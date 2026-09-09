@@ -60,15 +60,22 @@ Caller не обязан заранее знать current bundle version.
 
 ```text
 load(locale, namespaces)
-→ resolve explicit locale fallback chain
-→ resolve translation sources per locale candidate
-→ merge by explicit policy
-→ validate
+→ obtain explicit fallback chain from LocaleRegistry
+→ for every locale in [target, ...fallbacks, en]:
+     resolve sources
+     merge by source priority
+     validate
+     build locale/namespace bundle
 → {
-     resources,
+     resourcesByLocale,
+     fallbackLocales,
      bundleVersions
    }
 ```
+
+Важно: loader НЕ должен flatten-ить English/другой fallback locale внутрь target-locale
+resource object. Locale-specific plural/context rules должны применяться в контексте того
+locale, которому принадлежит resource.
 
 Translation sources:
 
@@ -97,7 +104,7 @@ PostgreSQL, но `TranslationResourceLoader` знает только их contra
 У resolution две независимые оси: locale specificity и source origin. Порядок MUST быть
 однозначным.
 
-Сначала применяется explicit locale chain из `LocaleRegistry`:
+Vico формирует explicit locale chain:
 
 ```text
 target locale
@@ -107,7 +114,8 @@ target locale
 → canonical en
 ```
 
-Внутри каждого non-English locale candidate выбирается первый current value:
+Внутри каждого non-English locale bundle для каждого message key выбирается первый
+`current` source:
 
 ```text
 1. current local manual override
@@ -117,19 +125,9 @@ target locale
 
 Для `en` используется canonical English source.
 
-То есть locale specificity имеет приоритет над origin fallback: current machine translation
-для exact target locale выигрывает у manual translation из менее специфичного fallback
-locale.
-
-Для каждого key алгоритм концептуально выглядит так:
-
-```text
-for candidateLocale in [target, ...explicitFallbacks, en]:
-  value = firstCurrentValueBySourcePriority(candidateLocale, key)
-  if value exists:
-    use value
-    stop
-```
+Во время `t(...)` i18next проходит только эту явно переданную locale chain. Поэтому locale
+specificity имеет приоритет над origin fallback: current machine translation для exact
+target locale выигрывает у manual translation из менее специфичного fallback locale.
 
 `current` означает соответствие актуальному `sourceFingerprint` из `STO-02`.
 
@@ -137,12 +135,13 @@ Stale local/manual/machine translation не должна молча выигры
 source или locale fallback. Machine translation никогда не перезаписывает current manual
 override того же locale.
 
-Если local override stale, loader пропускает его и продолжает сначала source-priority
-внутри того же locale, затем explicit locale fallback chain.
+Если local override stale, bundle compiler пропускает его и продолжает source-priority
+внутри того же locale. Если current value для message unit в этом locale отсутствует,
+i18next переходит к следующему locale из explicit fallback chain.
 
-При недоступности PostgreSQL runtime может собрать UI из доступных current local overrides
-по той же locale chain и canonical English; translation provider в request path не
-вызывается.
+При недоступности PostgreSQL runtime может собрать доступные locale bundles из current
+local overrides и canonical English. Если нужные persistent resources недоступны, English
+остаётся resource fallback; translation provider в request path не вызывается.
 
 ## Local translation packs (`UI-05`)
 
@@ -222,8 +221,8 @@ Structural corruption, unknown keys при strict catalog policy или broken p
 ```text
 fingerprint mismatch
 → mark/expose stale
-→ exclude local value from current bundle
-→ continue source/locale priority chain
+→ exclude local value from current locale bundle
+→ continue source/locale fallback
 ```
 
 Проект может позже включить более строгую CI-policy, которая блокирует merge при stale
@@ -235,20 +234,28 @@ strict mode нельзя предполагать без явного решен
 На каждый SSR request создаётся отдельный i18next instance. Request-specific language
 state не хранится в global Worker instance.
 
-Vico полностью разрешает key-level locale fallback до вызова i18next через
-`TranslationResourceLoader`. Поэтому внутренний i18next fallback не должен создавать
-вторую скрытую fallback-систему.
+Vico владеет fallback policy: `LocaleRegistry` формирует explicit fallback chain, а
+`TranslationResourceLoader` загружает только resources этой chain. i18next используется
+для корректного key lookup/plural/context resolution внутри неё.
 
-Целевой архитектурный baseline:
+Целевой архитектурный baseline для target locale:
 
 ```text
+lng: targetLocale
 supportedLngs: false
 load: "currentOnly"
-fallbackLng: false
+fallbackLng: explicit LocaleRegistry fallback locales ending in en
 ```
 
-Loader отдаёт i18next уже resolved resources для requested locale/namespaces; i18next не
-решает, надо ли дополнительно искать `zh`, `dev` или другой locale.
+Для canonical `en` fallback может быть `false`, чтобы не включался default `dev`.
+
+Нельзя оставлять default `fallbackLng: "dev"` или полагаться на implicit locale reduction.
+Fallback locales всегда вычислены Vico и переданы явно.
+
+Почему locale resources не flatten-ятся: i18next выбирает plural suffix для каждого
+проверяемого locale. Если Arabic target не имеет current structured message и fallback —
+English, English resource должен разрешаться как English с English plural rules, а не быть
+скопированным в Arabic bundle и интерпретироваться по Arabic suffix rules.
 
 `remix-i18next` и `i18next-browser-languagedetector` не являются source of truth и не
 являются обязательными архитектурными зависимостями.
@@ -260,7 +267,7 @@ Server:
 ```text
 LocaleResolver
 → TranslationResourceLoader
-→ request-scoped i18next
+→ request-scoped i18next(explicit fallback chain)
 → SSR
 ```
 
@@ -268,14 +275,16 @@ Browser получает тот же snapshot:
 
 ```text
 resolved locale
-initial resources
+explicit fallback locales
+initial resources by locale
 resource/bundle versions
 ```
 
-Browser не должен заново определять язык после того, как SSR уже выбрал locale.
+Browser гидратирует i18next с той же chain/resources и не должен заново определять язык
+после того, как SSR уже выбрал locale.
 
 Target-language dictionaries не bundle-ятся целиком в client JavaScript. Загружаются
-только необходимые locale/namespaces.
+только необходимые locale/namespaces и их explicit fallbacks для текущего route.
 
 Read transport может быть route loader data или read-only endpoint вроде
 `GET /api/i18n/:locale/:namespace`; endpoint никогда напрямую не вызывает translator.
@@ -349,7 +358,7 @@ UiMessageDescriptor
 → target plural/select structure
 → structured-capable translation provider
 → structural validation
-→ i18next resource
+→ locale-specific i18next resource
 ```
 
 Основной `LocaleRulesProvider` может использовать `Intl.PluralRules`. Если runtime не
@@ -359,13 +368,17 @@ UiMessageDescriptor
 Plain-text MT provider не объявляется capable для structured operation, которую он не
 может гарантировать.
 
+Structured message считается current только когда required target branches валидны; нельзя
+публиковать частично сгенерированный plural unit как current и надеяться, что отдельные
+suffixes случайно fallback-нутся.
+
 ## Compiled namespace bundles (`UI-14`)
 
 SSR/runtime не должен выполнять N storage queries по одному translation key.
 
-Готовые current values и уже разрешённые locale fallbacks компилируются в versioned
-locale/namespace bundle для конкретного requested locale. Bundle version является output
-metadata loader/storage layer, а не обязательным аргументом обычного resource lookup.
+Для каждого locale из explicit chain current values компилируются в отдельный versioned
+locale/namespace bundle. Bundle version является output metadata loader/storage layer, а
+не обязательным аргументом обычного resource lookup.
 
 Persistence, versioning, ETag/cache contract описаны в
 [`STORAGE_AND_VERSIONING.md`](STORAGE_AND_VERSIONING.md).
