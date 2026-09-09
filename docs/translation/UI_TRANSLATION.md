@@ -28,6 +28,10 @@ errors
 
 English catalog является source of truth для translation keys и TypeScript typing.
 
+Каждый UI key, который реально используется приложением, должен иметь canonical English
+message. Missing canonical key — defect canonical catalog/build-time contract, а не повод
+создавать machine translation или молча показывать translation key пользователю.
+
 Canonical message descriptor должен хранить достаточно semantic metadata для безопасного
 manual/machine translation:
 
@@ -174,6 +178,11 @@ app/i18n/manual/
 
 Наличие `manual/ru` не означает, что `ru` автоматически разрешён в `LocaleRegistry`.
 
+Local packs не должны из-за удобства хранения автоматически импортироваться целиком в
+client JavaScript. Client получает только resources текущего route/locale chain.
+Server/build packaging local packs остаётся implementation detail `LocalTranslationSource`
+и может быть изменено при росте числа packs без изменения domain contract.
+
 Local override должен быть связан с canonical `sourceFingerprint`. Допустимы:
 
 ```text
@@ -205,15 +214,18 @@ translation новым hash.
 Structural validation до merge/deploy проверяет:
 
 ```text
-known key/namespace
+known canonical key/namespace
 placeholder set
 plural/select structure
 forbidden markup
 maximum value constraints
 ```
 
-Structural corruption, unknown keys при strict catalog policy или broken placeholders
-должны ломать соответствующую validation check.
+Partial pack может пропускать keys, но key/namespace, которого нет в canonical catalog
+текущей версии проекта, является structural error: typo/dead key не должен молча попадать
+в pack.
+
+Broken placeholders/structured message также ломают validation check.
 
 `sourceFingerprint` mismatch имеет другую семантику: он означает `stale`, а не
 автоматически «битый файл». Архитектурный baseline:
@@ -286,8 +298,26 @@ Browser гидратирует i18next с той же chain/resources и не д
 Target-language dictionaries не bundle-ятся целиком в client JavaScript. Загружаются
 только необходимые locale/namespaces и их explicit fallbacks для текущего route.
 
-Read transport может быть route loader data или read-only endpoint вроде
-`GET /api/i18n/:locale/:namespace`; endpoint никогда напрямую не вызывает translator.
+### Read transport
+
+Read transport может быть route loader data или read-only endpoint вроде:
+
+```text
+GET /api/i18n/:locale/:namespace
+```
+
+Если используется endpoint, он обязан:
+
+```text
+canonicalize/validate locale
+проверить registry access/publication policy для читаемого locale
+validate namespace against canonical catalog
+вернуть только ready/current compiled resource data
+не создавать locale/task
+не вызывать translation provider
+```
+
+Caching/versioning endpoint описывается через `STO-05`.
 
 ## UiTranslationService (`UI-11`)
 
