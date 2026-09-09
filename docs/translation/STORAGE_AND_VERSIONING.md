@@ -18,19 +18,23 @@ locale
 namespace
 key
 sourceFingerprint
-generationPolicyVersion
 translated payload
 origin
-provider/model
 status
-provenance/attribution metadata
 createdAt / updatedAt
+
+machine-specific when applicable:
+generationPolicyVersion
+provider/model
+provenance/attribution metadata
 ```
 
-Это contract данных, а не готовая SQL table.
+Это contract данных, а не готовая SQL table. `generationPolicyVersion` и provider/model
+metadata обязательны для machine-generated record в той мере, в какой они применимы, но
+не должны искусственно требоваться от local/persistent manual translation.
 
-Storage API должен поддерживать current lookup, stale detection, safe upsert и построение
-namespace bundle.
+Storage API должен поддерживать current lookup, stale detection, safe/conditional upsert и
+построение namespace bundle.
 
 ## sourceFingerprint (`STO-02`)
 
@@ -87,6 +91,10 @@ validation semantics
 Изменение implementation detail не обязано автоматически инвалидировать все translations;
 версия меняется только когда policy действительно влияет на требуемый результат.
 
+Queued machine task и conditional result publication должны учитывать эту version, чтобы
+результат старой generation policy не становился current после смены policy, если новая
+policy требует regeneration.
+
 ## Origin, manual priority и stale lifecycle (`STO-04`)
 
 Минимальные origins:
@@ -124,14 +132,31 @@ HTTP ETag / Cache-Control
 
 Конкретный cache backend не входит в domain contract.
 
-Cache key/version обязаны учитывать locale, namespace и bundle/source version, чтобы stale
-resources не смешивались с current.
+### Cache identity
+
+Individual locale/namespace bundle cache key/version обязаны учитывать как минимум:
+
+```text
+locale
+namespace
+bundle/source version
+```
+
+чтобы stale resources не смешивались с current.
+
+Explicit locale fallback chain не flatten-ится в individual bundle. Если позже кэшируется
+не отдельный bundle, а composite loader response/resource graph, такой cache key/version
+дополнительно MUST учитывать версию/identity `LocaleRegistry` fallback policy. Иначе
+изменённый fallback chain может продолжить обслуживаться из старого composite cache даже
+при неизменившихся translation bundles.
 
 Обычный `TranslationResourceLoader` lookup не должен требовать от caller заранее знать
 current bundle version. Loader возвращает bundle version/hash как metadata результата;
 cache layer может использовать её для validation/ETag/cache-key strategy.
 
-Canonical English находится в deploy и остаётся hard fallback даже при storage outage.
+Canonical English находится в deploy и остаётся hard resource fallback даже при translation
+storage outage. Route-level availability non-English locale отдельно определяется
+`LocaleRegistry`; bootstrap `en` описан в `LOCALES.md`.
 
 ## Provider provenance (`STO-06`)
 
@@ -140,10 +165,13 @@ Machine record хранит достаточную provenance:
 ```text
 provider
 model/version when available
-machine | manual origin
+machine origin
 generation policy version
 attribution/presentation metadata
 ```
+
+Manual record хранит manual origin и при необходимости audit metadata, но не обязан иметь
+фиктивный provider/model.
 
 Это позволяет выполнять provider-specific legal/presentation requirements на boundary, а не
 разбрасывать условия `if provider === ...` по UI.
