@@ -78,10 +78,12 @@ Exact upstream tag:
 https://github.com/i18next/i18next/tree/v26.4.2
 ```
 
-Exact defaults source:
+Exact sources:
 
 ```text
 https://github.com/i18next/i18next/blob/v26.4.2/src/defaults.js
+https://github.com/i18next/i18next/blob/v26.4.2/src/LanguageUtils.js
+https://github.com/i18next/i18next/blob/v26.4.2/src/Translator.js
 ```
 
 В `26.4.2` defaults:
@@ -92,15 +94,10 @@ supportedLngs: false
 load: "all"
 ```
 
-Exact translator source:
-
-```text
-https://github.com/i18next/i18next/blob/v26.4.2/src/Translator.js
-```
-
-Translator resolution вычисляет plural suffix с использованием конкретного locale code,
-который в данный момент проверяется. Это важно для fallback между языками с разными plural
-rules.
+`LanguageUtils.toResolveHierarchy()` при `load: "currentOnly"` оставляет exact current code
+и затем добавляет explicit fallback codes; `Translator.resolve()` вычисляет plural suffix
+для конкретного locale code, который проверяется. Это важно для fallback между языками с
+разными plural rules.
 
 Current official docs, перепроверены 2026-09-10:
 
@@ -121,12 +118,12 @@ load: "currentOnly"
 fallbackLng: explicit LocaleRegistry fallback chain ending in en
 ```
 
-Для `en` fallback отключается, чтобы default `dev` не участвовал.
+Для canonical `en` fallback отключается, чтобы default `dev` не участвовал.
 
-Почему не используется прежняя идея `fallbackLng: false` + flatten всех fallback resources
-в target bundle: это может неверно интерпретировать English plural keys как target-language
-plural structure. Поэтому Vico загружает отдельные bundles для каждого locale chain, а
-explicit chain передаётся i18next.
+Почему не используется `fallbackLng: false` + flatten всех fallback resources в target
+bundle: это может неверно интерпретировать English plural keys как target-language plural
+structure. Поэтому Vico загружает отдельные bundles для каждого locale chain, а explicit
+chain передаётся i18next.
 
 ### react-i18next 17.0.13
 
@@ -145,8 +142,9 @@ https://react.i18next.com/latest/ssr
 ```
 
 Подтверждён pattern с request-specific i18next instance/provider и передачей client той же
-initial language/store. Vico расширяет snapshot также explicit fallback chain и bundle
-versions, чтобы hydration использовал тот же resource graph.
+initial language/store. Vico расширяет snapshot также explicit fallback chain, bundle
+versions и locale-sensitive formatting inputs, чтобы initial hydration использовал тот же
+resource/formatting context.
 
 ### remix-i18next 8.0.0
 
@@ -174,7 +172,7 @@ supportedLanguages: string[]
 Архитектурный вывод: библиотека не является source of truth Vico для runtime
 `LocaleRegistry`. Это не утверждение, что библиотека «плохая» или несовместима с RR8.
 
-### BCP 47 / RFC 4647 / RFC 9110
+### BCP 47 / RFC 4647 / RFC 9110 / Intl
 
 Проверены 2026-09-10:
 
@@ -187,18 +185,25 @@ https://tc39.es/ecma402/
 
 Подтверждено:
 
-- BCP-47 описывает language/script/region tags;
+- BCP-47 описывает language/script/region tags и extensions;
 - RFC 4647 определяет filtering и lookup для language tags;
 - `Accept-Language` использует language ranges и q-values;
 - `q=0` означает not acceptable;
-- `Intl.getCanonicalLocales()` пригоден для canonicalization boundary.
+- wildcard `*` является language range, но конкретный выбор representation остаётся
+  application policy;
+- `Intl.getCanonicalLocales()` пригоден для canonicalization boundary;
+- стандартный `Intl` layer предоставляет locale-aware formatting primitives.
 
-Архитектурный вывод Vico:
+Архитектурные выводы Vico:
 
 - explicit URL locale authoritative после canonicalization/registry lookup;
 - invalid/inactive URL locale не подменяется cookie/header preference;
 - negotiation без locale segment использует user/cookie/Accept-Language/en;
+- wildcard не выбирает случайный Vico locale: default остаётся `en`;
 - alias/case/deprecated representation активного locale redirect-ится на canonical URL;
+- formatting extensions не создают translation bundle автоматически;
+- numbers/dates/time/list formatting использует явный formatting context;
+- SSR и initial hydration не зависят от разных server/browser default timezone/locale;
 - provider-specific language codes не входят в domain locale identity.
 
 ### Plural rules
@@ -237,12 +242,18 @@ https://developers.cloudflare.com/workers/runtime-apis/context/
 ```text
 persist/commit translation task
 → enqueue translationTaskId
-→ idempotent consumer
+→ preflight current source/policy checks
+→ provider
+→ conditional current write
 → retry/DLQ/reconciliation
 ```
 
 Если enqueue после DB commit failed/unknown, persistent pending task позволяет безопасно
 re-enqueue. Если enqueue произошёл дважды, consumer остаётся идемпотентным.
+
+Queued task повторно проверяет source revision/fingerprint, generation policy, locale
+eligibility и наличие higher-priority manual result до внешнего provider call. Result
+старой task не публикуется current после source/policy change.
 
 При этом at-least-once + DB lease не дают универсальную exactly-once гарантию внешнего API
 call. Crash после provider response, но до durable commit, может привести к повторному
@@ -275,10 +286,10 @@ https://cloud.google.com/translate/docs/languages
 https://cloud.google.com/translate/attribution
 ```
 
-Google имеет собственную support matrix и текущие attribution/presentation requirements.
+Google имеет собственную support matrix и current attribution/presentation requirements.
 При прямом отображении translation results действуют требования attribution; provider
 policy может изменяться, поэтому provenance/attribution metadata хранится за adapter/store
-boundary, а не hard-code-ится по всему UI.
+boundary, а provider router должен учитывать способность продукта выполнить эти правила.
 
 ### PostgreSQL
 
@@ -299,20 +310,26 @@ PostgreSQL/ICU поддерживает locale-specific collations и BCP-47-sty
 - независимые `translationStatus` и `publicationStatus`;
 - explicit URL locale authoritative; negotiation только когда locale segment отсутствует;
 - canonical URL redirect для aliases/case/deprecated representations;
+- formatting preferences отделены от translation identity;
+- deterministic locale-sensitive SSR/hydration formatting context;
 - English как единственный canonical UI source;
 - local packs как partial manual source, не как locale registry;
 - source priority внутри locale: local manual → persistent manual → machine;
 - locale fallback: target → explicit registry fallbacks → en;
 - cross-locale resources не flatten-ятся;
-- `sourceFingerprint` freshness и запрет автоматического refresh старого manual hash;
+- `sourceFingerprint` freshness и запрет automatic refresh старого manual hash;
 - stale fingerprint по умолчанию исключает value из current bundle, но сам по себе не
   обязан ломать deploy; strict stale-CI — отдельная repository policy;
+- unknown local key — structural error, missing local key допустим для partial pack;
 - `TranslationBundleCache` как optimization, не translation source;
+- composite cache учитывает fallback-policy identity/version;
 - UI/content translation — разные domain services;
+- content translation miss/failure → original current revision;
 - source-locale correction user content создаёт новую immutable revision;
-- provider capability router;
+- machine provider router отделён от manual/local ingestion;
 - provider calls вне SSR path;
 - durable task before enqueue;
+- stale queued task preflight + conditional current write;
 - idempotent state без ложной exactly-once provider guarantee;
 - Component Registry + traceability rule.
 
@@ -324,28 +341,36 @@ PostgreSQL/ICU поддерживает locale-specific collations и BCP-47-sty
 | Переводы готовы, язык скрыт | `translationStatus=ready`, `publicationStatus=inactive` |
 | PostgreSQL registry недоступен | bootstrap `/en` остаётся разрешимым; другие locale не угадываются |
 | `/RU/...` при canonical `ru` | redirect на canonical `/ru/...` |
+| BCP-47 formatting extension без отдельного translation | canonical route использует translation locale, prefs отдельно |
 | `/unknown/...` + cookie `ru` | unknown route policy; cookie не подменяет explicit URL |
 | `/` + cookie `ru` | negotiation → canonical `/ru/` при active registry entry |
 | `Accept-Language` содержит `q=0` | такой range не выбирается |
+| `Accept-Language: *` без конкретного match | deterministic default `en`, не случайный locale |
+| server timezone ≠ browser timezone | initial formatting context одинаков на SSR/hydration |
 | `zh-Hans` и `zh-Hant` | независимые locale + explicit registry matching |
 | `sr-Cyrl` и `sr-Latn` | независимые script locale |
 | Новый RTL locale | registry direction, без special-case |
-| Сотни locale | target resources не bundle-ятся все в JS |
+| Сотни locale | target resources не bundle-ятся все в client JS |
 | Частичный local pack | merge с persistent sources того же locale |
+| Unknown key в local pack | structural validation error |
 | English source изменился | old manual fingerprint остаётся stale |
 | Stale local pack | value исключён; fallback продолжается; strict CI только если явно включён |
 | Target machine есть, fallback manual есть | exact target machine выигрывает по locale specificity |
 | Arabic target plural missing, English fallback | i18next использует English bundle/English plural rules |
-| Provider потерял locale pair | router выбирает другой adapter/manual path |
+| Fallback chain изменилась | composite cache identity меняется; stale resource graph не переиспользуется |
+| Provider потерял locale pair | другой machine adapter или normal UI/content fallback; manual ingestion отдельно |
 | Provider сломал placeholder | validator reject |
+| Manual translation появился до machine call | stale-task preflight может отменить лишнюю machine job |
+| Source changed while provider call runs | old result не публикуется current |
 | Queue доставила job дважды | idempotent persistent state |
 | DB task committed, enqueue failed | reconciliation re-enqueue |
 | Crash после provider response до commit | API call может повториться; state остаётся idempotent |
 | Provider/Queue недоступны | request path не вызывает provider; готовые/local/English resources используются |
+| User-content translation недоступна | показывается original current revision |
 | UI `en`, post `ru` | content sourceLocale независим |
 | sourceLocale исправлен вручную | новая revision; старые translations historical |
 | Большой Markdown с code | AST/semantic segmentation |
-| Новый provider | новый adapter |
+| Новый provider | новый machine adapter |
 | Нужен Workflow | меняется orchestration implementation за boundary |
 
 ## Внешняя граница гарантии
@@ -357,6 +382,7 @@ PostgreSQL/ICU поддерживает locale-specific collations и BCP-47-sty
 
 > Vico не имеет hard-coded языкового или письменностного потолка. Любой зарегистрированный
 > BCP-47 locale может быть добавлен без изменения архитектуры ядра. Automatic translation
-> маршрутизируется через расширяемые providers. Если текущие providers не имеют нужной
-> capability, используется другой adapter/provider, manual/import translation или canonical
-> English fallback.
+> маршрутизируется через расширяемые machine providers. Если текущие providers не имеют
+> нужной capability, используется другой adapter либо manual/import translation; UI при
+> отсутствии current translation продолжает fallback chain до canonical English, а
+> user-content translation — до original content текущей revision.
