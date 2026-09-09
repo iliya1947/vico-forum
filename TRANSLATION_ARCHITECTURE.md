@@ -33,34 +33,39 @@
    translation providers не определяют список locale.
 4. Публичный UI использует generic `/:locale/*`; технические routes (`/api/*`,
    `/api/auth/*`, `/api/i18n/*`) не вкладываются в locale namespace.
-5. Порядок выбора locale: URL → authenticated `user.locale` → cookie →
-   `Accept-Language` → `en`.
-6. English (`en`) — единственный canonical UI source, поддерживаемый разработчиком.
-7. UI-переводы могут одновременно поступать из local packs, manual persistent
+5. Явный `/:locale` в URL является authoritative: unknown/inactive URL locale не должен
+   молча проваливаться в user/cookie/header negotiation. Когда locale segment отсутствует,
+   negotiation идёт `user.locale` → cookie → `Accept-Language` → `en`.
+6. В текущем React Router `8.3.1` locale boundary должен иметь server `loader`, чтобы
+   client-side смена `:locale` гарантированно проходила server validation/resource loading.
+7. English (`en`) — единственный canonical UI source, поддерживаемый разработчиком.
+8. UI-переводы могут одновременно поступать из local packs, manual persistent
    translations и machine translations.
-8. Приоритет готовых UI-ресурсов:
-   current local manual → current persistent manual → current machine → canonical English.
-9. Любой non-English translation должен проверяться на freshness относительно
-   `sourceFingerprint`; stale translation не побеждает актуальный fallback.
-10. `i18next` + `react-i18next` — runtime/rendering layer. Locale resolution,
+9. Locale fallback и source priority различаются: сначала exact target locale, затем
+   explicit registry fallbacks, затем `en`; внутри каждого non-English locale действует
+   current local manual → current persistent manual → current machine.
+10. Любой non-English translation должен проверяться на freshness относительно
+    `sourceFingerprint`; stale translation не побеждает актуальный source/fallback.
+11. `i18next` + `react-i18next` — runtime/rendering layer. Locale resolution, fallback,
     resource composition и translation generation принадлежат Vico.
-11. На каждый SSR request создаётся request-scoped i18next instance; browser гидратирует
+12. На каждый SSR request создаётся request-scoped i18next instance; browser гидратирует
     тот же locale/resource snapshot, который использовал сервер.
-12. Translation API никогда не находится в критическом SSR path.
-13. UI translation и user-content translation — отдельные domain services с общим
+13. Translation API никогда не находится в критическом SSR path.
+14. UI translation и user-content translation — отдельные domain services с общим
     низкоуровневым provider abstraction.
-14. Provider-specific language codes, limits, capabilities, retries и attribution
+15. Provider-specific language codes, limits, capabilities, retries и attribution
     изолированы в adapters и не ограничивают locale architecture Vico.
-15. Background translation jobs идемпотентны; duplicate delivery не должна приводить
-    к duplicate state или неконтролируемым повторным provider calls.
-16. Provider output и local packs проходят runtime/build validation структуры,
-    placeholders и message semantics.
-17. Direction — обязательная metadata locale; Hebrew и другие RTL-языки не имеют
+16. Background translation jobs обеспечивают idempotent persistent state; exactly-once
+    внешний provider call не предполагается без собственной гарантии provider.
+17. Provider output и local packs проходят validation структуры/placeholders/message
+    semantics. Fingerprint mismatch означает stale и не обязан сам по себе ломать deploy.
+18. Direction — обязательная metadata locale; Hebrew и другие RTL-языки не имеют
     special-case архитектуры.
-18. Вся цепочка Unicode-safe. User content может иметь язык/направление, отличные от UI.
-19. Canonical English остаётся hard fallback при недоступности PostgreSQL, Queue или
+19. Вся цепочка Unicode-safe. User content может иметь язык/направление, отличные от UI.
+20. Canonical English остаётся hard fallback при недоступности PostgreSQL, Queue или
     translation providers.
-20. Архитектура не фиксирует преждевременно финальную PostgreSQL schema, конкретный
+21. Translation readiness locale и public publication status — независимые состояния.
+22. Архитектура не фиксирует преждевременно финальную PostgreSQL schema, конкретный
     формат translation pack, вечный provider priority или конкретную queue topology.
 
 ## Component Registry
@@ -174,14 +179,19 @@ if (locale === "he")
 local translation directories as LocaleRegistry
 remix-i18next supportedLanguages as source of truth
 browser language re-detection after SSR has resolved locale
-implicit i18next locale reduction as Vico fallback policy
+explicit unknown/inactive /:locale → silently use cookie/header locale
+server middleware without locale-boundary loader as client-navigation guarantee
+implicit i18next locale reduction or default dev fallback as Vico fallback policy
 translation provider call inside SSR render path
 unknown URL locale → create locale / enqueue translation
 Cloudflare → Google as hard-coded universal provider chain
+TranslationBundleCache treated as translation source
 raw provider HTML → dangerouslySetInnerHTML
 raw Markdown sent as an opaque translation string
 stale manual/local translation silently treated as current
+automatic sourceFingerprint refresh without translation review
 non-idempotent Queue consumer
+assuming exactly-once external provider calls from Queue idempotency alone
 provider-specific locale codes leaking into domain locale model
 ```
 
