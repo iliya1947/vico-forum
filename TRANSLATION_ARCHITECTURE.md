@@ -39,38 +39,47 @@
    negotiation идёт `user.locale` → cookie → `Accept-Language` → `en`.
 6. В текущем React Router `8.3.1` locale boundary должен иметь server `loader`, чтобы
    client-side смена `:locale` гарантированно проходила server validation/resource loading.
-7. English (`en`) — единственный canonical UI source, поддерживаемый разработчиком.
-8. UI-переводы могут одновременно поступать из local packs, manual persistent
+7. Translation locale и formatting preferences разделены. Locale-sensitive numbers/dates/
+   time/list formatting использует `Intl` с явным formatting context; initial SSR и
+   hydration получают одинаковые formatting inputs.
+8. English (`en`) — единственный canonical UI source, поддерживаемый разработчиком.
+9. UI-переводы могут одновременно поступать из local packs, manual persistent
    translations и machine translations.
-9. Vico формирует explicit locale fallback chain: target → registry fallbacks → `en`.
-   Внутри каждого non-English locale source priority: current local manual → current
-   persistent manual → current machine. Locale resources не flatten-ятся между языками.
-10. Любой non-English translation должен проверяться на freshness относительно
+10. Vico формирует explicit locale fallback chain: target → registry fallbacks → `en`.
+    Внутри каждого non-English locale source priority: current local manual → current
+    persistent manual → current machine. Locale resources не flatten-ятся между языками.
+11. Любой non-English translation должен проверяться на freshness относительно
     `sourceFingerprint`; stale translation не побеждает актуальный source/fallback.
-11. `i18next` + `react-i18next` — runtime/rendering layer. Locale resolution и fallback
+12. `i18next` + `react-i18next` — runtime/rendering layer. Locale resolution и fallback
     policy принадлежат Vico; request-scoped i18next получает explicit fallback chain и
     locale-specific resources. Default `dev`/implicit locale reduction не используются.
-12. На каждый SSR request создаётся request-scoped i18next instance; browser гидратирует
+13. На каждый SSR request создаётся request-scoped i18next instance; browser гидратирует
     тот же locale/fallback/resource snapshot, который использовал сервер.
-13. Translation API никогда не находится в критическом SSR path.
-14. UI translation и user-content translation — отдельные domain services с общим
-    низкоуровневым provider abstraction.
-15. Provider-specific language codes, limits, capabilities, retries и attribution
-    изолированы в adapters и не ограничивают locale architecture Vico.
-16. Background translation jobs обеспечивают idempotent persistent state; exactly-once
+14. Translation API никогда не находится в критическом SSR path.
+15. UI translation и user-content translation — отдельные domain services с общим
+    низкоуровневым machine-provider abstraction. Manual/local ingestion не притворяется
+    machine provider.
+16. Если user-content translation отсутствует/невалидна/недоступна, показывается original
+    content текущей revision; UI English fallback к user content не применяется.
+17. Provider-specific language codes, limits, capabilities, retries, attribution и
+    применимые data-handling constraints изолированы в adapters и не ограничивают locale
+    architecture Vico.
+18. Background translation jobs обеспечивают idempotent persistent state; exactly-once
     внешний provider call не предполагается без собственной гарантии provider.
-17. Durable translation task создаётся/коммитится до Queue enqueue; enqueue failure/unknown
+19. Durable translation task создаётся/коммитится до Queue enqueue; enqueue failure/unknown
     восстанавливается reconciliation, а duplicate enqueue безопасен через idempotency.
-18. Provider output и local packs проходят validation структуры/placeholders/message
+20. Queued task повторно проверяет source/policy/locale eligibility перед provider call и
+    conditional publish; устаревшая task не может записать result как current.
+21. Provider output и local packs проходят validation структуры/placeholders/message
     semantics. Fingerprint mismatch означает stale и не обязан сам по себе ломать deploy.
-19. Direction — обязательная metadata locale; Hebrew и другие RTL-языки не имеют
+22. Direction — обязательная metadata locale; Hebrew и другие RTL-языки не имеют
     special-case архитектуры.
-20. Вся цепочка Unicode-safe. User content может иметь язык/направление, отличные от UI.
-21. Canonical English остаётся минимальным route/resource fallback при недоступности
+23. Вся цепочка Unicode-safe. User content может иметь язык/направление, отличные от UI.
+24. Canonical English остаётся минимальным route/resource fallback при недоступности
     PostgreSQL, Queue или translation providers; non-English locale не угадывается без
     надёжной registry data.
-22. Translation readiness locale и public publication status — независимые состояния.
-23. Архитектура не фиксирует преждевременно финальную PostgreSQL schema, конкретный
+25. Translation readiness locale и public publication status — независимые состояния.
+26. Архитектура не фиксирует преждевременно финальную PostgreSQL schema, конкретный
     формат translation pack, вечный provider priority или конкретную queue topology.
 
 ## Component Registry
@@ -85,7 +94,7 @@
 | LOC-03 | `LocaleResolver` | [`LOCALES.md`](docs/translation/LOCALES.md) | Stage 1 foundation |
 | LOC-04 | Generic locale routing and locale boundary | [`LOCALES.md`](docs/translation/LOCALES.md) | Stage 1 foundation |
 | LOC-05 | Explicit fallback/matching policy | [`LOCALES.md`](docs/translation/LOCALES.md) | Stage 1 foundation |
-| LOC-06 | Translation locale vs formatting preferences | [`LOCALES.md`](docs/translation/LOCALES.md) | Stage 1 boundary |
+| LOC-06 | Translation locale vs formatting/SSR formatting context | [`LOCALES.md`](docs/translation/LOCALES.md) | Stage 1 boundary |
 | LOC-07 | Direction/LTR/RTL metadata | [`LOCALES.md`](docs/translation/LOCALES.md) | Stage 1 foundation |
 | LOC-08 | Locale-aware HTTP negotiation/caching boundary | [`LOCALES.md`](docs/translation/LOCALES.md) | Stage 1 foundation |
 | LOC-09 | Locale lifecycle/activation boundary | [`LOCALES.md`](docs/translation/LOCALES.md) | Stage 1 abstraction; admin flow later |
@@ -104,17 +113,17 @@
 | UI-12 | `TranslationValidator` | [`UI_TRANSLATION.md`](docs/translation/UI_TRANSLATION.md) | Local-pack validation early; provider validation later |
 | UI-13 | `LocaleRulesProvider` / plural-select rules | [`UI_TRANSLATION.md`](docs/translation/UI_TRANSLATION.md) | Structured UI translation |
 | UI-14 | Compiled namespace bundles | [`UI_TRANSLATION.md`](docs/translation/UI_TRANSLATION.md) | DB translation infrastructure |
-| CNT-01 | `ContentTranslationService` | [`CONTENT_TRANSLATION.md`](docs/translation/CONTENT_TRANSLATION.md) | User-content translation stage |
+| CNT-01 | `ContentTranslationService` + original-content fallback | [`CONTENT_TRANSLATION.md`](docs/translation/CONTENT_TRANSLATION.md) | User-content translation stage |
 | CNT-02 | Revision-bound content translation identity | [`CONTENT_TRANSLATION.md`](docs/translation/CONTENT_TRANSLATION.md) | Forum revisions + translation stage |
 | CNT-03 | Independent source locale / language detection boundary | [`CONTENT_TRANSLATION.md`](docs/translation/CONTENT_TRANSLATION.md) | User-content translation stage |
 | CNT-04 | Markdown AST / protected technical fragments | [`CONTENT_TRANSLATION.md`](docs/translation/CONTENT_TRANSLATION.md) | User-content translation stage |
 | CNT-05 | Topic-title translation as separate translatable unit | [`CONTENT_TRANSLATION.md`](docs/translation/CONTENT_TRANSLATION.md) | User-content translation stage |
 | CNT-06 | Revision-bound content translation persistence | [`CONTENT_TRANSLATION.md`](docs/translation/CONTENT_TRANSLATION.md) | User-content translation stage |
-| PRV-01 | `TranslationProviderRouter` | [`PROVIDERS_AND_JOBS.md`](docs/translation/PROVIDERS_AND_JOBS.md) | Provider integration stage |
+| PRV-01 | Machine `TranslationProviderRouter` | [`PROVIDERS_AND_JOBS.md`](docs/translation/PROVIDERS_AND_JOBS.md) | Provider integration stage |
 | PRV-02 | Provider adapters and capability mapping | [`PROVIDERS_AND_JOBS.md`](docs/translation/PROVIDERS_AND_JOBS.md) | Provider integration stage |
-| JOB-01 | `TranslationJobDispatcher` | [`PROVIDERS_AND_JOBS.md`](docs/translation/PROVIDERS_AND_JOBS.md) | Background translation stage |
+| JOB-01 | `TranslationJobDispatcher` + durable enqueue ordering | [`PROVIDERS_AND_JOBS.md`](docs/translation/PROVIDERS_AND_JOBS.md) | Background translation stage |
 | JOB-02 | Persistent translation task identity | [`PROVIDERS_AND_JOBS.md`](docs/translation/PROVIDERS_AND_JOBS.md) | Background translation stage |
-| JOB-03 | Idempotent consumer / duplicate protection | [`PROVIDERS_AND_JOBS.md`](docs/translation/PROVIDERS_AND_JOBS.md) | Background translation stage |
+| JOB-03 | Idempotent consumer / stale-task and duplicate protection | [`PROVIDERS_AND_JOBS.md`](docs/translation/PROVIDERS_AND_JOBS.md) | Background translation stage |
 | JOB-04 | Retry classification and DLQ | [`PROVIDERS_AND_JOBS.md`](docs/translation/PROVIDERS_AND_JOBS.md) | Production background translation |
 | JOB-05 | Provider-independent fallback / future orchestration | [`PROVIDERS_AND_JOBS.md`](docs/translation/PROVIDERS_AND_JOBS.md) | Provider integration stage |
 | JOB-06 | Persistent task reconciliation / observability | [`PROVIDERS_AND_JOBS.md`](docs/translation/PROVIDERS_AND_JOBS.md) | Background translation stage |
@@ -137,7 +146,7 @@ request
   ↓
 LocaleResolver → LocaleRegistry
   ↓
-target locale + explicit fallback locales + direction
+target locale + explicit fallback locales + direction/formatting context
   ↓
 TranslationResourceLoader
   ├─ LocalTranslationSource
@@ -152,7 +161,7 @@ request-scoped i18next
   ↓
 React Router v8 SSR
   ↓
-same locale/fallback/resources → hydration
+same locale/fallback/resources/formatting inputs → hydration
 
 Canonical English catalog
   ↓
@@ -173,6 +182,7 @@ ContentTranslationService
 TranslationProviderRouter
   ↓
 revision-bound translation
+  └─ on miss/failure → original current revision
 ```
 
 ## Запрещённые архитектурные паттерны
@@ -187,6 +197,7 @@ if (locale === "he")
 local translation directories as LocaleRegistry
 remix-i18next supportedLanguages as source of truth
 browser language re-detection after SSR has resolved locale
+server/browser default locale or timezone as implicit SSR formatting contract
 explicit unknown/inactive /:locale → silently use cookie/header locale
 server middleware without locale-boundary loader as client-navigation guarantee
 implicit i18next locale reduction or default dev fallback as Vico fallback policy
@@ -194,12 +205,14 @@ flatten fallback-locale resources into target locale and reinterpret their plura
 translation provider call inside SSR render path
 unknown URL locale → create locale / enqueue translation
 Cloudflare → Google as hard-coded universal provider chain
+manual/local import disguised as machine TranslationProvider adapter
 TranslationBundleCache treated as translation source
 raw provider HTML → dangerouslySetInnerHTML
 raw Markdown sent as an opaque translation string
 stale manual/local translation silently treated as current
 automatic sourceFingerprint refresh without translation review
 Queue message referring to a translation task not yet committed durably
+stale queued task publishing over a newer source/policy
 non-idempotent Queue consumer
 assuming exactly-once external provider calls from Queue idempotency alone
 provider-specific locale codes leaking into domain locale model
@@ -223,7 +236,7 @@ provider-specific locale codes leaking into domain locale model
 ## Detail documents
 
 - [`LOCALES.md`](docs/translation/LOCALES.md) — locale identity, registry, resolution,
-  routing, fallback, direction и HTTP boundary.
+  routing, fallback, direction, formatting и HTTP boundary.
 - [`UI_TRANSLATION.md`](docs/translation/UI_TRANSLATION.md) — canonical UI, local packs,
   resource loader, i18next SSR, UI generation, validation и structured messages.
 - [`CONTENT_TRANSLATION.md`](docs/translation/CONTENT_TRANSLATION.md) — перевод topic/post
