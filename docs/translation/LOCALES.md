@@ -32,7 +32,8 @@ formattingPreferences
 
 ```text
 tag
-status
+translationStatus
+publicationStatus
 direction
 fallbackChain
 aliases / matchTags
@@ -40,15 +41,27 @@ nativeName
 presentationMetadata
 ```
 
-Минимальный lifecycle:
+`translationStatus` и `publicationStatus` — разные оси состояния.
+
+Минимальный translation lifecycle:
 
 ```text
 draft
 generating
 partial
 ready
+```
+
+Минимальный publication lifecycle:
+
+```text
+inactive
+active
 disabled
 ```
+
+Это позволяет однозначно представить, например, `translationStatus=ready` при
+`publicationStatus=inactive`: переводы готовы, но locale ещё не опубликован.
 
 Требования:
 
@@ -56,7 +69,8 @@ disabled
 - aliases/match rules принадлежат registry, а не React-условиям;
 - `direction` является обязательной metadata;
 - provider-specific language codes не принадлежат публичному locale contract;
-- наличие `docs`, local pack или provider support не активирует locale само по себе.
+- наличие docs, local pack или provider support не активирует locale само по себе;
+- readiness перевода не должна неявно менять publication status.
 
 До PostgreSQL может существовать config/in-memory adapter того же интерфейса. Позже
 он заменяется persistent adapter без изменения consumers.
@@ -77,7 +91,7 @@ Resolver обязан:
 
 1. разобрать кандидата;
 2. canonicalize BCP-47 tag;
-3. lookup только среди разрешённых registry entries;
+3. lookup только среди разрешённых и публично допустимых registry entries;
 4. учитывать `q` priorities в `Accept-Language`;
 5. применять явные aliases/matching rules registry;
 6. вернуть resolved translation locale, fallback chain, direction и presentation metadata;
@@ -102,12 +116,27 @@ Fallback semantics принадлежат Vico. Нельзя полагатьс�
 /api/i18n/*
 ```
 
-`/:locale/*` должен иметь server-side locale boundary через React Router v8
-middleware/loader, чтобы document request и client navigation использовали одну и ту же
-validation/resource-loading границу.
+`/:locale/*` должен иметь server-side locale boundary.
 
-Переход `/en/topic/1 → /ka/topic/1` не должен зависеть от случайного client `useEffect`
-или повторного browser language detection.
+Для React Router v8 Framework Mode boundary route MUST иметь server `loader` или другой
+явно эквивалентный механизм, который гарантирует server data round-trip при смене
+`:locale` на hydrated client navigation. Server middleware может дополнять эту границу,
+но одного middleware недостаточно как гарантии для каждой client navigation, потому что
+он выполняется на клиентской навигации только когда происходит соответствующий `.data`
+request.
+
+Цель:
+
+```text
+document request
+и
+client navigation /en/topic/1 → /ka/topic/1
+```
+
+должны проходить одну server-side locale validation/resource-loading границу.
+
+Переключение locale не должно зависеть от случайного client `useEffect` или повторного
+browser language detection.
 
 Unprefixed `/` выполняет negotiation и redirect на canonical `/:locale/` URL.
 
@@ -153,13 +182,20 @@ response либо эквивалентная корректная cache policy.
 
 ## Locale lifecycle / activation (`LOC-09`)
 
-Registration и activation — разные операции. Валидный BCP-47 tag может быть зарегистрирован
-как `draft/generating/partial`, но не должен становиться публично active только из-за
-появления local pack или machine translation.
+Registration, translation readiness и publication — разные операции.
 
-Activation flow должен иметь явную policy: metadata validated, fallback/direction valid,
-required UI resources готовы на принятом уровне качества либо разрешён `partial` mode с
-English fallback.
+Пример допустимого состояния:
+
+```text
+registered = yes
+translationStatus = ready
+publicationStatus = inactive
+```
+
+Activation flow должен явно переводить `publicationStatus` в `active` только после
+проверки metadata, fallback/direction и требуемого уровня UI resources. Если проект
+разрешает публичный partial mode, это отдельная явная policy, а не побочный эффект
+наличия нескольких переводов.
 
 Bulk generation, если она нужна, запускается отдельным admin/internal flow и не является
 side effect обычного page request.
