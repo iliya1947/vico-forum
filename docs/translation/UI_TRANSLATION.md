@@ -60,7 +60,8 @@ Caller не обязан заранее знать current bundle version.
 
 ```text
 load(locale, namespaces)
-→ resolve translation sources
+→ resolve explicit locale fallback chain
+→ resolve translation sources per locale candidate
 → merge by explicit policy
 → validate
 → {
@@ -93,25 +94,55 @@ PostgreSQL, но `TranslationResourceLoader` знает только их contra
 
 ## Resource priority (`UI-04` — `UI-08`)
 
-Приоритет для каждого message key:
+У resolution две независимые оси: locale specificity и source origin. Порядок MUST быть
+однозначным.
+
+Сначала применяется explicit locale chain из `LocaleRegistry`:
+
+```text
+target locale
+→ explicit fallback locale 1
+→ explicit fallback locale 2
+→ ...
+→ canonical en
+```
+
+Внутри каждого non-English locale candidate выбирается первый current value:
 
 ```text
 1. current local manual override
 2. current manual translation from persistent store
 3. current machine translation from persistent store
-4. canonical English fallback
+```
+
+Для `en` используется canonical English source.
+
+То есть locale specificity имеет приоритет над origin fallback: current machine translation
+для exact target locale выигрывает у manual translation из менее специфичного fallback
+locale.
+
+Для каждого key алгоритм концептуально выглядит так:
+
+```text
+for candidateLocale in [target, ...explicitFallbacks, en]:
+  value = firstCurrentValueBySourcePriority(candidateLocale, key)
+  if value exists:
+    use value
+    stop
 ```
 
 `current` означает соответствие актуальному `sourceFingerprint` из `STO-02`.
 
-Stale local/manual/machine translation не должна молча выигрывать у canonical English.
-Machine translation никогда не перезаписывает current manual override.
+Stale local/manual/machine translation не должна молча выигрывать у следующего current
+source или locale fallback. Machine translation никогда не перезаписывает current manual
+override того же locale.
 
-Если local override stale, loader пропускает его и продолжает priority chain к current
-persistent manual/machine или canonical English.
+Если local override stale, loader пропускает его и продолжает сначала source-priority
+внутри того же locale, затем explicit locale fallback chain.
 
 При недоступности PostgreSQL runtime может собрать UI из доступных current local overrides
-и canonical English; translation provider в request path не вызывается.
+по той же locale chain и canonical English; translation provider в request path не
+вызывается.
 
 ## Local translation packs (`UI-05`)
 
@@ -192,7 +223,7 @@ Structural corruption, unknown keys при strict catalog policy или broken p
 fingerprint mismatch
 → mark/expose stale
 → exclude local value from current bundle
-→ continue source priority chain
+→ continue source/locale priority chain
 ```
 
 Проект может позже включить более строгую CI-policy, которая блокирует merge при stale
@@ -204,8 +235,9 @@ strict mode нельзя предполагать без явного решен
 На каждый SSR request создаётся отдельный i18next instance. Request-specific language
 state не хранится в global Worker instance.
 
-Vico разрешает fallback chain до вызова i18next через `TranslationResourceLoader`, поэтому
-внутренний i18next fallback не должен создавать вторую скрытую fallback-систему.
+Vico полностью разрешает key-level locale fallback до вызова i18next через
+`TranslationResourceLoader`. Поэтому внутренний i18next fallback не должен создавать
+вторую скрытую fallback-систему.
 
 Целевой архитектурный baseline:
 
@@ -215,16 +247,8 @@ load: "currentOnly"
 fallbackLng: false
 ```
 
-Explicit Vico chain:
-
-```text
-target locale
-→ explicit LocaleRegistry fallbacks
-→ canonical en
-```
-
-разрешается `TranslationResourceLoader` до передачи готовых resources в request-scoped
-i18next instance.
+Loader отдаёт i18next уже resolved resources для requested locale/namespaces; i18next не
+решает, надо ли дополнительно искать `zh`, `dev` или другой locale.
 
 `remix-i18next` и `i18next-browser-languagedetector` не являются source of truth и не
 являются обязательными архитектурными зависимостями.
@@ -339,9 +363,9 @@ Plain-text MT provider не объявляется capable для structured ope
 
 SSR/runtime не должен выполнять N storage queries по одному translation key.
 
-Готовые current values компилируются в versioned locale/namespace bundle. Bundle version
-является output metadata loader/storage layer, а не обязательным аргументом обычного
-resource lookup.
+Готовые current values и уже разрешённые locale fallbacks компилируются в versioned
+locale/namespace bundle для конкретного requested locale. Bundle version является output
+metadata loader/storage layer, а не обязательным аргументом обычного resource lookup.
 
 Persistence, versioning, ETag/cache contract описаны в
 [`STORAGE_AND_VERSIONING.md`](STORAGE_AND_VERSIONING.md).
