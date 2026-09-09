@@ -25,6 +25,7 @@ request/provider limits
 cost policy
 availability
 attribution/presentation requirements
+data-handling/privacy policy when applicable
 ```
 
 Если текущие machine providers не поддерживают пару/capability, architecture остаётся
@@ -52,6 +53,7 @@ retry classification
 provider/model metadata
 glossary support
 attribution/presentation requirements
+provider-specific data-handling constraints
 ```
 
 Ни один provider не определяет `LocaleRegistry`.
@@ -112,19 +114,41 @@ targetLocale
 generationPolicyVersion
 ```
 
-Это позволяет дедуплицировать логически одинаковую работу.
+Это позволяет дедуплицировать логически одинаковую работу и проверять, что queued task всё
+ещё относится к current source/policy перед внешним provider call.
 
-## Idempotency (`JOB-03`)
+## Idempotency и stale-task guards (`JOB-03`)
 
 Queue delivery может повторяться. Consumer обязан быть идемпотентным.
 
+Перед provider call consumer повторно загружает durable task/current source state и
+проверяет как минимум:
+
+```text
+task не cancelled/terminal
+source revision/fingerprint всё ещё соответствует task identity
+generationPolicyVersion всё ещё допустима для этой task
+target locale всё ещё разрешён для generation policy
+не появился более высокий current manual result, делающий machine task ненужной
+```
+
+Если task устарела до provider call, consumer завершает/помечает её stale/cancelled без
+внешнего вызова.
+
+После provider response и validation запись результата должна быть conditional относительно
+исходной task identity. Если source/policy изменилась во время вызова, старый result не
+может быть опубликован как current translation. Его можно отбросить или сохранить как
+historical/audit result согласно storage policy.
+
 Гарантируемый контракт Vico:
 
-- повторная доставка не создаёт duplicate translation records;
-- storage write использует check/upsert;
+- повторная доставка не создаёт duplicate current translation records;
+- storage write использует check/upsert/conditional-current semantics;
 - before-provider-call claim/status/lease снижает вероятность повторной оплаты одной
   логической translation;
 - completion повторного message безопасен;
+- stale/outdated task не может перезаписать более новую source revision/fingerprint;
+- machine result не перезаписывает current manual result;
 - повторная обработка приводит к одному корректному persistent state.
 
 При этом Vico НЕ заявляет exactly-once внешний provider call, если сам provider не
@@ -157,6 +181,7 @@ temporary dependency error → retry
 unsupported provider pair  → alternate provider / terminal unsupported
 invalid provider output    → terminal / QA
 invalid source descriptor  → terminal
+stale/cancelled task       → terminal without provider retry
 ```
 
 Production background translation должна иметь Dead Letter Queue или эквивалентный
@@ -202,6 +227,8 @@ translate → QA → human review → approve → publish
 7. External API не становится бесплатным публичным proxy через Vico.
 8. Self-healing UI enqueue ограничен зарегистрированными locale и internal budget/rate
    policy; обычный request не вызывает provider синхронно.
+9. Provider selection может учитывать data-handling/privacy policy для конкретного domain;
+   provider capability не считается разрешением отправлять ему любой тип данных.
 
 ## Provenance handoff
 
