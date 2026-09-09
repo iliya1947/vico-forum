@@ -2,8 +2,12 @@
 
 ## Scope
 
-Этот документ является detail contract для компонентов `UI-*`, `STO-02` и `SEC-03` из
+Этот документ является detail contract для компонентов `UI-*` и `SEC-03` из
 [`TRANSLATION_ARCHITECTURE.md`](../../TRANSLATION_ARCHITECTURE.md).
+
+`STO-02` (`sourceFingerprint`) принадлежит только
+[`STORAGE_AND_VERSIONING.md`](STORAGE_AND_VERSIONING.md). Этот файл использует его
+контракт, но не является вторым владельцем компонента.
 
 ## Canonical English catalog (`UI-01`, `UI-02`)
 
@@ -49,27 +53,36 @@ rich
 
 ## TranslationResourceLoader (`UI-03`)
 
-`TranslationResourceLoader` — стабильная граница чтения и композиции готовых UI resources:
+`TranslationResourceLoader` — стабильная граница чтения и композиции готовых UI resources.
+Caller не обязан заранее знать current bundle version.
+
+Логический контракт:
 
 ```text
-locale + namespace + version
-→ resolve sources
+load(locale, namespaces)
+→ resolve translation sources
 → merge by explicit policy
 → validate
-→ compiled resource bundle
+→ {
+     resources,
+     bundleVersions
+   }
 ```
 
-Source adapters:
+Translation sources:
 
 ```text
 CanonicalEnglishSource
 LocalTranslationSource
 DatabaseManualTranslationSource
 DatabaseMachineTranslationSource
-TranslationBundleCache
 ```
 
-Storage/transport конкретного adapter не входит в domain contract.
+`TranslationBundleCache` НЕ является translation source и не участвует в resource merge
+как пятый источник. Это отдельный optimization layer вокруг уже скомпилированного bundle;
+его contract описан в `STORAGE_AND_VERSIONING.md`.
+
+Storage/transport конкретного source adapter не входит в domain contract.
 
 ## Persistent translation sources (`UI-06`, `UI-07`)
 
@@ -89,13 +102,13 @@ PostgreSQL, но `TranslationResourceLoader` знает только их contra
 4. canonical English fallback
 ```
 
-`current` означает соответствие актуальному `sourceFingerprint`.
+`current` означает соответствие актуальному `sourceFingerprint` из `STO-02`.
 
 Stale local/manual/machine translation не должна молча выигрывать у canonical English.
 Machine translation никогда не перезаписывает current manual override.
 
-При недоступности PostgreSQL runtime может собрать UI из доступных local overrides и
-canonical English; translation provider в request path не вызывается.
+При недоступности PostgreSQL runtime может собрать UI из доступных current local overrides
+и canonical English; translation provider в request path не вызывается.
 
 ## Local translation packs (`UI-05`)
 
@@ -138,11 +151,21 @@ value + sourceFingerprint внутри pack
 
 ```text
 обычный translation file
-+ generated sidecar fingerprint manifest
++ sidecar fingerprint manifest
 ```
 
-Tooling должен позволять переводчикам работать с простым форматом, а техническую metadata
-поддерживать автоматически.
+Критический инвариант freshness:
+
+> Tooling MUST NOT автоматически обновлять `sourceFingerprint` существующего local/manual
+> перевода только потому, что изменился canonical English source.
+
+Новый fingerprint может быть записан только когда перевод был создан, обновлён или явно
+подтверждён относительно текущего canonical message. Иначе старый перевод должен остаться
+`stale`.
+
+Tooling может автоматически вычислять текущий canonical fingerprint и сравнивать его с
+зафиксированным fingerprint перевода, но не может автоматически «подтверждать» старый
+translation новым hash.
 
 До merge/deploy local packs проходят build/CI validation:
 
@@ -160,14 +183,27 @@ sourceFingerprint freshness
 На каждый SSR request создаётся отдельный i18next instance. Request-specific language
 state не хранится в global Worker instance.
 
-Архитектурная конфигурация:
+Vico разрешает fallback chain до вызова i18next через `TranslationResourceLoader`, поэтому
+внутренний i18next fallback не должен создавать вторую скрытую fallback-систему.
+
+Целевой архитектурный baseline:
 
 ```text
 supportedLngs: false
 load: "currentOnly"
+fallbackLng: false
 ```
 
-Explicit fallback chain передаётся Vico, а не выводится из неявной i18next hierarchy.
+Explicit Vico chain:
+
+```text
+target locale
+→ explicit LocaleRegistry fallbacks
+→ canonical en
+```
+
+разрешается `TranslationResourceLoader` до передачи готовых resources в request-scoped
+i18next instance.
 
 `remix-i18next` и `i18next-browser-languagedetector` не являются source of truth и не
 являются обязательными архитектурными зависимостями.
@@ -278,6 +314,9 @@ Plain-text MT provider не объявляется capable для structured ope
 
 SSR/runtime не должен выполнять N storage queries по одному translation key.
 
-Готовые current values компилируются в versioned locale/namespace bundle. Persistence,
-versioning, ETag/cache contract описаны в
+Готовые current values компилируются в versioned locale/namespace bundle. Bundle version
+является output metadata loader/storage layer, а не обязательным аргументом обычного
+resource lookup.
+
+Persistence, versioning, ETag/cache contract описаны в
 [`STORAGE_AND_VERSIONING.md`](STORAGE_AND_VERSIONING.md).
