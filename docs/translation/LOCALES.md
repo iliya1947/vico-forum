@@ -24,6 +24,11 @@ translationLocale
 formattingPreferences
 ```
 
+По умолчанию public locale URL идентифицирует `translationLocale`, а не отдельный bundle
+для каждой formatting extension. Если URL-кандидат содержит только formatting extension,
+которая не меняет translation identity, canonical route policy должна нормализовать его к
+translation-locale URL, если проект явно не утвердил extensions как часть public URL.
+
 ## LocaleRegistry (`LOC-02`)
 
 `LocaleRegistry` — единственный source of truth для разрешённых locale.
@@ -65,8 +70,10 @@ disabled
 
 Требования:
 
-- fallback chains валидируются на циклы;
+- fallback chains валидируются на циклы, self-reference и дубли;
 - aliases/match rules принадлежат registry, а не React-условиям;
+- alias graph не может иметь loops или неоднозначно отображать один alias в несколько
+  canonical locale;
 - `direction` является обязательной metadata;
 - provider-specific language codes не принадлежат публичному locale contract;
 - наличие docs, local pack или provider support не активирует locale само по себе;
@@ -112,10 +119,11 @@ URL
 
 Если request уже совпал с `/:locale/*`, URL locale является authoritative candidate:
 
-1. canonicalize BCP-47 tag;
-2. lookup registry entry;
-3. если locale разрешён для прямой публикации — использовать его;
-4. если locale unknown/inactive/disabled — применить утверждённую unknown/inactive route
+1. разобрать translation identity и допустимые formatting preferences;
+2. canonicalize BCP-47 tag;
+3. lookup registry entry;
+4. если locale разрешён для прямой публикации — использовать его;
+5. если locale unknown/inactive/disabled — применить утверждённую unknown/inactive route
    policy.
 
 Явно присутствующий, но недопустимый `/:locale` MUST NOT молча fall through к
@@ -145,6 +153,10 @@ Invalid/inactive candidate из user/cookie/header пропускается и n
 следующий источник. `Accept-Language` обрабатывается с учётом `q` priorities; значения с
 `q=0` не выбираются как допустимое предпочтение. Matching выполняется только против
 registry locale, разрешённых negotiation policy.
+
+Wildcard `*` не выбирает случайный active locale и тем более не создаёт новый locale.
+Если после более конкретных acceptable ranges нет однозначного match, Vico использует
+свой default `en`.
 
 Если persistent registry недоступен и ни один non-English candidate нельзя безопасно
 подтвердить, resolver может использовать bootstrap `en` вместо предположения о состоянии
