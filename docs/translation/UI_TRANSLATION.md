@@ -107,6 +107,9 @@ PostgreSQL, но `TranslationResourceLoader` знает только их contra
 Stale local/manual/machine translation не должна молча выигрывать у canonical English.
 Machine translation никогда не перезаписывает current manual override.
 
+Если local override stale, loader пропускает его и продолжает priority chain к current
+persistent manual/machine или canonical English.
+
 При недоступности PostgreSQL runtime может собрать UI из доступных current local overrides
 и canonical English; translation provider в request path не вызывается.
 
@@ -167,7 +170,9 @@ Tooling может автоматически вычислять текущий 
 зафиксированным fingerprint перевода, но не может автоматически «подтверждать» старый
 translation новым hash.
 
-До merge/deploy local packs проходят build/CI validation:
+### Validation local packs
+
+Structural validation до merge/deploy проверяет:
 
 ```text
 known key/namespace
@@ -175,8 +180,24 @@ placeholder set
 plural/select structure
 forbidden markup
 maximum value constraints
-sourceFingerprint freshness
 ```
+
+Structural corruption, unknown keys при strict catalog policy или broken placeholders
+должны ломать соответствующую validation check.
+
+`sourceFingerprint` mismatch имеет другую семантику: он означает `stale`, а не
+автоматически «битый файл». Архитектурный baseline:
+
+```text
+fingerprint mismatch
+→ mark/expose stale
+→ exclude local value from current bundle
+→ continue source priority chain
+```
+
+Проект может позже включить более строгую CI-policy, которая блокирует merge при stale
+local overrides, но это repository policy, а не фундаментальный runtime invariant. Такой
+strict mode нельзя предполагать без явного решения.
 
 ## i18next runtime (`UI-09`)
 
@@ -254,8 +275,12 @@ CanonicalUiCatalog
 ```text
 locale registration/activation → bulk generation
 canonical source changed       → selective regeneration
-missing/stale key observed     → deduplicated self-healing enqueue
+missing/stale key observed     → controlled deduplicated self-healing enqueue
 ```
+
+Self-healing enqueue допустим только для зарегистрированного locale и проходит internal
+policy/deduplication/rate-or-budget boundary. Обычный page request никогда напрямую не
+вызывает provider и не создаёт неограниченную fan-out генерацию.
 
 Первый посетитель не должен быть основным механизмом массовой генерации locale.
 
