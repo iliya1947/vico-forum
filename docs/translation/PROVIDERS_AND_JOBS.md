@@ -99,13 +99,32 @@ generationPolicyVersion
 
 Queue delivery может повторяться. Consumer обязан быть идемпотентным.
 
-Требования:
+Гарантируемый контракт Vico:
 
 - повторная доставка не создаёт duplicate translation records;
 - storage write использует check/upsert;
-- before-provider-call claim/status/lease не позволяет без необходимости оплачивать одну
-  логическую translation несколько раз;
-- completion повторного message безопасен.
+- before-provider-call claim/status/lease снижает вероятность повторной оплаты одной
+  логической translation;
+- completion повторного message безопасен;
+- повторная обработка приводит к одному корректному persistent state.
+
+При этом Vico НЕ заявляет exactly-once внешний provider call, если сам provider не
+предоставляет отдельную idempotency guarantee.
+
+Возможен crash window:
+
+```text
+provider вернул результат
+→ Worker упал до durable commit
+→ Queue доставила message повторно
+→ provider call может повториться
+```
+
+Поэтому архитектура гарантирует idempotent state и best-effort duplicate-cost protection,
+а не невозможную универсальную exactly-once семантику поверх внешнего API.
+
+Если конкретный provider поддерживает собственный idempotency key, adapter может
+использовать его дополнительно.
 
 Нельзя полагаться на Queue ordering для correctness.
 
@@ -134,6 +153,9 @@ transport доставки.
 Должен существовать способ найти tasks, которые остались `pending/processing` без
 завершения, и безопасно re-enqueue/reconcile их по idempotent identity. Конкретный cron,
 admin action или Workflow не фиксируется архитектурой заранее.
+
+Lease/claim state должен иметь recovery policy, чтобы crash после claim не оставлял task
+навсегда заблокированной.
 
 ## Future orchestration (`JOB-05`)
 
