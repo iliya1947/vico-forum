@@ -63,11 +63,28 @@ Revision концептуально содержит:
 original content
 sourceLocale | und
 detection confidence
-optional manual language correction
 ```
 
 Language detection является отдельной capability/adapter boundary. UI locale нельзя
 использовать как доказательство source language сообщения.
+
+`sourceLocale` является metadata конкретной content revision. Если автоматически
+определённый язык был исправлен вручную так, что это меняет семантику translation input,
+исправление MUST создавать новую revision (или эквивалентно новый immutable source
+version). Нельзя менять `sourceLocale` существующей revision in place и продолжать считать
+старые translations current.
+
+Базовый контракт Vico выбирает именно revision semantics:
+
+```text
+manual source-locale correction
+→ new content revision
+→ new revisionId
+→ previous translations remain historical
+```
+
+Это сохраняет identity `contentType + contentId + revisionId + targetLocale` полной и не
+требует отдельного скрытого `sourceLocaleVersion`.
 
 ## Markdown и technical fragments (`CNT-04`)
 
