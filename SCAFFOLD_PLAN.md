@@ -1,35 +1,42 @@
-# План scaffold (этап 0)
+# План scaffold (этап 0 → этап 1)
 
-Проверено: **2026-09-09**. Этот документ фиксирует решения для этапа 1, но не
-создаёт приложение и не проектирует production-инфраструктуру.
+Проверено/синхронизировано: **2026-09-10**.
+
+Этот документ фиксирует executable plan для Stage 1 из `ROADMAP.md`. Source of truth
+мультиязычности — `TRANSLATION_ARCHITECTURE.md`; этот файл не повторяет всю архитектуру,
+а переводит Stage 1 contracts в конкретные scaffold-задачи.
 
 ## Зафиксированный toolchain
 
 | Компонент | Версия | Основание совместимости |
 | --- | ---: | --- |
-| Node.js | `24.21.0` | Текущая LTS-ветка; удовлетворяет минимуму `>=22.22.0` React Router и remix-i18next. |
-| pnpm | `12.3.4` | Текущий стабильный релиз; версия должна быть записана в `packageManager` и совпадать локально и в CI. |
-| create-cloudflare (C3) | `2.72.6` | Официальный генератор Cloudflare; его React Router integration вызывает `create-react-router@8.3.1` и добавляет Workers entrypoint, Wrangler и Cloudflare Vite plugin. |
-| React Router packages | `8.3.1` | Одна версия для `react-router` и `@react-router/dev`; Framework Mode, SSR и Vite 8 поддерживаются официально. |
-| React / React DOM | `19.3.0` | Одинаковая версия обоих пакетов; удовлетворяет peer dependency React Router `>=19.2.7`. |
-| Vite | `8.2.2` | В диапазоне React Router `^7 || ^8` и Cloudflare Vite plugin `^6.1 || ^7 || ^8`. |
-| TypeScript | `5.9.3` | Версия из актуального default template React Router; входит в диапазоны React Router и i18next, а также в `<6.1` typescript-eslint. |
-| Wrangler | `4.130.0` | В диапазоне React Router `^4` и точно соответствует peer dependency Cloudflare Vite plugin. |
-| Cloudflare Vite plugin | `1.54.6` | Актуальная официальная интеграция Workers с Vite; peer dependency требует Wrangler `^4.130.0`. |
+| Node.js | `24.21.0` | Зафиксирован Stage 0; удовлетворяет требованиям React Router 8.3.1 и test toolchain. |
+| pnpm | `12.3.4` | Зафиксирован Stage 0; версия записывается в `packageManager` и совпадает локально/CI. |
+| create-cloudflare (C3) | `2.72.6` | Официальный генератор Cloudflare для React Router/Workers scaffold. |
+| React Router packages | `8.3.1` | Framework Mode + SSR; locale boundary использует server loader по exact-version middleware contract. |
+| React / React DOM | `19.3.0` | Одинаковая версия обоих пакетов; зафиксировано Stage 0. |
+| Vite | `8.2.2` | Совместимый диапазон React Router/Cloudflare Vite plugin, проверенный Stage 0. |
+| TypeScript | `5.9.3` | Зафиксирован Stage 0; используется для app + generated route/Workers types. |
+| Wrangler | `4.130.0` | Зафиксирован Stage 0 и согласован с Cloudflare Vite plugin. |
+| Cloudflare Vite plugin | `1.54.6` | Зафиксирован Stage 0 для Workers SSR/Vite integration. |
 
-В `package.json` этапа 1 версии верхнего уровня фиксируются без `^`/`~`, а
-`engines.node` — как `24.21.0`. Файлы `.node-version` и `packageManager:
-"pnpm@12.3.4"` становятся едиными источниками версий для разработчика и CI.
-Lockfile `pnpm-lock.yaml` коммитится.
+В `package.json` Stage 1 верхнеуровневые версии фиксируются без `^`/`~`.
+`engines.node = "24.21.0"`, `.node-version` и `packageManager: "pnpm@12.3.4"`
+используются локально и в CI. `pnpm-lock.yaml` коммитится.
 
-## Версии зависимостей первого PR
+## Зависимости Stage 1
 
 Runtime dependencies:
 
-- `react@19.3.0`, `react-dom@19.3.0`, `react-router@8.3.1`;
-- `i18next@26.4.2`, `react-i18next@17.0.13`, `remix-i18next@8.0.0`;
-- `i18next-browser-languagedetector@8.2.1` для синхронной клиентской гидратации
-  от серверного `<html lang>` по официальному примеру remix-i18next.
+- `react@19.3.0`;
+- `react-dom@19.3.0`;
+- `react-router@8.3.1`;
+- `i18next@26.4.2`;
+- `react-i18next@17.0.13`.
+
+`remix-i18next` и `i18next-browser-languagedetector` **не входят** в Stage 1 baseline.
+Locale resolution принадлежит Vico `LocaleResolver`/`LocaleRegistry`, а client hydration
+получает уже разрешённый server snapshot и не выполняет повторную browser detection.
 
 Development dependencies:
 
@@ -43,53 +50,34 @@ Development dependencies:
 - `eslint@10.10.0`, `@eslint/js@10.0.1`, `typescript-eslint@8.70.0`,
   `globals@17.12.0`.
 
-Проверка метаданных npm и пробная резолюция этого полного набора не выявили
-конфликтов peer dependencies. Существенные границы: remix-i18next 8 требует
-React Router 8 и Node `>=22.22.0`; Vitest 5 допускает Node `^24`; jsdom 30 —
-Node `^24.15.0`; typescript-eslint 8 — TypeScript `<6.1.0`.
+Exact-version i18n/RR facts и официальные source links зафиксированы в
+`docs/translation/RESEARCH.md`. Архитектурная коррекция меняет i18n dependencies, но не
+отменяет Stage 0 toolchain compatibility work.
 
-pnpm 12 запрещает неразрешённые install scripts. Поэтому после генерации нужно
-проверить фактический lockfile и явно разрешить только необходимые скрипты
-`esbuild` и `workerd` через `allowBuilds` в `pnpm-workspace.yaml`. Это решение
-проверено чистой установкой; не следует использовать интерактивный
-`pnpm approve-builds` в CI.
+pnpm 12 запрещает неразрешённые install scripts. После генерации нужно проверить
+фактический lockfile и явно разрешить только необходимые scripts `esbuild` и `workerd`
+через `allowBuilds` в `pnpm-workspace.yaml`; интерактивный `pnpm approve-builds` в CI не
+используется.
 
-## Проверенные guides, templates и generators
+## Проверенные guides/generators
 
-1. [React Router: Installation](https://reactrouter.com/start/framework/installation)
-   рекомендует `create-react-router`, а
-   [Deploying](https://reactrouter.com/start/framework/deploying) направляет
-   Cloudflare-проекты к поддерживаемому Cloudflare template.
-2. [Cloudflare: React Router](https://developers.cloudflare.com/workers/framework-guides/web-apps/react-router/)
-   прямо поддерживает React Router v8 с SSR через Cloudflare Vite plugin и
-   рекомендует C3. Документация отдельно предупреждает, что SPA mode и
-   prerendering с этим plugin не поддерживаются; они проекту не нужны.
-3. Исходники официального
-   [C3 React Router template](https://github.com/cloudflare/workers-sdk/tree/main/packages/create-cloudflare/templates/react-router)
-   были сверены с опубликованным генератором: C3 берёт upstream default
-   template, удаляет Node server adapter, добавляет `workers/app.ts`,
-   `wrangler.jsonc`, Cloudflare Vite plugin и Workers-aware typecheck.
-4. Актуальный
-   [React Router default template](https://github.com/remix-run/react-router-templates/tree/main/default)
-   подтверждает Framework Mode, SSR, TypeScript, Vite 8 и React 19. C3 template
-   включает Tailwind и демонстрационную страницу; в этапе 1 они удаляются как
-   не относящиеся к минимальному scaffold зависимости и контент.
-5. [remix-i18next v8 README](https://github.com/sergiodxa/remix-i18next)
-   явно назначает v8 для React Router v8 и описывает SSR middleware,
-   `I18nextProvider`, передачу locale через router context, `lang`/`dir` и
-   клиентскую гидратацию. Это именно нужная интеграция, а не вывод только из
-   package manifest.
-6. Версии и peer/engine ranges дополнительно сверены с опубликованными npm
-   manifests соответствующих пакетов. Статус Node сверён с
-   [официальным графиком релизов](https://nodejs.org/en/about/previous-releases),
-   а установка pnpm — с [официальной документацией pnpm](https://pnpm.io/installation).
+1. React Router Framework Mode и Cloudflare deployment используют официальный
+   Cloudflare React Router template/integration.
+2. Cloudflare C3 `2.72.6` генерирует React Router Workers scaffold; приложение создаётся
+   во временном каталоге, чтобы не перезаписать документы репозитория.
+3. React Router `8.3.1` server middleware на hydrated client navigation выполняется только
+   при server data request; route с locale boundary должен иметь server `loader`.
+4. `i18next@26.4.2`: defaults `fallbackLng=["dev"]`, `supportedLngs=false`, `load="all"`.
+   Vico переопределяет `load: "currentOnly"` и передаёт explicit registry fallback chain,
+   поэтому default `dev`/implicit locale reduction не используются.
+5. `react-i18next@17.0.13` используется с request-specific i18next instance и одинаковым
+   server/client initial resource snapshot.
+6. Причины отказа от `remix-i18next` как locale source of truth и все exact-version refs
+   находятся в `docs/translation/RESEARCH.md`.
 
-## Воспроизводимый порядок создания scaffold
+## Воспроизводимое создание scaffold
 
-Генератор запускается в пустом временном каталоге, чтобы не перезаписать
-документы существующего репозитория. В команду C3 намеренно не передаётся
-`--lang`: React Router template уже TypeScript, а фильтр C3 `2.72.6` считает
-этот template несовместимым при явном `--lang=ts`.
+Генератор запускается в пустом временном каталоге:
 
 ```sh
 pnpm create cloudflare@2.72.6 vico-forum-scaffold \
@@ -97,14 +85,216 @@ pnpm create cloudflare@2.72.6 vico-forum-scaffold \
   --no-deploy --no-git --no-agents
 ```
 
-После переноса минимально необходимых файлов в репозиторий этап 1 обязан:
+После переноса минимально необходимых файлов Stage 1 обязан:
 
-1. заменить диапазоны генератора точными версиями из этого документа;
-2. удалить Tailwind, welcome assets и Node-only остатки, если они появились;
-3. добавить i18n, тестовую инфраструктуру, ESLint и четыре scripts;
-4. создать lockfile установленной версией pnpm и выполнить чистую установку.
+1. заменить диапазоны generator dependencies точными версиями этого документа;
+2. удалить Tailwind/welcome assets/Node-only остатки, если они появились и не нужны;
+3. добавить locale/i18n foundation по разделу ниже;
+4. добавить tests, ESLint и scripts;
+5. создать lockfile нужной pnpm version и выполнить frozen clean install.
 
-Команды разработчика:
+## Locale/i18n foundation Stage 1
+
+### 1. Routing и LocaleRegistry
+
+- public UI route — generic `/:locale/*`;
+- technical routes (`/api/*`, `/api/auth/*`, `/api/i18n/*`) не помещаются под `/:locale`;
+- route, владеющий locale boundary, экспортирует server `loader`;
+- `LocaleRegistry` — abstraction с config/in-memory adapter Stage 1;
+- canonical `en` — bootstrap active locale;
+- Stage 1 может иметь seed/test registry data (`ru`, `he` и другие), но это данные, не
+  `type Locale = ...`, не `supportedLocales = [...] as const` и не resource-map ceiling;
+- test должен доказать, что дополнительный locale fixture добавляется через registry data
+  без изменения app routes/core i18n code.
+
+Минимальная registry metadata Stage 1:
+
+```text
+tag
+translationStatus
+publicationStatus
+direction
+fallbackChain
+aliases / matchTags
+presentation metadata
+```
+
+Cycle/self-reference/duplicate fallback и ambiguous alias должны валидироваться.
+
+### 2. LocaleResolver
+
+Explicit `/:locale` authoritative:
+
+```text
+URL candidate
+→ BCP-47 canonicalization
+→ registry lookup
+→ active/direct-publication policy
+→ locale context
+```
+
+Unknown/inactive explicit locale в Stage 1 возвращает `404` и **не** проваливается к
+cookie/header negotiation. Canonicalizable case/alias representation активного locale
+redirect-ится на canonical URL.
+
+Без locale segment (`/`) negotiation:
+
+```text
+authenticated user.locale (hook reserved; фактическая auth в Stage 4)
+→ cookie
+→ Accept-Language
+→ en
+```
+
+До Stage 4 authenticated source отсутствует, но public contract/typed boundary не меняется.
+`Accept-Language` учитывает q-values; `q=0` не выбирается. Wildcard не выбирает случайный
+locale: если конкретного match нет, default — `en`.
+
+### 3. Formatting/direction/Unicode
+
+Locale context содержит translation locale, direction и явный formatting context boundary.
+Timezone не выводится из языка. Initial SSR и hydration используют одинаковые
+locale-sensitive formatting inputs.
+
+Document root:
+
+```html
+<html lang="..." dir="ltr|rtl">
+```
+
+CSS scaffold использует logical properties там, где направление имеет значение.
+Никаких `if (locale === "he")`; Unicode strings не ограничиваются Latin-only validation.
+
+### 4. Canonical English catalog
+
+Создать canonical English catalog, разбитый по минимальным namespaces/features.
+English catalog — source of truth для UI keys и TypeScript typing.
+
+Минимальный message descriptor поддерживает:
+
+```text
+namespace
+key
+source
+description/context
+placeholders
+messageKind
+protectedTerms
+```
+
+Stage 1 не обязан реализовывать machine plural generation, но catalog contract не должен
+закрывать эту возможность.
+
+### 5. Local translation packs
+
+Реализовать `LocalTranslationSource` как partial manual source за adapter boundary.
+
+Требования:
+
+- local directory не активирует locale;
+- missing key допустим для partial pack;
+- unknown canonical key/namespace — validation error;
+- placeholders/structure валидируются;
+- local value связан с canonical `sourceFingerprint`;
+- fingerprint mismatch = stale: value исключается из current bundle, fallback продолжается;
+- tooling не обновляет fingerprint старого translation автоматически только из-за нового
+  English source.
+
+Конкретный file format остаётся implementation detail `LocalTranslationSource`. Если для
+Stage 1 выбирается JSON + sidecar manifest или эквивалентный формат, остальной app code не
+должен зависеть от него.
+
+### 6. TranslationResourceLoader
+
+Stage 1 source set:
+
+```text
+LocalTranslationSource
+CanonicalEnglishSource
+```
+
+Persistent manual/machine sources подключаются в Stage 3 без изменения loader contract.
+
+Логический результат:
+
+```text
+load(locale, namespaces)
+→ resourcesByLocale
+→ fallbackLocales
+→ bundleVersions/metadata
+```
+
+Vico формирует locale chain:
+
+```text
+target → explicit registry fallbacks → en
+```
+
+Resources разных locale **не flatten-ятся** друг в друга.
+
+### 7. i18next + SSR/hydration
+
+На каждый SSR request создаётся отдельный i18next instance.
+
+Baseline:
+
+```text
+lng: targetLocale
+supportedLngs: false
+load: "currentOnly"
+fallbackLng: explicit registry fallback locales ending in en
+```
+
+Для canonical `en` fallback отключается, чтобы default `dev` не участвовал.
+
+Client получает тот же:
+
+```text
+resolved locale
+fallback locales
+initial resources by locale
+resource/bundle metadata
+formatting inputs
+```
+
+и не запускает повторный browser language detection.
+
+### 8. TranslationValidator Stage 1
+
+Stage 1 validator покрывает canonical/local inputs:
+
+```text
+known key/namespace
+placeholder set
+plural/select structure when present
+forbidden markup
+maximum value constraints
+stale fingerprint classification
+```
+
+Provider-output validation расширяется в Stage 5.
+
+## Testing Stage 1
+
+Автоматически проверить минимум:
+
+1. generic locale route с locale fixture, не зашитым в app core;
+2. bootstrap `en`;
+3. root negotiation: cookie, `Accept-Language`, q-values, wildcard default;
+4. explicit unknown/inactive locale → 404 без cookie/header fallback;
+5. alias/case canonical redirect;
+6. LTR и RTL через registry metadata;
+7. explicit fallback chain без implicit locale reduction;
+8. partial local pack priority;
+9. stale local translation исключается и English/registry fallback продолжает работать;
+10. invalid local placeholders/unknown key отклоняются validation;
+11. SSR HTML `lang`/`dir` и одинаковый hydration resource snapshot;
+12. locale-sensitive formatting inputs не зависят от разных server/browser defaults.
+
+Тестовые locale (`ru`, `he`, `ka` или другие) являются fixtures/registry data, а не
+закрытым списком поддерживаемых языков.
+
+## Команды разработчика
 
 ```sh
 pnpm install --frozen-lockfile
@@ -116,13 +306,16 @@ pnpm build
 pnpm preview
 ```
 
-`typecheck` использует Cloudflare-последовательность
-`wrangler types && react-router typegen && tsc -b`. `test` запускает Vitest
-однократно (`vitest run`), а не watch mode. `preview` собирает приложение и
-запускает локальный Workers-compatible preview. Deploy-команда и реальный
-deploy не входят в первый PR.
+`typecheck`:
 
-CI использует те же Node `24.21.0` и pnpm `12.3.4`, затем выполняет:
+```sh
+wrangler types && react-router typegen && tsc -b
+```
+
+`test` запускает `vitest run`. `preview` собирает приложение и запускает локальный
+Workers-compatible preview. Deploy не входит в Stage 1.
+
+CI использует Node `24.21.0` и pnpm `12.3.4`:
 
 ```sh
 pnpm install --frozen-lockfile
@@ -132,33 +325,42 @@ pnpm test
 pnpm build
 ```
 
-Четыре проверки остаются отдельными обязательными шагами; кэш pnpm может
-ускорять job, но не заменяет frozen-lockfile установку.
+## Окружения Stage 1
 
-## Окружения этапа 1
+- **Local:** Node/pnpm exact versions, Vite + Cloudflare plugin, local workerd/Wrangler.
+  Несекретные defaults — `wrangler.jsonc`, local secrets — только ignored `.dev.vars`.
+- **CI:** Linux job с теми же Node/pnpm; tests не требуют Cloudflare account, PostgreSQL,
+  OAuth или translation-provider credentials.
 
-- **Local development:** Node/pnpm указанной версии, Vite + Cloudflare plugin и
-  локальный runtime workerd/Wrangler. Несекретные defaults находятся в
-  `wrangler.jsonc`, локальные секреты — только в игнорируемом `.dev.vars`.
-- **CI:** один Linux job с теми же Node/pnpm; unit/integration tests не требуют
-  Cloudflare account, production secrets, PostgreSQL или OAuth credentials.
+Preview/production Cloudflare, PostgreSQL, Google OAuth, Queues и translation providers
+не настраиваются в Stage 1.
 
-Preview/production Cloudflare, PostgreSQL, Google OAuth и translation providers
-не настраиваются. Их решения принадлежат последующим этапам.
+## Границы первого implementation PR
 
-## Границы первого PR (этап 1)
+Входит:
 
-Входит только:
+- минимальный React Router v8 SSR Workers scaffold;
+- generic locale routing, `LocaleRegistry`, `LocaleResolver`, server locale loader;
+- canonical English catalog + typed keys;
+- partial local translation source + fingerprint/validation;
+- `TranslationResourceLoader`;
+- request-scoped i18next + identical hydration snapshot;
+- `lang`/`dir`, LTR/RTL, formatting context, Unicode-safe foundation;
+- locale/i18n tests;
+- ESLint, typecheck, Vitest, production build и CI;
+- локальные инструкции и реально необходимые variables.
 
-- минимальный React Router v8 SSR scaffold для Workers с TypeScript;
-- `/en`, `/ru`, `/he`, fallback `en`, SSR i18n middleware, `lang` и LTR/RTL;
-- применимая до авторизации часть приоритета locale: URL → cookie →
-  `Accept-Language` → `en`, с сохранением места `user.locale` в контракте;
-- тесты locale routing и `lang`/`dir`;
-- ESLint, typecheck, Vitest, production build и CI для этих четырёх проверок;
-- краткие инструкции локального запуска и только реально нужные переменные.
+Не входит:
 
-Не входят бизнес-логика форума, схема/подключение БД, Better Auth, Google OAuth,
-поиск, модерация, translation providers, deploy и production-инфраструктура.
-Таким образом, scaffold не требует решений о форумной схеме или функциях
-последующих этапов.
+- PostgreSQL/Drizzle persistence;
+- Better Auth/Google OAuth;
+- persistent manual/machine UI translation store;
+- Cloudflare/Google translation providers;
+- Cloudflare Queues/translation jobs;
+- forum business logic;
+- user-content translation;
+- deploy/production infrastructure.
+
+Stage 1 реализует только translation component boundaries, назначенные Stage 1 в
+`ROADMAP.md`; остальные component IDs сохраняются для последующих этапов через
+`TRANSLATION_ARCHITECTURE.md` traceability.
