@@ -24,6 +24,13 @@ topic/post revision
 
 Оригинал никогда не заменяется translation.
 
+Если `targetLocale` эквивалентен известному `sourceLocale`, service не создаёт бессмысленную
+translation job и показывает original content.
+
+Если current translation отсутствует, provider недоступен или перевод не прошёл validation,
+user-content fallback — original source content, а не canonical English UI translation и
+не translation от старой revision.
+
 Translation request может быть on-demand, но должен проходить deduplication/rate limiting
 и не превращать публичный форум в proxy к translation provider.
 
@@ -85,6 +92,10 @@ manual source-locale correction
 
 Это сохраняет identity `contentType + contentId + revisionId + targetLocale` полной и не
 требует отдельного скрытого `sourceLocaleVersion`.
+
+Если source locale остаётся `und`, translation flow должен использовать только явно
+разрешённую detection/provider capability; он не подставляет UI locale как фиктивный
+source language.
 
 ## Markdown и technical fragments (`CNT-04`)
 
