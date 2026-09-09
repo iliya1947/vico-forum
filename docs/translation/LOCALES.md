@@ -72,8 +72,27 @@ disabled
 - наличие docs, local pack или provider support не активирует locale само по себе;
 - readiness перевода не должна неявно менять publication status.
 
-До PostgreSQL может существовать config/in-memory adapter того же интерфейса. Позже
-он заменяется persistent adapter без изменения consumers.
+### Bootstrap English
+
+Canonical `en` является минимальной bootstrap registry entry и не должен зависеть от
+PostgreSQL translation/locale storage для самого факта существования:
+
+```text
+tag = en
+translationStatus = ready
+publicationStatus = active
+direction = ltr
+fallbackChain = []
+```
+
+Persistent `LocaleRegistry` adapter расширяет этот bootstrap другими locale, но не может
+удалить hard fallback `en`. Это обеспечивает безопасный минимальный route/resource fallback
+при недоступности persistent registry. Для non-English locale outage policy может fail
+closed или redirect на `/en/...`; нельзя придумывать активный locale без надёжной registry
+data.
+
+До PostgreSQL может существовать config/in-memory adapter того же интерфейса. Позже он
+заменяется composite/persistent adapter без изменения consumers.
 
 ## LocaleResolver (`LOC-03`, `LOC-05`)
 
@@ -103,6 +122,12 @@ URL
 `user.locale`, cookie или `Accept-Language`. Иначе URL и фактически отрендеренный язык
 разойдутся.
 
+Если URL tag является валидным alias/deprecated/case-variant представлением активного
+canonical locale и registry/BCP-47 canonicalization однозначно определяет canonical tag,
+route policy должна redirect-ить на canonical `/:locale/...` URL вместо обслуживания
+нескольких URL для одного и того же locale. Это предотвращает duplicate locale URLs и
+сохраняет стабильную ссылочную идентичность.
+
 ### Negotiation без locale segment
 
 Когда публичный route не содержит locale (в первую очередь `/`), resolver выбирает:
@@ -116,8 +141,14 @@ authenticated user.locale
 
 и redirect-ит на canonical `/:locale/...` URL.
 
-Для `Accept-Language` resolver учитывает `q` priorities и match только против registry
-locale, разрешённых negotiation policy.
+Invalid/inactive candidate из user/cookie/header пропускается и negotiation продолжает
+следующий источник. `Accept-Language` обрабатывается с учётом `q` priorities; значения с
+`q=0` не выбираются как допустимое предпочтение. Matching выполняется только против
+registry locale, разрешённых negotiation policy.
+
+Если persistent registry недоступен и ни один non-English candidate нельзя безопасно
+подтвердить, resolver может использовать bootstrap `en` вместо предположения о состоянии
+других locale.
 
 Общие обязанности resolver:
 
