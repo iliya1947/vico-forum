@@ -2,7 +2,7 @@
 
 ## Scope
 
-Этот документ является detail contract для компонентов `STO-*` из
+Этот документ является единственным detail contract для компонентов `STO-*` из
 [`TRANSLATION_ARCHITECTURE.md`](../../TRANSLATION_ARCHITECTURE.md).
 
 Он определяет логические invariants. Финальная PostgreSQL schema, migration names,
@@ -18,19 +18,23 @@ locale
 namespace
 key
 sourceFingerprint
-generationPolicyVersion
 translated payload
 origin
-provider/model
 status
-provenance/attribution metadata
 createdAt / updatedAt
+
+machine-specific when applicable:
+generationPolicyVersion
+provider/model
+provenance/attribution metadata
 ```
 
-Это contract данных, а не готовая SQL table.
+Это contract данных, а не готовая SQL table. `generationPolicyVersion` и provider/model
+metadata обязательны для machine-generated record в той мере, в какой они применимы, но
+не должны искусственно требоваться от local/persistent manual translation.
 
-Storage API должен поддерживать current lookup, stale detection, safe upsert и построение
-namespace bundle.
+Storage API должен поддерживать current lookup, stale detection, safe/conditional upsert и
+построение namespace bundle.
 
 ## sourceFingerprint (`STO-02`)
 
@@ -49,15 +53,28 @@ other explicitly versioned translation metadata
 
 ```text
 source semantics changed
-→ fingerprint changed
+→ canonical fingerprint changed
 → previous local/manual/machine translation stale
 ```
+
+Критический инвариант для manual/local translation:
+
+> Stored/manual `sourceFingerprint` MUST NOT автоматически заменяться новым canonical
+> fingerprint только потому, что изменился English source.
+
+Иначе система потеряет возможность отличить действительно проверенный перевод от старого
+перевода, который tooling ошибочно «освежил» новым hash.
+
+Новый fingerprint перевод получает только после создания, обновления или явного
+подтверждения translation относительно текущего canonical message. Tooling может
+автоматически вычислять current canonical fingerprint и сравнивать его с сохранённым, но
+не может автоматически переносить старое подтверждение на новый source.
 
 Deleted key исключается из active bundle даже если historical translations остаются в
 storage.
 
-Local translation packs должны иметь возможность проверить свой fingerprint через pack
-metadata или generated sidecar manifest.
+Local translation packs должны иметь возможность проверить свой сохранённый fingerprint
+через pack metadata или sidecar manifest.
 
 ## generationPolicyVersion (`STO-03`)
 
@@ -74,6 +91,10 @@ validation semantics
 Изменение implementation detail не обязано автоматически инвалидировать все translations;
 версия меняется только когда policy действительно влияет на требуемый результат.
 
+Queued machine task и conditional result publication должны учитывать эту version, чтобы
+результат старой generation policy не становился current после смены policy, если новая
+policy требует regeneration.
+
 ## Origin, manual priority и stale lifecycle (`STO-04`)
 
 Минимальные origins:
@@ -86,8 +107,9 @@ machine
 
 Priority определяется в `UI_TRANSLATION.md`.
 
-Manual translation не становится «вечной». После изменения fingerprint она получает stale
-state и требует review/update. Machine translation не перезаписывает current manual value.
+Manual translation не становится «вечной». После изменения canonical fingerprint она
+остаётся привязанной к старому fingerprint, получает stale state и требует review/update.
+Machine translation не перезаписывает current manual value.
 
 Historical stale translations можно хранить для audit/review, но они не входят в current
 runtime bundle.
@@ -96,7 +118,10 @@ runtime bundle.
 
 Runtime должен читать locale/namespace bundle, а не выполнять N storage queries по keys.
 
-Compiled bundle имеет version/hash. Поверх persistent source of truth допускаются:
+Compiled bundle имеет version/hash. `TranslationBundleCache` — optimization layer вокруг
+готового compiled bundle, а не translation source и не участник source-priority merge.
+
+Поверх persistent source of truth допускаются:
 
 ```text
 in-process/request cache where safe
@@ -107,10 +132,31 @@ HTTP ETag / Cache-Control
 
 Конкретный cache backend не входит в domain contract.
 
-Cache key/version обязаны учитывать locale, namespace и bundle/source version, чтобы stale
-resources не смешивались с current.
+### Cache identity
 
-Canonical English находится в deploy и остаётся hard fallback даже при storage outage.
+Individual locale/namespace bundle cache key/version обязаны учитывать как минимум:
+
+```text
+locale
+namespace
+bundle/source version
+```
+
+чтобы stale resources не смешивались с current.
+
+Explicit locale fallback chain не flatten-ится в individual bundle. Если позже кэшируется
+не отдельный bundle, а composite loader response/resource graph, такой cache key/version
+дополнительно MUST учитывать версию/identity `LocaleRegistry` fallback policy. Иначе
+изменённый fallback chain может продолжить обслуживаться из старого composite cache даже
+при неизменившихся translation bundles.
+
+Обычный `TranslationResourceLoader` lookup не должен требовать от caller заранее знать
+current bundle version. Loader возвращает bundle version/hash как metadata результата;
+cache layer может использовать её для validation/ETag/cache-key strategy.
+
+Canonical English находится в deploy и остаётся hard resource fallback даже при translation
+storage outage. Route-level availability non-English locale отдельно определяется
+`LocaleRegistry`; bootstrap `en` описан в `LOCALES.md`.
 
 ## Provider provenance (`STO-06`)
 
@@ -119,10 +165,13 @@ Machine record хранит достаточную provenance:
 ```text
 provider
 model/version when available
-machine | manual origin
+machine origin
 generation policy version
 attribution/presentation metadata
 ```
+
+Manual record хранит manual origin и при необходимости audit metadata, но не обязан иметь
+фиктивный provider/model.
 
 Это позволяет выполнять provider-specific legal/presentation requirements на boundary, а не
 разбрасывать условия `if provider === ...` по UI.

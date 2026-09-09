@@ -24,6 +24,13 @@ topic/post revision
 
 Оригинал никогда не заменяется translation.
 
+Если `targetLocale` эквивалентен известному `sourceLocale`, service не создаёт бессмысленную
+translation job и показывает original content.
+
+Если current translation отсутствует, provider недоступен или перевод не прошёл validation,
+user-content fallback — original source content, а не canonical English UI translation и
+не translation от старой revision.
+
 Translation request может быть on-demand, но должен проходить deduplication/rate limiting
 и не превращать публичный форум в proxy к translation provider.
 
@@ -63,11 +70,32 @@ Revision концептуально содержит:
 original content
 sourceLocale | und
 detection confidence
-optional manual language correction
 ```
 
 Language detection является отдельной capability/adapter boundary. UI locale нельзя
 использовать как доказательство source language сообщения.
+
+`sourceLocale` является metadata конкретной content revision. Если автоматически
+определённый язык был исправлен вручную так, что это меняет семантику translation input,
+исправление MUST создавать новую revision (или эквивалентно новый immutable source
+version). Нельзя менять `sourceLocale` существующей revision in place и продолжать считать
+старые translations current.
+
+Базовый контракт Vico выбирает именно revision semantics:
+
+```text
+manual source-locale correction
+→ new content revision
+→ new revisionId
+→ previous translations remain historical
+```
+
+Это сохраняет identity `contentType + contentId + revisionId + targetLocale` полной и не
+требует отдельного скрытого `sourceLocaleVersion`.
+
+Если source locale остаётся `und`, translation flow должен использовать только явно
+разрешённую detection/provider capability; он не подставляет UI locale как фиктивный
+source language.
 
 ## Markdown и technical fragments (`CNT-04`)
 

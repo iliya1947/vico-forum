@@ -24,6 +24,34 @@ translationLocale
 formattingPreferences
 ```
 
+По умолчанию public locale URL идентифицирует `translationLocale`, а не отдельный bundle
+для каждой formatting extension. Если URL-кандидат содержит только formatting extension,
+которая не меняет translation identity, canonical route policy должна нормализовать его к
+translation-locale URL, если проект явно не утвердил extensions как часть public URL.
+
+### Locale-aware formatting boundary
+
+Числа, даты, время, относительное время и списки не должны форматироваться через
+language-specific `if`/ручные шаблоны. Форматирование использует стандартный `Intl` layer
+с явным formatting context, концептуально:
+
+```text
+translationLocale
+numberingSystem?
+calendar?
+timeZone?
+other approved formatting preferences
+```
+
+`timeZone` не выводится автоматически из языка. Это отдельная user/request preference или
+явный project default.
+
+Для SSR initial render и hydration должны использовать одинаковые locale-sensitive
+formatting inputs. Нельзя полагаться одновременно на server default timezone/locale и
+browser default timezone/locale, если это может изменить initial text и вызвать hydration
+mismatch. Если relative-time UI зависит от текущего времени, initial reference value также
+должно быть детерминированным для SSR/hydration либо обновляться уже после hydration.
+
 ## LocaleRegistry (`LOC-02`)
 
 `LocaleRegistry` — единственный source of truth для разрешённых locale.
@@ -32,7 +60,8 @@ formattingPreferences
 
 ```text
 tag
-status
+translationStatus
+publicationStatus
 direction
 fallbackChain
 aliases / matchTags
@@ -40,30 +69,64 @@ nativeName
 presentationMetadata
 ```
 
-Минимальный lifecycle:
+`translationStatus` и `publicationStatus` — разные оси состояния.
+
+Минимальный translation lifecycle:
 
 ```text
 draft
 generating
 partial
 ready
+```
+
+Минимальный publication lifecycle:
+
+```text
+inactive
+active
 disabled
 ```
 
+Это позволяет однозначно представить, например, `translationStatus=ready` при
+`publicationStatus=inactive`: переводы готовы, но locale ещё не опубликован.
+
 Требования:
 
-- fallback chains валидируются на циклы;
+- fallback chains валидируются на циклы, self-reference и дубли;
 - aliases/match rules принадлежат registry, а не React-условиям;
+- alias graph не может иметь loops или неоднозначно отображать один alias в несколько
+  canonical locale;
 - `direction` является обязательной metadata;
 - provider-specific language codes не принадлежат публичному locale contract;
-- наличие `docs`, local pack или provider support не активирует locale само по себе.
+- наличие docs, local pack или provider support не активирует locale само по себе;
+- readiness перевода не должна неявно менять publication status.
 
-До PostgreSQL может существовать config/in-memory adapter того же интерфейса. Позже
-он заменяется persistent adapter без изменения consumers.
+### Bootstrap English
+
+Canonical `en` является минимальной bootstrap registry entry и не должен зависеть от
+PostgreSQL translation/locale storage для самого факта существования:
+
+```text
+tag = en
+translationStatus = ready
+publicationStatus = active
+direction = ltr
+fallbackChain = []
+```
+
+Persistent `LocaleRegistry` adapter расширяет этот bootstrap другими locale, но не может
+удалить hard fallback `en`. Это обеспечивает безопасный минимальный route/resource fallback
+при недоступности persistent registry. Для non-English locale outage policy может fail
+closed или redirect на `/en/...`; нельзя придумывать активный locale без надёжной registry
+data.
+
+До PostgreSQL может существовать config/in-memory adapter того же интерфейса. Позже он
+заменяется composite/persistent adapter без изменения consumers.
 
 ## LocaleResolver (`LOC-03`, `LOC-05`)
 
-Server-side resolution order:
+Концептуальный приоритет остаётся:
 
 ```text
 URL
@@ -73,18 +136,67 @@ URL
 → en
 ```
 
-Resolver обязан:
+Но URL и negotiation имеют разные semantics.
 
-1. разобрать кандидата;
+### Явный locale в URL
+
+Если request уже совпал с `/:locale/*`, URL locale является authoritative candidate:
+
+1. разобрать translation identity и допустимые formatting preferences;
 2. canonicalize BCP-47 tag;
-3. lookup только среди разрешённых registry entries;
-4. учитывать `q` priorities в `Accept-Language`;
-5. применять явные aliases/matching rules registry;
-6. вернуть resolved translation locale, fallback chain, direction и presentation metadata;
-7. положить результат в typed React Router request context.
+3. lookup registry entry;
+4. если locale разрешён для прямой публикации — использовать его;
+5. если locale unknown/inactive/disabled — применить утверждённую unknown/inactive route
+   policy.
+
+Явно присутствующий, но недопустимый `/:locale` MUST NOT молча fall through к
+`user.locale`, cookie или `Accept-Language`. Иначе URL и фактически отрендеренный язык
+разойдутся.
+
+Если URL tag является валидным alias/deprecated/case-variant представлением активного
+canonical locale и registry/BCP-47 canonicalization однозначно определяет canonical tag,
+route policy должна redirect-ить на canonical `/:locale/...` URL вместо обслуживания
+нескольких URL для одного и того же locale. Это предотвращает duplicate locale URLs и
+сохраняет стабильную ссылочную идентичность.
+
+### Negotiation без locale segment
+
+Когда публичный route не содержит locale (в первую очередь `/`), resolver выбирает:
+
+```text
+authenticated user.locale
+→ locale cookie
+→ Accept-Language
+→ en
+```
+
+и redirect-ит на canonical `/:locale/...` URL.
+
+Invalid/inactive candidate из user/cookie/header пропускается и negotiation продолжает
+следующий источник. `Accept-Language` обрабатывается с учётом `q` priorities; значения с
+`q=0` не выбираются как допустимое предпочтение. Matching выполняется только против
+registry locale, разрешённых negotiation policy.
+
+Wildcard `*` не выбирает случайный active locale и тем более не создаёт новый locale.
+Если после более конкретных acceptable ranges нет однозначного match, Vico использует
+свой default `en`.
+
+Если persistent registry недоступен и ни один non-English candidate нельзя безопасно
+подтвердить, resolver может использовать bootstrap `en` вместо предположения о состоянии
+других locale.
+
+Общие обязанности resolver:
+
+- применять явные aliases/matching rules registry;
+- вернуть resolved translation locale, fallback chain, direction и presentation metadata;
+- положить результат в typed React Router request context.
 
 Fallback semantics принадлежат Vico. Нельзя полагаться на неявное i18next reduction
 вроде `zh-Hant → zh`, если это явно не разрешено registry policy.
+
+Fallback chain может использовать только зарегистрированные locale, разрешённые
+внутренней fallback policy; direct publication status и fallback eligibility не обязаны
+быть одним и тем же флагом.
 
 ## Routing и locale boundary (`LOC-04`)
 
@@ -102,12 +214,26 @@ Fallback semantics принадлежат Vico. Нельзя полагатьс�
 /api/i18n/*
 ```
 
-`/:locale/*` должен иметь server-side locale boundary через React Router v8
-middleware/loader, чтобы document request и client navigation использовали одну и ту же
-validation/resource-loading границу.
+В текущем baseline React Router `8.3.1` route, владеющий `/:locale` boundary, MUST export
+server `loader`. Это принудительно создаёт server `.data` request для client-side
+navigation, затрагивающей этот boundary, и тем самым гарантирует выполнение server-side
+locale validation/resource-loading middleware/logic.
 
-Переход `/en/topic/1 → /ka/topic/1` не должен зависеть от случайного client `useEffect`
-или повторного browser language detection.
+Server middleware может дополнять boundary, но не заменяет этот loader requirement:
+React Router не создаёт новый network request только ради server middleware.
+
+Цель:
+
+```text
+document request
+и
+client navigation /en/topic/1 → /ka/topic/1
+```
+
+должны проходить одну server-side locale validation/resource-loading границу.
+
+Переключение locale не должно зависеть от случайного client `useEffect` или повторного
+browser language detection.
 
 Unprefixed `/` выполняет negotiation и redirect на canonical `/:locale/` URL.
 
@@ -153,13 +279,20 @@ response либо эквивалентная корректная cache policy.
 
 ## Locale lifecycle / activation (`LOC-09`)
 
-Registration и activation — разные операции. Валидный BCP-47 tag может быть зарегистрирован
-как `draft/generating/partial`, но не должен становиться публично active только из-за
-появления local pack или machine translation.
+Registration, translation readiness и publication — разные операции.
 
-Activation flow должен иметь явную policy: metadata validated, fallback/direction valid,
-required UI resources готовы на принятом уровне качества либо разрешён `partial` mode с
-English fallback.
+Пример допустимого состояния:
+
+```text
+registered = yes
+translationStatus = ready
+publicationStatus = inactive
+```
+
+Activation flow должен явно переводить `publicationStatus` в `active` только после
+проверки metadata, fallback/direction и требуемого уровня UI resources. Если проект
+разрешает публичный partial mode, это отдельная явная policy, а не побочный эффект
+наличия нескольких переводов.
 
 Bulk generation, если она нужна, запускается отдельным admin/internal flow и не является
 side effect обычного page request.
@@ -176,7 +309,10 @@ side effect обычного page request.
 ```
 
 Unknown/inactive locale обрабатывается явной route policy (404/redirect/другая
-утверждённая политика). Конкретный UX можно выбрать отдельно, но side effects запрещены.
+утверждённая политика). Он не проваливается в cookie/header negotiation при уже
+существующем `/:locale` segment.
+
+Конкретный UX можно выбрать отдельно, но side effects запрещены.
 
 ## Unicode, scripts и fonts (`LOC-10`)
 

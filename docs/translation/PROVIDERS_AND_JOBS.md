@@ -13,7 +13,7 @@
 Cloudflare → Google → done
 ```
 
-`TranslationProviderRouter` выбирает adapter по policy/capabilities:
+`TranslationProviderRouter` выбирает machine/external adapter по policy/capabilities:
 
 ```text
 source/target locale pair
@@ -25,20 +25,26 @@ request/provider limits
 cost policy
 availability
 attribution/presentation requirements
+data-handling/privacy policy when applicable
 ```
 
 Если текущие machine providers не поддерживают пару/capability, architecture остаётся
-работоспособной через другой adapter, manual/import path или canonical English UI fallback.
+работоспособной через другой machine adapter либо без machine result: UI использует
+следующий resource fallback/canonical English, content показывает original source, а
+manual/import translation может быть добавлена отдельным validated ingestion path.
+
+Manual/local import НЕ является обязательным `TranslationProviderRouter` adapter: это
+отдельный способ получить trusted-after-validation resource в translation store/source.
+Так provider routing не смешивается с manual resource ingestion.
 
 ## Provider adapters (`PRV-02`)
 
-Примеры adapters:
+Примеры machine/external adapters:
 
 ```text
 CloudflareTranslationProvider
 GoogleTranslationProvider
 FutureTranslationProvider
-ManualImportProvider
 ```
 
 Adapter изолирует:
@@ -52,6 +58,7 @@ retry classification
 provider/model metadata
 glossary support
 attribution/presentation requirements
+provider-specific data-handling constraints
 ```
 
 Ни один provider не определяет `LocaleRegistry`.
@@ -81,6 +88,25 @@ Queue message должна быть маленькой и ссылаться н�
 
 Large source payload/state хранится persistent, а не дублируется в message.
 
+### Persistent task before enqueue
+
+Базовый порядок защищает от DB/Queue dual-write рассинхронизации:
+
+```text
+1. create/upsert durable translation task
+2. commit task identity/state
+3. enqueue message containing translationTaskId
+```
+
+Нельзя сначала enqueue-ить ссылку на task, которая ещё не существует durable.
+
+Если task commit успешен, а enqueue не удался или результат enqueue неизвестен, task
+остаётся `pending` и `JOB-06` reconciliation безопасно повторяет enqueue. Если enqueue был
+фактически успешен дважды, `JOB-03` idempotency делает повторную доставку безопасной.
+
+Это не требует распределённой транзакции между PostgreSQL и Queue и не заявляет exactly-once
+enqueue.
+
 ## Translation task identity (`JOB-02`)
 
 Stable logical job identity должна включать достаточную semantic versioning информацию:
@@ -93,19 +119,60 @@ targetLocale
 generationPolicyVersion
 ```
 
-Это позволяет дедуплицировать логически одинаковую работу.
+Это позволяет дедуплицировать логически одинаковую работу и проверять, что queued task всё
+ещё относится к current source/policy перед внешним provider call.
 
-## Idempotency (`JOB-03`)
+## Idempotency и stale-task guards (`JOB-03`)
 
 Queue delivery может повторяться. Consumer обязан быть идемпотентным.
 
-Требования:
+Перед provider call consumer повторно загружает durable task/current source state и
+проверяет как минимум:
 
-- повторная доставка не создаёт duplicate translation records;
-- storage write использует check/upsert;
-- before-provider-call claim/status/lease не позволяет без необходимости оплачивать одну
-  логическую translation несколько раз;
-- completion повторного message безопасен.
+```text
+task не cancelled/terminal
+source revision/fingerprint всё ещё соответствует task identity
+generationPolicyVersion всё ещё допустима для этой task
+target locale всё ещё разрешён для generation policy
+не появился более высокий current manual result, делающий machine task ненужной
+```
+
+Если task устарела до provider call, consumer завершает/помечает её stale/cancelled без
+внешнего вызова.
+
+После provider response и validation запись результата должна быть conditional относительно
+исходной task identity. Если source/policy изменилась во время вызова, старый result не
+может быть опубликован как current translation. Его можно отбросить или сохранить как
+historical/audit result согласно storage policy.
+
+Гарантируемый контракт Vico:
+
+- повторная доставка не создаёт duplicate current translation records;
+- storage write использует check/upsert/conditional-current semantics;
+- before-provider-call claim/status/lease снижает вероятность повторной оплаты одной
+  логической translation;
+- completion повторного message безопасен;
+- stale/outdated task не может перезаписать более новую source revision/fingerprint;
+- machine result не перезаписывает current manual result;
+- повторная обработка приводит к одному корректному persistent state.
+
+При этом Vico НЕ заявляет exactly-once внешний provider call, если сам provider не
+предоставляет отдельную idempotency guarantee.
+
+Возможен crash window:
+
+```text
+provider вернул результат
+→ Worker упал до durable commit
+→ Queue доставила message повторно
+→ provider call может повториться
+```
+
+Поэтому архитектура гарантирует idempotent state и best-effort duplicate-cost protection,
+а не невозможную универсальную exactly-once семантику поверх внешнего API.
+
+Если конкретный provider поддерживает собственный idempotency key, adapter может
+использовать его дополнительно.
 
 Нельзя полагаться на Queue ordering для correctness.
 
@@ -119,6 +186,7 @@ temporary dependency error → retry
 unsupported provider pair  → alternate provider / terminal unsupported
 invalid provider output    → terminal / QA
 invalid source descriptor  → terminal
+stale/cancelled task       → terminal without provider retry
 ```
 
 Production background translation должна иметь Dead Letter Queue или эквивалентный
@@ -134,6 +202,11 @@ transport доставки.
 Должен существовать способ найти tasks, которые остались `pending/processing` без
 завершения, и безопасно re-enqueue/reconcile их по idempotent identity. Конкретный cron,
 admin action или Workflow не фиксируется архитектурой заранее.
+
+Lease/claim state должен иметь recovery policy, чтобы crash после claim не оставлял task
+навсегда заблокированной.
+
+Reconciliation также закрывает окно `durable task committed → enqueue failed/unknown`.
 
 ## Future orchestration (`JOB-05`)
 
@@ -157,9 +230,16 @@ translate → QA → human review → approve → publish
 5. Provider credentials/secrets остаются server-side и не попадают в client bundle.
 6. Provider response проходит `TranslationValidator` до publication.
 7. External API не становится бесплатным публичным proxy через Vico.
+8. Self-healing UI enqueue ограничен зарегистрированными locale и internal budget/rate
+   policy; обычный request не вызывает provider синхронно.
+9. Provider selection может учитывать data-handling/privacy policy для конкретного domain;
+   provider capability не считается разрешением отправлять ему любой тип данных.
 
 ## Provenance handoff
 
-Adapter возвращает provider/model/origin/attribution metadata вместе с результатом.
+Machine adapter возвращает provider/model/origin/attribution metadata вместе с результатом.
+Manual/local ingestion получает собственный origin/audit metadata через соответствующий
+resource/store path, не притворяясь machine provider.
+
 Правила persistence описаны в
 [`STORAGE_AND_VERSIONING.md`](STORAGE_AND_VERSIONING.md).
