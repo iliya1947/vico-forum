@@ -81,6 +81,25 @@ Queue message должна быть маленькой и ссылаться н�
 
 Large source payload/state хранится persistent, а не дублируется в message.
 
+### Persistent task before enqueue
+
+Базовый порядок защищает от DB/Queue dual-write рассинхронизации:
+
+```text
+1. create/upsert durable translation task
+2. commit task identity/state
+3. enqueue message containing translationTaskId
+```
+
+Нельзя сначала enqueue-ить ссылку на task, которая ещё не существует durable.
+
+Если task commit успешен, а enqueue не удался или результат enqueue неизвестен, task
+остаётся `pending` и `JOB-06` reconciliation безопасно повторяет enqueue. Если enqueue был
+фактически успешен дважды, `JOB-03` idempotency делает повторную доставку безопасной.
+
+Это не требует распределённой транзакции между PostgreSQL и Queue и не заявляет exactly-once
+enqueue.
+
 ## Translation task identity (`JOB-02`)
 
 Stable logical job identity должна включать достаточную semantic versioning информацию:
@@ -157,6 +176,8 @@ admin action или Workflow не фиксируется архитектуро�
 Lease/claim state должен иметь recovery policy, чтобы crash после claim не оставлял task
 навсегда заблокированной.
 
+Reconciliation также закрывает окно `durable task committed → enqueue failed/unknown`.
+
 ## Future orchestration (`JOB-05`)
 
 Если позже появится многошаговый процесс:
@@ -179,6 +200,8 @@ translate → QA → human review → approve → publish
 5. Provider credentials/secrets остаются server-side и не попадают в client bundle.
 6. Provider response проходит `TranslationValidator` до publication.
 7. External API не становится бесплатным публичным proxy через Vico.
+8. Self-healing UI enqueue ограничен зарегистрированными locale и internal budget/rate
+   policy; обычный request не вызывает provider синхронно.
 
 ## Provenance handoff
 
