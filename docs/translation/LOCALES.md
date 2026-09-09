@@ -29,6 +29,29 @@ formattingPreferences
 которая не меняет translation identity, canonical route policy должна нормализовать его к
 translation-locale URL, если проект явно не утвердил extensions как часть public URL.
 
+### Locale-aware formatting boundary
+
+Числа, даты, время, относительное время и списки не должны форматироваться через
+language-specific `if`/ручные шаблоны. Форматирование использует стандартный `Intl` layer
+с явным formatting context, концептуально:
+
+```text
+translationLocale
+numberingSystem?
+calendar?
+timeZone?
+other approved formatting preferences
+```
+
+`timeZone` не выводится автоматически из языка. Это отдельная user/request preference или
+явный project default.
+
+Для SSR initial render и hydration должны использовать одинаковые locale-sensitive
+formatting inputs. Нельзя полагаться одновременно на server default timezone/locale и
+browser default timezone/locale, если это может изменить initial text и вызвать hydration
+mismatch. Если relative-time UI зависит от текущего времени, initial reference value также
+должно быть детерминированным для SSR/hydration либо обновляться уже после hydration.
+
 ## LocaleRegistry (`LOC-02`)
 
 `LocaleRegistry` — единственный source of truth для разрешённых locale.
