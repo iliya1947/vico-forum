@@ -13,7 +13,7 @@
 Cloudflare → Google → done
 ```
 
-`TranslationProviderRouter` выбирает adapter по policy/capabilities:
+`TranslationProviderRouter` выбирает machine/external adapter по policy/capabilities:
 
 ```text
 source/target locale pair
@@ -29,17 +29,22 @@ data-handling/privacy policy when applicable
 ```
 
 Если текущие machine providers не поддерживают пару/capability, architecture остаётся
-работоспособной через другой adapter, manual/import path или canonical English UI fallback.
+работоспособной через другой machine adapter либо без machine result: UI использует
+следующий resource fallback/canonical English, content показывает original source, а
+manual/import translation может быть добавлена отдельным validated ingestion path.
+
+Manual/local import НЕ является обязательным `TranslationProviderRouter` adapter: это
+отдельный способ получить trusted-after-validation resource в translation store/source.
+Так provider routing не смешивается с manual resource ingestion.
 
 ## Provider adapters (`PRV-02`)
 
-Примеры adapters:
+Примеры machine/external adapters:
 
 ```text
 CloudflareTranslationProvider
 GoogleTranslationProvider
 FutureTranslationProvider
-ManualImportProvider
 ```
 
 Adapter изолирует:
@@ -232,6 +237,9 @@ translate → QA → human review → approve → publish
 
 ## Provenance handoff
 
-Adapter возвращает provider/model/origin/attribution metadata вместе с результатом.
+Machine adapter возвращает provider/model/origin/attribution metadata вместе с результатом.
+Manual/local ingestion получает собственный origin/audit metadata через соответствующий
+resource/store path, не притворяясь machine provider.
+
 Правила persistence описаны в
 [`STORAGE_AND_VERSIONING.md`](STORAGE_AND_VERSIONING.md).
