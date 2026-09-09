@@ -77,7 +77,7 @@ disabled
 
 ## LocaleResolver (`LOC-03`, `LOC-05`)
 
-Server-side resolution order:
+Концептуальный приоритет остаётся:
 
 ```text
 URL
@@ -87,18 +87,50 @@ URL
 → en
 ```
 
-Resolver обязан:
+Но URL и negotiation имеют разные semantics.
 
-1. разобрать кандидата;
-2. canonicalize BCP-47 tag;
-3. lookup только среди разрешённых и публично допустимых registry entries;
-4. учитывать `q` priorities в `Accept-Language`;
-5. применять явные aliases/matching rules registry;
-6. вернуть resolved translation locale, fallback chain, direction и presentation metadata;
-7. положить результат в typed React Router request context.
+### Явный locale в URL
+
+Если request уже совпал с `/:locale/*`, URL locale является authoritative candidate:
+
+1. canonicalize BCP-47 tag;
+2. lookup registry entry;
+3. если locale разрешён для прямой публикации — использовать его;
+4. если locale unknown/inactive/disabled — применить утверждённую unknown/inactive route
+   policy.
+
+Явно присутствующий, но недопустимый `/:locale` MUST NOT молча fall through к
+`user.locale`, cookie или `Accept-Language`. Иначе URL и фактически отрендеренный язык
+разойдутся.
+
+### Negotiation без locale segment
+
+Когда публичный route не содержит locale (в первую очередь `/`), resolver выбирает:
+
+```text
+authenticated user.locale
+→ locale cookie
+→ Accept-Language
+→ en
+```
+
+и redirect-ит на canonical `/:locale/...` URL.
+
+Для `Accept-Language` resolver учитывает `q` priorities и match только против registry
+locale, разрешённых negotiation policy.
+
+Общие обязанности resolver:
+
+- применять явные aliases/matching rules registry;
+- вернуть resolved translation locale, fallback chain, direction и presentation metadata;
+- положить результат в typed React Router request context.
 
 Fallback semantics принадлежат Vico. Нельзя полагаться на неявное i18next reduction
 вроде `zh-Hant → zh`, если это явно не разрешено registry policy.
+
+Fallback chain может использовать только зарегистрированные locale, разрешённые
+внутренней fallback policy; direct publication status и fallback eligibility не обязаны
+быть одним и тем же флагом.
 
 ## Routing и locale boundary (`LOC-04`)
 
@@ -116,14 +148,13 @@ Fallback semantics принадлежат Vico. Нельзя полагатьс�
 /api/i18n/*
 ```
 
-`/:locale/*` должен иметь server-side locale boundary.
+В текущем baseline React Router `8.3.1` route, владеющий `/:locale` boundary, MUST export
+server `loader`. Это принудительно создаёт server `.data` request для client-side
+navigation, затрагивающей этот boundary, и тем самым гарантирует выполнение server-side
+locale validation/resource-loading middleware/logic.
 
-Для React Router v8 Framework Mode boundary route MUST иметь server `loader` или другой
-явно эквивалентный механизм, который гарантирует server data round-trip при смене
-`:locale` на hydrated client navigation. Server middleware может дополнять эту границу,
-но одного middleware недостаточно как гарантии для каждой client navigation, потому что
-он выполняется на клиентской навигации только когда происходит соответствующий `.data`
-request.
+Server middleware может дополнять boundary, но не заменяет этот loader requirement:
+React Router не создаёт новый network request только ради server middleware.
 
 Цель:
 
@@ -212,7 +243,10 @@ side effect обычного page request.
 ```
 
 Unknown/inactive locale обрабатывается явной route policy (404/redirect/другая
-утверждённая политика). Конкретный UX можно выбрать отдельно, но side effects запрещены.
+утверждённая политика). Он не проваливается в cookie/header negotiation при уже
+существующем `/:locale` segment.
+
+Конкретный UX можно выбрать отдельно, но side effects запрещены.
 
 ## Unicode, scripts и fonts (`LOC-10`)
 
