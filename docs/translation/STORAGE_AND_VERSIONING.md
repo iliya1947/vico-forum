@@ -2,7 +2,7 @@
 
 ## Scope
 
-Этот документ является detail contract для компонентов `STO-*` из
+Этот документ является единственным detail contract для компонентов `STO-*` из
 [`TRANSLATION_ARCHITECTURE.md`](../../TRANSLATION_ARCHITECTURE.md).
 
 Он определяет логические invariants. Финальная PostgreSQL schema, migration names,
@@ -49,15 +49,28 @@ other explicitly versioned translation metadata
 
 ```text
 source semantics changed
-→ fingerprint changed
+→ canonical fingerprint changed
 → previous local/manual/machine translation stale
 ```
+
+Критический инвариант для manual/local translation:
+
+> Stored/manual `sourceFingerprint` MUST NOT автоматически заменяться новым canonical
+> fingerprint только потому, что изменился English source.
+
+Иначе система потеряет возможность отличить действительно проверенный перевод от старого
+перевода, который tooling ошибочно «освежил» новым hash.
+
+Новый fingerprint перевод получает только после создания, обновления или явного
+подтверждения translation относительно текущего canonical message. Tooling может
+автоматически вычислять current canonical fingerprint и сравнивать его с сохранённым, но
+не может автоматически переносить старое подтверждение на новый source.
 
 Deleted key исключается из active bundle даже если historical translations остаются в
 storage.
 
-Local translation packs должны иметь возможность проверить свой fingerprint через pack
-metadata или generated sidecar manifest.
+Local translation packs должны иметь возможность проверить свой сохранённый fingerprint
+через pack metadata или sidecar manifest.
 
 ## generationPolicyVersion (`STO-03`)
 
@@ -86,8 +99,9 @@ machine
 
 Priority определяется в `UI_TRANSLATION.md`.
 
-Manual translation не становится «вечной». После изменения fingerprint она получает stale
-state и требует review/update. Machine translation не перезаписывает current manual value.
+Manual translation не становится «вечной». После изменения canonical fingerprint она
+остаётся привязанной к старому fingerprint, получает stale state и требует review/update.
+Machine translation не перезаписывает current manual value.
 
 Historical stale translations можно хранить для audit/review, но они не входят в current
 runtime bundle.
@@ -96,7 +110,10 @@ runtime bundle.
 
 Runtime должен читать locale/namespace bundle, а не выполнять N storage queries по keys.
 
-Compiled bundle имеет version/hash. Поверх persistent source of truth допускаются:
+Compiled bundle имеет version/hash. `TranslationBundleCache` — optimization layer вокруг
+готового compiled bundle, а не translation source и не участник source-priority merge.
+
+Поверх persistent source of truth допускаются:
 
 ```text
 in-process/request cache where safe
@@ -109,6 +126,10 @@ HTTP ETag / Cache-Control
 
 Cache key/version обязаны учитывать locale, namespace и bundle/source version, чтобы stale
 resources не смешивались с current.
+
+Обычный `TranslationResourceLoader` lookup не должен требовать от caller заранее знать
+current bundle version. Loader возвращает bundle version/hash как metadata результата;
+cache layer может использовать её для validation/ETag/cache-key strategy.
 
 Canonical English находится в deploy и остаётся hard fallback даже при storage outage.
 
