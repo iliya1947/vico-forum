@@ -29,6 +29,14 @@ const fixtures: LocaleDefinition[] = [
     fallbackChain: ["en"],
     nativeName: "ქართული",
   },
+  {
+    tag: "de",
+    translationStatus: "ready",
+    publicationStatus: "disabled",
+    direction: "ltr",
+    fallbackChain: ["en"],
+    nativeName: "Deutsch",
+  },
 ];
 const registry = new InMemoryLocaleRegistry(fixtures);
 
@@ -58,14 +66,50 @@ describe("explicit locale resolution", () => {
     });
   });
 
-  it.each(["unknown", "not_a_tag", "ka"])("temporarily falls back unavailable %s to English", (candidate) => {
-    const request = new Request(`https://vico.test/${candidate}/topic?view=latest`, {
-      headers: { Cookie: "vico_locale=ru", "Accept-Language": "ar" },
+  it.each(["unknown", "not_a_tag", "ka", "de"])(
+    "temporarily falls back unavailable %s to English",
+    (candidate) => {
+      const request = new Request(`https://vico.test/${candidate}/topic?view=latest`, {
+        headers: { Cookie: "vico_locale=ru", "Accept-Language": "ar" },
+      });
+      expect(resolveExplicitLocale(request, candidate, registry)).toEqual({
+        type: "redirect",
+        status: 307,
+        location: "/en/topic?view=latest",
+      });
+    },
+  );
+
+  it("applies the same redirect policy to HEAD requests", () => {
+    const canonicalizable = resolveExplicitLocale(
+      new Request("https://vico.test/RU/topic?view=latest", { method: "HEAD" }),
+      "RU",
+      registry,
+    );
+    const unavailable = resolveExplicitLocale(
+      new Request("https://vico.test/ka/topic?view=latest", { method: "HEAD" }),
+      "ka",
+      registry,
+    );
+
+    expect(canonicalizable).toEqual({
+      type: "redirect",
+      status: 308,
+      location: "/ru/topic?view=latest",
     });
-    expect(resolveExplicitLocale(request, candidate, registry)).toEqual({
+    expect(unavailable).toEqual({
       type: "redirect",
       status: 307,
       location: "/en/topic?view=latest",
+    });
+  });
+
+  it("does not implicitly reduce an unregistered locale tag", () => {
+    const request = new Request("https://vico.test/ru-RU/topic");
+    expect(resolveExplicitLocale(request, "ru-RU", registry)).toEqual({
+      type: "redirect",
+      status: 307,
+      location: "/en/topic",
     });
   });
 
