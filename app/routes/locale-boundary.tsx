@@ -1,7 +1,13 @@
-import { Outlet, redirect, type RouterContextProvider } from "react-router";
+import { useMemo } from "react";
+import { I18nextProvider } from "react-i18next";
+import { Outlet, redirect, useLoaderData, type RouterContextProvider } from "react-router";
+import { manualTranslationPacks } from "../localization/manual-packs";
 import { localeContext } from "../localization/request-context";
 import { localeRegistry } from "../localization/registry";
+import { TranslationResourceLoader, type TranslationSnapshot } from "../localization/resource-loader";
 import { resolveExplicitLocale } from "../localization/resolver";
+import { createTranslationRuntime } from "../localization/runtime";
+import { CanonicalEnglishSource, LocalTranslationSource } from "../localization/sources";
 
 interface LocaleBoundaryArgs {
   request: Request;
@@ -28,14 +34,27 @@ export const middleware = [
   },
 ];
 
-export function loader(args: LocaleBoundaryArgs) {
+const resourceLoader = new TranslationResourceLoader([
+  new LocalTranslationSource(manualTranslationPacks),
+  new CanonicalEnglishSource(),
+]);
+
+export async function loader(args: LocaleBoundaryArgs) {
+  let locale;
   try {
-    return args.context.get(localeContext);
+    locale = args.context.get(localeContext);
   } catch {
-    return guardLocale(args);
+    locale = guardLocale(args);
   }
+  return resourceLoader.load(locale, ["common"]);
 }
 
 export default function LocaleBoundary() {
-  return <Outlet />;
+  const snapshot = useLoaderData<TranslationSnapshot>();
+  const i18n = useMemo(() => createTranslationRuntime(snapshot), [snapshot]);
+  return (
+    <I18nextProvider i18n={i18n} defaultNS="common">
+      <Outlet />
+    </I18nextProvider>
+  );
 }

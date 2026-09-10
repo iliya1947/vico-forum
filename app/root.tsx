@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Links, Meta, Outlet, Scripts, ScrollRestoration, useMatches } from "react-router";
 import type { ResolvedLocaleContext } from "./localization/locale";
+import type { TranslationSnapshot } from "./localization/resource-loader";
 import "./styles.css";
 
 function isLocaleContext(value: unknown): value is ResolvedLocaleContext {
@@ -12,10 +13,19 @@ function isLocaleContext(value: unknown): value is ResolvedLocaleContext {
   );
 }
 
+function localeFromLoaderData(value: unknown): ResolvedLocaleContext | undefined {
+  if (isLocaleContext(value)) return value;
+  if (value && typeof value === "object" && "locale" in value) {
+    const locale = (value as Partial<TranslationSnapshot>).locale;
+    if (isLocaleContext(locale)) return locale;
+  }
+  return undefined;
+}
+
 export function Layout({ children }: { children: ReactNode }) {
   const locale = useMatches()
-    .map((match) => match.loaderData)
-    .find(isLocaleContext);
+    .map((match) => localeFromLoaderData(match.loaderData))
+    .find((candidate) => candidate !== undefined);
 
   return (
     <html lang={locale?.translationLocale ?? "en"} dir={locale?.direction ?? "ltr"}>
