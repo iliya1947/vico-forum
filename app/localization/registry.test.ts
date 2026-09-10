@@ -21,6 +21,17 @@ describe("InMemoryLocaleRegistry", () => {
     expect(registry.find("sr-Latn")?.locale.tag).toBe("sr-Latn");
   });
 
+  it("keeps LocaleDefinition scalar fields readonly at compile time", () => {
+    const definition = locale("fr");
+    if (false) {
+      // @ts-expect-error LocaleDefinition identity is immutable after construction
+      definition.tag = "de";
+      // @ts-expect-error LocaleDefinition publication state is immutable in a returned snapshot
+      definition.publicationStatus = "inactive";
+    }
+    expect(definition.tag).toBe("fr");
+  });
+
   it("rejects invalid fallback and alias graphs", () => {
     expect(() => new InMemoryLocaleRegistry([locale("ru", ["missing"])]))
       .toThrow("Unknown fallback");
