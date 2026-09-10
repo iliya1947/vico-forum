@@ -1,16 +1,16 @@
+import { useTranslation } from "react-i18next";
+
 export function meta() {
-  return [
-    { title: "Vico Forum" },
-    { name: "description", content: "Vico Forum development scaffold" },
-  ];
+  return [{ title: "Vico Forum" }];
 }
 
 export default function Home() {
+  const { t } = useTranslation("common");
   return (
     <main className="shell">
-      <p className="eyebrow">Vico Forum</p>
-      <h1>Development scaffold</h1>
-      <p>Stage 1B establishes the locale routing and resolution foundation.</p>
+      <p className="eyebrow">{t("productName")}</p>
+      <h1>{t("heading")}</h1>
+      <p>{t("stageSummary")}</p>
     </main>
   );
 }

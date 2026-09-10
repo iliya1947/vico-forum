@@ -4,8 +4,7 @@
 
 ## Состояние
 
-Этап 0 завершён. Stage 1 выполняется серией компактных PR `1A → 1B → 1C`.
-Stage 1A и Stage 1B завершены; весь Stage 1 ещё не завершён.
+Этапы 0 и 1 завершены. Stage 1 выполнен серией компактных PR `1A → 1B → 1C`.
 
 ## Готово
 
@@ -23,10 +22,15 @@ Stage 1A и Stage 1B завершены; весь Stage 1 ещё не завер
 - root negotiation учитывает зарезервированный authenticated source, locale cookie, `Accept-Language` с q-values и deterministic `en` fallback; negotiation redirect имеет `Cache-Control: no-store`;
 - locale context содержит `lang`/`dir`, explicit fallback locales и детерминированный formatting context с `UTC`; SSR выставляет document attributes из loader snapshot;
 - targeted tests покрывают registry fixtures/invalid graphs, LTR/RTL, canonical/unavailable redirects, negotiation, cache policy и запрет downstream side effect для redirect-required mutations.
+- Stage 1C добавил canonical English UI catalog с typed message descriptors и semantic `sourceFingerprint`;
+- реализованы partial local translation packs за `LocalTranslationSource`, structural validation, stale classification/exclusion и независимость packs от `LocaleRegistry`;
+- `TranslationResourceLoader` собирает отдельные bundles для target/explicit fallback/`en`, сохраняет source priority и возвращает bundle/stale metadata;
+- locale boundary создаёт request-scoped `i18next` runtime с `load: "currentOnly"` и explicit fallback, а SSR/hydration используют один сериализованный locale/resource/formatting snapshot без browser redetection;
+- полный Stage 1 acceptance покрыт 30 тестами; `lint`, `typecheck`, `test`, `build` и Workers-compatible preview выполнены.
 
 ## Сейчас
 
-Stage 1B завершён. Stage 1 остаётся незавершённым до Stage 1C и полного Stage 1 acceptance.
+Stage 1 завершён. Проект готов к Stage 2.
 
 ## Блокеры
 
@@ -34,4 +38,4 @@ Stage 1B завершён. Stage 1 остаётся незавершённым �
 
 ## Следующий шаг
 
-Реализовать PR 1C: canonical English UI catalog, local translation packs, resource loader и request-scoped i18next runtime. Затем выполнить полный Stage 1 acceptance.
+Реализовать Stage 2: подключить PostgreSQL, Drizzle и persistent adapter `LocaleRegistry`.
