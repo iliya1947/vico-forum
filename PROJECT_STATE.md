@@ -4,7 +4,7 @@
 
 ## Состояние
 
-Этап 0 завершён. Реализация Stage 1 выполнена серией компактных PR `1A → 1B → 1C`; перед Stage 2 остаются финальный Stage 1 acceptance на merged `main` и первый реальный Cloudflare Workers preview/deploy checkpoint.
+Этап 0 и Stage 1 завершены. Stage 1 acceptance выполнен на merged `main`, после чего успешно создан и развёрнут первый реальный Cloudflare Worker `vico-forum` на `workers.dev`. Проект готов к подготовке Stage 2.
 
 ## Готово
 
@@ -26,11 +26,15 @@
 - реализованы partial local translation packs за `LocalTranslationSource`, structural validation, stale classification/exclusion и независимость packs от `LocaleRegistry`;
 - `TranslationResourceLoader` собирает отдельные bundles для target/explicit fallback/`en`, сохраняет source priority и возвращает bundle/stale metadata;
 - canonical English остаётся authoritative source для `en`, а resource/source version меняется вместе с current bundle payload/semantics;
-- locale boundary создаёт request-scoped `i18next` runtime с `load: "currentOnly"` и explicit fallback, а SSR/hydration используют один сериализованный locale/resource/formatting snapshot без browser redetection.
+- locale boundary создаёт request-scoped `i18next` runtime с `load: "currentOnly"` и explicit fallback, а SSR/hydration используют один сериализованный locale/resource/formatting snapshot без browser redetection;
+- Stage 1 acceptance выполнен на merged `main`: CI подтвердил `lint`, `typecheck`, 32 tests и `build`, а финальный build дополнительно проверен через Workers-compatible `vite preview`/`workerd`;
+- локальный Workers smoke подтвердил root negotiation `307` + `no-store`, locale canonicalization `308` с сохранением query, fail-closed `404` для redirect-required mutation, Hebrew SSR `lang="he" dir="rtl"`, English fallback и отдельный `/api/*` namespace;
+- первый реальный Cloudflare Workers deploy успешно выполнен для `vico-forum`; Worker доступен на `https://vico-forum.iliya1947a.workers.dev`;
+- deployed smoke на `workers.dev` подтвердил root negotiation, canonical locale redirect, fail-closed mutation policy и Hebrew RTL SSR/fallback behavior.
 
 ## Сейчас
 
-Stage 1 implementation завершён. Полный Stage 1 acceptance должен быть выполнен на merged `main`; до Stage 2 также требуется первый реальный Cloudflare Workers preview/deploy checkpoint.
+Stage 1 закрыт. Cloudflare Workers account/deploy path подтверждён реальным deployment checkpoint. Следующая работа начинается с Stage 2 preflight: выбор совместимого с Cloudflare Workers способа подключения PostgreSQL и exact-version Drizzle setup до внесения изменений в зависимости, окружение и миграции.
 
 ## Блокеры
 
@@ -38,4 +42,4 @@ Stage 1 implementation завершён. Полный Stage 1 acceptance дол�
 
 ## Следующий шаг
 
-После merge PR 1C выполнить полный Stage 1 acceptance на `main`, затем первый реальный Cloudflare Workers preview/deploy. После успешного checkpoint переходить к Stage 2: PostgreSQL, Drizzle и persistent adapter `LocaleRegistry`.
+Подготовить Stage 2 по `ROADMAP.md`: проверить официальную документацию выбранных PostgreSQL/Cloudflare Workers/Drizzle версий, зафиксировать совместимый connection path и только после этого реализовать PostgreSQL, Drizzle migrations и persistent adapter `LocaleRegistry` отдельным компактным PR или серией компактных PR.
