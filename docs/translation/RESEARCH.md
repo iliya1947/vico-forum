@@ -98,9 +98,10 @@ https://github.com/remix-run/react-router/blob/react-router@8.3.1/docs/explanati
   manifest в initial document;
 - route manifest содержит route metadata, а не реализации route modules.
 
-Проверено 2026-09-10: upstream issue `remix-run/react-router#15326` о взаимодействии
-catch-all route с lazy/fog-of-war discovery остаётся открыт; связанный fix PR `#15395`
-также ещё не merged. Reproduction upstream в первую очередь описывает root-level splat,
+Проверено 2026-09-10: upstream issue `remix-run/react-router#15326` закрыт после merge fix PR
+`#15395`; отдельный manifest-version-mismatch defect `#15488` также закрыт после merge fix
+PR `#15489`. Оба исправления merged после релиза React Router `8.3.1`, поэтому pinned
+`8.3.1` их не содержит. Reproduction upstream в первую очередь описывает root-level splat,
 поэтому это не считается доказанным runtime defect конкретно Vico.
 
 Текущий compatibility choice Vico для небольшого route tree:
@@ -110,9 +111,10 @@ routeDiscovery: { mode: "initial" }
 ```
 
 Это временная framework-compatibility мера, а не invariant translation architecture. Она не
-меняет `/:locale` contract, server locale loader/middleware или resource pipeline и должна
-быть пересмотрена при обновлении React Router либо после закрытия соответствующего upstream
-issue/fix.
+меняет `/:locale` contract, server locale loader/middleware или resource pipeline. Решение
+нужно пересмотреть при обновлении Vico на опубликованную версию React Router, которая
+содержит оба upstream fix, и повторно проверить routing/fetcher behavior перед возвратом
+lazy discovery.
 
 ### i18next 26.4.2
 
