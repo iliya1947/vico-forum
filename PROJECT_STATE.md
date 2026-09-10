@@ -16,11 +16,12 @@ Stage 1A завершён и merged; весь Stage 1 ещё не завершё
 - завершён этап 0 и зафиксирован `SCAFFOLD_PLAN.md` с exact toolchain и границами Stage 1;
 - Stage 1 разделён на PR 1A (scaffold/quality gates), PR 1B (locale boundary/resolution) и PR 1C (UI translation resource runtime);
 - Stage 1A merged: добавлен минимальный React Router v8 Framework Mode SSR scaffold для Cloudflare Workers, exact toolchain, lockfile, ESLint, Vitest и CI;
-- для Stage 1B выбрана explicit-locale route policy: canonicalizable alias/case/deprecated variant активного locale получает permanent canonical redirect, а malformed/unknown/inactive/disabled locale временно redirect-ится на тот же путь под `/en/` без cookie/header negotiation.
+- для Stage 1B выбрана method-aware explicit-locale route policy: только `GET`/`HEAD` используют `307` fallback на `/en/...` или `308` canonicalization; любой non-`GET`/`HEAD` request, которому потребовался бы locale redirect, fail closed как `404` без `Location` и до matched action; active canonical locale остаётся доступным для normal route/action handling;
+- HTTP rationale для `307`/`308` и exact React Router `8.3.1` redirect contract зафиксированы в `docs/translation/RESEARCH.md`.
 
 ## Сейчас
 
-Следующий шаг — Stage 1B: generic `/:locale/*`, `LocaleRegistry`, `LocaleResolver`, BCP-47 canonicalization, root negotiation, `lang`/`dir`, formatting context и targeted routing tests.
+Следующий шаг — Stage 1B: generic `/:locale/*`, `LocaleRegistry`, `LocaleResolver`, BCP-47 canonicalization, root negotiation, method-aware locale guard, `lang`/`dir`, formatting context и targeted routing tests.
 
 ## Блокеры
 
