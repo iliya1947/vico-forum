@@ -133,11 +133,22 @@ URL candidate
 → locale context
 ```
 
-Unknown/inactive explicit locale **не** проваливается к cookie/header negotiation.
-До implementation PR, который реализует locale resolution, должна быть явно выбрана и
-зафиксирована одна route policy из разрешённых архитектурой вариантов (например `404` или
-утверждённый redirect); Codex не должен молча придумывать её. Canonicalizable case/alias
-representation активного locale redirect-ится на canonical URL.
+Explicit locale **не** проваливается к cookie/header negotiation.
+Для Stage 1B зафиксирована следующая route policy:
+
+- active canonical locale обслуживается напрямую;
+- однозначный alias/deprecated/case-variant активного locale получает `308 Permanent Redirect`
+  на canonical `/:locale/...` URL;
+- malformed BCP-47 candidate, unknown locale, а также registered locale с
+  `publicationStatus=inactive|disabled` получают `307 Temporary Redirect` на тот же
+  route remainder под bootstrap `/en/...`;
+- query string сохраняется; redirect destination строится только как внутренний Vico path,
+  а не из user-supplied absolute URL;
+- fallback redirect на `/en/...` не смотрит `user.locale`, cookie или `Accept-Language`.
+
+`307` выбран как временный redirect: unavailable locale может стать доступным позже, а
+HTTP method/body при redirect не меняются. `308` используется только для постоянной
+canonicalization уже существующего активного locale.
 
 Без locale segment (`/`) negotiation:
 
@@ -290,8 +301,8 @@ Provider-output validation расширяется в Stage 5.
 2. bootstrap `en`;
 3. root negotiation: cookie, `Accept-Language`, q-values, wildcard default;
 4. negotiation redirect `/` имеет `Cache-Control: no-store` и не может быть переиспользован как общий redirect для разных request preferences;
-5. explicit unknown/inactive locale следует зафиксированной route policy и не использует cookie/header fallback;
-6. alias/case canonical redirect;
+5. malformed/unknown/inactive/disabled explicit locale получает `307` на тот же route remainder под `/en/`, сохраняет query string и не использует cookie/header fallback;
+6. alias/case/deprecated representation активного locale получает `308` на canonical locale URL;
 7. LTR и RTL через registry metadata;
 8. explicit fallback chain без implicit locale reduction;
 9. partial local pack priority;
@@ -371,7 +382,7 @@ Stage 1 является одним архитектурным этапом, н�
 - generic `/:locale/*`, server locale loader и technical-route separation;
 - `LocaleRegistry` abstraction/config adapter;
 - `LocaleResolver`, BCP-47 canonicalization, aliases/fallback policy;
-- выбранная до начала PR unknown/inactive-locale route policy;
+- зафиксированная explicit-locale policy: unavailable locale → temporary `/en/...`, canonicalizable active alias/case/deprecated form → permanent canonical redirect;
 - root negotiation + `Cache-Control: no-store` baseline;
 - direction, `lang`/`dir`, formatting-context и Unicode-safe foundation;
 - targeted routing/negotiation/cache tests.
