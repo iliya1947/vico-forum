@@ -2,6 +2,6 @@ import type { Config } from "@react-router/dev/config";
 
 export default {
   ssr: true,
-  // Keep the small route manifest eager while upstream catch-all/lazy-discovery issue #15326 remains unresolved.
+  // React Router 8.3.1 predates upstream lazy-discovery fixes #15395/#15489; re-evaluate after upgrading.
   routeDiscovery: { mode: "initial" },
 } satisfies Config;
