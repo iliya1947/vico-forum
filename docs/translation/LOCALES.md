@@ -146,18 +146,36 @@ URL
 2. canonicalize BCP-47 tag;
 3. lookup registry entry;
 4. если locale разрешён для прямой публикации — использовать его;
-5. если locale unknown/inactive/disabled — применить утверждённую unknown/inactive route
-   policy.
+5. иначе применить explicit-locale route policy ниже.
 
 Явно присутствующий, но недопустимый `/:locale` MUST NOT молча fall through к
 `user.locale`, cookie или `Accept-Language`. Иначе URL и фактически отрендеренный язык
 разойдутся.
 
-Если URL tag является валидным alias/deprecated/case-variant представлением активного
-canonical locale и registry/BCP-47 canonicalization однозначно определяет canonical tag,
-route policy должна redirect-ить на canonical `/:locale/...` URL вместо обслуживания
-нескольких URL для одного и того же locale. Это предотвращает duplicate locale URLs и
-сохраняет стабильную ссылочную идентичность.
+Для Stage 1B зафиксирована policy:
+
+```text
+active canonical locale
+→ render
+
+active locale через alias / deprecated tag / case variant
+→ 308 Permanent Redirect на canonical /:locale/... URL
+
+malformed BCP-47 candidate
+unknown locale
+registered + publicationStatus=inactive
+registered + publicationStatus=disabled
+→ 307 Temporary Redirect на тот же route remainder под /en/...
+```
+
+Для unavailable locale сохраняются route remainder и query string. Redirect destination
+строится только как внутренний Vico path и не может принимать user-supplied absolute URL.
+Fallback на `/en/...` не использует `user.locale`, cookie или `Accept-Language`.
+
+`307` является временным: unavailable locale может быть зарегистрирован/активирован позже,
+и redirect не должен закреплять постоянный перенос; кроме того, HTTP method и body
+сохраняются. `308` применяется только когда уже существующий активный locale имеет
+однозначный постоянный canonical URL.
 
 ### Negotiation без locale segment
 
@@ -299,20 +317,23 @@ side effect обычного page request.
 
 ## Unknown locale и abuse (`SEC-01`)
 
-Запрос вроде `/random-language-123/`:
+Запрос вроде `/random-language-123/topic/1?view=latest`:
 
 ```text
 не создаёт LocaleRegistry entry
 не создаёт translation task
 не вызывает provider
 не тратит translation quota
+не использует cookie/header negotiation
+→ 307 /en/topic/1?view=latest
 ```
 
-Unknown/inactive locale обрабатывается явной route policy (404/redirect/другая
-утверждённая политика). Он не проваливается в cookie/header negotiation при уже
-существующем `/:locale` segment.
+Та же temporary `/en/...` policy применяется к malformed/unknown/inactive/disabled
+explicit locale. Alias/deprecated/case variant активного locale вместо этого получает
+`308` на его canonical locale URL.
 
-Конкретный UX можно выбрать отдельно, но side effects запрещены.
+Redirect target обязан оставаться внутренним Vico path; explicit locale input не может
+превратить locale fallback в open redirect.
 
 ## Unicode, scripts и fonts (`LOC-10`)
 
