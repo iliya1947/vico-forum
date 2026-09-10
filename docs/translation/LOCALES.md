@@ -152,30 +152,48 @@ URL
 `user.locale`, cookie или `Accept-Language`. Иначе URL и фактически отрендеренный язык
 разойдутся.
 
-Для Stage 1B зафиксирована policy:
+Для Stage 1B redirect policy применяется только к `GET`/`HEAD`:
 
 ```text
-active canonical locale
-→ render
+GET/HEAD + active canonical locale
+→ normal route handling
 
-active locale через alias / deprecated tag / case variant
+GET/HEAD + active locale через alias / deprecated tag / case variant
 → 308 Permanent Redirect на canonical /:locale/... URL
 
-malformed BCP-47 candidate
-unknown locale
-registered + publicationStatus=inactive
-registered + publicationStatus=disabled
+GET/HEAD + malformed BCP-47 candidate
+GET/HEAD + unknown locale
+GET/HEAD + registered + publicationStatus=inactive
+GET/HEAD + registered + publicationStatus=disabled
 → 307 Temporary Redirect на тот же route remainder под /en/...
 ```
 
-Для unavailable locale сохраняются route remainder и query string. Redirect destination
-строится только как внутренний Vico path и не может принимать user-supplied absolute URL.
-Fallback на `/en/...` не использует `user.locale`, cookie или `Accept-Language`.
+Для любого метода, кроме `GET`/`HEAD`, locale canonicalization/fallback redirect запрещён:
 
-`307` является временным: unavailable locale может быть зарегистрирован/активирован позже,
-и redirect не должен закреплять постоянный перенос; кроме того, HTTP method и body
-сохраняются. `308` применяется только когда уже существующий активный locale имеет
-однозначный постоянный canonical URL.
+```text
+non-GET/HEAD + active canonical locale
+→ normal matched-route handling
+
+non-GET/HEAD + любой explicit locale candidate, который потребовал бы 307/308 redirect
+→ 404 Not Found
+→ без Location
+→ без user/cookie/Accept-Language negotiation
+→ до выполнения matched action
+```
+
+Это относится в том числе к `POST`, `PUT`, `PATCH` и `DELETE`. Canonical active locale сам
+по себе не блокирует будущие actions; fail-closed policy срабатывает только когда request
+потребовал бы locale redirect.
+
+Для `GET`/`HEAD` unavailable locale сохраняются route remainder и query string. Redirect
+destination строится только как внутренний Vico path и не может принимать user-supplied
+absolute URL. Fallback на `/en/...` не использует `user.locale`, cookie или
+`Accept-Language`.
+
+`307` является временным: unavailable locale может быть зарегистрирован/активирован позже.
+`307` и `308` являются method-preserving redirects, поэтому Vico намеренно не использует
+их для non-`GET`/`HEAD` locale correction/fallback. `308` применяется для `GET`/`HEAD`
+только когда уже существующий активный locale имеет однозначный постоянный canonical URL.
 
 ### Negotiation без locale segment
 
@@ -189,6 +207,9 @@ authenticated user.locale
 ```
 
 и redirect-ит на canonical `/:locale/...` URL.
+
+Root negotiation является navigation behavior и выполняется только для `GET`/`HEAD`.
+Другие методы не должны language-negotiate и redirect-иться в mutating locale route.
 
 Invalid/inactive candidate из user/cookie/header пропускается и negotiation продолжает
 следующий источник. `Accept-Language` обрабатывается с учётом `q` priorities; значения с
@@ -240,6 +261,11 @@ locale validation/resource-loading middleware/logic.
 Server middleware может дополнять boundary, но не заменяет этот loader requirement:
 React Router не создаёт новый network request только ради server middleware.
 
+Method-aware locale guard обязан применяться на server boundary и завершать любой
+non-`GET`/`HEAD` request, требующий locale redirect, до выполнения matched action. Конкретное
+размещение guard может использовать React Router server middleware/shared server logic, но
+тест должен доказывать отсутствие action side effect.
+
 Цель:
 
 ```text
@@ -253,7 +279,8 @@ client navigation /en/topic/1 → /ka/topic/1
 Переключение locale не должно зависеть от случайного client `useEffect` или повторного
 browser language detection.
 
-Unprefixed `/` выполняет negotiation и redirect на canonical `/:locale/` URL.
+Unprefixed `/` выполняет negotiation и redirect на canonical `/:locale/` URL только для
+`GET`/`HEAD`.
 
 ## Direction и writing systems (`LOC-07`)
 
@@ -317,7 +344,7 @@ side effect обычного page request.
 
 ## Unknown locale и abuse (`SEC-01`)
 
-Запрос вроде `/random-language-123/topic/1?view=latest`:
+`GET /random-language-123/topic/1?view=latest`:
 
 ```text
 не создаёт LocaleRegistry entry
@@ -328,9 +355,13 @@ side effect обычного page request.
 → 307 /en/topic/1?view=latest
 ```
 
-Та же temporary `/en/...` policy применяется к malformed/unknown/inactive/disabled
-explicit locale. Alias/deprecated/case variant активного locale вместо этого получает
-`308` на его canonical locale URL.
+Та же temporary `/en/...` policy для `GET`/`HEAD` применяется к
+malformed/unknown/inactive/disabled explicit locale. Alias/deprecated/case variant активного
+locale для `GET`/`HEAD` вместо этого получает `308` на canonical locale URL.
+
+`POST`/другой non-`GET`/`HEAD` request к любому explicit locale candidate, который потребовал
+бы такой redirect, получает `404` без `Location`; matched action не выполняется. Это не даёт
+method-preserving `307`/`308` повторно отправить mutation body на другой locale URL.
 
 Redirect target обязан оставаться внутренним Vico path; explicit locale input не может
 превратить locale fallback в open redirect.
