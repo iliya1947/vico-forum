@@ -4,38 +4,30 @@
 
 ## Состояние
 
-Проект находится на этапе подготовки репозитория.
-Код приложения ещё не создан.
+Этап 0 завершён. Stage 1 выполняется серией компактных PR `1A → 1B → 1C`.
+Stage 1A добавляет базовый scaffold и quality gates; весь Stage 1 ещё не завершён.
 
 ## Готово
 
-- создан GitHub-репозиторий;
-- добавлен `AGENTS.md`;
-- добавлен `PROJECT.md`;
-- добавлен `PROJECT_STATE.md`;
-- добавлен `README.md`;
-- добавлен `.gitignore`;
-- добавлен `.env.example`;
-- добавлен последовательный roadmap до первого production-релиза;
+- создан GitHub-репозиторий и базовая проектная документация;
+- зафиксирован последовательный roadmap до первого production-релиза;
 - зафиксирована расширяемая архитектура мультиязычности и переводов без hard-coded списка locale;
-- translation architecture разделена на короткий обязательный contract и detail documents; все 49 component IDs привязаны к этапам реализации через `ROADMAP.md`;
-- синхронизированы `PROJECT.md`, `ROADMAP.md` и `SCAFFOLD_PLAN.md` с `TRANSLATION_ARCHITECTURE.md`;
-- завершён этап 0: по актуальной официальной документации, integration guides,
-  templates и generators проверена совместимость scaffold-стека;
-- в `SCAFFOLD_PLAN.md` зафиксированы версии runtime и зависимостей, package
-  manager, локальные/CI-команды, Stage 1 locale/i18n foundation и границы реализации.
+- translation architecture разделена на обязательный contract и detail documents; все 49 component IDs привязаны к этапам реализации через `ROADMAP.md`;
+- завершён этап 0 и зафиксирован `SCAFFOLD_PLAN.md` с exact toolchain и границами Stage 1;
+- Stage 1 разделён на PR 1A (scaffold/quality gates), PR 1B (locale boundary/resolution) и PR 1C (UI translation resource runtime);
+- в Stage 1A добавлен минимальный React Router v8 Framework Mode SSR scaffold для Cloudflare Workers, exact toolchain, lockfile, ESLint, Vitest и CI.
 
 ## Сейчас
 
-Этап 0 завершён. Код приложения и scaffold ещё не созданы.
-Stage 1 подготовлен к последовательной реализации несколькими компактными PR, каждый из которых должен сохранять зелёные обязательные проверки.
+Stage 1A ограничен технической foundation: locale routing/resolution и UI translation business behavior в него не входят.
+Обязательные проверки Stage 1A: frozen install, `lint`, `typecheck`, `test`, `build`.
 
 ## Блокеры
 
-Нет.
+Нет блокеров для Stage 1A.
 
-Не является блокером для первого scaffold PR, но до реализации locale routing/resolution необходимо отдельно выбрать разрешённую архитектурой policy для explicit unknown/inactive `/:locale`.
+До начала PR 1B необходимо отдельно выбрать разрешённую архитектурой policy для explicit unknown/inactive `/:locale`.
 
 ## Следующий шаг
 
-Начать этап 1 по `SCAFFOLD_PLAN.md` как серию компактных PR: сначала базовый Workers/React Router scaffold и CI, затем locale boundary/resolution, затем UI translation resource runtime. К этапу 2 переходить только после выполнения всех критериев завершения Stage 1.
+После merge Stage 1A с подтверждёнными обязательными проверками выбрать unknown/inactive-locale route policy и реализовать PR 1B по `SCAFFOLD_PLAN.md`.
