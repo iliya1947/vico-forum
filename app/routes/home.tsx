@@ -10,7 +10,7 @@ export default function Home() {
     <main className="shell">
       <p className="eyebrow">Vico Forum</p>
       <h1>Development scaffold</h1>
-      <p>Stage 1A establishes the React Router and Cloudflare Workers foundation.</p>
+      <p>Stage 1B establishes the locale routing and resolution foundation.</p>
     </main>
   );
 }

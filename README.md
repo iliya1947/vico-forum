@@ -15,7 +15,7 @@
 
 ## Разработка
 
-Stage 1A содержит только базовый React Router v8 SSR scaffold для Cloudflare Workers и quality gates. Locale routing/resolution и UI translation runtime реализуются отдельно в PR 1B и PR 1C по `SCAFFOLD_PLAN.md`.
+Stage 1A содержит базовый React Router v8 SSR scaffold для Cloudflare Workers и quality gates. Stage 1B добавляет locale routing/resolution foundation; UI translation runtime остаётся отдельным PR 1C по `SCAFFOLD_PLAN.md`.
 
 Требования:
 
