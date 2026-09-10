@@ -1,9 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { canonicalEnglishCatalog } from "./catalog";
 import { sourceFingerprint } from "./fingerprint";
+import { manualTranslationPacks } from "./manual-packs";
 import { TranslationResourceLoader } from "./resource-loader";
 import { createTranslationRuntime } from "./runtime";
-import { CanonicalEnglishSource, LocalTranslationSource, type TranslationPack } from "./sources";
+import {
+  CanonicalEnglishSource,
+  LocalTranslationSource,
+  validateTranslationPacks,
+  type TranslationPack,
+} from "./sources";
 
 const locale = {
   translationLocale: "x-stage-one",
@@ -70,6 +76,15 @@ describe("UI translation resources", () => {
     expect(createTranslationRuntime(snapshot).t("heading")).toBe("Translation foundation");
   });
 
+  it("classifies stale translations before validating their obsolete structure", async () => {
+    const staleWithObsoletePlaceholder = await currentPack("Old {{removedPlaceholder}}");
+    staleWithObsoletePlaceholder.common!.heading!.sourceFingerprint = "old-fingerprint";
+
+    await expect(
+      new LocalTranslationSource({ xx: staleWithObsoletePlaceholder }).load("xx", ["common"]),
+    ).resolves.toMatchObject({ resources: {}, staleKeys: ["common:heading"] });
+  });
+
   it("changes local source version when a current translation payload changes", async () => {
     const first = await new LocalTranslationSource({ xx: await currentPack("First translation") }).load("xx", [
       "common",
@@ -94,6 +109,24 @@ describe("UI translation resources", () => {
     await expect(new LocalTranslationSource({ xx: broken }).load("xx", ["common"])).rejects.toThrow(
       "Placeholder mismatch",
     );
+  });
+
+  it("validates every real manual pack for CI while allowing stale values", async () => {
+    await expect(validateTranslationPacks(manualTranslationPacks)).resolves.toEqual({
+      staleKeys: { ru: ["common:stageSummary"] },
+    });
+  });
+
+  it("rejects unknown identities and invalid current translations during full-pack validation", async () => {
+    await expect(
+      validateTranslationPacks({ xx: { unknown: { key: { value: "Value", sourceFingerprint: "stale" } } } }),
+    ).rejects.toThrow("Unknown canonical namespace");
+    await expect(
+      validateTranslationPacks({ xx: { common: { typo: { value: "Value", sourceFingerprint: "stale" } } } }),
+    ).rejects.toThrow("Unknown canonical key");
+
+    const broken = await currentPack("Broken {{name}}");
+    await expect(validateTranslationPacks({ xx: broken })).rejects.toThrow("Placeholder mismatch");
   });
 
   it("creates isolated runtimes from the same serialized server snapshot", async () => {

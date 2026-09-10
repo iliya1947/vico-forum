@@ -102,6 +102,23 @@ disabled
 - наличие docs, local pack или provider support не активирует locale само по себе;
 - readiness перевода не должна неявно менять publication status.
 
+### Reserved top-level route segments
+
+`LocaleRegistry` обязан применять единый централизованный список top-level segments,
+которые принадлежат техническим routes и поэтому не могут быть locale identity. В текущей
+конфигурации точные reserved segments:
+
+```text
+api
+assets
+```
+
+Регистрация canonical locale tag, alias или `matchTag` запрещена, если его canonicalized
+translation tag **точно** совпадает с reserved segment. Проверка не является prefix-match:
+например, `api-BR` не конфликтует с `/api`, если это syntactically valid и явно
+зарегистрированный locale tag. Контракт остаётся generic и не вводит hard-coded список
+поддерживаемых языков.
+
 ### Bootstrap English
 
 Canonical `en` является минимальной bootstrap registry entry и не должен зависеть от
@@ -252,6 +269,10 @@ Fallback chain может использовать только зарегист
 /api/auth/*
 /api/i18n/*
 ```
+
+Внутри `/:locale` Home является только index route. Любой неизвестный child path совпадает
+с отдельным catch-all route и возвращает настоящий HTTP `404`, продолжая проходить locale
+boundary loader/middleware.
 
 В текущем baseline React Router `8.3.1` route, владеющий `/:locale` boundary, MUST export
 server `loader`. Это принудительно создаёт server `.data` request для client-side

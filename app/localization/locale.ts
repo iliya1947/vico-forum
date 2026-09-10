@@ -7,11 +7,11 @@ export interface LocaleDefinition {
   translationStatus: TranslationStatus;
   publicationStatus: PublicationStatus;
   direction: TextDirection;
-  fallbackChain: string[];
-  aliases?: string[];
-  matchTags?: string[];
+  fallbackChain: readonly string[];
+  aliases?: readonly string[];
+  matchTags?: readonly string[];
   nativeName: string;
-  presentationMetadata?: Record<string, string>;
+  presentationMetadata?: Readonly<Record<string, string>>;
 }
 
 export interface FormattingContext {
@@ -23,11 +23,11 @@ export interface FormattingContext {
 
 export interface ResolvedLocaleContext {
   translationLocale: string;
-  fallbackLocales: string[];
+  fallbackLocales: readonly string[];
   direction: TextDirection;
   formatting: FormattingContext;
   nativeName: string;
-  presentationMetadata: Record<string, string>;
+  presentationMetadata: Readonly<Record<string, string>>;
 }
 
 export interface LocaleCandidate {

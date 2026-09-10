@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { LocaleDefinition } from "./locale";
 import { InMemoryLocaleRegistry } from "./registry";
 
-function locale(tag: string, fallbackChain: string[] = ["en"]): LocaleDefinition {
+function locale(tag: string, fallbackChain: readonly string[] = ["en"]): LocaleDefinition {
   return {
     tag,
     translationStatus: "draft",
@@ -33,5 +33,49 @@ describe("InMemoryLocaleRegistry", () => {
           { ...locale("de"), aliases: ["shared"] },
         ]),
     ).toThrow("Ambiguous locale alias");
+  });
+
+  it.each(["api", "ASSETS"])("rejects reserved canonical locale %s", (tag) => {
+    expect(() => new InMemoryLocaleRegistry([locale(tag)])).toThrow("reserved top-level segment");
+  });
+
+  it.each(["api", "assets-u-ca-gregory"])("rejects reserved canonicalized alias or matchTag %s", (tag) => {
+    expect(() => new InMemoryLocaleRegistry([{ ...locale("fr"), aliases: [tag] }])).toThrow(
+      "reserved top-level segment",
+    );
+    expect(() => new InMemoryLocaleRegistry([{ ...locale("fr"), matchTags: [tag] }])).toThrow(
+      "reserved top-level segment",
+    );
+  });
+
+  it("allows a locale tag whose prefix only resembles a reserved segment", () => {
+    expect(new InMemoryLocaleRegistry([locale("api-BR")]).find("api-BR")?.locale.tag).toBe("api-BR");
+  });
+
+  it("keeps registry snapshots and matches immutable and detached from configuration", () => {
+    const fallbackChain = ["en"];
+    const aliases = ["fr-FR"];
+    const matchTags = ["fr-Latn"];
+    const presentationMetadata = { menuLabel: "French" };
+    const registry = new InMemoryLocaleRegistry([
+      { ...locale("fr", fallbackChain), aliases, matchTags, presentationMetadata },
+    ]);
+    const match = registry.find("fr")!;
+
+    fallbackChain.push("de");
+    aliases.push("fr-CA");
+    matchTags.push("fr-BE");
+    presentationMetadata.menuLabel = "Changed";
+
+    expect(match.locale.fallbackChain).toEqual(["en"]);
+    expect(match.locale.aliases).toEqual(["fr-FR"]);
+    expect(match.locale.matchTags).toEqual(["fr-Latn"]);
+    expect(match.locale.presentationMetadata).toEqual({ menuLabel: "French" });
+    expect(Object.isFrozen(match)).toBe(true);
+    expect(Object.isFrozen(match.locale)).toBe(true);
+    expect(Object.isFrozen(match.locale.fallbackChain)).toBe(true);
+    expect(Object.isFrozen(match.locale.aliases)).toBe(true);
+    expect(Object.isFrozen(match.locale.matchTags)).toBe(true);
+    expect(Object.isFrozen(match.locale.presentationMetadata)).toBe(true);
   });
 });

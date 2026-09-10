@@ -1,5 +1,8 @@
 import { parseLocaleCandidate, type LocaleDefinition } from "./locale";
 
+export const RESERVED_TOP_LEVEL_SEGMENTS = Object.freeze(["api", "assets"] as const);
+const reservedTopLevelSegments = new Set<string>(RESERVED_TOP_LEVEL_SEGMENTS);
+
 const BOOTSTRAP_ENGLISH: LocaleDefinition = {
   tag: "en",
   translationStatus: "ready",
@@ -10,8 +13,8 @@ const BOOTSTRAP_ENGLISH: LocaleDefinition = {
 };
 
 export interface LocaleMatch {
-  locale: LocaleDefinition;
-  kind: "canonical" | "alias";
+  readonly locale: LocaleDefinition;
+  readonly kind: "canonical" | "alias";
 }
 
 export interface LocaleRegistry {
@@ -28,6 +31,26 @@ function canonicalTag(value: string, field: string): string {
   return parsed.translationTag;
 }
 
+function assertNotReserved(tag: string, field: string): void {
+  if (reservedTopLevelSegments.has(tag)) {
+    throw new Error(`${field} conflicts with reserved top-level segment: ${tag}`);
+  }
+}
+
+function localeSnapshot(input: LocaleDefinition, tag: string, fallbackChain: readonly string[]): LocaleDefinition {
+  const aliases = input.aliases ? Object.freeze([...input.aliases]) : undefined;
+  const matchTags = input.matchTags ? Object.freeze([...input.matchTags]) : undefined;
+  const presentationMetadata = Object.freeze({ ...input.presentationMetadata });
+  return Object.freeze({
+    ...input,
+    tag,
+    fallbackChain: Object.freeze([...fallbackChain]),
+    aliases,
+    matchTags,
+    presentationMetadata,
+  });
+}
+
 export class InMemoryLocaleRegistry implements LocaleRegistry {
   readonly bootstrap: LocaleDefinition;
   readonly #locales = new Map<string, LocaleDefinition>();
@@ -38,6 +61,7 @@ export class InMemoryLocaleRegistry implements LocaleRegistry {
 
     for (const input of definitions) {
       const tag = canonicalTag(input.tag, "Locale tag");
+      assertNotReserved(tag, "Locale tag");
       if (this.#locales.has(tag)) throw new Error(`Duplicate locale: ${tag}`);
 
       const fallbackChain = input.fallbackChain.map((fallback) => canonicalTag(fallback, "Fallback"));
@@ -46,14 +70,7 @@ export class InMemoryLocaleRegistry implements LocaleRegistry {
       }
       if (fallbackChain.includes(tag)) throw new Error(`Locale cannot fall back to itself: ${tag}`);
 
-      this.#locales.set(tag, {
-        ...input,
-        tag,
-        fallbackChain,
-        aliases: input.aliases ? [...input.aliases] : undefined,
-        matchTags: input.matchTags ? [...input.matchTags] : undefined,
-        presentationMetadata: { ...input.presentationMetadata },
-      });
+      this.#locales.set(tag, localeSnapshot(input, tag, fallbackChain));
     }
 
     this.bootstrap = this.#locales.get("en")!;
@@ -66,6 +83,7 @@ export class InMemoryLocaleRegistry implements LocaleRegistry {
       for (const alias of [...(locale.aliases ?? []), ...(locale.matchTags ?? [])]) {
         const parsed = parseLocaleCandidate(alias);
         if (!parsed) throw new Error(`Invalid locale alias: ${alias}`);
+        assertNotReserved(parsed.translationTag, "Locale alias");
         this.#addMatch(parsed.translationTag, locale, "alias");
       }
       for (const fallback of locale.fallbackChain) {
@@ -82,7 +100,7 @@ export class InMemoryLocaleRegistry implements LocaleRegistry {
       throw new Error(`Ambiguous locale alias: ${tag}`);
     }
     if (existing && kind === "alias") return;
-    this.#matches.set(tag, { locale, kind });
+    this.#matches.set(tag, Object.freeze({ locale, kind }));
   }
 
   #validateFallbackCycle(tag: string, path: string[]) {

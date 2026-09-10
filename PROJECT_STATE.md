@@ -4,7 +4,9 @@
 
 ## Состояние
 
-Этап 0 и Stage 1 завершены. Stage 1 acceptance выполнен на merged `main`, после чего успешно создан и развёрнут первый реальный Cloudflare Worker `vico-forum` на `workers.dev`. Проект готов к подготовке Stage 2.
+Этап 0 и Stage 1 завершены. После Stage 1 acceptance выполнен hardening locale routing,
+registry и UI translation validation/type contracts. Первый реальный Cloudflare Worker
+`vico-forum` развёрнут на `workers.dev`. Проект готов к подготовке Stage 2.
 
 ## Готово
 
@@ -31,6 +33,15 @@
 - локальный Workers smoke подтвердил root negotiation `307` + `no-store`, locale canonicalization `308` с сохранением query, fail-closed `404` для redirect-required mutation, Hebrew SSR `lang="he" dir="rtl"`, English fallback и отдельный `/api/*` namespace;
 - первый реальный Cloudflare Workers deploy успешно выполнен для `vico-forum`; Worker доступен на `https://vico-forum.iliya1947a.workers.dev`;
 - deployed smoke на `workers.dev` подтвердил root negotiation, canonical locale redirect, fail-closed mutation policy и Hebrew RTL SSR/fallback behavior.
+- Stage 1 hardening исправляет порядок local translation validation: identity и freshness
+  проверяются до структуры, stale не попадает в current bundle и не является CI failure;
+  отдельная full-pack regression validation проверяет все реальные manual packs;
+- `LocaleRegistry` запрещает точные canonicalized collisions с централизованными reserved
+  segments `api`/`assets` и отдаёт defensive immutable runtime snapshots и matches;
+- i18next module augmentation выводит строгий resource/key shape из canonical English
+  descriptors без превращения descriptors в runtime resources;
+- Home внутри `/:locale` является index route, а неизвестный child path обрабатывается
+  отдельным locale-boundary catch-all с HTTP `404`.
 
 ## Сейчас
 
