@@ -28,7 +28,7 @@ react-i18next 17.0.13
 remix-i18next 8.0.0
 BCP 47 / RFC 5646
 RFC 4647 language matching
-RFC 9110 Accept-Language semantics
+RFC 9110 HTTP / Accept-Language / redirect semantics
 ECMA-402 / Intl
 Cloudflare Queues
 Cloudflare Workers AI M2M100
@@ -52,17 +52,30 @@ Exact middleware docs на том же tag:
 https://github.com/remix-run/react-router/blob/react-router@8.3.1/docs/how-to/middleware.md
 ```
 
+Exact redirect source на том же tag:
+
+```text
+https://github.com/remix-run/react-router/blob/react-router@8.3.1/packages/react-router/lib/router/utils.ts
+```
+
 Подтверждено:
 
 - server middleware выполняется для document requests;
 - на hydrated client navigation server middleware выполняется только когда есть `.data`
   request для loader/action;
 - добавление server `loader` на route заставляет client navigation, затрагивающую этот
-  route, сходить на сервер и тем самым выполнить server middleware.
+  route, сходить на сервер и тем самым выполнить server middleware;
+- `redirect(url, init)` создаёт `Response` с `Location`; status можно передать явно числом
+  или через `ResponseInit`, default — `302`;
+- `redirect()` допускает absolute URL, поэтому user-controlled redirect destination требует
+  validation; Vico locale redirects строятся только из внутреннего route remainder и
+  canonical registry data.
 
 Архитектурный вывод Vico: route, владеющий `/:locale` boundary, MUST иметь server loader.
 Middleware может использоваться вместе с ним, но не является самостоятельной гарантией
-server-side locale validation на каждой client navigation.
+server-side locale validation на каждой client navigation. Method-aware locale guard должен
+также покрывать mutation request path до выполнения action; acceptance проверяет отсутствие
+side effect, а не только код ответа.
 
 Current Cloudflare React Router integration docs, перепроверены 2026-09-10:
 
@@ -180,6 +193,7 @@ supportedLanguages: string[]
 https://www.rfc-editor.org/rfc/rfc5646.html
 https://www.rfc-editor.org/rfc/rfc4647.html
 https://www.rfc-editor.org/rfc/rfc9110.html
+https://www.rfc-editor.org/errata/eid7109
 https://tc39.es/ecma402/
 ```
 
@@ -191,16 +205,31 @@ https://tc39.es/ecma402/
 - `q=0` означает not acceptable;
 - wildcard `*` является language range, но конкретный выбор representation остаётся
   application policy;
+- RFC 9110 §15.4.8: при автоматическом `307 Temporary Redirect` user agent MUST NOT менять
+  request method;
+- RFC 9110 описывает `307`/`308` как однозначные method-preserving redirect variants;
+- verified RFC 9110 errata EID 7109 для §15.4.9 явно добавляет к `308 Permanent Redirect`
+  требование не менять request method при автоматическом redirect;
 - `Intl.getCanonicalLocales()` пригоден для canonicalization boundary;
 - стандартный `Intl` layer предоставляет locale-aware formatting primitives.
+
+Следствие HTTP semantics: `307` или `308` после `POST`/другого mutation-capable request может
+автоматически отправить тот же method и body на URI из `Location`. Поэтому status сам по
+себе не является безопасным способом «перекинуть пользователя на правильный язык» для
+state-changing request.
 
 Архитектурные выводы Vico:
 
 - explicit URL locale authoritative после canonicalization/registry lookup;
 - invalid/inactive URL locale не подменяется cookie/header preference;
 - negotiation без locale segment использует user/cookie/Accept-Language/en;
+- root language negotiation/redirect применяется только к `GET`/`HEAD`;
+- locale `307`/`308` canonicalization/fallback применяется только к `GET`/`HEAD`;
+- non-`GET`/`HEAD` request с explicit locale, который потребовал бы locale redirect,
+  fail closed как `404` без `Location` и до action; active canonical locale не блокируется;
 - wildcard не выбирает случайный Vico locale: default остаётся `en`;
-- alias/case/deprecated representation активного locale redirect-ится на canonical URL;
+- alias/case/deprecated representation активного locale redirect-ится на canonical URL
+  только для `GET`/`HEAD`;
 - formatting extensions не создают translation bundle автоматически;
 - numbers/dates/time/list formatting использует явный formatting context;
 - SSR и initial hydration не зависят от разных server/browser default timezone/locale;
@@ -309,7 +338,10 @@ PostgreSQL/ICU поддерживает locale-specific collations и BCP-47-sty
 - bootstrap active `en` внутри `LocaleRegistry` abstraction;
 - независимые `translationStatus` и `publicationStatus`;
 - explicit URL locale authoritative; negotiation только когда locale segment отсутствует;
-- canonical URL redirect для aliases/case/deprecated representations;
+- `GET`/`HEAD` locale redirects: unavailable explicit locale → temporary `/en/...`,
+  canonicalizable active locale → permanent canonical URL;
+- non-`GET`/`HEAD` locale correction/fallback не redirect-ится: redirect-required explicit
+  locale → `404` без `Location` до action; canonical active locale продолжает normal route;
 - formatting preferences отделены от translation identity;
 - deterministic locale-sensitive SSR/hydration formatting context;
 - English как единственный canonical UI source;
@@ -340,10 +372,13 @@ PostgreSQL/ICU поддерживает locale-specific collations и BCP-47-sty
 | Добавить `ka` | registry → local/import/generation → locale bundle |
 | Переводы готовы, язык скрыт | `translationStatus=ready`, `publicationStatus=inactive` |
 | PostgreSQL registry недоступен | bootstrap `/en` остаётся разрешимым; другие locale не угадываются |
-| `/RU/...` при canonical `ru` | redirect на canonical `/ru/...` |
+| `GET /RU/...` при canonical `ru` | `308` на canonical `/ru/...` |
+| `POST /RU/...` при canonical `ru` | `404`, без `Location`, action не выполняется |
+| `GET /unknown/...` + cookie `ru` | `307` на `/en/...`; cookie не подменяет explicit URL |
+| `POST /unknown/...` + cookie `ru` | `404`, без negotiation/redirect, action не выполняется |
 | BCP-47 formatting extension без отдельного translation | canonical route использует translation locale, prefs отдельно |
-| `/unknown/...` + cookie `ru` | unknown route policy; cookie не подменяет explicit URL |
-| `/` + cookie `ru` | negotiation → canonical `/ru/` при active registry entry |
+| `GET /` + cookie `ru` | negotiation → canonical `/ru/` при active registry entry |
+| non-`GET`/`HEAD` `/` | language negotiation redirect не выполняется |
 | `Accept-Language` содержит `q=0` | такой range не выбирается |
 | `Accept-Language: *` без конкретного match | deterministic default `en`, не случайный locale |
 | server timezone ≠ browser timezone | initial formatting context одинаков на SSR/hydration |

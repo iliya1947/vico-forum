@@ -134,21 +134,32 @@ URL candidate
 ```
 
 Explicit locale **не** проваливается к cookie/header negotiation.
-Для Stage 1B зафиксирована следующая route policy:
+Для Stage 1B redirect policy применяется только к `GET`/`HEAD`:
 
-- active canonical locale обслуживается напрямую;
-- однозначный alias/deprecated/case-variant активного locale получает `308 Permanent Redirect`
-  на canonical `/:locale/...` URL;
-- malformed BCP-47 candidate, unknown locale, а также registered locale с
-  `publicationStatus=inactive|disabled` получают `307 Temporary Redirect` на тот же
-  route remainder под bootstrap `/en/...`;
+- `GET`/`HEAD` с active canonical locale обслуживается обычным route handling;
+- `GET`/`HEAD` с однозначным alias/deprecated/case-variant активного locale получает
+  `308 Permanent Redirect` на canonical `/:locale/...` URL;
+- `GET`/`HEAD` с malformed BCP-47 candidate, unknown locale, а также registered locale с
+  `publicationStatus=inactive|disabled` получает `307 Temporary Redirect` на тот же route
+  remainder под bootstrap `/en/...`;
 - query string сохраняется; redirect destination строится только как внутренний Vico path,
   а не из user-supplied absolute URL;
 - fallback redirect на `/en/...` не смотрит `user.locale`, cookie или `Accept-Language`.
 
-`307` выбран как временный redirect: unavailable locale может стать доступным позже, а
-HTTP method/body при redirect не меняются. `308` используется только для постоянной
-canonicalization уже существующего активного locale.
+Для любого метода, кроме `GET`/`HEAD`, locale correction/fallback redirect запрещён:
+
+- active canonical locale продолжает normal matched-route handling;
+- если explicit locale candidate потребовал бы `307` или `308`, request получает
+  `404 Not Found` без `Location`, без user/cookie/header negotiation и **до выполнения
+  matched action**;
+- правило относится в том числе к `POST`, `PUT`, `PATCH`, `DELETE` и не мешает будущим
+  actions на уже canonical active locale.
+
+RFC 9110 определяет `307` как method-preserving temporary redirect; verified errata для
+`308` подтверждает ту же method-preserving semantics для permanent redirect. Поэтому Vico
+не использует `307`/`308` для non-`GET`/`HEAD` locale correction: mutation body не должен
+автоматически переотправляться на другой locale URL. Exact references и React Router 8.3.1
+`redirect()` contract зафиксированы в `docs/translation/RESEARCH.md`.
 
 Без locale segment (`/`) negotiation:
 
@@ -160,6 +171,10 @@ authenticated user.locale (hook reserved; фактическая auth в Stage 4
 ```
 
 До Stage 4 authenticated source отсутствует, но public contract/typed boundary не меняется.
+Root negotiation является navigation behavior и выполняется только для `GET`/`HEAD`;
+non-`GET`/`HEAD` request не должен language-negotiate и redirect-иться в mutating locale
+route.
+
 `Accept-Language` учитывает q-values; `q=0` не выбирается. Wildcard не выбирает случайный
 locale: если конкретного match нет, default — `en`.
 
@@ -300,16 +315,18 @@ Provider-output validation расширяется в Stage 5.
 1. generic locale route с locale fixture, не зашитым в app core;
 2. bootstrap `en`;
 3. root negotiation: cookie, `Accept-Language`, q-values, wildcard default;
-4. negotiation redirect `/` имеет `Cache-Control: no-store` и не может быть переиспользован как общий redirect для разных request preferences;
-5. malformed/unknown/inactive/disabled explicit locale получает `307` на тот же route remainder под `/en/`, сохраняет query string и не использует cookie/header fallback;
-6. alias/case/deprecated representation активного locale получает `308` на canonical locale URL;
-7. LTR и RTL через registry metadata;
-8. explicit fallback chain без implicit locale reduction;
-9. partial local pack priority;
-10. stale local translation исключается и English/registry fallback продолжает работать;
-11. invalid local placeholders/unknown key отклоняются validation;
-12. SSR HTML `lang`/`dir` и одинаковый hydration resource snapshot;
-13. locale-sensitive formatting inputs не зависят от разных server/browser defaults.
+4. `GET`/`HEAD` negotiation redirect `/` имеет `Cache-Control: no-store` и не может быть переиспользован как общий redirect для разных request preferences;
+5. `GET`/`HEAD` malformed/unknown/inactive/disabled explicit locale получает `307` на тот же route remainder под `/en/`, сохраняет query string и не использует cookie/header fallback;
+6. `GET`/`HEAD` alias/case/deprecated representation активного locale получает `308` на canonical locale URL;
+7. representative non-`GET`/`HEAD` requests (минимум `POST`, плюс unit coverage policy для остальных методов) к locale, который потребовал бы `307`/`308`, получают `404` без `Location`, не используют negotiation и не выполняют matched action/side effect;
+8. non-`GET`/`HEAD` request к active canonical locale не блокируется locale policy и может дойти до matched action boundary;
+9. LTR и RTL через registry metadata;
+10. explicit fallback chain без implicit locale reduction;
+11. partial local pack priority;
+12. stale local translation исключается и English/registry fallback продолжает работать;
+13. invalid local placeholders/unknown key отклоняются validation;
+14. SSR HTML `lang`/`dir` и одинаковый hydration resource snapshot;
+15. locale-sensitive formatting inputs не зависят от разных server/browser defaults.
 
 Тестовые locale (`ru`, `he`, `ka` или другие) являются fixtures/registry data, а не
 закрытым списком поддерживаемых языков.
@@ -382,10 +399,10 @@ Stage 1 является одним архитектурным этапом, н�
 - generic `/:locale/*`, server locale loader и technical-route separation;
 - `LocaleRegistry` abstraction/config adapter;
 - `LocaleResolver`, BCP-47 canonicalization, aliases/fallback policy;
-- зафиксированная explicit-locale policy: unavailable locale → temporary `/en/...`, canonicalizable active alias/case/deprecated form → permanent canonical redirect;
+- method-aware explicit-locale policy: `GET`/`HEAD` unavailable locale → temporary `/en/...`, `GET`/`HEAD` canonicalizable active alias/case/deprecated form → permanent canonical redirect, а non-`GET`/`HEAD` request, требующий любого locale redirect, → fail-closed `404` до action;
 - root negotiation + `Cache-Control: no-store` baseline;
 - direction, `lang`/`dir`, formatting-context и Unicode-safe foundation;
-- targeted routing/negotiation/cache tests.
+- targeted routing/negotiation/cache/mutation-safety tests.
 
 ### PR 1C — UI translation resource runtime
 
