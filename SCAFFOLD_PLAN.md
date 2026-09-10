@@ -133,8 +133,10 @@ URL candidate
 → locale context
 ```
 
-Unknown/inactive explicit locale в Stage 1 возвращает `404` и **не** проваливается к
-cookie/header negotiation. Canonicalizable case/alias representation активного locale
+Unknown/inactive explicit locale **не** проваливается к cookie/header negotiation.
+До implementation PR должна быть явно выбрана и зафиксирована одна route policy из
+разрешённых архитектурой вариантов (например `404` или canonical redirect); Codex не
+должен молча придумывать её. Canonicalizable case/alias representation активного locale
 redirect-ится на canonical URL.
 
 Без locale segment (`/`) negotiation:
@@ -281,7 +283,7 @@ Provider-output validation расширяется в Stage 5.
 1. generic locale route с locale fixture, не зашитым в app core;
 2. bootstrap `en`;
 3. root negotiation: cookie, `Accept-Language`, q-values, wildcard default;
-4. explicit unknown/inactive locale → 404 без cookie/header fallback;
+4. explicit unknown/inactive locale следует зафиксированной route policy и не использует cookie/header fallback;
 5. alias/case canonical redirect;
 6. LTR и RTL через registry metadata;
 7. explicit fallback chain без implicit locale reduction;
