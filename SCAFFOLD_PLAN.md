@@ -121,7 +121,7 @@ presentation metadata
 
 Cycle/self-reference/duplicate fallback и ambiguous alias должны валидироваться.
 
-### 2. LocaleResolver
+### 2. LocaleResolver и negotiation caching
 
 Explicit `/:locale` authoritative:
 
@@ -134,10 +134,10 @@ URL candidate
 ```
 
 Unknown/inactive explicit locale **не** проваливается к cookie/header negotiation.
-До implementation PR должна быть явно выбрана и зафиксирована одна route policy из
-разрешённых архитектурой вариантов (например `404` или canonical redirect); Codex не
-должен молча придумывать её. Canonicalizable case/alias representation активного locale
-redirect-ится на canonical URL.
+До implementation PR, который реализует locale resolution, должна быть явно выбрана и
+зафиксирована одна route policy из разрешённых архитектурой вариантов (например `404` или
+утверждённый redirect); Codex не должен молча придумывать её. Canonicalizable case/alias
+representation активного locale redirect-ится на canonical URL.
 
 Без locale segment (`/`) negotiation:
 
@@ -151,6 +151,12 @@ authenticated user.locale (hook reserved; фактическая auth в Stage 4
 До Stage 4 authenticated source отсутствует, но public contract/typed boundary не меняется.
 `Accept-Language` учитывает q-values; `q=0` не выбирается. Wildcard не выбирает случайный
 locale: если конкретного match нет, default — `en`.
+
+`/` зависит от request-specific cookie/header preferences, поэтому Stage 1 baseline для
+negotiation redirect — `Cache-Control: no-store`. Это не означает `no-store` для обычных
+canonical `/:locale/...` страниц. Если позже baseline заменяется эквивалентной корректной
+cache policy (`Vary`/edge rules и т. п.), такое изменение должно быть отдельно обосновано и
+покрыто тестом до удаления `no-store`.
 
 ### 3. Formatting/direction/Unicode
 
@@ -283,15 +289,16 @@ Provider-output validation расширяется в Stage 5.
 1. generic locale route с locale fixture, не зашитым в app core;
 2. bootstrap `en`;
 3. root negotiation: cookie, `Accept-Language`, q-values, wildcard default;
-4. explicit unknown/inactive locale следует зафиксированной route policy и не использует cookie/header fallback;
-5. alias/case canonical redirect;
-6. LTR и RTL через registry metadata;
-7. explicit fallback chain без implicit locale reduction;
-8. partial local pack priority;
-9. stale local translation исключается и English/registry fallback продолжает работать;
-10. invalid local placeholders/unknown key отклоняются validation;
-11. SSR HTML `lang`/`dir` и одинаковый hydration resource snapshot;
-12. locale-sensitive formatting inputs не зависят от разных server/browser defaults.
+4. negotiation redirect `/` имеет `Cache-Control: no-store` и не может быть переиспользован как общий redirect для разных request preferences;
+5. explicit unknown/inactive locale следует зафиксированной route policy и не использует cookie/header fallback;
+6. alias/case canonical redirect;
+7. LTR и RTL через registry metadata;
+8. explicit fallback chain без implicit locale reduction;
+9. partial local pack priority;
+10. stale local translation исключается и English/registry fallback продолжает работать;
+11. invalid local placeholders/unknown key отклоняются validation;
+12. SSR HTML `lang`/`dir` и одинаковый hydration resource snapshot;
+13. locale-sensitive formatting inputs не зависят от разных server/browser defaults.
 
 Тестовые locale (`ru`, `he`, `ka` или другие) являются fixtures/registry data, а не
 закрытым списком поддерживаемых языков.
@@ -337,22 +344,54 @@ pnpm build
 Preview/production Cloudflare, PostgreSQL, Google OAuth, Queues и translation providers
 не настраиваются в Stage 1.
 
-## Границы первого implementation PR
+## Разбиение Stage 1 на компактные PR
+
+Stage 1 является одним архитектурным этапом, но реализуется последовательной серией из
+трёх компактных PR. Каждый PR должен быть самодостаточным по своей границе, проходить
+актуальные `lint`, `typecheck`, `test`, `build` и не объявлять весь Stage 1 завершённым до
+последнего PR.
+
+### PR 1A — scaffold и quality gates
 
 Входит:
 
-- минимальный React Router v8 SSR Workers scaffold;
-- generic locale routing, `LocaleRegistry`, `LocaleResolver`, server locale loader;
-- canonical English catalog + typed keys;
-- partial local translation source + fingerprint/validation;
-- `TranslationResourceLoader`;
-- request-scoped i18next + identical hydration snapshot;
-- `lang`/`dir`, LTR/RTL, formatting context, Unicode-safe foundation;
-- locale/i18n tests;
+- минимальный React Router v8 SSR Workers scaffold из C3;
+- точные dependency/runtime versions, lockfile и pnpm `allowBuilds`;
+- удаление ненужного demo/Tailwind/Node-only scaffold content;
 - ESLint, typecheck, Vitest, production build и CI;
-- локальные инструкции и реально необходимые variables.
+- локальные команды/инструкции и только реально нужные environment placeholders.
 
-Не входит:
+Не входит locale business behavior; цель PR — получить воспроизводимую техническую базу,
+на которой следующие два PR добавляют Stage 1 contracts без смешивания с настройкой CI.
+
+### PR 1B — locale boundary и resolution
+
+Входит преимущественно `LOC-01`–`LOC-10` и `SEC-01`:
+
+- generic `/:locale/*`, server locale loader и technical-route separation;
+- `LocaleRegistry` abstraction/config adapter;
+- `LocaleResolver`, BCP-47 canonicalization, aliases/fallback policy;
+- выбранная до начала PR unknown/inactive-locale route policy;
+- root negotiation + `Cache-Control: no-store` baseline;
+- direction, `lang`/`dir`, formatting-context и Unicode-safe foundation;
+- targeted routing/negotiation/cache tests.
+
+### PR 1C — UI translation resource runtime
+
+Входит преимущественно `UI-01`, `UI-02`, `UI-03`, `UI-04`, `UI-05`, `UI-08`, `UI-09`,
+`UI-10`, `UI-12`, `STO-02` contract и `SEC-03`:
+
+- canonical English catalog + typed message descriptors;
+- partial `LocalTranslationSource` + fingerprints/validation;
+- `TranslationResourceLoader`;
+- request-scoped i18next + explicit fallback chain;
+- identical SSR/hydration resource snapshot;
+- targeted source-priority/freshness/hydration tests.
+
+После PR 1C выполняются все Stage 1 acceptance checks из `ROADMAP.md`. Только после их
+фактического прохождения и обновления `PROJECT_STATE.md` можно переходить к Stage 2.
+
+## Не входит в Stage 1
 
 - PostgreSQL/Drizzle persistence;
 - Better Auth/Google OAuth;
