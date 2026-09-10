@@ -46,12 +46,29 @@
 
 ## Мультиязычность и переводы
 
-1. Интерфейс локализуется через `i18next` + `react-i18next` + `remix-i18next` v8 с SSR middleware.
-2. Locale является частью URL (`/ru/...`, `/en/...`, `/he/...`). При первом входе приоритет определения языка: URL → `user.locale` → cookie → `Accept-Language` → `en`.
-3. Перевод пользовательского контента отделён от локализации интерфейса и реализуется через сменный `TranslationProvider`.
-4. Основной провайдер автоматического перевода — Cloudflare Workers AI `@cf/meta/m2m100-1.2b`; Google Cloud Translation сохраняется как резервный провайдер.
-5. Перевод выполняется on-demand и постоянно кэшируется в PostgreSQL. Оригинал не заменяется; перевод привязывается к конкретной ревизии исходного сообщения.
-6. Заголовки тем переводятся отдельно. Код, inline-code, URL и технические идентификаторы не отправляются на машинный перевод.
+Этот раздел фиксирует только верхнеуровневый контракт. Полный source of truth для
+мультиязычности, UI-переводов и перевода пользовательского контента —
+[`TRANSLATION_ARCHITECTURE.md`](./TRANSLATION_ARCHITECTURE.md) и указанные в нём
+detail documents.
+
+1. Публичный UI использует generic `/:locale/*`. Locale — зарегистрированный canonical
+   BCP-47 tag из runtime `LocaleRegistry`; hard-coded списка поддерживаемых языков в
+   маршрутах, типах или i18n resources быть не должно.
+2. English (`en`) — единственный canonical UI source. Runtime-локализация и SSR используют
+   `i18next` + `react-i18next`; non-English UI resources могут поступать из local
+   translation packs, persistent manual translations и machine translations с явным
+   source/fallback/freshness contract.
+3. Явный locale в URL authoritative. Когда locale segment отсутствует, приоритет
+   negotiation: authenticated `user.locale` → cookie → `Accept-Language` → `en`.
+   `lang`, `dir`, Unicode, разные scripts и locale-sensitive formatting должны работать
+   без специальных условий для отдельных языков.
+4. UI translation и перевод пользовательского контента — отдельные domain services.
+   Ограничения конкретного translation provider не определяют locale universe Vico.
+   Пользовательский перевод привязан к immutable revision исходника; при отсутствии или
+   ошибке перевода показывается original current revision.
+5. Translation providers, persistent storage, local packs, background jobs, plural/select
+   rules, provider provenance, безопасность, fallback и caching реализуются только по
+   контрактам из `TRANSLATION_ARCHITECTURE.md`.
 
 ## Разработка
 
