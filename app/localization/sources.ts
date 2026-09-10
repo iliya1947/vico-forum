@@ -19,6 +19,10 @@ export interface TranslationSource {
   load(locale: string, namespaces: readonly string[]): Promise<TranslationSourceResult>;
 }
 
+export interface TranslationPackValidation {
+  staleKeys: Readonly<Record<string, readonly string[]>>;
+}
+
 const EMPTY_RESULT: TranslationSourceResult = { resources: {}, staleKeys: [], version: "empty" };
 
 function descriptorIndex(): Map<string, UiMessageDescriptor> {
@@ -92,16 +96,42 @@ export class LocalTranslationSource implements TranslationSource {
         const identity = `${namespace}:${key}`;
         const descriptor = known.get(identity);
         if (!descriptor) throw new Error(`Unknown canonical key: ${identity}`);
-        validateTranslation(descriptor, translation.value);
         const currentFingerprint = await sourceFingerprint(descriptor);
         if (translation.sourceFingerprint !== currentFingerprint) {
           staleKeys.push(identity);
           continue;
         }
+        validateTranslation(descriptor, translation.value);
         (resources[namespace] ??= {})[key] = translation.value;
         versionParts.push(JSON.stringify([identity, translation.sourceFingerprint, translation.value]));
       }
     }
     return { resources, staleKeys, version: await resourceVersion(versionParts) };
   }
+}
+
+export async function validateTranslationPacks(
+  packs: Readonly<Record<string, TranslationPack>>,
+): Promise<TranslationPackValidation> {
+  const known = descriptorIndex();
+  const staleKeys: Record<string, string[]> = {};
+
+  for (const [locale, pack] of Object.entries(packs)) {
+    for (const [namespace, messages] of Object.entries(pack)) {
+      if (!(namespace in canonicalEnglishCatalog)) throw new Error(`Unknown canonical namespace: ${namespace}`);
+      for (const [key, translation] of Object.entries(messages)) {
+        const identity = `${namespace}:${key}`;
+        const descriptor = known.get(identity);
+        if (!descriptor) throw new Error(`Unknown canonical key: ${identity}`);
+        const currentFingerprint = await sourceFingerprint(descriptor);
+        if (translation.sourceFingerprint !== currentFingerprint) {
+          (staleKeys[locale] ??= []).push(identity);
+          continue;
+        }
+        validateTranslation(descriptor, translation.value);
+      }
+    }
+  }
+
+  return { staleKeys };
 }

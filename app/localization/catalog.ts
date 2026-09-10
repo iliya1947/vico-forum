@@ -46,10 +46,15 @@ export const canonicalEnglishCatalog = {
 
 export type UiNamespace = keyof typeof canonicalEnglishCatalog;
 export type UiKey<N extends UiNamespace> = keyof (typeof canonicalEnglishCatalog)[N] & string;
+type DescriptorSource<T> = T extends { readonly source: infer Source extends string } ? Source : never;
+export type CanonicalResourceShape = {
+  [N in UiNamespace]: {
+    [K in UiKey<N>]: DescriptorSource<(typeof canonicalEnglishCatalog)[N][K]>;
+  };
+};
 
 export function catalogDescriptors(): UiMessageDescriptor[] {
   return Object.values(canonicalEnglishCatalog).flatMap((namespace) =>
     Object.values(namespace) as UiMessageDescriptor[],
   );
 }
-

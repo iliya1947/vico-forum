@@ -3,15 +3,15 @@ export type TranslationStatus = "draft" | "generating" | "partial" | "ready";
 export type PublicationStatus = "inactive" | "active" | "disabled";
 
 export interface LocaleDefinition {
-  tag: string;
-  translationStatus: TranslationStatus;
-  publicationStatus: PublicationStatus;
-  direction: TextDirection;
-  fallbackChain: string[];
-  aliases?: string[];
-  matchTags?: string[];
-  nativeName: string;
-  presentationMetadata?: Record<string, string>;
+  readonly tag: string;
+  readonly translationStatus: TranslationStatus;
+  readonly publicationStatus: PublicationStatus;
+  readonly direction: TextDirection;
+  readonly fallbackChain: readonly string[];
+  readonly aliases?: readonly string[];
+  readonly matchTags?: readonly string[];
+  readonly nativeName: string;
+  readonly presentationMetadata?: Readonly<Record<string, string>>;
 }
 
 export interface FormattingContext {
@@ -23,11 +23,11 @@ export interface FormattingContext {
 
 export interface ResolvedLocaleContext {
   translationLocale: string;
-  fallbackLocales: string[];
+  fallbackLocales: readonly string[];
   direction: TextDirection;
   formatting: FormattingContext;
   nativeName: string;
-  presentationMetadata: Record<string, string>;
+  presentationMetadata: Readonly<Record<string, string>>;
 }
 
 export interface LocaleCandidate {

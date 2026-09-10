@@ -23,11 +23,11 @@ function toContext(match: LocaleMatch, candidate?: LocaleCandidate): ResolvedLoc
   };
   return {
     translationLocale: locale.tag,
-    fallbackLocales: [...locale.fallbackChain],
+    fallbackLocales: locale.fallbackChain,
     direction: locale.direction,
     formatting,
     nativeName: locale.nativeName,
-    presentationMetadata: { ...locale.presentationMetadata },
+    presentationMetadata: locale.presentationMetadata ?? Object.freeze({}),
   };
 }
 

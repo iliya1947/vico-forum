@@ -27,3 +27,29 @@ jobs:
         run: pnpm test
       - name: Build
         run: pnpm build
+      - name: Workers smoke
+        run: |
+          set -euo pipefail
+          pnpm exec vite preview --host 127.0.0.1 --port 4173 > /tmp/vico-preview.log 2>&1 &
+          preview_pid=$!
+          trap 'kill "$preview_pid" 2>/dev/null || true' EXIT
+
+          ready=false
+          for _ in {1..30}; do
+            if curl --silent --show-error --fail http://127.0.0.1:4173/he/ > /tmp/vico-he.html; then
+              ready=true
+              break
+            fi
+            sleep 1
+          done
+
+          if [ "$ready" != true ]; then
+            cat /tmp/vico-preview.log
+            exit 1
+          fi
+
+          test "$(curl --silent --show-error --output /tmp/vico-he.html --write-out '%{http_code}' http://127.0.0.1:4173/he/)" = "200"
+          grep -q 'lang="he"' /tmp/vico-he.html
+          grep -q 'dir="rtl"' /tmp/vico-he.html
+          test "$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' http://127.0.0.1:4173/he/topic)" = "404"
+          test "$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' http://127.0.0.1:4173/api/test)" = "404"

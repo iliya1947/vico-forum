@@ -83,6 +83,39 @@ Current Cloudflare React Router integration docs, перепроверены 202
 https://developers.cloudflare.com/workers/framework-guides/web-apps/react-router/
 ```
 
+#### Route discovery compatibility checkpoint
+
+Exact React Router `8.3.1` lazy route discovery docs:
+
+```text
+https://github.com/remix-run/react-router/blob/react-router@8.3.1/docs/explanation/lazy-route-discovery.md
+```
+
+Подтверждено:
+
+- lazy route discovery включён по умолчанию;
+- `routeDiscovery: { mode: "initial" }` является официальным opt-out и включает весь route
+  manifest в initial document;
+- route manifest содержит route metadata, а не реализации route modules.
+
+Проверено 2026-09-10: upstream issue `remix-run/react-router#15326` закрыт после merge fix PR
+`#15395`; отдельный manifest-version-mismatch defect `#15488` также закрыт после merge fix
+PR `#15489`. Оба исправления merged после релиза React Router `8.3.1`, поэтому pinned
+`8.3.1` их не содержит. Reproduction upstream в первую очередь описывает root-level splat,
+поэтому это не считается доказанным runtime defect конкретно Vico.
+
+Текущий compatibility choice Vico для небольшого route tree:
+
+```text
+routeDiscovery: { mode: "initial" }
+```
+
+Это временная framework-compatibility мера, а не invariant translation architecture. Она не
+меняет `/:locale` contract, server locale loader/middleware или resource pipeline. Решение
+нужно пересмотреть при обновлении Vico на опубликованную версию React Router, которая
+содержит оба upstream fix, и повторно проверить routing/fetcher behavior перед возвратом
+lazy discovery.
+
 ### i18next 26.4.2
 
 Exact upstream tag:
