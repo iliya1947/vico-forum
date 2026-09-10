@@ -22,14 +22,14 @@ describe("InMemoryLocaleRegistry", () => {
   });
 
   it("keeps LocaleDefinition scalar fields readonly at compile time", () => {
-    const definition = locale("fr");
-    if (false) {
+    const assertReadonly = (definition: LocaleDefinition) => {
       // @ts-expect-error LocaleDefinition identity is immutable after construction
       definition.tag = "de";
       // @ts-expect-error LocaleDefinition publication state is immutable in a returned snapshot
       definition.publicationStatus = "inactive";
-    }
-    expect(definition.tag).toBe("fr");
+    };
+
+    expect(assertReadonly).toBeTypeOf("function");
   });
 
   it("rejects invalid fallback and alias graphs", () => {
