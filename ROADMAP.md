@@ -20,8 +20,10 @@ Source of truth:
 4. С первого scaffold использовать generic `/:locale/*`, runtime `LocaleRegistry`, canonical English UI и request-scoped i18next.
 5. Тестовую инфраструктуру создать вместе со scaffold. На последующих этапах добавлять тесты на новое критичное поведение.
 6. В CI постоянно выполнять `lint`, `typecheck`, `test`, `build`.
-7. Не добавлять поиск, жалобы, блокировки, audit log и другие незафиксированные функции без отдельного продуктового решения.
-8. Не переходить к следующему этапу, пока не выполнены критерии завершения текущего.
+7. Все внешние/пользовательские данные валидировать runtime на соответствующей системной границе; authz для защищённых операций проверяется на сервере.
+8. Все state-changing browser actions должны иметь применимую CSRF/origin protection; публичные write/generation boundaries должны иметь базовый rate limiting/anti-spam без ограничения публичного чтения. Конкретные thresholds выбираются на этапе реализации и не являются архитектурной константой.
+9. Не добавлять поиск, жалобы, блокировки, audit log и другие незафиксированные функции без отдельного продуктового решения.
+10. Не переходить к следующему этапу, пока не выполнены критерии завершения текущего.
 
 ## Этап 0. Подготовить реализацию scaffold
 
@@ -37,6 +39,8 @@ Source of truth:
 
 **Translation components:** `LOC-01`–`LOC-10`, `UI-01`, `UI-02`, `UI-03`, `UI-04`, `UI-05`, `UI-08`, `UI-09`, `UI-10`, `UI-12`, `STO-02` (contract), `SEC-01`, `SEC-03`.
 
+Stage 1 реализуется не одним крупным PR, а последовательной серией компактных PR `1A → 1B → 1C`, описанной в `SCAFFOLD_PLAN.md`. Отдельный PR внутри Stage 1 не означает завершение всего этапа; переход к Stage 2 разрешён только после прохождения всех Stage 1 acceptance checks.
+
 ### Работы
 
 1. Создать минимальное React Router v8 Framework Mode SSR-приложение с TypeScript для Cloudflare Workers по `SCAFFOLD_PLAN.md`.
@@ -44,17 +48,19 @@ Source of truth:
 3. Реализовать `LocaleRegistry` abstraction и config/in-memory adapter: bootstrap active `en`, без compile-time locale union/list.
 4. Реализовать `LocaleResolver`: explicit URL authoritative; без locale segment — cookie → `Accept-Language` → `en`, с зарезервированным authenticated `user.locale` source для Stage 4.
 5. Реализовать BCP-47 canonicalization, aliases/canonical redirects, explicit fallback chain, unknown/inactive-locale protection, direction metadata и formatting context boundary.
-6. Создать canonical English UI catalog, typed keys/message descriptors и `CanonicalEnglishSource`.
-7. Добавить partial `LocalTranslationSource` с `sourceFingerprint` freshness и structural validation; local packs не определяют список locale.
-8. Реализовать `TranslationResourceLoader`: source priority внутри locale, отдельные locale bundles, explicit fallback chain, без cross-locale flattening.
-9. Настроить request-scoped `i18next` + `react-i18next` с `load: "currentOnly"` и explicit Vico `fallbackLng`; browser получает тот же locale/fallback/resources snapshot без повторного language detection.
-10. Устанавливать `<html lang>`/`dir` из locale context; использовать direction-neutral CSS и Unicode-safe validation.
-11. Настроить Vitest/testing infrastructure, ESLint, typecheck, build и CI.
+6. Для request-dependent root negotiation `/` использовать безопасную cache policy; Stage 1 baseline — `Cache-Control: no-store`, согласно `LOC-08`/`SCAFFOLD_PLAN.md`.
+7. Создать canonical English UI catalog, typed keys/message descriptors и `CanonicalEnglishSource`.
+8. Добавить partial `LocalTranslationSource` с `sourceFingerprint` freshness и structural validation; local packs не определяют список locale.
+9. Реализовать `TranslationResourceLoader`: source priority внутри locale, отдельные locale bundles, explicit fallback chain, без cross-locale flattening.
+10. Настроить request-scoped `i18next` + `react-i18next` с `load: "currentOnly"` и explicit Vico `fallbackLng`; browser получает тот же locale/fallback/resources snapshot без повторного language detection.
+11. Устанавливать `<html lang>`/`dir` из locale context; использовать direction-neutral CSS и Unicode-safe validation.
+12. Настроить Vitest/testing infrastructure, ESLint, typecheck, build и CI.
 
 ### Критерий завершения
 
 - Добавление нового locale через registry data не требует изменения routes, locale TypeScript union или resource bundle map.
-- `/` выполняет negotiation; explicit unknown/inactive `/:locale` не подменяется cookie/header locale.
+- `/` выполняет negotiation с безопасной cache policy; request-specific negotiation result не может быть закэширован как универсальный redirect.
+- Explicit unknown/inactive `/:locale` не подменяется cookie/header locale.
 - Canonical/alias URL behavior, `lang`, `dir`, LTR/RTL и explicit fallback работают через SSR.
 - Partial local pack может override отдельные current keys; stale override исключается и fallback продолжается.
 - Server и hydration используют один locale/resource/formatting context.
@@ -64,6 +70,7 @@ Source of truth:
 
 - Проверить generic locale fixture, включая locale, которого нет в исходном app code.
 - Проверить LTR и RTL locale, canonical redirects, unknown locale, cookie/header negotiation и `q=0`.
+- Проверить `Cache-Control: no-store` для Stage 1 root negotiation redirect либо документированную эквивалентную policy, если baseline был отдельно пересмотрен.
 - Проверить source priority, stale local translation и English fallback.
 - Проверить SSR/hydration snapshot.
 - Выполнить `lint`, `typecheck`, `test`, `build` и Workers-compatible preview.
@@ -128,6 +135,7 @@ Source of truth:
 3. Реализовать Google sign-in, server session и logout.
 4. Интегрировать validated `user.locale` в существующий LocaleResolver: URL остаётся authoritative.
 5. Добавить минимальную защищённую страницу для проверки сессии.
+6. Проверить security defaults/requirements выбранной версии Better Auth для cookies, trusted origins и CSRF/origin boundary; не считать auth-библиотеку автоматической защитой будущих forum actions без отдельной проверки этих actions.
 
 ### Критерий завершения
 
@@ -135,11 +143,13 @@ Source of truth:
 - Google OAuth, SSR session и logout работают.
 - Защищённый route недоступен без валидной сессии.
 - `user.locale` участвует только в negotiation без explicit locale URL.
+- Auth cookies/origins настроены согласно exact-version contract без ослабления server-side authz.
 
 ### Проверки
 
 - Auth migrations.
 - Автоматические auth/session negative tests.
+- Проверить invalid/untrusted origin behavior на auth boundary согласно официальному API выбранной версии.
 - Preview smoke-test Google OAuth.
 - `lint`, `typecheck`, `test`, `build`.
 
@@ -226,20 +236,26 @@ Source of truth:
 
 1. Разрешить авторизованному пользователю создавать тему и отвечать.
 2. Реализовать безопасный Markdown/text/code input/output.
-3. Выполнять server-side runtime validation и authz.
-4. Создавать immutable revisions при поддерживаемом редактировании.
-5. Сохранять/уточнять source-locale metadata revision без подмены UI locale.
+3. Выполнять server-side runtime validation и authz для всех write operations.
+4. Реализовать применимую CSRF/origin protection для state-changing browser requests; защита должна соответствовать фактической session/auth architecture, а не предполагаться по наличию OAuth.
+5. Добавить базовый rate limiting/anti-spam на создание тем и сообщений. Точные thresholds/configuration выбираются на этом этапе; публичное чтение не должно требовать этих write limits.
+6. Создавать immutable revisions при поддерживаемом редактировании.
+7. Сохранять/уточнять source-locale metadata revision без подмены UI locale.
 
 ### Критерий завершения
 
 - Пользователь может создать тему/ответ, гость — нет.
 - Markdown/code безопасны от XSS.
+- Cross-origin/forged state-changing request не проходит защитную границу.
+- Очевидный burst/spam на write endpoints ограничивается без нарушения обычного публичного чтения.
 - Revision history и source-locale metadata сохраняют invariants Stage 6.
 
 ### Проверки
 
 - Integration/E2E create-topic/reply/authz.
 - XSS/Markdown safety tests.
+- Negative tests для CSRF/origin boundary в соответствии с выбранной реализацией.
+- Rate-limit/anti-spam tests для create-topic/reply boundary, включая нормальный разрешённый сценарий.
 - `lint`, `typecheck`, `test`, `build`.
 
 ## Этап 9. Реализовать solved topic и базовые роли
@@ -249,18 +265,20 @@ Source of truth:
 1. Разрешить автору темы отметить её решённой и выбрать лучший ответ.
 2. Проверять author/topic consistency на сервере.
 3. Реализовать минимальное разграничение guest/user/moderator/admin для текущих сценариев.
-4. Не добавлять расширенную модерацию без отдельного решения.
+4. Применить общую state-changing request protection к изменению solved/best-answer state.
+5. Не добавлять расширенную модерацию без отдельного решения.
 
 ### Критерий завершения
 
 - Только уполномоченный автор выбирает best answer.
 - Best answer принадлежит той же теме.
 - Role/authz checks покрыты negative tests.
+- State-changing security boundary не обходится через прямой browser request.
 
 ### Проверки
 
 - Integration/E2E `создать тему → получить ответ → решить`.
-- Negative authz/consistency tests.
+- Negative authz/consistency и origin/CSRF tests для solved/best-answer mutation.
 - `lint`, `typecheck`, `test`, `build`.
 
 ## Этап 10. Реализовать перевод пользовательского контента
@@ -303,7 +321,7 @@ Source of truth:
 2. Проверить миграции и безопасный deploy порядок.
 3. Добавить минимальную диагностику ошибок/translation task failures.
 4. Настроить и проверить backup/restore PostgreSQL.
-5. Проверить Markdown/XSS, auth routes/cookies, secrets, permissions и translation generation abuse boundaries.
+5. Проверить Markdown/XSS, auth routes/cookies, CSRF/origin protections, rate limiting/anti-spam, secrets, permissions и translation generation abuse boundaries.
 6. Провести accessibility, LTR/RTL, locale/formatting, translation fallback и original-content smoke tests.
 7. Выполнить preview, затем production deploy без merge со стороны Codex.
 8. Обновить `PROJECT_STATE.md` фактическими результатами.
@@ -314,6 +332,7 @@ Source of truth:
 - DB migrations, OAuth, LocaleRegistry, UI resources, Queue/provider jobs работают в production configuration.
 - Guest/user/solved-topic core flow работает.
 - Generic active locales, LTR/RTL, automatic UI translation и on-demand content translation проходят smoke-test.
+- Публичные write boundaries имеют проверенные authz, CSRF/origin и basic anti-abuse controls.
 - Backup restore проверен.
 - Release revision имеет зелёный обязательный CI.
 
@@ -324,6 +343,7 @@ Source of truth:
 - OAuth/cookies/logout production-like smoke.
 - E2E core forum flow на LTR/RTL locale.
 - UI translation generation/fallback, content translation/original fallback, Queue failure path.
+- Security smoke/negative tests для write boundaries.
 - Backup/restore и post-deploy diagnostics.
 
 ## Translation Component Traceability
@@ -361,6 +381,7 @@ Source of truth:
 - guest/user/moderator/admin в минимально необходимом объёме;
 - generic BCP-47 locale routing, SSR, LTR/RTL, canonical English + local/manual/machine UI translation;
 - revision-bound on-demand translation пользовательского контента с original fallback;
+- server-side validation/authz, применимая CSRF/origin protection и basic anti-spam/rate limiting для public write boundaries;
 - обязательный CI и production-safe persistence/background boundaries.
 
 Поиск, жалобы, блокировки, audit log и другие дополнительные возможности не входят в
