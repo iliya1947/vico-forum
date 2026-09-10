@@ -41,6 +41,22 @@ describe("UI translation resources", () => {
     );
   });
 
+  it("keeps canonical English authoritative over local pack data", async () => {
+    const englishLocale = {
+      ...locale,
+      translationLocale: "en",
+      fallbackLocales: [],
+      formatting: { locale: "en", timeZone: "UTC" },
+      nativeName: "English",
+    };
+    const snapshot = await new TranslationResourceLoader([
+      new LocalTranslationSource({ en: await currentPack("Local English override") }),
+      new CanonicalEnglishSource(),
+    ]).load(englishLocale, ["common"]);
+
+    expect(snapshot.resourcesByLocale.en?.common?.heading).toBe("Translation foundation");
+  });
+
   it("exposes and excludes a stale local override so English fallback continues", async () => {
     const pack = await currentPack("Old translation");
     pack.common!.heading!.sourceFingerprint = "old-fingerprint";
@@ -52,6 +68,18 @@ describe("UI translation resources", () => {
     expect(snapshot.staleKeys["x-stage-one"]).toEqual(["common:heading"]);
     expect(snapshot.resourcesByLocale["x-stage-one"]?.common?.heading).toBeUndefined();
     expect(createTranslationRuntime(snapshot).t("heading")).toBe("Translation foundation");
+  });
+
+  it("changes local source version when a current translation payload changes", async () => {
+    const first = await new LocalTranslationSource({ xx: await currentPack("First translation") }).load("xx", [
+      "common",
+    ]);
+    const second = await new LocalTranslationSource({ xx: await currentPack("Second translation") }).load("xx", [
+      "common",
+    ]);
+
+    expect(first.version).not.toBe("empty");
+    expect(second.version).not.toBe(first.version);
   });
 
   it("rejects unknown keys and broken placeholders", async () => {
