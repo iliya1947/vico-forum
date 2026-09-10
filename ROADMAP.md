@@ -17,7 +17,7 @@ Source of truth:
 1. Перед использованием библиотек/API проверять официальную документацию именно выбранных версий.
 2. Не менять без отдельного решения baseline: модульный монолит, React Router v8 Framework Mode + SSR + TypeScript, Cloudflare Workers, PostgreSQL + Drizzle ORM, Better Auth + Google OAuth.
 3. Мультиязычность не имеет hard-coded списка locale. Все translation component IDs из `TRANSLATION_ARCHITECTURE.md` должны быть привязаны к этапам этого roadmap.
-4. С первого scaffold использовать generic `/:locale/*`, runtime `LocaleRegistry`, canonical English UI и request-scoped i18next.
+4. Stage 1A создаёт только технический scaffold/quality gates; generic `/:locale/*` и runtime `LocaleRegistry` обязательны в PR 1B, а canonical English UI и request-scoped i18next — в PR 1C. Эти компоненты нельзя откладывать за пределы Stage 1.
 5. Тестовую инфраструктуру создать вместе со scaffold. На последующих этапах добавлять тесты на новое критичное поведение.
 6. В CI постоянно выполнять `lint`, `typecheck`, `test`, `build`.
 7. Все внешние/пользовательские данные валидировать runtime на соответствующей системной границе; authz для защищённых операций проверяется на сервере.
