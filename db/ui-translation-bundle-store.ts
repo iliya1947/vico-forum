@@ -1,8 +1,9 @@
 import { and, eq } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import type {
-  CompiledNamespaceBundle,
-  TranslationBundleStore,
+import {
+  compileNamespaceBundle,
+  type CompiledNamespaceBundle,
+  type TranslationBundleStore,
 } from "../app/localization/bundles";
 import { uiTranslationBundles } from "./schema";
 
@@ -37,28 +38,32 @@ export class DrizzleUiTranslationBundleStore implements TranslationBundleStore {
       resources[key] = value;
     }
 
-    return {
-      locale: row.locale,
-      namespace: row.namespace,
-      bundleVersion: row.bundleVersion,
-      resources,
-    };
+    const verified = await compileNamespaceBundle(row.locale, row.namespace, resources);
+    if (verified.bundleVersion !== row.bundleVersion) {
+      throw new Error(`compiled bundle version mismatch: ${row.locale}:${row.namespace}`);
+    }
+    return verified;
   }
 
   async put(bundle: CompiledNamespaceBundle): Promise<void> {
+    const verified = await compileNamespaceBundle(bundle.locale, bundle.namespace, bundle.resources);
+    if (verified.bundleVersion !== bundle.bundleVersion) {
+      throw new Error(`compiled bundle version mismatch: ${bundle.locale}:${bundle.namespace}`);
+    }
+
     await this.database
       .insert(uiTranslationBundles)
       .values({
-        locale: bundle.locale,
-        namespace: bundle.namespace,
-        bundleVersion: bundle.bundleVersion,
-        resources: bundle.resources,
+        locale: verified.locale,
+        namespace: verified.namespace,
+        bundleVersion: verified.bundleVersion,
+        resources: verified.resources,
       })
       .onConflictDoUpdate({
         target: [uiTranslationBundles.locale, uiTranslationBundles.namespace],
         set: {
-          bundleVersion: bundle.bundleVersion,
-          resources: bundle.resources,
+          bundleVersion: verified.bundleVersion,
+          resources: verified.resources,
           compiledAt: new Date(),
         },
       });
