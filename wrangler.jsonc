@@ -2,5 +2,11 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "vico-forum",
   "compatibility_date": "2026-09-09",
-  "main": "./workers/app.ts"
+  "main": "./workers/app.ts",
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      "id": "aa1fb9feeff44a23ae12d88eefceb942"
+    }
+  ]
 }

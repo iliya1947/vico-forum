@@ -102,10 +102,19 @@ export function createRequestRegistryLoader(repository: PersistentLocaleReposito
 }
 
 function classifyLoadFailure(error: unknown): "unavailable" | "schema-mismatch" | "integrity" | undefined {
-  if (error instanceof RegistryIntegrityError) return "integrity";
-  const code = (error as { code?: string } | undefined)?.code;
-  if (code === "42P01" || code === "42703" || code === "42804") return "schema-mismatch";
-  if (code?.startsWith("08") || ["57P01", "57P02", "57P03", "53300"].includes(code ?? "")) return "unavailable";
+  const seen = new Set<unknown>();
+  let current = error;
+  while (current && (typeof current === "object" || typeof current === "function") && !seen.has(current)) {
+    seen.add(current);
+    if (current instanceof RegistryIntegrityError) return "integrity";
+    const candidate = current as { cause?: unknown; code?: unknown };
+    const code = typeof candidate.code === "string" ? candidate.code : undefined;
+    if (code === "42P01" || code === "42703" || code === "42804") return "schema-mismatch";
+    if (code?.startsWith("08") || ["57P01", "57P02", "57P03", "53300"].includes(code ?? "")) {
+      return "unavailable";
+    }
+    current = candidate.cause;
+  }
   return undefined;
 }
 

@@ -102,6 +102,19 @@ describe("PostgreSQL 17 locale migrations", () => {
     expect(result.rows.some(({ tag }) => tag.toLowerCase() === "en")).toBe(false);
   });
 
+  it("classifies a Drizzle-wrapped missing-table error as schema mismatch", async () => {
+    await client.query("create schema registry_missing_table");
+    await client.query("set search_path to registry_missing_table");
+    try {
+      const loaded = await loadPersistentRegistry(new DrizzleLocaleRepository(drizzle(client)));
+      expect(loaded.health).toEqual({ status: "degraded", reason: "schema-mismatch" });
+      expect(loaded.registry.activeLocales().map(({ tag }) => tag)).toEqual(["en"]);
+    } finally {
+      await client.query("set search_path to public");
+      await client.query("drop schema registry_missing_table cascade");
+    }
+  });
+
   it("loads the persistent registry through Drizzle", async () => {
     const loaded = await loadPersistentRegistry(new DrizzleLocaleRepository(drizzle(client)));
     expect(loaded.health).toEqual({ status: "healthy" });

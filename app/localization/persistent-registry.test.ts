@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { DrizzleQueryError } from "drizzle-orm";
 import {
   RegistryIntegrityError,
   assemblePersistentRegistry,
@@ -79,6 +80,17 @@ describe("persistent locale registry", () => {
     const loaded = await loadPersistentRegistry({ readAll: async () => { throw error; } });
     expect(loaded.health).toEqual({ status: "degraded", reason });
     expect(loaded.registry.activeLocales().map(({ tag }) => tag)).toEqual(["en"]);
+  });
+
+  it("classifies PostgreSQL errors wrapped by Drizzle and handles cyclic causes safely", async () => {
+    const missingTable = Object.assign(new Error("missing table"), { code: "42P01" });
+    const wrapped = new DrizzleQueryError("select * from locales", [], missingTable);
+    const loaded = await loadPersistentRegistry({ readAll: async () => { throw wrapped; } });
+    expect(loaded.health).toEqual({ status: "degraded", reason: "schema-mismatch" });
+
+    const cyclic = new Error("cycle") as Error & { cause?: unknown };
+    cyclic.cause = cyclic;
+    await expect(loadPersistentRegistry({ readAll: async () => { throw cyclic; } })).rejects.toBe(cyclic);
   });
 
   it("does not mask programming errors and memoizes one load per request service", async () => {
