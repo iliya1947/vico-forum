@@ -9,7 +9,7 @@ routing, registry и UI translation validation/type contracts. Stage 2 persisten
 и серия PR 2A/2B/2C завершены: production Neon migrations применены, read-only runtime role
 и cache-disabled Hyperdrive с direct Neon origin созданы, реальный Hyperdrive binding
 подключён к production Worker. Native Cloudflare Workers Builds работает от GitHub `main`,
-a real deployed `workers.dev` Hyperdrive acceptance успешно пройден.
+real deployed `workers.dev` Hyperdrive acceptance успешно пройден.
 
 ## Готово
 
