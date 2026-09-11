@@ -66,15 +66,17 @@ production Neon/Hyperdrive ещё не подключён.
   автоматического destructive down rollback.
 - Stage 2 PR 2B добавил strict runtime parser PostgreSQL rows, Drizzle repository и сборку
   effective registry из code-owned `en` и validated persistent graph;
-- validated registry получает deterministic versioned SHA-256 semantic identity, отдельно
+- validated registry получает deterministic versioned SHA-256 semantic identity с
+  application-defined UTF-8 bytewise ordering, отдельно
   от classified `healthy`/`degraded` load health; classified outage, schema mismatch и
   integrity failure публикуют только bootstrap English без stale process-state recovery;
 - locale routes используют lazy memoized request registry service boundary, сохраняя
   synchronous `LocaleRegistry`/`LocaleResolver`; degraded non-English read временно
   перенаправляется на English с `307`/`no-store`, а write fail closed;
 - controlled writer реализует desired-state mutation в короткой `SERIALIZABLE` transaction,
-  whole-graph validation до DML и bounded whole-unit retry только для `40001`/`40P01`;
-  production Worker DML path не добавлен;
+  whole-graph validation до DML, bounded whole-unit retry только для `40001`/`40P01` и
+  unknown-commit reconciliation через semantic pre/expected/actual state без blind retry;
+  rollback failure сохраняет исходную ошибку, production Worker DML path не добавлен;
 - unit tests покрывают row parsing, graph rejection, semantic identity, degraded
   classification и request memoization; PostgreSQL integration suite дополнена persistent
   Drizzle load и concurrent controlled writes.

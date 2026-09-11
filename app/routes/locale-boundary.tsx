@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { I18nextProvider } from "react-i18next";
 import { Outlet, redirect, useLoaderData, type RouterContextProvider } from "react-router";
 import { manualTranslationPacks } from "../localization/manual-packs";
+import { parseLocaleCandidate } from "../localization/locale";
 import { localeContext, registryForRequest } from "../localization/request-context";
 import { TranslationResourceLoader, type TranslationSnapshot } from "../localization/resource-loader";
 import { resolveExplicitLocale } from "../localization/resolver";
@@ -20,7 +21,8 @@ async function guardLocale({ request, params, context }: LocaleBoundaryArgs) {
 
   const loaded = await registryForRequest(context);
   const resolution = resolveExplicitLocale(request, candidate, loaded.registry);
-  if (loaded.health.status === "degraded" && candidate.toLowerCase() !== "en") {
+  const candidateIdentity = parseLocaleCandidate(candidate)?.translationTag;
+  if (loaded.health.status === "degraded" && candidateIdentity !== loaded.registry.bootstrap.tag) {
     if (request.method !== "GET" && request.method !== "HEAD") throw new Response("Not Found", { status: 404 });
     const url = new URL(request.url);
     const suffix = url.pathname.split("/").slice(2).join("/");

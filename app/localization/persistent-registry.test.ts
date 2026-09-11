@@ -41,12 +41,34 @@ describe("persistent locale registry", () => {
     );
   });
 
-  it("builds deterministic semantic identities independent of row and unordered metadata order", async () => {
-    const he = row({ tag: "he", direction: "rtl", aliases: ["iw"], nativeName: "עברית" });
+  it("normalizes row, alias, match-tag, and metadata-key order for semantic identity", async () => {
+    const he = row({
+      tag: "he",
+      direction: "rtl",
+      aliases: ["he-IL", "iw"],
+      matchTags: ["he-Hebr", "he-u-ca-hebrew"],
+      nativeName: "עברית",
+      presentationMetadata: { zed: "last", alpha: "first" },
+    });
+    const reorderedHe = row({
+      tag: "he",
+      direction: "rtl",
+      aliases: ["iw", "he-IL"],
+      matchTags: ["he-u-ca-hebrew", "he-Hebr"],
+      nativeName: "עברית",
+      presentationMetadata: { alpha: "first", zed: "last" },
+    });
     const first = await assemblePersistentRegistry([row(), he]);
-    const second = await assemblePersistentRegistry([he, row()]);
+    const second = await assemblePersistentRegistry([reorderedHe, row()]);
     expect(first.semanticIdentity).toMatch(/^sha256:[0-9a-f]{64}$/);
     expect(first.semanticIdentity).toBe(second.semanticIdentity);
+  });
+
+  it("preserves semantic fallback order in the identity", async () => {
+    const de = row({ tag: "de", publicationStatus: "inactive", nativeName: "Deutsch" });
+    const first = await assemblePersistentRegistry([de, row({ fallbackChain: ["de", "en"] })]);
+    const second = await assemblePersistentRegistry([de, row({ fallbackChain: ["en", "de"] })]);
+    expect(first.semanticIdentity).not.toBe(second.semanticIdentity);
   });
 
   it.each([
@@ -68,5 +90,12 @@ describe("persistent locale registry", () => {
     const [one, two] = await Promise.all([load(), load()]);
     expect(one).toBe(two);
     expect(readAll).toHaveBeenCalledOnce();
+  });
+
+  it("does not classify semantic hashing failures as registry integrity", async () => {
+    const failure = new TypeError("crypto runtime failure");
+    const digest = vi.spyOn(crypto.subtle, "digest").mockRejectedValueOnce(failure);
+    await expect(loadPersistentRegistry({ readAll: async () => [row()] })).rejects.toBe(failure);
+    digest.mockRestore();
   });
 });

@@ -2,6 +2,7 @@ import { parseLocaleCandidate, type LocaleDefinition } from "./locale";
 import {
   BOOTSTRAP_ENGLISH,
   InMemoryLocaleRegistry,
+  LocaleRegistryValidationError,
   RESERVED_TOP_LEVEL_SEGMENTS,
   type LocaleRegistry,
 } from "./registry";
@@ -70,14 +71,17 @@ export function parsePersistentLocaleRow(row: PersistentLocaleRow): LocaleDefini
 }
 
 export async function assemblePersistentRegistry(rows: readonly PersistentLocaleRow[]) {
+  const definitions = rows.map(parsePersistentLocaleRow);
+  let registry: LocaleRegistry;
   try {
-    const definitions = rows.map(parsePersistentLocaleRow);
-    const registry = new InMemoryLocaleRegistry(definitions);
-    return { registry, semanticIdentity: await registryIdentity(definitions) };
+    registry = new InMemoryLocaleRegistry(definitions);
   } catch (error) {
-    if (error instanceof RegistryIntegrityError) throw error;
-    throw new RegistryIntegrityError("persistent locale graph is invalid", { cause: error });
+    if (error instanceof LocaleRegistryValidationError) {
+      throw new RegistryIntegrityError("persistent locale graph is invalid", { cause: error });
+    }
+    throw error;
   }
+  return { registry, semanticIdentity: await registryIdentity(definitions) };
 }
 
 export async function loadPersistentRegistry(repository: PersistentLocaleRepository): Promise<LoadedLocaleRegistry> {
@@ -106,10 +110,11 @@ function classifyLoadFailure(error: unknown): "unavailable" | "schema-mismatch" 
 }
 
 async function registryIdentity(persistent: readonly LocaleDefinition[]): Promise<string> {
-  const effective = [BOOTSTRAP_ENGLISH, ...persistent].sort((a, b) => a.tag.localeCompare(b.tag));
+  const effective = [BOOTSTRAP_ENGLISH, ...persistent].sort((a, b) => deterministicCompare(a.tag, b.tag));
   const semantic = {
     format: "vico-locale-registry-v1",
-    reservedTopLevelSegments: [...RESERVED_TOP_LEVEL_SEGMENTS].sort(),
+    ordering: "utf8-bytewise-v1",
+    reservedTopLevelSegments: [...RESERVED_TOP_LEVEL_SEGMENTS].sort(deterministicCompare),
     locales: effective.map((locale) => ({
       tag: locale.tag,
       translationStatus: locale.translationStatus,
@@ -119,7 +124,9 @@ async function registryIdentity(persistent: readonly LocaleDefinition[]): Promis
       aliases: matches(locale.aliases),
       matchTags: matches(locale.matchTags),
       nativeName: locale.nativeName,
-      presentationMetadata: Object.fromEntries(Object.entries(locale.presentationMetadata ?? {}).sort()),
+      presentationMetadata: Object.fromEntries(
+        Object.entries(locale.presentationMetadata ?? {}).sort(([left], [right]) => deterministicCompare(left, right)),
+      ),
     })),
   };
   const bytes = new TextEncoder().encode(JSON.stringify(semantic));
@@ -130,7 +137,16 @@ async function registryIdentity(persistent: readonly LocaleDefinition[]): Promis
 function matches(values: readonly string[] | undefined) {
   return [...(values ?? [])]
     .map((declared) => ({ declared, effective: parseLocaleCandidate(declared)?.translationTag }))
-    .sort((a, b) => a.declared.localeCompare(b.declared));
+    .sort((a, b) => deterministicCompare(a.declared, b.declared) || deterministicCompare(a.effective ?? "", b.effective ?? ""));
+}
+
+function deterministicCompare(left: string, right: string): number {
+  const leftBytes = new TextEncoder().encode(left);
+  const rightBytes = new TextEncoder().encode(right);
+  for (let index = 0; index < Math.min(leftBytes.length, rightBytes.length); index++) {
+    if (leftBytes[index] !== rightBytes[index]) return leftBytes[index]! - rightBytes[index]!;
+  }
+  return leftBytes.length - rightBytes.length;
 }
 
 function requiredString(value: unknown, field: string): string {
@@ -161,4 +177,3 @@ function stringRecord(value: unknown): Record<string, string> {
   }
   return Object.fromEntries(entries) as Record<string, string>;
 }
-

@@ -1,6 +1,7 @@
 import { RouterContextProvider } from "react-router";
 import { describe, expect, it, vi } from "vitest";
-import { localeContext } from "../localization/request-context";
+import { localeContext, registryLoaderContext } from "../localization/request-context";
+import { assemblePersistentRegistry } from "../localization/persistent-registry";
 import { middleware } from "./locale-boundary";
 
 describe("locale boundary middleware", () => {
@@ -37,5 +38,28 @@ describe("locale boundary middleware", () => {
     expect(response).toBeInstanceOf(Response);
     expect(next).toHaveBeenCalledOnce();
     expect(context.get(localeContext)).toMatchObject({ translationLocale: "he", direction: "rtl" });
+  });
+
+  it("recognizes extended English through canonical translation identity while degraded", async () => {
+    const next = vi.fn(async () => new Response("handled"));
+    const context = new RouterContextProvider();
+    const bootstrap = await assemblePersistentRegistry([]);
+    context.set(registryLoaderContext, async () => ({
+      ...bootstrap,
+      health: { status: "degraded", reason: "unavailable" },
+    }));
+
+    await expect(middleware[0](
+      {
+        request: new Request("https://vico.test/en-u-nu-arab/"),
+        params: { locale: "en-u-nu-arab" },
+        context,
+      },
+      next,
+    )).rejects.toMatchObject({
+      status: 308,
+      headers: expect.objectContaining({}),
+    });
+    expect(next).not.toHaveBeenCalled();
   });
 });
