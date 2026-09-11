@@ -15,18 +15,49 @@ explicitly destructive clean-database integration test and accepts only a local 
 whose name ends in `_test`.
 
 The `vico-forum-registry` Hyperdrive configuration uses the direct Neon endpoint with caching
-disabled. Its ID is declared as the `HYPERDRIVE` binding in `wrangler.jsonc`. Deploy only after
-the manual production migration workflow and its verification have succeeded:
+disabled. Its ID is declared as the `HYPERDRIVE` binding in `wrangler.jsonc`. Normal production
+Worker deployment is performed by native Cloudflare Workers Builds from GitHub `main`.
 
-```sh
-pnpm exec wrangler deploy
+### Schema-dependent release ordering
+
+A production schema change must become safe in production before runtime code is allowed to
+depend on it. For the first introduction of any schema required by runtime, use this sequence:
+
+```text
+migration-only PR
+→ merge to main
+→ run production migration workflow from main
+→ verify the production migration
+→ runtime PR that depends on the new schema
 ```
 
-Smoke-test `/ru/`, `/he/`, `/iw/`, `/ka/`, `/unknown/`, and `/api/test`. A healthy
-registry serves `ru`/`he`, canonicalizes `iw`, and treats inactive/unknown locales by the
-established routing policy. Bootstrap-only English behavior is an availability fallback,
-not successful deployment acceptance; inspect Worker and Hyperdrive diagnostics before
-proceeding if it occurs.
+Do not combine the first production migration for a schema and runtime code that requires that
+schema in one PR. The migration PR must remain forward-compatible with the currently deployed
+Worker, so an automatic Workers Build after its merge cannot make the existing runtime depend
+on unapplied database state.
+
+Smoke-test `/ru/`, `/he/`, `/iw/`, `/ka/`, `/unknown/`, and `/api/test` after a relevant
+production deployment. A healthy registry serves `ru`/`he`, canonicalizes `iw`, and treats
+inactive/unknown locales by the established routing policy. Bootstrap-only English behavior is
+an availability fallback, not successful deployment acceptance; inspect Worker and Hyperdrive
+diagnostics before proceeding if it occurs.
+
+## Preview / non-production isolation gate
+
+Until Cloudflare non-production build settings are separately verified, treat preview/non-production
+uploads as potentially using the top-level production `HYPERDRIVE` binding.
+
+That is acceptable only while the production database capability exposed to the Worker remains
+strictly read-only and the data reachable through that capability is public. Before either of the
+following becomes true:
+
+- a preview/non-production Worker receives any runtime `INSERT`, `UPDATE`, or `DELETE` capability;
+- the bound production database exposes non-public translation, admin, auth, or other private data;
+
+preview/non-production execution must be isolated from production by a separate staging
+Worker/Hyperdrive/database (for example through an explicit Wrangler environment) or the
+non-production build path must be disabled. A public Preview URL is not a substitute for this
+capability boundary.
 
 ## Local Workers integration
 
