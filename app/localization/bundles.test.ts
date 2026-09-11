@@ -37,13 +37,13 @@ describe("compiled UI namespace bundles", () => {
     );
   });
 
-  it("derives cache and strong ETag identities from the validated bundle version", async () => {
+  it("derives cache and weak semantic ETag identities from the validated bundle version", async () => {
     const bundle = await compileNamespaceBundle("ru", "common", { heading: "Основа переводов" });
 
     expect(bundleCacheIdentity(bundle.locale, bundle.namespace, bundle.bundleVersion)).toBe(
       JSON.stringify(["vico-ui-bundle-cache-v1", "ru", "common", bundle.bundleVersion]),
     );
-    expect(translationBundleEtag(bundle.bundleVersion)).toBe(`"vico-ui-${bundle.bundleVersion}"`);
+    expect(translationBundleEtag(bundle.bundleVersion)).toBe(`W/"vico-ui-${bundle.bundleVersion}"`);
     expect(() => translationBundleEtag("bad")).toThrow("bundle version");
   });
 });
