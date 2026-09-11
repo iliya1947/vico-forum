@@ -69,9 +69,10 @@ export function bundleCacheIdentity(locale: string, namespace: string, bundleVer
   return JSON.stringify([BUNDLE_CACHE_FORMAT, locale, namespace, bundleVersion]);
 }
 
+/** Semantic bundle identity is representation-independent, so expose it as a weak ETag. */
 export function translationBundleEtag(bundleVersion: string): string {
   assertBundleVersion(bundleVersion);
-  return `"vico-ui-${bundleVersion}"`;
+  return `W/"vico-ui-${bundleVersion}"`;
 }
 
 function assertBundleVersion(bundleVersion: string): void {
