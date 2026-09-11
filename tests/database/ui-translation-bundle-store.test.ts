@@ -65,4 +65,21 @@ describe("Drizzle compiled UI translation bundle store", () => {
     );
     expect(count.rows[0]?.count).toBe("1");
   });
+
+  it("rejects mismatched bundle versions on both write and read boundaries", async () => {
+    const repository = new DrizzleUiTranslationBundleStore(drizzle(client));
+    const valid = await compileNamespaceBundle("ru", "common", { heading: "Основа переводов" });
+
+    await expect(repository.put({ ...valid, bundleVersion: "a".repeat(64) })).rejects.toThrow(
+      "compiled bundle version mismatch",
+    );
+
+    await client.query(
+      `insert into ui_translation_bundles (locale, namespace, bundle_version, resources)
+       values ('ka', 'common', $1, $2::jsonb)`,
+      ["b".repeat(64), JSON.stringify({ heading: "თარგმანის საფუძველი" })],
+    );
+
+    await expect(repository.read("ka", "common")).rejects.toThrow("compiled bundle version mismatch");
+  });
 });
