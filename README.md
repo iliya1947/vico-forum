@@ -15,11 +15,12 @@
 
 ## Разработка
 
-Stage 1 завершён и укреплён regression coverage: проект содержит React Router v8 SSR
-scaffold для Cloudflare Workers, generic locale boundary/resolution, request-scoped
-i18next runtime, валидируемые translation packs и строгую типизацию canonical UI keys.
-Следующий продуктовый этап — Stage 2; последовательность работ зафиксирована в
-`ROADMAP.md` и актуальное состояние — в `PROJECT_STATE.md`.
+Stage 1 и Stage 2 завершены. Persistent `LocaleRegistry` работает в production через Neon,
+cache-disabled Cloudflare Hyperdrive, `pg` и Drizzle. Перед Stage 3 выполнен hardening failure
+boundaries и migration/release safety: required CI включает `checks` и `database`, migration
+history защищена как append-only, а production migration workflow ограничен `main`.
+Следующий продуктовый этап — Stage 3; последовательность работ зафиксирована в `ROADMAP.md`,
+а актуальное состояние — в `PROJECT_STATE.md`.
 
 Требования:
 

@@ -44,12 +44,13 @@ diagnostics before proceeding if it occurs.
 
 ## Preview / non-production isolation gate
 
-Until Cloudflare non-production build settings are separately verified, treat preview/non-production
-uploads as potentially using the top-level production `HYPERDRIVE` binding.
+Cloudflare Branch control has been verified with **Builds for non-production branches enabled**.
+No separate staging Hyperdrive/DB binding is configured in the repository, so preview/non-production
+uploads must be treated as potentially receiving the top-level production `HYPERDRIVE` binding.
 
-That is acceptable only while the production database capability exposed to the Worker remains
-strictly read-only and the data reachable through that capability is public. Before either of the
-following becomes true:
+The current setup is accepted only while the production database capability exposed to the Worker
+remains strictly read-only and the data reachable through that capability is public locale registry
+data. Before either of the following becomes true:
 
 - a preview/non-production Worker receives any runtime `INSERT`, `UPDATE`, or `DELETE` capability;
 - the bound production database exposes non-public translation, admin, auth, or other private data;
