@@ -7,12 +7,19 @@
     "react-router.config.ts",
     "vite.config.ts",
     "vitest.config.ts",
-    "vitest.database.config.ts"
+    "vitest.database.config.ts",
+    "app/localization/persistent-registry.ts",
+    "app/localization/registry.ts",
+    "app/localization/locale.ts"
   ],
   "compilerOptions": {
     "composite": true,
-    "types": ["node"],
-    "lib": ["ES2022"],
+    "types": [
+      "node"
+    ],
+    "lib": [
+      "ES2022"
+    ],
     "target": "ES2022",
     "module": "ES2022",
     "moduleResolution": "bundler"

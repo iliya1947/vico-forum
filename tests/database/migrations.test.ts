@@ -1,7 +1,10 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
-import { Client, type DatabaseError } from "pg";
+import { Client, type ClientBase, type DatabaseError } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { loadPersistentRegistry } from "../../app/localization/persistent-registry";
+import { parseLocaleCandidate } from "../../app/localization/locale";
+import { AmbiguousCommitOutcomeError, ControlledLocaleWriter, DrizzleLocaleRepository } from "../../db/locale-repository";
 
 const databaseUrl = process.env.DATABASE_URL;
 
@@ -97,6 +100,116 @@ describe("PostgreSQL 17 locale migrations", () => {
       },
     ]);
     expect(result.rows.some(({ tag }) => tag.toLowerCase() === "en")).toBe(false);
+  });
+
+  it("loads the persistent registry through Drizzle", async () => {
+    const loaded = await loadPersistentRegistry(new DrizzleLocaleRepository(drizzle(client)));
+    expect(loaded.health).toEqual({ status: "healthy" });
+    expect(loaded.semanticIdentity).toMatch(/^sha256:[0-9a-f]{64}$/);
+    const aliasIdentity = parseLocaleCandidate("iw")?.translationTag;
+    expect(aliasIdentity).toBe("he");
+    expect(aliasIdentity && loaded.registry.find(aliasIdentity)?.locale.tag).toBe("he");
+    expect(loaded.registry.find("ka")?.locale.publicationStatus).toBe("inactive");
+  });
+
+  it("serializes concurrent desired-state writes and preserves a valid graph", async () => {
+    const second = new Client({ connectionString: databaseUrl });
+    await second.connect();
+    try {
+      const locale = (tag: string) => ({
+        tag, translationStatus: "draft" as const, publicationStatus: "inactive" as const,
+        direction: "ltr" as const, fallbackChain: ["en"], nativeName: tag,
+      });
+      await Promise.all([
+        new ControlledLocaleWriter(client, new DrizzleLocaleRepository(drizzle(client)), 4)
+          .apply({ type: "put", locale: locale("de") }),
+        new ControlledLocaleWriter(second, new DrizzleLocaleRepository(drizzle(second)), 4)
+          .apply({ type: "put", locale: locale("fr") }),
+      ]);
+      const loaded = await loadPersistentRegistry(new DrizzleLocaleRepository(drizzle(client)));
+      expect(loaded.health).toEqual({ status: "healthy" });
+      expect(loaded.registry.find("de")?.locale.tag).toBe("de");
+      expect(loaded.registry.find("fr")?.locale.tag).toBe("fr");
+    } finally {
+      await second.end();
+    }
+  });
+
+  it("reconciles an ambiguous commit that PostgreSQL applied without blind retry", async () => {
+    let commitCalls = 0;
+    const ambiguousClient = new Proxy(client, {
+      get(target, property) {
+        if (property !== "query") return Reflect.get(target, property, target);
+        return async (text: string, values?: unknown[]) => {
+          const result = await target.query(text, values);
+          if (text.toLowerCase() === "commit") {
+            commitCalls++;
+            throw Object.assign(new Error("connection lost after commit"), { code: "08007" });
+          }
+          return result;
+        };
+      },
+    }) as ClientBase;
+    const writer = new ControlledLocaleWriter(
+      ambiguousClient,
+      new DrizzleLocaleRepository(drizzle(client)),
+    );
+
+    await writer.apply({
+      type: "put",
+      locale: {
+        tag: "es", translationStatus: "draft", publicationStatus: "inactive",
+        direction: "ltr", fallbackChain: ["en"], nativeName: "Español",
+      },
+    });
+    expect(commitCalls).toBe(1);
+    expect((await loadPersistentRegistry(new DrizzleLocaleRepository(drizzle(client))))
+      .registry.find("es")?.locale.tag).toBe("es");
+  });
+
+  it("preserves the original transaction error when rollback also fails", async () => {
+    const original = Object.assign(new Error("serialization failure"), { code: "40001" });
+    const rollback = new Error("rollback failure");
+    const fakeClient = {
+      async query(text: string) {
+        if (text.toLowerCase() === "commit") throw original;
+        if (text.toLowerCase() === "rollback") throw rollback;
+        if (text.startsWith("select")) return { rows: [] };
+        return { rows: [] };
+      },
+    } as unknown as ClientBase;
+    const writer = new ControlledLocaleWriter(fakeClient, { readAll: async () => [] }, 0);
+    await expect(writer.apply({
+      type: "put",
+      locale: {
+        tag: "it", translationStatus: "draft", publicationStatus: "inactive",
+        direction: "ltr", fallbackChain: ["en"], nativeName: "Italiano",
+      },
+    })).rejects.toBe(original);
+  });
+
+  it("reports an unresolved ambiguous commit when actual state is neither pre nor expected", async () => {
+    const original = Object.assign(new Error("statement completion unknown"), { code: "40003" });
+    const fakeClient = {
+      async query(text: string) {
+        if (text.toLowerCase() === "commit") throw original;
+        if (text.startsWith("select")) return { rows: [] };
+        return { rows: [] };
+      },
+    } as unknown as ClientBase;
+    const writer = new ControlledLocaleWriter(fakeClient, {
+      readAll: async () => [{
+        tag: "de", translationStatus: "draft", publicationStatus: "inactive", direction: "ltr",
+        fallbackChain: ["en"], aliases: [], matchTags: [], nativeName: "Deutsch", presentationMetadata: {},
+      }],
+    });
+    await expect(writer.apply({
+      type: "put",
+      locale: {
+        tag: "it", translationStatus: "draft", publicationStatus: "inactive",
+        direction: "ltr", fallbackChain: ["en"], nativeName: "Italiano",
+      },
+    })).rejects.toBeInstanceOf(AmbiguousCommitOutcomeError);
   });
 
   it.each([
