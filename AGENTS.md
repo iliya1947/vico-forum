@@ -16,7 +16,7 @@
 
 8. Если после изменения поменялось фактическое состояние проекта — обнови `PROJECT_STATE.md`.
 
-9. Все изменения передавай только через Pull Request. Не делай merge самостоятельно.
+9. Все изменения должны попадать в `main` только через Pull Request. PR создаёт и merge выполняет пользователь. Не выполняй merge самостоятельно.
 
 10. Если изменение впервые добавляет production schema, от которой будет зависеть runtime, разделяй rollout на migration-only PR и отдельный runtime PR. Runtime PR можно merge только после merge migration PR и успешных production migration + verification. Не объединяй первое появление production schema и runtime dependency на неё в одном PR.
 
