@@ -34,22 +34,35 @@ export function createHyperdriveUiTranslationStore(
 ): UiTranslationStore {
   let storePromise: Promise<DrizzleUiTranslationStore> | undefined;
   let reportedDegraded = false;
+  const reads = new Map<string, Promise<readonly Awaited<ReturnType<DrizzleUiTranslationStore["readApproved"]>>[number][]>>();
 
   const loadStore = () => (storePromise ??= connectStore(connectionString, createClient));
 
-  return {
-    async readApproved(locale, namespaces) {
-      try {
-        return await (await loadStore()).readApproved(locale, namespaces);
-      } catch (error) {
-        const reason = classifyReadFailure(error);
-        if (!reason) throw error;
-        if (!reportedDegraded) {
-          reportedDegraded = true;
-          reportDegraded(reason);
-        }
-        return [];
+  const read = async (locale: string, namespaces: readonly string[]) => {
+    if (locale === "en" || namespaces.length === 0) return [];
+    try {
+      return await (await loadStore()).readApproved(locale, namespaces);
+    } catch (error) {
+      const reason = classifyReadFailure(error);
+      if (!reason) throw error;
+      if (!reportedDegraded) {
+        reportedDegraded = true;
+        reportDegraded(reason);
       }
+      return [];
+    }
+  };
+
+  return {
+    readApproved(locale, namespaces) {
+      const normalizedNamespaces = [...new Set(namespaces)].sort();
+      const key = JSON.stringify([locale, normalizedNamespaces]);
+      let pending = reads.get(key);
+      if (!pending) {
+        pending = read(locale, normalizedNamespaces);
+        reads.set(key, pending);
+      }
+      return pending;
     },
   };
 }
