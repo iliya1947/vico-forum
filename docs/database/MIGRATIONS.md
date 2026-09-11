@@ -17,3 +17,18 @@
 
 `DATABASE_URL` is an administrative input to Drizzle Kit and local integration tests. It
 must not be committed, logged, or exposed to the browser/Worker bundle.
+
+## Manual production run
+
+Run the **Production database migration** GitHub Actions workflow manually. Its
+`production-db` environment must provide the admin Neon connection as the
+`NEON_MIGRATION_DATABASE_URL` environment secret and may require environment reviewer
+approval. The workflow serializes production migrations, validates the checked-in history,
+applies it with `drizzle-kit migrate`, and then performs a separate SELECT-only verification
+of PostgreSQL 17, UTF-8, the complete migration ledger, and the expected persistent locale
+rows.
+
+This workflow does not deploy the application and does not run destructive SQL,
+`drizzle-kit push`, or the disposable-database `db:test` suite. A successful local or CI
+validation is not evidence that a production migration ran; the dispatched environment job
+must complete with the production credential.
