@@ -8,7 +8,7 @@
 Он **не является отдельным списком требований для Codex**. Обязательные implementation
 contracts находятся в главном registry и detail documents.
 
-Последняя повторная проверка: 2026-09-10.
+Последняя повторная проверка: 2026-09-11.
 
 Правило источников:
 
@@ -23,6 +23,10 @@ contracts находятся в главном registry и detail documents.
 ```text
 React Router 8.3.1 Framework Mode + SSR
 Cloudflare Workers + Cloudflare Vite plugin
+Cloudflare Hyperdrive + Neon PostgreSQL 17
+pg 8.23.0
+drizzle-orm 0.45.2
+drizzle-kit 0.31.10
 i18next 26.4.2
 react-i18next 17.0.13
 remix-i18next 8.0.0
@@ -37,6 +41,107 @@ PostgreSQL Unicode/ICU
 ```
 
 ## Подтверждённые факты, повлиявшие на решения
+
+### Stage 2 PostgreSQL / Neon / Hyperdrive / Drizzle preflight
+
+Проверено 2026-09-11 по current official documentation и exact package artifacts.
+
+Основные источники:
+
+```text
+https://developers.cloudflare.com/hyperdrive/reference/supported-databases-and-features/
+https://developers.cloudflare.com/hyperdrive/concepts/query-caching/
+https://developers.cloudflare.com/hyperdrive/concepts/connection-pooling/
+https://developers.cloudflare.com/hyperdrive/concepts/connection-lifecycle/
+https://developers.cloudflare.com/hyperdrive/configuration/local-development/
+https://developers.cloudflare.com/hyperdrive/examples/connect-to-postgres/postgres-database-providers/neon/
+https://developers.cloudflare.com/workers/runtime-apis/nodejs/
+https://neon.com/docs/postgresql/postgres-version-policy
+https://www.postgresql.org/docs/17/transaction-iso.html
+https://www.postgresql.org/docs/17/errcodes-appendix.html
+https://www.postgresql.org/docs/17/arrays.html
+https://www.postgresql.org/docs/17/ddl-constraints.html
+https://orm.drizzle.team/docs/connect-cloudflare-hyperdrive
+https://orm.drizzle.team/docs/drizzle-kit-generate
+https://orm.drizzle.team/docs/drizzle-kit-migrate
+https://node-postgres.com/apis/client
+```
+
+Подтверждено/зафиксировано для Stage 2:
+
+- Cloudflare Hyperdrive support matrix явно указывает PostgreSQL `9.0–17.x`; Neon отдельно
+  поддерживает PostgreSQL 18, но combination Hyperdrive + PostgreSQL 18 не имеет столь же
+  явного documented support. Vico использует PostgreSQL 17 как максимальное подтверждённое
+  пересечение поддержки.
+- Cloudflare рекомендует `pg` для PostgreSQL/Hyperdrive; выбран `pg 8.23.0`, который выше
+  минимальной Hyperdrive-compatible версии. Для TypeScript используется compatible
+  `@types/pg 8.23.1`.
+- Выбраны stable pins `drizzle-orm 0.45.2` и `drizzle-kit 0.31.10`; implementation обязана
+  дополнительно проверить фактические declarations/CLI installed exact artifacts, потому
+  что public Drizzle docs не versioned по каждому patch release.
+- Hyperdrive query caching включён по умолчанию. Current docs описывают default `max_age=60`
+  и `stale_while_revalidate=15`; writes не invalidates уже cached SELECT. Поэтому registry
+  использует отдельную cache-disabled Hyperdrive configuration, сохраняя connection pooling.
+- Advisory locks перечислены Cloudflare среди unsupported PostgreSQL features Hyperdrive;
+  `pg_advisory_xact_lock` не входит в Vico write protocol.
+- Для Neon origin за Hyperdrive используется direct/unpooled endpoint: Hyperdrive сам
+  выполняет pooling. Migration/admin connection идёт напрямую и не использует Hyperdrive.
+- При compatibility date Vico `2026-09-09` explicit positive `nodejs_compat` flag не нужен:
+  current Workers Node compatibility включается по compatibility date начиная с 2026-08-04.
+- Hyperdrive client создаётся внутри Worker invocation/request path, а не module-global.
+  Edge connection lifecycle управляется Worker/Hyperdrive; обычные Node test/admin tools
+  закрывают свои clients явно.
+- Local Hyperdrive connection override идёт напрямую в локальную PostgreSQL и не
+  воспроизводит настоящий Hyperdrive pooling/query-cache service. Поэтому local
+  `vite preview`/workerd является Workers integration test, а настоящий Hyperdrive
+  acceptance выполняется через deployed Worker с real binding.
+- PostgreSQL `SERIALIZABLE` требует retry всей transaction после `40001`; `40P01` является
+  deadlock и может классифицироваться для whole-unit retry. `40003` означает unknown
+  statement completion и не должен превращаться в blind retry вокруг ambiguous commit.
+- PostgreSQL arrays могут содержать `NULL`, иметь multiple dimensions и non-default lower
+  bounds; `NOT NULL` массива защищает только сам array value. Row-local DB constraints
+  поэтому дополняют runtime parser, но не заменяют whole-graph validation.
+- PostgreSQL `CHECK` не является безопасным механизмом cross-row graph validation. Fallback
+  existence/cycles и alias ambiguity остаются TypeScript domain invariants.
+
+Архитектурные решения Stage 2 после stress-test:
+
+```text
+Neon PostgreSQL 17
+→ cache-disabled Hyperdrive
+→ pg
+→ Drizzle
+→ one-table persistent locale metadata
+```
+
+- физическая Stage 2 schema — одна `locales` table с scalar metadata,
+  `fallback_chain text[]`, `aliases text[]`, `match_tags text[]` и
+  `presentation_metadata jsonb`;
+- `en` остаётся только code-owned bootstrap; PostgreSQL хранит non-bootstrap locale;
+- initial data migration воспроизводит текущие `ru`, `he`, `ka`, включая `he -> alias iw`
+  и inactive `ka`;
+- runtime читает полный маленький registry snapshot одним query, валидирует rows/whole graph
+  и только затем публикует immutable synchronous registry;
+- `tag`/fallback хранят canonical translation identity, aliases/matchTags — validated declared
+  form, а effective match identity вычисляется тем же runtime canonicalization boundary;
+- production Worker Stage 2 read-only; DML writer существует только как controlled
+  test/admin boundary до появления настоящего protected write flow;
+- registry content identity — versioned deterministic semantic SHA-256 effective validated
+  graph, а не persisted monotonic revision; health/provenance load state хранится отдельно;
+- forward-only production schema evolution: migrations before deploy, application rollback,
+  forward repair; destructive automatic down migration не является baseline workflow.
+
+Причина выбора semantic hash вместо persisted revision: Stage 3 нужен content/cache identity
+fallback policy, registry маленький и всё равно валидируется целиком; hash автоматически
+включает code-owned bootstrap и effective match semantics и не может быть забыт при отдельной
+DB mutation. Persisted revision может быть добавлена позже как отдельная audit/event-ordering
+сущность, если появится такой use case.
+
+Причина выбора arrays вместо normalized alias/fallback relations: текущий access pattern —
+small registry, full-snapshot reads, редкие controlled writes и обязательная whole-graph
+validation. Normalization остаётся допустимой будущей migration при появлении granular SQL
+lookup, edge-level audit/lifecycle, external writers или требований DB-level cross-row
+uniqueness/FK.
 
 ### React Router 8.3.1
 
