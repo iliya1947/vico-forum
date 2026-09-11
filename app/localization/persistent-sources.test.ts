@@ -53,7 +53,7 @@ describe("persistent UI translation sources", () => {
     ]).load(locale, ["common"]);
 
     expect(snapshot.resourcesByLocale.ru?.common?.heading).toBe("Ручной перевод");
-    expect(persistentStore.readApproved).toHaveBeenCalledTimes(4);
+    expect(persistentStore.readApproved).toHaveBeenCalledTimes(2);
   });
 
   it("excludes stale manual data so a current machine value can win", async () => {
