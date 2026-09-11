@@ -9,6 +9,20 @@ assert.ok(databaseUrl, "DATABASE_URL is required");
 const journal = JSON.parse(await readFile("drizzle/meta/_journal.json", "utf8"));
 const expectedMigrationHistory = journal.entries.map(({ when }) => String(when));
 
+const requiredLocaleColumns = new Map([
+  ["tag", "text"],
+  ["translation_status", "text"],
+  ["publication_status", "text"],
+  ["direction", "text"],
+  ["fallback_chain", "_text"],
+  ["aliases", "_text"],
+  ["match_tags", "_text"],
+  ["native_name", "text"],
+  ["presentation_metadata", "jsonb"],
+  ["created_at", "timestamptz"],
+  ["updated_at", "timestamptz"],
+]);
+
 const client = new pg.Client({ connectionString: databaseUrl });
 
 try {
@@ -37,56 +51,30 @@ try {
     "Database migration history does not match the checked-in Drizzle journal",
   );
 
-  const locales = await client.query(`
-    SELECT
-      tag,
-      translation_status,
-      publication_status,
-      direction,
-      fallback_chain,
-      aliases,
-      match_tags,
-      native_name,
-      presentation_metadata
+  const localeColumns = await client.query(`
+    SELECT column_name, udt_name, is_nullable
+    FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'locales'
+  `);
+  const columnsByName = new Map(localeColumns.rows.map((row) => [row.column_name, row]));
+  for (const [columnName, udtName] of requiredLocaleColumns) {
+    const column = columnsByName.get(columnName);
+    assert.ok(column, `Expected public.locales.${columnName} to exist`);
+    assert.equal(column.udt_name, udtName, `Unexpected type for public.locales.${columnName}`);
+    assert.equal(column.is_nullable, "NO", `Expected public.locales.${columnName} to be NOT NULL`);
+  }
+
+  const reservedLocaleRows = await client.query(`
+    SELECT tag
     FROM public.locales
-    WHERE tag = ANY (ARRAY['ru', 'he', 'ka', 'en']::text[])
+    WHERE lower(tag) = ANY (ARRAY['en', 'api', 'assets']::text[])
     ORDER BY tag
   `);
-  assert.deepEqual(locales.rows, [
-    {
-      tag: "he",
-      translation_status: "draft",
-      publication_status: "active",
-      direction: "rtl",
-      fallback_chain: ["en"],
-      aliases: ["iw"],
-      match_tags: [],
-      native_name: "עברית",
-      presentation_metadata: {},
-    },
-    {
-      tag: "ka",
-      translation_status: "draft",
-      publication_status: "inactive",
-      direction: "ltr",
-      fallback_chain: ["en"],
-      aliases: [],
-      match_tags: [],
-      native_name: "ქართული",
-      presentation_metadata: {},
-    },
-    {
-      tag: "ru",
-      translation_status: "draft",
-      publication_status: "active",
-      direction: "ltr",
-      fallback_chain: ["en"],
-      aliases: [],
-      match_tags: [],
-      native_name: "Русский",
-      presentation_metadata: {},
-    },
-  ], "Expected exact ru/he/ka locale data and no persistent en row");
+  assert.deepEqual(
+    reservedLocaleRows.rows,
+    [],
+    "Persistent locale registry must not contain bootstrap/reserved locale rows",
+  );
 
   globalThis.console.log("Production database migration verification passed.");
 } finally {
