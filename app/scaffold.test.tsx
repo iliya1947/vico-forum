@@ -20,7 +20,7 @@ describe("Stage 1A scaffold", () => {
       resourcesByLocale: {
         en: { common: { productName: "Vico Forum", heading: "Translation foundation", stageSummary: "Summary" } },
       },
-      bundleVersions: { en: ["test"] },
+      bundleVersions: { en: { common: "test" } },
       staleKeys: {},
     });
     render(
