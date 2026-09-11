@@ -30,8 +30,8 @@ describe("compiled UI namespace bundles", () => {
     expect(changedLocale.bundleVersion).not.toBe(baseline.bundleVersion);
   });
 
-  it("rejects non-canonical locale and unknown resource identities", async () => {
-    await expect(compileNamespaceBundle("RU", "common", {})).rejects.toThrow("canonical translation locale");
+  it("rejects blank locale and unknown resource identities", async () => {
+    await expect(compileNamespaceBundle("   ", "common", {})).rejects.toThrow("locale must not be blank");
     await expect(compileNamespaceBundle("ru", "unknown", {})).rejects.toThrow("Unknown canonical namespace");
     await expect(compileNamespaceBundle("ru", "common", { typo: "value" })).rejects.toThrow(
       "Unknown canonical key",
