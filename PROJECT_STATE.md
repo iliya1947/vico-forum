@@ -11,6 +11,15 @@ routing, registry и UI translation validation/type contracts. Stage 2 persisten
 подключён к production Worker. Native Cloudflare Workers Builds работает от GitHub `main`,
 real deployed `workers.dev` Hyperdrive acceptance успешно пройден.
 
+Перед Stage 3 завершён отдельный pre-Stage-3 hardening: registry failure boundaries больше не
+маскируют отсутствие request loader, transport-level `pg` outages классифицируются как degraded
+availability, degraded registry получает безопасную reason-only telemetry, required GitHub checks
+включают `checks` и `database` с требованием актуальности branch, accepted migration history
+защищена как append-only, production migration workflow ограничен `main`, а production verifier
+проверяет устойчивые invariants вместо mutable locale lifecycle state. Cloudflare non-production
+builds подтверждены как включённые; текущая preview capability допускается только при существующей
+read-only/public-data границе и должна быть изолирована до появления write-capability или private data.
+
 ## Готово
 
 - создан GitHub-репозиторий и базовая проектная документация;
@@ -109,20 +118,39 @@ real deployed `workers.dev` Hyperdrive acceptance успешно пройден.
   возвращает `404` без `Location`;
 - Hyperdrive metrics во время acceptance показали production query traffic через
   `vico-forum-registry` с отключённым caching и `0` errors, что подтверждает deployed path
-  Neon → Hyperdrive → `pg` → Drizzle → persistent `LocaleRegistry`.
+  Neon → Hyperdrive → `pg` → Drizzle → persistent `LocaleRegistry`;
+- pre-Stage-3 H1 hardening удалил скрытый Stage 1 `ru`/`he`/`ka` healthy fallback при
+  отсутствии injected registry loader, классифицирует реальные Node/`pg` transport failures
+  как availability degradation без маскирования authentication/programming errors и пишет
+  одну structured reason-only degraded telemetry event на request loader;
+- GitHub `Protect main` требует оба status checks — `checks` и `database` — и требует
+  актуальность PR branch относительно `main` перед merge;
+- pre-Stage-3 H2 hardening добавил CI guard immutable accepted migration SQL/snapshots,
+  append-only Drizzle journal validation и one-to-one проверку новых SQL/journal entries;
+- production migration workflow имеет explicit `refs/heads/main` guard и checkout exact
+  dispatched `github.sha`; production verifier проверяет PostgreSQL/schema/ledger/reserved
+  locale invariants без фиксации mutable translation/publication lifecycle values;
+- Cloudflare Branch control проверен вручную: `Builds for non-production branches` включён;
+  текущий preview path допускается только при read-only Worker capability и публичных locale
+  registry data, а до write-capability или private production data требуется staging isolation
+  либо отключение non-production builds.
 
 ## Сейчас
 
-Stage 1 и Stage 2 закрыты. Persistent `LocaleRegistry` работает в production через Neon и
-cache-disabled Hyperdrive, production deploy выполняется через GitHub `main` → Cloudflare
-Workers Builds, а real deployed acceptance пройден. Stage 3 ещё не начат.
+Stage 1, Stage 2 и pre-Stage-3 hardening закрыты. Persistent `LocaleRegistry` работает в
+production через Neon и cache-disabled Hyperdrive, release/migration safety guards включены,
+а Stage 3 ещё не начат.
 
 ## Блокеры
 
 - Блокеров для перехода к Stage 3 нет.
+- Preview/non-production isolation является future gate: до появления runtime write-capability
+  или непубличных production data нужно создать отдельный staging Worker/Hyperdrive/DB либо
+  отключить non-production builds.
 
 ## Следующий шаг
 
-Начать Stage 3 из `ROADMAP.md`: спроектировать PostgreSQL schema persistent UI translation
-resources и подготовить reviewed migration перед реализацией `UiTranslationStore` и
+Начать Stage 3 из `ROADMAP.md`. Первое schema-dependent изменение выполнять по закреплённому
+release contract: отдельный migration-only PR с PostgreSQL schema persistent UI translation
+resources → production migration/verification → отдельный runtime PR с `UiTranslationStore` и
 persistent manual/machine translation sources.
