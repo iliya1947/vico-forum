@@ -20,10 +20,12 @@ availability, degraded registry получает безопасную reason-onl
 builds подтверждены как включённые; текущая preview capability допускается только при существующей
 read-only/public-data границе и должна быть изолирована до появления write-capability или private data.
 
-Stage 3 начат migration-only PR 3A: добавляется persistent UI translation schema без runtime
-зависимости Worker от новых таблиц. Production migration для Stage 3A ещё не применена; после merge
-3A требуется отдельный production migration/verification и обновление read-only runtime grants до
-начала runtime PR.
+Stage 3A завершён: migration-only PR merged, persistent UI translation schema применена в production
+через `Production database migration #2`, production verification завершился успешно, а существующему
+`vico_forum_runtime` выдан только `SELECT` на `public.ui_translations` и
+`public.ui_translation_bundles`. Эффективные права вручную проверены: `SELECT=true`, а
+`INSERT`/`UPDATE`/`DELETE`/`TRUNCATE`/`REFERENCES`/`TRIGGER=false` на обеих таблицах. Stage 3B
+идёт отдельным read-only runtime PR без schema/dependency/write-capability изменений.
 
 ## Готово
 
@@ -138,28 +140,30 @@ Stage 3 начат migration-only PR 3A: добавляется persistent UI tr
 - Cloudflare Branch control проверен вручную: `Builds for non-production branches` включён;
   текущий preview path допускается только при read-only Worker capability и публичных locale
   registry data, а до write-capability или private production data требуется staging isolation
-  либо отключение non-production builds.
+  либо отключение non-production builds;
+- Stage 3A migration-only PR добавил `ui_translations` и `ui_translation_bundles` без runtime
+  dependency, после merge migration применена и verified в production, а `vico_forum_runtime`
+  получил только read-only `SELECT` на новые таблицы с вручную подтверждённым отсутствием DML и
+  других table-level mutation privileges.
 
 ## Сейчас
 
-Stage 3A в работе как отдельный migration-only change. Candidate schema добавляет
-`ui_translations` для persistent manual/machine translation candidates и
-`ui_translation_bundles` для versioned locale/namespace bundles; canonical English остаётся
-code-owned и запрещён в persistent UI storage. Worker runtime пока не читает новые таблицы.
+Stage 3B выполняется отдельным read-only runtime PR. Candidate implementation добавляет
+`UiTranslationStore`, persistent manual/machine translation sources, существующий priority
+`local manual → persistent manual → machine`, `sourceFingerprint` freshness, request-scoped
+memoized Hyperdrive reads и safe fallback на local/canonical English при classified DB availability
+или schema failures. Worker write-capability, provider calls и translation generation не добавляются.
 
 ## Блокеры
 
-- Блокеров для PR 3A нет.
-- После merge 3A runtime PR заблокирован до успешной production migration/verification и
-  выдачи существующему runtime role read-only `SELECT` на новые таблицы.
+- Блокеров для PR 3B по production schema/grants нет: migration и production verification Stage 3A
+  завершены, необходимые read-only grants применены и проверены.
 - Preview/non-production isolation является future gate: до появления runtime write-capability
   или непубличных production data нужно создать отдельный staging Worker/Hyperdrive/DB либо
   отключить non-production builds.
 
 ## Следующий шаг
 
-Завершить PR 3A и пройти required CI. После merge выполнить production migration/verification,
-выдать только `SELECT` на `public.ui_translations` и `public.ui_translation_bundles` существующему
-read-only runtime role и подтвердить отсутствие DML/admin privileges. После этого открыть
-отдельный Stage 3 runtime PR для `UiTranslationStore`, persistent manual/machine sources и
-compiled bundle integration.
+Завершить PR 3B, пройти required `checks` + `database` и выполнить review. После merge подтвердить
+read-only persistent translation path на deployed Worker, затем продолжить оставшиеся работы Stage 3
+по compiled bundle/version/cache boundary без преждевременного включения runtime writes.

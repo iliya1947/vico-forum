@@ -1,6 +1,7 @@
 import { RouterContextProvider, createRequestHandler } from "react-router";
-import { registryLoaderContext } from "../app/localization/request-context";
+import { registryLoaderContext, uiTranslationStoreContext } from "../app/localization/request-context";
 import { createHyperdriveRegistryLoader } from "../db/hyperdrive-registry";
+import { createHyperdriveUiTranslationStore } from "../db/hyperdrive-ui-translations";
 
 const requestHandler = createRequestHandler(
   () => import("virtual:react-router/server-build"),
@@ -10,7 +11,9 @@ const requestHandler = createRequestHandler(
 export default {
   async fetch(request, env) {
     const context = new RouterContextProvider();
-    context.set(registryLoaderContext, createHyperdriveRegistryLoader(env.HYPERDRIVE.connectionString));
+    const connectionString = env.HYPERDRIVE.connectionString;
+    context.set(registryLoaderContext, createHyperdriveRegistryLoader(connectionString));
+    context.set(uiTranslationStoreContext, createHyperdriveUiTranslationStore(connectionString));
     return requestHandler(request, context);
   },
 } satisfies ExportedHandler<Env>;

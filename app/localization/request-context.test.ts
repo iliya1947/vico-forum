@@ -3,11 +3,14 @@ import { describe, expect, it } from "vitest";
 import { assemblePersistentRegistry } from "./persistent-registry";
 import {
   RegistryLoaderConfigurationError,
+  UiTranslationStoreConfigurationError,
   registryForRequest,
   registryLoaderContext,
+  uiTranslationStoreContext,
+  uiTranslationStoreForRequest,
 } from "./request-context";
 
-describe("registry request context", () => {
+describe("request localization context", () => {
   it("fails explicitly when the registry loader was not injected", async () => {
     const context = new RouterContextProvider();
 
@@ -29,5 +32,19 @@ describe("registry request context", () => {
     context.set(registryLoaderContext, async () => expected);
 
     await expect(registryForRequest(context)).resolves.toBe(expected);
+  });
+
+  it("fails explicitly when the UI translation store was not injected", () => {
+    const context = new RouterContextProvider();
+
+    expect(() => uiTranslationStoreForRequest(context)).toThrow(UiTranslationStoreConfigurationError);
+  });
+
+  it("returns the explicitly injected UI translation store", () => {
+    const context = new RouterContextProvider();
+    const store = { readApproved: async () => [] };
+    context.set(uiTranslationStoreContext, store);
+
+    expect(uiTranslationStoreForRequest(context)).toBe(store);
   });
 });
