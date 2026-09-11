@@ -18,15 +18,46 @@
 `DATABASE_URL` is an administrative input to Drizzle Kit and local integration tests. It
 must not be committed, logged, or exposed to the browser/Worker bundle.
 
+## Immutable accepted history
+
+Once a migration is accepted on `main`, its SQL file and corresponding Drizzle snapshot are
+immutable. Fixes are added as a new forward migration; do not edit, delete, or rename an
+already accepted migration to change production state.
+
+Pull-request CI compares the candidate branch with its merge base and rejects:
+
+- modification, deletion, or rename of accepted `drizzle/*.sql` files;
+- modification, deletion, or rename of accepted `drizzle/meta/*_snapshot.json` files;
+- rewriting or deleting existing entries in `drizzle/meta/_journal.json`;
+- non-monotonic or duplicate appended journal entries;
+- a new migration SQL file without exactly one matching appended journal entry, or vice versa.
+
+`drizzle-kit check` and the clean-database integration suite remain required as separate
+checks: the history guard protects accepted files, while Drizzle metadata validation and
+`db:test` prove the resulting current history.
+
 ## Manual production run
 
-Run the **Production database migration** GitHub Actions workflow manually. Its
-`production-db` environment must provide the admin Neon connection as the
+Run the **Production database migration** GitHub Actions workflow manually from `main`. The
+workflow job has an explicit `refs/heads/main` guard and checks out the dispatched
+`github.sha`; dispatching the workflow against another branch or tag must not reach the
+migration steps.
+
+Its `production-db` environment must provide the admin Neon connection as the
 `NEON_MIGRATION_DATABASE_URL` environment secret and may require environment reviewer
 approval. The workflow serializes production migrations, validates the checked-in history,
 applies it with `drizzle-kit migrate`, and then performs a separate SELECT-only verification
-of PostgreSQL 17, UTF-8, the complete migration ledger, and the expected persistent locale
-rows.
+of stable production invariants:
+
+- PostgreSQL 17 and UTF-8;
+- the complete migration ledger matching the checked-in Drizzle journal;
+- required `public.locales` columns and their stable PostgreSQL types/NOT NULL contract;
+- absence of persistent bootstrap/reserved locale rows such as `en`, `api`, and `assets`.
+
+The production verifier intentionally does not require exact mutable locale lifecycle values
+such as publication/translation status, aliases, native names, or presentation metadata.
+Those values can change legitimately without invalidating an unrelated future migration.
+Exact initial seed data remains covered by the clean disposable PostgreSQL integration test.
 
 This workflow does not deploy the application and does not run destructive SQL,
 `drizzle-kit push`, or the disposable-database `db:test` suite. A successful local or CI
