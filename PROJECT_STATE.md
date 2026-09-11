@@ -9,8 +9,9 @@ registry и UI translation validation/type contracts. Первый реальн�
 `vico-forum` развёрнут на `workers.dev`. Stage 2 persistence preflight завершён и его
 technical contract зафиксирован в roadmap/detail documentation. PR 2A реализует DB
 foundation, а PR 2B — persistent registry domain/repository и request-scoped boundary;
-production Neon/Hyperdrive runtime factory подготовлен в PR 2C, но account-level Neon и
-Hyperdrive resources ещё не созданы и deployed smoke не выполнен.
+production Neon migrations применены, read-only runtime role и cache-disabled Hyperdrive с
+direct Neon origin созданы. PR 2C подключает binding и готовит local Workers integration;
+real deployed Hyperdrive smoke ещё не выполнен.
 
 ## Готово
 
@@ -87,24 +88,32 @@ Hyperdrive resources ещё не созданы и deployed smoke не выпо�
 - добавлены factory tests для lazy/memoized DB access и degraded connection behavior, а
   operational runbook разделяет direct migration/admin credential и read-only Worker role,
   фиксирует cache-disabled Hyperdrive provisioning, local connection override, deployed
-  smoke и forward-only recovery.
+  smoke и forward-only recovery;
+- production migrations успешно применены и проверены существующим manual GitHub Actions
+  workflow; создан `vico_forum_runtime` без admin/superuser прав, с `SELECT` и без
+  `INSERT`/`UPDATE`/`DELETE` на `public.locales`;
+- создан `vico-forum-registry` Hyperdrive с direct Neon origin и отключённым caching; реальный
+  configuration ID объявлен как Worker binding;
+- persistent registry classification проходит безопасную cause-chain, включая PostgreSQL
+  errors внутри Drizzle `0.45.2` `DrizzleQueryError`; CI local Workers smoke использует только
+  disposable PostgreSQL 17 через Wrangler local connection override;
+- local Workers smoke фактически выполнен с PostgreSQL `17.11` и Wrangler Hyperdrive local
+  connection override: `/he/` и `/ru/` вернули `200`, alias `/iw/` — `308`, inactive `/ka/`
+  и unknown locale — `307`, `/he/topic` и `/api/test` — `404`.
 
 ## Сейчас
 
-Stage 1 закрыт. Stage 2 persistence preflight и PR 2A/2B завершены. Кодовая часть PR 2C
-переводит production Worker с config registry на request-scoped `HYPERDRIVE` factory.
-Account-specific binding ID намеренно не фиксируется без созданного Cloudflare resource;
-production Neon provisioning, read-only grants, migration и real deployed smoke остаются
-обязательными operational acceptance actions.
+Stage 1 закрыт. Stage 2 persistence preflight и PR 2A/2B завершены. PR 2C переводит
+production Worker с config registry на request-scoped `HYPERDRIVE` factory; production
+migrations, least-privilege runtime role, cache-disabled Hyperdrive и binding подготовлены.
+До завершения Stage 2 остаётся выполнить real deployed `workers.dev` Hyperdrive smoke.
 
 ## Блокеры
 
-- В окружении реализации отсутствуют Neon/Cloudflare account credentials и созданный
-  Hyperdrive configuration ID; поэтому реальные resources, binding configuration и deployed
-  Hyperdrive smoke нельзя честно подтвердить в этом PR.
+- Текущее окружение не аутентифицировано в Cloudflare (`wrangler whoami`); real deployed
+  Hyperdrive smoke остаётся невыполненным acceptance-критерием.
 
 ## Следующий шаг
 
-Создать Neon PostgreSQL 17 и read-only role, применить migrations, создать cache-disabled
-Hyperdrive по `docs/database/HYPERDRIVE.md`, добавить полученный binding ID в deployment
-configuration и выполнить local Workers + real deployed Hyperdrive acceptance smoke.
+Выполнить real deployed Hyperdrive smoke для locale routing и `/api/test`; только после его
+успеха закрыть PR 2C и Stage 2.

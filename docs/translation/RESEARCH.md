@@ -79,6 +79,9 @@ https://node-postgres.com/apis/client
 - Выбраны stable pins `drizzle-orm 0.45.2` и `drizzle-kit 0.31.10`; implementation обязана
   дополнительно проверить фактические declarations/CLI installed exact artifacts, потому
   что public Drizzle docs не versioned по каждому patch release.
+- Exact `drizzle-orm 0.45.2` artifact оборачивает ошибки driver query в
+  `DrizzleQueryError` и сохраняет исходную ошибку в `cause`; operational PostgreSQL error
+  classification поэтому безопасно проходит cause-chain и защищена от циклов.
 - Hyperdrive query caching включён по умолчанию. Current docs описывают default `max_age=60`
   и `stale_while_revalidate=15`; writes не invalidates уже cached SELECT. Поэтому registry
   использует отдельную cache-disabled Hyperdrive configuration, сохраняя connection pooling.
