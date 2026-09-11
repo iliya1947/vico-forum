@@ -79,7 +79,13 @@ describe("Hyperdrive UI translation request store", () => {
       }) as unknown as Client,
       vi.fn(),
     );
-    await expect(authStore.readApproved("ru", ["common"])).rejects.toBe(authFailure);
+
+    try {
+      await authStore.readApproved("ru", ["common"]);
+      throw new Error("Expected the permission failure to remain visible");
+    } catch (error) {
+      expect((error as { cause?: unknown }).cause).toBe(authFailure);
+    }
   });
 
   it("does not mask a programming failure while connecting", async () => {
