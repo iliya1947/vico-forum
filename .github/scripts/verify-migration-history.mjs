@@ -9,7 +9,7 @@ import {
   parseNameStatus,
 } from "./migration-history.mjs";
 
-const baseRef = process.env.GITHUB_BASE_REF;
+const baseRef = globalThis.process.env.GITHUB_BASE_REF;
 assert.ok(baseRef, "GITHUB_BASE_REF is required; this guard is intended for pull_request CI");
 
 const remoteBase = `origin/${baseRef}`;
@@ -32,6 +32,6 @@ const currentJournal = JSON.parse(await readFile("drizzle/meta/_journal.json", "
 const appendedEntries = assertJournalAppendOnly(baseJournal, currentJournal);
 assertNewSqlMatchesJournal(changes, appendedEntries);
 
-console.log(
+globalThis.console.log(
   `Migration history guard passed: ${appendedEntries.length} new migration(s), accepted history unchanged.`,
 );
