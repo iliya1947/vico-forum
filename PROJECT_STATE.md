@@ -7,11 +7,11 @@
 Этап 0 и Stage 1 завершены. После Stage 1 acceptance выполнен hardening locale routing,
 registry и UI translation validation/type contracts. Первый реальный Cloudflare Worker
 `vico-forum` развёрнут на `workers.dev`. Stage 2 persistence preflight завершён и его
-technical contract зафиксирован в roadmap/detail documentation. PR 2A реализует DB
-foundation, а PR 2B — persistent registry domain/repository и request-scoped boundary;
+technical contract зафиксирован в roadmap/detail documentation. PR 2A/2B/2C merged;
 production Neon migrations применены, read-only runtime role и cache-disabled Hyperdrive с
-direct Neon origin созданы. PR 2C подключает binding и готовит local Workers integration;
-real deployed Hyperdrive smoke ещё не выполнен.
+direct Neon origin созданы, реальный Hyperdrive binding объявлен в Worker config. Native
+Cloudflare Workers Builds подключён к GitHub `main`; real deployed Hyperdrive smoke ещё не
+выполнен.
 
 ## Готово
 
@@ -99,21 +99,26 @@ real deployed Hyperdrive smoke ещё не выполнен.
   disposable PostgreSQL 17 через Wrangler local connection override;
 - local Workers smoke фактически выполнен с PostgreSQL `17.11` и Wrangler Hyperdrive local
   connection override: `/he/` и `/ru/` вернули `200`, alias `/iw/` — `308`, inactive `/ka/`
-  и unknown locale — `307`, `/he/topic` и `/api/test` — `404`.
+  и unknown locale — `307`, `/he/topic` и `/api/test` — `404`;
+- native Cloudflare Workers Builds подключён к GitHub repository `iliya1947/vico-forum` с
+  production branch `main`; production build использует `pnpm run build`, deploy —
+  `npx wrangler deploy`, а `PNPM_VERSION` зафиксирован как `12.3.4`.
 
 ## Сейчас
 
-Stage 1 закрыт. Stage 2 persistence preflight и PR 2A/2B завершены. PR 2C переводит
-production Worker с config registry на request-scoped `HYPERDRIVE` factory; production
-migrations, least-privilege runtime role, cache-disabled Hyperdrive и binding подготовлены.
-До завершения Stage 2 остаётся выполнить real deployed `workers.dev` Hyperdrive smoke.
+Stage 1 закрыт. Stage 2 persistence preflight и PR 2A/2B/2C завершены. Production
+migrations, least-privilege runtime role, cache-disabled Hyperdrive, binding и native GitHub
+→ Cloudflare Workers Builds integration подготовлены. Первый production build/deploy через
+новую Git integration ещё не выполнен; real deployed `workers.dev` Hyperdrive smoke остаётся
+финальным acceptance-критерием Stage 2.
 
 ## Блокеры
 
-- Текущее окружение не аутентифицировано в Cloudflare (`wrangler whoami`); real deployed
-  Hyperdrive smoke остаётся невыполненным acceptance-критерием.
+- Первый production build/deploy через подключённый Cloudflare Workers Builds ещё не
+  выполнен, поэтому real deployed Hyperdrive smoke пока нельзя считать пройденным.
 
 ## Следующий шаг
 
-Выполнить real deployed Hyperdrive smoke для locale routing и `/api/test`; только после его
-успеха закрыть PR 2C и Stage 2.
+Смержить этот docs-only PR в `main`, чтобы новый push запустил первый Cloudflare Workers
+Build/deploy; после успешного deploy выполнить real deployed Hyperdrive smoke для locale
+routing и `/api/test`, затем закрыть Stage 2.
