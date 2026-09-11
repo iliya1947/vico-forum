@@ -1,6 +1,6 @@
 # Database migrations
 
-## Stage 2 baseline
+## Baseline
 
 - PostgreSQL schema changes are committed as reviewed SQL in `drizzle/` and applied with
   `pnpm db:migrate`. Production schema changes must not use `drizzle-kit push`.
@@ -51,8 +51,10 @@ of stable production invariants:
 
 - PostgreSQL 17 and UTF-8;
 - the complete migration ledger matching the checked-in Drizzle journal;
-- required `public.locales` columns and their stable PostgreSQL types/NOT NULL contract;
-- absence of persistent bootstrap/reserved locale rows such as `en`, `api`, and `assets`.
+- required columns/types/nullability for `public.locales`, `public.ui_translations`, and
+  `public.ui_translation_bundles`;
+- absence of persistent bootstrap/reserved locale rows such as `en`, `api`, and `assets`;
+- absence of persistent canonical-English rows in UI translation storage/bundles.
 
 The production verifier intentionally does not require exact mutable locale lifecycle values
 such as publication/translation status, aliases, native names, or presentation metadata.
@@ -63,3 +65,22 @@ This workflow does not deploy the application and does not run destructive SQL,
 `drizzle-kit push`, or the disposable-database `db:test` suite. A successful local or CI
 validation is not evidence that a production migration ran; the dispatched environment job
 must complete with the production credential.
+
+## Stage 3A rollout
+
+Stage 3A introduces `public.ui_translations` and `public.ui_translation_bundles` as a
+migration-only change. The current Worker must not depend on either table in the same PR.
+After the migration PR is merged:
+
+1. run the **Production database migration** workflow from `main` and require its production
+   verification to pass;
+2. grant the existing read-only runtime role only the privileges needed by the later Stage 3
+   runtime, currently `SELECT` on the two new tables;
+3. verify the runtime role still has no `INSERT`, `UPDATE`, `DELETE`, ownership, or migration
+   privileges;
+4. only then open/merge the separate runtime PR that adds `UiTranslationStore` and persistent
+   manual/machine sources.
+
+The production role name is environment-specific infrastructure and is intentionally not
+hard-coded into the portable migration SQL because disposable CI databases do not contain
+that production role.

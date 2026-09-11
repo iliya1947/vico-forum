@@ -9,18 +9,57 @@ assert.ok(databaseUrl, "DATABASE_URL is required");
 const journal = JSON.parse(await readFile("drizzle/meta/_journal.json", "utf8"));
 const expectedMigrationHistory = journal.entries.map(({ when }) => String(when));
 
-const requiredLocaleColumns = new Map([
-  ["tag", "text"],
-  ["translation_status", "text"],
-  ["publication_status", "text"],
-  ["direction", "text"],
-  ["fallback_chain", "_text"],
-  ["aliases", "_text"],
-  ["match_tags", "_text"],
-  ["native_name", "text"],
-  ["presentation_metadata", "jsonb"],
-  ["created_at", "timestamptz"],
-  ["updated_at", "timestamptz"],
+const requiredTables = new Map([
+  [
+    "locales",
+    new Map([
+      ["tag", "text"],
+      ["translation_status", "text"],
+      ["publication_status", "text"],
+      ["direction", "text"],
+      ["fallback_chain", "_text"],
+      ["aliases", "_text"],
+      ["match_tags", "_text"],
+      ["native_name", "text"],
+      ["presentation_metadata", "jsonb"],
+      ["created_at", "timestamptz"],
+      ["updated_at", "timestamptz"],
+    ]),
+  ],
+  [
+    "ui_translations",
+    new Map([
+      ["locale", "text"],
+      ["namespace", "text"],
+      ["key", "text"],
+      ["origin", "text"],
+      ["status", "text"],
+      ["source_fingerprint", "text"],
+      ["translated_payload", "jsonb"],
+      ["generation_policy_version", "text"],
+      ["provider", "text"],
+      ["provider_model", "text"],
+      ["provenance_metadata", "jsonb"],
+      ["created_at", "timestamptz"],
+      ["updated_at", "timestamptz"],
+    ]),
+  ],
+  [
+    "ui_translation_bundles",
+    new Map([
+      ["locale", "text"],
+      ["namespace", "text"],
+      ["bundle_version", "text"],
+      ["resources", "jsonb"],
+      ["compiled_at", "timestamptz"],
+    ]),
+  ],
+]);
+
+const nullableColumns = new Set([
+  "ui_translations.generation_policy_version",
+  "ui_translations.provider",
+  "ui_translations.provider_model",
 ]);
 
 const client = new pg.Client({ connectionString: databaseUrl });
@@ -51,17 +90,25 @@ try {
     "Database migration history does not match the checked-in Drizzle journal",
   );
 
-  const localeColumns = await client.query(`
-    SELECT column_name, udt_name, is_nullable
-    FROM information_schema.columns
-    WHERE table_schema = 'public' AND table_name = 'locales'
-  `);
-  const columnsByName = new Map(localeColumns.rows.map((row) => [row.column_name, row]));
-  for (const [columnName, udtName] of requiredLocaleColumns) {
-    const column = columnsByName.get(columnName);
-    assert.ok(column, `Expected public.locales.${columnName} to exist`);
-    assert.equal(column.udt_name, udtName, `Unexpected type for public.locales.${columnName}`);
-    assert.equal(column.is_nullable, "NO", `Expected public.locales.${columnName} to be NOT NULL`);
+  for (const [tableName, requiredColumns] of requiredTables) {
+    const tableColumns = await client.query(
+      `SELECT column_name, udt_name, is_nullable
+       FROM information_schema.columns
+       WHERE table_schema = 'public' AND table_name = $1`,
+      [tableName],
+    );
+    const columnsByName = new Map(tableColumns.rows.map((row) => [row.column_name, row]));
+    for (const [columnName, udtName] of requiredColumns) {
+      const column = columnsByName.get(columnName);
+      assert.ok(column, `Expected public.${tableName}.${columnName} to exist`);
+      assert.equal(column.udt_name, udtName, `Unexpected type for public.${tableName}.${columnName}`);
+      const expectedNullable = nullableColumns.has(`${tableName}.${columnName}`) ? "YES" : "NO";
+      assert.equal(
+        column.is_nullable,
+        expectedNullable,
+        `Unexpected nullability for public.${tableName}.${columnName}`,
+      );
+    }
   }
 
   const reservedLocaleRows = await client.query(`
@@ -74,6 +121,17 @@ try {
     reservedLocaleRows.rows,
     [],
     "Persistent locale registry must not contain bootstrap/reserved locale rows",
+  );
+
+  const persistentEnglishRows = await client.query(`
+    SELECT 'translation' AS source, locale FROM public.ui_translations WHERE lower(locale) = 'en'
+    UNION ALL
+    SELECT 'bundle' AS source, locale FROM public.ui_translation_bundles WHERE lower(locale) = 'en'
+  `);
+  assert.deepEqual(
+    persistentEnglishRows.rows,
+    [],
+    "Canonical English UI resources must remain code-owned rather than persistent rows",
   );
 
   globalThis.console.log("Production database migration verification passed.");

@@ -15,6 +15,13 @@
       "when": 1789089613664,
       "tag": "0001_seed-locales",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789134327035,
+      "tag": "0002_ui_translation_storage",
+      "breakpoints": true
     }
   ]
 }

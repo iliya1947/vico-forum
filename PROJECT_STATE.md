@@ -20,6 +20,11 @@ availability, degraded registry получает безопасную reason-onl
 builds подтверждены как включённые; текущая preview capability допускается только при существующей
 read-only/public-data границе и должна быть изолирована до появления write-capability или private data.
 
+Stage 3 начат migration-only PR 3A: добавляется persistent UI translation schema без runtime
+зависимости Worker от новых таблиц. Production migration для Stage 3A ещё не применена; после merge
+3A требуется отдельный production migration/verification и обновление read-only runtime grants до
+начала runtime PR.
+
 ## Готово
 
 - создан GitHub-репозиторий и базовая проектная документация;
@@ -137,20 +142,24 @@ read-only/public-data границе и должна быть изолирова
 
 ## Сейчас
 
-Stage 1, Stage 2 и pre-Stage-3 hardening закрыты. Persistent `LocaleRegistry` работает в
-production через Neon и cache-disabled Hyperdrive, release/migration safety guards включены,
-а Stage 3 ещё не начат.
+Stage 3A в работе как отдельный migration-only change. Candidate schema добавляет
+`ui_translations` для persistent manual/machine translation candidates и
+`ui_translation_bundles` для versioned locale/namespace bundles; canonical English остаётся
+code-owned и запрещён в persistent UI storage. Worker runtime пока не читает новые таблицы.
 
 ## Блокеры
 
-- Блокеров для перехода к Stage 3 нет.
+- Блокеров для PR 3A нет.
+- После merge 3A runtime PR заблокирован до успешной production migration/verification и
+  выдачи существующему runtime role read-only `SELECT` на новые таблицы.
 - Preview/non-production isolation является future gate: до появления runtime write-capability
   или непубличных production data нужно создать отдельный staging Worker/Hyperdrive/DB либо
   отключить non-production builds.
 
 ## Следующий шаг
 
-Начать Stage 3 из `ROADMAP.md`. Первое schema-dependent изменение выполнять по закреплённому
-release contract: отдельный migration-only PR с PostgreSQL schema persistent UI translation
-resources → production migration/verification → отдельный runtime PR с `UiTranslationStore` и
-persistent manual/machine translation sources.
+Завершить PR 3A и пройти required CI. После merge выполнить production migration/verification,
+выдать только `SELECT` на `public.ui_translations` и `public.ui_translation_bundles` существующему
+read-only runtime role и подтвердить отсутствие DML/admin privileges. После этого открыть
+отдельный Stage 3 runtime PR для `UiTranslationStore`, persistent manual/machine sources и
+compiled bundle integration.
