@@ -150,6 +150,75 @@ Explicit locale fallback chain не flatten-ится в individual bundle. Ес�
 изменённый fallback chain может продолжить обслуживаться из старого composite cache даже
 при неизменившихся translation bundles.
 
+### LocaleRegistry semantic identity
+
+Начиная со Stage 2 validated effective `LocaleRegistry` получает deterministic semantic
+identity. Это content identity текущего effective registry, а не persisted mutation counter.
+Stage 2 не создаёт отдельную registry revision table.
+
+Формат identity versioned, baseline:
+
+```text
+sha256:<64 lowercase hex chars>
+```
+
+Preimage использует canonical UTF-8 representation с explicit format/version marker и
+включает минимум:
+
+```text
+identity format version
+централизованные reserved top-level segments
+code-owned bootstrap English
+все persistent locale в deterministic canonical-tag order
+для каждого locale:
+  tag
+  translationStatus
+  publicationStatus
+  direction
+  fallbackChain
+  aliases + derived effective match identities
+  matchTags + derived effective match identities
+  nativeName
+  presentationMetadata
+```
+
+Hash строится только после runtime row parsing и whole-graph validation. Он не вычисляется
+через `activeLocales()`, потому что identity должна включать inactive/disabled registered
+locale и полный fallback/matching graph.
+
+Canonical serialization обязана быть стабильной:
+
+- locale и reserved segments сортируются application-defined deterministic comparator;
+- `fallbackChain` сохраняет порядок, потому что он semantic;
+- порядок `aliases`/`matchTags` не является semantic, поэтому declared/effective pairs
+  нормализуются deterministic sort перед hashing; multiplicity и категория поля при этом
+  сохраняются;
+- keys `presentationMetadata` сортируются deterministic;
+- derived effective match identity вычисляется тем же locale parser/canonicalization
+  boundary, который использует runtime registry;
+- raw DB row order и locale-specific collation не участвуют в identity.
+
+Не входят в semantic identity:
+
+```text
+created_at / updated_at
+DB/provider/connection details
+load duration
+operational health/error state
+```
+
+Это позволяет одинаковому effective registry иметь одинаковую identity после no-op/revert и
+одновременно гарантирует, что изменение bootstrap, fallback/match semantics или runtime
+canonicalization, влияющее на effective graph, меняет identity.
+
+Registry load health хранится отдельно от semantic identity. Healthy bootstrap-only registry
+и degraded bootstrap-only fallback могут иметь одинаковый hash, но только первый считается
+healthy source state. Degraded result не должен публиковаться в shared/persistent composite
+cache даже при валидном semantic hash.
+
+Persisted monotonic revision может быть добавлена позже как отдельная audit/event-ordering
+сущность, если появится соответствующий use case; она не заменяет semantic content identity.
+
 Обычный `TranslationResourceLoader` lookup не должен требовать от caller заранее знать
 current bundle version. Loader возвращает bundle version/hash как metadata результата;
 cache layer может использовать её для validation/ETag/cache-key strategy.

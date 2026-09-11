@@ -1,12 +1,14 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-09-10
+Последнее обновление: 2026-09-11
 
 ## Состояние
 
 Этап 0 и Stage 1 завершены. После Stage 1 acceptance выполнен hardening locale routing,
 registry и UI translation validation/type contracts. Первый реальный Cloudflare Worker
-`vico-forum` развёрнут на `workers.dev`. Проект готов к подготовке Stage 2.
+`vico-forum` развёрнут на `workers.dev`. Stage 2 persistence preflight завершён и его
+technical contract зафиксирован в roadmap/detail documentation; реализация Stage 2 ещё не
+начата.
 
 ## Готово
 
@@ -44,11 +46,19 @@ registry и UI translation validation/type contracts. Первый реальн�
   отдельным locale-boundary catch-all с HTTP `404`;
 - hardening CI дополнен Workers-runtime smoke через Cloudflare Vite preview: canonical `/he/`
   возвращает `200` с `lang="he"`/`dir="rtl"`, `/he/topic` возвращает настоящий `404`, а
-  `/api/test` остаётся отдельным technical `404`.
+  `/api/test` остаётся отдельным technical `404`;
+- Stage 2 persistence preflight завершён: выбран PostgreSQL 17 + Neon + cache-disabled
+  Hyperdrive + `pg` + Drizzle path; `en` остаётся code-owned bootstrap, persistent registry
+  хранит только non-bootstrap locale; зафиксированы one-table registry model, request-scoped
+  loading, semantic registry hash, degraded behavior, read-only Stage 2 Worker,
+  forward-only migration policy и серия PR `2A → 2B → 2C`; detail contract и rationale
+  находятся в `docs/translation/LOCALES.md`, `STORAGE_AND_VERSIONING.md` и `RESEARCH.md`.
 
 ## Сейчас
 
-Stage 1 закрыт. Cloudflare Workers account/deploy path подтверждён реальным deployment checkpoint. Следующая работа начинается с Stage 2 preflight: выбор совместимого с Cloudflare Workers способа подключения PostgreSQL и exact-version Drizzle setup до внесения изменений в зависимости, окружение и миграции.
+Stage 1 закрыт. Stage 2 persistence preflight закрыт; открытых architecture decision gates
+для старта Stage 2 не осталось. Код, зависимости, migrations, Neon/Hyperdrive binding и CI
+Stage 2 ещё не изменялись.
 
 ## Блокеры
 
@@ -56,4 +66,7 @@ Stage 1 закрыт. Cloudflare Workers account/deploy path подтвержд�
 
 ## Следующий шаг
 
-Подготовить Stage 2 по `ROADMAP.md`: проверить официальную документацию выбранных PostgreSQL/Cloudflare Workers/Drizzle версий, зафиксировать совместимый connection path и только после этого реализовать PostgreSQL, Drizzle migrations и persistent adapter `LocaleRegistry` отдельным компактным PR или серией компактных PR.
+Начать PR 2A по `ROADMAP.md`: добавить exact PostgreSQL/Drizzle dependencies/configuration,
+создать и проверить PostgreSQL 17 `locales` schema/constraints, initial `ru`/`he`/`ka` data
+migration и disposable PostgreSQL 17 integration path в CI. PR 2A не должен подключать
+production Neon/Hyperdrive runtime раньше PR 2C.

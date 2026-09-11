@@ -79,25 +79,59 @@ Stage 1 реализуется не одним крупным PR, а после�
 
 **Translation components:** `LOC-02` (persistent adapter), `LOC-09` (persistent lifecycle), `STO-07`.
 
-### Работы
+Обязательные detail contracts Stage 2 находятся в `docs/translation/LOCALES.md` и
+`docs/translation/STORAGE_AND_VERSIONING.md`; exact-version evidence и внешние ограничения —
+в `docs/translation/RESEARCH.md`.
 
-1. Выбрать совместимый с Cloudflare Workers способ подключения PostgreSQL по официальной документации выбранных версий.
-2. Настроить Drizzle ORM, окружение и миграции.
-3. Создать persistent adapter `LocaleRegistry`, сохранив bootstrap `en` как безопасный fallback.
-4. Персистировать locale metadata, translation/publication status, direction, fallback/alias policy с проверкой циклов/неоднозначности.
-5. Добавить интеграционную тестовую БД.
+Stage 2 выполняется серией `2A → 2B → 2C`. Переход к Stage 3 разрешён только после
+завершения всей серии и реального Hyperdrive acceptance.
+
+### PR 2A — DB foundation
+
+1. Добавить exact PostgreSQL/Drizzle dependencies и Drizzle configuration.
+2. Создать PostgreSQL 17 schema `locales` с row-local constraints из locale contract.
+3. Добавить reproducible reviewed SQL migrations; production `drizzle-kit push` не использовать.
+4. Отдельной data migration перенести текущие persistent `ru`, `he`, `ka` semantics; code-owned `en` в БД не создавать.
+5. Добавить disposable PostgreSQL 17 integration database в CI и безопасный migration test.
+6. Зафиксировать forward-only production migration/recovery baseline: migrations before deploy, application rollback, forward repair/restore вместо автоматического destructive down rollback.
+
+### PR 2B — persistent LocaleRegistry
+
+1. Реализовать server-only PostgreSQL row parser, persistent repository и graph assembly `BOOTSTRAP_ENGLISH + persistent rows`.
+2. Сохранить существующие synchronous `LocaleRegistry`/`LocaleResolver` consumers; async DB I/O выполняется до передачи immutable snapshot.
+3. Добавить request-scoped lazy/memoized registry loading через React Router request context без module-global `pg.Client`/`Pool` и без DB access для technical routes, которым registry не нужен.
+4. Реализовать deterministic semantic SHA-256 identity validated effective registry и отдельный load-health state.
+5. Реализовать degraded bootstrap-only behavior для classified DB/schema/integrity failures без восстановления stale non-English process state.
+6. Добавить controlled test/admin writer boundary и integration/concurrency tests для desired-state `SERIALIZABLE` writes; production Worker Stage 2 остаётся read-only.
+7. Сохранить Stage 1 locale/routing behavior regression tests.
+
+### PR 2C — Neon + Hyperdrive integration
+
+1. Создать/подключить Neon PostgreSQL 17 и cache-disabled `HYPERDRIVE` configuration с direct/unpooled Neon origin.
+2. Разделить migration/admin credentials и production Worker read-only DB capability; `DATABASE_URL` не передавать Worker runtime.
+3. Подтвердить local Workers integration с disposable PostgreSQL 17 через documented local Hyperdrive connection override.
+4. Выполнить реальный deployed Worker smoke через настоящий Hyperdrive; local `vite preview` не считается проверкой remote Hyperdrive service.
+5. Зафиксировать operational/deployment procedure и безопасное различие healthy/degraded registry state.
 
 ### Критерий завершения
 
-- Миграции воспроизводимо применяются к чистой БД.
-- Persistent LocaleRegistry заменяет config adapter без изменения consumers.
-- Invalid fallback/alias graph не может быть сохранён как рабочая конфигурация.
-- Секреты БД не попадают в Git.
+- Чистая PostgreSQL 17 DB воспроизводимо получает schema и exact initial `ru`/`he`/`ka` data без DB row `en`.
+- Persistent `LocaleRegistry` заменяет config adapter без изменения synchronous consumers и сохраняет Stage 1 routing/fallback behavior.
+- Invalid DB row/fallback/alias graph не публикуется как working registry; whole-graph validation применяется на load и controlled write boundary.
+- Один locale-sensitive request использует один immutable registry snapshot; `/api/*` без registry consumer не выполняет registry DB query.
+- Validated registry имеет deterministic semantic identity, а operational load health хранится отдельно.
+- DB outage/schema mismatch/integrity failure сохраняет только безопасный public English fallback; release/deployment acceptance при этом не считается успешным.
+- Production Worker Stage 2 имеет только необходимые read privileges; migration/runtime/test credentials разделены, DB secrets не попадают в Git/client bundle/logs.
+- Real deployed `workers.dev` request подтверждает работу Neon → Hyperdrive → `pg` → Drizzle path.
 
 ### Проверки
 
-- Чистая миграция и rollback/forward-процедура согласно принятому migration workflow.
-- Интеграционные тесты registry и DB access.
+- Clean migrations и exact initial-data verification на disposable PostgreSQL 17.
+- DB constraint, row-parser, whole-graph, semantic-hash, degraded-mode и controlled writer/concurrency integration tests.
+- Regression: `/ru/`, `/he/`, alias `iw`, inactive `ka`, unknown/canonical locale, non-`GET`/`HEAD` fail-closed и technical `/api/*` semantics.
+- Workers-compatible local preview с local PostgreSQL binding.
+- Real deployed Hyperdrive smoke после migration и до завершения Stage 2.
+- Forward-only application/DB recovery procedure проверена на принятом migration workflow.
 - `lint`, `typecheck`, `test`, `build`.
 
 ## Этап 3. Реализовать persistent UI translation resources

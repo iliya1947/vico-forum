@@ -141,6 +141,170 @@ data.
 До PostgreSQL может существовать config/in-memory adapter того же интерфейса. Позже он
 заменяется composite/persistent adapter без изменения consumers.
 
+### Persistent LocaleRegistry Stage 2
+
+Stage 2 фиксирует physical storage только для registry metadata. Persistent UI translations
+по-прежнему принадлежат Stage 3.
+
+Effective registry всегда строится как:
+
+```text
+code-owned BOOTSTRAP_ENGLISH
++
+validated persistent non-bootstrap locale rows
+```
+
+`en` не хранится в PostgreSQL, не seed-ится и не имеет второй authoritative representation.
+Попытка persistent writer записать canonical `en` отклоняется до SQL; DB constraint служит
+только defense-in-depth. Если row `en` обнаружен при чтении, persistent dataset считается
+invalid и не публикуется как working registry.
+
+Stage 2 использует одну PostgreSQL table `locales`:
+
+```text
+tag                    text primary key
+translation_status     text not null
+publication_status     text not null
+direction               text not null
+fallback_chain          text[] not null
+aliases                 text[] not null default '{}'
+match_tags              text[] not null default '{}'
+native_name             text not null
+presentation_metadata   jsonb not null default '{}'
+created_at              timestamptz not null default now()
+updated_at              timestamptz not null default now()
+```
+
+`fallback_chain` намеренно не имеет default: добавление locale обязано явно задавать fallback
+policy. `created_at`/`updated_at` являются audit metadata, а не registry version/cache
+identity. Trigger для `updated_at` не является частью Stage 2 contract; controlled writer
+обновляет его явно.
+
+SQL constraints защищают только простые row-local invariants:
+
+- `translation_status` принадлежит `draft | generating | partial | ready`;
+- `publication_status` принадлежит `inactive | active | disabled`;
+- `direction` принадлежит `ltr | rtl`;
+- `native_name` не пуст после trim;
+- `presentation_metadata` — JSON object;
+- stored `tag` не может быть bootstrap/reserved exact identity (`en`, `api`, `assets`) с
+  case-insensitive defense-in-depth check;
+- arrays имеют ожидаемую one-dimensional shape/lower bound и не содержат SQL `NULL`
+  elements.
+
+BCP-47 canonicalization, cross-row alias collisions, fallback existence/cycles и другие
+whole-graph invariants не дублируются SQL triggers/functions. Они проверяются одним domain
+validator на write и при load. Invalid persistent graph может физически существовать после
+обходного/manual SQL, но не может стать working `LocaleRegistry`.
+
+Storage semantics:
+
+```text
+tag
+  canonical BCP-47 translation identity без formatting extensions
+
+fallback_chain
+  ordered array canonical translation identities; order semantic
+
+aliases / match_tags
+  validated declared strings; category preserved; array order не является UX/runtime order
+
+effective match identity
+  вычисляется тем же parseLocaleCandidate(), что и runtime resolver/registry
+  не хранится отдельной DB column в Stage 2
+```
+
+Declared alias/matchTag сохраняется как metadata/provenance. Например, `iw` остаётся `iw` в
+storage, а effective match identity вычисляется как `he`. Same-target redundancy, которую
+текущий registry уже допускает, Stage 2 отдельно не запрещает; cross-locale effective
+ambiguity по-прежнему запрещена. В `fallback_chain` duplicates остаются запрещены.
+
+Каждая DB row сначала проходит runtime parser: статусы, direction, canonical identity,
+arrays, `nativeName` и `presentationMetadata` (`Record<string, string>`). Только после этого
+все persistent rows объединяются с `BOOTSTRAP_ENGLISH` и проходят существующую/factored
+whole-graph validation. Публичный `LocaleRegistry` остаётся синхронным и immutable.
+
+Initial persistent data обязаны воспроизводить текущее Stage 1 state без `en` row:
+
+```text
+ru  draft / active   / ltr / fallback [en]
+he  draft / active   / rtl / fallback [en] / alias [iw]
+ka  draft / inactive / ltr / fallback [en]
+```
+
+Persistent read выполняется одним explicit-column query полного registry dataset. DB row
+order может быть deterministic для диагностики/tests, но не является UX order или semantic
+identity.
+
+#### Request-scoped composition
+
+DB I/O не переносится внутрь синхронных `LocaleRegistry.find()`/`activeLocales()` и
+`LocaleResolver`. Worker создаёт новый React Router request context на request и передаёт
+lazy request services в `requestHandler`. Первый locale consumer запускает async persistent
+load; один memoized Promise/snapshot переиспользуется всеми locale consumers того же
+request.
+
+Следствия:
+
+- один registry load максимум на locale-sensitive request;
+- middleware/loader/action в одном request видят один immutable snapshot;
+- technical `/api/*` route, которому registry не нужен, не открывает registry DB path;
+- `pg`/Drizzle/repository modules остаются server-only;
+- module-global `pg.Client`/`Pool` запрещён.
+
+Stage 2 не вводит cross-request stale registry cache. Такой cache допускается только после
+отдельной correctness/performance проверки.
+
+#### Registry load health и degraded mode
+
+Registry semantic identity и load health являются разными понятиями. Persistent load
+различает минимум:
+
+```text
+healthy
+
+degraded: unavailable
+degraded: schema-mismatch
+degraded: integrity
+```
+
+Valid empty `locales` table является generic healthy bootstrap-only state. После initial
+production migration отсутствие ожидаемых `ru`/`he`/`ka` считается deployment/acceptance
+failure, а не нормальным завершением миграции.
+
+При classified DB/schema/integrity failure invalid/untrusted persistent rows не публикуются;
+effective registry временно состоит только из code-owned `en`. Non-English state не
+восстанавливается из старого process-memory snapshot. Public English read path остаётся
+доступен, но operational/deployment acceptance считается failed. Неожиданная programming
+exception не должна автоматически маскироваться под degraded DB mode.
+
+Explicit non-English `GET`/`HEAD` в degraded mode использует только temporary `/en/...`
+fallback и `Cache-Control: no-store`; degraded state не превращается в permanent `308` и не
+перезаписывает locale preference cookie. Writes в degraded state fail closed.
+
+#### Controlled lifecycle writes
+
+Stage 2 production Worker имеет read-only registry DB capability. Runtime DML добавляется
+только вместе с реальным protected server-side write flow. Controlled test/admin writer
+может существовать за отдельной narrowly-scoped DML boundary.
+
+Writer принимает desired-state mutation и использует короткую `SERIALIZABLE` transaction:
+
+```text
+read full persistent dataset inside transaction
+→ parse/assemble proposed effective graph
+→ apply desired mutation in memory
+→ whole-graph validate
+→ persist exact delta + updated_at
+→ commit
+```
+
+External HTTP/provider calls и другие side effects внутри transaction запрещены. Whole-unit
+retry допустим для безопасно классифицированных serialization/deadlock failures. Unknown
+commit outcome никогда не превращается в blind retry; reconciliation сравнивает semantic
+pre-state, expected post-state и фактический reloaded state. Persisted command/idempotency
+table не является требованием Stage 2.
+
 ## LocaleResolver (`LOC-03`, `LOC-05`)
 
 Концептуальный приоритет остаётся:
