@@ -1,6 +1,5 @@
 import { canonicalEnglishCatalog, type UiMessageDescriptor } from "./catalog";
 import { sha256Text, sourceFingerprint } from "./fingerprint";
-import { parseLocaleCandidate } from "./locale";
 import { validateTranslation } from "./sources";
 
 const BUNDLE_VERSION_FORMAT = "vico-ui-bundle-v1";
@@ -29,10 +28,7 @@ export async function compileNamespaceBundle(
   namespace: string,
   resources: Readonly<Record<string, string>>,
 ): Promise<CompiledNamespaceBundle> {
-  const parsedLocale = parseLocaleCandidate(locale);
-  if (!parsedLocale || parsedLocale.canonicalInput !== parsedLocale.translationTag) {
-    throw new Error(`bundle locale must be a canonical translation locale: ${locale}`);
-  }
+  if (!locale.trim()) throw new Error("bundle locale must not be blank");
   if (!namespace.trim()) throw new Error("bundle namespace must not be blank");
 
   const canonicalNamespace = canonicalEnglishCatalog[namespace as keyof typeof canonicalEnglishCatalog];
@@ -57,13 +53,13 @@ export async function compileNamespaceBundle(
 
   const bundleVersion = await sha256Text(JSON.stringify({
     format: BUNDLE_VERSION_FORMAT,
-    locale: parsedLocale.translationTag,
+    locale,
     namespace,
     resources: versionEntries,
   }));
 
   return {
-    locale: parsedLocale.translationTag,
+    locale,
     namespace,
     resources: normalizedResources,
     bundleVersion,
