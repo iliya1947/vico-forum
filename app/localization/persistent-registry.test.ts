@@ -74,6 +74,11 @@ describe("persistent locale registry", () => {
 
   it.each([
     [Object.assign(new Error("offline"), { code: "08006" }), "unavailable"],
+    [Object.assign(new Error("refused"), { code: "ECONNREFUSED" }), "unavailable"],
+    [Object.assign(new Error("timed out"), { code: "ETIMEDOUT" }), "unavailable"],
+    [Object.assign(new Error("dns failed"), { code: "ENOTFOUND" }), "unavailable"],
+    [Object.assign(new Error("reset"), { code: "ECONNRESET" }), "unavailable"],
+    [Object.assign(new Error("broken pipe"), { code: "EPIPE" }), "unavailable"],
     [Object.assign(new Error("missing table"), { code: "42P01" }), "schema-mismatch"],
     [new RegistryIntegrityError("bad graph"), "integrity"],
   ] as const)("degrades to bootstrap English for a classified failure", async (error, reason) => {
@@ -93,9 +98,16 @@ describe("persistent locale registry", () => {
     await expect(loadPersistentRegistry({ readAll: async () => { throw cyclic; } })).rejects.toBe(cyclic);
   });
 
-  it("does not mask programming errors and memoizes one load per request service", async () => {
-    const failure = new TypeError("bug");
-    await expect(loadPersistentRegistry({ readAll: async () => { throw failure; } })).rejects.toBe(failure);
+  it("does not mask programming or authentication errors and memoizes one load per request service", async () => {
+    const programmingFailure = new TypeError("bug");
+    await expect(loadPersistentRegistry({ readAll: async () => { throw programmingFailure; } })).rejects.toBe(
+      programmingFailure,
+    );
+
+    const authenticationFailure = Object.assign(new Error("authentication failed"), { code: "28P01" });
+    await expect(loadPersistentRegistry({ readAll: async () => { throw authenticationFailure; } })).rejects.toBe(
+      authenticationFailure,
+    );
 
     const readAll = vi.fn(async () => [row()]);
     const load = createRequestRegistryLoader({ readAll });

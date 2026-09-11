@@ -23,9 +23,11 @@ export interface PersistentLocaleRepository {
   readAll(): Promise<readonly PersistentLocaleRow[]>;
 }
 
+export type RegistryDegradedReason = "unavailable" | "schema-mismatch" | "integrity";
+
 export type RegistryLoadHealth =
   | { readonly status: "healthy" }
-  | { readonly status: "degraded"; readonly reason: "unavailable" | "schema-mismatch" | "integrity" };
+  | { readonly status: "degraded"; readonly reason: RegistryDegradedReason };
 
 export interface LoadedLocaleRegistry {
   readonly registry: LocaleRegistry;
@@ -40,8 +42,27 @@ export class RegistryIntegrityError extends Error {
   }
 }
 
+export class RegistryConnectionUnavailableError extends Error {
+  constructor(options?: ErrorOptions) {
+    super("persistent registry connection unavailable", options);
+    this.name = "RegistryConnectionUnavailableError";
+  }
+}
+
 const translationStatuses = new Set(["draft", "generating", "partial", "ready"]);
 const publicationStatuses = new Set(["inactive", "active", "disabled"]);
+const transportUnavailableCodes = new Set([
+  "ECONNREFUSED",
+  "ETIMEDOUT",
+  "ENOTFOUND",
+  "ECONNRESET",
+  "EPIPE",
+]);
+const postgresUnavailableCodes = new Set(["57P01", "57P02", "57P03", "53300"]);
+
+export function isTransportUnavailableCode(code: unknown): boolean {
+  return typeof code === "string" && transportUnavailableCodes.has(code);
+}
 
 export function parsePersistentLocaleRow(row: PersistentLocaleRow): LocaleDefinition {
   const tag = requiredString(row.tag, "tag");
@@ -101,16 +122,17 @@ export function createRequestRegistryLoader(repository: PersistentLocaleReposito
   return () => (load ??= loadPersistentRegistry(repository));
 }
 
-function classifyLoadFailure(error: unknown): "unavailable" | "schema-mismatch" | "integrity" | undefined {
+function classifyLoadFailure(error: unknown): RegistryDegradedReason | undefined {
   const seen = new Set<unknown>();
   let current = error;
   while (current && (typeof current === "object" || typeof current === "function") && !seen.has(current)) {
     seen.add(current);
     if (current instanceof RegistryIntegrityError) return "integrity";
+    if (current instanceof RegistryConnectionUnavailableError) return "unavailable";
     const candidate = current as { cause?: unknown; code?: unknown };
     const code = typeof candidate.code === "string" ? candidate.code : undefined;
     if (code === "42P01" || code === "42703" || code === "42804") return "schema-mismatch";
-    if (code?.startsWith("08") || ["57P01", "57P02", "57P03", "53300"].includes(code ?? "")) {
+    if (code?.startsWith("08") || postgresUnavailableCodes.has(code ?? "") || isTransportUnavailableCode(code)) {
       return "unavailable";
     }
     current = candidate.cause;
