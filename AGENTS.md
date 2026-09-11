@@ -17,3 +17,7 @@
 8. Если после изменения поменялось фактическое состояние проекта — обнови `PROJECT_STATE.md`.
 
 9. Все изменения передавай только через Pull Request. Не делай merge самостоятельно.
+
+10. Если изменение впервые добавляет production schema, от которой будет зависеть runtime, разделяй rollout на migration-only PR и отдельный runtime PR. Runtime PR можно merge только после merge migration PR и успешных production migration + verification. Не объединяй первое появление production schema и runtime dependency на неё в одном PR.
+
+11. Если non-production/preview build использует production Hyperdrive, это допустимо только пока production capability остаётся read-only, а доступные через неё данные являются публичными. До появления любой runtime write-capability или непубличных production data preview/non-production path должен быть изолирован отдельным staging Worker/Hyperdrive/DB либо отключён.
