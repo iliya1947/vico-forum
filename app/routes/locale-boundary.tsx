@@ -3,10 +3,18 @@ import { I18nextProvider } from "react-i18next";
 import { Outlet, redirect, useLoaderData, type RouterContextProvider } from "react-router";
 import { manualTranslationPacks } from "../localization/manual-packs";
 import { parseLocaleCandidate } from "../localization/locale";
-import { localeContext, registryForRequest } from "../localization/request-context";
+import {
+  localeContext,
+  registryForRequest,
+  uiTranslationStoreForRequest,
+} from "../localization/request-context";
 import { TranslationResourceLoader, type TranslationSnapshot } from "../localization/resource-loader";
 import { resolveExplicitLocale } from "../localization/resolver";
 import { createTranslationRuntime } from "../localization/runtime";
+import {
+  DatabaseMachineTranslationSource,
+  DatabaseManualTranslationSource,
+} from "../localization/persistent-sources";
 import { CanonicalEnglishSource, LocalTranslationSource } from "../localization/sources";
 
 interface LocaleBoundaryArgs {
@@ -45,10 +53,8 @@ export const middleware = [
   },
 ];
 
-const resourceLoader = new TranslationResourceLoader([
-  new LocalTranslationSource(manualTranslationPacks),
-  new CanonicalEnglishSource(),
-]);
+const localSource = new LocalTranslationSource(manualTranslationPacks);
+const canonicalEnglishSource = new CanonicalEnglishSource();
 
 export async function loader(args: LocaleBoundaryArgs) {
   let locale;
@@ -57,6 +63,14 @@ export async function loader(args: LocaleBoundaryArgs) {
   } catch {
     locale = await guardLocale(args);
   }
+
+  const store = uiTranslationStoreForRequest(args.context);
+  const resourceLoader = new TranslationResourceLoader([
+    localSource,
+    new DatabaseManualTranslationSource(store),
+    new DatabaseMachineTranslationSource(store),
+    canonicalEnglishSource,
+  ]);
   return resourceLoader.load(locale, ["common"]);
 }
 
