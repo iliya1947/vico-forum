@@ -1,0 +1,140 @@
+{
+  "id": "1d914fa9-95f9-43b5-b7a3-eedbdba74be7",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.locales": {
+      "name": "locales",
+      "schema": "",
+      "columns": {
+        "tag": {
+          "name": "tag",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "translation_status": {
+          "name": "translation_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "publication_status": {
+          "name": "publication_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "direction": {
+          "name": "direction",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fallback_chain": {
+          "name": "fallback_chain",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "aliases": {
+          "name": "aliases",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::text[]"
+        },
+        "match_tags": {
+          "name": "match_tags",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::text[]"
+        },
+        "native_name": {
+          "name": "native_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "presentation_metadata": {
+          "name": "presentation_metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "locales_translation_status_check": {
+          "name": "locales_translation_status_check",
+          "value": "\"locales\".\"translation_status\" in ('draft', 'generating', 'partial', 'ready')"
+        },
+        "locales_publication_status_check": {
+          "name": "locales_publication_status_check",
+          "value": "\"locales\".\"publication_status\" in ('inactive', 'active', 'disabled')"
+        },
+        "locales_direction_check": {
+          "name": "locales_direction_check",
+          "value": "\"locales\".\"direction\" in ('ltr', 'rtl')"
+        },
+        "locales_native_name_check": {
+          "name": "locales_native_name_check",
+          "value": "btrim(\"locales\".\"native_name\") <> ''"
+        },
+        "locales_presentation_metadata_object_check": {
+          "name": "locales_presentation_metadata_object_check",
+          "value": "jsonb_typeof(\"locales\".\"presentation_metadata\") = 'object'"
+        },
+        "locales_non_bootstrap_tag_check": {
+          "name": "locales_non_bootstrap_tag_check",
+          "value": "lower(\"locales\".\"tag\") not in ('en', 'api', 'assets')"
+        },
+        "locales_fallback_chain_shape_check": {
+          "name": "locales_fallback_chain_shape_check",
+          "value": "(\n    cardinality(\"locales\".\"fallback_chain\") = 0\n    or (array_ndims(\"locales\".\"fallback_chain\") = 1 and array_lower(\"locales\".\"fallback_chain\", 1) = 1)\n  ) and array_position(\"locales\".\"fallback_chain\", null) is null"
+        },
+        "locales_aliases_shape_check": {
+          "name": "locales_aliases_shape_check",
+          "value": "(\n    cardinality(\"locales\".\"aliases\") = 0\n    or (array_ndims(\"locales\".\"aliases\") = 1 and array_lower(\"locales\".\"aliases\", 1) = 1)\n  ) and array_position(\"locales\".\"aliases\", null) is null"
+        },
+        "locales_match_tags_shape_check": {
+          "name": "locales_match_tags_shape_check",
+          "value": "(\n    cardinality(\"locales\".\"match_tags\") = 0\n    or (array_ndims(\"locales\".\"match_tags\") = 1 and array_lower(\"locales\".\"match_tags\", 1) = 1)\n  ) and array_position(\"locales\".\"match_tags\", null) is null"
+        }
+      },
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

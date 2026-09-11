@@ -7,8 +7,8 @@
 Этап 0 и Stage 1 завершены. После Stage 1 acceptance выполнен hardening locale routing,
 registry и UI translation validation/type contracts. Первый реальный Cloudflare Worker
 `vico-forum` развёрнут на `workers.dev`. Stage 2 persistence preflight завершён и его
-technical contract зафиксирован в roadmap/detail documentation; реализация Stage 2 ещё не
-начата.
+technical contract зафиксирован в roadmap/detail documentation. PR 2A реализует DB
+foundation; persistent runtime adapter и production Neon/Hyperdrive ещё не подключены.
 
 ## Готово
 
@@ -53,12 +53,22 @@ technical contract зафиксирован в roadmap/detail documentation; р�
   loading, semantic registry hash, degraded behavior, read-only Stage 2 Worker,
   forward-only migration policy и серия PR `2A → 2B → 2C`; detail contract и rationale
   находятся в `docs/translation/LOCALES.md`, `STORAGE_AND_VERSIONING.md` и `RESEARCH.md`.
+- Stage 2 PR 2A добавил exact `pg 8.23.0`, `drizzle-orm 0.45.2`, `drizzle-kit 0.31.10` и
+  `@types/pg 8.23.1`, Drizzle configuration и checked-in migration metadata;
+- schema migration создаёт одну `locales` table с согласованными row-local PostgreSQL
+  constraints, а отдельная data migration добавляет exact `ru`/`he`/`ka` state без DB row
+  для code-owned bootstrap `en`;
+- CI получил disposable PostgreSQL 17 service и integration test чистой migration history,
+  UTF-8/exact initial data, повторного безопасного запуска и row-local constraints;
+- зафиксирован forward-only migration/recovery workflow: migrations before deploy,
+  application rollback и reviewed forward repair/restore без production `push` или
+  автоматического destructive down rollback.
 
 ## Сейчас
 
-Stage 1 закрыт. Stage 2 persistence preflight закрыт; открытых architecture decision gates
-для старта Stage 2 не осталось. Код, зависимости, migrations, Neon/Hyperdrive binding и CI
-Stage 2 ещё не изменялись.
+Stage 1 закрыт. Stage 2 persistence preflight и DB foundation PR 2A завершены в текущей
+ветке. Persistent `LocaleRegistry`, Neon/Hyperdrive binding и runtime DB path ещё не
+реализованы и относятся к PR 2B/2C.
 
 ## Блокеры
 
@@ -66,7 +76,7 @@ Stage 2 ещё не изменялись.
 
 ## Следующий шаг
 
-Начать PR 2A по `ROADMAP.md`: добавить exact PostgreSQL/Drizzle dependencies/configuration,
-создать и проверить PostgreSQL 17 `locales` schema/constraints, initial `ru`/`he`/`ka` data
-migration и disposable PostgreSQL 17 integration path в CI. PR 2A не должен подключать
-production Neon/Hyperdrive runtime раньше PR 2C.
+Начать PR 2B по `ROADMAP.md`: реализовать persistent repository, runtime row parser,
+whole-graph assembly/validation, semantic registry identity, request-scoped loading,
+degraded behavior и controlled test/admin writer. Production Neon/Hyperdrive runtime
+остаётся границей PR 2C.
