@@ -2,6 +2,8 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { Client, type DatabaseError } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { loadPersistentRegistry } from "../../app/localization/persistent-registry";
+import { ControlledLocaleWriter, DrizzleLocaleRepository } from "../../db/locale-repository";
 
 const databaseUrl = process.env.DATABASE_URL;
 
@@ -97,6 +99,35 @@ describe("PostgreSQL 17 locale migrations", () => {
       },
     ]);
     expect(result.rows.some(({ tag }) => tag.toLowerCase() === "en")).toBe(false);
+  });
+
+  it("loads the persistent registry through Drizzle", async () => {
+    const loaded = await loadPersistentRegistry(new DrizzleLocaleRepository(drizzle(client)));
+    expect(loaded.health).toEqual({ status: "healthy" });
+    expect(loaded.semanticIdentity).toMatch(/^sha256:[0-9a-f]{64}$/);
+    expect(loaded.registry.find("iw")?.locale.tag).toBe("he");
+    expect(loaded.registry.find("ka")?.locale.publicationStatus).toBe("inactive");
+  });
+
+  it("serializes concurrent desired-state writes and preserves a valid graph", async () => {
+    const second = new Client({ connectionString: databaseUrl });
+    await second.connect();
+    try {
+      const locale = (tag: string) => ({
+        tag, translationStatus: "draft" as const, publicationStatus: "inactive" as const,
+        direction: "ltr" as const, fallbackChain: ["en"], nativeName: tag,
+      });
+      await Promise.all([
+        new ControlledLocaleWriter(client, 4).apply({ type: "put", locale: locale("de") }),
+        new ControlledLocaleWriter(second, 4).apply({ type: "put", locale: locale("fr") }),
+      ]);
+      const loaded = await loadPersistentRegistry(new DrizzleLocaleRepository(drizzle(client)));
+      expect(loaded.health).toEqual({ status: "healthy" });
+      expect(loaded.registry.find("de")?.locale.tag).toBe("de");
+      expect(loaded.registry.find("fr")?.locale.tag).toBe("fr");
+    } finally {
+      await second.end();
+    }
   });
 
   it.each([

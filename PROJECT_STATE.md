@@ -8,7 +8,8 @@
 registry и UI translation validation/type contracts. Первый реальный Cloudflare Worker
 `vico-forum` развёрнут на `workers.dev`. Stage 2 persistence preflight завершён и его
 technical contract зафиксирован в roadmap/detail documentation. PR 2A реализует DB
-foundation; persistent runtime adapter и production Neon/Hyperdrive ещё не подключены.
+foundation, а PR 2B — persistent registry domain/repository и request-scoped boundary;
+production Neon/Hyperdrive ещё не подключён.
 
 ## Готово
 
@@ -63,12 +64,27 @@ foundation; persistent runtime adapter и production Neon/Hyperdrive ещё не
 - зафиксирован forward-only migration/recovery workflow: migrations before deploy,
   application rollback и reviewed forward repair/restore без production `push` или
   автоматического destructive down rollback.
+- Stage 2 PR 2B добавил strict runtime parser PostgreSQL rows, Drizzle repository и сборку
+  effective registry из code-owned `en` и validated persistent graph;
+- validated registry получает deterministic versioned SHA-256 semantic identity, отдельно
+  от classified `healthy`/`degraded` load health; classified outage, schema mismatch и
+  integrity failure публикуют только bootstrap English без stale process-state recovery;
+- locale routes используют lazy memoized request registry service boundary, сохраняя
+  synchronous `LocaleRegistry`/`LocaleResolver`; degraded non-English read временно
+  перенаправляется на English с `307`/`no-store`, а write fail closed;
+- controlled writer реализует desired-state mutation в короткой `SERIALIZABLE` transaction,
+  whole-graph validation до DML и bounded whole-unit retry только для `40001`/`40P01`;
+  production Worker DML path не добавлен;
+- unit tests покрывают row parsing, graph rejection, semantic identity, degraded
+  classification и request memoization; PostgreSQL integration suite дополнена persistent
+  Drizzle load и concurrent controlled writes.
 
 ## Сейчас
 
-Stage 1 закрыт. Stage 2 persistence preflight и DB foundation PR 2A завершены в текущей
-ветке. Persistent `LocaleRegistry`, Neon/Hyperdrive binding и runtime DB path ещё не
-реализованы и относятся к PR 2B/2C.
+Stage 1 закрыт. Stage 2 persistence preflight, DB foundation PR 2A и persistent registry
+PR 2B завершены. До PR 2C request boundary сохраняет Stage 1 config registry как default;
+production DB factory, Neon/Hyperdrive binding и read-only runtime credentials ещё не
+подключены.
 
 ## Блокеры
 
@@ -76,7 +92,6 @@ Stage 1 закрыт. Stage 2 persistence preflight и DB foundation PR 2A за�
 
 ## Следующий шаг
 
-Начать PR 2B по `ROADMAP.md`: реализовать persistent repository, runtime row parser,
-whole-graph assembly/validation, semantic registry identity, request-scoped loading,
-degraded behavior и controlled test/admin writer. Production Neon/Hyperdrive runtime
-остаётся границей PR 2C.
+Начать PR 2C по `ROADMAP.md`: подключить production read-only registry factory к
+cache-disabled Neon/Hyperdrive binding, проверить local Workers override и выполнить real
+deployed Hyperdrive smoke после migrations.

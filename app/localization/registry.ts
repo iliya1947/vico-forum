@@ -3,14 +3,14 @@ import { parseLocaleCandidate, type LocaleDefinition } from "./locale";
 export const RESERVED_TOP_LEVEL_SEGMENTS = Object.freeze(["api", "assets"] as const);
 const reservedTopLevelSegments = new Set<string>(RESERVED_TOP_LEVEL_SEGMENTS);
 
-const BOOTSTRAP_ENGLISH: LocaleDefinition = {
+export const BOOTSTRAP_ENGLISH: LocaleDefinition = Object.freeze({
   tag: "en",
   translationStatus: "ready",
   publicationStatus: "active",
   direction: "ltr",
   fallbackChain: [],
   nativeName: "English",
-};
+});
 
 export interface LocaleMatch {
   readonly locale: LocaleDefinition;
