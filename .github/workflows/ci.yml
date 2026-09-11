@@ -27,6 +27,8 @@ jobs:
         run: pnpm test
       - name: Build
         run: pnpm build
+      - name: Validate migration metadata
+        run: pnpm db:check
       - name: Workers smoke
         run: |
           set -euo pipefail
@@ -53,3 +55,34 @@ jobs:
           grep -q 'dir="rtl"' /tmp/vico-he.html
           test "$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' http://127.0.0.1:4173/he/topic)" = "404"
           test "$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' http://127.0.0.1:4173/api/test)" = "404"
+
+  database:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: vico_forum_test
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d vico_forum_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/vico_forum_test
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        with:
+          version: 12.3.4
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Test clean PostgreSQL 17 migrations and constraints
+        run: pnpm db:test
