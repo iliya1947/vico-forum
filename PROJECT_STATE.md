@@ -108,6 +108,12 @@ production Worker с config registry на request-scoped `HYPERDRIVE` factory; p
 migrations, least-privilege runtime role, cache-disabled Hyperdrive и binding подготовлены.
 До завершения Stage 2 остаётся выполнить real deployed `workers.dev` Hyperdrive smoke.
 
+Для Stage 2C подготовлен отдельный manual GitHub Actions workflow production migrations:
+он защищён environment `production-db`, сериализует запуски, использует только отдельный
+admin Neon secret и после Drizzle migrate выполняет SELECT-only проверку PostgreSQL 17,
+UTF-8, migration ledger и initial locale data. Production migration ещё не запускалась,
+поскольку credential/environment пока не предоставлены.
+
 ## Блокеры
 
 - Текущее окружение не аутентифицировано в Cloudflare (`wrangler whoami`); real deployed
