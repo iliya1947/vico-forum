@@ -2,12 +2,23 @@ import { RouterContextProvider } from "react-router";
 import { describe, expect, it, vi } from "vitest";
 import { localeContext, registryLoaderContext } from "../localization/request-context";
 import { assemblePersistentRegistry } from "../localization/persistent-registry";
+import { localeRegistry } from "../localization/registry";
 import { middleware } from "./locale-boundary";
+
+function contextWithFixtureRegistry() {
+  const context = new RouterContextProvider();
+  context.set(registryLoaderContext, async () => ({
+    registry: localeRegistry,
+    semanticIdentity: "test-fixture",
+    health: { status: "healthy" },
+  }));
+  return context;
+}
 
 describe("locale boundary middleware", () => {
   it("does not execute the downstream action for redirect-required mutations", async () => {
     const next = vi.fn(async () => new Response("mutated"));
-    const context = new RouterContextProvider();
+    const context = contextWithFixtureRegistry();
 
     await expect(
       middleware[0](
@@ -24,7 +35,7 @@ describe("locale boundary middleware", () => {
 
   it("sets typed request context and reaches downstream handling for a canonical locale", async () => {
     const next = vi.fn(async () => new Response("handled"));
-    const context = new RouterContextProvider();
+    const context = contextWithFixtureRegistry();
 
     const response = await middleware[0](
       {
@@ -60,6 +71,35 @@ describe("locale boundary middleware", () => {
       status: 308,
       headers: expect.objectContaining({}),
     });
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it("temporarily redirects non-English reads to English while the registry is degraded", async () => {
+    const next = vi.fn(async () => new Response("handled"));
+    const context = new RouterContextProvider();
+    const bootstrap = await assemblePersistentRegistry([]);
+    context.set(registryLoaderContext, async () => ({
+      ...bootstrap,
+      health: { status: "degraded", reason: "unavailable" },
+    }));
+
+    try {
+      await middleware[0](
+        {
+          request: new Request("https://vico.test/he/?from=outage"),
+          params: { locale: "he" },
+          context,
+        },
+        next,
+      );
+      throw new Error("Expected degraded locale redirect");
+    } catch (error) {
+      expect(error).toBeInstanceOf(Response);
+      const response = error as Response;
+      expect(response.status).toBe(307);
+      expect(response.headers.get("Location")).toBe("/en/?from=outage");
+      expect(response.headers.get("Cache-Control")).toBe("no-store");
+    }
     expect(next).not.toHaveBeenCalled();
   });
 });
