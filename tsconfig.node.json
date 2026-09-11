@@ -8,6 +8,10 @@
     "vite.config.ts",
     "vitest.config.ts",
     "vitest.database.config.ts",
+    "app/localization/catalog.ts",
+    "app/localization/fingerprint.ts",
+    "app/localization/sources.ts",
+    "app/localization/persistent-sources.ts",
     "app/localization/persistent-registry.ts",
     "app/localization/registry.ts",
     "app/localization/locale.ts"
