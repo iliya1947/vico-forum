@@ -23,7 +23,7 @@ const locale = {
 async function row(
   origin: "persistent_manual" | "machine",
   value: unknown,
-  fingerprint = await sourceFingerprint(canonicalEnglishCatalog.common.heading),
+  fingerprint?: string,
 ): Promise<PersistentUiTranslationRow> {
   return {
     locale: "ru",
@@ -31,7 +31,7 @@ async function row(
     key: "heading",
     origin,
     status: "approved",
-    sourceFingerprint: fingerprint,
+    sourceFingerprint: fingerprint ?? await sourceFingerprint(canonicalEnglishCatalog.common.heading),
     translatedPayload: value,
   };
 }
