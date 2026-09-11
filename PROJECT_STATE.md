@@ -4,14 +4,12 @@
 
 ## Состояние
 
-Этап 0 и Stage 1 завершены. После Stage 1 acceptance выполнен hardening locale routing,
-registry и UI translation validation/type contracts. Первый реальный Cloudflare Worker
-`vico-forum` развёрнут на `workers.dev`. Stage 2 persistence preflight завершён и его
-technical contract зафиксирован в roadmap/detail documentation. PR 2A/2B/2C merged;
-production Neon migrations применены, read-only runtime role и cache-disabled Hyperdrive с
-direct Neon origin созданы, реальный Hyperdrive binding объявлен в Worker config. Native
-Cloudflare Workers Builds подключён к GitHub `main`; real deployed Hyperdrive smoke ещё не
-выполнен.
+Этап 0, Stage 1 и Stage 2 завершены. После Stage 1 acceptance выполнен hardening locale
+routing, registry и UI translation validation/type contracts. Stage 2 persistence preflight
+и серия PR 2A/2B/2C завершены: production Neon migrations применены, read-only runtime role
+и cache-disabled Hyperdrive с direct Neon origin созданы, реальный Hyperdrive binding
+подключён к production Worker. Native Cloudflare Workers Builds работает от GitHub `main`,
+real deployed `workers.dev` Hyperdrive acceptance успешно пройден.
 
 ## Готово
 
@@ -102,23 +100,29 @@ Cloudflare Workers Builds подключён к GitHub `main`; real deployed Hyp
   и unknown locale — `307`, `/he/topic` и `/api/test` — `404`;
 - native Cloudflare Workers Builds подключён к GitHub repository `iliya1947/vico-forum` с
   production branch `main`; production build использует `pnpm run build`, deploy —
-  `npx wrangler deploy`, а `PNPM_VERSION` зафиксирован как `12.3.4`.
+  `npx wrangler deploy`, а `PNPM_VERSION` зафиксирован как `12.3.4`;
+- первый production build/deploy через native Git integration успешно выполнен из `main`;
+  active Worker deployment содержит binding `HYPERDRIVE` → `vico-forum-registry`;
+- real deployed Stage 2 acceptance на `workers.dev` подтверждён: `/he/` и `/ru/` открываются
+  через persistent locale registry, `/iw/` canonicalized на `/he/`, inactive `/ka/` и unknown
+  locale fallback на `/en/`, `/he/topic` и `/api/test` возвращают `404`, а `POST /IW/`
+  возвращает `404` без `Location`;
+- Hyperdrive metrics во время acceptance показали production query traffic через
+  `vico-forum-registry` с отключённым caching и `0` errors, что подтверждает deployed path
+  Neon → Hyperdrive → `pg` → Drizzle → persistent `LocaleRegistry`.
 
 ## Сейчас
 
-Stage 1 закрыт. Stage 2 persistence preflight и PR 2A/2B/2C завершены. Production
-migrations, least-privilege runtime role, cache-disabled Hyperdrive, binding и native GitHub
-→ Cloudflare Workers Builds integration подготовлены. Первый production build/deploy через
-новую Git integration ещё не выполнен; real deployed `workers.dev` Hyperdrive smoke остаётся
-финальным acceptance-критерием Stage 2.
+Stage 1 и Stage 2 закрыты. Persistent `LocaleRegistry` работает в production через Neon и
+cache-disabled Hyperdrive, production deploy выполняется через GitHub `main` → Cloudflare
+Workers Builds, а real deployed acceptance пройден. Stage 3 ещё не начат.
 
 ## Блокеры
 
-- Первый production build/deploy через подключённый Cloudflare Workers Builds ещё не
-  выполнен, поэтому real deployed Hyperdrive smoke пока нельзя считать пройденным.
+- Блокеров для перехода к Stage 3 нет.
 
 ## Следующий шаг
 
-Смержить этот docs-only PR в `main`, чтобы новый push запустил первый Cloudflare Workers
-Build/deploy; после успешного deploy выполнить real deployed Hyperdrive smoke для locale
-routing и `/api/test`, затем закрыть Stage 2.
+Начать Stage 3 из `ROADMAP.md`: спроектировать PostgreSQL schema persistent UI translation
+resources и подготовить reviewed migration перед реализацией `UiTranslationStore` и
+persistent manual/machine translation sources.
