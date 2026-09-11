@@ -5,12 +5,16 @@ import {
   type CompiledNamespaceBundle,
   type TranslationBundleStore,
 } from "../app/localization/bundles";
+import { parseLocaleCandidate } from "../app/localization/locale";
 import { uiTranslationBundles } from "./schema";
 
 export class DrizzleUiTranslationBundleStore implements TranslationBundleStore {
   constructor(private readonly database: NodePgDatabase) {}
 
   async read(locale: string, namespace: string): Promise<CompiledNamespaceBundle | undefined> {
+    const persistentLocale = persistentBundleLocale(locale);
+    if (!namespace.trim()) throw new Error("persistent bundle namespace must not be blank");
+
     const rows = await this.database
       .select({
         locale: uiTranslationBundles.locale,
@@ -21,7 +25,7 @@ export class DrizzleUiTranslationBundleStore implements TranslationBundleStore {
       .from(uiTranslationBundles)
       .where(
         and(
-          eq(uiTranslationBundles.locale, locale),
+          eq(uiTranslationBundles.locale, persistentLocale),
           eq(uiTranslationBundles.namespace, namespace),
         ),
       )
@@ -46,7 +50,8 @@ export class DrizzleUiTranslationBundleStore implements TranslationBundleStore {
   }
 
   async put(bundle: CompiledNamespaceBundle): Promise<void> {
-    const verified = await compileNamespaceBundle(bundle.locale, bundle.namespace, bundle.resources);
+    const persistentLocale = persistentBundleLocale(bundle.locale);
+    const verified = await compileNamespaceBundle(persistentLocale, bundle.namespace, bundle.resources);
     if (verified.bundleVersion !== bundle.bundleVersion) {
       throw new Error(`compiled bundle version mismatch: ${bundle.locale}:${bundle.namespace}`);
     }
@@ -68,4 +73,12 @@ export class DrizzleUiTranslationBundleStore implements TranslationBundleStore {
         },
       });
   }
+}
+
+function persistentBundleLocale(locale: string): string {
+  const parsed = parseLocaleCandidate(locale);
+  if (!parsed || parsed.canonicalInput !== parsed.translationTag || parsed.translationTag === "en") {
+    throw new Error(`persistent bundle locale must be a canonical non-English translation locale: ${locale}`);
+  }
+  return parsed.translationTag;
 }
