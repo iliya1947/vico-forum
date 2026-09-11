@@ -21,7 +21,7 @@ const client = new Client({ connectionString: databaseUrl });
 
 beforeAll(async () => {
   await client.connect();
-  await client.query("drop schema public cascade; create schema public");
+  await client.query("drop schema if exists drizzle cascade; drop schema public cascade; create schema public");
   await migrate(drizzle(client), { migrationsFolder: "./drizzle" });
 });
 

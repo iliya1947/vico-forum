@@ -2,6 +2,7 @@
   "extends": "./tsconfig.json",
   "include": [
     "db/**/*.ts",
+    "tests/database/**/*.ts",
     "drizzle.config.ts",
     "react-router.config.ts",
     "vite.config.ts",
