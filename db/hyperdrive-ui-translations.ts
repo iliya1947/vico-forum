@@ -1,6 +1,9 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Client } from "pg";
-import type { UiTranslationStore } from "../app/localization/persistent-sources";
+import type {
+  PersistentUiTranslationRow,
+  UiTranslationStore,
+} from "../app/localization/persistent-sources";
 import { isTransportUnavailableCode } from "../app/localization/persistent-registry";
 import { DrizzleUiTranslationStore } from "./ui-translation-store";
 
@@ -34,11 +37,14 @@ export function createHyperdriveUiTranslationStore(
 ): UiTranslationStore {
   let storePromise: Promise<DrizzleUiTranslationStore> | undefined;
   let reportedDegraded = false;
-  const reads = new Map<string, Promise<readonly Awaited<ReturnType<DrizzleUiTranslationStore["readApproved"]>>[number][]>>();
+  const reads = new Map<string, Promise<readonly PersistentUiTranslationRow[]>>();
 
   const loadStore = () => (storePromise ??= connectStore(connectionString, createClient));
 
-  const read = async (locale: string, namespaces: readonly string[]) => {
+  const read = async (
+    locale: string,
+    namespaces: readonly string[],
+  ): Promise<readonly PersistentUiTranslationRow[]> => {
     if (locale === "en" || namespaces.length === 0) return [];
     try {
       return await (await loadStore()).readApproved(locale, namespaces);
