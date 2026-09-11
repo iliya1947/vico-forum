@@ -1,4 +1,4 @@
-import { canonicalEnglishCatalog, catalogDescriptors, type UiMessageDescriptor } from "./catalog";
+import { catalogDescriptors, type UiMessageDescriptor } from "./catalog";
 import { sha256Text, sourceFingerprint } from "./fingerprint";
 import { validateTranslation, type ResourceBundle, type TranslationSource, type TranslationSourceResult } from "./sources";
 
@@ -147,8 +147,4 @@ async function resourceVersion(parts: readonly string[]): Promise<string> {
 
 function emptyResult(): TranslationSourceResult {
   return { resources: {}, staleKeys: [], version: "empty" };
-}
-
-export function isCanonicalNamespace(namespace: string): boolean {
-  return namespace in canonicalEnglishCatalog;
 }
