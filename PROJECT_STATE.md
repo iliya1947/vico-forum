@@ -88,6 +88,12 @@ PR 2B завершены. До PR 2C request boundary сохраняет Stage 1
 production DB factory, Neon/Hyperdrive binding и read-only runtime credentials ещё не
 подключены.
 
+Для Stage 2C подготовлен отдельный manual GitHub Actions workflow production migrations:
+он защищён environment `production-db`, сериализует запуски, использует только отдельный
+admin Neon secret и после Drizzle migrate выполняет SELECT-only проверку PostgreSQL 17,
+UTF-8, migration ledger и initial locale data. Production migration ещё не запускалась,
+поскольку credential/environment пока не предоставлены.
+
 ## Блокеры
 
 Нет.
