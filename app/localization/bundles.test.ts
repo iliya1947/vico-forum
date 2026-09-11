@@ -30,10 +30,17 @@ describe("compiled UI namespace bundles", () => {
     expect(changedLocale.bundleVersion).not.toBe(baseline.bundleVersion);
   });
 
-  it("rejects unknown resource identities instead of caching them", async () => {
+  it("rejects non-canonical locale and unknown resource identities", async () => {
+    await expect(compileNamespaceBundle("RU", "common", {})).rejects.toThrow("canonical translation locale");
     await expect(compileNamespaceBundle("ru", "unknown", {})).rejects.toThrow("Unknown canonical namespace");
     await expect(compileNamespaceBundle("ru", "common", { typo: "value" })).rejects.toThrow(
       "Unknown canonical key",
+    );
+  });
+
+  it("validates resource semantics before publishing a bundle identity", async () => {
+    await expect(compileNamespaceBundle("ru", "common", { heading: "<b>unsafe</b>" })).rejects.toThrow(
+      "Markup is forbidden",
     );
   });
 
