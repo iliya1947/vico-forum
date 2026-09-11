@@ -20,12 +20,14 @@ availability, degraded registry получает безопасную reason-onl
 builds подтверждены как включённые; текущая preview capability допускается только при существующей
 read-only/public-data границе и должна быть изолирована до появления write-capability или private data.
 
-Stage 3A завершён: migration-only PR merged, persistent UI translation schema применена в production
-через `Production database migration #2`, production verification завершился успешно, а существующему
+Stage 3A и Stage 3B завершены. Persistent UI translation schema применена в production через
+`Production database migration #2`, production verification завершился успешно, а существующему
 `vico_forum_runtime` выдан только `SELECT` на `public.ui_translations` и
-`public.ui_translation_bundles`. Эффективные права вручную проверены: `SELECT=true`, а
-`INSERT`/`UPDATE`/`DELETE`/`TRUNCATE`/`REFERENCES`/`TRIGGER=false` на обеих таблицах. Stage 3B
-идёт отдельным read-only runtime PR без schema/dependency/write-capability изменений.
+`public.ui_translation_bundles`. Read-only persistent source runtime merged и принят deployed smoke:
+временный approved `ru/common/stageSummary` из production PostgreSQL был прочитан Worker через
+Hyperdrive и появился в SSR, после удаления записи English fallback восстановился. Workers
+Observability включён через `wrangler.jsonc`; production events видны без Worker errors. Stage 3C
+выполняет оставшийся compiled bundle/version/cache/ETag boundary без добавления Worker writes.
 
 ## Готово
 
@@ -144,26 +146,33 @@ Stage 3A завершён: migration-only PR merged, persistent UI translation s
 - Stage 3A migration-only PR добавил `ui_translations` и `ui_translation_bundles` без runtime
   dependency, после merge migration применена и verified в production, а `vico_forum_runtime`
   получил только read-only `SELECT` на новые таблицы с вручную подтверждённым отсутствием DML и
-  других table-level mutation privileges.
+  других table-level mutation privileges;
+- Stage 3B read-only runtime PR добавил `UiTranslationStore`, persistent manual/machine sources,
+  runtime boundary validation, existing `local manual → persistent manual → machine` priority,
+  request-scoped memoized Hyperdrive reads и classified DB fallback без provider calls или writes;
+- deployed Stage 3B acceptance подтверждён временной approved production translation: Worker прочитал
+  `ru/common/stageSummary` из PostgreSQL через Hyperdrive и отдал её SSR; после удаления тестовой
+  записи English fallback восстановился;
+- Workers Observability включён repository-owned Wrangler config и после production deploy показывает
+  реальные request events без Worker errors в проверенной выборке.
 
 ## Сейчас
 
-Stage 3B выполняется отдельным read-only runtime PR. Candidate implementation добавляет
-`UiTranslationStore`, persistent manual/machine translation sources, существующий priority
-`local manual → persistent manual → machine`, `sourceFingerprint` freshness, request-scoped
-memoized Hyperdrive reads и safe fallback на local/canonical English при classified DB availability
-или schema failures. Worker write-capability, provider calls и translation generation не добавляются.
+Stage 3C выполняется отдельным PR для `UI-14`/`STO-05`: deterministic versioned locale/namespace
+bundles, persistent compiled-bundle repository и cache/ETag identity boundary. Production Worker
+остаётся read-only; Cloudflare Cache API/KV backend и runtime bundle writes не добавляются.
 
 ## Блокеры
 
-- Блокеров для PR 3B по production schema/grants нет: migration и production verification Stage 3A
-  завершены, необходимые read-only grants применены и проверены.
+- Блокеров для Stage 3C по production schema нет: `ui_translation_bundles` уже создана и runtime role
+  имеет только read-only `SELECT`; compiler persistence остаётся admin/test boundary и не подключается
+  к Worker write path.
 - Preview/non-production isolation является future gate: до появления runtime write-capability
   или непубличных production data нужно создать отдельный staging Worker/Hyperdrive/DB либо
   отключить non-production builds.
 
 ## Следующий шаг
 
-Завершить PR 3B, пройти required `checks` + `database` и выполнить review. После merge подтвердить
-read-only persistent translation path на deployed Worker, затем продолжить оставшиеся работы Stage 3
-по compiled bundle/version/cache boundary без преждевременного включения runtime writes.
+Завершить PR 3C, пройти required `checks` + `database` и review. После merge проверить deployed
+regression для locale/translation SSR; если критерии Stage 3 закрыты, зафиксировать Stage 3 acceptance
+и переходить к Stage 4 (Better Auth + Google OAuth).
