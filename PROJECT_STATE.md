@@ -20,14 +20,12 @@ availability, degraded registry получает безопасную reason-onl
 builds подтверждены как включённые; текущая preview capability допускается только при существующей
 read-only/public-data границе и должна быть изолирована до появления write-capability или private data.
 
-Stage 3A и Stage 3B завершены. Persistent UI translation schema применена в production через
-`Production database migration #2`, production verification завершился успешно, а существующему
-`vico_forum_runtime` выдан только `SELECT` на `public.ui_translations` и
-`public.ui_translation_bundles`. Read-only persistent source runtime merged и принят deployed smoke:
-временный approved `ru/common/stageSummary` из production PostgreSQL был прочитан Worker через
-Hyperdrive и появился в SSR, после удаления записи English fallback восстановился. Workers
-Observability включён через `wrangler.jsonc`; production events видны без Worker errors. Stage 3C
-выполняет оставшийся compiled bundle/version/cache/ETag boundary без добавления Worker writes.
+Stage 3 завершён. Stage 3A добавил и применил production schema persistent UI translations;
+Stage 3B подключил read-only persistent manual/machine sources к Worker runtime и прошёл реальный
+production Hyperdrive smoke; Stage 3C добавил deterministic compiled locale/namespace bundle identity,
+persistent bundle repository и cache/ETag boundary без Worker write-capability. Финальный deployed
+regression после merge Stage 3C подтвердил `/en/`, `/ru/`, `/he/`, Hebrew RTL, English fallback и
+отсутствие Worker errors в проверенной Observability выборке.
 
 ## Готово
 
@@ -154,25 +152,33 @@ Observability включён через `wrangler.jsonc`; production events ви
   `ru/common/stageSummary` из PostgreSQL через Hyperdrive и отдал её SSR; после удаления тестовой
   записи English fallback восстановился;
 - Workers Observability включён repository-owned Wrangler config и после production deploy показывает
-  реальные request events без Worker errors в проверенной выборке.
+  реальные request events без Worker errors в проверенной выборке;
+- Stage 3C добавил deterministic compiled locale/namespace bundles, semantic bundle version,
+  backend-independent cache identity/weak ETag boundary и Drizzle persistence поверх уже существующей
+  `ui_translation_bundles`; production Worker при этом остался read-only и runtime bundle writes не
+  добавлялись;
+- Stage 3 final deployed acceptance после merge Stage 3C подтвердил корректный SSR для `en`/`ru`/`he`,
+  Hebrew RTL, expected English fallback и отсутствие Worker errors в проверенной Observability выборке.
 
 ## Сейчас
 
-Stage 3C выполняется отдельным PR для `UI-14`/`STO-05`: deterministic versioned locale/namespace
-bundles, persistent compiled-bundle repository и cache/ETag identity boundary. Production Worker
-остаётся read-only; Cloudflare Cache API/KV backend и runtime bundle writes не добавляются.
+Stage 3 закрыт. Перед Stage 4 выполняется отдельный pre-Stage-4 audit/hardening. Это необходимо,
+потому что Stage 4 впервые вводит authentication/session boundary, private auth data и runtime
+write-capability, поэтому существующий preview/non-production production-Hyperdrive допуск больше
+нельзя автоматически переносить на следующий этап.
 
 ## Блокеры
 
-- Блокеров для Stage 3C по production schema нет: `ui_translation_bundles` уже создана и runtime role
-  имеет только read-only `SELECT`; compiler persistence остаётся admin/test boundary и не подключается
-  к Worker write path.
-- Preview/non-production isolation является future gate: до появления runtime write-capability
-  или непубличных production data нужно создать отдельный staging Worker/Hyperdrive/DB либо
-  отключить non-production builds.
+- Блокеров для закрытого Stage 3 нет.
+- До runtime writes или private auth data необходимо выполнить уже зафиксированный isolation gate:
+  создать отдельный staging Worker/Hyperdrive/DB для non-production/preview path либо отключить
+  non-production builds.
+- Exact-version Better Auth + React Router SSR + Cloudflare Workers + Drizzle integration и auth
+  security boundary ещё не прошли отдельный pre-Stage-4 review; это задача следующего hardening.
 
 ## Следующий шаг
 
-Завершить PR 3C, пройти required `checks` + `database` и review. После merge проверить deployed
-regression для locale/translation SSR; если критерии Stage 3 закрыты, зафиксировать Stage 3 acceptance
-и переходить к Stage 4 (Better Auth + Google OAuth).
+Провести pre-Stage-4 audit/hardening по тому же принципу, что и перед Stage 3: проверить текущий
+код, документацию, CI/deploy/runtime boundaries и актуальную официальную документацию Better Auth,
+Google OAuth, React Router и Cloudflare; зафиксировать blockers/required changes и только после их
+закрытия начинать Stage 4 (Better Auth + Google OAuth).
