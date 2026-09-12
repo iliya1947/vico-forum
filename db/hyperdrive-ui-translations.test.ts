@@ -56,6 +56,26 @@ describe("Hyperdrive UI translation request store", () => {
     expect(reportDegraded).toHaveBeenCalledWith("unavailable");
   });
 
+  it("opens a request-local circuit after a query timeout and discards the client", async () => {
+    const timeout = new Error("Query read timeout");
+    const query = vi.fn(async () => { throw timeout; });
+    const end = vi.fn(async () => undefined);
+    const reportDegraded = vi.fn();
+    const store = createHyperdriveUiTranslationStore(
+      "postgres://runtime@hyperdrive/vico",
+      () => ({ connect: vi.fn(async () => undefined), query, end }) as unknown as Client,
+      reportDegraded,
+    );
+
+    await expect(store.readApproved("ru", ["common"])).resolves.toEqual([]);
+    await expect(store.readApproved("he", ["common"])).resolves.toEqual([]);
+
+    expect(query).toHaveBeenCalledOnce();
+    expect(end).toHaveBeenCalledOnce();
+    expect(reportDegraded).toHaveBeenCalledOnce();
+    expect(reportDegraded).toHaveBeenCalledWith("timeout");
+  });
+
   it("treats node-postgres code-less connection termination as unavailable", async () => {
     const unavailable = new Error("Connection terminated unexpectedly");
     const reportDegraded = vi.fn();
@@ -84,7 +104,9 @@ describe("Hyperdrive UI translation request store", () => {
     );
 
     await expect(store.readApproved("ru", ["common"])).resolves.toEqual([]);
+    await expect(store.readApproved("he", ["common"])).resolves.toEqual([]);
     expect(reportDegraded).toHaveBeenCalledWith("schema-mismatch");
+    expect(query).toHaveBeenCalledOnce();
 
     const authFailure = Object.assign(new Error("permission denied"), { code: "42501" });
     const authStore = createHyperdriveUiTranslationStore(

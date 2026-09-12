@@ -90,6 +90,11 @@ operations rather than granting auth writes to the localization role.
 The current verifier does **not** yet enforce this privilege contract. Extending it is a
 pre-Stage-4 hardening requirement, not a completed check.
 
+Runtime-role timeout defaults are operational role configuration, not portable schema. Apply the
+reviewed `scripts/configure-localization-deadlines.sql` with environment-specific role/database
+names and follow the real Hyperdrive acceptance in `HYPERDRIVE.md`; do not add production role names
+to Drizzle migrations.
+
 ## Migration → runtime evidence
 
 Schema-first ordering is necessary but is not sufficient evidence by itself. A later runtime

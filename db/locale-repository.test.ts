@@ -30,6 +30,27 @@ function row(tag: string): PersistentLocaleRow {
 }
 
 describe("ControlledLocaleWriter canonical identity", () => {
+  it("sets transaction-local deadlines before reading or mutating without retrying a timeout", async () => {
+    const timeout = Object.assign(new Error("statement timeout"), { code: "57014" });
+    const query = vi.fn(async (text: string) => {
+      if (text.startsWith("select tag")) throw timeout;
+      return { rows: [] };
+    });
+    const writer = new ControlledLocaleWriter(
+      { query } as unknown as ClientBase,
+      { readAll: async () => [] },
+    );
+
+    await expect(writer.apply({ type: "put", locale: locale("fr") })).rejects.toBe(timeout);
+    expect(query.mock.calls.map(([text]) => text)).toEqual([
+      "begin isolation level serializable",
+      "set local lock_timeout = '2s'",
+      "set local statement_timeout = '10s'",
+      expect.stringMatching(/^select tag/),
+      "rollback",
+    ]);
+  });
+
   it("uses one canonical tag for state replacement and SQL DML", async () => {
     const queries: Array<{ text: string; values?: unknown[] }> = [];
     const query = vi.fn(async (text: string, values?: unknown[]) => {

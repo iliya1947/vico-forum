@@ -8,8 +8,14 @@ import type {
   UiTranslationStore,
 } from "../app/localization/persistent-sources";
 import { DrizzleUiTranslationStore } from "./ui-translation-store";
+import {
+  bestEffortDiscardClient,
+  createLocalizationClient,
+  isPostgresConnectionTimeout,
+  isPostgresQueryTimeout,
+} from "./postgres-deadlines";
 
-export type UiTranslationStoreDegradedReason = "unavailable" | "schema-mismatch";
+export type UiTranslationStoreDegradedReason = "unavailable" | "schema-mismatch" | "timeout";
 
 type UiTranslationStoreDegradedReporter = (reason: UiTranslationStoreDegradedReason) => void;
 
@@ -25,7 +31,7 @@ class UiTranslationConnectionUnavailableError extends Error {
 }
 
 const schemaMismatchCodes = new Set(["42P01", "42703", "42804"]);
-const defaultClientFactory: PostgreSqlClientFactory = (connectionString) => new Client({ connectionString });
+const defaultClientFactory: PostgreSqlClientFactory = createLocalizationClient;
 const defaultDegradedReporter: UiTranslationStoreDegradedReporter = (reason) => {
   console.warn(JSON.stringify({ event: "ui_translation_store_degraded", reason }));
 };
@@ -37,21 +43,28 @@ export function createHyperdriveUiTranslationStore(
   reportDegraded: UiTranslationStoreDegradedReporter = defaultDegradedReporter,
 ): UiTranslationStore {
   let storePromise: Promise<DrizzleUiTranslationStore> | undefined;
+  let client: Client | undefined;
+  let circuitOpen = false;
   let reportedDegraded = false;
   const reads = new Map<string, Promise<readonly PersistentUiTranslationRow[]>>();
 
-  const loadStore = () => (storePromise ??= connectStore(connectionString, createClient));
+  const loadStore = () => (storePromise ??= connectStore(connectionString, createClient, (connected) => {
+    client = connected;
+  }));
 
   const read = async (
     locale: string,
     namespaces: readonly string[],
   ): Promise<readonly PersistentUiTranslationRow[]> => {
     if (locale === "en" || namespaces.length === 0) return [];
+    if (circuitOpen) return [];
     try {
       return await (await loadStore()).readApproved(locale, namespaces);
     } catch (error) {
       const reason = classifyReadFailure(error);
       if (!reason) throw error;
+      circuitOpen = true;
+      if (client) bestEffortDiscardClient(client);
       if (!reportedDegraded) {
         reportedDegraded = true;
         reportDegraded(reason);
@@ -74,12 +87,17 @@ export function createHyperdriveUiTranslationStore(
   };
 }
 
-async function connectStore(connectionString: string, createClient: PostgreSqlClientFactory) {
+async function connectStore(
+  connectionString: string,
+  createClient: PostgreSqlClientFactory,
+  connected: (client: Client) => void,
+) {
   const client = createClient(connectionString);
+  connected(client);
   try {
     await client.connect();
   } catch (error) {
-    if (!isPostgresAvailabilityFailure(error)) throw error;
+    if (!isPostgresAvailabilityFailure(error) && !isPostgresConnectionTimeout(error)) throw error;
     throw new UiTranslationConnectionUnavailableError({ cause: error });
   }
   return new DrizzleUiTranslationStore(drizzle(client));
@@ -95,6 +113,7 @@ function classifyReadFailure(error: unknown): UiTranslationStoreDegradedReason |
 
     const candidate = current as { cause?: unknown; code?: unknown };
     const code = typeof candidate.code === "string" ? candidate.code : undefined;
+    if (isPostgresQueryTimeout(current)) return "timeout";
     if (code && schemaMismatchCodes.has(code)) return "schema-mismatch";
     if (isPostgresAvailabilityFailure(current)) return "unavailable";
     current = candidate.cause;

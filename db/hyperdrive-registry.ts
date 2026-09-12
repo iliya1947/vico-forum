@@ -8,6 +8,12 @@ import {
   type RegistryDegradedReason,
 } from "../app/localization/persistent-registry";
 import { DrizzleLocaleRepository } from "./locale-repository";
+import {
+  bestEffortDiscardClient,
+  createLocalizationClient,
+  isPostgresConnectionTimeout,
+  isPostgresQueryTimeout,
+} from "./postgres-deadlines";
 
 interface PostgreSqlClientFactory {
   (connectionString: string): Client;
@@ -15,7 +21,7 @@ interface PostgreSqlClientFactory {
 
 type RegistryDegradedReporter = (reason: RegistryDegradedReason) => void;
 
-const defaultClientFactory: PostgreSqlClientFactory = (connectionString) => new Client({ connectionString });
+const defaultClientFactory: PostgreSqlClientFactory = createLocalizationClient;
 
 const defaultDegradedReporter: RegistryDegradedReporter = (reason) => {
   console.warn(JSON.stringify({ event: "locale_registry_degraded", reason }));
@@ -32,11 +38,16 @@ export function createHyperdriveRegistryLoader(
       const client = createClient(connectionString);
       try {
         await client.connect();
+        return await new DrizzleLocaleRepository(drizzle(client)).readAll();
       } catch (error) {
-        if (!isPostgresAvailabilityFailure(error)) throw error;
+        if (
+          !isPostgresAvailabilityFailure(error) &&
+          !isPostgresConnectionTimeout(error) &&
+          !isPostgresQueryTimeout(error)
+        ) throw error;
+        bestEffortDiscardClient(client);
         throw new RegistryConnectionUnavailableError({ cause: error });
       }
-      return new DrizzleLocaleRepository(drizzle(client)).readAll();
     },
   });
 

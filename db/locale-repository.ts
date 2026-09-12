@@ -65,6 +65,8 @@ export class ControlledLocaleWriter {
     let preState: string | undefined;
     let expectedPostState: string | undefined;
     try {
+      await this.client.query("set local lock_timeout = '2s'");
+      await this.client.query("set local statement_timeout = '10s'");
       const current = await this.client.query(`select tag, translation_status as "translationStatus",
         publication_status as "publicationStatus", direction, fallback_chain as "fallbackChain",
         aliases, match_tags as "matchTags", native_name as "nativeName",
