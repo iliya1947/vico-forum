@@ -175,7 +175,10 @@ fallback и отсутствие Worker errors в проверенной Observa
   degradation известными transport/SQLSTATE failure shapes;
 - production manual translation packs очищены от synthetic stale fixture; stale/freshness behavior
   остаётся покрыт test-only fixtures, а full-pack validation требует отсутствие stale keys в реальных
-  runtime-owned manual packs.
+  runtime-owned manual packs;
+- observability hardening включает Cloudflare query-string redaction для Workers logs и заменяет raw
+  SSR error logging на fixed allowlisted structured metadata без message/stack/request payload;
+  targeted tests проверяют, что sensitive error/request values не сериализуются в application log.
 
 ## Сейчас
 
