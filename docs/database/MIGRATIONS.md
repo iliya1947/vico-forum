@@ -54,7 +54,11 @@ of stable production invariants:
 - required columns/types/nullability for `public.locales`, `public.ui_translations`, and
   `public.ui_translation_bundles`;
 - absence of persistent bootstrap/reserved locale rows such as `en`, `api`, and `assets`;
-- absence of persistent canonical-English rows in UI translation storage/bundles.
+- absence of persistent canonical-English rows in UI translation storage/bundles;
+- the current migration role and the environment-provided runtime role, their dangerous
+  attributes and memberships;
+- application ownership, exact runtime `public` schema/table/sequence privileges, grants to
+  `PUBLIC`, default privileges, and any cross-domain runtime grants.
 
 The production verifier intentionally does not require exact mutable locale lifecycle values
 such as publication/translation status, aliases, native names, or presentation metadata.
@@ -83,12 +87,18 @@ verification boundary must cover at least:
 - default privileges that could silently broaden future runtime access.
 
 Production role names are environment-specific inputs and must not be hard-coded into portable
-migration SQL. The current localization runtime role is read-only; Stage 4 must derive a separate
+migration SQL. The verifier derives the migration role from `current_user`; set the production
+environment variable `RUNTIME_DATABASE_ROLE` to the existing localization runtime role. Its exact
+allowlist is `USAGE` on `public` plus `SELECT` on `locales`, `ui_translations`, and
+`ui_translation_bundles`; the existing `PUBLIC` schema `USAGE` remains allowed, while other
+`PUBLIC` privileges are rejected. Set `MIGRATION_DATABASE_ROLE_MEMBERSHIPS` to the comma-separated
+exact membership allowlist for the existing migration credential (an empty value means no
+memberships). The current localization runtime role is read-only; Stage 4 must derive a separate
 least-privilege auth role/Hyperdrive from the exact selected Better Auth schema and real adapter
 operations rather than granting auth writes to the localization role.
 
-The current verifier does **not** yet enforce this privilege contract. Extending it is a
-pre-Stage-4 hardening requirement, not a completed check.
+The production verifier enforces this current privilege contract. Its targeted fixtures run in PR
+CI; production catalog verification still runs only in the protected production migration workflow.
 
 Runtime-role timeout defaults are operational role configuration, not portable schema. Apply the
 reviewed `scripts/configure-localization-deadlines.sql` with environment-specific role/database

@@ -38,3 +38,5 @@ jobs:
         run: node .github/scripts/verify-production-migration.mjs
         env:
           DATABASE_URL: ${{ secrets.NEON_MIGRATION_DATABASE_URL }}
+          RUNTIME_DATABASE_ROLE: ${{ vars.RUNTIME_DATABASE_ROLE }}
+          MIGRATION_DATABASE_ROLE_MEMBERSHIPS: ${{ vars.MIGRATION_DATABASE_ROLE_MEMBERSHIPS }}

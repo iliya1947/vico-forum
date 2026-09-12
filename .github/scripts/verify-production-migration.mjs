@@ -2,9 +2,30 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
 import pg from "pg";
+import {
+  assertProductionPrivilegeContract,
+  readProductionPrivilegeSnapshot,
+} from "./production-privileges.mjs";
 
 const databaseUrl = globalThis.process.env.DATABASE_URL;
 assert.ok(databaseUrl, "DATABASE_URL is required");
+const runtimeRole = globalThis.process.env.RUNTIME_DATABASE_ROLE;
+assert.ok(runtimeRole, "RUNTIME_DATABASE_ROLE is required");
+const migrationMembershipsValue = globalThis.process.env.MIGRATION_DATABASE_ROLE_MEMBERSHIPS;
+assert.notEqual(
+  migrationMembershipsValue,
+  undefined,
+  "MIGRATION_DATABASE_ROLE_MEMBERSHIPS is required (use an empty value for no memberships)",
+);
+const migrationMemberships = migrationMembershipsValue
+  .split(",")
+  .map((role) => role.trim())
+  .filter(Boolean);
+assert.equal(
+  new Set(migrationMemberships).size,
+  migrationMemberships.length,
+  "MIGRATION_DATABASE_ROLE_MEMBERSHIPS must not contain duplicates",
+);
 
 const journal = JSON.parse(await readFile("drizzle/meta/_journal.json", "utf8"));
 const expectedMigrationHistory = journal.entries.map(({ when }) => String(when));
@@ -134,7 +155,16 @@ try {
     "Canonical English UI resources must remain code-owned rather than persistent rows",
   );
 
-  globalThis.console.log("Production database migration verification passed.");
+  const identity = await client.query("SELECT current_user AS migration_role");
+  const migrationRole = identity.rows[0].migration_role;
+  const privilegeSnapshot = await readProductionPrivilegeSnapshot(client, [migrationRole, runtimeRole]);
+  assertProductionPrivilegeContract(privilegeSnapshot, {
+    migrationRole,
+    runtimeRole,
+    migrationMemberships,
+  });
+
+  globalThis.console.log("Production database schema and privilege verification passed.");
 } finally {
   await client.end();
 }
