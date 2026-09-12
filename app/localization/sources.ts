@@ -23,6 +23,13 @@ export interface TranslationPackValidation {
   staleKeys: Readonly<Record<string, readonly string[]>>;
 }
 
+export class TranslationValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "TranslationValidationError";
+  }
+}
+
 const EMPTY_RESULT: TranslationSourceResult = { resources: {}, staleKeys: [], version: "empty" };
 
 function descriptorIndex(): Map<string, UiMessageDescriptor> {
@@ -39,17 +46,19 @@ async function resourceVersion(parts: readonly string[]): Promise<string> {
 }
 
 export function validateTranslation(descriptor: UiMessageDescriptor, value: string): void {
-  if (!value.trim()) throw new Error(`Empty translation: ${descriptor.namespace}:${descriptor.key}`);
-  if (value.length > 10_000) throw new Error(`Translation is too long: ${descriptor.namespace}:${descriptor.key}`);
+  if (!value.trim()) throw new TranslationValidationError(`Empty translation: ${descriptor.namespace}:${descriptor.key}`);
+  if (value.length > 10_000) {
+    throw new TranslationValidationError(`Translation is too long: ${descriptor.namespace}:${descriptor.key}`);
+  }
   if (/<\/?[a-z][^>]*>/i.test(value)) {
-    throw new Error(`Markup is forbidden: ${descriptor.namespace}:${descriptor.key}`);
+    throw new TranslationValidationError(`Markup is forbidden: ${descriptor.namespace}:${descriptor.key}`);
   }
   const expected = [...descriptor.placeholders].sort();
   if (JSON.stringify(placeholders(value)) !== JSON.stringify(expected)) {
-    throw new Error(`Placeholder mismatch: ${descriptor.namespace}:${descriptor.key}`);
+    throw new TranslationValidationError(`Placeholder mismatch: ${descriptor.namespace}:${descriptor.key}`);
   }
   if (descriptor.messageKind === "plural" && !descriptor.placeholders.includes("count")) {
-    throw new Error(`Plural message requires count: ${descriptor.namespace}:${descriptor.key}`);
+    throw new TranslationValidationError(`Plural message requires count: ${descriptor.namespace}:${descriptor.key}`);
   }
 }
 

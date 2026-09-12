@@ -56,6 +56,22 @@ describe("Hyperdrive UI translation request store", () => {
     expect(reportDegraded).toHaveBeenCalledWith("unavailable");
   });
 
+  it("treats node-postgres code-less connection termination as unavailable", async () => {
+    const unavailable = new Error("Connection terminated unexpectedly");
+    const reportDegraded = vi.fn();
+    const store = createHyperdriveUiTranslationStore(
+      "postgres://runtime@hyperdrive/vico",
+      () => ({
+        connect: vi.fn(async () => { throw unavailable; }),
+        query: vi.fn(),
+      }) as unknown as Client,
+      reportDegraded,
+    );
+
+    await expect(store.readApproved("ru", ["common"])).resolves.toEqual([]);
+    expect(reportDegraded).toHaveBeenCalledWith("unavailable");
+  });
+
   it("falls back for a missing translation table without masking other SQL failures", async () => {
     const missingTable = Object.assign(new Error("missing table"), { code: "42P01" });
     const query = vi.fn(async () => { throw missingTable; });
@@ -88,17 +104,21 @@ describe("Hyperdrive UI translation request store", () => {
     }
   });
 
-  it("does not mask a programming failure while connecting", async () => {
-    const failure = new TypeError("client programming error");
+  it.each([
+    new TypeError("client programming error"),
+    new Error("driver configuration failure"),
+  ])("does not mask an unknown connect failure", async (failure) => {
+    const reportDegraded = vi.fn();
     const store = createHyperdriveUiTranslationStore(
       "postgres://runtime@hyperdrive/vico",
       () => ({
         connect: vi.fn(async () => { throw failure; }),
         query: vi.fn(),
       }) as unknown as Client,
-      vi.fn(),
+      reportDegraded,
     );
 
     await expect(store.readApproved("ru", ["common"])).rejects.toBe(failure);
+    expect(reportDegraded).not.toHaveBeenCalled();
   });
 });

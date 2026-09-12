@@ -1,10 +1,12 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Client } from "pg";
+import {
+  isPostgresAvailabilityFailure,
+} from "../app/localization/persistent-registry";
 import type {
   PersistentUiTranslationRow,
   UiTranslationStore,
 } from "../app/localization/persistent-sources";
-import { isTransportUnavailableCode } from "../app/localization/persistent-registry";
 import { DrizzleUiTranslationStore } from "./ui-translation-store";
 
 export type UiTranslationStoreDegradedReason = "unavailable" | "schema-mismatch";
@@ -22,7 +24,6 @@ class UiTranslationConnectionUnavailableError extends Error {
   }
 }
 
-const postgresUnavailableCodes = new Set(["57P01", "57P02", "57P03", "53300"]);
 const schemaMismatchCodes = new Set(["42P01", "42703", "42804"]);
 const defaultClientFactory: PostgreSqlClientFactory = (connectionString) => new Client({ connectionString });
 const defaultDegradedReporter: UiTranslationStoreDegradedReporter = (reason) => {
@@ -78,7 +79,7 @@ async function connectStore(connectionString: string, createClient: PostgreSqlCl
   try {
     await client.connect();
   } catch (error) {
-    if (!isConnectAvailabilityFailure(error)) throw error;
+    if (!isPostgresAvailabilityFailure(error)) throw error;
     throw new UiTranslationConnectionUnavailableError({ cause: error });
   }
   return new DrizzleUiTranslationStore(drizzle(client));
@@ -95,33 +96,9 @@ function classifyReadFailure(error: unknown): UiTranslationStoreDegradedReason |
     const candidate = current as { cause?: unknown; code?: unknown };
     const code = typeof candidate.code === "string" ? candidate.code : undefined;
     if (code && schemaMismatchCodes.has(code)) return "schema-mismatch";
-    if (code?.startsWith("08") || postgresUnavailableCodes.has(code ?? "") || isTransportUnavailableCode(code)) {
-      return "unavailable";
-    }
+    if (isPostgresAvailabilityFailure(current)) return "unavailable";
     current = candidate.cause;
   }
 
   return undefined;
-}
-
-function isConnectAvailabilityFailure(error: unknown): boolean {
-  if (
-    error instanceof TypeError ||
-    error instanceof ReferenceError ||
-    error instanceof SyntaxError ||
-    error instanceof RangeError
-  ) {
-    return false;
-  }
-
-  const code =
-    error && (typeof error === "object" || typeof error === "function")
-      ? (error as { code?: unknown }).code
-      : undefined;
-
-  if (typeof code === "string") {
-    return code.startsWith("08") || postgresUnavailableCodes.has(code) || isTransportUnavailableCode(code);
-  }
-
-  return error instanceof Error;
 }

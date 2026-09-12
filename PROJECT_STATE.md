@@ -168,7 +168,11 @@ fallback и отсутствие Worker errors в проверенной Observa
 - canonical locale persistence hardening нормализует controlled put/delete до canonical translation
   identity до state comparison и SQL DML, сохраняет canonical BCP-47 casing, отклоняет formatting
   extensions и классифицирует non-canonical physical stored tag как registry integrity degradation;
-  targeted tests покрывают writer/load boundary.
+  targeted tests покрывают writer/load boundary;
+- persistent UI translation resilience hardening изолирует malformed individual rows на уровне строки,
+  публикует только reason/count telemetry без translation payload, сохраняет store scope и
+  programming/runtime/auth/unknown failures видимыми и ограничивает PostgreSQL availability
+  degradation известными transport/SQLSTATE failure shapes.
 
 ## Сейчас
 
@@ -181,8 +185,6 @@ production privilege contract и migration→runtime evidence contract. Техн
 
 - Добавить bounded PostgreSQL connect/query/statement deadlines для localization Hyperdrive reads
   без маскирования programming/auth errors; конкретные значения подтвердить staging telemetry.
-- Malformed individual persistent translation row должна безопасно пропускаться с reason/count
-  telemetry и fallback, при этом scope/config/programming/unknown errors не скрываются.
 - Расширить production verifier проверкой runtime roles/grants/ownership/default privileges; текущие
   ручные privilege checks недостаточны для Stage 4 auth/private data.
 - Создать выбранную staging isolation topology до private auth data/runtime writes: отдельный Neon
@@ -193,8 +195,8 @@ production privilege contract и migration→runtime evidence contract. Техн
 
 ## Следующий шаг
 
-Закрыть repo/runtime hardening (DB deadlines, malformed-row degradation, production privilege verification
-и migration evidence), затем создать и проверить staging isolation. После закрытия этих блокеров начать
-Stage 4 с exact-version Better Auth + React Router SSR + Cloudflare Workers + Drizzle preflight, получить
-реальную auth schema/adapter operations и только после этого зафиксировать auth DB grants и выполнять
-auth migration/runtime rollout.
+Закрыть repo/runtime hardening (DB deadlines, production privilege verification и migration evidence),
+затем создать и проверить staging isolation. После закрытия этих блокеров начать Stage 4 с exact-version
+Better Auth + React Router SSR + Cloudflare Workers + Drizzle preflight, получить реальную auth
+schema/adapter operations и только после этого зафиксировать auth DB grants и выполнять auth
+migration/runtime rollout.

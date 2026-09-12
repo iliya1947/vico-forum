@@ -94,6 +94,7 @@ describe("persistent locale registry", () => {
     [Object.assign(new Error("dns failed"), { code: "ENOTFOUND" }), "unavailable"],
     [Object.assign(new Error("reset"), { code: "ECONNRESET" }), "unavailable"],
     [Object.assign(new Error("broken pipe"), { code: "EPIPE" }), "unavailable"],
+    [new Error("Connection terminated unexpectedly"), "unavailable"],
     [Object.assign(new Error("missing table"), { code: "42P01" }), "schema-mismatch"],
     [new RegistryIntegrityError("bad graph"), "integrity"],
   ] as const)("degrades to bootstrap English for a classified failure", async (error, reason) => {
@@ -113,17 +114,19 @@ describe("persistent locale registry", () => {
     await expect(loadPersistentRegistry({ readAll: async () => { throw cyclic; } })).rejects.toBe(cyclic);
   });
 
-  it("does not mask programming or authentication errors and memoizes one load per request service", async () => {
-    const programmingFailure = new TypeError("bug");
-    await expect(loadPersistentRegistry({ readAll: async () => { throw programmingFailure; } })).rejects.toBe(
-      programmingFailure,
-    );
+  it("does not mask programming, authentication, or unknown driver errors", async () => {
+    const failures = [
+      new TypeError("bug"),
+      Object.assign(new Error("authentication failed"), { code: "28P01" }),
+      new Error("driver configuration failure"),
+    ];
 
-    const authenticationFailure = Object.assign(new Error("authentication failed"), { code: "28P01" });
-    await expect(loadPersistentRegistry({ readAll: async () => { throw authenticationFailure; } })).rejects.toBe(
-      authenticationFailure,
-    );
+    for (const failure of failures) {
+      await expect(loadPersistentRegistry({ readAll: async () => { throw failure; } })).rejects.toBe(failure);
+    }
+  });
 
+  it("memoizes one load per request service", async () => {
     const readAll = vi.fn(async () => [row()]);
     const load = createRequestRegistryLoader({ readAll });
     const [one, two] = await Promise.all([load(), load()]);

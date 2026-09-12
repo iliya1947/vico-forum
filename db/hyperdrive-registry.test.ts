@@ -50,7 +50,7 @@ describe("Hyperdrive registry request factory", () => {
     expect(reportDegraded).toHaveBeenCalledWith("unavailable");
   });
 
-  it("treats a code-less pg connect failure as unavailable", async () => {
+  it("treats node-postgres code-less connection termination as unavailable", async () => {
     const unavailable = new Error("Connection terminated unexpectedly");
     const createClient = () => ({
       connect: vi.fn(async () => { throw unavailable; }),
@@ -72,6 +72,7 @@ describe("Hyperdrive registry request factory", () => {
   it.each([
     Object.assign(new Error("authentication failed"), { code: "28P01" }),
     new TypeError("client programming error"),
+    new Error("driver configuration failure"),
   ])("does not mask a non-availability connect failure", async (failure) => {
     const createClient = () => ({
       connect: vi.fn(async () => { throw failure; }),
