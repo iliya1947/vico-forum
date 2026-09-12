@@ -190,13 +190,18 @@ fallback и отсутствие Worker errors в проверенной Observa
   inbound memberships, foreign tables, column ACL/grant options, grants `PUBLIC` и отсутствие
   cross-domain grants; effective default
   ACL учитывает hard-wired и catalog defaults PostgreSQL 17, targeted fixtures подключены к PR CI.
+- migration→runtime evidence linkage фиксирует production workflow run ID, exact `main` SHA, SHA-256
+  Drizzle journal и newest runtime-required migration; PR CI сверяет successful manual production
+  workflow через GitHub API, ancestry и exact journal coverage, а production workflow публикует
+  готовые run/SHA/journal evidence values только после успешной schema/privilege verification.
 
 ## Сейчас
 
 Stage 3 закрыт. Pre-Stage-4 audit завершён; выполняется обязательный hardening перед Stage 4.
 Документация синхронизирована с фактическим Stage 3C runtime boundary, выбранной staging topology,
-production privilege contract и migration→runtime evidence contract. Технические hardening items
-ещё не считаются выполненными, пока соответствующий код/CI/infrastructure не реализованы и не проверены.
+production privilege contract и migration→runtime evidence contract. Migration evidence реализован;
+остальные технические hardening items ещё не считаются выполненными, пока соответствующий
+код/CI/infrastructure не реализованы и не проверены.
 
 ## Блокеры
 
@@ -206,12 +211,10 @@ production privilege contract и migration→runtime evidence contract. Техн
   staging project, staging-only credentials/roles, staging Hyperdrive configuration(s), отдельный
   Cloudflare staging Worker/environment, build с выбранным staging environment (`CLOUDFLARE_ENV=staging`)
   и реальный deployed staging smoke без production DB bindings/secrets.
-- Добавить минимальную migration→runtime evidence linkage для первого Stage 4 schema-dependent rollout.
 
 ## Следующий шаг
 
-Закрыть repo/runtime hardening (DB deadlines, production privilege verification и migration evidence),
-затем создать и проверить staging isolation. После закрытия этих блокеров начать Stage 4 с exact-version
-Better Auth + React Router SSR + Cloudflare Workers + Drizzle preflight, получить реальную auth
-schema/adapter operations и только после этого зафиксировать auth DB grants и выполнять auth
-migration/runtime rollout.
+Проверить DB deadlines на staging и создать/проверить staging isolation. После закрытия этих блокеров
+начать Stage 4 с exact-version Better Auth + React Router SSR + Cloudflare Workers + Drizzle preflight,
+получить реальную auth schema/adapter operations и только после этого зафиксировать auth DB grants и
+выполнять auth migration/runtime rollout.
