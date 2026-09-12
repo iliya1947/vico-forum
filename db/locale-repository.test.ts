@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ClientBase } from "pg";
-import { ControlledLocaleWriter } from "./locale-repository";
+import { AmbiguousCommitOutcomeError, ControlledLocaleWriter } from "./locale-repository";
 import type { LocaleDefinition } from "../app/localization/locale";
 import type { PersistentLocaleRow } from "../app/localization/persistent-registry";
 
@@ -67,6 +67,45 @@ describe("ControlledLocaleWriter canonical identity", () => {
     );
 
     await expect(writer.apply({ type: "put", locale: locale("fr") })).resolves.toBeUndefined();
+    expect(readAll).toHaveBeenCalledOnce();
+    expect(query.mock.calls.filter(([text]) => text === "commit")).toHaveLength(1);
+    expect(query.mock.calls.filter(([text]) => text === "begin isolation level serializable")).toHaveLength(1);
+  });
+
+  it("returns the original commit-time statement timeout when reconciliation finds the pre-state", async () => {
+    const timeout = Object.assign(new Error("canceling statement due to statement timeout"), { code: "57014" });
+    const query = vi.fn(async (text: string) => {
+      if (text.startsWith("select tag")) return { rows: [] };
+      if (text === "commit") throw timeout;
+      return { rows: [] };
+    });
+    const readAll = vi.fn(async () => []);
+    const writer = new ControlledLocaleWriter(
+      { query } as unknown as ClientBase,
+      { readAll },
+    );
+
+    await expect(writer.apply({ type: "put", locale: locale("fr") })).rejects.toBe(timeout);
+    expect(readAll).toHaveBeenCalledOnce();
+    expect(query.mock.calls.filter(([text]) => text === "commit")).toHaveLength(1);
+    expect(query.mock.calls.filter(([text]) => text === "begin isolation level serializable")).toHaveLength(1);
+  });
+
+  it("reports an ambiguous outcome when commit-time statement timeout reconciles to a third state", async () => {
+    const timeout = Object.assign(new Error("canceling statement due to statement timeout"), { code: "57014" });
+    const query = vi.fn(async (text: string) => {
+      if (text.startsWith("select tag")) return { rows: [] };
+      if (text === "commit") throw timeout;
+      return { rows: [] };
+    });
+    const readAll = vi.fn(async () => [row("de")]);
+    const writer = new ControlledLocaleWriter(
+      { query } as unknown as ClientBase,
+      { readAll },
+    );
+
+    await expect(writer.apply({ type: "put", locale: locale("fr") }))
+      .rejects.toBeInstanceOf(AmbiguousCommitOutcomeError);
     expect(readAll).toHaveBeenCalledOnce();
     expect(query.mock.calls.filter(([text]) => text === "commit")).toHaveLength(1);
     expect(query.mock.calls.filter(([text]) => text === "begin isolation level serializable")).toHaveLength(1);
