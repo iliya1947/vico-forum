@@ -6,6 +6,7 @@ import {
   DatabaseManualTranslationSource,
   PersistentTranslationIntegrityError,
   type PersistentUiTranslationRow,
+  type PersistentTranslationRowIssueReporter,
   type UiTranslationStore,
 } from "./persistent-sources";
 import { TranslationResourceLoader } from "./resource-loader";
@@ -20,18 +21,21 @@ const locale = {
   presentationMetadata: {},
 };
 
+type CommonKey = keyof typeof canonicalEnglishCatalog.common;
+
 async function row(
   origin: "persistent_manual" | "machine",
   value: unknown,
   fingerprint?: string,
+  key: CommonKey = "heading",
 ): Promise<PersistentUiTranslationRow> {
   return {
     locale: "ru",
     namespace: "common",
-    key: "heading",
+    key,
     origin,
     status: "approved",
-    sourceFingerprint: fingerprint ?? await sourceFingerprint(canonicalEnglishCatalog.common.heading),
+    sourceFingerprint: fingerprint ?? await sourceFingerprint(canonicalEnglishCatalog.common[key]),
     translatedPayload: value,
   };
 }
@@ -71,7 +75,8 @@ describe("persistent UI translation sources", () => {
     expect(snapshot.staleKeys.ru).toContain("common:heading");
   });
 
-  it("ignores approved historical rows whose canonical key no longer exists", async () => {
+  it("skips approved historical rows whose canonical key no longer exists and reports the reason", async () => {
+    const reportRowIssues = vi.fn<PersistentTranslationRowIssueReporter>();
     const persistentStore = store([{
       locale: "ru",
       namespace: "common",
@@ -82,26 +87,81 @@ describe("persistent UI translation sources", () => {
       translatedPayload: "Историческое значение",
     }]);
 
-    await expect(new DatabaseManualTranslationSource(persistentStore).load("ru", ["common"]))
+    await expect(new DatabaseManualTranslationSource(persistentStore, reportRowIssues).load("ru", ["common"]))
       .resolves.toMatchObject({ resources: {}, staleKeys: [] });
+    expect(reportRowIssues).toHaveBeenCalledOnce();
+    expect(reportRowIssues).toHaveBeenCalledWith({
+      origin: "persistent_manual",
+      skippedRows: 1,
+      reasons: { "unknown-key": 1 },
+    });
+  });
+
+  it("skips malformed rows, keeps valid rows, and reports aggregate reason counts", async () => {
+    const reportRowIssues = vi.fn<PersistentTranslationRowIssueReporter>();
+    const valid = await row("persistent_manual", "Актуальное состояние", undefined, "stageSummary");
+    const invalidPayload = await row("persistent_manual", { one: "Один", other: "Много" });
+    const invalidTranslation = await row("persistent_manual", "<b>Нельзя</b>");
+    const invalidFingerprint = { ...(await row("persistent_manual", "Значение")), sourceFingerprint: "bad" };
+    const invalidStatus = { ...(await row("persistent_manual", "Значение")), status: "draft" };
+    const invalidLocale = { ...(await row("persistent_manual", "Значение")), locale: "" };
+
+    const result = await new DatabaseManualTranslationSource(
+      store([invalidPayload, invalidTranslation, invalidFingerprint, invalidStatus, invalidLocale, valid]),
+      reportRowIssues,
+    ).load("ru", ["common"]);
+
+    expect(result.resources.common?.stageSummary).toBe("Актуальное состояние");
+    expect(result.resources.common?.heading).toBeUndefined();
+    expect(reportRowIssues).toHaveBeenCalledOnce();
+    expect(reportRowIssues).toHaveBeenCalledWith({
+      origin: "persistent_manual",
+      skippedRows: 5,
+      reasons: {
+        "invalid-fingerprint": 1,
+        "invalid-locale": 1,
+        "invalid-payload": 1,
+        "invalid-status": 1,
+        "invalid-translation": 1,
+      },
+    });
+  });
+
+  it("reports an invalid origin as malformed row data instead of publishing it", async () => {
+    const reportRowIssues = vi.fn<PersistentTranslationRowIssueReporter>();
+    const malformed = { ...(await row("persistent_manual", "Значение")), origin: "unknown" };
+
+    await expect(
+      new DatabaseManualTranslationSource(store([malformed]), reportRowIssues).load("ru", ["common"]),
+    ).resolves.toMatchObject({ resources: {} });
+    expect(reportRowIssues).toHaveBeenCalledWith({
+      origin: "persistent_manual",
+      skippedRows: 1,
+      reasons: { "invalid-origin": 1 },
+    });
   });
 
   it("rejects a store row outside the requested scope", async () => {
+    const reportRowIssues = vi.fn<PersistentTranslationRowIssueReporter>();
     const persistentStore = store([{
       ...(await row("persistent_manual", "Значение")),
       locale: "he",
     }]);
 
-    await expect(new DatabaseManualTranslationSource(persistentStore).load("ru", ["common"]))
+    await expect(new DatabaseManualTranslationSource(persistentStore, reportRowIssues).load("ru", ["common"]))
       .rejects.toBeInstanceOf(PersistentTranslationIntegrityError);
+    expect(reportRowIssues).not.toHaveBeenCalled();
   });
 
-  it("rejects structured payloads until the structured-message runtime is implemented", async () => {
-    const persistentStore = store([
-      await row("persistent_manual", { one: "Один", other: "Много" }),
-    ]);
+  it("does not hide programming/runtime failures while processing otherwise valid rows", async () => {
+    const failure = new TypeError("crypto runtime failure");
+    const digest = vi.spyOn(crypto.subtle, "digest").mockRejectedValueOnce(failure);
+    const reportRowIssues = vi.fn<PersistentTranslationRowIssueReporter>();
+    const persistentStore = store([await row("persistent_manual", "Значение")]);
 
-    await expect(new DatabaseManualTranslationSource(persistentStore).load("ru", ["common"]))
-      .rejects.toBeInstanceOf(PersistentTranslationIntegrityError);
+    await expect(new DatabaseManualTranslationSource(persistentStore, reportRowIssues).load("ru", ["common"]))
+      .rejects.toBe(failure);
+    expect(reportRowIssues).not.toHaveBeenCalled();
+    digest.mockRestore();
   });
 });
