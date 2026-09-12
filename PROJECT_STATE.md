@@ -185,6 +185,11 @@ fallback и отсутствие Worker errors в проверенной Observa
   transaction-local lock/statement deadlines без расширения retry, а exact PostgreSQL statement
   timeout во время `COMMIT` направляет в существующую semantic reconciliation;
   repo-side role/database defaults и обязательный real staging Hyperdrive acceptance документированы.
+- production DB verifier машинно проверяет текущий read-only privilege contract: атрибуты и
+  memberships runtime/migration ролей, ownership, schema/table/sequence/default privileges,
+  inbound memberships, foreign tables, column ACL/grant options, grants `PUBLIC` и отсутствие
+  cross-domain grants; effective default
+  ACL учитывает hard-wired и catalog defaults PostgreSQL 17, targeted fixtures подключены к PR CI.
 
 ## Сейчас
 
@@ -197,8 +202,6 @@ production privilege contract и migration→runtime evidence contract. Техн
 
 - Подтвердить и откалибровать PostgreSQL role/database deadlines на real staging Hyperdrive, включая
   pool restart/reset/reuse и судьбу origin query после Worker-side `query_timeout`/cleanup.
-- Расширить production verifier проверкой runtime roles/grants/ownership/default privileges; текущие
-  ручные privilege checks недостаточны для Stage 4 auth/private data.
 - Создать выбранную staging isolation topology до private auth data/runtime writes: отдельный Neon
   staging project, staging-only credentials/roles, staging Hyperdrive configuration(s), отдельный
   Cloudflare staging Worker/environment, build с выбранным staging environment (`CLOUDFLARE_ENV=staging`)

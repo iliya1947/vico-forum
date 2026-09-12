@@ -24,6 +24,7 @@ jobs:
       - name: Protect accepted migration history
         run: |
           node --test .github/scripts/migration-history.test.mjs
+          node --test .github/scripts/production-privileges.test.mjs
           node .github/scripts/verify-migration-history.mjs
       - name: Lint
         run: pnpm lint
