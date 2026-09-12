@@ -330,7 +330,7 @@ CanonicalUiCatalog
 → TranslationProviderRouter
 → TranslationValidator
 → UiTranslationStore
-→ compiled namespace bundles
+→ compiled bundles
 ```
 
 Основные triggers:
@@ -410,5 +410,10 @@ SSR/runtime не должен выполнять N storage queries по одно
 locale/namespace bundle. Bundle version является output metadata loader/storage layer, а
 не обязательным аргументом обычного resource lookup.
 
-Persistence, versioning, ETag/cache contract описаны в
+Stage 3C реализует deterministic compilation/version identity и persistence/cache primitives,
+но не переключает production SSR на чтение persisted compiled bundles. Текущий SSR продолжает
+собирать bundle из local/manual/persistent raw sources через `TranslationResourceLoader`.
+Generation/publish pipeline и runtime consumption persisted compiled bundles относятся к Stage 5.
+
+Persistence, versioning, ETag/cache contract и точная Stage 3C/Stage 5 boundary описаны в
 [`STORAGE_AND_VERSIONING.md`](STORAGE_AND_VERSIONING.md).
