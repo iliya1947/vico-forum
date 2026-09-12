@@ -54,3 +54,9 @@ export function parseLocaleCandidate(candidate: string): LocaleCandidate | undef
     return undefined;
   }
 }
+
+export function canonicalizeTranslationLocale(candidate: string): string | undefined {
+  const parsed = parseLocaleCandidate(candidate);
+  if (!parsed || parsed.canonicalInput !== parsed.translationTag) return undefined;
+  return parsed.translationTag;
+}

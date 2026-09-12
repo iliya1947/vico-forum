@@ -164,7 +164,11 @@ fallback и отсутствие Worker errors в проверенной Observa
 - pre-Stage-4 audit завершён: независимо проверены runtime persistence/failure boundaries,
   migration/privilege verification, staging isolation, Stage 3C ownership и актуальные внешние
   ограничения Cloudflare/Neon/Google/`pg`; `nodejs_compat` и request-scoped `client.end()` findings
-  закрыты как false positives.
+  закрыты как false positives;
+- canonical locale persistence hardening нормализует controlled put/delete до canonical translation
+  identity до state comparison и SQL DML, сохраняет canonical BCP-47 casing, отклоняет formatting
+  extensions и классифицирует non-canonical physical stored tag как registry integrity degradation;
+  targeted tests покрывают writer/load boundary.
 
 ## Сейчас
 
@@ -175,9 +179,6 @@ production privilege contract и migration→runtime evidence contract. Техн
 
 ## Блокеры
 
-- Исправить canonical locale persistence boundary: controlled put/delete должны использовать
-  normalized canonical identity, а non-canonical physical stored tag должен классифицироваться как
-  integrity failure.
 - Добавить bounded PostgreSQL connect/query/statement deadlines для localization Hyperdrive reads
   без маскирования programming/auth errors; конкретные значения подтвердить staging telemetry.
 - Malformed individual persistent translation row должна безопасно пропускаться с reason/count
@@ -192,8 +193,8 @@ production privilege contract и migration→runtime evidence contract. Техн
 
 ## Следующий шаг
 
-Закрыть repo/runtime hardening (canonical locale persistence, DB deadlines, malformed-row degradation,
-production privilege verification и migration evidence), затем создать и проверить staging isolation.
-После закрытия этих блокеров начать Stage 4 с exact-version Better Auth + React Router SSR + Cloudflare
-Workers + Drizzle preflight, получить реальную auth schema/adapter operations и только после этого
-зафиксировать auth DB grants и выполнять auth migration/runtime rollout.
+Закрыть repo/runtime hardening (DB deadlines, malformed-row degradation, production privilege verification
+и migration evidence), затем создать и проверить staging isolation. После закрытия этих блокеров начать
+Stage 4 с exact-version Better Auth + React Router SSR + Cloudflare Workers + Drizzle preflight, получить
+реальную auth schema/adapter operations и только после этого зафиксировать auth DB grants и выполнять
+auth migration/runtime rollout.

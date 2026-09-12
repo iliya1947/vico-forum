@@ -33,6 +33,21 @@ describe("persistent locale registry", () => {
     expect(() => parsePersistentLocaleRow(row({ tag: "en" }))).toThrow("bootstrap en");
   });
 
+  it("requires physical tags to already use canonical translation identity", () => {
+    expect(parsePersistentLocaleRow(row({ tag: "zh-Hant-TW" })).tag).toBe("zh-Hant-TW");
+    for (const tag of ["FR", "zh-hant-tw", "fr-u-ca-gregory"]) {
+      expect(() => parsePersistentLocaleRow(row({ tag }))).toThrow(
+        "tag must be stored as a canonical translation locale",
+      );
+    }
+  });
+
+  it("treats a noncanonical physical tag as registry integrity degradation", async () => {
+    const loaded = await loadPersistentRegistry({ readAll: async () => [row({ tag: "FR" })] });
+    expect(loaded.health).toEqual({ status: "degraded", reason: "integrity" });
+    expect(loaded.registry.activeLocales().map(({ tag }) => tag)).toEqual(["en"]);
+  });
+
   it("validates the whole graph before publishing it", async () => {
     await expect(assemblePersistentRegistry([row({ fallbackChain: ["missing"] })])).rejects.toThrow(
       "persistent locale graph is invalid",
