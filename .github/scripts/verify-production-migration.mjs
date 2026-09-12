@@ -157,7 +157,10 @@ try {
 
   const identity = await client.query("SELECT current_user AS migration_role");
   const migrationRole = identity.rows[0].migration_role;
-  const privilegeSnapshot = await readProductionPrivilegeSnapshot(client, [migrationRole, runtimeRole]);
+  const privilegeSnapshot = await readProductionPrivilegeSnapshot(client, {
+    migrationRole,
+    runtimeRole,
+  });
   assertProductionPrivilegeContract(privilegeSnapshot, {
     migrationRole,
     runtimeRole,

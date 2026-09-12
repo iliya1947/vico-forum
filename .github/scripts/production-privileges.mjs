@@ -29,8 +29,19 @@ export function assertProductionPrivilegeContract(
   const runtimeMemberships = snapshot.memberships.filter(({ member }) => member === runtimeRole);
   assert.deepEqual(runtimeMemberships, [], `Runtime role ${runtimeRole} must not inherit from another role`);
   assert.deepEqual(
-    sorted(snapshot.memberships.filter(({ member }) => member === migrationRole).map(({ role }) => role)),
-    sorted(migrationMemberships),
+    sorted(
+      snapshot.memberships
+        .filter(({ member }) => member === migrationRole)
+        .map(
+          ({ role, admin_option, inherit_option, set_option }) =>
+            `${role}.admin=${admin_option}.inherit=${inherit_option}.set=${set_option}`,
+        ),
+    ),
+    sorted(
+      migrationMemberships.map(
+        (role) => `${role}.admin=false.inherit=true.set=true`,
+      ),
+    ),
     `Unexpected memberships for migration role ${migrationRole}`,
   );
 
@@ -52,27 +63,44 @@ export function assertProductionPrivilegeContract(
   const runtimeSchemaPrivileges = sorted(
     snapshot.schemaPrivileges
       .filter(({ grantee }) => grantee === runtimeRole)
-      .map(({ schema, privilege }) => `${schema}.${privilege}`),
+      .map(
+        ({ schema, privilege, is_grantable }) =>
+          `${schema}.${privilege}.grantable=${is_grantable}`,
+      ),
   );
-  assert.deepEqual(runtimeSchemaPrivileges, ["public.USAGE"], "Unexpected runtime schema privileges");
+  assert.deepEqual(
+    runtimeSchemaPrivileges,
+    ["public.USAGE.grantable=false"],
+    "Unexpected runtime schema privileges",
+  );
 
   const runtimeRelationPrivileges = sorted(
     snapshot.relationPrivileges
       .filter(({ grantee }) => grantee === runtimeRole)
-      .map(({ schema, name, kind, privilege }) => `${schema}.${name}.${kind}.${privilege}`),
+      .map(
+        ({ schema, name, kind, privilege, is_grantable }) =>
+          `${schema}.${name}.${kind}.${privilege}.grantable=${is_grantable}`,
+      ),
   );
   assert.deepEqual(
     runtimeRelationPrivileges,
-    applicationTables.map((table) => `public.${table}.table.SELECT`).sort(),
+    applicationTables.map((table) => `public.${table}.table.SELECT.grantable=false`).sort(),
     "Runtime relation privileges must be exactly SELECT on the localization tables",
   );
 
   const publicSchemaPrivileges = sorted(
     snapshot.schemaPrivileges
       .filter(({ grantee }) => grantee === "PUBLIC")
-      .map(({ schema, privilege }) => `${schema}.${privilege}`),
+      .map(
+        ({ schema, privilege, is_grantable }) =>
+          `${schema}.${privilege}.grantable=${is_grantable}`,
+      ),
   );
-  assert.deepEqual(publicSchemaPrivileges, ["public.USAGE"], "Unexpected PUBLIC schema privileges");
+  assert.deepEqual(
+    publicSchemaPrivileges,
+    ["public.USAGE.grantable=false"],
+    "Unexpected PUBLIC schema privileges",
+  );
   assert.deepEqual(
     snapshot.relationPrivileges.filter(({ grantee }) => grantee === "PUBLIC"),
     [],
@@ -80,15 +108,33 @@ export function assertProductionPrivilegeContract(
   );
 
   assert.deepEqual(
-    snapshot.defaultPrivileges.filter(
+    snapshot.columnPrivileges.filter(
       ({ grantee }) => grantee === runtimeRole || grantee === "PUBLIC",
     ),
     [],
-    "Default privileges must not grant future objects to runtime or PUBLIC",
+    "Runtime and PUBLIC must not have column-level privileges",
+  );
+
+  const applicationDefaults = sorted(
+    snapshot.defaultPrivileges.map(
+      ({ schema, object_type, grantee, privilege, is_grantable }) =>
+        `${schema}.${object_type}.${grantee}.${privilege}.grantable=${is_grantable}`,
+    ),
+  );
+  assert.deepEqual(
+    applicationDefaults,
+    sorted(["*.T.PUBLIC.USAGE.grantable=false", "*.f.PUBLIC.EXECUTE.grantable=false"]),
+    "Unexpected effective default privileges for future migration-owned objects",
+  );
+  assert.deepEqual(
+    snapshot.otherDefaultPrivileges,
+    [],
+    "Another role must not default-grant future tables or sequences to runtime or PUBLIC",
   );
 }
 
-export async function readProductionPrivilegeSnapshot(client, roles) {
+export async function readProductionPrivilegeSnapshot(client, { migrationRole, runtimeRole }) {
+  const roles = [migrationRole, runtimeRole];
   const roleRows = await client.query(
     `SELECT rolname, rolsuper, rolcreatedb, rolcreaterole, rolcanlogin, rolreplication, rolbypassrls
      FROM pg_catalog.pg_roles
@@ -97,7 +143,8 @@ export async function readProductionPrivilegeSnapshot(client, roles) {
     [roles],
   );
   const memberships = await client.query(
-    `SELECT member.rolname AS member, granted.rolname AS role
+    `SELECT member.rolname AS member, granted.rolname AS role,
+       membership.admin_option, membership.inherit_option, membership.set_option
      FROM pg_catalog.pg_auth_members membership
      JOIN pg_catalog.pg_roles member ON member.oid = membership.member
      JOIN pg_catalog.pg_roles granted ON granted.oid = membership.roleid
@@ -126,7 +173,7 @@ export async function readProductionPrivilegeSnapshot(client, roles) {
   const schemaPrivileges = await client.query(
     `SELECT namespace.nspname AS schema,
        CASE acl.grantee WHEN 0 THEN 'PUBLIC' ELSE grantee.rolname END AS grantee,
-       acl.privilege_type AS privilege
+       acl.privilege_type AS privilege, acl.is_grantable
      FROM pg_catalog.pg_namespace namespace
      CROSS JOIN LATERAL pg_catalog.aclexplode(
        COALESCE(namespace.nspacl, pg_catalog.acldefault('n', namespace.nspowner))
@@ -142,11 +189,14 @@ export async function readProductionPrivilegeSnapshot(client, roles) {
     `SELECT namespace.nspname AS schema, relation.relname AS name,
        CASE relation.relkind WHEN 'S' THEN 'sequence' WHEN 'v' THEN 'view' WHEN 'm' THEN 'view' ELSE 'table' END AS kind,
        CASE acl.grantee WHEN 0 THEN 'PUBLIC' ELSE grantee.rolname END AS grantee,
-       acl.privilege_type AS privilege
+       acl.privilege_type AS privilege, acl.is_grantable
      FROM pg_catalog.pg_class relation
      JOIN pg_catalog.pg_namespace namespace ON namespace.oid = relation.relnamespace
      CROSS JOIN LATERAL pg_catalog.aclexplode(
-       COALESCE(relation.relacl, pg_catalog.acldefault(CASE WHEN relation.relkind = 'S' THEN 's'::char ELSE 'r'::char END, relation.relowner))
+       COALESCE(relation.relacl, pg_catalog.acldefault(
+         CASE WHEN relation.relkind = 'S' THEN 'S'::"char" ELSE 'r'::"char" END,
+         relation.relowner
+       ))
      ) acl
      LEFT JOIN pg_catalog.pg_roles grantee ON grantee.oid = acl.grantee
      WHERE namespace.nspname NOT IN ('pg_catalog', 'information_schema')
@@ -156,19 +206,71 @@ export async function readProductionPrivilegeSnapshot(client, roles) {
      ORDER BY 1, 2, 3, 4, 5`,
     [roles],
   );
+  const columnPrivileges = await client.query(
+    `SELECT namespace.nspname AS schema, relation.relname AS name, attribute.attname AS column,
+       CASE acl.grantee WHEN 0 THEN 'PUBLIC' ELSE grantee.rolname END AS grantee,
+       acl.privilege_type AS privilege, acl.is_grantable
+     FROM pg_catalog.pg_attribute attribute
+     JOIN pg_catalog.pg_class relation ON relation.oid = attribute.attrelid
+     JOIN pg_catalog.pg_namespace namespace ON namespace.oid = relation.relnamespace
+     CROSS JOIN LATERAL pg_catalog.aclexplode(attribute.attacl) acl
+     LEFT JOIN pg_catalog.pg_roles grantee ON grantee.oid = acl.grantee
+     WHERE namespace.nspname NOT IN ('pg_catalog', 'information_schema')
+       AND namespace.nspname !~ '^pg_toast'
+       AND relation.relkind IN ('r', 'p', 'v', 'm', 'f')
+       AND attribute.attnum > 0 AND NOT attribute.attisdropped
+       AND (acl.grantee = 0 OR grantee.rolname = ANY($1::name[]))
+     ORDER BY 1, 2, 3, 4, 5, 6`,
+    [roles],
+  );
   const defaultPrivileges = await client.query(
+    `WITH object_types(object_type) AS (
+       VALUES ('r'::"char"), ('S'::"char"), ('f'::"char"), ('T'::"char"), ('n'::"char")
+     ), effective_defaults AS (
+       SELECT object_types.object_type, '*'::name AS schema,
+         COALESCE(defaults.defaclacl, pg_catalog.acldefault(object_types.object_type, owner.oid)) AS acl
+       FROM pg_catalog.pg_roles owner
+       CROSS JOIN object_types
+       LEFT JOIN pg_catalog.pg_default_acl defaults
+         ON defaults.defaclrole = owner.oid
+         AND defaults.defaclnamespace = 0
+         AND defaults.defaclobjtype = object_types.object_type
+       WHERE owner.rolname = $1
+       UNION ALL
+       SELECT defaults.defaclobjtype, namespace.nspname, defaults.defaclacl
+       FROM pg_catalog.pg_default_acl defaults
+       JOIN pg_catalog.pg_roles owner ON owner.oid = defaults.defaclrole
+       JOIN pg_catalog.pg_namespace namespace ON namespace.oid = defaults.defaclnamespace
+       WHERE owner.rolname = $1
+     )
+     SELECT $1::name AS owner, effective_defaults.schema,
+       effective_defaults.object_type,
+       CASE acl.grantee WHEN 0 THEN 'PUBLIC' ELSE grantee.rolname END AS grantee,
+       acl.privilege_type AS privilege, acl.is_grantable
+     FROM effective_defaults
+     CROSS JOIN LATERAL pg_catalog.aclexplode(effective_defaults.acl) acl
+     LEFT JOIN pg_catalog.pg_roles grantee ON grantee.oid = acl.grantee
+     WHERE acl.grantee = 0 OR grantee.rolname = $2
+     ORDER BY 1, 2, 3, 4, 5`,
+    [migrationRole, runtimeRole],
+  );
+  const otherDefaultPrivileges = await client.query(
     `SELECT owner.rolname AS owner, COALESCE(namespace.nspname, '*') AS schema,
        defaults.defaclobjtype AS object_type,
        CASE acl.grantee WHEN 0 THEN 'PUBLIC' ELSE grantee.rolname END AS grantee,
-       acl.privilege_type AS privilege
+       acl.privilege_type AS privilege, acl.is_grantable
      FROM pg_catalog.pg_default_acl defaults
      JOIN pg_catalog.pg_roles owner ON owner.oid = defaults.defaclrole
      LEFT JOIN pg_catalog.pg_namespace namespace ON namespace.oid = defaults.defaclnamespace
      CROSS JOIN LATERAL pg_catalog.aclexplode(defaults.defaclacl) acl
      LEFT JOIN pg_catalog.pg_roles grantee ON grantee.oid = acl.grantee
-     WHERE acl.grantee = 0 OR grantee.rolname = ANY($1::name[])
-     ORDER BY 1, 2, 3, 4, 5`,
-    [roles],
+     WHERE owner.rolname <> $1
+       AND (
+         grantee.rolname = $2
+         OR (acl.grantee = 0 AND defaults.defaclobjtype IN ('r', 'S'))
+       )
+     ORDER BY 1, 2, 3, 4, 5, 6`,
+    [migrationRole, runtimeRole],
   );
 
   return {
@@ -177,6 +279,8 @@ export async function readProductionPrivilegeSnapshot(client, roles) {
     ownedObjects: ownedObjects.rows,
     schemaPrivileges: schemaPrivileges.rows,
     relationPrivileges: relationPrivileges.rows,
+    columnPrivileges: columnPrivileges.rows,
     defaultPrivileges: defaultPrivileges.rows,
+    otherDefaultPrivileges: otherDefaultPrivileges.rows,
   };
 }

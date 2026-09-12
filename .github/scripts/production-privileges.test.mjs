@@ -34,14 +34,22 @@ function fixture() {
         rolbypassrls: false,
       },
     ],
-    memberships: [{ member: "migration", role: "managed_service_admin" }],
+    memberships: [
+      {
+        member: "migration",
+        role: "managed_service_admin",
+        admin_option: false,
+        inherit_option: true,
+        set_option: true,
+      },
+    ],
     ownedObjects: [
       { schema: "public", name: "public", kind: "schema", owner: "pg_database_owner" },
       ...applicationTables.map((name) => ({ schema: "public", name, kind: "table", owner: "migration" })),
     ],
     schemaPrivileges: [
-      { schema: "public", grantee: "PUBLIC", privilege: "USAGE" },
-      { schema: "public", grantee: "runtime", privilege: "USAGE" },
+      { schema: "public", grantee: "PUBLIC", privilege: "USAGE", is_grantable: false },
+      { schema: "public", grantee: "runtime", privilege: "USAGE", is_grantable: false },
     ],
     relationPrivileges: applicationTables.map((name) => ({
       schema: "public",
@@ -49,8 +57,28 @@ function fixture() {
       kind: "table",
       grantee: "runtime",
       privilege: "SELECT",
+      is_grantable: false,
     })),
-    defaultPrivileges: [],
+    columnPrivileges: [],
+    defaultPrivileges: [
+      {
+        owner: "migration",
+        schema: "*",
+        object_type: "f",
+        grantee: "PUBLIC",
+        privilege: "EXECUTE",
+        is_grantable: false,
+      },
+      {
+        owner: "migration",
+        schema: "*",
+        object_type: "T",
+        grantee: "PUBLIC",
+        privilege: "USAGE",
+        is_grantable: false,
+      },
+    ],
+    otherDefaultPrivileges: [],
   };
 }
 
@@ -64,12 +92,32 @@ test("rejects dangerous role attributes and runtime memberships", () => {
   assert.throws(() => assertProductionPrivilegeContract(dangerous, contract), /rolbypassrls/);
 
   const membership = fixture();
-  membership.memberships.push({ member: "runtime", role: "writer" });
+  membership.memberships.push({
+    member: "runtime",
+    role: "writer",
+    admin_option: false,
+    inherit_option: true,
+    set_option: true,
+  });
   assert.throws(() => assertProductionPrivilegeContract(membership, contract), /must not inherit/);
 
   const migrationMembership = fixture();
-  migrationMembership.memberships.push({ member: "migration", role: "unexpected_admin" });
+  migrationMembership.memberships.push({
+    member: "migration",
+    role: "unexpected_admin",
+    admin_option: false,
+    inherit_option: true,
+    set_option: true,
+  });
   assert.throws(() => assertProductionPrivilegeContract(migrationMembership, contract), /Unexpected memberships/);
+});
+
+test("rejects changes to significant migration membership options", () => {
+  for (const option of ["admin_option", "inherit_option", "set_option"]) {
+    const candidate = fixture();
+    candidate.memberships[0][option] = !candidate.memberships[0][option];
+    assert.throws(() => assertProductionPrivilegeContract(candidate, contract), /Unexpected memberships/);
+  }
 });
 
 test("rejects runtime ownership and wrong application-table ownership", () => {
@@ -84,8 +132,8 @@ test("rejects runtime ownership and wrong application-table ownership", () => {
 
 test("rejects schema CREATE, table mutation, sequence, and cross-domain grants", () => {
   for (const grant of [
-    { schema: "public", grantee: "runtime", privilege: "CREATE" },
-    { schema: "private", grantee: "runtime", privilege: "USAGE" },
+    { schema: "public", grantee: "runtime", privilege: "CREATE", is_grantable: false },
+    { schema: "private", grantee: "runtime", privilege: "USAGE", is_grantable: false },
   ]) {
     const candidate = fixture();
     candidate.schemaPrivileges.push(grant);
@@ -93,13 +141,38 @@ test("rejects schema CREATE, table mutation, sequence, and cross-domain grants",
   }
 
   for (const grant of [
-    { schema: "public", name: "locales", kind: "table", grantee: "runtime", privilege: "UPDATE" },
-    { schema: "public", name: "future_id_seq", kind: "sequence", grantee: "runtime", privilege: "USAGE" },
-    { schema: "auth", name: "users", kind: "table", grantee: "runtime", privilege: "SELECT" },
+    { schema: "public", name: "locales", kind: "table", grantee: "runtime", privilege: "UPDATE", is_grantable: false },
+    { schema: "public", name: "future_id_seq", kind: "sequence", grantee: "runtime", privilege: "USAGE", is_grantable: false },
+    { schema: "auth", name: "users", kind: "table", grantee: "runtime", privilege: "SELECT", is_grantable: false },
   ]) {
     const candidate = fixture();
     candidate.relationPrivileges.push(grant);
     assert.throws(() => assertProductionPrivilegeContract(candidate, contract), /exactly SELECT/);
+  }
+});
+
+test("rejects schema and relation grant options", () => {
+  const schemaGrantOption = fixture();
+  schemaGrantOption.schemaPrivileges.find(({ grantee }) => grantee === "runtime").is_grantable = true;
+  assert.throws(() => assertProductionPrivilegeContract(schemaGrantOption, contract), /schema privileges/);
+
+  const tableGrantOption = fixture();
+  tableGrantOption.relationPrivileges[0].is_grantable = true;
+  assert.throws(() => assertProductionPrivilegeContract(tableGrantOption, contract), /exactly SELECT/);
+});
+
+test("rejects runtime and PUBLIC column-level privileges", () => {
+  for (const grantee of ["runtime", "PUBLIC"]) {
+    const candidate = fixture();
+    candidate.columnPrivileges.push({
+      schema: "public",
+      name: "locales",
+      column: "tag",
+      grantee,
+      privilege: "UPDATE",
+      is_grantable: false,
+    });
+    assert.throws(() => assertProductionPrivilegeContract(candidate, contract), /column-level/);
   }
 });
 
@@ -111,16 +184,21 @@ test("rejects grants to PUBLIC and broadening default privileges", () => {
     kind: "table",
     grantee: "PUBLIC",
     privilege: "SELECT",
+    is_grantable: false,
   });
   assert.throws(() => assertProductionPrivilegeContract(publicGrant, contract), /PUBLIC/);
 
-  const defaults = fixture();
-  defaults.defaultPrivileges.push({
-    owner: "migration",
-    schema: "public",
-    object_type: "r",
-    grantee: "runtime",
-    privilege: "SELECT",
+  const applicationDefaults = fixture();
+  applicationDefaults.defaultPrivileges.push({
+    owner: "migration", schema: "public", object_type: "r", grantee: "runtime",
+    privilege: "SELECT", is_grantable: false,
   });
-  assert.throws(() => assertProductionPrivilegeContract(defaults, contract), /Default privileges/);
+  assert.throws(() => assertProductionPrivilegeContract(applicationDefaults, contract), /effective default/);
+
+  const otherDefaults = fixture();
+  otherDefaults.otherDefaultPrivileges.push({
+    owner: "other", schema: "public", object_type: "S", grantee: "PUBLIC",
+    privilege: "USAGE", is_grantable: false,
+  });
+  assert.throws(() => assertProductionPrivilegeContract(otherDefaults, contract), /Another role/);
 });
