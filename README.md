@@ -15,12 +15,9 @@
 
 ## Разработка
 
-Stage 1 и Stage 2 завершены. Persistent `LocaleRegistry` работает в production через Neon,
-cache-disabled Cloudflare Hyperdrive, `pg` и Drizzle. Перед Stage 3 выполнен hardening failure
-boundaries и migration/release safety: required CI включает `checks` и `database`, migration
-history защищена как append-only, а production migration workflow ограничен `main`.
-Следующий продуктовый этап — Stage 3; последовательность работ зафиксирована в `ROADMAP.md`,
-а актуальное состояние — в `PROJECT_STATE.md`.
+Stage 0, Stage 1, Stage 2 и Stage 3 завершены. Persistent `LocaleRegistry` и persistent UI translation sources работают в production через Neon, cache-disabled Cloudflare Hyperdrive, `pg` и Drizzle.
+
+Pre-Stage-4 audit завершён и зафиксировал обязательный hardening перед auth/private data/runtime writes: canonical locale persistence boundary, bounded DB deadlines, безопасную деградацию malformed translation rows, production privilege verification и полную staging isolation. Stage 4 (Better Auth + Google OAuth) начинается только после закрытия этих блокеров.
 
 Требования:
 
