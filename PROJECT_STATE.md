@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-09-11
+Последнее обновление: 2026-09-12
 
 ## Состояние
 
@@ -22,10 +22,12 @@ read-only/public-data границе и должна быть изолирова
 
 Stage 3 завершён. Stage 3A добавил и применил production schema persistent UI translations;
 Stage 3B подключил read-only persistent manual/machine sources к Worker runtime и прошёл реальный
-production Hyperdrive smoke; Stage 3C добавил deterministic compiled locale/namespace bundle identity,
-persistent bundle repository и cache/ETag boundary без Worker write-capability. Финальный deployed
-regression после merge Stage 3C подтвердил `/en/`, `/ru/`, `/he/`, Hebrew RTL, English fallback и
-отсутствие Worker errors в проверенной Observability выборке.
+production Hyperdrive smoke; Stage 3C добавил deterministic compiled locale/namespace bundle
+compiler/identity, persistence adapter и cache/ETag primitives без Worker write-capability.
+Production SSR при этом продолжает читать raw local/persistent translation sources и компилировать
+bundle в request path; persisted compiled-bundle publish/read path относится к Stage 5. Финальный
+deployed regression после merge Stage 3C подтвердил `/en/`, `/ru/`, `/he/`, Hebrew RTL, English
+fallback и отсутствие Worker errors в проверенной Observability выборке.
 
 ## Готово
 
@@ -36,7 +38,7 @@ regression после merge Stage 3C подтвердил `/en/`, `/ru/`, `/he/`
 - завершён этап 0 и зафиксирован `SCAFFOLD_PLAN.md` с exact toolchain и границами Stage 1;
 - Stage 1 разделён на PR 1A (scaffold/quality gates), PR 1B (locale boundary/resolution) и PR 1C (UI translation resource runtime);
 - Stage 1A merged: добавлен минимальный React Router v8 Framework Mode SSR scaffold для Cloudflare Workers, exact toolchain, lockfile, ESLint, Vitest и CI;
-- для Stage 1B выбрана method-aware explicit-locale route policy: только `GET`/`HEAD` используют `307` fallback на `/en/...` или `308` canonicalization; любой non-`GET`/`HEAD` request, которому потребовался бы locale redirect, fail closed как `404` без `Location` и до matched action; active canonical locale остаётся доступным для normal route/action handling;
+- для Stage 1B выбрана method-aware explicit-locale route policy: только `GET`/`HEAD` используют `307` fallback на `/en/...` или `308` canonicalization; любой non-`GET`/non-`HEAD` request, которому потребовался бы locale redirect, fail closed как `404` без `Location` и до matched action; active canonical locale остаётся доступным для normal route/action handling;
 - HTTP rationale для `307`/`308` и exact React Router `8.3.1` redirect contract зафиксированы в `docs/translation/RESEARCH.md`;
 - в Stage 1B реализованы generic `/:locale/*`, отдельный technical `/api/*` namespace, server locale loader и pre-action method-aware guard;
 - добавлены `LocaleRegistry` abstraction с bootstrap `en` и валидируемым in-memory adapter, `LocaleResolver`, BCP-47 canonicalization, aliases, explicit fallback metadata и publication-state checks;
@@ -153,32 +155,45 @@ regression после merge Stage 3C подтвердил `/en/`, `/ru/`, `/he/`
   записи English fallback восстановился;
 - Workers Observability включён repository-owned Wrangler config и после production deploy показывает
   реальные request events без Worker errors в проверенной выборке;
-- Stage 3C добавил deterministic compiled locale/namespace bundles, semantic bundle version,
-  backend-independent cache identity/weak ETag boundary и Drizzle persistence поверх уже существующей
-  `ui_translation_bundles`; production Worker при этом остался read-only и runtime bundle writes не
-  добавлялись;
+- Stage 3C добавил deterministic compiled locale/namespace bundle compiler/identity,
+  backend-independent cache identity/weak ETag boundary и Drizzle persistence primitives поверх уже
+  существующей `ui_translation_bundles`; production Worker остался read-only, runtime bundle writes и
+  persisted compiled-bundle SSR reads не добавлялись;
 - Stage 3 final deployed acceptance после merge Stage 3C подтвердил корректный SSR для `en`/`ru`/`he`,
-  Hebrew RTL, expected English fallback и отсутствие Worker errors в проверенной Observability выборке.
+  Hebrew RTL, expected English fallback и отсутствие Worker errors в проверенной Observability выборке;
+- pre-Stage-4 audit завершён: независимо проверены runtime persistence/failure boundaries,
+  migration/privilege verification, staging isolation, Stage 3C ownership и актуальные внешние
+  ограничения Cloudflare/Neon/Google/`pg`; `nodejs_compat` и request-scoped `client.end()` findings
+  закрыты как false positives.
 
 ## Сейчас
 
-Stage 3 закрыт. Перед Stage 4 выполняется отдельный pre-Stage-4 audit/hardening. Это необходимо,
-потому что Stage 4 впервые вводит authentication/session boundary, private auth data и runtime
-write-capability, поэтому существующий preview/non-production production-Hyperdrive допуск больше
-нельзя автоматически переносить на следующий этап.
+Stage 3 закрыт. Pre-Stage-4 audit завершён; выполняется обязательный hardening перед Stage 4.
+Документация синхронизирована с фактическим Stage 3C runtime boundary, выбранной staging topology,
+production privilege contract и migration→runtime evidence contract. Технические hardening items
+ещё не считаются выполненными, пока соответствующий код/CI/infrastructure не реализованы и не проверены.
 
 ## Блокеры
 
-- Блокеров для закрытого Stage 3 нет.
-- До runtime writes или private auth data необходимо выполнить уже зафиксированный isolation gate:
-  создать отдельный staging Worker/Hyperdrive/DB для non-production/preview path либо отключить
-  non-production builds.
-- Exact-version Better Auth + React Router SSR + Cloudflare Workers + Drizzle integration и auth
-  security boundary ещё не прошли отдельный pre-Stage-4 review; это задача следующего hardening.
+- Исправить canonical locale persistence boundary: controlled put/delete должны использовать
+  normalized canonical identity, а non-canonical physical stored tag должен классифицироваться как
+  integrity failure.
+- Добавить bounded PostgreSQL connect/query/statement deadlines для localization Hyperdrive reads
+  без маскирования programming/auth errors; конкретные значения подтвердить staging telemetry.
+- Malformed individual persistent translation row должна безопасно пропускаться с reason/count
+  telemetry и fallback, при этом scope/config/programming/unknown errors не скрываются.
+- Расширить production verifier проверкой runtime roles/grants/ownership/default privileges; текущие
+  ручные privilege checks недостаточны для Stage 4 auth/private data.
+- Создать выбранную staging isolation topology до private auth data/runtime writes: отдельный Neon
+  staging project, staging-only credentials/roles, staging Hyperdrive configuration(s), отдельный
+  Cloudflare staging Worker/environment, build с выбранным staging environment (`CLOUDFLARE_ENV=staging`)
+  и реальный deployed staging smoke без production DB bindings/secrets.
+- Добавить минимальную migration→runtime evidence linkage для первого Stage 4 schema-dependent rollout.
 
 ## Следующий шаг
 
-Провести pre-Stage-4 audit/hardening по тому же принципу, что и перед Stage 3: проверить текущий
-код, документацию, CI/deploy/runtime boundaries и актуальную официальную документацию Better Auth,
-Google OAuth, React Router и Cloudflare; зафиксировать blockers/required changes и только после их
-закрытия начинать Stage 4 (Better Auth + Google OAuth).
+Закрыть repo/runtime hardening (canonical locale persistence, DB deadlines, malformed-row degradation,
+production privilege verification и migration evidence), затем создать и проверить staging isolation.
+После закрытия этих блокеров начать Stage 4 с exact-version Better Auth + React Router SSR + Cloudflare
+Workers + Drizzle preflight, получить реальную auth schema/adapter operations и только после этого
+зафиксировать auth DB grants и выполнять auth migration/runtime rollout.
