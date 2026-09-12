@@ -33,6 +33,15 @@ describe("persistent locale registry", () => {
     expect(() => parsePersistentLocaleRow(row({ tag: "en" }))).toThrow("bootstrap en");
   });
 
+  it("requires physical tags to already use canonical translation identity", () => {
+    expect(parsePersistentLocaleRow(row({ tag: "zh-Hant-TW" })).tag).toBe("zh-Hant-TW");
+    for (const tag of ["FR", "zh-hant-tw", "fr-u-ca-gregory"]) {
+      expect(() => parsePersistentLocaleRow(row({ tag }))).toThrow(
+        "tag must be stored as a canonical translation locale",
+      );
+    }
+  });
+
   it("validates the whole graph before publishing it", async () => {
     await expect(assemblePersistentRegistry([row({ fallbackChain: ["missing"] })])).rejects.toThrow(
       "persistent locale graph is invalid",
