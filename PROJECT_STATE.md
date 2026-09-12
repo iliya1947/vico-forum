@@ -172,7 +172,10 @@ fallback и отсутствие Worker errors в проверенной Observa
 - persistent UI translation resilience hardening изолирует malformed individual rows на уровне строки,
   публикует только reason/count telemetry без translation payload, сохраняет store scope и
   programming/runtime/auth/unknown failures видимыми и ограничивает PostgreSQL availability
-  degradation известными transport/SQLSTATE failure shapes.
+  degradation известными transport/SQLSTATE failure shapes;
+- production manual translation packs очищены от synthetic stale fixture; stale/freshness behavior
+  остаётся покрыт test-only fixtures, а full-pack validation требует отсутствие stale keys в реальных
+  runtime-owned manual packs.
 
 ## Сейчас
 
