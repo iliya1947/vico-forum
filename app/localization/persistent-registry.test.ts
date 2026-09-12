@@ -42,6 +42,12 @@ describe("persistent locale registry", () => {
     }
   });
 
+  it("treats a noncanonical physical tag as registry integrity degradation", async () => {
+    const loaded = await loadPersistentRegistry({ readAll: async () => [row({ tag: "FR" })] });
+    expect(loaded.health).toEqual({ status: "degraded", reason: "integrity" });
+    expect(loaded.registry.activeLocales().map(({ tag }) => tag)).toEqual(["en"]);
+  });
+
   it("validates the whole graph before publishing it", async () => {
     await expect(assemblePersistentRegistry([row({ fallbackChain: ["missing"] })])).rejects.toThrow(
       "persistent locale graph is invalid",
