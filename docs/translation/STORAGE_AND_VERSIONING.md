@@ -116,7 +116,7 @@ runtime bundle.
 
 ## Bundles и cache (`STO-05`)
 
-Runtime должен читать locale/namespace bundle, а не выполнять N storage queries по keys.
+Целевой runtime должен читать locale/namespace bundle, а не выполнять N storage queries по keys.
 
 Compiled bundle имеет version/hash. `TranslationBundleCache` — optimization layer вокруг
 готового compiled bundle, а не translation source и не участник source-priority merge.
@@ -131,6 +131,25 @@ HTTP ETag / Cache-Control
 ```
 
 Конкретный cache backend не входит в domain contract.
+
+### Stage 3C / Stage 5 implementation boundary
+
+Stage 3C реализовал deterministic bundle compiler/identity, persistence adapter и
+backend-independent cache/ETag primitives. Это не означает, что production SSR уже читает
+persisted rows из `ui_translation_bundles`.
+
+Текущий production SSR path остаётся:
+
+```text
+local/manual/persistent raw translation sources
+→ TranslationResourceLoader
+→ compile locale/namespace bundle in request path
+→ request-scoped i18next
+```
+
+End-to-end generation/publish path, запись compiled current bundle и последующее чтение
+persisted compiled bundle в SSR/runtime принадлежат Stage 5. До этого `ui_translation_bundles`
+и cache/ETag helpers являются подготовленными primitives, а не активным runtime read path.
 
 ### Cache identity
 
