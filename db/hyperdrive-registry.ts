@@ -3,11 +3,11 @@ import { Client } from "pg";
 import {
   RegistryConnectionUnavailableError,
   createRequestRegistryLoader,
+  isPostgresAvailabilityFailure,
   type LoadedLocaleRegistry,
   type RegistryDegradedReason,
 } from "../app/localization/persistent-registry";
 import { DrizzleLocaleRepository } from "./locale-repository";
-import { isPostgresConnectAvailabilityFailure } from "./postgres-errors";
 
 interface PostgreSqlClientFactory {
   (connectionString: string): Client;
@@ -33,7 +33,7 @@ export function createHyperdriveRegistryLoader(
       try {
         await client.connect();
       } catch (error) {
-        if (!isPostgresConnectAvailabilityFailure(error)) throw error;
+        if (!isPostgresAvailabilityFailure(error)) throw error;
         throw new RegistryConnectionUnavailableError({ cause: error });
       }
       return new DrizzleLocaleRepository(drizzle(client)).readAll();
