@@ -1,0 +1,6 @@
+{
+  "workflowRunId": 34613209216,
+  "migrationSha": "458db7ed8c28153ab7b9e5eba3be0e025c51f926",
+  "journalSha256": "57f24be12d3d8a83b6a93852b0d2af1d8b3d3eccc30b920535aa7d15df579fb7",
+  "requiredMigrationTag": "0002_ui_translation_storage"
+}

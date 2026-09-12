@@ -127,12 +127,20 @@ migration workflow run
 → reference from the schema-dependent runtime rollout/PR
 ```
 
-The existing workflow already checks out the dispatched `github.sha` and verifies the production
-migration ledger, but there is not yet a machine-enforced linkage from that successful run to a
-later runtime deployment. Before the first Stage 4 schema-dependent auth rollout, retain explicit
-run/SHA/verification evidence and add the smallest repository-owned enforcement needed to prevent
-a runtime release from claiming an unapplied schema. A larger deployment orchestrator is not
-required for this solo-project workflow.
+After successful production verification, the migration workflow writes a copyable evidence object
+to its step summary. For every schema-dependent runtime rollout, update
+`.github/runtime-migration-evidence.json` with the successful production workflow run ID, its exact
+`main` SHA, the emitted Drizzle journal SHA-256, and the newest migration tag required by that
+runtime. The migration SHA must be an ancestor of the runtime commit; do not use evidence from a
+branch-only migration or from a later, unrelated history to bypass schema-first review.
+
+Pull-request CI resolves the run through the GitHub Actions API and requires the production migration
+workflow, `workflow_dispatch`, `main`, the recorded SHA, and a completed successful conclusion. It
+also reads the journal at that exact Git commit, verifies its SHA-256, and proves that its immutable
+history covers the declared required migration. Consequently, a runtime PR cannot advance its schema
+requirement using only local/CI migration success or an unapplied migration commit. The evidence file
+is the repository-owned runtime schema-requirement declaration; a PR introducing a new runtime schema
+dependency must update it even when a newer successful migration run happens to cover that schema.
 
 ## Stage 3A rollout
 

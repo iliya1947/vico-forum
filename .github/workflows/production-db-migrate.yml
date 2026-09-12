@@ -40,3 +40,14 @@ jobs:
           DATABASE_URL: ${{ secrets.NEON_MIGRATION_DATABASE_URL }}
           RUNTIME_DATABASE_ROLE: ${{ vars.RUNTIME_DATABASE_ROLE }}
           MIGRATION_DATABASE_ROLE_MEMBERSHIPS: ${{ vars.MIGRATION_DATABASE_ROLE_MEMBERSHIPS }}
+      - name: Emit runtime evidence
+        run: |
+          journal_sha256=$(sha256sum drizzle/meta/_journal.json | cut -d ' ' -f 1)
+          {
+            echo '## Migration → runtime evidence'
+            echo
+            echo '```json'
+            printf '{"workflowRunId":%s,"migrationSha":"%s","journalSha256":"%s"}\n' \
+              '${{ github.run_id }}' '${{ github.sha }}' "$journal_sha256"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
