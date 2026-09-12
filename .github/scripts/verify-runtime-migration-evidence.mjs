@@ -31,8 +31,8 @@ const headers = {
   "X-GitHub-Api-Version": "2022-11-28",
 };
 if (globalThis.process.env.GITHUB_TOKEN) headers.Authorization = `Bearer ${globalThis.process.env.GITHUB_TOKEN}`;
-const response = await fetch(`https://api.github.com/repos/${repository}/actions/runs/${evidence.workflowRunId}`, { headers });
+const response = await globalThis.fetch(`https://api.github.com/repos/${repository}/actions/runs/${evidence.workflowRunId}`, { headers });
 assert.equal(response.ok, true, `Could not read production migration workflow run: GitHub API returned ${response.status}`);
 assertMigrationWorkflowRun(await response.json(), evidence);
 
-console.log(`Runtime migration evidence passed: ${evidence.requiredMigrationTag} was verified by run ${evidence.workflowRunId}.`);
+globalThis.console.log(`Runtime migration evidence passed: ${evidence.requiredMigrationTag} was verified by run ${evidence.workflowRunId}.`);
