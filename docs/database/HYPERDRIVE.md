@@ -3,9 +3,23 @@
 ## Capability boundary
 
 The production Worker receives only the `HYPERDRIVE` binding. Its `vico_forum_runtime`
-PostgreSQL role has `CONNECT`, `USAGE` on the application schema, and `SELECT` on `locales`;
-it does not own the schema and has no `INSERT`, `UPDATE`, or `DELETE` privileges.
+PostgreSQL role has `CONNECT`, `USAGE` on the application schema, and read-only `SELECT`
+access to the currently exposed localization tables:
+
+```text
+public.locales
+public.ui_translations
+public.ui_translation_bundles
+```
+
+The role does not own the schema or these tables and must not have `CREATE`, `INSERT`,
+`UPDATE`, `DELETE`, `TRUNCATE`, `REFERENCES`, `TRIGGER`, migration, or admin capability.
 `DATABASE_URL` is never configured as a Worker secret or variable.
+
+Auth runtime capability is intentionally not part of this binding. Stage 4 must derive the
+exact auth privilege allowlist from the selected Better Auth version/schema and expose it
+through a separate cache-disabled auth Hyperdrive/runtime role rather than broadening the
+localization role.
 
 ## Provision and deploy
 
@@ -45,20 +59,37 @@ diagnostics before proceeding if it occurs.
 ## Preview / non-production isolation gate
 
 Cloudflare Branch control has been verified with **Builds for non-production branches enabled**.
-No separate staging Hyperdrive/DB binding is configured in the repository, so preview/non-production
+No separate staging Hyperdrive/DB binding is currently configured, so preview/non-production
 uploads must be treated as potentially receiving the top-level production `HYPERDRIVE` binding.
 
-The current setup is accepted only while the production database capability exposed to the Worker
-remains strictly read-only and the data reachable through that capability is public locale registry
-data. Before either of the following becomes true:
+The current setup is accepted only while the production capability exposed to preview remains
+strictly read-only and the reachable data is public localization data. Before Stage 4 introduces
+private auth data or any runtime write capability, the non-production path must be isolated.
 
-- a preview/non-production Worker receives any runtime `INSERT`, `UPDATE`, or `DELETE` capability;
-- the bound production database exposes non-public translation, admin, auth, or other private data;
+The selected staging topology is:
 
-preview/non-production execution must be isolated from production by a separate staging
-Worker/Hyperdrive/database (for example through an explicit Wrangler environment) or the
-non-production build path must be disabled. A public Preview URL is not a substitute for this
-capability boundary.
+```text
+separate Neon staging project
+→ staging-only migration/admin credentials
+→ staging-only read/runtime roles
+→ staging Hyperdrive configuration(s)
+→ separate Cloudflare staging Worker/environment
+→ stable staging URL for auth/runtime smoke
+```
+
+The staging Neon project is created independently; do not use an ordinary production child
+branch that copies production rows/credentials as the auth staging boundary. Staging must have
+no fallback to production database bindings or secrets.
+
+Wrangler environment bindings, variables and secrets are environment-specific. Because Vico
+uses `@cloudflare/vite-plugin`, the staging environment must also be selected during the build
+(for example with `CLOUDFLARE_ENV=staging` before `react-router build`), not only at a later deploy
+command. Workers Builds production and non-production commands must be verified so a branch build
+cannot accidentally build/upload with the top-level production environment.
+
+Until this staging path has been created and smoke-tested, non-production builds must not be used
+for Stage 4 auth/private-data/runtime-write acceptance; disabling non-production builds remains
+the safe fallback.
 
 ## Local Workers integration
 

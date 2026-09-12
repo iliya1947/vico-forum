@@ -143,9 +143,9 @@ Stage 2 выполняется серией `2A → 2B → 2C`. Переход �
 1. Спроектировать фактическую PostgreSQL schema UI translations по logical contracts и создать миграцию.
 2. Реализовать `UiTranslationStore`, persistent manual/machine sources и current/stale lifecycle.
 3. Сохранять `sourceFingerprint`; manual/local fingerprint нельзя автоматически обновлять после изменения canonical source.
-4. Компилировать versioned locale/namespace bundles без N-query-per-key runtime path.
-5. Реализовать bundle-version/cache/ETag boundary без привязки domain к конкретному cache backend.
-6. Подключить persistent sources к существующему `TranslationResourceLoader` без изменения его публичного контракта.
+4. Добавить deterministic compiler/version identity для locale/namespace bundles без N-query-per-key semantics.
+5. Добавить persistence adapter и backend-independent bundle-version/cache/ETag primitives без обязательного переключения production SSR на persisted compiled-bundle reads.
+6. Подключить persistent raw sources к существующему `TranslationResourceLoader` без изменения его публичного контракта.
 
 ### Критерий завершения
 
@@ -153,43 +153,63 @@ Stage 2 выполняется серией `2A → 2B → 2C`. Переход �
 - Target → registry fallback → `en` работает между locale без flattening.
 - Source change делает старые values stale и исключает их из current bundle.
 - Loader продолжает работать при отсутствии persistent translation данных через local/English resources.
+- Stage 3C предоставляет deterministic bundle/persistence/cache primitives; end-to-end generation → publish → persisted compiled bundle → SSR/runtime consumption не требуется до Stage 5.
 
 ### Проверки
 
 - Миграции к чистой БД.
-- Интеграционные тесты current/stale, priority, bundle version и cache identity.
+- Интеграционные тесты current/stale, priority, deterministic bundle version, persistence adapter и cache identity.
 - `lint`, `typecheck`, `test`, `build`.
 
 ## Этап 4. Подключить Better Auth и Google OAuth
 
+### Preconditions
+
+До Stage 4 должны быть закрыты pre-Stage-4 hardening blockers и создан безопасный non-production boundary:
+
+```text
+separate Neon staging project
+→ staging-only roles/credentials
+→ staging Hyperdrive configuration(s)
+→ separate Cloudflare staging Worker/environment
+→ build with the staging Cloudflare environment selected (Vite: CLOUDFLARE_ENV=staging)
+→ stable staging URL for OAuth/runtime smoke
+```
+
+Staging не использует production DB bindings/secrets и не создаётся обычной production child branch с copied private data/credentials. Google OAuth staging и production используют отдельные Google Cloud projects/clients/secrets и exact environment-specific redirect URIs.
+
+Exact auth DB grants не фиксируются до выбора конкретной Better Auth версии, генерации/проверки её schema и реальных adapter operations. Auth runtime получает отдельный cache-disabled Hyperdrive/least-privilege role; localization `HYPERDRIVE` не расширяется auth writes.
+
 ### Работы
 
 1. Проверить exact-version интеграцию Better Auth с React Router SSR, Cloudflare Workers и Drizzle.
-2. Добавить auth schema миграциями.
-3. Реализовать Google sign-in, server session и logout.
-4. Интегрировать validated `user.locale` в существующий LocaleResolver: URL остаётся authoritative.
-5. Добавить минимальную защищённую страницу для проверки сессии.
-6. Проверить security defaults/requirements выбранной версии Better Auth для cookies, trusted origins и CSRF/origin boundary; не считать auth-библиотеку автоматической защитой будущих forum actions без отдельной проверки этих actions.
+2. Получить и проверить exact Better Auth schema/adapter operations, затем сформировать least-privilege auth DB manifest.
+3. Добавить auth schema миграциями по принятому migration-first rollout contract.
+4. Реализовать Google sign-in, server session и logout.
+5. Интегрировать validated `user.locale` в существующий LocaleResolver: URL остаётся authoritative.
+6. Добавить минимальную защищённую страницу для проверки сессии.
+7. Проверить security defaults/requirements выбранной версии Better Auth для cookies, trusted origins и CSRF/origin boundary; не считать auth-библиотеку автоматической защитой будущих forum actions без отдельной проверки этих actions.
 
 ### Критерий завершения
 
 - Публичные страницы доступны гостю.
-- Google OAuth, SSR session и logout работают.
+- Google OAuth, SSR session и logout работают на изолированном staging и затем в production rollout.
 - Защищённый route недоступен без валидной сессии.
 - `user.locale` участвует только в negotiation без explicit locale URL.
 - Auth cookies/origins настроены согласно exact-version contract без ослабления server-side authz.
+- Auth runtime DB capability отделена от localization runtime и не использует migration/admin credential.
 
 ### Проверки
 
-- Auth migrations.
+- Auth migrations + production migration verification до schema-dependent runtime rollout.
 - Автоматические auth/session negative tests.
 - Проверить invalid/untrusted origin behavior на auth boundary согласно официальному API выбранной версии.
-- Preview smoke-test Google OAuth.
+- Реальный OAuth smoke на стабильном staging URL без production DB bindings/secrets.
 - `lint`, `typecheck`, `test`, `build`.
 
 ## Этап 5. Реализовать automatic UI translation providers и background jobs
 
-**Translation components:** `UI-11`, `UI-12` (provider validation), `UI-13`, `PRV-01`, `PRV-02`, `JOB-01`–`JOB-06`, `STO-03`, `STO-06`, `SEC-02`, `SEC-04`.
+**Translation components:** `UI-11`, `UI-12` (provider validation), `UI-13`, `UI-14` (publish/runtime consumption), `PRV-01`, `PRV-02`, `JOB-01`–`JOB-06`, `STO-03`, `STO-05` (active cache/read path), `STO-06`, `SEC-02`, `SEC-04`.
 
 ### Работы
 
@@ -201,6 +221,7 @@ Stage 2 выполняется серией `2A → 2B → 2C`. Переход �
 6. Сохранять `generationPolicyVersion`, provider/model provenance и attribution/presentation metadata.
 7. Реализовать controlled bulk generation, source-change regeneration и deduplicated/rate-or-budget self-healing.
 8. Не вызывать external translation provider в SSR request path; provider secrets остаются server-side.
+9. Завершить Stage 3C boundary: generation/validation публикуют current compiled bundles, persisted bundle identity используется runtime read/cache path, а ETag/cache backend подключается только после проверки фактических query/cache patterns.
 
 ### Критерий завершения
 
@@ -209,12 +230,13 @@ Stage 2 выполняется серией `2A → 2B → 2C`. Переход �
 - Duplicate/stale Queue task не создаёт некорректный current state.
 - Provider failure не ломает UI: current stored/local/English fallback остаётся доступен.
 - Structured messages публикуются current только после полной validation.
+- End-to-end generation → publish → persisted compiled bundle → runtime/SSR consumption работает без N-query-per-key path.
 
 ### Проверки
 
 - Contract tests provider adapters без обязательного real external call в общем CI.
 - Queue/idempotency/stale-task/reconciliation tests.
-- Integration tests UI generation → storage → compiled bundle → SSR.
+- Integration tests UI generation → storage → compiled bundle → persisted bundle read/cache → SSR.
 - Preview smoke-test реальных providers.
 - `lint`, `typecheck`, `test`, `build`.
 
@@ -391,13 +413,15 @@ Stage 2 выполняется серией `2A → 2B → 2C`. Переход �
 | `LOC-02`, `LOC-09` | Stage 1 abstraction → Stage 2 persistence |
 | `UI-01`, `UI-02`, `UI-03`, `UI-04`, `UI-05`, `UI-08`, `UI-09`, `UI-10` | Stage 1 |
 | `UI-12` | Stage 1 local/input validation → Stage 5 provider validation |
-| `UI-06`, `UI-07`, `UI-14` | Stage 3 |
+| `UI-06`, `UI-07` | Stage 3 |
+| `UI-14` | Stage 3 compiler/persistence primitives → Stage 5 publish/runtime consumption |
 | `UI-11`, `UI-13` | Stage 5 |
 | `CNT-02`, `CNT-03`, `CNT-05` | Stage 6 boundaries → Stage 10 full implementation |
 | `CNT-01`, `CNT-04`, `CNT-06` | Stage 10 |
 | `PRV-01`, `PRV-02` | Stage 5; reused Stage 10 |
 | `JOB-01`, `JOB-02`, `JOB-03`, `JOB-04`, `JOB-05`, `JOB-06` | Stage 5; reused Stage 10 |
-| `STO-01`, `STO-04`, `STO-05` | Stage 3 |
+| `STO-01`, `STO-04` | Stage 3 |
+| `STO-05` | Stage 3 identity/persistence/cache primitives → Stage 5 active publish/read/cache path |
 | `STO-02` | Stage 1 contract → Stage 3 persistence |
 | `STO-03`, `STO-06` | Stage 5 |
 | `STO-07` | Stage 2 |
