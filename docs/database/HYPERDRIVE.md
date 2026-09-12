@@ -123,6 +123,65 @@ trap 'kill "$preview_pid" 2>/dev/null || true; docker stop vico-forum-postgres' 
 Local mode connects directly and does not reproduce Hyperdrive pooling or query caching.
 Consequently, acceptance still requires a deployed smoke against the real binding.
 
+## PostgreSQL deadlines
+
+Localization reads use two Worker-side `pg 8.23.0` bounds: `connectionTimeoutMillis = 1000`
+and `query_timeout = 2000` milliseconds. The runtime-role defaults must add the server-side
+layers `lock_timeout = 500ms` and `statement_timeout = 1500ms`, preserving
+`lock_timeout < statement_timeout < query_timeout`. These are conservative initial values for
+small indexed localization reads, not production-tuned SLOs; calibrate them from staging latency
+and timeout telemetry before treating them as final.
+
+Do not issue `SET` or create a transaction for ordinary runtime reads. Apply the infrastructure
+defaults with the admin connection (substituting the environment-specific identifiers):
+
+```sh
+psql "$ADMIN_DATABASE_URL" --set=runtime_role=vico_forum_runtime \
+  --set=database_name=vico_forum \
+  --file=scripts/configure-localization-deadlines.sql
+```
+
+PostgreSQL 17 applies `ALTER ROLE ... IN DATABASE ... SET` defaults only when a new origin
+session logs in. Therefore an administrative catalog check proves configuration, but does not
+prove what an existing Hyperdrive origin session is using.
+
+### Required real staging acceptance
+
+Use the isolated staging Worker, staging Hyperdrive and staging database; local Wrangler/direct
+PostgreSQL does not exercise the pool. Record timestamps, Worker/Hyperdrive diagnostics, SQLSTATE,
+elapsed time, backend PID and the results, without logging credentials or translation payloads.
+
+1. Apply the role/database defaults and verify their catalog entries with the admin connection.
+2. Restart/reset the staging Hyperdrive pool using the currently documented Cloudflare operational
+   mechanism. Through the deployed Worker binding, query `current_setting('lock_timeout')` and
+   `current_setting('statement_timeout')` on newly established sessions. Repeat across enough
+   backend PIDs to cover pool reuse; every observed session must report `500ms` and `1500ms`.
+3. Reuse connections across sequential requests and repeat the settings probe. Deliberately change
+   a transaction-local setting in a controlled test transaction, end it by both commit and rollback,
+   and prove later borrowers receive the role defaults rather than leaked session state.
+4. In a staging-only diagnostic endpoint/test harness, run a statement longer than 1500ms and verify
+   SQLSTATE `57014` with the statement-timeout message before the 2000ms caller deadline. Hold a
+   conflicting lock from an admin session and verify SQLSTATE `55P03` with the lock-timeout message
+   near 500ms. Remove the endpoint/harness after acceptance.
+5. Separately make the server-side statement deadline longer than the client `query_timeout`, execute
+   a uniquely identifiable `pg_sleep` through Hyperdrive, and verify the Worker falls back, opens its
+   request-local circuit and does not reuse that Client. Observe `pg_stat_activity` from the admin
+   connection to determine whether the origin statement continues after best-effort `client.end()`;
+   do not infer cancellation from Worker cleanup. Then confirm the pool remains healthy and a later
+   request uses a clean session.
+
+The repository tests validate configuration, classification and application behavior, but none of
+the five observations above is considered confirmed until this deployed staging acceptance is run.
+
+The controlled locale writer already owns a short transaction and applies
+`SET LOCAL lock_timeout = '2s'` followed by `SET LOCAL statement_timeout = '10s'`. Writer operations validate
+the complete locale graph and can be heavier than runtime reads, so they receive wider initial
+bounds. Timeout SQLSTATEs are not added to its existing serialization/deadlock retry allowlist.
+An exact PostgreSQL `57014 / canceling statement due to statement timeout` returned during `COMMIT`
+does use the existing semantic reconciliation because PostgreSQL 17 can report a fired timeout after
+the durable commit point; other `57014` errors are not classified by SQLSTATE alone. These writer
+values also require staging calibration.
+
 ## Recovery
 
 If registry loading reports degraded state, keep the English read fallback available, do not

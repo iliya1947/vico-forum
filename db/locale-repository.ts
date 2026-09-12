@@ -2,6 +2,7 @@ import { asc } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { ClientBase, DatabaseError, QueryResult } from "pg";
 import { locales } from "./schema";
+import { isPostgresStatementTimeout } from "./postgres-deadlines";
 import { canonicalizeTranslationLocale, type LocaleDefinition } from "../app/localization/locale";
 import {
   RegistryIntegrityError,
@@ -65,6 +66,8 @@ export class ControlledLocaleWriter {
     let preState: string | undefined;
     let expectedPostState: string | undefined;
     try {
+      await this.client.query("set local lock_timeout = '2s'");
+      await this.client.query("set local statement_timeout = '10s'");
       const current = await this.client.query(`select tag, translation_status as "translationStatus",
         publication_status as "publicationStatus", direction, fallback_chain as "fallbackChain",
         aliases, match_tags as "matchTags", native_name as "nativeName",
@@ -148,5 +151,6 @@ function asRows(locales: readonly LocaleDefinition[]): PersistentLocaleRow[] {
 
 function isAmbiguousCommitError(error: unknown): boolean {
   const code = (error as DatabaseError | undefined)?.code;
-  return code === "40003" || code === "08007" || code?.startsWith("08") === true;
+  return code === "40003" || code === "08007" || code?.startsWith("08") === true ||
+    isPostgresStatementTimeout(error);
 }

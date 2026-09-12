@@ -69,6 +69,24 @@ describe("Hyperdrive registry request factory", () => {
     expect(reportDegraded).toHaveBeenCalledWith("unavailable");
   });
 
+  it("degrades and discards the client after a query timeout", async () => {
+    const end = vi.fn(async () => undefined);
+    const reportDegraded = vi.fn();
+    const loaded = await createHyperdriveRegistryLoader(
+      "postgres://runtime@hyperdrive/vico",
+      () => ({
+        connect: vi.fn(async () => undefined),
+        query: vi.fn(async () => { throw new Error("Query read timeout"); }),
+        end,
+      }) as unknown as Client,
+      reportDegraded,
+    )();
+
+    expect(loaded.health).toEqual({ status: "degraded", reason: "unavailable" });
+    expect(end).toHaveBeenCalledOnce();
+    expect(reportDegraded).toHaveBeenCalledOnce();
+  });
+
   it.each([
     Object.assign(new Error("authentication failed"), { code: "28P01" }),
     new TypeError("client programming error"),

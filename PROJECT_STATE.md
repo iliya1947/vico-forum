@@ -179,6 +179,12 @@ fallback и отсутствие Worker errors в проверенной Observa
 - observability hardening включает Cloudflare query-string redaction для Workers logs и заменяет raw
   SSR error logging на fixed allowlisted structured metadata без message/stack/request payload;
   targeted tests проверяют, что sensitive error/request values не сериализуются в application log.
+- PostgreSQL deadline hardening добавляет для request-scoped localization adapters bounded
+  `connectionTimeoutMillis`/`query_timeout`, узкую timeout classification, request-local circuit
+  breaker persistent UI reads и best-effort discard клиента после timeout; controlled writer задаёт
+  transaction-local lock/statement deadlines без расширения retry, а exact PostgreSQL statement
+  timeout во время `COMMIT` направляет в существующую semantic reconciliation;
+  repo-side role/database defaults и обязательный real staging Hyperdrive acceptance документированы.
 
 ## Сейчас
 
@@ -189,8 +195,8 @@ production privilege contract и migration→runtime evidence contract. Техн
 
 ## Блокеры
 
-- Добавить bounded PostgreSQL connect/query/statement deadlines для localization Hyperdrive reads
-  без маскирования programming/auth errors; конкретные значения подтвердить staging telemetry.
+- Подтвердить и откалибровать PostgreSQL role/database deadlines на real staging Hyperdrive, включая
+  pool restart/reset/reuse и судьбу origin query после Worker-side `query_timeout`/cleanup.
 - Расширить production verifier проверкой runtime roles/grants/ownership/default privileges; текущие
   ручные privilege checks недостаточны для Stage 4 auth/private data.
 - Создать выбранную staging isolation topology до private auth data/runtime writes: отдельный Neon
