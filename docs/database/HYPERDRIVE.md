@@ -176,8 +176,11 @@ the five observations above is considered confirmed until this deployed staging 
 The controlled locale writer already owns a short transaction and applies
 `SET LOCAL lock_timeout = '2s'` followed by `SET LOCAL statement_timeout = '10s'`. Writer operations validate
 the complete locale graph and can be heavier than runtime reads, so they receive wider initial
-bounds. Timeout SQLSTATEs are not added to its existing serialization/deadlock retry allowlist, and
-the commit reconciliation path is unchanged. These writer values also require staging calibration.
+bounds. Timeout SQLSTATEs are not added to its existing serialization/deadlock retry allowlist.
+An exact PostgreSQL `57014 / canceling statement due to statement timeout` returned during `COMMIT`
+does use the existing semantic reconciliation because PostgreSQL 17 can report a fired timeout after
+the durable commit point; other `57014` errors are not classified by SQLSTATE alone. These writer
+values also require staging calibration.
 
 ## Recovery
 

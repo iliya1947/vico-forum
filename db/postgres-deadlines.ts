@@ -23,9 +23,13 @@ export function isPostgresConnectionTimeout(error: unknown): boolean {
 export function isPostgresQueryTimeout(error: unknown): boolean {
   return findError(error, ({ code, message }) =>
     message === "Query read timeout" ||
-    (code === "57014" && message === "canceling statement due to statement timeout") ||
+    isStatementTimeoutShape(code, message) ||
     (code === "55P03" && message === "canceling statement due to lock timeout")
   );
+}
+
+export function isPostgresStatementTimeout(error: unknown): boolean {
+  return findError(error, ({ code, message }) => isStatementTimeoutShape(code, message));
 }
 
 export function bestEffortDiscardClient(client: Client): void {
@@ -52,4 +56,8 @@ function findError(
     current = candidate.cause;
   }
   return false;
+}
+
+function isStatementTimeoutShape(code: string | undefined, message: string | undefined): boolean {
+  return code === "57014" && message === "canceling statement due to statement timeout";
 }

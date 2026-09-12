@@ -182,7 +182,8 @@ fallback и отсутствие Worker errors в проверенной Observa
 - PostgreSQL deadline hardening добавляет для request-scoped localization adapters bounded
   `connectionTimeoutMillis`/`query_timeout`, узкую timeout classification, request-local circuit
   breaker persistent UI reads и best-effort discard клиента после timeout; controlled writer задаёт
-  transaction-local lock/statement deadlines без расширения retry или изменения reconciliation;
+  transaction-local lock/statement deadlines без расширения retry, а exact PostgreSQL statement
+  timeout во время `COMMIT` направляет в существующую semantic reconciliation;
   repo-side role/database defaults и обязательный real staging Hyperdrive acceptance документированы.
 
 ## Сейчас

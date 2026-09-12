@@ -6,6 +6,7 @@ import {
   createLocalizationClient,
   isPostgresConnectionTimeout,
   isPostgresQueryTimeout,
+  isPostgresStatementTimeout,
 } from "./postgres-deadlines";
 
 describe("PostgreSQL deadlines", () => {
@@ -45,6 +46,16 @@ describe("PostgreSQL deadlines", () => {
   it("recognizes only the exact pg 8.23.0 connection timeout shape", () => {
     expect(isPostgresConnectionTimeout(new Error("timeout expired"))).toBe(true);
     expect(isPostgresConnectionTimeout(new Error("operation timeout"))).toBe(false);
+  });
+
+  it("requires both SQLSTATE and exact message for a PostgreSQL statement timeout", () => {
+    expect(isPostgresStatementTimeout(
+      Object.assign(new Error("canceling statement due to statement timeout"), { code: "57014" }),
+    )).toBe(true);
+    expect(isPostgresStatementTimeout(
+      Object.assign(new Error("canceling statement due to user request"), { code: "57014" }),
+    )).toBe(false);
+    expect(isPostgresStatementTimeout(new Error("canceling statement due to statement timeout"))).toBe(false);
   });
 
   it("swallows synchronous and asynchronous cleanup failures", async () => {
