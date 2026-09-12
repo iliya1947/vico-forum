@@ -111,8 +111,8 @@ describe("UI translation resources", () => {
     );
   });
 
-  it("validates every real manual pack for CI while allowing stale values", async () => {
-    await expect(validateTranslationPacks(manualTranslationPacks)).resolves.toBeDefined();
+  it("validates every real manual pack without synthetic stale production data", async () => {
+    await expect(validateTranslationPacks(manualTranslationPacks)).resolves.toEqual({ staleKeys: {} });
   });
 
   it("rejects unknown identities and invalid current translations during full-pack validation", async () => {
