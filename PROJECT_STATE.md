@@ -187,7 +187,8 @@ fallback и отсутствие Worker errors в проверенной Observa
   repo-side role/database defaults и обязательный real staging Hyperdrive acceptance документированы.
 - production DB verifier машинно проверяет текущий read-only privilege contract: атрибуты и
   memberships runtime/migration ролей, ownership, schema/table/sequence/default privileges,
-  column ACL/grant options, grants `PUBLIC` и отсутствие cross-domain grants; effective default
+  inbound memberships, foreign tables, column ACL/grant options, grants `PUBLIC` и отсутствие
+  cross-domain grants; effective default
   ACL учитывает hard-wired и catalog defaults PostgreSQL 17, targeted fixtures подключены к PR CI.
 
 ## Сейчас

@@ -120,6 +120,20 @@ test("rejects changes to significant migration membership options", () => {
   }
 });
 
+test("rejects inbound memberships in runtime and migration roles", () => {
+  for (const role of ["runtime", "migration"]) {
+    const candidate = fixture();
+    candidate.memberships.push({
+      member: "unexpected_login",
+      role,
+      admin_option: false,
+      inherit_option: true,
+      set_option: true,
+    });
+    assert.throws(() => assertProductionPrivilegeContract(candidate, contract), /Other roles/);
+  }
+});
+
 test("rejects runtime ownership and wrong application-table ownership", () => {
   const runtimeOwner = fixture();
   runtimeOwner.ownedObjects.push({ schema: "other", name: "leak", kind: "table", owner: "runtime" });
@@ -128,6 +142,15 @@ test("rejects runtime ownership and wrong application-table ownership", () => {
   const wrongOwner = fixture();
   wrongOwner.ownedObjects.find(({ name }) => name === "locales").owner = "someone_else";
   assert.throws(() => assertProductionPrivilegeContract(wrongOwner, contract), /own public.locales/);
+
+  const foreignTableOwner = fixture();
+  foreignTableOwner.ownedObjects.push({
+    schema: "external",
+    name: "private_users",
+    kind: "table",
+    owner: "runtime",
+  });
+  assert.throws(() => assertProductionPrivilegeContract(foreignTableOwner, contract), /must not own/);
 });
 
 test("rejects schema CREATE, table mutation, sequence, and cross-domain grants", () => {
@@ -144,6 +167,7 @@ test("rejects schema CREATE, table mutation, sequence, and cross-domain grants",
     { schema: "public", name: "locales", kind: "table", grantee: "runtime", privilege: "UPDATE", is_grantable: false },
     { schema: "public", name: "future_id_seq", kind: "sequence", grantee: "runtime", privilege: "USAGE", is_grantable: false },
     { schema: "auth", name: "users", kind: "table", grantee: "runtime", privilege: "SELECT", is_grantable: false },
+    { schema: "external", name: "private_users", kind: "table", grantee: "runtime", privilege: "SELECT", is_grantable: false },
   ]) {
     const candidate = fixture();
     candidate.relationPrivileges.push(grant);
@@ -201,4 +225,11 @@ test("rejects grants to PUBLIC and broadening default privileges", () => {
     privilege: "USAGE", is_grantable: false,
   });
   assert.throws(() => assertProductionPrivilegeContract(otherDefaults, contract), /Another role/);
+
+  const otherSchemaDefaults = fixture();
+  otherSchemaDefaults.otherDefaultPrivileges.push({
+    owner: "other", schema: "*", object_type: "n", grantee: "PUBLIC",
+    privilege: "USAGE", is_grantable: false,
+  });
+  assert.throws(() => assertProductionPrivilegeContract(otherSchemaDefaults, contract), /Another role/);
 });

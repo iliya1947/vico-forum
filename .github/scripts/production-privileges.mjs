@@ -44,6 +44,14 @@ export function assertProductionPrivilegeContract(
     ),
     `Unexpected memberships for migration role ${migrationRole}`,
   );
+  assert.deepEqual(
+    snapshot.memberships.filter(
+      ({ member, role }) =>
+        member !== role && (role === runtimeRole || role === migrationRole),
+    ),
+    [],
+    "Other roles must not inherit or SET ROLE to runtime or migration roles",
+  );
 
   assert.equal(
     snapshot.ownedObjects.some(({ owner }) => owner === runtimeRole),
@@ -148,7 +156,7 @@ export async function readProductionPrivilegeSnapshot(client, { migrationRole, r
      FROM pg_catalog.pg_auth_members membership
      JOIN pg_catalog.pg_roles member ON member.oid = membership.member
      JOIN pg_catalog.pg_roles granted ON granted.oid = membership.roleid
-     WHERE member.rolname = ANY($1::name[])
+     WHERE member.rolname = ANY($1::name[]) OR granted.rolname = ANY($1::name[])
      ORDER BY member.rolname, granted.rolname`,
     [roles],
   );
@@ -166,7 +174,7 @@ export async function readProductionPrivilegeSnapshot(client, { migrationRole, r
      JOIN pg_catalog.pg_roles owner ON owner.oid = relation.relowner
      WHERE namespace.nspname NOT IN ('pg_catalog', 'information_schema')
        AND namespace.nspname !~ '^pg_toast'
-       AND relation.relkind IN ('r', 'p', 'S', 'v', 'm')
+       AND relation.relkind IN ('r', 'p', 'S', 'v', 'm', 'f')
      ORDER BY 1, 2, 3, 4`,
     [roles],
   );
@@ -194,14 +202,14 @@ export async function readProductionPrivilegeSnapshot(client, { migrationRole, r
      JOIN pg_catalog.pg_namespace namespace ON namespace.oid = relation.relnamespace
      CROSS JOIN LATERAL pg_catalog.aclexplode(
        COALESCE(relation.relacl, pg_catalog.acldefault(
-         CASE WHEN relation.relkind = 'S' THEN 'S'::"char" ELSE 'r'::"char" END,
+         CASE WHEN relation.relkind = 'S' THEN 's'::"char" ELSE 'r'::"char" END,
          relation.relowner
        ))
      ) acl
      LEFT JOIN pg_catalog.pg_roles grantee ON grantee.oid = acl.grantee
      WHERE namespace.nspname NOT IN ('pg_catalog', 'information_schema')
        AND namespace.nspname !~ '^pg_toast'
-       AND relation.relkind IN ('r', 'p', 'S', 'v', 'm')
+       AND relation.relkind IN ('r', 'p', 'S', 'v', 'm', 'f')
        AND (acl.grantee = 0 OR grantee.rolname = ANY($1::name[]))
      ORDER BY 1, 2, 3, 4, 5`,
     [roles],
@@ -224,11 +232,16 @@ export async function readProductionPrivilegeSnapshot(client, { migrationRole, r
     [roles],
   );
   const defaultPrivileges = await client.query(
-    `WITH object_types(object_type) AS (
-       VALUES ('r'::"char"), ('S'::"char"), ('f'::"char"), ('T'::"char"), ('n'::"char")
+    `WITH object_types(object_type, hard_wired_type) AS (
+       VALUES
+         ('r'::"char", 'r'::"char"),
+         ('S'::"char", 's'::"char"),
+         ('f'::"char", 'f'::"char"),
+         ('T'::"char", 'T'::"char"),
+         ('n'::"char", 'n'::"char")
      ), effective_defaults AS (
        SELECT object_types.object_type, '*'::name AS schema,
-         COALESCE(defaults.defaclacl, pg_catalog.acldefault(object_types.object_type, owner.oid)) AS acl
+         COALESCE(defaults.defaclacl, pg_catalog.acldefault(object_types.hard_wired_type, owner.oid)) AS acl
        FROM pg_catalog.pg_roles owner
        CROSS JOIN object_types
        LEFT JOIN pg_catalog.pg_default_acl defaults
@@ -267,7 +280,7 @@ export async function readProductionPrivilegeSnapshot(client, { migrationRole, r
      WHERE owner.rolname <> $1
        AND (
          grantee.rolname = $2
-         OR (acl.grantee = 0 AND defaults.defaclobjtype IN ('r', 'S'))
+         OR (acl.grantee = 0 AND defaults.defaclobjtype IN ('r', 'S', 'n'))
        )
      ORDER BY 1, 2, 3, 4, 5, 6`,
     [migrationRole, runtimeRole],

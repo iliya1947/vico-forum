@@ -93,11 +93,12 @@ allowlist is `USAGE` on `public` plus `SELECT` on `locales`, `ui_translations`, 
 `ui_translation_bundles`; the existing `PUBLIC` schema `USAGE` remains allowed, while other
 `PUBLIC` privileges are rejected. Set `MIGRATION_DATABASE_ROLE_MEMBERSHIPS` to the comma-separated
 exact membership allowlist for the existing migration credential (an empty value means no
-memberships); each allowed membership must retain `ADMIN FALSE`, `INHERIT TRUE`, and `SET TRUE`.
-The verifier also rejects column-level grants and grant options. Effective migration-role defaults
+memberships); each allowed membership must retain `ADMIN FALSE`, `INHERIT TRUE`, and `SET TRUE`,
+and no other role may be a member of either production role. The verifier also rejects column-level
+grants, grant options, and runtime ownership or grants on foreign tables. Effective migration-role defaults
 are reconstructed from PostgreSQL hard-wired global defaults plus `pg_default_acl` global and
 per-schema entries: the existing `PUBLIC EXECUTE` for functions and `PUBLIC USAGE` for types are
-allowed, while future table/sequence access for runtime or `PUBLIC` is rejected. The current
+allowed, while future table/sequence/schema access for runtime or `PUBLIC` is rejected. The current
 localization runtime role is read-only; Stage 4 must derive a separate
 least-privilege auth role/Hyperdrive from the exact selected Better Auth schema and real adapter
 operations rather than granting auth writes to the localization role.
