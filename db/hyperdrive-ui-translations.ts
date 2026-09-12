@@ -4,8 +4,8 @@ import type {
   PersistentUiTranslationRow,
   UiTranslationStore,
 } from "../app/localization/persistent-sources";
-import { isTransportUnavailableCode } from "../app/localization/persistent-registry";
 import { DrizzleUiTranslationStore } from "./ui-translation-store";
+import { isPostgresConnectAvailabilityFailure } from "./postgres-errors";
 
 export type UiTranslationStoreDegradedReason = "unavailable" | "schema-mismatch";
 
@@ -78,7 +78,7 @@ async function connectStore(connectionString: string, createClient: PostgreSqlCl
   try {
     await client.connect();
   } catch (error) {
-    if (!isConnectAvailabilityFailure(error)) throw error;
+    if (!isPostgresConnectAvailabilityFailure(error)) throw error;
     throw new UiTranslationConnectionUnavailableError({ cause: error });
   }
   return new DrizzleUiTranslationStore(drizzle(client));
@@ -95,33 +95,11 @@ function classifyReadFailure(error: unknown): UiTranslationStoreDegradedReason |
     const candidate = current as { cause?: unknown; code?: unknown };
     const code = typeof candidate.code === "string" ? candidate.code : undefined;
     if (code && schemaMismatchCodes.has(code)) return "schema-mismatch";
-    if (code?.startsWith("08") || postgresUnavailableCodes.has(code ?? "") || isTransportUnavailableCode(code)) {
+    if (code?.startsWith("08") || postgresUnavailableCodes.has(code ?? "") || isPostgresConnectAvailabilityFailure(current)) {
       return "unavailable";
     }
     current = candidate.cause;
   }
 
   return undefined;
-}
-
-function isConnectAvailabilityFailure(error: unknown): boolean {
-  if (
-    error instanceof TypeError ||
-    error instanceof ReferenceError ||
-    error instanceof SyntaxError ||
-    error instanceof RangeError
-  ) {
-    return false;
-  }
-
-  const code =
-    error && (typeof error === "object" || typeof error === "function")
-      ? (error as { code?: unknown }).code
-      : undefined;
-
-  if (typeof code === "string") {
-    return code.startsWith("08") || postgresUnavailableCodes.has(code) || isTransportUnavailableCode(code);
-  }
-
-  return error instanceof Error;
 }
