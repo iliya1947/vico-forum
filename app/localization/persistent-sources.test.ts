@@ -154,10 +154,10 @@ describe("persistent UI translation sources", () => {
   });
 
   it("does not hide programming/runtime failures while processing otherwise valid rows", async () => {
+    const persistentStore = store([await row("persistent_manual", "Значение")]);
     const failure = new TypeError("crypto runtime failure");
     const digest = vi.spyOn(crypto.subtle, "digest").mockRejectedValueOnce(failure);
     const reportRowIssues = vi.fn<PersistentTranslationRowIssueReporter>();
-    const persistentStore = store([await row("persistent_manual", "Значение")]);
 
     await expect(new DatabaseManualTranslationSource(persistentStore, reportRowIssues).load("ru", ["common"]))
       .rejects.toBe(failure);
