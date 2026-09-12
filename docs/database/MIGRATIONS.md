@@ -66,19 +66,65 @@ This workflow does not deploy the application and does not run destructive SQL,
 validation is not evidence that a production migration ran; the dispatched environment job
 must complete with the production credential.
 
+## Production privilege contract
+
+Runtime database privileges are part of the production contract and must be verifiable from
+the repository rather than existing only as manually remembered infrastructure state.
+
+Before Stage 4 auth/private data/runtime writes are accepted, production verification must
+also check the expected runtime roles and grants using the migration/admin credential. The
+verification boundary must cover at least:
+
+- runtime role attributes: no superuser/admin/bypass-style capability;
+- application schema `USAGE` and absence of schema `CREATE`;
+- no ownership of application schema/tables;
+- exact table privileges required by each runtime capability and no unrelated cross-domain grants;
+- sequence privileges when the selected schema actually requires them;
+- default privileges that could silently broaden future runtime access.
+
+Production role names are environment-specific inputs and must not be hard-coded into portable
+migration SQL. The current localization runtime role is read-only; Stage 4 must derive a separate
+least-privilege auth role/Hyperdrive from the exact selected Better Auth schema and real adapter
+operations rather than granting auth writes to the localization role.
+
+The current verifier does **not** yet enforce this privilege contract. Extending it is a
+pre-Stage-4 hardening requirement, not a completed check.
+
+## Migration → runtime evidence
+
+Schema-first ordering is necessary but is not sufficient evidence by itself. A later runtime
+rollout that depends on a migration must be traceable to the exact production migration run
+that made the required schema safe.
+
+The minimum evidence contract is:
+
+```text
+migration workflow run
+→ exact checked-out Git SHA
+→ checked-in Drizzle journal identity/history
+→ successful production schema verification
+→ reference from the schema-dependent runtime rollout/PR
+```
+
+The existing workflow already checks out the dispatched `github.sha` and verifies the production
+migration ledger, but there is not yet a machine-enforced linkage from that successful run to a
+later runtime deployment. Before the first Stage 4 schema-dependent auth rollout, retain explicit
+run/SHA/verification evidence and add the smallest repository-owned enforcement needed to prevent
+a runtime release from claiming an unapplied schema. A larger deployment orchestrator is not
+required for this solo-project workflow.
+
 ## Stage 3A rollout
 
-Stage 3A introduces `public.ui_translations` and `public.ui_translation_bundles` as a
-migration-only change. The current Worker must not depend on either table in the same PR.
-After the migration PR is merged:
+Stage 3A introduced `public.ui_translations` and `public.ui_translation_bundles` as a
+migration-only change. The Worker did not depend on either table in the same PR. After the
+migration PR was merged:
 
-1. run the **Production database migration** workflow from `main` and require its production
-   verification to pass;
-2. grant the existing read-only runtime role only the privileges needed by the later Stage 3
-   runtime, currently `SELECT` on the two new tables;
-3. verify the runtime role still has no `INSERT`, `UPDATE`, `DELETE`, ownership, or migration
-   privileges;
-4. only then open/merge the separate runtime PR that adds `UiTranslationStore` and persistent
+1. the **Production database migration** workflow was run from `main` and production verification passed;
+2. the existing read-only runtime role received only the privileges needed by Stage 3 runtime,
+   currently `SELECT` on the two translation tables in addition to `public.locales`;
+3. the runtime role was manually checked to remain without `INSERT`, `UPDATE`, `DELETE`, ownership,
+   or migration privileges;
+4. only then was the separate runtime PR merged with `UiTranslationStore` and persistent
    manual/machine sources.
 
 The production role name is environment-specific infrastructure and is intentionally not
