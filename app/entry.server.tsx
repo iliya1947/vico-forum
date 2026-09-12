@@ -1,6 +1,7 @@
 import type { EntryContext, RouterContextProvider } from "react-router";
 import { ServerRouter } from "react-router";
 import { renderToReadableStream } from "react-dom/server";
+import { reportSsrStreamError } from "./server-logging";
 
 export const streamTimeout = 5_000;
 
@@ -28,7 +29,7 @@ export default async function handleRequest(
       onError(error: unknown) {
         responseStatusCode = 500;
         if (shellRendered) {
-          console.error(error);
+          reportSsrStreamError(error);
         }
       },
     },
