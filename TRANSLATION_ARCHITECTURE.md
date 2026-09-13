@@ -229,9 +229,10 @@ provider-specific locale codes leaking into domain locale model
 Нельзя удалять, переименовывать или переносить component ID между detail documents без
 одновременного обновления этого registry и соответствующего roadmap mapping.
 
-До следующего implementation PR необходимо пересобрать существующие i18n-пункты
-`PROJECT.md`, `ROADMAP.md` и `SCAFFOLD_PLAN.md` по этому контракту. Текущий Stage 1,
-построенный вокруг фиксированных `en` / `ru` / `he`, не является целевой i18n-реализацией.
+Синхронизация `PROJECT.md`, `ROADMAP.md` и `SCAFFOLD_PLAN.md` с этим контрактом выполнена
+до реализации Stage 1. Реализованный Stage 1 использует generic `/:locale/*`, runtime
+`LocaleRegistry` и не имеет фиксированного compile-time списка locale. Фактическое состояние
+реализации фиксируется в `PROJECT_STATE.md`.
 
 ## Detail documents
 
