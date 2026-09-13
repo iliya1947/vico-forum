@@ -35,6 +35,7 @@ function fixture() {
         rolbypassrls: false,
       },
     ],
+    databaseOwnerRole: "database_owner",
     memberships: [
       {
         member: "migration",
@@ -42,6 +43,20 @@ function fixture() {
         admin_option: false,
         inherit_option: true,
         set_option: true,
+      },
+      {
+        member: "database_owner",
+        role: "migration",
+        admin_option: true,
+        inherit_option: false,
+        set_option: false,
+      },
+      {
+        member: "database_owner",
+        role: "runtime",
+        admin_option: true,
+        inherit_option: false,
+        set_option: false,
       },
     ],
     ownedObjects: [
@@ -121,18 +136,46 @@ test("rejects changes to significant migration membership options", () => {
   }
 });
 
-test("rejects inbound memberships in runtime and migration roles", () => {
+test("allows only database-owner admin-only inbound memberships", () => {
   for (const role of ["runtime", "migration"]) {
-    const candidate = fixture();
-    candidate.memberships.push({
+    const unexpectedMember = fixture();
+    unexpectedMember.memberships.push({
       member: "unexpected_login",
       role,
-      admin_option: false,
-      inherit_option: true,
-      set_option: true,
+      admin_option: true,
+      inherit_option: false,
+      set_option: false,
     });
-    assert.throws(() => assertProductionPrivilegeContract(candidate, contract), /Other roles/);
+    assert.throws(() => assertProductionPrivilegeContract(unexpectedMember, contract), /Only database owner/);
+
+    const inherited = fixture();
+    inherited.memberships.find(
+      ({ member, role: candidateRole }) => member === "database_owner" && candidateRole === role,
+    ).inherit_option = true;
+    assert.throws(() => assertProductionPrivilegeContract(inherited, contract), /must not inherit/);
+
+    const settable = fixture();
+    settable.memberships.find(
+      ({ member, role: candidateRole }) => member === "database_owner" && candidateRole === role,
+    ).set_option = true;
+    assert.throws(() => assertProductionPrivilegeContract(settable, contract), /must not SET ROLE/);
+
+    const adminRemoved = fixture();
+    adminRemoved.memberships.find(
+      ({ member, role: candidateRole }) => member === "database_owner" && candidateRole === role,
+    ).admin_option = false;
+    assert.throws(() => assertProductionPrivilegeContract(adminRemoved, contract), /must retain ADMIN OPTION/);
   }
+});
+
+test("requires runtime and migration roles to be distinct from the database owner", () => {
+  const runtimeOwner = fixture();
+  runtimeOwner.databaseOwnerRole = "runtime";
+  assert.throws(() => assertProductionPrivilegeContract(runtimeOwner, contract), /Runtime role must not own/);
+
+  const migrationOwner = fixture();
+  migrationOwner.databaseOwnerRole = "migration";
+  assert.throws(() => assertProductionPrivilegeContract(migrationOwner, contract), /Migration role must not own/);
 });
 
 test("rejects runtime ownership and wrong application-table ownership", () => {

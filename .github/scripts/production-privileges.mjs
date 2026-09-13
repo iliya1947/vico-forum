@@ -51,14 +51,35 @@ export function assertProductionPrivilegeContract(
     ),
     `Unexpected memberships for migration role ${migrationRole}`,
   );
-  assert.deepEqual(
-    snapshot.memberships.filter(
-      ({ member, role }) =>
-        member !== role && (role === runtimeRole || role === migrationRole),
-    ),
-    [],
-    "Other roles must not inherit or SET ROLE to runtime or migration roles",
-  );
+
+  assert.ok(snapshot.databaseOwnerRole, "Expected current database owner role to exist");
+  assert.notEqual(snapshot.databaseOwnerRole, runtimeRole, "Runtime role must not own the current database");
+  assert.notEqual(snapshot.databaseOwnerRole, migrationRole, "Migration role must not own the current database");
+  for (const membership of snapshot.memberships.filter(
+    ({ member, role }) =>
+      member !== role && (role === runtimeRole || role === migrationRole),
+  )) {
+    assert.equal(
+      membership.member,
+      snapshot.databaseOwnerRole,
+      `Only database owner ${snapshot.databaseOwnerRole} may hold an inbound admin membership in runtime or migration roles`,
+    );
+    assert.equal(
+      membership.admin_option,
+      true,
+      `Database owner membership in ${membership.role} must retain ADMIN OPTION`,
+    );
+    assert.equal(
+      membership.inherit_option,
+      false,
+      `Database owner must not inherit privileges from ${membership.role}`,
+    );
+    assert.equal(
+      membership.set_option,
+      false,
+      `Database owner must not SET ROLE to ${membership.role}`,
+    );
+  }
 
   assert.equal(
     snapshot.ownedObjects.some(({ owner }) => owner === runtimeRole),
@@ -156,6 +177,12 @@ export async function readProductionPrivilegeSnapshot(client, { migrationRole, r
      WHERE rolname = ANY($1::name[])
      ORDER BY rolname`,
     [roles],
+  );
+  const databaseOwner = await client.query(
+    `SELECT owner.rolname AS role
+     FROM pg_catalog.pg_database database
+     JOIN pg_catalog.pg_roles owner ON owner.oid = database.datdba
+     WHERE database.datname = current_database()`,
   );
   const memberships = await client.query(
     `SELECT member.rolname AS member, granted.rolname AS role,
@@ -295,6 +322,7 @@ export async function readProductionPrivilegeSnapshot(client, { migrationRole, r
 
   return {
     roles: roleRows.rows,
+    databaseOwnerRole: databaseOwner.rows[0]?.role ?? null,
     memberships: memberships.rows,
     ownedObjects: ownedObjects.rows,
     schemaPrivileges: schemaPrivileges.rows,
