@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-09-12
+Последнее обновление: 2026-09-13
 
 ## Состояние
 
@@ -184,12 +184,18 @@ fallback и отсутствие Worker errors в проверенной Observa
   breaker persistent UI reads и best-effort discard клиента после timeout; controlled writer задаёт
   transaction-local lock/statement deadlines без расширения retry, а exact PostgreSQL statement
   timeout во время `COMMIT` направляет в существующую semantic reconciliation;
-  repo-side role/database defaults и обязательный real staging Hyperdrive acceptance документированы.
+- real deployed Hyperdrive deadline acceptance выполнен 2026-09-13 в текущем pre-release production
+  candidate: origin sessions подтвердили `500ms`/`1500ms`, pool reuse и reset после `COMMIT`/`ROLLBACK`;
+  statement timeout дал `57014` примерно за `1571ms`, lock timeout — `55P03` примерно за `569ms`,
+  client deadline — `Query read timeout` примерно за `2000ms`; после client timeout уникальный backend
+  не был найден в `pg_stat_activity`, без вывода о том, какой компонент именно его прекратил;
+- отдельный diagnostic harness подтвердил инфраструктурное поведение `pg`/Hyperdrive/PostgreSQL, но
+  не выполнял deployed application path request-local circuit breaker; этот behavior покрыт repo tests;
 - production DB verifier машинно проверяет текущий read-only privilege contract: атрибуты и
   memberships runtime/migration ролей, ownership, schema/table/sequence/default privileges,
   inbound memberships, foreign tables, column ACL/grant options, grants `PUBLIC` и отсутствие
-  cross-domain grants; effective default
-  ACL учитывает hard-wired и catalog defaults PostgreSQL 17, targeted fixtures подключены к PR CI.
+  cross-domain grants; effective default ACL учитывает hard-wired и catalog defaults PostgreSQL 17,
+  targeted fixtures подключены к PR CI;
 - migration→runtime evidence linkage фиксирует production workflow run ID, exact `main` SHA, SHA-256
   Drizzle journal и newest runtime-required migration; PR CI сверяет successful manual production
   workflow через GitHub API, ancestry и exact journal coverage, а production workflow публикует
@@ -197,24 +203,25 @@ fallback и отсутствие Worker errors в проверенной Observa
 
 ## Сейчас
 
-Stage 3 закрыт. Pre-Stage-4 audit завершён; выполняется обязательный hardening перед Stage 4.
-Документация синхронизирована с фактическим Stage 3C runtime boundary, выбранной staging topology,
-production privilege contract и migration→runtime evidence contract. Migration evidence реализован;
-остальные технические hardening items ещё не считаются выполненными, пока соответствующий
-код/CI/infrastructure не реализованы и не проверены.
+Stage 3 закрыт. Обязательный pre-Stage-4 hardening завершён, включая real deployed Hyperdrive deadline
+acceptance. До первого релиза текущая deployed среда используется как pre-release production candidate
+только с test/pre-release data, пока нет реальных пользователей или ценной private data. Отдельный
+staging не является условием начала Stage 4; preview/non-production path при появлении auth writes или
+private data должен быть изолирован от production bindings/secrets либо отключён.
+
+После первого релиза с реальными пользователями/private data fault injection в production прекращается,
+а для рискованных post-release DB/Hyperdrive/auth/runtime изменений требуется отдельный staging gate.
+Временная инфраструктура и другие тестовые ресурсы текущего acceptance ещё не считаются полностью
+очищенными, пока cleanup не завершён фактически.
 
 ## Блокеры
 
-- Подтвердить и откалибровать PostgreSQL role/database deadlines на real staging Hyperdrive, включая
-  pool restart/reset/reuse и судьбу origin query после Worker-side `query_timeout`/cleanup.
-- Создать выбранную staging isolation topology до private auth data/runtime writes: отдельный Neon
-  staging project, staging-only credentials/roles, staging Hyperdrive configuration(s), отдельный
-  Cloudflare staging Worker/environment, build с выбранным staging environment (`CLOUDFLARE_ENV=staging`)
-  и реальный deployed staging smoke без production DB bindings/secrets.
+Обязательных pre-Stage-4 blockers по PostgreSQL deadlines или отдельному staging environment больше нет.
+Cleanup временных test resources остаётся operational housekeeping и не объявляется завершённым заранее.
 
 ## Следующий шаг
 
-Проверить DB deadlines на staging и создать/проверить staging isolation. После закрытия этих блокеров
-начать Stage 4 с exact-version Better Auth + React Router SSR + Cloudflare Workers + Drizzle preflight,
-получить реальную auth schema/adapter operations и только после этого зафиксировать auth DB grants и
-выполнять auth migration/runtime rollout.
+Начать Stage 4 с exact-version Better Auth + React Router SSR + Cloudflare Workers + Drizzle preflight.
+Получить и проверить реальную Better Auth schema/adapter operations и Google OAuth requirements, после
+чего зафиксировать отдельный least-privilege auth runtime role/Hyperdrive, auth DB grants и точный
+migration/runtime rollout contract.
