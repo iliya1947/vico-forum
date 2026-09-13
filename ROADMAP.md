@@ -165,20 +165,30 @@ Stage 2 выполняется серией `2A → 2B → 2C`. Переход �
 
 ### Preconditions
 
-До Stage 4 должны быть закрыты pre-Stage-4 hardening blockers и создан безопасный non-production boundary:
+До Stage 4 должны быть закрыты pre-Stage-4 hardening blockers. Отдельный staging environment не
+является условием начала Stage 4 до первого релиза.
 
-```text
-separate Neon staging project
-→ staging-only roles/credentials
-→ staging Hyperdrive configuration(s)
-→ separate Cloudflare staging Worker/environment
-→ build with the staging Cloudflare environment selected (Vite: CLOUDFLARE_ENV=staging)
-→ stable staging URL for OAuth/runtime smoke
-```
+1. Текущая deployed среда используется как pre-release production candidate только пока нет реальных
+   пользователей или ценной private data; в ней допускаются только test/pre-release identities и data.
+2. Real Hyperdrive deadline acceptance текущего candidate уже выполнен; отдельный staging не нужен
+   только для повторения этого pre-release infrastructure acceptance.
+3. Preview/non-production builds не должны получать возможность писать auth/private data через
+   production bindings. До появления такой capability preview path либо изолируется, либо
+   non-production builds отключаются.
+4. Auth runtime получает отдельный cache-disabled Hyperdrive и отдельный least-privilege database role;
+   localization `HYPERDRIVE` не расширяется auth writes.
+5. Exact auth DB grants не фиксируются до выбора конкретной Better Auth версии, генерации/проверки её
+   schema и реальных adapter operations.
+6. Топология Google OAuth projects/clients/secrets и exact redirect URIs определяется только после
+   Stage 4 exact-version Google OAuth/Better Auth/Cloudflare проверки; отдельные staging/production
+   Google Cloud projects не считаются безусловной архитектурной константой заранее.
 
-Staging не использует production DB bindings/secrets и не создаётся обычной production child branch с copied private data/credentials. Google OAuth staging и production используют отдельные Google Cloud projects/clients/secrets и exact environment-specific redirect URIs.
+### Post-release operational gate
 
-Exact auth DB grants не фиксируются до выбора конкретной Better Auth версии, генерации/проверки её schema и реальных adapter operations. Auth runtime получает отдельный cache-disabled Hyperdrive/least-privilege role; localization `HYPERDRIVE` не расширяется auth writes.
+После первого релиза с реальными пользователями или ценной private data fault injection в production
+прекращается. Рискованные post-release изменения database/Hyperdrive/auth/runtime проходят через
+отдельную staging среду до production rollout. Её точная Neon/Cloudflare/OAuth topology определяется
+по фактическим требованиям на момент создания и не является pre-Stage-4 blocker.
 
 ### Работы
 
@@ -193,7 +203,7 @@ Exact auth DB grants не фиксируются до выбора конкре�
 ### Критерий завершения
 
 - Публичные страницы доступны гостю.
-- Google OAuth, SSR session и logout работают на изолированном staging и затем в production rollout.
+- Google OAuth, SSR session и logout работают в текущем pre-release production candidate с test/pre-release identities/data.
 - Защищённый route недоступен без валидной сессии.
 - `user.locale` участвует только в negotiation без explicit locale URL.
 - Auth cookies/origins настроены согласно exact-version contract без ослабления server-side authz.
@@ -204,7 +214,8 @@ Exact auth DB grants не фиксируются до выбора конкре�
 - Auth migrations + production migration verification до schema-dependent runtime rollout.
 - Автоматические auth/session negative tests.
 - Проверить invalid/untrusted origin behavior на auth boundary согласно официальному API выбранной версии.
-- Реальный OAuth smoke на стабильном staging URL без production DB bindings/secrets.
+- Реальный OAuth smoke в текущем pre-release production candidate только с test/pre-release identities/data.
+- Убедиться, что preview/non-production path не может выполнять auth writes против production private data.
 - `lint`, `typecheck`, `test`, `build`.
 
 ## Этап 5. Реализовать automatic UI translation providers и background jobs

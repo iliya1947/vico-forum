@@ -56,40 +56,28 @@ inactive/unknown locales by the established routing policy. Bootstrap-only Engli
 an availability fallback, not successful deployment acceptance; inspect Worker and Hyperdrive
 diagnostics before proceeding if it occurs.
 
-## Preview / non-production isolation gate
+## Pre-release and post-release lifecycle
+
+Until the first release has real users or valuable private data, the current deployed environment
+may be used as the pre-release production candidate for real infrastructure acceptance. It must
+contain only test/pre-release data appropriate for that purpose. This avoids requiring a permanent
+separate staging environment before Stage 4 solely to repeat infrastructure behavior already tested
+through the deployed candidate.
 
 Cloudflare Branch control has been verified with **Builds for non-production branches enabled**.
 No separate staging Hyperdrive/DB binding is currently configured, so preview/non-production
-uploads must be treated as potentially receiving the top-level production `HYPERDRIVE` binding.
+uploads must still be treated as potentially receiving the top-level production `HYPERDRIVE`
+binding. While that binding exposes only read-only public localization data, this is acceptable.
+Before preview/non-production code is allowed to exercise auth writes or private data, that path
+must either be isolated from production bindings/secrets or non-production builds must be disabled.
+This preview safety boundary is separate from requiring a standing staging environment for the
+pre-release production candidate.
 
-The current setup is accepted only while the production capability exposed to preview remains
-strictly read-only and the reachable data is public localization data. Before Stage 4 introduces
-private auth data or any runtime write capability, the non-production path must be isolated.
-
-The selected staging topology is:
-
-```text
-separate Neon staging project
-→ staging-only migration/admin credentials
-→ staging-only read/runtime roles
-→ staging Hyperdrive configuration(s)
-→ separate Cloudflare staging Worker/environment
-→ stable staging URL for auth/runtime smoke
-```
-
-The staging Neon project is created independently; do not use an ordinary production child
-branch that copies production rows/credentials as the auth staging boundary. Staging must have
-no fallback to production database bindings or secrets.
-
-Wrangler environment bindings, variables and secrets are environment-specific. Because Vico
-uses `@cloudflare/vite-plugin`, the staging environment must also be selected during the build
-(for example with `CLOUDFLARE_ENV=staging` before `react-router build`), not only at a later deploy
-command. Workers Builds production and non-production commands must be verified so a branch build
-cannot accidentally build/upload with the top-level production environment.
-
-Until this staging path has been created and smoke-tested, non-production builds must not be used
-for Stage 4 auth/private-data/runtime-write acceptance; disabling non-production builds remains
-the safe fallback.
+After the first release has real users or valuable private data, fault injection and destructive
+infrastructure diagnostics stop in production. Risky post-release database, Hyperdrive, auth, or
+runtime changes require an isolated staging environment before production rollout. Its exact topology
+must be derived from the then-current Cloudflare, database, Better Auth, and OAuth requirements rather
+than treated as a fixed Stage 4 precondition.
 
 ## Local Workers integration
 
@@ -126,11 +114,11 @@ Consequently, acceptance still requires a deployed smoke against the real bindin
 ## PostgreSQL deadlines
 
 Localization reads use two Worker-side `pg 8.23.0` bounds: `connectionTimeoutMillis = 1000`
-and `query_timeout = 2000` milliseconds. The runtime-role defaults must add the server-side
-layers `lock_timeout = 500ms` and `statement_timeout = 1500ms`, preserving
+and `query_timeout = 2000` milliseconds. The runtime-role defaults add the server-side layers
+`lock_timeout = 500ms` and `statement_timeout = 1500ms`, preserving
 `lock_timeout < statement_timeout < query_timeout`. These are conservative initial values for
-small indexed localization reads, not production-tuned SLOs; calibrate them from staging latency
-and timeout telemetry before treating them as final.
+small indexed localization reads, not permanent SLOs; future changes must be justified by real
+latency/timeout evidence and, after release, tested in staging when the change is risky.
 
 Do not issue `SET` or create a transaction for ordinary runtime reads. Apply the infrastructure
 defaults with the admin connection (substituting the environment-specific identifiers):
@@ -145,33 +133,39 @@ PostgreSQL 17 applies `ALTER ROLE ... IN DATABASE ... SET` defaults only when a 
 session logs in. Therefore an administrative catalog check proves configuration, but does not
 prove what an existing Hyperdrive origin session is using.
 
-### Required real staging acceptance
+Cloudflare Hyperdrive uses transaction pooling and resets supported session state before a pooled
+origin connection is returned for another borrower. PostgreSQL advisory locks are explicitly
+unsupported by Hyperdrive and must not be used for Hyperdrive acceptance, coordination, or runtime
+locking. Use ordinary row/table locking from a direct admin connection when controlled lock
+contention is required for diagnostics.
 
-Use the isolated staging Worker, staging Hyperdrive and staging database; local Wrangler/direct
-PostgreSQL does not exercise the pool. Record timestamps, Worker/Hyperdrive diagnostics, SQLSTATE,
-elapsed time, backend PID and the results, without logging credentials or translation payloads.
+### Real Hyperdrive deadline acceptance — 2026-09-13
 
-1. Apply the role/database defaults and verify their catalog entries with the admin connection.
-2. Restart/reset the staging Hyperdrive pool using the currently documented Cloudflare operational
-   mechanism. Through the deployed Worker binding, query `current_setting('lock_timeout')` and
-   `current_setting('statement_timeout')` on newly established sessions. Repeat across enough
-   backend PIDs to cover pool reuse; every observed session must report `500ms` and `1500ms`.
-3. Reuse connections across sequential requests and repeat the settings probe. Deliberately change
-   a transaction-local setting in a controlled test transaction, end it by both commit and rollback,
-   and prove later borrowers receive the role defaults rather than leaked session state.
-4. In a staging-only diagnostic endpoint/test harness, run a statement longer than 1500ms and verify
-   SQLSTATE `57014` with the statement-timeout message before the 2000ms caller deadline. Hold a
-   conflicting lock from an admin session and verify SQLSTATE `55P03` with the lock-timeout message
-   near 500ms. Remove the endpoint/harness after acceptance.
-5. Separately make the server-side statement deadline longer than the client `query_timeout`, execute
-   a uniquely identifiable `pg_sleep` through Hyperdrive, and verify the Worker falls back, opens its
-   request-local circuit and does not reuse that Client. Observe `pg_stat_activity` from the admin
-   connection to determine whether the origin statement continues after best-effort `client.end()`;
-   do not infer cancellation from Worker cleanup. Then confirm the pool remains healthy and a later
-   request uses a clean session.
+The deadline stack was accepted against the real deployed Hyperdrive path in the current pre-release
+production candidate. A separate diagnostic harness exercised `pg → Hyperdrive → PostgreSQL`
+infrastructure behavior. The observed results were:
 
-The repository tests validate configuration, classification and application behavior, but none of
-the five observations above is considered confirmed until this deployed staging acceptance is run.
+1. Newly observed origin sessions reported `lock_timeout = 500ms` and
+   `statement_timeout = 1500ms`.
+2. Repeated requests covered pooled connection reuse. Controlled transaction-local setting changes
+   were ended through both `COMMIT` and `ROLLBACK`; later borrowers again observed the configured
+   `500ms` / `1500ms` role defaults rather than leaked transaction state.
+3. A statement exceeding the server deadline failed with SQLSTATE `57014` and the PostgreSQL
+   statement-timeout error after approximately `1571ms`, before the `2000ms` client deadline.
+4. Controlled lock contention failed with SQLSTATE `55P03` and the PostgreSQL lock-timeout error
+   after approximately `569ms`.
+5. With the server-side statement deadline intentionally made longer than the client deadline, the
+   client failed with `Query read timeout` after approximately `2000ms`. The uniquely identifiable
+   backend was not found in `pg_stat_activity` after the client timeout. This observation does **not**
+   establish which component terminated or cancelled the backend statement; no such mechanism is
+   inferred from the absence alone.
+
+These observations close the real Hyperdrive infrastructure acceptance required for the current
+pre-release candidate. They do not prove the deployed production application's request-local circuit
+breaker, because the diagnostic harness did not execute that application path. The request-local
+circuit-breaker behavior remains covered by repository tests, including the persistent UI translation
+store timeout test that proves later reads in the same request do not issue another query after the
+circuit opens and that the client is discarded best-effort.
 
 The controlled locale writer already owns a short transaction and applies
 `SET LOCAL lock_timeout = '2s'` followed by `SET LOCAL statement_timeout = '10s'`. Writer operations validate
@@ -179,8 +173,8 @@ the complete locale graph and can be heavier than runtime reads, so they receive
 bounds. Timeout SQLSTATEs are not added to its existing serialization/deadlock retry allowlist.
 An exact PostgreSQL `57014 / canceling statement due to statement timeout` returned during `COMMIT`
 does use the existing semantic reconciliation because PostgreSQL 17 can report a fired timeout after
-the durable commit point; other `57014` errors are not classified by SQLSTATE alone. These writer
-values also require staging calibration.
+the durable commit point; other `57014` errors are not classified by SQLSTATE alone. Future risky
+post-release changes to these writer deadlines require staging calibration before production rollout.
 
 ## Recovery
 
