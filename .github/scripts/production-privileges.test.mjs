@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   applicationTables,
+  localizationRuntimeTables,
   assertProductionPrivilegeContract,
 } from "./production-privileges.mjs";
 
@@ -51,7 +52,7 @@ function fixture() {
       { schema: "public", grantee: "PUBLIC", privilege: "USAGE", is_grantable: false },
       { schema: "public", grantee: "runtime", privilege: "USAGE", is_grantable: false },
     ],
-    relationPrivileges: applicationTables.map((name) => ({
+    relationPrivileges: localizationRuntimeTables.map((name) => ({
       schema: "public",
       name,
       kind: "table",

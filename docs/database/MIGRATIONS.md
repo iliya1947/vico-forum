@@ -51,8 +51,8 @@ of stable production invariants:
 
 - PostgreSQL 17 and UTF-8;
 - the complete migration ledger matching the checked-in Drizzle journal;
-- required columns/types/nullability for `public.locales`, `public.ui_translations`, and
-  `public.ui_translation_bundles`;
+- exact columns/types/nullability for the localization tables and the Stage 4A Better Auth
+  tables (`user`, `session`, `account`, `verification`, and database-backed `rate_limit`);
 - absence of persistent bootstrap/reserved locale rows such as `en`, `api`, and `assets`;
 - absence of persistent canonical-English rows in UI translation storage/bundles;
 - the current migration role and the environment-provided runtime role, their dangerous
@@ -159,3 +159,16 @@ migration PR was merged:
 The production role name is environment-specific infrastructure and is intentionally not
 hard-coded into the portable migration SQL because disposable CI databases do not contain
 that production role.
+
+## Stage 4A rollout
+
+Stage 4A adds the Better Auth 1.7.4 default PostgreSQL/Drizzle core tables and the
+`rate_limit` table required by database-backed rate limiting. `user.locale` is nullable,
+server-owned Better Auth metadata (`input: false` in the future auth configuration) and has
+no foreign key to `locales`, because bootstrap `en` is intentionally code-owned.
+
+This is migration-only foundation: the Worker has no Better Auth initialization, auth route,
+Google OAuth configuration, auth Hyperdrive binding, auth role, or auth grants. The existing
+localization runtime role remains limited to `SELECT` on `locales`, `ui_translations`, and
+`ui_translation_bundles`; it receives no access to auth tables. Apply and verify this migration
+in production after merge before a separate runtime/auth-capability PR records migration evidence.

@@ -45,7 +45,68 @@ describe("PostgreSQL 17 locale migrations", () => {
     const applied = await client.query<{ count: string }>(
       'select count(*)::text as count from drizzle."__drizzle_migrations"',
     );
-    expect(applied.rows[0]?.count).toBe("3");
+    expect(applied.rows[0]?.count).toBe("4");
+  });
+
+  it("creates the exact Better Auth 1.7.4 PostgreSQL foundation", async () => {
+    const columns = await client.query<{
+      column_name: string;
+      data_type: string;
+      is_nullable: "YES" | "NO";
+      table_name: string;
+    }>(`select table_name, column_name, data_type, is_nullable
+          from information_schema.columns
+         where table_schema = 'public'
+           and table_name = any(array['user', 'session', 'account', 'verification', 'rate_limit'])
+         order by table_name, ordinal_position`);
+
+    expect(columns.rows).toEqual([
+      ...authColumns("account", [
+        ["id", "text", "NO"], ["account_id", "text", "NO"], ["provider_id", "text", "NO"],
+        ["user_id", "text", "NO"], ["access_token", "text", "YES"], ["refresh_token", "text", "YES"],
+        ["id_token", "text", "YES"], ["access_token_expires_at", "timestamp without time zone", "YES"],
+        ["refresh_token_expires_at", "timestamp without time zone", "YES"], ["scope", "text", "YES"],
+        ["password", "text", "YES"], ["created_at", "timestamp without time zone", "NO"],
+        ["updated_at", "timestamp without time zone", "NO"],
+      ]),
+      ...authColumns("rate_limit", [["id", "text", "NO"], ["key", "text", "NO"],
+        ["count", "integer", "NO"], ["last_request", "bigint", "NO"]]),
+      ...authColumns("session", [["id", "text", "NO"], ["expires_at", "timestamp without time zone", "NO"],
+        ["token", "text", "NO"], ["created_at", "timestamp without time zone", "NO"],
+        ["updated_at", "timestamp without time zone", "NO"], ["ip_address", "text", "YES"],
+        ["user_agent", "text", "YES"], ["user_id", "text", "NO"]]),
+      ...authColumns("user", [["id", "text", "NO"], ["name", "text", "NO"], ["email", "text", "NO"],
+        ["email_verified", "boolean", "NO"], ["image", "text", "YES"],
+        ["created_at", "timestamp without time zone", "NO"], ["updated_at", "timestamp without time zone", "NO"],
+        ["locale", "text", "YES"]]),
+      ...authColumns("verification", [["id", "text", "NO"], ["identifier", "text", "NO"],
+        ["value", "text", "NO"], ["expires_at", "timestamp without time zone", "NO"],
+        ["created_at", "timestamp without time zone", "NO"], ["updated_at", "timestamp without time zone", "NO"]]),
+    ]);
+
+    const constraints = await client.query<{ constraint_name: string }>(`
+      select constraint_name from information_schema.table_constraints
+       where table_schema = 'public'
+         and constraint_name in ('user_email_unique', 'session_token_unique', 'rate_limit_key_unique',
+           'account_user_id_user_id_fk', 'session_user_id_user_id_fk')
+       order by constraint_name`);
+    expect(constraints.rows.map(({ constraint_name }) => constraint_name)).toEqual([
+      "account_user_id_user_id_fk", "rate_limit_key_unique", "session_token_unique",
+      "session_user_id_user_id_fk", "user_email_unique",
+    ]);
+
+    const indexes = await client.query<{ indexname: string }>(`
+      select indexname from pg_indexes where schemaname = 'public'
+       and indexname in ('account_userId_idx', 'session_userId_idx', 'verification_identifier_idx')
+       order by indexname`);
+    expect(indexes.rows.map(({ indexname }) => indexname)).toEqual([
+      "account_userId_idx", "session_userId_idx", "verification_identifier_idx",
+    ]);
+
+    const localeForeignKeys = await client.query<{ count: string }>(`
+      select count(*)::text as count from information_schema.table_constraints
+       where table_schema = 'public' and table_name = 'user' and constraint_type = 'FOREIGN KEY'`);
+    expect(localeForeignKeys.rows[0]?.count).toBe("0");
   });
 
   it("stores the exact non-bootstrap Stage 1 locale data", async () => {
@@ -293,4 +354,16 @@ async function expectDatabaseCheck(operation: Promise<unknown>) {
   } catch (error) {
     expect((error as DatabaseError).code).toBe("23514");
   }
+}
+
+function authColumns(
+  tableName: string,
+  columns: Array<[string, string, "YES" | "NO"]>,
+) {
+  return columns.map(([column_name, data_type, is_nullable]) => ({
+    table_name: tableName,
+    column_name,
+    data_type,
+    is_nullable,
+  }));
 }
