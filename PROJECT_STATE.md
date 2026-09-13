@@ -201,6 +201,13 @@ fallback и отсутствие Worker errors в проверенной Observa
   workflow через GitHub API, ancestry и exact journal coverage, а production workflow публикует
   готовые run/SHA/journal evidence values только после успешной schema/privilege verification.
 
+- Stage 4A migration-only foundation добавляет exact Better Auth `1.7.4` core PostgreSQL/Drizzle
+  schema (`user`, `session`, `account`, `verification`) и database-backed `rate_limit`; nullable
+  server-owned `user.locale` не имеет FK на persistent `locales` из-за code-owned bootstrap `en`;
+- Stage 4A не подключает Better Auth runtime, OAuth/routes/secrets, auth Hyperdrive/role/grants или
+  Worker write-capability; production verifier разделяет ownership всех application tables и прежний
+  read-only localization allowlist из `locales`, `ui_translations`, `ui_translation_bundles`.
+
 ## Сейчас
 
 Stage 3 закрыт. Обязательный pre-Stage-4 hardening завершён, включая real deployed Hyperdrive deadline
@@ -221,7 +228,6 @@ Cleanup временных test resources остаётся operational housekeep
 
 ## Следующий шаг
 
-Начать Stage 4 с exact-version Better Auth + React Router SSR + Cloudflare Workers + Drizzle preflight.
-Получить и проверить реальную Better Auth schema/adapter operations и Google OAuth requirements, после
-чего зафиксировать отдельный least-privilege auth runtime role/Hyperdrive, auth DB grants и точный
-migration/runtime rollout contract.
+После merge Stage 4A применить и проверить новую migration в production. Затем отдельным runtime PR
+подключить Better Auth/Google OAuth только после отдельной least-privilege auth role/Hyperdrive, auth
+grants, preview isolation и зафиксированного migration evidence; localization Worker/role не расширять.
