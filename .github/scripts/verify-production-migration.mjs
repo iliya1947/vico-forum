@@ -75,9 +75,41 @@ const requiredTables = new Map([
       ["compiled_at", "timestamptz"],
     ]),
   ],
+  ["user", new Map([
+    ["id", "text"], ["name", "text"], ["email", "text"], ["email_verified", "bool"],
+    ["image", "text"], ["created_at", "timestamp"], ["updated_at", "timestamp"], ["locale", "text"],
+  ])],
+  ["session", new Map([
+    ["id", "text"], ["expires_at", "timestamp"], ["token", "text"], ["created_at", "timestamp"],
+    ["updated_at", "timestamp"], ["ip_address", "text"], ["user_agent", "text"], ["user_id", "text"],
+  ])],
+  ["account", new Map([
+    ["id", "text"], ["account_id", "text"], ["provider_id", "text"], ["user_id", "text"],
+    ["access_token", "text"], ["refresh_token", "text"], ["id_token", "text"],
+    ["access_token_expires_at", "timestamp"], ["refresh_token_expires_at", "timestamp"],
+    ["scope", "text"], ["password", "text"], ["created_at", "timestamp"], ["updated_at", "timestamp"],
+  ])],
+  ["verification", new Map([
+    ["id", "text"], ["identifier", "text"], ["value", "text"], ["expires_at", "timestamp"],
+    ["created_at", "timestamp"], ["updated_at", "timestamp"],
+  ])],
+  ["rate_limit", new Map([
+    ["id", "text"], ["key", "text"], ["count", "int4"], ["last_request", "int8"],
+  ])],
 ]);
 
 const nullableColumns = new Set([
+  "user.image",
+  "user.locale",
+  "session.ip_address",
+  "session.user_agent",
+  "account.access_token",
+  "account.refresh_token",
+  "account.id_token",
+  "account.access_token_expires_at",
+  "account.refresh_token_expires_at",
+  "account.scope",
+  "account.password",
   "ui_translations.generation_policy_version",
   "ui_translations.provider",
   "ui_translations.provider_model",
@@ -119,6 +151,11 @@ try {
       [tableName],
     );
     const columnsByName = new Map(tableColumns.rows.map((row) => [row.column_name, row]));
+    assert.equal(
+      columnsByName.size,
+      requiredColumns.size,
+      `Unexpected column set for public.${tableName}`,
+    );
     for (const [columnName, udtName] of requiredColumns) {
       const column = columnsByName.get(columnName);
       assert.ok(column, `Expected public.${tableName}.${columnName} to exist`);

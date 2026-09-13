@@ -1,6 +1,13 @@
 import assert from "node:assert/strict";
 
-export const applicationTables = ["locales", "ui_translation_bundles", "ui_translations"];
+export const applicationTables = [
+  "account", "locales", "rate_limit", "session", "ui_translation_bundles",
+  "ui_translations", "user", "verification",
+];
+
+export const localizationRuntimeTables = [
+  "locales", "ui_translation_bundles", "ui_translations",
+];
 
 const dangerousAttributes = ["rolsuper", "rolcreatedb", "rolcreaterole", "rolreplication", "rolbypassrls"];
 
@@ -92,7 +99,7 @@ export function assertProductionPrivilegeContract(
   );
   assert.deepEqual(
     runtimeRelationPrivileges,
-    applicationTables.map((table) => `public.${table}.table.SELECT.grantable=false`).sort(),
+    localizationRuntimeTables.map((table) => `public.${table}.table.SELECT.grantable=false`).sort(),
     "Runtime relation privileges must be exactly SELECT on the localization tables",
   );
 
