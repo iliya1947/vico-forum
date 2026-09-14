@@ -1,8 +1,8 @@
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { I18nextProvider } from "react-i18next";
-import { createMemoryRouter, RouterProvider } from "react-router";
+import { createMemoryRouter, RouterProvider, useLoaderData } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { canonicalEnglishCatalog } from "../localization/catalog";
 import { createTranslationRuntime } from "../localization/runtime";
@@ -28,6 +28,23 @@ function renderControls(initialUser: { name: string } | null, actions: AuthClien
     Component: () => <HeaderAuthProvider initialUser={initialUser}><AuthControls locale={direction === "ltr" ? "en" : "he"} actions={actions} /></HeaderAuthProvider>,
   }], { initialEntries: [path] });
   return render(<div dir={direction}><I18nextProvider i18n={i18n(direction)}><RouterProvider router={router} /></I18nextProvider></div>);
+}
+
+function renderServerSnapshotControls(actions: AuthClientActions) {
+  let authUser: { name: string } | null = { name: "Ada Lovelace" };
+  const router = createMemoryRouter([{
+    path: "*",
+    loader: () => ({ authUser }),
+    Component: () => {
+      const data = useLoaderData() as { authUser: { name: string } | null };
+      return <HeaderAuthProvider initialUser={data.authUser}><AuthControls locale="en" actions={actions} /></HeaderAuthProvider>;
+    },
+  }], { initialEntries: ["/en"] });
+  render(<I18nextProvider i18n={i18n("ltr")}><RouterProvider router={router} /></I18nextProvider>);
+  return {
+    router,
+    setAuthUser(value: { name: string } | null) { authUser = value; },
+  };
 }
 
 function actions(): AuthClientActions {
@@ -58,6 +75,21 @@ describe("forum header auth controls", () => {
     await userEvent.click(screen.getByRole("button", { name: "Sign out" }));
     expect(await screen.findByRole("button", { name: "Sign in with Google" })).toBeVisible();
     expect(screen.queryByText("Ada Lovelace")).not.toBeInTheDocument();
+  });
+
+  it("reconciles the header when revalidation changes the server auth snapshot to guest", async () => {
+    const client = actions();
+    const { router, setAuthUser } = renderServerSnapshotControls(client);
+    expect(await screen.findByText("Ada Lovelace")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Sign out" })).toBeVisible();
+
+    setAuthUser(null);
+    await act(async () => { await router.revalidate(); });
+
+    expect(await screen.findByRole("button", { name: "Sign in with Google" })).toBeVisible();
+    expect(screen.queryByText("Ada Lovelace")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Sign out" })).not.toBeInTheDocument();
+    expect(client.signOut).not.toHaveBeenCalled();
   });
 
   it("disables the control while a request is pending and shows only a safe error", async () => {
