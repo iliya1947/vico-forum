@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-09-14
+Последнее обновление: 2026-09-15
 
 ## Текущее состояние
 
@@ -88,10 +88,21 @@ Forum MVP ещё не завершён:
 
 - Google sign-in/sign-out controls используют SSR session пользователя в общем forum header,
   локальный locale-aware callback и client-side синхронизацию после выхода;
-- minimum roles и moderator/admin authorization остаются отдельным Stage 4E2 slice;
+- Stage 4E2 должен реализовать dynamic DB-backed roles/permissions, protected management UI,
+  custom roles и per-user `allow | deny | inherit` overrides;
 - Stage 4 целиком не завершён до Stage 4E2 и core E2E.
 
-То есть следующий продуктовый приоритет — не дальнейший infrastructure hardening, а сам форум.
+Для Stage 4E2 зафиксирован новый authorization contract: Better Auth остаётся источником
+identity/session, но не authoritative role/permission state. Effective permissions должны
+разрешаться server-side из PostgreSQL через единый PermissionResolver на каждом защищённом
+request; изменения role grants, role assignment и user overrides должны применяться без
+logout/login. Built-in `user/moderator/admin` являются только стартовыми системными ролями;
+custom roles создаются через сайт, permissions любой роли редактируются, а персональный
+`deny` может отнять capability, выданную ролью. Полный contract —
+`docs/auth/AUTHORIZATION.md`. Эта подсистема ещё не реализована.
+
+То есть следующий продуктовый приоритет — не дальнейший infrastructure hardening, а завершение
+forum core через Stage 4E2.
 
 ## Stage 4A и production migration evidence
 
@@ -159,12 +170,14 @@ boundaries `CNT-02`, `CNT-03`, `CNT-05`, migration и PostgreSQL integration cov
 Better Auth runtime/session boundary, authenticated создание тем/ответов, safe CommonMark
 rendering и transactional per-author write cooldown завершены локально/для CI.
 
-### 3. Stage 4E — solved/best answer + minimum roles
+### 3. Stage 4E — solved/best answer + dynamic authorization
 
 Первый компактный slice solved/best-answer author flow реализован локально/для CI. Следующий
-slice Stage 4E2 должен добавить minimum roles и moderator/admin authorization, после чего
-нужен core E2E для завершения Stage 4. Real Google OAuth и external deployment acceptance
-остаются границей Stage 6 и не являются условием внутренней разработки Stage 4E.
+slice Stage 4E2 должен реализовать контракт `docs/auth/AUTHORIZATION.md`: dynamic roles,
+редактируемые role permissions, custom role creation, user role assignment, персональные
+`allow/deny` overrides, management UI, lockout protection и core E2E. Real Google OAuth и
+external deployment acceptance остаются границей Stage 6 и не являются условием внутренней
+разработки Stage 4E.
 
 ### 4. Stage 5 — translations/background jobs
 
@@ -174,8 +187,8 @@ translation согласно уже зафиксированной translation a
 ### 5. Stage 6 — pre-release external integration
 
 Только здесь собрать внешний production-like path целиком: pending migrations в Neon,
-least-privilege runtime capabilities/Hyperdrive, real Google OAuth, Queues/providers,
-preview isolation, deployment smoke и migration evidence.
+least-privilege runtime capabilities/Hyperdrive, real Google OAuth, authorization bootstrap,
+Queues/providers, preview isolation, deployment smoke и migration evidence.
 
 ## Блокеры
 

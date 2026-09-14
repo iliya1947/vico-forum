@@ -25,14 +25,25 @@
 - Технический контент должен удобно поддерживать текст, Markdown и код.
 - AI-функции могут расширять форум, но не должны заменять его базовую механику.
 
-## Базовые роли
+## Авторизация и права доступа
 
-- гость;
-- пользователь;
-- модератор;
-- администратор.
+Пользовательская авторизация планируется через Google OAuth / Better Auth. Better Auth отвечает
+за authentication/session и authoritative identity пользователя; application permissions
+разрешаются отдельно server-side.
 
-Пользовательская авторизация планируется через Google OAuth.
+Права доступа строятся как dynamic permission-based authorization:
+
+- built-in роли `user`, `moderator`, `admin` существуют как стартовые системные роли;
+- администратор может через сайт создавать custom roles;
+- набор permissions любой роли, включая built-in roles, можно динамически изменять;
+- конкретному пользователю можно назначить роль и дополнительно поставить для permission
+  персональный `allow` или `deny`;
+- effective permissions берутся из актуального server-side DB state, а не из client input или
+  долгоживущего session role claim;
+- permission catalog состоит из реальных code-backed capabilities приложения: UI назначает
+  существующие permissions, но не создаёт исполняемую функциональность из произвольной строки.
+
+Полный source of truth для authorization — [`docs/auth/AUTHORIZATION.md`](./docs/auth/AUTHORIZATION.md).
 
 ## Техническая основа
 
