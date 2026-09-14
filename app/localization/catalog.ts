@@ -79,6 +79,7 @@ export const canonicalEnglishCatalog = {
     forumWriteError_unauthenticated: message("forumWriteError_unauthenticated", "Sign in to post.", "Forum mutation authentication error."),
     forumWriteError_origin: message("forumWriteError_origin", "This request could not be verified.", "Forum mutation origin error."),
     forumWriteError_notFound: message("forumWriteError_notFound", "The target section or topic no longer exists.", "Forum mutation missing target error."),
+    forumWriteError_rateLimited: message("forumWriteError_rateLimited", "Please wait a few seconds before posting again.", "Forum mutation rate limit error."),
     forumWriteError_unavailable: message("forumWriteError_unavailable", "Your message could not be saved. Please try again.", "Forum mutation storage error."),
   },
 } as const satisfies Record<string, Record<string, UiMessageDescriptor>>;

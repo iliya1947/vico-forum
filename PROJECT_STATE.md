@@ -19,7 +19,7 @@ Vico Forum находится в ранней разработке. Технич
 - production-like read-only localization DB capability, migration verification и Hyperdrive
   acceptance/hardening.
 
-Stage 4D начат: существующая Better Auth `1.7.4` schema foundation (`user`, `session`,
+Stage 4D завершён в local/CI path: существующая Better Auth `1.7.4` schema foundation (`user`, `session`,
 `account`, `verification`, `rate_limit`, nullable server-owned `user.locale`) подключена к
 server-only runtime через PostgreSQL Drizzle adapter. Worker создаёт request-scoped auth
 capability без module-global PostgreSQL connection, разрешает текущую session до React
@@ -64,13 +64,25 @@ Forum write participation реализован локально/для CI:
   revisions фиксируют `sourceLocale: "und"`;
 - classic UI показывает write forms только при наличии session, а PostgreSQL integration
   suite проверяет persistence и rollback через disposable DB;
+- тела сообщений рендерятся переиспользуемым CommonMark renderer на `react-markdown 10.1.0`:
+  без raw HTML, исполняемых unsafe URL и внешних images, но с paragraphs, emphasis, lists,
+  links, inline/fenced code и LTR/RTL-safe layout;
+- единая pre-release policy ограничивает пользователя одной topic/reply content mutation в
+  5 секунд; существующая `user` row блокируется `SELECT ... FOR UPDATE` в той же PostgreSQL
+  transaction до проверки последнего `forum_posts.created_at` и атомарного write;
+- domain cooldown преобразуется route actions в локализованный HTTP `429` с `Retry-After`;
+  deterministic и реально concurrent PostgreSQL coverage проверяет общую policy для topic/
+  reply, rollback, независимость пользователей и невозможность concurrent bypass;
+- существующая schema `0004` достаточна: `user` даёт per-author row lock, а индексированный
+  `forum_posts.author_id` и `forum_posts.created_at` дают cooldown history, поэтому migration
+  для Stage 4D не добавлялась.
 
-Forum write/auth UI ещё не завершены:
+Forum MVP ещё не завершён:
 
 - нет solved/best-answer flow;
 - Google sign-in/sign-out controls используют SSR session пользователя в общем forum header,
   локальный locale-aware callback и client-side синхронизацию после выхода;
-- нет Markdown editor/rendering и отдельного write anti-spam/rate limiting.
+- нет минимальных forum roles.
 
 То есть следующий продуктовый приоритет — не дальнейший infrastructure hardening, а сам форум.
 
@@ -135,14 +147,16 @@ boundaries `CNT-02`, `CNT-03`, `CNT-05`, migration и PostgreSQL integration cov
 Реализованы реальные SSR страницы и canonical locale navigation гостя по всей forum
 иерархии. Runtime остаётся read-only; schema `0004` достаточна для этого этапа.
 
-### 3. Stage 4D–4E — участие и forum MVP
+### Выполнено: Stage 4D — участие, safe Markdown и basic anti-spam
 
-Better Auth runtime/session boundary и authenticated создание тем/ответов подключены как части Stage 4D: PostgreSQL/Hyperdrive
-Drizzle adapter, database-backed auth rate limiting, Cloudflare client-IP boundary, auth resource
-route, Google sign-in/sign-out UX и `user.locale` priority для URL без locale. Следующие части —
-Markdown, write anti-spam/rate limiting, solved/best answer и минимальные роли. Реальный
-Google OAuth/external deployment acceptance не является условием внутренней разработки этих
-boundaries.
+Better Auth runtime/session boundary, authenticated создание тем/ответов, safe CommonMark
+rendering и transactional per-author write cooldown завершены локально/для CI.
+
+### 3. Stage 4E — solved/best answer + minimum roles
+
+Следующий продуктовый этап — завершить forum MVP через solved/best-answer flow и минимальные
+роли. Real Google OAuth и external deployment acceptance остаются границей Stage 6 и не
+являются условием внутренней разработки Stage 4E.
 
 ### 4. Stage 5 — translations/background jobs
 
@@ -157,7 +171,7 @@ preview isolation, deployment smoke и migration evidence.
 
 ## Блокеры
 
-Для продолжения Stage 4D продуктовых или operational блокеров нет. Native Cloudflare Git
+Для продолжения Stage 4E продуктовых или operational блокеров нет. Native Cloudflare Git
 integration отключён, поэтому merge в `main` не выполняет автоматический production deploy.
 
 Cleanup временных test resources прошлых acceptance остаётся housekeeping и не блокирует

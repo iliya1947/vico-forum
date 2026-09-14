@@ -6,6 +6,7 @@ import type { ForumWriter } from "../../db/hyperdrive-forum";
 import { forumWriterContext } from "./request-context";
 import { action as sectionAction } from "../routes/section";
 import { action as topicAction } from "../routes/topic";
+import { ForumWriteRateLimitError } from "../../db/forum-write-policy";
 
 const session = {
   user: { id: "session-user", name: "Ada", email: "ada@example.test", emailVerified: true, createdAt: new Date(), updatedAt: new Date() },
@@ -72,5 +73,18 @@ describe("forum write route actions", () => {
     expect((await topicAction({ request: request("/en/topics/t", { body: "body" }), params: { locale: "en" }, context: context(invalidWriter) }) as { init: { status: number } }).init.status).toBe(400);
     expect(invalidWriter.createTopic).not.toHaveBeenCalled();
     expect(invalidWriter.createReply).not.toHaveBeenCalled();
+  });
+
+  it("returns 429 with Retry-After for the domain cooldown without exposing details", async () => {
+    const forumWriter = writer();
+    forumWriter.createReply.mockRejectedValueOnce(new ForumWriteRateLimitError(2_100));
+    const response = await topicAction({
+      request: request("/en/topics/topic-1", { body: "Too soon" }),
+      params: { locale: "en", topicId: "topic-1" }, context: context(forumWriter),
+    });
+    if (response instanceof Response) throw new Error("expected action data response");
+    expect(response).toMatchObject({ data: { error: "rateLimited" }, init: { status: 429 } });
+    expect(new Headers(response.init?.headers).get("Retry-After")).toBe("3");
+    expect(JSON.stringify(response)).not.toContain("forum write cooldown is active");
   });
 });

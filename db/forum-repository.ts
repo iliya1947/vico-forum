@@ -1,4 +1,4 @@
-import { and, asc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import {
   forumCategories,
@@ -9,6 +9,7 @@ import {
   forumTopics,
   user,
 } from "./schema";
+import { ForumWriteRateLimitError, forumWritePolicy, type ForumWritePolicy } from "./forum-write-policy";
 
 export interface ForumCategorySummary {
   id: string;
@@ -115,7 +116,10 @@ export class ConcurrentRevisionError extends Error {}
 export class ForumEntityNotFoundError extends Error {}
 
 export class DrizzleForumRepository {
-  constructor(private readonly database: NodePgDatabase) {}
+  constructor(
+    private readonly database: NodePgDatabase,
+    private readonly writePolicy: ForumWritePolicy = forumWritePolicy,
+  ) {}
 
   async createCategory(input: { id: string; name: string }) {
     const [created] = await this.database.insert(forumCategories).values(input).returning();
@@ -146,6 +150,7 @@ export class DrizzleForumRepository {
 
   async createTopicWithInitialPost(input: CreateTopicWithInitialPostInput): Promise<{ topic: ForumTopic; post: ForumPost }> {
     return this.database.transaction(async (tx) => {
+      const createdAt = await enforceForumWriteCooldown(tx, input.authorId, this.writePolicy);
       const [section] = await tx.select({ id: forumSections.id }).from(forumSections)
         .where(eq(forumSections.id, input.sectionId));
       if (!section) throw new ForumEntityNotFoundError("section does not exist");
@@ -166,6 +171,7 @@ export class DrizzleForumRepository {
         topicId: input.id,
         authorId: input.authorId,
         currentRevisionId: input.initialPost.bodyRevision.id,
+        createdAt,
       });
       await tx.insert(forumPostRevisions).values({
         ...input.initialPost.bodyRevision,
@@ -181,6 +187,7 @@ export class DrizzleForumRepository {
 
   async createPost(input: CreatePostInput): Promise<ForumPost> {
     return this.database.transaction(async (tx) => {
+      const createdAt = await enforceForumWriteCooldown(tx, input.authorId, this.writePolicy);
       const [topic] = await tx.select({ id: forumTopics.id }).from(forumTopics)
         .where(eq(forumTopics.id, input.topicId));
       if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
@@ -189,6 +196,7 @@ export class DrizzleForumRepository {
         topicId: input.topicId,
         authorId: input.authorId,
         currentRevisionId: input.bodyRevision.id,
+        createdAt,
       });
       await tx.insert(forumPostRevisions).values({
         ...input.bodyRevision,
@@ -435,4 +443,27 @@ export class DrizzleForumRepository {
     const [posts] = await this.database.select({ count: sql<number>`count(*)::int` }).from(forumPostRevisions);
     return { topicTitles: titles?.count ?? 0, postBodies: posts?.count ?? 0 };
   }
+}
+
+type ForumTransaction = Parameters<Parameters<NodePgDatabase["transaction"]>[0]>[0];
+
+async function enforceForumWriteCooldown(
+  tx: ForumTransaction,
+  authorId: string,
+  policy: ForumWritePolicy,
+): Promise<Date> {
+  // The existing Better Auth user row is the per-author mutex. This lock and the
+  // post lookup deliberately live in the same transaction as the forum write.
+  await tx.select({ id: user.id }).from(user).where(eq(user.id, authorId)).for("update");
+  const [latest] = await tx.select({ createdAt: forumPosts.createdAt })
+    .from(forumPosts)
+    .where(eq(forumPosts.authorId, authorId))
+    .orderBy(desc(forumPosts.createdAt), desc(forumPosts.id))
+    .limit(1);
+  const now = policy.now();
+  if (latest) {
+    const retryAfterMs = policy.cooldownMs - (now.getTime() - latest.createdAt.getTime());
+    if (retryAfterMs > 0) throw new ForumWriteRateLimitError(retryAfterMs);
+  }
+  return now;
 }

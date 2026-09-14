@@ -3,12 +3,13 @@ import { data } from "react-router";
 import { authSessionForRequest } from "../auth/request-context";
 import { ForumEntityNotFoundError } from "../../db/forum-repository";
 import { InvalidForumContentError } from "../../db/forum-service";
+import { ForumWriteRateLimitError } from "../../db/forum-write-policy";
 import { forumWriterForRequest } from "./request-context";
 
-export interface ForumMutationError { error: "invalid" | "unauthenticated" | "origin" | "notFound" | "unavailable" }
+export interface ForumMutationError { error: "invalid" | "unauthenticated" | "origin" | "notFound" | "rateLimited" | "unavailable" }
 
-export function mutationFailure(error: ForumMutationError["error"], status: number) {
-  return data<ForumMutationError>({ error }, { status });
+export function mutationFailure(error: ForumMutationError["error"], status: number, headers?: HeadersInit) {
+  return data<ForumMutationError>({ error }, { status, headers });
 }
 
 export function requireSameOrigin(request: Request) {
@@ -41,6 +42,11 @@ export async function runForumMutation<T>(
   } catch (error) {
     if (error instanceof InvalidForumContentError) return mutationFailure("invalid", 400);
     if (error instanceof ForumEntityNotFoundError) return mutationFailure("notFound", 404);
+    if (error instanceof ForumWriteRateLimitError) {
+      return mutationFailure("rateLimited", 429, {
+        "Retry-After": String(Math.max(1, Math.ceil(error.retryAfterMs / 1_000))),
+      });
+    }
     return mutationFailure("unavailable", 503);
   }
 }

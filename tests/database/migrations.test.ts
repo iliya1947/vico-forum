@@ -8,6 +8,7 @@ import { AmbiguousCommitOutcomeError, ControlledLocaleWriter, DrizzleLocaleRepos
 import { ConcurrentRevisionError, DrizzleForumRepository } from "../../db/forum-repository";
 import { ForumService, InvalidForumContentError } from "../../db/forum-service";
 import { createHyperdriveForumWriter } from "../../db/hyperdrive-forum";
+import { FORUM_WRITE_COOLDOWN_MS, ForumWriteRateLimitError } from "../../db/forum-write-policy";
 
 const databaseUrl = process.env.DATABASE_URL;
 
@@ -99,7 +100,11 @@ describe("PostgreSQL 17 locale migrations", () => {
   });
 
   it("persists browser write capability topics/replies with und revisions and rolls back an incomplete topic", async () => {
-    const writer = createHyperdriveForumWriter(databaseUrl);
+    let clock = Date.now();
+    const writer = createHyperdriveForumWriter(databaseUrl, undefined, {
+      cooldownMs: FORUM_WRITE_COOLDOWN_MS,
+      now: () => new Date(clock += FORUM_WRITE_COOLDOWN_MS),
+    });
     let createdTopicId: string | undefined;
     try {
       const created = await writer.createTopic({
@@ -133,6 +138,65 @@ describe("PostgreSQL 17 locale migrations", () => {
         await client.query("delete from forum_topics where id = $1", [createdTopicId]);
       }
     }
+  });
+
+  it("enforces one shared deterministic topic/reply cooldown per author without partial writes", async () => {
+    await insertForumAuthor("cooldown-author", "cooldown@example.test", null);
+    await insertForumAuthor("other-author", "other@example.test", null);
+    const start = Date.parse("2026-09-14T12:00:00.000Z");
+    let now = start;
+    const repository = new DrizzleForumRepository(drizzle(client), {
+      cooldownMs: FORUM_WRITE_COOLDOWN_MS,
+      now: () => new Date(now),
+    });
+
+    await repository.createTopicWithInitialPost(topicWrite("cooldown-topic", "cooldown-author"));
+    await expect(repository.createPost(replyWrite("cooldown-reply", "cooldown-topic", "cooldown-author")))
+      .rejects.toMatchObject({ retryAfterMs: FORUM_WRITE_COOLDOWN_MS });
+
+    const beforeRejectedTopic = await forumRowCounts();
+    await expect(repository.createTopicWithInitialPost(topicWrite("rejected-topic", "cooldown-author")))
+      .rejects.toBeInstanceOf(ForumWriteRateLimitError);
+    expect(await forumRowCounts()).toEqual(beforeRejectedTopic);
+    expect(await repository.readTopic("rejected-topic")).toBeUndefined();
+
+    await repository.createTopicWithInitialPost(topicWrite("other-topic", "other-author"));
+    now += FORUM_WRITE_COOLDOWN_MS;
+    await expect(repository.createPost(replyWrite("allowed-reply", "cooldown-topic", "cooldown-author")))
+      .resolves.toMatchObject({ id: "allowed-reply" });
+    await client.query("delete from forum_topics where author_id = any($1::text[])", [["cooldown-author", "other-author"]]);
+    await client.query('delete from "user" where id = any($1::text[])', [["cooldown-author", "other-author"]]);
+  });
+
+  it("serializes genuinely concurrent PostgreSQL writes on the existing user row", async () => {
+    await insertForumAuthor("concurrent-author", "concurrent@example.test", null);
+    const fixedNow = new Date("2026-09-14T13:00:00.000Z");
+    const policy = { cooldownMs: FORUM_WRITE_COOLDOWN_MS, now: () => fixedNow };
+    const first = createHyperdriveForumWriter(databaseUrl, undefined, policy);
+    const second = createHyperdriveForumWriter(databaseUrl, undefined, policy);
+
+    const outcomes = await Promise.allSettled([
+      first.createTopic({ sectionId: "typescript", authorId: "concurrent-author", title: "First", body: "First body" }),
+      second.createTopic({ sectionId: "typescript", authorId: "concurrent-author", title: "Second", body: "Second body" }),
+    ]);
+
+    expect(outcomes.filter(({ status }) => status === "fulfilled")).toHaveLength(1);
+    const rejected = outcomes.find(({ status }) => status === "rejected");
+    expect(rejected).toMatchObject({ status: "rejected", reason: expect.any(ForumWriteRateLimitError) });
+    const rows = await client.query<{ topics: number; titles: number; posts: number; revisions: number }>(`
+      select
+        count(distinct t.id)::int as topics,
+        count(distinct tr.id)::int as titles,
+        count(distinct p.id)::int as posts,
+        count(distinct pr.id)::int as revisions
+      from forum_topics t
+      left join forum_topic_title_revisions tr on tr.topic_id = t.id
+      left join forum_posts p on p.topic_id = t.id
+      left join forum_post_revisions pr on pr.post_id = p.id
+      where t.author_id = 'concurrent-author'`);
+    expect(rows.rows[0]).toEqual({ topics: 1, titles: 1, posts: 1, revisions: 1 });
+    await client.query("delete from forum_topics where author_id = 'concurrent-author'");
+    await client.query('delete from "user" where id = \'concurrent-author\'');
   });
 
   it("appends immutable revisions and atomically advances only the matching current revision", async () => {
@@ -603,6 +667,26 @@ async function insertForumAuthor(id: string, email: string, locale: string | nul
      values ($1, 'Forum Author', $2, true, now(), now(), $3)`,
     [id, email, locale],
   );
+}
+
+function topicWrite(id: string, authorId: string) {
+  return {
+    id,
+    sectionId: "typescript",
+    authorId,
+    titleRevision: { id: `${id}-title`, originalContent: `${id} title`, sourceLocale: "und" },
+    initialPost: {
+      id: `${id}-post`, topicId: id, authorId,
+      bodyRevision: { id: `${id}-body`, originalContent: `${id} body`, sourceLocale: "und" },
+    },
+  };
+}
+
+function replyWrite(id: string, topicId: string, authorId: string) {
+  return {
+    id, topicId, authorId,
+    bodyRevision: { id: `${id}-body`, originalContent: `${id} body`, sourceLocale: "und" },
+  };
 }
 
 function authColumns(

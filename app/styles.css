@@ -69,7 +69,12 @@ body {
 .forum-post + .forum-post { margin-block-start: 0.8rem; }
 .forum-post header { display: flex; flex-direction: column; gap: 0.4rem; padding: 1rem; background: #f4f6f8; border-inline-end: 1px solid var(--border); }
 .forum-post header span { color: var(--ink-muted); font-size: 0.85rem; }
-.post-body { margin: 0; padding: 1rem 1.25rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+.post-body { min-width: 0; padding: 1rem 1.25rem; overflow-wrap: anywhere; }
+.post-body > :first-child { margin-block-start: 0; }
+.post-body > :last-child { margin-block-end: 0; }
+.post-body pre { max-width: 100%; overflow-x: auto; padding: 0.85rem; background: #f4f6f8; direction: ltr; text-align: start; }
+.post-body code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; unicode-bidi: isolate; }
+.post-body :not(pre) > code { padding: 0.12rem 0.3rem; background: #f4f6f8; }
 .empty-state, .route-state { margin: 0; padding: 2rem 1.25rem; border: 1px solid var(--border); background: var(--panel); }
 .forum-write-form { margin-block-start: 1rem; padding: 1.25rem; border: 1px solid var(--border); background: var(--panel); }
 .forum-write-form h2 { margin-block-start: 0; }

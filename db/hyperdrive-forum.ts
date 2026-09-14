@@ -3,6 +3,7 @@ import { Client } from "pg";
 import type { ForumReader } from "./forum-repository";
 import { DrizzleForumRepository } from "./forum-repository";
 import { ForumService } from "./forum-service";
+import { forumWritePolicy, type ForumWritePolicy } from "./forum-write-policy";
 
 export interface ForumWriter {
   createTopic(input: { sectionId: string; authorId: string; title: string; body: string }): Promise<{ topicId: string }>;
@@ -35,12 +36,13 @@ export function createHyperdriveForumReader(connectionString: string): ForumRead
 export function createHyperdriveForumWriter(
   connectionString: string,
   clientFactory: ClientFactory = () => new Client({ connectionString }),
+  writePolicy: ForumWritePolicy = forumWritePolicy,
 ): ForumWriter {
   async function write<T>(operation: (service: ForumService) => Promise<T>): Promise<T> {
     const client = clientFactory();
     try {
       await client.connect();
-      return await operation(new ForumService(new DrizzleForumRepository(drizzle(client))));
+      return await operation(new ForumService(new DrizzleForumRepository(drizzle(client), writePolicy)));
     } finally {
       await client.end();
     }
