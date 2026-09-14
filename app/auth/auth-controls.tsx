@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { useLocation, useRevalidator } from "react-router";
 import { useTranslation } from "react-i18next";
 import { authClientActions, type AuthClientActions } from "./auth-client";
@@ -15,6 +15,9 @@ export function HeaderAuthProvider({ initialUser, children }: {
   children: ReactNode;
 }) {
   const [user, setUser] = useState(initialUser);
+  useEffect(() => {
+    setUser(initialUser);
+  }, [initialUser]);
   return <HeaderAuthContext value={{ user, setUser }}>{children}</HeaderAuthContext>;
 }
 
