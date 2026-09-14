@@ -68,7 +68,9 @@ Forum write participation реализован локально/для CI:
 Forum write/auth UI ещё не завершены:
 
 - нет solved/best-answer flow;
-- нет sign-in UX, Markdown editor/rendering и отдельного write anti-spam/rate limiting.
+- Google sign-in/sign-out controls используют SSR session пользователя в общем forum header,
+  локальный locale-aware callback и client-side синхронизацию после выхода;
+- нет Markdown editor/rendering и отдельного write anti-spam/rate limiting.
 
 То есть следующий продуктовый приоритет — не дальнейший infrastructure hardening, а сам форум.
 
@@ -137,7 +139,7 @@ boundaries `CNT-02`, `CNT-03`, `CNT-05`, migration и PostgreSQL integration cov
 
 Better Auth runtime/session boundary и authenticated создание тем/ответов подключены как части Stage 4D: PostgreSQL/Hyperdrive
 Drizzle adapter, database-backed auth rate limiting, Cloudflare client-IP boundary, auth resource
-route и `user.locale` priority для URL без locale. Следующие части — sign-in UX,
+route, Google sign-in/sign-out UX и `user.locale` priority для URL без locale. Следующие части —
 Markdown, write anti-spam/rate limiting, solved/best answer и минимальные роли. Реальный
 Google OAuth/external deployment acceptance не является условием внутренней разработки этих
 boundaries.

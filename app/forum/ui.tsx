@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Link, isRouteErrorResponse, useRouteError } from "react-router";
 import { useTranslation } from "react-i18next";
 import { forumIndexPath } from "./paths";
+import { AuthControls } from "../auth/auth-controls";
 
 export function ForumShell({ locale, children }: { locale: string; children: ReactNode }) {
   const { t } = useTranslation("common");
@@ -10,6 +11,7 @@ export function ForumShell({ locale, children }: { locale: string; children: Rea
       <header className="site-header">
         <Link className="brand" to={forumIndexPath(locale)}>{t("productName")}</Link>
         <span className="site-tagline">{t("forumTagline")}</span>
+        <AuthControls locale={locale} />
       </header>
       {children}
     </main>

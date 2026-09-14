@@ -42,6 +42,10 @@ export const canonicalEnglishCatalog = {
       protectedTerms: ["Stage 1"],
     },
     forumTagline: message("forumTagline", "Questions, discussions, and practical answers", "Forum header tagline."),
+    signInGoogle: message("signInGoogle", "Sign in with Google", "Google sign-in button in the forum header.", [], ["Google"]),
+    signOut: message("signOut", "Sign out", "Sign-out button in the forum header."),
+    authPending: message("authPending", "Please wait…", "Pending label while an authentication request is running."),
+    authError: message("authError", "Authentication failed. Please try again.", "Safe error shown when an authentication request fails."),
     forumIndex: message("forumIndex", "Forum index", "Link and eyebrow for the forum index."),
     categoriesHeading: message("categoriesHeading", "Categories", "Heading above the public category list."),
     categoriesIntro: message("categoriesIntro", "Browse the forum by category and section.", "Introduction to the forum index."),
@@ -84,6 +88,7 @@ function message<const Key extends string, const Source extends string>(
   source: Source,
   description: string,
   placeholders: readonly string[] = [],
+  protectedTerms: readonly string[] = [],
 ) {
   return {
     namespace: "common",
@@ -92,7 +97,7 @@ function message<const Key extends string, const Source extends string>(
     description,
     placeholders,
     messageKind: placeholders.length === 0 ? "plain" : "interpolation",
-    protectedTerms: [],
+    protectedTerms,
   } as const satisfies UiMessageDescriptor;
 }
 
