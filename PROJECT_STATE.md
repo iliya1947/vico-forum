@@ -146,7 +146,7 @@ preview isolation, deployment smoke и migration evidence.
 
 ## Блокеры
 
-Для продолжения Stage 4C продуктовых или operational блокеров нет. Native Cloudflare Git
+Для продолжения Stage 4D продуктовых или operational блокеров нет. Native Cloudflare Git
 integration отключён, поэтому merge в `main` не выполняет автоматический production deploy.
 
 Cleanup временных test resources прошлых acceptance остаётся housekeeping и не блокирует
