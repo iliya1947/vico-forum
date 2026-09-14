@@ -70,6 +70,23 @@ detail documents.
    rules, provider provenance, безопасность, fallback и caching реализуются только по
    контрактам из `TRANSLATION_ARCHITECTURE.md`.
 
+## Принцип разработки
+
+До pre-release приоритет — работающий продукт и обратимая local/CI разработка.
+
+- Уже созданный infrastructure/localization foundation сохраняется и переиспользуется, но
+  не развивается дальше без необходимости текущей продуктовой функции.
+- Обычная feature-разработка не должна зависеть от реального production rollout, Neon,
+  Hyperdrive, Google OAuth или translation providers, если задачу можно полноценно проверить
+  локально и в CI.
+- External deployment, production migrations, реальные OAuth/provider credentials,
+  infrastructure smoke и destructive/fault-injection проверки выполняются только когда
+  этого требует текущий этап pre-release/release либо конкретная задача действительно не
+  проверяется без внешней среды.
+- Решения, которые необходимо заложить заранее во избежание дорогой переделки, допускаются
+  как foundation boundary, но не должны превращаться в преждевременную реализацию всей
+  будущей подсистемы.
+
 ## Разработка
 
 Проект разрабатывает один человек с использованием ChatGPT и Codex.

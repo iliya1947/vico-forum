@@ -2,442 +2,359 @@
 
 ## Назначение
 
-Этот roadmap описывает путь от подготовленного репозитория без кода до первого production-релиза Vico Forum.
+Этот roadmap описывает путь Vico Forum от уже созданного technical foundation до первого
+production-релиза.
 
 Source of truth:
-- продуктовый и технический baseline — `PROJECT.md`;
-- мультиязычность и переводы — `TRANSLATION_ARCHITECTURE.md` и `docs/translation/*`;
-- точные решения scaffold — `SCAFFOLD_PLAN.md`.
 
-Каждый этап выполняется отдельным компактным Pull Request или серией независимых Pull Request.
-При изменении фактического состояния проекта обновляется `PROJECT_STATE.md`.
+- продуктовый и технический baseline — `PROJECT.md`;
+- текущее фактическое состояние — `PROJECT_STATE.md`;
+- мультиязычность и переводы — `TRANSLATION_ARCHITECTURE.md` и `docs/translation/*`;
+- database rollout/operations — `docs/database/*`;
+- завершённый Stage 1 scaffold plan — `SCAFFOLD_PLAN.md`.
+
+Ключевой принцип текущего roadmap: **до pre-release разработка идёт product-first через
+local/CI path; external deployment и production acceptance не являются gate для каждого
+feature PR**.
 
 ## Общие правила выполнения
 
-1. Перед использованием библиотек/API проверять официальную документацию именно выбранных версий.
-2. Не менять без отдельного решения baseline: модульный монолит, React Router v8 Framework Mode + SSR + TypeScript, Cloudflare Workers, PostgreSQL + Drizzle ORM, Better Auth + Google OAuth.
-3. Мультиязычность не имеет hard-coded списка locale. Все translation component IDs из `TRANSLATION_ARCHITECTURE.md` должны быть привязаны к этапам этого roadmap.
-4. Stage 1A создаёт только технический scaffold/quality gates; generic `/:locale/*` и runtime `LocaleRegistry` обязательны в PR 1B, а canonical English UI и request-scoped i18next — в PR 1C. Эти компоненты нельзя откладывать за пределы Stage 1.
-5. Тестовую инфраструктуру создать вместе со scaffold. На последующих этапах добавлять тесты на новое критичное поведение.
-6. В CI постоянно выполнять `lint`, `typecheck`, `test`, `build`.
-7. Все внешние/пользовательские данные валидировать runtime на соответствующей системной границе; authz для защищённых операций проверяется на сервере.
-8. Все state-changing browser actions должны иметь применимую CSRF/origin protection; публичные write/generation boundaries должны иметь базовый rate limiting/anti-spam без ограничения публичного чтения. Конкретные thresholds выбираются на этапе реализации и не являются архитектурной константой.
-9. Не добавлять поиск, жалобы, блокировки, audit log и другие незафиксированные функции без отдельного продуктового решения.
-10. Не переходить к следующему этапу, пока не выполнены критерии завершения текущего.
+1. Не менять без отдельного решения baseline: модульный монолит, React Router v8 Framework
+   Mode + SSR + TypeScript, Cloudflare Workers, PostgreSQL + Drizzle ORM, Better Auth +
+   Google OAuth.
+2. Перед использованием внешних API/библиотек проверять официальную документацию именно
+   используемой версии.
+3. Все внешние/пользовательские данные валидировать runtime на соответствующей границе;
+   authz для защищённых операций проверяется на сервере.
+4. В CI постоянно выполнять `lint`, `typecheck`, `test`, `build`; schema changes дополнительно
+   проходят migration metadata и disposable PostgreSQL integration checks.
+5. До pre-release обычная feature-разработка не обязана применять новые migrations в Neon,
+   выполнять deployed Hyperdrive smoke или настраивать production OAuth/provider resources,
+   если задача полноценно проверяется локально и в CI.
+6. Merge feature-кода сам по себе не должен означать production rollout. До первого
+   forum-code PR active development `main` должен быть отделён от автоматического production
+   deploy.
+7. Когда изменение действительно выкатывается во внешний pre-release/production runtime,
+   schema-dependent rollout выполняется по `docs/database/MIGRATIONS.md`: schema становится
+   безопасной в target DB до runtime dependency.
+8. State-changing browser actions должны иметь применимую CSRF/origin protection; публичные
+   write boundaries — базовый rate limiting/anti-spam без ограничения публичного чтения.
+9. Не добавлять функции вне текущего этапа без отдельного продуктового решения.
+10. Translation architecture сохраняется как обязательный contract, но наличие будущего
+    component ID не делает его текущим development priority.
 
-## Этап 0. Подготовить реализацию scaffold
+---
 
-Этап 0 уже подготовил toolchain и воспроизводимые команды. После исправления translation architecture `SCAFFOLD_PLAN.md` синхронизирован с новым i18n-контрактом; фиксированные `/en`/`/ru`/`/he`, `remix-i18next` и browser redetection больше не являются архитектурой Stage 1.
+# Завершённый foundation
 
-### Критерий завершения
+## Stage 0 — toolchain и scaffold preparation — завершён
 
-- Зафиксированы runtime/package-manager/toolchain версии и команды.
-- Scaffold создаётся официальным Cloudflare/React Router путем.
-- Stage 1 не требует решений о форумной схеме, OAuth, translation providers или production deploy.
+Зафиксированы runtime/package-manager/toolchain версии и воспроизводимый путь создания
+React Router/Cloudflare Workers приложения.
 
-## Этап 1. Создать scaffold и locale/i18n foundation
+## Stage 1 — locale/i18n foundation — завершён
 
-**Translation components:** `LOC-01`–`LOC-10`, `UI-01`, `UI-02`, `UI-03`, `UI-04`, `UI-05`, `UI-08`, `UI-09`, `UI-10`, `UI-12`, `STO-02` (contract), `SEC-01`, `SEC-03`.
+Реализованы:
 
-Stage 1 реализуется не одним крупным PR, а последовательной серией компактных PR `1A → 1B → 1C`, описанной в `SCAFFOLD_PLAN.md`. Отдельный PR внутри Stage 1 не означает завершение всего этапа; переход к Stage 2 разрешён только после прохождения всех Stage 1 acceptance checks.
+- React Router v8 SSR Workers scaffold;
+- generic `/:locale/*` и technical routes вне locale namespace;
+- `LocaleRegistry`, `LocaleResolver`, BCP-47 canonicalization, aliases/fallbacks;
+- method-aware locale routing policy;
+- `lang`/`dir`, LTR/RTL и formatting context;
+- canonical English UI catalog, local translation packs и `sourceFingerprint`;
+- `TranslationResourceLoader`;
+- request-scoped `i18next` + SSR/hydration resource snapshot;
+- quality gates и Workers-compatible local smoke.
 
-### Работы
+**Translation components:** `LOC-01`–`LOC-10`, `UI-01`–`UI-05`, `UI-08`–`UI-10`,
+`UI-12` (initial validation), `STO-02` (contract), `SEC-01`, `SEC-03` (initial boundary).
 
-1. Создать минимальное React Router v8 Framework Mode SSR-приложение с TypeScript для Cloudflare Workers по `SCAFFOLD_PLAN.md`.
-2. Реализовать generic `/:locale/*` locale boundary с server `loader`; технические routes держать вне locale namespace.
-3. Реализовать `LocaleRegistry` abstraction и config/in-memory adapter: bootstrap active `en`, без compile-time locale union/list.
-4. Реализовать `LocaleResolver`: explicit URL authoritative; без locale segment — cookie → `Accept-Language` → `en`, с зарезервированным authenticated `user.locale` source для Stage 4.
-5. Реализовать BCP-47 canonicalization, aliases/canonical redirects, explicit fallback chain, unknown/inactive-locale protection, direction metadata и formatting context boundary.
-6. Для request-dependent root negotiation `/` использовать безопасную cache policy; Stage 1 baseline — `Cache-Control: no-store`, согласно `LOC-08`/`SCAFFOLD_PLAN.md`.
-7. Создать canonical English UI catalog, typed keys/message descriptors и `CanonicalEnglishSource`.
-8. Добавить partial `LocalTranslationSource` с `sourceFingerprint` freshness и structural validation; local packs не определяют список locale.
-9. Реализовать `TranslationResourceLoader`: source priority внутри locale, отдельные locale bundles, explicit fallback chain, без cross-locale flattening.
-10. Настроить request-scoped `i18next` + `react-i18next` с `load: "currentOnly"` и explicit Vico `fallbackLng`; browser получает тот же locale/fallback/resources snapshot без повторного language detection.
-11. Устанавливать `<html lang>`/`dir` из locale context; использовать direction-neutral CSS и Unicode-safe validation.
-12. Настроить Vitest/testing infrastructure, ESLint, typecheck, build и CI.
+## Stage 2 — PostgreSQL, Drizzle и persistent LocaleRegistry — завершён
 
-### Критерий завершения
+Реализованы:
 
-- Добавление нового locale через registry data не требует изменения routes, locale TypeScript union или resource bundle map.
-- `/` выполняет negotiation с безопасной cache policy; request-specific negotiation result не может быть закэширован как универсальный redirect.
-- Explicit unknown/inactive `/:locale` не подменяется cookie/header locale.
-- Canonical/alias URL behavior, `lang`, `dir`, LTR/RTL и explicit fallback работают через SSR.
-- Partial local pack может override отдельные current keys; stale override исключается и fallback продолжается.
-- Server и hydration используют один locale/resource/formatting context.
-- CI выполняет `lint`, `typecheck`, `test`, `build`.
+- PostgreSQL 17/Drizzle migration foundation;
+- persistent `locales` storage без DB-owned bootstrap `en`;
+- request-scoped persistent registry load/validation/degraded behavior;
+- semantic registry identity;
+- Neon + cache-disabled Hyperdrive localization read path;
+- disposable PostgreSQL CI, production migration workflow и infrastructure acceptance.
 
-### Проверки
+**Translation components:** `LOC-02` persistence, `LOC-09` lifecycle boundary, `STO-07`.
 
-- Проверить generic locale fixture, включая locale, которого нет в исходном app code.
-- Проверить LTR и RTL locale, canonical redirects, unknown locale, cookie/header negotiation и `q=0`.
-- Проверить `Cache-Control: no-store` для Stage 1 root negotiation redirect либо документированную эквивалентную policy, если baseline был отдельно пересмотрен.
-- Проверить source priority, stale local translation и English fallback.
-- Проверить SSR/hydration snapshot.
-- Выполнить `lint`, `typecheck`, `test`, `build` и Workers-compatible preview.
+## Stage 3 — persistent UI translation resources — завершён
 
-## Этап 2. Подключить PostgreSQL, Drizzle и persistent LocaleRegistry
+Реализованы:
 
-**Translation components:** `LOC-02` (persistent adapter), `LOC-09` (persistent lifecycle), `STO-07`.
+- `ui_translations` и `ui_translation_bundles` schema;
+- persistent manual/machine read sources;
+- freshness/validation boundaries;
+- deterministic compiled locale/namespace bundle identity;
+- persistence/cache/ETag primitives.
 
-Обязательные detail contracts Stage 2 находятся в `docs/translation/LOCALES.md` и
-`docs/translation/STORAGE_AND_VERSIONING.md`; exact-version evidence и внешние ограничения —
-в `docs/translation/RESEARCH.md`.
+Production SSR пока продолжает читать raw local/persistent translation sources и собирать
+bundle в request path. Active generation/publish/persisted-bundle runtime path остаётся
+Stage 5.
 
-Stage 2 выполняется серией `2A → 2B → 2C`. Переход к Stage 3 разрешён только после
-завершения всей серии и реального Hyperdrive acceptance.
+**Translation components:** `UI-06`, `UI-07`, `UI-14` primitives, `STO-01`, `STO-02`
+persistence, `STO-04`, `STO-05` primitives.
 
-### PR 2A — DB foundation
+## Stage 4A — Better Auth schema foundation — завершён как подготовительный migration-only шаг
 
-1. Добавить exact PostgreSQL/Drizzle dependencies и Drizzle configuration.
-2. Создать PostgreSQL 17 schema `locales` с row-local constraints из locale contract.
-3. Добавить reproducible reviewed SQL migrations; production `drizzle-kit push` не использовать.
-4. Отдельной data migration перенести текущие persistent `ru`, `he`, `ka` semantics; code-owned `en` в БД не создавать.
-5. Добавить disposable PostgreSQL 17 integration database в CI и безопасный migration test.
-6. Зафиксировать forward-only production migration/recovery baseline: migrations before deploy, application rollback, forward repair/restore вместо автоматического destructive down rollback.
+Stage 4A был выполнен до reprioritization roadmap и сохраняется как готовый foundation:
 
-### PR 2B — persistent LocaleRegistry
+- Better Auth `1.7.4` core PostgreSQL/Drizzle tables;
+- database-backed `rate_limit`;
+- nullable server-owned `user.locale`;
+- без Better Auth runtime, routes, Google OAuth, auth Hyperdrive/role/grants или Worker
+  auth write-capability.
 
-1. Реализовать server-only PostgreSQL row parser, persistent repository и graph assembly `BOOTSTRAP_ENGLISH + persistent rows`.
-2. Сохранить существующие synchronous `LocaleRegistry`/`LocaleResolver` consumers; async DB I/O выполняется до передачи immutable snapshot.
-3. Добавить request-scoped lazy/memoized registry loading через React Router request context без module-global `pg.Client`/`Pool` и без DB access для technical routes, которым registry не нужен.
-4. Реализовать deterministic semantic SHA-256 identity validated effective registry и отдельный load-health state.
-5. Реализовать degraded bootstrap-only behavior для classified DB/schema/integrity failures без восстановления stale non-English process state.
-6. Добавить controlled test/admin writer boundary и integration/concurrency tests для desired-state `SERIALIZABLE` writes; production Worker Stage 2 остаётся read-only.
-7. Сохранить Stage 1 locale/routing behavior regression tests.
+Stage 4A **не задаёт следующий infrastructure шаг**. Active Stage 4 продолжается через
+forum-core работу 4B–4E.
 
-### PR 2C — Neon + Hyperdrive integration
+---
 
-1. Создать/подключить Neon PostgreSQL 17 и cache-disabled `HYPERDRIVE` configuration с direct/unpooled Neon origin.
-2. Разделить migration/admin credentials и production Worker read-only DB capability; `DATABASE_URL` не передавать Worker runtime.
-3. Подтвердить local Workers integration с disposable PostgreSQL 17 через documented local Hyperdrive connection override.
-4. Выполнить реальный deployed Worker smoke через настоящий Hyperdrive; local `vite preview` не считается проверкой remote Hyperdrive service.
-5. Зафиксировать operational/deployment procedure и безопасное различие healthy/degraded registry state.
+# Active product-first roadmap
 
-### Критерий завершения
+## Stage 4 — сделать рабочее ядро форума
 
-- Чистая PostgreSQL 17 DB воспроизводимо получает schema и exact initial `ru`/`he`/`ka` data без DB row `en`.
-- Persistent `LocaleRegistry` заменяет config adapter без изменения synchronous consumers и сохраняет Stage 1 routing/fallback behavior.
-- Invalid DB row/fallback/alias graph не публикуется как working registry; whole-graph validation применяется на load и controlled write boundary.
-- Один locale-sensitive request использует один immutable registry snapshot; `/api/*` без registry consumer не выполняет registry DB query.
-- Validated registry имеет deterministic semantic identity, а operational load health хранится отдельно.
-- DB outage/schema mismatch/integrity failure сохраняет только безопасный public English fallback; release/deployment acceptance при этом не считается успешным.
-- Production Worker Stage 2 имеет только необходимые read privileges; migration/runtime/test credentials разделены, DB secrets не попадают в Git/client bundle/logs.
-- Real deployed `workers.dev` request подтверждает работу Neon → Hyperdrive → `pg` → Drizzle path.
+Stage 4 — текущий продуктовый приоритет. Он выполняется серией компактных PR `4B → 4C → 4D → 4E`.
 
-### Проверки
+Критерий завершения всего Stage 4: в local/CI environment существует реально используемый
+forum MVP с публичным чтением, authenticated participation, solved/best-answer flow и
+минимальными ролями. External production rollout не является критерием завершения Stage 4.
 
-- Clean migrations и exact initial-data verification на disposable PostgreSQL 17.
-- DB constraint, row-parser, whole-graph, semantic-hash, degraded-mode и controlled writer/concurrency integration tests.
-- Regression: `/ru/`, `/he/`, alias `iw`, inactive `ka`, unknown/canonical locale, non-`GET`/`HEAD` fail-closed и technical `/api/*` semantics.
-- Workers-compatible local preview с local PostgreSQL binding.
-- Real deployed Hyperdrive smoke после migration и до завершения Stage 2.
-- Forward-only application/DB recovery procedure проверена на принятом migration workflow.
-- `lint`, `typecheck`, `test`, `build`.
+### Stage 4B — forum domain foundation
 
-## Этап 3. Реализовать persistent UI translation resources
+**Translation boundaries prepared for later implementation:** `CNT-02`, `CNT-03`, `CNT-05`.
 
-**Translation components:** `UI-06`, `UI-07`, `UI-14`, `STO-01`, `STO-02` (persistence), `STO-04`, `STO-05`.
+#### Работы
 
-### Работы
+1. Спроектировать минимальную forum model для `категория → раздел → тема → сообщение`.
+2. Добавить Drizzle schema и forward migration для forum entities.
+3. Связать authored content с существующим `user` identity без подключения production auth.
+4. Заложить immutable revision boundary для изменяемого topic/post content, чтобы будущий
+   revision-bound translation не требовал переделывать identity model.
+5. Topic title хранить как отдельную versioned/translatable unit или эквивалентную модель,
+   сохраняющую `CNT-05` invariant.
+6. Source-locale metadata revision хранить независимо от UI locale; `und` допустим.
+7. Добавить repositories/services только для текущих forum use cases.
+8. Добавить clean-migration, constraint и repository integration tests на disposable
+   PostgreSQL 17.
+9. Не добавлять production DB grants, new Hyperdrive, external OAuth/provider resources или
+   deployed smoke только ради этой schema.
 
-1. Спроектировать фактическую PostgreSQL schema UI translations по logical contracts и создать миграцию.
-2. Реализовать `UiTranslationStore`, persistent manual/machine sources и current/stale lifecycle.
-3. Сохранять `sourceFingerprint`; manual/local fingerprint нельзя автоматически обновлять после изменения canonical source.
-4. Добавить deterministic compiler/version identity для locale/namespace bundles без N-query-per-key semantics.
-5. Добавить persistence adapter и backend-independent bundle-version/cache/ETag primitives без обязательного переключения production SSR на persisted compiled-bundle reads.
-6. Подключить persistent raw sources к существующему `TranslationResourceLoader` без изменения его публичного контракта.
+#### Критерий завершения
 
-### Критерий завершения
+- schema поддерживает category → section → topic → post;
+- content/revision identity пригодна для будущего `CNT-*` без скрытой зависимости от UI locale;
+- migrations воспроизводимо проходят local/CI PostgreSQL 17;
+- forum domain не зависит от Neon/production rollout для разработки и tests;
+- нет незаявленных функций.
 
-- Local manual → persistent manual → machine priority работает внутри locale.
-- Target → registry fallback → `en` работает между locale без flattening.
-- Source change делает старые values stale и исключает их из current bundle.
-- Loader продолжает работать при отсутствии persistent translation данных через local/English resources.
-- Stage 3C предоставляет deterministic bundle/persistence/cache primitives; end-to-end generation → publish → persisted compiled bundle → SSR/runtime consumption не требуется до Stage 5.
+### Stage 4C — публичное чтение и классический forum UI
 
-### Проверки
+#### Работы
 
-- Миграции к чистой БД.
-- Интеграционные тесты current/stale, priority, deterministic bundle version, persistence adapter и cache identity.
-- `lint`, `typecheck`, `test`, `build`.
+1. Реализовать SSR-страницы категорий, разделов, списка тем и темы с сообщениями.
+2. Сформировать классическую forum navigation/layout, а не социальную ленту.
+3. Сохранять canonical locale во внутренних ссылках.
+4. Все UI strings добавлять через существующий canonical English/i18n path.
+5. Добавить empty/not-found/error states.
+6. Проверить query shape и очевидные N+1 cases.
 
-## Этап 4. Подключить Better Auth и Google OAuth
+#### Критерий завершения
+
+- гость проходит `категория → раздел → тема → сообщения`;
+- forum UI существует как реальный продукт, а не landing/scaffold page;
+- LTR/RTL и locale-aware rendering продолжают работать через существующий foundation;
+- public read path покрыт integration/E2E tests минимум для LTR и RTL fixtures.
+
+### Stage 4D — auth/session и участие в обсуждениях
+
+#### Работы
+
+1. Перед реализацией повторно проверить exact pinned Better Auth integration с текущими
+   React Router/Workers/Drizzle versions.
+2. Подключить Better Auth runtime/session boundary к уже существующей Stage 4A schema.
+3. Реализовать auth routes/configuration за server-only boundary и env placeholders; real
+   production Google credentials не являются условием local/CI implementation.
+4. Интегрировать validated `user.locale` в существующий negotiation path; explicit URL locale
+   остаётся authoritative.
+5. Разрешить authenticated user создавать topic и reply.
+6. Реализовать safe Markdown/text/code input/output.
+7. Добавить runtime validation, server-side authz, применимую CSRF/origin protection и
+   базовый anti-spam/rate limiting для write boundaries.
+8. Добавить automated session/authz/create-topic/reply tests без зависимости общего CI от
+   реального Google OAuth call.
+
+#### Критерий завершения
+
+- guest read остаётся публичным;
+- authenticated application session boundary существует и защищает write operations;
+- user может создать topic/reply в development/test environment;
+- guest не может выполнить protected writes;
+- Markdown/code output безопасен от XSS;
+- real Google OAuth deployment smoke ещё не требуется для завершения 4D.
+
+### Stage 4E — solved topic, best answer и минимальные роли
+
+#### Работы
+
+1. Реализовать solved state и best answer.
+2. Проверять author/topic/post consistency на сервере.
+3. Реализовать только необходимое разграничение `guest/user/moderator/admin`.
+4. Покрыть state-changing solved/best-answer actions той же security boundary.
+5. Провести core E2E: guest read → authenticated topic → reply → solved/best answer.
+6. Не добавлять расширенную модерацию, репутацию, поиск, жалобы и т. п. без отдельного решения.
+
+#### Критерий завершения Stage 4
+
+- local/CI forum MVP работает end-to-end;
+- public read, participation и solved flow реализованы;
+- базовые authz/security invariants покрыты negative tests;
+- translation foundation не сломан;
+- external production infrastructure всё ещё может оставаться выключенной/необновлённой.
+
+---
+
+## Stage 5 — завершить automatic translations и background jobs
+
+Stage 5 выполняется **после рабочего forum core**. Архитектура уже зафиксирована; здесь
+добавляется недостающая реализация.
+
+**Translation components:** `UI-11`, `UI-12` provider validation, `UI-13`, `UI-14`
+publish/runtime consumption, `CNT-01`–`CNT-06`, `PRV-01`, `PRV-02`, `JOB-01`–`JOB-06`,
+`STO-03`, `STO-05` active path, `STO-06`, `SEC-02`, `SEC-03` extension, `SEC-04`.
+
+### Stage 5A — UI translation generation/runtime completion
+
+1. Реализовать `UiTranslationService`, `TranslationProviderRouter` и provider adapter
+   boundaries.
+2. Реализовать structured/plural validation через `LocaleRulesProvider`.
+3. Реализовать durable translation task model, dispatcher, idempotent consumer,
+   stale-task guards, retry/DLQ/reconciliation semantics.
+4. Завершить generation → validation → publish → persisted compiled bundle → runtime read path.
+5. Provider calls не выполнять в SSR request path.
+6. Общий CI использует contract/fake adapters; реальные external provider calls не являются
+   обязательными для каждого PR.
+
+### Stage 5B — user-content translation
+
+1. Реализовать `ContentTranslationService` поверх Stage 4 revisions.
+2. Identity: `contentType + contentId + revisionId + targetLocale`.
+3. Реализовать source-locale detection/correction boundary без подмены UI locale.
+4. Переводить topic title отдельно от body.
+5. Защищать Markdown/code/URL/technical fragments через structured/AST path.
+6. При miss/failure показывать original current revision.
+7. Использовать shared provider/job infrastructure с content-specific policy, validation,
+   dedup/rate limits и provenance.
+
+### Критерий завершения Stage 5
+
+- machine UI translation может публиковать current validated bundle;
+- persisted compiled bundle может использоваться runtime без N-query-per-key path;
+- user-content translation revision-bound и original-safe;
+- Queue/provider failures не ломают public read/forum content;
+- contract/integration tests не требуют production secrets.
+
+---
+
+## Stage 6 — pre-release external integration
+
+Stage 6 впервые собирает локально готовый продукт с реальной внешней инфраструктурой как
+единый production candidate.
 
 ### Preconditions
 
-До Stage 4 должны быть закрыты pre-Stage-4 hardening blockers. Отдельный staging environment не
-является условием начала Stage 4 до первого релиза.
-
-1. Текущая deployed среда используется как pre-release production candidate только пока нет реальных
-   пользователей или ценной private data; в ней допускаются только test/pre-release identities и data.
-2. Real Hyperdrive deadline acceptance текущего candidate уже выполнен; отдельный staging не нужен
-   только для повторения этого pre-release infrastructure acceptance.
-3. Preview/non-production builds не должны получать возможность писать auth/private data через
-   production bindings. До появления такой capability preview path либо изолируется, либо
-   non-production builds отключаются.
-4. Auth runtime получает отдельный cache-disabled Hyperdrive и отдельный least-privilege database role;
-   localization `HYPERDRIVE` не расширяется auth writes.
-5. Exact auth DB grants не фиксируются до выбора конкретной Better Auth версии, генерации/проверки её
-   schema и реальных adapter operations.
-6. Топология Google OAuth projects/clients/secrets и exact redirect URIs определяется только после
-   Stage 4 exact-version Google OAuth/Better Auth/Cloudflare проверки; отдельные staging/production
-   Google Cloud projects не считаются безусловной архитектурной константой заранее.
-
-### Post-release operational gate
-
-После первого релиза с реальными пользователями или ценной private data fault injection в production
-прекращается. Рискованные post-release изменения database/Hyperdrive/auth/runtime проходят через
-отдельную staging среду до production rollout. Её точная Neon/Cloudflare/OAuth topology определяется
-по фактическим требованиям на момент создания и не является pre-Stage-4 blocker.
+- Stage 4 forum MVP завершён;
+- Stage 5 translation implementation завершён в local/CI path;
+- active development branch больше не auto-promotes каждую feature merge в production;
+- current exact versions/platform UI повторно проверены перед provisioning.
 
 ### Работы
 
-1. Проверить exact-version интеграцию Better Auth с React Router SSR, Cloudflare Workers и Drizzle.
-2. Получить и проверить exact Better Auth schema/adapter operations, затем сформировать least-privilege auth DB manifest.
-3. Добавить auth schema миграциями по принятому migration-first rollout contract.
-4. Реализовать Google sign-in, server session и logout.
-5. Интегрировать validated `user.locale` в существующий LocaleResolver: URL остаётся authoritative.
-6. Добавить минимальную защищённую страницу для проверки сессии.
-7. Проверить security defaults/requirements выбранной версии Better Auth для cookies, trusted origins и CSRF/origin boundary; не считать auth-библиотеку автоматической защитой будущих forum actions без отдельной проверки этих actions.
+1. Восстановить/проверить dedicated least-privilege migration connection и убрать временный
+   database-owner no-op exception до первой новой external schema migration.
+2. Применить все pending reviewed migrations в pre-release Neon через защищённый production
+   migration workflow и зафиксировать migration → runtime evidence.
+3. Спроектировать и создать реальные runtime roles/grants по фактическим forum/auth/translation
+   queries; localization role не расширять механически.
+4. Подключить необходимые cache-disabled Hyperdrive bindings для runtime capabilities.
+5. Настроить real Google OAuth credentials/redirect URIs/secrets и выполнить OAuth/session/logout smoke.
+6. Настроить Cloudflare Queues и реальные translation provider credentials/adapters, выполнить
+   provider/job smoke без превращения CI в зависимость от внешних API.
+7. Изолировать preview/non-production от production private data/write capabilities или
+   отключить соответствующий preview path.
+8. Проверить deployment ordering, Worker bindings, logs/observability и external failure paths.
+9. Выполнить real deployed smoke core forum flow + LTR/RTL + auth + translations.
+10. Настроить и проверить PostgreSQL backup/restore до release.
 
 ### Критерий завершения
 
-- Публичные страницы доступны гостю.
-- Google OAuth, SSR session и logout работают в текущем pre-release production candidate с test/pre-release identities/data.
-- Защищённый route недоступен без валидной сессии.
-- `user.locale` участвует только в negotiation без explicit locale URL.
-- Auth cookies/origins настроены согласно exact-version contract без ослабления server-side authz.
-- Auth runtime DB capability отделена от localization runtime и не использует migration/admin credential.
+- pre-release candidate воспроизводимо развёрнут из зафиксированной revision;
+- real Google OAuth работает;
+- forum/auth/translation runtime capabilities используют least privilege;
+- pending schema доказанно применена до schema-dependent runtime rollout;
+- Queues/providers работают в реальной конфигурации;
+- preview isolation/private-data boundary проверены;
+- backup/restore проверен;
+- core forum + translations проходят deployed smoke.
 
-### Проверки
+---
 
-- Auth migrations + production migration verification до schema-dependent runtime rollout.
-- Автоматические auth/session negative tests.
-- Проверить invalid/untrusted origin behavior на auth boundary согласно официальному API выбранной версии.
-- Реальный OAuth smoke в текущем pre-release production candidate только с test/pre-release identities/data.
-- Убедиться, что preview/non-production path не может выполнять auth writes против production private data.
-- `lint`, `typecheck`, `test`, `build`.
-
-## Этап 5. Реализовать automatic UI translation providers и background jobs
-
-**Translation components:** `UI-11`, `UI-12` (provider validation), `UI-13`, `UI-14` (publish/runtime consumption), `PRV-01`, `PRV-02`, `JOB-01`–`JOB-06`, `STO-03`, `STO-05` (active cache/read path), `STO-06`, `SEC-02`, `SEC-04`.
+## Stage 7 — первый production-релиз
 
 ### Работы
 
-1. Реализовать `UiTranslationService`, machine `TranslationProviderRouter` и provider adapters за capability/policy boundary.
-2. Интегрировать Cloudflare Workers AI M2M100 и Google Cloud Translation как adapters без hard-coded universal primary/fallback chain.
-3. Реализовать structured/plural translation через `LocaleRulesProvider` и validation; plain provider не объявлять capable там, где не гарантирует structured result.
-4. Реализовать `TranslationJobDispatcher` на Cloudflare Queues: durable task commit до enqueue, маленький task-id message.
-5. Реализовать idempotent consumer, stale-task preflight, conditional current publish, lease recovery, retry classification, DLQ и reconciliation.
-6. Сохранять `generationPolicyVersion`, provider/model provenance и attribution/presentation metadata.
-7. Реализовать controlled bulk generation, source-change regeneration и deduplicated/rate-or-budget self-healing.
-8. Не вызывать external translation provider в SSR request path; provider secrets остаются server-side.
-9. Завершить Stage 3C boundary: generation/validation публикуют current compiled bundles, persisted bundle identity используется runtime read/cache path, а ETag/cache backend подключается только после проверки фактических query/cache patterns.
+1. Зафиксировать release revision и production configuration без секретов в Git.
+2. Выполнить полный security review write/auth/provider boundaries.
+3. Выполнить accessibility, LTR/RTL, locale/formatting и original-content fallback checks.
+4. Выполнить полный CI и финальные E2E.
+5. Выполнить управляемый production deploy из release revision.
+6. Проверить post-deploy diagnostics и core flows.
+7. Обновить `PROJECT_STATE.md` фактическими результатами.
 
 ### Критерий завершения
 
-- Новый registered locale может получить machine UI resources без изменения app routes/i18n core.
-- Provider capability/unsupported pair переключается policy/router, а не изменением locale model.
-- Duplicate/stale Queue task не создаёт некорректный current state.
-- Provider failure не ломает UI: current stored/local/English fallback остаётся доступен.
-- Structured messages публикуются current только после полной validation.
-- End-to-end generation → publish → persisted compiled bundle → runtime/SSR consumption работает без N-query-per-key path.
+- production deploy воспроизводим;
+- guest/user/solved-topic core flow работает;
+- Google OAuth/session/logout работает;
+- automatic UI translation и on-demand content translation работают с безопасными fallback;
+- write boundaries имеют проверенные authz, CSRF/origin и basic anti-abuse controls;
+- backup/restore и operational diagnostics готовы;
+- release revision имеет зелёный обязательный CI.
 
-### Проверки
+После появления реальных пользователей/private data fault injection и destructive
+infrastructure diagnostics в production прекращаются; рискованные DB/Hyperdrive/auth/runtime
+изменения проходят отдельный staging gate.
 
-- Contract tests provider adapters без обязательного real external call в общем CI.
-- Queue/idempotency/stale-task/reconciliation tests.
-- Integration tests UI generation → storage → compiled bundle → persisted bundle read/cache → SSR.
-- Preview smoke-test реальных providers.
-- `lint`, `typecheck`, `test`, `build`.
-
-## Этап 6. Зафиксировать минимальную форумную модель и revision boundaries
-
-**Translation components prepared for later implementation:** `CNT-02`, `CNT-03`, `CNT-05`.
-
-### Работы
-
-1. Описать и мигрировать только базовые сущности: категория, раздел, тема, сообщение и связи.
-2. Учесть авторство, solved state, best answer и immutable content revisions.
-3. Revision model должен хранить original content и source-locale metadata (`sourceLocale | und`) без зависимости от UI locale.
-4. Topic title моделировать как отдельную versioned/translatable unit, чтобы Stage 10 не потребовал переделки forum schema.
-5. Зафиксировать минимальные права текущих ролей.
-
-### Критерий завершения
-
-- Схема поддерживает `категория → раздел → тема → сообщения`.
-- Revision identity достаточна для будущего revision-bound translation.
-- Source-locale correction может создавать новую revision без изменения translation identity model.
-- Нет незаявленных функций.
-
-### Проверки
-
-- Чистые миграции и integration tests constraints.
-- Проверить revision invariants.
-- `lint`, `typecheck`, `test`, `build`.
-
-## Этап 7. Реализовать публичное чтение форума
-
-### Работы
-
-1. Реализовать SSR-страницы категорий, разделов, списков тем и темы с сообщениями.
-2. Сохранять canonical locale во внутренних ссылках.
-3. Использовать существующий UI translation resource path для всех UI strings.
-4. Добавить минимальные empty/error states и навигацию классического форума.
-
-### Критерий завершения
-
-- Гость проходит `категория → раздел → тема → сообщения`.
-- Публичный UI работает через generic active locales, а не фиксированный набор языков.
-- LTR/RTL и locale-aware formatting работают из общей foundation.
-
-### Проверки
-
-- Integration tests queries и критичных N+1 случаев.
-- E2E guest path минимум на LTR и RTL locale и на дополнительном registry locale fixture.
-- `lint`, `typecheck`, `test`, `build`.
-
-## Этап 8. Реализовать участие в обсуждениях
-
-### Работы
-
-1. Разрешить авторизованному пользователю создавать тему и отвечать.
-2. Реализовать безопасный Markdown/text/code input/output.
-3. Выполнять server-side runtime validation и authz для всех write operations.
-4. Реализовать применимую CSRF/origin protection для state-changing browser requests; защита должна соответствовать фактической session/auth architecture, а не предполагаться по наличию OAuth.
-5. Добавить базовый rate limiting/anti-spam на создание тем и сообщений. Точные thresholds/configuration выбираются на этом этапе; публичное чтение не должно требовать этих write limits.
-6. Создавать immutable revisions при поддерживаемом редактировании.
-7. Сохранять/уточнять source-locale metadata revision без подмены UI locale.
-
-### Критерий завершения
-
-- Пользователь может создать тему/ответ, гость — нет.
-- Markdown/code безопасны от XSS.
-- Cross-origin/forged state-changing request не проходит защитную границу.
-- Очевидный burst/spam на write endpoints ограничивается без нарушения обычного публичного чтения.
-- Revision history и source-locale metadata сохраняют invariants Stage 6.
-
-### Проверки
-
-- Integration/E2E create-topic/reply/authz.
-- XSS/Markdown safety tests.
-- Negative tests для CSRF/origin boundary в соответствии с выбранной реализацией.
-- Rate-limit/anti-spam tests для create-topic/reply boundary, включая нормальный разрешённый сценарий.
-- `lint`, `typecheck`, `test`, `build`.
-
-## Этап 9. Реализовать solved topic и базовые роли
-
-### Работы
-
-1. Разрешить автору темы отметить её решённой и выбрать лучший ответ.
-2. Проверять author/topic consistency на сервере.
-3. Реализовать минимальное разграничение guest/user/moderator/admin для текущих сценариев.
-4. Применить общую state-changing request protection к изменению solved/best-answer state.
-5. Не добавлять расширенную модерацию без отдельного решения.
-
-### Критерий завершения
-
-- Только уполномоченный автор выбирает best answer.
-- Best answer принадлежит той же теме.
-- Role/authz checks покрыты negative tests.
-- State-changing security boundary не обходится через прямой browser request.
-
-### Проверки
-
-- Integration/E2E `создать тему → получить ответ → решить`.
-- Negative authz/consistency и origin/CSRF tests для solved/best-answer mutation.
-- `lint`, `typecheck`, `test`, `build`.
-
-## Этап 10. Реализовать перевод пользовательского контента
-
-**Translation components:** `CNT-01`–`CNT-06` (full implementation); reuse `PRV-*`, `JOB-*`, `STO-06`, `SEC-02`.
-
-### Работы
-
-1. Реализовать отдельный `ContentTranslationService`; оригинал никогда не заменяется переводом.
-2. Translation identity: `contentType + contentId + revisionId + targetLocale`; новая revision не использует старый перевод как current.
-3. Реализовать language detection boundary; `und` не подменяется UI locale. Manual source-locale correction создаёт новую revision.
-4. Переводить topic title отдельно от body.
-5. Разбирать Markdown в AST/structured representation; не переводить fenced/inline code, URLs, technical identifiers и markup structure.
-6. Использовать shared machine provider router/job infrastructure с content-specific policy, rate limits, validation и provenance.
-7. Реализовать revision-bound persistence/cache; при miss/failure показывать original current revision.
-8. Если target locale эквивалентен source locale, не создавать бессмысленную translation job.
-
-### Критерий завершения
-
-- Original content всегда доступен и не заменяется machine result.
-- Повторный запрос current revision/target использует сохранённый translation.
-- Old revision translation не выдаётся как current после edit/source-locale correction.
-- Technical fragments сохраняются без отправки provider.
-- Provider failure безопасно возвращает original content.
-- UI translation storage и content translation storage/lifecycle не смешаны.
-
-### Проверки
-
-- Unit tests AST protect/restore и source-locale logic.
-- Integration tests revision identity, persistence/cache и separate title translation.
-- Provider contract tests + preview smoke-test.
-- Rate-limit/dedup/authz tests.
-- `lint`, `typecheck`, `test`, `build`.
-
-## Этап 11. Подготовить первый production-релиз
-
-### Работы
-
-1. Зафиксировать production-конфигурацию Workers, PostgreSQL, OAuth, Queues и translation providers без секретов в Git.
-2. Проверить миграции и безопасный deploy порядок.
-3. Добавить минимальную диагностику ошибок/translation task failures.
-4. Настроить и проверить backup/restore PostgreSQL.
-5. Проверить Markdown/XSS, auth routes/cookies, CSRF/origin protections, rate limiting/anti-spam, secrets, permissions и translation generation abuse boundaries.
-6. Провести accessibility, LTR/RTL, locale/formatting, translation fallback и original-content smoke tests.
-7. Выполнить preview, затем production deploy без merge со стороны Codex.
-8. Обновить `PROJECT_STATE.md` фактическими результатами.
-
-### Критерий завершения
-
-- Production deploy воспроизводим из зафиксированной ревизии.
-- DB migrations, OAuth, LocaleRegistry, UI resources, Queue/provider jobs работают в production configuration.
-- Guest/user/solved-topic core flow работает.
-- Generic active locales, LTR/RTL, automatic UI translation и on-demand content translation проходят smoke-test.
-- Публичные write boundaries имеют проверенные authz, CSRF/origin и basic anti-abuse controls.
-- Backup restore проверен.
-- Release revision имеет зелёный обязательный CI.
-
-### Проверки
-
-- Полный `lint`, `typecheck`, `test`, `build`.
-- Preview/staging migrations и smoke tests.
-- OAuth/cookies/logout production-like smoke.
-- E2E core forum flow на LTR/RTL locale.
-- UI translation generation/fallback, content translation/original fallback, Queue failure path.
-- Security smoke/negative tests для write boundaries.
-- Backup/restore и post-deploy diagnostics.
+---
 
 ## Translation Component Traceability
 
-Эта таблица не дублирует detail contracts. Она гарантирует, что ни один component ID из
-`TRANSLATION_ARCHITECTURE.md` не потерян между архитектурой и реализацией.
-
-| Component IDs | Этап |
+| Component IDs | Реализация / текущая фаза |
 | --- | --- |
-| `LOC-01`, `LOC-03`, `LOC-04`, `LOC-05`, `LOC-06`, `LOC-07`, `LOC-08`, `LOC-10` | Stage 1 |
-| `LOC-02`, `LOC-09` | Stage 1 abstraction → Stage 2 persistence |
-| `UI-01`, `UI-02`, `UI-03`, `UI-04`, `UI-05`, `UI-08`, `UI-09`, `UI-10` | Stage 1 |
-| `UI-12` | Stage 1 local/input validation → Stage 5 provider validation |
-| `UI-06`, `UI-07` | Stage 3 |
-| `UI-14` | Stage 3 compiler/persistence primitives → Stage 5 publish/runtime consumption |
+| `LOC-01`, `LOC-03`, `LOC-04`, `LOC-05`, `LOC-06`, `LOC-07`, `LOC-08`, `LOC-10` | Stage 1 — реализовано |
+| `LOC-02` | Stage 1 abstraction → Stage 2 persistence — реализовано |
+| `LOC-09` | Stage 2 lifecycle boundary — реализовано; protected lifecycle UI/admin flow только при реальном use case |
+| `UI-01`, `UI-02`, `UI-03`, `UI-04`, `UI-05`, `UI-08`, `UI-09`, `UI-10` | Stage 1 — реализовано |
+| `UI-06`, `UI-07` | Stage 3 — реализовано |
 | `UI-11`, `UI-13` | Stage 5 |
-| `CNT-02`, `CNT-03`, `CNT-05` | Stage 6 boundaries → Stage 10 full implementation |
-| `CNT-01`, `CNT-04`, `CNT-06` | Stage 10 |
-| `PRV-01`, `PRV-02` | Stage 5; reused Stage 10 |
-| `JOB-01`, `JOB-02`, `JOB-03`, `JOB-04`, `JOB-05`, `JOB-06` | Stage 5; reused Stage 10 |
-| `STO-01`, `STO-04` | Stage 3 |
-| `STO-05` | Stage 3 identity/persistence/cache primitives → Stage 5 active publish/read/cache path |
-| `STO-02` | Stage 1 contract → Stage 3 persistence |
+| `UI-12` | Stage 1 local/input validation → Stage 5 provider validation |
+| `UI-14` | Stage 3 compiler/persistence primitives → Stage 5 active publish/runtime consumption |
+| `CNT-02`, `CNT-03`, `CNT-05` | Stage 4B forum revision/schema boundary → Stage 5 full implementation |
+| `CNT-01`, `CNT-04`, `CNT-06` | Stage 5 |
+| `PRV-01`, `PRV-02` | Stage 5 implementation → Stage 6 real provider acceptance |
+| `JOB-01`, `JOB-02`, `JOB-03`, `JOB-04`, `JOB-05`, `JOB-06` | Stage 5 implementation → Stage 6 real Queue acceptance |
+| `STO-01`, `STO-04` | Stage 3 — реализовано |
+| `STO-02` | Stage 1 contract → Stage 3 persistence — реализовано |
 | `STO-03`, `STO-06` | Stage 5 |
-| `STO-07` | Stage 2 |
-| `SEC-01`, `SEC-03` | Stage 1 (`SEC-03` extended Stage 5) |
-| `SEC-02`, `SEC-04` | Stage 5 (`SEC-02` reused Stage 10) |
+| `STO-05` | Stage 3 primitives → Stage 5 active publish/read/cache path |
+| `STO-07` | Stage 2 — реализовано |
+| `SEC-01` | Stage 1 — реализовано |
+| `SEC-03` | Stage 1 initial validation → Stage 5 provider/content extension |
+| `SEC-02`, `SEC-04` | Stage 5 implementation → Stage 6 external-secret/abuse acceptance |
 
 ## Первый production-релиз: обязательный объём
 
@@ -450,8 +367,8 @@ Stage 2 выполняется серией `2A → 2B → 2C`. Переход �
 - guest/user/moderator/admin в минимально необходимом объёме;
 - generic BCP-47 locale routing, SSR, LTR/RTL, canonical English + local/manual/machine UI translation;
 - revision-bound on-demand translation пользовательского контента с original fallback;
-- server-side validation/authz, применимая CSRF/origin protection и basic anti-spam/rate limiting для public write boundaries;
-- обязательный CI и production-safe persistence/background boundaries.
+- server-side validation/authz, применимая CSRF/origin protection и basic anti-spam/rate limiting;
+- воспроизводимые migrations, CI и production-safe external/runtime boundaries.
 
-Поиск, жалобы, блокировки, audit log и другие дополнительные возможности не входят в
-обязательный объём до отдельного продуктового решения.
+Поиск, жалобы, блокировки, reputation/audit log и другие дополнительные возможности не
+входят в обязательный объём без отдельного продуктового решения.

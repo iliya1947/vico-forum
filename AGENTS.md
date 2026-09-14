@@ -20,6 +20,12 @@
 
 9. Все изменения должны попадать в `main` только через Pull Request. PR создаёт и merge выполняет пользователь. Не выполняй merge самостоятельно.
 
-10. Если изменение впервые добавляет production schema, от которой будет зависеть runtime, разделяй rollout на migration-only PR и отдельный runtime PR. Runtime PR можно merge только после merge migration PR и успешных production migration + verification. Не объединяй первое появление production schema и runtime dependency на неё в одном PR.
+10. Во время обычной pre-release feature-разработки новые schema/runtime changes проверяются локально и в CI и не обязаны немедленно применяться к Neon/production-like environment. Если изменение **фактически выкатывается** во внешний pre-release/production runtime и впервые добавляет schema, от которой этот runtime будет зависеть, rollout разделяется: migration-only change → merge → успешная target-environment migration + verification → runtime rollout, который зависит от новой schema. Не переноси это external rollout требование на обычную local/CI разработку, если production deployment не выполняется.
 
-11. Если non-production/preview build использует production Hyperdrive, это допустимо только пока production capability остаётся read-only, а доступные через неё данные являются публичными. До появления любой runtime write-capability или непубличных production data preview/non-production path должен быть изолирован отдельным staging Worker/Hyperdrive/DB либо отключён.
+11. До первого forum-code PR active development `main` должен быть отделён от автоматического production promotion. Не выполняй production deploy, не меняй Cloudflare/Neon/Google resources и не запускай production migration workflow только потому, что feature PR добавляет schema или runtime code. Такие внешние действия выполняются только отдельной задачей/этапом с явным разрешением пользователя.
+
+12. Если non-production/preview build имеет доступ к production bindings, writes или private data, этот path должен быть изолирован либо отключён до использования соответствующей capability. Read-only public localization capability не должна автоматически расширяться для forum/auth/translation writes.
+
+13. Текущий продуктовый приоритет — Stage 4 forum core (`4B → 4C → 4D → 4E`). Не превращай forum feature-задачу в дополнительный Hyperdrive/Neon/OAuth/provider hardening, если этот hardening не нужен для выполнения и local/CI проверки самой задачи.
+
+14. Существующий localization/translation/database foundation сохраняй и переиспользуй. Не переписывай его ради нового forum code без конкретной технической необходимости.

@@ -2,22 +2,33 @@
 
 Классический веб-форум для обсуждения разработки с ChatGPT, Codex, Cursor, Claude и другими AI-инструментами.
 
-Проект находится на ранней стадии разработки.
+Проект находится на ранней стадии разработки. Технический foundation уже создан; текущий приоритет — построить рабочее ядро форума.
 
 ## Документация
 
-- [`PROJECT.md`](./PROJECT.md) — постоянный контекст и принятые основы проекта.
-- [`PROJECT_STATE.md`](./PROJECT_STATE.md) — текущее состояние разработки.
-- [`ROADMAP.md`](./ROADMAP.md) — последовательный план разработки до первого production-релиза.
-- [`SCAFFOLD_PLAN.md`](./SCAFFOLD_PLAN.md) — проверенные версии, команды и executable plan этапа 1.
-- [`TRANSLATION_ARCHITECTURE.md`](./TRANSLATION_ARCHITECTURE.md) — обязательный архитектурный контракт мультиязычности и переводов; detail documents находятся в [`docs/translation/`](./docs/translation/).
+- [`PROJECT.md`](./PROJECT.md) — постоянный продуктовый и технический baseline.
+- [`PROJECT_STATE.md`](./PROJECT_STATE.md) — текущее фактическое состояние и следующий шаг.
+- [`ROADMAP.md`](./ROADMAP.md) — последовательный путь до первого production-релиза.
+- [`SCAFFOLD_PLAN.md`](./SCAFFOLD_PLAN.md) — завершённый executable plan Stage 1 и зафиксированный toolchain.
+- [`TRANSLATION_ARCHITECTURE.md`](./TRANSLATION_ARCHITECTURE.md) — архитектурный контракт мультиязычности и переводов; detail documents находятся в [`docs/translation/`](./docs/translation/).
+- [`docs/database/`](./docs/database/) — migration/Hyperdrive contracts и operational runbooks.
 - [`AGENTS.md`](./AGENTS.md) — правила работы Codex с репозиторием.
 
 ## Разработка
 
-Stage 0, Stage 1, Stage 2 и Stage 3 завершены. Persistent `LocaleRegistry` и persistent UI translation sources работают в production через Neon, cache-disabled Cloudflare Hyperdrive, `pg` и Drizzle.
+Stage 0–3 завершены. Дополнительно уже создана migration-only Better Auth schema foundation (исторический Stage 4A), но Better Auth runtime и Google OAuth ещё не подключены.
 
-Pre-Stage-4 audit и обязательный hardening завершены: canonical locale persistence boundary, bounded DB deadlines, безопасная деградация malformed translation rows и production privilege verification закрыты; real Hyperdrive deadline acceptance пройден. Отдельный staging environment не является условием начала Stage 4 до первого релиза. Перед появлением auth writes или private data preview/non-production path должен быть изолирован от production bindings/secrets либо отключён. Следующий этап — Stage 4 (Better Auth + Google OAuth).
+Активное направление — **forum-first**:
+
+1. построить базовую модель `категория → раздел → тема → сообщения`;
+2. реализовать публичное SSR-чтение и классический forum UI;
+3. подключить auth/session и участие в обсуждениях в local/CI development path;
+4. добавить solved/best-answer и минимальные роли;
+5. только после рабочего forum core завершать automatic translations/background jobs и выполнять внешнюю pre-release интеграцию с Google OAuth, Neon/Hyperdrive runtime writes, Cloudflare Queues/providers и production rollout.
+
+Обычная разработка до pre-release проверяется локально и в CI. Merge feature-кода сам по себе не должен означать production rollout. Реальные external environment migrations/deploy/smoke являются отдельным pre-release/release процессом.
+
+Текущая production-like инфраструктура и ранее выполненные Hyperdrive acceptance остаются полезным foundation, но не являются gate для каждого нового forum feature PR.
 
 Требования:
 

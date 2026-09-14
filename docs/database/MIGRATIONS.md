@@ -1,199 +1,190 @@
 # Database migrations
 
-## Baseline
+## Назначение
 
-- PostgreSQL schema changes are committed as reviewed SQL in `drizzle/` and applied with
-  `pnpm db:migrate`. Production schema changes must not use `drizzle-kit push`.
-- Use a dedicated migration connection for schema changes. During the current pre-release candidate
-  only, the database-owner connection may be used to re-run an already-applied migration history for
-  verification/evidence when the repository-owned pre-release flag explicitly allows it. A preflight
-  verifier must prove the production ledger already matches the checked-in journal before `db:migrate`,
-  so this temporary owner mode cannot apply a pending schema migration. The production Worker never
-  receives either migration/admin credential.
-- Verify generated migration metadata with `pnpm db:check`, and prove the full migration
-  history against a clean disposable PostgreSQL 17 database with `pnpm db:test`.
-- The production workflow is forward-only. If an application release fails, roll the
-  application back while retaining compatible schema, then prepare and review a forward
-  repair migration.
-- Do not automate destructive down migrations. For destructive corruption or an ambiguous
-  migration outcome, stop deployment, inspect the migration ledger and database state, and
-  recover through a reviewed forward repair or a tested PostgreSQL backup restore.
+Этот документ разделяет два разных процесса:
 
-`DATABASE_URL` is an administrative input to Drizzle Kit and local integration tests. It
-must not be committed, logged, or exposed to the browser/Worker bundle.
+1. **development migration** — schema evolution для active local/CI разработки;
+2. **external rollout** — применение уже reviewed schema в pre-release/production-like
+   PostgreSQL перед runtime deployment, который от неё зависит.
+
+Обычная разработка не должна превращаться в production rollout только из-за появления
+новой таблицы или migration.
+
+## Development baseline
+
+- PostgreSQL schema changes коммитятся как reviewed forward SQL в `drizzle/` и применяются
+  через Drizzle migration history. Production schema changes не используют `drizzle-kit push`.
+- `pnpm db:check` проверяет migration metadata.
+- `pnpm db:test` воспроизводит полную migration history на disposable PostgreSQL 17 и может
+  выполняться только против локальной test DB, имя которой заканчивается на `_test`.
+- Pull-request CI защищает accepted migration history и проверяет current schema/tests.
+- Во время active pre-release feature-разработки новая migration может быть merged вместе с
+  runtime/domain code, если change не выкатывается автоматически во внешний runtime и local/CI
+  проверки доказывают согласованность schema + code.
+- Новая migration **не обязана немедленно применяться в Neon** только для того, чтобы
+  продолжать разработку следующего feature PR.
+
+`DATABASE_URL` является server/admin development input. Он не коммитится, не логируется и
+не попадает в browser/Worker bundle.
 
 ## Immutable accepted history
 
-Once a migration is accepted on `main`, its SQL file and corresponding Drizzle snapshot are
-immutable. Fixes are added as a new forward migration; do not edit, delete, or rename an
-already accepted migration to change production state.
+После попадания migration в `main` её SQL и соответствующий Drizzle snapshot считаются
+accepted history и не переписываются. Исправления делаются новой forward migration.
 
-Pull-request CI compares the candidate branch with its merge base and rejects:
+PR CI отклоняет:
 
-- modification, deletion, or rename of accepted `drizzle/*.sql` files;
-- modification, deletion, or rename of accepted `drizzle/meta/*_snapshot.json` files;
-- rewriting or deleting existing entries in `drizzle/meta/_journal.json`;
-- non-monotonic or duplicate appended journal entries;
-- a new migration SQL file without exactly one matching appended journal entry, or vice versa.
+- modification/deletion/rename accepted `drizzle/*.sql`;
+- modification/deletion/rename accepted `drizzle/meta/*_snapshot.json`;
+- rewrite/delete существующих entries в `drizzle/meta/_journal.json`;
+- non-monotonic/duplicate appended journal entries;
+- новый SQL без matching journal entry и наоборот.
 
-`drizzle-kit check` and the clean-database integration suite remain required as separate
-checks: the history guard protects accepted files, while Drizzle metadata validation and
-`db:test` prove the resulting current history.
+`drizzle-kit check` и clean-database integration suite остаются отдельными проверками:
+history guard защищает прошлое, а Drizzle/tests проверяют текущую итоговую schema.
 
-## Manual production run
+## External schema-dependent rollout
 
-Run the **Production database migration** GitHub Actions workflow manually from `main`. The
-workflow job has an explicit `refs/heads/main` guard and checks out the dispatched
-`github.sha`; dispatching the workflow against another branch or tag must not reach the
-migration steps.
+Только когда новая schema действительно должна стать доступной во внешнем
+pre-release/production runtime, действует schema-first ordering:
 
-Its `production-db` environment provides the production migration connection as the
-`NEON_MIGRATION_DATABASE_URL` environment secret and may require environment reviewer approval.
-During the current pre-release candidate this secret may temporarily use the direct database-owner
-connection only to verify/evidence an already-applied migration history. In that mode the workflow runs
-the full verifier before `db:migrate`; any pending checked-in migration therefore fails before a write
-can start. Remove the owner exception and restore a dedicated least-privilege migration connection
-before the next schema migration, and in all cases before the first release or real/private production
-data. The workflow serializes production migrations, validates the checked-in history, applies it with
-`drizzle-kit migrate`, and then performs a separate SELECT-only verification of stable production
-invariants:
+```text
+reviewed migration on main/release revision
+→ target-environment migration workflow
+→ target DB verification
+→ migration evidence
+→ runtime rollout that depends on the new schema
+```
 
-- PostgreSQL 17 and UTF-8;
-- the complete migration ledger matching the checked-in Drizzle journal;
-- exact columns/types/nullability for the localization tables and the Stage 4A Better Auth
-  tables (`user`, `session`, `account`, `verification`, and database-backed `rate_limit`);
-- absence of persistent bootstrap/reserved locale rows such as `en`, `api`, and `assets`;
-- absence of persistent canonical-English rows in UI translation storage/bundles;
-- the current connection role, application owner role and environment-provided runtime role,
-  including dangerous attributes and memberships where applicable;
-- application ownership, exact runtime `public` schema/table/sequence privileges, grants to
-  `PUBLIC`, default privileges, and any cross-domain runtime grants.
+Первое появление target-environment schema и runtime, который уже требует эту schema,
+нельзя выкатывать одним неразделимым external deployment step. Это rollout constraint, а
+не запрет разрабатывать schema и runtime совместно локально/в CI.
 
-The production verifier intentionally does not require exact mutable locale lifecycle values
-such as publication/translation status, aliases, native names, or presentation metadata.
-Those values can change legitimately without invalidating an unrelated future migration.
-Exact initial seed data remains covered by the clean disposable PostgreSQL integration test.
+Если application release после migration неудачен, rollback application code должен
+сохранять совместимость с уже применённой schema. Production recovery — forward repair или
+проверенный backup restore; автоматические destructive down migrations не являются baseline.
 
-This workflow does not deploy the application and does not run destructive SQL,
-`drizzle-kit push`, or the disposable-database `db:test` suite. A successful local or CI
-validation is not evidence that a production migration ran; the dispatched environment job
-must complete with the production credential.
+## Current production migration workflow state
 
-## Production privilege contract
+Workflow **Production database migration** запускается вручную через `workflow_dispatch`,
+ограничен `refs/heads/main`, serializes production DB migrations и проверяет exact checked-out
+`github.sha`.
 
-Runtime database privileges are part of the production contract and must be verifiable from
-the repository rather than existing only as manually remembered infrastructure state.
+После PR #49 текущий pre-release workflow временно допускает database-owner connection
+только для **owner verification/no-op evidence**. Перед `db:migrate` выполняется полный
+preflight verifier, который обязан доказать, что checked-in Drizzle journal уже полностью
+присутствует в target DB. Если есть хотя бы одна pending migration, workflow должен завершиться
+до migration write.
 
-Before Stage 4 auth/private data/runtime writes are accepted, production verification must
-also check the expected runtime roles and grants using the migration/admin connection. The
-verification boundary must cover at least:
+Следствие: текущий owner-mode **не предназначен для применения новой forum/auth/translation
+schema**.
 
-- runtime role attributes: no superuser/admin/bypass-style capability;
-- application schema `USAGE` and absence of schema `CREATE`;
-- no ownership of application schema/tables;
-- exact table privileges required by each runtime capability and no unrelated cross-domain grants;
-- sequence privileges when the selected schema actually requires them;
-- default privileges that could silently broaden future runtime access.
+Перед следующим настоящим external schema rollout нужно:
 
-Production role names are environment-specific inputs and must not be hard-coded into portable
-migration SQL. The verifier derives the current connection role from `current_user`, the database
-owner from PostgreSQL catalogs, and the application owner from the actual ownership of all required
-application tables. Those application tables must have exactly one owner. Normally the connection
-role must be that application owner. The current pre-release workflow may explicitly allow the
-connection role to be the database owner only after a preflight proves the checked-in migration journal
-is already fully applied. This exception does not change application ownership: the application owner
-must remain distinct from the database owner and runtime role and must still have `LOGIN` with no
-dangerous `SUPERUSER`/`CREATEDB`/`CREATEROLE`/`REPLICATION`/`BYPASSRLS` attributes. Remove the
-exception before the next schema migration, and in all cases before the first release or any real/private
-production data.
+1. убрать `PRE_RELEASE_ALLOW_DATABASE_OWNER_CONNECTION=true` owner exception;
+2. восстановить/проверить dedicated least-privilege migration connection;
+3. проверить актуальный migration role/ownership contract;
+4. только после этого применять pending migration через protected target-environment workflow.
 
-Set the production environment variable `RUNTIME_DATABASE_ROLE` to the existing localization runtime
-role. Its exact allowlist is `USAGE` on `public` plus `SELECT` on `locales`, `ui_translations`, and
-`ui_translation_bundles`; the existing `PUBLIC` schema `USAGE` remains allowed, while other `PUBLIC`
-privileges are rejected. Set `MIGRATION_DATABASE_ROLE_MEMBERSHIPS` to the comma-separated exact
-outbound membership allowlist for the application owner role (an empty value means no memberships);
-each allowed membership must retain `ADMIN FALSE`, `INHERIT TRUE`, and `SET TRUE`.
+Временный owner exception должен быть удалён в любом случае до первого release с
+реальными/private production data.
 
-PostgreSQL 17 automatically gives a `CREATEROLE` user `ADMIN OPTION` on roles it creates. The
-production verifier therefore allows the current database owner to be an inbound member of the
-runtime or application owner role only with `ADMIN TRUE`, `INHERIT FALSE`, and `SET FALSE`. Runtime
-and application owner roles must remain distinct from the database owner. This creator-admin grant is
-an administrative trust boundary rather than runtime privilege isolation: any other inbound member,
-or any inbound membership that enables `INHERIT` or `SET ROLE`, is rejected. The verifier also rejects
-column-level grants, grant options, and runtime ownership or grants on foreign tables. Effective
-application-owner defaults are reconstructed from PostgreSQL hard-wired global defaults plus
-`pg_default_acl` global and per-schema entries: the existing `PUBLIC EXECUTE` for functions and
-`PUBLIC USAGE` for types are allowed, while future table/sequence/schema access for runtime or
-`PUBLIC` is rejected. The current localization runtime role is read-only; Stage 4 must derive a
-separate least-privilege auth role/Hyperdrive from the exact selected Better Auth schema and real
-adapter operations rather than granting auth writes to the localization role.
+## Production verification contract
 
-The production verifier enforces this current privilege contract. Its targeted fixtures run in PR
-CI; production catalog verification still runs only in the protected production migration workflow.
+Target-environment verifier проверяет стабильные invariants, а не mutable product state.
+Текущий contract включает как минимум:
 
-Runtime-role timeout defaults are operational role configuration, not portable schema. Apply the
-reviewed `scripts/configure-localization-deadlines.sql` with environment-specific role/database
-names and follow the real Hyperdrive acceptance in `HYPERDRIVE.md`; do not add production role names
-to Drizzle migrations.
+- PostgreSQL 17 и UTF-8;
+- migration ledger против checked-in Drizzle journal;
+- expected schema shape для уже принятых localization/translation/Better Auth tables;
+- отсутствие persistent bootstrap/reserved locale rows (`en`, `api`, `assets`);
+- отсутствие persistent canonical-English UI translation rows;
+- current connection role, application owner и configured runtime role attributes/memberships;
+- application table ownership;
+- schema/table/sequence privileges, column ACL/grant options, `PUBLIC` grants и default ACL;
+- отсутствие неожиданных cross-domain runtime grants/ownership.
+
+Verifier намеренно не фиксирует mutable locale publication/translation state, aliases,
+native names или presentation metadata.
+
+При добавлении forum schema target-environment verifier расширяется только когда эта schema
+готовится к external rollout. Обычный Stage 4B development PR не обязан заранее добавлять
+production role grants или external catalog acceptance для ещё не выкатываемой schema.
+
+## Runtime privilege model
+
+Runtime capabilities разделяются по реальной ответственности и principle of least privilege.
+Не следует автоматически расширять существующий localization runtime role на forum/auth writes.
+
+Текущий localization role остаётся read-only для:
+
+```text
+public.locales
+public.ui_translations
+public.ui_translation_bundles
+```
+
+Forum/auth/translation write-capabilities проектируются по фактическим query patterns ближе к
+Stage 6 external integration. До этого их correctness проверяется на development/test DB без
+преждевременного provisioning production roles.
+
+Production role names остаются environment-specific и не hard-code-ятся в portable migrations.
+
+Runtime-role deadline defaults — operational role configuration, не portable schema. Existing
+localization defaults/acceptance описаны в `HYPERDRIVE.md`.
 
 ## Migration → runtime evidence
 
-Schema-first ordering is necessary but is not sufficient evidence by itself. A later runtime
-rollout that depends on a migration must be traceable to the exact production migration run
-that made the required schema safe.
+Evidence требуется для **external schema-dependent runtime rollout**, а не для каждого merged
+migration commit.
 
-The minimum evidence contract is:
+Минимальный evidence chain:
 
 ```text
-migration workflow run
+target migration workflow run
 → exact checked-out Git SHA
 → checked-in Drizzle journal identity/history
-→ successful production schema verification
-→ reference from the schema-dependent runtime rollout/PR
+→ successful target DB verification
+→ schema-dependent runtime rollout
 ```
 
-After successful production verification, the migration workflow writes a copyable evidence object
-to its step summary. For every schema-dependent runtime rollout, update
-`.github/runtime-migration-evidence.json` with the successful production workflow run ID, its exact
-`main` SHA, the emitted Drizzle journal SHA-256, and the newest migration tag required by that
-runtime. The migration SHA must be an ancestor of the runtime commit; do not use evidence from a
-branch-only migration or from a later, unrelated history to bypass schema-first review.
+После успешного target migration workflow repository-owned
+`.github/runtime-migration-evidence.json` фиксирует:
 
-Pull-request CI resolves the run through the GitHub Actions API and requires the production migration
-workflow, `workflow_dispatch`, `main`, the recorded SHA, and a completed successful conclusion. It
-also reads the journal at that exact Git commit, verifies its SHA-256, and proves that its immutable
-history covers the declared required migration. Consequently, a runtime PR cannot advance its schema
-requirement using only local/CI migration success or an unapplied migration commit. The evidence file
-is the repository-owned runtime schema-requirement declaration; a PR introducing a new runtime schema
-dependency must update it even when a newer successful migration run happens to cover that schema.
+- workflow run ID;
+- exact migration SHA;
+- SHA-256 Drizzle journal;
+- newest migration tag, от которой зависит внешний runtime rollout.
 
-## Stage 3A rollout
+PR CI проверяет workflow identity, `main`, successful completion, ancestry и journal coverage.
 
-Stage 3A introduced `public.ui_translations` and `public.ui_translation_bundles` as a
-migration-only change. The Worker did not depend on either table in the same PR. After the
-migration PR was merged:
+Это не означает, что evidence file должен обновляться при каждой development migration.
+Он обновляется тогда, когда external runtime действительно начинает зависеть от новой
+migration.
 
-1. the **Production database migration** workflow was run from `main` and production verification passed;
-2. the existing read-only runtime role received only the privileges needed by Stage 3 runtime,
-   currently `SELECT` on the two translation tables in addition to `public.locales`;
-3. the runtime role was manually checked to remain without `INSERT`, `UPDATE`, `DELETE`, ownership,
-   or migration privileges;
-4. only then was the separate runtime PR merged with `UiTranslationStore` and persistent
-   manual/machine sources.
+Текущий evidence относится к `0002_ui_translation_storage`, потому что deployed Worker
+пока не зависит от Better Auth schema `0003`.
 
-The production role name is environment-specific infrastructure and is intentionally not
-hard-coded into the portable migration SQL because disposable CI databases do not contain
-that production role.
+## Исторические rollout checkpoints
 
-## Stage 4A rollout
+### Stage 3A
 
-Stage 4A adds the Better Auth 1.7.4 default PostgreSQL/Drizzle core tables and the
-`rate_limit` table required by database-backed rate limiting. `user.locale` is nullable,
-server-owned Better Auth metadata (`input: false` in the future auth configuration) and has
-no foreign key to `locales`, because bootstrap `en` is intentionally code-owned.
+`ui_translations` и `ui_translation_bundles` впервые были добавлены migration-only, затем
+применены/проверены в production-like DB, после чего отдельный runtime rollout получил
+read-only persistent translation access. Этот rollout остаётся валидной историей уже
+развёрнутого localization foundation.
 
-This is migration-only foundation: the Worker has no Better Auth initialization, auth route,
-Google OAuth configuration, auth Hyperdrive binding, auth role, or auth grants. The existing
-localization runtime role remains limited to `SELECT` on `locales`, `ui_translations`, and
-`ui_translation_bundles`; it receives no access to auth tables. Apply and verify this migration
-in production after merge before a separate runtime/auth-capability PR records migration evidence.
+### Stage 4A
+
+Stage 4A добавил Better Auth `1.7.4` core tables и database-backed `rate_limit` как
+migration-only foundation. `user.locale` nullable и server-owned, без FK на `locales`, потому
+что bootstrap `en` code-owned.
+
+Stage 4A runtime dependency не добавлялась: Better Auth initialization, auth routes, Google
+OAuth, auth Hyperdrive/role/grants и Worker auth writes отсутствуют. Поэтому отсутствие
+runtime evidence для `0003` не блокирует Stage 4B forum development.
+
+Когда Better Auth runtime и forum writes будут готовиться к Stage 6 external integration,
+все pending migrations должны быть применены/verified и соответствующий evidence обновлён
+до external runtime rollout.
