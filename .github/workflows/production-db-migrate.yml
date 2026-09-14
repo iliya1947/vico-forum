@@ -30,6 +30,14 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Validate migration metadata
         run: pnpm db:check
+      - name: Verify pre-release owner-mode baseline
+        run: node .github/scripts/verify-production-migration.mjs
+        env:
+          DATABASE_URL: ${{ secrets.NEON_MIGRATION_DATABASE_URL }}
+          RUNTIME_DATABASE_ROLE: ${{ vars.RUNTIME_DATABASE_ROLE }}
+          MIGRATION_DATABASE_ROLE_MEMBERSHIPS: ${{ vars.MIGRATION_DATABASE_ROLE_MEMBERSHIPS }}
+          # While this exception exists, pending migrations must fail before db:migrate.
+          PRE_RELEASE_ALLOW_DATABASE_OWNER_CONNECTION: "true"
       - name: Apply migrations
         run: pnpm db:migrate
         env:
@@ -40,8 +48,8 @@ jobs:
           DATABASE_URL: ${{ secrets.NEON_MIGRATION_DATABASE_URL }}
           RUNTIME_DATABASE_ROLE: ${{ vars.RUNTIME_DATABASE_ROLE }}
           MIGRATION_DATABASE_ROLE_MEMBERSHIPS: ${{ vars.MIGRATION_DATABASE_ROLE_MEMBERSHIPS }}
-          # Temporary pre-release exception. Remove before the first release/private production data.
-          PRE_RELEASE_ALLOW_DATABASE_OWNER_MIGRATIONS: "true"
+          # Temporary pre-release verification exception. Remove before the next schema migration.
+          PRE_RELEASE_ALLOW_DATABASE_OWNER_CONNECTION: "true"
       - name: Emit runtime evidence
         run: |
           journal_sha256=$(sha256sum drizzle/meta/_journal.json | cut -d ' ' -f 1)
