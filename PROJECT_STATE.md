@@ -77,12 +77,19 @@ Forum write participation реализован локально/для CI:
   `forum_posts.author_id` и `forum_posts.created_at` дают cooldown history, поэтому migration
   для Stage 4D не добавлялась.
 
+Stage 4E начат локально/для CI: автор темы может отметить её решённой, а затем выбрать или
+заменить лучший ответ сообщением из этой же темы. Solved/best-answer состояние доступно
+публичному reader и отображается на странице темы со стабильной ссылкой на сообщение;
+mutation path использует Better Auth session, same-origin boundary и атомарные repository
+проверки автора, темы и сообщения. Forward migration `0005` добавляет только это состояние,
+без изменения immutable content revisions.
+
 Forum MVP ещё не завершён:
 
-- нет solved/best-answer flow;
 - Google sign-in/sign-out controls используют SSR session пользователя в общем forum header,
   локальный locale-aware callback и client-side синхронизацию после выхода;
-- нет минимальных forum roles.
+- minimum roles и moderator/admin authorization остаются отдельным Stage 4E2 slice;
+- Stage 4 целиком не завершён до Stage 4E2 и core E2E.
 
 То есть следующий продуктовый приоритет — не дальнейший infrastructure hardening, а сам форум.
 
@@ -154,9 +161,10 @@ rendering и transactional per-author write cooldown завершены лока
 
 ### 3. Stage 4E — solved/best answer + minimum roles
 
-Следующий продуктовый этап — завершить forum MVP через solved/best-answer flow и минимальные
-роли. Real Google OAuth и external deployment acceptance остаются границей Stage 6 и не
-являются условием внутренней разработки Stage 4E.
+Первый компактный slice solved/best-answer author flow реализован локально/для CI. Следующий
+slice Stage 4E2 должен добавить minimum roles и moderator/admin authorization, после чего
+нужен core E2E для завершения Stage 4. Real Google OAuth и external deployment acceptance
+остаются границей Stage 6 и не являются условием внутренней разработки Stage 4E.
 
 ### 4. Stage 5 — translations/background jobs
 

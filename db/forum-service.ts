@@ -68,6 +68,15 @@ export class ForumService {
   readTopic(id: string) { return this.repository.readTopic(id); }
   readPost(id: string) { return this.repository.readPost(id); }
   readHierarchy(categoryId: string) { return this.repository.readHierarchy(categoryId); }
+  markTopicSolved(topicId: string, actorId: string) {
+    validateEntity(topicId, actorId);
+    return this.repository.markTopicSolved(topicId, actorId);
+  }
+  selectBestAnswer(topicId: string, postId: string, actorId: string) {
+    validateEntity(topicId, actorId);
+    requireText(postId, "post id");
+    return this.repository.selectBestAnswer(topicId, postId, actorId);
+  }
 }
 
 function validateEntity(id: string, authorId: string) {

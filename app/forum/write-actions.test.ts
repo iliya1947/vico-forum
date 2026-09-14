@@ -7,6 +7,7 @@ import { forumWriterContext } from "./request-context";
 import { action as sectionAction } from "../routes/section";
 import { action as topicAction } from "../routes/topic";
 import { ForumWriteRateLimitError } from "../../db/forum-write-policy";
+import { ForumAuthorizationError, ForumEntityNotFoundError, ForumStateConflictError } from "../../db/forum-repository";
 
 const session = {
   user: { id: "session-user", name: "Ada", email: "ada@example.test", emailVerified: true, createdAt: new Date(), updatedAt: new Date() },
@@ -30,6 +31,8 @@ function writer() {
   return {
     createTopic: vi.fn(async () => ({ topicId: "server-topic" })),
     createReply: vi.fn(async () => ({ postId: "server-post" })),
+    markTopicSolved: vi.fn(async () => undefined),
+    selectBestAnswer: vi.fn(async () => undefined),
   } satisfies ForumWriter;
 }
 
@@ -86,5 +89,42 @@ describe("forum write route actions", () => {
     expect(response).toMatchObject({ data: { error: "rateLimited" }, init: { status: 429 } });
     expect(new Headers(response.init?.headers).get("Retry-After")).toBe("3");
     expect(JSON.stringify(response)).not.toContain("forum write cooldown is active");
+  });
+
+  it("uses only the session actor for same-origin solution mutations", async () => {
+    const forumWriter = writer();
+    await topicAction({
+      request: request("/en/topics/topic-1", { intent: "markSolved", actorId: "forged-author" }),
+      params: { locale: "en", topicId: "topic-1" }, context: context(forumWriter),
+    });
+    expect(forumWriter.markTopicSolved).toHaveBeenCalledWith({ topicId: "topic-1", actorId: "session-user" });
+
+    const selected = await topicAction({
+      request: request("/en/topics/topic-1", { intent: "selectBestAnswer", postId: "post-2", authorId: "forged-author" }),
+      params: { locale: "en", topicId: "topic-1" }, context: context(forumWriter),
+    });
+    expect(forumWriter.selectBestAnswer).toHaveBeenCalledWith({ topicId: "topic-1", postId: "post-2", actorId: "session-user" });
+    if (!(selected instanceof Response)) throw new Error("expected redirect");
+    expect(selected.headers.get("Location")).toBe("/en/topics/topic-1#post-post-2");
+  });
+
+  it("denies guest, cross-origin, and non-author solution mutations with controlled semantics", async () => {
+    const guest = writer();
+    const guestResponse = await topicAction({ request: request("/en/topics/t", { intent: "markSolved" }), params: { locale: "en", topicId: "t" }, context: context(guest, false) });
+    expect(guestResponse).toMatchObject({ init: { status: 401 } });
+    expect(guest.markTopicSolved).not.toHaveBeenCalled();
+
+    const crossOrigin = writer();
+    const originResponse = await topicAction({ request: request("/en/topics/t", { intent: "markSolved" }, "https://evil.example"), params: { locale: "en", topicId: "t" }, context: context(crossOrigin) });
+    expect(originResponse).toMatchObject({ init: { status: 403 } });
+    expect(crossOrigin.markTopicSolved).not.toHaveBeenCalled();
+
+    for (const [error, status] of [[new ForumAuthorizationError("domain authorization detail"), 403], [new ForumEntityNotFoundError("domain missing detail"), 404], [new ForumStateConflictError("domain conflict detail"), 409]] as const) {
+      const nonAuthor = writer();
+      nonAuthor.markTopicSolved.mockRejectedValueOnce(error);
+      const response = await topicAction({ request: request("/en/topics/t", { intent: "markSolved" }), params: { locale: "en", topicId: "t" }, context: context(nonAuthor) });
+      expect(response).toMatchObject({ init: { status } });
+      expect(JSON.stringify(response)).not.toContain(error.message);
+    }
   });
 });

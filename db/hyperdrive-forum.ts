@@ -8,6 +8,8 @@ import { forumWritePolicy, type ForumWritePolicy } from "./forum-write-policy";
 export interface ForumWriter {
   createTopic(input: { sectionId: string; authorId: string; title: string; body: string }): Promise<{ topicId: string }>;
   createReply(input: { topicId: string; authorId: string; body: string }): Promise<{ postId: string }>;
+  markTopicSolved(input: { topicId: string; actorId: string }): Promise<void>;
+  selectBestAnswer(input: { topicId: string; postId: string; actorId: string }): Promise<void>;
 }
 
 type ClientFactory = () => Client;
@@ -71,5 +73,7 @@ export function createHyperdriveForumWriter(
       });
       return { postId };
     }),
+    markTopicSolved: ({ topicId, actorId }) => write((forum) => forum.markTopicSolved(topicId, actorId)),
+    selectBestAnswer: ({ topicId, postId, actorId }) => write((forum) => forum.selectBestAnswer(topicId, postId, actorId)),
   };
 }

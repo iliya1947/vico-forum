@@ -13,7 +13,8 @@ export async function loader({ params, context }: {
 }) {
   const topic = await forumReaderForRequest(context).readTopicPage(params.topicId ?? "");
   if (!topic) throw new Response("Not Found", { status: 404 });
-  return { locale: params.locale ?? "en", topic, authenticated: authSessionForRequest(context) !== null };
+  const session = authSessionForRequest(context);
+  return { locale: params.locale ?? "en", topic, authenticated: session !== null, canManageSolution: session?.user.id === topic.authorId };
 }
 
 export async function action({ request, params, context }: {
@@ -26,6 +27,20 @@ export async function action({ request, params, context }: {
   if (denied) return denied;
   let formData: FormData;
   try { formData = await request.formData(); } catch { return mutationFailure("invalid", 400); }
+  const intent = requiredFormText(formData, "intent") ?? "reply";
+  if (intent === "markSolved") return runForumMutation(request, context, async (writer, actorId) => {
+    await writer.markTopicSolved({ topicId, actorId });
+    return redirect(forumTopicPath(locale, topicId));
+  });
+  if (intent === "selectBestAnswer") {
+    const postId = requiredFormText(formData, "postId");
+    if (!postId) return mutationFailure("invalid", 400);
+    return runForumMutation(request, context, async (writer, actorId) => {
+      await writer.selectBestAnswer({ topicId, postId, actorId });
+      return redirect(`${forumTopicPath(locale, topicId)}#post-${encodeURIComponent(postId)}`);
+    });
+  }
+  if (intent !== "reply") return mutationFailure("invalid", 400);
   const body = requiredFormText(formData, "body");
   if (!body) return mutationFailure("invalid", 400);
   return runForumMutation(request, context, async (writer, authorId) => {
@@ -35,7 +50,7 @@ export async function action({ request, params, context }: {
 }
 
 export default function TopicRoute() {
-  const { locale, topic, authenticated } = useLoaderData<typeof loader>();
+  const { locale, topic, authenticated, canManageSolution } = useLoaderData<typeof loader>();
   const actionData = useActionData<ForumMutationError>();
   const { t } = useTranslation("common");
   return (
@@ -45,13 +60,19 @@ export default function TopicRoute() {
         { label: topic.section.name, to: forumSectionPath(locale, topic.section.id) },
         { label: topic.title.originalContent },
       ]} />
-      <section className="page-heading"><p className="eyebrow">{t("topicLabel")}</p><h1>{topic.title.originalContent}</h1><p>{t("startedBy", { author: topic.authorName })}</p></section>
+      <section className="page-heading"><p className="eyebrow">{t("topicLabel")}</p><h1>{topic.title.originalContent}</h1><p>{t("startedBy", { author: topic.authorName })}</p>
+        {topic.isSolved && <strong className="solved-badge">{t("solved")}</strong>}
+        {topic.bestAnswerPostId && <p><a href={`#post-${encodeURIComponent(topic.bestAnswerPostId)}`}>{t("goToSolution")}</a></p>}
+        {canManageSolution && !topic.isSolved && <Form method="post"><input type="hidden" name="intent" value="markSolved" /><button type="submit">{t("markSolved")}</button></Form>}
+      </section>
       {topic.posts.length === 0 ? <EmptyState>{t("postsEmpty")}</EmptyState> : (
         <ol className="post-list">
           {topic.posts.map((post, index) => (
-            <li className="forum-post" key={post.id}>
+            <li id={`post-${post.id}`} className={`forum-post${topic.bestAnswerPostId === post.id ? " best-answer" : ""}`} key={post.id}>
               <header><strong>{post.authorName}</strong><span>{t("postNumber", { number: index + 1 })}</span></header>
+              {topic.bestAnswerPostId === post.id && <strong className="best-answer-label">{t("bestAnswer")}</strong>}
               <ForumMarkdown>{post.body.originalContent}</ForumMarkdown>
+              {canManageSolution && topic.isSolved && topic.bestAnswerPostId !== post.id && <Form method="post" className="solution-form"><input type="hidden" name="intent" value="selectBestAnswer" /><input type="hidden" name="postId" value={post.id} /><button type="submit">{t("selectBestAnswer")}</button></Form>}
             </li>
           ))}
         </ol>
