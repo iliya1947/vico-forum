@@ -19,10 +19,13 @@ Vico Forum находится в ранней разработке. Технич
 - production-like read-only localization DB capability, migration verification и Hyperdrive
   acceptance/hardening.
 
-Дополнительно создана migration-only Better Auth `1.7.4` schema foundation (`user`,
-`session`, `account`, `verification`, `rate_limit`, nullable server-owned `user.locale`).
-Better Auth runtime, auth routes, Google OAuth, auth Hyperdrive/role/grants и Worker auth
-write-capability ещё **не реализованы**.
+Stage 4D начат: существующая Better Auth `1.7.4` schema foundation (`user`, `session`,
+`account`, `verification`, `rate_limit`, nullable server-owned `user.locale`) подключена к
+server-only runtime через PostgreSQL Drizzle adapter. Worker создаёт request-scoped auth
+capability без module-global PostgreSQL connection, разрешает текущую session до React
+Router handler и предоставляет её loaders/actions через typed context. Better Auth resource
+route доступен под `/api/auth/*`; Google provider использует env placeholders, но real OAuth
+smoke и production credentials не выполнялись.
 
 ## Что реально работает в продукте
 
@@ -56,7 +59,7 @@ Forum write/auth UI ещё не реализованы:
 
 - нет создания темы или ответа;
 - нет solved/best-answer flow;
-- нет runtime auth/session integration.
+- нет sign-in/forum write UI (runtime auth/session foundation уже подключён).
 
 То есть следующий продуктовый приоритет — не дальнейший infrastructure hardening, а сам форум.
 
@@ -123,9 +126,12 @@ boundaries `CNT-02`, `CNT-03`, `CNT-05`, migration и PostgreSQL integration cov
 
 ### 3. Stage 4D–4E — участие и forum MVP
 
-Подключить Better Auth runtime/session boundary, создание тем/ответов, Markdown/validation,
-solved/best answer и минимальные роли. Реальный Google OAuth/external deployment acceptance
-не является условием внутренней разработки этих boundaries.
+Better Auth runtime/session boundary подключён как первая часть Stage 4D: PostgreSQL/Hyperdrive
+Drizzle adapter, database-backed rate limiting, Cloudflare client-IP boundary, auth resource
+route и `user.locale` priority для URL без locale. Следующие части — sign-in/forum write UI,
+создание тем/ответов, Markdown/validation, solved/best answer и минимальные роли. Реальный
+Google OAuth/external deployment acceptance не является условием внутренней разработки этих
+boundaries.
 
 ### 4. Stage 5 — translations/background jobs
 
