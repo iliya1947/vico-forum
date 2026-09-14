@@ -8,7 +8,7 @@ import {
   registryForRequest,
   uiTranslationStoreForRequest,
 } from "../localization/request-context";
-import { TranslationResourceLoader, type TranslationSnapshot } from "../localization/resource-loader";
+import { TranslationResourceLoader } from "../localization/resource-loader";
 import { resolveExplicitLocale } from "../localization/resolver";
 import { createTranslationRuntime } from "../localization/runtime";
 import {
@@ -16,6 +16,8 @@ import {
   DatabaseManualTranslationSource,
 } from "../localization/persistent-sources";
 import { CanonicalEnglishSource, LocalTranslationSource } from "../localization/sources";
+import { authSessionForRequest } from "../auth/request-context";
+import { HeaderAuthProvider } from "../auth/auth-controls";
 
 interface LocaleBoundaryArgs {
   request: Request;
@@ -71,15 +73,17 @@ export async function loader(args: LocaleBoundaryArgs) {
     new DatabaseMachineTranslationSource(store),
     canonicalEnglishSource,
   ]);
-  return resourceLoader.load(locale, ["common"]);
+  const snapshot = await resourceLoader.load(locale, ["common"]);
+  const session = authSessionForRequest(args.context);
+  return { ...snapshot, authUser: session ? { name: session.user.name } : null };
 }
 
 export default function LocaleBoundary() {
-  const snapshot = useLoaderData<TranslationSnapshot>();
+  const snapshot = useLoaderData<typeof loader>();
   const i18n = useMemo(() => createTranslationRuntime(snapshot), [snapshot]);
   return (
     <I18nextProvider i18n={i18n} defaultNS="common">
-      <Outlet />
+      <HeaderAuthProvider initialUser={snapshot.authUser}><Outlet /></HeaderAuthProvider>
     </I18nextProvider>
   );
 }
