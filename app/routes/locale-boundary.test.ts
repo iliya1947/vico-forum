@@ -4,6 +4,7 @@ import { localeContext, registryLoaderContext } from "../localization/request-co
 import { assemblePersistentRegistry } from "../localization/persistent-registry";
 import { localeRegistry } from "../localization/registry";
 import { middleware } from "./locale-boundary";
+import { authSessionContext } from "../auth/request-context";
 
 function contextWithFixtureRegistry() {
   const context = new RouterContextProvider();
@@ -36,6 +37,16 @@ describe("locale boundary middleware", () => {
   it("sets typed request context and reaches downstream handling for a canonical locale", async () => {
     const next = vi.fn(async () => new Response("handled"));
     const context = contextWithFixtureRegistry();
+    context.set(authSessionContext, {
+      user: {
+        id: "user-1", name: "Vico", email: "vico@example.test", emailVerified: true,
+        createdAt: new Date(), updatedAt: new Date(), locale: "ru",
+      },
+      session: {
+        id: "session-1", token: "token", userId: "user-1", expiresAt: new Date(Date.now() + 60_000),
+        createdAt: new Date(), updatedAt: new Date(),
+      },
+    });
 
     const response = await middleware[0](
       {

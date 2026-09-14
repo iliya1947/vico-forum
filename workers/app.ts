@@ -4,6 +4,8 @@ import { registryLoaderContext, uiTranslationStoreContext } from "../app/localiz
 import { createHyperdriveRegistryLoader } from "../db/hyperdrive-registry";
 import { createHyperdriveForumReader } from "../db/hyperdrive-forum";
 import { createHyperdriveUiTranslationStore } from "../db/hyperdrive-ui-translations";
+import { createHyperdriveAuthRuntime, type BetterAuthEnvironment } from "../app/auth/auth.server";
+import { initializeAuthContext, withAuthSessionCookies } from "../app/auth/session-context";
 
 const requestHandler = createRequestHandler(
   () => import("virtual:react-router/server-build"),
@@ -14,9 +16,12 @@ export default {
   async fetch(request, env) {
     const context = new RouterContextProvider();
     const connectionString = env.HYPERDRIVE.connectionString;
+    const auth = createHyperdriveAuthRuntime(connectionString, env as Env & BetterAuthEnvironment);
+    const authHeaders = await initializeAuthContext(context, request, auth);
     context.set(forumReaderContext, createHyperdriveForumReader(connectionString));
     context.set(registryLoaderContext, createHyperdriveRegistryLoader(connectionString));
     context.set(uiTranslationStoreContext, createHyperdriveUiTranslationStore(connectionString));
-    return requestHandler(request, context);
+    const response = await requestHandler(request, context);
+    return withAuthSessionCookies(response, authHeaders);
   },
 } satisfies ExportedHandler<Env>;
