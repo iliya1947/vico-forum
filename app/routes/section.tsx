@@ -1,5 +1,7 @@
-import { Link, useLoaderData, type RouterContextProvider } from "react-router";
+import { Form, Link, redirect, useActionData, useLoaderData, type RouterContextProvider } from "react-router";
 import { useTranslation } from "react-i18next";
+import { authSessionForRequest } from "../auth/request-context";
+import { forumMutationGuard, requiredFormText, runForumMutation, mutationFailure, type ForumMutationError } from "../forum/mutations.server";
 import { forumCategoryPath, forumTopicPath } from "../forum/paths";
 import { forumReaderForRequest } from "../forum/request-context";
 import { Breadcrumbs, EmptyState, ForumRouteError, ForumShell } from "../forum/ui";
@@ -10,11 +12,31 @@ export async function loader({ params, context }: {
 }) {
   const section = await forumReaderForRequest(context).readSection(params.sectionId ?? "");
   if (!section) throw new Response("Not Found", { status: 404 });
-  return { locale: params.locale ?? "en", section };
+  return { locale: params.locale ?? "en", section, authenticated: authSessionForRequest(context) !== null };
+}
+
+export async function action({ request, params, context }: {
+  request: Request; params: { locale?: string; sectionId?: string }; context: RouterContextProvider;
+}) {
+  const sectionId = typeof params.sectionId === "string" && params.sectionId.trim() ? params.sectionId : undefined;
+  const locale = typeof params.locale === "string" && params.locale.trim() ? params.locale : undefined;
+  if (!sectionId || !locale) return mutationFailure("invalid", 400);
+  const denied = forumMutationGuard(request, context);
+  if (denied) return denied;
+  let formData: FormData;
+  try { formData = await request.formData(); } catch { return mutationFailure("invalid", 400); }
+  const title = requiredFormText(formData, "title");
+  const body = requiredFormText(formData, "body");
+  if (!title || !body) return mutationFailure("invalid", 400);
+  return runForumMutation(request, context, async (writer, authorId) => {
+    const created = await writer.createTopic({ sectionId, authorId, title, body });
+    return redirect(forumTopicPath(locale, created.topicId));
+  });
 }
 
 export default function SectionRoute() {
-  const { locale, section } = useLoaderData<typeof loader>();
+  const { locale, section, authenticated } = useLoaderData<typeof loader>();
+  const actionData = useActionData<ForumMutationError>();
   const { t } = useTranslation("common");
   return (
     <ForumShell locale={locale}>
@@ -36,6 +58,13 @@ export default function SectionRoute() {
           ))}
         </div>
       )}
+      {authenticated && <Form method="post" className="forum-write-form">
+        <h2>{t("createTopicHeading")}</h2>
+        {actionData?.error && <p role="alert">{t(`forumWriteError_${actionData.error}`)}</p>}
+        <label>{t("topicTitleLabel")}<input name="title" required /></label>
+        <label>{t("initialPostLabel")}<textarea name="body" required rows={7} /></label>
+        <button type="submit">{t("createTopicSubmit")}</button>
+      </Form>}
     </ForumShell>
   );
 }

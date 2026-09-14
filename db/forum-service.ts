@@ -2,6 +2,7 @@ import { canonicalizeTranslationLocale } from "../app/localization/locale";
 import type {
   CreatePostInput,
   CreateTopicInput,
+  CreateTopicWithInitialPostInput,
   DrizzleForumRepository,
   ForumRevisionContent,
 } from "./forum-repository";
@@ -36,6 +37,20 @@ export class ForumService {
     requireText(input.topicId, "topic id");
     const bodyRevision = normalizeRevision(input.bodyRevision);
     return this.repository.createPost({ ...input, bodyRevision });
+  }
+
+  createTopicWithInitialPost(input: CreateTopicWithInitialPostInput) {
+    validateEntity(input.id, input.authorId);
+    requireText(input.sectionId, "section id");
+    validateEntity(input.initialPost.id, input.initialPost.authorId);
+    if (input.initialPost.topicId !== input.id || input.initialPost.authorId !== input.authorId) {
+      throw new InvalidForumContentError("initial post must belong to the new topic and author");
+    }
+    return this.repository.createTopicWithInitialPost({
+      ...input,
+      titleRevision: normalizeRevision(input.titleRevision),
+      initialPost: { ...input.initialPost, bodyRevision: normalizeRevision(input.initialPost.bodyRevision) },
+    });
   }
 
   reviseTopicTitle(topicId: string, expectedRevisionId: string, revision: ForumRevisionContent, authorId: string) {

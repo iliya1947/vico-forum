@@ -55,11 +55,20 @@ Stage 4C public forum read реализован локально/для CI:
 - LTR/RTL fixtures покрывают цепочку `category → section → topic → posts`;
 - schema и migration `0004` не менялись.
 
-Forum write/auth UI ещё не реализованы:
+Forum write participation реализован локально/для CI:
 
-- нет создания темы или ответа;
+- authenticated пользователь может создать тему с первым сообщением и ответить в теме;
+- route actions используют request-scoped Hyperdrive/Drizzle write capability и только
+  `session.user.id`, проверяют input и same-origin browser mutations;
+- тема, title revision и первое post/body revision создаются одной транзакцией; новые
+  revisions фиксируют `sourceLocale: "und"`;
+- classic UI показывает write forms только при наличии session, а PostgreSQL integration
+  suite проверяет persistence и rollback через disposable DB;
+
+Forum write/auth UI ещё не завершены:
+
 - нет solved/best-answer flow;
-- нет sign-in/forum write UI (runtime auth/session foundation уже подключён).
+- нет sign-in UX, Markdown editor/rendering и отдельного write anti-spam/rate limiting.
 
 То есть следующий продуктовый приоритет — не дальнейший infrastructure hardening, а сам форум.
 
@@ -126,10 +135,10 @@ boundaries `CNT-02`, `CNT-03`, `CNT-05`, migration и PostgreSQL integration cov
 
 ### 3. Stage 4D–4E — участие и forum MVP
 
-Better Auth runtime/session boundary подключён как первая часть Stage 4D: PostgreSQL/Hyperdrive
-Drizzle adapter, database-backed rate limiting, Cloudflare client-IP boundary, auth resource
-route и `user.locale` priority для URL без locale. Следующие части — sign-in/forum write UI,
-создание тем/ответов, Markdown/validation, solved/best answer и минимальные роли. Реальный
+Better Auth runtime/session boundary и authenticated создание тем/ответов подключены как части Stage 4D: PostgreSQL/Hyperdrive
+Drizzle adapter, database-backed auth rate limiting, Cloudflare client-IP boundary, auth resource
+route и `user.locale` priority для URL без locale. Следующие части — sign-in UX,
+Markdown, write anti-spam/rate limiting, solved/best answer и минимальные роли. Реальный
 Google OAuth/external deployment acceptance не является условием внутренней разработки этих
 boundaries.
 

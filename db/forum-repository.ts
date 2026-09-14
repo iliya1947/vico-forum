@@ -107,6 +107,10 @@ export interface CreatePostInput {
   bodyRevision: ForumRevisionContent;
 }
 
+export interface CreateTopicWithInitialPostInput extends CreateTopicInput {
+  initialPost: CreatePostInput;
+}
+
 export class ConcurrentRevisionError extends Error {}
 export class ForumEntityNotFoundError extends Error {}
 
@@ -140,8 +144,46 @@ export class DrizzleForumRepository {
     });
   }
 
+  async createTopicWithInitialPost(input: CreateTopicWithInitialPostInput): Promise<{ topic: ForumTopic; post: ForumPost }> {
+    return this.database.transaction(async (tx) => {
+      const [section] = await tx.select({ id: forumSections.id }).from(forumSections)
+        .where(eq(forumSections.id, input.sectionId));
+      if (!section) throw new ForumEntityNotFoundError("section does not exist");
+
+      await tx.insert(forumTopics).values({
+        id: input.id,
+        sectionId: input.sectionId,
+        authorId: input.authorId,
+        currentTitleRevisionId: input.titleRevision.id,
+      });
+      await tx.insert(forumTopicTitleRevisions).values({
+        ...input.titleRevision,
+        topicId: input.id,
+        authorId: input.authorId,
+      });
+      await tx.insert(forumPosts).values({
+        id: input.initialPost.id,
+        topicId: input.id,
+        authorId: input.authorId,
+        currentRevisionId: input.initialPost.bodyRevision.id,
+      });
+      await tx.insert(forumPostRevisions).values({
+        ...input.initialPost.bodyRevision,
+        postId: input.initialPost.id,
+        authorId: input.authorId,
+      });
+      return {
+        topic: { id: input.id, sectionId: input.sectionId, authorId: input.authorId, title: input.titleRevision },
+        post: { id: input.initialPost.id, topicId: input.id, authorId: input.authorId, body: input.initialPost.bodyRevision },
+      };
+    });
+  }
+
   async createPost(input: CreatePostInput): Promise<ForumPost> {
     return this.database.transaction(async (tx) => {
+      const [topic] = await tx.select({ id: forumTopics.id }).from(forumTopics)
+        .where(eq(forumTopics.id, input.topicId));
+      if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
       await tx.insert(forumPosts).values({
         id: input.id,
         topicId: input.topicId,
