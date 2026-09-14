@@ -141,26 +141,61 @@ describe("PostgreSQL 17 locale migrations", () => {
   });
 
   it("atomically enforces topic-author and topic/post solution consistency", async () => {
-    const repository = new DrizzleForumRepository(drizzle(client));
+    let now = Date.parse("2026-09-14T14:00:00.000Z");
+    const repository = new DrizzleForumRepository(drizzle(client), {
+      cooldownMs: FORUM_WRITE_COOLDOWN_MS,
+      now: () => new Date(now += FORUM_WRITE_COOLDOWN_MS),
+    });
     const forum = new ForumService(repository);
     await insertForumAuthor("solution-author", "solution@example.test", null);
     await insertForumAuthor("solution-other", "solution-other@example.test", null);
-    await forum.createTopic({ id: "solution-topic", sectionId: "typescript", authorId: "solution-author", titleRevision: { id: "solution-title", originalContent: "Solution", sourceLocale: "en" } });
-    await forum.createPost({ id: "solution-post-1", topicId: "solution-topic", authorId: "solution-other", bodyRevision: { id: "solution-body-1", originalContent: "One", sourceLocale: "en" } });
-    await forum.createPost({ id: "solution-post-2", topicId: "solution-topic", authorId: "solution-other", bodyRevision: { id: "solution-body-2", originalContent: "Two", sourceLocale: "en" } });
 
-    await expect(forum.selectBestAnswer("solution-topic", "solution-post-1", "solution-author")).rejects.toBeInstanceOf(ForumStateConflictError);
-    await expect(forum.markTopicSolved("solution-topic", "solution-other")).rejects.toBeInstanceOf(ForumAuthorizationError);
-    await forum.markTopicSolved("solution-topic", "solution-author");
-    await expect(forum.selectBestAnswer("solution-topic", "missing", "solution-author")).rejects.toBeInstanceOf(ForumEntityNotFoundError);
-    await expect(forum.selectBestAnswer("solution-topic", "post-1", "solution-author")).rejects.toBeInstanceOf(ForumStateConflictError);
-    await forum.selectBestAnswer("solution-topic", "solution-post-1", "solution-author");
-    expect(await repository.readTopicPage("solution-topic")).toMatchObject({ isSolved: true, bestAnswerPostId: "solution-post-1" });
-    await forum.selectBestAnswer("solution-topic", "solution-post-2", "solution-author");
-    expect(await repository.readTopicPage("solution-topic")).toMatchObject({ isSolved: true, bestAnswerPostId: "solution-post-2" });
+    try {
+      const constraint = await client.query<{
+        confdeltype: string;
+        condeferrable: boolean;
+        condeferred: boolean;
+      }>(`select confdeltype, condeferrable, condeferred
+            from pg_constraint
+           where conname = 'forum_topics_best_answer_topic_post_fk'`);
+      expect(constraint.rows[0]).toEqual({ confdeltype: "a", condeferrable: true, condeferred: true });
 
-    await client.query("delete from forum_topics where id = 'solution-topic'");
-    await client.query('delete from "user" where id = any($1::text[])', [["solution-author", "solution-other"]]);
+      await forum.createTopic({ id: "solution-topic", sectionId: "typescript", authorId: "solution-author", titleRevision: { id: "solution-title", originalContent: "Solution", sourceLocale: "en" } });
+      await forum.createPost({ id: "solution-post-1", topicId: "solution-topic", authorId: "solution-other", bodyRevision: { id: "solution-body-1", originalContent: "One", sourceLocale: "en" } });
+      await forum.createPost({ id: "solution-post-2", topicId: "solution-topic", authorId: "solution-other", bodyRevision: { id: "solution-body-2", originalContent: "Two", sourceLocale: "en" } });
+
+      await expect(forum.selectBestAnswer("solution-topic", "solution-post-1", "solution-author")).rejects.toBeInstanceOf(ForumStateConflictError);
+      await expect(forum.markTopicSolved("solution-topic", "solution-other")).rejects.toBeInstanceOf(ForumAuthorizationError);
+      await forum.markTopicSolved("solution-topic", "solution-author");
+      await expect(forum.selectBestAnswer("solution-topic", "missing", "solution-author")).rejects.toBeInstanceOf(ForumEntityNotFoundError);
+      await expect(forum.selectBestAnswer("solution-topic", "post-1", "solution-author")).rejects.toBeInstanceOf(ForumStateConflictError);
+
+      await client.query("begin");
+      try {
+        await client.query("set constraints all deferred");
+        await client.query("update forum_topics set best_answer_post_id = 'post-1' where id = 'solution-topic'");
+        await expectDatabaseCode(client.query("commit"), "23503");
+      } finally {
+        await client.query("rollback");
+      }
+
+      await forum.selectBestAnswer("solution-topic", "solution-post-1", "solution-author");
+      expect(await repository.readTopicPage("solution-topic")).toMatchObject({ isSolved: true, bestAnswerPostId: "solution-post-1" });
+      await forum.selectBestAnswer("solution-topic", "solution-post-2", "solution-author");
+      expect(await repository.readTopicPage("solution-topic")).toMatchObject({ isSolved: true, bestAnswerPostId: "solution-post-2" });
+
+      await client.query("delete from forum_topics where id = 'solution-topic'");
+      const deletedGraph = await client.query<{ topics: number; posts: number; titles: number; bodies: number }>(`
+        select
+          (select count(*)::int from forum_topics where id = 'solution-topic') as topics,
+          (select count(*)::int from forum_posts where topic_id = 'solution-topic') as posts,
+          (select count(*)::int from forum_topic_title_revisions where topic_id = 'solution-topic') as titles,
+          (select count(*)::int from forum_post_revisions where post_id in ('solution-post-1', 'solution-post-2')) as bodies`);
+      expect(deletedGraph.rows[0]).toEqual({ topics: 0, posts: 0, titles: 0, bodies: 0 });
+    } finally {
+      await client.query("delete from forum_topics where id = 'solution-topic'");
+      await client.query('delete from "user" where id = any($1::text[])', [["solution-author", "solution-other"]]);
+    }
   });
 
   it("enforces one shared deterministic topic/reply cooldown per author without partial writes", async () => {
