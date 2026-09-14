@@ -288,7 +288,6 @@ export const forumTopics = pgTable(
   (table) => [
     index("forum_topics_section_id_idx").on(table.sectionId),
     index("forum_topics_author_id_idx").on(table.authorId),
-    unique("forum_topics_id_current_title_revision_unique").on(table.id, table.currentTitleRevisionId),
   ],
 );
 
@@ -311,7 +310,6 @@ export const forumTopicTitleRevisions = pgTable(
       columns: [table.topicId],
       foreignColumns: [forumTopics.id],
     }).onDelete("cascade"),
-    index("forum_topic_title_revisions_topic_id_idx").on(table.topicId),
     check("forum_topic_title_revisions_content_check", sql`btrim(${table.originalContent}) <> ''`),
     check("forum_topic_title_revisions_source_locale_check", sourceLocaleCheck(table.sourceLocale)),
   ],
@@ -334,7 +332,6 @@ export const forumPosts = pgTable(
   (table) => [
     index("forum_posts_topic_id_idx").on(table.topicId),
     index("forum_posts_author_id_idx").on(table.authorId),
-    unique("forum_posts_id_current_revision_unique").on(table.id, table.currentRevisionId),
   ],
 );
 
@@ -357,7 +354,6 @@ export const forumPostRevisions = pgTable(
       columns: [table.postId],
       foreignColumns: [forumPosts.id],
     }).onDelete("cascade"),
-    index("forum_post_revisions_post_id_idx").on(table.postId),
     check("forum_post_revisions_content_check", sql`btrim(${table.originalContent}) <> ''`),
     check("forum_post_revisions_source_locale_check", sourceLocaleCheck(table.sourceLocale)),
   ],

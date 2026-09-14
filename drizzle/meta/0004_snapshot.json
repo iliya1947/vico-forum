@@ -205,23 +205,7 @@
           "default": "now()"
         }
       },
-      "indexes": {
-        "forum_post_revisions_post_id_idx": {
-          "name": "forum_post_revisions_post_id_idx",
-          "columns": [
-            {
-              "expression": "post_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
+      "indexes": {},
       "foreignKeys": {
         "forum_post_revisions_author_id_user_id_fk": {
           "name": "forum_post_revisions_author_id_user_id_fk",
@@ -371,16 +355,7 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "forum_posts_id_current_revision_unique": {
-          "name": "forum_posts_id_current_revision_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "id",
-            "current_revision_id"
-          ]
-        }
-      },
+      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -500,23 +475,7 @@
           "default": "now()"
         }
       },
-      "indexes": {
-        "forum_topic_title_revisions_topic_id_idx": {
-          "name": "forum_topic_title_revisions_topic_id_idx",
-          "columns": [
-            {
-              "expression": "topic_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
+      "indexes": {},
       "foreignKeys": {
         "forum_topic_title_revisions_author_id_user_id_fk": {
           "name": "forum_topic_title_revisions_author_id_user_id_fk",
@@ -666,16 +625,7 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "forum_topics_id_current_title_revision_unique": {
-          "name": "forum_topics_id_current_title_revision_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "id",
-            "current_title_revision_id"
-          ]
-        }
-      },
+      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
