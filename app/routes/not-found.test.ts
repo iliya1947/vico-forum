@@ -7,6 +7,9 @@ describe("localized route shape", () => {
     const localeRoute = routes.find((candidate) => candidate.path === ":locale");
     expect(localeRoute?.children).toEqual([
       expect.objectContaining({ index: true, file: "routes/home.tsx" }),
+      expect.objectContaining({ path: "categories/:categoryId", file: "routes/category.tsx" }),
+      expect.objectContaining({ path: "sections/:sectionId", file: "routes/section.tsx" }),
+      expect.objectContaining({ path: "topics/:topicId", file: "routes/topic.tsx" }),
       expect.objectContaining({ path: "*", file: "routes/not-found.ts" }),
     ]);
   });

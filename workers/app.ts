@@ -1,6 +1,8 @@
 import { RouterContextProvider, createRequestHandler } from "react-router";
+import { forumReaderContext } from "../app/forum/request-context";
 import { registryLoaderContext, uiTranslationStoreContext } from "../app/localization/request-context";
 import { createHyperdriveRegistryLoader } from "../db/hyperdrive-registry";
+import { createHyperdriveForumReader } from "../db/hyperdrive-forum";
 import { createHyperdriveUiTranslationStore } from "../db/hyperdrive-ui-translations";
 
 const requestHandler = createRequestHandler(
@@ -12,6 +14,7 @@ export default {
   async fetch(request, env) {
     const context = new RouterContextProvider();
     const connectionString = env.HYPERDRIVE.connectionString;
+    context.set(forumReaderContext, createHyperdriveForumReader(connectionString));
     context.set(registryLoaderContext, createHyperdriveRegistryLoader(connectionString));
     context.set(uiTranslationStoreContext, createHyperdriveUiTranslationStore(connectionString));
     return requestHandler(request, context);

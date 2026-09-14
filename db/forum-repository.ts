@@ -7,7 +7,61 @@ import {
   forumSections,
   forumTopicTitleRevisions,
   forumTopics,
+  user,
 } from "./schema";
+
+export interface ForumCategorySummary {
+  id: string;
+  name: string;
+  sectionCount: number;
+}
+
+export interface ForumSectionSummary {
+  id: string;
+  name: string;
+  topicCount: number;
+  postCount: number;
+}
+
+export interface ForumCategoryPage {
+  id: string;
+  name: string;
+  sections: ForumSectionSummary[];
+}
+
+export interface ForumTopicSummary {
+  id: string;
+  title: ForumRevisionContent;
+  authorName: string;
+  postCount: number;
+  createdAt: Date;
+}
+
+export interface ForumSectionPage {
+  id: string;
+  name: string;
+  category: { id: string; name: string };
+  topics: ForumTopicSummary[];
+}
+
+export interface ForumThreadPost extends ForumPost {
+  authorName: string;
+  createdAt: Date;
+}
+
+export interface ForumTopicPage extends ForumTopic {
+  createdAt: Date;
+  authorName: string;
+  section: { id: string; name: string; category: { id: string; name: string } };
+  posts: ForumThreadPost[];
+}
+
+export interface ForumReader {
+  listCategories(): Promise<ForumCategorySummary[]>;
+  readCategory(id: string): Promise<ForumCategoryPage | undefined>;
+  readSection(id: string): Promise<ForumSectionPage | undefined>;
+  readTopicPage(id: string): Promise<ForumTopicPage | undefined>;
+}
 
 export interface ForumRevisionContent {
   id: string;
@@ -101,6 +155,134 @@ export class DrizzleForumRepository {
       });
       return { id: input.id, topicId: input.topicId, authorId: input.authorId, body: input.bodyRevision };
     });
+  }
+
+  async listCategories(): Promise<ForumCategorySummary[]> {
+    return this.database
+      .select({
+        id: forumCategories.id,
+        name: forumCategories.name,
+        sectionCount: sql<number>`count(distinct ${forumSections.id})::int`,
+      })
+      .from(forumCategories)
+      .leftJoin(forumSections, eq(forumSections.categoryId, forumCategories.id))
+      .groupBy(forumCategories.id, forumCategories.name, forumCategories.createdAt)
+      .orderBy(asc(forumCategories.createdAt), asc(forumCategories.id));
+  }
+
+  async readCategory(id: string): Promise<ForumCategoryPage | undefined> {
+    const rows = await this.database
+      .select({
+        categoryId: forumCategories.id,
+        categoryName: forumCategories.name,
+        sectionId: forumSections.id,
+        sectionName: forumSections.name,
+        sectionCreatedAt: forumSections.createdAt,
+        topicCount: sql<number>`count(distinct ${forumTopics.id})::int`,
+        postCount: sql<number>`count(distinct ${forumPosts.id})::int`,
+      })
+      .from(forumCategories)
+      .leftJoin(forumSections, eq(forumSections.categoryId, forumCategories.id))
+      .leftJoin(forumTopics, eq(forumTopics.sectionId, forumSections.id))
+      .leftJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
+      .where(eq(forumCategories.id, id))
+      .groupBy(forumCategories.id, forumCategories.name, forumSections.id, forumSections.name, forumSections.createdAt)
+      .orderBy(asc(forumSections.createdAt), asc(forumSections.id));
+    const first = rows[0];
+    if (!first) return undefined;
+    return {
+      id: first.categoryId,
+      name: first.categoryName,
+      sections: rows.flatMap((row) => row.sectionId && row.sectionName
+        ? [{ id: row.sectionId, name: row.sectionName, topicCount: row.topicCount, postCount: row.postCount }]
+        : []),
+    };
+  }
+
+  async readSection(id: string): Promise<ForumSectionPage | undefined> {
+    const [section] = await this.database
+      .select({ id: forumSections.id, name: forumSections.name, categoryId: forumCategories.id, categoryName: forumCategories.name })
+      .from(forumSections)
+      .innerJoin(forumCategories, eq(forumCategories.id, forumSections.categoryId))
+      .where(eq(forumSections.id, id));
+    if (!section) return undefined;
+    const topics = await this.database
+      .select({
+        id: forumTopics.id,
+        revisionId: forumTopicTitleRevisions.id,
+        originalContent: forumTopicTitleRevisions.originalContent,
+        sourceLocale: forumTopicTitleRevisions.sourceLocale,
+        authorName: user.name,
+        postCount: sql<number>`count(distinct ${forumPosts.id})::int`,
+        createdAt: forumTopics.createdAt,
+      })
+      .from(forumTopics)
+      .innerJoin(forumTopicTitleRevisions, and(
+        eq(forumTopicTitleRevisions.topicId, forumTopics.id),
+        eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId),
+      ))
+      .innerJoin(user, eq(user.id, forumTopics.authorId))
+      .leftJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
+      .where(eq(forumTopics.sectionId, id))
+      .groupBy(forumTopics.id, forumTopicTitleRevisions.id, user.name)
+      .orderBy(asc(forumTopics.createdAt), asc(forumTopics.id));
+    return {
+      id: section.id,
+      name: section.name,
+      category: { id: section.categoryId, name: section.categoryName },
+      topics: topics.map((topic) => ({
+        id: topic.id,
+        title: { id: topic.revisionId, originalContent: topic.originalContent, sourceLocale: topic.sourceLocale },
+        authorName: topic.authorName,
+        postCount: topic.postCount,
+        createdAt: topic.createdAt,
+      })),
+    };
+  }
+
+  async readTopicPage(id: string): Promise<ForumTopicPage | undefined> {
+    const [topic] = await this.database
+      .select({
+        id: forumTopics.id, sectionId: forumSections.id, sectionName: forumSections.name,
+        categoryId: forumCategories.id, categoryName: forumCategories.name, authorId: forumTopics.authorId,
+        authorName: user.name, createdAt: forumTopics.createdAt, revisionId: forumTopicTitleRevisions.id,
+        originalContent: forumTopicTitleRevisions.originalContent, sourceLocale: forumTopicTitleRevisions.sourceLocale,
+      })
+      .from(forumTopics)
+      .innerJoin(forumSections, eq(forumSections.id, forumTopics.sectionId))
+      .innerJoin(forumCategories, eq(forumCategories.id, forumSections.categoryId))
+      .innerJoin(user, eq(user.id, forumTopics.authorId))
+      .innerJoin(forumTopicTitleRevisions, and(
+        eq(forumTopicTitleRevisions.topicId, forumTopics.id),
+        eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId),
+      ))
+      .where(eq(forumTopics.id, id));
+    if (!topic) return undefined;
+    const posts = await this.database
+      .select({
+        id: forumPosts.id, topicId: forumPosts.topicId, authorId: forumPosts.authorId,
+        authorName: user.name, createdAt: forumPosts.createdAt, revisionId: forumPostRevisions.id,
+        originalContent: forumPostRevisions.originalContent, sourceLocale: forumPostRevisions.sourceLocale,
+      })
+      .from(forumPosts)
+      .innerJoin(user, eq(user.id, forumPosts.authorId))
+      .innerJoin(forumPostRevisions, and(
+        eq(forumPostRevisions.postId, forumPosts.id),
+        eq(forumPostRevisions.id, forumPosts.currentRevisionId),
+      ))
+      .where(eq(forumPosts.topicId, id))
+      .orderBy(asc(forumPosts.createdAt), asc(forumPosts.id));
+    return {
+      id: topic.id, sectionId: topic.sectionId, authorId: topic.authorId, authorName: topic.authorName,
+      createdAt: topic.createdAt,
+      title: { id: topic.revisionId, originalContent: topic.originalContent, sourceLocale: topic.sourceLocale },
+      section: { id: topic.sectionId, name: topic.sectionName, category: { id: topic.categoryId, name: topic.categoryName } },
+      posts: posts.map((post) => ({
+        id: post.id, topicId: post.topicId, authorId: post.authorId, authorName: post.authorName,
+        createdAt: post.createdAt,
+        body: { id: post.revisionId, originalContent: post.originalContent, sourceLocale: post.sourceLocale },
+      })),
+    };
   }
 
   async readTopic(id: string): Promise<ForumTopic | undefined> {

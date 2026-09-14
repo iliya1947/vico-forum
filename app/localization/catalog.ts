@@ -41,8 +41,48 @@ export const canonicalEnglishCatalog = {
       messageKind: "plain",
       protectedTerms: ["Stage 1"],
     },
+    forumTagline: message("forumTagline", "Questions, discussions, and practical answers", "Forum header tagline."),
+    forumIndex: message("forumIndex", "Forum index", "Link and eyebrow for the forum index."),
+    categoriesHeading: message("categoriesHeading", "Categories", "Heading above the public category list."),
+    categoriesIntro: message("categoriesIntro", "Browse the forum by category and section.", "Introduction to the forum index."),
+    categoriesEmpty: message("categoriesEmpty", "There are no categories yet.", "Empty category list message."),
+    sectionsEmpty: message("sectionsEmpty", "There are no sections in this category yet.", "Empty section list message."),
+    topicsEmpty: message("topicsEmpty", "There are no topics in this section yet.", "Empty topic list message."),
+    postsEmpty: message("postsEmpty", "There are no messages in this topic yet.", "Empty post list message."),
+    breadcrumbsLabel: message("breadcrumbsLabel", "Breadcrumbs", "Accessible label for forum breadcrumbs."),
+    categoryLabel: message("categoryLabel", "Category", "Category page type label."),
+    sectionLabel: message("sectionLabel", "Section", "Section page type label."),
+    topicLabel: message("topicLabel", "Topic", "Topic page type label."),
+    topicsHeading: message("topicsHeading", "Topics", "Accessible heading for the topic table."),
+    topicColumn: message("topicColumn", "Topic", "Topic table title column."),
+    postsColumn: message("postsColumn", "Messages", "Topic table message-count column."),
+    sectionCount: message("sectionCount", "{{count}} section(s)", "Number of sections in a category.", ["count"]),
+    topicAndPostCount: message("topicAndPostCount", "{{topics}} topic(s) · {{posts}} message(s)", "Topic and message totals for a section.", ["topics", "posts"]),
+    startedBy: message("startedBy", "Started by {{author}}", "Name of the topic author.", ["author"]),
+    postNumber: message("postNumber", "Message #{{number}}", "Sequential message number.", ["number"]),
+    forumNotFoundHeading: message("forumNotFoundHeading", "Forum page not found", "Forum not-found heading."),
+    forumNotFoundBody: message("forumNotFoundBody", "The category, section, or topic does not exist.", "Forum not-found explanation."),
+    forumErrorHeading: message("forumErrorHeading", "The forum could not be loaded", "Forum read error heading."),
+    forumErrorBody: message("forumErrorBody", "Please try again later.", "Forum read error explanation."),
   },
 } as const satisfies Record<string, Record<string, UiMessageDescriptor>>;
+
+function message<const Key extends string, const Source extends string>(
+  key: Key,
+  source: Source,
+  description: string,
+  placeholders: readonly string[] = [],
+) {
+  return {
+    namespace: "common",
+    key,
+    source,
+    description,
+    placeholders,
+    messageKind: placeholders.length === 0 ? "plain" : "interpolation",
+    protectedTerms: [],
+  } as const satisfies UiMessageDescriptor;
+}
 
 export type UiNamespace = keyof typeof canonicalEnglishCatalog;
 export type UiKey<N extends UiNamespace> = keyof (typeof canonicalEnglishCatalog)[N] & string;

@@ -26,8 +26,7 @@ write-capability ещё **не реализованы**.
 
 ## Что реально работает в продукте
 
-Сейчас приложение предоставляет только технический SSR/localization foundation и простую
-landing page.
+Приложение предоставляет SSR/localization foundation и первый публичный read-only forum UI.
 
 Stage 4B forum domain foundation реализован локально/для CI:
 
@@ -40,10 +39,21 @@ Stage 4B forum domain foundation реализован локально/для CI
 - PostgreSQL integration suite проверяет clean full history, hierarchy, FK/current/immutable
   invariants и отсутствие зависимости source locale от persistent `LocaleRegistry`.
 
-Forum runtime/UI ещё не реализованы:
+Stage 4C public forum read реализован локально/для CI:
 
-- нет forum routes/pages;
-- нет публичной навигации по категориям/разделам/темам;
+- locale-scoped SSR routes показывают индекс категорий, категорию с разделами, раздел со
+  списком тем и тему с последовательными сообщениями;
+- loaders получают request-scoped `ForumReader` через существующий `RouterContextProvider`,
+  а Worker создаёт PostgreSQL/Hyperdrive-backed reader;
+- repository предоставляет page-shaped bulk reads с aggregate counts и current revision/
+  author joins без per-row queries на публичном path;
+- classic forum UI сохраняет canonical locale во внутренних ссылках, работает внутри
+  существующего i18next boundary и имеет empty/not-found/error states;
+- LTR/RTL fixtures покрывают цепочку `category → section → topic → posts`;
+- schema и migration `0004` не менялись.
+
+Forum write/auth UI ещё не реализованы:
+
 - нет создания темы или ответа;
 - нет solved/best-answer flow;
 - нет runtime auth/session integration.
@@ -106,9 +116,10 @@ classification; точные результаты и ограничения на
 boundaries `CNT-02`, `CNT-03`, `CNT-05`, migration и PostgreSQL integration coverage —
 локально/в CI, без production migration или runtime rollout.
 
-### 2. Stage 4C — публичное чтение и классический UI
+### Выполнено: Stage 4C — публичное чтение и классический UI
 
-После forum schema реализовать реальные SSR страницы и навигацию гостя.
+Реализованы реальные SSR страницы и canonical locale navigation гостя по всей forum
+иерархии. Runtime остаётся read-only; schema `0004` достаточна для этого этапа.
 
 ### 3. Stage 4D–4E — участие и forum MVP
 

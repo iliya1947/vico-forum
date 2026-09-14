@@ -79,6 +79,22 @@ describe("PostgreSQL 17 locale migrations", () => {
       }],
     });
     expect(await repository.revisionCounts()).toEqual({ topicTitles: 1, postBodies: 1 });
+    expect(await repository.listCategories()).toEqual([
+      { id: "development", name: "Development", sectionCount: 1 },
+    ]);
+    expect(await repository.readCategory("development")).toMatchObject({
+      id: "development",
+      sections: [{ id: "typescript", topicCount: 1, postCount: 1 }],
+    });
+    expect(await repository.readSection("typescript")).toMatchObject({
+      category: { id: "development" },
+      topics: [{ id: "topic-1", authorName: "Forum Author", postCount: 1 }],
+    });
+    expect(await repository.readTopicPage("topic-1")).toMatchObject({
+      section: { id: "typescript", category: { id: "development" } },
+      posts: [{ id: "post-1", authorName: "Forum Author", body: { originalContent: "Нужен пример." } }],
+    });
+    expect(await repository.readCategory("missing")).toBeUndefined();
   });
 
   it("appends immutable revisions and atomically advances only the matching current revision", async () => {
