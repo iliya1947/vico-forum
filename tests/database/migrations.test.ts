@@ -100,31 +100,39 @@ describe("PostgreSQL 17 locale migrations", () => {
 
   it("persists browser write capability topics/replies with und revisions and rolls back an incomplete topic", async () => {
     const writer = createHyperdriveForumWriter(databaseUrl);
-    const created = await writer.createTopic({
-      sectionId: "typescript", authorId: "forum-author", title: "Runtime topic", body: "Initial runtime post",
-    });
-    await writer.createReply({ topicId: created.topicId, authorId: "forum-author", body: "Runtime reply" });
+    let createdTopicId: string | undefined;
+    try {
+      const created = await writer.createTopic({
+        sectionId: "typescript", authorId: "forum-author", title: "Runtime topic", body: "Initial runtime post",
+      });
+      createdTopicId = created.topicId;
+      await writer.createReply({ topicId: created.topicId, authorId: "forum-author", body: "Runtime reply" });
 
-    const persisted = await new DrizzleForumRepository(drizzle(client)).readTopicPage(created.topicId);
-    expect(persisted).toMatchObject({
-      authorId: "forum-author",
-      title: { originalContent: "Runtime topic", sourceLocale: "und" },
-      posts: [
-        { authorId: "forum-author", body: { originalContent: "Initial runtime post", sourceLocale: "und" } },
-        { authorId: "forum-author", body: { originalContent: "Runtime reply", sourceLocale: "und" } },
-      ],
-    });
+      const persisted = await new DrizzleForumRepository(drizzle(client)).readTopicPage(created.topicId);
+      expect(persisted).toMatchObject({
+        authorId: "forum-author",
+        title: { originalContent: "Runtime topic", sourceLocale: "und" },
+        posts: [
+          { authorId: "forum-author", body: { originalContent: "Initial runtime post", sourceLocale: "und" } },
+          { authorId: "forum-author", body: { originalContent: "Runtime reply", sourceLocale: "und" } },
+        ],
+      });
 
-    const repository = new DrizzleForumRepository(drizzle(client));
-    await expect(repository.createTopicWithInitialPost({
-      id: "atomic-rollback-topic", sectionId: "typescript", authorId: "forum-author",
-      titleRevision: { id: "atomic-duplicate", originalContent: "Must roll back", sourceLocale: "und" },
-      initialPost: {
-        id: "post-1", topicId: "atomic-rollback-topic", authorId: "forum-author",
-        bodyRevision: { id: "atomic-body", originalContent: "Duplicate post id", sourceLocale: "und" },
-      },
-    })).rejects.toBeDefined();
-    expect(await repository.readTopic("atomic-rollback-topic")).toBeUndefined();
+      const repository = new DrizzleForumRepository(drizzle(client));
+      await expect(repository.createTopicWithInitialPost({
+        id: "atomic-rollback-topic", sectionId: "typescript", authorId: "forum-author",
+        titleRevision: { id: "atomic-duplicate", originalContent: "Must roll back", sourceLocale: "und" },
+        initialPost: {
+          id: "post-1", topicId: "atomic-rollback-topic", authorId: "forum-author",
+          bodyRevision: { id: "atomic-body", originalContent: "Duplicate post id", sourceLocale: "und" },
+        },
+      })).rejects.toBeDefined();
+      expect(await repository.readTopic("atomic-rollback-topic")).toBeUndefined();
+    } finally {
+      if (createdTopicId) {
+        await client.query("delete from forum_topics where id = $1", [createdTopicId]);
+      }
+    }
   });
 
   it("appends immutable revisions and atomically advances only the matching current revision", async () => {
