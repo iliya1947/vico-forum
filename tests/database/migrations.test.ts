@@ -5,6 +5,8 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { loadPersistentRegistry } from "../../app/localization/persistent-registry";
 import { parseLocaleCandidate } from "../../app/localization/locale";
 import { AmbiguousCommitOutcomeError, ControlledLocaleWriter, DrizzleLocaleRepository } from "../../db/locale-repository";
+import { ConcurrentRevisionError, DrizzleForumRepository } from "../../db/forum-repository";
+import { ForumService, InvalidForumContentError } from "../../db/forum-service";
 
 const databaseUrl = process.env.DATABASE_URL;
 
@@ -45,7 +47,98 @@ describe("PostgreSQL 17 locale migrations", () => {
     const applied = await client.query<{ count: string }>(
       'select count(*)::text as count from drizzle."__drizzle_migrations"',
     );
-    expect(applied.rows[0]?.count).toBe("4");
+    expect(applied.rows[0]?.count).toBe("5");
+  });
+
+  it("creates and reads the category, section, topic, and post hierarchy with independent revisions", async () => {
+    await insertForumAuthor("forum-author", "forum-author@example.test", "ru");
+    const repository = new DrizzleForumRepository(drizzle(client));
+    const forum = new ForumService(repository);
+
+    await forum.createCategory({ id: "development", name: "Development" });
+    await forum.createSection({ id: "typescript", categoryId: "development", name: "TypeScript" });
+    await forum.createTopic({
+      id: "topic-1", sectionId: "typescript", authorId: "forum-author",
+      titleRevision: { id: "topic-title-r1", originalContent: "Как типизировать API?", sourceLocale: "ru" },
+    });
+    await forum.createPost({
+      id: "post-1", topicId: "topic-1", authorId: "forum-author",
+      bodyRevision: { id: "post-body-r1", originalContent: "Нужен пример.", sourceLocale: "und" },
+    });
+
+    expect(await forum.readHierarchy("development")).toMatchObject({
+      id: "development",
+      sections: [{
+        id: "typescript",
+        topics: [{
+          id: "topic-1",
+          authorId: "forum-author",
+          title: { id: "topic-title-r1", sourceLocale: "ru" },
+          posts: [{ id: "post-1", body: { id: "post-body-r1", sourceLocale: "und" } }],
+        }],
+      }],
+    });
+    expect(await repository.revisionCounts()).toEqual({ topicTitles: 1, postBodies: 1 });
+  });
+
+  it("appends immutable revisions and atomically advances only the matching current revision", async () => {
+    const repository = new DrizzleForumRepository(drizzle(client));
+    const forum = new ForumService(repository);
+
+    await forum.reviseTopicTitle(
+      "topic-1", "topic-title-r1",
+      { id: "topic-title-r2", originalContent: "Как типизировать HTTP API?", sourceLocale: "ru" },
+      "forum-author",
+    );
+    await forum.revisePostBody(
+      "post-1", "post-body-r1",
+      { id: "post-body-r2", originalContent: "Нужен минимальный пример.", sourceLocale: "ru" },
+      "forum-author",
+    );
+    expect((await forum.readTopic("topic-1"))?.title.id).toBe("topic-title-r2");
+    expect((await forum.readPost("post-1"))?.body.id).toBe("post-body-r2");
+    expect(await repository.revisionCounts()).toEqual({ topicTitles: 2, postBodies: 2 });
+
+    await expectDatabaseCode(
+      client.query("update forum_post_revisions set original_content = 'mutated' where id = 'post-body-r1'"),
+      "55000",
+    );
+    await expect(forum.revisePostBody(
+      "post-1", "post-body-r1",
+      { id: "post-body-lost-race", originalContent: "lost", sourceLocale: "en" },
+      "forum-author",
+    )).rejects.toBeInstanceOf(ConcurrentRevisionError);
+    expect(await repository.revisionCounts()).toEqual({ topicTitles: 2, postBodies: 2 });
+  });
+
+  it("enforces forum foreign keys, owner-matching current pointers, and registry-independent source locale", async () => {
+    await expectDatabaseCode(
+      client.query(`insert into forum_posts (id, topic_id, author_id, current_revision_id)
+                    values ('missing-author-post', 'topic-1', 'missing-user', 'missing-revision')`),
+      "23503",
+    );
+
+    await client.query("begin");
+    try {
+      await client.query("set constraints all deferred");
+      await client.query(`insert into forum_posts (id, topic_id, author_id, current_revision_id)
+                          values ('bad-current-post', 'topic-1', 'forum-author', 'post-body-r2')`);
+      await expectDatabaseCode(client.query("commit"), "23503");
+    } finally {
+      await client.query("rollback");
+    }
+
+    expect((await client.query(
+      `select count(*)::text as count from information_schema.table_constraints
+       where table_schema = 'public' and table_name in ('forum_post_revisions', 'forum_topic_title_revisions')
+         and constraint_type = 'FOREIGN KEY' and constraint_name like '%source_locale%'`,
+    )).rows[0]?.count).toBe("0");
+    expect((await client.query("select count(*)::text as count from locales where tag = 'und'")).rows[0]?.count).toBe("0");
+    expect((await new ForumService(new DrizzleForumRepository(drizzle(client))).readPost("post-1"))?.body.sourceLocale).toBe("ru");
+    expect(() => new ForumService(new DrizzleForumRepository(drizzle(client))).createPost({
+      id: "invalid-locale-post", topicId: "topic-1", authorId: "forum-author",
+      bodyRevision: { id: "invalid-locale-r1", originalContent: "body", sourceLocale: "not_a_locale" },
+    })).toThrow(InvalidForumContentError);
   });
 
   it("creates the exact Better Auth 1.7.4 PostgreSQL foundation", async () => {
@@ -354,6 +447,23 @@ async function expectDatabaseCheck(operation: Promise<unknown>) {
   } catch (error) {
     expect((error as DatabaseError).code).toBe("23514");
   }
+}
+
+async function expectDatabaseCode(operation: Promise<unknown>, code: string) {
+  try {
+    await operation;
+    throw new Error(`Expected PostgreSQL error ${code}`);
+  } catch (error) {
+    expect((error as DatabaseError).code).toBe(code);
+  }
+}
+
+async function insertForumAuthor(id: string, email: string, locale: string | null) {
+  await client.query(
+    `insert into "user" (id, name, email, email_verified, created_at, updated_at, locale)
+     values ($1, 'Forum Author', $2, true, now(), now(), $3)`,
+    [id, email, locale],
+  );
 }
 
 function authColumns(
