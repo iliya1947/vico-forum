@@ -9,6 +9,7 @@ Source of truth:
 
 - продуктовый и технический baseline — `PROJECT.md`;
 - текущее фактическое состояние — `PROJECT_STATE.md`;
+- application authorization — `docs/auth/AUTHORIZATION.md`;
 - мультиязычность и переводы — `TRANSLATION_ARCHITECTURE.md` и `docs/translation/*`;
 - database rollout/operations — `docs/database/*`;
 - завершённый Stage 1 scaffold plan — `SCAFFOLD_PLAN.md`.
@@ -122,7 +123,8 @@ Stage 4 — текущий продуктовый приоритет. Он вы�
 
 Критерий завершения всего Stage 4: в local/CI environment существует реально используемый
 forum MVP с публичным чтением, authenticated participation, solved/best-answer flow и
-минимальными ролями. External production rollout не является критерием завершения Stage 4.
+динамическим permission-based authorization согласно `docs/auth/AUTHORIZATION.md`. External
+production rollout не является критерием завершения Stage 4.
 
 ### Stage 4B — forum domain foundation
 
@@ -197,22 +199,35 @@ forum MVP с публичным чтением, authenticated participation, sol
 - Markdown/code output безопасен от XSS;
 - real Google OAuth deployment smoke ещё не требуется для завершения 4D.
 
-### Stage 4E — solved topic, best answer и минимальные роли
+### Stage 4E — solved topic, best answer и динамическая авторизация
 
 #### Работы
 
 1. Реализовать solved state и best answer.
 2. Проверять author/topic/post consistency на сервере.
-3. Реализовать только необходимое разграничение `guest/user/moderator/admin`.
-4. Покрыть state-changing solved/best-answer actions той же security boundary.
-5. Провести core E2E: guest read → authenticated topic → reply → solved/best answer.
-6. Не добавлять расширенную модерацию, репутацию, поиск, жалобы и т. п. без отдельного решения.
+3. Реализовать application authorization по контракту `docs/auth/AUTHORIZATION.md`: dynamic
+   DB-backed roles, built-in defaults `user/moderator/admin`, custom role creation/editing,
+   редактируемые role-permission grants и per-user `allow | deny | inherit` overrides.
+4. Все protected forum/admin actions разрешать через единый server-side PermissionResolver;
+   Better Auth session используется только как authoritative identity source, а изменения
+   permissions должны действовать на следующий request без logout/login.
+5. Добавить защищённый locale-aware authorization management UI и lockout protection для
+   recovery-critical access-management capability.
+6. Покрыть state-changing solved/best-answer и authorization-management actions существующей
+   security boundary.
+7. Провести core E2E: guest read → authenticated topic → reply → solved/best answer, а также
+   negative/effective-permission tests для role grants и user overrides.
+8. Не добавлять bans, impersonation, расширенную модерацию, репутацию, поиск, жалобы и т. п.
+   без отдельного решения.
 
 #### Критерий завершения Stage 4
 
 - local/CI forum MVP работает end-to-end;
 - public read, participation и solved flow реализованы;
-- базовые authz/security invariants покрыты negative tests;
+- roles и role permissions динамически управляются через сайт, custom roles создаются, а
+  конкретному пользователю permission можно как выдать, так и явно запретить;
+- effective authorization определяется актуальным server-side DB state через единый resolver;
+- базовые authz/security invariants и lockout protection покрыты negative tests;
 - translation foundation не сломан;
 - external production infrastructure всё ещё может оставаться выключенной/необновлённой.
 
@@ -278,8 +293,9 @@ Stage 6 впервые собирает локально готовый прод
    database-owner no-op exception до первой новой external schema migration.
 2. Применить все pending reviewed migrations в pre-release Neon через защищённый production
    migration workflow и зафиксировать migration → runtime evidence.
-3. Спроектировать и создать реальные runtime roles/grants по фактическим forum/auth/translation
-   queries; localization role не расширять механически.
+3. Спроектировать и создать реальные PostgreSQL runtime roles/grants по фактическим
+   forum/auth/translation queries; не путать infrastructure DB roles с application roles из
+   `docs/auth/AUTHORIZATION.md`; localization role не расширять механически.
 4. Подключить необходимые cache-disabled Hyperdrive bindings для runtime capabilities.
 5. Настроить real Google OAuth credentials/redirect URIs/secrets и выполнить OAuth/session/logout smoke.
 6. Настроить Cloudflare Queues и реальные translation provider credentials/adapters, выполнить
@@ -289,6 +305,8 @@ Stage 6 впервые собирает локально готовый прод
 8. Проверить deployment ordering, Worker bindings, logs/observability и external failure paths.
 9. Выполнить real deployed smoke core forum flow + LTR/RTL + auth + translations.
 10. Настроить и проверить PostgreSQL backup/restore до release.
+11. Выполнить server-controlled bootstrap/verification первого пользователя с effective
+    `access.authorization.manage` без публичного unauthenticated bootstrap endpoint.
 
 ### Критерий завершения
 
@@ -296,6 +314,7 @@ Stage 6 впервые собирает локально готовый прод
 - real Google OAuth работает;
 - forum/auth/translation runtime capabilities используют least privilege;
 - pending schema доказанно применена до schema-dependent runtime rollout;
+- application authorization bootstrap и dynamic role/user permission management проверены;
 - Queues/providers работают в реальной конфигурации;
 - preview isolation/private-data boundary проверены;
 - backup/restore проверен;
@@ -321,6 +340,8 @@ Stage 6 впервые собирает локально готовый прод
 - guest/user/solved-topic core flow работает;
 - Google OAuth/session/logout работает;
 - automatic UI translation и on-demand content translation работают с безопасными fallback;
+- dynamic application roles/permissions и per-user allow/deny overrides управляются через
+  защищённый сайт и применяются без повторного login;
 - write boundaries имеют проверенные authz, CSRF/origin и basic anti-abuse controls;
 - backup/restore и operational diagnostics готовы;
 - release revision имеет зелёный обязательный CI.
@@ -364,7 +385,9 @@ infrastructure diagnostics в production прекращаются; рисков�
 - Google OAuth;
 - Markdown/text/code;
 - solved topic + best answer;
-- guest/user/moderator/admin в минимально необходимом объёме;
+- dynamic DB-backed roles/permissions: built-in defaults `user/moderator/admin`, custom role
+  creation/editing, редактируемые role permissions и per-user `allow | deny | inherit` overrides;
+- protected site UI для role/user permission management и lockout protection;
 - generic BCP-47 locale routing, SSR, LTR/RTL, canonical English + local/manual/machine UI translation;
 - revision-bound on-demand translation пользовательского контента с original fallback;
 - server-side validation/authz, применимая CSRF/origin protection и basic anti-spam/rate limiting;
