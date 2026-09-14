@@ -27,8 +27,13 @@ export interface AuthSession {
   readonly session: AuthSessionRecord;
 }
 
+export interface AuthSessionResolution {
+  readonly session: AuthSession | null;
+  readonly headers: Headers;
+}
+
 export interface AuthRuntime {
-  getSession(headers: Headers): Promise<AuthSession | null>;
+  getSession(headers: Headers): Promise<AuthSessionResolution>;
   handle(request: Request): Promise<Response>;
 }
 

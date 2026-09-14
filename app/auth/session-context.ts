@@ -10,7 +10,26 @@ export async function initializeAuthContext(
   context: RouterContextProvider,
   request: Request,
   runtime: AuthRuntime,
-): Promise<void> {
+): Promise<Headers> {
   context.set(authRuntimeContext, runtime);
-  context.set(authSessionContext, await runtime.getSession(request.headers));
+  const resolved = await runtime.getSession(request.headers);
+  context.set(authSessionContext, resolved.session);
+  return resolved.headers;
+}
+
+/**
+ * Propagates only Better Auth Set-Cookie values from the pre-routing session lookup.
+ * getSession also emits endpoint cache headers that must not overwrite the final page response.
+ */
+export function withAuthSessionCookies(response: Response, authHeaders: Headers): Response {
+  const setCookies = authHeaders.getSetCookie();
+  if (setCookies.length === 0) return response;
+
+  const headers = new Headers(response.headers);
+  for (const cookie of setCookies) headers.append("Set-Cookie", cookie);
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
 }

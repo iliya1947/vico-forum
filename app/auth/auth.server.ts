@@ -73,8 +73,11 @@ export function createHyperdriveAuthRuntime(
 
   return {
     getSession: (headers) => useAuth(async (auth) => {
-      const value = await auth.api.getSession({ headers });
-      return value as AuthSession | null;
+      const result = await auth.api.getSession({ headers, returnHeaders: true });
+      return {
+        session: result.response as AuthSession | null,
+        headers: result.headers ?? new Headers(),
+      };
     }),
     handle: (request) => useAuth((auth) => auth.handler(request)),
   };

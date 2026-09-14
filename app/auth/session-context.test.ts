@@ -6,7 +6,7 @@ import {
   type AuthRuntime,
   type AuthSession,
 } from "./request-context";
-import { initializeAuthContext } from "./session-context";
+import { initializeAuthContext, withAuthSessionCookies } from "./session-context";
 
 const authenticatedSession: AuthSession = {
   user: {
@@ -21,8 +21,11 @@ const authenticatedSession: AuthSession = {
   },
 };
 
-function runtime(value: AuthSession | null): AuthRuntime {
-  return { getSession: vi.fn().mockResolvedValue(value), handle: vi.fn() };
+function runtime(value: AuthSession | null, headers = new Headers()): AuthRuntime {
+  return {
+    getSession: vi.fn().mockResolvedValue({ session: value, headers }),
+    handle: vi.fn(),
+  };
 }
 
 describe("request-scoped auth session", () => {
@@ -45,5 +48,32 @@ describe("request-scoped auth session", () => {
     const context = new RouterContextProvider();
     await initializeAuthContext(context, new Request("https://vico.test/en"), runtime(null));
     expect(authSessionForRequest(context)).toBeNull();
+  });
+
+  it("propagates Better Auth Set-Cookie values without copying get-session cache headers", async () => {
+    const authHeaders = new Headers({
+      "Cache-Control": "no-store",
+      Pragma: "no-cache",
+    });
+    authHeaders.append("Set-Cookie", "better-auth.session_token=one; Path=/; HttpOnly");
+    authHeaders.append("Set-Cookie", "better-auth.session_data=two; Path=/; HttpOnly");
+
+    const context = new RouterContextProvider();
+    const resolvedHeaders = await initializeAuthContext(
+      context,
+      new Request("https://vico.test/en"),
+      runtime(authenticatedSession, authHeaders),
+    );
+    const response = withAuthSessionCookies(
+      new Response("ok", { headers: { "Cache-Control": "public, max-age=60" } }),
+      resolvedHeaders,
+    );
+
+    expect(response.headers.getSetCookie()).toEqual([
+      "better-auth.session_token=one; Path=/; HttpOnly",
+      "better-auth.session_data=two; Path=/; HttpOnly",
+    ]);
+    expect(response.headers.get("Cache-Control")).toBe("public, max-age=60");
+    expect(response.headers.get("Pragma")).toBeNull();
   });
 });
