@@ -4,8 +4,10 @@
 
 - PostgreSQL schema changes are committed as reviewed SQL in `drizzle/` and applied with
   `pnpm db:migrate`. Production schema changes must not use `drizzle-kit push`.
-- Run migrations with a dedicated migration connection before deploying application
-  code that depends on them. The production Worker does not receive this credential.
+- Use a dedicated migration connection before the first release or any real/private production
+  data. During the current pre-release candidate only, the database-owner connection may be used
+  by the manual migration workflow when the repository-owned pre-release verifier flag explicitly
+  allows it. The production Worker never receives either migration/admin credential.
 - Verify generated migration metadata with `pnpm db:check`, and prove the full migration
   history against a clean disposable PostgreSQL 17 database with `pnpm db:test`.
 - The production workflow is forward-only. If an application release fails, roll the
@@ -43,11 +45,14 @@ workflow job has an explicit `refs/heads/main` guard and checks out the dispatch
 `github.sha`; dispatching the workflow against another branch or tag must not reach the
 migration steps.
 
-Its `production-db` environment must provide the dedicated production migration connection as the
-`NEON_MIGRATION_DATABASE_URL` environment secret and may require environment reviewer
-approval. The workflow serializes production migrations, validates the checked-in history,
-applies it with `drizzle-kit migrate`, and then performs a separate SELECT-only verification
-of stable production invariants:
+Its `production-db` environment provides the production migration connection as the
+`NEON_MIGRATION_DATABASE_URL` environment secret and may require environment reviewer approval.
+During the current pre-release candidate this secret may temporarily use the direct database-owner
+connection; before the first release or any real/private production data it must return to a dedicated
+least-privilege migration connection and the pre-release owner exception must be removed. The workflow
+serializes production migrations, validates the checked-in history, applies it with
+`drizzle-kit migrate`, and then performs a separate SELECT-only verification of stable production
+invariants:
 
 - PostgreSQL 17 and UTF-8;
 - the complete migration ledger matching the checked-in Drizzle journal;
@@ -55,8 +60,8 @@ of stable production invariants:
   tables (`user`, `session`, `account`, `verification`, and database-backed `rate_limit`);
 - absence of persistent bootstrap/reserved locale rows such as `en`, `api`, and `assets`;
 - absence of persistent canonical-English rows in UI translation storage/bundles;
-- the current migration role and the environment-provided runtime role, their dangerous
-  attributes and memberships;
+- the current connection role, application owner role and environment-provided runtime role,
+  including dangerous attributes and memberships where applicable;
 - application ownership, exact runtime `public` schema/table/sequence privileges, grants to
   `PUBLIC`, default privileges, and any cross-domain runtime grants.
 
@@ -76,7 +81,7 @@ Runtime database privileges are part of the production contract and must be veri
 the repository rather than existing only as manually remembered infrastructure state.
 
 Before Stage 4 auth/private data/runtime writes are accepted, production verification must
-also check the expected runtime roles and grants using the migration credential. The
+also check the expected runtime roles and grants using the migration/admin connection. The
 verification boundary must cover at least:
 
 - runtime role attributes: no superuser/admin/bypass-style capability;
@@ -87,23 +92,31 @@ verification boundary must cover at least:
 - default privileges that could silently broaden future runtime access.
 
 Production role names are environment-specific inputs and must not be hard-coded into portable
-migration SQL. The verifier derives the migration role from `current_user` and the current database
-owner from PostgreSQL catalogs; set the production environment variable `RUNTIME_DATABASE_ROLE` to
-the existing localization runtime role. Its exact allowlist is `USAGE` on `public` plus `SELECT` on
-`locales`, `ui_translations`, and `ui_translation_bundles`; the existing `PUBLIC` schema `USAGE`
-remains allowed, while other `PUBLIC` privileges are rejected. Set
-`MIGRATION_DATABASE_ROLE_MEMBERSHIPS` to the comma-separated exact outbound membership allowlist for
-the migration credential (an empty value means no memberships); each allowed membership must retain
-`ADMIN FALSE`, `INHERIT TRUE`, and `SET TRUE`.
+migration SQL. The verifier derives the current connection role from `current_user`, the database
+owner from PostgreSQL catalogs, and the application owner from the actual ownership of all required
+application tables. Those application tables must have exactly one owner. Normally the connection
+role must be that application owner. The current pre-release workflow may explicitly allow the
+connection role to be the database owner, but this exception does not change application ownership:
+the application owner must remain distinct from the database owner and runtime role and must still
+have `LOGIN` with no dangerous `SUPERUSER`/`CREATEDB`/`CREATEROLE`/`REPLICATION`/`BYPASSRLS`
+attributes. The exception is repository-owned and must be removed before the first release or any
+real/private production data.
+
+Set the production environment variable `RUNTIME_DATABASE_ROLE` to the existing localization runtime
+role. Its exact allowlist is `USAGE` on `public` plus `SELECT` on `locales`, `ui_translations`, and
+`ui_translation_bundles`; the existing `PUBLIC` schema `USAGE` remains allowed, while other `PUBLIC`
+privileges are rejected. Set `MIGRATION_DATABASE_ROLE_MEMBERSHIPS` to the comma-separated exact
+outbound membership allowlist for the application owner role (an empty value means no memberships);
+each allowed membership must retain `ADMIN FALSE`, `INHERIT TRUE`, and `SET TRUE`.
 
 PostgreSQL 17 automatically gives a `CREATEROLE` user `ADMIN OPTION` on roles it creates. The
 production verifier therefore allows the current database owner to be an inbound member of the
-runtime or migration role only with `ADMIN TRUE`, `INHERIT FALSE`, and `SET FALSE`. Runtime and
-migration roles must remain distinct from the database owner. This creator-admin grant is an
-administrative trust boundary rather than runtime privilege isolation: any other inbound member, or
-any inbound membership that enables `INHERIT` or `SET ROLE`, is rejected. The verifier also rejects
+runtime or application owner role only with `ADMIN TRUE`, `INHERIT FALSE`, and `SET FALSE`. Runtime
+and application owner roles must remain distinct from the database owner. This creator-admin grant is
+an administrative trust boundary rather than runtime privilege isolation: any other inbound member,
+or any inbound membership that enables `INHERIT` or `SET ROLE`, is rejected. The verifier also rejects
 column-level grants, grant options, and runtime ownership or grants on foreign tables. Effective
-migration-role defaults are reconstructed from PostgreSQL hard-wired global defaults plus
+application-owner defaults are reconstructed from PostgreSQL hard-wired global defaults plus
 `pg_default_acl` global and per-schema entries: the existing `PUBLIC EXECUTE` for functions and
 `PUBLIC USAGE` for types are allowed, while future table/sequence/schema access for runtime or
 `PUBLIC` is rejected. The current localization runtime role is read-only; Stage 4 must derive a
