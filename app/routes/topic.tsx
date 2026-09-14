@@ -4,6 +4,7 @@ import { authSessionForRequest } from "../auth/request-context";
 import { forumMutationGuard, mutationFailure, requiredFormText, runForumMutation, type ForumMutationError } from "../forum/mutations.server";
 import { forumCategoryPath, forumSectionPath, forumTopicPath } from "../forum/paths";
 import { forumReaderForRequest } from "../forum/request-context";
+import { ForumMarkdown } from "../forum/markdown";
 import { Breadcrumbs, EmptyState, ForumRouteError, ForumShell } from "../forum/ui";
 
 export async function loader({ params, context }: {
@@ -50,7 +51,7 @@ export default function TopicRoute() {
           {topic.posts.map((post, index) => (
             <li className="forum-post" key={post.id}>
               <header><strong>{post.authorName}</strong><span>{t("postNumber", { number: index + 1 })}</span></header>
-              <p className="post-body">{post.body.originalContent}</p>
+              <ForumMarkdown>{post.body.originalContent}</ForumMarkdown>
             </li>
           ))}
         </ol>
