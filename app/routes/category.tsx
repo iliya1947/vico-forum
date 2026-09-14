@@ -1,5 +1,6 @@
 import { Link, useLoaderData, type RouterContextProvider } from "react-router";
 import { useTranslation } from "react-i18next";
+import { forumSectionPath } from "../forum/paths";
 import { forumReaderForRequest } from "../forum/request-context";
 import { Breadcrumbs, EmptyState, ForumRouteError, ForumShell } from "../forum/ui";
 
@@ -23,7 +24,7 @@ export default function CategoryRoute() {
         <ul className="forum-list">
           {category.sections.map((section) => (
             <li key={section.id}>
-              <Link className="forum-list-link" to={`/${locale}/sections/${section.id}`}>
+              <Link className="forum-list-link" to={forumSectionPath(locale, section.id)}>
                 <strong>{section.name}</strong>
                 <span>{t("topicAndPostCount", { topics: section.topicCount, posts: section.postCount })}</span>
               </Link>

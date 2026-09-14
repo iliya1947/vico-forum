@@ -1,5 +1,6 @@
 import { useLoaderData, type RouterContextProvider } from "react-router";
 import { useTranslation } from "react-i18next";
+import { forumCategoryPath, forumSectionPath } from "../forum/paths";
 import { forumReaderForRequest } from "../forum/request-context";
 import { Breadcrumbs, EmptyState, ForumRouteError, ForumShell } from "../forum/ui";
 
@@ -18,8 +19,8 @@ export default function TopicRoute() {
   return (
     <ForumShell locale={locale}>
       <Breadcrumbs locale={locale} items={[
-        { label: topic.section.category.name, to: `/${locale}/categories/${topic.section.category.id}` },
-        { label: topic.section.name, to: `/${locale}/sections/${topic.section.id}` },
+        { label: topic.section.category.name, to: forumCategoryPath(locale, topic.section.category.id) },
+        { label: topic.section.name, to: forumSectionPath(locale, topic.section.id) },
         { label: topic.title.originalContent },
       ]} />
       <section className="page-heading"><p className="eyebrow">{t("topicLabel")}</p><h1>{topic.title.originalContent}</h1><p>{t("startedBy", { author: topic.authorName })}</p></section>

@@ -1,5 +1,6 @@
 import { Link, useLoaderData, type RouterContextProvider } from "react-router";
 import { useTranslation } from "react-i18next";
+import { forumCategoryPath, forumTopicPath } from "../forum/paths";
 import { forumReaderForRequest } from "../forum/request-context";
 import { Breadcrumbs, EmptyState, ForumRouteError, ForumShell } from "../forum/ui";
 
@@ -18,7 +19,7 @@ export default function SectionRoute() {
   return (
     <ForumShell locale={locale}>
       <Breadcrumbs locale={locale} items={[
-        { label: section.category.name, to: `/${locale}/categories/${section.category.id}` },
+        { label: section.category.name, to: forumCategoryPath(locale, section.category.id) },
         { label: section.name },
       ]} />
       <section className="page-heading"><p className="eyebrow">{t("sectionLabel")}</p><h1>{section.name}</h1></section>
@@ -29,7 +30,7 @@ export default function SectionRoute() {
           </div>
           {section.topics.map((topic) => (
             <div className="topic-row" role="row" key={topic.id}>
-              <span role="cell"><Link to={`/${locale}/topics/${topic.id}`}>{topic.title.originalContent}</Link><small>{t("startedBy", { author: topic.authorName })}</small></span>
+              <span role="cell"><Link to={forumTopicPath(locale, topic.id)}>{topic.title.originalContent}</Link><small>{t("startedBy", { author: topic.authorName })}</small></span>
               <span role="cell" className="count-cell">{topic.postCount}</span>
             </div>
           ))}

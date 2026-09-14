@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { Link, useLoaderData, type RouterContextProvider } from "react-router";
+import { forumCategoryPath } from "../forum/paths";
 import { forumReaderForRequest } from "../forum/request-context";
 import { EmptyState, ForumRouteError, ForumShell } from "../forum/ui";
 import type { ForumCategorySummary } from "../../db/forum-repository";
@@ -29,7 +30,7 @@ export default function Home() {
         <ul className="forum-list">
           {categories.map((category: ForumCategorySummary) => (
             <li key={category.id}>
-              <Link className="forum-list-link" to={`/${locale}/categories/${category.id}`}>
+              <Link className="forum-list-link" to={forumCategoryPath(locale, category.id)}>
                 <strong>{category.name}</strong>
                 <span>{t("sectionCount", { count: category.sectionCount })}</span>
               </Link>
