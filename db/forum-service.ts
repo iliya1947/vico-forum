@@ -1,3 +1,4 @@
+import { canonicalizeTranslationLocale } from "../app/localization/locale";
 import type {
   CreatePostInput,
   CreateTopicInput,
@@ -25,28 +26,28 @@ export class ForumService {
 
   createTopic(input: CreateTopicInput) {
     validateEntity(input.id, input.authorId);
-    validateRevision(input.titleRevision);
-    return this.repository.createTopic(input);
+    requireText(input.sectionId, "section id");
+    const titleRevision = normalizeRevision(input.titleRevision);
+    return this.repository.createTopic({ ...input, titleRevision });
   }
 
   createPost(input: CreatePostInput) {
     validateEntity(input.id, input.authorId);
-    validateRevision(input.bodyRevision);
-    return this.repository.createPost(input);
+    requireText(input.topicId, "topic id");
+    const bodyRevision = normalizeRevision(input.bodyRevision);
+    return this.repository.createPost({ ...input, bodyRevision });
   }
 
   reviseTopicTitle(topicId: string, expectedRevisionId: string, revision: ForumRevisionContent, authorId: string) {
     validateEntity(topicId, authorId);
     requireText(expectedRevisionId, "expected revision id");
-    validateRevision(revision);
-    return this.repository.reviseTopicTitle(topicId, expectedRevisionId, revision, authorId);
+    return this.repository.reviseTopicTitle(topicId, expectedRevisionId, normalizeRevision(revision), authorId);
   }
 
   revisePostBody(postId: string, expectedRevisionId: string, revision: ForumRevisionContent, authorId: string) {
     validateEntity(postId, authorId);
     requireText(expectedRevisionId, "expected revision id");
-    validateRevision(revision);
-    return this.repository.revisePostBody(postId, expectedRevisionId, revision, authorId);
+    return this.repository.revisePostBody(postId, expectedRevisionId, normalizeRevision(revision), authorId);
   }
 
   readTopic(id: string) { return this.repository.readTopic(id); }
@@ -59,16 +60,16 @@ function validateEntity(id: string, authorId: string) {
   requireText(authorId, "author id");
 }
 
-function validateRevision(revision: ForumRevisionContent) {
+function normalizeRevision(revision: ForumRevisionContent): ForumRevisionContent {
   requireText(revision.id, "revision id");
   requireText(revision.originalContent, "original content");
-  if (revision.sourceLocale === "und") return;
-  try {
-    const canonical = Intl.getCanonicalLocales(revision.sourceLocale);
-    if (canonical.length !== 1 || canonical[0] !== revision.sourceLocale) throw new Error("not canonical");
-  } catch {
-    throw new InvalidForumContentError("source locale must be 'und' or one canonical BCP-47 tag");
+  const sourceLocale = canonicalizeTranslationLocale(revision.sourceLocale);
+  if (!sourceLocale) {
+    throw new InvalidForumContentError(
+      "source locale must be 'und' or one canonicalizable translation locale without formatting extensions",
+    );
   }
+  return { ...revision, sourceLocale };
 }
 
 function requireText(value: string, field: string) {
