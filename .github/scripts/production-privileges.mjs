@@ -17,20 +17,61 @@ function sorted(values) {
 
 export function assertProductionPrivilegeContract(
   snapshot,
-  { migrationRole, runtimeRole, migrationMemberships = [] },
+  {
+    migrationRole,
+    runtimeRole,
+    migrationMemberships = [],
+    allowDatabaseOwnerConnection = false,
+  },
 ) {
-  assert.notEqual(runtimeRole, migrationRole, "Runtime and migration roles must be distinct");
+  assert.ok(snapshot.databaseOwnerRole, "Expected current database owner role to exist");
+  assert.equal(
+    snapshot.applicationOwnerRoles.length,
+    1,
+    "Application tables must have exactly one owner role",
+  );
+
+  const applicationOwnerRole = snapshot.applicationOwnerRoles[0];
+  assert.notEqual(runtimeRole, applicationOwnerRole, "Runtime and application owner roles must be distinct");
+  assert.notEqual(snapshot.databaseOwnerRole, runtimeRole, "Runtime role must not own the current database");
+  assert.notEqual(
+    snapshot.databaseOwnerRole,
+    applicationOwnerRole,
+    "Application owner role must not own the current database",
+  );
+
+  if (migrationRole === snapshot.databaseOwnerRole) {
+    assert.equal(
+      allowDatabaseOwnerConnection,
+      true,
+      "Database-owner connection is allowed only in explicit pre-release mode",
+    );
+  } else {
+    assert.equal(
+      migrationRole,
+      applicationOwnerRole,
+      "Dedicated migration connection must use the application owner role",
+    );
+  }
 
   const roles = new Map(snapshot.roles.map((role) => [role.rolname, role]));
   const runtime = roles.get(runtimeRole);
-  const migration = roles.get(migrationRole);
+  const applicationOwner = roles.get(applicationOwnerRole);
   assert.ok(runtime, `Expected runtime role ${runtimeRole} to exist`);
-  assert.ok(migration, `Expected migration role ${migrationRole} to exist`);
+  assert.ok(applicationOwner, `Expected application owner role ${applicationOwnerRole} to exist`);
   assert.equal(runtime.rolcanlogin, true, `Runtime role ${runtimeRole} must be able to log in`);
-  assert.equal(migration.rolcanlogin, true, `Migration role ${migrationRole} must be able to log in`);
+  assert.equal(
+    applicationOwner.rolcanlogin,
+    true,
+    `Application owner role ${applicationOwnerRole} must be able to log in`,
+  );
   for (const attribute of dangerousAttributes) {
     assert.equal(runtime[attribute], false, `Runtime role ${runtimeRole} must not have ${attribute}`);
-    assert.equal(migration[attribute], false, `Migration role ${migrationRole} must not directly have ${attribute}`);
+    assert.equal(
+      applicationOwner[attribute],
+      false,
+      `Application owner role ${applicationOwnerRole} must not directly have ${attribute}`,
+    );
   }
 
   const runtimeMemberships = snapshot.memberships.filter(({ member }) => member === runtimeRole);
@@ -38,7 +79,7 @@ export function assertProductionPrivilegeContract(
   assert.deepEqual(
     sorted(
       snapshot.memberships
-        .filter(({ member }) => member === migrationRole)
+        .filter(({ member }) => member === applicationOwnerRole)
         .map(
           ({ role, admin_option, inherit_option, set_option }) =>
             `${role}.admin=${admin_option}.inherit=${inherit_option}.set=${set_option}`,
@@ -49,20 +90,17 @@ export function assertProductionPrivilegeContract(
         (role) => `${role}.admin=false.inherit=true.set=true`,
       ),
     ),
-    `Unexpected memberships for migration role ${migrationRole}`,
+    `Unexpected memberships for application owner role ${applicationOwnerRole}`,
   );
 
-  assert.ok(snapshot.databaseOwnerRole, "Expected current database owner role to exist");
-  assert.notEqual(snapshot.databaseOwnerRole, runtimeRole, "Runtime role must not own the current database");
-  assert.notEqual(snapshot.databaseOwnerRole, migrationRole, "Migration role must not own the current database");
   for (const membership of snapshot.memberships.filter(
     ({ member, role }) =>
-      member !== role && (role === runtimeRole || role === migrationRole),
+      member !== role && (role === runtimeRole || role === applicationOwnerRole),
   )) {
     assert.equal(
       membership.member,
       snapshot.databaseOwnerRole,
-      `Only database owner ${snapshot.databaseOwnerRole} may hold an inbound admin membership in runtime or migration roles`,
+      `Only database owner ${snapshot.databaseOwnerRole} may hold an inbound admin membership in runtime or application owner roles`,
     );
     assert.equal(
       membership.admin_option,
@@ -90,9 +128,9 @@ export function assertProductionPrivilegeContract(
     assert.ok(
       snapshot.ownedObjects.some(
         ({ schema, name, kind, owner }) =>
-          schema === "public" && name === table && kind === "table" && owner === migrationRole,
+          schema === "public" && name === table && kind === "table" && owner === applicationOwnerRole,
       ),
-      `Expected migration role ${migrationRole} to own public.${table}`,
+      `Expected application owner role ${applicationOwnerRole} to own public.${table}`,
     );
   }
 
@@ -160,7 +198,7 @@ export function assertProductionPrivilegeContract(
   assert.deepEqual(
     applicationDefaults,
     sorted(["*.T.PUBLIC.USAGE.grantable=false", "*.f.PUBLIC.EXECUTE.grantable=false"]),
-    "Unexpected effective default privileges for future migration-owned objects",
+    "Unexpected effective default privileges for future application-owner objects",
   );
   assert.deepEqual(
     snapshot.otherDefaultPrivileges,
@@ -170,7 +208,23 @@ export function assertProductionPrivilegeContract(
 }
 
 export async function readProductionPrivilegeSnapshot(client, { migrationRole, runtimeRole }) {
-  const roles = [migrationRole, runtimeRole];
+  const applicationOwners = await client.query(
+    `SELECT DISTINCT owner.rolname AS role
+     FROM pg_catalog.pg_class relation
+     JOIN pg_catalog.pg_namespace namespace ON namespace.oid = relation.relnamespace
+     JOIN pg_catalog.pg_roles owner ON owner.oid = relation.relowner
+     WHERE namespace.nspname = 'public'
+       AND relation.relkind IN ('r', 'p')
+       AND relation.relname = ANY($1::name[])
+     ORDER BY owner.rolname`,
+    [applicationTables],
+  );
+  const applicationOwnerRoles = applicationOwners.rows.map(({ role }) => role);
+  const applicationOwnerRole = applicationOwnerRoles.length === 1
+    ? applicationOwnerRoles[0]
+    : migrationRole;
+  const roles = [...new Set([applicationOwnerRole, runtimeRole])];
+
   const roleRows = await client.query(
     `SELECT rolname, rolsuper, rolcreatedb, rolcreaterole, rolcanlogin, rolreplication, rolbypassrls
      FROM pg_catalog.pg_roles
@@ -299,7 +353,7 @@ export async function readProductionPrivilegeSnapshot(client, { migrationRole, r
      LEFT JOIN pg_catalog.pg_roles grantee ON grantee.oid = acl.grantee
      WHERE acl.grantee = 0 OR grantee.rolname = $2
      ORDER BY 1, 2, 3, 4, 5`,
-    [migrationRole, runtimeRole],
+    [applicationOwnerRole, runtimeRole],
   );
   const otherDefaultPrivileges = await client.query(
     `SELECT owner.rolname AS owner, COALESCE(namespace.nspname, '*') AS schema,
@@ -317,12 +371,13 @@ export async function readProductionPrivilegeSnapshot(client, { migrationRole, r
          OR (acl.grantee = 0 AND defaults.defaclobjtype IN ('r', 'S', 'n'))
        )
      ORDER BY 1, 2, 3, 4, 5, 6`,
-    [migrationRole, runtimeRole],
+    [applicationOwnerRole, runtimeRole],
   );
 
   return {
     roles: roleRows.rows,
     databaseOwnerRole: databaseOwner.rows[0]?.role ?? null,
+    applicationOwnerRoles,
     memberships: memberships.rows,
     ownedObjects: ownedObjects.rows,
     schemaPrivileges: schemaPrivileges.rows,
