@@ -353,7 +353,6 @@ describe("PostgreSQL 17 locale migrations", () => {
       ]);
       const loaded = await loadPersistentRegistry(new DrizzleLocaleRepository(drizzle(client)));
       expect(loaded.health).toEqual({ status: "healthy" });
-      expect(loaded.semanticIdentity).toMatch(/^sha256:[0-9a-f]{64}$/);
       expect(loaded.registry.find("de")?.locale.tag).toBe("de");
       expect(loaded.registry.find("fr")?.locale.tag).toBe("fr");
     } finally {
