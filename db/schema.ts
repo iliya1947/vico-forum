@@ -4,6 +4,7 @@ import {
   bigint,
   boolean,
   check,
+  foreignKey,
   index,
   integer,
   jsonb,
@@ -11,6 +12,7 @@ import {
   primaryKey,
   text,
   timestamp,
+  unique,
   type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 
@@ -242,6 +244,121 @@ export const rateLimit = pgTable("rate_limit", {
   lastRequest: bigint("last_request", { mode: "number" }).notNull(),
 });
 
+export const forumCategories = pgTable(
+  "forum_categories",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [check("forum_categories_name_check", sql`btrim(${table.name}) <> ''`)],
+);
+
+export const forumSections = pgTable(
+  "forum_sections",
+  {
+    id: text("id").primaryKey(),
+    categoryId: text("category_id")
+      .notNull()
+      .references(() => forumCategories.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("forum_sections_category_id_idx").on(table.categoryId),
+    check("forum_sections_name_check", sql`btrim(${table.name}) <> ''`),
+  ],
+);
+
+export const forumTopics = pgTable(
+  "forum_topics",
+  {
+    id: text("id").primaryKey(),
+    sectionId: text("section_id")
+      .notNull()
+      .references(() => forumSections.id, { onDelete: "cascade" }),
+    authorId: text("author_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "restrict" }),
+    // The migration adds a deferred owner-matching FK to (topic_id, revision_id).
+    // Drizzle 0.45.2's PostgreSQL foreign-key builder has no deferrability API.
+    currentTitleRevisionId: text("current_title_revision_id").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("forum_topics_section_id_idx").on(table.sectionId),
+    index("forum_topics_author_id_idx").on(table.authorId),
+  ],
+);
+
+export const forumTopicTitleRevisions = pgTable(
+  "forum_topic_title_revisions",
+  {
+    id: text("id").primaryKey(),
+    topicId: text("topic_id").notNull(),
+    authorId: text("author_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "restrict" }),
+    originalContent: text("original_content").notNull(),
+    sourceLocale: text("source_locale").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    unique("forum_topic_title_revisions_topic_id_id_unique").on(table.topicId, table.id),
+    foreignKey({
+      name: "forum_topic_title_revisions_topic_id_fk",
+      columns: [table.topicId],
+      foreignColumns: [forumTopics.id],
+    }).onDelete("cascade"),
+    check("forum_topic_title_revisions_content_check", sql`btrim(${table.originalContent}) <> ''`),
+    check("forum_topic_title_revisions_source_locale_check", sourceLocaleCheck(table.sourceLocale)),
+  ],
+);
+
+export const forumPosts = pgTable(
+  "forum_posts",
+  {
+    id: text("id").primaryKey(),
+    topicId: text("topic_id")
+      .notNull()
+      .references(() => forumTopics.id, { onDelete: "cascade" }),
+    authorId: text("author_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "restrict" }),
+    // The migration adds a deferred owner-matching FK to (post_id, revision_id).
+    currentRevisionId: text("current_revision_id").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("forum_posts_topic_id_idx").on(table.topicId),
+    index("forum_posts_author_id_idx").on(table.authorId),
+  ],
+);
+
+export const forumPostRevisions = pgTable(
+  "forum_post_revisions",
+  {
+    id: text("id").primaryKey(),
+    postId: text("post_id").notNull(),
+    authorId: text("author_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "restrict" }),
+    originalContent: text("original_content").notNull(),
+    sourceLocale: text("source_locale").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    unique("forum_post_revisions_post_id_id_unique").on(table.postId, table.id),
+    foreignKey({
+      name: "forum_post_revisions_post_id_fk",
+      columns: [table.postId],
+      foreignColumns: [forumPosts.id],
+    }).onDelete("cascade"),
+    check("forum_post_revisions_content_check", sql`btrim(${table.originalContent}) <> ''`),
+    check("forum_post_revisions_source_locale_check", sourceLocaleCheck(table.sourceLocale)),
+  ],
+);
+
 export const userRelations = relations(user, ({ many }) => ({
   sessions: many(session),
   accounts: many(account),
@@ -260,4 +377,8 @@ function arrayShapeCheck(column: AnyPgColumn) {
     cardinality(${column}) = 0
     or (array_ndims(${column}) = 1 and array_lower(${column}, 1) = 1)
   ) and array_position(${column}, null) is null`;
+}
+
+function sourceLocaleCheck(column: AnyPgColumn) {
+  return sql`${column} = btrim(${column}) and ${column} ~ '^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*$'`;
 }

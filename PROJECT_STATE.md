@@ -29,10 +29,19 @@ write-capability ещё **не реализованы**.
 Сейчас приложение предоставляет только технический SSR/localization foundation и простую
 landing page.
 
-Forum domain ещё не реализован:
+Stage 4B forum domain foundation реализован локально/для CI:
 
-- нет category/section/topic/post schema;
-- нет forum repositories/services;
+- добавлены category/section/topic/post schema и forward migration `0004`;
+- topic title и post body хранятся как отдельные immutable revisions с обязательным
+  current-revision pointer, original content и независимым `sourceLocale | und`;
+- forum topics, posts и их revisions связаны с существующим Better Auth `user.id`;
+- минимальные forum repository/service API создают и читают hierarchy и атомарно добавляют
+  новые revisions с optimistic current-revision guard;
+- PostgreSQL integration suite проверяет clean full history, hierarchy, FK/current/immutable
+  invariants и отсутствие зависимости source locale от persistent `LocaleRegistry`.
+
+Forum runtime/UI ещё не реализованы:
+
 - нет forum routes/pages;
 - нет публичной навигации по категориям/разделам/темам;
 - нет создания темы или ответа;
@@ -85,22 +94,17 @@ classification; точные результаты и ограничения на
 
 ## Ближайший маршрут
 
-### 0. Изолировать active development от production auto-deploy
+### Выполнено: изолировать active development от production auto-deploy
 
-До первого forum-code PR нужно изменить Cloudflare Workers Builds/branch policy так, чтобы
-обычные merge в active development `main` не продвигали сырой feature-код автоматически в
-production Worker. Точный вариант выбирается по текущему Cloudflare UI: отключить production
-auto-deploy от `main`, использовать отдельную release branch или эквивалентную управляемую
-схему.
+Пользователь отключил native Cloudflare Git integration. Merge в active development `main`
+больше не запускает Cloudflare auto-deploy; operational prerequisite первого forum-code PR
+закрыт. Production deploy по-прежнему не выполняется в обычных feature-задачах.
 
-Это отдельное operational действие и не выполняется этим docs-only change.
+### Выполнено: Stage 4B — forum domain foundation
 
-### 1. Stage 4B — forum domain foundation
-
-Следующая кодовая задача: минимальная forum model
-`категория → раздел → тема → сообщение` плюс необходимые revision boundaries для будущего
-content translation, migrations и integration tests — **локально/в CI, без production
-migration requirement**.
+Реализованы минимальная forum model `категория → раздел → тема → сообщение`, revision
+boundaries `CNT-02`, `CNT-03`, `CNT-05`, migration и PostgreSQL integration coverage —
+локально/в CI, без production migration или runtime rollout.
 
 ### 2. Stage 4C — публичное чтение и классический UI
 
@@ -125,11 +129,8 @@ preview isolation, deployment smoke и migration evidence.
 
 ## Блокеры
 
-Для начала Stage 4B code implementation продуктовых блокеров нет.
-
-Перед первым forum-code merge есть один operational prerequisite: development `main` не
-должен автоматически продвигаться в production Worker. Пока это не подтверждено/изменено,
-forum-code merge выполнять не следует.
+Для продолжения Stage 4C продуктовых или operational блокеров нет. Native Cloudflare Git
+integration отключён, поэтому merge в `main` не выполняет автоматический production deploy.
 
 Cleanup временных test resources прошлых acceptance остаётся housekeeping и не блокирует
 локальную/CI разработку forum core.
