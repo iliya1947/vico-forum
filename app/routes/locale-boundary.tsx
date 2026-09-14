@@ -8,7 +8,7 @@ import {
   registryForRequest,
   uiTranslationStoreForRequest,
 } from "../localization/request-context";
-import { TranslationResourceLoader, type TranslationSnapshot } from "../localization/resource-loader";
+import { TranslationResourceLoader } from "../localization/resource-loader";
 import { resolveExplicitLocale } from "../localization/resolver";
 import { createTranslationRuntime } from "../localization/runtime";
 import {
@@ -79,7 +79,7 @@ export async function loader(args: LocaleBoundaryArgs) {
 }
 
 export default function LocaleBoundary() {
-  const snapshot = useLoaderData<TranslationSnapshot>();
+  const snapshot = useLoaderData<typeof loader>();
   const i18n = useMemo(() => createTranslationRuntime(snapshot), [snapshot]);
   return (
     <I18nextProvider i18n={i18n} defaultNS="common">
