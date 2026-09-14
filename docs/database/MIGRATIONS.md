@@ -4,10 +4,12 @@
 
 - PostgreSQL schema changes are committed as reviewed SQL in `drizzle/` and applied with
   `pnpm db:migrate`. Production schema changes must not use `drizzle-kit push`.
-- Use a dedicated migration connection before the first release or any real/private production
-  data. During the current pre-release candidate only, the database-owner connection may be used
-  by the manual migration workflow when the repository-owned pre-release verifier flag explicitly
-  allows it. The production Worker never receives either migration/admin credential.
+- Use a dedicated migration connection for schema changes. During the current pre-release candidate
+  only, the database-owner connection may be used to re-run an already-applied migration history for
+  verification/evidence when the repository-owned pre-release flag explicitly allows it. A preflight
+  verifier must prove the production ledger already matches the checked-in journal before `db:migrate`,
+  so this temporary owner mode cannot apply a pending schema migration. The production Worker never
+  receives either migration/admin credential.
 - Verify generated migration metadata with `pnpm db:check`, and prove the full migration
   history against a clean disposable PostgreSQL 17 database with `pnpm db:test`.
 - The production workflow is forward-only. If an application release fails, roll the
@@ -48,9 +50,11 @@ migration steps.
 Its `production-db` environment provides the production migration connection as the
 `NEON_MIGRATION_DATABASE_URL` environment secret and may require environment reviewer approval.
 During the current pre-release candidate this secret may temporarily use the direct database-owner
-connection; before the first release or any real/private production data it must return to a dedicated
-least-privilege migration connection and the pre-release owner exception must be removed. The workflow
-serializes production migrations, validates the checked-in history, applies it with
+connection only to verify/evidence an already-applied migration history. In that mode the workflow runs
+the full verifier before `db:migrate`; any pending checked-in migration therefore fails before a write
+can start. Remove the owner exception and restore a dedicated least-privilege migration connection
+before the next schema migration, and in all cases before the first release or real/private production
+data. The workflow serializes production migrations, validates the checked-in history, applies it with
 `drizzle-kit migrate`, and then performs a separate SELECT-only verification of stable production
 invariants:
 
@@ -96,11 +100,12 @@ migration SQL. The verifier derives the current connection role from `current_us
 owner from PostgreSQL catalogs, and the application owner from the actual ownership of all required
 application tables. Those application tables must have exactly one owner. Normally the connection
 role must be that application owner. The current pre-release workflow may explicitly allow the
-connection role to be the database owner, but this exception does not change application ownership:
-the application owner must remain distinct from the database owner and runtime role and must still
-have `LOGIN` with no dangerous `SUPERUSER`/`CREATEDB`/`CREATEROLE`/`REPLICATION`/`BYPASSRLS`
-attributes. The exception is repository-owned and must be removed before the first release or any
-real/private production data.
+connection role to be the database owner only after a preflight proves the checked-in migration journal
+is already fully applied. This exception does not change application ownership: the application owner
+must remain distinct from the database owner and runtime role and must still have `LOGIN` with no
+dangerous `SUPERUSER`/`CREATEDB`/`CREATEROLE`/`REPLICATION`/`BYPASSRLS` attributes. Remove the
+exception before the next schema migration, and in all cases before the first release or any real/private
+production data.
 
 Set the production environment variable `RUNTIME_DATABASE_ROLE` to the existing localization runtime
 role. Its exact allowlist is `USAGE` on `public` plus `SELECT` on `locales`, `ui_translations`, and
