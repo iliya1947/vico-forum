@@ -107,12 +107,12 @@ test("allows database-owner connection only in explicit pre-release mode", () =>
   const ownerConnection = {
     ...contract,
     migrationRole: "database_owner",
-    allowDatabaseOwnerMigration: true,
+    allowDatabaseOwnerConnection: true,
   };
   assert.doesNotThrow(() => assertProductionPrivilegeContract(fixture(), ownerConnection));
 
   assert.throws(
-    () => assertProductionPrivilegeContract(fixture(), { ...ownerConnection, allowDatabaseOwnerMigration: false }),
+    () => assertProductionPrivilegeContract(fixture(), { ...ownerConnection, allowDatabaseOwnerConnection: false }),
     /explicit pre-release mode/,
   );
 });
@@ -131,7 +131,7 @@ test("owner-connection mode still enforces least privilege on the application ow
     () => assertProductionPrivilegeContract(candidate, {
       ...contract,
       migrationRole: "database_owner",
-      allowDatabaseOwnerMigration: true,
+      allowDatabaseOwnerConnection: true,
     }),
     /Application owner role migration must not directly have rolcreatedb/,
   );
