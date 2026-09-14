@@ -66,6 +66,12 @@ body {
 .forum-post header span { color: var(--ink-muted); font-size: 0.85rem; }
 .post-body { margin: 0; padding: 1rem 1.25rem; white-space: pre-wrap; overflow-wrap: anywhere; }
 .empty-state, .route-state { margin: 0; padding: 2rem 1.25rem; border: 1px solid var(--border); background: var(--panel); }
+.forum-write-form { margin-block-start: 1rem; padding: 1.25rem; border: 1px solid var(--border); background: var(--panel); }
+.forum-write-form h2 { margin-block-start: 0; }
+.forum-write-form label { display: grid; gap: 0.4rem; margin-block: 0.9rem; font-weight: 700; }
+.forum-write-form input, .forum-write-form textarea { width: 100%; padding: 0.7rem; border: 1px solid var(--border); font: inherit; }
+.forum-write-form button { padding: 0.65rem 1rem; border: 0; border-radius: 0.2rem; color: white; background: var(--brand); font: inherit; font-weight: 700; cursor: pointer; }
+.forum-write-form [role="alert"] { color: #8a1c1c; }
 
 .eyebrow {
   font-weight: 700;

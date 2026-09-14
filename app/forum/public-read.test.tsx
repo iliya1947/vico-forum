@@ -111,6 +111,19 @@ describe("forum path encoding", () => {
 });
 
 describe("forum read states", () => {
+  it("shows forum write forms only for an authenticated loader result", async () => {
+    const guestView = renderRoute(SectionRoute, { locale: "en", section, authenticated: false }, "/en/sections/typescript", "en", "ltr");
+    expect(screen.queryByRole("heading", { name: "Create a new topic" })).not.toBeInTheDocument();
+    guestView.unmount();
+
+    const authenticatedView = renderRoute(SectionRoute, { locale: "en", section, authenticated: true }, "/en/sections/typescript", "en", "ltr");
+    expect(await screen.findByRole("heading", { name: "Create a new topic" })).toBeInTheDocument();
+    authenticatedView.unmount();
+
+    renderRoute(TopicRoute, { locale: "en", topic, authenticated: true }, "/en/topics/typed-api", "en", "ltr");
+    expect(await screen.findByRole("heading", { name: "Add a reply" })).toBeInTheDocument();
+  });
+
   it("returns route-level 404 responses for missing entities", async () => {
     await expect(categoryLoader({ params: { locale: "en", categoryId: "missing" }, context: context() })).rejects.toMatchObject({ status: 404 });
   });

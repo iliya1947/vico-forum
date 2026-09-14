@@ -1,8 +1,8 @@
 import { RouterContextProvider, createRequestHandler } from "react-router";
-import { forumReaderContext } from "../app/forum/request-context";
+import { forumReaderContext, forumWriterContext } from "../app/forum/request-context";
 import { registryLoaderContext, uiTranslationStoreContext } from "../app/localization/request-context";
 import { createHyperdriveRegistryLoader } from "../db/hyperdrive-registry";
-import { createHyperdriveForumReader } from "../db/hyperdrive-forum";
+import { createHyperdriveForumReader, createHyperdriveForumWriter } from "../db/hyperdrive-forum";
 import { createHyperdriveUiTranslationStore } from "../db/hyperdrive-ui-translations";
 import { createHyperdriveAuthRuntime, type BetterAuthEnvironment } from "../app/auth/auth.server";
 import { initializeAuthContext, withAuthSessionCookies } from "../app/auth/session-context";
@@ -19,6 +19,7 @@ export default {
     const auth = createHyperdriveAuthRuntime(connectionString, env as Env & BetterAuthEnvironment);
     const authHeaders = await initializeAuthContext(context, request, auth);
     context.set(forumReaderContext, createHyperdriveForumReader(connectionString));
+    context.set(forumWriterContext, createHyperdriveForumWriter(connectionString));
     context.set(registryLoaderContext, createHyperdriveRegistryLoader(connectionString));
     context.set(uiTranslationStoreContext, createHyperdriveUiTranslationStore(connectionString));
     const response = await requestHandler(request, context);

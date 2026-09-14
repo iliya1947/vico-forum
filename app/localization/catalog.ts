@@ -64,6 +64,18 @@ export const canonicalEnglishCatalog = {
     forumNotFoundBody: message("forumNotFoundBody", "The category, section, or topic does not exist.", "Forum not-found explanation."),
     forumErrorHeading: message("forumErrorHeading", "The forum could not be loaded", "Forum read error heading."),
     forumErrorBody: message("forumErrorBody", "Please try again later.", "Forum read error explanation."),
+    createTopicHeading: message("createTopicHeading", "Create a new topic", "Heading above the authenticated topic form."),
+    topicTitleLabel: message("topicTitleLabel", "Topic title", "Label for a new topic title."),
+    initialPostLabel: message("initialPostLabel", "First message", "Label for a new topic's first message."),
+    createTopicSubmit: message("createTopicSubmit", "Create topic", "Submit button for a new topic."),
+    replyHeading: message("replyHeading", "Add a reply", "Heading above the authenticated reply form."),
+    replyBodyLabel: message("replyBodyLabel", "Reply", "Label for a reply body."),
+    replySubmit: message("replySubmit", "Post reply", "Submit button for a reply."),
+    forumWriteError_invalid: message("forumWriteError_invalid", "Enter all required fields.", "Forum mutation validation error."),
+    forumWriteError_unauthenticated: message("forumWriteError_unauthenticated", "Sign in to post.", "Forum mutation authentication error."),
+    forumWriteError_origin: message("forumWriteError_origin", "This request could not be verified.", "Forum mutation origin error."),
+    forumWriteError_notFound: message("forumWriteError_notFound", "The target section or topic no longer exists.", "Forum mutation missing target error."),
+    forumWriteError_unavailable: message("forumWriteError_unavailable", "Your message could not be saved. Please try again.", "Forum mutation storage error."),
   },
 } as const satisfies Record<string, Record<string, UiMessageDescriptor>>;
 
