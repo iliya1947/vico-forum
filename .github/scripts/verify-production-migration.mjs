@@ -26,6 +26,13 @@ assert.equal(
   migrationMemberships.length,
   "MIGRATION_DATABASE_ROLE_MEMBERSHIPS must not contain duplicates",
 );
+const allowOwnerMigrationValue =
+  globalThis.process.env.PRE_RELEASE_ALLOW_DATABASE_OWNER_MIGRATIONS ?? "false";
+assert.ok(
+  allowOwnerMigrationValue === "true" || allowOwnerMigrationValue === "false",
+  "PRE_RELEASE_ALLOW_DATABASE_OWNER_MIGRATIONS must be true or false when set",
+);
+const allowDatabaseOwnerMigration = allowOwnerMigrationValue === "true";
 
 const journal = JSON.parse(await readFile("drizzle/meta/_journal.json", "utf8"));
 const expectedMigrationHistory = journal.entries.map(({ when }) => String(when));
@@ -202,6 +209,7 @@ try {
     migrationRole,
     runtimeRole,
     migrationMemberships,
+    allowDatabaseOwnerMigration,
   });
 
   globalThis.console.log("Production database schema and privilege verification passed.");
