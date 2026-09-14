@@ -59,7 +59,7 @@ describe("PostgreSQL 17 locale migrations", () => {
     await forum.createSection({ id: "typescript", categoryId: "development", name: "TypeScript" });
     await forum.createTopic({
       id: "topic-1", sectionId: "typescript", authorId: "forum-author",
-      titleRevision: { id: "topic-title-r1", originalContent: "Как типизировать API?", sourceLocale: "ru" },
+      titleRevision: { id: "topic-title-r1", originalContent: "Как типизировать API?", sourceLocale: "EN-us" },
     });
     await forum.createPost({
       id: "post-1", topicId: "topic-1", authorId: "forum-author",
@@ -73,7 +73,7 @@ describe("PostgreSQL 17 locale migrations", () => {
         topics: [{
           id: "topic-1",
           authorId: "forum-author",
-          title: { id: "topic-title-r1", sourceLocale: "ru" },
+          title: { id: "topic-title-r1", sourceLocale: "en-US" },
           posts: [{ id: "post-1", body: { id: "post-body-r1", sourceLocale: "und" } }],
         }],
       }],
@@ -99,6 +99,10 @@ describe("PostgreSQL 17 locale migrations", () => {
     expect((await forum.readPost("post-1"))?.body.id).toBe("post-body-r2");
     expect(await repository.revisionCounts()).toEqual({ topicTitles: 2, postBodies: 2 });
 
+    await expectDatabaseCode(
+      client.query("update forum_topic_title_revisions set original_content = 'mutated' where id = 'topic-title-r1'"),
+      "55000",
+    );
     await expectDatabaseCode(
       client.query("update forum_post_revisions set original_content = 'mutated' where id = 'post-body-r1'"),
       "55000",
@@ -135,10 +139,64 @@ describe("PostgreSQL 17 locale migrations", () => {
     )).rows[0]?.count).toBe("0");
     expect((await client.query("select count(*)::text as count from locales where tag = 'und'")).rows[0]?.count).toBe("0");
     expect((await new ForumService(new DrizzleForumRepository(drizzle(client))).readPost("post-1"))?.body.sourceLocale).toBe("ru");
-    expect(() => new ForumService(new DrizzleForumRepository(drizzle(client))).createPost({
-      id: "invalid-locale-post", topicId: "topic-1", authorId: "forum-author",
-      bodyRevision: { id: "invalid-locale-r1", originalContent: "body", sourceLocale: "not_a_locale" },
+
+    const forum = new ForumService(new DrizzleForumRepository(drizzle(client)));
+    expect(() => forum.createTopic({
+      id: "blank-section-topic", sectionId: "   ", authorId: "forum-author",
+      titleRevision: { id: "blank-section-title-r1", originalContent: "title", sourceLocale: "en" },
     })).toThrow(InvalidForumContentError);
+    expect(() => forum.createPost({
+      id: "blank-topic-post", topicId: "", authorId: "forum-author",
+      bodyRevision: { id: "blank-topic-body-r1", originalContent: "body", sourceLocale: "en" },
+    })).toThrow(InvalidForumContentError);
+    expect(() => forum.createPost({
+      id: "extension-locale-post", topicId: "topic-1", authorId: "forum-author",
+      bodyRevision: { id: "extension-locale-r1", originalContent: "body", sourceLocale: "en-u-ca-gregory" },
+    })).toThrow(InvalidForumContentError);
+    expect(() => forum.createPost({
+      id: "invalid-locale-post", topicId: "topic-1", authorId: "forum-author",
+      bodyRevision: { id: "invalid-locale-r1", originalContent: "body", sourceLocale: "en-abc" },
+    })).toThrow(InvalidForumContentError);
+  });
+
+  it("cascades forum hierarchy deletes and protects current revisions", async () => {
+    await expectDatabaseCode(
+      client.query("delete from forum_topic_title_revisions where id = 'topic-title-r2'"),
+      "23503",
+    );
+    await expectDatabaseCode(
+      client.query("delete from forum_post_revisions where id = 'post-body-r2'"),
+      "23503",
+    );
+
+    const cases = [
+      {
+        deleteSql: "delete from forum_posts where id = 'post-1'",
+        expected: { categories: 1, sections: 1, topics: 1, titleRevisions: 2, posts: 0, postRevisions: 0 },
+      },
+      {
+        deleteSql: "delete from forum_topics where id = 'topic-1'",
+        expected: { categories: 1, sections: 1, topics: 0, titleRevisions: 0, posts: 0, postRevisions: 0 },
+      },
+      {
+        deleteSql: "delete from forum_sections where id = 'typescript'",
+        expected: { categories: 1, sections: 0, topics: 0, titleRevisions: 0, posts: 0, postRevisions: 0 },
+      },
+      {
+        deleteSql: "delete from forum_categories where id = 'development'",
+        expected: { categories: 0, sections: 0, topics: 0, titleRevisions: 0, posts: 0, postRevisions: 0 },
+      },
+    ];
+
+    for (const testCase of cases) {
+      await client.query("begin");
+      try {
+        await client.query(testCase.deleteSql);
+        expect(await forumRowCounts()).toEqual(testCase.expected);
+      } finally {
+        await client.query("rollback");
+      }
+    }
   });
 
   it("creates the exact Better Auth 1.7.4 PostgreSQL foundation", async () => {
@@ -295,6 +353,7 @@ describe("PostgreSQL 17 locale migrations", () => {
       ]);
       const loaded = await loadPersistentRegistry(new DrizzleLocaleRepository(drizzle(client)));
       expect(loaded.health).toEqual({ status: "healthy" });
+      expect(loaded.semanticIdentity).toMatch(/^sha256:[0-9a-f]{64}$/);
       expect(loaded.registry.find("de")?.locale.tag).toBe("de");
       expect(loaded.registry.find("fr")?.locale.tag).toBe("fr");
     } finally {
@@ -456,6 +515,33 @@ async function expectDatabaseCode(operation: Promise<unknown>, code: string) {
   } catch (error) {
     expect((error as DatabaseError).code).toBe(code);
   }
+}
+
+async function forumRowCounts() {
+  const result = await client.query<{
+    categories: number;
+    sections: number;
+    topics: number;
+    title_revisions: number;
+    posts: number;
+    post_revisions: number;
+  }>(`select
+      (select count(*)::int from forum_categories) as categories,
+      (select count(*)::int from forum_sections) as sections,
+      (select count(*)::int from forum_topics) as topics,
+      (select count(*)::int from forum_topic_title_revisions) as title_revisions,
+      (select count(*)::int from forum_posts) as posts,
+      (select count(*)::int from forum_post_revisions) as post_revisions`);
+  const row = result.rows[0];
+  if (!row) throw new Error("forum row-count query returned no rows");
+  return {
+    categories: row.categories,
+    sections: row.sections,
+    topics: row.topics,
+    titleRevisions: row.title_revisions,
+    posts: row.posts,
+    postRevisions: row.post_revisions,
+  };
 }
 
 async function insertForumAuthor(id: string, email: string, locale: string | null) {
