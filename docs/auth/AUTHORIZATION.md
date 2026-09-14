@@ -21,6 +21,8 @@ session snapshot: effective permissions разрешаются сервером 
    не входит в текущий контракт; исключения реализуются per-user permission overrides.
 7. Guest — отсутствие authenticated session; отдельная guest role row не нужна.
 8. Новому authenticated пользователю без явного assignment применяется built-in role `user`.
+9. Role inheritance не входит в текущую модель: каждая роль имеет собственный явный набор
+   permission grants.
 
 ## Permission catalog
 
@@ -45,7 +47,8 @@ actor должен быть author target topic. Client-provided `authorId`, rol
 
 ## Initial role defaults
 
-Это только initial DB seed, а не hard-coded role behavior.
+Это только initial DB seed, а не hard-coded role behavior. Grants перечислены явно; между
+ролями нет inheritance.
 
 ### `user`
 
@@ -55,12 +58,17 @@ actor должен быть author target topic. Client-provided `authorId`, rol
 
 ### `moderator`
 
-- initial permissions `user`;
+- `forum.topic.create`;
+- `forum.reply.create`;
+- `forum.solution.manageOwn`;
 - `forum.solution.manageAny`.
 
 ### `admin`
 
-- initial permissions `moderator`;
+- `forum.topic.create`;
+- `forum.reply.create`;
+- `forum.solution.manageOwn`;
+- `forum.solution.manageAny`;
 - `access.authorization.manage`.
 
 После bootstrap пользователь с `access.authorization.manage` может через сайт менять grants
