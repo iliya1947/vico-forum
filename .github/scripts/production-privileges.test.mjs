@@ -36,6 +36,7 @@ function fixture() {
       },
     ],
     databaseOwnerRole: "database_owner",
+    applicationOwnerRoles: ["migration"],
     memberships: [
       {
         member: "migration",
@@ -100,6 +101,40 @@ function fixture() {
 
 test("accepts the current read-only localization privilege contract", () => {
   assert.doesNotThrow(() => assertProductionPrivilegeContract(fixture(), contract));
+});
+
+test("allows database-owner connection only in explicit pre-release mode", () => {
+  const ownerConnection = {
+    ...contract,
+    migrationRole: "database_owner",
+    allowDatabaseOwnerMigration: true,
+  };
+  assert.doesNotThrow(() => assertProductionPrivilegeContract(fixture(), ownerConnection));
+
+  assert.throws(
+    () => assertProductionPrivilegeContract(fixture(), { ...ownerConnection, allowDatabaseOwnerMigration: false }),
+    /explicit pre-release mode/,
+  );
+});
+
+test("requires a dedicated connection to use the application owner role", () => {
+  assert.throws(
+    () => assertProductionPrivilegeContract(fixture(), { ...contract, migrationRole: "unexpected_login" }),
+    /must use the application owner role/,
+  );
+});
+
+test("owner-connection mode still enforces least privilege on the application owner", () => {
+  const candidate = fixture();
+  candidate.roles[0].rolcreatedb = true;
+  assert.throws(
+    () => assertProductionPrivilegeContract(candidate, {
+      ...contract,
+      migrationRole: "database_owner",
+      allowDatabaseOwnerMigration: true,
+    }),
+    /Application owner role migration must not directly have rolcreatedb/,
+  );
 });
 
 test("rejects dangerous role attributes and runtime memberships", () => {
@@ -168,14 +203,20 @@ test("allows only database-owner admin-only inbound memberships", () => {
   }
 });
 
-test("requires runtime and migration roles to be distinct from the database owner", () => {
+test("requires runtime and application owner roles to be distinct from the database owner", () => {
   const runtimeOwner = fixture();
   runtimeOwner.databaseOwnerRole = "runtime";
   assert.throws(() => assertProductionPrivilegeContract(runtimeOwner, contract), /Runtime role must not own/);
 
-  const migrationOwner = fixture();
-  migrationOwner.databaseOwnerRole = "migration";
-  assert.throws(() => assertProductionPrivilegeContract(migrationOwner, contract), /Migration role must not own/);
+  const applicationOwner = fixture();
+  applicationOwner.databaseOwnerRole = "migration";
+  assert.throws(() => assertProductionPrivilegeContract(applicationOwner, contract), /Application owner role must not own/);
+});
+
+test("rejects ambiguous application ownership", () => {
+  const candidate = fixture();
+  candidate.applicationOwnerRoles = ["migration", "other_owner"];
+  assert.throws(() => assertProductionPrivilegeContract(candidate, contract), /exactly one owner role/);
 });
 
 test("rejects runtime ownership and wrong application-table ownership", () => {
