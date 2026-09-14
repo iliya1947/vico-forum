@@ -25,6 +25,7 @@ const section = {
 };
 const topic = {
   id: "typed/api", sectionId: "typescript/basics", authorId: "ada", authorName: "Ada", createdAt: new Date("2026-01-01"),
+  isSolved: false, bestAnswerPostId: null,
   title: section.topics[0]!.title,
   section: { id: "typescript/basics", name: "TypeScript", category: { id: "development/core", name: "Development" } },
   posts: [{
@@ -111,6 +112,25 @@ describe("forum path encoding", () => {
 });
 
 describe("forum read states", () => {
+  it("shows public solved state, highlights the answer, and links to its stable post anchor", async () => {
+    const solvedTopic = { ...topic, isSolved: true, bestAnswerPostId: "answer" };
+    renderRoute(TopicRoute, { locale: "en", topic: solvedTopic, authenticated: false, canManageSolution: false }, "/en/topics/typed-api", "en", "ltr");
+    expect(await screen.findByText("Solved")).toBeInTheDocument();
+    expect(screen.getByText("Best answer").closest("li")).toHaveAttribute("id", "post-answer");
+    expect(screen.getByText("Best answer").closest("li")).toHaveClass("best-answer");
+    expect(screen.getByRole("link", { name: "Go to solution" })).toHaveAttribute("href", "#post-answer");
+    expect(screen.queryByRole("button", { name: "Select as best answer" })).not.toBeInTheDocument();
+  });
+
+  it("shows solution controls only to the topic author", async () => {
+    const unsolved = { locale: "en", topic, authenticated: true, canManageSolution: true };
+    const authorView = renderRoute(TopicRoute, unsolved, "/en/topics/typed-api", "en", "ltr");
+    expect(await screen.findByRole("button", { name: "Mark as solved" })).toBeInTheDocument();
+    authorView.unmount();
+    renderRoute(TopicRoute, { ...unsolved, canManageSolution: false }, "/en/topics/typed-api", "en", "ltr");
+    expect(screen.queryByRole("button", { name: "Mark as solved" })).not.toBeInTheDocument();
+  });
+
   it("shows forum write forms only for an authenticated loader result", async () => {
     const guestView = renderRoute(SectionRoute, { locale: "en", section, authenticated: false }, "/en/sections/typescript", "en", "ltr");
     expect(screen.queryByRole("heading", { name: "Create a new topic" })).not.toBeInTheDocument();
@@ -120,7 +140,7 @@ describe("forum read states", () => {
     expect(await screen.findByRole("heading", { name: "Create a new topic" })).toBeInTheDocument();
     authenticatedView.unmount();
 
-    renderRoute(TopicRoute, { locale: "en", topic, authenticated: true }, "/en/topics/typed-api", "en", "ltr");
+    renderRoute(TopicRoute, { locale: "en", topic, authenticated: true, canManageSolution: false }, "/en/topics/typed-api", "en", "ltr");
     expect(await screen.findByRole("heading", { name: "Add a reply" })).toBeInTheDocument();
   });
 

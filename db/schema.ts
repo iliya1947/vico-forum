@@ -283,11 +283,14 @@ export const forumTopics = pgTable(
     // The migration adds a deferred owner-matching FK to (topic_id, revision_id).
     // Drizzle 0.45.2's PostgreSQL foreign-key builder has no deferrability API.
     currentTitleRevisionId: text("current_title_revision_id").notNull(),
+    isSolved: boolean("is_solved").notNull().default(false),
+    bestAnswerPostId: text("best_answer_post_id"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
     index("forum_topics_section_id_idx").on(table.sectionId),
     index("forum_topics_author_id_idx").on(table.authorId),
+    check("forum_topics_best_answer_requires_solved_check", sql`${table.bestAnswerPostId} is null or ${table.isSolved}`),
   ],
 );
 
@@ -332,6 +335,7 @@ export const forumPosts = pgTable(
   (table) => [
     index("forum_posts_topic_id_idx").on(table.topicId),
     index("forum_posts_author_id_idx").on(table.authorId),
+    unique("forum_posts_topic_id_id_unique").on(table.topicId, table.id),
   ],
 );
 

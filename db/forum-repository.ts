@@ -75,6 +75,8 @@ export interface ForumTopic {
   sectionId: string;
   authorId: string;
   title: ForumRevisionContent;
+  isSolved: boolean;
+  bestAnswerPostId: string | null;
 }
 
 export interface ForumPost {
@@ -114,6 +116,8 @@ export interface CreateTopicWithInitialPostInput extends CreateTopicInput {
 
 export class ConcurrentRevisionError extends Error {}
 export class ForumEntityNotFoundError extends Error {}
+export class ForumAuthorizationError extends Error {}
+export class ForumStateConflictError extends Error {}
 
 export class DrizzleForumRepository {
   constructor(
@@ -144,7 +148,7 @@ export class DrizzleForumRepository {
         topicId: input.id,
         authorId: input.authorId,
       });
-      return { id: input.id, sectionId: input.sectionId, authorId: input.authorId, title: input.titleRevision };
+      return { id: input.id, sectionId: input.sectionId, authorId: input.authorId, title: input.titleRevision, isSolved: false, bestAnswerPostId: null };
     });
   }
 
@@ -179,7 +183,7 @@ export class DrizzleForumRepository {
         authorId: input.authorId,
       });
       return {
-        topic: { id: input.id, sectionId: input.sectionId, authorId: input.authorId, title: input.titleRevision },
+        topic: { id: input.id, sectionId: input.sectionId, authorId: input.authorId, title: input.titleRevision, isSolved: false, bestAnswerPostId: null },
         post: { id: input.initialPost.id, topicId: input.id, authorId: input.authorId, body: input.initialPost.bodyRevision },
       };
     });
@@ -297,6 +301,7 @@ export class DrizzleForumRepository {
         categoryId: forumCategories.id, categoryName: forumCategories.name, authorId: forumTopics.authorId,
         authorName: user.name, createdAt: forumTopics.createdAt, revisionId: forumTopicTitleRevisions.id,
         originalContent: forumTopicTitleRevisions.originalContent, sourceLocale: forumTopicTitleRevisions.sourceLocale,
+        isSolved: forumTopics.isSolved, bestAnswerPostId: forumTopics.bestAnswerPostId,
       })
       .from(forumTopics)
       .innerJoin(forumSections, eq(forumSections.id, forumTopics.sectionId))
@@ -324,6 +329,7 @@ export class DrizzleForumRepository {
       .orderBy(asc(forumPosts.createdAt), asc(forumPosts.id));
     return {
       id: topic.id, sectionId: topic.sectionId, authorId: topic.authorId, authorName: topic.authorName,
+      isSolved: topic.isSolved, bestAnswerPostId: topic.bestAnswerPostId,
       createdAt: topic.createdAt,
       title: { id: topic.revisionId, originalContent: topic.originalContent, sourceLocale: topic.sourceLocale },
       section: { id: topic.sectionId, name: topic.sectionName, category: { id: topic.categoryId, name: topic.categoryName } },
@@ -344,6 +350,8 @@ export class DrizzleForumRepository {
         revisionId: forumTopicTitleRevisions.id,
         originalContent: forumTopicTitleRevisions.originalContent,
         sourceLocale: forumTopicTitleRevisions.sourceLocale,
+        isSolved: forumTopics.isSolved,
+        bestAnswerPostId: forumTopics.bestAnswerPostId,
       })
       .from(forumTopics)
       .innerJoin(
@@ -358,8 +366,34 @@ export class DrizzleForumRepository {
       id: row.id,
       sectionId: row.sectionId,
       authorId: row.authorId,
+      isSolved: row.isSolved,
+      bestAnswerPostId: row.bestAnswerPostId,
       title: { id: row.revisionId, originalContent: row.originalContent, sourceLocale: row.sourceLocale },
     };
+  }
+
+  async markTopicSolved(topicId: string, actorId: string): Promise<void> {
+    await this.database.transaction(async (tx) => {
+      const [topic] = await tx.select({ authorId: forumTopics.authorId }).from(forumTopics)
+        .where(eq(forumTopics.id, topicId)).for("update");
+      if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
+      if (topic.authorId !== actorId) throw new ForumAuthorizationError("only the topic author may solve it");
+      await tx.update(forumTopics).set({ isSolved: true }).where(eq(forumTopics.id, topicId));
+    });
+  }
+
+  async selectBestAnswer(topicId: string, postId: string, actorId: string): Promise<void> {
+    await this.database.transaction(async (tx) => {
+      const [topic] = await tx.select({ authorId: forumTopics.authorId, isSolved: forumTopics.isSolved })
+        .from(forumTopics).where(eq(forumTopics.id, topicId)).for("update");
+      if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
+      if (topic.authorId !== actorId) throw new ForumAuthorizationError("only the topic author may select an answer");
+      if (!topic.isSolved) throw new ForumStateConflictError("topic must be solved first");
+      const [post] = await tx.select({ topicId: forumPosts.topicId }).from(forumPosts).where(eq(forumPosts.id, postId));
+      if (!post) throw new ForumEntityNotFoundError("post does not exist");
+      if (post.topicId !== topicId) throw new ForumStateConflictError("post belongs to another topic");
+      await tx.update(forumTopics).set({ bestAnswerPostId: postId }).where(eq(forumTopics.id, topicId));
+    });
   }
 
   async readPost(id: string): Promise<ForumPost | undefined> {

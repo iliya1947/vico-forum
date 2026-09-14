@@ -5,7 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { loadPersistentRegistry } from "../../app/localization/persistent-registry";
 import { parseLocaleCandidate } from "../../app/localization/locale";
 import { AmbiguousCommitOutcomeError, ControlledLocaleWriter, DrizzleLocaleRepository } from "../../db/locale-repository";
-import { ConcurrentRevisionError, DrizzleForumRepository } from "../../db/forum-repository";
+import { ConcurrentRevisionError, DrizzleForumRepository, ForumAuthorizationError, ForumEntityNotFoundError, ForumStateConflictError } from "../../db/forum-repository";
 import { ForumService, InvalidForumContentError } from "../../db/forum-service";
 import { createHyperdriveForumWriter } from "../../db/hyperdrive-forum";
 import { FORUM_WRITE_COOLDOWN_MS, ForumWriteRateLimitError } from "../../db/forum-write-policy";
@@ -49,7 +49,7 @@ describe("PostgreSQL 17 locale migrations", () => {
     const applied = await client.query<{ count: string }>(
       'select count(*)::text as count from drizzle."__drizzle_migrations"',
     );
-    expect(applied.rows[0]?.count).toBe("5");
+    expect(applied.rows[0]?.count).toBe("6");
   });
 
   it("creates and reads the category, section, topic, and post hierarchy with independent revisions", async () => {
@@ -138,6 +138,29 @@ describe("PostgreSQL 17 locale migrations", () => {
         await client.query("delete from forum_topics where id = $1", [createdTopicId]);
       }
     }
+  });
+
+  it("atomically enforces topic-author and topic/post solution consistency", async () => {
+    const repository = new DrizzleForumRepository(drizzle(client));
+    const forum = new ForumService(repository);
+    await insertForumAuthor("solution-author", "solution@example.test", null);
+    await insertForumAuthor("solution-other", "solution-other@example.test", null);
+    await forum.createTopic({ id: "solution-topic", sectionId: "typescript", authorId: "solution-author", titleRevision: { id: "solution-title", originalContent: "Solution", sourceLocale: "en" } });
+    await forum.createPost({ id: "solution-post-1", topicId: "solution-topic", authorId: "solution-other", bodyRevision: { id: "solution-body-1", originalContent: "One", sourceLocale: "en" } });
+    await forum.createPost({ id: "solution-post-2", topicId: "solution-topic", authorId: "solution-other", bodyRevision: { id: "solution-body-2", originalContent: "Two", sourceLocale: "en" } });
+
+    await expect(forum.selectBestAnswer("solution-topic", "solution-post-1", "solution-author")).rejects.toBeInstanceOf(ForumStateConflictError);
+    await expect(forum.markTopicSolved("solution-topic", "solution-other")).rejects.toBeInstanceOf(ForumAuthorizationError);
+    await forum.markTopicSolved("solution-topic", "solution-author");
+    await expect(forum.selectBestAnswer("solution-topic", "missing", "solution-author")).rejects.toBeInstanceOf(ForumEntityNotFoundError);
+    await expect(forum.selectBestAnswer("solution-topic", "post-1", "solution-author")).rejects.toBeInstanceOf(ForumStateConflictError);
+    await forum.selectBestAnswer("solution-topic", "solution-post-1", "solution-author");
+    expect(await repository.readTopicPage("solution-topic")).toMatchObject({ isSolved: true, bestAnswerPostId: "solution-post-1" });
+    await forum.selectBestAnswer("solution-topic", "solution-post-2", "solution-author");
+    expect(await repository.readTopicPage("solution-topic")).toMatchObject({ isSolved: true, bestAnswerPostId: "solution-post-2" });
+
+    await client.query("delete from forum_topics where id = 'solution-topic'");
+    await client.query('delete from "user" where id = any($1::text[])', [["solution-author", "solution-other"]]);
   });
 
   it("enforces one shared deterministic topic/reply cooldown per author without partial writes", async () => {

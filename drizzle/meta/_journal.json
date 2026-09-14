@@ -36,6 +36,13 @@
       "when": 1789398277610,
       "tag": "0004_forum_domain_foundation",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1789425022551,
+      "tag": "0005_calm_proemial_gods",
+      "breakpoints": true
     }
   ]
 }
