@@ -1,10 +1,11 @@
 import { RouterContextProvider } from "react-router";
 import { describe, expect, it, vi } from "vitest";
-import { localeContext, registryLoaderContext } from "../localization/request-context";
+import { localeContext, registryLoaderContext, uiTranslationStoreContext } from "../localization/request-context";
 import { assemblePersistentRegistry } from "../localization/persistent-registry";
 import { localeRegistry } from "../localization/registry";
-import { middleware } from "./locale-boundary";
+import { loader, middleware } from "./locale-boundary";
 import { authSessionContext } from "../auth/request-context";
+import { authorizationContext } from "../authorization/request-context";
 
 function contextWithFixtureRegistry() {
   const context = new RouterContextProvider();
@@ -112,5 +113,36 @@ describe("locale boundary middleware", () => {
       expect(response.headers.get("Cache-Control")).toBe("no-store");
     }
     expect(next).not.toHaveBeenCalled();
+  });
+});
+
+describe("locale boundary loader", () => {
+  it("keeps public pages available when the optional authorization-nav lookup fails", async () => {
+    const context = new RouterContextProvider();
+    context.set(localeContext, {
+      translationLocale: "en", fallbackLocales: [], direction: "ltr",
+      formatting: { locale: "en", timeZone: "UTC" }, nativeName: "English", presentationMetadata: {},
+    });
+    context.set(uiTranslationStoreContext, { readApproved: vi.fn(async () => []) });
+    context.set(authSessionContext, {
+      user: {
+        id: "user-1", name: "Vico", email: "vico@example.test", emailVerified: true,
+        createdAt: new Date(), updatedAt: new Date(), locale: "en",
+      },
+      session: {
+        id: "session-1", token: "token", userId: "user-1", expiresAt: new Date(Date.now() + 60_000),
+        createdAt: new Date(), updatedAt: new Date(),
+      },
+    });
+    context.set(authorizationContext, {
+      forUser: () => ({ resolve: vi.fn(), has: vi.fn(async () => { throw new Error("database unavailable"); }) }),
+    } as never);
+
+    const snapshot = await loader({
+      request: new Request("https://vico.test/en/"), params: { locale: "en" }, context,
+    });
+
+    expect(snapshot.authUser).toEqual({ name: "Vico", canManageAuthorization: false });
+    expect(snapshot.locale.translationLocale).toBe("en");
   });
 });

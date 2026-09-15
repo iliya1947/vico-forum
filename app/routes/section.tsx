@@ -1,10 +1,13 @@
-import { Form, Link, redirect, useActionData, useLoaderData, type RouterContextProvider } from "react-router";
+import { Form, Link, useActionData, useLoaderData, type RouterContextProvider } from "react-router";
 import { useTranslation } from "react-i18next";
 import { authSessionForRequest } from "../auth/request-context";
-import { forumMutationGuard, requiredFormText, runForumMutation, mutationFailure, type ForumMutationError } from "../forum/mutations.server";
+import { authorizationForRequest } from "../authorization/request-context";
 import { forumCategoryPath, forumTopicPath } from "../forum/paths";
 import { forumReaderForRequest } from "../forum/request-context";
+import type { ForumMutationError } from "../forum/mutations.server";
 import { Breadcrumbs, EmptyState, ForumRouteError, ForumShell } from "../forum/ui";
+
+export { sectionAction as action } from "../forum/actions.server";
 
 export async function loader({ params, context }: {
   params: { locale?: string; sectionId?: string };
@@ -12,30 +15,20 @@ export async function loader({ params, context }: {
 }) {
   const section = await forumReaderForRequest(context).readSection(params.sectionId ?? "");
   if (!section) throw new Response("Not Found", { status: 404 });
-  return { locale: params.locale ?? "en", section, authenticated: authSessionForRequest(context) !== null };
-}
-
-export async function action({ request, params, context }: {
-  request: Request; params: { locale?: string; sectionId?: string }; context: RouterContextProvider;
-}) {
-  const sectionId = typeof params.sectionId === "string" && params.sectionId.trim() ? params.sectionId : undefined;
-  const locale = typeof params.locale === "string" && params.locale.trim() ? params.locale : undefined;
-  if (!sectionId || !locale) return mutationFailure("invalid", 400);
-  const denied = forumMutationGuard(request, context);
-  if (denied) return denied;
-  let formData: FormData;
-  try { formData = await request.formData(); } catch { return mutationFailure("invalid", 400); }
-  const title = requiredFormText(formData, "title");
-  const body = requiredFormText(formData, "body");
-  if (!title || !body) return mutationFailure("invalid", 400);
-  return runForumMutation(request, context, async (writer, authorId) => {
-    const created = await writer.createTopic({ sectionId, authorId, title, body });
-    return redirect(forumTopicPath(locale, created.topicId));
-  });
+  const session = authSessionForRequest(context);
+  let canCreateTopic = false;
+  if (session) {
+    try {
+      canCreateTopic = await authorizationForRequest(context).forUser(session.user.id).has("forum.topic.create");
+    } catch {
+      // Public section reads remain available when optional presentation authorization is unavailable.
+    }
+  }
+  return { locale: params.locale ?? "en", section, canCreateTopic };
 }
 
 export default function SectionRoute() {
-  const { locale, section, authenticated } = useLoaderData<typeof loader>();
+  const { locale, section, canCreateTopic } = useLoaderData<typeof loader>();
   const actionData = useActionData<ForumMutationError>();
   const { t } = useTranslation("common");
   return (
@@ -58,7 +51,7 @@ export default function SectionRoute() {
           ))}
         </div>
       )}
-      {authenticated && <Form method="post" className="forum-write-form">
+      {canCreateTopic && <Form method="post" className="forum-write-form">
         <h2>{t("createTopicHeading")}</h2>
         {actionData?.error && <p role="alert">{t(`forumWriteError_${actionData.error}`)}</p>}
         <label>{t("topicTitleLabel")}<input name="title" required /></label>

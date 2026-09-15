@@ -290,7 +290,7 @@ describe("PostgreSQL 17 locale migrations", () => {
 
       await expect(forum.selectBestAnswer("solution-topic", "solution-post-1", "solution-author")).rejects.toBeInstanceOf(ForumStateConflictError);
       await expect(forum.markTopicSolved("solution-topic", "solution-other")).rejects.toBeInstanceOf(ForumAuthorizationError);
-      await forum.markTopicSolved("solution-topic", "solution-author");
+      await forum.markTopicSolved("solution-topic", "solution-other", "any");
       await expect(forum.selectBestAnswer("solution-topic", "missing", "solution-author")).rejects.toBeInstanceOf(ForumEntityNotFoundError);
       await expect(forum.selectBestAnswer("solution-topic", "post-1", "solution-author")).rejects.toBeInstanceOf(ForumStateConflictError);
 
@@ -307,6 +307,8 @@ describe("PostgreSQL 17 locale migrations", () => {
       expect(await repository.readTopicPage("solution-topic")).toMatchObject({ isSolved: true, bestAnswerPostId: "solution-post-1" });
       await forum.selectBestAnswer("solution-topic", "solution-post-2", "solution-author");
       expect(await repository.readTopicPage("solution-topic")).toMatchObject({ isSolved: true, bestAnswerPostId: "solution-post-2" });
+      await forum.selectBestAnswer("solution-topic", "solution-post-1", "solution-other", "any");
+      expect(await repository.readTopicPage("solution-topic")).toMatchObject({ bestAnswerPostId: "solution-post-1" });
 
       await client.query("delete from forum_topics where id = 'solution-topic'");
       const deletedGraph = await client.query<{ topics: number; posts: number; titles: number; bodies: number }>(`

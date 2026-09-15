@@ -118,6 +118,7 @@ export class ConcurrentRevisionError extends Error {}
 export class ForumEntityNotFoundError extends Error {}
 export class ForumAuthorizationError extends Error {}
 export class ForumStateConflictError extends Error {}
+export type SolutionManagementScope = "own" | "any";
 
 export class DrizzleForumRepository {
   constructor(
@@ -372,22 +373,23 @@ export class DrizzleForumRepository {
     };
   }
 
-  async markTopicSolved(topicId: string, actorId: string): Promise<void> {
+  async markTopicSolved(topicId: string, actorId: string, scope: SolutionManagementScope = "own"): Promise<void> {
     await this.database.transaction(async (tx) => {
-      const [topic] = await tx.select({ authorId: forumTopics.authorId }).from(forumTopics)
+      const [topic] = await tx.select({ authorId: forumTopics.authorId, isSolved: forumTopics.isSolved }).from(forumTopics)
         .where(eq(forumTopics.id, topicId)).for("update");
       if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
-      if (topic.authorId !== actorId) throw new ForumAuthorizationError("only the topic author may solve it");
+      if (scope === "own" && topic.authorId !== actorId) throw new ForumAuthorizationError("only the topic author may solve it");
+      if (topic.isSolved) throw new ForumStateConflictError("topic is already solved");
       await tx.update(forumTopics).set({ isSolved: true }).where(eq(forumTopics.id, topicId));
     });
   }
 
-  async selectBestAnswer(topicId: string, postId: string, actorId: string): Promise<void> {
+  async selectBestAnswer(topicId: string, postId: string, actorId: string, scope: SolutionManagementScope = "own"): Promise<void> {
     await this.database.transaction(async (tx) => {
       const [topic] = await tx.select({ authorId: forumTopics.authorId, isSolved: forumTopics.isSolved })
         .from(forumTopics).where(eq(forumTopics.id, topicId)).for("update");
       if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
-      if (topic.authorId !== actorId) throw new ForumAuthorizationError("only the topic author may select an answer");
+      if (scope === "own" && topic.authorId !== actorId) throw new ForumAuthorizationError("only the topic author may select an answer");
       if (!topic.isSolved) throw new ForumStateConflictError("topic must be solved first");
       const [post] = await tx.select({ topicId: forumPosts.topicId }).from(forumPosts).where(eq(forumPosts.id, postId));
       if (!post) throw new ForumEntityNotFoundError("post does not exist");

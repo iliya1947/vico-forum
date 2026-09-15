@@ -18,6 +18,7 @@ import {
 import { CanonicalEnglishSource, LocalTranslationSource } from "../localization/sources";
 import { authSessionForRequest } from "../auth/request-context";
 import { HeaderAuthProvider } from "../auth/auth-controls";
+import { authorizationForRequest } from "../authorization/request-context";
 
 interface LocaleBoundaryArgs {
   request: Request;
@@ -75,7 +76,16 @@ export async function loader(args: LocaleBoundaryArgs) {
   ]);
   const snapshot = await resourceLoader.load(locale, ["common"]);
   const session = authSessionForRequest(args.context);
-  return { ...snapshot, authUser: session ? { name: session.user.name } : null };
+  let canManageAuthorization = false;
+  if (session) {
+    const resolver = authorizationForRequest(args.context).forUser(session.user.id);
+    try {
+      canManageAuthorization = await resolver.has("access.authorization.manage");
+    } catch {
+      // The header link is presentation-only; the protected admin route checks permission independently.
+    }
+  }
+  return { ...snapshot, authUser: session ? { name: session.user.name, canManageAuthorization } : null };
 }
 
 export default function LocaleBoundary() {

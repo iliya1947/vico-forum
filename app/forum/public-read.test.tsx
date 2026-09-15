@@ -123,7 +123,7 @@ describe("forum read states", () => {
   });
 
   it("shows solution controls only to the topic author", async () => {
-    const unsolved = { locale: "en", topic, authenticated: true, canManageSolution: true };
+    const unsolved = { locale: "en", topic, canReply: true, canManageSolution: true };
     const authorView = renderRoute(TopicRoute, unsolved, "/en/topics/typed-api", "en", "ltr");
     expect(await screen.findByRole("button", { name: "Mark as solved" })).toBeInTheDocument();
     authorView.unmount();
@@ -132,15 +132,15 @@ describe("forum read states", () => {
   });
 
   it("shows forum write forms only for an authenticated loader result", async () => {
-    const guestView = renderRoute(SectionRoute, { locale: "en", section, authenticated: false }, "/en/sections/typescript", "en", "ltr");
+    const guestView = renderRoute(SectionRoute, { locale: "en", section, canCreateTopic: false }, "/en/sections/typescript", "en", "ltr");
     expect(screen.queryByRole("heading", { name: "Create a new topic" })).not.toBeInTheDocument();
     guestView.unmount();
 
-    const authenticatedView = renderRoute(SectionRoute, { locale: "en", section, authenticated: true }, "/en/sections/typescript", "en", "ltr");
+    const authenticatedView = renderRoute(SectionRoute, { locale: "en", section, canCreateTopic: true }, "/en/sections/typescript", "en", "ltr");
     expect(await screen.findByRole("heading", { name: "Create a new topic" })).toBeInTheDocument();
     authenticatedView.unmount();
 
-    renderRoute(TopicRoute, { locale: "en", topic, authenticated: true, canManageSolution: false }, "/en/topics/typed-api", "en", "ltr");
+    renderRoute(TopicRoute, { locale: "en", topic, canReply: true, canManageSolution: false }, "/en/topics/typed-api", "en", "ltr");
     expect(await screen.findByRole("heading", { name: "Add a reply" })).toBeInTheDocument();
   });
 

@@ -5,6 +5,7 @@ import type {
   CreateTopicWithInitialPostInput,
   DrizzleForumRepository,
   ForumRevisionContent,
+  SolutionManagementScope,
 } from "./forum-repository";
 
 export class InvalidForumContentError extends Error {}
@@ -68,15 +69,21 @@ export class ForumService {
   readTopic(id: string) { return this.repository.readTopic(id); }
   readPost(id: string) { return this.repository.readPost(id); }
   readHierarchy(categoryId: string) { return this.repository.readHierarchy(categoryId); }
-  markTopicSolved(topicId: string, actorId: string) {
+  markTopicSolved(topicId: string, actorId: string, scope: SolutionManagementScope = "own") {
     validateEntity(topicId, actorId);
-    return this.repository.markTopicSolved(topicId, actorId);
+    validateSolutionScope(scope);
+    return this.repository.markTopicSolved(topicId, actorId, scope);
   }
-  selectBestAnswer(topicId: string, postId: string, actorId: string) {
+  selectBestAnswer(topicId: string, postId: string, actorId: string, scope: SolutionManagementScope = "own") {
     validateEntity(topicId, actorId);
     requireText(postId, "post id");
-    return this.repository.selectBestAnswer(topicId, postId, actorId);
+    validateSolutionScope(scope);
+    return this.repository.selectBestAnswer(topicId, postId, actorId, scope);
   }
+}
+
+function validateSolutionScope(scope: SolutionManagementScope) {
+  if (scope !== "own" && scope !== "any") throw new InvalidForumContentError("solution scope is invalid");
 }
 
 function validateEntity(id: string, authorId: string) {

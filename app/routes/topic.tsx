@@ -1,11 +1,14 @@
-import { Form, redirect, useActionData, useLoaderData, type RouterContextProvider } from "react-router";
+import { Form, useActionData, useLoaderData, type RouterContextProvider } from "react-router";
 import { useTranslation } from "react-i18next";
 import { authSessionForRequest } from "../auth/request-context";
-import { forumMutationGuard, mutationFailure, requiredFormText, runForumMutation, type ForumMutationError } from "../forum/mutations.server";
-import { forumCategoryPath, forumSectionPath, forumTopicPath } from "../forum/paths";
+import { authorizationForRequest } from "../authorization/request-context";
+import { forumCategoryPath, forumSectionPath } from "../forum/paths";
 import { forumReaderForRequest } from "../forum/request-context";
+import type { ForumMutationError } from "../forum/mutations.server";
 import { ForumMarkdown } from "../forum/markdown";
 import { Breadcrumbs, EmptyState, ForumRouteError, ForumShell } from "../forum/ui";
+
+export { topicAction as action } from "../forum/actions.server";
 
 export async function loader({ params, context }: {
   params: { locale?: string; topicId?: string };
@@ -14,43 +17,21 @@ export async function loader({ params, context }: {
   const topic = await forumReaderForRequest(context).readTopicPage(params.topicId ?? "");
   if (!topic) throw new Response("Not Found", { status: 404 });
   const session = authSessionForRequest(context);
-  return { locale: params.locale ?? "en", topic, authenticated: session !== null, canManageSolution: session?.user.id === topic.authorId };
-}
-
-export async function action({ request, params, context }: {
-  request: Request; params: { locale?: string; topicId?: string }; context: RouterContextProvider;
-}) {
-  const topicId = typeof params.topicId === "string" && params.topicId.trim() ? params.topicId : undefined;
-  const locale = typeof params.locale === "string" && params.locale.trim() ? params.locale : undefined;
-  if (!topicId || !locale) return mutationFailure("invalid", 400);
-  const denied = forumMutationGuard(request, context);
-  if (denied) return denied;
-  let formData: FormData;
-  try { formData = await request.formData(); } catch { return mutationFailure("invalid", 400); }
-  const intent = requiredFormText(formData, "intent") ?? "reply";
-  if (intent === "markSolved") return runForumMutation(request, context, async (writer, actorId) => {
-    await writer.markTopicSolved({ topicId, actorId });
-    return redirect(forumTopicPath(locale, topicId));
-  });
-  if (intent === "selectBestAnswer") {
-    const postId = requiredFormText(formData, "postId");
-    if (!postId) return mutationFailure("invalid", 400);
-    return runForumMutation(request, context, async (writer, actorId) => {
-      await writer.selectBestAnswer({ topicId, postId, actorId });
-      return redirect(`${forumTopicPath(locale, topicId)}#post-${encodeURIComponent(postId)}`);
-    });
+  let canReply = false, canManageSolution = false;
+  if (session) {
+    try {
+      const resolver = authorizationForRequest(context).forUser(session.user.id);
+      const [reply, any, own] = await Promise.all([resolver.has("forum.reply.create"), resolver.has("forum.solution.manageAny"), resolver.has("forum.solution.manageOwn")]);
+      canReply = reply; canManageSolution = any || (own && session.user.id === topic.authorId);
+    } catch {
+      // Public topic reads remain available when optional presentation authorization is unavailable.
+    }
   }
-  if (intent !== "reply") return mutationFailure("invalid", 400);
-  const body = requiredFormText(formData, "body");
-  if (!body) return mutationFailure("invalid", 400);
-  return runForumMutation(request, context, async (writer, authorId) => {
-    await writer.createReply({ topicId, authorId, body });
-    return redirect(forumTopicPath(locale, topicId));
-  });
+  return { locale: params.locale ?? "en", topic, canReply, canManageSolution };
 }
 
 export default function TopicRoute() {
-  const { locale, topic, authenticated, canManageSolution } = useLoaderData<typeof loader>();
+  const { locale, topic, canReply, canManageSolution } = useLoaderData<typeof loader>();
   const actionData = useActionData<ForumMutationError>();
   const { t } = useTranslation("common");
   return (
@@ -77,7 +58,7 @@ export default function TopicRoute() {
           ))}
         </ol>
       )}
-      {authenticated && <Form method="post" className="forum-write-form">
+      {canReply && <Form method="post" className="forum-write-form">
         <h2>{t("replyHeading")}</h2>
         {actionData?.error && <p role="alert">{t(`forumWriteError_${actionData.error}`)}</p>}
         <label>{t("replyBodyLabel")}<textarea name="body" required rows={7} /></label>
