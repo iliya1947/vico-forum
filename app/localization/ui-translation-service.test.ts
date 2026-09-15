@@ -36,6 +36,7 @@ async function persistentRow(
   origin: Origin,
   locale = "fr-CA",
   fingerprint?: string,
+  generationPolicyVersion = "ui-policy-v1",
 ): Promise<PersistentUiTranslationRow> {
   return {
     locale,
@@ -45,6 +46,7 @@ async function persistentRow(
     status: "approved",
     sourceFingerprint: fingerprint ?? await sourceFingerprint(canonicalEnglishCatalog.common.heading),
     translatedPayload: "Fondation de traduction",
+    generationPolicyVersion: origin === "machine" ? generationPolicyVersion : null,
   };
 }
 
@@ -117,6 +119,18 @@ describe("UiTranslationService", () => {
 
   it("does not dispatch a duplicate for a current machine translation", async () => {
     expect((await headingJob([await persistentRow("machine")])).heading).toBeUndefined();
+  });
+
+  it("regenerates a machine translation created under an older generation policy", async () => {
+    const unchangedFingerprint = await sourceFingerprint(canonicalEnglishCatalog.common.heading);
+    const oldPolicyRow = await persistentRow("machine", "fr-CA", unchangedFingerprint, "ui-policy-v0");
+
+    const { heading } = await headingJob([oldPolicyRow]);
+
+    expect(heading).toMatchObject({
+      sourceFingerprint: unchangedFingerprint,
+      generationPolicyVersion: "ui-policy-v1",
+    });
   });
 
   it.each(["local manual", "persistent manual", "machine"])(

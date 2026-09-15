@@ -59,7 +59,11 @@ export class UiTranslationService {
       throw new Error("generationPolicyVersion must not be blank");
     }
     this.#manualSource = new DatabaseManualTranslationSource(dependencies.persistentStore);
-    this.#machineSource = new DatabaseMachineTranslationSource(dependencies.persistentStore);
+    this.#machineSource = new DatabaseMachineTranslationSource(
+      dependencies.persistentStore,
+      undefined,
+      dependencies.generationPolicyVersion,
+    );
   }
 
   async plan(request: UiTranslationGenerationRequest): Promise<readonly UiTranslationJobSpecification[]> {

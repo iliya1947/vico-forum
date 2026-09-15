@@ -129,8 +129,9 @@ Stage 4E2b authorization integration и management UI:
 
 - `UiTranslationService` строит deterministic exact-target plan только для зарегистрированного
   canonical non-English locale и canonical catalog namespaces;
-- current local manual, persistent manual и machine values подавляют duplicate generation, а
-  missing/stale exact-target units формируют versioned stable job identity;
+- current local manual, persistent manual и machine values текущей generation policy подавляют
+  duplicate generation, а missing/source-stale/policy-stale exact-target units формируют versioned
+  stable job identity;
 - provider/transport-independent `TranslationJobDispatcher` принимает план без подключения Queue,
   provider, durable task schema или SSR/runtime generation path.
 

@@ -37,6 +37,7 @@ async function row(
     status: "approved",
     sourceFingerprint: fingerprint ?? await sourceFingerprint(canonicalEnglishCatalog.common[key]),
     translatedPayload: value,
+    generationPolicyVersion: origin === "machine" ? "ui-policy-v1" : null,
   };
 }
 
@@ -73,6 +74,20 @@ describe("persistent UI translation sources", () => {
 
     expect(snapshot.resourcesByLocale.ru?.common?.heading).toBe("Актуальный машинный перевод");
     expect(snapshot.staleKeys.ru).toContain("common:heading");
+  });
+
+  it("can exclude a machine value from generation planning when its policy is stale", async () => {
+    const machine = await row("machine", "Старый машинный перевод");
+    machine.generationPolicyVersion = "ui-policy-v0";
+
+    const result = await new DatabaseMachineTranslationSource(
+      store([machine]),
+      undefined,
+      "ui-policy-v1",
+    ).load("ru", ["common"]);
+
+    expect(result.resources.common?.heading).toBeUndefined();
+    expect(result.staleKeys).toEqual(["common:heading"]);
   });
 
   it("skips approved historical rows whose canonical key no longer exists and reports the reason", async () => {
