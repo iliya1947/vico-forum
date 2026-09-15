@@ -110,16 +110,18 @@ Stage 4A был выполнен до reprioritization roadmap и сохраня
 - без Better Auth runtime, routes, Google OAuth, auth Hyperdrive/role/grants или Worker
   auth write-capability.
 
-Stage 4A **не задаёт следующий infrastructure шаг**. Active Stage 4 продолжается через
-forum-core работу 4B–4E.
+Stage 4A **не задаёт следующий infrastructure шаг**. Forum-core работа 4B–4E впоследствии
+завершена в local/CI path; текущий продуктовый приоритет — Stage 5.
 
 ---
 
 # Active product-first roadmap
 
-## Stage 4 — сделать рабочее ядро форума
+## Stage 4 — сделать рабочее ядро форума — завершён
 
-Stage 4 — текущий продуктовый приоритет. Он выполняется серией компактных PR `4B → 4C → 4D → 4E`.
+Stage 4 завершён в local/CI path серией компактных PR `4B → 4C → 4D → 4E`. Ниже сохраняется
+completion record реализованного forum core; external production rollout не являлся критерием
+завершения Stage 4 и остаётся отдельной границей Stage 6.
 
 Критерий завершения всего Stage 4: в local/CI environment существует реально используемый
 forum MVP с публичным чтением, authenticated participation, solved/best-answer flow и
@@ -235,8 +237,8 @@ production rollout не является критерием завершения
 
 ## Stage 5 — завершить automatic translations и background jobs
 
-Stage 5 выполняется **после рабочего forum core**. Архитектура уже зафиксирована; здесь
-добавляется недостающая реализация.
+Stage 5 — **текущий продуктовый приоритет** после завершённого Stage 4 forum core.
+Архитектура уже зафиксирована; здесь добавляется недостающая реализация в local/CI path.
 
 **Translation components:** `UI-11`, `UI-12` provider validation, `UI-13`, `UI-14`
 publish/runtime consumption, `CNT-01`–`CNT-06`, `PRV-01`, `PRV-02`, `JOB-01`–`JOB-06`,
