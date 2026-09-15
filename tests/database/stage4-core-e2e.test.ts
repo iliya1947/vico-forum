@@ -15,9 +15,13 @@ import { DrizzleForumRepository } from "../../db/forum-repository";
 import { createHyperdriveForumWriter } from "../../db/hyperdrive-forum";
 import { FORUM_WRITE_COOLDOWN_MS } from "../../db/forum-write-policy";
 
-const databaseUrl = process.env.DATABASE_URL;
-if (!databaseUrl) throw new Error("DATABASE_URL is required for the disposable database integration test");
+function requiredDatabaseUrl(): string {
+  const value = process.env.DATABASE_URL;
+  if (!value) throw new Error("DATABASE_URL is required for the disposable database integration test");
+  return value;
+}
 
+const databaseUrl = requiredDatabaseUrl();
 const parsedDatabaseUrl = new URL(databaseUrl);
 if (!["127.0.0.1", "localhost"].includes(parsedDatabaseUrl.hostname) || !parsedDatabaseUrl.pathname.endsWith("_test")) {
   throw new Error("Database integration tests only run against a local database ending in _test");
