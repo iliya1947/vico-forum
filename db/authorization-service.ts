@@ -23,9 +23,9 @@ export class AuthorizationService {
       id: crypto.randomUUID(), slug: slug(input.slug), displayName: text(input.displayName, "display name"),
     });
   }
-  renameCustomRole(actorId: string, roleId: string, input: { slug: string; displayName: string }) {
+  renameCustomRole(actorId: string, roleId: string, input: { displayName: string }) {
     return this.repository.renameCustomRole(text(actorId, "actor id"), text(roleId, "role id"), {
-      slug: slug(input.slug), displayName: text(input.displayName, "display name"),
+      displayName: text(input.displayName, "display name"),
     });
   }
   replaceRoleGrants(actorId: string, roleId: string, permissions: unknown) {
@@ -58,7 +58,7 @@ export function createAuthorizationCapability(repository: PostgresAuthorizationR
       resolve,
       async has(permission) {
         if (!PERMISSION_CATALOG.includes(permission)) invalid("permission must be a known catalog key");
-        return (await resolve()).effectivePermissions.includes(permission);
+        return repository.hasPermission(validUserId, permission);
       },
     };
   } };
