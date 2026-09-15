@@ -77,17 +77,17 @@ INSERT INTO "authz_role_permissions" ("role_id", "permission_key") VALUES
 --> statement-breakpoint
 INSERT INTO "authz_mutation_lock" ("id") VALUES (1);
 --> statement-breakpoint
-CREATE FUNCTION authz_protect_system_roles() RETURNS trigger LANGUAGE plpgsql AS $$
+CREATE FUNCTION authz_protect_role_identity() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'DELETE' THEN
     IF OLD.is_system THEN RAISE EXCEPTION 'built-in authorization roles cannot be deleted' USING ERRCODE = '23514'; END IF;
     RETURN OLD;
   END IF;
-  IF OLD.is_system AND (NEW.slug <> OLD.slug OR NOT NEW.is_system) THEN
-    RAISE EXCEPTION 'built-in authorization role identity cannot be changed' USING ERRCODE = '23514';
+  IF NEW.slug <> OLD.slug OR NEW.is_system <> OLD.is_system THEN
+    RAISE EXCEPTION 'authorization role identity cannot be changed' USING ERRCODE = '23514';
   END IF;
   RETURN NEW;
 END $$;
 --> statement-breakpoint
-CREATE TRIGGER authz_protect_system_roles_trigger BEFORE UPDATE OR DELETE ON authz_roles
-FOR EACH ROW EXECUTE FUNCTION authz_protect_system_roles();
+CREATE TRIGGER authz_protect_role_identity_trigger BEFORE UPDATE OR DELETE ON authz_roles
+FOR EACH ROW EXECUTE FUNCTION authz_protect_role_identity();
