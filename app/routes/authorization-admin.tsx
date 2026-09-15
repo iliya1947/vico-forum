@@ -13,7 +13,14 @@ async function manager(context: RouterContextProvider) {
   const session = authSessionForRequest(context);
   if (!session) throw new Response("Unauthenticated", { status: 401 });
   const capability = authorizationForRequest(context);
-  if (!(await capability.forUser(session.user.id).has("access.authorization.manage"))) throw new Response("Forbidden", { status: 403 });
+  try {
+    if (!(await capability.forUser(session.user.id).has("access.authorization.manage"))) {
+      throw new Response("Forbidden", { status: 403 });
+    }
+  } catch (error) {
+    if (error instanceof Response) throw error;
+    throw new Response("Unavailable", { status: 503 });
+  }
   return { actorId: session.user.id, capability };
 }
 
