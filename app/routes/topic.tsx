@@ -1,12 +1,14 @@
-import { Form, redirect, useActionData, useLoaderData, type RouterContextProvider } from "react-router";
+import { Form, useActionData, useLoaderData, type RouterContextProvider } from "react-router";
 import { useTranslation } from "react-i18next";
 import { authSessionForRequest } from "../auth/request-context";
-import { forumMutationGuard, mutationFailure, requireForumPermission, requiredFormText, runForumMutation, solutionScope, type ForumMutationError } from "../forum/mutations.server";
 import { authorizationForRequest } from "../authorization/request-context";
-import { forumCategoryPath, forumSectionPath, forumTopicPath } from "../forum/paths";
+import { forumCategoryPath, forumSectionPath } from "../forum/paths";
 import { forumReaderForRequest } from "../forum/request-context";
+import type { ForumMutationError } from "../forum/mutations.server";
 import { ForumMarkdown } from "../forum/markdown";
 import { Breadcrumbs, EmptyState, ForumRouteError, ForumShell } from "../forum/ui";
+
+export { topicAction as action } from "../forum/actions.server";
 
 export async function loader({ params, context }: {
   params: { locale?: string; topicId?: string };
@@ -22,42 +24,6 @@ export async function loader({ params, context }: {
     canReply = reply; canManageSolution = any || (own && session.user.id === topic.authorId);
   }
   return { locale: params.locale ?? "en", topic, canReply, canManageSolution };
-}
-
-export async function action({ request, params, context }: {
-  request: Request; params: { locale?: string; topicId?: string }; context: RouterContextProvider;
-}) {
-  const topicId = typeof params.topicId === "string" && params.topicId.trim() ? params.topicId : undefined;
-  const locale = typeof params.locale === "string" && params.locale.trim() ? params.locale : undefined;
-  if (!topicId || !locale) return mutationFailure("invalid", 400);
-  const denied = forumMutationGuard(request, context);
-  if (denied) return denied;
-  let formData: FormData;
-  try { formData = await request.formData(); } catch { return mutationFailure("invalid", 400); }
-  const intent = requiredFormText(formData, "intent") ?? "reply";
-  if (intent === "markSolved") {
-    const authorization = await solutionScope(context); if ("error" in authorization) return authorization.error;
-    return runForumMutation(request, context, async (writer, actorId) => {
-    await writer.markTopicSolved({ topicId, actorId, scope: authorization.scope });
-    return redirect(forumTopicPath(locale, topicId));
-  }); }
-  if (intent === "selectBestAnswer") {
-    const postId = requiredFormText(formData, "postId");
-    if (!postId) return mutationFailure("invalid", 400);
-    const authorization = await solutionScope(context); if ("error" in authorization) return authorization.error;
-    return runForumMutation(request, context, async (writer, actorId) => {
-      await writer.selectBestAnswer({ topicId, postId, actorId, scope: authorization.scope });
-      return redirect(`${forumTopicPath(locale, topicId)}#post-${encodeURIComponent(postId)}`);
-    });
-  }
-  if (intent !== "reply") return mutationFailure("invalid", 400);
-  const forbidden = await requireForumPermission(context, "forum.reply.create"); if (forbidden) return forbidden;
-  const body = requiredFormText(formData, "body");
-  if (!body) return mutationFailure("invalid", 400);
-  return runForumMutation(request, context, async (writer, authorId) => {
-    await writer.createReply({ topicId, authorId, body });
-    return redirect(forumTopicPath(locale, topicId));
-  });
 }
 
 export default function TopicRoute() {
