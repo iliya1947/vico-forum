@@ -2,9 +2,10 @@ import { RouterContextProvider } from "react-router";
 import { describe, expect, it, vi } from "vitest";
 import type { AuthSession } from "../auth/request-context";
 import { authSessionContext } from "../auth/request-context";
+import type { PermissionKey } from "../authorization/catalog";
+import { authorizationContext } from "../authorization/request-context";
 import type { ForumWriter } from "../../db/hyperdrive-forum";
 import { forumWriterContext } from "./request-context";
-import { authorizationContext } from "../authorization/request-context";
 import { action as sectionAction } from "../routes/section";
 import { action as topicAction } from "../routes/topic";
 import { ForumWriteRateLimitError } from "../../db/forum-write-policy";
@@ -15,18 +16,30 @@ const session = {
   session: { id: "session", token: "token", userId: "session-user", expiresAt: new Date(), createdAt: new Date(), updatedAt: new Date() },
 } satisfies AuthSession;
 
+const allForumPermissions = [
+  "forum.topic.create",
+  "forum.reply.create",
+  "forum.solution.manageOwn",
+  "forum.solution.manageAny",
+] as const satisfies readonly PermissionKey[];
+
 function request(path: string, fields: Record<string, string>, origin = "https://forum.example") {
   const body = new FormData();
   for (const [name, value] of Object.entries(fields)) body.set(name, value);
   return new Request(`https://forum.example${path}`, { method: "POST", headers: { Origin: origin }, body });
 }
 
-function context(writer: ForumWriter, authenticated = true) {
+function context(
+  writer: ForumWriter,
+  authenticated = true,
+  permissions: readonly PermissionKey[] = allForumPermissions,
+) {
   const value = new RouterContextProvider();
+  const allowed = new Set<PermissionKey>(permissions);
   value.set(authSessionContext, authenticated ? session : null);
   value.set(forumWriterContext, writer);
   value.set(authorizationContext, {
-    forUser: () => ({ resolve: vi.fn(), has: vi.fn(async () => true) }),
+    forUser: () => ({ resolve: vi.fn(), has: vi.fn(async (permission: PermissionKey) => allowed.has(permission)) }),
   } as never);
   return value;
 }
@@ -66,6 +79,26 @@ describe("forum write route actions", () => {
     expect(response.headers.get("Location")).toBe("/en/topics/topic-1");
   });
 
+  it("rejects authenticated users without topic/reply permissions before writing", async () => {
+    const topicWriter = writer();
+    const topicResponse = await sectionAction({
+      request: request("/en/sections/typescript", { title: "Denied", body: "Denied" }),
+      params: { locale: "en", sectionId: "typescript" },
+      context: context(topicWriter, true, ["forum.reply.create"]),
+    });
+    expect(topicResponse).toMatchObject({ data: { error: "forbidden" }, init: { status: 403 } });
+    expect(topicWriter.createTopic).not.toHaveBeenCalled();
+
+    const replyWriter = writer();
+    const replyResponse = await topicAction({
+      request: request("/en/topics/topic-1", { body: "Denied" }),
+      params: { locale: "en", topicId: "topic-1" },
+      context: context(replyWriter, true, ["forum.topic.create"]),
+    });
+    expect(replyResponse).toMatchObject({ data: { error: "forbidden" }, init: { status: 403 } });
+    expect(replyWriter.createReply).not.toHaveBeenCalled();
+  });
+
   it("rejects guest, cross-origin, blank, and invalid route input without writing", async () => {
     const guestWriter = writer();
     expect((await topicAction({ request: request("/en/topics/t", { body: "reply" }), params: { locale: "en", topicId: "t" }, context: context(guestWriter, false) }) as { init: { status: number } }).init.status).toBe(401);
@@ -95,24 +128,45 @@ describe("forum write route actions", () => {
     expect(JSON.stringify(response)).not.toContain("forum write cooldown is active");
   });
 
-  it("uses only the session actor for same-origin solution mutations", async () => {
-    const forumWriter = writer();
+  it("derives solution scope from server permissions and ignores forged authorization fields", async () => {
+    const ownWriter = writer();
     await topicAction({
-      request: request("/en/topics/topic-1", { intent: "markSolved", actorId: "forged-author" }),
-      params: { locale: "en", topicId: "topic-1" }, context: context(forumWriter),
+      request: request("/en/topics/topic-1", {
+        intent: "markSolved",
+        actorId: "forged-author",
+        authorId: "forged-author",
+        role: "admin",
+        permission: "forum.solution.manageAny",
+        scope: "any",
+      }),
+      params: { locale: "en", topicId: "topic-1" },
+      context: context(ownWriter, true, ["forum.solution.manageOwn"]),
     });
-    expect(forumWriter.markTopicSolved).toHaveBeenCalledWith({ topicId: "topic-1", actorId: "session-user", scope: "any" });
+    expect(ownWriter.markTopicSolved).toHaveBeenCalledWith({ topicId: "topic-1", actorId: "session-user", scope: "own" });
 
+    const anyWriter = writer();
     const selected = await topicAction({
-      request: request("/en/topics/topic-1", { intent: "selectBestAnswer", postId: "post-2", authorId: "forged-author" }),
-      params: { locale: "en", topicId: "topic-1" }, context: context(forumWriter),
+      request: request("/en/topics/topic-1", { intent: "selectBestAnswer", postId: "post-2", scope: "own" }),
+      params: { locale: "en", topicId: "topic-1" },
+      context: context(anyWriter, true, ["forum.solution.manageOwn", "forum.solution.manageAny"]),
     });
-    expect(forumWriter.selectBestAnswer).toHaveBeenCalledWith({ topicId: "topic-1", postId: "post-2", actorId: "session-user", scope: "any" });
+    expect(anyWriter.selectBestAnswer).toHaveBeenCalledWith({ topicId: "topic-1", postId: "post-2", actorId: "session-user", scope: "any" });
     if (!(selected instanceof Response)) throw new Error("expected redirect");
     expect(selected.headers.get("Location")).toBe("/en/topics/topic-1#post-post-2");
   });
 
-  it("denies guest, cross-origin, and non-author solution mutations with controlled semantics", async () => {
+  it("denies solution mutations when no solution permission is effective", async () => {
+    const forumWriter = writer();
+    const response = await topicAction({
+      request: request("/en/topics/topic-1", { intent: "markSolved", role: "admin", scope: "any" }),
+      params: { locale: "en", topicId: "topic-1" },
+      context: context(forumWriter, true, ["forum.reply.create"]),
+    });
+    expect(response).toMatchObject({ data: { error: "forbidden" }, init: { status: 403 } });
+    expect(forumWriter.markTopicSolved).not.toHaveBeenCalled();
+  });
+
+  it("denies guest, cross-origin, and repository authorization/state failures with controlled semantics", async () => {
     const guest = writer();
     const guestResponse = await topicAction({ request: request("/en/topics/t", { intent: "markSolved" }), params: { locale: "en", topicId: "t" }, context: context(guest, false) });
     expect(guestResponse).toMatchObject({ init: { status: 401 } });
