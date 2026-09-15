@@ -19,9 +19,13 @@ export async function loader({ params, context }: {
   const session = authSessionForRequest(context);
   let canReply = false, canManageSolution = false;
   if (session) {
-    const resolver = authorizationForRequest(context).forUser(session.user.id);
-    const [reply, any, own] = await Promise.all([resolver.has("forum.reply.create"), resolver.has("forum.solution.manageAny"), resolver.has("forum.solution.manageOwn")]);
-    canReply = reply; canManageSolution = any || (own && session.user.id === topic.authorId);
+    try {
+      const resolver = authorizationForRequest(context).forUser(session.user.id);
+      const [reply, any, own] = await Promise.all([resolver.has("forum.reply.create"), resolver.has("forum.solution.manageAny"), resolver.has("forum.solution.manageOwn")]);
+      canReply = reply; canManageSolution = any || (own && session.user.id === topic.authorId);
+    } catch {
+      // Public topic reads remain available when optional presentation authorization is unavailable.
+    }
   }
   return { locale: params.locale ?? "en", topic, canReply, canManageSolution };
 }

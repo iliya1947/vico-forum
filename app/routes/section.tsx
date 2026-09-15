@@ -16,7 +16,14 @@ export async function loader({ params, context }: {
   const section = await forumReaderForRequest(context).readSection(params.sectionId ?? "");
   if (!section) throw new Response("Not Found", { status: 404 });
   const session = authSessionForRequest(context);
-  const canCreateTopic = session ? await authorizationForRequest(context).forUser(session.user.id).has("forum.topic.create") : false;
+  let canCreateTopic = false;
+  if (session) {
+    try {
+      canCreateTopic = await authorizationForRequest(context).forUser(session.user.id).has("forum.topic.create");
+    } catch {
+      // Public section reads remain available when optional presentation authorization is unavailable.
+    }
+  }
   return { locale: params.locale ?? "en", section, canCreateTopic };
 }
 
