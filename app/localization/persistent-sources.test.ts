@@ -114,30 +114,39 @@ describe("persistent UI translation sources", () => {
 
   it("skips malformed rows, keeps valid rows, and reports aggregate reason counts", async () => {
     const reportRowIssues = vi.fn<PersistentTranslationRowIssueReporter>();
-    const valid = await row("persistent_manual", "Актуальное состояние", undefined, "stageSummary");
+    const valid = await row("persistent_manual", "Актуальное состояние Stage 1", undefined, "stageSummary");
     const invalidPayload = await row("persistent_manual", { one: "Один", other: "Много" });
     const invalidTranslation = await row("persistent_manual", "<b>Нельзя</b>");
+    const invalidProtectedTerm = await row("persistent_manual", "Описание", undefined, "stageSummary");
     const invalidFingerprint = { ...(await row("persistent_manual", "Значение")), sourceFingerprint: "bad" };
     const invalidStatus = { ...(await row("persistent_manual", "Значение")), status: "draft" };
     const invalidLocale = { ...(await row("persistent_manual", "Значение")), locale: "" };
 
     const result = await new DatabaseManualTranslationSource(
-      store([invalidPayload, invalidTranslation, invalidFingerprint, invalidStatus, invalidLocale, valid]),
+      store([
+        invalidPayload,
+        invalidTranslation,
+        invalidProtectedTerm,
+        invalidFingerprint,
+        invalidStatus,
+        invalidLocale,
+        valid,
+      ]),
       reportRowIssues,
     ).load("ru", ["common"]);
 
-    expect(result.resources.common?.stageSummary).toBe("Актуальное состояние");
+    expect(result.resources.common?.stageSummary).toBe("Актуальное состояние Stage 1");
     expect(result.resources.common?.heading).toBeUndefined();
     expect(reportRowIssues).toHaveBeenCalledOnce();
     expect(reportRowIssues).toHaveBeenCalledWith({
       origin: "persistent_manual",
-      skippedRows: 5,
+      skippedRows: 6,
       reasons: {
         "invalid-fingerprint": 1,
         "invalid-locale": 1,
         "invalid-payload": 1,
         "invalid-status": 1,
-        "invalid-translation": 1,
+        "invalid-translation": 2,
       },
     });
   });

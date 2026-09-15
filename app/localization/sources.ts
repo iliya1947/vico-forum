@@ -1,5 +1,7 @@
 import { canonicalEnglishCatalog, catalogDescriptors, type UiMessageDescriptor } from "./catalog";
 import { sha256Text, sourceFingerprint } from "./fingerprint";
+export { TranslationValidationError, validateTranslation } from "./translation-validation";
+import { validateTranslation } from "./translation-validation";
 
 export interface TranslationValue {
   value: string;
@@ -23,13 +25,6 @@ export interface TranslationPackValidation {
   staleKeys: Readonly<Record<string, readonly string[]>>;
 }
 
-export class TranslationValidationError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "TranslationValidationError";
-  }
-}
-
 const EMPTY_RESULT: TranslationSourceResult = { resources: {}, staleKeys: [], version: "empty" };
 
 function descriptorIndex(): Map<string, UiMessageDescriptor> {
@@ -40,30 +35,9 @@ function isCanonicalUiNamespace(namespace: string): namespace is keyof typeof ca
   return Object.hasOwn(canonicalEnglishCatalog, namespace);
 }
 
-function placeholders(value: string): string[] {
-  return [...value.matchAll(/{{\s*([\w.-]+)\s*}}/g)].map((match) => match[1]!).sort();
-}
-
 async function resourceVersion(parts: readonly string[]): Promise<string> {
   if (!parts.length) return "empty";
   return sha256Text(JSON.stringify([...parts].sort()));
-}
-
-export function validateTranslation(descriptor: UiMessageDescriptor, value: string): void {
-  if (!value.trim()) throw new TranslationValidationError(`Empty translation: ${descriptor.namespace}:${descriptor.key}`);
-  if (value.length > 10_000) {
-    throw new TranslationValidationError(`Translation is too long: ${descriptor.namespace}:${descriptor.key}`);
-  }
-  if (/<\/?[a-z][^>]*>/i.test(value)) {
-    throw new TranslationValidationError(`Markup is forbidden: ${descriptor.namespace}:${descriptor.key}`);
-  }
-  const expected = [...descriptor.placeholders].sort();
-  if (JSON.stringify(placeholders(value)) !== JSON.stringify(expected)) {
-    throw new TranslationValidationError(`Placeholder mismatch: ${descriptor.namespace}:${descriptor.key}`);
-  }
-  if (descriptor.messageKind === "plural" && !descriptor.placeholders.includes("count")) {
-    throw new TranslationValidationError(`Plural message requires count: ${descriptor.namespace}:${descriptor.key}`);
-  }
 }
 
 export class CanonicalEnglishSource implements TranslationSource {

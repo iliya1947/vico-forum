@@ -20,6 +20,8 @@
     "app/localization/catalog.ts",
     "app/localization/fingerprint.ts",
     "app/localization/sources.ts",
+    "app/localization/translation-validation.ts",
+    "app/localization/locale-rules.ts",
     "app/localization/bundles.ts",
     "app/localization/persistent-sources.ts",
     "app/localization/persistent-registry.ts",

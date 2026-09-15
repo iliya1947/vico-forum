@@ -42,7 +42,7 @@ describe("Drizzle compiled UI translation bundle store", () => {
     const repository = new DrizzleUiTranslationBundleStore(drizzle(client));
     const bundle = await compileNamespaceBundle("ru", "common", {
       heading: "Основа переводов",
-      stageSummary: "Описание",
+      stageSummary: "Описание Stage 1",
     });
 
     await repository.put(bundle);

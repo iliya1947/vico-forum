@@ -8,12 +8,12 @@ import {
 describe("compiled UI namespace bundles", () => {
   it("produces a deterministic locale/namespace content identity", async () => {
     const first = await compileNamespaceBundle("ru", "common", {
-      stageSummary: "Описание",
+      stageSummary: "Описание Stage 1",
       heading: "Основа переводов",
     });
     const second = await compileNamespaceBundle("ru", "common", {
       heading: "Основа переводов",
-      stageSummary: "Описание",
+      stageSummary: "Описание Stage 1",
     });
 
     expect(first).toEqual(second);
@@ -41,6 +41,9 @@ describe("compiled UI namespace bundles", () => {
   it("validates resource semantics before publishing a bundle identity", async () => {
     await expect(compileNamespaceBundle("ru", "common", { heading: "<b>unsafe</b>" })).rejects.toThrow(
       "Markup is forbidden",
+    );
+    await expect(compileNamespaceBundle("ru", "common", { stageSummary: "Описание" })).rejects.toThrow(
+      "Protected term mismatch",
     );
   });
 
