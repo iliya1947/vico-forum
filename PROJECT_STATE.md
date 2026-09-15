@@ -125,6 +125,15 @@ Stage 4E2b authorization integration и management UI:
 - route tests покрывают authenticated permission denial для topic/reply/solution, server-derived
   `own | any`, precedence `manageAny`, и игнорирование forged actor/author/role/permission/scope.
 
+Первый ограниченный шаг Stage 5A UI translation generation:
+
+- `UiTranslationService` строит deterministic exact-target plan только для зарегистрированного
+  canonical non-English locale и canonical catalog namespaces;
+- current local manual, persistent manual и machine values подавляют duplicate generation, а
+  missing/stale exact-target units формируют versioned stable job identity;
+- provider/transport-independent `TranslationJobDispatcher` принимает план без подключения Queue,
+  provider, durable task schema или SSR/runtime generation path.
+
 Core Stage 4 integration подтверждён PostgreSQL 17 CI:
 
 - connected test проходит `public read → authenticated topic → second-user reply → solved → best answer
