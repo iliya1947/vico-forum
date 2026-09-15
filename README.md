@@ -2,7 +2,7 @@
 
 Классический веб-форум для обсуждения разработки с ChatGPT, Codex, Cursor, Claude и другими AI-инструментами.
 
-Проект находится на ранней стадии разработки. Технический foundation уже создан; текущий приоритет — завершить рабочее ядро форума.
+Проект находится на ранней стадии разработки. Forum core Stage 4 завершён в local/CI path; текущий продуктовый приоритет — automatic translations и background jobs Stage 5.
 
 ## Документация
 
@@ -17,19 +17,18 @@
 
 ## Разработка
 
-Stage 0–3 завершены. Stage 4A Better Auth schema foundation, Stage 4B forum domain, Stage 4C public forum read и Stage 4D auth/session + participation завершены в текущем local/CI path. Первый Stage 4E slice solved/best-answer author flow также реализован.
+Stage 0–4 завершены в текущем local/CI path. Forum MVP включает public read, Better Auth session boundary, authenticated topic/reply participation, safe Markdown, anti-spam cooldown, solved/best-answer flow и dynamic PostgreSQL-backed authorization с management UI по [`docs/auth/AUTHORIZATION.md`](./docs/auth/AUTHORIZATION.md).
 
-Текущий следующий шаг — **Stage 4E2**:
+Текущий следующий шаг — **Stage 5**:
 
-1. реализовать dynamic DB-backed authorization по [`docs/auth/AUTHORIZATION.md`](./docs/auth/AUTHORIZATION.md): custom roles, редактируемые role permissions и per-user `allow | deny | inherit` overrides;
-2. перевести protected forum actions на единый server-side PermissionResolver и добавить защищённый authorization management UI;
-3. закрыть core Stage 4 E2E;
-4. после завершения Stage 4 перейти к automatic translations/background jobs Stage 5;
-5. real Google OAuth, pending external migrations, Neon/Hyperdrive runtime capabilities, Cloudflare Queues/providers и production-like smoke остаются Stage 6 external integration.
+1. завершить automatic UI translation generation/runtime path;
+2. реализовать revision-bound translation пользовательского контента;
+3. добавить durable background jobs/provider integration согласно [`TRANSLATION_ARCHITECTURE.md`](./TRANSLATION_ARCHITECTURE.md) и [`ROADMAP.md`](./ROADMAP.md);
+4. real Google OAuth, pending external migrations, authorization bootstrap, Neon/Hyperdrive runtime capabilities, Cloudflare Queues/providers и production-like smoke остаются Stage 6 external integration.
 
 Обычная разработка до pre-release проверяется локально и в CI. Merge feature-кода сам по себе не должен означать production rollout. Реальные external environment migrations/deploy/smoke являются отдельным pre-release/release процессом.
 
-Текущая production-like инфраструктура и ранее выполненные Hyperdrive acceptance остаются полезным foundation, но не являются gate для каждого нового forum feature PR.
+Текущая production-like инфраструктура и ранее выполненные Hyperdrive acceptance остаются полезным foundation, но не являются gate для каждого нового feature PR.
 
 Требования:
 
