@@ -1,11 +1,13 @@
-import { Form, Link, redirect, useActionData, useLoaderData, type RouterContextProvider } from "react-router";
+import { Form, Link, useActionData, useLoaderData, type RouterContextProvider } from "react-router";
 import { useTranslation } from "react-i18next";
 import { authSessionForRequest } from "../auth/request-context";
-import { forumMutationGuard, requireForumPermission, requiredFormText, runForumMutation, mutationFailure, type ForumMutationError } from "../forum/mutations.server";
 import { authorizationForRequest } from "../authorization/request-context";
 import { forumCategoryPath, forumTopicPath } from "../forum/paths";
 import { forumReaderForRequest } from "../forum/request-context";
+import type { ForumMutationError } from "../forum/mutations.server";
 import { Breadcrumbs, EmptyState, ForumRouteError, ForumShell } from "../forum/ui";
+
+export { sectionAction as action } from "../forum/actions.server";
 
 export async function loader({ params, context }: {
   params: { locale?: string; sectionId?: string };
@@ -16,27 +18,6 @@ export async function loader({ params, context }: {
   const session = authSessionForRequest(context);
   const canCreateTopic = session ? await authorizationForRequest(context).forUser(session.user.id).has("forum.topic.create") : false;
   return { locale: params.locale ?? "en", section, canCreateTopic };
-}
-
-export async function action({ request, params, context }: {
-  request: Request; params: { locale?: string; sectionId?: string }; context: RouterContextProvider;
-}) {
-  const sectionId = typeof params.sectionId === "string" && params.sectionId.trim() ? params.sectionId : undefined;
-  const locale = typeof params.locale === "string" && params.locale.trim() ? params.locale : undefined;
-  if (!sectionId || !locale) return mutationFailure("invalid", 400);
-  const denied = forumMutationGuard(request, context);
-  if (denied) return denied;
-  const forbidden = await requireForumPermission(context, "forum.topic.create");
-  if (forbidden) return forbidden;
-  let formData: FormData;
-  try { formData = await request.formData(); } catch { return mutationFailure("invalid", 400); }
-  const title = requiredFormText(formData, "title");
-  const body = requiredFormText(formData, "body");
-  if (!title || !body) return mutationFailure("invalid", 400);
-  return runForumMutation(request, context, async (writer, authorId) => {
-    const created = await writer.createTopic({ sectionId, authorId, title, body });
-    return redirect(forumTopicPath(locale, created.topicId));
-  });
 }
 
 export default function SectionRoute() {
