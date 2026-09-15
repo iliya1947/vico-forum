@@ -46,12 +46,16 @@ export class PostgresAuthorizationRepository {
   async resolveUser(userId: string, database: Queryable = this.pool): Promise<UserAuthorization> {
     const role = await database.query<RoleRow & { explicit_assignment: boolean }>(`
       select r.id, r.slug, r.display_name, r.is_system, (ur.user_id is not null) explicit_assignment
-      from authz_roles r
-      left join authz_user_roles ur on ur.role_id = r.id and ur.user_id = $1
-      where ur.user_id is not null
-         or (r.slug = 'user' and not exists (select 1 from authz_user_roles where user_id = $1))`, [userId]);
+      from "user" u
+      left join authz_user_roles ur on ur.user_id = u.id
+      join authz_roles r on r.id = coalesce(ur.role_id, (select id from authz_roles where slug = 'user'))
+      where u.id = $1`, [userId]);
     const selected = role.rows[0];
-    if (!selected) throw new AuthorizationNotFoundError("built-in user role is missing");
+    if (!selected) {
+      const existingUser = await database.query("select 1 from \"user\" where id = $1", [userId]);
+      if (!existingUser.rowCount) throw new AuthorizationNotFoundError("user does not exist");
+      throw new AuthorizationNotFoundError("built-in user role is missing");
+    }
     const [grants, overrideRows] = await Promise.all([
       this.readRoleGrants(selected.id, database),
       database.query<{ permission_key: PermissionKey; effect: OverrideEffect }>(
@@ -72,7 +76,7 @@ export class PostgresAuthorizationRepository {
   }
 
   async hasPermission(userId: string, permission: PermissionKey): Promise<boolean> {
-    return (await this.resolveUser(userId)).effectivePermissions.includes(permission);
+    return effectivePermission(this.pool, userId, permission);
   }
 
   createCustomRole(actorId: string, role: { id: string; slug: string; displayName: string }) {
@@ -84,11 +88,11 @@ export class PostgresAuthorizationRepository {
     });
   }
 
-  renameCustomRole(actorId: string, roleId: string, input: { slug: string; displayName: string }) {
+  renameCustomRole(actorId: string, roleId: string, input: { displayName: string }) {
     return this.mutate(actorId, async (client) => {
       const result = await client.query(
-        "update authz_roles set slug = $2, display_name = $3, updated_at = now() where id = $1 and not is_system",
-        [roleId, input.slug, input.displayName],
+        "update authz_roles set display_name = $2, updated_at = now() where id = $1 and not is_system",
+        [roleId, input.displayName],
       );
       if (result.rowCount === 0) throw new AuthorizationNotFoundError("custom role does not exist");
     });
@@ -176,11 +180,12 @@ async function effectivePermission(database: Queryable, userId: string, permissi
   const result = await database.query<{ allowed: boolean }>(`select case
     when o.effect = 'deny' then false when o.effect = 'allow' then true
     when rp.permission_key is not null then true else false end allowed
-    from (select $1::text user_id, $2::text permission_key) input
-    left join authz_user_permission_overrides o on o.user_id = input.user_id and o.permission_key = input.permission_key
-    left join authz_user_roles ur on ur.user_id = input.user_id
+    from "user" u
+    left join authz_user_permission_overrides o on o.user_id = u.id and o.permission_key = $2
+    left join authz_user_roles ur on ur.user_id = u.id
     join authz_roles r on r.id = coalesce(ur.role_id, (select id from authz_roles where slug = 'user'))
-    left join authz_role_permissions rp on rp.role_id = r.id and rp.permission_key = input.permission_key`, [userId, permission]);
+    left join authz_role_permissions rp on rp.role_id = r.id and rp.permission_key = $2
+    where u.id = $1`, [userId, permission]);
   return result.rows[0]?.allowed ?? false;
 }
 
