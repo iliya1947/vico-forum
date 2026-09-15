@@ -135,12 +135,14 @@ export async function uiTranslationJobIdentity(specification: JobIdentityInput):
 function requestedNamespaces(requested: readonly string[] | undefined): UiNamespace[] {
   const namespaces = requested ?? Object.keys(canonicalEnglishCatalog);
   const unique = [...new Set(namespaces)];
+  const canonicalNamespaces: UiNamespace[] = [];
   for (const namespace of unique) {
     if (!isCanonicalUiNamespace(namespace)) {
       throw new UiTranslationGenerationScopeError(`Unknown canonical UI namespace: ${namespace}`);
     }
+    canonicalNamespaces.push(namespace);
   }
-  return unique.sort(deterministicCompare);
+  return canonicalNamespaces.sort(deterministicCompare);
 }
 
 function isCanonicalUiNamespace(namespace: string): namespace is UiNamespace {
