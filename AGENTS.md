@@ -26,7 +26,7 @@
 
 12. Если non-production/preview build имеет доступ к production bindings, writes или private data, этот path должен быть изолирован либо отключён до использования соответствующей capability. Read-only public localization capability не должна автоматически расширяться для forum/auth/translation writes.
 
-13. Текущий продуктовый приоритет — Stage 4 forum core (`4B → 4C → 4D → 4E`). Не превращай forum feature-задачу в дополнительный Hyperdrive/Neon/OAuth/provider hardening, если этот hardening не нужен для выполнения и local/CI проверки самой задачи.
+13. Текущий продуктовый приоритет — Stage 5 translations/background jobs. Реализуй Stage 5 через local/CI path по `TRANSLATION_ARCHITECTURE.md`, `docs/translation/*` и `ROADMAP.md`; не превращай Stage 5 feature-задачу в Stage 6 Hyperdrive/Neon/real OAuth/real Queue/provider rollout или дополнительный infrastructure hardening, если это не требуется для реализации и local/CI проверки самой задачи.
 
 14. Существующий localization/translation/database foundation сохраняй и переиспользуй. Не переписывай его ради нового forum code без конкретной технической необходимости.
 
