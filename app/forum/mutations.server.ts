@@ -10,7 +10,7 @@ import type { PermissionKey } from "../authorization/catalog";
 
 export interface ForumMutationError { error: "invalid" | "unauthenticated" | "origin" | "forbidden" | "notFound" | "conflict" | "rateLimited" | "unavailable" }
 
-export function mutationFailure(error: ForumMutationError["error"], status: number, headers?: HeadersInit) {
+export function mutationFailure(error: ForumMutationError["error"], status: number, headers?: Record<string, string>) {
   return data<ForumMutationError>({ error }, { status, headers });
 }
 
