@@ -132,8 +132,8 @@ Stage 4E2b authorization integration и management UI:
 - current local manual, persistent manual и machine values текущей generation policy подавляют
   duplicate generation, а missing/source-stale/policy-stale exact-target units формируют versioned
   stable job identity;
-- provider/transport-independent `TranslationJobDispatcher` принимает план без подключения Queue,
-  provider, durable task schema или SSR/runtime generation path.
+- provider/transport-independent `TranslationJobDispatcher` принимает план без подключения к
+  SSR/runtime generation path.
 
 Следующий ограниченный слой Stage 5A UI translation pipeline:
 
@@ -148,8 +148,22 @@ Stage 4E2b authorization integration и management UI:
   structured branch проверяют non-empty/size/markup/placeholders/protected terms, а plural unit требует
   точного полного target branch set без missing/unexpected branches;
 - router/rules/validation остаются за `TranslationJobDispatcher` boundary и не подключены к SSR/page
-  request. Durable tasks/Queues, consumer/lease/reconciliation/DLQ, реальные adapters/provider calls,
-  persistence/publish/runtime switching и user-content translation остаются следующей Stage 5 работой.
+  request. Реальные adapters/provider calls, consumer/publish/runtime switching и user-content
+  translation остаются следующей Stage 5 работой.
+
+Durable foundation Stage 5A для UI translation jobs:
+
+- реализованы `JOB-01`/`JOB-02`: migration `0007` добавляет минимальную `translation_tasks` schema
+  со stable logical identity, UI source identity/fingerprint, target locale, generation policy,
+  durable `pending` status и lifecycle timestamps;
+- PostgreSQL-backed task store валидирует job/DB boundaries и idempotently upsert-ит один durable
+  task для одной stable identity; task остаётся `pending` при enqueue failure/unknown;
+- persistent dispatcher последовательно коммитит task перед transport-neutral enqueue, а message
+  содержит только `translationTaskId`; fake enqueue adapter обеспечивает local/CI coverage без
+  Cloudflare Queue;
+- Queue delivery не считается exactly-once. Real Queue adapter, consumer, lease/stale guards,
+  retry/DLQ/reconciliation, provider execution, validation/result publication и persisted bundle
+  runtime path явно остаются следующими Stage 5 slices.
 
 Core Stage 4 integration подтверждён PostgreSQL 17 CI:
 

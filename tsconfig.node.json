@@ -21,6 +21,8 @@
     "app/localization/fingerprint.ts",
     "app/localization/sources.ts",
     "app/localization/translation-validation.ts",
+    "app/localization/translation-tasks.ts",
+    "app/localization/ui-translation-service.ts",
     "app/localization/locale-rules.ts",
     "app/localization/bundles.ts",
     "app/localization/persistent-sources.ts",
