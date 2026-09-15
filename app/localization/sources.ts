@@ -36,6 +36,10 @@ function descriptorIndex(): Map<string, UiMessageDescriptor> {
   return new Map(catalogDescriptors().map((descriptor) => [`${descriptor.namespace}:${descriptor.key}`, descriptor]));
 }
 
+function isCanonicalUiNamespace(namespace: string): namespace is keyof typeof canonicalEnglishCatalog {
+  return Object.hasOwn(canonicalEnglishCatalog, namespace);
+}
+
 function placeholders(value: string): string[] {
   return [...value.matchAll(/{{\s*([\w.-]+)\s*}}/g)].map((match) => match[1]!).sort();
 }
@@ -68,8 +72,8 @@ export class CanonicalEnglishSource implements TranslationSource {
     const resources: ResourceBundle = {};
     const versionParts: string[] = [];
     for (const namespace of namespaces) {
-      const messages = canonicalEnglishCatalog[namespace as keyof typeof canonicalEnglishCatalog];
-      if (!messages) throw new Error(`Unknown canonical namespace: ${namespace}`);
+      if (!isCanonicalUiNamespace(namespace)) throw new Error(`Unknown canonical namespace: ${namespace}`);
+      const messages = canonicalEnglishCatalog[namespace];
       resources[namespace] = {};
       for (const descriptor of Object.values(messages) as UiMessageDescriptor[]) {
         validateTranslation(descriptor, descriptor.source);
@@ -100,7 +104,7 @@ export class LocalTranslationSource implements TranslationSource {
 
     for (const [namespace, messages] of Object.entries(pack)) {
       if (!namespaces.includes(namespace)) continue;
-      if (!(namespace in canonicalEnglishCatalog)) throw new Error(`Unknown canonical namespace: ${namespace}`);
+      if (!isCanonicalUiNamespace(namespace)) throw new Error(`Unknown canonical namespace: ${namespace}`);
       for (const [key, translation] of Object.entries(messages)) {
         const identity = `${namespace}:${key}`;
         const descriptor = known.get(identity);
@@ -127,7 +131,7 @@ export async function validateTranslationPacks(
 
   for (const [locale, pack] of Object.entries(packs)) {
     for (const [namespace, messages] of Object.entries(pack)) {
-      if (!(namespace in canonicalEnglishCatalog)) throw new Error(`Unknown canonical namespace: ${namespace}`);
+      if (!isCanonicalUiNamespace(namespace)) throw new Error(`Unknown canonical namespace: ${namespace}`);
       for (const [key, translation] of Object.entries(messages)) {
         const identity = `${namespace}:${key}`;
         const descriptor = known.get(identity);
