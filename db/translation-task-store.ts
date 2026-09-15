@@ -1,8 +1,9 @@
-import { eq } from "drizzle-orm";
+import { and, eq, lte, or } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import {
   validateUiTranslationJobSpecification,
   type TranslationTask,
+  type TranslationTaskClaimResult,
   type TranslationTaskStore,
 } from "../app/localization/translation-tasks";
 import {
@@ -70,18 +71,71 @@ export class DrizzleTranslationTaskStore implements TranslationTaskStore {
       .limit(1);
     return rows[0] ? await parseTaskRow(rows[0]) : undefined;
   }
+
+  async claim(id: string, now: Date, leaseDurationMs: number): Promise<TranslationTaskClaimResult> {
+    if (!isUuid(id)) throw new TypeError("translation task id must be a UUID");
+    if (!Number.isSafeInteger(leaseDurationMs) || leaseDurationMs <= 0) {
+      throw new TypeError("translation task lease duration must be a positive integer");
+    }
+    const claimToken = crypto.randomUUID();
+    const leaseExpiresAt = new Date(now.getTime() + leaseDurationMs);
+    if (Number.isNaN(now.getTime()) || Number.isNaN(leaseExpiresAt.getTime())) {
+      throw new TypeError("translation task claim time must be valid");
+    }
+    const rows = await this.database
+      .update(translationTasks)
+      .set({ status: "processing", claimToken, claimedAt: now, leaseExpiresAt, updatedAt: now })
+      .where(and(
+        eq(translationTasks.id, id),
+        or(
+          eq(translationTasks.status, "pending"),
+          and(eq(translationTasks.status, "processing"), lte(translationTasks.leaseExpiresAt, now)),
+        ),
+      ))
+      .returning();
+    if (rows[0]) {
+      const task = await parseTaskRow(rows[0]);
+      if (task.status !== "processing" || !task.claimToken) {
+        throw new TranslationTaskIntegrityError("claimed translation task has invalid processing state");
+      }
+      return { outcome: "claimed", task: { ...task, status: "processing", claimToken: task.claimToken } };
+    }
+    const existing = await this.findById(id);
+    if (!existing) return { outcome: "not-found" };
+    return { outcome: existing.status === "stale" ? "terminal" : "already-claimed" };
+  }
+
+  async markStale(id: string, claimToken: string, now: Date): Promise<boolean> {
+    if (!isUuid(id) || !isUuid(claimToken) || Number.isNaN(now.getTime())) {
+      throw new TypeError("translation task stale transition requires valid identifiers and time");
+    }
+    const rows = await this.database
+      .update(translationTasks)
+      .set({ status: "stale", claimToken: null, leaseExpiresAt: null, staleAt: now, updatedAt: now })
+      .where(and(
+        eq(translationTasks.id, id),
+        eq(translationTasks.status, "processing"),
+        eq(translationTasks.claimToken, claimToken),
+      ))
+      .returning({ id: translationTasks.id });
+    return rows.length === 1;
+  }
 }
 
 async function parseTaskRow(row: TranslationTaskRow): Promise<TranslationTask> {
   const task = {
     id: row.id,
     taskIdentity: row.taskIdentity,
-    translationKind: row.translationKind,
+    translationKind: row.translationKind as "ui",
     sourceIdentity: { namespace: row.sourceNamespace, key: row.sourceKey },
     sourceFingerprint: row.sourceFingerprint,
     targetLocale: row.targetLocale,
     generationPolicyVersion: row.generationPolicyVersion,
-    status: row.status,
+    status: row.status as TranslationTask["status"],
+    claimToken: row.claimToken,
+    claimedAt: row.claimedAt,
+    leaseExpiresAt: row.leaseExpiresAt,
+    staleAt: row.staleAt,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -101,14 +155,29 @@ async function parseTaskRow(row: TranslationTaskRow): Promise<TranslationTask> {
     targetLocale: task.targetLocale,
     generationPolicyVersion: task.generationPolicyVersion,
   });
-  if (task.status !== "pending") throw new TranslationTaskIntegrityError("invalid translation task status");
+  if (!isTaskStatus(task.status)) throw new TranslationTaskIntegrityError("invalid translation task status");
   if (!isUuid(task.id) || !(task.createdAt instanceof Date) || !(task.updatedAt instanceof Date)) {
     throw new TranslationTaskIntegrityError("invalid translation task identity or timestamps");
   }
   if (task.updatedAt < task.createdAt) {
     throw new TranslationTaskIntegrityError("translation task updatedAt precedes createdAt");
   }
-  return { ...task, translationKind: "ui", status: "pending" };
+  assertLifecycle(task);
+  return { ...task, translationKind: "ui", status: task.status };
+}
+
+function isTaskStatus(value: string): value is TranslationTask["status"] {
+  return value === "pending" || value === "processing" || value === "stale";
+}
+
+function assertLifecycle(task: TranslationTask): void {
+  const processing = task.status === "processing" && task.claimToken && task.claimedAt &&
+    task.leaseExpiresAt && !task.staleAt && task.leaseExpiresAt > task.claimedAt;
+  const pending = task.status === "pending" && !task.claimToken && !task.claimedAt &&
+    !task.leaseExpiresAt && !task.staleAt;
+  const stale = task.status === "stale" && !task.claimToken && task.claimedAt &&
+    !task.leaseExpiresAt && task.staleAt && task.staleAt >= task.claimedAt;
+  if (!pending && !processing && !stale) throw new TranslationTaskIntegrityError("invalid translation task lifecycle");
 }
 
 async function assertStableIdentity(specification: UiTranslationJobSpecification): Promise<void> {

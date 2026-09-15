@@ -58,7 +58,7 @@ describe("PostgreSQL 17 locale migrations", () => {
     const applied = await client.query<{ count: string }>(
       'select count(*)::text as count from drizzle."__drizzle_migrations"',
     );
-    expect(applied.rows[0]?.count).toBe("8");
+    expect(applied.rows[0]?.count).toBe("9");
   });
 
   it("seeds the code catalog and independent built-in role grants exactly", async () => {
