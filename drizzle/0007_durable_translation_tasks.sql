@@ -1,0 +1,23 @@
+CREATE TABLE "translation_tasks" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"task_identity" text NOT NULL,
+	"translation_kind" text NOT NULL,
+	"source_namespace" text NOT NULL,
+	"source_key" text NOT NULL,
+	"source_fingerprint" text NOT NULL,
+	"target_locale" text NOT NULL,
+	"generation_policy_version" text NOT NULL,
+	"status" text DEFAULT 'pending' NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "translation_tasks_task_identity_unique" UNIQUE("task_identity"),
+	CONSTRAINT "translation_tasks_identity_check" CHECK ("translation_tasks"."task_identity" ~ '^[0-9a-f]{64}$'),
+	CONSTRAINT "translation_tasks_kind_check" CHECK ("translation_tasks"."translation_kind" = 'ui'),
+	CONSTRAINT "translation_tasks_source_namespace_check" CHECK (btrim("translation_tasks"."source_namespace") <> ''),
+	CONSTRAINT "translation_tasks_source_key_check" CHECK (btrim("translation_tasks"."source_key") <> ''),
+	CONSTRAINT "translation_tasks_source_fingerprint_check" CHECK ("translation_tasks"."source_fingerprint" ~ '^[0-9a-f]{64}$'),
+	CONSTRAINT "translation_tasks_target_locale_check" CHECK ("translation_tasks"."target_locale" = btrim("translation_tasks"."target_locale") and "translation_tasks"."target_locale" <> '' and lower("translation_tasks"."target_locale") <> 'en'),
+	CONSTRAINT "translation_tasks_generation_policy_version_check" CHECK (btrim("translation_tasks"."generation_policy_version") <> ''),
+	CONSTRAINT "translation_tasks_status_check" CHECK ("translation_tasks"."status" = 'pending'),
+	CONSTRAINT "translation_tasks_timestamps_check" CHECK ("translation_tasks"."updated_at" >= "translation_tasks"."created_at")
+);

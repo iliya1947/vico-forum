@@ -13,6 +13,7 @@ import {
   text,
   timestamp,
   unique,
+  uuid,
   type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 
@@ -154,6 +155,40 @@ export const uiTranslationBundles = pgTable(
       "ui_translation_bundles_resources_object_check",
       sql`jsonb_typeof(${table.resources}) = 'object'`,
     ),
+  ],
+);
+
+export const translationTasks = pgTable(
+  "translation_tasks",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    taskIdentity: text("task_identity").notNull().unique(),
+    translationKind: text("translation_kind").notNull(),
+    sourceNamespace: text("source_namespace").notNull(),
+    sourceKey: text("source_key").notNull(),
+    sourceFingerprint: text("source_fingerprint").notNull(),
+    targetLocale: text("target_locale").notNull(),
+    generationPolicyVersion: text("generation_policy_version").notNull(),
+    status: text("status").notNull().default("pending"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    check("translation_tasks_identity_check", sql`${table.taskIdentity} ~ '^[0-9a-f]{64}$'`),
+    check("translation_tasks_kind_check", sql`${table.translationKind} = 'ui'`),
+    check("translation_tasks_source_namespace_check", sql`btrim(${table.sourceNamespace}) <> ''`),
+    check("translation_tasks_source_key_check", sql`btrim(${table.sourceKey}) <> ''`),
+    check("translation_tasks_source_fingerprint_check", sql`${table.sourceFingerprint} ~ '^[0-9a-f]{64}$'`),
+    check(
+      "translation_tasks_target_locale_check",
+      sql`${table.targetLocale} = btrim(${table.targetLocale}) and ${table.targetLocale} <> '' and lower(${table.targetLocale}) <> 'en'`,
+    ),
+    check(
+      "translation_tasks_generation_policy_version_check",
+      sql`btrim(${table.generationPolicyVersion}) <> ''`,
+    ),
+    check("translation_tasks_status_check", sql`${table.status} = 'pending'`),
+    check("translation_tasks_timestamps_check", sql`${table.updatedAt} >= ${table.createdAt}`),
   ],
 );
 
