@@ -6,9 +6,8 @@ import { RouterContextProvider } from "react-router";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { authSessionContext, type AuthSession } from "../../app/auth/request-context";
 import { authorizationContext } from "../../app/authorization/request-context";
-import { forumReaderContext, forumWriterContext } from "../../app/forum/request-context";
-import { action as sectionAction, loader as sectionLoader } from "../../app/routes/section";
-import { action as topicAction, loader as topicLoader } from "../../app/routes/topic";
+import { forumWriterContext } from "../../app/forum/request-context";
+import { sectionAction, topicAction } from "../../app/forum/actions.server";
 import { INITIAL_ROLE_GRANTS } from "../../app/authorization/catalog";
 import { createAuthorizationCapability, AuthorizationService } from "../../db/authorization-service";
 import { PostgresAuthorizationRepository } from "../../db/authorization-repository";
@@ -55,8 +54,7 @@ beforeAll(async () => {
   await client.query(`drop schema if exists ${schemaName} cascade; create schema ${schemaName}`);
   await client.query(`set search_path to ${schemaName}`);
   for (const file of migrationFiles) {
-    const sql = (await readFile(`drizzle/${file}`, "utf8"))
-      .replaceAll('"public".', `"${schemaName}".`);
+    const sql = (await readFile(`drizzle/${file}`, "utf8")).replaceAll('"public".', `"${schemaName}".`);
     await client.query(sql);
   }
 });
@@ -123,7 +121,9 @@ async function createTopic(userId: string, name: string, title: string) {
     }
     const location = response.headers.get("Location");
     if (!location) throw new Error("topic creation did not return a redirect location");
-    return decodeURIComponent(location.split("/").at(-1)!);
+    const segment = location.split("/").at(-1);
+    if (!segment) throw new Error("topic creation returned an invalid redirect location");
+    return decodeURIComponent(segment);
   } finally {
     await state.close();
   }
@@ -153,11 +153,10 @@ describe("Stage 4 connected forum authorization flow", () => {
     await forum.createCategory({ id: "e2e-category", name: "E2E Category" });
     await forum.createSection({ id: "e2e-section", categoryId: "e2e-category", name: "E2E Section" });
 
-    const guestContext = new RouterContextProvider();
-    guestContext.set(authSessionContext, null);
-    guestContext.set(forumReaderContext, forum);
-    await expect(sectionLoader({ params: { locale: "en", sectionId: "e2e-section" }, context: guestContext }))
-      .resolves.toMatchObject({ section: { id: "e2e-section", topics: [] } });
+    await expect(forum.readSection("e2e-section")).resolves.toMatchObject({
+      id: "e2e-section",
+      topics: [],
+    });
 
     const topicId = await createTopic("e2e-author", "Author", "Core E2E topic");
 
@@ -190,11 +189,7 @@ describe("Stage 4 connected forum authorization flow", () => {
       await bestState.close();
     }
 
-    const publicContext = new RouterContextProvider();
-    publicContext.set(authSessionContext, null);
-    publicContext.set(forumReaderContext, forum);
-    const publicTopic = await topicLoader({ params: { locale: "en", topicId }, context: publicContext });
-    expect(publicTopic.topic).toMatchObject({
+    await expect(forum.readTopicPage(topicId)).resolves.toMatchObject({
       isSolved: true,
       bestAnswerPostId: reply.id,
       posts: expect.arrayContaining([
