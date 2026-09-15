@@ -135,6 +135,22 @@ Stage 4E2b authorization integration и management UI:
 - provider/transport-independent `TranslationJobDispatcher` принимает план без подключения Queue,
   provider, durable task schema или SSR/runtime generation path.
 
+Следующий ограниченный слой Stage 5A UI translation pipeline:
+
+- реализованы `PRV-01`/`PRV-02`: provider-neutral `TranslationProviderRouter` выбирает fake/contract
+  machine adapter по Vico locale pair, UI/content domain, `messageKind` и plain/structured capability;
+  provider-specific locale mapping остаётся внутри adapter, а result boundary сохраняет provider/model/
+  machine provenance metadata;
+- реализован `UI-13`: изолированный `LocaleRulesProvider` получает полный cardinal plural branch set
+  target locale через `Intl.PluralRules` и возвращает controlled failure при invalid/unsupported rules без
+  English fallback;
+- `UI-12`/`SEC-03` расширены единым validation boundary для недоверенного provider output: plain и каждая
+  structured branch проверяют non-empty/size/markup/placeholders/protected terms, а plural unit требует
+  точного полного target branch set без missing/unexpected branches;
+- router/rules/validation остаются за `TranslationJobDispatcher` boundary и не подключены к SSR/page
+  request. Durable tasks/Queues, consumer/lease/reconciliation/DLQ, реальные adapters/provider calls,
+  persistence/publish/runtime switching и user-content translation остаются следующей Stage 5 работой.
+
 Core Stage 4 integration подтверждён PostgreSQL 17 CI:
 
 - connected test проходит `public read → authenticated topic → second-user reply → solved → best answer
