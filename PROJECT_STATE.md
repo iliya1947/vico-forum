@@ -4,8 +4,9 @@
 
 ## Текущее состояние
 
-Vico Forum находится в ранней разработке. Технический foundation значительно опережает
-продуктовый forum core.
+Vico Forum находится в ранней разработке. Stage 4 forum core завершён в local/CI path; следующий
+активный продуктовый этап — Stage 5 translations/background jobs. External production integration
+остаётся отдельной границей Stage 6.
 
 Завершены Stage 0–3:
 
@@ -29,9 +30,9 @@ smoke и production credentials не выполнялись.
 
 ## Что реально работает в продукте
 
-Приложение предоставляет SSR/localization foundation и первый публичный read-only forum UI.
+Stage 4 forum MVP завершён локально/для CI.
 
-Stage 4B forum domain foundation реализован локально/для CI:
+Stage 4B forum domain foundation:
 
 - добавлены category/section/topic/post schema и forward migration `0004`;
 - topic title и post body хранятся как отдельные immutable revisions с обязательным
@@ -42,7 +43,7 @@ Stage 4B forum domain foundation реализован локально/для CI
 - PostgreSQL integration suite проверяет clean full history, hierarchy, FK/current/immutable
   invariants и отсутствие зависимости source locale от persistent `LocaleRegistry`.
 
-Stage 4C public forum read реализован локально/для CI:
+Stage 4C public forum read:
 
 - locale-scoped SSR routes показывают индекс категорий, категорию с разделами, раздел со
   списком тем и тему с последовательными сообщениями;
@@ -55,15 +56,16 @@ Stage 4C public forum read реализован локально/для CI:
 - LTR/RTL fixtures покрывают цепочку `category → section → topic → posts`;
 - schema и migration `0004` не менялись.
 
-Forum write participation реализован локально/для CI:
+Stage 4D participation, safe Markdown и anti-spam:
 
-- authenticated пользователь может создать тему с первым сообщением и ответить в теме;
+- authenticated пользователь может создать тему с первым сообщением и ответить в теме только
+  при effective `forum.topic.create` / `forum.reply.create`;
 - route actions используют request-scoped Hyperdrive/Drizzle write capability и только
-  `session.user.id`, проверяют input и same-origin browser mutations;
+  `session.user.id`, проверяют input, effective permission и same-origin browser mutations;
 - тема, title revision и первое post/body revision создаются одной транзакцией; новые
   revisions фиксируют `sourceLocale: "und"`;
-- classic UI показывает write forms только при наличии session, а PostgreSQL integration
-  suite проверяет persistence и rollback через disposable DB;
+- classic UI показывает write forms только при соответствующем effective permission, а
+  PostgreSQL integration suite проверяет persistence и rollback через disposable DB;
 - тела сообщений рендерятся переиспользуемым CommonMark renderer на `react-markdown 10.1.0`:
   без raw HTML, исполняемых unsafe URL и внешних images, но с paragraphs, emphasis, lists,
   links, inline/fenced code и LTR/RTL-safe layout;
@@ -77,62 +79,71 @@ Forum write participation реализован локально/для CI:
   `forum_posts.author_id` и `forum_posts.created_at` дают cooldown history, поэтому migration
   для Stage 4D не добавлялась.
 
-Stage 4E начат локально/для CI: автор темы может отметить её решённой, а затем выбрать или
-заменить лучший ответ сообщением из этой же темы. Solved/best-answer состояние доступно
-публичному reader и отображается на странице темы со стабильной ссылкой на сообщение;
-mutation path использует Better Auth session, same-origin boundary и атомарные repository
-проверки автора, темы и сообщения. Forward migration `0005` добавляет только это состояние,
-без изменения immutable content revisions.
+Stage 4E solved/best answer:
 
-Stage 4E2a authorization backend foundation реализован локально/для CI:
+- тема может быть отмечена решённой, после чего выбирается или заменяется лучший ответ из той
+  же темы;
+- `forum.solution.manageOwn` требует server-side ownership target topic, а
+  `forum.solution.manageAny` разрешает управление любой темой;
+- solution scope `own | any` вычисляется только server-side через `PermissionResolver` и
+  передаётся в domain boundary без доверия к FormData;
+- repository атомарно блокирует topic, применяет ownership для `own`, проверяет solved state и
+  принадлежность best-answer post теме;
+- solved/best-answer состояние доступно публичному reader и отображается со стабильной ссылкой;
+- forward migration `0005` добавляет только solution state без изменения immutable revisions.
+
+Stage 4E2a authorization backend foundation:
 
 - migration `0006` добавляет normalized PostgreSQL schema, code-backed permission catalog,
   независимые built-in roles с явными initial grants, custom roles, одно role assignment на
   пользователя и персональные `allow | deny` overrides;
 - единый request-scoped `PermissionResolver` разрешает актуальное DB state с приоритетом
-  `deny → allow → role grant → deny by default`, а пользователя без assignment трактует как
-  built-in `user` без session role claim;
+  `deny → allow → role grant → deny by default`, а существующего пользователя без assignment
+  трактует как built-in `user` без session role claim;
 - backend repository/service предоставляет validated management operations и чтение raw/effective
   state, а Worker подключает отдельную authorization capability через `RouterContextProvider`;
 - все authz mutations сериализуются PostgreSQL row lock на singleton row и после появления manager
   атомарно отклоняют переход к нулю effective `access.authorization.manage`; disposable PostgreSQL
-  suite включает реальную concurrent проверку и rollback.
+  suite включает реальную concurrent проверку и rollback;
+- role stable slug защищён service/repository contract и PostgreSQL trigger; nonexistent Better Auth
+  identity не получает default permissions.
 
-Stage 4E2b реализован в рабочем дереве для local/CI verification: forum create/reply actions и
-формы теперь используют effective permissions, solution management получает только server-derived
-scope `own | any`, а repository сохраняет topic lock и ownership/topic/post invariants. Добавлены
-request-scoped management capability и Better Auth user read model, а защищённая locale-aware
-страница `/:locale/admin/authorization` управляет roles, grants, assignments и user overrides
-через существующий service/repository path. Management link разрешается server-side и сохраняет
-locale. Route coverage проверяет independent authentication/permission checks, session-derived
-actor и controlled lockout response; PostgreSQL coverage включает `own | any` repository boundary.
+Stage 4E2b authorization integration и management UI:
 
-Локальный `DATABASE_URL` в текущей среде отсутствует, поэтому обязательный `pnpm db:test` gate и
-полный Stage 4 local/CI completion остаются неподтверждёнными до зелёного GitHub Actions
-`database` job на актуальном PR head. По этой причине Stage 4/4E пока не отмечены завершёнными и
-активным продуктовым этапом остаётся финальная verification Stage 4E2b; после зелёного DB gate
-следующим этапом станет Stage 5.
+- create/reply routes и presentation используют актуальные effective permissions вместо простого
+  факта наличия session;
+- защищённая locale-aware страница `/:locale/admin/authorization` позволяет просматривать роли,
+  создавать/переименовывать/удалять допустимые custom roles, менять grants любой роли, назначать
+  пользователю роль, задавать `inherit | allow | deny` и видеть effective permissions;
+- добавлены request-scoped management capability и минимальный Better Auth user read model;
+- loader и action management route независимо требуют session и актуальный
+  `access.authorization.manage`; mutations также проверяют same-origin и runtime input;
+- guest/forbidden/infrastructure/lockout cases отображаются controlled HTTP semantics, включая
+  explicit `503` при failure первоначального permission resolution;
+- header показывает locale-preserving management link только effective manager; сам link не является
+  authorization boundary;
+- route tests покрывают authenticated permission denial для topic/reply/solution, server-derived
+  `own | any`, precedence `manageAny`, и игнорирование forged actor/author/role/permission/scope.
 
-Forum MVP ещё не завершён:
+Core Stage 4 integration подтверждён PostgreSQL 17 CI:
 
-- Google sign-in/sign-out controls используют SSR session пользователя в общем forum header,
-  локальный locale-aware callback и client-side синхронизацию после выхода;
-- Stage 4E2b code path добавляет protected management UI/routes и переводит forum actions/UI на
-  `PermissionResolver`, но обязательный PostgreSQL gate в этой среде не выполнен;
-- Stage 4 целиком не отмечен завершённым до подтверждения core DB integration на CI.
+- connected test проходит `public read → authenticated topic → second-user reply → solved → best answer
+  → public read persisted solution` через реальные forum actions, request-scoped authorization и
+  PostgreSQL repositories;
+- отдельные следующие requests подтверждают dynamic role assignment/grant removal/grant restore,
+  per-user `deny`, `inherit`, `allow` и отсутствие доверия forged authorization fields;
+- GitHub Actions CI #140 на head до документационного sync прошёл `checks` и `database`, включая
+  lint, typecheck, unit tests, build, migration metadata, PostgreSQL tests, Workers build и local
+  Hyperdrive smoke.
 
-Для Stage 4E2 зафиксирован новый authorization contract: Better Auth остаётся источником
-identity/session, но не authoritative role/permission state. Effective permissions должны
-разрешаться server-side из PostgreSQL через единый PermissionResolver на каждом защищённом
-request; изменения role grants, role assignment и user overrides должны применяться без
-logout/login. Built-in `user/moderator/admin` являются только стартовыми системными ролями;
-custom roles создаются через сайт, permissions любой роли редактируются, а персональный
-`deny` может отнять capability, выданную ролью. Полный contract —
-`docs/auth/AUTHORIZATION.md`. Backend foundation реализован в Stage 4E2a; UI и forum integration
-остаются Stage 4E2b.
+Таким образом Stage 4 целиком завершён в local/CI path. Real Google OAuth, external authorization
+bootstrap, pending production migrations и production-like deployment acceptance намеренно остаются
+Stage 6 и не являются условием завершения Stage 4.
 
-То есть следующий продуктовый приоритет — не дальнейший infrastructure hardening, а завершение
-forum core через Stage 4E2.
+Полный authorization contract — `docs/auth/AUTHORIZATION.md`.
+
+Следующий продуктовый приоритет — **Stage 5 translations/background jobs** согласно
+`TRANSLATION_ARCHITECTURE.md`, `docs/translation/*` и `ROADMAP.md`.
 
 ## Stage 4A и production migration evidence
 
@@ -146,7 +157,7 @@ checked-in migration journal уже применён до запуска `db:mig
 
 Repository-owned runtime migration evidence сейчас всё ещё относится к
 `0002_ui_translation_storage`. Это корректно, потому что production Worker пока не зависит
-от Better Auth schema `0003`.
+от Better Auth/forum/authz migrations `0003`–`0006`.
 
 Перед следующим настоящим external schema rollout временный owner exception должен быть
 снят, а dedicated migration capability восстановлена/проверена согласно
@@ -160,29 +171,29 @@ classification; точные результаты и ограничения на
 `docs/database/HYPERDRIVE.md`.
 
 Эти результаты остаются доказательством готовности существующего infrastructure foundation,
-но больше не являются gate для каждого forum feature PR.
+но больше не являются gate для каждого feature PR.
 
 ## Новое направление разработки
 
-До pre-release используется **forum-first local/CI path**:
+До pre-release используется **product-first local/CI path**:
 
-1. Forum schema, repositories, runtime behavior и UI разрабатываются против disposable/local
+1. Product schema, repositories, runtime behavior и UI разрабатываются против disposable/local
    PostgreSQL 17 и существующего Workers-compatible local path.
 2. Каждый PR по-прежнему проходит обязательные repository checks (`lint`, `typecheck`,
    tests, build, migration metadata и DB integration там, где применимо).
 3. Merge feature-кода не должен автоматически означать external production rollout.
-4. Новые forum migrations не обязаны немедленно применяться в Neon только ради продолжения
+4. Новые migrations не обязаны немедленно применяться в Neon только ради продолжения
    разработки.
 5. Реальные Cloudflare/Neon/Google/provider integrations и production acceptance собираются
-   в отдельный pre-release этап после появления рабочего forum core.
+   в отдельный pre-release этап после реализации соответствующих local/CI product stages.
 
 ## Ближайший маршрут
 
 ### Выполнено: изолировать active development от production auto-deploy
 
 Пользователь отключил native Cloudflare Git integration. Merge в active development `main`
-больше не запускает Cloudflare auto-deploy; operational prerequisite первого forum-code PR
-закрыт. Production deploy по-прежнему не выполняется в обычных feature-задачах.
+больше не запускает Cloudflare auto-deploy; production deploy по-прежнему не выполняется в
+обычных feature-задачах.
 
 ### Выполнено: Stage 4B — forum domain foundation
 
@@ -193,27 +204,24 @@ boundaries `CNT-02`, `CNT-03`, `CNT-05`, migration и PostgreSQL integration cov
 ### Выполнено: Stage 4C — публичное чтение и классический UI
 
 Реализованы реальные SSR страницы и canonical locale navigation гостя по всей forum
-иерархии. Runtime остаётся read-only; schema `0004` достаточна для этого этапа.
+иерархии.
 
 ### Выполнено: Stage 4D — участие, safe Markdown и basic anti-spam
 
 Better Auth runtime/session boundary, authenticated создание тем/ответов, safe CommonMark
 rendering и transactional per-author write cooldown завершены локально/для CI.
 
-### 3. Stage 4E — solved/best answer + dynamic authorization
+### Выполнено: Stage 4E — solved/best answer + dynamic authorization
 
-Первый компактный slice solved/best-answer author flow и Stage 4E2a dynamic authorization backend
-foundation реализованы локально/для CI. Следующий slice Stage 4E2b должен добавить management UI,
-перевести forum actions/UI на `PermissionResolver` и закрыть core E2E. Real Google OAuth и
-external deployment acceptance остаются границей Stage 6 и не являются условием внутренней
-разработки Stage 4E.
+Solved/best-answer flow, Stage 4E2a dynamic authorization backend, Stage 4E2b management UI,
+forum PermissionResolver integration и connected core E2E завершены local/CI.
 
-### 4. Stage 5 — translations/background jobs
+### Следующий этап: Stage 5 — translations/background jobs
 
-После рабочего forum core завершить automatic UI translation и revision-bound user-content
-translation согласно уже зафиксированной translation architecture.
+Завершить automatic UI translation и revision-bound user-content translation согласно уже
+зафиксированной translation architecture.
 
-### 5. Stage 6 — pre-release external integration
+### Stage 6 — pre-release external integration
 
 Только здесь собрать внешний production-like path целиком: pending migrations в Neon,
 least-privilege runtime capabilities/Hyperdrive, real Google OAuth, authorization bootstrap,
@@ -221,8 +229,9 @@ Queues/providers, preview isolation, deployment smoke и migration evidence.
 
 ## Блокеры
 
-Для продолжения Stage 4E продуктовых или operational блокеров нет. Native Cloudflare Git
-integration отключён, поэтому merge в `main` не выполняет автоматический production deploy.
+Для начала Stage 5 продуктовых или operational блокеров по текущему roadmap нет. Native
+Cloudflare Git integration отключён, поэтому merge в `main` не выполняет автоматический
+production deploy.
 
 Cleanup временных test resources прошлых acceptance остаётся housekeeping и не блокирует
-локальную/CI разработку forum core.
+local/CI product development.
