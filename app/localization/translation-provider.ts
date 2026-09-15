@@ -1,5 +1,4 @@
 import type { MessageKind } from "./catalog";
-import type { ProviderTranslationValue } from "./translation-validation";
 
 export type TranslationDomain = "ui" | "content";
 export type TranslationOperation = "plain" | "structured";
@@ -22,7 +21,7 @@ export interface MachineTranslationProvenance {
 }
 
 export interface MachineTranslationResult {
-  readonly value: ProviderTranslationValue;
+  readonly value: unknown;
   readonly provenance: MachineTranslationProvenance;
 }
 
@@ -42,6 +41,13 @@ export class UnsupportedTranslationProviderError extends Error {
   }
 }
 
+export class UnsupportedTranslationMessageKindError extends Error {
+  constructor(readonly messageKind: MessageKind) {
+    super(`Machine translation is not implemented for message kind: ${messageKind}`);
+    this.name = "UnsupportedTranslationMessageKindError";
+  }
+}
+
 export class TranslationProviderRouter {
   constructor(private readonly adapters: readonly MachineTranslationProviderAdapter[]) {}
 
@@ -56,5 +62,14 @@ export class TranslationProviderRouter {
 }
 
 export function translationOperation(messageKind: MessageKind): TranslationOperation {
-  return messageKind === "plain" || messageKind === "interpolation" ? "plain" : "structured";
+  switch (messageKind) {
+    case "plain":
+    case "interpolation":
+      return "plain";
+    case "plural":
+    case "rich":
+      return "structured";
+    case "contextual/select":
+      throw new UnsupportedTranslationMessageKindError(messageKind);
+  }
 }

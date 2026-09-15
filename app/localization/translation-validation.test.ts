@@ -60,7 +60,7 @@ describe("provider output validation", () => {
       .toThrow(/Controlled token mismatch/);
   });
 
-  it.each(["", "   ", "<strong>Bonjour</strong>"])("rejects untrusted plain output %j", (output) => {
+  it.each(["", "   ", "<strong>Bonjour</strong>", 42, null])("rejects untrusted plain output %j", (output) => {
     expect(() => validateProviderOutput(plainDescriptor, "fr", output, rules))
       .toThrow(TranslationValidationError);
   });

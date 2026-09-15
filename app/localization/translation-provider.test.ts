@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { MessageKind } from "./catalog";
 import {
   TranslationProviderRouter,
+  UnsupportedTranslationMessageKindError,
   UnsupportedTranslationProviderError,
   type MachineTranslationProviderAdapter,
   type MachineTranslationRequest,
@@ -25,7 +26,7 @@ function request(
 
 function adapter(
   supports: (candidate: MachineTranslationRequest) => boolean,
-  value = "Bonjour",
+  value: unknown = "Bonjour",
 ): MachineTranslationProviderAdapter {
   return {
     supports: vi.fn(supports),
@@ -82,5 +83,17 @@ describe("TranslationProviderRouter", () => {
     const any = adapter(() => true);
     await expect(new TranslationProviderRouter([any]).translate(request("plural", "plain"))).rejects.toBeInstanceOf(TypeError);
     expect(any.supports).not.toHaveBeenCalled();
+  });
+
+  it("keeps contextual/select machine translation controlled-unsupported until select structure exists", async () => {
+    const any = adapter(() => true);
+    await expect(new TranslationProviderRouter([any]).translate(request("contextual/select")))
+      .rejects.toBeInstanceOf(UnsupportedTranslationMessageKindError);
+    expect(any.supports).not.toHaveBeenCalled();
+  });
+
+  it("keeps raw provider payload untrusted at the router boundary", async () => {
+    const raw = adapter(() => true, 42);
+    await expect(new TranslationProviderRouter([raw]).translate(request())).resolves.toMatchObject({ value: 42 });
   });
 });
