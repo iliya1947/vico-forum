@@ -153,10 +153,7 @@ describe("Stage 4 connected forum authorization flow", () => {
     await forum.createCategory({ id: "e2e-category", name: "E2E Category" });
     await forum.createSection({ id: "e2e-section", categoryId: "e2e-category", name: "E2E Section" });
 
-    await expect(forum.readSection("e2e-section")).resolves.toMatchObject({
-      id: "e2e-section",
-      topics: [],
-    });
+    await expect(forum.readSection("e2e-section")).resolves.toMatchObject({ id: "e2e-section", topics: [] });
 
     const topicId = await createTopic("e2e-author", "Author", "Core E2E topic");
 
@@ -189,13 +186,9 @@ describe("Stage 4 connected forum authorization flow", () => {
       await bestState.close();
     }
 
-    await expect(forum.readTopicPage(topicId)).resolves.toMatchObject({
-      isSolved: true,
-      bestAnswerPostId: reply.id,
-      posts: expect.arrayContaining([
-        expect.objectContaining({ id: reply.id, body: { originalContent: "Connected reply" } }),
-      ]),
-    });
+    const publicTopic = await forum.readTopicPage(topicId);
+    expect(publicTopic).toMatchObject({ isSolved: true, bestAnswerPostId: reply.id });
+    expect(publicTopic?.posts.find((post) => post.id === reply.id)?.body.originalContent).toBe("Connected reply");
 
     const managementPool = scopedPool();
     const authorization = new AuthorizationService(new PostgresAuthorizationRepository(managementPool));
