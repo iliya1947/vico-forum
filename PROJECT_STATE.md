@@ -142,9 +142,9 @@ Core Stage 4 integration подтверждён PostgreSQL 17 CI:
   PostgreSQL repositories;
 - отдельные следующие requests подтверждают dynamic role assignment/grant removal/grant restore,
   per-user `deny`, `inherit`, `allow` и отсутствие доверия forged authorization fields;
-- GitHub Actions CI #140 на head до документационного sync прошёл `checks` и `database`, включая
-  lint, typecheck, unit tests, build, migration metadata, PostgreSQL tests, Workers build и local
-  Hyperdrive smoke.
+- GitHub Actions CI #144 на финальном head PR #61 `0d3863359f02cb230c3d50c10d8f6be03bb8ed5c`
+  прошёл `checks` и `database`, включая lint, typecheck, unit tests, build, migration metadata,
+  PostgreSQL tests, Workers build и local Hyperdrive smoke.
 
 Таким образом Stage 4 целиком завершён в local/CI path. Real Google OAuth, external authorization
 bootstrap, pending production migrations и production-like deployment acceptance намеренно остаются
