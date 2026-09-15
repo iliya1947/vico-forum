@@ -84,13 +84,27 @@ mutation path использует Better Auth session, same-origin boundary и 
 проверки автора, темы и сообщения. Forward migration `0005` добавляет только это состояние,
 без изменения immutable content revisions.
 
+Stage 4E2a authorization backend foundation реализован локально/для CI:
+
+- migration `0006` добавляет normalized PostgreSQL schema, code-backed permission catalog,
+  независимые built-in roles с явными initial grants, custom roles, одно role assignment на
+  пользователя и персональные `allow | deny` overrides;
+- единый request-scoped `PermissionResolver` разрешает актуальное DB state с приоритетом
+  `deny → allow → role grant → deny by default`, а пользователя без assignment трактует как
+  built-in `user` без session role claim;
+- backend repository/service предоставляет validated management operations и чтение raw/effective
+  state, а Worker подключает отдельную authorization capability через `RouterContextProvider`;
+- все authz mutations сериализуются PostgreSQL row lock на singleton row и после появления manager
+  атомарно отклоняют переход к нулю effective `access.authorization.manage`; disposable PostgreSQL
+  suite включает реальную concurrent проверку и rollback.
+
 Forum MVP ещё не завершён:
 
 - Google sign-in/sign-out controls используют SSR session пользователя в общем forum header,
   локальный locale-aware callback и client-side синхронизацию после выхода;
-- Stage 4E2 должен реализовать dynamic DB-backed roles/permissions, protected management UI,
-  custom roles и per-user `allow | deny | inherit` overrides;
-- Stage 4 целиком не завершён до Stage 4E2 и core E2E.
+- Stage 4E2b должен добавить protected management UI/routes, перевести forum actions/UI на
+  `PermissionResolver` и закрыть core E2E;
+- Stage 4 целиком не завершён до Stage 4E2b и core E2E.
 
 Для Stage 4E2 зафиксирован новый authorization contract: Better Auth остаётся источником
 identity/session, но не authoritative role/permission state. Effective permissions должны
@@ -99,7 +113,8 @@ request; изменения role grants, role assignment и user overrides до�
 logout/login. Built-in `user/moderator/admin` являются только стартовыми системными ролями;
 custom roles создаются через сайт, permissions любой роли редактируются, а персональный
 `deny` может отнять capability, выданную ролью. Полный contract —
-`docs/auth/AUTHORIZATION.md`. Эта подсистема ещё не реализована.
+`docs/auth/AUTHORIZATION.md`. Backend foundation реализован в Stage 4E2a; UI и forum integration
+остаются Stage 4E2b.
 
 То есть следующий продуктовый приоритет — не дальнейший infrastructure hardening, а завершение
 forum core через Stage 4E2.
@@ -172,10 +187,9 @@ rendering и transactional per-author write cooldown завершены лока
 
 ### 3. Stage 4E — solved/best answer + dynamic authorization
 
-Первый компактный slice solved/best-answer author flow реализован локально/для CI. Следующий
-slice Stage 4E2 должен реализовать контракт `docs/auth/AUTHORIZATION.md`: dynamic roles,
-редактируемые role permissions, custom role creation, user role assignment, персональные
-`allow/deny` overrides, management UI, lockout protection и core E2E. Real Google OAuth и
+Первый компактный slice solved/best-answer author flow и Stage 4E2a dynamic authorization backend
+foundation реализованы локально/для CI. Следующий slice Stage 4E2b должен добавить management UI,
+перевести forum actions/UI на `PermissionResolver` и закрыть core E2E. Real Google OAuth и
 external deployment acceptance остаются границей Stage 6 и не являются условием внутренней
 разработки Stage 4E.
 

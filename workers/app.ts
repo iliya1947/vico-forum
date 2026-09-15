@@ -6,6 +6,8 @@ import { createHyperdriveForumReader, createHyperdriveForumWriter } from "../db/
 import { createHyperdriveUiTranslationStore } from "../db/hyperdrive-ui-translations";
 import { createHyperdriveAuthRuntime, type BetterAuthEnvironment } from "../app/auth/auth.server";
 import { initializeAuthContext, withAuthSessionCookies } from "../app/auth/session-context";
+import { authorizationContext } from "../app/authorization/request-context";
+import { createHyperdriveAuthorization } from "../db/hyperdrive-authorization";
 
 const requestHandler = createRequestHandler(
   () => import("virtual:react-router/server-build"),
@@ -22,6 +24,7 @@ export default {
     context.set(forumWriterContext, createHyperdriveForumWriter(connectionString));
     context.set(registryLoaderContext, createHyperdriveRegistryLoader(connectionString));
     context.set(uiTranslationStoreContext, createHyperdriveUiTranslationStore(connectionString));
+    context.set(authorizationContext, createHyperdriveAuthorization(connectionString));
     const response = await requestHandler(request, context);
     return withAuthSessionCookies(response, authHeaders);
   },

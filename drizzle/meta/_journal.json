@@ -43,6 +43,13 @@
       "when": 1789425022551,
       "tag": "0005_calm_proemial_gods",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1789430803958,
+      "tag": "0006_loving_sentinels",
+      "breakpoints": true
     }
   ]
 }
