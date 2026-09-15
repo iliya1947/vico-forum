@@ -29,6 +29,7 @@ export function createHyperdriveAuthorization(connectionString: string): Authori
   readRole: (roleId) => run((service) => service.readRole(roleId)),
   listUsers: () => run((service) => service.listUsers()),
   resolveUser: (userId) => run((service) => service.resolveUser(userId)),
+  readManagementState: () => run((service) => service.readManagementState()),
   createCustomRole: (actorId, input) => run((service) => service.createCustomRole(actorId, input)),
   renameCustomRole: (actorId, roleId, input) => run((service) => service.renameCustomRole(actorId, roleId, input)),
   replaceRoleGrants: (actorId, roleId, permissions) => run((service) => service.replaceRoleGrants(actorId, roleId, permissions)),

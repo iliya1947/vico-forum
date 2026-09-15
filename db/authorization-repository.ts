@@ -11,11 +11,15 @@ export interface UserAuthorization {
   effectivePermissions: PermissionKey[];
 }
 export interface AuthorizationUserSummary { id: string; name: string; email: string; role: AuthorizationRole; explicitAssignment: boolean }
+export interface AuthorizationRoleDetails extends AuthorizationRole { grants: PermissionKey[] }
+export interface AuthorizationUserDetails extends AuthorizationUserSummary { authorization: UserAuthorization }
+export interface AuthorizationManagementState { roles: AuthorizationRoleDetails[]; users: AuthorizationUserDetails[] }
 
 export class AuthorizationForbiddenError extends Error {}
 export class AuthorizationLockoutError extends Error {}
 export class AuthorizationNotFoundError extends Error {}
 export class AuthorizationRoleAssignedError extends Error {}
+export class AuthorizationRoleSlugConflictError extends Error {}
 
 type Queryable = Pick<Pool | PoolClient, "query">;
 
@@ -38,6 +42,55 @@ export class PostgresAuthorizationRepository {
       order by u.name, u.email, u.id`);
     return result.rows.map((row) => ({ id: row.user_id, name: row.user_name, email: row.email,
       role: mapRole(row), explicitAssignment: row.explicit_assignment }));
+  }
+
+  async readManagementState(): Promise<AuthorizationManagementState> {
+    const roles = await this.listRoles();
+    const users = await this.listUsers();
+    const grants = await this.pool.query<{ role_id: string; permission_key: PermissionKey }>(
+      "select role_id, permission_key from authz_role_permissions order by role_id, permission_key",
+    );
+    const overrides = await this.pool.query<{ user_id: string; permission_key: PermissionKey; effect: OverrideEffect }>(
+      "select user_id, permission_key, effect from authz_user_permission_overrides order by user_id, permission_key",
+    );
+
+    const grantsByRole = new Map<string, PermissionKey[]>();
+    for (const row of grants.rows) {
+      const roleGrants = grantsByRole.get(row.role_id) ?? [];
+      roleGrants.push(row.permission_key);
+      grantsByRole.set(row.role_id, roleGrants);
+    }
+    const overridesByUser = new Map<string, Array<{ permission: PermissionKey; effect: OverrideEffect }>>();
+    for (const row of overrides.rows) {
+      const userOverrides = overridesByUser.get(row.user_id) ?? [];
+      userOverrides.push({ permission: row.permission_key, effect: row.effect });
+      overridesByUser.set(row.user_id, userOverrides);
+    }
+
+    return {
+      roles: roles.map((role) => ({ ...role, grants: [...(grantsByRole.get(role.id) ?? [])] })),
+      users: users.map((user) => {
+        const roleGrants = [...(grantsByRole.get(user.role.id) ?? [])];
+        const userOverrides = overridesByUser.get(user.id) ?? [];
+        const overrideMap: Partial<Record<PermissionKey, OverrideEffect>> = {};
+        const effectivePermissions = new Set<PermissionKey>(roleGrants);
+        for (const override of userOverrides) {
+          overrideMap[override.permission] = override.effect;
+          if (override.effect === "allow") effectivePermissions.add(override.permission);
+          else effectivePermissions.delete(override.permission);
+        }
+        return {
+          ...user,
+          authorization: {
+            role: user.role,
+            explicitAssignment: user.explicitAssignment,
+            grants: roleGrants,
+            overrides: overrideMap,
+            effectivePermissions: [...effectivePermissions].sort(),
+          },
+        };
+      }),
+    };
   }
 
   async readRole(roleId: string): Promise<(AuthorizationRole & { grants: PermissionKey[] }) | undefined> {
@@ -93,10 +146,17 @@ export class PostgresAuthorizationRepository {
 
   createCustomRole(actorId: string, role: { id: string; slug: string; displayName: string }) {
     return this.mutate(actorId, async (client) => {
-      await client.query(
-        "insert into authz_roles (id, slug, display_name, is_system) values ($1, $2, $3, false)",
-        [role.id, role.slug, role.displayName],
-      );
+      try {
+        await client.query(
+          "insert into authz_roles (id, slug, display_name, is_system) values ($1, $2, $3, false)",
+          [role.id, role.slug, role.displayName],
+        );
+      } catch (error) {
+        if (isDatabaseConstraint(error, "23505", "authz_roles_slug_unique")) {
+          throw new AuthorizationRoleSlugConflictError("role slug already exists");
+        }
+        throw error;
+      }
     });
   }
 
@@ -215,4 +275,9 @@ async function countManagers(database: Queryable): Promise<number> {
 
 function isDatabaseCode(error: unknown, code: string): boolean {
   return typeof error === "object" && error !== null && "code" in error && error.code === code;
+}
+
+function isDatabaseConstraint(error: unknown, code: string, constraint: string): boolean {
+  return typeof error === "object" && error !== null && "code" in error && error.code === code
+    && "constraint" in error && error.constraint === constraint;
 }

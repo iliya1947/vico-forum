@@ -76,9 +76,15 @@ export async function loader(args: LocaleBoundaryArgs) {
   ]);
   const snapshot = await resourceLoader.load(locale, ["common"]);
   const session = authSessionForRequest(args.context);
-  const canManageAuthorization = session
-    ? await authorizationForRequest(args.context).forUser(session.user.id).has("access.authorization.manage")
-    : false;
+  let canManageAuthorization = false;
+  if (session) {
+    const resolver = authorizationForRequest(args.context).forUser(session.user.id);
+    try {
+      canManageAuthorization = await resolver.has("access.authorization.manage");
+    } catch {
+      // The header link is presentation-only; the protected admin route checks permission independently.
+    }
+  }
   return { ...snapshot, authUser: session ? { name: session.user.name, canManageAuthorization } : null };
 }
 
