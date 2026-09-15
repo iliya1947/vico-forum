@@ -1,6 +1,7 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Client } from "pg";
 import type { ForumReader } from "./forum-repository";
+import type { SolutionManagementScope } from "./forum-repository";
 import { DrizzleForumRepository } from "./forum-repository";
 import { ForumService } from "./forum-service";
 import { forumWritePolicy, type ForumWritePolicy } from "./forum-write-policy";
@@ -8,8 +9,8 @@ import { forumWritePolicy, type ForumWritePolicy } from "./forum-write-policy";
 export interface ForumWriter {
   createTopic(input: { sectionId: string; authorId: string; title: string; body: string }): Promise<{ topicId: string }>;
   createReply(input: { topicId: string; authorId: string; body: string }): Promise<{ postId: string }>;
-  markTopicSolved(input: { topicId: string; actorId: string }): Promise<void>;
-  selectBestAnswer(input: { topicId: string; postId: string; actorId: string }): Promise<void>;
+  markTopicSolved(input: { topicId: string; actorId: string; scope: SolutionManagementScope }): Promise<void>;
+  selectBestAnswer(input: { topicId: string; postId: string; actorId: string; scope: SolutionManagementScope }): Promise<void>;
 }
 
 type ClientFactory = () => Client;
@@ -73,7 +74,7 @@ export function createHyperdriveForumWriter(
       });
       return { postId };
     }),
-    markTopicSolved: ({ topicId, actorId }) => write((forum) => forum.markTopicSolved(topicId, actorId)),
-    selectBestAnswer: ({ topicId, postId, actorId }) => write((forum) => forum.selectBestAnswer(topicId, postId, actorId)),
+    markTopicSolved: ({ topicId, actorId, scope }) => write((forum) => forum.markTopicSolved(topicId, actorId, scope)),
+    selectBestAnswer: ({ topicId, postId, actorId, scope }) => write((forum) => forum.selectBestAnswer(topicId, postId, actorId, scope)),
   };
 }

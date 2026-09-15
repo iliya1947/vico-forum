@@ -4,6 +4,7 @@ import type { AuthSession } from "../auth/request-context";
 import { authSessionContext } from "../auth/request-context";
 import type { ForumWriter } from "../../db/hyperdrive-forum";
 import { forumWriterContext } from "./request-context";
+import { authorizationContext } from "../authorization/request-context";
 import { action as sectionAction } from "../routes/section";
 import { action as topicAction } from "../routes/topic";
 import { ForumWriteRateLimitError } from "../../db/forum-write-policy";
@@ -24,6 +25,9 @@ function context(writer: ForumWriter, authenticated = true) {
   const value = new RouterContextProvider();
   value.set(authSessionContext, authenticated ? session : null);
   value.set(forumWriterContext, writer);
+  value.set(authorizationContext, {
+    forUser: () => ({ resolve: vi.fn(), has: vi.fn(async () => true) }),
+  } as never);
   return value;
 }
 
@@ -87,7 +91,7 @@ describe("forum write route actions", () => {
     });
     if (response instanceof Response) throw new Error("expected action data response");
     expect(response).toMatchObject({ data: { error: "rateLimited" }, init: { status: 429 } });
-    expect(new Headers(response.init?.headers).get("Retry-After")).toBe("3");
+    expect(new Headers(response?.init?.headers).get("Retry-After")).toBe("3");
     expect(JSON.stringify(response)).not.toContain("forum write cooldown is active");
   });
 
@@ -97,13 +101,13 @@ describe("forum write route actions", () => {
       request: request("/en/topics/topic-1", { intent: "markSolved", actorId: "forged-author" }),
       params: { locale: "en", topicId: "topic-1" }, context: context(forumWriter),
     });
-    expect(forumWriter.markTopicSolved).toHaveBeenCalledWith({ topicId: "topic-1", actorId: "session-user" });
+    expect(forumWriter.markTopicSolved).toHaveBeenCalledWith({ topicId: "topic-1", actorId: "session-user", scope: "any" });
 
     const selected = await topicAction({
       request: request("/en/topics/topic-1", { intent: "selectBestAnswer", postId: "post-2", authorId: "forged-author" }),
       params: { locale: "en", topicId: "topic-1" }, context: context(forumWriter),
     });
-    expect(forumWriter.selectBestAnswer).toHaveBeenCalledWith({ topicId: "topic-1", postId: "post-2", actorId: "session-user" });
+    expect(forumWriter.selectBestAnswer).toHaveBeenCalledWith({ topicId: "topic-1", postId: "post-2", actorId: "session-user", scope: "any" });
     if (!(selected instanceof Response)) throw new Error("expected redirect");
     expect(selected.headers.get("Location")).toBe("/en/topics/topic-1#post-post-2");
   });

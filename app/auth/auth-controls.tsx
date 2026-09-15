@@ -1,9 +1,9 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { useLocation, useRevalidator } from "react-router";
+import { Link, useLocation, useRevalidator } from "react-router";
 import { useTranslation } from "react-i18next";
 import { authClientActions, type AuthClientActions } from "./auth-client";
 
-export interface HeaderAuthUser { readonly name: string }
+export interface HeaderAuthUser { readonly name: string; readonly canManageAuthorization?: boolean }
 
 const HeaderAuthContext = createContext<{
   user: HeaderAuthUser | null;
@@ -78,6 +78,7 @@ export function AuthControls({ locale, actions = authClientActions }: {
   return (
     <div className="auth-controls">
       {user ? <span className="auth-user">{user.name}</span> : null}
+      {user?.canManageAuthorization ? <Link to={`/${encodeURIComponent(locale)}/admin/authorization`}>{t("authorizationNav")}</Link> : null}
       <button type="button" disabled={pending} onClick={user ? signOut : signIn}>
         {pending ? t("authPending") : user ? t("signOut") : t("signInGoogle")}
       </button>

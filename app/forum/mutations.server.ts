@@ -5,6 +5,8 @@ import { ForumAuthorizationError, ForumEntityNotFoundError, ForumStateConflictEr
 import { InvalidForumContentError } from "../../db/forum-service";
 import { ForumWriteRateLimitError } from "../../db/forum-write-policy";
 import { forumWriterForRequest } from "./request-context";
+import { authorizationForRequest } from "../authorization/request-context";
+import type { PermissionKey } from "../authorization/catalog";
 
 export interface ForumMutationError { error: "invalid" | "unauthenticated" | "origin" | "forbidden" | "notFound" | "conflict" | "rateLimited" | "unavailable" }
 
@@ -24,8 +26,8 @@ export function requiredFormText(formData: FormData, name: string): string | und
 }
 
 export function forumMutationGuard(request: Request, context: RouterContextProvider) {
-  if (!requireSameOrigin(request)) return mutationFailure("origin", 403);
   if (!authSessionForRequest(context)) return mutationFailure("unauthenticated", 401);
+  if (!requireSameOrigin(request)) return mutationFailure("origin", 403);
 }
 
 export async function runForumMutation<T>(
@@ -51,4 +53,25 @@ export async function runForumMutation<T>(
     }
     return mutationFailure("unavailable", 503);
   }
+}
+
+export async function requireForumPermission(context: RouterContextProvider, permission: PermissionKey) {
+  const session = authSessionForRequest(context);
+  if (!session) return mutationFailure("unauthenticated", 401);
+  try {
+    if (!(await authorizationForRequest(context).forUser(session.user.id).has(permission))) {
+      return mutationFailure("forbidden", 403);
+    }
+  } catch { return mutationFailure("unavailable", 503); }
+}
+
+export async function solutionScope(context: RouterContextProvider) {
+  const session = authSessionForRequest(context);
+  if (!session) return { error: mutationFailure("unauthenticated", 401) } as const;
+  try {
+    const resolver = authorizationForRequest(context).forUser(session.user.id);
+    if (await resolver.has("forum.solution.manageAny")) return { scope: "any" as const };
+    if (await resolver.has("forum.solution.manageOwn")) return { scope: "own" as const };
+    return { error: mutationFailure("forbidden", 403) } as const;
+  } catch { return { error: mutationFailure("unavailable", 503) } as const; }
 }

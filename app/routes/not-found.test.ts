@@ -10,6 +10,7 @@ describe("localized route shape", () => {
       expect.objectContaining({ path: "categories/:categoryId", file: "routes/category.tsx" }),
       expect.objectContaining({ path: "sections/:sectionId", file: "routes/section.tsx" }),
       expect.objectContaining({ path: "topics/:topicId", file: "routes/topic.tsx" }),
+      expect.objectContaining({ path: "admin/authorization", file: "routes/authorization-admin.tsx" }),
       expect.objectContaining({ path: "*", file: "routes/not-found.ts" }),
     ]);
   });

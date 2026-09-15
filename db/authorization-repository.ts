@@ -10,6 +10,7 @@ export interface UserAuthorization {
   overrides: Partial<Record<PermissionKey, OverrideEffect>>;
   effectivePermissions: PermissionKey[];
 }
+export interface AuthorizationUserSummary { id: string; name: string; email: string; role: AuthorizationRole; explicitAssignment: boolean }
 
 export class AuthorizationForbiddenError extends Error {}
 export class AuthorizationLockoutError extends Error {}
@@ -26,6 +27,17 @@ export class PostgresAuthorizationRepository {
       "select id, slug, display_name, is_system from authz_roles order by is_system desc, slug",
     );
     return result.rows.map(mapRole);
+  }
+
+  async listUsers(): Promise<AuthorizationUserSummary[]> {
+    const result = await this.pool.query<RoleRow & { user_id: string; user_name: string; email: string; explicit_assignment: boolean }>(`
+      select u.id user_id, u.name user_name, u.email, r.id, r.slug, r.display_name, r.is_system,
+        (ur.user_id is not null) explicit_assignment
+      from "user" u left join authz_user_roles ur on ur.user_id = u.id
+      join authz_roles r on r.id = coalesce(ur.role_id, (select id from authz_roles where slug = 'user'))
+      order by u.name, u.email, u.id`);
+    return result.rows.map((row) => ({ id: row.user_id, name: row.user_name, email: row.email,
+      role: mapRole(row), explicitAssignment: row.explicit_assignment }));
   }
 
   async readRole(roleId: string): Promise<(AuthorizationRole & { grants: PermissionKey[] }) | undefined> {

@@ -18,6 +18,7 @@ import {
 import { CanonicalEnglishSource, LocalTranslationSource } from "../localization/sources";
 import { authSessionForRequest } from "../auth/request-context";
 import { HeaderAuthProvider } from "../auth/auth-controls";
+import { authorizationForRequest } from "../authorization/request-context";
 
 interface LocaleBoundaryArgs {
   request: Request;
@@ -75,7 +76,10 @@ export async function loader(args: LocaleBoundaryArgs) {
   ]);
   const snapshot = await resourceLoader.load(locale, ["common"]);
   const session = authSessionForRequest(args.context);
-  return { ...snapshot, authUser: session ? { name: session.user.name } : null };
+  const canManageAuthorization = session
+    ? await authorizationForRequest(args.context).forUser(session.user.id).has("access.authorization.manage")
+    : false;
+  return { ...snapshot, authUser: session ? { name: session.user.name, canManageAuthorization } : null };
 }
 
 export default function LocaleBoundary() {

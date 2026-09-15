@@ -98,13 +98,28 @@ Stage 4E2a authorization backend foundation реализован локальн�
   атомарно отклоняют переход к нулю effective `access.authorization.manage`; disposable PostgreSQL
   suite включает реальную concurrent проверку и rollback.
 
+Stage 4E2b реализован в рабочем дереве для local/CI verification: forum create/reply actions и
+формы теперь используют effective permissions, solution management получает только server-derived
+scope `own | any`, а repository сохраняет topic lock и ownership/topic/post invariants. Добавлены
+request-scoped management capability и Better Auth user read model, а защищённая locale-aware
+страница `/:locale/admin/authorization` управляет roles, grants, assignments и user overrides
+через существующий service/repository path. Management link разрешается server-side и сохраняет
+locale. Route coverage проверяет independent authentication/permission checks, session-derived
+actor и controlled lockout response; PostgreSQL coverage включает `own | any` repository boundary.
+
+Локальный `DATABASE_URL` в текущей среде отсутствует, поэтому обязательный `pnpm db:test` gate и
+полный Stage 4 local/CI completion остаются неподтверждёнными до зелёного GitHub Actions
+`database` job на актуальном PR head. По этой причине Stage 4/4E пока не отмечены завершёнными и
+активным продуктовым этапом остаётся финальная verification Stage 4E2b; после зелёного DB gate
+следующим этапом станет Stage 5.
+
 Forum MVP ещё не завершён:
 
 - Google sign-in/sign-out controls используют SSR session пользователя в общем forum header,
   локальный locale-aware callback и client-side синхронизацию после выхода;
-- Stage 4E2b должен добавить protected management UI/routes, перевести forum actions/UI на
-  `PermissionResolver` и закрыть core E2E;
-- Stage 4 целиком не завершён до Stage 4E2b и core E2E.
+- Stage 4E2b code path добавляет protected management UI/routes и переводит forum actions/UI на
+  `PermissionResolver`, но обязательный PostgreSQL gate в этой среде не выполнен;
+- Stage 4 целиком не отмечен завершённым до подтверждения core DB integration на CI.
 
 Для Stage 4E2 зафиксирован новый authorization contract: Better Auth остаётся источником
 identity/session, но не authoritative role/permission state. Effective permissions должны

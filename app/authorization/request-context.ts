@@ -1,8 +1,8 @@
 import { createContext, type RouterContextProvider } from "react-router";
-import type { AuthorizationCapability } from "../../db/authorization-service";
+import type { AuthorizationManagementCapability } from "../../db/authorization-service";
 
-export const authorizationContext = createContext<AuthorizationCapability>();
+export const authorizationContext = createContext<AuthorizationManagementCapability>();
 
-export function authorizationForRequest(context: RouterContextProvider): AuthorizationCapability {
+export function authorizationForRequest(context: RouterContextProvider): AuthorizationManagementCapability {
   return context.get(authorizationContext);
 }

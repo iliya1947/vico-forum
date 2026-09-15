@@ -11,10 +11,23 @@ export interface PermissionResolver {
 export interface AuthorizationCapability {
   forUser(userId: string): PermissionResolver;
 }
+export interface AuthorizationManagementCapability extends AuthorizationCapability {
+  listRoles(): ReturnType<AuthorizationService["listRoles"]>;
+  readRole(roleId: string): ReturnType<AuthorizationService["readRole"]>;
+  listUsers(): ReturnType<AuthorizationService["listUsers"]>;
+  resolveUser(userId: string): ReturnType<AuthorizationService["resolveUser"]>;
+  createCustomRole(actorId: string, input: { slug: string; displayName: string }): ReturnType<AuthorizationService["createCustomRole"]>;
+  renameCustomRole(actorId: string, roleId: string, input: { displayName: string }): ReturnType<AuthorizationService["renameCustomRole"]>;
+  replaceRoleGrants(actorId: string, roleId: string, permissions: unknown): ReturnType<AuthorizationService["replaceRoleGrants"]>;
+  deleteCustomRole(actorId: string, roleId: string): ReturnType<AuthorizationService["deleteCustomRole"]>;
+  assignUserRole(actorId: string, userId: string, roleId: string): ReturnType<AuthorizationService["assignUserRole"]>;
+  setUserOverride(actorId: string, userId: string, permission: unknown, effect: unknown): ReturnType<AuthorizationService["setUserOverride"]>;
+}
 
 export class AuthorizationService {
   constructor(private readonly repository: PostgresAuthorizationRepository) {}
   listRoles() { return this.repository.listRoles(); }
+  listUsers() { return this.repository.listUsers(); }
   readRole(roleId: string) { return this.repository.readRole(text(roleId, "role id")); }
   resolveUser(userId: string) { return this.repository.resolveUser(text(userId, "user id")); }
 
