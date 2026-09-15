@@ -6,15 +6,21 @@ import { AuthorizationLockoutError } from "../../db/authorization-repository";
 import { action, loader } from "./authorization-admin";
 
 const session = { user: { id: "manager", name: "Manager", email: "m@example.test" } } as AuthSession;
-function capability(manage = true) {
+function capability(manage: boolean | Error = true) {
   return {
-    forUser: () => ({ has: vi.fn(async () => manage), resolve: vi.fn() }),
+    forUser: () => ({
+      has: vi.fn(async () => {
+        if (manage instanceof Error) throw manage;
+        return manage;
+      }),
+      resolve: vi.fn(),
+    }),
     listRoles: vi.fn(async () => []), listUsers: vi.fn(async () => []), readRole: vi.fn(), resolveUser: vi.fn(),
     createCustomRole: vi.fn(), renameCustomRole: vi.fn(), replaceRoleGrants: vi.fn(), deleteCustomRole: vi.fn(),
     assignUserRole: vi.fn(), setUserOverride: vi.fn(),
   };
 }
-function context(authenticated = true, manage = true) {
+function context(authenticated = true, manage: boolean | Error = true) {
   const context = new RouterContextProvider(); const value = capability(manage);
   context.set(authSessionContext, authenticated ? session : null); context.set(authorizationContext, value);
   return { context, value };
@@ -28,6 +34,12 @@ describe("authorization management route", () => {
     await expect(loader({ params: { locale: "en" }, context: context(false).context })).rejects.toMatchObject({ status: 401 });
     await expect(action({ request: request({ intent: "deleteRole", roleId: "r" }), context: context(false).context })).rejects.toMatchObject({ status: 401 });
     await expect(loader({ params: { locale: "en" }, context: context(true, false).context })).rejects.toMatchObject({ status: 403 });
+    await expect(action({ request: request({ intent: "deleteRole", roleId: "r" }), context: context(true, false).context })).rejects.toMatchObject({ status: 403 });
+  });
+  it("maps permission resolver infrastructure failures to controlled 503 responses", async () => {
+    const failure = new Error("database detail must not escape");
+    await expect(loader({ params: { locale: "en" }, context: context(true, failure).context })).rejects.toMatchObject({ status: 503 });
+    await expect(action({ request: request({ intent: "deleteRole", roleId: "r" }), context: context(true, failure).context })).rejects.toMatchObject({ status: 503 });
   });
   it("uses the session actor and ignores forged authorization fields", async () => {
     const state = context(); await action({ request: request({ intent: "assignRole", userId: "target", roleId: "role", actorId: "forged", permission: "access.authorization.manage" }), context: state.context });
