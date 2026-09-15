@@ -29,3 +29,5 @@
 13. Текущий продуктовый приоритет — Stage 4 forum core (`4B → 4C → 4D → 4E`). Не превращай forum feature-задачу в дополнительный Hyperdrive/Neon/OAuth/provider hardening, если этот hardening не нужен для выполнения и local/CI проверки самой задачи.
 
 14. Существующий localization/translation/database foundation сохраняй и переиспользуй. Не переписывай его ради нового forum code без конкретной технической необходимости.
+
+15. Если задача меняет PostgreSQL schema/migration, SQL constraints/invariants или DB integration behavior, `pnpm db:test` является обязательным verification gate. Если в локальном окружении нет `DATABASE_URL`, прямо укажи, что DB suite не проверен локально. Не называй изменение merge-ready до успешного GitHub Actions `database` job на актуальном PR head. Если текущая Codex-сессия не может наблюдать PR/CI после создания PR пользователем, явно укажи, что merge readiness остаётся неподтверждённой до зелёного `database` job.

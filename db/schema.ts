@@ -244,6 +244,52 @@ export const rateLimit = pgTable("rate_limit", {
   lastRequest: bigint("last_request", { mode: "number" }).notNull(),
 });
 
+export const authzRoles = pgTable("authz_roles", {
+  id: text("id").primaryKey(),
+  slug: text("slug").notNull().unique(),
+  displayName: text("display_name").notNull(),
+  isSystem: boolean("is_system").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  check("authz_roles_slug_check", sql`${table.slug} = btrim(${table.slug}) and ${table.slug} ~ '^[a-z][a-z0-9-]{0,62}$'`),
+  check("authz_roles_display_name_check", sql`btrim(${table.displayName}) <> ''`),
+]);
+
+export const authzPermissions = pgTable("authz_permissions", {
+  key: text("key").primaryKey(),
+}, (table) => [check("authz_permissions_catalog_check", sql`${table.key} in (
+  'forum.topic.create', 'forum.reply.create', 'forum.solution.manageOwn',
+  'forum.solution.manageAny', 'access.authorization.manage'
+)`)]);
+
+export const authzRolePermissions = pgTable("authz_role_permissions", {
+  roleId: text("role_id").notNull().references(() => authzRoles.id, { onDelete: "cascade" }),
+  permissionKey: text("permission_key").notNull().references(() => authzPermissions.key, { onDelete: "restrict" }),
+}, (table) => [primaryKey({ name: "authz_role_permissions_pk", columns: [table.roleId, table.permissionKey] })]);
+
+export const authzUserRoles = pgTable("authz_user_roles", {
+  userId: text("user_id").primaryKey().references(() => user.id, { onDelete: "cascade" }),
+  roleId: text("role_id").notNull().references(() => authzRoles.id, { onDelete: "restrict" }),
+  assignedAt: timestamp("assigned_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [index("authz_user_roles_role_id_idx").on(table.roleId)]);
+
+export const authzUserPermissionOverrides = pgTable("authz_user_permission_overrides", {
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  permissionKey: text("permission_key").notNull().references(() => authzPermissions.key, { onDelete: "restrict" }),
+  effect: text("effect").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  primaryKey({ name: "authz_user_permission_overrides_pk", columns: [table.userId, table.permissionKey] }),
+  check("authz_user_permission_overrides_effect_check", sql`${table.effect} in ('allow', 'deny')`),
+]);
+
+// The singleton row is the serialization boundary for every authorization mutation.
+export const authzMutationLock = pgTable("authz_mutation_lock", {
+  id: integer("id").primaryKey(),
+  managersEverExisted: boolean("managers_ever_existed").notNull().default(false),
+}, (table) => [check("authz_mutation_lock_singleton_check", sql`${table.id} = 1`)]);
+
 export const forumCategories = pgTable(
   "forum_categories",
   {

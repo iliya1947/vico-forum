@@ -1,6 +1,6 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
-import { Client, type ClientBase, type DatabaseError } from "pg";
+import { Client, Pool, type ClientBase, type DatabaseError } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { loadPersistentRegistry } from "../../app/localization/persistent-registry";
 import { parseLocaleCandidate } from "../../app/localization/locale";
@@ -9,6 +9,15 @@ import { ConcurrentRevisionError, DrizzleForumRepository, ForumAuthorizationErro
 import { ForumService, InvalidForumContentError } from "../../db/forum-service";
 import { createHyperdriveForumWriter } from "../../db/hyperdrive-forum";
 import { FORUM_WRITE_COOLDOWN_MS, ForumWriteRateLimitError } from "../../db/forum-write-policy";
+import { PERMISSION_CATALOG, INITIAL_ROLE_GRANTS } from "../../app/authorization/catalog";
+import { AuthorizationService, InvalidAuthorizationInputError } from "../../db/authorization-service";
+import {
+  AuthorizationForbiddenError,
+  AuthorizationLockoutError,
+  AuthorizationNotFoundError,
+  AuthorizationRoleAssignedError,
+  PostgresAuthorizationRepository,
+} from "../../db/authorization-repository";
 
 const databaseUrl = process.env.DATABASE_URL;
 
@@ -49,7 +58,122 @@ describe("PostgreSQL 17 locale migrations", () => {
     const applied = await client.query<{ count: string }>(
       'select count(*)::text as count from drizzle."__drizzle_migrations"',
     );
-    expect(applied.rows[0]?.count).toBe("6");
+    expect(applied.rows[0]?.count).toBe("7");
+  });
+
+  it("seeds the code catalog and independent built-in role grants exactly", async () => {
+    const permissions = await client.query<{ key: string }>("select key from authz_permissions order by key");
+    expect(permissions.rows.map(({ key }) => key)).toEqual([...PERMISSION_CATALOG].sort());
+    const roles = await client.query<{ slug: string; grants: string[] }>(`
+      select r.slug, coalesce(array_agg(rp.permission_key order by rp.permission_key)
+        filter (where rp.permission_key is not null), '{}') grants
+      from authz_roles r left join authz_role_permissions rp on rp.role_id = r.id
+      where r.is_system group by r.id order by r.slug`);
+    expect(Object.fromEntries(roles.rows.map((row) => [row.slug, row.grants]))).toEqual(
+      Object.fromEntries(Object.entries(INITIAL_ROLE_GRANTS).map(([slug, grants]) => [slug, [...grants].sort()])),
+    );
+    await expectDatabaseCode(client.query("insert into authz_permissions (key) values ('made.up.permission')"), "23514");
+    await expectDatabaseCode(client.query("delete from authz_roles where slug = 'user'"), "23514");
+  });
+
+  it("manages dynamic roles, assignments, overrides, precedence, validation, and rollback", async () => {
+    await insertForumAuthor("authz-admin", "authz-admin@example.test", null);
+    await insertForumAuthor("authz-user", "authz-user@example.test", null);
+    await client.query("insert into authz_user_roles (user_id, role_id) values ('authz-admin', 'builtin-admin')");
+    const pool = new Pool({ connectionString: databaseUrl });
+    const repository = new PostgresAuthorizationRepository(pool);
+    const service = new AuthorizationService(repository);
+    try {
+      const defaultState = await service.resolveUser("authz-user");
+      expect(defaultState).toMatchObject({ role: { slug: "user" }, explicitAssignment: false });
+      expect(defaultState.effectivePermissions).toContain("forum.topic.create");
+      await expect(service.resolveUser("missing-authz-user")).rejects.toBeInstanceOf(AuthorizationNotFoundError);
+      expect(await repository.hasPermission("missing-authz-user", "forum.topic.create")).toBe(false);
+
+      await service.createCustomRole("authz-admin", { slug: "helpers", displayName: "Helpers" });
+      const custom = (await service.listRoles()).find((role) => role.slug === "helpers")!;
+      await service.renameCustomRole("authz-admin", custom.id, { displayName: "Support" });
+      expect(await service.readRole(custom.id)).toMatchObject({ slug: "helpers", displayName: "Support" });
+      await expectDatabaseCode(
+        client.query("update authz_roles set slug = 'support' where id = $1", [custom.id]),
+        "23514",
+      );
+      await service.replaceRoleGrants("authz-admin", custom.id, ["forum.solution.manageAny"]);
+      await service.assignUserRole("authz-admin", "authz-user", custom.id);
+      expect(await service.resolveUser("authz-user")).toMatchObject({
+        role: { slug: "helpers" }, explicitAssignment: true,
+        grants: ["forum.solution.manageAny"], effectivePermissions: ["forum.solution.manageAny"],
+      });
+      await expect(service.deleteCustomRole("authz-admin", custom.id)).rejects.toBeInstanceOf(AuthorizationRoleAssignedError);
+
+      await service.setUserOverride("authz-admin", "authz-user", "forum.topic.create", "allow");
+      expect((await service.resolveUser("authz-user")).effectivePermissions).toContain("forum.topic.create");
+      await service.setUserOverride("authz-admin", "authz-user", "forum.solution.manageAny", "deny");
+      expect((await service.resolveUser("authz-user")).effectivePermissions).not.toContain("forum.solution.manageAny");
+      await service.setUserOverride("authz-admin", "authz-user", "forum.solution.manageAny", null);
+      expect((await service.resolveUser("authz-user")).effectivePermissions).toContain("forum.solution.manageAny");
+      expect(() => service.replaceRoleGrants("authz-admin", custom.id, ["unknown"]))
+        .toThrow(InvalidAuthorizationInputError);
+
+      const defaultUserGrants = await repository.readRoleGrants("builtin-user");
+      try {
+        await service.replaceRoleGrants("authz-admin", "builtin-user", [
+          ...INITIAL_ROLE_GRANTS.user,
+          "access.authorization.manage",
+        ]);
+        await expect(service.createCustomRole("missing-authz-actor", { slug: "intruder", displayName: "Intruder" }))
+          .rejects.toBeInstanceOf(AuthorizationForbiddenError);
+        expect((await service.listRoles()).some((role) => role.slug === "intruder")).toBe(false);
+      } finally {
+        await service.replaceRoleGrants("authz-admin", "builtin-user", defaultUserGrants);
+      }
+
+      await service.assignUserRole("authz-admin", "authz-user", "builtin-user");
+      await service.deleteCustomRole("authz-admin", custom.id);
+      expect(await service.readRole(custom.id)).toBeUndefined();
+      await expect(service.renameCustomRole("authz-admin", "builtin-user", { displayName: "Member" }))
+        .rejects.toBeDefined();
+
+      const grantsBefore = await repository.readRoleGrants("builtin-admin");
+      await expect(service.replaceRoleGrants("authz-admin", "builtin-admin", grantsBefore.filter((key) => key !== "access.authorization.manage")))
+        .rejects.toBeInstanceOf(AuthorizationLockoutError);
+      expect(await repository.readRoleGrants("builtin-admin")).toEqual(grantsBefore);
+    } finally {
+      await pool.end();
+      await client.query("delete from authz_user_permission_overrides where user_id in ('authz-admin', 'authz-user')");
+      await client.query("delete from authz_user_roles where user_id in ('authz-admin', 'authz-user')");
+      await client.query("delete from authz_roles where slug = 'intruder' and not is_system");
+      await client.query('delete from "user" where id in (\'authz-admin\', \'authz-user\')');
+    }
+  });
+
+  it("serializes concurrent mutations so the last two managers cannot both be removed", async () => {
+    await insertForumAuthor("manager-one", "manager-one@example.test", null);
+    await insertForumAuthor("manager-two", "manager-two@example.test", null);
+    await client.query("insert into authz_user_roles (user_id, role_id) values ('manager-one', 'builtin-admin'), ('manager-two', 'builtin-admin')");
+    const firstPool = new Pool({ connectionString: databaseUrl });
+    const secondPool = new Pool({ connectionString: databaseUrl });
+    const first = new AuthorizationService(new PostgresAuthorizationRepository(firstPool));
+    const second = new AuthorizationService(new PostgresAuthorizationRepository(secondPool));
+    try {
+      const outcomes = await Promise.allSettled([
+        first.setUserOverride("manager-one", "manager-one", "access.authorization.manage", "deny"),
+        second.setUserOverride("manager-two", "manager-two", "access.authorization.manage", "deny"),
+      ]);
+      expect(outcomes.filter((result) => result.status === "fulfilled")).toHaveLength(1);
+      const rejected = outcomes.find((result) => result.status === "rejected");
+      expect(rejected).toMatchObject({ status: "rejected", reason: expect.any(AuthorizationLockoutError) });
+      const states = await Promise.all([
+        first.resolveUser("manager-one"),
+        second.resolveUser("manager-two"),
+      ]);
+      expect(states.filter((state) => state.effectivePermissions.includes("access.authorization.manage"))).toHaveLength(1);
+    } finally {
+      await firstPool.end(); await secondPool.end();
+      await client.query("delete from authz_user_permission_overrides where user_id in ('manager-one', 'manager-two')");
+      await client.query("delete from authz_user_roles where user_id in ('manager-one', 'manager-two')");
+      await client.query('delete from "user" where id in (\'manager-one\', \'manager-two\')');
+    }
   });
 
   it("creates and reads the category, section, topic, and post hierarchy with independent revisions", async () => {

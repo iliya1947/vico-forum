@@ -11,6 +11,7 @@
     "app/auth/auth.server.ts",
     "app/auth/request-context.ts",
     "app/auth/session-context.ts",
+    "app/authorization/catalog.ts",
     "app/localization/catalog.ts",
     "app/localization/fingerprint.ts",
     "app/localization/sources.ts",
