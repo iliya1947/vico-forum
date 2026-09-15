@@ -1,4 +1,4 @@
-import { canonicalEnglishCatalog, type UiMessageDescriptor } from "./catalog";
+import { canonicalEnglishCatalog, type UiMessageDescriptor, type UiNamespace } from "./catalog";
 import { sha256Text, sourceFingerprint } from "./fingerprint";
 import { canonicalizeTranslationLocale } from "./locale";
 import type { UiTranslationStore } from "./persistent-sources";
@@ -132,22 +132,24 @@ export async function uiTranslationJobIdentity(specification: JobIdentityInput):
   ]));
 }
 
-function requestedNamespaces(requested: readonly string[] | undefined): string[] {
+function requestedNamespaces(requested: readonly string[] | undefined): UiNamespace[] {
   const namespaces = requested ?? Object.keys(canonicalEnglishCatalog);
   const unique = [...new Set(namespaces)];
   for (const namespace of unique) {
-    if (!(namespace in canonicalEnglishCatalog)) {
+    if (!isCanonicalUiNamespace(namespace)) {
       throw new UiTranslationGenerationScopeError(`Unknown canonical UI namespace: ${namespace}`);
     }
   }
   return unique.sort(deterministicCompare);
 }
 
-function descriptorsFor(namespaces: readonly string[]): UiMessageDescriptor[] {
+function isCanonicalUiNamespace(namespace: string): namespace is UiNamespace {
+  return Object.hasOwn(canonicalEnglishCatalog, namespace);
+}
+
+function descriptorsFor(namespaces: readonly UiNamespace[]): UiMessageDescriptor[] {
   return namespaces
-    .flatMap((namespace) => Object.values(
-      canonicalEnglishCatalog[namespace as keyof typeof canonicalEnglishCatalog],
-    ) as UiMessageDescriptor[])
+    .flatMap((namespace) => Object.values(canonicalEnglishCatalog[namespace]) as UiMessageDescriptor[])
     .sort((left, right) => deterministicCompare(
       `${left.namespace}\0${left.key}`,
       `${right.namespace}\0${right.key}`,

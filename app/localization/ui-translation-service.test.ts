@@ -164,15 +164,18 @@ describe("UiTranslationService", () => {
     expect(await uiTranslationJobIdentity({ ...base, generationPolicyVersion: "ui-policy-v2" })).not.toBe(identity);
   });
 
-  it("rejects invalid, unknown, English, and unknown-namespace generation scopes", async () => {
+  it("rejects invalid, unknown, English, and non-canonical namespace generation scopes", async () => {
     const { service, dispatcher, store } = setup();
     for (const request of [
       { targetLocale: "not_a_locale" },
       { targetLocale: "de" },
       { targetLocale: "en" },
-      { targetLocale: "fr-CA", namespaces: ["unknown"] },
     ]) {
       await expect(service.planAndDispatch(request)).rejects.toBeInstanceOf(UiTranslationGenerationScopeError);
+    }
+    for (const namespace of ["unknown", "toString", "constructor", "__proto__", "hasOwnProperty"]) {
+      await expect(service.planAndDispatch({ targetLocale: "fr-CA", namespaces: [namespace] }))
+        .rejects.toBeInstanceOf(UiTranslationGenerationScopeError);
     }
     expect(dispatcher.dispatch).not.toHaveBeenCalled();
     expect(store.readApproved).not.toHaveBeenCalled();
