@@ -127,6 +127,21 @@ describe("UI translation resources", () => {
     await expect(validateTranslationPacks({ xx: broken })).rejects.toThrow("Placeholder mismatch");
   });
 
+  it.each(["toString", "constructor", "__proto__", "hasOwnProperty"])(
+    "rejects inherited namespace name %s across UI translation sources",
+    async (namespace) => {
+      const pack = Object.fromEntries([[namespace, {}]]) as TranslationPack;
+
+      await expect(new CanonicalEnglishSource().load("en", [namespace])).rejects.toThrow(
+        "Unknown canonical namespace",
+      );
+      await expect(new LocalTranslationSource({ xx: pack }).load("xx", [namespace])).rejects.toThrow(
+        "Unknown canonical namespace",
+      );
+      await expect(validateTranslationPacks({ xx: pack })).rejects.toThrow("Unknown canonical namespace");
+    },
+  );
+
   it("creates isolated runtimes from the same serialized server snapshot", async () => {
     const snapshot = await new TranslationResourceLoader([new CanonicalEnglishSource()]).load(
       { ...locale, translationLocale: "en", fallbackLocales: [], formatting: { locale: "en", timeZone: "UTC" } },
