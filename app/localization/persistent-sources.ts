@@ -18,6 +18,7 @@ export interface PersistentUiTranslationRow {
   status: unknown;
   sourceFingerprint: unknown;
   translatedPayload: unknown;
+  generationPolicyVersion?: unknown;
 }
 
 export interface UiTranslationStore {
@@ -73,6 +74,7 @@ abstract class DatabaseTranslationSource implements TranslationSource {
     private readonly store: UiTranslationStore,
     private readonly origin: PersistentTranslationOrigin,
     private readonly reportRowIssues: PersistentTranslationRowIssueReporter = defaultRowIssueReporter,
+    private readonly requiredGenerationPolicyVersion?: string,
   ) {}
 
   async load(locale: string, namespaces: readonly string[]): Promise<TranslationSourceResult> {
@@ -112,6 +114,14 @@ abstract class DatabaseTranslationSource implements TranslationSource {
         staleKeys.push(identity);
         continue;
       }
+      if (
+        row.origin === "machine" &&
+        this.requiredGenerationPolicyVersion !== undefined &&
+        row.generationPolicyVersion !== this.requiredGenerationPolicyVersion
+      ) {
+        staleKeys.push(identity);
+        continue;
+      }
 
       let value: string;
       try {
@@ -147,8 +157,12 @@ export class DatabaseManualTranslationSource extends DatabaseTranslationSource {
 }
 
 export class DatabaseMachineTranslationSource extends DatabaseTranslationSource {
-  constructor(store: UiTranslationStore, reportRowIssues?: PersistentTranslationRowIssueReporter) {
-    super(store, "machine", reportRowIssues);
+  constructor(
+    store: UiTranslationStore,
+    reportRowIssues?: PersistentTranslationRowIssueReporter,
+    requiredGenerationPolicyVersion?: string,
+  ) {
+    super(store, "machine", reportRowIssues, requiredGenerationPolicyVersion);
   }
 }
 
@@ -200,6 +214,7 @@ function parseApprovedRow(row: PersistentUiTranslationRow) {
     origin,
     sourceFingerprint: fingerprint,
     translatedPayload: row.translatedPayload,
+    generationPolicyVersion: row.generationPolicyVersion,
   };
 }
 

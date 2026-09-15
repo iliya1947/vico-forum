@@ -67,6 +67,7 @@ describe("Drizzle UI translation store", () => {
         status: "approved",
         sourceFingerprint: fingerprint,
         translatedPayload: "יסוד תרגום",
+        generationPolicyVersion: null,
       },
     ]);
   });
@@ -74,5 +75,25 @@ describe("Drizzle UI translation store", () => {
   it("returns no persistent rows for canonical English", async () => {
     await expect(new DrizzleUiTranslationStore(drizzle(client)).readApproved("en", ["common"]))
       .resolves.toEqual([]);
+  });
+
+  it("returns the generation policy needed to determine whether a machine row is current", async () => {
+    const fingerprint = await sourceFingerprint(canonicalEnglishCatalog.common.productName);
+    await client.query(
+      `insert into ui_translations
+        (locale, namespace, key, origin, status, source_fingerprint, translated_payload,
+         generation_policy_version, provider)
+       values ('he', 'common', 'productName', 'machine', 'approved', $1, $2::jsonb, $3, 'test-provider')`,
+      [fingerprint, JSON.stringify("פורום ויקו"), "ui-policy-v0"],
+    );
+
+    const rows = await new DrizzleUiTranslationStore(drizzle(client)).readApproved("he", ["common"]);
+
+    expect(rows).toContainEqual(expect.objectContaining({
+      key: "productName",
+      origin: "machine",
+      sourceFingerprint: fingerprint,
+      generationPolicyVersion: "ui-policy-v0",
+    }));
   });
 });
