@@ -161,9 +161,26 @@ Durable foundation Stage 5A для UI translation jobs:
 - persistent dispatcher последовательно коммитит task перед transport-neutral enqueue, а message
   содержит только `translationTaskId`; fake enqueue adapter обеспечивает local/CI coverage без
   Cloudflare Queue;
-- Queue delivery не считается exactly-once. Real Queue adapter, consumer, lease/stale guards,
-  retry/DLQ/reconciliation, provider execution, validation/result publication и persisted bundle
+- Queue delivery не считается exactly-once. Real Queue adapter, retry/DLQ/reconciliation,
+  provider execution, validation/result publication и persisted bundle
   runtime path явно остаются следующими Stage 5 slices.
+
+Первая часть `JOB-03` для UI translation consumer:
+
+- migration `0008` расширяет task lifecycle минимальными состояниями `pending → processing → stale`,
+  уникальным claim token и timestamps claim/lease/stale; expired processing lease допускает reclaim;
+- PostgreSQL repository атомарно выдаёт только один execution claim, превращает duplicate delivery
+  при live lease в no-op и conditionally завершает stale task только для актуального claim token;
+- provider/Queue-independent consumer после claim повторно проверяет canonical descriptor/fingerprint,
+  generation policy, зарегистрированный canonical non-English generation target и exact-target local/
+  persistent manual result; fallback resources не считаются exact-target evidence;
+- eligible task возвращает typed execution context, но provider execution, retry/DLQ, reconciliation,
+  result publication и Cloudflare Queue binding намеренно не реализованы в этом slice.
+
+Для этого slice локально прошли lint, typecheck, unit suite, production build и migration metadata
+check. PostgreSQL integration coverage добавляет реальную concurrent claim проверку через отдельные
+pool connections, но локально не выполнена из-за отсутствующего `DATABASE_URL`; merge readiness до
+зелёного GitHub Actions `database` job на актуальном PR head не подтверждена.
 
 Core Stage 4 integration подтверждён PostgreSQL 17 CI:
 

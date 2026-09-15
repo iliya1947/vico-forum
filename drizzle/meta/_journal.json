@@ -57,6 +57,13 @@
       "when": 1789494339867,
       "tag": "0007_durable_translation_tasks",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1789496313456,
+      "tag": "0008_translation_task_claim_lease",
+      "breakpoints": true
     }
   ]
 }

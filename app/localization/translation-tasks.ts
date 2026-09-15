@@ -4,7 +4,7 @@ import type {
   UiTranslationJobSpecification,
 } from "./ui-translation-service";
 
-export type TranslationTaskStatus = "pending";
+export type TranslationTaskStatus = "pending" | "processing" | "stale";
 
 export interface TranslationTask {
   readonly id: string;
@@ -18,6 +18,10 @@ export interface TranslationTask {
   readonly targetLocale: string;
   readonly generationPolicyVersion: string;
   readonly status: TranslationTaskStatus;
+  readonly claimToken: string | null;
+  readonly claimedAt: Date | null;
+  readonly leaseExpiresAt: Date | null;
+  readonly staleAt: Date | null;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 }
@@ -26,7 +30,13 @@ export interface TranslationTaskStore {
   upsertPending(specification: UiTranslationJobSpecification): Promise<TranslationTask>;
   findById(id: string): Promise<TranslationTask | undefined>;
   findByIdentity(taskIdentity: string): Promise<TranslationTask | undefined>;
+  claim(id: string, now: Date, leaseDurationMs: number): Promise<TranslationTaskClaimResult>;
+  markStale(id: string, claimToken: string, now: Date): Promise<boolean>;
 }
+
+export type TranslationTaskClaimResult =
+  | { readonly outcome: "claimed"; readonly task: TranslationTask & { readonly status: "processing"; readonly claimToken: string } }
+  | { readonly outcome: "not-found" | "already-claimed" | "terminal" };
 
 export interface TranslationTaskMessage {
   readonly translationTaskId: string;

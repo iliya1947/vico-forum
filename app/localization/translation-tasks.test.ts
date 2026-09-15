@@ -20,7 +20,10 @@ function job(taskIdentity = "a".repeat(64), key = "heading"): UiTranslationJobSp
 
 function task(specification: UiTranslationJobSpecification, id = "task-1"): TranslationTask {
   const createdAt = new Date("2026-09-15T00:00:00.000Z");
-  return { id, ...specification, status: "pending", createdAt, updatedAt: createdAt };
+  return {
+    id, ...specification, status: "pending", claimToken: null, claimedAt: null,
+    leaseExpiresAt: null, staleAt: null, createdAt, updatedAt: createdAt,
+  };
 }
 
 function storeWith(
@@ -30,6 +33,8 @@ function storeWith(
     upsertPending,
     findById: vi.fn(async () => undefined),
     findByIdentity: vi.fn(async () => undefined),
+    claim: vi.fn(async () => ({ outcome: "not-found" as const })),
+    markStale: vi.fn(async () => false),
   };
 }
 
