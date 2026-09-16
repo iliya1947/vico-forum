@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
   bundleCacheIdentity,
+  codeOwnedBundleInputs,
   compileNamespaceBundle,
   translationBundleEtag,
   verifyCompiledNamespaceBundle,
 } from "./bundles";
+import { canonicalEnglishCatalog } from "./catalog";
+import { sourceFingerprint } from "./fingerprint";
 
 describe("compiled translation bundles", () => {
   it("builds deterministic content identity independent of input key order", async () => {
@@ -80,5 +83,16 @@ describe("compiled translation bundles", () => {
   it("rejects malformed cache versions", () => {
     expect(() => bundleCacheIdentity("ru", "common", "bad")).toThrow(/bundle version/);
     expect(() => translationBundleEtag("bad")).toThrow(/bundle version/);
+  });
+
+  it("invalidates deploy identity when a local override changes or is removed", async () => {
+    const fingerprint = await sourceFingerprint(canonicalEnglishCatalog.common.heading);
+    const previous = { ru: { common: { heading: { value: "Старое", sourceFingerprint: fingerprint } } } };
+    const changed = { ru: { common: { heading: { value: "Новое", sourceFingerprint: fingerprint } } } };
+    const removed = { ru: { common: {} } };
+
+    const previousIdentity = await codeOwnedBundleInputs("ru", "common", previous);
+    await expect(codeOwnedBundleInputs("ru", "common", changed)).resolves.not.toBe(previousIdentity);
+    await expect(codeOwnedBundleInputs("ru", "common", removed)).resolves.not.toBe(previousIdentity);
   });
 });

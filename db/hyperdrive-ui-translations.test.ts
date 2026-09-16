@@ -34,7 +34,47 @@ describe("Hyperdrive UI translation request store", () => {
 
     await expect(store.readApproved("en", ["common"])).resolves.toEqual([]);
     await expect(store.readApproved("ru", [])).resolves.toEqual([]);
+    await expect(store.read("en", "common")).resolves.toBeUndefined();
     expect(createClient).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    [Object.assign(new Error("connection unavailable"), { code: "08006" }), "unavailable"],
+    [new Error("Query read timeout"), "timeout"],
+    [Object.assign(new Error("missing bundle table"), { code: "42P01" }), "schema-mismatch"],
+  ] as const)("degrades a persisted bundle read for classified database failures", async (failure, reason) => {
+    const query = vi.fn(async () => { throw failure; });
+    const reportDegraded = vi.fn();
+    const store = createHyperdriveUiTranslationStore(
+      "postgres://runtime@hyperdrive/vico",
+      () => ({ connect: vi.fn(async () => undefined), query, end: vi.fn() }) as unknown as Client,
+      reportDegraded,
+    );
+
+    await expect(store.read("ru", "common")).resolves.toBeUndefined();
+    await expect(store.readApproved("ru", ["common"])).resolves.toEqual([]);
+    expect(query).toHaveBeenCalledOnce();
+    expect(reportDegraded).toHaveBeenCalledOnce();
+    expect(reportDegraded).toHaveBeenCalledWith(reason);
+  });
+
+  it("does not mask an unclassified bundle read failure", async () => {
+    const failure = Object.assign(new Error("permission denied"), { code: "42501" });
+    const store = createHyperdriveUiTranslationStore(
+      "postgres://runtime@hyperdrive/vico",
+      () => ({
+        connect: vi.fn(async () => undefined),
+        query: vi.fn(async () => { throw failure; }),
+      }) as unknown as Client,
+      vi.fn(),
+    );
+
+    try {
+      await store.read("ru", "common");
+      throw new Error("Expected the permission failure to remain visible");
+    } catch (error) {
+      expect((error as { cause?: unknown }).cause).toBe(failure);
+    }
   });
 
   it("falls back to no persistent rows for a connection outage and reports once", async () => {

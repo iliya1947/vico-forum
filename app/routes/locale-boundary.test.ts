@@ -123,7 +123,10 @@ describe("locale boundary loader", () => {
       translationLocale: "en", fallbackLocales: [], direction: "ltr",
       formatting: { locale: "en", timeZone: "UTC" }, nativeName: "English", presentationMetadata: {},
     });
-    context.set(uiTranslationStoreContext, { readApproved: vi.fn(async () => []) });
+    context.set(uiTranslationStoreContext, {
+      readApproved: vi.fn(async () => []),
+      read: vi.fn(async () => undefined),
+    });
     context.set(authSessionContext, {
       user: {
         id: "user-1", name: "Vico", email: "vico@example.test", emailVerified: true,

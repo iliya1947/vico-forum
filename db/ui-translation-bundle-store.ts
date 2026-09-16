@@ -34,19 +34,7 @@ export class DrizzleUiTranslationBundleStore implements TranslationBundleStore {
     const row = rows[0];
     if (!row) return undefined;
 
-    const resources: Record<string, string> = {};
-    for (const [key, value] of Object.entries(row.resources)) {
-      if (typeof value !== "string") {
-        throw new Error(`compiled bundle contains unsupported structured payload: ${namespace}:${key}`);
-      }
-      resources[key] = value;
-    }
-
-    const verified = await verifyCompiledNamespaceBundle(row.locale, row.namespace, resources);
-    if (verified.bundleVersion !== row.bundleVersion) {
-      throw new Error(`compiled bundle version mismatch: ${row.locale}:${row.namespace}`);
-    }
-    return verified;
+    return verifyPersistedCompiledBundle(row);
   }
 
   async put(bundle: CompiledNamespaceBundle): Promise<void> {
@@ -72,6 +60,44 @@ export class DrizzleUiTranslationBundleStore implements TranslationBundleStore {
           compiledAt: new Date(),
         },
       });
+  }
+}
+
+export class PersistentBundleIntegrityError extends Error {
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
+    this.name = "PersistentBundleIntegrityError";
+  }
+}
+
+export async function verifyPersistedCompiledBundle(row: {
+  locale: string;
+  namespace: string;
+  bundleVersion: string;
+  resources: unknown;
+}): Promise<CompiledNamespaceBundle> {
+  try {
+    if (!row.resources || typeof row.resources !== "object" || Array.isArray(row.resources)) {
+      throw new Error("compiled bundle resources must be an object");
+    }
+    const resources: Record<string, string> = {};
+    for (const [key, value] of Object.entries(row.resources)) {
+      if (typeof value !== "string") {
+        throw new Error(`compiled bundle contains unsupported structured payload: ${row.namespace}:${key}`);
+      }
+      resources[key] = value;
+    }
+    const verified = await verifyCompiledNamespaceBundle(row.locale, row.namespace, resources);
+    if (verified.bundleVersion !== row.bundleVersion) {
+      throw new Error(`compiled bundle version mismatch: ${row.locale}:${row.namespace}`);
+    }
+    return verified;
+  } catch (error) {
+    const detail = error instanceof Error ? `: ${error.message}` : "";
+    throw new PersistentBundleIntegrityError(
+      `persisted compiled bundle is not current or valid: ${row.locale}:${row.namespace}${detail}`,
+      { cause: error },
+    );
   }
 }
 

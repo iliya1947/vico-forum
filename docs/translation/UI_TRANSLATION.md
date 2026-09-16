@@ -152,6 +152,14 @@ transaction с raw publication и task completion. Fallback resources в эту 
 local overrides и canonical English. Если нужные persistent resources недоступны, English
 остаётся resource fallback; translation provider в request path не вызывается.
 
+Stage 5A runtime сначала читает проверенный persisted compiled bundle для каждого canonical
+non-English `(locale, namespace)`. На hit raw `ui_translations` для этого namespace не читаются.
+На miss выполняется прежняя сборка из local/persistent raw sources; при classified database
+unavailable/timeout/schema failure остаются current local overrides и code-owned English.
+Invalid structural payload, несовпадающая version или bundle от несовместимого deploy не
+обслуживаются и используют тот же безопасный miss path. Остальные programming/configuration
+ошибки не классифицируются как degradation.
+
 ## Local translation packs (`UI-05`)
 
 Local packs хранятся в Git как дополнительный manual source. Они могут быть частичными:
@@ -433,10 +441,12 @@ Persistent raw translation может оставаться structured JSON, но
 содержит уже runtime-ready string resources; bundle verification собирает branches обратно
 только для structural validation и deterministic semantic identity.
 
-Stage 3C реализует deterministic compilation/version identity и persistence/cache primitives,
-но не переключает production SSR на чтение persisted compiled bundles. Текущий SSR продолжает
-собирать bundle из local/manual/persistent raw sources через `TranslationResourceLoader`.
-Generation/publish pipeline и runtime consumption persisted compiled bundles относятся к Stage 5.
+Stage 3C реализовал deterministic compilation/version identity и persistence/cache primitives.
+Stage 5A переключил SSR/runtime на verified persisted compiled bundles для canonical non-English
+locale. English всегда компилируется из code-owned canonical catalog. Bundle identity включает
+semantic identity всего canonical namespace и точное состояние local manual pack данного
+`(locale, namespace)`, включая отсутствие overrides. Поэтому изменение или удаление local value
+инвалидирует bundle предыдущего deploy без request-time чтения whole raw namespace.
 
 Persistence, versioning, ETag/cache contract и точная Stage 3C/Stage 5 boundary описаны в
 [`STORAGE_AND_VERSIONING.md`](STORAGE_AND_VERSIONING.md).

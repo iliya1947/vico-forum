@@ -7,6 +7,11 @@ import type {
   PersistentUiTranslationRow,
   UiTranslationStore,
 } from "../app/localization/persistent-sources";
+import type { CompiledNamespaceBundle, TranslationBundleReader } from "../app/localization/bundles";
+import {
+  DrizzleUiTranslationBundleStore,
+  PersistentBundleIntegrityError,
+} from "./ui-translation-bundle-store";
 import { DrizzleUiTranslationStore } from "./ui-translation-store";
 import {
   bestEffortDiscardClient,
@@ -15,7 +20,7 @@ import {
   isPostgresQueryTimeout,
 } from "./postgres-deadlines";
 
-export type UiTranslationStoreDegradedReason = "unavailable" | "schema-mismatch" | "timeout";
+export type UiTranslationStoreDegradedReason = "unavailable" | "schema-mismatch" | "timeout" | "invalid-bundle";
 
 type UiTranslationStoreDegradedReporter = (reason: UiTranslationStoreDegradedReason) => void;
 
@@ -41,16 +46,22 @@ export function createHyperdriveUiTranslationStore(
   connectionString: string,
   createClient: PostgreSqlClientFactory = defaultClientFactory,
   reportDegraded: UiTranslationStoreDegradedReporter = defaultDegradedReporter,
-): UiTranslationStore {
-  let storePromise: Promise<DrizzleUiTranslationStore> | undefined;
+): UiTranslationStore & TranslationBundleReader {
+  let storePromise: Promise<{ raw: DrizzleUiTranslationStore; bundles: DrizzleUiTranslationBundleStore }> | undefined;
   let client: Client | undefined;
   let circuitOpen = false;
   let reportedDegraded = false;
   const reads = new Map<string, Promise<readonly PersistentUiTranslationRow[]>>();
+  const bundleReads = new Map<string, Promise<CompiledNamespaceBundle | undefined>>();
 
   const loadStore = () => (storePromise ??= connectStore(connectionString, createClient, (connected) => {
     client = connected;
   }));
+  const reportOnce = (reason: UiTranslationStoreDegradedReason) => {
+    if (reportedDegraded) return;
+    reportedDegraded = true;
+    reportDegraded(reason);
+  };
 
   const read = async (
     locale: string,
@@ -59,16 +70,13 @@ export function createHyperdriveUiTranslationStore(
     if (locale === "en" || namespaces.length === 0) return [];
     if (circuitOpen) return [];
     try {
-      return await (await loadStore()).readApproved(locale, namespaces);
+      return await (await loadStore()).raw.readApproved(locale, namespaces);
     } catch (error) {
       const reason = classifyReadFailure(error);
       if (!reason) throw error;
       circuitOpen = true;
       if (client) bestEffortDiscardClient(client);
-      if (!reportedDegraded) {
-        reportedDegraded = true;
-        reportDegraded(reason);
-      }
+      reportOnce(reason);
       return [];
     }
   };
@@ -81,6 +89,32 @@ export function createHyperdriveUiTranslationStore(
       if (!pending) {
         pending = read(locale, normalizedNamespaces);
         reads.set(key, pending);
+      }
+      return pending;
+    },
+    read(locale, namespace) {
+      if (locale === "en") return Promise.resolve(undefined);
+      const key = JSON.stringify([locale, namespace]);
+      let pending = bundleReads.get(key);
+      if (!pending) {
+        pending = (async () => {
+          if (circuitOpen) return undefined;
+          try {
+            return await (await loadStore()).bundles.read(locale, namespace);
+          } catch (error) {
+            if (error instanceof PersistentBundleIntegrityError) {
+              reportOnce("invalid-bundle");
+              return undefined;
+            }
+            const reason = classifyReadFailure(error);
+            if (!reason) throw error;
+            circuitOpen = true;
+            if (client) bestEffortDiscardClient(client);
+            reportOnce(reason);
+            return undefined;
+          }
+        })();
+        bundleReads.set(key, pending);
       }
       return pending;
     },
@@ -100,7 +134,11 @@ async function connectStore(
     if (!isPostgresAvailabilityFailure(error) && !isPostgresConnectionTimeout(error)) throw error;
     throw new UiTranslationConnectionUnavailableError({ cause: error });
   }
-  return new DrizzleUiTranslationStore(drizzle(client));
+  const database = drizzle(client);
+  return {
+    raw: new DrizzleUiTranslationStore(database),
+    bundles: new DrizzleUiTranslationBundleStore(database),
+  };
 }
 
 function classifyReadFailure(error: unknown): UiTranslationStoreDegradedReason | undefined {

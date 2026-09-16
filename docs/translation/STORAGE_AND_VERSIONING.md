@@ -135,21 +135,20 @@ HTTP ETag / Cache-Control
 ### Stage 3C / Stage 5 implementation boundary
 
 Stage 3C реализовал deterministic bundle compiler/identity, persistence adapter и
-backend-independent cache/ETag primitives. Это не означает, что production SSR уже читает
-persisted rows из `ui_translation_bundles`.
-
-Текущий production SSR path остаётся:
+backend-independent cache/ETag primitives. Stage 5A активировал следующий SSR path:
 
 ```text
-local/manual/persistent raw translation sources
-→ TranslationResourceLoader
-→ compile locale/namespace bundle in request path
+canonical non-English locale/namespace
+→ read + structural/current-deploy verification ui_translation_bundles
+→ hit: runtime-ready resources без чтения ui_translations
+→ miss/degraded/invalid: local + доступные persistent raw sources
+→ canonical code-owned English fallback
 → request-scoped i18next
 ```
 
-End-to-end generation/publish path, запись compiled current bundle и последующее чтение
-persisted compiled bundle в SSR/runtime принадлежат Stage 5. До этого `ui_translation_bundles`
-и cache/ETag helpers являются подготовленными primitives, а не активным runtime read path.
+Каждый locale chain member читается отдельным bundle; fallback resources не flatten-ятся.
+Canonical English никогда не читается из bundle table. Translation provider не вызывается
+из request path.
 
 Stage 5A publication теперь атомарно завершает claimed task, записывает raw machine result и
 пересобирает persisted exact-locale namespace bundle в одной PostgreSQL transaction. Ошибка
@@ -163,8 +162,16 @@ Queue ordering для correctness не используются. Schema для �
 Bundle строится существующим source merge `local manual → persistent manual → current machine`,
 с текущими fingerprint/generation-policy checks. Он содержит только exact locale, не включает
 fallback locale, а structured plural raw JSON компилируется существующим compiler в i18next v4
-suffix resources. Runtime/SSR пока по-прежнему читает raw sources; переключение чтения на
-persisted bundle остаётся отдельным следующим Stage 5A slice.
+suffix resources.
+
+Самосогласованного `bundleVersion`, вычисленного только по stored resources, недостаточно для
+currentness. Версия bundle format v2 дополнительно включает deterministic code-owned input
+identity: fingerprints всех canonical descriptors namespace и exact current local manual pack
+для locale/namespace (keys, сохранённые fingerprints и payloads, включая факт отсутствия key).
+Runtime пересчитывает эту identity из текущего deploy при verification. Поэтому изменение либо
+удаление local override меняет ожидаемую version, и старый bundle уходит в miss path. Это не
+требует schema migration: existing `bundle_version` уже хранит semantic hash, а публикация и
+runtime используют один compiler/verifier.
 
 ### Cache identity
 

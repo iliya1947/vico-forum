@@ -42,7 +42,10 @@ describe("request localization context", () => {
 
   it("returns the explicitly injected UI translation store", () => {
     const context = new RouterContextProvider();
-    const store = { readApproved: async () => [] };
+    const store = {
+      readApproved: async () => [],
+      read: async () => undefined,
+    };
     context.set(uiTranslationStoreContext, store);
 
     expect(uiTranslationStoreForRequest(context)).toBe(store);
