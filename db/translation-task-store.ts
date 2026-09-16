@@ -48,7 +48,7 @@ export class DrizzleTranslationTaskStore implements TranslationTaskStore {
           claimedAt: sql`case when ${translationTasks.status} = 'stale' then null else ${translationTasks.claimedAt} end`,
           leaseExpiresAt: sql`case when ${translationTasks.status} = 'stale' then null else ${translationTasks.leaseExpiresAt} end`,
           staleAt: sql`case when ${translationTasks.status} = 'stale' then null else ${translationTasks.staleAt} end`,
-          updatedAt: databaseNow,
+          updatedAt: sql`case when ${translationTasks.status} = 'processing' then ${translationTasks.updatedAt} else ${databaseNow} end`,
         },
       })
       .returning();
@@ -87,7 +87,7 @@ export class DrizzleTranslationTaskStore implements TranslationTaskStore {
     }
     const claimToken = crypto.randomUUID();
     const databaseNow = sql`statement_timestamp()`;
-    const leaseExpiresAt = sql`${databaseNow} + (${leaseDurationMs} * interval '1 millisecond')`;
+    const leaseExpiresAt = sql`${databaseNow} + (${leaseDurationMs}::double precision * interval '1 millisecond')`;
     const rows = await this.database
       .update(translationTasks)
       .set({ status: "processing", claimToken, claimedAt: databaseNow, leaseExpiresAt, updatedAt: databaseNow })
