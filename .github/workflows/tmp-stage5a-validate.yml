@@ -1,0 +1,68 @@
+name: Temporary Stage 5A validation
+
+on:
+  push:
+    branches:
+      - feat/stage-5a-translation-publication-foundation
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    if: ${{ !contains(github.event.head_commit.message, 'chore(stage-5a): sync migration count') }}
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: vico_forum_test
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d vico_forum_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/vico_forum_test
+      CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE: postgresql://postgres:postgres@127.0.0.1:5432/vico_forum_test
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: feat/stage-5a-translation-publication-foundation
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
+        with:
+          version: 12.3.4
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Sync migration count fixture
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('tests/database/migrations.test.ts')
+          text = path.read_text()
+          old = 'expect(applied.rows[0]?.count).toBe("9");'
+          new = 'expect(applied.rows[0]?.count).toBe("10");'
+          if old not in text:
+              raise SystemExit('expected migration count fixture not found')
+          path.write_text(text.replace(old, new, 1))
+          PY
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+      - run: pnpm db:check
+      - run: pnpm db:test
+      - name: Commit migration count fixture
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add tests/database/migrations.test.ts
+          git commit -m "chore(stage-5a): sync migration count"
+          git push origin HEAD:feat/stage-5a-translation-publication-foundation
