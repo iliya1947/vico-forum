@@ -22,7 +22,7 @@ export function validateTranslation(descriptor: UiMessageDescriptor, value: stri
   if (!sameStrings(placeholders(value), expected)) {
     throw new TranslationValidationError(`Placeholder mismatch: ${identity}`);
   }
-  if (!sameStrings(controlledTokens(value), controlledTokens(descriptor.source))) {
+  if (!sameStrings(controlledTokens(value), descriptorControlledTokens(descriptor))) {
     throw new TranslationValidationError(`Controlled token mismatch: ${identity}`);
   }
   for (const protectedTerm of descriptor.protectedTerms) {
@@ -41,16 +41,23 @@ export function validateProviderOutput(
   output: unknown,
   localeRules: LocaleRulesProvider,
 ): asserts output is ProviderTranslationValue {
+  const identity = `${descriptor.namespace}:${descriptor.key}`;
   if (descriptor.messageKind !== "plural") {
+    if (typeof descriptor.source !== "string") {
+      throw new TranslationValidationError(`Non-plural source must be plain: ${identity}`);
+    }
     if (typeof output !== "string") {
-      throw new TranslationValidationError(`Expected plain translation: ${descriptor.namespace}:${descriptor.key}`);
+      throw new TranslationValidationError(`Expected plain translation: ${identity}`);
     }
     validateTranslation(descriptor, output);
     return;
   }
 
+  if (!isRecord(descriptor.source)) {
+    throw new TranslationValidationError(`Plural source must be structured: ${identity}`);
+  }
   if (!isRecord(output)) {
-    throw new TranslationValidationError(`Expected structured translation: ${descriptor.namespace}:${descriptor.key}`);
+    throw new TranslationValidationError(`Expected structured translation: ${identity}`);
   }
   const required: string[] = [...localeRules.pluralBranches(targetLocale)].sort(deterministicCompare);
   const actual = Object.keys(output).sort(deterministicCompare);
@@ -65,10 +72,15 @@ export function validateProviderOutput(
   for (const branch of required) {
     const value = output[branch];
     if (typeof value !== "string") {
-      throw new TranslationValidationError(`Invalid structured branch ${branch}: ${descriptor.namespace}:${descriptor.key}`);
+      throw new TranslationValidationError(`Invalid structured branch ${branch}: ${identity}`);
     }
     validateTranslation(descriptor, value);
   }
+}
+
+function descriptorControlledTokens(descriptor: UiMessageDescriptor): string[] {
+  const values = typeof descriptor.source === "string" ? [descriptor.source] : Object.values(descriptor.source);
+  return [...new Set(values.flatMap(controlledTokens))].sort(deterministicCompare);
 }
 
 function placeholders(value: string): string[] {

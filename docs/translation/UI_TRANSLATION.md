@@ -398,6 +398,11 @@ UiMessageDescriptor
 → locale-specific i18next resource
 ```
 
+Canonical descriptor может хранить plural source как одну логическую base-key структуру
+(`one/other` для English), а target machine/manual payload — как validated map required target
+branches. Raw structured payload остаётся одной translation unit для freshness, priority и
+publication; отдельные plural branches не получают независимый lifecycle.
+
 Основной `LocaleRulesProvider` может использовать `Intl.PluralRules`. Если runtime не
 имеет данных для нужного locale, adapter можно заменить/дополнить CLDR/polyfill data без
 изменения translation domain.
@@ -416,6 +421,12 @@ SSR/runtime не должен выполнять N storage queries по одно
 Для каждого locale из explicit chain current values компилируются в отдельный versioned
 locale/namespace bundle. Bundle version является output metadata loader/storage layer, а
 не обязательным аргументом обычного resource lookup.
+
+Для plural unit compiler преобразует validated logical structured payload в i18next JSON v4
+runtime keys с locale-specific suffixes (`key_one`, `key_few`, `key_many`, `key_other` и т. п.).
+Persistent raw translation может оставаться structured JSON, но persisted compiled bundle
+содержит уже runtime-ready string resources; bundle verification собирает branches обратно
+только для structural validation и deterministic semantic identity.
 
 Stage 3C реализует deterministic compilation/version identity и persistence/cache primitives,
 но не переключает production SSR на чтение persisted compiled bundles. Текущий SSR продолжает

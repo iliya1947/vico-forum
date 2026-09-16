@@ -1,11 +1,13 @@
 export const messageKinds = ["plain", "interpolation", "plural", "contextual/select", "rich"] as const;
 
 export type MessageKind = (typeof messageKinds)[number];
+export type UiStructuredMessageSource = Readonly<Record<string, string>>;
+export type UiMessageSource = string | UiStructuredMessageSource;
 
 export interface UiMessageDescriptor {
   namespace: string;
   key: string;
-  source: string;
+  source: UiMessageSource;
   description: string;
   placeholders: readonly string[];
   messageKind: MessageKind;
@@ -60,7 +62,12 @@ export const canonicalEnglishCatalog = {
     topicsHeading: message("topicsHeading", "Topics", "Accessible heading for the topic table."),
     topicColumn: message("topicColumn", "Topic", "Topic table title column."),
     postsColumn: message("postsColumn", "Messages", "Topic table message-count column."),
-    sectionCount: message("sectionCount", "{{count}} section(s)", "Number of sections in a category.", ["count"]),
+    sectionCount: pluralMessage(
+      "sectionCount",
+      { one: "{{count}} section", other: "{{count}} sections" },
+      "Number of sections in a category.",
+      ["count"],
+    ),
     topicAndPostCount: message("topicAndPostCount", "{{topics}} topic(s) · {{posts}} message(s)", "Topic and message totals for a section.", ["topics", "posts"]),
     startedBy: message("startedBy", "Started by {{author}}", "Name of the topic author.", ["author"]),
     postNumber: message("postNumber", "Message #{{number}}", "Sequential message number.", ["number"]),
@@ -132,9 +139,29 @@ function message<const Key extends string, const Source extends string>(
   } as const satisfies UiMessageDescriptor;
 }
 
+function pluralMessage<const Key extends string, const Source extends UiStructuredMessageSource>(
+  key: Key,
+  source: Source,
+  description: string,
+  placeholders: readonly string[],
+  protectedTerms: readonly string[] = [],
+) {
+  return {
+    namespace: "common",
+    key,
+    source,
+    description,
+    placeholders,
+    messageKind: "plural",
+    protectedTerms,
+  } as const satisfies UiMessageDescriptor;
+}
+
 export type UiNamespace = keyof typeof canonicalEnglishCatalog;
 export type UiKey<N extends UiNamespace> = keyof (typeof canonicalEnglishCatalog)[N] & string;
-type DescriptorSource<T> = T extends { readonly source: infer Source extends string } ? Source : never;
+type DescriptorSource<T> = T extends { readonly source: infer Source }
+  ? Source extends string ? Source : string
+  : never;
 export type CanonicalResourceShape = {
   [N in UiNamespace]: {
     [K in UiKey<N>]: DescriptorSource<(typeof canonicalEnglishCatalog)[N][K]>;

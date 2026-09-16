@@ -34,6 +34,7 @@ beforeAll(async () => {
   await client.query(`set search_path to ${schemaName}`);
   await client.query(await readFile("drizzle/0007_durable_translation_tasks.sql", "utf8"));
   await client.query(await readFile("drizzle/0008_translation_task_claim_lease.sql", "utf8"));
+  await client.query(await readFile("drizzle/0009_translation_task_completion.sql", "utf8"));
 });
 
 afterAll(async () => {

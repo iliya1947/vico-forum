@@ -1,6 +1,10 @@
 import type { ResolvedLocaleContext } from "./locale";
 import { compileNamespaceBundle } from "./bundles";
-import type { TranslationSource, ResourceBundle } from "./sources";
+import type {
+  ResourceBundle,
+  TranslationSource,
+  TranslationSourceBundle,
+} from "./sources";
 
 export interface TranslationSnapshot {
   locale: ResolvedLocaleContext;
@@ -21,23 +25,25 @@ export class TranslationResourceLoader {
     const staleKeys: Record<string, string[]> = {};
 
     for (const tag of chain) {
-      const bundle: ResourceBundle = {};
+      const logicalBundle: TranslationSourceBundle = {};
       for (const source of this.sources) {
         const result = await source.load(tag, requestedNamespaces);
         for (const [namespace, messages] of Object.entries(result.resources)) {
-          const target = (bundle[namespace] ??= {});
+          const target = (logicalBundle[namespace] ??= {});
           for (const [key, value] of Object.entries(messages)) target[key] ??= value;
         }
         if (result.staleKeys.length) (staleKeys[tag] ??= []).push(...result.staleKeys);
       }
 
+      const runtimeBundle: ResourceBundle = {};
       const versions: Record<string, string> = {};
       for (const namespace of requestedNamespaces) {
-        const compiled = await compileNamespaceBundle(tag, namespace, bundle[namespace] ?? {});
+        const compiled = await compileNamespaceBundle(tag, namespace, logicalBundle[namespace] ?? {});
+        runtimeBundle[namespace] = compiled.resources;
         versions[namespace] = compiled.bundleVersion;
       }
 
-      resourcesByLocale[tag] = bundle;
+      resourcesByLocale[tag] = runtimeBundle;
       bundleVersions[tag] = versions;
     }
 

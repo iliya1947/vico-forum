@@ -64,6 +64,13 @@
       "when": 1789496313456,
       "tag": "0008_translation_task_claim_lease",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1789550800033,
+      "tag": "0009_translation_task_completion",
+      "breakpoints": true
     }
   ]
 }

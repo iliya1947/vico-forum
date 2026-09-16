@@ -148,8 +148,8 @@ Stage 4E2b authorization integration и management UI:
   structured branch проверяют non-empty/size/markup/placeholders/protected terms, а plural unit требует
   точного полного target branch set без missing/unexpected branches;
 - router/rules/validation остаются за `TranslationJobDispatcher` boundary и не подключены к SSR/page
-  request. Реальные adapters/provider calls, consumer/publish/runtime switching и user-content
-  translation остаются следующей Stage 5 работой.
+  request. Реальные adapters/provider calls, real Queue binding, retry/DLQ/reconciliation,
+  persisted-bundle runtime switching и user-content translation остаются следующей Stage 5 работой.
 
 Durable foundation Stage 5A для UI translation jobs:
 
@@ -184,8 +184,38 @@ Durable foundation Stage 5A для UI translation jobs:
 - provider/Queue-independent consumer после claim повторно проверяет canonical descriptor/fingerprint,
   generation policy, generation target и exact-target local/persistent manual result; fallback resources
   не считаются exact-target evidence;
-- eligible task возвращает typed execution context, но provider execution, retry/DLQ, reconciliation,
-  result publication и Cloudflare Queue binding намеренно не реализованы в этом slice.
+- eligible task возвращает typed execution context для следующего provider execution layer.
+
+Текущий Stage 5A slice — conditional machine result publication и structured payload persistence:
+
+- migration `0009` добавляет terminal `completed` state и `completed_at`; completed stable identity
+  не реактивируется duplicate planning, а новая source/policy generation получает новую logical identity;
+- durable task store deduplicate/reactivate выполняет только для той же stable identity; другая
+  source/policy identity той же UI translation unit не удаляется и не отзывается этим slice. Поэтому
+  delayed duplicate уже completed identity не может удалить pending task или сбросить processing claim
+  другого поколения;
+- consumer/result publisher повторно применяют current source fingerprint, generation policy,
+  generation target и manual-priority preflight к claimed task. Authoritative ordering/serialization
+  разных stable identities одной logical unit не реализованы в этом slice и остаются частью дальнейшего
+  `JOB-03` completion до подключения real Queue/provider execution;
+- `UiTranslationResultPublisher` валидирует provider output через общий
+  `validateProviderOutput`/`LocaleRulesProvider` boundary и только после current preflight передаёт
+  результат в publication store;
+- PostgreSQL publication store в одной transaction conditionally переводит актуальный claim
+  `processing → completed` и upsert-ит approved machine row с `sourceFingerprint`, generation policy и
+  provider/model/provenance metadata; потерянный/reclaimed claim не публикует результат;
+- canonical UI descriptor теперь допускает structured plural source как одну logical translation unit;
+  `sectionCount` переведён на реальный `one/other` canonical plural fixture, а source fingerprint
+  детерминированно учитывает structured source semantics;
+- persistent raw machine translation сохраняет validated structured plural payload как JSON object,
+  source loader возвращает его как одну logical unit, а compiled bundle materializes полный target
+  branch set в i18next JSON v4 suffix resources (`key_one`, `key_few`, `key_many`, `key_other` и т. п.);
+- PostgreSQL integration coverage проверяет successful publication/completion, lost-claim no-op,
+  terminal completed identity, delayed duplicate completed identity без повреждения другого pending/
+  processing generation, structured payload persistence/read и runtime bundle compilation;
+- реальные provider calls, real Cloudflare Queue consumer binding, retry/DLQ, `JOB-06` reconciliation,
+  automatic generation-result → whole namespace bundle publication и переключение production SSR на
+  persisted compiled bundle всё ещё не реализованы и остаются следующими Stage 5A slices.
 
 Lifecycle correction из PR #69 merged в `main` commit
 `c12550c3fa1cb371df82a178d20ed7020c33f9ce`. GitHub Actions CI #170 на финальном head PR #69
@@ -197,6 +227,12 @@ migrations/integration tests, Workers build и local Hyperdrive smoke.
 CI #171 на head `d88b342df399832812614b6c3ee988b6b95252cc`: после enqueue failure fresh DB reader
 подтверждает сохранённую `pending` task. Это доказывает prerequisite для будущего `JOB-06`, но
 не означает, что reconciliation уже реализован.
+
+Исправление generation-isolation в PR #71 проверено GitHub Actions CI #188 на head
+`03214222eefd6033934c3fda5bf088e8842cd069`: полностью прошли `checks` и `database`, включая
+lint, typecheck, unit tests, build, migration metadata/history checks, PostgreSQL 17 integration,
+Workers build и local Hyperdrive smoke. PostgreSQL regression test подтверждает, что delayed duplicate
+completed identity не удаляет pending task и не отзывает processing claim другого поколения.
 
 Core Stage 4 integration подтверждён PostgreSQL 17 CI:
 

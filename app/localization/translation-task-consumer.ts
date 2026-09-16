@@ -29,27 +29,25 @@ export type TranslationTaskConsumerResult =
   | { readonly outcome: "stale"; readonly reason: TranslationTaskStaleReason }
   | { readonly outcome: "not-found" | "already-claimed" | "terminal" | "claim-lost" };
 
-export interface TranslationTaskConsumerDependencies {
-  readonly tasks: TranslationTaskStore;
+export interface TranslationTaskPreflightDependencies {
   readonly localeRegistry: LocaleRegistry;
   readonly localManualSource: TranslationSource;
   readonly persistentStore: UiTranslationStore;
   readonly generationPolicyVersion: string;
+}
+
+export interface TranslationTaskConsumerDependencies extends TranslationTaskPreflightDependencies {
+  readonly tasks: TranslationTaskStore;
   readonly leaseDurationMs: number;
 }
 
 /** Claims and revalidates durable work without knowing about Queue or translation providers. */
 export class UiTranslationTaskConsumer {
-  readonly #persistentManualSource: TranslationSource;
-
   constructor(private readonly dependencies: TranslationTaskConsumerDependencies) {
-    if (!dependencies.generationPolicyVersion.trim()) {
-      throw new TypeError("generationPolicyVersion must not be blank");
-    }
+    assertPreflightDependencies(dependencies);
     if (!Number.isSafeInteger(dependencies.leaseDurationMs) || dependencies.leaseDurationMs <= 0) {
       throw new TypeError("leaseDurationMs must be a positive integer");
     }
-    this.#persistentManualSource = new DatabaseManualTranslationSource(dependencies.persistentStore);
   }
 
   async consume(message: TranslationTaskMessage): Promise<TranslationTaskConsumerResult> {
@@ -59,9 +57,9 @@ export class UiTranslationTaskConsumer {
     );
     if (claim.outcome !== "claimed") return { outcome: claim.outcome };
 
-    const reason = await this.#staleReason(claim.task);
+    const reason = await uiTranslationTaskStaleReason(claim.task, this.dependencies);
     if (!reason) {
-      return { outcome: "eligible", context: { task: claim.task, source: this.#descriptor(claim.task)! } };
+      return { outcome: "eligible", context: { task: claim.task, source: descriptorForTask(claim.task)! } };
     }
 
     const transitioned = await this.dependencies.tasks.markStale(
@@ -70,30 +68,41 @@ export class UiTranslationTaskConsumer {
     );
     return transitioned ? { outcome: "stale", reason } : { outcome: "claim-lost" };
   }
+}
 
-  async #staleReason(task: TranslationTask): Promise<TranslationTaskStaleReason | undefined> {
-    const descriptor = this.#descriptor(task);
-    if (!descriptor) return "source-missing";
-    if (await sourceFingerprint(descriptor) !== task.sourceFingerprint) return "source-changed";
-    if (task.generationPolicyVersion !== this.dependencies.generationPolicyVersion) return "policy-changed";
+export async function uiTranslationTaskStaleReason(
+  task: TranslationTask,
+  dependencies: TranslationTaskPreflightDependencies,
+): Promise<TranslationTaskStaleReason | undefined> {
+  assertPreflightDependencies(dependencies);
+  const descriptor = descriptorForTask(task);
+  if (!descriptor) return "source-missing";
+  if (await sourceFingerprint(descriptor) !== task.sourceFingerprint) return "source-changed";
+  if (task.generationPolicyVersion !== dependencies.generationPolicyVersion) return "policy-changed";
 
-    if (
-      resolveUiTranslationGenerationTarget(this.dependencies.localeRegistry, task.targetLocale) !== task.targetLocale
-    ) return "target-locale-ineligible";
+  if (
+    resolveUiTranslationGenerationTarget(dependencies.localeRegistry, task.targetLocale) !== task.targetLocale
+  ) return "target-locale-ineligible";
 
-    const namespaces = [task.sourceIdentity.namespace];
-    for (const source of [this.dependencies.localManualSource, this.#persistentManualSource]) {
-      const result = await source.load(task.targetLocale, namespaces);
-      if (Object.hasOwn(result.resources[task.sourceIdentity.namespace] ?? {}, task.sourceIdentity.key)) {
-        return "manual-translation-exists";
-      }
+  const namespaces = [task.sourceIdentity.namespace];
+  const persistentManualSource = new DatabaseManualTranslationSource(dependencies.persistentStore);
+  for (const source of [dependencies.localManualSource, persistentManualSource]) {
+    const result = await source.load(task.targetLocale, namespaces);
+    if (Object.hasOwn(result.resources[task.sourceIdentity.namespace] ?? {}, task.sourceIdentity.key)) {
+      return "manual-translation-exists";
     }
-    return undefined;
   }
+  return undefined;
+}
 
-  #descriptor(task: TranslationTask): UiMessageDescriptor | undefined {
-    return catalogDescriptors().find((candidate) =>
-      candidate.namespace === task.sourceIdentity.namespace && candidate.key === task.sourceIdentity.key
-    );
+export function descriptorForTask(task: TranslationTask): UiMessageDescriptor | undefined {
+  return catalogDescriptors().find((candidate) =>
+    candidate.namespace === task.sourceIdentity.namespace && candidate.key === task.sourceIdentity.key
+  );
+}
+
+function assertPreflightDependencies(dependencies: TranslationTaskPreflightDependencies): void {
+  if (!dependencies.generationPolicyVersion.trim()) {
+    throw new TypeError("generationPolicyVersion must not be blank");
   }
 }

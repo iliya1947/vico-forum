@@ -174,6 +174,7 @@ export const translationTasks = pgTable(
     claimedAt: timestamp("claimed_at", { withTimezone: true }),
     leaseExpiresAt: timestamp("lease_expires_at", { withTimezone: true }),
     staleAt: timestamp("stale_at", { withTimezone: true }),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -191,23 +192,28 @@ export const translationTasks = pgTable(
       "translation_tasks_generation_policy_version_check",
       sql`btrim(${table.generationPolicyVersion}) <> ''`,
     ),
-    check("translation_tasks_status_check", sql`${table.status} in ('pending', 'processing', 'stale')`),
+    check("translation_tasks_status_check", sql`${table.status} in ('pending', 'processing', 'stale', 'completed')`),
     check(
       "translation_tasks_lifecycle_check",
       sql`(
         ${table.status} = 'pending'
         and ${table.claimToken} is null and ${table.claimedAt} is null
-        and ${table.leaseExpiresAt} is null and ${table.staleAt} is null
+        and ${table.leaseExpiresAt} is null and ${table.staleAt} is null and ${table.completedAt} is null
       ) or (
         ${table.status} = 'processing'
         and ${table.claimToken} is not null and ${table.claimedAt} is not null
         and ${table.leaseExpiresAt} is not null and ${table.leaseExpiresAt} > ${table.claimedAt}
-        and ${table.staleAt} is null
+        and ${table.staleAt} is null and ${table.completedAt} is null
       ) or (
         ${table.status} = 'stale'
         and ${table.claimToken} is null and ${table.claimedAt} is not null
         and ${table.leaseExpiresAt} is null and ${table.staleAt} is not null
-        and ${table.staleAt} >= ${table.claimedAt}
+        and ${table.staleAt} >= ${table.claimedAt} and ${table.completedAt} is null
+      ) or (
+        ${table.status} = 'completed'
+        and ${table.claimToken} is null and ${table.claimedAt} is not null
+        and ${table.leaseExpiresAt} is null and ${table.staleAt} is null
+        and ${table.completedAt} is not null and ${table.completedAt} >= ${table.claimedAt}
       )`,
     ),
     check("translation_tasks_timestamps_check", sql`${table.updatedAt} >= ${table.createdAt}`),

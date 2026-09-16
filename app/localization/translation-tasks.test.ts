@@ -22,7 +22,7 @@ function task(specification: UiTranslationJobSpecification, id = "task-1"): Tran
   const createdAt = new Date("2026-09-15T00:00:00.000Z");
   return {
     id, ...specification, status: "pending", claimToken: null, claimedAt: null,
-    leaseExpiresAt: null, staleAt: null, createdAt, updatedAt: createdAt,
+    leaseExpiresAt: null, staleAt: null, completedAt: null, createdAt, updatedAt: createdAt,
   };
 }
 

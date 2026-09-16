@@ -147,14 +147,25 @@ message не должно самостоятельно возвращать task
 атомарно вернуть соответствующую stale task в `pending`, сохранив её stable identity/id и
 очистив старую claim/stale metadata. Это новая planning decision, а не Queue retry.
 
+`completed` имеет более строгую семантику: успешно опубликованная stable logical identity
+остаётся terminal и не возвращается в `pending` ни duplicate Queue delivery, ни duplicate
+planning. Новая machine generation после изменения source semantics или generation policy
+получает новую stable identity через новый `sourceFingerprint` и/или
+`generationPolicyVersion`.
+
 Duplicate planning не должно сбрасывать или продлевать живой `processing` claim. Durable
-claim/lease/stale timestamps, которые определяют expiration/reclaim, используют единый
-PostgreSQL-owned clock, а не wall clock вызывающего Worker.
+claim/lease/stale/completion timestamps, которые определяют lifecycle/reclaim, используют
+единый PostgreSQL-owned clock, а не wall clock вызывающего Worker.
 
 После provider response и validation запись результата должна быть conditional относительно
 исходной task identity. Если source/policy изменилась во время вызова, старый result не
 может быть опубликован как current translation. Его можно отбросить или сохранить как
 historical/audit result согласно storage policy.
+
+Для current Stage 5 UI machine publication durable result и переход актуального claim
+`processing → completed` выполняются в одной PostgreSQL transaction boundary. Publication
+разрешена только пока совпадает текущий claim token; потерянный/reclaimed claim не может
+опубликовать machine row и отдельно «дозавершить» task.
 
 Гарантируемый контракт Vico:
 

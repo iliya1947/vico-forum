@@ -1,7 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import {
-  compileNamespaceBundle,
+  verifyCompiledNamespaceBundle,
   type CompiledNamespaceBundle,
   type TranslationBundleStore,
 } from "../app/localization/bundles";
@@ -42,7 +42,7 @@ export class DrizzleUiTranslationBundleStore implements TranslationBundleStore {
       resources[key] = value;
     }
 
-    const verified = await compileNamespaceBundle(row.locale, row.namespace, resources);
+    const verified = await verifyCompiledNamespaceBundle(row.locale, row.namespace, resources);
     if (verified.bundleVersion !== row.bundleVersion) {
       throw new Error(`compiled bundle version mismatch: ${row.locale}:${row.namespace}`);
     }
@@ -51,7 +51,7 @@ export class DrizzleUiTranslationBundleStore implements TranslationBundleStore {
 
   async put(bundle: CompiledNamespaceBundle): Promise<void> {
     const persistentLocale = persistentBundleLocale(bundle.locale);
-    const verified = await compileNamespaceBundle(persistentLocale, bundle.namespace, bundle.resources);
+    const verified = await verifyCompiledNamespaceBundle(persistentLocale, bundle.namespace, bundle.resources);
     if (verified.bundleVersion !== bundle.bundleVersion) {
       throw new Error(`compiled bundle version mismatch: ${bundle.locale}:${bundle.namespace}`);
     }

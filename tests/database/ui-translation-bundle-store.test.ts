@@ -51,6 +51,33 @@ describe("Drizzle compiled UI translation bundle store", () => {
     await expect(repository.read("he", "common")).resolves.toBeUndefined();
   });
 
+  it("persists compiled i18next v4 plural resources without storing structured objects in the bundle", async () => {
+    const repository = new DrizzleUiTranslationBundleStore(drizzle(client));
+    const bundle = await compileNamespaceBundle("ru", "common", {
+      sectionCount: {
+        one: "{{count}} раздел",
+        few: "{{count}} раздела",
+        many: "{{count}} разделов",
+        other: "{{count}} раздела",
+      },
+    });
+
+    expect(bundle.resources).toEqual({
+      sectionCount_few: "{{count}} раздела",
+      sectionCount_many: "{{count}} разделов",
+      sectionCount_one: "{{count}} раздел",
+      sectionCount_other: "{{count}} раздела",
+    });
+
+    await repository.put(bundle);
+
+    await expect(repository.read("ru", "common")).resolves.toEqual(bundle);
+    const persisted = await client.query<{ resources: Record<string, unknown> }>(
+      "select resources from ui_translation_bundles where locale = 'ru' and namespace = 'common'",
+    );
+    expect(persisted.rows[0]?.resources).toEqual(bundle.resources);
+  });
+
   it("upserts the same locale/namespace identity instead of creating duplicates", async () => {
     const repository = new DrizzleUiTranslationBundleStore(drizzle(client));
     const first = await compileNamespaceBundle("he", "common", { heading: "תשתית תרגום" });

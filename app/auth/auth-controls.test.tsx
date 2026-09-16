@@ -11,10 +11,23 @@ import { AuthControls, HeaderAuthProvider, safeForumReturnPath } from "./auth-co
 
 afterEach(cleanup);
 
+function canonicalCommonResources(): Record<string, string> {
+  const resources: Record<string, string> = {};
+  for (const [key, descriptor] of Object.entries(canonicalEnglishCatalog.common)) {
+    if (typeof descriptor.source === "string") {
+      resources[key] = descriptor.source;
+      continue;
+    }
+    for (const [branch, value] of Object.entries(descriptor.source)) {
+      resources[`${key}_${branch}`] = value;
+    }
+  }
+  return resources;
+}
+
 function i18n(direction: "ltr" | "rtl") {
   const locale = direction === "ltr" ? "en" : "he";
-  const common = Object.fromEntries(Object.entries(canonicalEnglishCatalog.common)
-    .map(([key, descriptor]) => [key, descriptor.source]));
+  const common = canonicalCommonResources();
   return createTranslationRuntime({
     locale: { translationLocale: locale, fallbackLocales: locale === "en" ? [] : ["en"], direction, formatting: { locale, timeZone: "UTC" }, nativeName: "Test", presentationMetadata: {} },
     fallbackLocales: locale === "en" ? [] : ["en"], resourcesByLocale: { en: { common } }, bundleVersions: { en: { common: "test" } }, staleKeys: {},

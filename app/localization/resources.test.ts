@@ -47,6 +47,28 @@ describe("UI translation resources", () => {
     );
   });
 
+  it("compiles canonical English plural branches into real i18next runtime lookup", async () => {
+    const englishLocale = {
+      ...locale,
+      translationLocale: "en",
+      fallbackLocales: [],
+      formatting: { locale: "en", timeZone: "UTC" },
+      nativeName: "English",
+    };
+    const snapshot = await new TranslationResourceLoader([new CanonicalEnglishSource()]).load(
+      englishLocale,
+      ["common"],
+    );
+    const runtime = createTranslationRuntime(snapshot);
+
+    expect(snapshot.resourcesByLocale.en?.common).toMatchObject({
+      sectionCount_one: "{{count}} section",
+      sectionCount_other: "{{count}} sections",
+    });
+    expect(runtime.t("sectionCount", { count: 1 })).toBe("1 section");
+    expect(runtime.t("sectionCount", { count: 2 })).toBe("2 sections");
+  });
+
   it("keeps canonical English authoritative over local pack data", async () => {
     const englishLocale = {
       ...locale,

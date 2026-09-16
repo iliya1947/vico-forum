@@ -48,7 +48,8 @@ export class DrizzleTranslationTaskStore implements TranslationTaskStore {
           claimedAt: sql`case when ${translationTasks.status} = 'stale' then null else ${translationTasks.claimedAt} end`,
           leaseExpiresAt: sql`case when ${translationTasks.status} = 'stale' then null else ${translationTasks.leaseExpiresAt} end`,
           staleAt: sql`case when ${translationTasks.status} = 'stale' then null else ${translationTasks.staleAt} end`,
-          updatedAt: sql`case when ${translationTasks.status} = 'processing' then ${translationTasks.updatedAt} else ${databaseNow} end`,
+          completedAt: sql`case when ${translationTasks.status} = 'stale' then null else ${translationTasks.completedAt} end`,
+          updatedAt: sql`case when ${translationTasks.status} in ('processing', 'completed') then ${translationTasks.updatedAt} else ${databaseNow} end`,
         },
       })
       .returning();
@@ -108,7 +109,9 @@ export class DrizzleTranslationTaskStore implements TranslationTaskStore {
     }
     const existing = await this.findById(id);
     if (!existing) return { outcome: "not-found" };
-    return { outcome: existing.status === "stale" ? "terminal" : "already-claimed" };
+    return {
+      outcome: existing.status === "stale" || existing.status === "completed" ? "terminal" : "already-claimed",
+    };
   }
 
   async markStale(id: string, claimToken: string): Promise<boolean> {
@@ -118,7 +121,14 @@ export class DrizzleTranslationTaskStore implements TranslationTaskStore {
     const databaseNow = sql`statement_timestamp()`;
     const rows = await this.database
       .update(translationTasks)
-      .set({ status: "stale", claimToken: null, leaseExpiresAt: null, staleAt: databaseNow, updatedAt: databaseNow })
+      .set({
+        status: "stale",
+        claimToken: null,
+        leaseExpiresAt: null,
+        staleAt: databaseNow,
+        completedAt: null,
+        updatedAt: databaseNow,
+      })
       .where(and(
         eq(translationTasks.id, id),
         eq(translationTasks.status, "processing"),
@@ -143,6 +153,7 @@ async function parseTaskRow(row: TranslationTaskRow): Promise<TranslationTask> {
     claimedAt: row.claimedAt,
     leaseExpiresAt: row.leaseExpiresAt,
     staleAt: row.staleAt,
+    completedAt: row.completedAt,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -174,17 +185,21 @@ async function parseTaskRow(row: TranslationTaskRow): Promise<TranslationTask> {
 }
 
 function isTaskStatus(value: string): value is TranslationTask["status"] {
-  return value === "pending" || value === "processing" || value === "stale";
+  return value === "pending" || value === "processing" || value === "stale" || value === "completed";
 }
 
 function assertLifecycle(task: TranslationTask): void {
   const processing = task.status === "processing" && task.claimToken && task.claimedAt &&
-    task.leaseExpiresAt && !task.staleAt && task.leaseExpiresAt > task.claimedAt;
+    task.leaseExpiresAt && !task.staleAt && !task.completedAt && task.leaseExpiresAt > task.claimedAt;
   const pending = task.status === "pending" && !task.claimToken && !task.claimedAt &&
-    !task.leaseExpiresAt && !task.staleAt;
+    !task.leaseExpiresAt && !task.staleAt && !task.completedAt;
   const stale = task.status === "stale" && !task.claimToken && task.claimedAt &&
-    !task.leaseExpiresAt && task.staleAt && task.staleAt >= task.claimedAt;
-  if (!pending && !processing && !stale) throw new TranslationTaskIntegrityError("invalid translation task lifecycle");
+    !task.leaseExpiresAt && task.staleAt && !task.completedAt && task.staleAt >= task.claimedAt;
+  const completed = task.status === "completed" && !task.claimToken && task.claimedAt &&
+    !task.leaseExpiresAt && !task.staleAt && task.completedAt && task.completedAt >= task.claimedAt;
+  if (!pending && !processing && !stale && !completed) {
+    throw new TranslationTaskIntegrityError("invalid translation task lifecycle");
+  }
 }
 
 async function assertStableIdentity(specification: UiTranslationJobSpecification): Promise<void> {
