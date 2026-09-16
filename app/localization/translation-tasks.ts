@@ -17,6 +17,8 @@ export interface TranslationTask {
   readonly sourceFingerprint: string;
   readonly targetLocale: string;
   readonly generationPolicyVersion: string;
+  /** PostgreSQL-assigned monotonic order within the logical UI unit. */
+  readonly generation: number;
   readonly status: TranslationTaskStatus;
   readonly claimToken: string | null;
   readonly claimedAt: Date | null;
@@ -33,6 +35,7 @@ export interface TranslationTaskStore {
   findByIdentity(taskIdentity: string): Promise<TranslationTask | undefined>;
   claim(id: string, leaseDurationMs: number): Promise<TranslationTaskClaimResult>;
   markStale(id: string, claimToken: string): Promise<boolean>;
+  isCurrentGeneration(task: TranslationTask): Promise<boolean>;
 }
 
 export type TranslationTaskClaimResult =

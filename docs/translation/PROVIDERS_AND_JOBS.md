@@ -157,6 +157,16 @@ Duplicate planning не должно сбрасывать или продлев�
 claim/lease/stale/completion timestamps, которые определяют lifecycle/reclaim, используют
 единый PostgreSQL-owned clock, а не wall clock вызывающего Worker.
 
+Для UI unit `(translationKind, namespace, key, targetLocale)` PostgreSQL хранит отдельный
+durable generation head и монотонный номер каждой впервые увиденной stable identity. Planning
+новой identity и conditional publication берут row lock одного head в общей transaction
+boundary. Поэтому concurrent planning сериализуется в однозначный persistent порядок, а
+publication разрешена только task, чей номер всё ещё равен `currentGeneration`. Повтор уже
+известной старой identity сохраняет исходный номер и не передвигает head: `stale` identity
+может быть reactivated только пока она сама остаётся current; `completed` остаётся terminal.
+`sourceFingerprint`, `taskIdentity` и `generationPolicyVersion` участвуют в identity/validation,
+но не сравниваются как хронологические значения.
+
 После provider response и validation запись результата должна быть conditional относительно
 исходной task identity. Если source/policy изменилась во время вызова, старый result не
 может быть опубликован как current translation. Его можно отбросить или сохранить как
@@ -164,7 +174,7 @@ historical/audit result согласно storage policy.
 
 Для current Stage 5 UI machine publication durable result и переход актуального claim
 `processing → completed` выполняются в одной PostgreSQL transaction boundary. Publication
-разрешена только пока совпадает текущий claim token; потерянный/reclaimed claim не может
+разрешена только пока совпадают текущая durable generation и claim token; потерянный/reclaimed claim не может
 опубликовать machine row и отдельно «дозавершить» task.
 
 Гарантируемый контракт Vico:

@@ -186,36 +186,42 @@ Durable foundation Stage 5A для UI translation jobs:
   не считаются exact-target evidence;
 - eligible task возвращает typed execution context для следующего provider execution layer.
 
-Текущий Stage 5A slice — conditional machine result publication и structured payload persistence:
+Текущий Stage 5A state включает durable current-generation ordering для UI translation tasks:
 
 - migration `0009` добавляет terminal `completed` state и `completed_at`; completed stable identity
   не реактивируется duplicate planning, а новая source/policy generation получает новую logical identity;
-- durable task store deduplicate/reactivate выполняет только для той же stable identity; другая
-  source/policy identity той же UI translation unit не удаляется и не отзывается этим slice. Поэтому
-  delayed duplicate уже completed identity не может удалить pending task или сбросить processing claim
-  другого поколения;
+- forward migration `0010` добавляет каждой task монотонный номер generation внутри logical unit
+  `(translationKind, namespace, key, targetLocale)` и отдельный durable generation head;
+- planning разных stable identities и publication сериализуются row lock одного head. Новая identity
+  атомарно становится current, а delayed повтор старой identity сохраняет старый номер и не может
+  передвинуть head назад;
+- same-identity dedup, terminal `completed`, live-claim preservation и reactivation `stale` сохранены;
+  reactivation разрешена только если эта identity всё ещё current;
 - consumer/result publisher повторно применяют current source fingerprint, generation policy,
-  generation target и manual-priority preflight к claimed task. Authoritative ordering/serialization
-  разных stable identities одной logical unit не реализованы в этом slice и остаются частью дальнейшего
-  `JOB-03` completion до подключения real Queue/provider execution;
+  generation target, durable current generation и manual-priority preflight к claimed task;
 - `UiTranslationResultPublisher` валидирует provider output через общий
   `validateProviderOutput`/`LocaleRulesProvider` boundary и только после current preflight передаёт
   результат в publication store;
-- PostgreSQL publication store в одной transaction conditionally переводит актуальный claim
+- PostgreSQL publication store под тем же generation-head lock в одной transaction conditionally переводит актуальный claim
   `processing → completed` и upsert-ит approved machine row с `sourceFingerprint`, generation policy и
-  provider/model/provenance metadata; потерянный/reclaimed claim не публикует результат;
+  provider/model/provenance metadata; superseded generation и потерянный/reclaimed claim не публикуют результат;
 - canonical UI descriptor теперь допускает structured plural source как одну logical translation unit;
   `sectionCount` переведён на реальный `one/other` canonical plural fixture, а source fingerprint
   детерминированно учитывает structured source semantics;
 - persistent raw machine translation сохраняет validated structured plural payload как JSON object,
   source loader возвращает его как одну logical unit, а compiled bundle materializes полный target
   branch set в i18next JSON v4 suffix resources (`key_one`, `key_few`, `key_many`, `key_other` и т. п.);
-- PostgreSQL integration coverage проверяет successful publication/completion, lost-claim no-op,
-  terminal completed identity, delayed duplicate completed identity без повреждения другого pending/
-  processing generation, structured payload persistence/read и runtime bundle compilation;
+- PostgreSQL integration coverage использует независимые connections для concurrent planning разных
+  identities, отдельно проверяет delayed old identity и publication fencing уже выполняющейся старой
+  task, а также existing completion/claim/structured payload contracts;
 - реальные provider calls, real Cloudflare Queue consumer binding, retry/DLQ, `JOB-06` reconciliation,
   automatic generation-result → whole namespace bundle publication и переключение production SSR на
   persisted compiled bundle всё ещё не реализованы и остаются следующими Stage 5A slices.
+
+Migration `0010`, metadata/history и PostgreSQL integration suite локально проверены на PostgreSQL
+17.11. GitHub Actions CI #190 на head `28f21961d485358bf1c02940f159fa3c8d273b3b` полностью
+прошёл `checks` и `database`, включая migration history/evidence, lint, typecheck, unit tests, build,
+migration metadata, clean PostgreSQL 17 migrations/integration tests, Workers build и local Hyperdrive smoke.
 
 Lifecycle correction из PR #69 merged в `main` commit
 `c12550c3fa1cb371df82a178d20ed7020c33f9ce`. GitHub Actions CI #170 на финальном head PR #69
@@ -290,7 +296,7 @@ classification; точные результаты и ограничения на
    PostgreSQL 17 и существующего Workers-compatible local path.
 2. Каждый PR по-прежнему проходит обязательные repository checks (`lint`, `typecheck`,
    tests, build, migration metadata и DB integration там, где применимо).
-3. Merge feature-кода не должен автоматически означать external production rollout.
+3. Merge feature-кода сам по себе не должен означать external production rollout.
 4. Новые migrations не обязаны немедленно применяться в Neon только ради продолжения
    разработки.
 5. Реальные Cloudflare/Neon/Google/provider integrations и production acceptance собираются

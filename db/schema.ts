@@ -6,8 +6,8 @@ import {
   check,
   foreignKey,
   index,
-  integer,
   jsonb,
+  integer,
   pgTable,
   primaryKey,
   text,
@@ -169,6 +169,7 @@ export const translationTasks = pgTable(
     sourceFingerprint: text("source_fingerprint").notNull(),
     targetLocale: text("target_locale").notNull(),
     generationPolicyVersion: text("generation_policy_version").notNull(),
+    generation: integer("generation").notNull(),
     status: text("status").notNull().default("pending"),
     claimToken: uuid("claim_token"),
     claimedAt: timestamp("claimed_at", { withTimezone: true }),
@@ -191,6 +192,14 @@ export const translationTasks = pgTable(
     check(
       "translation_tasks_generation_policy_version_check",
       sql`btrim(${table.generationPolicyVersion}) <> ''`,
+    ),
+    check("translation_tasks_generation_check", sql`${table.generation} > 0`),
+    unique("translation_tasks_unit_generation_unique").on(
+      table.translationKind,
+      table.sourceNamespace,
+      table.sourceKey,
+      table.targetLocale,
+      table.generation,
     ),
     check("translation_tasks_status_check", sql`${table.status} in ('pending', 'processing', 'stale', 'completed')`),
     check(
@@ -217,6 +226,32 @@ export const translationTasks = pgTable(
       )`,
     ),
     check("translation_tasks_timestamps_check", sql`${table.updatedAt} >= ${table.createdAt}`),
+  ],
+);
+
+export const translationTaskGenerationHeads = pgTable(
+  "translation_task_generation_heads",
+  {
+    translationKind: text("translation_kind").notNull(),
+    sourceNamespace: text("source_namespace").notNull(),
+    sourceKey: text("source_key").notNull(),
+    targetLocale: text("target_locale").notNull(),
+    currentGeneration: integer("current_generation").notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({
+      name: "translation_task_generation_heads_pk",
+      columns: [table.translationKind, table.sourceNamespace, table.sourceKey, table.targetLocale],
+    }),
+    check("translation_task_generation_heads_kind_check", sql`${table.translationKind} = 'ui'`),
+    check("translation_task_generation_heads_namespace_check", sql`btrim(${table.sourceNamespace}) <> ''`),
+    check("translation_task_generation_heads_key_check", sql`btrim(${table.sourceKey}) <> ''`),
+    check(
+      "translation_task_generation_heads_locale_check",
+      sql`${table.targetLocale} = btrim(${table.targetLocale}) and ${table.targetLocale} <> '' and lower(${table.targetLocale}) <> 'en'`,
+    ),
+    check("translation_task_generation_heads_generation_check", sql`${table.currentGeneration} > 0`),
   ],
 );
 

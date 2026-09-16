@@ -10,7 +10,7 @@ import {
   uiTranslationJobIdentity,
   type UiTranslationJobSpecification,
 } from "../app/localization/ui-translation-service";
-import { translationTasks } from "./schema";
+import { translationTaskGenerationHeads, translationTasks } from "./schema";
 
 type TranslationTaskRow = typeof translationTasks.$inferSelect;
 
@@ -27,10 +27,44 @@ export class DrizzleTranslationTaskStore implements TranslationTaskStore {
   async upsertPending(specification: UiTranslationJobSpecification): Promise<TranslationTask> {
     validateUiTranslationJobSpecification(specification);
     await assertStableIdentity(specification);
-    const databaseNow = sql`statement_timestamp()`;
-    const rows = await this.database
-      .insert(translationTasks)
-      .values({
+    return this.database.transaction(async (transaction) => {
+      const unit = unitValues(specification);
+      const insertedHead = await transaction.insert(translationTaskGenerationHeads).values({
+        ...unit,
+        currentGeneration: 1,
+      }).onConflictDoNothing().returning({ currentGeneration: translationTaskGenerationHeads.currentGeneration });
+
+      // The head row is the serialization point shared with publication. Re-read the stable
+      // identity only after taking this lock so same- and different-identity races are ordered.
+      const locked = await transaction.execute<{ current_generation: number }>(sql`
+        select current_generation
+          from ${translationTaskGenerationHeads}
+         where ${translationTaskGenerationHeads.translationKind} = ${unit.translationKind}
+           and ${translationTaskGenerationHeads.sourceNamespace} = ${unit.sourceNamespace}
+           and ${translationTaskGenerationHeads.sourceKey} = ${unit.sourceKey}
+           and ${translationTaskGenerationHeads.targetLocale} = ${unit.targetLocale}
+         for update
+      `);
+      const currentGeneration = locked.rows[0]?.current_generation;
+      if (!Number.isSafeInteger(currentGeneration) || currentGeneration! <= 0) {
+        throw new TranslationTaskIntegrityError("translation generation head is missing or invalid");
+      }
+      const existingRows = await transaction.select().from(translationTasks)
+        .where(eq(translationTasks.taskIdentity, specification.taskIdentity)).limit(1);
+      if (existingRows[0]) {
+        const existing = await parseTaskRow(existingRows[0]);
+        assertMatchesSpecification(existing, specification);
+        if (existing.status !== "stale" || existing.generation !== currentGeneration) return existing;
+        const databaseNow = sql`statement_timestamp()`;
+        const reactivated = await transaction.update(translationTasks).set({
+          status: "pending", claimToken: null, claimedAt: null, leaseExpiresAt: null,
+          staleAt: null, completedAt: null, updatedAt: databaseNow,
+        }).where(and(eq(translationTasks.id, existing.id), eq(translationTasks.status, "stale"))).returning();
+        return parseTaskRow(requiredRow(reactivated[0]));
+      }
+
+      const generation = insertedHead.length === 1 ? currentGeneration : currentGeneration + 1;
+      const rows = await transaction.insert(translationTasks).values({
         taskIdentity: specification.taskIdentity,
         translationKind: specification.translationKind,
         sourceNamespace: specification.sourceIdentity.namespace,
@@ -38,25 +72,20 @@ export class DrizzleTranslationTaskStore implements TranslationTaskStore {
         sourceFingerprint: specification.sourceFingerprint,
         targetLocale: specification.targetLocale,
         generationPolicyVersion: specification.generationPolicyVersion,
+        generation,
         status: "pending",
-      })
-      .onConflictDoUpdate({
-        target: translationTasks.taskIdentity,
-        set: {
-          status: sql`case when ${translationTasks.status} = 'stale' then 'pending' else ${translationTasks.status} end`,
-          claimToken: sql`case when ${translationTasks.status} = 'stale' then null else ${translationTasks.claimToken} end`,
-          claimedAt: sql`case when ${translationTasks.status} = 'stale' then null else ${translationTasks.claimedAt} end`,
-          leaseExpiresAt: sql`case when ${translationTasks.status} = 'stale' then null else ${translationTasks.leaseExpiresAt} end`,
-          staleAt: sql`case when ${translationTasks.status} = 'stale' then null else ${translationTasks.staleAt} end`,
-          completedAt: sql`case when ${translationTasks.status} = 'stale' then null else ${translationTasks.completedAt} end`,
-          updatedAt: sql`case when ${translationTasks.status} in ('processing', 'completed') then ${translationTasks.updatedAt} else ${databaseNow} end`,
-        },
-      })
-      .returning();
+      }).returning();
+      if (generation !== currentGeneration) {
+        await transaction.update(translationTaskGenerationHeads).set({
+          currentGeneration: generation,
+          updatedAt: sql`statement_timestamp()`,
+        }).where(unitCondition(unit));
+      }
 
-    const task = await parseTaskRow(requiredRow(rows[0]));
-    assertMatchesSpecification(task, specification);
-    return task;
+      const task = await parseTaskRow(requiredRow(rows[0]));
+      assertMatchesSpecification(task, specification);
+      return task;
+    });
   }
 
   async findById(id: string): Promise<TranslationTask | undefined> {
@@ -137,6 +166,17 @@ export class DrizzleTranslationTaskStore implements TranslationTaskStore {
       .returning({ id: translationTasks.id });
     return rows.length === 1;
   }
+
+  async isCurrentGeneration(task: TranslationTask): Promise<boolean> {
+    const rows = await this.database.select({ currentGeneration: translationTaskGenerationHeads.currentGeneration })
+      .from(translationTaskGenerationHeads).where(unitCondition({
+        translationKind: task.translationKind,
+        sourceNamespace: task.sourceIdentity.namespace,
+        sourceKey: task.sourceIdentity.key,
+        targetLocale: task.targetLocale,
+      })).limit(1);
+    return rows[0]?.currentGeneration === task.generation;
+  }
 }
 
 async function parseTaskRow(row: TranslationTaskRow): Promise<TranslationTask> {
@@ -148,6 +188,7 @@ async function parseTaskRow(row: TranslationTaskRow): Promise<TranslationTask> {
     sourceFingerprint: row.sourceFingerprint,
     targetLocale: row.targetLocale,
     generationPolicyVersion: row.generationPolicyVersion,
+    generation: row.generation,
     status: row.status as TranslationTask["status"],
     claimToken: row.claimToken,
     claimedAt: row.claimedAt,
@@ -174,6 +215,9 @@ async function parseTaskRow(row: TranslationTaskRow): Promise<TranslationTask> {
     generationPolicyVersion: task.generationPolicyVersion,
   });
   if (!isTaskStatus(task.status)) throw new TranslationTaskIntegrityError("invalid translation task status");
+  if (!Number.isSafeInteger(task.generation) || task.generation <= 0) {
+    throw new TranslationTaskIntegrityError("invalid translation task generation");
+  }
   if (!isUuid(task.id) || !(task.createdAt instanceof Date) || !(task.updatedAt instanceof Date)) {
     throw new TranslationTaskIntegrityError("invalid translation task identity or timestamps");
   }
@@ -182,6 +226,31 @@ async function parseTaskRow(row: TranslationTaskRow): Promise<TranslationTask> {
   }
   assertLifecycle(task);
   return { ...task, translationKind: "ui", status: task.status };
+}
+
+type TranslationUnit = {
+  translationKind: "ui";
+  sourceNamespace: string;
+  sourceKey: string;
+  targetLocale: string;
+};
+
+function unitValues(specification: UiTranslationJobSpecification): TranslationUnit {
+  return {
+    translationKind: specification.translationKind,
+    sourceNamespace: specification.sourceIdentity.namespace,
+    sourceKey: specification.sourceIdentity.key,
+    targetLocale: specification.targetLocale,
+  };
+}
+
+function unitCondition(unit: TranslationUnit) {
+  return and(
+    eq(translationTaskGenerationHeads.translationKind, unit.translationKind),
+    eq(translationTaskGenerationHeads.sourceNamespace, unit.sourceNamespace),
+    eq(translationTaskGenerationHeads.sourceKey, unit.sourceKey),
+    eq(translationTaskGenerationHeads.targetLocale, unit.targetLocale),
+  );
 }
 
 function isTaskStatus(value: string): value is TranslationTask["status"] {
