@@ -24,6 +24,11 @@ Role не должен иметь schema ownership/`CREATE`, table ownership, `I
 `DELETE`, `TRUNCATE`, `REFERENCES`, `TRIGGER`, migration или admin capability.
 `DATABASE_URL` не является Worker secret/variable.
 
+Stage 5A использует `ui_translation_bundles` как первый read для canonical non-English
+locale/namespace. Это остаётся той же request-scoped read-only capability: на bundle miss
+допустим fallback-read `ui_translations`, а canonical English DB не читает. Новых grants или
+отдельного connection pool для runtime-read slice не требуется.
+
 Новые forum/auth/translation write-capabilities не добавляются в этот role механически.
 Они проектируются по фактическим runtime operations на Stage 6 external integration.
 

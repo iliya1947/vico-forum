@@ -2,10 +2,12 @@ import { createContext, type RouterContextProvider } from "react-router";
 import type { ResolvedLocaleContext } from "./locale";
 import type { LoadedLocaleRegistry } from "./persistent-registry";
 import type { UiTranslationStore } from "./persistent-sources";
+import type { TranslationBundleReader } from "./bundles";
 
 export const localeContext = createContext<ResolvedLocaleContext>();
 export const registryLoaderContext = createContext<() => Promise<LoadedLocaleRegistry>>();
-export const uiTranslationStoreContext = createContext<UiTranslationStore>();
+export type RuntimeUiTranslationStore = UiTranslationStore & TranslationBundleReader;
+export const uiTranslationStoreContext = createContext<RuntimeUiTranslationStore>();
 
 export class RegistryLoaderConfigurationError extends Error {
   constructor(options?: ErrorOptions) {
@@ -31,7 +33,7 @@ export async function registryForRequest(context: RouterContextProvider) {
   return load();
 }
 
-export function uiTranslationStoreForRequest(context: RouterContextProvider): UiTranslationStore {
+export function uiTranslationStoreForRequest(context: RouterContextProvider): RuntimeUiTranslationStore {
   try {
     return context.get(uiTranslationStoreContext);
   } catch (error) {

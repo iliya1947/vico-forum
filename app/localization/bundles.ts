@@ -1,13 +1,15 @@
 import { canonicalEnglishCatalog, type UiMessageDescriptor } from "./catalog";
 import { sha256Text, sourceFingerprint } from "./fingerprint";
+import { manualTranslationPacks } from "./manual-packs";
 import { IntlLocaleRulesProvider, type LocaleRulesProvider } from "./locale-rules";
 import {
   validateProviderOutput,
   type ProviderTranslationValue,
 } from "./translation-validation";
 import type { TranslationSource, TranslationSourceBundle } from "./sources";
+import type { TranslationPack } from "./sources";
 
-const BUNDLE_VERSION_FORMAT = "vico-ui-bundle-v1";
+const BUNDLE_VERSION_FORMAT = "vico-ui-bundle-v2";
 const BUNDLE_CACHE_FORMAT = "vico-ui-bundle-cache-v1";
 const SHA256_HEX = /^[0-9a-f]{64}$/;
 const defaultLocaleRules = new IntlLocaleRulesProvider();
@@ -19,8 +21,11 @@ export interface CompiledNamespaceBundle {
   bundleVersion: string;
 }
 
-export interface TranslationBundleStore {
+export interface TranslationBundleReader {
   read(locale: string, namespace: string): Promise<CompiledNamespaceBundle | undefined>;
+}
+
+export interface TranslationBundleStore extends TranslationBundleReader {
   put(bundle: CompiledNamespaceBundle): Promise<void>;
 }
 
@@ -132,10 +137,41 @@ export async function verifyCompiledNamespaceBundle(
     format: BUNDLE_VERSION_FORMAT,
     locale,
     namespace,
+    codeOwnedInputs: await codeOwnedBundleInputs(locale, namespace),
     resources: versionEntries.sort(([left], [right]) => deterministicCompare(left, right)),
   }));
 
   return { locale, namespace, resources: normalizedResources, bundleVersion };
+}
+
+/**
+ * Identifies every code-owned input that can affect an exact-locale bundle. This deliberately
+ * includes absent local overrides: removing one must invalidate a bundle produced by an older
+ * deploy even when the canonical source fingerprint itself did not change.
+ */
+export async function codeOwnedBundleInputs(
+  locale: string,
+  namespace: string,
+  packs: Readonly<Record<string, TranslationPack>> = manualTranslationPacks,
+): Promise<string> {
+  assertBundleScope(locale, namespace);
+  const descriptors = [...descriptorMap(namespace).values()]
+    .sort((left, right) => deterministicCompare(left.key, right.key));
+  const localMessages = packs[locale]?.[namespace] ?? {};
+  const canonical = await Promise.all(descriptors.map(async (descriptor) => [
+    descriptor.key,
+    await sourceFingerprint(descriptor),
+  ]));
+  const local = Object.entries(localMessages)
+    .sort(([left], [right]) => deterministicCompare(left, right))
+    .map(([key, translation]) => [
+      key,
+      translation.sourceFingerprint,
+      typeof translation.value === "string"
+        ? translation.value
+        : Object.fromEntries(Object.entries(translation.value).sort(([left], [right]) => deterministicCompare(left, right))),
+    ]);
+  return sha256Text(JSON.stringify({ format: "vico-ui-code-inputs-v1", canonical, local }));
 }
 
 export function bundleCacheIdentity(locale: string, namespace: string, bundleVersion: string): string {

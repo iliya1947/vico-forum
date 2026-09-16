@@ -153,8 +153,8 @@ Stage 4E2b authorization integration и management UI:
   `LocaleRulesProvider`;
 - provider output остаётся untrusted до существующего validation/publication boundary; execution path
   остаётся вне SSR/page request. Real external provider adapters/calls, real Queue binding,
-  retry/DLQ/reconciliation, persisted-bundle runtime switching и user-content translation остаются
-  следующей Stage 5 работой.
+  retry/DLQ/reconciliation и user-content translation остаются следующей Stage 5 работой;
+  persisted-bundle runtime switching описан ниже как завершённый последующий slice.
 
 Durable foundation Stage 5A для UI translation jobs:
 
@@ -169,8 +169,9 @@ Durable foundation Stage 5A для UI translation jobs:
 - PostgreSQL integration coverage проверяет окно `durable task committed → enqueue failed/unknown`:
   после ошибки enqueue новая независимая DB connection видит ту же task в `pending`, поэтому будущий
   `JOB-06` reconciliation имеет durable recovery source;
-- Queue delivery не считается exactly-once. Real Queue adapter, retry/DLQ/reconciliation,
-  real external provider adapters/calls и persisted bundle runtime path остаются следующими Stage 5 slices;
+- Queue delivery не считается exactly-once. Real Queue adapter, retry/DLQ/reconciliation и
+  real external provider adapters/calls остаются следующими Stage 5 slices; persisted bundle runtime
+  path реализован последующим slice ниже;
   provider-neutral execution и conditional result publication описаны ниже.
 
 Первая часть `JOB-03` для UI translation consumer:
@@ -223,9 +224,8 @@ Durable foundation Stage 5A для UI translation jobs:
 - PostgreSQL integration coverage использует независимые connections для concurrent planning разных
   identities, отдельно проверяет delayed old identity и publication fencing уже выполняющейся старой
   task, а также existing completion/claim/structured payload contracts;
-- real external provider adapters/calls, real Cloudflare Queue consumer binding, retry/DLQ,
-  `JOB-06` reconciliation и переключение production SSR на persisted compiled bundle всё ещё не
-  реализованы и остаются следующими Stage 5A slices.
+- real external provider adapters/calls, real Cloudflare Queue consumer binding, retry/DLQ и
+  `JOB-06` reconciliation всё ещё не реализованы и остаются следующими Stage 5A slices;
 
 Следующий ограниченный slice Stage 5A publication завершён в текущей ветке:
 
@@ -242,7 +242,24 @@ Durable foundation Stage 5A для UI translation jobs:
   исключая ложный durable success; schema/migrations не менялись;
 - PostgreSQL coverage добавляет whole namespace, local/persistent manual priority, plural,
   lost/superseded claim bundle preservation, concurrent independent connections и atomic rollback;
-- runtime/SSR чтение persisted bundles намеренно остаётся следующим Stage 5A slice.
+- runtime/SSR чтение persisted bundles реализовано следующим slice, описанным ниже.
+
+Persisted compiled UI bundle runtime-read slice завершён в текущей ветке:
+
+- `TranslationResourceLoader` для каждого canonical non-English locale/namespace сначала читает
+  и проверяет `ui_translation_bundles`; normal hit не читает и не реконструирует namespace из
+  raw `ui_translations`;
+- target/fallback locale bundles остаются отдельными, runtime-ready plural suffix resources
+  передаются без повторной locale-компиляции, а SSR/hydration используют прежний единый snapshot;
+- canonical `en` всегда строится из code-owned catalog и не обращается к bundle table;
+- bundle miss использует прежний raw priority merge; classified connection/query timeout,
+  unavailable/schema failure и invalid bundle безопасно оставляют local/English fallback, тогда
+  как произвольные programming/configuration failures остаются видимыми;
+- bundle format v2 включает current-deploy identity canonical namespace и exact local manual pack,
+  включая отсутствующие overrides, поэтому изменение или удаление local value инвалидирует старую
+  persisted version без обычной request-time пересборки whole raw namespace;
+- schema/migration не понадобились: existing `bundle_version` хранит новый semantic identity;
+  внешний rollout не выполнялся, а retry/DLQ, `JOB-06`, real Queue/provider и Stage 5B остаются вне scope.
 
 Bundle-publication slice проверен GitHub Actions CI #196 на head
 `f7dc2de4b613f1cf7413dbdc28c94f49a9d1526e`: полностью прошли `checks` и `database`, включая

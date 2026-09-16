@@ -73,7 +73,7 @@ export async function loader(args: LocaleBoundaryArgs) {
     new DatabaseManualTranslationSource(store),
     new DatabaseMachineTranslationSource(store),
     canonicalEnglishSource,
-  ]);
+  ], store);
   const snapshot = await resourceLoader.load(locale, ["common"]);
   const session = authSessionForRequest(args.context);
   let canManageAuthorization = false;
