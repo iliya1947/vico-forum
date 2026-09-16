@@ -30,6 +30,7 @@ beforeAll(async () => {
     "drizzle/0007_durable_translation_tasks.sql",
     "drizzle/0008_translation_task_claim_lease.sql",
     "drizzle/0009_translation_task_completion.sql",
+    "drizzle/0010_translation_task_generation_order.sql",
   ]) {
     await client.query(await readFile(migration, "utf8"));
   }
@@ -41,10 +42,13 @@ afterAll(async () => {
   await client.end();
 });
 
-async function job(generationPolicyVersion: string): Promise<UiTranslationJobSpecification> {
+async function job(
+  generationPolicyVersion: string,
+  key = "generationIsolation",
+): Promise<UiTranslationJobSpecification> {
   const specification = {
     translationKind: "ui" as const,
-    sourceIdentity: { namespace: "common", key: "generationIsolation" },
+    sourceIdentity: { namespace: "common", key },
     sourceFingerprint: "b".repeat(64),
     targetLocale: "fr",
     generationPolicyVersion,
@@ -53,6 +57,71 @@ async function job(generationPolicyVersion: string): Promise<UiTranslationJobSpe
 }
 
 describe("translation task generation isolation", () => {
+  it("serializes concurrent different identities through one durable current generation", async () => {
+    const firstClient = new Client({ connectionString: databaseUrl });
+    const secondClient = new Client({ connectionString: databaseUrl });
+    await Promise.all([firstClient.connect(), secondClient.connect()]);
+    try {
+      await Promise.all([
+        firstClient.query(`set search_path to ${schemaName}`),
+        secondClient.query(`set search_path to ${schemaName}`),
+      ]);
+      const firstStore = new DrizzleTranslationTaskStore(drizzle(firstClient));
+      const secondStore = new DrizzleTranslationTaskStore(drizzle(secondClient));
+      const [first, second] = await Promise.all([
+        firstStore.upsertPending(await job("concurrent-policy-a", "generationConcurrent")),
+        secondStore.upsertPending(await job("concurrent-policy-b", "generationConcurrent")),
+      ]);
+
+      expect(new Set([first.generation, second.generation])).toEqual(new Set([1, 2]));
+      const current = await client.query<{ current_count: number; current_generation: number }>(`
+        select count(*) filter (where t.generation = h.current_generation)::int as current_count,
+               max(h.current_generation)::int as current_generation
+          from translation_tasks t
+          join translation_task_generation_heads h using
+            (translation_kind, source_namespace, source_key, target_locale)
+         where t.source_key = 'generationConcurrent'
+           and t.generation_policy_version like 'concurrent-policy-%'
+      `);
+      expect(current.rows).toEqual([{ current_count: 1, current_generation: 2 }]);
+    } finally {
+      await Promise.all([firstClient.end(), secondClient.end()]);
+    }
+  });
+
+  it("does not let delayed old planning or old in-flight work regain current publication rights", async () => {
+    const tasks = new DrizzleTranslationTaskStore(drizzle(client));
+    const publications = new DrizzleUiTranslationPublicationStore(drizzle(client));
+    const olderSpecification = await job("delayed-policy-v1", "generationDelayed");
+    const newerSpecification = await job("delayed-policy-v2", "generationDelayed");
+    const older = await tasks.upsertPending(olderSpecification);
+    const oldClaim = await tasks.claim(older.id, 60_000);
+    if (oldClaim.outcome !== "claimed") throw new Error("older claim failed");
+
+    const newer = await tasks.upsertPending(newerSpecification);
+    await expect(tasks.upsertPending(olderSpecification)).resolves.toMatchObject({
+      id: older.id,
+      generation: oldClaim.task.generation,
+      status: "processing",
+      claimToken: oldClaim.task.claimToken,
+    });
+    await expect(tasks.isCurrentGeneration(oldClaim.task)).resolves.toBe(false);
+    await expect(tasks.isCurrentGeneration(newer)).resolves.toBe(true);
+    await expect(publications.publishClaimedMachineResult({
+      task: oldClaim.task,
+      value: "Résultat ancien retardé",
+      provenance: { provider: "fake", model: "fake-v1", origin: "machine" },
+    })).resolves.toBe(false);
+    await expect(tasks.findById(older.id)).resolves.toMatchObject({ status: "processing" });
+    const published = await client.query<{ count: number }>(`
+      select count(*)::int as count from ui_translations
+       where locale = 'fr' and namespace = 'common' and key = 'generationDelayed' and origin = 'machine'
+    `);
+    expect(published.rows[0]?.count).toBe(0);
+    await expect(tasks.markStale(older.id, oldClaim.task.claimToken)).resolves.toBe(true);
+    await expect(tasks.upsertPending(olderSpecification)).resolves.toMatchObject({ status: "stale" });
+  });
+
   it("keeps a newer generation intact when an older completed identity is planned again", async () => {
     const database = drizzle(client);
     const tasks = new DrizzleTranslationTaskStore(database);
@@ -97,6 +166,7 @@ describe("translation task generation isolation", () => {
         where source_namespace = 'common'
           and source_key = 'generationIsolation'
           and target_locale = 'fr'
+          and generation_policy_version in ('ui-policy-v1', 'ui-policy-v2')
         order by generation_policy_version`,
     );
     expect(rows.rows).toEqual([

@@ -16,6 +16,7 @@ export type TranslationTaskStaleReason =
   | "source-missing"
   | "source-changed"
   | "policy-changed"
+  | "generation-superseded"
   | "target-locale-ineligible"
   | "manual-translation-exists";
 
@@ -34,6 +35,7 @@ export interface TranslationTaskPreflightDependencies {
   readonly localManualSource: TranslationSource;
   readonly persistentStore: UiTranslationStore;
   readonly generationPolicyVersion: string;
+  readonly tasks: TranslationTaskStore;
 }
 
 export interface TranslationTaskConsumerDependencies extends TranslationTaskPreflightDependencies {
@@ -79,6 +81,7 @@ export async function uiTranslationTaskStaleReason(
   if (!descriptor) return "source-missing";
   if (await sourceFingerprint(descriptor) !== task.sourceFingerprint) return "source-changed";
   if (task.generationPolicyVersion !== dependencies.generationPolicyVersion) return "policy-changed";
+  if (!await dependencies.tasks.isCurrentGeneration(task)) return "generation-superseded";
 
   if (
     resolveUiTranslationGenerationTarget(dependencies.localeRegistry, task.targetLocale) !== task.targetLocale

@@ -27,6 +27,7 @@ async function context(
     sourceFingerprint: await sourceFingerprint(source),
     targetLocale,
     generationPolicyVersion: "ui-policy-v1",
+    generation: 1,
     status: "processing",
     claimToken: "20000000-0000-4000-8000-000000000002",
     claimedAt: now,
@@ -47,6 +48,7 @@ function publisherHarness(options: {
   const markStale = vi.fn(async () => true);
   const tasks = {
     upsertPending: vi.fn(), findById: vi.fn(), findByIdentity: vi.fn(), claim: vi.fn(), markStale,
+    isCurrentGeneration: vi.fn(async () => true),
   } as unknown as TranslationTaskStore;
   const publishClaimedMachineResult = vi.fn(options.publish ?? (async () => true));
   const publications: UiTranslationPublicationStore = { publishClaimedMachineResult };

@@ -5,7 +5,7 @@ import type {
   UiTranslationPublicationStore,
 } from "../app/localization/translation-publication";
 import { canonicalPayload } from "../app/localization/sources";
-import { translationTasks, uiTranslations } from "./schema";
+import { translationTaskGenerationHeads, translationTasks, uiTranslations } from "./schema";
 
 export class DrizzleUiTranslationPublicationStore implements UiTranslationPublicationStore {
   constructor(private readonly database: NodePgDatabase) {}
@@ -13,6 +13,16 @@ export class DrizzleUiTranslationPublicationStore implements UiTranslationPublic
   async publishClaimedMachineResult(publication: MachineUiTranslationPublication): Promise<boolean> {
     return this.database.transaction(async (transaction) => {
       const databaseNow = sql`statement_timestamp()`;
+      const head = await transaction.execute<{ current_generation: number }>(sql`
+        select current_generation
+          from ${translationTaskGenerationHeads}
+         where ${translationTaskGenerationHeads.translationKind} = ${publication.task.translationKind}
+           and ${translationTaskGenerationHeads.sourceNamespace} = ${publication.task.sourceIdentity.namespace}
+           and ${translationTaskGenerationHeads.sourceKey} = ${publication.task.sourceIdentity.key}
+           and ${translationTaskGenerationHeads.targetLocale} = ${publication.task.targetLocale}
+         for update
+      `);
+      if (head.rows[0]?.current_generation !== publication.task.generation) return false;
       const completed = await transaction
         .update(translationTasks)
         .set({

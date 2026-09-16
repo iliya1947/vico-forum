@@ -71,6 +71,13 @@
       "when": 1789550800033,
       "tag": "0009_translation_task_completion",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1789574281954,
+      "tag": "0010_translation_task_generation_order",
+      "breakpoints": true
     }
   ]
 }

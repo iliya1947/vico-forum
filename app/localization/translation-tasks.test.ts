@@ -21,7 +21,7 @@ function job(taskIdentity = "a".repeat(64), key = "heading"): UiTranslationJobSp
 function task(specification: UiTranslationJobSpecification, id = "task-1"): TranslationTask {
   const createdAt = new Date("2026-09-15T00:00:00.000Z");
   return {
-    id, ...specification, status: "pending", claimToken: null, claimedAt: null,
+    id, ...specification, generation: 1, status: "pending", claimToken: null, claimedAt: null,
     leaseExpiresAt: null, staleAt: null, completedAt: null, createdAt, updatedAt: createdAt,
   };
 }
@@ -35,6 +35,7 @@ function storeWith(
     findByIdentity: vi.fn(async () => undefined),
     claim: vi.fn(async () => ({ outcome: "not-found" as const })),
     markStale: vi.fn(async () => false),
+    isCurrentGeneration: vi.fn(async () => true),
   };
 }
 

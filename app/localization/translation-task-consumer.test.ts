@@ -27,6 +27,7 @@ async function claimedTask(overrides: Partial<TranslationTask> = {}): Promise<Tr
     sourceFingerprint: await sourceFingerprint(canonicalEnglishCatalog.common.heading),
     targetLocale: "fr",
     generationPolicyVersion: "ui-policy-v1",
+    generation: 1,
     status: "processing",
     claimToken,
     claimedAt: now,
@@ -45,12 +46,14 @@ async function harness(options: {
   localManualSource?: TranslationSource;
   persistentRows?: readonly PersistentUiTranslationRow[];
   policy?: string;
+  currentGeneration?: boolean;
 } = {}) {
   const task = options.task ?? await claimedTask();
   const markStale = vi.fn(async () => true);
   const tasks: TranslationTaskStore = {
     upsertPending: vi.fn(), findById: vi.fn(), findByIdentity: vi.fn(), markStale,
     claim: vi.fn(async () => ({ outcome: "claimed" as const, task })),
+    isCurrentGeneration: vi.fn(async () => options.currentGeneration ?? true),
   };
   const consumer = new UiTranslationTaskConsumer({
     tasks,
@@ -76,6 +79,7 @@ describe("UiTranslationTaskConsumer stale preflight", () => {
     ["canonical source", async () => ({ task: await claimedTask({ sourceIdentity: { namespace: "common", key: "removed" } }) }), "source-missing"],
     ["source fingerprint", async () => ({ task: await claimedTask({ sourceFingerprint: "b".repeat(64) }) }), "source-changed"],
     ["generation policy", async () => ({ policy: "ui-policy-v2" }), "policy-changed"],
+    ["durable generation", async () => ({ currentGeneration: false }), "generation-superseded"],
     ["removed locale", async () => ({ localeRegistry: registry("de") }), "target-locale-ineligible"],
     ["disabled locale", async () => ({ localeRegistry: registry("fr", "disabled") }), "target-locale-ineligible"],
   ] as const)("marks a task stale when its %s is no longer current", async (_label, setup, reason) => {

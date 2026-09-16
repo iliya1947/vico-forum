@@ -35,6 +35,7 @@ beforeAll(async () => {
   await client.query(await readFile("drizzle/0007_durable_translation_tasks.sql", "utf8"));
   await client.query(await readFile("drizzle/0008_translation_task_claim_lease.sql", "utf8"));
   await client.query(await readFile("drizzle/0009_translation_task_completion.sql", "utf8"));
+  await client.query(await readFile("drizzle/0010_translation_task_generation_order.sql", "utf8"));
 });
 
 afterAll(async () => {
@@ -140,6 +141,7 @@ describe("DrizzleTranslationTaskStore", () => {
       source_fingerprint: "e".repeat(64),
       target_locale: "fr",
       generation_policy_version: "ui-policy-v1",
+      generation: 1,
       status: "pending",
       ...override,
     };
@@ -147,8 +149,8 @@ describe("DrizzleTranslationTaskStore", () => {
     await expectDatabaseCode(client.query(
       `insert into translation_tasks
         (task_identity, translation_kind, source_namespace, source_key, source_fingerprint,
-         target_locale, generation_policy_version, status)
-       values ($1, $2, $3, $4, $5, $6, $7, $8)`,
+         target_locale, generation_policy_version, generation, status)
+       values ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
       Object.values(fields),
     ), "23514");
   });
