@@ -85,10 +85,13 @@ async function harness(options: {
     leaseDurationMs: 60_000,
   });
 
-  const translate = vi.fn(async (_request: MachineTranslationRequest) => ({
-    value: options.providerValue ?? "Fondation de traduction",
-    provenance: { provider: "fake", model: "fake-v1", origin: "machine" as const },
-  }));
+  const translate = vi.fn(async (request: MachineTranslationRequest) => {
+    void request;
+    return {
+      value: options.providerValue ?? "Fondation de traduction",
+      provenance: { provider: "fake", model: "fake-v1", origin: "machine" as const },
+    };
+  });
   const adapter: MachineTranslationProviderAdapter = {
     supports: vi.fn(() => true),
     translate,
