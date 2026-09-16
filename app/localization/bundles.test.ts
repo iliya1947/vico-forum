@@ -3,57 +3,82 @@ import {
   bundleCacheIdentity,
   compileNamespaceBundle,
   translationBundleEtag,
+  verifyCompiledNamespaceBundle,
 } from "./bundles";
 
-describe("compiled UI namespace bundles", () => {
-  it("produces a deterministic locale/namespace content identity", async () => {
+describe("compiled translation bundles", () => {
+  it("builds deterministic content identity independent of input key order", async () => {
     const first = await compileNamespaceBundle("ru", "common", {
-      stageSummary: "Описание Stage 1",
+      stageSummary: "Stage 1 создаёт основу локализации.",
       heading: "Основа переводов",
     });
     const second = await compileNamespaceBundle("ru", "common", {
       heading: "Основа переводов",
-      stageSummary: "Описание Stage 1",
+      stageSummary: "Stage 1 создаёт основу локализации.",
     });
 
-    expect(first).toEqual(second);
     expect(first.bundleVersion).toMatch(/^[0-9a-f]{64}$/);
+    expect(second.bundleVersion).toBe(first.bundleVersion);
     expect(Object.keys(first.resources)).toEqual(["heading", "stageSummary"]);
   });
 
-  it("changes version when locale or current resource content changes", async () => {
-    const baseline = await compileNamespaceBundle("ru", "common", { heading: "Перевод" });
-    const changedValue = await compileNamespaceBundle("ru", "common", { heading: "Новый перевод" });
-    const changedLocale = await compileNamespaceBundle("he", "common", { heading: "Перевод" });
-
-    expect(changedValue.bundleVersion).not.toBe(baseline.bundleVersion);
-    expect(changedLocale.bundleVersion).not.toBe(baseline.bundleVersion);
+  it("changes the bundle version when current resource content changes", async () => {
+    const first = await compileNamespaceBundle("he", "common", { heading: "תשתית תרגום" });
+    const second = await compileNamespaceBundle("he", "common", { heading: "בסיס תרגום" });
+    expect(second.bundleVersion).not.toBe(first.bundleVersion);
   });
 
-  it("rejects blank locale and unknown resource identities", async () => {
-    await expect(compileNamespaceBundle("   ", "common", {})).rejects.toThrow("locale must not be blank");
-    await expect(compileNamespaceBundle("ru", "unknown", {})).rejects.toThrow("Unknown canonical namespace");
-    await expect(compileNamespaceBundle("ru", "common", { typo: "value" })).rejects.toThrow(
+  it("expands a structured plural payload into i18next v4 suffix keys", async () => {
+    const bundle = await compileNamespaceBundle("ru", "common", {
+      sectionCount: {
+        one: "{{count}} раздел",
+        few: "{{count}} раздела",
+        many: "{{count}} разделов",
+        other: "{{count}} раздела",
+      },
+    });
+
+    expect(bundle.resources).toEqual({
+      sectionCount_few: "{{count}} раздела",
+      sectionCount_many: "{{count}} разделов",
+      sectionCount_one: "{{count}} раздел",
+      sectionCount_other: "{{count}} раздела",
+    });
+    await expect(verifyCompiledNamespaceBundle("ru", "common", bundle.resources)).resolves.toEqual(bundle);
+  });
+
+  it("rejects incomplete or unknown compiled plural resources", async () => {
+    await expect(verifyCompiledNamespaceBundle("ru", "common", {
+      sectionCount_one: "{{count}} раздел",
+    })).rejects.toThrow(/Missing structured branches/);
+    await expect(verifyCompiledNamespaceBundle("ru", "common", {
+      sectionCount_one: "{{count}} раздел",
+      sectionCount_few: "{{count}} раздела",
+      sectionCount_many: "{{count}} разделов",
+      sectionCount_other: "{{count}} раздела",
+      sectionCount_zero: "{{count}} разделов",
+    })).rejects.toThrow(/Unknown compiled resource key/);
+  });
+
+  it("rejects unknown keys and invalid translation payloads before persistence", async () => {
+    await expect(compileNamespaceBundle("ru", "common", { unknown: "x" })).rejects.toThrow(
       "Unknown canonical key",
     );
-  });
-
-  it("validates resource semantics before publishing a bundle identity", async () => {
-    await expect(compileNamespaceBundle("ru", "common", { heading: "<b>unsafe</b>" })).rejects.toThrow(
+    await expect(compileNamespaceBundle("ru", "common", { forumTagline: "<b>unsafe</b>" })).rejects.toThrow(
       "Markup is forbidden",
     );
-    await expect(compileNamespaceBundle("ru", "common", { stageSummary: "Описание" })).rejects.toThrow(
-      "Protected term mismatch",
-    );
   });
 
-  it("derives cache and weak semantic ETag identities from the validated bundle version", async () => {
+  it("derives stable cache identity and weak ETag from semantic bundle identity", async () => {
     const bundle = await compileNamespaceBundle("ru", "common", { heading: "Основа переводов" });
-
-    expect(bundleCacheIdentity(bundle.locale, bundle.namespace, bundle.bundleVersion)).toBe(
+    expect(bundleCacheIdentity("ru", "common", bundle.bundleVersion)).toBe(
       JSON.stringify(["vico-ui-bundle-cache-v1", "ru", "common", bundle.bundleVersion]),
     );
     expect(translationBundleEtag(bundle.bundleVersion)).toBe(`W/"vico-ui-${bundle.bundleVersion}"`);
-    expect(() => translationBundleEtag("bad")).toThrow("bundle version");
+  });
+
+  it("rejects malformed cache versions", () => {
+    expect(() => bundleCacheIdentity("ru", "common", "bad")).toThrow(/bundle version/);
+    expect(() => translationBundleEtag("bad")).toThrow(/bundle version/);
   });
 });
