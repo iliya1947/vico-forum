@@ -32,6 +32,7 @@ async function claimedTask(overrides: Partial<TranslationTask> = {}): Promise<Tr
     claimedAt: now,
     leaseExpiresAt: new Date(now.getTime() + 60_000),
     staleAt: null,
+    completedAt: null,
     createdAt: now,
     updatedAt: now,
     ...overrides,
