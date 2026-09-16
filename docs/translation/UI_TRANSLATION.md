@@ -143,6 +143,11 @@ override того же locale.
 внутри того же locale. Если current value для message unit в этом locale отсутствует,
 i18next переходит к следующему locale из explicit fallback chain.
 
+При successful conditional machine publication persisted bundle пересобирается для всего
+exact-locale namespace тем же priority/freshness merge и existing bundle compiler в одной
+transaction с raw publication и task completion. Fallback resources в эту persisted запись
+не входят.
+
 При недоступности PostgreSQL runtime может собрать доступные locale bundles из current
 local overrides и canonical English. Если нужные persistent resources недоступны, English
 остаётся resource fallback; translation provider в request path не вызывается.
