@@ -219,8 +219,9 @@ Durable foundation Stage 5A для UI translation jobs:
   persisted compiled bundle всё ещё не реализованы и остаются следующими Stage 5A slices.
 
 Migration `0010`, metadata/history и PostgreSQL integration suite локально проверены на PostgreSQL
-17.11; GitHub Actions для текущего head ещё не выполнялся, поэтому merge readiness требует зелёного
-актуального `database` job.
+17.11. GitHub Actions CI #190 на head `28f21961d485358bf1c02940f159fa3c8d273b3b` полностью
+прошёл `checks` и `database`, включая migration history/evidence, lint, typecheck, unit tests, build,
+migration metadata, clean PostgreSQL 17 migrations/integration tests, Workers build и local Hyperdrive smoke.
 
 Lifecycle correction из PR #69 merged в `main` commit
 `c12550c3fa1cb371df82a178d20ed7020c33f9ce`. GitHub Actions CI #170 на финальном head PR #69
@@ -295,7 +296,7 @@ classification; точные результаты и ограничения на
    PostgreSQL 17 и существующего Workers-compatible local path.
 2. Каждый PR по-прежнему проходит обязательные repository checks (`lint`, `typecheck`,
    tests, build, migration metadata и DB integration там, где применимо).
-3. Merge feature-кода не должен автоматически означать external production rollout.
+3. Merge feature-кода сам по себе не должен означать external production rollout.
 4. Новые migrations не обязаны немедленно применяться в Neon только ради продолжения
    разработки.
 5. Реальные Cloudflare/Neon/Google/provider integrations и production acceptance собираются
