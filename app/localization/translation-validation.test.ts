@@ -6,7 +6,10 @@ import { TranslationValidationError, validateProviderOutput } from "./translatio
 const pluralDescriptor: UiMessageDescriptor = {
   namespace: "synthetic",
   key: "itemCount",
-  source: "{{count}} Vico item(s)",
+  source: {
+    one: "{{count}} Vico item",
+    other: "{{count}} Vico items",
+  },
   description: "Synthetic plural validation fixture.",
   placeholders: ["count"],
   messageKind: "plural",
