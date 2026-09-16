@@ -341,6 +341,13 @@ canonical source changed       → selective regeneration
 missing/stale key observed     → controlled deduplicated self-healing enqueue
 ```
 
+Generation eligibility для UI определяется одним общим predicate, который используют и
+planner, и consumer preflight. В текущем Stage 5 baseline machine generation разрешена
+только для зарегистрированного canonical non-English locale. `publicationStatus=active` и
+`publicationStatus=inactive` допустимы: inactive locale можно подготовить до публикации.
+`publicationStatus=disabled` generation запрещает, пока locale явно не вернётся в разрешённое
+состояние.
+
 Self-healing enqueue допустим только для зарегистрированного locale и проходит internal
 policy/deduplication/rate-or-budget boundary. Обычный page request никогда напрямую не
 вызывает provider и не создаёт неограниченную fan-out генерацию.
