@@ -4,7 +4,7 @@ import type {
   UiTranslationJobSpecification,
 } from "./ui-translation-service";
 
-export type TranslationTaskStatus = "pending" | "processing" | "stale";
+export type TranslationTaskStatus = "pending" | "processing" | "stale" | "completed";
 
 export interface TranslationTask {
   readonly id: string;
@@ -22,6 +22,7 @@ export interface TranslationTask {
   readonly claimedAt: Date | null;
   readonly leaseExpiresAt: Date | null;
   readonly staleAt: Date | null;
+  readonly completedAt: Date | null;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 }
