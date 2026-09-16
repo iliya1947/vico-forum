@@ -40,7 +40,7 @@ Stage 4B forum domain foundation:
 - forum topics, posts и их revisions связаны с существующим Better Auth `user.id`;
 - минимальные forum repository/service API создают и читают hierarchy и атомарно добавляют
   новые revisions с optimistic current-revision guard;
-- PostgreSQL integration suite проверяет clean full history, FK/current/immutable
+- PostgreSQL integration suite проверяет clean full history, hierarchy, FK/current/immutable
   invariants и отсутствие зависимости source locale от persistent `LocaleRegistry`.
 
 Stage 4C public forum read:
