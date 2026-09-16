@@ -30,8 +30,8 @@ export interface TranslationTaskStore {
   upsertPending(specification: UiTranslationJobSpecification): Promise<TranslationTask>;
   findById(id: string): Promise<TranslationTask | undefined>;
   findByIdentity(taskIdentity: string): Promise<TranslationTask | undefined>;
-  claim(id: string, now: Date, leaseDurationMs: number): Promise<TranslationTaskClaimResult>;
-  markStale(id: string, claimToken: string, now: Date): Promise<boolean>;
+  claim(id: string, leaseDurationMs: number): Promise<TranslationTaskClaimResult>;
+  markStale(id: string, claimToken: string): Promise<boolean>;
 }
 
 export type TranslationTaskClaimResult =
