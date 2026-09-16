@@ -124,7 +124,7 @@ describe("DrizzleTranslationTaskStore", () => {
   it("atomically grants one execution owner and makes a live duplicate a no-op", async () => {
     const store = new DrizzleTranslationTaskStore(drizzle(client));
     const pending = await store.upsertPending(await job("forumTagline"));
-    const claimedAt = new Date("2026-09-15T12:00:00.000Z");
+    const claimedAt = new Date(pending.createdAt.getTime() + 1_000);
     const pool = new Pool({ connectionString: databaseUrl, options: `-c search_path=${schemaName}` });
     const firstStore = new DrizzleTranslationTaskStore(drizzle(pool));
     const secondStore = new DrizzleTranslationTaskStore(drizzle(pool));
@@ -142,17 +142,18 @@ describe("DrizzleTranslationTaskStore", () => {
   it("reclaims an expired lease and never reclaims a terminal stale task", async () => {
     const store = new DrizzleTranslationTaskStore(drizzle(client));
     const pending = await store.upsertPending(await job("productName"));
-    const first = await store.claim(pending.id, new Date("2026-09-15T12:00:00.000Z"), 1_000);
+    const claimedAt = new Date(pending.createdAt.getTime() + 1_000);
+    const first = await store.claim(pending.id, claimedAt, 1_000);
     expect(first.outcome).toBe("claimed");
-    const reclaimed = await store.claim(pending.id, new Date("2026-09-15T12:00:01.000Z"), 1_000);
+    const reclaimed = await store.claim(pending.id, new Date(claimedAt.getTime() + 1_000), 1_000);
     expect(reclaimed.outcome).toBe("claimed");
     if (first.outcome !== "claimed" || reclaimed.outcome !== "claimed") throw new Error("claim failed");
     expect(reclaimed.task.claimToken).not.toBe(first.task.claimToken);
-    await expect(store.markStale(pending.id, first.task.claimToken, new Date("2026-09-15T12:00:01.100Z")))
+    await expect(store.markStale(pending.id, first.task.claimToken, new Date(claimedAt.getTime() + 1_100)))
       .resolves.toBe(false);
-    await expect(store.markStale(pending.id, reclaimed.task.claimToken, new Date("2026-09-15T12:00:01.100Z")))
+    await expect(store.markStale(pending.id, reclaimed.task.claimToken, new Date(claimedAt.getTime() + 1_100)))
       .resolves.toBe(true);
-    await expect(store.claim(pending.id, new Date("2026-09-15T12:10:00.000Z"), 1_000))
+    await expect(store.claim(pending.id, new Date(claimedAt.getTime() + 600_000), 1_000))
       .resolves.toEqual({ outcome: "terminal" });
   });
 });
