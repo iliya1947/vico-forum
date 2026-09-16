@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { canonicalEnglishCatalog, type UiMessageDescriptor } from "./catalog";
 import { sourceFingerprint } from "./fingerprint";
 import { IntlLocaleRulesProvider } from "./locale-rules";
+import type { PersistentUiTranslationRow } from "./persistent-sources";
 import { InMemoryLocaleRegistry } from "./registry";
 import { LocalTranslationSource } from "./sources";
 import {
@@ -40,7 +41,7 @@ async function context(
 
 function publisherHarness(options: {
   locale?: string;
-  persistentRows?: readonly Record<string, unknown>[];
+  persistentRows?: readonly PersistentUiTranslationRow[];
   publish?: UiTranslationPublicationStore["publishClaimedMachineResult"];
 } = {}) {
   const markStale = vi.fn(async () => true);
