@@ -241,9 +241,13 @@ Durable foundation Stage 5A для UI translation jobs:
 - compilation/persistence failure откатывает raw translation и task completion вместе с bundle,
   исключая ложный durable success; schema/migrations не менялись;
 - PostgreSQL coverage добавляет whole namespace, local/persistent manual priority, plural,
-  lost/superseded claim bundle preservation, concurrent independent connections и atomic rollback.
-  Локальные/CI результаты для этой ветки фиксируются отдельно после фактического запуска;
+  lost/superseded claim bundle preservation, concurrent independent connections и atomic rollback;
 - runtime/SSR чтение persisted bundles намеренно остаётся следующим Stage 5A slice.
+
+Bundle-publication slice проверен GitHub Actions CI #196 на head
+`f7dc2de4b613f1cf7413dbdc28c94f49a9d1526e`: полностью прошли `checks` и `database`, включая
+migration history/evidence, lint, typecheck, unit tests, build, migration metadata, clean PostgreSQL 17
+migrations/integration tests, Workers build и local Hyperdrive smoke.
 
 Provider-execution slice проверен GitHub Actions CI #193 на code head
 `72efa8d4dc102437b5ca5c82d5c35a434f76896a`: полностью прошли `checks` и `database`, включая
@@ -298,7 +302,7 @@ Stage 6 и не являются условием завершения Stage 4.
 PR #49 (`fix: allow pre-release owner verification`) был merged в `main`.
 
 Текущий production migration workflow допускает временный pre-release database-owner
-connection только в **no-op verification mode**: preflight обязан доказать, что весь
+connection только для **no-op verification mode**: preflight обязан доказать, что весь
 checked-in migration journal уже применён до запуска `db:migrate`. Поэтому этот режим не
 может использоваться для применения новой pending migration.
 
