@@ -1,12 +1,17 @@
 import { catalogDescriptors, type UiMessageDescriptor } from "./catalog";
 import { sha256Text, sourceFingerprint } from "./fingerprint";
+import { IntlLocaleRulesProvider, type LocaleRulesProvider } from "./locale-rules";
 import {
-  TranslationValidationError,
-  validateTranslation,
-  type ResourceBundle,
+  canonicalPayload,
   type TranslationSource,
+  type TranslationSourceBundle,
   type TranslationSourceResult,
 } from "./sources";
+import {
+  TranslationValidationError,
+  validateProviderOutput,
+  type ProviderTranslationValue,
+} from "./translation-validation";
 
 export type PersistentTranslationOrigin = "persistent_manual" | "machine";
 
@@ -64,6 +69,7 @@ class PersistentTranslationRowError extends PersistentTranslationIntegrityError 
 const knownDescriptors = new Map(
   catalogDescriptors().map((descriptor) => [`${descriptor.namespace}:${descriptor.key}`, descriptor]),
 );
+const defaultLocaleRules = new IntlLocaleRulesProvider();
 
 const defaultRowIssueReporter: PersistentTranslationRowIssueReporter = (summary) => {
   console.warn(JSON.stringify({ event: "persistent_ui_translation_rows_skipped", ...summary }));
@@ -75,12 +81,13 @@ abstract class DatabaseTranslationSource implements TranslationSource {
     private readonly origin: PersistentTranslationOrigin,
     private readonly reportRowIssues: PersistentTranslationRowIssueReporter = defaultRowIssueReporter,
     private readonly requiredGenerationPolicyVersion?: string,
+    private readonly localeRules: LocaleRulesProvider = defaultLocaleRules,
   ) {}
 
   async load(locale: string, namespaces: readonly string[]): Promise<TranslationSourceResult> {
     if (locale === "en" || namespaces.length === 0) return emptyResult();
 
-    const resources: ResourceBundle = {};
+    const resources: TranslationSourceBundle = {};
     const staleKeys: string[] = [];
     const versionParts: string[] = [];
     const requestedNamespaces = new Set(namespaces);
@@ -123,10 +130,9 @@ abstract class DatabaseTranslationSource implements TranslationSource {
         continue;
       }
 
-      let value: string;
+      let value: ProviderTranslationValue;
       try {
-        value = currentStringPayload(descriptor, row.translatedPayload);
-        validateTranslation(descriptor, value);
+        value = currentPayload(descriptor, locale, row.translatedPayload, this.localeRules);
       } catch (error) {
         if (error instanceof TranslationValidationError) {
           incrementIssue(rowIssues, "invalid-translation");
@@ -137,7 +143,7 @@ abstract class DatabaseTranslationSource implements TranslationSource {
       }
 
       (resources[row.namespace] ??= {})[row.key] = value;
-      versionParts.push(JSON.stringify([identity, row.sourceFingerprint, value]));
+      versionParts.push(JSON.stringify([identity, row.sourceFingerprint, canonicalPayload(value)]));
     }
 
     reportRowIssueSummary(this.origin, rowIssues, this.reportRowIssues);
@@ -151,8 +157,12 @@ abstract class DatabaseTranslationSource implements TranslationSource {
 }
 
 export class DatabaseManualTranslationSource extends DatabaseTranslationSource {
-  constructor(store: UiTranslationStore, reportRowIssues?: PersistentTranslationRowIssueReporter) {
-    super(store, "persistent_manual", reportRowIssues);
+  constructor(
+    store: UiTranslationStore,
+    reportRowIssues?: PersistentTranslationRowIssueReporter,
+    localeRules?: LocaleRulesProvider,
+  ) {
+    super(store, "persistent_manual", reportRowIssues, undefined, localeRules);
   }
 }
 
@@ -161,8 +171,9 @@ export class DatabaseMachineTranslationSource extends DatabaseTranslationSource 
     store: UiTranslationStore,
     reportRowIssues?: PersistentTranslationRowIssueReporter,
     requiredGenerationPolicyVersion?: string,
+    localeRules?: LocaleRulesProvider,
   ) {
-    super(store, "machine", reportRowIssues, requiredGenerationPolicyVersion);
+    super(store, "machine", reportRowIssues, requiredGenerationPolicyVersion, localeRules);
   }
 }
 
@@ -218,18 +229,28 @@ function parseApprovedRow(row: PersistentUiTranslationRow) {
   };
 }
 
-function currentStringPayload(descriptor: UiMessageDescriptor, payload: unknown): string {
-  if (typeof payload === "string") return payload;
-  if (payload && typeof payload === "object" && !Array.isArray(payload)) {
+function currentPayload(
+  descriptor: UiMessageDescriptor,
+  locale: string,
+  payload: unknown,
+  localeRules: LocaleRulesProvider,
+): ProviderTranslationValue {
+  if (descriptor.messageKind === "plural") {
+    if (!isStringRecord(payload)) {
+      throw new PersistentTranslationRowError(
+        "invalid-payload",
+        `structured persistent payload is invalid: ${descriptor.namespace}:${descriptor.key}`,
+      );
+    }
+  } else if (typeof payload !== "string") {
     throw new PersistentTranslationRowError(
       "invalid-payload",
       `structured persistent payload is not supported for current message ${descriptor.namespace}:${descriptor.key}`,
     );
   }
-  throw new PersistentTranslationRowError(
-    "invalid-payload",
-    `persistent translation payload is invalid: ${descriptor.namespace}:${descriptor.key}`,
-  );
+
+  validateProviderOutput(descriptor, locale, payload, localeRules);
+  return canonicalPayload(payload);
 }
 
 function requiredString(
@@ -245,6 +266,11 @@ function requiredString(
 
 function isPersistentTranslationOrigin(value: unknown): value is PersistentTranslationOrigin {
   return value === "persistent_manual" || value === "machine";
+}
+
+function isStringRecord(value: unknown): value is Readonly<Record<string, string>> {
+  return typeof value === "object" && value !== null && !Array.isArray(value) &&
+    Object.values(value).every((entry) => typeof entry === "string");
 }
 
 function recordRowIssue(
