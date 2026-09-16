@@ -57,7 +57,6 @@ async function harness(options: {
     localManualSource: options.localManualSource ?? new LocalTranslationSource({}),
     persistentStore: { readApproved: vi.fn(async () => options.persistentRows ?? []) },
     generationPolicyVersion: options.policy ?? "ui-policy-v1",
-    now: () => now,
     leaseDurationMs: 60_000,
   });
   return { result: await consumer.consume({ translationTaskId: taskId }), markStale };
@@ -81,7 +80,7 @@ describe("UiTranslationTaskConsumer stale preflight", () => {
   ] as const)("marks a task stale when its %s is no longer current", async (_label, setup, reason) => {
     const { result, markStale } = await harness(await setup());
     expect(result).toEqual({ outcome: "stale", reason });
-    expect(markStale).toHaveBeenCalledWith(taskId, claimToken, now);
+    expect(markStale).toHaveBeenCalledWith(taskId, claimToken);
   });
 
   it("marks a task stale when an exact-target local manual translation appeared", async () => {
@@ -113,7 +112,7 @@ describe("UiTranslationTaskConsumer stale preflight", () => {
       const tasks = { claim: vi.fn(async () => ({ outcome })) } as unknown as TranslationTaskStore;
       const consumer = new UiTranslationTaskConsumer({ tasks, localeRegistry: registry(), localManualSource: local,
         persistentStore: { readApproved: vi.fn() }, generationPolicyVersion: "ui-policy-v1",
-        now: () => now, leaseDurationMs: 60_000 });
+        leaseDurationMs: 60_000 });
       await expect(consumer.consume({ translationTaskId: taskId })).resolves.toEqual({ outcome });
       expect(local.load).not.toHaveBeenCalled();
     }
