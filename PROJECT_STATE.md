@@ -161,6 +161,9 @@ Durable foundation Stage 5A для UI translation jobs:
 - persistent dispatcher последовательно коммитит task перед transport-neutral enqueue, а message
   содержит только `translationTaskId`; fake enqueue adapter обеспечивает local/CI coverage без
   Cloudflare Queue;
+- PostgreSQL integration coverage проверяет окно `durable task committed → enqueue failed/unknown`:
+  после ошибки enqueue новая независимая DB connection видит ту же task в `pending`, поэтому будущий
+  `JOB-06` reconciliation имеет durable recovery source;
 - Queue delivery не считается exactly-once. Real Queue adapter, retry/DLQ/reconciliation,
   provider execution, validation/result publication и persisted bundle
   runtime path явно остаются следующими Stage 5 slices.
@@ -171,16 +174,29 @@ Durable foundation Stage 5A для UI translation jobs:
   уникальным claim token и timestamps claim/lease/stale; expired processing lease допускает reclaim;
 - PostgreSQL repository атомарно выдаёт только один execution claim, превращает duplicate delivery
   при live lease в no-op и conditionally завершает stale task только для актуального claim token;
+- durable claim/lease/stale expiration и reclaim используют PostgreSQL-owned `statement_timestamp()`,
+  а не wall clock вызывающего Worker; duplicate planning не сбрасывает и не продлевает живой
+  `processing` claim;
+- planner и consumer используют единое generation-eligibility правило: зарегистрированный canonical
+  non-English locale; `active` и `inactive` разрешены для generation, `disabled` запрещён;
+- `stale` остаётся terminal для старой Queue delivery/retry, но более поздний fresh eligible plan может
+  атомарно вернуть ту же stable task identity/id в `pending`, очистив старую claim/stale metadata;
 - provider/Queue-independent consumer после claim повторно проверяет canonical descriptor/fingerprint,
-  generation policy, зарегистрированный canonical non-English generation target и exact-target local/
-  persistent manual result; fallback resources не считаются exact-target evidence;
+  generation policy, generation target и exact-target local/persistent manual result; fallback resources
+  не считаются exact-target evidence;
 - eligible task возвращает typed execution context, но provider execution, retry/DLQ, reconciliation,
   result publication и Cloudflare Queue binding намеренно не реализованы в этом slice.
 
-Для этого slice локально прошли lint, typecheck, unit suite, production build и migration metadata
-check. После исправления test-clock fixture GitHub Actions CI #167 на head
-`0cbe639b16bce3f32dc4aa197f9f55ee1cd9862d` полностью прошёл `checks` и `database`, включая
-PostgreSQL 17 migrations/integration tests, Workers build и local Hyperdrive smoke.
+Lifecycle correction из PR #69 merged в `main` commit
+`c12550c3fa1cb371df82a178d20ed7020c33f9ce`. GitHub Actions CI #170 на финальном head PR #69
+`f6522c4750f91863b78fb41f6cbbc44f8362c639` полностью прошёл `checks` и `database`, включая
+lint, typecheck, unit tests, build, migration metadata/history checks, PostgreSQL 17
+migrations/integration tests, Workers build и local Hyperdrive smoke.
+
+Дополнительный PostgreSQL integration test durable enqueue-failure recovery прошёл GitHub Actions
+CI #171 на head `d88b342df399832812614b6c3ee988b6b95252cc`: после enqueue failure fresh DB reader
+подтверждает сохранённую `pending` task. Это доказывает prerequisite для будущего `JOB-06`, но
+не означает, что reconciliation уже реализован.
 
 Core Stage 4 integration подтверждён PostgreSQL 17 CI:
 
