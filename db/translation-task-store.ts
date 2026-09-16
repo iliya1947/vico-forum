@@ -231,4 +231,5 @@ function assertMatchesSpecification(
 
 function requiredRow(row: TranslationTaskRow | undefined): TranslationTaskRow {
   if (!row) throw new TranslationTaskIntegrityError("translation task upsert returned no row");
+  return row;
 }
