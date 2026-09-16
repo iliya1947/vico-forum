@@ -75,6 +75,37 @@ describe("DrizzleTranslationTaskStore", () => {
     await expect(store.findById(created!.id)).resolves.toEqual(created);
   });
 
+  it("keeps the durable task pending and visible to a fresh DB reader when enqueue fails", async () => {
+    const store = new DrizzleTranslationTaskStore(drizzle(client));
+    const specification = await job("enqueue-failure");
+    const queueFailure = new Error("enqueue outcome unknown");
+    const queue = new FakeTranslationTaskEnqueuer(() => { throw queueFailure; });
+
+    await expect(new PersistentTranslationJobDispatcher(store, queue).dispatch([specification]))
+      .rejects.toBe(queueFailure);
+
+    const freshClient = new Client({
+      connectionString: databaseUrl,
+      options: `-c search_path=${schemaName}`,
+    });
+    await freshClient.connect();
+    try {
+      const freshStore = new DrizzleTranslationTaskStore(drizzle(freshClient));
+      await expect(freshStore.findByIdentity(specification.taskIdentity)).resolves.toMatchObject({
+        taskIdentity: specification.taskIdentity,
+        status: "pending",
+        claimToken: null,
+        claimedAt: null,
+        leaseExpiresAt: null,
+        staleAt: null,
+      });
+    } finally {
+      await freshClient.end();
+    }
+
+    expect(queue.messages).toEqual([]);
+  });
+
   it("upserts a duplicate logical job without creating another durable task", async () => {
     const store = new DrizzleTranslationTaskStore(drizzle(client));
     const specification = await job("stageSummary");
