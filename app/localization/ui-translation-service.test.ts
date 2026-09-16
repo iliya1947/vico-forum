@@ -28,6 +28,14 @@ const registry = new InMemoryLocaleRegistry([
     fallbackChain: ["en"],
     nativeName: "Français",
   },
+  {
+    tag: "de",
+    translationStatus: "draft",
+    publicationStatus: "disabled",
+    direction: "ltr",
+    fallbackChain: ["en"],
+    nativeName: "Deutsch",
+  },
 ]);
 
 type Origin = "persistent_manual" | "machine";
@@ -94,7 +102,7 @@ async function headingJob(
 }
 
 describe("UiTranslationService", () => {
-  it("dispatches a missing exact-target translation with stable job fields", async () => {
+  it("dispatches a missing exact-target translation for an inactive registered locale", async () => {
     const { dispatcher, jobs, heading } = await headingJob();
 
     expect(heading).toMatchObject({
@@ -164,10 +172,11 @@ describe("UiTranslationService", () => {
     expect(await uiTranslationJobIdentity({ ...base, generationPolicyVersion: "ui-policy-v2" })).not.toBe(identity);
   });
 
-  it("rejects invalid, unknown, English, and non-canonical namespace generation scopes", async () => {
+  it("rejects invalid, unknown, disabled, English, and non-canonical namespace generation scopes", async () => {
     const { service, dispatcher, store } = setup();
     for (const request of [
       { targetLocale: "not_a_locale" },
+      { targetLocale: "es" },
       { targetLocale: "de" },
       { targetLocale: "en" },
     ]) {

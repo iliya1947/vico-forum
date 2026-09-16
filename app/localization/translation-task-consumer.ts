@@ -3,6 +3,9 @@ import { sourceFingerprint } from "./fingerprint";
 import { DatabaseManualTranslationSource, type UiTranslationStore } from "./persistent-sources";
 import type { LocaleRegistry } from "./registry";
 import type { TranslationSource } from "./sources";
+import {
+  resolveUiTranslationGenerationTarget,
+} from "./ui-translation-service";
 import type {
   TranslationTask,
   TranslationTaskMessage,
@@ -32,7 +35,6 @@ export interface TranslationTaskConsumerDependencies {
   readonly localManualSource: TranslationSource;
   readonly persistentStore: UiTranslationStore;
   readonly generationPolicyVersion: string;
-  readonly now: () => Date;
   readonly leaseDurationMs: number;
 }
 
@@ -51,10 +53,8 @@ export class UiTranslationTaskConsumer {
   }
 
   async consume(message: TranslationTaskMessage): Promise<TranslationTaskConsumerResult> {
-    const claimedAt = this.dependencies.now();
     const claim = await this.dependencies.tasks.claim(
       message.translationTaskId,
-      claimedAt,
       this.dependencies.leaseDurationMs,
     );
     if (claim.outcome !== "claimed") return { outcome: claim.outcome };
@@ -67,7 +67,6 @@ export class UiTranslationTaskConsumer {
     const transitioned = await this.dependencies.tasks.markStale(
       claim.task.id,
       claim.task.claimToken,
-      this.dependencies.now(),
     );
     return transitioned ? { outcome: "stale", reason } : { outcome: "claim-lost" };
   }
@@ -78,10 +77,8 @@ export class UiTranslationTaskConsumer {
     if (await sourceFingerprint(descriptor) !== task.sourceFingerprint) return "source-changed";
     if (task.generationPolicyVersion !== this.dependencies.generationPolicyVersion) return "policy-changed";
 
-    const locale = this.dependencies.localeRegistry.find(task.targetLocale);
     if (
-      !locale || locale.kind !== "canonical" || locale.locale.tag !== task.targetLocale ||
-      locale.locale.tag === "en" || locale.locale.publicationStatus === "disabled"
+      resolveUiTranslationGenerationTarget(this.dependencies.localeRegistry, task.targetLocale) !== task.targetLocale
     ) return "target-locale-ineligible";
 
     const namespaces = [task.sourceIdentity.namespace];

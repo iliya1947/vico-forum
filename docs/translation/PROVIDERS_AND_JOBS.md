@@ -140,6 +140,17 @@ target locale всё ещё разрешён для generation policy
 Если task устарела до provider call, consumer завершает/помечает её stale/cancelled без
 внешнего вызова.
 
+`stale/cancelled` является terminal состоянием для текущей Queue delivery и её retry: старое
+message не должно самостоятельно возвращать task в execution. Но terminal state не означает
+вечный запрет той же stable logical identity. Если более поздний fresh generation plan снова
+определяет ровно ту же identity как актуальную и нуждающуюся в работе, durable store может
+атомарно вернуть соответствующую stale task в `pending`, сохранив её stable identity/id и
+очистив старую claim/stale metadata. Это новая planning decision, а не Queue retry.
+
+Duplicate planning не должно сбрасывать или продлевать живой `processing` claim. Durable
+claim/lease/stale timestamps, которые определяют expiration/reclaim, используют единый
+PostgreSQL-owned clock, а не wall clock вызывающего Worker.
+
 После provider response и validation запись результата должна быть conditional относительно
 исходной task identity. Если source/policy изменилась во время вызова, старый result не
 может быть опубликован как current translation. Его можно отбросить или сохранить как

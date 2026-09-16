@@ -25,7 +25,7 @@ export interface UiTranslationJobSpecification {
   readonly taskIdentity: string;
 }
 
-/** Provider- and transport-independent boundary; durable storage and enqueueing belong to later stages. */
+/** Provider- and transport-independent boundary for dispatching planned translation jobs. */
 export interface TranslationJobDispatcher {
   dispatch(jobs: readonly UiTranslationJobSpecification[]): Promise<void>;
 }
@@ -48,6 +48,25 @@ export interface UiTranslationServiceDependencies {
   readonly persistentStore: UiTranslationStore;
   readonly dispatcher: TranslationJobDispatcher;
   readonly generationPolicyVersion: string;
+}
+
+export function resolveUiTranslationGenerationTarget(
+  localeRegistry: LocaleRegistry,
+  candidate: string,
+): string | undefined {
+  const canonicalCandidate = canonicalizeTranslationLocale(candidate);
+  const match = canonicalCandidate ? localeRegistry.find(canonicalCandidate) : undefined;
+  if (
+    !canonicalCandidate ||
+    !match ||
+    match.kind !== "canonical" ||
+    match.locale.tag !== canonicalCandidate ||
+    match.locale.tag === "en" ||
+    match.locale.publicationStatus === "disabled"
+  ) {
+    return undefined;
+  }
+  return match.locale.tag;
 }
 
 export class UiTranslationService {
@@ -108,13 +127,11 @@ export class UiTranslationService {
   }
 
   #targetLocale(candidate: string): string {
-    const canonicalCandidate = canonicalizeTranslationLocale(candidate);
-    const match = canonicalCandidate ? this.dependencies.localeRegistry.find(canonicalCandidate) : undefined;
-    if (!match) throw new UiTranslationGenerationScopeError(`Unknown UI generation locale: ${candidate}`);
-    if (match.locale.tag === "en") {
-      throw new UiTranslationGenerationScopeError("Canonical English cannot be a machine translation target");
+    const targetLocale = resolveUiTranslationGenerationTarget(this.dependencies.localeRegistry, candidate);
+    if (!targetLocale) {
+      throw new UiTranslationGenerationScopeError(`UI generation is not allowed for locale: ${candidate}`);
     }
-    return match.locale.tag;
+    return targetLocale;
   }
 }
 

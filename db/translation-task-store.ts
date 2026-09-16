@@ -1,4 +1,4 @@
-import { and, eq, lte, or } from "drizzle-orm";
+import { and, eq, lte, or, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import {
   validateUiTranslationJobSpecification,
@@ -27,6 +27,7 @@ export class DrizzleTranslationTaskStore implements TranslationTaskStore {
   async upsertPending(specification: UiTranslationJobSpecification): Promise<TranslationTask> {
     validateUiTranslationJobSpecification(specification);
     await assertStableIdentity(specification);
+    const databaseNow = sql`statement_timestamp()`;
     const rows = await this.database
       .insert(translationTasks)
       .values({
@@ -41,7 +42,14 @@ export class DrizzleTranslationTaskStore implements TranslationTaskStore {
       })
       .onConflictDoUpdate({
         target: translationTasks.taskIdentity,
-        set: { updatedAt: new Date() },
+        set: {
+          status: sql`case when ${translationTasks.status} = 'stale' then 'pending' else ${translationTasks.status} end`,
+          claimToken: sql`case when ${translationTasks.status} = 'stale' then null else ${translationTasks.claimToken} end`,
+          claimedAt: sql`case when ${translationTasks.status} = 'stale' then null else ${translationTasks.claimedAt} end`,
+          leaseExpiresAt: sql`case when ${translationTasks.status} = 'stale' then null else ${translationTasks.leaseExpiresAt} end`,
+          staleAt: sql`case when ${translationTasks.status} = 'stale' then null else ${translationTasks.staleAt} end`,
+          updatedAt: sql`case when ${translationTasks.status} = 'processing' then ${translationTasks.updatedAt} else ${databaseNow} end`,
+        },
       })
       .returning();
 
@@ -72,24 +80,22 @@ export class DrizzleTranslationTaskStore implements TranslationTaskStore {
     return rows[0] ? await parseTaskRow(rows[0]) : undefined;
   }
 
-  async claim(id: string, now: Date, leaseDurationMs: number): Promise<TranslationTaskClaimResult> {
+  async claim(id: string, leaseDurationMs: number): Promise<TranslationTaskClaimResult> {
     if (!isUuid(id)) throw new TypeError("translation task id must be a UUID");
     if (!Number.isSafeInteger(leaseDurationMs) || leaseDurationMs <= 0) {
       throw new TypeError("translation task lease duration must be a positive integer");
     }
     const claimToken = crypto.randomUUID();
-    const leaseExpiresAt = new Date(now.getTime() + leaseDurationMs);
-    if (Number.isNaN(now.getTime()) || Number.isNaN(leaseExpiresAt.getTime())) {
-      throw new TypeError("translation task claim time must be valid");
-    }
+    const databaseNow = sql`statement_timestamp()`;
+    const leaseExpiresAt = sql`${databaseNow} + (${leaseDurationMs}::double precision * interval '1 millisecond')`;
     const rows = await this.database
       .update(translationTasks)
-      .set({ status: "processing", claimToken, claimedAt: now, leaseExpiresAt, updatedAt: now })
+      .set({ status: "processing", claimToken, claimedAt: databaseNow, leaseExpiresAt, updatedAt: databaseNow })
       .where(and(
         eq(translationTasks.id, id),
         or(
           eq(translationTasks.status, "pending"),
-          and(eq(translationTasks.status, "processing"), lte(translationTasks.leaseExpiresAt, now)),
+          and(eq(translationTasks.status, "processing"), lte(translationTasks.leaseExpiresAt, databaseNow)),
         ),
       ))
       .returning();
@@ -105,13 +111,14 @@ export class DrizzleTranslationTaskStore implements TranslationTaskStore {
     return { outcome: existing.status === "stale" ? "terminal" : "already-claimed" };
   }
 
-  async markStale(id: string, claimToken: string, now: Date): Promise<boolean> {
-    if (!isUuid(id) || !isUuid(claimToken) || Number.isNaN(now.getTime())) {
-      throw new TypeError("translation task stale transition requires valid identifiers and time");
+  async markStale(id: string, claimToken: string): Promise<boolean> {
+    if (!isUuid(id) || !isUuid(claimToken)) {
+      throw new TypeError("translation task stale transition requires valid identifiers");
     }
+    const databaseNow = sql`statement_timestamp()`;
     const rows = await this.database
       .update(translationTasks)
-      .set({ status: "stale", claimToken: null, leaseExpiresAt: null, staleAt: now, updatedAt: now })
+      .set({ status: "stale", claimToken: null, leaseExpiresAt: null, staleAt: databaseNow, updatedAt: databaseNow })
       .where(and(
         eq(translationTasks.id, id),
         eq(translationTasks.status, "processing"),
