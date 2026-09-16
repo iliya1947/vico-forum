@@ -302,7 +302,7 @@ Stage 6 и не являются условием завершения Stage 4.
 PR #49 (`fix: allow pre-release owner verification`) был merged в `main`.
 
 Текущий production migration workflow допускает временный pre-release database-owner
-connection в **no-op verification mode**: preflight обязан доказать, что весь
+connection только для **no-op verification mode**: preflight обязан доказать, что весь
 checked-in migration journal уже применён до запуска `db:migrate`. Поэтому этот режим не
 может использоваться для применения новой pending migration.
 
