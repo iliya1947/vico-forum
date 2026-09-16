@@ -38,9 +38,9 @@ export class DrizzleUiTranslationPublicationStore implements UiTranslationPublic
 
       if (!completed[0]) return false;
 
-      const provenanceMetadata = publication.provenance.attribution?.trim()
-        ? { attribution: publication.provenance.attribution }
-        : {};
+      const provenanceMetadata: Record<string, string> = {};
+      const attribution = publication.provenance.attribution?.trim();
+      if (attribution) provenanceMetadata.attribution = attribution;
       const translatedPayload = canonicalPayload(publication.value);
 
       await transaction
