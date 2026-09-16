@@ -184,8 +184,29 @@ Durable foundation Stage 5A для UI translation jobs:
 - provider/Queue-independent consumer после claim повторно проверяет canonical descriptor/fingerprint,
   generation policy, generation target и exact-target local/persistent manual result; fallback resources
   не считаются exact-target evidence;
-- eligible task возвращает typed execution context, но provider execution, retry/DLQ, reconciliation,
-  result publication и Cloudflare Queue binding намеренно не реализованы в этом slice.
+- eligible task возвращает typed execution context для следующего provider execution layer.
+
+Следующий Stage 5A slice — conditional machine result publication и structured payload persistence:
+
+- migration `0009` добавляет terminal `completed` state и `completed_at`; completed stable identity
+  не реактивируется duplicate planning, а новая source/policy generation получает новую logical identity;
+- `UiTranslationResultPublisher` повторно применяет current stale/manual preflight к уже claimed task,
+  валидирует provider output через общий `TranslationValidator`/`LocaleRulesProvider` boundary и только
+  после этого передаёт результат в publication store;
+- PostgreSQL publication store в одной transaction conditionally переводит актуальный claim
+  `processing → completed` и upsert-ит approved machine row с `sourceFingerprint`, generation policy и
+  provider/model/provenance metadata; потерянный/reclaimed claim не публикует результат;
+- canonical UI descriptor теперь допускает structured plural source как одну logical translation unit;
+  `sectionCount` переведён на реальный `one/other` canonical plural fixture, а source fingerprint
+  детерминированно учитывает structured source semantics;
+- persistent raw machine translation сохраняет validated structured plural payload как JSON object,
+  source loader возвращает его как одну logical unit, а compiled bundle materializes полный target
+  branch set в i18next JSON v4 suffix resources (`key_one`, `key_few`, `key_many`, `key_other` и т. п.);
+- PostgreSQL integration coverage проверяет successful publication/completion, lost-claim no-op,
+  terminal completed identity, structured payload persistence/read и runtime bundle compilation;
+- реальные provider calls, real Cloudflare Queue consumer binding, retry/DLQ, `JOB-06` reconciliation,
+  automatic generation-result → whole namespace bundle publication и переключение production SSR на
+  persisted compiled bundle всё ещё не реализованы и остаются следующими Stage 5A slices.
 
 Lifecycle correction из PR #69 merged в `main` commit
 `c12550c3fa1cb371df82a178d20ed7020c33f9ce`. GitHub Actions CI #170 на финальном head PR #69
