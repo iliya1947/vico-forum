@@ -151,6 +151,21 @@ End-to-end generation/publish path, запись compiled current bundle и по
 persisted compiled bundle в SSR/runtime принадлежат Stage 5. До этого `ui_translation_bundles`
 и cache/ETag helpers являются подготовленными primitives, а не активным runtime read path.
 
+Stage 5A publication теперь атомарно завершает claimed task, записывает raw machine result и
+пересобирает persisted exact-locale namespace bundle в одной PostgreSQL transaction. Ошибка
+компиляции/записи bundle откатывает также raw result и completion, поэтому successful completion
+не может оставить permanent stale bundle. Concurrent publications разных keys одного
+`(locale, namespace)` сериализуются через deterministic `FOR UPDATE` всех существующих
+generation-head rows этого namespace; после ожидания следующая transaction читает уже
+закоммиченный whole-namespace state и не может затереть предыдущий result. Advisory locks и
+Queue ordering для correctness не используются. Schema для этого не изменялась.
+
+Bundle строится существующим source merge `local manual → persistent manual → current machine`,
+с текущими fingerprint/generation-policy checks. Он содержит только exact locale, не включает
+fallback locale, а structured plural raw JSON компилируется существующим compiler в i18next v4
+suffix resources. Runtime/SSR пока по-прежнему читает raw sources; переключение чтения на
+persisted bundle остаётся отдельным следующим Stage 5A slice.
+
 ### Cache identity
 
 Individual locale/namespace bundle cache key/version обязаны учитывать как минимум:

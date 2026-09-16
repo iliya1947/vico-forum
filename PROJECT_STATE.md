@@ -224,9 +224,26 @@ Durable foundation Stage 5A для UI translation jobs:
   identities, отдельно проверяет delayed old identity и publication fencing уже выполняющейся старой
   task, а также existing completion/claim/structured payload contracts;
 - real external provider adapters/calls, real Cloudflare Queue consumer binding, retry/DLQ,
-  `JOB-06` reconciliation, automatic generation-result → whole namespace bundle publication и
-  переключение production SSR на persisted compiled bundle всё ещё не реализованы и остаются
-  следующими Stage 5A slices.
+  `JOB-06` reconciliation и переключение production SSR на persisted compiled bundle всё ещё не
+  реализованы и остаются следующими Stage 5A slices.
+
+Следующий ограниченный slice Stage 5A publication завершён в текущей ветке:
+
+- successful conditional machine publication теперь одной PostgreSQL transaction завершает task,
+  записывает raw machine payload и пересобирает persisted whole exact-locale namespace bundle;
+- bundle использует existing priority/freshness contracts `local manual → persistent manual →
+  current machine`, не flatten-ит locale fallback и компилирует structured plural JSON в i18next
+  v4 suffix resources;
+- publications разных keys одного `(locale, namespace)` сериализуются deterministic row locks
+  существующих generation heads, поэтому поздняя transaction компилирует уже закоммиченный
+  namespace state и не может сделать lost update/regression; Queue ordering и advisory locks не
+  используются;
+- compilation/persistence failure откатывает raw translation и task completion вместе с bundle,
+  исключая ложный durable success; schema/migrations не менялись;
+- PostgreSQL coverage добавляет whole namespace, local/persistent manual priority, plural,
+  lost/superseded claim bundle preservation, concurrent independent connections и atomic rollback.
+  Локальные/CI результаты для этой ветки фиксируются отдельно после фактического запуска;
+- runtime/SSR чтение persisted bundles намеренно остаётся следующим Stage 5A slice.
 
 Provider-execution slice проверен GitHub Actions CI #193 на code head
 `72efa8d4dc102437b5ca5c82d5c35a434f76896a`: полностью прошли `checks` и `database`, включая

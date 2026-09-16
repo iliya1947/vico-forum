@@ -28,6 +28,7 @@
     "app/localization/translation-tasks.ts",
     "app/localization/ui-translation-service.ts",
     "app/localization/locale-rules.ts",
+    "app/localization/manual-packs.ts",
     "app/localization/bundles.ts",
     "app/localization/persistent-sources.ts",
     "app/localization/persistent-registry.ts",

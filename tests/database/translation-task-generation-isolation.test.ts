@@ -3,11 +3,13 @@ import { readFile } from "node:fs/promises";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Client } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { compileNamespaceBundle } from "../../app/localization/bundles";
 import {
   uiTranslationJobIdentity,
   type UiTranslationJobSpecification,
 } from "../../app/localization/ui-translation-service";
 import { DrizzleTranslationTaskStore } from "../../db/translation-task-store";
+import { DrizzleUiTranslationBundleStore } from "../../db/ui-translation-bundle-store";
 import { DrizzleUiTranslationPublicationStore } from "../../db/ui-translation-publication-store";
 
 const databaseUrl = process.env.DATABASE_URL;
@@ -99,6 +101,9 @@ describe("translation task generation isolation", () => {
     if (oldClaim.outcome !== "claimed") throw new Error("older claim failed");
 
     const newer = await tasks.upsertPending(newerSpecification);
+    const bundles = new DrizzleUiTranslationBundleStore(drizzle(client));
+    const existingBundle = await compileNamespaceBundle("fr", "common", { heading: "Valeur actuelle" });
+    await bundles.put(existingBundle);
     await expect(tasks.upsertPending(olderSpecification)).resolves.toMatchObject({
       id: older.id,
       generation: oldClaim.task.generation,
@@ -118,6 +123,7 @@ describe("translation task generation isolation", () => {
        where locale = 'fr' and namespace = 'common' and key = 'generationDelayed' and origin = 'machine'
     `);
     expect(published.rows[0]?.count).toBe(0);
+    await expect(bundles.read("fr", "common")).resolves.toEqual(existingBundle);
     await expect(tasks.markStale(older.id, oldClaim.task.claimToken)).resolves.toBe(true);
     await expect(tasks.upsertPending(olderSpecification)).resolves.toMatchObject({ status: "stale" });
   });

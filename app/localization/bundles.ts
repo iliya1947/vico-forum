@@ -5,6 +5,7 @@ import {
   validateProviderOutput,
   type ProviderTranslationValue,
 } from "./translation-validation";
+import type { TranslationSource, TranslationSourceBundle } from "./sources";
 
 const BUNDLE_VERSION_FORMAT = "vico-ui-bundle-v1";
 const BUNDLE_CACHE_FORMAT = "vico-ui-bundle-cache-v1";
@@ -26,6 +27,21 @@ export interface TranslationBundleStore {
 export interface TranslationBundleCache {
   read(cacheIdentity: string): Promise<CompiledNamespaceBundle | undefined>;
   put(cacheIdentity: string, bundle: CompiledNamespaceBundle): Promise<void>;
+}
+
+export async function compileExactLocaleNamespaceBundle(
+  locale: string,
+  namespace: string,
+  sources: readonly TranslationSource[],
+): Promise<CompiledNamespaceBundle> {
+  const logicalResources: TranslationSourceBundle[string] = {};
+  for (const source of sources) {
+    const result = await source.load(locale, [namespace]);
+    for (const [key, value] of Object.entries(result.resources[namespace] ?? {})) {
+      logicalResources[key] ??= value;
+    }
+  }
+  return compileNamespaceBundle(locale, namespace, logicalResources);
 }
 
 export async function compileNamespaceBundle(
