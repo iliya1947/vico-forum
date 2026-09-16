@@ -1,4 +1,4 @@
-import { and, eq, lte, ne, or, sql } from "drizzle-orm";
+import { and, eq, lte, or, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import {
   validateUiTranslationJobSpecification,
@@ -27,67 +27,34 @@ export class DrizzleTranslationTaskStore implements TranslationTaskStore {
   async upsertPending(specification: UiTranslationJobSpecification): Promise<TranslationTask> {
     validateUiTranslationJobSpecification(specification);
     await assertStableIdentity(specification);
+    const databaseNow = sql`statement_timestamp()`;
+    const rows = await this.database
+      .insert(translationTasks)
+      .values({
+        taskIdentity: specification.taskIdentity,
+        translationKind: specification.translationKind,
+        sourceNamespace: specification.sourceIdentity.namespace,
+        sourceKey: specification.sourceIdentity.key,
+        sourceFingerprint: specification.sourceFingerprint,
+        targetLocale: specification.targetLocale,
+        generationPolicyVersion: specification.generationPolicyVersion,
+        status: "pending",
+      })
+      .onConflictDoUpdate({
+        target: translationTasks.taskIdentity,
+        set: {
+          status: sql`case when ${translationTasks.status} = 'stale' then 'pending' else ${translationTasks.status} end`,
+          claimToken: sql`case when ${translationTasks.status} = 'stale' then null else ${translationTasks.claimToken} end`,
+          claimedAt: sql`case when ${translationTasks.status} = 'stale' then null else ${translationTasks.claimedAt} end`,
+          leaseExpiresAt: sql`case when ${translationTasks.status} = 'stale' then null else ${translationTasks.leaseExpiresAt} end`,
+          staleAt: sql`case when ${translationTasks.status} = 'stale' then null else ${translationTasks.staleAt} end`,
+          completedAt: sql`case when ${translationTasks.status} = 'stale' then null else ${translationTasks.completedAt} end`,
+          updatedAt: sql`case when ${translationTasks.status} in ('processing', 'completed') then ${translationTasks.updatedAt} else ${databaseNow} end`,
+        },
+      })
+      .returning();
 
-    const row = await this.database.transaction(async (transaction) => {
-      const databaseNow = sql`statement_timestamp()`;
-      const sameUnit = and(
-        eq(translationTasks.translationKind, specification.translationKind),
-        eq(translationTasks.sourceNamespace, specification.sourceIdentity.namespace),
-        eq(translationTasks.sourceKey, specification.sourceIdentity.key),
-        eq(translationTasks.targetLocale, specification.targetLocale),
-        ne(translationTasks.taskIdentity, specification.taskIdentity),
-      );
-
-      // A freshly planned generation supersedes older active work for the same logical UI unit.
-      // Revoke an in-flight claim before creating the new pending task so the older result can no
-      // longer pass the conditional publication guard. Pending work has never executed, so it can
-      // be removed; any already-enqueued delivery becomes a safe not-found no-op.
-      await transaction
-        .update(translationTasks)
-        .set({
-          status: "stale",
-          claimToken: null,
-          leaseExpiresAt: null,
-          staleAt: databaseNow,
-          completedAt: null,
-          updatedAt: databaseNow,
-        })
-        .where(and(sameUnit, eq(translationTasks.status, "processing")));
-
-      await transaction
-        .delete(translationTasks)
-        .where(and(sameUnit, eq(translationTasks.status, "pending")));
-
-      const rows = await transaction
-        .insert(translationTasks)
-        .values({
-          taskIdentity: specification.taskIdentity,
-          translationKind: specification.translationKind,
-          sourceNamespace: specification.sourceIdentity.namespace,
-          sourceKey: specification.sourceIdentity.key,
-          sourceFingerprint: specification.sourceFingerprint,
-          targetLocale: specification.targetLocale,
-          generationPolicyVersion: specification.generationPolicyVersion,
-          status: "pending",
-        })
-        .onConflictDoUpdate({
-          target: translationTasks.taskIdentity,
-          set: {
-            status: sql`case when ${translationTasks.status} = 'stale' then 'pending' else ${translationTasks.status} end`,
-            claimToken: sql`case when ${translationTasks.status} = 'stale' then null else ${translationTasks.claimToken} end`,
-            claimedAt: sql`case when ${translationTasks.status} = 'stale' then null else ${translationTasks.claimedAt} end`,
-            leaseExpiresAt: sql`case when ${translationTasks.status} = 'stale' then null else ${translationTasks.leaseExpiresAt} end`,
-            staleAt: sql`case when ${translationTasks.status} = 'stale' then null else ${translationTasks.staleAt} end`,
-            completedAt: sql`case when ${translationTasks.status} = 'stale' then null else ${translationTasks.completedAt} end`,
-            updatedAt: sql`case when ${translationTasks.status} in ('processing', 'completed') then ${translationTasks.updatedAt} else ${databaseNow} end`,
-          },
-        })
-        .returning();
-
-      return requiredRow(rows[0]);
-    });
-
-    const task = await parseTaskRow(row);
+    const task = await parseTaskRow(requiredRow(rows[0]));
     assertMatchesSpecification(task, specification);
     return task;
   }
@@ -264,5 +231,4 @@ function assertMatchesSpecification(
 
 function requiredRow(row: TranslationTaskRow | undefined): TranslationTaskRow {
   if (!row) throw new TranslationTaskIntegrityError("translation task upsert returned no row");
-  return row;
 }
