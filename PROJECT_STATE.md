@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-09-15
+Последнее обновление: 2026-09-16
 
 ## Текущее состояние
 
@@ -178,9 +178,9 @@ Durable foundation Stage 5A для UI translation jobs:
   result publication и Cloudflare Queue binding намеренно не реализованы в этом slice.
 
 Для этого slice локально прошли lint, typecheck, unit suite, production build и migration metadata
-check. PostgreSQL integration coverage добавляет реальную concurrent claim проверку через отдельные
-pool connections, но локально не выполнена из-за отсутствующего `DATABASE_URL`; merge readiness до
-зелёного GitHub Actions `database` job на актуальном PR head не подтверждена.
+check. После исправления test-clock fixture GitHub Actions CI #167 на head
+`0cbe639b16bce3f32dc4aa197f9f55ee1cd9862d` полностью прошёл `checks` и `database`, включая
+PostgreSQL 17 migrations/integration tests, Workers build и local Hyperdrive smoke.
 
 Core Stage 4 integration подтверждён PostgreSQL 17 CI:
 
