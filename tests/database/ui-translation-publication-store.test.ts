@@ -57,11 +57,12 @@ async function job(
 }
 
 describe("DrizzleUiTranslationPublicationStore", () => {
-  it("atomically publishes a machine result and completes the matching claim", async () => {
+  it("atomically publishes a machine result and keeps the completed stable identity terminal", async () => {
     const database = drizzle(client);
     const tasks = new DrizzleTranslationTaskStore(database);
     const publications = new DrizzleUiTranslationPublicationStore(database);
-    const pending = await tasks.upsertPending(await job(canonicalEnglishCatalog.common.heading, "fr"));
+    const specification = await job(canonicalEnglishCatalog.common.heading, "fr");
+    const pending = await tasks.upsertPending(specification);
     const claim = await tasks.claim(pending.id, 60_000);
     if (claim.outcome !== "claimed") throw new Error("claim failed");
 
@@ -73,6 +74,12 @@ describe("DrizzleUiTranslationPublicationStore", () => {
 
     await expect(tasks.findById(pending.id)).resolves.toMatchObject({
       status: "completed", claimToken: null, leaseExpiresAt: null, staleAt: null,
+      completedAt: expect.any(Date),
+    });
+    await expect(tasks.upsertPending(specification)).resolves.toMatchObject({
+      id: pending.id,
+      status: "completed",
+      claimToken: null,
       completedAt: expect.any(Date),
     });
     await expect(tasks.claim(pending.id, 60_000)).resolves.toEqual({ outcome: "terminal" });
