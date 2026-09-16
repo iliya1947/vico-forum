@@ -22,6 +22,7 @@
     "app/localization/sources.ts",
     "app/localization/translation-validation.ts",
     "app/localization/translation-provider.ts",
+    "app/localization/translation-execution.ts",
     "app/localization/translation-task-consumer.ts",
     "app/localization/translation-publication.ts",
     "app/localization/translation-tasks.ts",

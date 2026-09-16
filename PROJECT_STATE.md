@@ -147,9 +147,14 @@ Stage 4E2b authorization integration и management UI:
 - `UI-12`/`SEC-03` расширены единым validation boundary для недоверенного provider output: plain и каждая
   structured branch проверяют non-empty/size/markup/placeholders/protected terms, а plural unit требует
   точного полного target branch set без missing/unexpected branches;
-- router/rules/validation остаются за `TranslationJobDispatcher` boundary и не подключены к SSR/page
-  request. Реальные adapters/provider calls, real Queue binding, retry/DLQ/reconciliation,
-  persisted-bundle runtime switching и user-content translation остаются следующей Stage 5 работой.
+- provider-neutral `UiTranslationTaskExecutor` теперь связывает eligible claimed task с
+  `TranslationProviderRouter` и `UiTranslationResultPublisher`; provider request строится из canonical
+  English descriptor и target locale, а plural execution получает полный target branch contract через
+  `LocaleRulesProvider`;
+- provider output остаётся untrusted до существующего validation/publication boundary; execution path
+  остаётся вне SSR/page request. Real external provider adapters/calls, real Queue binding,
+  retry/DLQ/reconciliation, persisted-bundle runtime switching и user-content translation остаются
+  следующей Stage 5 работой.
 
 Durable foundation Stage 5A для UI translation jobs:
 
@@ -165,8 +170,8 @@ Durable foundation Stage 5A для UI translation jobs:
   после ошибки enqueue новая независимая DB connection видит ту же task в `pending`, поэтому будущий
   `JOB-06` reconciliation имеет durable recovery source;
 - Queue delivery не считается exactly-once. Real Queue adapter, retry/DLQ/reconciliation,
-  provider execution, validation/result publication и persisted bundle
-  runtime path явно остаются следующими Stage 5 slices.
+  real external provider adapters/calls и persisted bundle runtime path остаются следующими Stage 5 slices;
+  provider-neutral execution и conditional result publication описаны ниже.
 
 Первая часть `JOB-03` для UI translation consumer:
 
@@ -184,9 +189,9 @@ Durable foundation Stage 5A для UI translation jobs:
 - provider/Queue-independent consumer после claim повторно проверяет canonical descriptor/fingerprint,
   generation policy, generation target и exact-target local/persistent manual result; fallback resources
   не считаются exact-target evidence;
-- eligible task возвращает typed execution context для следующего provider execution layer.
+- eligible task возвращает typed execution context для provider-neutral execution layer.
 
-Текущий Stage 5A state включает durable current-generation ordering для UI translation tasks:
+Текущий Stage 5A state включает durable current-generation ordering и provider-neutral execution для UI translation tasks:
 
 - migration `0009` добавляет terminal `completed` state и `completed_at`; completed stable identity
   не реактивируется duplicate planning, а новая source/policy generation получает новую logical identity;
@@ -199,6 +204,10 @@ Durable foundation Stage 5A для UI translation jobs:
   reactivation разрешена только если эта identity всё ещё current;
 - consumer/result publisher повторно применяют current source fingerprint, generation policy,
   generation target, durable current generation и manual-priority preflight к claimed task;
+- `UiTranslationTaskExecutor` после successful claim/preflight формирует provider-neutral request,
+  вызывает `TranslationProviderRouter` и передаёт raw result в `UiTranslationResultPublisher`;
+- connected contract coverage с fake adapter проверяет plain execution, target plural branch handoff,
+  stale-generation short-circuit до provider call и rejection invalid provider output до persistence;
 - `UiTranslationResultPublisher` валидирует provider output через общий
   `validateProviderOutput`/`LocaleRulesProvider` boundary и только после current preflight передаёт
   результат в publication store;
@@ -214,9 +223,15 @@ Durable foundation Stage 5A для UI translation jobs:
 - PostgreSQL integration coverage использует независимые connections для concurrent planning разных
   identities, отдельно проверяет delayed old identity и publication fencing уже выполняющейся старой
   task, а также existing completion/claim/structured payload contracts;
-- реальные provider calls, real Cloudflare Queue consumer binding, retry/DLQ, `JOB-06` reconciliation,
-  automatic generation-result → whole namespace bundle publication и переключение production SSR на
-  persisted compiled bundle всё ещё не реализованы и остаются следующими Stage 5A slices.
+- real external provider adapters/calls, real Cloudflare Queue consumer binding, retry/DLQ,
+  `JOB-06` reconciliation, automatic generation-result → whole namespace bundle publication и
+  переключение production SSR на persisted compiled bundle всё ещё не реализованы и остаются
+  следующими Stage 5A slices.
+
+Provider-execution slice проверен GitHub Actions CI #193 на code head
+`72efa8d4dc102437b5ca5c82d5c35a434f76896a`: полностью прошли `checks` и `database`, включая
+migration history/evidence, lint, typecheck, unit tests, build, migration metadata, clean PostgreSQL 17
+migrations/integration tests, Workers build и local Hyperdrive smoke.
 
 Migration `0010`, metadata/history и PostgreSQL integration suite локально проверены на PostgreSQL
 17.11. GitHub Actions CI #190 на head `28f21961d485358bf1c02940f159fa3c8d273b3b` полностью
