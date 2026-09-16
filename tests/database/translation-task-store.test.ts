@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 
 import { drizzle } from "drizzle-orm/node-postgres";
-import { Client, type DatabaseError } from "pg";
+import { Client, Pool, type DatabaseError } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   FakeTranslationTaskEnqueuer,
@@ -33,6 +33,7 @@ beforeAll(async () => {
   await client.query(`drop schema if exists ${schemaName} cascade; create schema ${schemaName}`);
   await client.query(`set search_path to ${schemaName}`);
   await client.query(await readFile("drizzle/0007_durable_translation_tasks.sql", "utf8"));
+  await client.query(await readFile("drizzle/0008_translation_task_claim_lease.sql", "utf8"));
 });
 
 afterAll(async () => {
@@ -96,7 +97,8 @@ describe("DrizzleTranslationTaskStore", () => {
     ["invalid fingerprint", { source_fingerprint: "bad" }],
     ["English target", { target_locale: "en" }],
     ["blank policy", { generation_policy_version: " " }],
-    ["invalid status", { status: "processing" }],
+    ["invalid status", { status: "unknown" }],
+    ["processing without lease metadata", { status: "processing" }],
   ])("rejects %s durable state at the schema boundary", async (_label, override) => {
     const fields = {
       task_identity: "d".repeat(64),
@@ -117,6 +119,42 @@ describe("DrizzleTranslationTaskStore", () => {
        values ($1, $2, $3, $4, $5, $6, $7, $8)`,
       Object.values(fields),
     ), "23514");
+  });
+
+  it("atomically grants one execution owner and makes a live duplicate a no-op", async () => {
+    const store = new DrizzleTranslationTaskStore(drizzle(client));
+    const pending = await store.upsertPending(await job("forumTagline"));
+    const claimedAt = new Date(pending.createdAt.getTime() + 1_000);
+    const pool = new Pool({ connectionString: databaseUrl, options: `-c search_path=${schemaName}` });
+    const firstStore = new DrizzleTranslationTaskStore(drizzle(pool));
+    const secondStore = new DrizzleTranslationTaskStore(drizzle(pool));
+    const [first, second] = await Promise.all([
+      firstStore.claim(pending.id, claimedAt, 60_000),
+      secondStore.claim(pending.id, claimedAt, 60_000),
+    ]).finally(() => pool.end());
+
+    expect([first, second].filter(({ outcome }) => outcome === "claimed")).toHaveLength(1);
+    expect([first, second].filter(({ outcome }) => outcome === "already-claimed")).toHaveLength(1);
+    await expect(store.claim(pending.id, new Date(claimedAt.getTime() + 30_000), 60_000))
+      .resolves.toEqual({ outcome: "already-claimed" });
+  });
+
+  it("reclaims an expired lease and never reclaims a terminal stale task", async () => {
+    const store = new DrizzleTranslationTaskStore(drizzle(client));
+    const pending = await store.upsertPending(await job("productName"));
+    const claimedAt = new Date(pending.createdAt.getTime() + 1_000);
+    const first = await store.claim(pending.id, claimedAt, 1_000);
+    expect(first.outcome).toBe("claimed");
+    const reclaimed = await store.claim(pending.id, new Date(claimedAt.getTime() + 1_000), 1_000);
+    expect(reclaimed.outcome).toBe("claimed");
+    if (first.outcome !== "claimed" || reclaimed.outcome !== "claimed") throw new Error("claim failed");
+    expect(reclaimed.task.claimToken).not.toBe(first.task.claimToken);
+    await expect(store.markStale(pending.id, first.task.claimToken, new Date(claimedAt.getTime() + 1_100)))
+      .resolves.toBe(false);
+    await expect(store.markStale(pending.id, reclaimed.task.claimToken, new Date(claimedAt.getTime() + 1_100)))
+      .resolves.toBe(true);
+    await expect(store.claim(pending.id, new Date(claimedAt.getTime() + 600_000), 1_000))
+      .resolves.toEqual({ outcome: "terminal" });
   });
 });
 
