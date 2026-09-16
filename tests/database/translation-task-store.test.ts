@@ -124,37 +124,90 @@ describe("DrizzleTranslationTaskStore", () => {
   it("atomically grants one execution owner and makes a live duplicate a no-op", async () => {
     const store = new DrizzleTranslationTaskStore(drizzle(client));
     const pending = await store.upsertPending(await job("forumTagline"));
-    const claimedAt = new Date(pending.createdAt.getTime() + 1_000);
     const pool = new Pool({ connectionString: databaseUrl, options: `-c search_path=${schemaName}` });
     const firstStore = new DrizzleTranslationTaskStore(drizzle(pool));
     const secondStore = new DrizzleTranslationTaskStore(drizzle(pool));
     const [first, second] = await Promise.all([
-      firstStore.claim(pending.id, claimedAt, 60_000),
-      secondStore.claim(pending.id, claimedAt, 60_000),
+      firstStore.claim(pending.id, 60_000),
+      secondStore.claim(pending.id, 60_000),
     ]).finally(() => pool.end());
 
     expect([first, second].filter(({ outcome }) => outcome === "claimed")).toHaveLength(1);
     expect([first, second].filter(({ outcome }) => outcome === "already-claimed")).toHaveLength(1);
-    await expect(store.claim(pending.id, new Date(claimedAt.getTime() + 30_000), 60_000))
-      .resolves.toEqual({ outcome: "already-claimed" });
+    await expect(store.claim(pending.id, 60_000)).resolves.toEqual({ outcome: "already-claimed" });
   });
 
-  it("reclaims an expired lease and never reclaims a terminal stale task", async () => {
+  it("keeps a live processing lease intact when the same logical job is dispatched again", async () => {
+    const store = new DrizzleTranslationTaskStore(drizzle(client));
+    const specification = await job("processing-upsert");
+    const pending = await store.upsertPending(specification);
+    const claim = await store.claim(pending.id, 60_000);
+    if (claim.outcome !== "claimed") throw new Error("claim failed");
+
+    const duplicate = await store.upsertPending(specification);
+
+    expect(duplicate).toMatchObject({
+      id: pending.id,
+      status: "processing",
+      claimToken: claim.task.claimToken,
+      claimedAt: claim.task.claimedAt,
+      leaseExpiresAt: claim.task.leaseExpiresAt,
+      staleAt: null,
+    });
+  });
+
+  it("reclaims an expired database lease and never reclaims a terminal stale task", async () => {
     const store = new DrizzleTranslationTaskStore(drizzle(client));
     const pending = await store.upsertPending(await job("productName"));
-    const claimedAt = new Date(pending.createdAt.getTime() + 1_000);
-    const first = await store.claim(pending.id, claimedAt, 1_000);
+    const first = await store.claim(pending.id, 60_000);
     expect(first.outcome).toBe("claimed");
-    const reclaimed = await store.claim(pending.id, new Date(claimedAt.getTime() + 1_000), 1_000);
+    if (first.outcome !== "claimed") throw new Error("claim failed");
+
+    await client.query(
+      `update translation_tasks
+          set claimed_at = statement_timestamp() - interval '2 seconds',
+              lease_expires_at = statement_timestamp() - interval '1 second',
+              updated_at = statement_timestamp()
+        where id = $1`,
+      [pending.id],
+    );
+
+    const reclaimed = await store.claim(pending.id, 60_000);
     expect(reclaimed.outcome).toBe("claimed");
-    if (first.outcome !== "claimed" || reclaimed.outcome !== "claimed") throw new Error("claim failed");
+    if (reclaimed.outcome !== "claimed") throw new Error("reclaim failed");
     expect(reclaimed.task.claimToken).not.toBe(first.task.claimToken);
-    await expect(store.markStale(pending.id, first.task.claimToken, new Date(claimedAt.getTime() + 1_100)))
-      .resolves.toBe(false);
-    await expect(store.markStale(pending.id, reclaimed.task.claimToken, new Date(claimedAt.getTime() + 1_100)))
-      .resolves.toBe(true);
-    await expect(store.claim(pending.id, new Date(claimedAt.getTime() + 600_000), 1_000))
-      .resolves.toEqual({ outcome: "terminal" });
+    await expect(store.markStale(pending.id, first.task.claimToken)).resolves.toBe(false);
+    await expect(store.markStale(pending.id, reclaimed.task.claimToken)).resolves.toBe(true);
+    await expect(store.claim(pending.id, 60_000)).resolves.toEqual({ outcome: "terminal" });
+  });
+
+  it("reactivates the same stale logical task only when a new plan dispatches it again", async () => {
+    const store = new DrizzleTranslationTaskStore(drizzle(client));
+    const specification = await job("reactivated-task");
+    const pending = await store.upsertPending(specification);
+    const claim = await store.claim(pending.id, 60_000);
+    if (claim.outcome !== "claimed") throw new Error("claim failed");
+    await expect(store.markStale(pending.id, claim.task.claimToken)).resolves.toBe(true);
+    await expect(store.claim(pending.id, 60_000)).resolves.toEqual({ outcome: "terminal" });
+
+    const reactivated = await store.upsertPending(specification);
+
+    expect(reactivated).toMatchObject({
+      id: pending.id,
+      taskIdentity: specification.taskIdentity,
+      status: "pending",
+      claimToken: null,
+      claimedAt: null,
+      leaseExpiresAt: null,
+      staleAt: null,
+    });
+    expect(reactivated.createdAt).toEqual(pending.createdAt);
+    await expect(store.claim(reactivated.id, 60_000)).resolves.toMatchObject({ outcome: "claimed" });
+    const count = await client.query<{ count: string }>(
+      "select count(*)::text as count from translation_tasks where task_identity = $1",
+      [specification.taskIdentity],
+    );
+    expect(count.rows[0]?.count).toBe("1");
   });
 });
 
