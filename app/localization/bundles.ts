@@ -66,6 +66,7 @@ export async function verifyCompiledNamespaceBundle(
 ): Promise<CompiledNamespaceBundle> {
   assertBundleScope(locale, namespace);
   const descriptors = descriptorMap(namespace);
+  const resourceKeys = Object.keys(resources);
   const consumed = new Set<string>();
   const normalizedResources: Record<string, string> = {};
   const versionEntries: Array<[string, string, string]> = [];
@@ -83,12 +84,11 @@ export async function verifyCompiledNamespaceBundle(
       continue;
     }
 
+    const pluralPrefix = `${descriptor.key}_`;
+    if (!resourceKeys.some((key) => key.startsWith(pluralPrefix))) continue;
+
     const branches = [...localeRules.pluralBranches(locale)].sort(deterministicCompare);
     const runtimeKeys = branches.map((branch) => `${descriptor.key}_${branch}`);
-    const hasAnyBranch = runtimeKeys.some((key) => Object.hasOwn(resources, key)) ||
-      Object.keys(resources).some((key) => key.startsWith(`${descriptor.key}_`));
-    if (!hasAnyBranch) continue;
-
     const structured: Record<string, string> = {};
     for (let index = 0; index < branches.length; index++) {
       const branch = branches[index]!;
@@ -108,7 +108,7 @@ export async function verifyCompiledNamespaceBundle(
     }
   }
 
-  for (const key of Object.keys(resources)) {
+  for (const key of resourceKeys) {
     if (!consumed.has(key)) throw new Error(`Unknown compiled resource key: ${namespace}:${key}`);
   }
 
