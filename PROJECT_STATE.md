@@ -190,8 +190,11 @@ Durable foundation Stage 5A для UI translation jobs:
 
 - migration `0009` добавляет terminal `completed` state и `completed_at`; completed stable identity
   не реактивируется duplicate planning, а новая source/policy generation получает новую logical identity;
+- fresh plan другой stable identity для той же UI translation unit в одной PostgreSQL transaction
+  отзывает старый `processing` claim в `stale` и удаляет ещё не исполнявшуюся superseded `pending` task;
+  поэтому committed fresh plan лишает старый provider result возможности пройти publication guard;
 - `UiTranslationResultPublisher` повторно применяет current stale/manual preflight к уже claimed task,
-  валидирует provider output через общий `TranslationValidator`/`LocaleRulesProvider` boundary и только
+  валидирует provider output через общий `validateProviderOutput`/`LocaleRulesProvider` boundary и только
   после этого передаёт результат в publication store;
 - PostgreSQL publication store в одной transaction conditionally переводит актуальный claim
   `processing → completed` и upsert-ит approved machine row с `sourceFingerprint`, generation policy и
@@ -203,7 +206,8 @@ Durable foundation Stage 5A для UI translation jobs:
   source loader возвращает его как одну logical unit, а compiled bundle materializes полный target
   branch set в i18next JSON v4 suffix resources (`key_one`, `key_few`, `key_many`, `key_other` и т. п.);
 - PostgreSQL integration coverage проверяет successful publication/completion, lost-claim no-op,
-  terminal completed identity, structured payload persistence/read и runtime bundle compilation;
+  superseded pending/processing generation, terminal completed identity, structured payload
+  persistence/read и runtime bundle compilation;
 - реальные provider calls, real Cloudflare Queue consumer binding, retry/DLQ, `JOB-06` reconciliation,
   automatic generation-result → whole namespace bundle publication и переключение production SSR на
   persisted compiled bundle всё ещё не реализованы и остаются следующими Stage 5A slices.
