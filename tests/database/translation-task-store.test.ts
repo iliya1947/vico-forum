@@ -153,6 +153,7 @@ describe("DrizzleTranslationTaskStore", () => {
       claimedAt: claim.task.claimedAt,
       leaseExpiresAt: claim.task.leaseExpiresAt,
       staleAt: null,
+      updatedAt: claim.task.updatedAt,
     });
   });
 
