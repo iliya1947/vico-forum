@@ -7,6 +7,7 @@ import { ForumWriteRateLimitError } from "../../db/forum-write-policy";
 import { forumWriterForRequest } from "./request-context";
 import { authorizationForRequest } from "../authorization/request-context";
 import type { PermissionKey } from "../authorization/catalog";
+import { AuthorizationUnavailableError } from "../../db/authorization-service";
 
 export interface ForumMutationError { error: "invalid" | "unauthenticated" | "origin" | "forbidden" | "notFound" | "conflict" | "rateLimited" | "unavailable" }
 
@@ -62,7 +63,10 @@ export async function requireForumPermission(context: RouterContextProvider, per
     if (!(await authorizationForRequest(context).forUser(session.user.id).has(permission))) {
       return mutationFailure("forbidden", 403);
     }
-  } catch { return mutationFailure("unavailable", 503); }
+  } catch (error) {
+    if (error instanceof AuthorizationUnavailableError) return mutationFailure("unavailable", 503);
+    throw error;
+  }
 }
 
 export async function solutionScope(context: RouterContextProvider) {
@@ -73,5 +77,10 @@ export async function solutionScope(context: RouterContextProvider) {
     if (await resolver.has("forum.solution.manageAny")) return { scope: "any" as const };
     if (await resolver.has("forum.solution.manageOwn")) return { scope: "own" as const };
     return { error: mutationFailure("forbidden", 403) } as const;
-  } catch { return { error: mutationFailure("unavailable", 503) } as const; }
+  } catch (error) {
+    if (error instanceof AuthorizationUnavailableError) {
+      return { error: mutationFailure("unavailable", 503) } as const;
+    }
+    throw error;
+  }
 }

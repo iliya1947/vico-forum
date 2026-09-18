@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-09-16
+Последнее обновление: 2026-09-18
 
 ## Текущее состояние
 
@@ -118,12 +118,17 @@ Stage 4E2b authorization integration и management UI:
 - добавлены request-scoped management capability и минимальный Better Auth user read model;
 - loader и action management route независимо требуют session и актуальный
   `access.authorization.manage`; mutations также проверяют same-origin и runtime input;
-- guest/forbidden/infrastructure/lockout cases отображаются controlled HTTP semantics, включая
-  explicit `503` при failure первоначального permission resolution;
+- guest, resolved permission denial и lockout cases сохраняют controlled HTTP semantics;
+- PostgreSQL/Hyperdrive authorization adapter классифицирует только известные availability/
+  connection/query-timeout failures как typed unavailable: optional presentation при таком outage
+  скрывает protected controls и сохраняет public read, а protected authorization boundary возвращает
+  controlled `503`; unexpected SQL/schema/programming/configuration/invariant errors больше не
+  маскируются как denial или infrastructure outage и проходят в обычный application error handling;
 - header показывает locale-preserving management link только effective manager; сам link не является
   authorization boundary;
 - route tests покрывают authenticated permission denial для topic/reply/solution, server-derived
-  `own | any`, precedence `manageAny`, и игнорирование forged actor/author/role/permission/scope.
+  `own | any`, precedence `manageAny`, игнорирование forged actor/author/role/permission/scope,
+  а также различие между classified unavailable и unexpected authorization errors.
 
 Первый ограниченный шаг Stage 5A UI translation generation:
 
@@ -304,6 +309,12 @@ Core Stage 4 integration подтверждён PostgreSQL 17 CI:
   прошёл `checks` и `database`, включая lint, typecheck, unit tests, build, migration metadata,
   PostgreSQL tests, Workers build и local Hyperdrive smoke.
 
+Исправление rollout/authz failure boundaries в PR #76 проверено GitHub Actions CI #202
+на head `b4d6beea1c890e4e27b1b2c5de969d4e0be07bd8`: полностью прошли `checks` и `database`,
+включая repository-local migration history/evidence contract checks, lint, typecheck, unit tests,
+build, migration metadata, clean PostgreSQL 17 migrations/integration tests, Workers build и
+local Hyperdrive smoke.
+
 Таким образом Stage 4 целиком завершён в local/CI path. Real Google OAuth, external authorization
 bootstrap, pending production migrations и production-like deployment acceptance намеренно остаются
 Stage 6 и не являются условием завершения Stage 4.
@@ -326,6 +337,11 @@ checked-in migration journal уже применён до запуска `db:mig
 Repository-owned runtime migration evidence сейчас всё ещё относится к
 `0002_ui_translation_storage`. Это корректно, потому что production Worker пока не зависит
 от Better Auth/forum/authz migrations `0003`–`0006`.
+
+Обычный `pull_request` CI больше не выполняет live GitHub Actions verification этого external
+evidence. Repository-local unit/static evidence contract и migration-history checks сохранены,
+а `.github/scripts/verify-runtime-migration-evidence.mjs` и текущий evidence остаются для
+фактического external schema-dependent rollout на Stage 6.
 
 Перед следующим настоящим external schema rollout временный owner exception должен быть
 снят, а dedicated migration capability восстановлена/проверена согласно

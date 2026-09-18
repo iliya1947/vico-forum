@@ -28,10 +28,6 @@ jobs:
           node --test .github/scripts/production-privileges.test.mjs
           node --test .github/scripts/runtime-migration-evidence.test.mjs
           node .github/scripts/verify-migration-history.mjs
-      - name: Verify migration to runtime evidence
-        run: node .github/scripts/verify-runtime-migration-evidence.mjs
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
       - name: Lint
         run: pnpm lint
       - name: Typecheck

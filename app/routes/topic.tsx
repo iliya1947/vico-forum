@@ -2,6 +2,7 @@ import { Form, useActionData, useLoaderData, type RouterContextProvider } from "
 import { useTranslation } from "react-i18next";
 import { authSessionForRequest } from "../auth/request-context";
 import { authorizationForRequest } from "../authorization/request-context";
+import { AuthorizationUnavailableError } from "../../db/authorization-service";
 import { forumCategoryPath, forumSectionPath } from "../forum/paths";
 import { forumReaderForRequest } from "../forum/request-context";
 import type { ForumMutationError } from "../forum/mutations.server";
@@ -23,7 +24,8 @@ export async function loader({ params, context }: {
       const resolver = authorizationForRequest(context).forUser(session.user.id);
       const [reply, any, own] = await Promise.all([resolver.has("forum.reply.create"), resolver.has("forum.solution.manageAny"), resolver.has("forum.solution.manageOwn")]);
       canReply = reply; canManageSolution = any || (own && session.user.id === topic.authorId);
-    } catch {
+    } catch (error) {
+      if (!(error instanceof AuthorizationUnavailableError)) throw error;
       // Public topic reads remain available when optional presentation authorization is unavailable.
     }
   }

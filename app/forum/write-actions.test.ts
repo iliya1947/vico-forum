@@ -10,6 +10,7 @@ import { action as sectionAction } from "../routes/section";
 import { action as topicAction } from "../routes/topic";
 import { ForumWriteRateLimitError } from "../../db/forum-write-policy";
 import { ForumAuthorizationError, ForumEntityNotFoundError, ForumStateConflictError } from "../../db/forum-repository";
+import { AuthorizationUnavailableError } from "../../db/authorization-service";
 
 const session = {
   user: { id: "session-user", name: "Ada", email: "ada@example.test", emailVerified: true, createdAt: new Date(), updatedAt: new Date() },
@@ -33,13 +34,20 @@ function context(
   writer: ForumWriter,
   authenticated = true,
   permissions: readonly PermissionKey[] = allForumPermissions,
+  authorizationError?: Error,
 ) {
   const value = new RouterContextProvider();
   const allowed = new Set<PermissionKey>(permissions);
   value.set(authSessionContext, authenticated ? session : null);
   value.set(forumWriterContext, writer);
   value.set(authorizationContext, {
-    forUser: () => ({ resolve: vi.fn(), has: vi.fn(async (permission: PermissionKey) => allowed.has(permission)) }),
+    forUser: () => ({
+      resolve: vi.fn(),
+      has: vi.fn(async (permission: PermissionKey) => {
+        if (authorizationError) throw authorizationError;
+        return allowed.has(permission);
+      }),
+    }),
   } as never);
   return value;
 }
@@ -185,4 +193,42 @@ describe("forum write route actions", () => {
       expect(JSON.stringify(response)).not.toContain(error.message);
     }
   });
+  it("maps only classified authorization outages to controlled 503 responses", async () => {
+    const topicWriter = writer();
+    const topicUnavailable = await sectionAction({
+      request: request("/en/sections/typescript", { title: "Unavailable", body: "Unavailable" }),
+      params: { locale: "en", sectionId: "typescript" },
+      context: context(topicWriter, true, allForumPermissions, new AuthorizationUnavailableError()),
+    });
+    expect(topicUnavailable).toMatchObject({ data: { error: "unavailable" }, init: { status: 503 } });
+    expect(topicWriter.createTopic).not.toHaveBeenCalled();
+
+    const unexpectedTopic = writer();
+    const unexpected = new Error("unexpected authorization bug");
+    await expect(sectionAction({
+      request: request("/en/sections/typescript", { title: "Unexpected", body: "Unexpected" }),
+      params: { locale: "en", sectionId: "typescript" },
+      context: context(unexpectedTopic, true, allForumPermissions, unexpected),
+    })).rejects.toBe(unexpected);
+    expect(unexpectedTopic.createTopic).not.toHaveBeenCalled();
+
+    const solutionWriter = writer();
+    const solutionUnavailable = await topicAction({
+      request: request("/en/topics/topic-1", { intent: "markSolved" }),
+      params: { locale: "en", topicId: "topic-1" },
+      context: context(solutionWriter, true, allForumPermissions, new AuthorizationUnavailableError()),
+    });
+    expect(solutionUnavailable).toMatchObject({ data: { error: "unavailable" }, init: { status: 503 } });
+    expect(solutionWriter.markTopicSolved).not.toHaveBeenCalled();
+
+    const unexpectedSolution = writer();
+    const solutionBug = new Error("unexpected solution authorization bug");
+    await expect(topicAction({
+      request: request("/en/topics/topic-1", { intent: "markSolved" }),
+      params: { locale: "en", topicId: "topic-1" },
+      context: context(unexpectedSolution, true, allForumPermissions, solutionBug),
+    })).rejects.toBe(solutionBug);
+    expect(unexpectedSolution.markTopicSolved).not.toHaveBeenCalled();
+  });
+
 });

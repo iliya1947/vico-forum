@@ -6,7 +6,7 @@ import { PERMISSION_CATALOG } from "../authorization/catalog";
 import { requireSameOrigin, requiredFormText } from "../forum/mutations.server";
 import { ForumShell } from "../forum/ui";
 import { AuthorizationForbiddenError, AuthorizationLockoutError, AuthorizationNotFoundError, AuthorizationRoleAssignedError, AuthorizationRoleSlugConflictError } from "../../db/authorization-repository";
-import { InvalidAuthorizationInputError } from "../../db/authorization-service";
+import { AuthorizationUnavailableError, InvalidAuthorizationInputError } from "../../db/authorization-service";
 
 type Failure = "invalid" | "forbidden" | "notFound" | "conflict" | "unavailable";
 async function manager(context: RouterContextProvider) {
@@ -19,7 +19,10 @@ async function manager(context: RouterContextProvider) {
     }
   } catch (error) {
     if (error instanceof Response) throw error;
-    throw new Response("Unavailable", { status: 503 });
+    if (error instanceof AuthorizationUnavailableError) {
+      throw new Response("Unavailable", { status: 503 });
+    }
+    throw error;
   }
   return { actorId: session.user.id, capability };
 }
@@ -29,7 +32,13 @@ export async function loader({ params, context }: { params: { locale?: string };
   try {
     const state = await capability.readManagementState();
     return { locale: params.locale ?? "en", ...state, permissions: PERMISSION_CATALOG };
-  } catch (error) { if (error instanceof Response) throw error; throw new Response("Unavailable", { status: 503 }); }
+  } catch (error) {
+    if (error instanceof Response) throw error;
+    if (error instanceof AuthorizationUnavailableError) {
+      throw new Response("Unavailable", { status: 503 });
+    }
+    throw error;
+  }
 }
 
 export async function action({ request, context }: { request: Request; context: RouterContextProvider }) {
@@ -48,11 +57,15 @@ export async function action({ request, context }: { request: Request; context: 
     else throw new InvalidAuthorizationInputError();
     return { ok: true as const };
   } catch (error) {
-    const [name, status]: [Failure, number] = error instanceof InvalidAuthorizationInputError || error instanceof AuthorizationRoleSlugConflictError ? ["invalid", 400]
+    const mapped: [Failure, number] | undefined =
+      error instanceof InvalidAuthorizationInputError || error instanceof AuthorizationRoleSlugConflictError ? ["invalid", 400]
       : error instanceof AuthorizationForbiddenError ? ["forbidden", 403]
       : error instanceof AuthorizationNotFoundError ? ["notFound", 404]
       : error instanceof AuthorizationLockoutError || error instanceof AuthorizationRoleAssignedError ? ["conflict", 409]
-      : ["unavailable", 503];
+      : error instanceof AuthorizationUnavailableError ? ["unavailable", 503]
+      : undefined;
+    if (!mapped) throw error;
+    const [name, status] = mapped;
     return Response.json({ error: name }, { status });
   }
 }

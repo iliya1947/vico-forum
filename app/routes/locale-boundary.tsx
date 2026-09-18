@@ -19,6 +19,7 @@ import { CanonicalEnglishSource, LocalTranslationSource } from "../localization/
 import { authSessionForRequest } from "../auth/request-context";
 import { HeaderAuthProvider } from "../auth/auth-controls";
 import { authorizationForRequest } from "../authorization/request-context";
+import { AuthorizationUnavailableError } from "../../db/authorization-service";
 
 interface LocaleBoundaryArgs {
   request: Request;
@@ -78,10 +79,11 @@ export async function loader(args: LocaleBoundaryArgs) {
   const session = authSessionForRequest(args.context);
   let canManageAuthorization = false;
   if (session) {
-    const resolver = authorizationForRequest(args.context).forUser(session.user.id);
     try {
+      const resolver = authorizationForRequest(args.context).forUser(session.user.id);
       canManageAuthorization = await resolver.has("access.authorization.manage");
-    } catch {
+    } catch (error) {
+      if (!(error instanceof AuthorizationUnavailableError)) throw error;
       // The header link is presentation-only; the protected admin route checks permission independently.
     }
   }

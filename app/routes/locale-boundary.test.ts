@@ -6,6 +6,7 @@ import { localeRegistry } from "../localization/registry";
 import { loader, middleware } from "./locale-boundary";
 import { authSessionContext } from "../auth/request-context";
 import { authorizationContext } from "../authorization/request-context";
+import { AuthorizationUnavailableError } from "../../db/authorization-service";
 
 function contextWithFixtureRegistry() {
   const context = new RouterContextProvider();
@@ -116,36 +117,49 @@ describe("locale boundary middleware", () => {
   });
 });
 
-describe("locale boundary loader", () => {
-  it("keeps public pages available when the optional authorization-nav lookup fails", async () => {
-    const context = new RouterContextProvider();
-    context.set(localeContext, {
-      translationLocale: "en", fallbackLocales: [], direction: "ltr",
-      formatting: { locale: "en", timeZone: "UTC" }, nativeName: "English", presentationMetadata: {},
-    });
-    context.set(uiTranslationStoreContext, {
-      readApproved: vi.fn(async () => []),
-      read: vi.fn(async () => undefined),
-    });
-    context.set(authSessionContext, {
-      user: {
-        id: "user-1", name: "Vico", email: "vico@example.test", emailVerified: true,
-        createdAt: new Date(), updatedAt: new Date(), locale: "en",
-      },
-      session: {
-        id: "session-1", token: "token", userId: "user-1", expiresAt: new Date(Date.now() + 60_000),
-        createdAt: new Date(), updatedAt: new Date(),
-      },
-    });
-    context.set(authorizationContext, {
-      forUser: () => ({ resolve: vi.fn(), has: vi.fn(async () => { throw new Error("database unavailable"); }) }),
-    } as never);
+function localeLoaderContext(authorizationError: Error) {
+  const context = new RouterContextProvider();
+  context.set(localeContext, {
+    translationLocale: "en", fallbackLocales: [], direction: "ltr",
+    formatting: { locale: "en", timeZone: "UTC" }, nativeName: "English", presentationMetadata: {},
+  });
+  context.set(uiTranslationStoreContext, {
+    readApproved: vi.fn(async () => []),
+    read: vi.fn(async () => undefined),
+  });
+  context.set(authSessionContext, {
+    user: {
+      id: "user-1", name: "Vico", email: "vico@example.test", emailVerified: true,
+      createdAt: new Date(), updatedAt: new Date(), locale: "en",
+    },
+    session: {
+      id: "session-1", token: "token", userId: "user-1", expiresAt: new Date(Date.now() + 60_000),
+      createdAt: new Date(), updatedAt: new Date(),
+    },
+  });
+  context.set(authorizationContext, {
+    forUser: () => ({ resolve: vi.fn(), has: vi.fn(async () => { throw authorizationError; }) }),
+  } as never);
+  return context;
+}
 
+describe("locale boundary loader", () => {
+  it("keeps public pages available for a classified optional authorization outage", async () => {
+    const context = localeLoaderContext(new AuthorizationUnavailableError());
     const snapshot = await loader({
       request: new Request("https://vico.test/en/"), params: { locale: "en" }, context,
     });
 
     expect(snapshot.authUser).toEqual({ name: "Vico", canManageAuthorization: false });
     expect(snapshot.locale.translationLocale).toBe("en");
+  });
+
+  it("does not hide unexpected optional authorization errors", async () => {
+    const failure = new Error("unexpected authorization bug");
+    await expect(loader({
+      request: new Request("https://vico.test/en/"),
+      params: { locale: "en" },
+      context: localeLoaderContext(failure),
+    })).rejects.toBe(failure);
   });
 });
