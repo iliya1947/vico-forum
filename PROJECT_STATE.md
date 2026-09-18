@@ -2,420 +2,181 @@
 
 Последнее обновление: 2026-09-18
 
-## Текущее состояние
+## Назначение
 
-Vico Forum находится в ранней разработке. Stage 4 forum core завершён в local/CI path; следующий
-активный продуктовый этап — Stage 5 translations/background jobs. External production integration
-остаётся отдельной границей Stage 6.
+Этот файл фиксирует только текущее фактическое состояние репозитория, известные текущие
+ограничения и ближайший маршрут разработки.
 
-Завершены Stage 0–3:
+Постоянные продуктовые и архитектурные решения находятся в соответствующих source-of-truth
+документах:
 
-- React Router v8 Framework Mode SSR scaffold для Cloudflare Workers;
-- generic locale routing, `LocaleRegistry`, BCP-47 resolution, LTR/RTL и request-scoped
-  `i18next` runtime;
-- PostgreSQL 17 + Drizzle foundation, checked-in migrations и disposable DB integration tests;
-- persistent locale registry через Neon/Hyperdrive;
-- persistent manual/machine UI translation read sources;
-- deterministic compiled UI bundle/version/cache primitives;
-- production-like read-only localization DB capability, migration verification и Hyperdrive
-  acceptance/hardening.
+- `PROJECT.md` — продуктовый и технический baseline;
+- `PROJECT_HISTORY.md` — значимая история решений, регрессий и последующих corrections;
+- `ROADMAP.md` — последовательность этапов;
+- `TRANSLATION_ARCHITECTURE.md` и `docs/translation/*` — мультиязычность и переводы;
+- `docs/auth/AUTHORIZATION.md` — application authorization;
+- `docs/database/*` — migrations, Hyperdrive и external rollout.
 
-Stage 4D завершён в local/CI path: существующая Better Auth `1.7.4` schema foundation (`user`, `session`,
-`account`, `verification`, `rate_limit`, nullable server-owned `user.locale`) подключена к
-server-only runtime через PostgreSQL Drizzle adapter. Worker создаёт request-scoped auth
-capability без module-global PostgreSQL connection, разрешает текущую session до React
-Router handler и предоставляет её loaders/actions через typed context. Better Auth resource
-route доступен под `/api/auth/*`; Google provider использует env placeholders, но real OAuth
-smoke и production credentials не выполнялись.
+История отдельных PR, commit SHA и CI run не дублируется здесь; значимые historical/corrective
+цепочки фиксируются в `PROJECT_HISTORY.md`.
 
-## Что реально работает в продукте
+## Текущая фаза
 
-Stage 4 forum MVP завершён локально/для CI.
+Vico Forum находится в ранней pre-release разработке.
 
-Stage 4B forum domain foundation:
+- Stage 0–3 foundation завершён.
+- Stage 4 forum core завершён в local/CI path.
+- Активный продуктовый этап — **Stage 5 translations/background jobs**.
+- External production-like integration намеренно отложена до **Stage 6**.
+- Обычная feature-разработка идёт через local/disposable PostgreSQL 17 и обязательный CI;
+  merge в `main` сам по себе не является external rollout.
 
-- добавлены category/section/topic/post schema и forward migration `0004`;
-- topic title и post body хранятся как отдельные immutable revisions с обязательным
-  current-revision pointer, original content и независимым `sourceLocale | und`;
-- forum topics, posts и их revisions связаны с существующим Better Auth `user.id`;
-- минимальные forum repository/service API создают и читают hierarchy и атомарно добавляют
-  новые revisions с optimistic current-revision guard;
-- PostgreSQL integration suite проверяет clean full history, hierarchy, FK/current/immutable
-  invariants и отсутствие зависимости source locale от persistent `LocaleRegistry`.
+## Реализованный foundation
 
-Stage 4C public forum read:
+Текущий repository baseline:
 
-- locale-scoped SSR routes показывают индекс категорий, категорию с разделами, раздел со
-  списком тем и тему с последовательными сообщениями;
-- loaders получают request-scoped `ForumReader` через существующий `RouterContextProvider`,
-  а Worker создаёт PostgreSQL/Hyperdrive-backed reader;
-- repository предоставляет page-shaped bulk reads с aggregate counts и current revision/
-  author joins без per-row queries на публичном path;
-- classic forum UI сохраняет canonical locale во внутренних ссылках, работает внутри
-  существующего i18next boundary и имеет empty/not-found/error states;
-- LTR/RTL fixtures покрывают цепочку `category → section → topic → posts`;
-- schema и migration `0004` не менялись.
+- React Router `8.3.1` Framework Mode + SSR + TypeScript на Cloudflare Workers;
+- Node `24.21.0`, pnpm `12.3.4`, React `19.3.0`, Vite `8.2.2`;
+- PostgreSQL 17 + Drizzle ORM с append-only migration history;
+- Better Auth `1.7.4` + PostgreSQL Drizzle adapter;
+- generic `/:locale/*`, runtime `LocaleRegistry`, BCP-47 resolution, LTR/RTL и request-scoped
+  `i18next`;
+- persistent locale registry, persistent UI translation storage и compiled bundle storage;
+- текущая migration history — `0000`–`0010`.
 
-Stage 4D participation, safe Markdown и anti-spam:
+## Forum core — Stage 4
 
-- authenticated пользователь может создать тему с первым сообщением и ответить в теме только
-  при effective `forum.topic.create` / `forum.reply.create`;
-- route actions используют request-scoped Hyperdrive/Drizzle write capability и только
-  `session.user.id`, проверяют input, effective permission и same-origin browser mutations;
-- тема, title revision и первое post/body revision создаются одной транзакцией; новые
-  revisions фиксируют `sourceLocale: "und"`;
-- classic UI показывает write forms только при соответствующем effective permission, а
-  PostgreSQL integration suite проверяет persistence и rollback через disposable DB;
-- тела сообщений рендерятся переиспользуемым CommonMark renderer на `react-markdown 10.1.0`:
-  без raw HTML, исполняемых unsafe URL и внешних images, но с paragraphs, emphasis, lists,
-  links, inline/fenced code и LTR/RTL-safe layout;
-- единая pre-release policy ограничивает пользователя одной topic/reply content mutation в
-  5 секунд; существующая `user` row блокируется `SELECT ... FOR UPDATE` в той же PostgreSQL
-  transaction до проверки последнего `forum_posts.created_at` и атомарного write;
-- domain cooldown преобразуется route actions в локализованный HTTP `429` с `Retry-After`;
-  deterministic и реально concurrent PostgreSQL coverage проверяет общую policy для topic/
-  reply, rollback, независимость пользователей и невозможность concurrent bypass;
-- существующая schema `0004` достаточна: `user` даёт per-author row lock, а индексированный
-  `forum_posts.author_id` и `forum_posts.created_at` дают cooldown history, поэтому migration
-  для Stage 4D не добавлялась.
+Stage 4 реализован и проверяется локально/в CI:
 
-Stage 4E solved/best answer:
+- публичное чтение `категория → раздел → тема → сообщения`;
+- Better Auth session boundary и `/api/auth/*`;
+- authenticated создание темы и ответа;
+- safe CommonMark rendering без raw HTML и внешних images;
+- transactional per-author cooldown для topic/reply writes;
+- solved topic и best answer;
+- immutable topic-title/post-body revisions с независимым `sourceLocale | und`;
+- dynamic PostgreSQL-backed authorization с built-in/custom roles, редактируемыми grants и
+  per-user `allow | deny | inherit` overrides;
+- locale-aware authorization management UI;
+- server-side `PermissionResolver`, server-derived solution scope и lockout protection;
+- authorization availability отделена от permission denial: только классифицированные
+  dependency availability failures используют controlled degradation/`503`, unexpected
+  programming/schema/configuration errors не маскируются.
 
-- тема может быть отмечена решённой, после чего выбирается или заменяется лучший ответ из той
-  же темы;
-- `forum.solution.manageOwn` требует server-side ownership target topic, а
-  `forum.solution.manageAny` разрешает управление любой темой;
-- solution scope `own | any` вычисляется только server-side через `PermissionResolver` и
-  передаётся в domain boundary без доверия к FormData;
-- repository атомарно блокирует topic, применяет ownership для `own`, проверяет solved state и
-  принадлежность best-answer post теме;
-- solved/best-answer состояние доступно публичному reader и отображается со стабильной ссылкой;
-- forward migration `0005` добавляет только solution state без изменения immutable revisions.
+Real Google OAuth credentials/smoke и внешний authorization bootstrap не входят в завершённый
+local/CI Stage 4 и остаются Stage 6.
 
-Stage 4E2a authorization backend foundation:
+## Translation system — текущее состояние Stage 5
 
-- migration `0006` добавляет normalized PostgreSQL schema, code-backed permission catalog,
-  независимые built-in roles с явными initial grants, custom roles, одно role assignment на
-  пользователя и персональные `allow | deny` overrides;
-- единый request-scoped `PermissionResolver` разрешает актуальное DB state с приоритетом
-  `deny → allow → role grant → deny by default`, а существующего пользователя без assignment
-  трактует как built-in `user` без session role claim;
-- backend repository/service предоставляет validated management operations и чтение raw/effective
-  state, а Worker подключает отдельную authorization capability через `RouterContextProvider`;
-- все authz mutations сериализуются PostgreSQL row lock на singleton row и после появления manager
-  атомарно отклоняют переход к нулю effective `access.authorization.manage`; disposable PostgreSQL
-  suite включает реальную concurrent проверку и rollback;
-- role stable slug защищён service/repository contract и PostgreSQL trigger; nonexistent Better Auth
-  identity не получает default permissions.
+### Stage 5A — реализованная часть
 
-Stage 4E2b authorization integration и management UI:
+В repository/local-CI path работают:
 
-- create/reply routes и presentation используют актуальные effective permissions вместо простого
-  факта наличия session;
-- защищённая locale-aware страница `/:locale/admin/authorization` позволяет просматривать роли,
-  создавать/переименовывать/удалять допустимые custom roles, менять grants любой роли, назначать
-  пользователю роль, задавать `inherit | allow | deny` и видеть effective permissions;
-- добавлены request-scoped management capability и минимальный Better Auth user read model;
-- loader и action management route независимо требуют session и актуальный
-  `access.authorization.manage`; mutations также проверяют same-origin и runtime input;
-- guest, resolved permission denial и lockout cases сохраняют controlled HTTP semantics;
-- PostgreSQL/Hyperdrive authorization adapter классифицирует только известные availability/
-  connection/query-timeout failures как typed unavailable: optional presentation при таком outage
-  скрывает protected controls и сохраняет public read, а protected authorization boundary возвращает
-  controlled `503`; unexpected SQL/schema/programming/configuration/invariant errors больше не
-  маскируются как denial или infrastructure outage и проходят в обычный application error handling;
-- header показывает locale-preserving management link только effective manager; сам link не является
-  authorization boundary;
-- route tests покрывают authenticated permission denial для topic/reply/solution, server-derived
-  `own | any`, precedence `manageAny`, игнорирование forged actor/author/role/permission/scope,
-  а также различие между classified unavailable и unexpected authorization errors.
+- `UiTranslationService` для exact-target generation planning;
+- provider-neutral `TranslationProviderRouter` и capability boundary;
+- `LocaleRulesProvider` и validation provider output, включая structured plural units;
+- durable translation tasks в PostgreSQL;
+- commit task before enqueue и transport-neutral enqueue boundary;
+- task lifecycle `pending → processing → stale/completed`, claim token и lease/reclaim;
+- stale/source/policy/locale/manual preflight перед provider call;
+- durable monotonic generation ordering и current-generation fencing;
+- provider-neutral task executor;
+- conditional machine publication с provider/model provenance;
+- atomic `task completion + raw machine translation + whole namespace bundle` publication;
+- persisted exact-locale compiled bundles с deterministic current-deploy identity;
+- SSR/runtime чтение verified persisted bundles для canonical non-English locale с raw/local/
+  English fallback при miss или классифицированной storage degradation.
 
-Первый ограниченный шаг Stage 5A UI translation generation:
+Migration `0007`–`0010` содержит durable task lifecycle и generation-ordering foundation.
 
-- `UiTranslationService` строит deterministic exact-target plan только для зарегистрированного
-  canonical non-English locale и canonical catalog namespaces;
-- current local manual, persistent manual и machine values текущей generation policy подавляют
-  duplicate generation, а missing/source-stale/policy-stale exact-target units формируют versioned
-  stable job identity;
-- provider/transport-independent `TranslationJobDispatcher` принимает план без подключения к
-  SSR/runtime generation path.
+### Stage 5 ещё не завершён
 
-Следующий ограниченный слой Stage 5A UI translation pipeline:
+Для завершения Stage 5 local/CI path ещё нужны:
 
-- реализованы `PRV-01`/`PRV-02`: provider-neutral `TranslationProviderRouter` выбирает fake/contract
-  machine adapter по Vico locale pair, UI/content domain, `messageKind` и plain/structured capability;
-  provider-specific locale mapping остаётся внутри adapter, а result boundary сохраняет provider/model/
-  machine provenance metadata;
-- реализован `UI-13`: изолированный `LocaleRulesProvider` получает полный cardinal plural branch set
-  target locale через `Intl.PluralRules` и возвращает controlled failure при invalid/unsupported rules без
-  English fallback;
-- `UI-12`/`SEC-03` расширены единым validation boundary для недоверенного provider output: plain и каждая
-  structured branch проверяют non-empty/size/markup/placeholders/protected terms, а plural unit требует
-  точного полного target branch set без missing/unexpected branches;
-- provider-neutral `UiTranslationTaskExecutor` теперь связывает eligible claimed task с
-  `TranslationProviderRouter` и `UiTranslationResultPublisher`; provider request строится из canonical
-  English descriptor и target locale, а plural execution получает полный target branch contract через
-  `LocaleRulesProvider`;
-- provider output остаётся untrusted до существующего validation/publication boundary; execution path
-  остаётся вне SSR/page request. Real external provider adapters/calls, real Queue binding,
-  retry/DLQ/reconciliation и user-content translation остаются следующей Stage 5 работой;
-  persisted-bundle runtime switching описан ниже как завершённый последующий slice.
+- `JOB-04` retry classification/DLQ semantics и соответствующий transport boundary;
+- `JOB-06` persistent task reconciliation/observability;
+- concrete machine-provider adapter implementation за существующим provider-neutral boundary;
+- Stage 5B `ContentTranslationService` и revision-bound перевод пользовательского контента;
+- Markdown AST/structured content translation path и content translation persistence.
 
-Durable foundation Stage 5A для UI translation jobs:
+Реальные Cloudflare Queue bindings, provider credentials/calls и deployed provider/Queue smoke —
+это отдельная Stage 6 external acceptance и не являются условием обычных Stage 5 feature PR.
 
-- реализованы `JOB-01`/`JOB-02`: migration `0007` добавляет минимальную `translation_tasks` schema
-  со stable logical identity, UI source identity/fingerprint, target locale, generation policy,
-  durable `pending` status и lifecycle timestamps;
-- PostgreSQL-backed task store валидирует job/DB boundaries и idempotently upsert-ит один durable
-  task для одной stable identity; task остаётся `pending` при enqueue failure/unknown;
-- persistent dispatcher последовательно коммитит task перед transport-neutral enqueue, а message
-  содержит только `translationTaskId`; fake enqueue adapter обеспечивает local/CI coverage без
-  Cloudflare Queue;
-- PostgreSQL integration coverage проверяет окно `durable task committed → enqueue failed/unknown`:
-  после ошибки enqueue новая независимая DB connection видит ту же task в `pending`, поэтому будущий
-  `JOB-06` reconciliation имеет durable recovery source;
-- Queue delivery не считается exactly-once. Real Queue adapter, retry/DLQ/reconciliation и
-  real external provider adapters/calls остаются следующими Stage 5 slices; persisted bundle runtime
-  path реализован последующим slice ниже;
-  provider-neutral execution и conditional result publication описаны ниже.
+## Известная текущая regression
 
-Первая часть `JOB-03` для UI translation consumer:
+### Local manual translation stale policy
 
-- migration `0008` расширяет task lifecycle минимальными состояниями `pending → processing → stale`,
-  уникальным claim token и timestamps claim/lease/stale; expired processing lease допускает reclaim;
-- PostgreSQL repository атомарно выдаёт только один execution claim, превращает duplicate delivery
-  при live lease в no-op и conditionally завершает stale task только для актуального claim token;
-- durable claim/lease/stale expiration и reclaim используют PostgreSQL-owned `statement_timestamp()`,
-  а не wall clock вызывающего Worker; duplicate planning не сбрасывает и не продлевает живой
-  `processing` claim;
-- planner и consumer используют единое generation-eligibility правило: зарегистрированный canonical
-  non-English locale; `active` и `inactive` разрешены для generation, `disabled` запрещён;
-- `stale` остаётся terminal для старой Queue delivery/retry, но более поздний fresh eligible plan может
-  атомарно вернуть ту же stable task identity/id в `pending`, очистив старую claim/stale metadata;
-- provider/Queue-independent consumer после claim повторно проверяет canonical descriptor/fingerprint,
-  generation policy, generation target и exact-target local/persistent manual result; fallback resources
-  не считаются exact-target evidence;
-- eligible task возвращает typed execution context для provider-neutral execution layer.
+Runtime/freshness contract корректно поддерживает stale local/manual translations:
 
-Текущий Stage 5A state включает durable current-generation ordering и provider-neutral execution для UI translation tasks:
+```text
+fingerprint mismatch
+→ stale
+→ исключить value из current bundle
+→ продолжить source/locale fallback
+```
 
-- migration `0009` добавляет terminal `completed` state и `completed_at`; completed stable identity
-  не реактивируется duplicate planning, а новая source/policy generation получает новую logical identity;
-- forward migration `0010` добавляет каждой task монотонный номер generation внутри logical unit
-  `(translationKind, namespace, key, targetLocale)` и отдельный durable generation head;
-- planning разных stable identities и publication сериализуются row lock одного head. Новая identity
-  атомарно становится current, а delayed повтор старой identity сохраняет старый номер и не может
-  передвинуть head назад;
-- same-identity dedup, terminal `completed`, live-claim preservation и reactivation `stale` сохранены;
-  reactivation разрешена только если эта identity всё ещё current;
-- consumer/result publisher повторно применяют current source fingerprint, generation policy,
-  generation target, durable current generation и manual-priority preflight к claimed task;
-- `UiTranslationTaskExecutor` после successful claim/preflight формирует provider-neutral request,
-  вызывает `TranslationProviderRouter` и передаёт raw result в `UiTranslationResultPublisher`;
-- connected contract coverage с fake adapter проверяет plain execution, target plural branch handoff,
-  stale-generation short-circuit до provider call и rejection invalid provider output до persistence;
-- `UiTranslationResultPublisher` валидирует provider output через общий
-  `validateProviderOutput`/`LocaleRulesProvider` boundary и только после current preflight передаёт
-  результат в publication store;
-- PostgreSQL publication store под тем же generation-head lock в одной transaction conditionally переводит актуальный claim
-  `processing → completed` и upsert-ит approved machine row с `sourceFingerprint`, generation policy и
-  provider/model/provenance metadata; superseded generation и потерянный/reclaimed claim не публикуют результат;
-- canonical UI descriptor теперь допускает structured plural source как одну logical translation unit;
-  `sectionCount` переведён на реальный `one/other` canonical plural fixture, а source fingerprint
-  детерминированно учитывает structured source semantics;
-- persistent raw machine translation сохраняет validated structured plural payload как JSON object,
-  source loader возвращает его как одну logical unit, а compiled bundle materializes полный target
-  branch set в i18next JSON v4 suffix resources (`key_one`, `key_few`, `key_many`, `key_other` и т. п.);
-- PostgreSQL integration coverage использует независимые connections для concurrent planning разных
-  identities, отдельно проверяет delayed old identity и publication fencing уже выполняющейся старой
-  task, а также existing completion/claim/structured payload contracts;
-- real external provider adapters/calls, real Cloudflare Queue consumer binding, retry/DLQ и
-  `JOB-06` reconciliation всё ещё не реализованы и остаются следующими Stage 5A slices;
+Но текущий `app/localization/resources.test.ts` ошибочно требует для реальных
+`manualTranslationPacks` результат `{ staleKeys: {} }`, а intentional stale runtime canary был
+удалён в PR #40.
 
-Следующий ограниченный slice Stage 5A publication завершён в текущей ветке:
+Это **не является принятой zero-stale repository policy**. Архитектурный contract допускает
+strict stale-blocking CI только после отдельного явного решения. Код/тестовая коррекция этой
+regression ещё не выполнена.
 
-- successful conditional machine publication теперь одной PostgreSQL transaction завершает task,
-  записывает raw machine payload и пересобирает persisted whole exact-locale namespace bundle;
-- bundle использует existing priority/freshness contracts `local manual → persistent manual →
-  current machine`, не flatten-ит locale fallback и компилирует structured plural JSON в i18next
-  v4 suffix resources;
-- publications разных keys одного `(locale, namespace)` сериализуются deterministic row locks
-  существующих generation heads, поэтому поздняя transaction компилирует уже закоммиченный
-  namespace state и не может сделать lost update/regression; Queue ordering и advisory locks не
-  используются;
-- compilation/persistence failure откатывает raw translation и task completion вместе с bundle,
-  исключая ложный durable success; schema/migrations не менялись;
-- PostgreSQL coverage добавляет whole namespace, local/persistent manual priority, plural,
-  lost/superseded claim bundle preservation, concurrent independent connections и atomic rollback;
-- runtime/SSR чтение persisted bundles реализовано следующим slice, описанным ниже.
+## CI и migration state
 
-Persisted compiled UI bundle runtime-read slice завершён в текущей ветке:
+Обычный pull-request CI сейчас проверяет:
 
-- `TranslationResourceLoader` для каждого canonical non-English locale/namespace сначала читает
-  и проверяет `ui_translation_bundles`; normal hit не читает и не реконструирует namespace из
-  raw `ui_translations`;
-- target/fallback locale bundles остаются отдельными, runtime-ready plural suffix resources
-  передаются без повторной locale-компиляции, а SSR/hydration используют прежний единый snapshot;
-- canonical `en` всегда строится из code-owned catalog и не обращается к bundle table;
-- bundle miss использует прежний raw priority merge; classified connection/query timeout,
-  unavailable/schema failure и invalid bundle безопасно оставляют local/English fallback, тогда
-  как произвольные programming/configuration failures остаются видимыми;
-- bundle format v2 включает current-deploy identity canonical namespace и exact local manual pack,
-  включая отсутствующие overrides, поэтому изменение или удаление local value инвалидирует старую
-  persisted version без обычной request-time пересборки whole raw namespace;
-- schema/migration не понадобились: existing `bundle_version` хранит новый semantic identity;
-  внешний rollout не выполнялся, а retry/DLQ, `JOB-06`, real Queue/provider и Stage 5B остаются вне scope.
+- accepted migration history и repository-local migration/evidence contracts;
+- lint;
+- typecheck;
+- unit/route tests;
+- production build;
+- Drizzle migration metadata;
+- clean PostgreSQL 17 migration/integration suite;
+- Workers build и local Hyperdrive smoke.
 
-Bundle-publication slice проверен GitHub Actions CI #196 на head
-`f7dc2de4b613f1cf7413dbdc28c94f49a9d1526e`: полностью прошли `checks` и `database`, включая
-migration history/evidence, lint, typecheck, unit tests, build, migration metadata, clean PostgreSQL 17
-migrations/integration tests, Workers build и local Hyperdrive smoke.
+Обычный PR CI не выполняет live GitHub Actions verification старого external migration evidence.
+Live migration→runtime verification относится только к фактическому external schema-dependent
+rollout по `docs/database/MIGRATIONS.md`.
 
-Provider-execution slice проверен GitHub Actions CI #193 на code head
-`72efa8d4dc102437b5ca5c82d5c35a434f76896a`: полностью прошли `checks` и `database`, включая
-migration history/evidence, lint, typecheck, unit tests, build, migration metadata, clean PostgreSQL 17
-migrations/integration tests, Workers build и local Hyperdrive smoke.
+## External / deployed state
 
-Migration `0010`, metadata/history и PostgreSQL integration suite локально проверены на PostgreSQL
-17.11. GitHub Actions CI #190 на head `28f21961d485358bf1c02940f159fa3c8d273b3b` полностью
-прошёл `checks` и `database`, включая migration history/evidence, lint, typecheck, unit tests, build,
-migration metadata, clean PostgreSQL 17 migrations/integration tests, Workers build и local Hyperdrive smoke.
+Repository/local-CI state намеренно может опережать внешний pre-release environment.
 
-Lifecycle correction из PR #69 merged в `main` commit
-`c12550c3fa1cb371df82a178d20ed7020c33f9ce`. GitHub Actions CI #170 на финальном head PR #69
-`f6522c4750f91863b78fb41f6cbbc44f8362c639` полностью прошёл `checks` и `database`, включая
-lint, typecheck, unit tests, build, migration metadata/history checks, PostgreSQL 17
-migrations/integration tests, Workers build и local Hyperdrive smoke.
+Текущее repository-owned migration evidence относится к `0002_ui_translation_storage`; более
+новые auth/forum/translation migrations не считаются externally accepted только по факту их
+наличия в `main`.
 
-Дополнительный PostgreSQL integration test durable enqueue-failure recovery прошёл GitHub Actions
-CI #171 на head `d88b342df399832812614b6c3ee988b6b95252cc`: после enqueue failure fresh DB reader
-подтверждает сохранённую `pending` task. Это доказывает prerequisite для будущего `JOB-06`, но
-не означает, что reconciliation уже реализован.
+Существующий внешний localization foundation использует read-only Hyperdrive capability для
+`locales`, `ui_translations` и `ui_translation_bundles`. Ранее выполненный real Hyperdrive
+acceptance остаётся evidence этого localization path, но не является gate для обычных feature PR.
 
-Исправление generation-isolation в PR #71 проверено GitHub Actions CI #188 на head
-`03214222eefd6033934c3fda5bf088e8842cd069`: полностью прошли `checks` и `database`, включая
-lint, typecheck, unit tests, build, migration metadata/history checks, PostgreSQL 17 integration,
-Workers build и local Hyperdrive smoke. PostgreSQL regression test подтверждает, что delayed duplicate
-completed identity не удаляет pending task и не отзывает processing claim другого поколения.
+По зафиксированному состоянию проекта native Cloudflare Git integration для active development
+`main` отключён. Перед Stage 6 фактическую external configuration необходимо проверить заново.
 
-Core Stage 4 integration подтверждён PostgreSQL 17 CI:
+Текущий production migration workflow временно допускает database-owner connection только для
+no-op verification. Перед следующим настоящим external schema rollout необходимо восстановить
+и проверить dedicated least-privilege migration capability и убрать owner exception.
 
-- connected test проходит `public read → authenticated topic → second-user reply → solved → best answer
-  → public read persisted solution` через реальные forum actions, request-scoped authorization и
-  PostgreSQL repositories;
-- отдельные следующие requests подтверждают dynamic role assignment/grant removal/grant restore,
-  per-user `deny`, `inherit`, `allow` и отсутствие доверия forged authorization fields;
-- GitHub Actions CI #144 на финальном head PR #61 `0d3863359f02cb230c3d50c10d8f6be03bb8ed5c`
-  прошёл `checks` и `database`, включая lint, typecheck, unit tests, build, migration metadata,
-  PostgreSQL tests, Workers build и local Hyperdrive smoke.
+До Stage 6 не считаются выполненными:
 
-Исправление rollout/authz failure boundaries в PR #76 проверено GitHub Actions CI #202
-на head `b4d6beea1c890e4e27b1b2c5de969d4e0be07bd8`: полностью прошли `checks` и `database`,
-включая repository-local migration history/evidence contract checks, lint, typecheck, unit tests,
-build, migration metadata, clean PostgreSQL 17 migrations/integration tests, Workers build и
-local Hyperdrive smoke.
-
-Таким образом Stage 4 целиком завершён в local/CI path. Real Google OAuth, external authorization
-bootstrap, pending production migrations и production-like deployment acceptance намеренно остаются
-Stage 6 и не являются условием завершения Stage 4.
-
-Полный authorization contract — `docs/auth/AUTHORIZATION.md`.
-
-Следующий продуктовый приоритет — **Stage 5 translations/background jobs** согласно
-`TRANSLATION_ARCHITECTURE.md`, `docs/translation/*` и `ROADMAP.md`.
-
-## Stage 4A и production migration evidence
-
-Исторический Stage 4A добавил Better Auth schema как migration-only foundation. После этого
-PR #49 (`fix: allow pre-release owner verification`) был merged в `main`.
-
-Текущий production migration workflow допускает временный pre-release database-owner
-connection только в **no-op verification mode**: preflight обязан доказать, что весь
-checked-in migration journal уже применён до запуска `db:migrate`. Поэтому этот режим не
-может использоваться для применения новой pending migration.
-
-Repository-owned runtime migration evidence сейчас всё ещё относится к
-`0002_ui_translation_storage`. Это корректно, потому что production Worker пока не зависит
-от Better Auth/forum/authz migrations `0003`–`0006`.
-
-Обычный `pull_request` CI больше не выполняет live GitHub Actions verification этого external
-evidence. Repository-local unit/static evidence contract и migration-history checks сохранены,
-а `.github/scripts/verify-runtime-migration-evidence.mjs` и текущий evidence остаются для
-фактического external schema-dependent rollout на Stage 6.
-
-Перед следующим настоящим external schema rollout временный owner exception должен быть
-снят, а dedicated migration capability восстановлена/проверена согласно
-`docs/database/MIGRATIONS.md`.
-
-## Выполненный infrastructure acceptance
-
-Real Hyperdrive deadline acceptance выполнен 2026-09-13 для существующего localization
-path. Зафиксированы pool reuse/reset, server/client deadline behavior и безопасная
-classification; точные результаты и ограничения находятся в
-`docs/database/HYPERDRIVE.md`.
-
-Эти результаты остаются доказательством готовности существующего infrastructure foundation,
-но больше не являются gate для каждого feature PR.
-
-## Новое направление разработки
-
-До pre-release используется **product-first local/CI path**:
-
-1. Product schema, repositories, runtime behavior и UI разрабатываются против disposable/local
-   PostgreSQL 17 и существующего Workers-compatible local path.
-2. Каждый PR по-прежнему проходит обязательные repository checks (`lint`, `typecheck`,
-   tests, build, migration metadata и DB integration там, где применимо).
-3. Merge feature-кода сам по себе не должен означать external production rollout.
-4. Новые migrations не обязаны немедленно применяться в Neon только ради продолжения
-   разработки.
-5. Реальные Cloudflare/Neon/Google/provider integrations и production acceptance собираются
-   в отдельный pre-release этап после реализации соответствующих local/CI product stages.
+- применение/acceptance всех pending external migrations;
+- real Google OAuth configuration и smoke;
+- server-controlled bootstrap первого authorization manager;
+- реальные forum/auth/translation write runtime roles и Hyperdrive bindings;
+- Cloudflare Queues и реальные translation providers;
+- preview/private-data isolation для write capabilities;
+- full production-like deployment smoke и backup/restore acceptance.
 
 ## Ближайший маршрут
 
-### Выполнено: изолировать active development от production auto-deploy
+1. Исправить подтверждённую regression local manual stale coverage (#40), не вводя strict
+   zero-stale policy без отдельного решения.
+2. Завершить оставшийся Stage 5A local/CI path: concrete machine-provider adapter,
+   retry/DLQ и reconciliation/observability, сохраняя provider/transport boundaries.
+3. Реализовать Stage 5B revision-bound user-content translation.
+4. После завершения Stage 5 перейти к Stage 6 external integration по `ROADMAP.md` и
+   `docs/database/*`.
 
-Пользователь отключил native Cloudflare Git integration. Merge в active development `main`
-больше не запускает Cloudflare auto-deploy; production deploy по-прежнему не выполняется в
-обычных feature-задачах.
-
-### Выполнено: Stage 4B — forum domain foundation
-
-Реализованы минимальная forum model `категория → раздел → тема → сообщение`, revision
-boundaries `CNT-02`, `CNT-03`, `CNT-05`, migration и PostgreSQL integration coverage —
-локально/в CI, без production migration или runtime rollout.
-
-### Выполнено: Stage 4C — публичное чтение и классический UI
-
-Реализованы реальные SSR страницы и canonical locale navigation гостя по всей forum
-иерархии.
-
-### Выполнено: Stage 4D — участие, safe Markdown и basic anti-spam
-
-Better Auth runtime/session boundary, authenticated создание тем/ответов, safe CommonMark
-rendering и transactional per-author write cooldown завершены локально/для CI.
-
-### Выполнено: Stage 4E — solved/best answer + dynamic authorization
-
-Solved/best-answer flow, Stage 4E2a dynamic authorization backend, Stage 4E2b management UI,
-forum PermissionResolver integration и connected core E2E завершены local/CI.
-
-### Следующий этап: Stage 5 — translations/background jobs
-
-Завершить automatic UI translation и revision-bound user-content translation согласно уже
-зафиксированной translation architecture.
-
-### Stage 6 — pre-release external integration
-
-Только здесь собрать внешний production-like path целиком: pending migrations в Neon,
-least-privilege runtime capabilities/Hyperdrive, real Google OAuth, authorization bootstrap,
-Queues/providers, preview isolation, deployment smoke и migration evidence.
-
-## Блокеры
-
-Для начала Stage 5 продуктовых или operational блокеров по текущему roadmap нет. Native
-Cloudflare Git integration отключён, поэтому merge в `main` не выполняет автоматический
-production deploy.
-
-Cleanup временных test resources прошлых acceptance остаётся housekeeping и не блокирует
-local/CI product development.
+На текущем этапе external rollout не является блокером для продолжения Stage 5 local/CI работы.

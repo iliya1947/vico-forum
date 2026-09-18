@@ -8,6 +8,7 @@
 
 - [`PROJECT.md`](./PROJECT.md) — постоянный продуктовый и технический baseline.
 - [`PROJECT_STATE.md`](./PROJECT_STATE.md) — текущее фактическое состояние и следующий шаг.
+- [`PROJECT_HISTORY.md`](./PROJECT_HISTORY.md) — история значимых решений, регрессий и последующих исправлений.
 - [`ROADMAP.md`](./ROADMAP.md) — последовательный путь до первого production-релиза.
 - [`docs/auth/AUTHORIZATION.md`](./docs/auth/AUTHORIZATION.md) — архитектурный контракт dynamic roles/permissions и per-user overrides.
 - [`SCAFFOLD_PLAN.md`](./SCAFFOLD_PLAN.md) — завершённый executable plan Stage 1 и зафиксированный toolchain.
