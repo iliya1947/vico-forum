@@ -309,6 +309,12 @@ Core Stage 4 integration подтверждён PostgreSQL 17 CI:
   прошёл `checks` и `database`, включая lint, typecheck, unit tests, build, migration metadata,
   PostgreSQL tests, Workers build и local Hyperdrive smoke.
 
+Исправление rollout/authz failure boundaries в PR #76 проверено GitHub Actions CI #202
+на head `b4d6beea1c890e4e27b1b2c5de969d4e0be07bd8`: полностью прошли `checks` и `database`,
+включая repository-local migration history/evidence contract checks, lint, typecheck, unit tests,
+build, migration metadata, clean PostgreSQL 17 migrations/integration tests, Workers build и
+local Hyperdrive smoke.
+
 Таким образом Stage 4 целиком завершён в local/CI path. Real Google OAuth, external authorization
 bootstrap, pending production migrations и production-like deployment acceptance намеренно остаются
 Stage 6 и не являются условием завершения Stage 4.
