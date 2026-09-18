@@ -121,7 +121,7 @@ runtime-owned `manualTranslationPacks` и добавил test, требующи�
 `validateTranslationPacks(manualTranslationPacks) === { staleKeys: {} }`.
 
 Это фактически ввело zero-stale repository gate без отдельного решения о strict stale-CI и
-убрало production-owned canary, который проходил реальный runtime stale path.
+убрало runtime-owned intentional stale canary, который проходил реальный stale/fallback path.
 
 **Статус**
 
@@ -132,17 +132,23 @@ runtime-owned `manualTranslationPacks` и добавил test, требующи�
 
 ---
 
-### H-002 — pre-Stage-4 staging как обязательный blocker
+### H-002 — pre-Stage-4 staging blocker: superseded process policy
 
 PR [#37](https://github.com/iliya1947/vico-forum/pull/37) после audit превратил отдельную
 staging topology и ряд infrastructure hardening items в обязательные pre-Stage-4 blockers.
 
-Это было сильнее, чем требовал product-first pre-release маршрут, и смешивало будущую external
-integration с local/CI feature development.
+Это не implementation defect уровня H-001/H-003/H-005/H-006. Это process/architecture
+решение, которое последующий review признал избыточным для solo pre-release product-first
+маршрута: часть hardening была полезной, но отдельный staging и real-infrastructure acceptance
+не должны были безусловно блокировать local/CI feature development до появления соответствующей
+external/private-data границы.
 
-PR [#45](https://github.com/iliya1947/vico-forum/pull/45) исправил lifecycle:
-отдельный staging перестал быть pre-Stage-4 blocker, а external acceptance была отделена от
-обычной feature-разработки.
+PR [#45](https://github.com/iliya1947/vico-forum/pull/45) пересмотрел lifecycle:
+отдельный staging перестал быть pre-Stage-4 blocker, а текущая deployed среда могла временно
+использоваться как pre-release production candidate с test/pre-release data. Preview/private
+write boundary при этом осталась обязательной отдельной защитой.
+
+Статус: исходная process policy superseded, а не runtime regression.
 
 Текущий source of truth: `PROJECT.md`, `ROADMAP.md`, `docs/database/HYPERDRIVE.md`.
 
@@ -286,18 +292,24 @@ fenced по current generation.
 
 ---
 
-### H-009 — accidental unrelated PROJECT_STATE rewrite during PR work
+### H-009 — accidental unrelated PROJECT_STATE rewrites during PR work
 
 В PR [#73](https://github.com/iliya1947/vico-forum/pull/73) full-file API replacement при
-синхронизации `PROJECT_STATE.md` случайно изменил несвязанный Stage 4 текст.
+синхронизации `PROJECT_STATE.md` случайно изменил несвязанный Stage 4 текст. Diff review
+обнаружил изменение до merge, и исходная формулировка была восстановлена.
 
-Diff review обнаружил изменение до merge, и исходная формулировка была восстановлена.
-Runtime behavior не менялся.
+В PR [#74](https://github.com/iliya1947/vico-forum/pull/74) проблема повторилась и потребовала
+нескольких последовательных corrections, чтобы точно восстановить unrelated wording:
 
-Этот эпизод является причиной не считать full-file documentation rewrite безопасным только
-потому, что intended change был маленьким.
+- `44b106a98f9b` — `docs: restore unrelated project state wording`;
+- `7351b4ab8fde` — `docs: restore exact project state wording`;
+- `dc231a79545f` — `docs: restore exact original project state wording`.
 
-Статус: исправлено до merge PR #73.
+Runtime behavior в этих эпизодах не менялся, но история показывает, что full-file
+documentation replacement нельзя считать безопасным только потому, что intended изменение
+маленькое: diff должен проверяться целиком, включая unrelated sections.
+
+Статус: оба случая исправлены до merge соответствующих PR.
 
 ---
 
