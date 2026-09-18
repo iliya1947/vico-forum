@@ -120,6 +120,30 @@ Role assignment и overrides ссылаются на существующий Be
 6. Routes/UI/domain code должны обращаться к единому PermissionResolver/authorization capability,
    а не распределять проверки `role === ...` по приложению.
 
+## Failure semantics
+
+Результат authorization resolution и отказ authorization infrastructure — разные состояния.
+
+- Успешный resolution с результатом `false` означает обычный permission denial. Protected
+  operation должна завершиться как forbidden и не выполнять mutation.
+- PostgreSQL/Hyperdrive authorization adapter может преобразовать только явно классифицированные
+  availability/connection/query-timeout failures своей dependency в
+  typed authorization-unavailable error.
+- Protected operation при таком typed unavailable failure должна fail closed и может вернуть
+  controlled `503`.
+- Optional presentation state на уже публичной странице — например management link,
+  create/reply form или solution controls — при таком typed unavailable failure может
+  деградировать до скрытых controls, чтобы реальная временная недоступность authorization
+  dependency не делала public read path недоступным.
+- SQL/schema, programming, configuration, invariant и другие unexpected errors не считаются
+  availability failure по умолчанию. Их нельзя интерпретировать как `permission=false`,
+  silently скрывать в presentation path или автоматически превращать в controlled `503`;
+  они должны проходить в обычный application error handling/observability.
+
+Optional presentation state не является authorization boundary: protected action независимо
+разрешает актуальный effective permission перед mutation. Catch-all suppression произвольных
+PermissionResolver errors не входит в authorization contract.
+
 ## Authorization management UI
 
 Пользователь с effective `access.authorization.manage` должен иметь locale-aware protected UI,

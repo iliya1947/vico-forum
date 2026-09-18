@@ -2,6 +2,7 @@ import { Form, Link, useActionData, useLoaderData, type RouterContextProvider } 
 import { useTranslation } from "react-i18next";
 import { authSessionForRequest } from "../auth/request-context";
 import { authorizationForRequest } from "../authorization/request-context";
+import { AuthorizationUnavailableError } from "../../db/authorization-service";
 import { forumCategoryPath, forumTopicPath } from "../forum/paths";
 import { forumReaderForRequest } from "../forum/request-context";
 import type { ForumMutationError } from "../forum/mutations.server";
@@ -20,7 +21,8 @@ export async function loader({ params, context }: {
   if (session) {
     try {
       canCreateTopic = await authorizationForRequest(context).forUser(session.user.id).has("forum.topic.create");
-    } catch {
+    } catch (error) {
+      if (!(error instanceof AuthorizationUnavailableError)) throw error;
       // Public section reads remain available when optional presentation authorization is unavailable.
     }
   }

@@ -157,11 +157,18 @@ target migration workflow run
 - SHA-256 Drizzle journal;
 - newest migration tag, от которой зависит внешний runtime rollout.
 
-PR CI проверяет workflow identity, `main`, successful completion, ancestry и journal coverage.
+Обычный pull-request CI проверяет repository-local migration history и unit/static evidence
+contract, но не обращается к GitHub Actions API и не требует актуальный external migration
+workflow run.
 
-Это не означает, что evidence file должен обновляться при каждой development migration.
-Он обновляется тогда, когда external runtime действительно начинает зависеть от новой
-migration.
+Live verification workflow identity, `main`, successful completion, ancestry и journal coverage
+выполняется только как часть фактического **external schema-dependent runtime rollout**.
+Скрипт `.github/scripts/verify-runtime-migration-evidence.mjs` и repository-owned evidence
+сохраняются для этой границы; подключение live verifier к Stage 6 rollout выполняется вместе
+с реализацией самого external release path.
+
+Evidence file не должен обновляться при каждой development migration. Он обновляется тогда,
+когда external runtime действительно начинает зависеть от новой migration.
 
 Текущий evidence относится к `0002_ui_translation_storage`, потому что deployed Worker
 пока не зависит от Better Auth schema `0003`.

@@ -2,6 +2,7 @@ import { RouterContextProvider } from "react-router";
 import { describe, expect, it, vi } from "vitest";
 import { authSessionContext, type AuthSession } from "../auth/request-context";
 import { authorizationContext } from "../authorization/request-context";
+import { AuthorizationUnavailableError } from "../../db/authorization-service";
 import type { ForumReader } from "../../db/forum-repository";
 import { forumReaderContext } from "./request-context";
 import { loader as sectionLoader } from "../routes/section";
@@ -66,38 +67,50 @@ const session = {
   },
 } satisfies AuthSession;
 
-function contextWithAuthorizationFailure() {
+function contextWithAuthorizationFailure(error: Error) {
   const context = new RouterContextProvider();
   context.set(forumReaderContext, reader);
   context.set(authSessionContext, session);
   context.set(authorizationContext, {
     forUser: () => ({
       resolve: vi.fn(),
-      has: vi.fn(async () => { throw new Error("authorization unavailable"); }),
+      has: vi.fn(async () => { throw error; }),
     }),
   } as never);
   return context;
 }
 
 describe("public forum authorization degradation", () => {
-  it("keeps an authenticated public section readable and hides the create form when authz fails", async () => {
-    const result = await sectionLoader({
-      params: { locale: "en", sectionId: section.id },
-      context: contextWithAuthorizationFailure(),
-    });
+  it("keeps authenticated public reads available for classified authorization outages", async () => {
+    const failure = new AuthorizationUnavailableError();
 
-    expect(result.section).toBe(section);
-    expect(result.canCreateTopic).toBe(false);
+    const sectionResult = await sectionLoader({
+      params: { locale: "en", sectionId: section.id },
+      context: contextWithAuthorizationFailure(failure),
+    });
+    expect(sectionResult.section).toBe(section);
+    expect(sectionResult.canCreateTopic).toBe(false);
+
+    const topicResult = await topicLoader({
+      params: { locale: "en", topicId: topic.id },
+      context: contextWithAuthorizationFailure(failure),
+    });
+    expect(topicResult.topic).toBe(topic);
+    expect(topicResult.canReply).toBe(false);
+    expect(topicResult.canManageSolution).toBe(false);
   });
 
-  it("keeps an authenticated public topic readable and hides protected controls when authz fails", async () => {
-    const result = await topicLoader({
-      params: { locale: "en", topicId: topic.id },
-      context: contextWithAuthorizationFailure(),
-    });
+  it("does not hide unexpected authorization errors in public loaders", async () => {
+    const failure = new Error("unexpected authorization bug");
 
-    expect(result.topic).toBe(topic);
-    expect(result.canReply).toBe(false);
-    expect(result.canManageSolution).toBe(false);
+    await expect(sectionLoader({
+      params: { locale: "en", sectionId: section.id },
+      context: contextWithAuthorizationFailure(failure),
+    })).rejects.toBe(failure);
+
+    await expect(topicLoader({
+      params: { locale: "en", topicId: topic.id },
+      context: contextWithAuthorizationFailure(failure),
+    })).rejects.toBe(failure);
   });
 });

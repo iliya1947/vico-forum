@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { authSessionContext, type AuthSession } from "../auth/request-context";
 import { authorizationContext } from "../authorization/request-context";
 import { AuthorizationLockoutError, AuthorizationRoleSlugConflictError } from "../../db/authorization-repository";
+import { AuthorizationUnavailableError } from "../../db/authorization-service";
 import { action, loader } from "./authorization-admin";
 
 const session = { user: { id: "manager", name: "Manager", email: "m@example.test" } } as AuthSession;
@@ -37,10 +38,15 @@ describe("authorization management route", () => {
     await expect(loader({ params: { locale: "en" }, context: context(true, false).context })).rejects.toMatchObject({ status: 403 });
     await expect(action({ request: request({ intent: "deleteRole", roleId: "r" }), context: context(true, false).context })).rejects.toMatchObject({ status: 403 });
   });
-  it("maps permission resolver infrastructure failures to controlled 503 responses", async () => {
-    const failure = new Error("database detail must not escape");
+  it("maps classified permission resolver outages to controlled 503 responses", async () => {
+    const failure = new AuthorizationUnavailableError({ cause: new Error("database detail must not escape") });
     await expect(loader({ params: { locale: "en" }, context: context(true, failure).context })).rejects.toMatchObject({ status: 503 });
     await expect(action({ request: request({ intent: "deleteRole", roleId: "r" }), context: context(true, failure).context })).rejects.toMatchObject({ status: 503 });
+  });
+  it("does not mask unexpected permission resolver errors", async () => {
+    const failure = new Error("unexpected permission resolver bug");
+    await expect(loader({ params: { locale: "en" }, context: context(true, failure).context })).rejects.toBe(failure);
+    await expect(action({ request: request({ intent: "deleteRole", roleId: "r" }), context: context(true, failure).context })).rejects.toBe(failure);
   });
   it("loads management state through one bulk capability operation", async () => {
     const state = context();
@@ -66,4 +72,32 @@ describe("authorization management route", () => {
     const response = await action({ request: request({ intent: "roleGrants", roleId: "admin" }), context: state.context });
     expect(response).toMatchObject({ status: 409 }); expect(await (response as Response).json()).toEqual({ error: "conflict" });
   });
+  it("maps only classified management operation outages to unavailable", async () => {
+    const loaderState = context();
+    loaderState.value.readManagementState.mockRejectedValueOnce(new AuthorizationUnavailableError());
+    await expect(loader({ params: { locale: "en" }, context: loaderState.context })).rejects.toMatchObject({ status: 503 });
+
+    const loaderBug = context();
+    const unexpectedRead = new Error("unexpected management read bug");
+    loaderBug.value.readManagementState.mockRejectedValueOnce(unexpectedRead);
+    await expect(loader({ params: { locale: "en" }, context: loaderBug.context })).rejects.toBe(unexpectedRead);
+
+    const actionState = context();
+    actionState.value.deleteCustomRole.mockRejectedValueOnce(new AuthorizationUnavailableError());
+    const unavailable = await action({
+      request: request({ intent: "deleteRole", roleId: "r" }),
+      context: actionState.context,
+    });
+    expect(unavailable).toMatchObject({ status: 503 });
+    expect(await (unavailable as Response).json()).toEqual({ error: "unavailable" });
+
+    const actionBug = context();
+    const unexpectedMutation = new Error("unexpected management mutation bug");
+    actionBug.value.deleteCustomRole.mockRejectedValueOnce(unexpectedMutation);
+    await expect(action({
+      request: request({ intent: "deleteRole", roleId: "r" }),
+      context: actionBug.context,
+    })).rejects.toBe(unexpectedMutation);
+  });
+
 });
