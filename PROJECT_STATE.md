@@ -173,8 +173,8 @@ no-op verification. Перед следующим настоящим external sc
 
 1. Исправить подтверждённую regression local manual stale coverage (#40), не вводя strict
    zero-stale policy без отдельного решения.
-2. Завершить оставшийся Stage 5A local/CI path: retry/DLQ и reconciliation/observability,
-   сохраняя provider/transport boundaries.
+2. Завершить оставшийся Stage 5A local/CI path: concrete machine-provider adapter,
+   retry/DLQ и reconciliation/observability, сохраняя provider/transport boundaries.
 3. Реализовать Stage 5B revision-bound user-content translation.
 4. После завершения Stage 5 перейти к Stage 6 external integration по `ROADMAP.md` и
    `docs/database/*`.
