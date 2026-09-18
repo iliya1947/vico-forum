@@ -266,6 +266,17 @@ Persisted compiled UI bundle runtime-read slice завершён в текуще
 - schema/migration не понадобились: existing `bundle_version` хранит новый semantic identity;
   внешний rollout не выполнялся, а retry/DLQ, `JOB-06`, real Queue/provider и Stage 5B остаются вне scope.
 
+Известная regression в repository-owned local manual pack coverage:
+
+- runtime/freshness contract допускает stale local/manual translation: fingerprint mismatch
+  отмечается как stale, value исключается из current bundle, после чего продолжается
+  source/locale fallback;
+- `app/localization/resources.test.ts` сейчас ошибочно требует `{ staleKeys: {} }` для всех
+  real `manualTranslationPacks`, а intentional stale canary был удалён PR #40;
+- это не является принятой zero-stale repository policy: архитектурный contract разрешает
+  strict stale-blocking CI только после отдельного явного решения; corrective code/test change
+  ещё не выполнен.
+
 Bundle-publication slice проверен GitHub Actions CI #196 на head
 `f7dc2de4b613f1cf7413dbdc28c94f49a9d1526e`: полностью прошли `checks` и `database`, включая
 migration history/evidence, lint, typecheck, unit tests, build, migration metadata, clean PostgreSQL 17
@@ -309,8 +320,8 @@ Core Stage 4 integration подтверждён PostgreSQL 17 CI:
   прошёл `checks` и `database`, включая lint, typecheck, unit tests, build, migration metadata,
   PostgreSQL tests, Workers build и local Hyperdrive smoke.
 
-Исправление rollout/authz failure boundaries в PR #76 проверено GitHub Actions CI #202
-на head `b4d6beea1c890e4e27b1b2c5de969d4e0be07bd8`: полностью прошли `checks` и `database`,
+Исправление rollout/authz failure boundaries в PR #76 проверено GitHub Actions CI #203
+на финальном head `417ca16ef068c70cbb6dfd0fbf26cd79aa4d9ede`: полностью прошли `checks` и `database`,
 включая repository-local migration history/evidence contract checks, lint, typecheck, unit tests,
 build, migration metadata, clean PostgreSQL 17 migrations/integration tests, Workers build и
 local Hyperdrive smoke.
