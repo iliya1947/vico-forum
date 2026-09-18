@@ -343,13 +343,26 @@ documentation replacement нельзя считать безопасным то�
 Из-за этого historical corrective behavior могло выглядеть как заранее принятая architecture
 policy. Это особенно мешало анализу H-001, H-005 и H-006.
 
-PR [#77](https://github.com/iliya1947/vico-forum/pull/77) разделяет ответственности:
+Первый rebuild внутри PR [#77](https://github.com/iliya1947/vico-forum/pull/77)
+(commit `bec8226573ba`) сократил `PROJECT_STATE.md`, удалив накопленную историческую часть,
+но ещё не создал отдельного места для её сохранения. Это сделало provenance старых ошибок
+существенно менее доступным и было обнаружено пользовательским review до merge.
+
+После этого тот же PR был исправлен:
+
+- `af7825bf7c51` добавил `PROJECT_HISTORY.md`;
+- `95adc2fa2a12` связал history из `PROJECT_STATE.md`;
+- `7b9c6721f139` добавил history в README documentation index;
+- последующие review commits уточнили provenance и вернули пропущенные corrective episodes.
+
+Итоговая ответственность PR #77:
 
 - `PROJECT_STATE.md` — только актуальное состояние, текущие ограничения и ближайший маршрут;
 - `PROJECT_HISTORY.md` — значимая история решений, регрессий и corrections;
 - постоянные contracts остаются в своих source-of-truth документах.
 
-Статус: текущий documentation PR, ещё не является merged history на момент создания этой записи.
+Статус: первоначальная потеря доступной history внутри PR исправлена до merge; сам PR ещё не
+является merged history на момент этой записи.
 
 ## Важное свойство исторических записей
 
