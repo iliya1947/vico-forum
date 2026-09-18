@@ -67,7 +67,7 @@ local/CI Stage 4 и остаются Stage 6.
 
 ## Translation system — текущее состояние Stage 5
 
-### Stage 5A уже реализовано
+### Stage 5A — реализованная часть
 
 В repository/local-CI path работают:
 
@@ -90,16 +90,16 @@ Migration `0007`–`0010` содержит durable task lifecycle и generation-
 
 ### Stage 5 ещё не завершён
 
-Не реализованы или не завершены:
+Для завершения Stage 5 local/CI path ещё нужны:
 
-- `JOB-04` production retry classification/DLQ path;
+- `JOB-04` retry classification/DLQ semantics и соответствующий transport boundary;
 - `JOB-06` persistent task reconciliation/observability;
-- real Cloudflare Queue transport/binding;
-- реальные external machine translation provider adapters/calls и credentials;
+- concrete machine-provider adapter implementation за существующим provider-neutral boundary;
 - Stage 5B `ContentTranslationService` и revision-bound перевод пользовательского контента;
 - Markdown AST/structured content translation path и content translation persistence.
 
-Fake/contract adapters и local/CI integration не считаются external provider/Queue acceptance.
+Реальные Cloudflare Queue bindings, provider credentials/calls и deployed provider/Queue smoke —
+это отдельная Stage 6 external acceptance и не являются условием обычных Stage 5 feature PR.
 
 ## Известная текущая regression
 
