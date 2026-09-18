@@ -123,6 +123,10 @@ runtime-owned `manualTranslationPacks` и добавил test, требующи�
 Это фактически ввело zero-stale repository gate без отдельного решения о strict stale-CI и
 убрало runtime-owned intentional stale canary, который проходил реальный stale/fallback path.
 
+Тот же PR обновил `PROJECT_STATE.md` как будто stale-pack cleanup и отсутствие stale keys
+были запланированным итоговым состоянием. Это исторически исказило provenance решения:
+исходный contract #17/#19, наоборот, намеренно разрешал stale real-pack entries.
+
 **Статус**
 
 На 2026-09-18 regression остаётся в коде и отмечена в `PROJECT_STATE.md`.
@@ -164,7 +168,11 @@ redaction, но configuration path был записан неверно для p
 PR [#64](https://github.com/iliya1947/vico-forum/pull/64) перенёс
 `redact_query_string` на поддерживаемый уровень `observability.redact_query_string`.
 
-Статус: исправлено.
+PR #41 также преждевременно записал в `PROJECT_STATE.md`, что query-string redaction уже
+работает, хотя pinned Wrangler фактически игнорировал неподдерживаемую вложенность. После
+PR #64 runtime догнал ранее записанное documentation assertion.
+
+Статус: runtime/config исправлены; историческое преждевременное утверждение сохранено здесь.
 
 ---
 
@@ -269,7 +277,11 @@ PR [#68](https://github.com/iliya1947/vico-forum/pull/68) ввёл claim/lease/s
 - duplicate Queue delivery stale task остаётся terminal;
 - planner и consumer используют единое locale eligibility rule.
 
-Статус: исправлено до продолжения Stage 5A.
+Внутри того же corrective PR #69 был ещё один implementation regression: helper временно
+потерял обязательный `return row`. Он был восстановлен до merge commit
+`f6522c4750f9` (`fix(stage-5a): restore translation task row return`).
+
+Статус: lifecycle semantics и missing-return regression исправлены до продолжения Stage 5A.
 
 Текущий source of truth: `docs/translation/PROVIDERS_AND_JOBS.md`.
 
@@ -288,7 +300,12 @@ PR [#72](https://github.com/iliya1947/vico-forum/pull/72) затем добав�
 generation numbers и отдельный generation head с PostgreSQL row-lock serialization; publication
 fenced по current generation.
 
-Статус: ошибочный вариант не попал в `main`; durable replacement реализован PR #72.
+Внутри PR #71 также повторился отдельный missing-return regression в task-store helper.
+Он был исправлен до merge commit `dcf70d8d18bb`
+(`fix(stage-5a): restore translation task row return`).
+
+Статус: unsafe supersession и missing-return regression не попали в `main`; durable
+replacement ordering реализован PR #72.
 
 ---
 
