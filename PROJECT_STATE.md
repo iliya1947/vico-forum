@@ -11,13 +11,14 @@
 документах:
 
 - `PROJECT.md` — продуктовый и технический baseline;
+- `PROJECT_HISTORY.md` — значимая история решений, регрессий и последующих corrections;
 - `ROADMAP.md` — последовательность этапов;
 - `TRANSLATION_ARCHITECTURE.md` и `docs/translation/*` — мультиязычность и переводы;
 - `docs/auth/AUTHORIZATION.md` — application authorization;
 - `docs/database/*` — migrations, Hyperdrive и external rollout.
 
-История отдельных PR, commit SHA и CI run не является частью этого файла, если конкретный
-исторический факт не нужен для понимания текущего состояния.
+История отдельных PR, commit SHA и CI run не дублируется здесь; значимые historical/corrective
+цепочки фиксируются в `PROJECT_HISTORY.md`.
 
 ## Текущая фаза
 
