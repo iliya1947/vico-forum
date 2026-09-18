@@ -211,16 +211,28 @@ PR [#76](https://github.com/iliya1947/vico-forum/pull/76) убрал live remote
 ### H-006 — catch-all authorization failure semantics
 
 PR [#61](https://github.com/iliya1947/vico-forum/pull/61) завершил Stage 4 authorization
-integration, но corrective-review внутри PR постепенно добавил broad catch-all behavior:
+integration, но одновременно ввёл broad catch-all failure semantics.
 
-- unexpected resolver/infrastructure errors превращались в controlled `503`;
-- optional presentation authorization скрывал controls при произвольной resolver error;
-- public read сохранялся ценой подавления различия между реальным outage и
-  SQL/schema/programming/configuration/invariant defect.
+Часть поведения существовала уже в первом commit PR #61 (`08572ef`):
+`requireForumPermission()` и `solutionScope()` превращали любую resolver exception в
+controlled `503`, а generic fallback management mutation также трактовал неизвестную ошибку
+как infrastructure `503`.
 
-До PR #61 отдельного architecture contract, требующего такой catch-all policy, не было.
-Поведение было внесено непосредственно реализацией/review PR #61 и затем записано как текущее
-состояние.
+Дальнейшие commits внутри того же PR расширили эту модель:
+
+- `0651435` добавил generic `503` mapping для authorization resolver failure в management
+  permission check;
+- после independent Codex review `20642f7` стал подавлять любую ошибку optional header
+  permission lookup и скрывать management link;
+- после следующего Codex review `0d38633` распространил такую presentation degradation на
+  section/topic loaders, сохраняя public read и скрывая write/solution controls.
+
+Таким образом broad policy не была целиком создана review: она появилась в исходной
+реализации #61 и затем была расширена corrective-review внутри того же PR.
+
+До PR #61 отдельного architecture contract, требующего интерпретировать произвольную
+authorization resolver error как availability failure, не было. Затем это поведение было
+записано как текущее состояние проекта.
 
 PR [#76](https://github.com/iliya1947/vico-forum/pull/76) заменил это на typed
 `AuthorizationUnavailableError` boundary:
