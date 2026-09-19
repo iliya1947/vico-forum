@@ -43,11 +43,11 @@ number is lower than the baseline PR number.
 
 | PR | Merge commit | Status | Decision IDs / no-decision evidence | Completeness notes |
 | --- | --- | --- | --- | --- |
-| #12 baseline | `8010bdc` | extracting | corrected `DLX12-*` inventory under narrow revision | Response `/2` fixes the broad omissions/provenance defect; security decisions still require atomic splitting. |
-| #5 | `b0632c0` | extracting | corrected `DLX5-*` inventory pending block acceptance | Response `/2` accounts for the previously omitted runtime/config boundaries. |
-| #13 | `0526b29` | extracting | corrected `DLX13-*` inventory under narrow revision | Response `/2` splits URL authority from redirect-target safety; inherited no-side-effect contract still needs explicit mapping. |
-| #14 | `7520605` | extracting | corrected `DLX14-*` inventory pending block acceptance | Response `/2` corrects provenance; final acceptance follows the narrow block revision. |
-| #15 | `8ea9d32` | extracting | corrected `DLX15-*` inventory pending block acceptance | Response `/2` corrects provenance; final acceptance follows the narrow block revision. |
+| #12 baseline | `8010bdc` | extracted | `DLX12-01..12`, `DLX12-13a..b`, `DLX12-14a..b`, `DLX12-15`, `DLX12-16a..d`, `DLX12-17..20`, `DLX-INH-SEC01-01` | PR #12 changes are decomposed; inherited control-point contracts still require the bounded #7–#11 ancestry pass before baseline extraction can be complete. |
+| #5 | `b0632c0` | extraction-complete | `DLX5-01..13` | Merged after #12; diff/body/internal commit, category sweep, and implementation-boundary reconciliation reviewed. |
+| #13 | `0526b29` | extraction-complete | `DLX13-01..04`; dependency on `DLX-INH-SEC01-01` | Diff/body/internal commits, category sweep, review gap, and inherited no-side-effect relationship reviewed. |
+| #14 | `7520605` | extraction-complete | `DLX14-01..03` | Diff/body/internal commits, category sweep, and governing-document conflict reviewed. |
+| #15 | `8ea9d32` | extraction-complete | `DLX15-01..02` | Diff/body/internal commit, category sweep, and action-resolution evidence limitation reviewed. |
 | #16 | `daff15c` | pending | — | — |
 | #17 | `5aa1859` | pending | — | — |
 | #18 | `777ef20` | pending | — | — |

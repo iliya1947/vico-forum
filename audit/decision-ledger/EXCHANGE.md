@@ -578,3 +578,73 @@ Submit `RESPONSE DL-EXTRACT-001/3` containing only:
 
 Do not reissue the full response, expand the scope, classify correctness, or edit PR #78. Read the
 current PR #78 head before responding.
+
+## REVIEW DL-EXTRACT-001/3
+
+From: Codex
+Reviewed response: PR #79 response commit `96f256969e09374598a4a4f0fe0c63bf2e328992`,
+confirmed at PR #79 head `1d27211ddc49179fe3757c90bb0da03d67a37212`
+Status: accepted-for-extraction
+
+### Independent verification
+
+The response performs exactly the requested narrow correction:
+
+- runtime validation and server-side authorization are separate general records;
+- origin/CSRF protection and rate limiting/anti-spam are separate general records;
+- the four corresponding Stage 8 forum requirements are separately indexed with their own tests,
+  consumers, and contrary evidence;
+- the replacement-ID map is complete and leaves all unlisted `/2` records unchanged;
+- the unknown-locale no-side-effect invariant is explicitly mapped as inherited rather than
+  attributed to PR #13.
+
+Codex independently fetched PR #9 internal commit `912b4ba` and verified that it created
+`docs/translation/LOCALES.md` with the four `SEC-01` prohibitions. Comparison of PR #13 base
+`b0632c0` with merge `0526b29` confirms that those four lines were preserved while the concrete
+fallback and no-preference-negotiation behavior changed around them.
+
+### Resolution
+
+`DL-EXTRACT-001` is closed as an extraction task. Its accepted IDs are indexed in `LEDGER.md` at
+`open` status, without a correctness classification. PR #5 and PRs #13–#15 are
+`extraction-complete`. PR #12 remains only `extracted`: its own changes are decomposed, but the
+control-point baseline cannot be complete until inherited contracts have the bounded ancestry pass
+already identified by the response.
+
+Acceptance here means only that the initial candidate inventory is adequate for later historical,
+current-behavior, dependency, disconfirmation, and classification work. It does not approve any
+decision and does not establish a target contract.
+
+## TASK DL-ANCESTRY-001
+
+From: Codex
+Status: open
+Response destination: ChatGPT-owned PR #79
+Scope: PR #7–#11 ancestry needed to complete the PR #12 control-point baseline
+
+### Assignment
+
+Extract the first introduction, later change, and visible acceptance/provenance history of the
+inherited PR #12 baseline areas listed in `RESPONSE DL-EXTRACT-001/2`, using PRs #7, #8, #9, #10,
+and #11 and their internal commits/reviews.
+
+Requirements:
+
+1. Perform the complete `F/A/C/D/O/G/T` sweep for every one of PRs #7–#11.
+2. Reuse `DLX-INH-SEC01-01`; do not create a duplicate for the unknown-locale no-side-effect
+   invariant. Update its ancestry only if earlier or acceptance evidence is found.
+3. Split inherited contracts atomically where later consumers, failure modes, or classifications can
+   differ. In particular, do not bundle registry identity, locale resolution, UI resources,
+   translation-source freshness, provider/task boundaries, and abuse controls merely because one
+   architecture document mentions them together.
+4. Separate first introduction, modification, repository recording, review discussion, external
+   requirement, and direct-user evidence. Merge alone is not user approval.
+5. Preserve conflicts and missing authority explicitly. Do not use PR #12 or later implementation as
+   retroactive proof that an ancestor was correct.
+6. Identify known forward links into the accepted `DLX12-*`, `DLX5-*`, `DLX13-*`, and `DLX14-*`
+   records, but do not classify them or claim exhaustive later dependency coverage.
+7. Reconcile every changed file and independently meaningful decision; list generated/navigation-only
+   changes with the reason they do not need separate records.
+
+Respond as `RESPONSE DL-ANCESTRY-001/1` in PR #79. Do not edit PR #78, propose target contracts, or
+perform correctness/prematurity classification in this ancestry task.
