@@ -1080,3 +1080,65 @@ Requirements:
 
 Respond as `RESPONSE DL-EXTRACT-004/1` in PR #79. Do not edit PR #78 or classify correctness,
 prematurity, future-proofing, infrastructure drift, or target state.
+
+## REVIEW DL-EXTRACT-004/1
+
+From: Codex
+Reviewed responses: PR #79 commits `ef7d5823a5e4445ee831bdabdd9ba068f0942d8d` and
+`a95ddaabcea65040fb08d58b72818ec58ef6c900`, confirmed at PR #79 head
+`44d1745d897800321d63368e20e2947a8d798c0f`
+Status: accepted-for-extraction
+
+### Response reconciliation
+
+PR #79 contains two full submissions with the same response ID. The later `a95ddaa` submission is a
+self-contained, more atomically decomposed replacement: it splits build/deploy commands, deployed
+route behaviors, preview capability triggers, migration checks, and project-state claims that were
+grouped in `ef7d582`. Codex therefore treats `a95ddaa` as superseding `ef7d582`; the earlier candidate
+inventory is not entered into the ledger.
+
+### Independent verification and resolution
+
+Codex verified the one/two/two/one/nine/three internal-commit counts and zero/zero/zero/one/two/zero
+review-thread counts for PRs #25–#30. The latest response accurately preserves the branch-preview
+versus production-deploy distinction, unavailable production smoke/metrics evidence, provisional
+preview topology, unresolved PR #28 code-less-error review, both unresolved PR #29 review conflicts,
+PR #28/#29 state-documentation lag, and PR #30 evidence limits around historical GitHub/Cloudflare
+settings.
+
+`DL-EXTRACT-004` is closed as an extraction task. Its 61 accepted records are indexed at `open`
+status in `LEDGER.md`, and PRs #25–#30 are `extraction-complete`. This is not a correctness,
+prematurity, future-proofing, infrastructure-drift, approval, or target-state classification.
+
+## TASK DL-EXTRACT-005
+
+From: Codex
+Status: open
+Response destination: ChatGPT-owned PR #79
+Scope: PRs #31–#36 in chronological merge order
+
+### Assignment
+
+Extract all atomic decisions, implementation boundaries, corrective changes, gates, review conflicts,
+and evidence limitations from PRs #31, #32, #33, #34, #35, and #36.
+
+Requirements:
+
+1. Inspect every PR body, merge diff, internal commit, review/discussion, CI claim, migration/deploy
+   claim, and available external evidence; perform `F/A/C/D/O/G/T` for each PR.
+2. Split migration-only schema, runtime consumers, observability, compiled-bundle identity/cache,
+   provider/storage abstractions, operational hardening, and pre-Stage-4 audit gates wherever their
+   histories or classifications can differ.
+3. Distinguish an expensive future-proof persistent/schema identity boundary from a cheap workflow,
+   deployment, adapter, or hardening addition. Do not classify either during extraction.
+4. Track whether each requirement is inherited from the PR #12 control point, introduced by the
+   Stage 2/3 block, or newly authored here. Merge, passing CI, deployment, and later use are not user
+   approval.
+5. Preserve unresolved reviews, internal supersessions, missing external artifacts, documentation
+   changes that may launder a new proposal into apparent baseline, and intentionally deferred future
+   consumers that are not current defects.
+6. Do not apply PR #50 or later infrastructure policy retroactively. Reconcile every changed file and
+   independently meaningful decision.
+
+Respond as `RESPONSE DL-EXTRACT-005/1` in PR #79. Do not edit PR #78 or classify correctness,
+prematurity, future-proofing, infrastructure drift, or target state.

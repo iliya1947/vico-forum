@@ -71,12 +71,12 @@ number is lower than the baseline PR number.
 | #22 | `92b55cd` | extraction-complete | `EX22-01..14`, `EX22-15a..c`, `EX22-16..19` | Persistent registry/writer, fixed hash review, two unresolved reviews, tests, and writer splits reviewed. |
 | #24 | `87c49c5` | extraction-complete | `EX24-01..11` | Merged before #23; manual production workflow and both unresolved review findings reviewed. |
 | #23 | `4f1a727` | extraction-complete | `EX23-01..03`, `EX23-04a..b`, `EX23-05..06`, `EX23-07a..b`, `EX23-08a..b`, `EX23-09..16`, `EX23-17a..c`, `EX23-18` | Four commits, binding correction, unresolved transport review, state-sync history, operational evidence limits, and atomic topology/recovery splits reviewed. |
-| #25 | `d39119a` | pending | — | — |
-| #26 | `fccde6b` | pending | — | — |
-| #27 | `e734f8f` | pending | — | — |
-| #28 | `2eb1186` | pending | — | — |
-| #29 | `c31c050` | pending | — | — |
-| #30 | `907e082` | pending | — | — |
+| #25 | `d39119a` | extraction-complete | `EX25-01..07` | Docs-only native-build path/state, preview evidence boundary, and remaining Stage 2 gate reviewed. |
+| #26 | `fccde6b` | extraction-complete | `EX26-01..12` | Production deploy/smoke/metrics claims split atomically and reviewed with missing raw evidence preserved. |
+| #27 | `e734f8f` | extraction-complete | `EX27-01..08` | Deployment path, schema-first rollout, provisional preview topology, and future isolation triggers reviewed. |
+| #28 | `2eb1186` | extraction-complete | `EX28-01..08` | Failure-boundary correction, unresolved broad code-less-error review, tests, telemetry, and state omission reviewed. |
+| #29 | `c31c050` | extraction-complete | `EX29-01..15` | Nine-commit migration hardening, both remaining review conflicts, evidence limits, and state omission reviewed. |
+| #30 | `907e082` | extraction-complete | `EX30-01..11` | Three-commit state sync, branch-preview evidence, capability gates, and unverifiable settings claims reviewed. |
 | #31 | `458db7e` | pending | — | — |
 | #32 | `7048478` | pending | — | — |
 | #33 | `15e0545` | pending | — | — |

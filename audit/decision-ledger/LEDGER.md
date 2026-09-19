@@ -410,6 +410,76 @@ composite IDs listed in that review's replacement map are superseded labels, not
 | `EX23-17c` | Registry recovery uses compatible application rollback plus forward database repair/restore, not in-band migration credentials. |
 | `EX23-18` | Production Worker request code does not explicitly close the normal Hyperdrive pg Client after a successful registry read. |
 
+### PRs #25–#30
+
+Detailed evidence is preserved in the latest full `DL-EXTRACT-004/1` response at PR #79 commit
+`a95ddaa`, accepted by `REVIEW DL-EXTRACT-004/1`. The earlier response with the same ID at
+`ef7d582` is superseded by that later, more atomically decomposed full submission.
+
+| Decision ID | Atomic decision index |
+| --- | --- |
+| `EX25-01` | Native Cloudflare Workers Builds from GitHub main becomes the recorded production deployment path. |
+| `EX25-02` | Workers Builds production build command is \`pnpm run build\`. |
+| `EX25-03` | Workers Builds production deploy command is \`npx wrangler deploy\`. |
+| `EX25-04` | Workers Builds pins PNPM_VERSION=12.3.4. |
+| `EX25-05` | Merge/push to main is the trigger for the first native production build. |
+| `EX25-06` | Local \`wrangler whoami\` authentication is no longer the Stage 2 deployment blocker. |
+| `EX25-07` | Real deployed Hyperdrive smoke remains the final Stage 2 acceptance gate after native deploy. |
+| `EX26-01` | Repository records the first native production build/deploy from main as successful. |
+| `EX26-02` | Repository records active production Worker binding HYPERDRIVE → vico-forum-registry. |
+| `EX26-03` | Deployed acceptance records active persistent locales he and ru serving successfully. |
+| `EX26-04` | Deployed acceptance records alias iw canonicalizing to he. |
+| `EX26-05` | Deployed acceptance records inactive and unknown locale fallback to English. |
+| `EX26-06` | Deployed acceptance records localized unknown-child and technical API 404 behavior. |
+| `EX26-07` | Deployed acceptance records redirect-required mutation failing closed. |
+| `EX26-08` | Repository records production Hyperdrive query traffic during acceptance. |
+| `EX26-09` | Repository records Hyperdrive query caching disabled during acceptance. |
+| `EX26-10` | Repository records zero Hyperdrive errors during acceptance. |
+| `EX26-11` | Stage 2 is recorded closed after deployed acceptance. |
+| `EX26-12` | Stage 3 becomes the next active stage with no recorded blocker. |
+| `EX27-01` | Native Workers Builds from main is the normal production Worker deployment path. |
+| `EX27-02` | First schema-dependent runtime rollout is migration-only PR → production migration/verification → runtime PR. |
+| `EX27-03` | Migration-only schema PR must remain compatible with the currently deployed Worker. |
+| `EX27-04` | Preview/non-production builds are provisionally treated as potentially using production HYPERDRIVE. |
+| `EX27-05` | Shared preview access to production DB is allowed only while Worker capability remains read-only. |
+| `EX27-06` | Shared preview access to production DB is allowed only while reachable data is public. |
+| `EX27-07` | Runtime write capability triggers preview isolation or disabling non-production builds. |
+| `EX27-08` | Exposure of non-public production data triggers preview isolation or disabling non-production builds. |
+| `EX28-01` | Registry availability classification adds explicit Node transport error codes. |
+| `EX28-02` | Connect-layer availability failures are wrapped in a typed registry infrastructure error. |
+| `EX28-03` | Code-bearing authentication and obvious programming failures remain visible at connect boundary. |
+| `EX28-04` | Any remaining code-less generic Error from pg connect is treated as unavailable. |
+| `EX28-05` | Missing registry-loader injection fails explicitly instead of using hidden Stage 1 registry fallback. |
+| `EX28-06` | Locale route test fixtures explicitly inject registry state. |
+| `EX28-07` | Degraded registry emits one structured reason-only event per request loader. |
+| `EX28-08` | Real pg connection-refusal behavior is covered by PostgreSQL integration test. |
+| `EX29-01` | Accepted migration SQL files are immutable. |
+| `EX29-02` | Accepted Drizzle snapshots are immutable. |
+| `EX29-03` | Drizzle journal accepted prefix is append-only. |
+| `EX29-04` | Drizzle journal requires contiguous idx, unique tags, and strictly increasing timestamps. |
+| `EX29-05` | Every appended journal entry must match one newly added migration SQL file. |
+| `EX29-06` | Pull-request migration guard compares candidate history against merge base with full Git history. |
+| `EX29-07` | Required checks job runs migration-history self-tests and verifier. |
+| `EX29-08` | Production migration workflow has a hard main-ref execution guard. |
+| `EX29-09` | Production migration workflow checks out the exact dispatched github.sha. |
+| `EX29-10` | Production verifier checks required public.locales column existence/type/nullability instead of exact mutable row state. |
+| `EX29-11` | Production verifier checks absence of bootstrap/reserved locale rows. |
+| `EX29-12` | Production verifier continues requiring migration ledger equality to checked-in journal. |
+| `EX29-13` | Exact mutable locale-state verification is moved out of production verifier and left to disposable integration tests. |
+| `EX29-14` | Node migration-history self-tests are excluded from ordinary Vitest jsdom discovery. |
+| `EX29-15` | PR #29 operational workflow changes are not recorded in PROJECT_STATE at merge. |
+| `EX30-01` | Repository records pre-Stage-3 hardening as closed and Stage 3 as next. |
+| `EX30-02` | Project state records H1 registry failure-boundary hardening as completed. |
+| `EX30-03` | Project state records required checks as checks + database with up-to-date branch requirement. |
+| `EX30-04` | Project state records H2 immutable-history/main-only migration hardening as completed. |
+| `EX30-05` | Repository records Cloudflare non-production branch builds as enabled. |
+| `EX30-06` | No staging Hyperdrive/DB binding exists in repository configuration at the PR #30 checkpoint. |
+| `EX30-07` | Existing shared preview→production DB topology is accepted only while DB capability stays read-only. |
+| `EX30-08` | Existing shared preview→production DB topology is accepted only while reachable data is public locale-registry data. |
+| `EX30-09` | Runtime write capability remains an explicit future trigger for staging isolation or disabling non-production builds. |
+| `EX30-10` | Private production data remains an explicit future trigger for staging isolation or disabling non-production builds. |
+| `EX30-11` | First Stage 3 schema-dependent change must follow migration-only → production migrate/verify → runtime split. |
+
 `COVERAGE.md` remains the authoritative working checklist for whether every in-scope PR/commit has
 been examined and whether mixed changes were completely decomposed. A populated ledger alone never
 proves that extraction or dependency discovery is complete.
