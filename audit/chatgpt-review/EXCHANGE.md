@@ -10020,3 +10020,870 @@ The two unsuffixed /1 IDs above are superseded labels and must not remain indepe
 Every other candidate record, F/A/C/D/O/G/T sweep, provenance/evidence limitation, review conflict, dependency statement, CI/preview evidence statement, changed-file reconciliation entry, stale-policy conflict, Observability decomposition, Stage 5 deferred-consumer treatment, and non-retroactive later-history treatment from RESPONSE DL-EXTRACT-006/1 remains unchanged.
 
 This narrow revision does not expand PR #37-#41 scope and does not classify any decision.
+
+
+## RESPONSE DL-EXTRACT-007/1
+
+From: ChatGPT  
+Status: submitted  
+Responding in: PR #79 at RESPONSE_COMMIT_SHA  
+Task source: PR #78 head 95717cca414b3ff699f5515a6001f58ff2a309dc  
+Scope: PRs #42–#46 in chronological merge order  
+Claims: evidence extraction only; no correctness, prematurity, infrastructure-drift, retained-value, remedy, approval, or target-state classification
+
+### Coverage sweep
+
+#### PR #42 / merge a127adb6c5113e2c717de4829adc322140393b9a
+
+F: none | A: bounded PostgreSQL deadline mechanics, timeout classification, request-local degradation/circuit behavior, controlled-writer timeout reconciliation | C: implements the deadline work named by EX37-05 and then corrects its own COMMIT-time timeout handling; leaves one review finding on the operational SQL invocation | D: PROJECT_STATE, HYPERDRIVE, MIGRATIONS | O: role/database timeout defaults and a real-Hyperdrive acceptance/calibration protocol | G: code-level deadline hardening is recorded as implemented, while real staging Hyperdrive confirmation/calibration remains a pre-Stage-4 blocker at this PR | T: targeted timeout/circuit/writer tests plus the operational SQL script; no workflow file changes
+
+Evidence inspected:
+- PR body, all 12 changed files, complete merge diff.
+- Three internal commits: 499755f, b79ec7e, 8b318d1.
+- One P2 review thread on 499755f about the deadline SQL invocation not stopping on SQL errors; the final PR does not add ON_ERROR_STOP or wrap the two ALTER ROLE statements in an explicit transaction. Thread remains unresolved and non-outdated.
+- Final GitHub Actions CI #78: checks=success, database=success.
+- Cloudflare bot records successful branch/commit preview deployment for 8b318d1. This is execution evidence, not evidence that the documented real-Hyperdrive acceptance protocol ran.
+- PR body says pg client options and PostgreSQL 17 timeout/SET LOCAL semantics were checked against official references. No raw external research snapshot is attached to the PR.
+- Current main still contains the same db/postgres-deadlines.ts constants/classifiers and the same ControlledLocaleWriter SET LOCAL + COMMIT-time statement-timeout reconciliation mechanics.
+
+Completeness limitations:
+- PR #42 does not itself contain the later real deployed acceptance observations; those are recorded by PR #45.
+- The PR body explicitly says real staging Hyperdrive acceptance remained outstanding at PR #42.
+- The operational script is repository evidence for intended infrastructure configuration, not evidence that ALTER ROLE succeeded externally.
+
+#### PR #43 / merge e1fddf9fb3073a893f2ffb3fdd5496d4e2a43d1d
+
+F: none | A: machine-verifiable production least-privilege model for the then-current localization runtime/migration roles | C: implements EX37-07/EX37-12*; fixes an in-PR grant-option omission and broadens catalog coverage; the final PR still contains the original blanket inbound-membership model later changed by PR #48 | D: PROJECT_STATE, MIGRATIONS | O: production catalog verification through the protected migration workflow | G: production privilege-verifier blocker is removed from PROJECT_STATE | T: targeted privilege fixtures run in ordinary PR CI; live catalog verification remains in the protected production migration workflow
+
+Evidence inspected:
+- PR body, all seven changed files, complete merge diff.
+- Three internal commits: 5f5fae1, 1674d34, 67b4f74.
+- One P2 review on 5f5fae1: grant options were dropped from the snapshot and therefore not rejected. Commit 1674d34 adds is_grantable coverage and tests; the review thread is marked outdated.
+- 1674d34 also expands the original simple default-ACL model to effective hard-wired/catalog defaults and records membership option triples.
+- 67b4f74 adds inbound-membership detection, foreign-table coverage, namespace-default coverage, and corrects the sequence hard-wired acldefault type mapping to lowercase s.
+- Final CI #81: checks=success, database=success.
+- Cloudflare bot records successful preview deployment for 67b4f74.
+- PR #48 later changes the final PR #43 blanket inbound-membership prohibition to a database-owner-only ADMIN=true, INHERIT=false, SET=false model. PR #48 is forward corrective evidence only; it is not used to rewrite PR #43's original model.
+- Current main contains later privilege-verifier evolution, including PR #48 and later auth/application-owner work, so current code is not used as a substitute for the exact PR #43 snapshot.
+
+Completeness limitations:
+- PR #43 did not run a live production catalog verification in the Codex task environment because protected credentials/role variables were unavailable there.
+- Successful CI validates repository tests, not the truth of the production catalog at merge time.
+- No direct-user evidence was found in this PR for the exact role-membership model.
+
+#### PR #44 / merge bdc9c0faec563a42c9bbf7e8fa83e59566da674c
+
+F: none | A: repository-owned migration-to-runtime evidence artifact and verifier | C: implements EX37-14a..e; receives an unresolved P1 about stale requiredMigrationTag; later PR #76 changes where live verification runs | D: PROJECT_STATE, MIGRATIONS | O: GitHub Actions API lookup of a production migration workflow run and evidence emitted by that workflow | G: ordinary pull_request CI gains a live external evidence gate; PROJECT_STATE removes the migration-evidence blocker | T: static/unit evidence-contract tests plus live verifier in ordinary PR CI
+
+Evidence inspected:
+- PR body, all eight changed files, complete merge diff.
+- Internal commits: 44ffa8c creates the evidence model/verifier/workflow placement; ac9f36f only changes fetch/console to explicit globalThis forms.
+- One P1 review on 44ffa8c: requiredMigrationTag can remain at an older migration while a PR adds a new migration plus runtime dependency, because the verifier only proves coverage through the declared tag. The final ac9f36f commit does not address this; thread remains unresolved and non-outdated.
+- Initial evidence artifact records workflowRunId 34613209216, migrationSha 458db7ed8c28153ab7b9e5eba3be0e025c51f926, journal SHA-256 57f24be12d3d8a83b6a93852b0d2af1d8b3d3eccc30b920535aa7d15df579fb7, requiredMigrationTag 0002_ui_translation_storage.
+- Final CI #83: checks=success, database=success. At this point ordinary PR CI includes the live GitHub Actions API verifier.
+- Cloudflare bot records successful preview deployment for ac9f36f.
+- PR body says local Git/journal checks passed but the task environment could not reach GitHub API; final GitHub CI subsequently passed.
+- PR #76 later removes the live verifier from ordinary pull_request CI while retaining repository-local evidence tests, the evidence artifact, and the verifier for an actual external schema-dependent runtime rollout. This is forward evidence only and does not retroactively classify PR #44.
+
+Completeness limitations:
+- A green PR #44 CI run establishes that its then-current live check executed successfully, not that ordinary PR CI was the required long-term placement.
+- The open P1 concerns advancement of the declared runtime schema requirement; it is distinct from whether the referenced existing production run is authentic.
+- No direct-user evidence in PR #44 establishes the exact CI placement as a user decision.
+
+#### PR #45 / merge 19ec4b58c4f0c16ad309112ad7a4f6d7f275c3d4
+
+F: none | A: pre-release versus post-release infrastructure lifecycle, retained preview safety boundary, retained auth DB capability separation, deferred OAuth topology | C: records external deadline-acceptance observations and revises multiple staging requirements introduced by PR #37; also clarifies AGENTS scope | D: AGENTS, PROJECT_STATE, ROADMAP, HYPERDRIVE | O: historical claims about a real deployed pg/Hyperdrive/PostgreSQL diagnostic run | G: separate staging ceases to be a pre-Stage-4 blocker; risky post-release changes gain a staging gate; Stage 4 becomes next step | T: documentation-only PR, no application test/build/lint change
+
+Evidence inspected:
+- PR body, all four changed files, complete merge diff.
+- Four internal commits: 5349e54, 074bbf6, c4e2aab, 398b5c7.
+- 5349e54 rewrites HYPERDRIVE from a fixed pre-Stage-4 staging topology to a pre-release/post-release lifecycle and records the real deadline acceptance observations.
+- 074bbf6 records those observations and the changed blocker state in PROJECT_STATE.
+- c4e2aab rewrites ROADMAP Stage 4 preconditions/acceptance around the pre-release production candidate and defers exact staging/OAuth topology.
+- 398b5c7 adds the explicit rule that AGENTS.md is Codex-only and not a ChatGPT behavior contract.
+- One P2 review on final head: README still said full staging isolation was a mandatory pre-Stage-4 blocker, contradicting the new ROADMAP/PROJECT_STATE policy. The thread remains unresolved in PR #45; PR #46 later updates README.
+- Final CI #84: checks=success, database=success. This is repository CI on documentation changes, not the external deadline acceptance evidence.
+- Cloudflare bot records successful preview deployment for 398b5c7.
+- PR #45 documentation records real deployed deadline observations but does not attach the diagnostic harness source, raw SQL/session logs, or a separate external run artifact to the PR.
+- No PR #50 decision is used as authority for any PR #45 record.
+
+Completeness limitations:
+- The external acceptance observations are repository-recorded historical claims; raw external telemetry is not attached here.
+- The diagnostic-harness scope is explicitly narrower than the application request-local circuit-breaker path.
+- The PR leaves README temporarily inconsistent until PR #46.
+
+#### PR #46 / merge 01ad59a1d7eabf87f5d30cf3b997e0db90e52163
+
+F: none | A: none new in runtime code; documentation records current generic-locale implementation and current pre-Stage-4 lifecycle | C: resolves the stale README status left by PR #45 review and removes a separate obsolete Stage 1 architecture instruction | D: README, TRANSLATION_ARCHITECTURE | O: none | G: README now says Stage 4 is next and preserves the preview/private-write isolation-or-disable trigger | T: documentation-only; no runtime/test/schema/dependency change
+
+Evidence inspected:
+- PR body and both changed files.
+- Internal commits: 18423ff updates README pre-Stage-4 status; f9e1f43 removes the stale Stage 1 architecture note.
+- No GitHub review threads or submitted reviews.
+- Final CI #85: checks=success, database=success.
+- Cloudflare bot records successful preview deployment for f9e1f43.
+- Current main still contains the corrected TRANSLATION_ARCHITECTURE statement that Stage 1 uses generic /:locale/*, runtime LocaleRegistry, and no fixed compile-time locale list.
+
+Completeness limitations:
+- PR #46 is documentation-only; its generic-locale statement summarizes already implemented earlier work rather than implementing it.
+- The README lifecycle text depends on PR #45's policy change but is still a distinct repository-state synchronization decision.
+- No later PR, including PR #50, is used to retroactively authorize the PR #46 wording.
+
+### Candidate atomic decisions — PR #42
+
+#### Candidate EX42-01 — Localization pg clients receive a bounded connection timeout
+
+Atomic decision: createLocalizationClient configures connectionTimeoutMillis = 1000ms for localization Hyperdrive access.
+
+Introduced/changed/recorded by: 499755f.
+
+Backward: EX37-05 named bounded connection/read deadlines as a pre-Stage-4 hardening item; EX39-08/10 had already narrowed which connection failures may degrade.
+
+Current behavior: unchanged in current main.
+
+#### Candidate EX42-02 — Localization pg clients receive a bounded caller-side query timeout
+
+Atomic decision: createLocalizationClient configures query_timeout = 2000ms.
+
+Introduced/changed/recorded by: 499755f.
+
+Backward: EX37-05.
+
+Current behavior: unchanged in current main.
+
+#### Candidate EX42-03 — Localization runtime-role server defaults are lock_timeout 500ms and statement_timeout 1500ms
+
+Atomic operational configuration: the repository SQL configures per-role/per-database lock_timeout = 500ms and statement_timeout = 1500ms, with documented ordering lock < statement < caller query timeout.
+
+Introduced/changed/recorded by: 499755f; scripts/configure-localization-deadlines.sql and HYPERDRIVE.
+
+Provenance: PR-or-review-discussion plus external-platform semantics asserted by the PR; no evidence in PR #42 that the external ALTER ROLE operations had already run.
+
+#### Candidate EX42-04 — Connection-timeout degradation recognizes only the exact pg code-less timeout-expired shape
+
+Atomic failure boundary: isPostgresConnectionTimeout traverses the cause chain and matches code-less message timeout expired rather than broad arbitrary Error.
+
+Introduced/changed/recorded by: 499755f.
+
+Backward: EX39-08/10 narrowed earlier broad connection degradation.
+
+#### Candidate EX42-05 — Query-timeout degradation recognizes only enumerated caller/server timeout shapes
+
+Atomic failure boundary: isPostgresQueryTimeout traverses causes and recognizes Query read timeout, exact 57014 statement-timeout message, and exact 55P03 lock-timeout message; other same-code/message shapes stay outside this classifier.
+
+Introduced by: 499755f; statement-timeout helper refactored by b79ec7e.
+
+Backward: EX39-08/10.
+
+#### Candidate EX42-06 — Cleanup after classified timeout is best-effort and cannot replace the original DB failure
+
+Atomic cleanup rule: bestEffortDiscardClient calls client.end but suppresses synchronous/asynchronous cleanup failure.
+
+Introduced/changed/recorded by: 499755f.
+
+#### Candidate EX42-07 — Registry connect/query timeout enters the existing unavailable-registry degradation boundary
+
+Atomic adapter behavior: registry connect/read catches classified availability/connection/query timeout, discards the client, wraps it as RegistryConnectionUnavailableError, and therefore uses the existing degraded bootstrap path.
+
+Introduced/changed/recorded by: 499755f.
+
+Backward: EX28/EX39 registry availability boundaries.
+
+This record describes the implemented runtime mechanism independently from the PR #37 blocker that triggered the work.
+
+#### Candidate EX42-08 — Persistent UI reads open a request-local circuit after a classified DB failure
+
+Atomic adapter behavior: once a classified timeout/schema-mismatch/unavailable read failure occurs, later persistent UI reads in the same request return no rows without issuing another store query.
+
+Introduced/changed/recorded by: 499755f.
+
+Backward: EX32-12 request-scoped store/memoization and EX39-08/10 failure classification.
+
+#### Candidate EX42-09 — Persistent UI degradation reports the first request-local reason once, including a distinct timeout reason
+
+Atomic telemetry rule: timeout joins unavailable/schema-mismatch as a degradation reason; only the first classified degradation is reported for the request-local store.
+
+Introduced/changed/recorded by: 499755f.
+
+#### Candidate EX42-10 — A classified persistent-UI failure best-effort discards the request client
+
+Atomic cleanup behavior: after the circuit opens, the connected client is discarded best-effort so later request-local reads do not reuse it.
+
+Introduced/changed/recorded by: 499755f.
+
+#### Candidate EX42-11 — Controlled locale-writer transactions set wider transaction-local lock and statement deadlines
+
+Atomic writer boundary: after BEGIN SERIALIZABLE and before state read/mutation, ControlledLocaleWriter executes SET LOCAL lock_timeout = 2s and SET LOCAL statement_timeout = 10s.
+
+Introduced/changed/recorded by: 499755f.
+
+Backward: EX27 controlled-writer short transaction/reconciliation model.
+
+Current behavior: unchanged in main.
+
+#### Candidate EX42-12 — Writer timeout errors do not join the serialization/deadlock retry allowlist
+
+Atomic retry boundary: retries remain limited to 40001 and 40P01; ordinary timeout failures before COMMIT propagate after rollback rather than becoming blind retries.
+
+Introduced/changed/recorded by: 499755f and clarified by b79ec7e.
+
+#### Candidate EX42-13 — Exact statement-timeout error during COMMIT enters the existing semantic commit reconciliation path
+
+Atomic correction inside PR #42: b79ec7e changes isAmbiguousCommitError so only exact PostgreSQL 57014 + canceling statement due to statement timeout during COMMIT is treated as ambiguous and reconciled.
+
+Introduced/changed/recorded by: b79ec7e.
+
+Historical change: the first PR #42 commit stated reconciliation was unchanged; the second commit explicitly changes this COMMIT-time case.
+
+#### Candidate EX42-14 — COMMIT-time statement-timeout reconciliation preserves existing post/pre/third-state semantics
+
+Atomic reconciliation behavior: if reread state equals expected post-state the write is accepted; if it equals pre-state the original timeout is rethrown; if it is a third/unknown state AmbiguousCommitOutcomeError is returned. A user-request 57014 is not routed into this path.
+
+Introduced/changed/recorded by: b79ec7e and completed by 8b318d1 tests.
+
+Backward: existing controlled-writer semantic reconciliation rather than a new blind retry mechanism.
+
+#### Candidate EX42-15 — Deadline configuration remains operational role/database state rather than portable migration schema
+
+Atomic ownership boundary: role/database timeout defaults are applied through a separate environment-parameterized SQL script, not checked into Drizzle schema migrations.
+
+Introduced/changed/recorded by: 499755f; MIGRATIONS/HYPERDRIVE.
+
+Backward: EX37-13 environment-specific production role names.
+
+#### Candidate EX42-16 — Effective server deadline settings must be verified on real pooled Hyperdrive sessions
+
+Atomic acceptance requirement: catalog configuration alone is insufficient; newly established origin sessions through the real binding must expose the intended lock/statement defaults.
+
+Introduced/changed/recorded by: 499755f HYPERDRIVE.
+
+This is an external acceptance gate, separate from EX42-03 repository configuration.
+
+#### Candidate EX42-17 — Hyperdrive acceptance must test pooled-session reuse/reset for deadline state leakage
+
+Atomic acceptance requirement: sequential borrowers after controlled transaction-local changes and COMMIT/ROLLBACK must observe configured defaults rather than leaked session state.
+
+Introduced/changed/recorded by: 499755f HYPERDRIVE.
+
+#### Candidate EX42-18 — Hyperdrive acceptance must separately prove server statement-timeout behavior
+
+Atomic acceptance requirement: a statement exceeding the server statement deadline must yield the exact statement-timeout failure before the caller query deadline.
+
+Introduced/changed/recorded by: 499755f HYPERDRIVE.
+
+#### Candidate EX42-19 — Hyperdrive acceptance must separately prove server lock-timeout behavior
+
+Atomic acceptance requirement: controlled lock contention must yield the expected lock-timeout SQLSTATE/message near the configured server deadline.
+
+Introduced/changed/recorded by: 499755f HYPERDRIVE.
+
+#### Candidate EX42-20 — Hyperdrive acceptance must investigate caller query-timeout origin-query fate rather than infer cancellation from client cleanup
+
+Atomic acceptance requirement: with server timeout longer than caller query_timeout, observe pg_stat_activity after a uniquely identifiable timed-out query and then verify a later clean request; do not infer server cancellation merely from best-effort client.end.
+
+Introduced/changed/recorded by: 499755f HYPERDRIVE.
+
+#### Candidate EX42-21 — Deadline implementation is recorded complete while real Hyperdrive calibration remains the blocker
+
+Atomic state transition: PROJECT_STATE moves from “implement deadlines” to “confirm/calibrate role/database deadlines on real staging Hyperdrive”.
+
+Introduced/changed/recorded by: 499755f; b79ec7e updates the state summary for COMMIT reconciliation.
+
+Dependency distinction: the runtime safeguards EX42-01..15 exist independently of whether EX37-03/05 made their external acceptance a pre-Stage-4 gate.
+
+#### Candidate EX42-22 — Deadline configuration invocation can report success after an ALTER ROLE failure
+
+Atomic open review finding: the documented psql invocation/script lacks ON_ERROR_STOP and does not explicitly make the two ALTER ROLE statements one transaction, so an SQL error can be followed by continued command processing.
+
+Recorded by: PR #42 P2 review on 499755f.
+
+Status in PR #42: unresolved and still present at final head. No correctness/remedy classification is made here.
+
+### Candidate atomic decisions — PR #43
+
+#### Candidate EX43-01 — Production privilege verification derives migration role from current_user and runtime role from environment input
+
+Atomic verifier input model: protected production verification reads the migration connection identity from PostgreSQL and takes RUNTIME_DATABASE_ROLE as the environment-specific runtime role.
+
+Introduced/changed/recorded by: 5f5fae1.
+
+Backward: EX37-13.
+
+#### Candidate EX43-02 — Runtime and migration roles must be distinct, login-capable, and directly lack dangerous role attributes
+
+Atomic role-attribute contract: the two roles are distinct, both rolcanlogin=true, and both directly lack rolsuper, rolcreatedb, rolcreaterole, rolreplication, and rolbypassrls.
+
+Introduced/changed/recorded by: 5f5fae1.
+
+Backward: EX37-12a.
+
+#### Candidate EX43-03 — Runtime role may have no outbound role memberships
+
+Atomic membership model: snapshot memberships where member=runtimeRole must be empty.
+
+Introduced/changed/recorded by: 5f5fae1.
+
+#### Candidate EX43-04 — Migration outbound memberships must equal an environment allowlist with exact membership options
+
+Atomic membership model: migration memberships must exactly match MIGRATION_DATABASE_ROLE_MEMBERSHIPS; after 1674d34 every allowed membership is required as ADMIN=false, INHERIT=true, SET=true.
+
+Introduced by: 5f5fae1; option semantics added by 1674d34.
+
+#### Candidate EX43-05 — Final PR #43 forbids every inbound membership into runtime or migration roles
+
+Atomic final membership model: 67b4f74 expands the snapshot to memberships where either protected role is the granted role and requires the filtered inbound set to be empty.
+
+Introduced/changed/recorded by: 67b4f74.
+
+Forward corrective evidence: PR #48 later replaces this blanket rule with a database-owner-only inbound ADMIN=true, INHERIT=false, SET=false exception and requires protected roles to stay distinct from the DB owner. PR #48 does not rewrite what PR #43 actually required.
+
+#### Candidate EX43-06 — Runtime role must not own application schemas/relations
+
+Atomic ownership rule: no scanned schema/table/sequence/view/foreign-table object may be owned by runtimeRole.
+
+Introduced by: 5f5fae1; foreign-table scan coverage added by 67b4f74.
+
+Backward: EX37-12c.
+
+#### Candidate EX43-07 — Each then-current localization application table must be owned by migrationRole
+
+Atomic ownership rule: locales, ui_translation_bundles, and ui_translations must each be public tables owned by migrationRole.
+
+Introduced/changed/recorded by: 5f5fae1.
+
+#### Candidate EX43-08 — Runtime schema privileges are exactly non-grantable USAGE on public
+
+Atomic privilege allowlist: runtime schema ACL must equal public.USAGE with no grant option.
+
+Introduced by: 5f5fae1; grant-option dimension added by 1674d34.
+
+Backward: EX37-12b.
+
+#### Candidate EX43-09 — Runtime relation privileges are exactly non-grantable SELECT on the three localization tables
+
+Atomic relation allowlist: no runtime DML, sequence, foreign-schema, foreign-table, or other relation grant is permitted beyond SELECT on the three localization tables.
+
+Introduced by: 5f5fae1; grant-option and foreign-table coverage expanded by 1674d34/67b4f74.
+
+Backward: EX37-12d/12e.
+
+#### Candidate EX43-10 — PUBLIC schema privilege is limited to non-grantable USAGE on public
+
+Atomic PUBLIC ACL rule: the verifier accepts the existing public-schema USAGE default but rejects other PUBLIC schema privileges.
+
+Introduced by: 5f5fae1; grantability tracked by 1674d34.
+
+#### Candidate EX43-11 — PUBLIC may have no application relation privileges
+
+Atomic PUBLIC ACL rule: PUBLIC table/sequence/view privileges in the scanned application space are rejected.
+
+Introduced/changed/recorded by: 5f5fae1.
+
+#### Candidate EX43-12 — Runtime and PUBLIC may have no column-level privileges
+
+Atomic ACL rule: column ACLs for runtime or PUBLIC are rejected separately from table-level ACLs.
+
+Introduced/changed/recorded by: 1674d34.
+
+#### Candidate EX43-13 — Effective migration-role default ACLs include hard-wired PostgreSQL defaults and explicit pg_default_acl
+
+Atomic verifier model: the snapshot reconstructs effective defaults from hard-wired defaults plus global/per-schema pg_default_acl entries rather than treating absence of explicit rows as no defaults.
+
+Introduced/changed/recorded by: 1674d34; 67b4f74 corrects the hard-wired sequence object type used with acldefault.
+
+Backward: EX37-12f.
+
+#### Candidate EX43-14 — The accepted effective defaults are PUBLIC EXECUTE for functions and PUBLIC USAGE for types only
+
+Atomic default-ACL allowlist: future migration-owned object defaults are required to equal those two hard-wired PUBLIC defaults, while table/sequence/schema broadening to runtime/PUBLIC is rejected.
+
+Introduced/changed/recorded by: 1674d34; namespace/default coverage extended by 67b4f74.
+
+#### Candidate EX43-15 — Default ACLs owned by other roles must not broaden future runtime/PUBLIC access
+
+Atomic cross-owner default-ACL rule: the verifier queries other role defaults and rejects relevant future table/sequence/schema grants to runtime or PUBLIC.
+
+Introduced by: 1674d34; namespace coverage extended by 67b4f74.
+
+#### Candidate EX43-16 — Catalog scanning includes foreign tables when checking ownership and relation grants
+
+Atomic coverage rule: relkind f is included so runtime ownership/grants on foreign tables are visible to the verifier.
+
+Introduced/changed/recorded by: 67b4f74.
+
+#### Candidate EX43-17 — Grant options are part of exact schema/relation/default privilege identity
+
+Atomic in-PR correction: is_grantable is preserved from aclexplode and expected false for accepted grants.
+
+Introduced/changed/recorded by: 1674d34 in response to the P2 review on 5f5fae1.
+
+Historical review status: the original omission is not silently erased; the review is outdated because the later commit changes the implementation.
+
+#### Candidate EX43-18 — Live privilege verification is integrated into the protected production migration verifier
+
+Atomic workflow placement: verify-production-migration performs existing schema/ledger checks and then reads/asserts the production privilege snapshot using protected production credentials/variables.
+
+Introduced/changed/recorded by: 5f5fae1.
+
+This is separate from ordinary PR CI fixture testing.
+
+#### Candidate EX43-19 — Ordinary PR CI runs only targeted privilege-contract fixtures, not live production catalog verification
+
+Atomic test placement: ci.yml adds production-privileges.test.mjs; the real catalog verifier remains inside the protected production migration workflow.
+
+Introduced/changed/recorded by: 5f5fae1.
+
+#### Candidate EX43-20 — Production workflow receives runtime-role and migration-membership allowlist variables
+
+Atomic operational input: production-db-migrate passes RUNTIME_DATABASE_ROLE and MIGRATION_DATABASE_ROLE_MEMBERSHIPS to the verifier.
+
+Introduced/changed/recorded by: 5f5fae1.
+
+#### Candidate EX43-21 — Project state records production privilege verification implemented and removes that hardening blocker
+
+Atomic state transition: PROJECT_STATE moves the privilege-verifier requirement into completed hardening and removes it from the blockers list.
+
+Introduced by: 5f5fae1; summary broadened by 1674d34/67b4f74.
+
+Dependency distinction: this records closure of EX37-07's gate in project state; it does not by itself establish the final correctness of every verifier assumption.
+
+### Candidate atomic decisions — PR #44
+
+#### Candidate EX44-01 — Runtime migration evidence stores a production migration workflow run ID
+
+Atomic artifact identity: runtime-migration-evidence.json records workflowRunId for the production migration run claimed to satisfy the runtime schema dependency.
+
+Introduced/changed/recorded by: 44ffa8c.
+
+Backward: EX37-14a.
+
+#### Candidate EX44-02 — Runtime migration evidence stores the exact production migration Git SHA
+
+Atomic artifact identity: the evidence manifest records migrationSha as a full lowercase Git SHA.
+
+Introduced/changed/recorded by: 44ffa8c.
+
+Backward: EX37-14b1.
+
+#### Candidate EX44-03 — Runtime migration evidence stores the Drizzle journal SHA-256 at the production migration SHA
+
+Atomic artifact identity: journalSha256 binds the evidence to the journal bytes checked out by the referenced production run SHA.
+
+Introduced/changed/recorded by: 44ffa8c.
+
+Backward: EX37-14b2.
+
+#### Candidate EX44-04 — Runtime migration evidence declares the newest migration tag required by the runtime
+
+Atomic runtime-requirement declaration: requiredMigrationTag identifies the journal point the runtime claims to require.
+
+Introduced/changed/recorded by: 44ffa8c.
+
+Backward: EX37-14d/14e.
+
+#### Candidate EX44-05 — Declared requiredMigrationTag must exist in the current checked-in journal
+
+Atomic static validation: assertRuntimeMigrationEvidence locates the tag in the current journal and rejects an unknown tag.
+
+Introduced/changed/recorded by: 44ffa8c.
+
+#### Candidate EX44-06 — Referenced migration SHA must be an ancestor of the runtime commit
+
+Atomic Git-history link: the live verifier requires migrationSha to be an ancestor of HEAD.
+
+Introduced/changed/recorded by: 44ffa8c.
+
+#### Candidate EX44-07 — Journal bytes at migrationSha must match the recorded journal digest
+
+Atomic artifact-integrity link: git show of the journal at migrationSha is SHA-256 checked against journalSha256.
+
+Introduced/changed/recorded by: 44ffa8c.
+
+#### Candidate EX44-08 — Evidence journal history must exactly cover the current journal prefix through requiredMigrationTag
+
+Atomic history link: the journal at the evidence SHA must contain the required index and exactly equal current immutable history through that index.
+
+Introduced/changed/recorded by: 44ffa8c.
+
+Backward: accepted append-only journal/history contracts and EX37-14b2.
+
+#### Candidate EX44-09 — Referenced GitHub run must be the successful manually dispatched production migration workflow on main at migrationSha
+
+Atomic external-run verification: run ID, workflow path, workflow_dispatch event, main branch, exact head SHA, completed status, and success conclusion must all match.
+
+Introduced/changed/recorded by: 44ffa8c.
+
+Backward: EX37-14a/14c.
+
+#### Candidate EX44-10 — Production migration workflow emits copyable run/SHA/journal evidence only after production verification
+
+Atomic producer-side evidence behavior: production-db-migrate appends run ID, github.sha, and journal digest to GITHUB_STEP_SUMMARY after the verification step.
+
+Introduced/changed/recorded by: 44ffa8c.
+
+#### Candidate EX44-11 — Schema-dependent runtime rollout is documented to update the evidence manifest to its newest required migration
+
+Atomic rollout linkage rule: a runtime rollout depending on new schema must update the repository-owned evidence declaration with the successful production run and newest required migration tag.
+
+Introduced/changed/recorded by: 44ffa8c MIGRATIONS.
+
+Backward: EX37-14d/14e.
+
+#### Candidate EX44-12 — Repository-local evidence format/history tests run in ordinary PR CI
+
+Atomic CI placement: unit/static tests for evidence shape, run-shape logic, and journal coverage are added alongside migration-history/privilege tests.
+
+Introduced/changed/recorded by: 44ffa8c.
+
+Forward evidence: PR #76 retains repository-local evidence contract checks.
+
+#### Candidate EX44-13 — Live GitHub Actions migration-evidence verification runs on every ordinary pull_request
+
+Atomic CI placement: ci.yml grants actions:read, passes github.token, and runs verify-runtime-migration-evidence.mjs during ordinary PR checks.
+
+Introduced/changed/recorded by: 44ffa8c.
+
+This record is intentionally separate from EX44-01..12 and the external rollout linkage itself.
+
+Forward evidence: PR #76 later removes this live step from ordinary PR CI and documents live verification at the actual external schema-dependent runtime rollout boundary.
+
+#### Candidate EX44-14 — requiredMigrationTag is not forced to advance relative to the PR base when a new schema dependency is introduced
+
+Atomic open review finding: the verifier validates the tag that the manifest declares, but does not compare the declaration to the PR base/new migration dependency to prove that a combined new migration+runtime change advanced the requirement.
+
+Recorded by: PR #44 P1 review on 44ffa8c.
+
+Status: unresolved in PR #44; ac9f36f only changes global object qualification.
+
+This finding is separate from authenticating the already-declared migration run/tag.
+
+#### Candidate EX44-15 — Project state records migration evidence implemented and removes the pre-Stage-4 evidence blocker
+
+Atomic state transition: PROJECT_STATE states the linkage is implemented and drops the corresponding blocker.
+
+Introduced/changed/recorded by: 44ffa8c.
+
+Dependency distinction: state closure of EX37-14e is not used here as proof of long-term CI placement or of the open advancement issue.
+
+### Candidate atomic decisions — PR #45
+
+#### Candidate EX45-01 — Current deployed environment may serve as the pre-release production candidate before valuable live data exists
+
+Atomic lifecycle rule: until first release has real users or valuable private data, the current deployed environment may be used for real infrastructure acceptance.
+
+Introduced/changed/recorded by: 5349e54 HYPERDRIVE, 074bbf6 PROJECT_STATE, c4e2aab ROADMAP.
+
+Provenance: PR-or-review-discussion / assistant-authored repository policy at this historical point. PR #50 is not used.
+
+#### Candidate EX45-02 — The pre-release production candidate is restricted to test/pre-release identities and data
+
+Atomic safety condition: the temporary pre-release production-candidate route is conditioned on absence of real users/valuable private data and use of test/pre-release identities/data.
+
+Introduced/changed/recorded by: 5349e54, 074bbf6, c4e2aab.
+
+#### Candidate EX45-03 — A standing separate staging environment is no longer a condition for starting Stage 4 before first release
+
+Atomic gate change: PR #45 removes the separate-staging precondition from Stage 4 start.
+
+Introduced/changed/recorded by: 5349e54, 074bbf6, c4e2aab.
+
+Changed earlier records: removes/deferes the pre-Stage-4 blocker timing attached to EX37-08a/08c1/08c2/08d/08e and EX37-18; it does not erase those historical PR #37 records.
+
+No PR #50 authority is applied.
+
+#### Candidate EX45-04 — Shared preview access remains accepted only for read-only public localization capability
+
+Atomic retained pre-release boundary: preview/non-production may still encounter top-level production HYPERDRIVE only while the exposed capability is read-only and reachable data is public localization data.
+
+Introduced as lifecycle restatement by: 5349e54.
+
+Backward: EX30-07/08; this boundary predates PR #37.
+
+#### Candidate EX45-05 — Preview/non-production auth writes or private-data access still require isolation from production or disabling non-production builds
+
+Atomic retained trigger: before preview code can exercise auth writes/private data against production, isolate that path from production bindings/secrets or disable non-production builds.
+
+Introduced/changed/recorded by: 5349e54, 074bbf6, c4e2aab.
+
+Backward: EX30-09/10 and EX35-09/10.
+
+This remains distinct from requiring a standing staging environment before Stage 4.
+
+#### Candidate EX45-06 — Post-release production fault injection/destructive infrastructure diagnostics stop once real users or valuable private data exist
+
+Atomic lifecycle transition: after first release with valuable/live data, risky diagnostic activity is no longer performed in production.
+
+Introduced/changed/recorded by: 5349e54, 074bbf6, c4e2aab.
+
+#### Candidate EX45-07 — Risky post-release DB/Hyperdrive/auth/runtime changes require staging before production rollout
+
+Atomic post-release gate: the separate staging requirement moves to risky post-release operational changes.
+
+Introduced/changed/recorded by: 5349e54, 074bbf6, c4e2aab.
+
+#### Candidate EX45-08 — Exact future staging topology is deferred to then-current platform/product requirements
+
+Atomic topology timing rule: Neon/Cloudflare/OAuth staging design is no longer frozen as the PR #37 Stage 4 topology; it will be derived when the post-release staging boundary is actually needed.
+
+Introduced/changed/recorded by: 5349e54, c4e2aab.
+
+Changed earlier records: EX37-08a/08b/08c1/08c2/08d are no longer asserted as an unconditional immediate topology.
+
+#### Candidate EX45-09 — Separate auth runtime Hyperdrive and least-privilege DB role remain required
+
+Atomic retained capability boundary: localization HYPERDRIVE is not broadened for auth writes; auth runtime gets a separate cache-disabled Hyperdrive and role.
+
+Introduced/changed/recorded by: c4e2aab retaining EX37-10.
+
+#### Candidate EX45-10 — Exact auth DB grants remain deferred until exact Better Auth version/schema/adapter operations are known
+
+Atomic retained sequencing rule: PR #45 preserves EX37-11/17 rather than replacing it with a preselected grant list.
+
+Introduced/changed/recorded by: c4e2aab.
+
+#### Candidate EX45-11 — Google OAuth staging/production topology is no longer an unconditional preselected architecture constant
+
+Atomic gate/topology change: Google Cloud projects/clients/secrets and exact redirect topology are deferred until Stage 4 exact-version Google OAuth/Better Auth/Cloudflare verification.
+
+Introduced/changed/recorded by: c4e2aab.
+
+Changed earlier record: EX37-09a's unconditional separate-project topology is not carried forward as an immediate constant; EX37-09b exact redirect configuration is deferred with the topology.
+
+#### Candidate EX45-12 — Stage 4 OAuth/session/logout acceptance moves from isolated staging to the current pre-release candidate
+
+Atomic acceptance-location change: Stage 4 completion/smoke uses the current pre-release production candidate with test/pre-release identities/data instead of requiring isolated staging first.
+
+Introduced/changed/recorded by: c4e2aab.
+
+Changed earlier record: EX37-18.
+
+#### Candidate EX45-13 — Hyperdrive pooling/reset behavior is recorded as an external constraint for deadline acceptance
+
+Atomic platform claim: documentation states Hyperdrive uses transaction pooling and resets supported session state before returning an origin connection to another borrower.
+
+Introduced/changed/recorded by: 5349e54.
+
+Provenance limitation: external-platform claim recorded by PR #45; raw source snapshot is not attached in this PR.
+
+#### Candidate EX45-14 — PostgreSQL advisory locks are excluded from Hyperdrive acceptance/runtime locking
+
+Atomic platform/diagnostic rule: docs state advisory locks are unsupported by Hyperdrive and direct admin row/table locking should be used for controlled contention diagnostics.
+
+Introduced/changed/recorded by: 5349e54.
+
+Provenance limitation: external-platform claim recorded by PR #45; raw source snapshot is not attached here.
+
+#### Candidate EX45-15 — Real deployed origin sessions are recorded with 500ms lock_timeout and 1500ms statement_timeout
+
+Atomic operational observation: the pre-release candidate acceptance records those effective settings on newly observed origin sessions.
+
+Introduced/changed/recorded by: 5349e54 HYPERDRIVE and 074bbf6 PROJECT_STATE.
+
+Evidence limitation: no raw session log is attached.
+
+#### Candidate EX45-16 — Real acceptance records pooled reuse and restoration of role defaults after COMMIT/ROLLBACK
+
+Atomic operational observation: repeated requests and controlled transaction-local setting changes are recorded as returning later borrowers to 500ms/1500ms defaults.
+
+Introduced/changed/recorded by: 5349e54, 074bbf6.
+
+#### Candidate EX45-17 — Real acceptance records PostgreSQL statement timeout at approximately 1571ms
+
+Atomic operational observation: the diagnostic run records SQLSTATE 57014 with statement-timeout message before the 2000ms caller deadline.
+
+Introduced/changed/recorded by: 5349e54, 074bbf6.
+
+#### Candidate EX45-18 — Real acceptance records lock timeout at approximately 569ms
+
+Atomic operational observation: controlled lock contention records SQLSTATE 55P03 with lock-timeout message near the configured 500ms deadline.
+
+Introduced/changed/recorded by: 5349e54, 074bbf6.
+
+#### Candidate EX45-19 — Real acceptance records caller query timeout near 2000ms and absence of the unique backend afterward without causal inference
+
+Atomic operational observation/limit: the diagnostic run records Query read timeout around 2000ms; the unique backend was not found afterward in pg_stat_activity, but the docs explicitly refuse to infer which component terminated/cancelled it.
+
+Introduced/changed/recorded by: 5349e54, 074bbf6.
+
+#### Candidate EX45-20 — Diagnostic acceptance does not prove the deployed application's request-local circuit breaker
+
+Atomic evidence-scope limit: the diagnostic harness covered pg/Hyperdrive/PostgreSQL infrastructure behavior, while the request-local application circuit remains evidenced by repository tests rather than that external run.
+
+Introduced/changed/recorded by: 5349e54, 074bbf6.
+
+Backward: EX42-08/10.
+
+#### Candidate EX45-21 — Project state records mandatory pre-Stage-4 deadline/staging blockers closed and Stage 4 as the next step
+
+Atomic state/gate transition: PROJECT_STATE says pre-Stage-4 hardening is complete, no mandatory deadline/separate-staging blockers remain, and exact-version Stage 4 preflight is next.
+
+Introduced/changed/recorded by: 074bbf6.
+
+This is a state assertion, not independent approval of each historical hardening decision.
+
+#### Candidate EX45-22 — Temporary acceptance-resource cleanup remains operational housekeeping rather than being declared complete
+
+Atomic state rule: PROJECT_STATE explicitly keeps temporary test-resource cleanup open until it is factually completed and does not make it a pre-Stage-4 blocker.
+
+Introduced/changed/recorded by: 074bbf6.
+
+#### Candidate EX45-23 — AGENTS.md is explicitly scoped to Codex and not ChatGPT
+
+Atomic workflow-document scope: AGENTS adds an explicit statement that it is a Codex instruction file, not a ChatGPT behavior contract.
+
+Introduced/changed/recorded by: 398b5c7.
+
+#### Candidate EX45-24 — README still contradicted the new staging lifecycle at PR #45 final head
+
+Atomic open review finding: ROADMAP/PROJECT_STATE say separate staging is no longer required before Stage 4, while README still says full staging isolation is a mandatory hardening blocker.
+
+Recorded by: PR #45 P2 review on 398b5c7.
+
+Status: unresolved within PR #45; PR #46 later updates README.
+
+### Candidate atomic decisions — PR #46
+
+#### Candidate EX46-01 — README records pre-Stage-4 audit/hardening as completed
+
+Atomic documentation state: README changes from “hardening blockers must still close” to a completed hardening summary including canonical persistence, deadlines, malformed-row behavior, privilege verification, and real deadline acceptance.
+
+Introduced/changed/recorded by: 18423ff.
+
+Backward: PR #38/#39/#42/#43 and PR #45 state transition.
+
+#### Candidate EX46-02 — README records that separate staging is not a pre-first-release Stage 4 start condition
+
+Atomic documentation synchronization: README adopts PR #45's revised staging lifecycle and removes its contradictory unconditional staging blocker wording.
+
+Introduced/changed/recorded by: 18423ff.
+
+Forward relation: resolves the documentation conflict recorded as EX45-24; it does not itself create the underlying PR #45 policy.
+
+#### Candidate EX46-03 — README preserves the preview/non-production isolation-or-disable trigger before auth writes/private data
+
+Atomic retained boundary: the synchronized README still requires preview/non-production to be isolated from production bindings/secrets or disabled before auth writes/private data appear.
+
+Introduced/changed/recorded by: 18423ff.
+
+Backward: EX30-09/10, EX35-09/10, EX45-05.
+
+#### Candidate EX46-04 — README records Stage 4 as the next project stage
+
+Atomic planning/state statement: with the recorded pre-Stage-4 hardening closed, README identifies Better Auth + Google OAuth Stage 4 as next.
+
+Introduced/changed/recorded by: 18423ff.
+
+#### Candidate EX46-05 — TRANSLATION_ARCHITECTURE removes an obsolete future instruction to resynchronize project plans before the next implementation PR
+
+Atomic documentation correction: the old text saying PROJECT/ROADMAP/SCAFFOLD still needed to be rebuilt before the next implementation PR is removed.
+
+Introduced/changed/recorded by: f9e1f43.
+
+This is independent from the infrastructure-lifecycle chain.
+
+#### Candidate EX46-06 — TRANSLATION_ARCHITECTURE records that project/roadmap/scaffold synchronization occurred before Stage 1 implementation
+
+Atomic historical documentation claim: the replacement text records that synchronization to the translation architecture had already happened before Stage 1.
+
+Introduced/changed/recorded by: f9e1f43.
+
+Backward: PR #7–#12 translation architecture/control-point ancestry.
+
+#### Candidate EX46-07 — TRANSLATION_ARCHITECTURE records implemented Stage 1 as generic-locale, runtime-registry, and without a fixed compile-time locale list
+
+Atomic implementation-summary claim: implemented Stage 1 is described as generic /:locale/* + runtime LocaleRegistry with no closed compile-time locale set.
+
+Introduced/changed/recorded by: f9e1f43.
+
+Backward: AN7-01/02, PR #16 and the already-recorded direct user decision for generic/data-driven locale architecture.
+
+Current behavior: the same corrected statement remains in current main.
+
+#### Candidate EX46-08 — TRANSLATION_ARCHITECTURE delegates factual implementation-state tracking to PROJECT_STATE
+
+Atomic documentation ownership rule: architecture text points actual implementation state to PROJECT_STATE rather than retaining a stale “current Stage 1” implementation assertion inside the architecture contract.
+
+Introduced/changed/recorded by: f9e1f43.
+
+### Review, dependency, and blocker-timing reconciliation
+
+1. EX37-05 is the origin of the newly enumerated pre-Stage-4 deadline blocker, but PR #42's runtime mechanisms EX42-01..15 are extracted independently from that gate. The fact that a blocker requested them is not used as proof that each mechanism was necessary.
+2. PR #42 leaves its external real-Hyperdrive acceptance/calibration as a blocker in EX42-16..21. PR #45 later changes the acceptance environment/lifecycle and records observations; those later records do not rewrite what PR #42 required at merge time.
+3. PR #43 implements many EX37-12* verifier checks, but its exact membership model is preserved historically: runtime has no outbound memberships; migration has an exact outbound allowlist; final #43 also forbids every inbound membership into runtime/migration. PR #48's database-owner exception is forward corrective evidence only.
+4. The grant-option omission reported on PR #43's first commit is preserved as an in-PR review event, while 1674d34 is separately recorded as the implementation change that adds grantability to the verifier.
+5. PR #44's repository-owned evidence artifact, Git/journal/run authentication, producer workflow, and rollout-linkage rule are separate from EX44-13, the decision to run the live GitHub API verifier on every ordinary PR.
+6. PR #44's unresolved P1 EX44-14 is also separate from EX44-13: it concerns whether the declared schema requirement advances, not where live verification is executed.
+7. PR #76 is used only as forward evidence that ordinary-PR live verification was later removed while evidence machinery and an external rollout boundary were retained. No PR #76 verdict is imported into this extraction.
+8. PR #45 retains the older generic preview safety trigger from EX30-09/10 and EX35-09/10 while removing the fixed separate-staging pre-Stage-4 timing introduced by PR #37. Those are not treated as the same decision.
+9. PR #45 preserves EX37-10 and EX37-11/17 (separate auth DB capability; defer exact grants to exact schema/operations) while changing EX37-08a/08c1/08c2/08d/08e, EX37-09a/b timing, and EX37-18 acceptance location.
+10. No PR #50 direct-user decision is applied to PR #45 or #46. This block is reconstructed solely from evidence available in #42–#46 plus earlier inherited contracts and later references used only as forward evidence.
+11. PR #46 has two independent documentation corrections: README lifecycle synchronization depends on PR #45, while the TRANSLATION_ARCHITECTURE cleanup depends on the earlier Stage 1 generic-locale lineage and is not merely a downstream infrastructure consequence.
+
+### Changed-file reconciliation
+
+#### PR #42
+- db/postgres-deadlines.ts + tests -> EX42-01..06.
+- db/hyperdrive-registry.ts + tests -> EX42-06/07.
+- db/hyperdrive-ui-translations.ts + tests -> EX42-06/08/09/10.
+- db/locale-repository.ts + tests -> EX42-11..14.
+- scripts/configure-localization-deadlines.sql -> EX42-03/15 and review finding EX42-22.
+- docs/database/HYPERDRIVE.md -> EX42-01..03, EX42-15..20, EX42-22.
+- docs/database/MIGRATIONS.md -> EX42-03/15 and operational acceptance ownership.
+- PROJECT_STATE.md -> EX42-21.
+- All 12 changed files are accounted for.
+
+#### PR #43
+- .github/scripts/production-privileges.mjs + tests -> EX43-02..17.
+- .github/scripts/verify-production-migration.mjs -> EX43-01/18/20.
+- .github/workflows/ci.yml -> EX43-19.
+- .github/workflows/production-db-migrate.yml -> EX43-18/20.
+- docs/database/MIGRATIONS.md -> EX43-01..20 as the recorded production privilege contract.
+- PROJECT_STATE.md -> EX43-21.
+- All seven changed files are accounted for.
+
+#### PR #44
+- .github/runtime-migration-evidence.json -> EX44-01..04.
+- .github/scripts/runtime-migration-evidence.mjs + tests -> EX44-04/05/08/12/14.
+- .github/scripts/verify-runtime-migration-evidence.mjs -> EX44-06..09/13.
+- .github/workflows/ci.yml -> EX44-12/13.
+- .github/workflows/production-db-migrate.yml -> EX44-10.
+- docs/database/MIGRATIONS.md -> EX44-01..13 rollout/evidence contract.
+- PROJECT_STATE.md -> EX44-15.
+- ac9f36f changes only explicit globalThis qualification inside the live verifier and does not add a separate evidence-policy decision.
+- All eight changed files are accounted for.
+
+#### PR #45
+- docs/database/HYPERDRIVE.md -> EX45-01..08, EX45-13..20.
+- PROJECT_STATE.md -> EX45-01..05, EX45-15..22.
+- ROADMAP.md -> EX45-01..12.
+- AGENTS.md -> EX45-23.
+- Review finding EX45-24 concerns unchanged README and is therefore a cross-document conflict, not a PR #45 changed-file entry.
+- All four changed files are accounted for.
+
+#### PR #46
+- README.md -> EX46-01..04 and resolution of EX45-24 at the documentation level.
+- TRANSLATION_ARCHITECTURE.md -> EX46-05..08.
+- Both changed files are accounted for.
+
+### CI, deployment, and external-evidence reconciliation
+
+- Final GitHub Actions runs for all five PRs show both checks and database jobs successful: #42 run 78, #43 run 81, #44 run 83, #45 run 84, #46 run 85.
+- Cloudflare bot records successful branch/commit preview deployments for each final head. These are execution facts and do not establish policy correctness, user approval, production-catalog truth, or the separately documented real deadline acceptance.
+- PR #42 says exact pg/PostgreSQL documentation was consulted, but no raw external research package is preserved in the PR.
+- PR #43's protected production catalog verification was not performed in the Codex task environment; targeted repository fixtures and final GitHub CI are distinct from a production catalog snapshot.
+- PR #44's local environment could not reach the GitHub API, while the final ordinary PR CI did run the live verifier successfully. The open requiredMigrationTag-advancement review remains despite green CI.
+- PR #45 records real production-candidate diagnostic observations without attaching the raw diagnostic harness/log bundle. The repository explicitly limits those observations so they do not prove the application's request-local circuit breaker.
+- PR #45 and #46 are documentation-only changes; their green CI/preview deploys do not transform their policy/state statements into direct user decisions.
+
+### Extraction reconciliation
+
+- Internal commit counts: #42=3, #43=3, #44=2, #45=4, #46=2.
+- Review-thread counts: #42=1, #43=1, #44=1, #45=1, #46=0.
+- Full F/A/C/D/O/G/T sweeps are recorded for every PR.
+- Every changed file is reconciled to one or more extracted records.
+- PR #42's runtime mechanisms are separated from the timing/gate inherited from EX37-03/05.
+- PR #43 preserves the exact original final membership model and does not import PR #48's later correction backward.
+- PR #44 separates evidence production/artifact/run/history/rollout linkage from ordinary-PR live verification placement and preserves both its unresolved P1 and PR #76 only as forward evidence.
+- PR #45 reconstructs retained versus changed staging/auth/OAuth boundaries without using PR #50.
+- PR #46 is decomposed into its own lifecycle-document and Stage-1-architecture synchronization decisions.
+- No record in this response is classified as correct, incorrect, foolish, justified, premature, future-proof, infrastructure drift, retained target architecture, approved, or requiring a remedy.
