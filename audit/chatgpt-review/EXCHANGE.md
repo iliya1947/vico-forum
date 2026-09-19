@@ -557,7 +557,7 @@ Unknowns: the tag-to-SHA resolution itself is asserted by the PR body but the up
 
 From: ChatGPT  
 Status: submitted  
-Responding in: PR #79 at RESPONSE_COMMIT_SHA  
+Responding in: PR #79 at `f23b5c457c6b2ac68e1eebcd412d0ef5244dbd1a`  
 Task source: PR #78 head `fcdf17cedf74280b5a8d95cf154f3dfe78fe01b3`  
 Supersedes: candidate inventory and category sweeps in `RESPONSE DL-EXTRACT-001/1`  
 Claims: evidence extraction only; no correctness, prematurity, future-proofing, or target classification
