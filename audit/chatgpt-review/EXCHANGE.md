@@ -1834,3 +1834,854 @@ Unknowns: whether PR #7 contains the first higher-level statement from which PR 
 - `DLX12-16` from `/2` is superseded by `DLX12-16a`, `DLX12-16b`, `DLX12-16c`, and `DLX12-16d`.
 - `DLX-INH-SEC01-01` is a new inherited mapping; it does not supersede a `/2` ID and explicitly connects the PR #9–#11 ancestry to PR #13.
 - Every other record in `RESPONSE DL-EXTRACT-001/2` remains unchanged, including `DLX12-01..12`, `DLX12-15`, `DLX12-17..20`, `DLX5-01..13`, `DLX13-01..04`, `DLX14-01..03`, and `DLX15-01..02`.
+
+
+## RESPONSE DL-ANCESTRY-001/1
+
+From: ChatGPT  
+Status: submitted  
+Responding in: PR #79 at RESPONSE_COMMIT_SHA  
+Task source: PR #78 head `6cd4137e777973749d853134dff82fb0d2f5453f`  
+Scope: PR #7–#11 ancestry for the PR #12 control-point baseline  
+Claims: evidence extraction only; no correctness, prematurity, future-proofing, or target-state classification
+
+### Coverage sweep
+
+#### PR #7 / `bdda416d9874599e4a51157bcdbbdecff1abb683`
+
+F: introduces a replacement multilingual/translation product contract covering generic locale support, automatic/manual UI translation, separate user-content translation, and provider-independent fallback  
+A: runtime `LocaleRegistry`, generic routing/resolution, request-scoped i18next, canonical English, resource loader, provider/job abstractions, revision-bound content translation, Unicode/LTR/RTL and caching/security boundaries  
+C: explicitly rejects the then-current fixed `en/ru/he` + `remix-i18next` foundation as the target architecture  
+D: adds only `TRANSLATION_ARCHITECTURE.md` as a new governing document  
+O: documents PostgreSQL/Queue/provider/storage boundaries and recovery expectations, but changes no deployed infrastructure/configuration  
+G: says project plans and Stage 1 must be synchronized before using the new architecture; says the then-open Stage 1 implementation must not merge as-is  
+T: specifies validation/idempotency/extension scenarios but adds no executable tests/workflows; build/test were not run because the PR is Markdown-only
+
+Evidence inspected:
+- PR body, sole internal commit `4d0a47f30536729a8e896342d0f3036a9b00123f`, complete `TRANSLATION_ARCHITECTURE.md` at merge, and final-head Codex review.
+- Final-head review P1 says the new document declares itself governing while `PROJECT.md`/`ROADMAP.md`/`SCAFFOLD_PLAN.md`/`PROJECT_STATE.md` still direct contributors to the incompatible old fixed-locale/remix plan.
+
+Completeness limitations:
+- PR #7 records many project choices in one architecture document, but Git-visible evidence does not establish direct-user authority for individual choices.
+- External-library/platform statements are historical claims made by the PR; exact external facts are later reworked in PR #10 and are not independently re-verified by this ancestry response.
+- No later PR #7 commit resolves the documentation-authority conflict raised by its review.
+
+#### PR #8 / `f1b169e651ef01ac553a800c859bb5336730bf89`
+
+F: adds repository/local manual UI translation packs as an explicit supported translation source  
+A: hybrid local/persistent-manual/machine/English resource composition; partial packs; local-source freshness, validation, provenance, and outage fallback  
+C: extends PR #7 architecture without returning to a fixed locale list  
+D: changes only `TRANSLATION_ARCHITECTURE.md`  
+O: records runtime resilience when PostgreSQL translation storage is unavailable; no infrastructure state changes  
+G: requires local-pack validation and adds `LocalTranslationSource` to the intended Stage 1 foundation  
+T: documents CI/build validation for local packs and extension scenarios; no executable tests/workflows added and build/test were not run
+
+Evidence inspected:
+- PR body, sole internal commit `09c9c7080379c4c4685813802602782f68724289`, full merged architecture document, and final-head Codex review.
+- Final-head review P1 again says `SCAFFOLD_PLAN.md`/`PROJECT_STATE.md` still direct the incompatible old Stage 1 plan.
+
+Completeness limitations:
+- The PR changes one large architecture document; source-format examples are examples, not separately fixed file-format contracts.
+- Direct-user provenance is not visible.
+
+#### PR #9 / `cc448c0db5424cdd589a08c05b5f5b0db1762884`
+
+F: no intended new product feature; the PR body says architecture decisions are preserved while reorganized  
+A: introduces the Component Registry/detail-document ownership model and traceability rule; first exact `SEC-01` four-prohibition form is visible here  
+C: splits the monolithic architecture into one entry contract plus six detail documents; the split also exposes two review-detected contract losses/inconsistencies  
+D: changes `TRANSLATION_ARCHITECTURE.md` and adds `LOCALES.md`, `UI_TRANSLATION.md`, `CONTENT_TRANSLATION.md`, `PROVIDERS_AND_JOBS.md`, `STORAGE_AND_VERSIONING.md`, `RESEARCH.md`  
+O: no infrastructure/configuration changes; provider/Queue/storage material is documentary contract only  
+G: every component ID must map to a roadmap stage and acceptance criterion before implementation; project-plan synchronization is stated as a prerequisite to the next implementation PR  
+T: no executable tests/workflows; no build/test/lint run
+
+Evidence inspected:
+- PR body, sole internal commit `912b4ba888e64910f37ffd80b263f49c721b6c52`, all seven merged documents, and all three review threads.
+- Reviews: P1 stale `PROJECT_STATE.md`/scaffold next step; P2 `SEC-02` registry says auth/rate-limit/dedupe but provider detail only states rate-limit/dedupe; P2 local-pack provenance/path identity was lost from the split storage detail.
+
+Completeness limitations:
+- Moving unchanged material between files is documentation organization, not a new project decision unless ownership/traceability semantics change.
+- The PR body’s “architecture decisions do not change” is a PR-discussion claim, not proof that the split preserved every contract; the review threads are contrary historical evidence.
+
+#### PR #10 / `878c727e46a5b8e9fbcad63b0cce515fa0892c98`
+
+F: sharpens observable locale/content fallback behavior, including explicit-URL authority, content-original fallback, and source-locale revision semantics  
+A: corrects locale lifecycle, resolver/loader semantics, formatting, UI fallback/resource composition, freshness, cache identity, provider/manual separation, task durability/idempotency/stale-task safety, and storage provenance  
+C: explicitly described as a post-PR #9 inconsistency repair plus repeated architecture audit; several internal commits replace earlier intermediate proposals inside the same PR  
+D: changes all seven translation architecture/detail/research documents  
+O: durable task-before-enqueue, reconciliation/lease recovery, cache identity, provider data-handling/provenance boundaries  
+G: formalizes activation/fallback/validation constraints and distinguishes architectural runtime invariants from optional stricter repository policy  
+T: no executable tests/workflows; research records exact/current external sources; one review identifies an inaccurate future verification date on an intermediate head
+
+Evidence inspected:
+- PR body; all 24 internal commit identities; diffs for all 24 commits; merged final versions of the seven changed docs; review discussion.
+- Important internal supersession: `1d843a58`/`5a79b253` temporarily modelled fallback as loader-resolved with `fallbackLng:false`; `4a54f446` replaces this with separate locale bundles plus an explicit registry fallback chain supplied to i18next. Final merged docs use the latter.
+- Review on intermediate `a981f91ed6ef0e103c7a18861f1903534af8306a` notes the claimed `2026-09-10` verification date was later than its `2026-09-09T23:12:31Z` commit time. Later research commits `48a1b94` and `08ab160` were also committed before midnight UTC while retaining `2026-09-10` wording.
+
+Completeness limitations:
+- Exact external-library/platform claims are recorded as external-evidence claims of the PR, not independently re-verified here.
+- Intermediate proposals superseded before merge are retained below as history/counter-evidence where causally relevant, not treated as final PR #10 contracts.
+
+#### PR #11 / `9fd97e9f6206b49dd05bf88a5d6e2089c8c175e4`
+
+F: replaces the old fixed-locale/remix project-plan baseline with the generic locale/translation architecture in product/project planning; no runtime feature code  
+A: projects the translation architecture into `PROJECT.md`, `ROADMAP.md`, and executable `SCAFFOLD_PLAN.md`; assigns component IDs across stages  
+C: removes fixed `/en`/`/ru`/`/he` ceiling and mandatory `remix-i18next`/browser-redetection assumptions; second commit removes an accidentally hard-coded `404` choice and restores an explicitly deferred unknown-locale route policy  
+D: changes exactly `PROJECT.md`, `ROADMAP.md`, `SCAFFOLD_PLAN.md`  
+O: schedules persistent registry, persistent UI resources, providers/Queues, revision boundaries, content translation, and release work without provisioning any external resource  
+G: stage/component traceability and acceptance/test mapping; preserves a pre-implementation decision gate for unavailable explicit locale  
+T: defines Stage 1 and later-stage test/acceptance plans; no executable test/workflow file changed and build/test/lint were not run
+
+Evidence inspected:
+- PR body; internal commits `f8ae89d04b55d68ed88c45f3352d811c72772224` and `dd8a12da8df4b2e15809720d1db7eb26ce55c4db`; merged `PROJECT.md`/`ROADMAP.md`/`SCAFFOLD_PLAN.md`; both Codex review threads on `f8ae89d`.
+- Review P2: `LOC-08` mapped to Stage 1 without an explicit no-store/equivalent cache task/test.
+- Review P2: `LOC-09` mapped to Stage 2 persistence but no explicit activation-flow implementation/acceptance was scheduled.
+- `dd8a12d` changes only the unknown-locale policy from hard-coded `404` back to a deferred route-policy choice; it does not address those two review findings.
+
+Completeness limitations:
+- `PROJECT_STATE.md` was intentionally not changed in PR #11; PR body says factual state remained Stage 0. Review history from PRs #7–#9 had already flagged that the recorded next step could still point at the old plan.
+- No direct-user-decision evidence is visible in the PR materials inspected.
+
+### Candidate ancestry records
+
+#### Candidate AN7-01 — Runtime LocaleRegistry replaces a closed locale list
+
+Atomic decision: supported UI locales are registered canonical BCP-47 identities in a runtime `LocaleRegistry` rather than a compile-time `en/ru/he` union/list or resource-map ceiling.
+
+First introduced / changed / recorded:
+- first visible introduction in this ancestry block: PR #7 `4d0a47f`, `TRANSLATION_ARCHITECTURE.md` locale model/registry and prohibited fixed-list pattern;
+- PR #8 preserves it and adds that local packs do not define the registry;
+- PR #9 assigns `LOC-01`/`LOC-02` stable IDs;
+- PR #10 splits translation/publication state and adds bootstrap English/persistent-registry outage behavior;
+- PR #11 maps the abstraction to Stage 1 and persistence to Stage 2.
+
+Normative provenance:
+- PR #7 body explicitly states “runtime LocaleRegistry instead of closed en/ru/he” — `PR-or-review-discussion`.
+- Exact field/status/interface wording committed in PR #7 — `assistant-authored-proposal` absent stronger accessible authority.
+- PR #10 research labels registry/bootstrap details as Vico project decisions, not external facts — `later-retrospective-summary` within this ancestry block.
+
+Known forward links: `DLX12-03`, `DLX12-04`, `DLX5-01`, `DLX13-02`/`DLX13-03`, `DLX14-01`.
+
+Contrary/unknown: PR #7–#9 coexist temporarily with old fixed-locale project plans; no direct-user decision is visible.
+
+#### Candidate AN7-02 — Generic locale namespace with technical routes outside it
+
+Atomic decision: public UI uses generic `/:locale/*` while technical routes such as `/api/*`/auth/i18n remain outside the locale namespace.
+
+First introduced / changed / recorded: PR #7 `4d0a47f`; stable `LOC-04` in PR #9; preserved/sharpened in PR #10; mapped to Stage 1 by PR #11.
+
+Normative provenance: PR #7 body explicitly names generic routing/LocaleResolver — `PR-or-review-discussion`; exact technical-route separation text — `assistant-authored-proposal`.
+
+Known forward links: `DLX12-03`, `DLX5-01`, later Stage 1 implementation lineage.
+
+Contrary/unknown: PR #7 review notes then-current plans still require fixed routes; no direct-user authority visible.
+
+#### Candidate AN7-03 — LocaleResolver owns server-side locale selection and typed context
+
+Atomic decision: Vico owns server locale resolution, using explicit URL first and otherwise user/cookie/Accept-Language/English sources, returning registry-derived locale context rather than delegating source-of-truth ownership to an i18n detector.
+
+First introduced / changed / recorded:
+- PR #7 introduces the resolver/order/typed request-context shape;
+- PR #10 `1000ee87` splits explicit-URL semantics from no-segment negotiation and later `b030474d`/`18fca72e` add q=0/wildcard/bootstrap-outage behavior;
+- PR #11 maps it to Stage 1.
+
+Normative provenance: PR #7 body — `PR-or-review-discussion`; detailed resolver algorithm — `assistant-authored-proposal`. PR #10 `RESEARCH.md` records BCP47/RFC/Intl constraints as `external-platform-requirement` evidence as understood by that PR.
+
+Known forward links: `DLX12-03`, `DLX12-12`, `DLX13-03`, `DLX14-02`.
+
+Contrary/unknown: PR #7’s single linear order was later refined because explicit URL and negotiation have different semantics; merge of #7 does not prove later refinement was already accepted.
+
+#### Candidate AN7-04 — Locale boundary requires a server round-trip for locale-changing client navigation
+
+Atomic decision: document requests and hydrated locale-changing navigation must cross the same server validation/resource-loading boundary; the final PR #10 exact-version form requires a server loader on the locale-boundary route.
+
+First introduced / changed / recorded:
+- PR #7 introduces “middleware/loader” server boundary;
+- PR #10 `7c408399` temporarily allows loader or equivalent, `1000ee87` hardens to an exact React Router 8.3.1 server-loader requirement;
+- PR #11 maps that loader into Stage 1/scaffold.
+
+Normative provenance:
+- project requirement introduced in PR #7 — `assistant-authored-proposal` and PR-body `PR-or-review-discussion`.
+- PR #10 research cites React Router 8.3.1 tag/middleware behavior as `external-platform-requirement` evidence recorded by the PR.
+
+Known forward links: `DLX12-03`, `DLX14-03` and later Stage 1 routing implementation.
+
+Contrary/unknown: exact external behavior is not independently re-verified here.
+
+#### Candidate AN7-05 — remix-i18next is not locale source of truth
+
+Atomic decision: Vico retains `i18next`/`react-i18next` for rendering but does not use `remix-i18next` detector/`supportedLanguages` as the authoritative locale registry; browser redetection after SSR is not authoritative.
+
+First introduced / changed / recorded: PR #7 `4d0a47f`; PR #9 registry/detail split; PR #10 research pins exact detector evidence; PR #11 removes `remix-i18next` and browser detector from Stage 1 dependencies.
+
+Normative provenance: PR #7 body — `PR-or-review-discussion`. PR #10 exact detector source is recorded as `external-platform-requirement` evidence; the choice not to use it as source of truth is a project proposal/decision.
+
+Known forward links: `DLX12-09`, `DLX5-09`.
+
+Contrary/unknown: old project/scaffold docs retained the prior mandatory remix baseline until PR #11.
+
+#### Candidate AN7-06 — Canonical English is the sole developer-maintained UI source
+
+Atomic decision: English is the canonical UI catalog/source of keys and typed message descriptors; non-English resources are derived/imported/manual/machine rather than mandatory full source dictionaries.
+
+First introduced / changed / recorded: PR #7; PR #8 adds hybrid manual sources without changing English canonicality; PR #9 assigns `UI-01`/`UI-02`/`UI-04`; PR #10 adds missing-canonical-key behavior; PR #11 maps it into Stage 1.
+
+Normative provenance: PR #7 body explicitly says canonical English UI catalog — `PR-or-review-discussion`; descriptor/key rules are `assistant-authored-proposal`.
+
+Known forward links: `DLX12-06`, `DLX5-09` and Stage 1C lineage.
+
+Contrary/unknown: no direct-user evidence in repository discussion.
+
+#### Candidate AN7-07 — Request-scoped i18next and identical SSR/hydration locale-resource state
+
+Atomic decision: each SSR request uses its own i18next instance, and hydration receives the same resolved locale/resources rather than redetecting language in the browser.
+
+First introduced / changed / recorded: PR #7; PR #8 preserves; PR #9 `UI-09`/`UI-10`; PR #10 later expands snapshot to explicit fallback resources and formatting inputs; PR #11 maps to Stage 1.
+
+Normative provenance: PR #7 body explicitly states request-scoped i18next/react-i18next — `PR-or-review-discussion`; exact snapshot contents — `assistant-authored-proposal`. PR #10 records react-i18next SSR docs as external evidence.
+
+Known forward links: `DLX12-09`, `DLX5-09`.
+
+Contrary/unknown: none within this ancestry block besides temporary old-plan conflict.
+
+#### Candidate AN7-08 — Vico owns explicit locale fallback; implicit i18next reduction is not the domain policy
+
+Atomic decision: fallback semantics are project-owned rather than inferred from a closed supported-language list or implicit locale reduction.
+
+First introduced / changed / recorded:
+- PR #7 explicitly sets `load:"currentOnly"` and registry-owned fallback;
+- PR #10 internal `1d843a58`/`5a79b253` temporarily propose loader-resolved/`fallbackLng:false` semantics;
+- `4a54f446` supersedes that intermediate model: loader keeps bundles separate by locale and request-scoped i18next receives the explicit registry fallback chain; final PR #10 and PR #11 use this form.
+
+Normative provenance: PR #7 architecture text — `assistant-authored-proposal`; PR #10 PR body/research — `PR-or-review-discussion` + recorded `external-platform-requirement` facts for i18next plural/fallback behavior.
+
+Known forward links: `DLX12-08`/`DLX12-09`, `DLX13-02`.
+
+Contrary/unknown: the two superseded PR #10 intermediate commits are explicit counter-history and must not be mistaken for the merged contract.
+
+#### Candidate AN7-09 — TranslationResourceLoader separates request-time reads from generation
+
+Atomic decision: request-time UI resource loading reads/combines already available resources behind a loader boundary; translation provider calls do not occur in the SSR render/read path and canonical English remains an in-deploy fallback.
+
+First introduced / changed / recorded: PR #7; PR #8 extends loader to hybrid sources; PR #9 `UI-03`; PR #10 hardens read-only endpoint and cache/source separation; PR #11 maps loader into Stage 1 and providers to later stages.
+
+Normative provenance: PR #7 body explicitly names dynamic resources/explicit fallback and providers/jobs — `PR-or-review-discussion`; detailed read/generation separation — `assistant-authored-proposal`.
+
+Known forward links: `DLX12-08`, `DLX12-20`, `DLX5-09`.
+
+Contrary/unknown: none establishing direct-user acceptance.
+
+#### Candidate AN7-10 — Direction and Unicode are data-driven, not language-special-cased
+
+Atomic decision: locale direction is registry metadata, document `lang`/`dir` derive from context, layout uses direction-neutral/logical CSS where relevant, and locale/content strings are Unicode-safe rather than Latin-only.
+
+First introduced / changed / recorded: PR #7; PR #9 `LOC-07`/`LOC-10`; PR #10 preserves and adds formatting context; PR #11 maps into Stage 1.
+
+Normative provenance: PR #7 body includes Unicode/LTR/RTL — `PR-or-review-discussion`; exact mechanics — `assistant-authored-proposal`.
+
+Known forward links: `DLX12-04`.
+
+Contrary/unknown: no direct-user evidence visible.
+
+#### Candidate AN7-11 — Root locale negotiation has a shared-cache safety boundary
+
+Atomic decision: request-dependent unprefixed-root locale negotiation must not be cached as one universal redirect; locale-bearing URLs are then cache-friendlier.
+
+First introduced / changed / recorded: PR #7 HTTP-caching section; PR #9 `LOC-08` specifies no-store or equivalent safe policy; PR #10 preserves; PR #11 maps `LOC-08` to Stage 1 but omits an explicit Stage 1 cache task/test.
+
+Normative provenance: PR #7 caching text — `assistant-authored-proposal`; PR #11 review is `PR-or-review-discussion` evidence that the mapping did not fully schedule the contract.
+
+Known forward links: `DLX12-11` and `DLX12-05`. PR #12 later adds the explicit no-store baseline/task/test.
+
+Contrary/unknown: PR #11 review P2 is the key gap; the contract exists before PR #12, but the executable plan does not fully carry it forward.
+
+#### Candidate AN7-12 — UI translation and user-content translation are separate domains
+
+Atomic decision: UI translation and user-generated-content translation have different identities/lifecycles while sharing only lower-level provider capabilities; content translation remains revision-bound and original source content is preserved.
+
+First introduced / changed / recorded: PR #7; PR #9 assigns `CNT-*` and separate detail doc; PR #10 adds original-current-revision fallback and source-locale-correction semantics; PR #11 schedules forum revision boundaries before later content-translation implementation.
+
+Normative provenance: PR #7 body explicitly states separate services — `PR-or-review-discussion`; detailed identities/persistence rules — `assistant-authored-proposal`.
+
+Known forward links: no direct `DLX12-*` runtime implementation record, but this is an inherited PR #12 control-point contract and forward ancestry for later forum revision/content-translation chains.
+
+Contrary/unknown: later consumer use is not treated as evidence of original correctness/authority.
+
+#### Candidate AN7-13 — Translation provider capability is adapter-owned, not locale-universe authority
+
+Atomic decision: provider-specific locale codes/support/limits/capabilities/provenance are isolated behind a machine-provider router/adapters, and no Cloudflare→Google hard-coded chain defines which locales Vico supports.
+
+First introduced / changed / recorded: PR #7; PR #9 `PRV-01`/`PRV-02`; PR #10 separates manual/local ingestion from machine providers and adds data-handling constraints; PR #11 schedules provider integration in a later stage.
+
+Normative provenance: PR #7 body explicitly states capability-based provider routing — `PR-or-review-discussion`; provider-specific external constraints are recorded as `external-platform-requirement` evidence in PR #10 research.
+
+Known forward links: `DLX12-20` (providers excluded from Stage 1); later Stage 5 provider chain.
+
+Contrary/unknown: no direct-user evidence visible.
+
+#### Candidate AN7-14 — Background translation work has persistent identity, idempotency and failure handling
+
+Atomic decision: background translation uses durable task identity, duplicate-safe processing, retry classification/DLQ and reconciliation rather than assuming one delivery/one external call.
+
+First introduced / changed / recorded:
+- PR #7 introduces task identity, Queue message ID, idempotency, retry/DLQ;
+- PR #9 assigns `JOB-01..06`;
+- PR #10 `0bdd9823` clarifies idempotent state ≠ universal exactly-once provider call; `90a0a775` adds durable-task-before-enqueue; `cccb712d` adds stale-task preflight/conditional publication; final contract records all;
+- PR #11 schedules these for later provider/jobs stage.
+
+Normative provenance: PR #7 body — `PR-or-review-discussion`. PR #10 Queue claims cite current Cloudflare docs as recorded `external-platform-requirement` evidence; project ordering/guards remain project-authored rules.
+
+Known forward links: `DLX12-20`; later durable-task cross-stage chain.
+
+Contrary/unknown: PR #7’s simpler “idempotent upsert” is later narrowed; it did not itself guarantee the final dual-write/stale-task semantics.
+
+#### Candidate AN7-15 — Translation generation security/abuse boundary is separate from locale routing
+
+Atomic decision: bulk generation is privileged/internal; on-demand user-content generation is subject to product auth/rate-limit/dedup policy; resource reads are read-only; provider APIs/secrets are not exposed as a public proxy/client capability.
+
+First introduced / changed / recorded: PR #7 security section; PR #9 `SEC-02`/`SEC-04`; PR #10 adds registered-locale/budget guards and provider-data policy; PR #11 schedules `SEC-02`/`SEC-04` with provider stages.
+
+Normative provenance: PR #7 body includes abuse protection/provider provenance — `PR-or-review-discussion`; exact controls — `assistant-authored-proposal`.
+
+Known forward links: `DLX12-14b` concerns broader write/generation anti-abuse; `DLX12-20` defers provider generation infrastructure beyond Stage 1.
+
+Contrary/unknown: PR #9 split detail accidentally omits the authentication part while its component registry still calls `SEC-02` an auth/rate-limit/dedupe boundary; see conflict C9-01 below.
+
+#### Candidate AN7-16 — Stage 1 must establish translation boundaries without provisioning later infrastructure
+
+Atomic decision: the initial translation foundation must establish generic locale routing/registry/resolver/canonical English/i18next/resource-loader/direction/Unicode/SSR-hydration boundaries, while PostgreSQL, Queue and real translation APIs can remain behind those abstractions for later stages.
+
+First introduced / changed / recorded: PR #7 Stage 1/scaffold section; PR #8 adds `LocalTranslationSource` to that foundation; PR #9 component boundaries; PR #10 corrected details; PR #11 turns the architecture into the Stage 1/Stage 2+ roadmap/scaffold plan.
+
+Normative provenance: PR #7 body explicitly states Stage 1 consequences — `PR-or-review-discussion`; exact boundary list — `assistant-authored-proposal`.
+
+Known forward links: `DLX12-03..10`, `DLX12-20`, `DLX5-01`.
+
+Contrary/unknown: PR #7/#8/#9 reviews repeatedly flag that old project/scaffold docs still direct incompatible work; PR #11 finally changes those plans, but its own two review gaps remain.
+
+### PR #8 additions
+
+#### Candidate AN8-01 — LocalTranslationSource is an independent partial manual UI source
+
+Atomic decision: repository-controlled local translation packs are an independent `LocalTranslationSource` and may partially cover a namespace/locale; their presence does not activate or define a locale.
+
+First introduced / changed / recorded: PR #8 `09c9c708`; PR #9 `UI-05`; PR #10 hardens loading/validation; PR #11 maps it to Stage 1.
+
+Normative provenance: PR #8 body explicitly lists `LocalTranslationSource`, partial/full packs, and registry independence — `PR-or-review-discussion`.
+
+Known forward links: `DLX12-07`, `DLX5-09`.
+
+Contrary/unknown: PR #8 review says the old Stage 1 plan still lacks this source abstraction.
+
+#### Candidate AN8-02 — UI source priority is explicit within a locale
+
+Atomic decision: for a non-English locale, current local manual overrides persistent manual, which overrides machine; canonical English is the eventual fallback.
+
+First introduced / changed / recorded: PR #8; PR #9 `UI-08`; PR #10 later separates source priority from locale fallback and preserves this order within each locale; PR #11 maps it into Stage 1/Stage 3.
+
+Normative provenance: PR #8 body says explicit priority/merge policy — `PR-or-review-discussion`; exact ordering text — `assistant-authored-proposal`.
+
+Known forward links: `DLX12-08`.
+
+Contrary/unknown: PR #10 shows the original linear description was insufficient for cross-locale fallback ordering; source priority itself remains distinct.
+
+#### Candidate AN8-03 — Local/manual freshness is bound to canonical sourceFingerprint
+
+Atomic decision: a local/manual translation is current only for the canonical message semantics it was reviewed against; source change makes the old value stale rather than silently current.
+
+First introduced / changed / recorded: PR #8; PR #9 `STO-02`/`UI-05`; PR #10 `1d843a58`/`73809ecd` explicitly forbids auto-refreshing old manual fingerprints; PR #11 maps the contract to Stage 1 and persistence later.
+
+Normative provenance: PR #8 body explicitly names `sourceFingerprint` freshness — `PR-or-review-discussion`; “must not auto-refresh” is a later PR #10 project rule.
+
+Known forward links: `DLX12-07`.
+
+Contrary/unknown: no direct-user evidence.
+
+#### Candidate AN8-04 — Local-pack structural validation is mandatory, but stale policy is distinct
+
+Atomic decision: local packs must validate key/namespace/placeholder/structured/markup/size constraints; freshness/staleness is a separate state and does not by itself imply the file is structurally invalid.
+
+First introduced / changed / recorded: PR #8 introduces CI/build validation; PR #9 details it; PR #10 `1d7e5b56` splits structural failure from stale and permits stricter stale-CI only by separate repository policy; `0ae13c3b` makes unknown canonical key a structural error while missing keys remain allowed.
+
+Normative provenance: PR #8 body — `PR-or-review-discussion` for validation; PR #10 body — `PR-or-review-discussion` for stale/structural correction.
+
+Known forward links: `DLX12-07` and Stage 1 validation scope.
+
+Contrary/unknown: PR #8 wording originally included fingerprint freshness in the CI validation list and did not yet distinguish stale state from structural failure.
+
+#### Candidate AN8-05 — Local resources provide a storage-outage fallback without becoming registry state
+
+Atomic decision: if persistent translation storage is unavailable, current repository local overrides plus canonical English remain available; this resource fallback does not invent/activate non-English locale registry state.
+
+First introduced / changed / recorded: PR #8 outage behavior; PR #10 later separates route-level registry availability from resource-level English fallback; PR #11 schedules persistent sources later.
+
+Normative provenance: PR #8 body explicitly states PostgreSQL outage local overrides → canonical English — `PR-or-review-discussion`; exact route/resource separation is PR #10 project-authored clarification.
+
+Known forward links: `DLX12-08`/`DLX12-20`.
+
+Contrary/unknown: PR #8 predates the bootstrap-English persistent-registry distinction.
+
+#### Candidate AN8-06 — Local source identity/provenance is observable metadata
+
+Atomic decision: local resource provenance must retain enough source identity (logically pack/path plus fingerprint/origin) to explain which repository source won a merge.
+
+First introduced / changed / recorded: PR #8 merged architecture includes local origin/path identity; PR #9 split loses this from the storage detail; PR #9 review explicitly flags the loss; PR #10 restores separate manual/local origin semantics and keeps machine provenance distinct.
+
+Normative provenance: PR #8 architecture wording — `assistant-authored-proposal`; PR #9 review — `PR-or-review-discussion` evidence that the split did not preserve it.
+
+Known forward links: later provenance/storage contracts; no direct `DLX12-*` implementation ID.
+
+Contrary/unknown: the PR #9 merged detail is inconsistent with the prior local provenance requirement until PR #10 correction.
+
+### PR #9 documentation/traceability additions
+
+#### Candidate AN9-01 — Translation architecture becomes a short entry contract plus single-owner detail documents
+
+Atomic decision: `TRANSLATION_ARCHITECTURE.md` is the mandatory entry point; component detail is split across six subsystem documents, each component having one designated detail owner.
+
+First introduced / changed / recorded: PR #9 `912b4ba`.
+
+Normative provenance: PR #9 body explicitly states the split and intent — `PR-or-review-discussion`; exact documentation-use rules — `assistant-authored-proposal`.
+
+Known forward links: PR #12 README linkage and control-point documentation structure.
+
+Contrary/unknown: review shows the split did not perfectly preserve every prior detail contract.
+
+#### Candidate AN9-02 — Stable Component Registry IDs enumerate mandatory translation contracts
+
+Atomic decision: 49 stable component IDs index locale/UI/content/provider/job/storage/security contracts and their intended implementation boundary.
+
+First introduced / changed / recorded: PR #9 `912b4ba`; later PR #10 changes descriptions/ownership details without deleting the registry; PR #11 maps IDs into roadmap stages.
+
+Normative provenance: PR #9 body explicitly states 49 stable IDs — `PR-or-review-discussion`.
+
+Known forward links: PR #11 stage mapping; PR #12 control point inherits the registry/traceability architecture.
+
+Contrary/unknown: a registry row can be internally inconsistent with a detail contract, as `SEC-02` review demonstrates; ID existence is not proof its detail is complete.
+
+#### Candidate AN9-03 — Component-to-roadmap traceability is a pre-implementation gate
+
+Atomic decision: every translation component ID must map to a roadmap stage and either be implemented with acceptance criteria or explicitly create a boundary assigned to a later stage before relevant implementation proceeds.
+
+First introduced / changed / recorded: PR #9 `912b4ba` traceability rule; PR #11 performs the first full roadmap mapping.
+
+Normative provenance: PR #9 body explicitly states the traceability rule — `PR-or-review-discussion`.
+
+Known forward links: PR #11 roadmap; PR #12 Stage 1 split/acceptance decomposition.
+
+Contrary/unknown: PR #11 review finds mapped `LOC-08`/`LOC-09` whose executable acceptance/scheduling is incomplete, showing mapping alone does not prove full traceability.
+
+#### Existing record DLX-INH-SEC01-01 — Unknown locale has no registry/translation/provider/quota side effects
+
+Ancestry update only; no duplicate candidate:
+- PR #7 precursor: “unknown locale never creates registry entry and never launches AI job.”
+- PR #9 `912b4ba` is the first exact accessible form with all four prohibitions in `docs/translation/LOCALES.md`: no registry entry, no translation task, no provider call, no translation quota use.
+- PR #10 preserves the four prohibitions while adding explicit-URL authority/route semantics.
+- PR #11 maps `SEC-01` to Stage 1.
+- PR #13 preserves the four lines and adds the concrete unavailable-locale fallback shape; therefore PR #13 is a forward consumer/change around the invariant, not its origin.
+
+Normative provenance: PR #9 detail contract is a `pre-existing-project-contract` by the PR #12/#13 control point; PR #13 body later restates absence of translation/provider side effects as `PR-or-review-discussion`.
+
+Known forward links: `DLX13-01`, `DLX13-03`, `DLX13-04`.
+
+#### Candidate AN9-04 — SEC-02 is indexed as auth + rate-limit + dedup for translation generation
+
+Atomic decision/index claim: the Component Registry names `SEC-02` as a translation-generation authentication/rate-limit/dedup boundary.
+
+First introduced / changed / recorded: PR #9 `912b4ba` registry row.
+
+Normative provenance: PR #9 component-registry text — `assistant-authored-proposal`; PR #9 review is `PR-or-review-discussion` counter-evidence.
+
+Known forward links: PR #11 maps `SEC-02` to Stage 5/reuse Stage 10; broader PR #12 generation anti-abuse record `DLX12-14b` is related but not identical.
+
+Contrary/unknown: merged `PROVIDERS_AND_JOBS.md` in PR #9 requires only rate limiting and dedup for user-content translation, omitting auth; review P2 explicitly identifies the mismatch. Do not infer that PR #9 fully established an auth requirement from its detail contract.
+
+#### Candidate AN9-05 — Project plans must be synchronized to the split architecture before implementation
+
+Atomic decision/gate: `PROJECT.md`/`ROADMAP.md`/`SCAFFOLD_PLAN.md` must be synchronized to the architecture/component registry before the next implementation PR; the old fixed-locale Stage 1 is not the target implementation.
+
+First introduced / changed / recorded: PR #9 `912b4ba`; PR body also explicitly says synchronization is the next separate change.
+
+Normative provenance: PR #9 body — `PR-or-review-discussion`.
+
+Known forward links: PR #11 performs synchronization; PR #12 then further splits Stage 1.
+
+Contrary/unknown: PR #9 review P1 says `PROJECT_STATE.md` still directs the next contributor to the unchanged old scaffold plan, so the gate is not consistently reflected in repository state at PR #9 merge.
+
+### PR #10 corrective ancestry
+
+#### Candidate AN10-01 — Translation readiness and publication status are separate locale states
+
+Atomic decision: `translationStatus` and `publicationStatus` are independent; a locale can be translation-ready while not publicly active.
+
+First introduced / changed / recorded: PR #10 `7c408399`; propagated to main architecture/research and PR #11 Stage 1/2 plans.
+
+Normative provenance: PR #10 body explicitly lists the split — `PR-or-review-discussion`.
+
+Known forward links: `DLX12-03` registry boundary; later persistent-registry work.
+
+Contrary/unknown: PR #7–#9 used a single status/lifecycle model, so the split is a genuine PR #10 change rather than ancestry to be attributed earlier.
+
+#### Candidate AN10-02 — Canonical English is a bootstrap registry entry independent of persistent registry availability
+
+Atomic decision: canonical `en` is active bootstrap locale/resource state that remains resolvable without persistent registry; non-English locale must not be guessed when persistent registry data is unavailable.
+
+First introduced / changed / recorded: PR #10 `b030474d`; synchronized top-level in `bdc89406`; mapped by PR #11.
+
+Normative provenance: PR #10 body explicitly lists bootstrap `en` — `PR-or-review-discussion`.
+
+Known forward links: `DLX12-03`/`DLX12-08` and later persistent-registry outage behavior.
+
+Contrary/unknown: PR #7–#9 had English hard resource fallback but not this explicit registry-availability distinction.
+
+#### Candidate AN10-03 — Explicit URL locale is authoritative; no-segment negotiation is a different path
+
+Atomic decision: an explicit `/:locale` candidate is resolved against registry/publication rules and does not silently fall through to user/cookie/header preference; only missing-locale requests negotiate user→cookie→Accept-Language→English.
+
+First introduced / changed / recorded: PR #10 `1000ee87`, further hardened by `b030474d`/`18fca72e`; PR #11 syncs; PR #12 inherits.
+
+Normative provenance: PR #10 body explicitly states explicit URL authority — `PR-or-review-discussion`; RFC/BCP evidence is recorded as `external-platform-requirement` support in research, while precedence remains project policy.
+
+Known forward links: `DLX12-12`, `DLX13-03`, `DLX14-02`.
+
+Contrary/unknown: PR #7 linear order did not clearly separate these semantics.
+
+#### Candidate AN10-04 — Canonical URL handling and negotiation edge cases are explicit
+
+Atomic decision: canonicalizable alias/deprecated/case representations of active locale redirect to canonical locale URL; formatting-only BCP-47 extensions are normalized to translation identity unless separately approved; q=0 is ineligible and wildcard does not pick a random locale.
+
+First introduced / changed / recorded: alias canonical redirect in `b030474d`; formatting extensions/fallback graph/wildcard in `18fca72e`; recorded in final research.
+
+Normative provenance: PR #10 body summarizes aliases/canonical redirects/q/wildcard/formatting separation — `PR-or-review-discussion`; standards facts are recorded as `external-platform-requirement` support.
+
+Known forward links: `DLX13-02` and the formatting-extension review on PR #13; later method-aware PR #14.
+
+Contrary/unknown: exact redirect status was not set by PR #10; PR #13 chooses statuses later.
+
+#### Candidate AN10-05 — Registry fallback/alias graphs have structural validity rules
+
+Atomic decision: fallback chains reject cycles/self-reference/duplicates; alias mapping must not loop or ambiguously map one alias to multiple canonical locales.
+
+First introduced / changed / recorded: cycle validation exists earlier; PR #10 `18fca72e` adds self-reference/duplicates/alias ambiguity.
+
+Normative provenance: PR #10 project-authored detail — `assistant-authored-proposal`; no direct-user evidence.
+
+Known forward links: `DLX12-03`/`DLX12-05` and later persistent registry validation.
+
+Contrary/unknown: no separate review discussion.
+
+#### Candidate AN10-06 — Locale-sensitive formatting has an explicit SSR/hydration context
+
+Atomic decision: translation locale is distinct from numbering/calendar/time-zone formatting preferences; locale-sensitive formatting uses explicit context and initial SSR/hydration must use the same formatting inputs.
+
+First introduced / changed / recorded: translation-vs-formatting split existed in PR #7; PR #10 `38af4d80` adds explicit formatting primitives/timezone/SSR-hydration rules and `9b890790` promotes them to top-level invariant; PR #11 maps to Stage 1.
+
+Normative provenance: PR #10 body explicitly lists formatting-context correction — `PR-or-review-discussion`; Intl capability is recorded as `external-platform-requirement` evidence.
+
+Known forward links: `DLX12-04`.
+
+Contrary/unknown: no direct-user evidence.
+
+#### Candidate AN10-07 — Locale fallback and source priority are separate axes; resources remain separate by locale
+
+Atomic decision: Vico builds target→explicit registry fallbacks→English; within each non-English locale it chooses current local→persistent manual→machine; resources for different locales are not flattened, and i18next receives the explicit fallback chain.
+
+First introduced / changed / recorded:
+- PR #8 introduced source priority but not the final two-axis semantics;
+- PR #10 `5a79b253` makes locale specificity/source origin explicit but temporarily flattens key-level resolution before i18next with `fallbackLng:false`;
+- `4a54f446` replaces that intermediate proposal with separate locale bundles plus explicit i18next fallback chain;
+- `bdc89406`/`08ab160` synchronize top-level/research; PR #11 maps final form.
+
+Normative provenance: PR #10 body explicitly states source priority, separate bundles and explicit fallback — `PR-or-review-discussion`; i18next plural behavior is recorded external evidence.
+
+Known forward links: `DLX12-08`/`DLX12-09`.
+
+Contrary/unknown: `1d843a58`/`5a79b253` are superseded intermediate history and must not be read as merged policy.
+
+#### Candidate AN10-08 — Stale translation and structural-invalid translation are different states
+
+Atomic decision: fingerprint mismatch marks a translation stale and excludes it from current resources while fallback continues; unknown canonical keys/broken placeholders/structure are structural validation errors; blocking merge solely for stale is a separate optional repository policy.
+
+First introduced / changed / recorded: PR #8 introduces freshness/validation; PR #10 `1d7e5b56` explicitly separates stale from structural error; `0ae13c3b` defines unknown key as structural and missing key as valid for partial pack.
+
+Normative provenance: PR #10 body explicitly lists stale/structural separation and canonical key requirement — `PR-or-review-discussion`.
+
+Known forward links: `DLX12-07`.
+
+Contrary/unknown: earlier PR #8 validation list did not make the distinction precise.
+
+#### Candidate AN10-09 — Manual/local sourceFingerprint cannot be silently refreshed
+
+Atomic decision: old manual/local translations retain the fingerprint they were reviewed against; tooling may compare with current canonical fingerprint but may only write a new fingerprint after update/explicit confirmation.
+
+First introduced / changed / recorded: PR #8 introduces fingerprint freshness; PR #10 `1d843a58`/`73809ecd` makes “no auto refresh” explicit; final storage/UI docs retain it.
+
+Normative provenance: PR #10 body explicitly lists this correction — `PR-or-review-discussion`.
+
+Known forward links: `DLX12-07` and persistent translation ancestry.
+
+Contrary/unknown: no direct-user evidence.
+
+#### Candidate AN10-10 — TranslationBundleCache is an optimization, not a translation source
+
+Atomic decision: cache wraps compiled resources rather than participating as a source in merge priority; individual bundle identity includes locale/namespace/version, while cached composite resource graphs must also include fallback-policy identity.
+
+First introduced / changed / recorded: PR #10 `1d843a58` removes cache from loader source list; `73809ecd`/`0174ab45` define cache identity; final docs preserve.
+
+Normative provenance: PR #10 body explicitly lists cache/source separation and fallback-policy identity — `PR-or-review-discussion`.
+
+Known forward links: `DLX12-08` and later translation storage/cache chain.
+
+Contrary/unknown: PR #8/PR #9 listed `TranslationBundleCache` alongside source adapters.
+
+#### Candidate AN10-11 — Read-only UI resource transport validates and has no generation side effects
+
+Atomic decision: if a resource endpoint is used, it canonicalizes/validates locale, checks registry/publication policy and namespace, returns only current/ready compiled resource data, and does not create locale/task or call a provider.
+
+First introduced / changed / recorded: PR #7 read endpoint already said validate/read existing/no provider; PR #10 `0ae13c3b` makes registry/publication/current/no-task semantics explicit.
+
+Normative provenance: early project-authored contract plus PR #10 corrective body — `PR-or-review-discussion` for the correction.
+
+Known forward links: `DLX-INH-SEC01-01` by shared no-side-effect shape and `DLX12-08` resource boundary.
+
+Contrary/unknown: endpoint is optional transport; the invariant applies if it exists.
+
+#### Candidate AN10-12 — Content translation miss/failure falls back to original current revision
+
+Atomic decision: if target equals known source no job is created; missing/unavailable/invalid current content translation displays original content of the current revision, not canonical-English UI text and not an older-revision translation.
+
+First introduced / changed / recorded: original preservation/revision identity exists in PR #7; PR #10 `1fafd60b` specifies the failure/miss path; final top-level contract records it; PR #11 product/roadmap syncs it.
+
+Normative provenance: PR #10 body explicitly lists user-content original fallback — `PR-or-review-discussion`.
+
+Known forward links: later forum/content-translation cross-stage chain.
+
+Contrary/unknown: no direct PR #12 implementation ID; it remains inherited architecture at the control point.
+
+#### Candidate AN10-13 — Manual source-locale correction creates a new immutable content revision
+
+Atomic decision: changing a revision’s detected source locale in a way that changes translation semantics must create a new revision/source version rather than mutating existing revision metadata in place.
+
+First introduced / changed / recorded: PR #10 `0270aa05`; final content/research/top-level docs; PR #11 schedules the revision boundary before later content translation.
+
+Normative provenance: PR #10 body explicitly lists this correction — `PR-or-review-discussion`.
+
+Known forward links: later immutable forum revision/sourceLocale chain.
+
+Contrary/unknown: PR #9 allowed optional manual language correction metadata without fixing its versioning semantics.
+
+#### Candidate AN10-14 — Machine provider routing and manual/local ingestion are separate paths
+
+Atomic decision: `TranslationProviderRouter` selects external machine adapters; manual/local translation enters via separate validated ingestion/source paths rather than pretending to be a machine provider.
+
+First introduced / changed / recorded: PR #7/8 allowed manual import in provider examples; PR #10 `50bc53d9` explicitly separates them and `9b890790` promotes separation to top-level.
+
+Normative provenance: PR #10 body explicitly lists machine-router/manual-ingestion separation — `PR-or-review-discussion`.
+
+Known forward links: later provider/storage architecture; `DLX12-20` keeps provider infrastructure out of Stage 1.
+
+Contrary/unknown: older architecture used `ManualImportProvider` in the adapter examples.
+
+#### Candidate AN10-15 — Durable translation task is committed before Queue enqueue
+
+Atomic decision: create/upsert and commit durable task identity/state before enqueueing its task ID; failed/unknown enqueue leaves a recoverable pending task for reconciliation, and duplicate enqueue is tolerated by idempotency.
+
+First introduced / changed / recorded: PR #10 `90a0a775`; top-level synchronized by `bdc89406`; research by `08ab160`; PR #11 schedules JOB-01/JOB-06 later.
+
+Normative provenance: PR #10 body explicitly states durable task before enqueue — `PR-or-review-discussion`; Queue delivery facts are recorded external evidence.
+
+Known forward links: later durable-task/dispatcher/reconciliation chain; `DLX12-20` as deferred infrastructure boundary.
+
+Contrary/unknown: PR #7–#9 had task identity/reconciliation but not this explicit DB/Queue ordering.
+
+#### Candidate AN10-16 — Queue idempotency guarantees state correctness, not universal exactly-once provider calls
+
+Atomic decision: duplicate processing must converge to one correct persistent current state and use claim/lease to reduce duplicate cost, but a crash after provider response before durable commit can cause a repeated external call unless provider offers its own idempotency guarantee.
+
+First introduced / changed / recorded: PR #10 `0bdd9823`; final provider/research/top-level docs.
+
+Normative provenance: PR #10 body explicitly states the corrected guarantee — `PR-or-review-discussion`; Cloudflare at-least-once semantics are recorded `external-platform-requirement` evidence.
+
+Known forward links: later JOB-03 implementation chain.
+
+Contrary/unknown: PR #7’s simpler wording could be misread as stronger duplicate-call prevention; PR #10 narrows it.
+
+#### Candidate AN10-17 — Stale task is checked before provider call and cannot publish over newer state
+
+Atomic decision: queued work re-checks task/source/policy/locale/higher-priority manual state before provider call, and publishes conditionally so outdated results cannot become current after source/policy change.
+
+First introduced / changed / recorded: PR #10 `cccb712d`; top-level `9b890790`; research `08ab160`.
+
+Normative provenance: PR #10 body explicitly lists stale-task preflight/conditional publish — `PR-or-review-discussion`.
+
+Known forward links: later JOB-03 implementation chain.
+
+Contrary/unknown: earlier idempotency contract did not fully specify stale-source/policy race handling.
+
+#### Candidate AN10-18 — Locale activation is a controlled publication transition
+
+Atomic decision: translation readiness does not automatically make locale public; activation must explicitly set publication active after validating metadata, direction/fallback, and required UI-resource level, with partial mode only by explicit policy.
+
+First introduced / changed / recorded: PR #9 already has registration/activation separation; PR #10 `7c408399` splits statuses and sharpens explicit activation checks; PR #11 maps `LOC-09` to Stage 1 abstraction/Stage 2 persistence.
+
+Normative provenance: PR #10 body explicitly states independent statuses; exact activation checks are project-authored detail.
+
+Known forward links: registry/persistence chain and PR #11 review conflict C11-02.
+
+Contrary/unknown: PR #11 does not actually schedule this activation flow despite mapping `LOC-09`, according to its review.
+
+#### Candidate AN10-19 — External-research evidence is separated from Vico project decisions
+
+Atomic decision/method: exact-version facts should use immutable upstream refs when possible; changing platform/standards pages are dated; Vico architecture choices are labelled as project choices rather than properties guaranteed by external libraries.
+
+First introduced / changed / recorded: PR #10 `a981f91e` and later research sync commits.
+
+Normative provenance: project documentation methodology — `assistant-authored-proposal`; individual external claims carry `external-platform-requirement` provenance as recorded.
+
+Known forward links: supports ancestry provenance for AN7-04/05/08/14 and AN10-03/04/06/07/15/16/17.
+
+Contrary/unknown: review on `a981f91e` identifies an inaccurate future verification date. Later PR #10 commits before midnight UTC retain `2026-09-10`; repository evidence in this task does not establish the actual wall-clock/location basis for that date, so it remains a provenance-quality conflict rather than silently corrected fact.
+
+### PR #11 synchronization/mapping records
+
+#### Candidate AN11-01 — Project/roadmap/scaffold source-of-truth structure is synchronized to translation architecture
+
+Atomic decision: `PROJECT.md` keeps only a high-level translation contract and points to `TRANSLATION_ARCHITECTURE.md`/detail docs; `ROADMAP.md` and `SCAFFOLD_PLAN.md` become the stage/executable mappings of that contract instead of retaining the old fixed-locale/remix baseline.
+
+First introduced / changed / recorded: PR #11 `f8ae89d`.
+
+Normative provenance: PR #11 body explicitly states this synchronization — `PR-or-review-discussion`.
+
+Known forward links: PR #12 README/project-state/scaffold split and all `DLX12-01..12` Stage 1 control-point records.
+
+Contrary/unknown: `PROJECT_STATE.md` itself is unchanged in PR #11, despite earlier review concerns about the recorded next step.
+
+#### Candidate AN11-02 — Every translation component is assigned to an implementation stage
+
+Atomic decision: the 49 component IDs are mapped in `ROADMAP.md` to concrete stages or staged abstraction→implementation transitions, with acceptance/test obligations.
+
+First introduced / changed / recorded: traceability rule in PR #9; actual full mapping in PR #11 `f8ae89d`.
+
+Normative provenance: PR #11 body explicitly states all 49 IDs were mapped — `PR-or-review-discussion`.
+
+Known forward links: PR #12 later decomposes Stage 1 into 1A/1B/1C without discarding the component assignments.
+
+Contrary/unknown: mapping completeness is challenged by PR #11 review for `LOC-08` and `LOC-09`; mapping an ID is not evidence all required work was actually scheduled.
+
+#### Candidate AN11-03 — Stage 1 executable plan includes the locale/UI foundation and keeps later infrastructure out
+
+Atomic decision: Stage 1 executable scope includes generic locale route/server loader, runtime registry/resolver, canonical English, local packs, fingerprint/validation, separate-locale resource loader, request-scoped i18next, shared hydration/formatting state, direction/Unicode and tests, while persistence/auth/providers/Queues/forum/content translation/deploy remain outside Stage 1.
+
+First introduced / changed / recorded: ancestry comes from PR #7/#8/#10; PR #11 `f8ae89d` makes it executable in `SCAFFOLD_PLAN.md` and `ROADMAP.md`.
+
+Normative provenance: PR #11 body explicitly enumerates this synchronized Stage 1 — `PR-or-review-discussion`.
+
+Known forward links: `DLX12-02..09`, `DLX12-20`, `DLX5-01`.
+
+Contrary/unknown: PR #12 later splits this all-at-once Stage 1 implementation into 1A/1B/1C, and its review exposes the “first scaffold” conflict that PR #5 later reconciles.
+
+#### Candidate AN11-04 — Persistent registry/resources/providers/content translation are staged behind the Stage 1 boundaries
+
+Atomic decision: roadmap sequences persistent registry (Stage 2), persistent UI translation storage (Stage 3), provider/jobs (Stage 5), forum revision preparation (Stage 6), and full user-content translation (Stage 10) instead of implementing those subsystems inside Stage 1.
+
+First introduced / changed / recorded: PR #11 `f8ae89d`.
+
+Normative provenance: PR #11 body explicitly states the sequential stage separation — `PR-or-review-discussion`.
+
+Known forward links: `DLX12-20`; later cross-stage chains for persistent registry, translation storage/cache, jobs and content revisions.
+
+Contrary/unknown: this response does not treat later implementation as proof the early staging was correct.
+
+#### Candidate AN11-05 — Unknown/inactive explicit-locale UX remains deliberately unresolved before implementation
+
+Atomic decision/open gate: explicit unknown/inactive locale must not fall through to cookie/header negotiation, but the exact route behavior is not hard-coded by PR #11 and must be explicitly chosen before its implementation PR.
+
+First introduced / changed / recorded:
+- `f8ae89d` initially hard-codes Stage 1 `404` in scaffold/test text;
+- `dd8a12da8df4b2e15809720d1db7eb26ce55c4db` supersedes that choice, restoring an explicit pre-implementation policy gate.
+
+Normative provenance: PR #11 second commit history is historical evidence; exact deferred-policy wording is `assistant-authored-proposal` absent stronger authority.
+
+Known forward links: `DLX12-12`; PR #13 later chooses redirect behavior; PR #14 scopes it by method.
+
+Contrary/unknown: the first PR #11 internal commit proves the route policy briefly became concrete `404` before being deliberately reverted to an unresolved choice.
+
+#### Candidate AN11-06 — Stage 1 dependency/runtime plan removes remix/browser detector but retains exact i18next/react-i18next runtime
+
+Atomic decision: Stage 1 dependencies include exact `i18next`/`react-i18next` but not `remix-i18next`/`i18next-browser-languagedetector`; scaffold uses exact toolchain versions and explicit fallback/hydration semantics.
+
+First introduced / changed / recorded: conceptual choice in PR #7; exact executable dependency plan in PR #11 `f8ae89d`.
+
+Normative provenance: PR #11 body explicitly states removal from Stage 1 dependency baseline — `PR-or-review-discussion`; exact-version compatibility references are inherited external-evidence claims from Stage 0/PR #10 research.
+
+Known forward links: `DLX5-08`/`DLX5-09` and `DLX12-09`.
+
+Contrary/unknown: no direct-user provenance visible.
+
+### Preserved conflicts and missing authority
+
+#### Conflict C7-01 / C8-01 / C9-01-plan — Governing translation docs and recorded project next-step were temporarily inconsistent
+
+PR #7, #8, and #9 reviews each independently report the same practical conflict: the new translation contract says the old fixed-locale/remix Stage 1 is not the target, while existing `PROJECT.md`/`ROADMAP.md`/`SCAFFOLD_PLAN.md` and/or `PROJECT_STATE.md` still direct contributors toward it. PR #11 synchronizes the three project-plan documents but deliberately leaves `PROJECT_STATE.md` unchanged. This ancestry response does not infer user acceptance from the eventual synchronization.
+
+#### Conflict C9-02 — SEC-02 registry/detail mismatch
+
+PR #9 Component Registry names auth/rate-limit/dedup, but its provider detail omits authentication. The final-head review records the mismatch. PR #10 hardens rate/budget/data policy but the inspected final provider detail still does not introduce a clear user-auth requirement for user-content translation. Therefore ancestry proves the registry claim and the conflict; it does not prove a resolved auth policy before PR #12.
+
+#### Conflict C9-03 — Local-pack provenance was lost in PR #9 split
+
+PR #8 contains logical local origin/path identity; PR #9 storage detail narrows provenance to machine records and review flags the loss. PR #10 restores separate manual origin/audit semantics but does not recreate the exact PR #8 “path/pack identity” wording in `STORAGE_AND_VERSIONING.md`. Keep this as historical provenance-boundary change rather than silently equating the formulations.
+
+#### Conflict C10-01 — Research verification date
+
+Codex review on `a981f91e` states `2026-09-10` was future-dated relative to commit time. Later PR #10 research commits retained that date while their Git timestamps were still on 2026-09-09 UTC. Repository evidence inspected here does not establish an alternative timezone/verification record, so the date claim is not used as authority for exact-version facts.
+
+#### Conflict C11-01 — LOC-08 mapped but Stage 1 cache acceptance missing
+
+PR #11 review says `LOC-08` is assigned to Stage 1 without an explicit no-store/equivalent cache task/test, even though `LOCALES.md` requires shared-cache protection. `dd8a12d` does not address it. PR #12 later introduces the explicit no-store baseline/test (`DLX12-11`/`DLX12-05`). This is forward history, not retroactive proof that PR #11’s mapping was complete.
+
+#### Conflict C11-02 — LOC-09 mapped but activation flow not scheduled
+
+PR #11 review says Stage 2 persists locale lifecycle but does not schedule the activation flow required by `LOCALES.md`. `dd8a12d` does not address it. This remains an ancestry gap for later persistent-registry history; no resolution is inferred here.
+
+### Changed-file and internal-history reconciliation
+
+- PR #7: only `TRANSLATION_ARCHITECTURE.md` changed. Section headings/examples/ASCII diagrams are organizational evidence for AN7-*; no generated files exist.
+- PR #8: only `TRANSLATION_ARCHITECTURE.md` changed. Example file layouts and example translated strings illustrate AN8-01/02/03 and are not fixed file-format/product-copy decisions.
+- PR #9:
+  - `TRANSLATION_ARCHITECTURE.md`: entry contract, component registry, traceability → AN9-01/02/03.
+  - `LOCALES.md`: locale detail owner; exact `SEC-01` four prohibitions → existing `DLX-INH-SEC01-01`.
+  - `UI_TRANSLATION.md`, `CONTENT_TRANSLATION.md`, `PROVIDERS_AND_JOBS.md`, `STORAGE_AND_VERSIONING.md`: mostly decomposition of existing architecture into owners; independently meaningful split regressions are preserved as C9-02/C9-03.
+  - `RESEARCH.md`: extracted rationales/source list; it is reference, not a separate implementation task.
+- PR #10: all seven files are corrective contract work. The 24 internal commits were inspected. Intermediate text later replaced inside the same PR is historical counter-evidence, not duplicated as a final candidate. In particular loader-flatten/`fallbackLng:false` is superseded by `4a54f446`, and final separate-bundle/explicit-fallback semantics are AN10-07.
+- PR #11:
+  - `PROJECT.md`: high-level contract/source-of-truth sync → AN11-01.
+  - `ROADMAP.md`: component/stage mapping and stage boundaries → AN11-02/03/04.
+  - `SCAFFOLD_PLAN.md`: executable Stage 1 dependency/locale/UI plan → AN11-03/05/06.
+  - second internal commit `dd8a12d` only reopens the unknown-locale policy choice and updates its test wording; no other review issue is changed.
+- No generated artifact in PR #7–#11 requires a separate decision record.
+
+### Forward-link reconciliation into already accepted extraction IDs
+
+Known, non-exhaustive links:
+- `AN7-01/02/03/04` → `DLX12-03`; `AN7-03`/`AN10-03/04` → `DLX12-12` and `DLX13-02/03`; method-aware changes later link to `DLX14-01/02/03`.
+- `AN7-10`/`AN10-06` → `DLX12-04`.
+- `AN7-11` → `DLX12-11`/`DLX12-05`.
+- `AN7-06` → `DLX12-06`.
+- `AN8-01/03/04` → `DLX12-07`.
+- `AN7-08/09`, `AN8-02/05`, `AN10-07/10/11` → `DLX12-08`.
+- `AN7-05/07/08`, `AN10-07`, `AN11-06` → `DLX12-09` and `DLX5-09`.
+- `AN7-16`/`AN11-03/04` → `DLX12-20` and `DLX5-01`.
+- `AN11-05` → `DLX12-12` → `DLX13-01..04`.
+- existing `DLX-INH-SEC01-01` ancestry is PR #7 precursor → PR #9 exact four prohibitions → PR #10 preservation → PR #11 Stage 1 mapping → PR #13 concrete fallback layering.
+- PR #11 executable-plan conflict around “first scaffold” is the immediate ancestry for `DLX12-01/02` and the PR #12 review later reconciled by `DLX5-01`.
+
+These links are discovery candidates only, not exhaustive dependency closure and not evidence that the earlier decisions were correct.
+
+### Extraction reconciliation
+
+- direct-user-decision evidence found in PR #7–#11 GitHub-visible material: none.
+- merge is not used as user approval.
+- external-platform-requirement evidence: only where PR #7/#10 research/body records a concrete outside constraint; this response does not independently re-verify those external sources.
+- inaccessible evidence: historical ChatGPT/Codex task transcripts behind task links and any off-Git user decisions.
+- unresolved ancestry/control-point issues retained: C7/C8/C9 plan synchronization history, C9 SEC-02 mismatch, C9 local-provenance loss, C10 research-date issue, C11 missing cache acceptance, C11 missing activation scheduling.
+- no correctness/prematurity/future-proof classification is assigned to any AN7/AN8/AN9/AN10/AN11 record.
