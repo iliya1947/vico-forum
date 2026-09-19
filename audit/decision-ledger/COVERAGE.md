@@ -62,10 +62,10 @@ number is lower than the baseline PR number.
 | #13 | `0526b29` | extraction-complete | `DLX13-01..04`; dependency on `DLX-INH-SEC01-01` | Diff/body/internal commits, category sweep, review gap, and inherited no-side-effect relationship reviewed. |
 | #14 | `7520605` | extraction-complete | `DLX14-01..03` | Diff/body/internal commits, category sweep, and governing-document conflict reviewed. |
 | #15 | `8ea9d32` | extraction-complete | `DLX15-01..02` | Diff/body/internal commit, category sweep, and action-resolution evidence limitation reviewed. |
-| #16 | `daff15c` | pending | — | — |
-| #17 | `5aa1859` | pending | — | — |
-| #18 | `777ef20` | pending | — | — |
-| #19 | `5a3c75a` | pending | — | — |
+| #16 | `daff15c` | extraction-complete | `EX16-01..08`, `EX16-09a..c`, `EX16-10`, `EX16-11a..b`, `EX16-12`, `EX16-13a..b`, `EX16-14..17` | Five commits, review conflict, category sweep, files, gates, and atomic replacement map reviewed. |
+| #17 | `5aa1859` | extraction-complete | `EX17-01..05`, `EX17-06a..b`, `EX17-07`, `EX17-08a..b`, `EX17-09..16` | Two commits, both review defects, superseded state claim, category sweep, and atomic replacement map reviewed. |
+| #18 | `777ef20` | extraction-complete | `EX18-01`, `EX18-02a..b`, `EX18-03` | Docs-only state/deployment claims split from their unavailable external evidence and reviewed. |
+| #19 | `5a3c75a` | extraction-complete | `EX19-01..12` | Twelve commits including empty final commit, corrections, compatibility history, category sweep, and files reviewed. |
 | #20 | `2d0d9e5` | pending | — | — |
 | #21 | `c0e2add` | pending | — | — |
 | #22 | `92b55cd` | pending | — | — |

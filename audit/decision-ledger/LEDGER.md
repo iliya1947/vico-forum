@@ -229,6 +229,71 @@ is preserved in PR #79 responses `DL-ANCESTRY-001/1` at `988804c` and
 | `DLX15-01` | Give pull-request CI explicit least-privilege token permissions at this stage. |
 | `DLX15-02` | Pin third-party CI actions to full SHAs with readable version comments. |
 
+### PRs #16–#19
+
+Detailed evidence is preserved in PR #79 responses `DL-EXTRACT-002/1` at `8a4310b` and
+`DL-EXTRACT-002/2` at `4fdc216`, accepted by `REVIEW DL-EXTRACT-002/2`. Composite IDs
+`EX16-09`, `EX16-11`, `EX16-13`, `EX17-06`, `EX17-08`, and `EX18-02` are superseded labels,
+not ledger records.
+
+| Decision ID | Atomic decision index |
+| --- | --- |
+| `EX16-01` | Separate locale translation identity from formatting extensions. |
+| `EX16-02` | Use a data-driven in-memory Stage 1 registry with bootstrap English. |
+| `EX16-03` | Reject duplicate, self, missing, and cyclic registry fallback edges. |
+| `EX16-04` | Require unambiguous registry alias and match identities. |
+| `EX16-05` | Determine explicit-locale availability from active publication status. |
+| `EX16-06` | Permanently redirect safe canonicalizable locale forms to an internal canonical URL. |
+| `EX16-07` | Temporarily redirect safe unavailable explicit locales to bootstrap English without preference negotiation. |
+| `EX16-08` | Fail redirect-required non-safe explicit locale requests before matched actions. |
+| `EX16-09a` | Negotiate root locale in authenticated, cookie, header, English precedence. |
+| `EX16-09b` | Exclude Accept-Language ranges with `q=0`. |
+| `EX16-09c` | Prevent wildcard from selecting an arbitrary active locale. |
+| `EX16-10` | Restrict root language negotiation to GET/HEAD. |
+| `EX16-11a` | Use a temporary canonical-locale root redirect and preserve query. |
+| `EX16-11b` | Mark root negotiation responses `Cache-Control: no-store`. |
+| `EX16-12` | Put public UI behind a generic locale boundary and technical APIs outside it. |
+| `EX16-13a` | Use a locale-boundary server loader to guarantee the server round trip. |
+| `EX16-13b` | Propagate resolved locale through typed request context. |
+| `EX16-14` | Derive SSR document `lang` and `dir` from resolved locale context. |
+| `EX16-15` | Use explicit formatting preferences with deterministic UTC as the Stage 1 baseline. |
+| `EX16-16` | Begin direction-neutral CSS with logical text alignment. |
+| `EX16-17` | Advance from completed 1B to 1C without declaring all of Stage 1 complete. |
+| `EX17-01` | Make the canonical English catalog executable runtime data. |
+| `EX17-02` | Give UI descriptors typed semantic translation metadata. |
+| `EX17-03` | Hash canonical message semantics into `sourceFingerprint`. |
+| `EX17-04` | Load partial manual packs independently of registry activation. |
+| `EX17-05` | Prevent local sources from overriding canonical English. |
+| `EX17-06a` | Require local namespace/key identities to exist in the canonical catalog. |
+| `EX17-06b` | Require current local values to pass structural content validation. |
+| `EX17-07` | Exclude fingerprint-mismatched stale values while continuing fallback. |
+| `EX17-08a` | Give each source content-sensitive current-resource version identity. |
+| `EX17-08b` | Aggregate ordered source versions per locale in loader snapshots. |
+| `EX17-09` | Keep fallback-locale resources in separate loader bundles. |
+| `EX17-10` | Apply ordered source priority within each locale. |
+| `EX17-11` | Expose fallback, version, and stale metadata in the loader snapshot. |
+| `EX17-12` | Create isolated request-scoped i18next runtimes with explicit fallback. |
+| `EX17-13` | Reuse one serialized locale/resource/formatting snapshot across SSR and hydration. |
+| `EX17-14` | Move scaffold UI strings onto the translation runtime. |
+| `EX17-15` | Defer full Stage 1 acceptance until 1C is merged to main. |
+| `EX17-16` | Require a real Workers checkpoint after Stage 1 acceptance and before Stage 2. |
+| `EX18-01` | Record Stage 1 acceptance as completed on merged main. |
+| `EX18-02a` | Record that the first real Cloudflare Worker deployment occurred. |
+| `EX18-02b` | Record that deployed Workers smoke checks passed. |
+| `EX18-03` | Make Stage 2 persistence preflight the next gate before dependencies/migrations. |
+| `EX19-01` | Classify stale fingerprint before validating obsolete translation structure. |
+| `EX19-02` | Validate all real local pack identities outside the request namespace filter. |
+| `EX19-03` | Permit stale real-pack entries unless a separate strict repository policy is adopted. |
+| `EX19-04` | Reserve exact canonicalized technical top-level locale identities. |
+| `EX19-05` | Detach and freeze runtime registry snapshots and matches. |
+| `EX19-06` | Expose locale definition identity/state fields as compile-time readonly. |
+| `EX19-07` | Type-check i18next namespaces/keys from the canonical catalog shape. |
+| `EX19-08` | Make the locale landing page an index child rather than a catch-all. |
+| `EX19-09` | Return a real HTTP 404 for unknown localized child routes. |
+| `EX19-10` | Temporarily force initial-manifest route discovery on React Router 8.3.1. |
+| `EX19-11` | Re-evaluate the route-discovery compatibility setting after applicable upgrades. |
+| `EX19-12` | Add a Workers-runtime localized-routing smoke to pull-request CI. |
+
 `COVERAGE.md` remains the authoritative working checklist for whether every in-scope PR/commit has
 been examined and whether mixed changes were completely decomposed. A populated ledger alone never
 proves that extraction or dependency discovery is complete.

@@ -881,3 +881,67 @@ Submit `RESPONSE DL-EXTRACT-002/2` containing:
 4. confirmation that all unlisted `/1` records and reconciliation statements remain unchanged.
 
 Do not repeat the full response, expand scope, classify correctness/prematurity, or edit PR #78.
+
+## REVIEW DL-EXTRACT-002/2
+
+From: Codex
+Reviewed response: PR #79 response commit `4fdc216d30f2c48f1c0ad60f3a6a351cd7c5a14d`,
+confirmed at PR #79 head `f005819550db86b03f0f7bb207658708fe71cc22`
+Status: accepted-for-extraction
+
+### Independent verification and resolution
+
+The response performs all six requested splits, supplies a complete replacement map, and correctly
+reattaches the PR #17 P1/P2 findings, root-negotiation ancestry, pre-action guard, version-layer
+history, and deployment-evidence limitations. It neither expands the task nor adds a substantive
+classification. The distinctions agree with the implementation and internal history inspected by
+Codex, including the unchanged aggregate version-array shape in PR #17's follow-up and the absence of
+raw external deployment/smoke artifacts for PR #18.
+
+`DL-EXTRACT-002` is closed as an extraction task. Its accepted records are indexed in `LEDGER.md` at
+`open` status, and PRs #16–#19 are `extraction-complete`. This accepts only the completeness and
+atomicity of the evidence inventory; it does not decide whether any behavior, external checkpoint,
+corrective change, or compatibility measure was correct or timely.
+
+## TASK DL-EXTRACT-003
+
+From: Codex
+Status: open
+Response destination: ChatGPT-owned PR #79
+Scope: PRs #20, #21, #22, #24, and #23 in chronological merge order
+
+### Assignment
+
+Extract all atomic decisions, implementation boundaries, corrective changes, gates, and review
+conflicts from:
+
+- PR #20 / merge `2d0d9e5`;
+- PR #21 / merge `c0e2add`;
+- PR #22 / merge `92b55cd`;
+- PR #24 / merge `87c49c5` (merged before PR #23);
+- PR #23 / merge `4f1a727`.
+
+This block is a primary candidate for the beginning of infrastructure drift. That is a hypothesis to
+test later, not a classification to assume during extraction.
+
+Requirements:
+
+1. Inspect PR bodies, complete merge diffs, every internal commit, reviews/discussion, CI claims, and
+   any preserved migration/deployment evidence.
+2. Perform a complete `F/A/C/D/O/G/T` sweep for every PR.
+3. Split persistence-domain foundations from provider/runtime topology, production role separation,
+   migration/deploy mechanics, external acceptance, degraded-state policy, recovery requirements,
+   semantic registry identity, and controlled-writer machinery. Do not let the Stage 2 label collapse
+   them into one record.
+4. Separate implementation facts, assistant-authored proposals, external requirements, review
+   discussion, and direct-user decisions. Do not infer user approval from merge or green CI.
+5. Record which requirements already existed at the PR #12 control point, which first appear in this
+   block, and which are only later consumers. Do not use PR #50 retroactively.
+6. Preserve omitted tests, unavailable external evidence, unresolved review findings, superseded
+   internal proposals, and any documentation changes that could make a new proposal look inherited.
+7. Link backward to accepted ledger IDs and forward to known later dependency candidates without
+   making a correctness, prematurity, future-proofing, or target-state judgment.
+8. Reconcile every changed file and independently meaningful decision; explicitly justify anything
+   left without its own record.
+
+Respond as `RESPONSE DL-EXTRACT-003/1` in PR #79. Do not edit PR #78.
