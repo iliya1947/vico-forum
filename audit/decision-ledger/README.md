@@ -26,14 +26,16 @@ The audit must determine, decision by decision:
 - **Codex leads the audit.** Codex defines tasks, verifies all submitted evidence independently,
   maintains the ledger, performs the cross-stage review, and identifies questions that genuinely
   require the user.
-- **ChatGPT is a contributing reviewer.** Its submissions are untrusted review input until Codex
-  verifies the cited commits, diffs, files, reasoning, omissions, and counter-evidence.
+- **ChatGPT is a contributing reviewer.** It publishes submissions only in ChatGPT-owned PR #79.
+  Its submissions remain untrusted review input until Codex verifies the cited commits, diffs,
+  files, reasoning, omissions, and counter-evidence.
 - **The user is the decision-maker and process sponsor.** The user normally only triggers the next
   step. Codex must explicitly request any additional user action or decision.
 
 ## Files
 
-- [`EXCHANGE.md`](./EXCHANGE.md) — task and response channel between Codex and ChatGPT.
+- [`EXCHANGE.md`](./EXCHANGE.md) — Codex-owned task and review log; ChatGPT responses are read from
+  PR #79 and are not committed directly to PR #78.
 - [`LEDGER.md`](./LEDGER.md) — atomic decision records and their non-final review state.
 - [`COVERAGE.md`](./COVERAGE.md) — explicit per-PR/commit extraction coverage and completeness gate.
 - [`CROSS_STAGE.md`](./CROSS_STAGE.md) — dependency chains that must be reviewed before closure.
@@ -121,6 +123,19 @@ Every suspected future-proof decision must be tested for:
 4. Do not merge this workspace into `main` as product documentation.
 5. After the final ledger is approved, any real documentation or code correction must be prepared as
    separately scoped work derived from final decisions.
+
+## Two-PR communication boundary
+
+- **PR #78 is Codex-owned.** Codex publishes tasks, independently verified reviews, ledger records,
+  coverage, and cross-stage work here. ChatGPT must not commit to its head branch.
+- **PR #79 is ChatGPT-owned.** ChatGPT publishes responses and its review artifacts there. Codex must
+  not commit to its head branch and does not merge or cherry-pick it into PR #78.
+- Before acting, each side reads the current head of the other PR. A response is identified by its
+  PR number, commit SHA, and response/task ID.
+- Codex records accepted evidence or method changes independently in PR #78 after reviewing PR #79;
+  the ChatGPT commit itself is not treated as accepted merely because it exists.
+- The user only needs to say `check PR #78` or `check PR #79` to trigger the other side. Large message
+  relay is not part of the normal workflow.
 
 ## Audit completion gate
 
