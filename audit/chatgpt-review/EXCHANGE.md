@@ -1601,3 +1601,236 @@ These are ancestry targets, not accepted conclusions about correctness or author
   - first-introduction/acceptance of inherited PR #12 contracts requires the bounded #7–#11 ancestry task above;
   - forward dependency lists are candidates, not exhaustive, until every later PR/current consumer is reconciled by the full audit;
   - no candidate in this response is a correctness or target-state classification.
+
+
+## RESPONSE DL-EXTRACT-001/3
+
+From: ChatGPT  
+Status: submitted  
+Responding in: PR #79 at RESPONSE_COMMIT_SHA  
+Task source: PR #78 head `ffae73b3a3645da617669b4759d57039936c1a80`  
+Scope: narrow replacement only; every unlisted `/2` record remains unchanged  
+Claims: evidence extraction only; no correctness or target-state classification
+
+### Replacement records for DLX12-13
+
+#### Candidate DLX12-13a — Runtime validation at external/user-data boundaries
+
+Atomic decision: external and user-controlled data must be runtime-validated at the relevant system boundary.
+
+Introduced/changed/recorded by: added as the first clause of ROADMAP general rule 7 in PR #12 internal commit `3936eb6e44df2b6cba918c644c1e02da88eb33cf`; recorded by merge `8010bdce49274e50c8f6035604daa64c2ddfcfc1`.
+
+Normative provenance:
+- PR #12 body explicitly says ROADMAP gained “runtime validation/authz” requirements — `PR-or-review-discussion`.
+- The exact standalone validation wording in `ROADMAP.md` is historical proof of what was authored; no direct-user-decision source is visible in this scope.
+
+Historical evidence: `ROADMAP.md` general rule 7 changes from no such general rule to “Все внешние/пользовательские данные валидировать runtime на соответствующей системной границе…”.
+
+Current-behavior locations to verify later: forum/auth/translation input parsers and mutation boundaries.
+
+Backward dependencies: earlier stage-specific validation rules and translation validators predate PR #12; exact ancestry is outside this narrow correction.
+
+Forward-dependency candidates: PR #55 forum mutation validation; PR #61 forged-input/runtime-validation coverage; later translation/admin write boundaries.
+
+Contrary evidence searched/found: authorization can be present or absent independently of input validation in later slices, which is why this record is split from DLX12-13b.
+
+Unknowns: direct-user provenance and exhaustive later consumers.
+
+#### Candidate DLX12-13b — Server-side authorization for protected operations
+
+Atomic decision: protected operations must perform authorization checks on the server.
+
+Introduced/changed/recorded by: added as the second clause of ROADMAP general rule 7 in `3936eb6e44df2b6cba918c644c1e02da88eb33cf`; recorded by merge `8010bdce49274e50c8f6035604daa64c2ddfcfc1`.
+
+Normative provenance:
+- PR #12 body explicitly says ROADMAP gained “runtime validation/authz” requirements — `PR-or-review-discussion`.
+- The exact server-side-authz clause in `ROADMAP.md` is historical evidence; no direct-user-decision source is visible here.
+
+Historical evidence: `ROADMAP.md` rule 7: “authz для защищённых операций проверяется на сервере.”
+
+Current-behavior locations to verify later: request-scoped authorization resolver and protected forum/admin actions.
+
+Backward dependencies: pre-existing authenticated/protected-route product baseline.
+
+Forward-dependency candidates: PR #55 authenticated forum writes; PR #59 dynamic-authorization contract; PR #61 server permission resolution and protected management UI; PR #76 authorization-unavailable failure boundary.
+
+Contrary evidence searched/found: runtime validation and authorization have different later implementation/failure histories; neither is evidence that the other was implemented.
+
+Unknowns: direct-user provenance and exhaustive later consumers.
+
+### Replacement records for DLX12-14
+
+#### Candidate DLX12-14a — State-changing browser actions require applicable origin/CSRF protection
+
+Atomic decision: state-changing browser actions must have origin/CSRF protection appropriate to the actual session/auth architecture.
+
+Introduced/changed/recorded by: general rule 8 added in `3936eb6e44df2b6cba918c644c1e02da88eb33cf`; recorded by merge `8010bdce49274e50c8f6035604daa64c2ddfcfc1`.
+
+Normative provenance: PR #12 body explicitly lists “CSRF/origin protection” for state-changing/public write boundaries — `PR-or-review-discussion`.
+
+Historical evidence: `ROADMAP.md` rule 8 and corresponding auth/forum/solved/release additions.
+
+Current-behavior locations to verify later: Better Auth origin settings, forum mutation origin checks, authorization-management actions, solved/best-answer mutations.
+
+Backward dependencies: authenticated browser-write/product baseline.
+
+Forward-dependency candidates: PR #53 Better Auth origin/CSRF configuration; PR #55 origin-checked forum mutations; PR #61 same-origin management mutations.
+
+Contrary evidence searched/found: anti-abuse throttling is independently implementable/deferrable and therefore is not part of this record.
+
+Unknowns: exact protection mechanism per later boundary and direct-user provenance.
+
+#### Candidate DLX12-14b — Public write/generation boundaries require basic rate limiting or anti-spam controls
+
+Atomic decision: public write/generation boundaries must have basic rate limiting/anti-spam controls without applying those write limits to ordinary public reading; exact thresholds are chosen at implementation time.
+
+Introduced/changed/recorded by: general rule 8 added in `3936eb6e44df2b6cba918c644c1e02da88eb33cf`; recorded by merge `8010bdce49274e50c8f6035604daa64c2ddfcfc1`.
+
+Normative provenance: PR #12 body explicitly lists “basic rate limiting/anti-spam” for the relevant write boundaries — `PR-or-review-discussion`.
+
+Historical evidence: `ROADMAP.md` rule 8 plus Stage 8/release-stage anti-abuse acceptance text.
+
+Current-behavior locations to verify later: Better Auth rate limiting, forum write throttling/anti-spam, translation-generation abuse controls.
+
+Backward dependencies: public-read/authenticated-write product model.
+
+Forward-dependency candidates: PR #53 uses Better Auth database-backed rate limiting; PR #56 explicitly states forum write anti-spam/rate limiting was not changed in that slice; later forum/generation controls require separate tracing.
+
+Contrary evidence searched/found: PR #55 can land origin-checked forum writes without proving that forum anti-abuse landed in the same slice; this is the concrete reason to keep this record separate from DLX12-14a.
+
+Unknowns: exact forum/generation anti-abuse implementation point through #77 and direct-user provenance.
+
+### Replacement records for DLX12-16
+
+#### Candidate DLX12-16a — Stage 8 topic/reply writes require server-side runtime validation
+
+Atomic decision: the forum topic/reply implementation stage must runtime-validate all write operations on the server.
+
+Introduced/changed/recorded by: Stage 8 work item 3 changed in `3936eb6e44df2b6cba918c644c1e02da88eb33cf` to require runtime validation for all write operations; recorded by merge `8010bdce49274e50c8f6035604daa64c2ddfcfc1`.
+
+Normative provenance:
+- PR #12 body gives the umbrella “runtime validation/authz” addition — `PR-or-review-discussion`.
+- The exact application to every Stage 8 write operation is not separately stated in the body; that granular wording is an `assistant-authored-proposal` as recorded in the changed ROADMAP text.
+
+Historical evidence: Stage 8 work-item diff.
+
+Current-behavior locations to verify later: create-topic/create-reply action parsing and mutation helpers.
+
+Backward dependencies: DLX12-13a and the pre-existing topic/reply stage.
+
+Forward-dependency candidates: PR #55 implements validated topic/reply actions; PR #61 later adds permission-gated mutation paths.
+
+Contrary evidence searched/found: the Stage 8 test additions in PR #12 do not add a dedicated validation-negative-test line distinct from existing integration/XSS checks; do not infer validation completeness from authz/origin/anti-abuse test entries.
+
+Unknowns: exhaustive validation consumers.
+
+#### Candidate DLX12-16b — Stage 8 topic/reply writes require server-side authorization
+
+Atomic decision: the forum topic/reply implementation stage must authorize all write operations on the server.
+
+Introduced/changed/recorded by: Stage 8 work item 3 changed in `3936eb6e44df2b6cba918c644c1e02da88eb33cf`; recorded by merge `8010bdce49274e50c8f6035604daa64c2ddfcfc1`.
+
+Normative provenance:
+- PR #12 body gives the umbrella “runtime validation/authz” addition — `PR-or-review-discussion`.
+- The exact Stage 8 all-write application is `assistant-authored-proposal` in the changed ROADMAP text.
+
+Historical evidence: Stage 8 work item 3 plus existing/retained “user can create topic/reply, guest cannot” criterion and “Integration/E2E create-topic/reply/authz” check.
+
+Current-behavior locations to verify later: authenticated forum actions and permission resolver.
+
+Backward dependencies: DLX12-13b; pre-existing authenticated-write requirement.
+
+Forward-dependency candidates: PR #55 derives author from server session; PR #61 adds dynamic permission resolution to forum mutations.
+
+Contrary evidence searched/found: validation, origin checking, and anti-abuse can change independently from authorization; they are not evidence for this record’s implementation.
+
+Unknowns: later authz model evolution before #59/#61.
+
+#### Candidate DLX12-16c — Stage 8 topic/reply browser writes require origin/CSRF protection and negative tests
+
+Atomic decision: topic/reply state-changing browser requests must use applicable origin/CSRF protection; cross-origin/forged requests must fail, and the stage must include negative tests for that boundary.
+
+Introduced/changed/recorded by: Stage 8 work item 4, completion criterion, and negative-test line added in `3936eb6e44df2b6cba918c644c1e02da88eb33cf`; recorded by merge `8010bdce49274e50c8f6035604daa64c2ddfcfc1`.
+
+Normative provenance:
+- umbrella CSRF/origin addition — PR #12 body, `PR-or-review-discussion`.
+- exact Stage 8 application/criterion/test wording — `assistant-authored-proposal`.
+
+Historical evidence: ROADMAP Stage 8 additions:
+- applicable CSRF/origin protection for state-changing browser requests;
+- forged cross-origin request must not pass;
+- dedicated negative tests.
+
+Current-behavior locations to verify later: forum mutation origin helper and topic/reply action tests.
+
+Backward dependencies: DLX12-14a.
+
+Forward-dependency candidates: PR #55 explicitly adds origin-checked topic/reply actions and negative route tests.
+
+Contrary evidence searched/found: PR #56 states write anti-spam/rate limiting is not part of that auth-control slice; origin protection therefore cannot be used as a proxy for anti-abuse completion.
+
+Unknowns: exact selected protection implementation in later history.
+
+#### Candidate DLX12-16d — Stage 8 topic/reply writes require basic anti-abuse limits and normal-path tests
+
+Atomic decision: topic/reply creation must have basic rate limiting/anti-spam; obvious burst/spam should be limited without affecting normal public read, and tests must cover both the limiting boundary and an allowed normal scenario.
+
+Introduced/changed/recorded by: Stage 8 work item 5, completion criterion, and rate-limit/anti-spam test line added in `3936eb6e44df2b6cba918c644c1e02da88eb33cf`; recorded by merge `8010bdce49274e50c8f6035604daa64c2ddfcfc1`.
+
+Normative provenance:
+- umbrella anti-abuse addition — PR #12 body, `PR-or-review-discussion`.
+- exact Stage 8 threshold-deferral/criterion/test wording — `assistant-authored-proposal`.
+
+Historical evidence: ROADMAP Stage 8 additions explicitly defer exact thresholds/configuration to implementation and require public reading not to be constrained by write limits.
+
+Current-behavior locations to verify later: forum create-topic/reply rate-limit or anti-spam boundary and tests.
+
+Backward dependencies: DLX12-14b.
+
+Forward-dependency candidates: PR #56 explicitly records that write anti-spam/rate limiting was not changed in that slice; later forum anti-abuse work must be traced independently of origin/authz work.
+
+Contrary evidence searched/found: PR #55’s origin-checked writes do not by themselves establish this control; later slices can therefore satisfy DLX12-16c while DLX12-16d remains separate.
+
+Unknowns: exact implementation/deferral history through #77.
+
+### Explicit inherited unknown-locale no-side-effect mapping
+
+#### Candidate DLX-INH-SEC01-01 — Unknown locale requests must not create translation/registry side effects
+
+Atomic decision: an unknown locale request must not create a `LocaleRegistry` entry, create a translation task, invoke a translation provider, or consume translation quota; route UX may be chosen separately, but those side effects are forbidden.
+
+Introduced/changed/recorded by:
+- first explicit accessible statement: PR #9 internal commit `912b4ba888e64910f37ffd80b263f49c721b6c52` created `docs/translation/LOCALES.md` with the `SEC-01` block containing all four prohibitions; merge `cc448c0db5424cdd589a08c05b5f5b0db1762884`.
+- PR #10 changes locale lifecycle/resolution semantics but preserves the four no-side-effect lines; merge `878c727e46a5b8e9fbcad63b0cce515fa0892c98`.
+- PR #11 maps `SEC-01` into Stage 1 translation-component scope and synchronizes Stage 1 locale/registry/resolver work; merge `9fd97e9f6206b49dd05bf88a5d6e2089c8c175e4`.
+- PR #13 does not introduce the invariant: its base at `b0632c024e8fff0aca07d815cb48bed1ef9cc954` already contains the four prohibitions. PR #13 `e0aa98e159e7f4ece5b7777bbfe094a6fef1ee68` preserves them while adding “no preference negotiation” plus the concrete `307 /en/...` fallback.
+
+Normative provenance:
+- the PR #9-created detail contract is inherited at the PR #12/#13 control point — `pre-existing-project-contract`.
+- PR #13 body explicitly says the detailed `LOC-*`/`SEC-01` contract includes absence of translation/provider side effects — `PR-or-review-discussion` as a restatement, not origin.
+
+Historical evidence:
+- PR #9 `LOCALES.md` new-file diff under “Unknown locale и abuse (`SEC-01`)” contains the four exact no-side-effect lines.
+- PR #13 base and head show those four lines unchanged; only negotiation/fallback behavior is added around them.
+
+Current-behavior locations to verify later: explicit-locale resolver/boundary, registry writer boundaries, translation-task creation/provider-dispatch paths.
+
+Backward dependencies: PR #9 component/detail-contract creation; earlier high-level abuse/provider architecture in PR #7 may be an ancestor and remains for the dedicated #7–#11 ancestry task.
+
+Forward relationship to PR #13:
+- DLX13-01 chooses the unavailable-locale redirect shape but must preserve DLX-INH-SEC01-01.
+- DLX13-03 adds/restates preference-negotiation authority and must not be mistaken for the side-effect prohibition.
+- DLX13-04 constrains the redirect target and is an independent open-redirect control.
+- PR #13’s concrete `307` fallback is therefore a routing decision layered on the inherited no-side-effect invariant, not the invariant’s origin.
+
+Contrary evidence searched/found: none in PR #13 removes or weakens the four prohibitions; the final-head review concerns formatting-extension canonicalization, not translation/provider side effects.
+
+Unknowns: whether PR #7 contains the first higher-level statement from which PR #9’s exact `SEC-01` wording was derived; that remains part of the bounded ancestry task.
+
+### Replacement-ID map
+
+- `DLX12-13` from `/2` is superseded by `DLX12-13a` and `DLX12-13b`.
+- `DLX12-14` from `/2` is superseded by `DLX12-14a` and `DLX12-14b`.
+- `DLX12-16` from `/2` is superseded by `DLX12-16a`, `DLX12-16b`, `DLX12-16c`, and `DLX12-16d`.
+- `DLX-INH-SEC01-01` is a new inherited mapping; it does not supersede a `/2` ID and explicitly connects the PR #9–#11 ancestry to PR #13.
+- Every other record in `RESPONSE DL-EXTRACT-001/2` remains unchanged, including `DLX12-01..12`, `DLX12-15`, `DLX12-17..20`, `DLX5-01..13`, `DLX13-01..04`, `DLX14-01..03`, and `DLX15-01..02`.
