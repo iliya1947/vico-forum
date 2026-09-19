@@ -7944,3 +7944,1011 @@ Known non-exhaustive links:
   - direct Cloudflare dashboard Branch-control snapshot for EX30-05.
 - no merge, Cloudflare deployment, green CI, project-state assertion or documentation entry is treated as direct-user approval.
 - no decision above is classified as correct, incorrect, necessary, premature, future-proof, infrastructure drift, approved, or target state.
+
+
+## RESPONSE DL-EXTRACT-005/1
+
+From: ChatGPT  
+Status: submitted  
+Responding in: PR #79 at RESPONSE_COMMIT_SHA  
+Task source: PR #78 head \`c89b65dde1ac8acade18992b2ea3beec2f8d2faf\`  
+Scope: PRs #31–#36 in chronological merge order  
+Claims: evidence extraction only; no correctness, necessity, prematurity, future-proofing, infrastructure-drift, approval, or target-state classification
+
+### Coverage sweep
+
+#### PR #31 / merge \`458db7ed8c28153ab7b9e5eba3be0e025c51f926\`
+
+F: persistent UI translation storage and compiled-bundle storage are introduced as Stage 3A data foundations  
+A: physical identities, lifecycle fields, origin/provenance fields, code-owned-English exclusion and migration-only/runtime-separation boundaries are introduced  
+C: no prior runtime defect is fixed; one final-head review finding remains open around whitespace-wrapped English locale values  
+D: \`PROJECT_STATE.md\` and migration runbook record Stage 3A as migration-only and runtime gated on production migration/grants  
+O: production verifier is extended for the two new tables; actual production migration/grants remain outside this PR and are explicitly pending at merge  
+G: runtime PR is gated on successful production migration/verification and verified read-only grants  
+T: migration SQL/snapshot/journal, disposable PostgreSQL integration coverage and production verifier checks are added; final PR-head CI completed successfully
+
+Evidence inspected:
+- PR body and complete nine-file merge diff.
+- All nine internal commits: \`032855ed\`, \`1ed9ad77\`, \`1e40aaf6\`, \`b99b02e8\`, \`5fd5aa01\`, \`3e66fe1b\`, \`dc5ac8e4\`, \`56387cc0\`, \`4a0e5af7\`.
+- One Codex P2 review thread on final head: \`locale = ' en '\` passes both translation and bundle English-exclusion constraints, and the production verifier uses the same untrimmed comparison.
+- Cloudflare bot proves successful deployment of PR head \`4a0e5af7\` to branch/commit preview URLs; this is not evidence that the Stage 3A production DB migration ran.
+- Final PR-head GitHub Actions CI completed successfully.
+- Current main spot-check still contains the same \`btrim(locale) <> '' and lower(locale) <> 'en'\` constraints, so the review finding remains relevant to later history.
+
+Completeness limitations:
+- The PR does not contain the production migration/grant execution that it gates the later runtime on.
+- Official Drizzle/PostgreSQL references are cited in the PR body but were not re-used here as normative project authority.
+- Passing CI/preview deployment is historical execution evidence, not user approval.
+
+#### PR #32 / merge \`7048478fc86cd8503d29169363dcd0ce7e0739ac\`
+
+F: read-only persistent manual/machine UI translation sources become active SSR inputs  
+A: \`UiTranslationStore\`, source adapters, request-context injection, request-scoped Hyperdrive access, stale/current validation and degradation boundaries are implemented  
+C: the initial rollout-state mismatch found by review is reconciled before merge by recording completed Stage 3A migration/grants; a separate compiled-bundle runtime-consumption review remains unresolved in this PR  
+D: \`PROJECT_STATE.md\` changes from “migration/grants pending” to recorded successful Stage 3A production migration/verification and read-only grants  
+O: repository records external production migration/grant facts but adds no new schema, dependency, provider, Worker write privilege or production resource  
+G: the Stage 3A migration/grant gate is recorded satisfied before the final runtime merge; deployed read-only persistent-source smoke remains the next acceptance step  
+T: unit and PostgreSQL tests cover store query shape, source priority, stale data, request context, Hyperdrive degradation and memoization; node typecheck scope is extended; final PR-head CI completed successfully
+
+Evidence inspected:
+- PR body, complete twelve-file merge diff, all 18 internal commits from \`d666771e\` through \`700cae62\`.
+- Two Codex review threads on \`9ce0fe07\`:
+  1. P1 rollout gate: project state still said migration/grants pending while runtime reads were wired. Later internal commit \`43b4da30\` records production migration #2, verification and read-only grants; the final PR body/state also asserts those prerequisites are satisfied.
+  2. P2 runtime path reads approved per-key rows from \`ui_translations\` rather than persisted \`ui_translation_bundles\`, conflicting with the then-current UI/STO/roadmap wording.
+- Final commit \`700cae62\` corrects the test expectation so wrapped database permission errors are still asserted visible via their cause rather than incorrectly requiring object identity.
+- Final PR-head CI completed successfully.
+
+Completeness limitations:
+- The production migration #2, verifier result and database grants are repository/PR-recorded external facts; raw workflow/catalog artifacts are not attached in the material reviewed here.
+- The compiled-bundle runtime-consumption review is preserved, not resolved retroactively. PR #34 later supplies compiler/persistence/cache primitives, and PR #37 later explicitly assigns persisted compiled-bundle publish/runtime consumption to Stage 5.
+- The adapter independently repeats PR #28's broad code-less connect-error availability rule; PR #39 is the known later narrowing candidate.
+
+#### PR #33 / merge \`15e05452fbc386cd1d8cc853672b846b49099080\`
+
+F: none  
+A: none in application/domain behavior  
+C: none in code; one review finding records project-state synchronization lag  
+D: \`PROJECT_STATE.md\` is not updated in this PR  
+O: repository-owned Wrangler configuration enables Workers Observability  
+G: none  
+T: no application test/schema/dependency change; final PR-head CI completed successfully; Cloudflare bot records successful branch/commit preview deployment
+
+Evidence inspected:
+- PR body, sole changed file \`wrangler.jsonc\`, sole internal commit \`05c31ee9\`.
+- One Codex P1 review: enabling Observability and its sampling rate changes repository-controlled operational state but is not recorded in \`PROJECT_STATE.md\`.
+- Cloudflare bot comment proves PR-head deployment, not production-main observability activation.
+- PR #34 later records Observability in \`PROJECT_STATE.md\`.
+
+Completeness limitations:
+- The PR body says Cloudflare production Observability was disabled before the change and cites current Cloudflare guidance; no raw dashboard/config export is attached.
+- No direct-user decision for the sampling rate was found in this PR.
+
+#### PR #34 / merge \`254f4a7d169cf1025242cc98875afa7e040386a5\`
+
+F: compiled UI bundle primitives and persistence are added; no provider/generation feature is added  
+A: deterministic bundle identity, bundle-version metadata, cache/ETag abstractions, persistence adapter, persistence integrity and locale-boundary separation are introduced  
+C: multiple in-PR corrections harden validation, persistence integrity, locale genericity and persistence locale identity; one final review finding remains open for inherited object properties used as namespace names  
+D: \`PROJECT_STATE.md\` records Stage 3B deployed acceptance/Observability claims and Stage 3C as active  
+O: no new schema, dependency, binding, provider, Worker DML privilege or concrete Cache/KV backend is added  
+G: Stage 3C is kept read-only; persisted compiled-bundle writes remain outside the production Worker path; post-merge deployed regression is the next stated acceptance step  
+T: unit tests cover deterministic versions, validation, cache identity/ETag and loader metadata; PostgreSQL integration covers bundle store read/upsert/integrity; final PR-head CI completed successfully
+
+Evidence inspected:
+- PR body, complete nine-file merge diff, all 18 internal commits from \`a1b31f75\` through \`76328d80\`.
+- Important in-PR supersession:
+  - \`8febf333\` temporarily made the generic compiler parse/canonicalize locale itself;
+  - \`30e3e569\` removes that locale-registry coupling so the logical compiler stays locale-agnostic;
+  - \`76328d80\` moves canonical non-English translation-locale enforcement to the persistent bundle-store boundary.
+- \`c24c2433\` adds read/write integrity verification by recompiling persisted content and comparing the semantic version before accepting or persisting it.
+- Codex P2 review at \`0c0b1ea5\`: direct property lookup on \`canonicalEnglishCatalog\` lets inherited names such as \`toString\`/\`__proto__\` appear as valid namespaces. Later commits in this PR do not add an own-property check.
+- Current main spot-check still uses direct truthy property access for namespace validation, so this review finding remains a live historical dependency for later review.
+- Cloudflare bot proves successful PR-head branch/commit preview deployment; final PR-head CI completed successfully.
+
+Completeness limitations:
+- Stage 3B deployed smoke and production Observability facts added to \`PROJECT_STATE.md\` are repository-recorded external claims; raw production smoke/log artifacts are not attached here.
+- Persisted compiled-bundle runtime reads are intentionally absent from this PR. PR #37 later changes documentation to state that Stage 3C provided compiler/persistence/cache primitives while end-to-end publish/persisted-read runtime consumption belongs to Stage 5. That later decision is forward evidence only here.
+- No concrete Cloudflare Cache API/KV backend is selected in this block.
+
+#### PR #35 / merge \`a9556b231286c4abd8b643100c30f6e0bfabbe1b\`
+
+F: none; documentation records Stage 3 completion  
+A: no runtime/schema/dependency/binding/permission change  
+C: none in implementation; state is advanced from Stage 3C-in-progress to Stage 3 closed  
+D: \`PROJECT_STATE.md\` records final Stage 3 deployed acceptance and introduces a pre-Stage-4 audit/hardening boundary  
+O: records external production regression/Observability observations; no infrastructure action is performed in the PR  
+G: Stage 4 is gated on a dedicated pre-Stage-4 audit/hardening pass and on the previously defined isolation boundary before private data/runtime writes  
+T: documentation-only; final PR-head CI completed successfully
+
+Evidence inspected:
+- PR body, one-file merge diff, sole internal commit \`f13921af\`.
+- No review threads/comments.
+- No raw production smoke or Observability artifact is attached to the PR.
+
+Completeness limitations:
+- Every deployed acceptance item in this PR is a repository-recorded external observation, not independently reconstructed external evidence.
+- Later PR #37 expands/synchronizes the pre-Stage-4 hardening contract; it does not retroactively prove the PR #35 decisions correct.
+
+#### PR #36 / merge \`f3a665fd3b911682a1509a0793db61bfc57f64bc\`
+
+F: none  
+A: none in product/runtime architecture  
+C: clarifies an existing Codex workflow rule rather than changing product behavior  
+D: only \`AGENTS.md\` changes  
+O: none  
+G: clarifies PR/merge actor responsibilities for Codex work  
+T: no test/workflow file change; final PR-head CI completed successfully; Cloudflare branch-preview deployment is unrelated execution evidence
+
+Evidence inspected:
+- PR body, one-line \`AGENTS.md\` diff, sole commit \`d5b4f64d\`.
+- No review threads.
+- Project rule outside this audit already establishes that \`AGENTS.md\` is for Codex only; later PR #45 also records that clarification in repository history.
+
+Completeness limitations:
+- This is a Codex-process contract, not a ChatGPT product/runtime contract and not evidence about application architecture.
+
+### Candidate atomic decisions — PR #31
+
+#### Candidate EX31-01 — Stage 3A is a migration-only schema slice with no Worker runtime dependency
+
+Atomic decision: introduce the UI-translation persistence schema in a PR that does not make the production Worker read or write the new tables.
+
+Boundary kind: rollout/process around a persistent schema boundary; retrofit-cost classification deferred.
+
+Introduced/changed/recorded by: PR body; \`PROJECT_STATE.md\`/runbook in \`56387cc0\` and \`4a0e5af7\`; merge \`458db7e\`.
+
+Normative provenance: EX27-02/03 and EX30-11 — \`pre-existing-project-contract\`; PR body is \`PR-or-review-discussion\`.
+
+Backward dependencies: Stage 3 roadmap item 1 and STO-01/STO-04/STO-05 physicalization boundary.
+
+Forward candidates: production migration/grants recorded by PR #32, then separate runtime sources in PR #32.
+
+#### Candidate EX31-02 — Persistent UI translation candidate identity is locale + namespace + key + origin
+
+Atomic decision: \`ui_translations\` uses a composite primary key \`(locale, namespace, key, origin)\`, permitting independently stored origins for one message unit.
+
+Boundary kind: persistent/schema identity.
+
+Introduced/changed/recorded by: schema \`032855ed\`, migration \`1ed9ad77\`.
+
+Normative provenance: STO-01/STO-04 — \`pre-existing-project-contract\`; exact physical key is an \`assistant-authored-proposal\` at this DB stage.
+
+Forward candidates: PR #32 store/source adapters; Stage 5 generation/publish.
+
+#### Candidate EX31-03 — Persistent translation origin is restricted to persistent_manual or machine
+
+Atomic decision: physical persistent rows admit \`persistent_manual\` or \`machine\`; local manual remains outside this table.
+
+Boundary kind: persistent/schema lifecycle identity.
+
+Introduced/changed/recorded by: \`032855ed\`/\`1ed9ad77\`.
+
+Normative provenance: UI-06/UI-07 and STO-04 — \`pre-existing-project-contract\`.
+
+Forward candidates: PR #32 manual and machine source adapters.
+
+#### Candidate EX31-04 — Persistent translation lifecycle status is draft, approved, or rejected
+
+Atomic decision: physical rows carry an independent \`status\` constrained to \`draft | approved | rejected\`.
+
+Boundary kind: persistent/schema lifecycle.
+
+Introduced/changed/recorded by: \`032855ed\`/\`1ed9ad77\`.
+
+Normative provenance: STO-01/STO-04 require current/stale/lifecycle capability but do not prescribe this exact three-value physical enum; exact values are an \`assistant-authored-proposal\`.
+
+Forward candidates: PR #32 reads only approved rows.
+
+#### Candidate EX31-05 — Persistent translations store lowercase SHA-256 sourceFingerprint
+
+Atomic decision: every UI translation row stores a non-null \`source_fingerprint\` constrained to 64 lowercase hexadecimal characters.
+
+Boundary kind: persistent/schema freshness identity.
+
+Introduced/changed/recorded by: \`032855ed\`/\`1ed9ad77\`.
+
+Normative provenance: STO-02 — \`pre-existing-project-contract\`.
+
+Forward candidates: PR #32 stale/current checks.
+
+#### Candidate EX31-06 — Persistent translation payload accepts string or object JSON shapes
+
+Atomic decision: \`translated_payload\` is non-null JSONB restricted at SQL level to JSON string or object.
+
+Boundary kind: persistent/schema payload contract.
+
+Introduced/changed/recorded by: \`032855ed\`/\`1ed9ad77\`.
+
+Normative provenance: existing UI structured-message architecture permits structured values; exact physical JSONB shape is an \`assistant-authored-proposal\`.
+
+Forward candidates: PR #32 deliberately fails structured runtime payloads closed until structured-message runtime exists; later structured Stage 5 work.
+
+#### Candidate EX31-07 — Machine rows require generation policy and provider metadata
+
+Atomic decision: a \`machine\` row requires nonblank \`generation_policy_version\` and nonblank \`provider\`; \`provider_model\` remains optional.
+
+Boundary kind: persistent/schema provenance.
+
+Introduced/changed/recorded by: \`032855ed\`/\`1ed9ad77\`.
+
+Normative provenance: STO-03/STO-06 logical machine provenance is a \`pre-existing-project-contract\`; exact nullability is physical-stage implementation.
+
+Forward candidates: Stage 5 provider/generation implementation.
+
+#### Candidate EX31-08 — Persistent-manual rows must not carry machine-only metadata
+
+Atomic decision: a \`persistent_manual\` row must have null generation-policy, provider and provider-model fields.
+
+Boundary kind: persistent/schema provenance separation.
+
+Introduced/changed/recorded by: \`032855ed\`/\`1ed9ad77\`.
+
+Normative provenance: STO-01/STO-06 separation of manual and machine provenance — \`pre-existing-project-contract\`.
+
+#### Candidate EX31-09 — Provenance metadata must be a JSON object
+
+Atomic decision: \`provenance_metadata\` is non-null JSONB with default empty object and an object-shape constraint.
+
+Boundary kind: persistent/schema metadata.
+
+Introduced/changed/recorded by: \`032855ed\`/\`1ed9ad77\`.
+
+Normative provenance: STO-06 requires sufficient provenance/attribution metadata where applicable; exact JSON-object storage is an \`assistant-authored-proposal\`.
+
+#### Candidate EX31-10 — Canonical English is excluded from persistent translation rows
+
+Atomic decision: physical \`ui_translations\` rows are intended to reject canonical \`en\`, leaving canonical English code-owned.
+
+Boundary kind: persistent/schema authority identity.
+
+Introduced/changed/recorded by: \`032855ed\`, \`1ed9ad77\`; verifier \`dc5ac8e4\`.
+
+Normative provenance: canonical-English code ownership from translation architecture/UI-01 — \`pre-existing-project-contract\`.
+
+Contrary evidence: the merged/current constraint uses \`btrim(locale) <> '' AND lower(locale) <> 'en'\`, so whitespace-wrapped \`' en '\` is accepted; final PR review identifies this exact gap.
+
+#### Candidate EX31-11 — Persistent compiled-bundle identity is locale + namespace
+
+Atomic decision: \`ui_translation_bundles\` uses composite primary key \`(locale, namespace)\`.
+
+Boundary kind: persistent/schema bundle identity.
+
+Introduced/changed/recorded by: \`032855ed\`/\`1ed9ad77\`.
+
+Normative provenance: UI-14/STO-05 require locale/namespace bundle identity; exact physical key is implementation at the DB stage.
+
+Forward candidates: PR #34 persistent bundle repository.
+
+#### Candidate EX31-12 — Persisted bundle_version is a lowercase SHA-256 hex digest
+
+Atomic decision: every persisted compiled bundle carries a non-null 64-lowercase-hex \`bundle_version\`.
+
+Boundary kind: persistent/schema cache identity.
+
+Introduced/changed/recorded by: \`032855ed\`/\`1ed9ad77\`.
+
+Normative provenance: STO-05 requires bundle version/hash but not this exact physical representation; exact form is an \`assistant-authored-proposal\`.
+
+Forward candidates: PR #34 compiler/store version verification.
+
+#### Candidate EX31-13 — Persisted compiled resources must be a JSON object
+
+Atomic decision: \`ui_translation_bundles.resources\` is non-null JSONB constrained to object shape.
+
+Boundary kind: persistent/schema bundle representation.
+
+Introduced/changed/recorded by: \`032855ed\`/\`1ed9ad77\`.
+
+Normative provenance: UI-14/STO-05 bundle persistence logical contract — \`pre-existing-project-contract\`; JSONB representation is implementation.
+
+#### Candidate EX31-14 — Canonical English is excluded from persistent bundle rows
+
+Atomic decision: physical compiled-bundle storage is intended to reject canonical \`en\`.
+
+Boundary kind: persistent/schema authority identity.
+
+Introduced/changed/recorded by: \`032855ed\`, \`1ed9ad77\`; verifier \`dc5ac8e4\`.
+
+Normative provenance: canonical-English code ownership — \`pre-existing-project-contract\`.
+
+Contrary evidence: the same whitespace-wrapped-English review gap applies to this table.
+
+#### Candidate EX31-15 — Production migration verifier checks new table columns, types and nullability
+
+Atomic verification decision: extend production verification from \`locales\` to stable columns/types/nullability of \`ui_translations\` and \`ui_translation_bundles\`.
+
+Boundary kind: operational verification.
+
+Introduced/changed/recorded by: \`dc5ac8e4\`.
+
+Normative provenance: EX29-09 stable-schema verification pattern — \`pre-existing-project-contract\`; exact new-table manifest is implementation.
+
+#### Candidate EX31-16 — Production migration verifier checks that persistent UI storage contains no English rows
+
+Atomic verification decision: production verification queries both new tables and requires no \`lower(locale) = 'en'\` rows.
+
+Boundary kind: operational verification.
+
+Introduced/changed/recorded by: \`dc5ac8e4\`.
+
+Normative provenance: EX31-10/14 intended code-owned-English boundary.
+
+Contrary evidence: it repeats the untrimmed comparison and therefore misses whitespace-wrapped English rows.
+
+#### Candidate EX31-17 — Stage 3A is appended as forward migration 0002 with snapshot/journal history
+
+Atomic migration-history decision: introduce the schema as a new forward SQL migration plus Drizzle snapshot/journal entry without rewriting accepted prior migrations.
+
+Boundary kind: persistent schema evolution.
+
+Introduced/changed/recorded by: \`1ed9ad77\`, \`1e40aaf6\`, \`b99b02e8\`.
+
+Normative provenance: EX20-28a, EX21-06a and EX29-01..05 — \`pre-existing-project-contract\`.
+
+#### Candidate EX31-18 — Disposable PostgreSQL coverage proves new schema constraints and migration-history count
+
+Atomic test decision: extend clean-DB migration expectations and add direct constraint tests for translation/bundle storage.
+
+Introduced/changed/recorded by: \`5fd5aa01\`, \`3e66fe1b\`.
+
+Normative provenance: roadmap Stage 3 migration/integration checks and existing DB-test policy — \`pre-existing-project-contract\`.
+
+#### Candidate EX31-19 — Runtime rollout is blocked until Stage 3A production migration and verification succeed
+
+Atomic gate: after the migration-only PR merges, the separate runtime PR must wait for successful production migration plus production verification.
+
+Boundary kind: workflow/release gate.
+
+Introduced/changed/recorded by: runbook \`56387cc0\`, state \`4a0e5af7\`.
+
+Normative provenance: EX27-02/EX30-11 — \`pre-existing-project-contract\`.
+
+Forward evidence: PR #32 final state records the gate satisfied.
+
+#### Candidate EX31-20 — Runtime role must receive only required SELECT grants on the new tables before runtime rollout
+
+Atomic capability gate: before the Stage 3 runtime consumer is enabled, grant the existing runtime role \`SELECT\` on the two new tables and verify absence of DML/ownership/migration capability.
+
+Boundary kind: operational capability gate.
+
+Introduced/changed/recorded by: runbook \`56387cc0\`, state \`4a0e5af7\`.
+
+Normative provenance: Stage 2 read-only runtime separation EX20-24/29 and EX23-07b — \`pre-existing-project-contract\`; exact new-table grant step is newly authored here.
+
+Forward evidence: PR #32 records these grants as applied and checked.
+
+### Candidate atomic decisions — PR #32
+
+#### Candidate EX32-01 — UiTranslationStore reads approved rows by locale and requested namespaces
+
+Atomic decision: the read-only Drizzle store queries \`ui_translations\` for one locale, approved status and the requested namespace set, with deterministic namespace/key/origin ordering.
+
+Introduced/changed/recorded by: \`11326c40\`, integration coverage \`9ce0fe07\`.
+
+Normative provenance: STO-01 current lookup and Stage 3 roadmap — \`pre-existing-project-contract\`; exact query shape is implementation.
+
+Backward dependencies: EX31-02/04.
+
+#### Candidate EX32-02 — Persistent manual translations are a distinct TranslationSource adapter
+
+Atomic decision: \`DatabaseManualTranslationSource\` reads only \`persistent_manual\` rows behind the common \`UiTranslationStore\` boundary.
+
+Introduced/changed/recorded by: \`d666771e\`.
+
+Normative provenance: UI-06 — \`pre-existing-project-contract\`.
+
+#### Candidate EX32-03 — Persistent machine translations are a distinct TranslationSource adapter
+
+Atomic decision: \`DatabaseMachineTranslationSource\` reads only \`machine\` rows behind the same store boundary.
+
+Introduced/changed/recorded by: \`d666771e\`.
+
+Normative provenance: UI-07 — \`pre-existing-project-contract\`.
+
+#### Candidate EX32-04 — Persistent source freshness is enforced against current sourceFingerprint
+
+Atomic decision: if a persisted row fingerprint differs from the current canonical descriptor fingerprint, the value is excluded from current resources and reported in \`staleKeys\`.
+
+Introduced/changed/recorded by: \`d666771e\`; tests \`2c7ac585\`.
+
+Normative provenance: STO-02/UI-08 — \`pre-existing-project-contract\`.
+
+#### Candidate EX32-05 — Approved rows for deleted canonical keys are ignored rather than published
+
+Atomic decision: historical rows whose namespace/key no longer maps to a current canonical descriptor remain storage history but are excluded from runtime resources.
+
+Introduced/changed/recorded by: \`d666771e\`.
+
+Normative provenance: STO-02 — \`pre-existing-project-contract\`.
+
+#### Candidate EX32-06 — Structured persistent payloads fail closed until structured-message runtime exists
+
+Atomic decision: object/structured payloads are rejected by the current persistent source adapter rather than partially rendered as current string resources.
+
+Introduced/changed/recorded by: \`d666771e\`.
+
+Normative provenance: UI-13 says structured messages require target-structure-aware validation; deferring their runtime consumption is implementation staging, not evidence of a permanent target.
+
+Forward candidates: structured provider/runtime work in later translation stage.
+
+#### Candidate EX32-07 — Persistent rows are runtime-parsed for identity, origin, status and fingerprint before use
+
+Atomic decision: source adapters require string identity fields, valid origin, \`approved\` status and lowercase SHA-256 fingerprint before a row can enter resource resolution.
+
+Introduced/changed/recorded by: \`d666771e\`.
+
+Normative provenance: general runtime-boundary validation plus STO/UI contracts — \`pre-existing-project-contract\`.
+
+#### Candidate EX32-08 — Store results outside requested locale/namespace scope fail as integrity errors
+
+Atomic decision: a store returning a row for a different locale or namespace causes \`PersistentTranslationIntegrityError\` instead of silently consuming cross-scope data.
+
+Introduced/changed/recorded by: \`d666771e\`; tests \`2c7ac585\`.
+
+Normative provenance: newly authored defense at the storage/source boundary, consistent with existing runtime-validation contract.
+
+#### Candidate EX32-09 — Loader source priority becomes local manual → persistent manual → machine → English
+
+Atomic implementation decision: the locale boundary constructs the loader with local manual, DB manual, DB machine and canonical English sources in the existing priority order.
+
+Introduced/changed/recorded by: \`ac994ae0\`, \`f7f99263\`.
+
+Normative provenance: UI-04..08/AN10-07b — \`pre-existing-project-contract\`.
+
+#### Candidate EX32-10 — UI translation store is an explicit typed request-context dependency
+
+Atomic decision: add \`uiTranslationStoreContext\`; missing injection raises typed \`UiTranslationStoreConfigurationError\`.
+
+Introduced/changed/recorded by: \`e33069e0\`, tests \`81b12f3b\`.
+
+Normative provenance: request-scoped service pattern inherited from registry boundary; exact service context is implementation.
+
+#### Candidate EX32-11 — Worker injects one Hyperdrive-backed UI translation store per request
+
+Atomic decision: Worker derives the connection string from \`HYPERDRIVE\` and injects a UI translation store alongside the registry loader into the request context.
+
+Introduced/changed/recorded by: \`ac994ae0\`.
+
+Normative provenance: Stage 3 runtime persistence plus Stage 2 request-scoped Hyperdrive topology — \`pre-existing-project-contract\`.
+
+#### Candidate EX32-12 — Hyperdrive translation store lazily reuses one client and memoizes identical reads per request
+
+Atomic decision: one request store lazily creates/opens a client and caches reads by locale plus normalized namespace set, allowing manual and machine source adapters to share the same query result.
+
+Introduced/changed/recorded by: \`bf2f8910\`, memoization \`b4306aab\`, tests \`2745e1da\`.
+
+Normative provenance: performance/request-scoping implementation; no cross-request cache is introduced.
+
+#### Candidate EX32-13 — English or empty-namespace UI reads do not open persistent translation DB access
+
+Atomic decision: canonical English and an empty namespace request return no persistent rows without creating a DB client.
+
+Introduced/changed/recorded by: \`bf2f8910\`.
+
+Normative provenance: code-owned English and lazy DB access — \`pre-existing-project-contract\`.
+
+#### Candidate EX32-14 — Classified PostgreSQL availability failure degrades to no persistent rows with reason-only telemetry
+
+Atomic decision: classified connection/availability failures return an empty persistent-source result so local/English fallback can continue, and emit one \`unavailable\` report per request store.
+
+Introduced/changed/recorded by: \`bf2f8910\`, tests \`2745e1da\`.
+
+Normative provenance: UI fallback-on-storage-outage contract plus Stage 2 degraded pattern — \`pre-existing-project-contract\`.
+
+#### Candidate EX32-15 — Classified translation-schema mismatch degrades to no persistent rows with reason-only telemetry
+
+Atomic decision: known missing/shape schema SQLSTATEs are classified separately as \`schema-mismatch\` and return no persistent rows.
+
+Introduced/changed/recorded by: \`bf2f8910\`, tests \`2745e1da\`.
+
+Normative provenance: newly applied degradation classification using Stage 2 pattern.
+
+#### Candidate EX32-16 — Authentication/programming/unknown database failures remain visible
+
+Atomic decision: permission errors, programming exceptions and database failures not matched by the degradation classifier propagate rather than silently becoming translation fallback.
+
+Introduced/changed/recorded by: \`bf2f8910\`; final test correction \`700cae62\`.
+
+Normative provenance: inherited “do not mask unexpected/programming failures” boundary EX20-21/EX22-08.
+
+#### Candidate EX32-17 — Generic code-less pg connect Error is also classified as unavailable
+
+Atomic implementation decision: the translation store repeats the PR #28 connect classifier behavior that treats a remaining code-less ordinary \`Error\` as availability failure.
+
+Introduced/changed/recorded by: \`bf2f8910\`.
+
+Normative provenance: implementation inherited from PR #28, not an independent direct-user requirement.
+
+Contrary/forward evidence: PR #28 review already questioned this broad rule; PR #39 later narrows PostgreSQL availability to known codes plus exact node-postgres code-less \`Connection terminated unexpectedly\`.
+
+#### Candidate EX32-18 — Repository records Stage 3A production migration and verification as completed before final runtime merge
+
+Atomic operational claim: final project state records production migration #2 and its production verification as successful.
+
+Introduced/changed/recorded by: \`43b4da30\`; PR body/final state.
+
+Normative provenance: historical external-operation claim, not normative approval.
+
+Evidence limitation: raw production workflow artifact is not attached in this PR.
+
+#### Candidate EX32-19 — Repository records runtime SELECT-only grants on both Stage 3A tables as verified
+
+Atomic operational claim: final project state records \`SELECT=true\` and mutation/table-admin privileges false for the existing runtime role on both new tables.
+
+Introduced/changed/recorded by: \`43b4da30\`; PR body.
+
+Normative provenance: historical external database-state claim.
+
+Evidence limitation: raw production catalog/grant snapshot is not attached.
+
+#### Candidate EX32-20 — Persisted compiled-bundle runtime consumption is absent from the merged SSR path
+
+Atomic historical/review fact: the merged locale SSR path still reads approved per-key \`ui_translations\` through source adapters; no production read of \`ui_translation_bundles\` is wired in this PR.
+
+Introduced/changed/recorded by: Codex P2 review at \`9ce0fe07\`; final merge retains the same runtime topology.
+
+Provenance: \`PR-or-review-discussion\` plus code history; this record does not classify the absence as a current defect.
+
+Forward evidence: PR #34 adds compiler/store/cache primitives; PR #37 later explicitly assigns persisted compiled-bundle publish/read consumption to Stage 5.
+
+#### Candidate EX32-21 — Post-merge deployed persistent-source smoke remains the next Stage 3B acceptance step
+
+Atomic gate/state: after merging the read-only runtime, project state requires deployed verification of the persistent translation path before continuing the remaining Stage 3 work.
+
+Introduced/changed/recorded by: final \`PROJECT_STATE.md\`.
+
+Normative provenance: newly authored stage acceptance step / repository state.
+
+Forward evidence: PR #34 later records that deployed Stage 3B smoke as completed.
+
+### Candidate atomic decisions — PR #33
+
+#### Candidate EX33-01 — Workers Observability is enabled in repository-owned Wrangler config
+
+Atomic operational configuration: \`wrangler.jsonc\` sets Workers Observability \`enabled: true\`.
+
+Introduced/changed/recorded by: \`05c31ee9\`; merge \`15e0545\`.
+
+Normative provenance: \`assistant-authored-proposal\`; the PR body cites Cloudflare guidance as \`external-platform-requirement\` rationale, not project approval.
+
+Forward candidates: PR #34/#35 production observations; PR #41 later observability redaction/logging hardening.
+
+#### Candidate EX33-02 — Workers Observability head sampling rate is set to 1
+
+Atomic operational configuration: repository config requests a 100% head sampling rate while traffic is described as low.
+
+Introduced/changed/recorded by: \`05c31ee9\`.
+
+Normative provenance: \`assistant-authored-proposal\`; no direct-user decision for this rate found in the PR.
+
+Forward candidates: later observability hardening/calibration.
+
+#### Candidate EX33-03 — PR #33 leaves PROJECT_STATE unsynchronized with the observability configuration
+
+Atomic historical gap: at merge, repository operational config enables Observability and sets the rate but \`PROJECT_STATE.md\` remains unchanged.
+
+Introduced/changed/recorded by: Codex P1 review on \`05c31ee9\`.
+
+Provenance: \`PR-or-review-discussion\` counter-evidence.
+
+Forward evidence: PR #34 records Observability enabled and later production events.
+
+### Candidate atomic decisions — PR #34
+
+#### Candidate EX34-01 — Logical bundle compiler remains locale-agnostic apart from requiring a nonblank locale identity
+
+Atomic decision: final \`compileNamespaceBundle()\` accepts a nonblank locale string as logical bundle identity and does not consult \`LocaleRegistry\`/BCP-47 parser.
+
+Introduced/changed/recorded by: initial compiler \`a1b31f75\`; temporary stricter parsing in \`8febf333\` is superseded by \`30e3e569\`.
+
+Normative provenance: generic-locale architecture is \`direct-user-decision\`; exact compiler/persistence separation is an implementation choice.
+
+Forward relationship: EX34-13 applies canonical translation-locale validation specifically at persistence.
+
+#### Candidate EX34-02 — Bundle namespace must map to the canonical catalog
+
+Atomic decision: compiler rejects a namespace absent from the canonical English catalog.
+
+Introduced/changed/recorded by: \`a1b31f75\`.
+
+Normative provenance: canonical catalog owns namespace/key identities — \`pre-existing-project-contract\`.
+
+Contrary evidence: final review finds inherited JavaScript object properties can satisfy the direct lookup; see EX34-23.
+
+#### Candidate EX34-03 — Bundle resource keys must map to canonical message descriptors
+
+Atomic decision: every supplied resource key must resolve to a canonical descriptor in that namespace.
+
+Introduced/changed/recorded by: \`a1b31f75\`.
+
+Normative provenance: canonical catalog/key validation — \`pre-existing-project-contract\`.
+
+#### Candidate EX34-04 — Bundle compiler validates translation semantics before publishing identity
+
+Atomic decision: resource values are validated against their canonical descriptors before entering the compiled bundle/version.
+
+Introduced/changed/recorded by: validation correction \`8febf333\`.
+
+Normative provenance: UI-12/SEC-03 — \`pre-existing-project-contract\`.
+
+#### Candidate EX34-05 — Bundle version hashes format, locale, namespace, canonical fingerprints and current compiled values
+
+Atomic decision: deterministic semantic bundle version is SHA-256 over a versioned preimage containing locale, namespace and ordered key/fingerprint/value entries.
+
+Introduced/changed/recorded by: \`a1b31f75\`, refined by validation corrections.
+
+Normative provenance: UI-14/STO-05 — \`pre-existing-project-contract\`; exact preimage format is implementation.
+
+#### Candidate EX34-06 — Bundle version input ordering uses deterministic UTF-8 bytewise key ordering
+
+Atomic decision: resource keys are sorted with an application-defined byte comparator rather than locale collation/insertion order before versioning.
+
+Introduced/changed/recorded by: \`a1b31f75\`.
+
+Normative provenance: deterministic content-identity implementation choice.
+
+#### Candidate EX34-07 — Backend-independent cache identity is locale + namespace + bundleVersion
+
+Atomic decision: expose a cache identity helper derived from a versioned marker plus locale, namespace and bundle version without choosing a physical cache backend.
+
+Introduced/changed/recorded by: \`a1b31f75\`.
+
+Normative provenance: STO-05 — \`pre-existing-project-contract\`.
+
+#### Candidate EX34-08 — Bundle semantic version is exposed as a weak HTTP ETag
+
+Atomic decision: expose \`W/"vico-ui-<bundleVersion>"\` rather than a strong representation ETag.
+
+Introduced/changed/recorded by: weak-ETag correction \`298503a6\`; expectation alignment \`eafbfd8f\`.
+
+Normative provenance: STO-05 permits HTTP ETag but does not mandate weak form; weak semantic form is implementation.
+
+#### Candidate EX34-09 — TranslationSnapshot bundleVersions becomes locale → namespace → semantic version metadata
+
+Atomic public/internal snapshot-shape decision: replace per-source version arrays with one compiled semantic version per locale and namespace.
+
+Introduced/changed/recorded by: \`b93085ab\`, fixture/test follow-ups \`d89a7bb1\`/\`d8adee00\`.
+
+Normative provenance: UI-03/UI-14 says loader returns bundle versions; exact nested shape is implementation.
+
+#### Candidate EX34-10 — TranslationResourceLoader computes compiled bundle versions after source merge in the request path
+
+Atomic runtime decision: after merging current sources for each locale, the loader compiles each requested namespace in memory to derive bundle metadata; it does not read a persisted compiled bundle.
+
+Introduced/changed/recorded by: \`b93085ab\`.
+
+Normative provenance: Stage 3 roadmap/UI-14 compiler boundary as then written — \`pre-existing-project-contract\`; persisted-read ownership remains disputed/deferred by later evidence.
+
+Forward evidence: PR #37 makes this current request-path compilation explicit and assigns persisted bundle consumption to Stage 5.
+
+#### Candidate EX34-11 — TranslationBundleStore is a backend-independent read/put abstraction
+
+Atomic abstraction decision: define a compiled-bundle persistence interface with \`read(locale, namespace)\` and \`put(bundle)\`.
+
+Introduced/changed/recorded by: \`a1b31f75\`.
+
+Normative provenance: UI-14/STO-05 persistent-bundle boundary — \`pre-existing-project-contract\`.
+
+#### Candidate EX34-12 — TranslationBundleCache is a separate backend-independent read/put abstraction
+
+Atomic abstraction decision: cache operations are isolated from the bundle store and source-priority merge behind a separate cache interface.
+
+Introduced/changed/recorded by: \`a1b31f75\`.
+
+Normative provenance: STO-05 explicitly says cache is an optimization layer, not a source — \`pre-existing-project-contract\`.
+
+#### Candidate EX34-13 — Persistent bundle adapter requires canonical non-English translation locale identity
+
+Atomic persistence decision: bundle-store read/put parses the locale and accepts only canonical translation identity with no formatting-extension representation and excludes canonical English.
+
+Introduced/changed/recorded by: final persistence-boundary correction \`76328d80\`.
+
+Normative provenance: code-owned English plus canonical persistent locale identity — \`pre-existing-project-contract\`.
+
+Historical supersession: \`8febf333\` temporarily enforced canonicality in the generic compiler; \`30e3e569\` removes that coupling and \`76328d80\` restores it only at persistence.
+
+#### Candidate EX34-14 — Persistent compiled-bundle read is keyed by locale + namespace
+
+Atomic store decision: Drizzle store reads at most one row for canonical persistent locale and namespace.
+
+Introduced/changed/recorded by: \`0031f0ee\`, final locale correction \`76328d80\`.
+
+Backward dependency: EX31-11.
+
+#### Candidate EX34-15 — Persistent bundle read verifies resource shape and recomputed bundle version before returning it
+
+Atomic integrity decision: string payloads are reconstructed, recompiled/validated and accepted only if the computed version equals stored \`bundle_version\`.
+
+Introduced/changed/recorded by: integrity correction \`c24c2433\`.
+
+Normative provenance: newly authored persistence integrity protection around STO-05.
+
+#### Candidate EX34-16 — Persistent bundle put revalidates bundle content/version and upserts by locale + namespace
+
+Atomic write-adapter decision: store \`put\` canonicalizes persistence locale, recompiles the content, rejects version mismatch, then inserts or updates the composite identity and refreshes \`compiled_at\`.
+
+Introduced/changed/recorded by: \`0031f0ee\`, integrity correction \`c24c2433\`, locale correction \`76328d80\`.
+
+Normative provenance: persistence-adapter implementation; production Worker capability is separate.
+
+#### Candidate EX34-17 — Compiled-bundle persistence writes remain outside the production Worker path
+
+Atomic capability boundary: although a put-capable bundle store exists for admin/test/compiler use, no Worker runtime write path or broader DB DML grant is added.
+
+Introduced/changed/recorded by: PR body and code topology.
+
+Normative provenance: existing read-only production runtime boundary EX20-24/EX27 preview constraints — \`pre-existing-project-contract\`.
+
+#### Candidate EX34-18 — Stage 3C does not select a Cloudflare Cache API, KV, or other concrete cache backend
+
+Atomic deferral/boundary: cache identity/ETag primitives are created without committing the domain to a physical edge cache implementation.
+
+Introduced/changed/recorded by: PR body and \`TranslationBundleCache\` abstraction.
+
+Normative provenance: STO-05 explicitly leaves concrete backend open — \`pre-existing-project-contract\`.
+
+This intentional deferral is not recorded as a defect.
+
+#### Candidate EX34-19 — Repository records Stage 3B deployed persistent-source smoke as successful
+
+Atomic operational claim: project state records a temporary approved production \`ru/common/stageSummary\` value being read through PostgreSQL/Hyperdrive into SSR, followed by deletion and restored English fallback.
+
+Introduced/changed/recorded by: \`PROJECT_STATE.md\` commit \`0c0b1ea5\`.
+
+Normative provenance: historical external-operation claim.
+
+Evidence limitation: raw production DB/request transcript is not attached to PR #34.
+
+#### Candidate EX34-20 — Repository records production Observability request events with no Worker errors in the checked sample
+
+Atomic operational claim: project state records Observability enabled after production deploy and a checked sample with request events and no Worker errors.
+
+Introduced/changed/recorded by: \`0c0b1ea5\`.
+
+Normative provenance: historical external-observation claim.
+
+Backward dependency: EX33-01/02.
+
+Evidence limitation: raw log/dashboard artifact is not attached.
+
+#### Candidate EX34-21 — Stage 3C is recorded as the remaining compiler/version/cache/ETag primitive slice
+
+Atomic state decision: after recorded Stage 3B acceptance, project state makes Stage 3C the active slice for deterministic bundle identity, persistence and cache/ETag boundary while keeping production Worker read-only.
+
+Introduced/changed/recorded by: \`0c0b1ea5\`.
+
+Normative provenance: roadmap Stage 3/UI-14/STO-05 lineage plus newly authored state decomposition.
+
+#### Candidate EX34-22 — Persisted compiled-bundle runtime read remains intentionally unconnected in PR #34
+
+Atomic historical boundary: PR #34 creates persisted bundle storage and runtime-computed bundle versions but does not switch production SSR to \`ui_translation_bundles\`.
+
+Introduced/changed/recorded by: code topology and preserved PR #32 review conflict.
+
+Provenance: historical fact; no correctness classification.
+
+Forward evidence: PR #37 later explicitly changes documentation so Stage 3C supplies primitives and Stage 5 owns generation/publish/persisted-bundle runtime consumption.
+
+#### Candidate EX34-23 — Namespace validation can accept inherited Object.prototype property names
+
+Atomic review/corrective finding: the final compiler checks \`canonicalEnglishCatalog[namespace]\` directly, so inherited property names such as \`toString\`/\`__proto__\` can bypass intended unknown-namespace rejection.
+
+Introduced/changed/recorded by: Codex P2 review at \`0c0b1ea5\`; later commits in PR #34 do not add an own-property check.
+
+Provenance: \`PR-or-review-discussion\` plus final/current-code evidence.
+
+No substantive correctness classification is assigned in this extraction; the finding is preserved for later correction-history review.
+
+### Candidate atomic decisions — PR #35
+
+#### Candidate EX35-01 — Repository records Stage 3A, 3B and 3C as completed and Stage 3 closed
+
+Atomic project-state transition: Stage 3 is marked complete after the previously recorded schema, persistent-source runtime and compiled-bundle primitive slices.
+
+Introduced/changed/recorded by: \`f13921af\`; merge \`a9556b2\`.
+
+Normative provenance: later-retrospective/project-state summary, not direct-user approval.
+
+#### Candidate EX35-02 — Final deployed Stage 3 acceptance records English SSR working
+
+Atomic external acceptance claim: the final deployed regression is recorded as confirming \`/en/\` SSR.
+
+Introduced/changed/recorded by: \`f13921af\`.
+
+Normative provenance: historical external-observation claim.
+
+Evidence limitation: raw request artifact is not attached.
+
+#### Candidate EX35-03 — Final deployed Stage 3 acceptance records Russian SSR working
+
+Atomic external acceptance claim: the final deployed regression is recorded as confirming \`/ru/\` SSR.
+
+Introduced/changed/recorded by: \`f13921af\`.
+
+Normative provenance: historical external-observation claim.
+
+#### Candidate EX35-04 — Final deployed Stage 3 acceptance records Hebrew SSR working
+
+Atomic external acceptance claim: the final deployed regression is recorded as confirming \`/he/\` SSR.
+
+Introduced/changed/recorded by: \`f13921af\`.
+
+Normative provenance: historical external-observation claim.
+
+#### Candidate EX35-05 — Final deployed Stage 3 acceptance records Hebrew RTL behavior
+
+Atomic external acceptance claim: the deployed regression is recorded as confirming Hebrew RTL behavior independently of route success.
+
+Introduced/changed/recorded by: \`f13921af\`.
+
+Normative provenance: historical external-observation claim.
+
+#### Candidate EX35-06 — Final deployed Stage 3 acceptance records expected English resource fallback
+
+Atomic external acceptance claim: the deployed regression is recorded as confirming the expected English fallback behavior.
+
+Introduced/changed/recorded by: \`f13921af\`.
+
+Normative provenance: historical external-observation claim.
+
+#### Candidate EX35-07 — Final deployed Stage 3 acceptance records no Worker errors in the checked Observability sample
+
+Atomic external acceptance claim: project state records no Worker errors in the Observability sample examined after Stage 3C merge.
+
+Introduced/changed/recorded by: \`f13921af\`.
+
+Normative provenance: historical external-observation claim.
+
+Evidence limitation: no raw Observability sample is attached.
+
+#### Candidate EX35-08 — Stage 4 is gated on a dedicated pre-Stage-4 audit/hardening pass
+
+Atomic process gate: after closing Stage 3, the next step is not immediate auth implementation but a dedicated review of current code/docs/CI/deploy/runtime boundaries and exact external docs before Stage 4.
+
+Introduced/changed/recorded by: \`f13921af\`.
+
+Boundary kind: workflow/hardening gate; retrofit-cost analysis deferred.
+
+Normative provenance: newly authored \`assistant-authored-proposal\` in project state/PR body.
+
+Forward candidates: PR #37 and subsequent pre-Stage-4 hardening PRs.
+
+#### Candidate EX35-09 — Runtime write capability remains a trigger for preview/non-production isolation before Stage 4
+
+Atomic future gate: before Stage 4 introduces runtime DB writes, the shared preview/production binding arrangement must be isolated with staging or non-production builds disabled.
+
+Introduced/changed/recorded by: \`f13921af\`.
+
+Normative provenance: EX27-07/EX30-09 — \`pre-existing-project-contract\`.
+
+This future trigger is not itself a current Stage 3 defect.
+
+#### Candidate EX35-10 — Private auth data remains a separate trigger for preview/non-production isolation
+
+Atomic future gate: before preview/non-production can reach private authentication/other non-public production data, staging isolation or disabling the path is required.
+
+Introduced/changed/recorded by: \`f13921af\`.
+
+Normative provenance: EX27-08/EX30-10 — \`pre-existing-project-contract\`.
+
+#### Candidate EX35-11 — Exact-version Better Auth + React Router + Workers + Drizzle/security review is required before Stage 4 implementation
+
+Atomic preflight gate: project state requires a separate exact-version auth/runtime/security review before beginning Better Auth + Google OAuth implementation.
+
+Introduced/changed/recorded by: \`f13921af\`.
+
+Normative provenance: DLX12-15 and roadmap Stage 4 exact-version verification lineage — \`pre-existing-project-contract\`, with the dedicated preflight packaging newly authored here.
+
+Forward candidates: PR #37 documentation hardening and later Stage 4A work.
+
+### Candidate atomic decisions — PR #36
+
+#### Candidate EX36-01 — Changes enter main only through a Pull Request
+
+Atomic Codex-process rule: \`AGENTS.md\` continues to require that changes reach \`main\` via PR rather than direct merge/push.
+
+Introduced/changed/recorded by: clarified wording \`d5b4f64d\`.
+
+Normative provenance: pre-existing Codex workflow contract, clarified rather than newly originated.
+
+#### Candidate EX36-02 — The user creates the Pull Request after Codex branch work
+
+Atomic Codex-process rule: the user, not Codex, creates the PR that carries Codex changes into main.
+
+Introduced/changed/recorded by: \`d5b4f64d\`; PR body explicitly describes branch work followed by user PR creation.
+
+Normative provenance: repository Codex-process contract; current project instructions independently establish the same user role.
+
+#### Candidate EX36-03 — The user performs merge and Codex does not merge
+
+Atomic Codex-process rule: merge remains a user action; Codex must not perform it.
+
+Introduced/changed/recorded by: \`d5b4f64d\`.
+
+Normative provenance: repository Codex-process contract.
+
+Forward evidence: PR #45 later explicitly clarifies that \`AGENTS.md\` is Codex-only and not a ChatGPT behavior contract.
+
+### Changed-file and internal-history reconciliation
+
+#### PR #31
+- \`db/schema.ts\` → EX31-02..14.
+- \`drizzle/0002_ui_translation_storage.sql\`, snapshot and journal → EX31-02..14, EX31-17.
+- migration-count and storage-constraint tests → EX31-18.
+- production verifier → EX31-15/16.
+- \`docs/database/MIGRATIONS.md\` and \`PROJECT_STATE.md\` → EX31-01, EX31-19/20.
+- No Worker runtime import/read/write of the new tables is introduced.
+- The whitespace-English review maps specifically to EX31-10, EX31-14 and EX31-16.
+
+#### PR #32
+- \`persistent-sources.ts/tests\` → EX32-02..09.
+- request-context source/tests → EX32-10.
+- \`locale-boundary.tsx\` → EX32-09 and runtime source composition.
+- \`ui-translation-store.ts\` + PostgreSQL integration → EX32-01.
+- \`hyperdrive-ui-translations.ts/tests\` → EX32-11..17.
+- \`workers/app.ts\` → EX32-11.
+- \`tsconfig.node.json\` only brings the translation domain into node typechecking; it is test/build support, not a separate domain decision.
+- \`PROJECT_STATE.md\` → EX32-18/19/21.
+- The rollout P1 review is historically reconciled by \`43b4da30\`; the bundle-read P2 review maps to EX32-20 and remains preserved.
+
+#### PR #33
+- \`wrangler.jsonc\` → EX33-01/02.
+- Absence of \`PROJECT_STATE.md\` update → EX33-03.
+- No application/runtime/schema code change.
+
+#### PR #34
+- \`bundles.ts/tests\` → EX34-01..08, EX34-11/12 and EX34-23.
+- \`resource-loader.ts\` and bundle-version tests → EX34-09/10.
+- \`ui-translation-bundle-store.ts\` and PostgreSQL test → EX34-13..16.
+- \`tsconfig.node.json\` adds bundle-domain typecheck coverage only.
+- scaffold fixture update is mechanical adaptation to the EX34-09 metadata shape.
+- \`PROJECT_STATE.md\` → EX34-19..22.
+- Internal temporary compiler canonicalization is not indexed as current state: \`8febf333\` → superseded by \`30e3e569\`, with persistence-specific validation restored by \`76328d80\`.
+- The final namespace review maps to EX34-23.
+
+#### PR #35
+- sole \`PROJECT_STATE.md\` change → EX35-01..11.
+- No runtime/schema/config permission/deployment change occurs in this PR.
+
+#### PR #36
+- sole \`AGENTS.md\` wording change → EX36-01..03.
+- \`AGENTS.md\` is a Codex-only process file; no product/runtime record is inferred from it.
+
+### Review-conflict and external-evidence reconciliation
+
+1. PR #31's whitespace-wrapped-English review is not superseded in this block and is still observable in current main constraints. It attaches only to English-exclusion/verifier records, not to the rest of the Stage 3A schema.
+2. PR #32's rollout-gate P1 finding is corrected inside the PR's final history by the project-state commit that records migration/verification/grants complete. This records the factual reconciliation without treating the external claims as independently verified.
+3. PR #32's persisted-bundle-runtime P2 finding is not silently converted into a defect or approval. PR #34 supplies compiler/persistence/cache primitives; PR #37 later moves active persisted-bundle publish/read consumption to Stage 5. The deferred future consumer therefore remains a separate history question for cross-stage review.
+4. PR #32 inherits the broad code-less-error availability rule; PR #39 is a known later corrective change and must be linked during that later extraction.
+5. PR #33's missing project-state update is later synchronized by PR #34.
+6. PR #34's inherited-property namespace review remains relevant to final/current code and must not be hidden by later Stage 3 closure documentation.
+7. PR #34/#35 production smoke and Observability statements lack attached raw external artifacts and remain repository-recorded claims.
+8. Cloudflare bot branch/commit preview deployments and green CI are execution evidence only, never direct-user approval.
+9. PR #36 process wording cannot be used as a ChatGPT instruction source; it governs Codex through \`AGENTS.md\`.
+10. PR #50 and all later infrastructure reprioritization are not applied retroactively.
+
+### Backward and forward dependency reconciliation
+
+Known non-exhaustive links:
+
+- UI-06/UI-07/STO-01/STO-02/STO-04 + EX27/EX30 rollout gates → EX31 persistent schema and migration-only boundary → EX32 read-only store/source runtime.
+- UI-14/STO-05 → EX31 compiled-bundle physical table → EX34 compiler/version/store/cache abstractions. This is a persistent/schema identity chain distinct from the rollout/process gates around it.
+- EX31-19/20 → EX32-18/19 records the migration/verification/grant gate as satisfied before the runtime consumer.
+- EX31-10/14/16 → open whitespace-English review; no later correction was found in the current-main spot-check.
+- EX28 degradation pattern → EX32-14..17; broad code-less classification points forward to PR #39.
+- EX33-01/02 → EX34-20 and EX35-07 operational Observability claims → later PR #41 observability privacy/log hardening.
+- EX32-20 → EX34-10/22 → PR #37 documentation explicitly assigns persisted compiled-bundle publish/read runtime consumption to Stage 5.
+- EX34-23 remains a current-consumer review item because current main still lacks an own-property namespace check.
+- EX35-08..11 → PR #37 pre-Stage-4 contract synchronization and later Stage 4 hardening/implementation.
+- EX36-01..03 → later PR #45 clarification that \`AGENTS.md\` is Codex-only.
+- Later use or correction is dependency/history evidence only; none of it establishes original correctness, necessity or user approval.
+
+### Extraction reconciliation
+
+- All PR bodies, merge diffs, internal commit sequences, available reviews/comments and final-head CI claims for PR #31–#36 were inspected.
+- Full F/A/C/D/O/G/T sweeps are recorded above for every PR.
+- Persistent/schema identity decisions are separated from operational rollout, workflow, adapter, observability and hardening boundaries so later retrofit-cost/future-proof analysis can classify them independently.
+- Intentionally deferred consumers are preserved without being called current defects: notably concrete cache backend selection and persisted compiled-bundle runtime consumption.
+- Direct-user evidence newly found in this block: none beyond the already recorded generic/data-driven locale decision, which is relevant to EX34-01 but does not approve the rest of Stage 3.
+- External facts unavailable as raw artifacts include PR #31/#32 production migration/grant evidence and PR #34/#35 production smoke/Observability samples.
+- No meaningful changed file or accepted review conflict is knowingly left unaccounted for.
+- No candidate above is classified as correct, incorrect, necessary, premature, future-proof, infrastructure drift, approved, or target state.
