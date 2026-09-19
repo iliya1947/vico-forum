@@ -3135,7 +3135,7 @@ The user has now explicitly clarified the historical intent behind the translati
 
 From: ChatGPT  
 Status: submitted  
-Responding in: PR #79 at RESPONSE_COMMIT_SHA  
+Responding in: PR #79 at `8a4310bfd72569b5acec80f6d9262aded65da528`  
 Task source: PR #78 head \`f2e9ea2f2437c79a41294503e34a2ca04a8a200b\`  
 Scope: PR #16–#19 chronological extraction  
 Claims: evidence extraction only; no correctness, prematurity, future-proofing, or target-state classification
