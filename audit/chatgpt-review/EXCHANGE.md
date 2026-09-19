@@ -551,3 +551,1053 @@ Unknowns: the tag-to-SHA resolution itself is asserted by the PR body but the up
   - Forward-dependency candidates above were found from known later PR bodies/searches through #77 but are explicitly non-exhaustive until the full cross-stage/current-consumer pass.
   - PR #13 formatting-extension review and PR #14 governing-document review expose unresolved questions whose later resolution was not traced to closure in this task.
   - Current main behavior has not been used to validate these historical decisions; the listed current-behavior paths are locations for later verification, per task scope.
+
+
+## RESPONSE DL-EXTRACT-001/2
+
+From: ChatGPT  
+Status: submitted  
+Responding in: PR #79 at RESPONSE_COMMIT_SHA  
+Task source: PR #78 head `fcdf17cedf74280b5a8d95cf154f3dfe78fe01b3`  
+Supersedes: candidate inventory and category sweeps in `RESPONSE DL-EXTRACT-001/1`  
+Claims: evidence extraction only; no correctness, prematurity, future-proofing, or target classification
+
+### Provenance correction applied to this replacement
+
+This response separates three questions that `/1` conflated:
+
+- a commit/diff proves that text or code appeared;
+- a PR body/comment/review can be `PR-or-review-discussion` provenance for a stated requirement or rationale;
+- authored normative text/code with no traceable authority beyond the change is recorded as `assistant-authored-proposal` where the surrounding evidence supports that origin, otherwise as `unknown/unsupported in accessible evidence`.
+
+A merge is not treated as user approval. Later implementation is only dependency evidence.
+
+### Coverage sweep
+
+#### PR #12 / baseline `8010bdce49274e50c8f6035604daa64c2ddfcfc1`
+
+F: product-scope exclusion for unapproved search/complaints/blocks/audit-log remains part of the control-point baseline; public-read/write-security product boundaries are sharpened  
+A: Stage 1A/1B/1C partition; 1B locale/formatting boundary assignment; 1C UI-resource boundary assignment; root-negotiation cache contract; validation/authz and browser-write security boundaries  
+C: documentation hardening/synchronization after audit; one unresolved first-scaffold contradiction is reported by the final-head review  
+D: `README.md`, `PROJECT_STATE.md`, `ROADMAP.md`, `SCAFFOLD_PLAN.md`  
+O: Stage 1 external-service exclusions are re-scoped to the whole stage; Workers-compatible preview remains an overall Stage 1 acceptance item  
+G: explicit-locale policy gate before 1B; each sub-PR must stay green; Stage 2 blocked until full Stage 1 acceptance and state synchronization  
+T: no-store acceptance; 1B routing/negotiation/cache tests; 1C source/freshness/hydration tests; auth/write/solution/release security checks
+
+Evidence inspected:
+- PR body, full four-file merge diff, all four internal commits: `39c940b`, `9c567c3`, `7caf056`, `3936eb6`.
+- Final-head Codex review on `3936eb6`: the new 1A/1B/1C split conflicted with the still-existing ROADMAP “from first scaffold” invariant.
+- Parent/control-point ancestry summaries for PR #7–#11 only to bound inherited contracts; they are not decomposed here.
+- Known later dependency candidates sampled through #77: #5, #13–#24, #28, #38, #40, #44, #53, #55, #56, #59, #61, #76.
+
+Completeness limitations:
+- PR #12 is a control point. Several locale/UI contracts below predate it; for those candidates `first introduced` remains unresolved pending a separate #7–#11 ancestry extraction.
+- The repository-visible material does not prove a direct user decision for the new PR #12 wording.
+- The final-head review issue was not corrected by another commit inside PR #12.
+
+#### PR #5 / `b0632c024e8fff0aca07d815cb48bed1ef9cc954`
+
+F: minimal development-scaffold shell only; no forum/locale business feature is implemented  
+A: React Router SSR/Workers execution topology; temporary root-locale placeholder; explicit runtime HEAD/render/error/timeout policies; exact dependency/toolchain and TypeScript boundaries  
+C: reconciles the PR #12 “first scaffold” contradiction by making 1A technical-only  
+D: `PROJECT_STATE.md`, `README.md`, `ROADMAP.md`  
+O: Cloudflare Worker/Vite/Wrangler runtime configuration; exact compatibility date; no external provisioning/deploy  
+G: Stage 1A quality gate and pre-1B locale-policy gate  
+T: pull-request CI; frozen install; ESLint; strict TypeScript/type generation; jsdom Vitest smoke; build
+
+Evidence inspected:
+- PR body, full merge diff across all 25 changed files except generated lockfile contents, and sole rebuilt internal commit `3c5ba21`.
+- PR body states the branch was rebuilt on current main and old PR #5 verification is not evidence for this version.
+- No GitHub-visible review comments.
+- Current-main locations were read only to identify later consumers/locations; they are not used to validate the historical decision.
+
+Completeness limitations:
+- The pre-rebuild PR #5 branch content is not present in the one-commit merged sequence.
+- `pnpm-lock.yaml` is treated as generated resolution evidence from `package.json`/pnpm configuration, not as a separate decision per resolved package.
+
+#### PR #13 / `0526b29078db82169b316d1c788b083167d7f84f`
+
+F: none  
+A: unavailable-locale fallback; active-locale canonical redirect; explicit-URL authority; internal-only redirect target  
+C: closes the PR #12 deferred explicit-locale route-policy gate; final-head review finds a formatting-extension case not deterministically covered  
+D: `PROJECT_STATE.md`, `SCAFFOLD_PLAN.md`, `docs/translation/LOCALES.md`  
+O: none  
+G: Stage 1A recorded merged; route-policy blocker removed; Stage 1B becomes next step  
+T: documented acceptance cases updated for `307`/`308`; no executable test/build/lint run
+
+Evidence inspected:
+- PR body and full three-file merge diff.
+- Internal sequence: `8a32444` → `8d96e8e` → `e0aa98e`.
+- Final-head Codex review on `e0aa98e` identifies missing deterministic handling for formatting-extension tags.
+
+Completeness limitations:
+- The body says the policy was decided, but no direct-user evidence is visible.
+- Later closure of the formatting-extension review is not established in this block.
+
+#### PR #14 / `752060513bd8b632d026a3fb42cee32e15f579e0`
+
+F: none  
+A: safe-method-only locale redirects; GET/HEAD-only root negotiation; pre-action locale guard  
+C: changes PR #13 after recognizing method-preserving redirect behavior; final-head review reports governing-document disagreement  
+D: `PROJECT_STATE.md`, `SCAFFOLD_PLAN.md`, `docs/translation/LOCALES.md`, `docs/translation/RESEARCH.md`  
+O: none  
+G: redirect-required non-GET/HEAD request must terminate before matched action; canonical active locale remains routable  
+T: mutation-safety tests must prove no action side effect; representative method coverage is added
+
+Evidence inspected:
+- PR body and full four-file merge diff.
+- Internal sequence: `2749e63` → `c24b4fb` → `316a309` → `d039d12`.
+- Final-head Codex review on `d039d12` identifies unconditional negotiation wording still present in `PROJECT.md`, `TRANSLATION_ARCHITECTURE.md`, and `ROADMAP.md`.
+
+Completeness limitations:
+- `RESEARCH.md` records exact RFC/React Router references; this extraction records their provenance but does not independently re-verify those external sources.
+- The cross-document disagreement is retained as contrary evidence, not resolved here.
+
+#### PR #15 / `8ea9d3267870584df4114087f7e0e572f23b1ecf`
+
+F: none  
+A: none  
+C: hardens an existing CI workflow  
+D: none  
+O: GitHub Actions token/action-supply-chain configuration  
+G: explicit top-level token permission boundary and immutable action-reference policy  
+T: `.github/workflows/ci.yml` only
+
+Evidence inspected:
+- PR body, complete one-file diff, and sole internal commit `a484b7d`.
+- No GitHub-visible review comments.
+
+Completeness limitations:
+- The body states upstream tag targets were resolved, but the raw lookup commands/output are not preserved in inspected repository evidence.
+- The cited GitHub recommendation is not independently re-verified in this extraction.
+
+### Candidate atomic decisions
+
+#### Candidate DLX12-01 — Split Stage 1 into 1A → 1B → 1C
+
+Atomic decision: Stage 1 is delivered as three sequential compact PR boundaries: 1A scaffold/quality gates, 1B locale boundary/resolution, 1C UI translation-resource runtime.
+
+Introduced/changed/recorded by: changed in `7caf056`; summarized in PR #12 body; recorded by `8010bdc`; the remaining ROADMAP contradiction is later changed by PR #5 `3c5ba21`.
+
+Normative provenance:
+- PR #12 body statement describing the three-part split — `PR-or-review-discussion`.
+- Detailed allocation text authored in `SCAFFOLD_PLAN.md` at `7caf056` — `assistant-authored-proposal` where not independently traceable to an earlier contract.
+
+Historical evidence: PR #12 body; `SCAFFOLD_PLAN.md` split diff; `PROJECT_STATE.md` state/next-step diff.
+
+Current-behavior locations to verify later: historical/current `ROADMAP.md`, `SCAFFOLD_PLAN.md`, `PROJECT_STATE.md`.
+
+Backward dependencies: pre-PR12 Stage 1 plan; detailed inherited translation contracts from PR #7–#11.
+
+Forward-dependency candidates: #5 implements 1A boundary; #13/#14 pre-1B policy work; #16 1B; #17 1C; #18 Stage 1 acceptance; #20 Stage 2 preflight.
+
+Contrary evidence searched/found: final-head PR #12 review says ROADMAP still required locale/i18n foundations “from the first scaffold”, contradicting the split.
+
+Unknowns: direct-user provenance of the split is not visible.
+
+#### Candidate DLX12-02 — Stage 1A is technical scaffold/quality-gates only
+
+Atomic decision: 1A contains the minimal Workers/React Router scaffold, exact toolchain/lockfile/build-script allowlist, removal of unnecessary scaffold content, quality gates, and local instructions; locale business behavior is deferred to 1B/1C.
+
+Introduced/changed/recorded by: `7caf056`; PR #12 body names “1A scaffold/quality gates”; `8010bdc` records it; PR #5 later reconciles ROADMAP to this boundary.
+
+Normative provenance:
+- PR #12 body high-level 1A scope — `PR-or-review-discussion`.
+- Detailed 1A inclusion/exclusion list in `7caf056` — `assistant-authored-proposal`.
+
+Historical evidence: `SCAFFOLD_PLAN.md` replacement of the previous single-implementation-PR section.
+
+Current-behavior locations to verify later: PR #5 merge tree; `README.md`/`ROADMAP.md` history.
+
+Backward dependencies: earlier scaffold plan/toolchain research.
+
+Forward-dependency candidates: #5; #13 begins only after 1A merge.
+
+Contrary evidence searched/found: same final-head review as DLX12-01.
+
+Unknowns: exact authority for the detailed sub-PR allocation.
+
+#### Candidate DLX12-03 — Assign generic locale routing/registry/resolver to 1B
+
+Atomic decision: 1B owns generic `/:locale/*`, server locale loader, technical-route separation, `LocaleRegistry` config adapter, `LocaleResolver`, BCP-47 canonicalization, aliases/fallback policy, and the selected explicit unavailable-locale policy.
+
+Introduced/changed/recorded by:
+- underlying contracts predate PR #12;
+- changed by `7caf056` by moving them from the prior all-in-one implementation boundary into 1B;
+- recorded by `8010bdc`.
+
+Normative provenance:
+- parent `SCAFFOLD_PLAN.md` lines visible on the left side of the PR #12 diff — `pre-existing-project-contract`.
+- detailed 1B partition in `7caf056` — `assistant-authored-proposal`.
+- PR #12 body high-level “1B locale boundary/resolution” — `PR-or-review-discussion`.
+
+Historical evidence: `SCAFFOLD_PLAN.md` old/new implementation-boundary diff; ROADMAP Stage 1 work remains present.
+
+Current-behavior locations to verify later: `app/localization/resolver.ts`, `app/localization/registry.ts`, `app/routes/locale-boundary.tsx`, `app/routes.ts`.
+
+Backward dependencies: PR #7/#10/#11 ancestry requires separate extraction.
+
+Forward-dependency candidates: #13/#14 refine route policy; #16 implements; #22/#23 persist/load registry.
+
+Contrary evidence searched/found: no evidence that PR #12 introduced the underlying routing/registry contracts; treating `7caf056` as their origin would be false.
+
+Unknowns: exact first-introducing commits within #7–#11.
+
+#### Candidate DLX12-04 — Assign direction, HTML locale metadata, formatting context, and Unicode foundation to 1B
+
+Atomic decision: 1B owns direction metadata, `lang`/`dir`, formatting-context boundary, and Unicode-safe foundation.
+
+Introduced/changed/recorded by: underlying contract predates PR #12; `7caf056` assigns it to 1B; `8010bdc` records the partition.
+
+Normative provenance: inherited `pre-existing-project-contract` plus the `7caf056` partition as `assistant-authored-proposal`.
+
+Historical evidence: new 1B list in `SCAFFOLD_PLAN.md`; ROADMAP existing Stage 1 direction/formatting work.
+
+Current-behavior locations to verify later: `app/root.tsx`, locale model/registry, formatting consumers.
+
+Backward dependencies: PR #7/#10/#11.
+
+Forward-dependency candidates: #16 implements SSR `lang`/`dir` and formatting context; later forum/UI routes consume the locale context.
+
+Contrary evidence searched/found: none inside this block; origin remains inherited rather than PR #12-created.
+
+Unknowns: exact ancestry record.
+
+#### Candidate DLX12-05 — 1B gets targeted routing/negotiation/cache verification
+
+Atomic decision: 1B must carry targeted tests for locale routing, negotiation, and negotiation caching, while full Stage 1 acceptance remains later.
+
+Introduced/changed/recorded by: `7caf056`; no exact test-boundary statement in PR #12 body beyond the split; `8010bdc`.
+
+Normative provenance: `assistant-authored-proposal` for the detailed sub-PR test boundary; overall green-check requirement is a `pre-existing-project-contract`.
+
+Historical evidence: `SCAFFOLD_PLAN.md` 1B list and overall acceptance list.
+
+Current-behavior locations to verify later: locale resolver/route tests and CI.
+
+Backward dependencies: existing Stage 1 acceptance list.
+
+Forward-dependency candidates: #16 reports targeted routing/negotiation/cache tests.
+
+Contrary evidence searched/found: none; no claim that passing 1B tests completes Stage 1.
+
+Unknowns: none beyond authority provenance.
+
+#### Candidate DLX12-06 — Assign canonical English catalog and typed message descriptors to 1C
+
+Atomic decision: 1C owns the canonical English UI catalog and typed message descriptors/source.
+
+Introduced/changed/recorded by: underlying contract predates #12; moved into 1C by `7caf056`; recorded by `8010bdc`.
+
+Normative provenance: inherited `pre-existing-project-contract`; detailed 1C partition `assistant-authored-proposal`; PR #12 body high-level “1C UI translation resource runtime” — `PR-or-review-discussion`.
+
+Historical evidence: old all-in-one boundary vs new 1C list in `SCAFFOLD_PLAN.md`; unchanged ROADMAP Stage 1 work provides baseline context.
+
+Current-behavior locations to verify later: `app/localization/catalog.ts`, source implementation and type augmentation.
+
+Backward dependencies: #7/#9/#10/#11 ancestry.
+
+Forward-dependency candidates: #17 implements canonical English descriptors/source; #19 later hardens type contracts.
+
+Contrary evidence searched/found: no evidence PR #12 first introduced canonical English.
+
+Unknowns: exact ancestor introducing/accepting the contract.
+
+#### Candidate DLX12-07 — Assign partial local translation packs, fingerprint freshness, and structural validation to 1C
+
+Atomic decision: 1C owns partial `LocalTranslationSource` packs, source fingerprints/freshness handling, and structural validation.
+
+Introduced/changed/recorded by: underlying local-pack/fingerprint contract predates #12; `7caf056` assigns it to 1C; `8010bdc` records.
+
+Normative provenance: inherited `pre-existing-project-contract`; 1C partition `assistant-authored-proposal`.
+
+Historical evidence: `SCAFFOLD_PLAN.md` old “partial local translation source + fingerprint/validation” line moved into the new 1C boundary; ROADMAP acceptance keeps stale/fallback and validation behavior.
+
+Current-behavior locations to verify later: `app/localization/sources.ts`, manual packs, translation-validation tests.
+
+Backward dependencies: especially PR #8, plus #10/#11.
+
+Forward-dependency candidates: #17 implements; #19 changes stale-vs-structural validation behavior; #40 later changes stale fixture/test expectations.
+
+Contrary evidence searched/found: later #19/#40 relationships show this contract has corrective history; no classification is made here.
+
+Unknowns: exact first-introducing ancestor records.
+
+#### Candidate DLX12-08 — Assign TranslationResourceLoader source priority and explicit fallback resources to 1C
+
+Atomic decision: 1C owns `TranslationResourceLoader` with source priority, separate locale bundles, and explicit fallback chain rather than cross-locale flattening.
+
+Introduced/changed/recorded by: underlying contract predates #12; `7caf056` assigns loader to 1C, while ROADMAP retains separate bundles/explicit fallback; `8010bdc` records.
+
+Normative provenance: inherited `pre-existing-project-contract`; sub-PR allocation `assistant-authored-proposal`.
+
+Historical evidence: `SCAFFOLD_PLAN.md` 1C list and ROADMAP Stage 1 work/acceptance.
+
+Current-behavior locations to verify later: `app/localization/resource-loader.ts` and translation source chain.
+
+Backward dependencies: #7/#10/#11.
+
+Forward-dependency candidates: #17 implementation; #19 hardening; later persistent/manual/machine translation-source PRs.
+
+Contrary evidence searched/found: none within initial block; origin not assigned to #12.
+
+Unknowns: ancestor-level origin/acceptance.
+
+#### Candidate DLX12-09 — Assign request-scoped i18next and identical SSR/hydration resource snapshot to 1C
+
+Atomic decision: 1C owns request-scoped i18next/react-i18next with explicit fallback and a shared server/hydration resource snapshot without repeat browser detection.
+
+Introduced/changed/recorded by: underlying contract predates #12; `7caf056` moves it to 1C; `8010bdc` records.
+
+Normative provenance: inherited `pre-existing-project-contract`; partition `assistant-authored-proposal`.
+
+Historical evidence: old all-in-one boundary and new 1C list; ROADMAP work/acceptance retains request-scoped runtime/snapshot requirements.
+
+Current-behavior locations to verify later: locale boundary loader, translation runtime, hydration snapshot serialization.
+
+Backward dependencies: #7/#10/#11.
+
+Forward-dependency candidates: #17 implements; #19 adds i18next typing/runtime hardening.
+
+Contrary evidence searched/found: final-head PR #12 review specifically cites postponing canonical English UI/request-scoped i18next to 1C as part of the first-scaffold contradiction.
+
+Unknowns: first-introducing ancestor.
+
+#### Candidate DLX12-10 — Full Stage 1 acceptance occurs only after 1C before Stage 2
+
+Atomic decision: individual 1A/1B/1C merges do not complete Stage 1; after 1C the full Stage 1 acceptance set must pass and `PROJECT_STATE.md` must be updated before moving to Stage 2.
+
+Introduced/changed/recorded by: `7caf056` and `3936eb6`; explicit in PR #12 body; `8010bdc`.
+
+Normative provenance: PR #12 body — `PR-or-review-discussion`; detailed state-update wording in `7caf056` — `assistant-authored-proposal`.
+
+Historical evidence: ROADMAP Stage 1 paragraph, SCAFFOLD final paragraph, PROJECT_STATE next step.
+
+Current-behavior locations to verify later: Stage 1 acceptance history and PR #18.
+
+Backward dependencies: existing general “do not move to next stage until completion criteria pass” baseline.
+
+Forward-dependency candidates: #17 says full acceptance remains pending; #18 records acceptance/deploy; #20 begins Stage 2.
+
+Contrary evidence searched/found: none to the sequencing rule; PR #12 review concerns the first-scaffold contents.
+
+Unknowns: direct-user provenance.
+
+#### Candidate DLX12-11 — Root negotiation Stage 1 cache baseline is Cache-Control: no-store
+
+Atomic decision: request-dependent root locale negotiation uses `Cache-Control: no-store` in Stage 1; an equivalent alternative cache policy can replace it only after separate justification and tests.
+
+Introduced/changed/recorded by: `7caf056`; repeated in `3936eb6`; explicitly summarized by PR #12 body; `8010bdc`.
+
+Normative provenance: PR #12 body — `PR-or-review-discussion`; exact alternative-policy wording in `7caf056` — `assistant-authored-proposal`.
+
+Historical evidence: SCAFFOLD negotiation-caching section, ROADMAP work/acceptance/test additions.
+
+Current-behavior locations to verify later: `app/routes/locale-negotiation.ts` and routing tests.
+
+Backward dependencies: existing request-specific cookie/header negotiation.
+
+Forward-dependency candidates: #16 implements no-store root redirect; #22 uses no-store for degraded registry fallback.
+
+Contrary evidence searched/found: the contract itself explicitly allows a separately justified equivalent alternative; no later replacement is established here.
+
+Unknowns: direct-user authority not visible.
+
+#### Candidate DLX12-12 — Explicit unavailable-locale policy must be chosen before 1B implementation
+
+Atomic decision/open gate: explicit unknown/inactive locale must not silently fall through to cookie/header negotiation, and the exact route policy must be chosen/recorded before locale-resolution implementation.
+
+Introduced/changed/recorded by: explicit-URL authority predates #12; `7caf056` tightens timing wording; `9c567c3` records the pre-1B gate; `8010bdc`.
+
+Normative provenance: inherited `pre-existing-project-contract` for explicit URL authority; exact pre-1B gate wording `assistant-authored-proposal`.
+
+Historical evidence: SCAFFOLD old/new lines and PROJECT_STATE blocker/next-step text.
+
+Current-behavior locations to verify later: resolver/boundary code.
+
+Backward dependencies: #10/#11 ancestry.
+
+Forward-dependency candidates: #13 selects a policy; #14 changes method scope; #16 implements.
+
+Contrary evidence searched/found: none in #12 closes the gate.
+
+Unknowns: exact ancestor origin of explicit URL authority.
+
+#### Candidate DLX12-13 — General runtime validation and server-side authz boundary
+
+Atomic decision: external/user data is runtime-validated at its system boundary and protected operations perform server-side authorization.
+
+Introduced/changed/recorded by: added to ROADMAP top-level rules in `3936eb6`; PR #12 body explicitly says runtime validation/authz was added; `8010bdc`.
+
+Normative provenance: PR #12 body — `PR-or-review-discussion`. Any earlier stage-specific validation/authz is inherited and not extracted here.
+
+Historical evidence: ROADMAP new rule 7 and Stage 8 wording change.
+
+Current-behavior locations to verify later: forum mutations/actions and authorization resolver.
+
+Backward dependencies: earlier forum/auth stage text.
+
+Forward-dependency candidates: #55 authenticated validated writes; #61 dynamic permission resolution; #76 narrows authorization failure classification.
+
+Contrary evidence searched/found: no scoped review disputes the boundary; later use is not authority evidence.
+
+Unknowns: direct-user provenance.
+
+#### Candidate DLX12-14 — General browser-mutation origin/CSRF and public-write anti-abuse boundary
+
+Atomic decision: state-changing browser actions require applicable CSRF/origin protection; public write/generation boundaries require basic rate limiting/anti-spam without restricting public reading; concrete thresholds are deferred to implementation.
+
+Introduced/changed/recorded by: `3936eb6`; explicitly summarized by PR #12 body; `8010bdc`.
+
+Normative provenance: PR #12 body — `PR-or-review-discussion`; exact ROADMAP wording historically appears in `3936eb6`.
+
+Historical evidence: ROADMAP top-level rule 8 and matching later-stage additions.
+
+Current-behavior locations to verify later: auth runtime, forum mutation checks, write throttling.
+
+Backward dependencies: public-read/authenticated-write product model.
+
+Forward-dependency candidates: #53 auth protections/rate limiting; #55 origin-checked forum writes; #56 says forum anti-spam was not changed in that slice; #61 same-origin management mutations.
+
+Contrary evidence searched/found: no review conflict in this block.
+
+Unknowns: exact threshold/mechanism intentionally left open.
+
+#### Candidate DLX12-15 — Better Auth security behavior must be checked at the selected version and not assumed to cover forum actions
+
+Atomic decision: auth work must verify selected-version cookie/trusted-origin/CSRF behavior; Better Auth is not assumed to automatically protect future forum actions, and server-side authz remains separate.
+
+Introduced/changed/recorded by: `3936eb6`; explicit in PR #12 body; `8010bdc`.
+
+Normative provenance: PR #12 body — `PR-or-review-discussion`. The actual Better Auth external contract is not re-verified in this task.
+
+Historical evidence: Stage 4 work, acceptance, and negative-test additions.
+
+Current-behavior locations to verify later: `app/auth/auth.server.ts`, auth resource route, forum actions.
+
+Backward dependencies: Better Auth + Google OAuth project baseline.
+
+Forward-dependency candidates: #53 Better Auth 1.7.4 runtime; #56 Google controls; #59 separates identity/session from application authz; #61 permission enforcement.
+
+Contrary evidence searched/found: none in this block.
+
+Unknowns: external exact-version semantics and direct-user provenance.
+
+#### Candidate DLX12-16 — Forum topic/reply writes get explicit validation, authz, origin/CSRF, and basic anti-spam acceptance
+
+Atomic decision: the topic/reply implementation stage applies runtime validation/authz to all writes, applicable CSRF/origin protection, basic rate limiting/anti-spam, and negative/normal-path tests for those boundaries.
+
+Introduced/changed/recorded by: detailed Stage 8 lines added in `3936eb6`; `8010bdc`.
+
+Normative provenance:
+- umbrella security addition in PR #12 body — `PR-or-review-discussion`.
+- exact Stage 8 application/test wording not separately stated in body — `assistant-authored-proposal`.
+
+Historical evidence: Stage 8 work/criteria/check additions in ROADMAP.
+
+Current-behavior locations to verify later: topic/reply action handlers, mutation helper, write-rate-limiting code/tests.
+
+Backward dependencies: general DLX12-13/14 plus existing forum-write stage.
+
+Forward-dependency candidates: #55 implements validated origin-checked writes; later anti-abuse work must be traced separately.
+
+Contrary evidence searched/found: #56 explicitly says write anti-spam/rate limiting was not changed there, showing later slices did not all consume this boundary at once.
+
+Unknowns: exact implementation point for anti-abuse through #77 remains cross-stage work.
+
+#### Candidate DLX12-17 — Solved/best-answer mutations inherit state-changing request protection
+
+Atomic decision: solved/best-answer mutations must use the common state-changing request protection and corresponding negative origin/CSRF tests, in addition to authorization/consistency checks.
+
+Introduced/changed/recorded by: Stage 9 additions in `3936eb6`; `8010bdc`.
+
+Normative provenance: exact Stage 9 wording — `assistant-authored-proposal`; umbrella browser-mutation rule in PR #12 body — `PR-or-review-discussion`.
+
+Historical evidence: ROADMAP Stage 9 work/criteria/check additions.
+
+Current-behavior locations to verify later: solution mutation/action code and tests.
+
+Backward dependencies: DLX12-14; existing solved/best-answer feature stage.
+
+Forward-dependency candidates: Stage 4 solution implementation/authorization PRs, including #61.
+
+Contrary evidence searched/found: none within initial block.
+
+Unknowns: later implementation trace not exhausted here.
+
+#### Candidate DLX12-18 — Production-readiness gate explicitly includes write-boundary security controls
+
+Atomic decision: production readiness must verify auth routes/cookies plus origin/CSRF, rate limiting/anti-spam, and other write-boundary security; security smoke/negative tests become release checks.
+
+Introduced/changed/recorded by: release-stage additions in `3936eb6`; `8010bdc`.
+
+Normative provenance: exact release-gate wording — `assistant-authored-proposal`; umbrella security change is stated in PR #12 body — `PR-or-review-discussion`.
+
+Historical evidence: Stage 11 work/criteria/check and MVP-summary additions.
+
+Current-behavior locations to verify later: release/preview workflows and production-acceptance documentation.
+
+Backward dependencies: DLX12-13/14 and existing production-readiness stage.
+
+Forward-dependency candidates: later rollout/migration/production-gate PRs; #50 reprioritization and #76 correction require cross-stage review before drawing conclusions.
+
+Contrary evidence searched/found: later reprioritization is a dependency candidate only, not retroactive evidence.
+
+Unknowns: final production-readiness shape after later roadmap changes.
+
+#### Candidate DLX12-19 — Baseline product scope excludes unapproved search/complaints/blocks/audit-log features
+
+Atomic decision: search, complaints, blocks, audit log, and other unrecorded features are not added without a separate product decision.
+
+Introduced/changed/recorded by: this wording already existed in the parent ROADMAP; PR #12 only renumbers it from rule 7 to rule 9 while inserting new rules above.
+
+Normative provenance: `pre-existing-project-contract`; exact first introduction is outside this task.
+
+Historical evidence: identical left/right ROADMAP text in the PR #12 diff except numbering.
+
+Current-behavior locations to verify later: roadmap/product-scope documentation and feature history.
+
+Backward dependencies: earlier roadmap ancestry outside #7–#11 if necessary.
+
+Forward-dependency candidates: later feature additions must be checked against separate product decisions; no such conclusion is made here.
+
+Contrary evidence searched/found: PR #12 does not newly authorize any of the excluded features.
+
+Unknowns: first-introducing commit/acceptance.
+
+#### Candidate DLX12-20 — Stage 1 excludes persistence/auth/providers/external production setup
+
+Atomic decision: Stage 1 does not configure PostgreSQL/Drizzle, Better Auth/Google OAuth, Queues/translation providers, or preview/production external infrastructure; those belong to later stages/checkpoints.
+
+Introduced/changed/recorded by: exclusion list predates #12; `7caf056` changes the heading from “not in first implementation PR” to “not in Stage 1”, broadening/clarifying the scope label; `8010bdc`.
+
+Normative provenance: inherited exclusion list — `pre-existing-project-contract`; Stage-wide re-scope wording in `7caf056` — `assistant-authored-proposal`.
+
+Historical evidence: SCAFFOLD heading/list diff.
+
+Current-behavior locations to verify later: roadmap stage boundaries and later DB/auth/provider PRs.
+
+Backward dependencies: pre-PR12 scaffold plan.
+
+Forward-dependency candidates: #18 first Workers deploy after Stage 1 acceptance; #20 Stage 2 DB preflight; #23 Hyperdrive; #24 production migration; #53 auth runtime.
+
+Contrary evidence searched/found: no external service setup appears in PR #12.
+
+Unknowns: exact authority for broadening the exclusion from first PR to whole Stage 1.
+
+#### Candidate DLX5-01 — Reconcile ROADMAP so Stage 1A is technical-only
+
+Atomic decision: ROADMAP rule 4 is changed so generic locale/registry moves to 1B and canonical English/request-scoped i18next moves to 1C, while all remain mandatory before Stage 1 completion.
+
+Introduced/changed/recorded by: `3c5ba21`; PR #5 RCA/body explicitly states the contradiction and reconciliation; merge `b0632c0`.
+
+Normative provenance: PR #5 body — `PR-or-review-discussion`.
+
+Historical evidence: ROADMAP one-line replacement; PROJECT_STATE/README synchronization.
+
+Current-behavior locations to verify later: Stage 1 implementation history.
+
+Backward dependencies: DLX12-01/02 and PR #12 review.
+
+Forward-dependency candidates: #13/#14/#16/#17/#18.
+
+Contrary evidence searched/found: the contrary first-scaffold wording is exactly what PR #5 removes.
+
+Unknowns: direct-user provenance not visible.
+
+#### Candidate DLX5-02 — Establish React Router Framework SSR on a Cloudflare Worker request handler
+
+Atomic decision: create the minimal application execution path using React Router Framework Mode SSR, client hydration, server rendering, route config, Cloudflare Vite plugin, Worker `createRequestHandler`, and a single index scaffold route.
+
+Introduced/changed/recorded by: implementation in `3c5ba21`; PR #5 body explicitly describes the minimal React Router 8.3.1 SSR/Workers scaffold; merge `b0632c0`.
+
+Normative provenance: PR #5 body — `PR-or-review-discussion`; the stack baseline is an inherited `pre-existing-project-contract`.
+
+Historical evidence: `app/entry.client.tsx`, `app/entry.server.tsx`, `app/routes.ts`, `app/root.tsx`, `workers/app.ts`, `vite.config.ts`, `react-router.config.ts`.
+
+Current-behavior locations to verify later: same files; later Worker request-context integrations.
+
+Backward dependencies: project stack baseline and 1A scope.
+
+Forward-dependency candidates: #16 routing/context, #17 translation runtime, #23 registry injection, #53 auth runtime.
+
+Contrary evidence searched/found: no PR #5 review comments.
+
+Unknowns: finer bootstrap-template choices not stated in body are reconciled below rather than treated as authoritative requirements.
+
+#### Candidate DLX5-03 — HEAD document requests return status/headers with no body
+
+Atomic decision: `app/entry.server.tsx` returns `new Response(null, {status, headers})` immediately for HTTP HEAD.
+
+Introduced/changed/recorded by: code in `3c5ba21`; merge `b0632c0`.
+
+Normative provenance: `unknown/unsupported in accessible evidence`. The PR body does not state a HEAD-response requirement and no cited pre-existing contract was found in this block.
+
+Historical evidence: exact HEAD branch in `app/entry.server.tsx`.
+
+Current-behavior locations to verify later: current `app/entry.server.tsx` still contains the branch.
+
+Backward dependencies: general HTTP/SSR scaffold only; no repository normative source identified.
+
+Forward-dependency candidates: current server entry preserves it; future route/document handling therefore depends on the common entrypoint behavior.
+
+Contrary evidence searched/found: no review discussion; no evidence that the behavior is mechanically forced by React Router.
+
+Unknowns: rationale/authority.
+
+#### Candidate DLX5-04 — Server render waits for allReady before returning the response
+
+Atomic decision: after `renderToReadableStream`, the server awaits `body.allReady` before constructing the document response.
+
+Introduced/changed/recorded by: code in `3c5ba21`; merge `b0632c0`.
+
+Normative provenance: `unknown/unsupported in accessible evidence`.
+
+Historical evidence: `await body.allReady` in `app/entry.server.tsx`.
+
+Current-behavior locations to verify later: current `app/entry.server.tsx` still has this behavior.
+
+Backward dependencies: React SSR scaffold.
+
+Forward-dependency candidates: all document SSR passes through this entrypoint until changed.
+
+Contrary evidence searched/found: no PR body/review requirement establishing “wait for all content” rather than an alternative streaming strategy.
+
+Unknowns: rationale and whether this came directly from scaffold template.
+
+#### Candidate DLX5-05 — Fixed SSR abort timing is introduced
+
+Atomic decision: export `streamTimeout = 5_000` and pass `AbortSignal.timeout(streamTimeout + 1_000)` to server rendering, creating a fixed six-second abort signal around a five-second named timeout constant.
+
+Introduced/changed/recorded by: code in `3c5ba21`; merge `b0632c0`.
+
+Normative provenance: `unknown/unsupported in accessible evidence`.
+
+Historical evidence: exact constants/options in `app/entry.server.tsx`.
+
+Current-behavior locations to verify later: current `app/entry.server.tsx` still contains the same timing.
+
+Backward dependencies: SSR rendering path.
+
+Forward-dependency candidates: any later slow loader/SSR behavior shares this common render boundary.
+
+Contrary evidence searched/found: no PR body/review or scaffold-plan line establishes this exact timeout.
+
+Unknowns: rationale for 5s/6s values.
+
+#### Candidate DLX5-06 — SSR render errors set status 500 and post-shell errors are logged
+
+Atomic decision: render errors set `responseStatusCode = 500`; if the shell is already marked rendered, the error is logged.
+
+Introduced/changed/recorded by: `3c5ba21`; merge `b0632c0`.
+
+Normative provenance: `unknown/unsupported in accessible evidence`.
+
+Historical evidence: `onError` callback in `app/entry.server.tsx`.
+
+Current-behavior locations to verify later: current entrypoint uses the same status behavior and a later logging helper.
+
+Backward dependencies: SSR response path.
+
+Forward-dependency candidates: later server logging work changes the logging sink while preserving the common boundary.
+
+Contrary evidence searched/found: no explicit historical requirement found in PR #5.
+
+Unknowns: template/rationale provenance.
+
+#### Candidate DLX5-07 — Stage 1A root HTML uses a temporary English locale placeholder
+
+Atomic decision: the initial scaffold renders `<html lang="en">` with no dynamic locale or `dir` at 1A.
+
+Introduced/changed/recorded by: `3c5ba21`; merge `b0632c0`.
+
+Normative provenance: PR #5 body says locale business behavior is excluded from 1A — `PR-or-review-discussion`; the exact hard-coded `lang="en"` implementation itself is `unknown/unsupported in accessible evidence`.
+
+Historical evidence: `app/root.tsx`.
+
+Current-behavior locations to verify later: current `app/root.tsx` derives `lang`/`dir` from loader data with English/LTR fallback.
+
+Backward dependencies: 1A technical-only boundary.
+
+Forward-dependency candidates: #16 replaces the static locale metadata with resolved locale context.
+
+Contrary evidence searched/found: this is temporary by stage scope; no evidence it was intended as final locale behavior.
+
+Unknowns: whether the exact placeholder came from scaffold template.
+
+#### Candidate DLX5-08 — Exact runtime/package-manager/dependency versions are pinned in the scaffold
+
+Atomic decision: use exact Node `24.21.0`, pnpm `12.3.4`, and exact package versions in `package.json`/lockfile rather than loose ranges.
+
+Introduced/changed/recorded by: `3c5ba21`; PR #5 body explicitly states exact runtime/toolchain versions and lockfile; merge `b0632c0`.
+
+Normative provenance: PR #5 body — `PR-or-review-discussion`; underlying Stage 0 exact-version research is an inherited contract not re-extracted here.
+
+Historical evidence: `.node-version`, `package.json`, `pnpm-lock.yaml`, README.
+
+Current-behavior locations to verify later: same toolchain/package files and CI.
+
+Backward dependencies: Stage 0 scaffold/version research.
+
+Forward-dependency candidates: later CI and implementation PRs report/use the pinned Node/pnpm and package graph.
+
+Contrary evidence searched/found: this task does not independently re-check external compatibility research.
+
+Unknowns: exact first acceptance of each package version.
+
+#### Candidate DLX5-09 — i18next/react-i18next dependencies are present in 1A while their UI runtime is deferred to 1C
+
+Atomic decision: `i18next` and `react-i18next` are installed/pinned in the 1A package graph even though PR #5 explicitly excludes locale/UI translation business runtime until later Stage 1 PRs.
+
+Introduced/changed/recorded by: `package.json` in `3c5ba21`; PR #5 body confirms the 1A exclusion and separately states removal of `remix-i18next`/browser detector/fixed locales; merge `b0632c0`.
+
+Normative provenance:
+- 1A exclusion — PR #5 body, `PR-or-review-discussion`.
+- exact decision to preinstall these two dependencies in 1A — `unknown/unsupported in accessible evidence`, with an inherited Stage 1 translation dependency baseline requiring ancestry confirmation.
+
+Historical evidence: package diff and PR body.
+
+Current-behavior locations to verify later: `package.json`; #17 translation runtime.
+
+Backward dependencies: PR #11 Stage 1 dependency baseline requires later ancestry extraction.
+
+Forward-dependency candidates: #17 consumes the libraries; #19 hardens i18next boundary.
+
+Contrary evidence searched/found: PR #5 deliberately removes other old i18n dependencies/behavior while retaining these packages.
+
+Unknowns: whether retaining them in 1A was intentional preinstallation or scaffold convenience.
+
+#### Candidate DLX5-10 — pnpm install-time native build allowlist and release-age exclusions are explicit
+
+Atomic decision: only `esbuild` and `workerd` are allowed build scripts, while a finite list of exact packages is excluded from pnpm release-age handling.
+
+Introduced/changed/recorded by: `pnpm-workspace.yaml` in `3c5ba21`; PR #5 body explicitly mentions `allowBuilds` only for `esbuild`/`workerd`; merge `b0632c0`.
+
+Normative provenance:
+- build-script allowlist — PR #5 body, `PR-or-review-discussion`.
+- exact `minimumReleaseAgeExclude` list — `unknown/unsupported in accessible evidence`; no body rationale for each exclusion.
+
+Historical evidence: `pnpm-workspace.yaml`.
+
+Current-behavior locations to verify later: current file retains the same allowlist/exclusions.
+
+Backward dependencies: pnpm toolchain choice.
+
+Forward-dependency candidates: every frozen install uses this workspace policy.
+
+Contrary evidence searched/found: no review discussion.
+
+Unknowns: rationale for each release-age exclusion.
+
+#### Candidate DLX5-11 — TypeScript uses a strict no-emit project-reference split for Node/config and Cloudflare/app code
+
+Atomic decision: root TypeScript config enables `strict`, `noEmit`, `verbatimModuleSyntax`, `checkJs` and `skipLibCheck`, with composite Node and Cloudflare project references; Cloudflare project includes generated React Router/Worker types and DOM/Worker-facing app code.
+
+Introduced/changed/recorded by: `3c5ba21`; merge `b0632c0`.
+
+Normative provenance: PR #5 body states TypeScript/config/quality-gate foundation generally — `PR-or-review-discussion`; exact compiler-flag combination is `unknown/unsupported in accessible evidence`.
+
+Historical evidence: `tsconfig.json`, `tsconfig.node.json`, `tsconfig.cloudflare.json` and `typecheck` script.
+
+Current-behavior locations to verify later: same configs, expanded later with DB/server files.
+
+Backward dependencies: TypeScript stack baseline.
+
+Forward-dependency candidates: all later typecheck gates and generated route/Worker types.
+
+Contrary evidence searched/found: no separate historical source makes individual flags independent architecture contracts. They are grouped because they jointly define one compile-time/typecheck boundary; environment-target/module/path flags are mechanical support for those two project contexts rather than separately observed runtime behavior.
+
+Unknowns: exact source of individual flag choices.
+
+#### Candidate DLX5-12 — Pull-request CI runs frozen install, lint, typecheck, tests, and build
+
+Atomic decision: every pull request runs a single `checks` job with frozen pnpm install followed by lint, typecheck, Vitest, and production build.
+
+Introduced/changed/recorded by: `3c5ba21`; PR #5 body and verification explicitly state these gates; merge `b0632c0`.
+
+Normative provenance: PR #5 body — `PR-or-review-discussion`; general mandatory-check requirement is inherited from PR #12/earlier roadmap.
+
+Historical evidence: `.github/workflows/ci.yml`, package scripts, ESLint/Vitest configs, scaffold smoke test.
+
+Current-behavior locations to verify later: current CI extends this base with DB/migration/smoke jobs.
+
+Backward dependencies: Stage 1 mandatory-green-check contract.
+
+Forward-dependency candidates: #15 hardens permissions/action refs; #19 adds Workers smoke; #24 adds migration workflow; #44 adds migration-evidence checks.
+
+Contrary evidence searched/found: later CI growth changes the gate set but does not erase the initial five-step base.
+
+Unknowns: none for the existence of this gate.
+
+#### Candidate DLX5-13 — Cloudflare runtime identity/compatibility boundary is fixed in Wrangler configuration
+
+Atomic decision: the Worker is named `vico-forum`, uses compatibility date `2026-09-09`, and enters through `./workers/app.ts`; Vite uses the Cloudflare SSR environment plus React Router plugin.
+
+Introduced/changed/recorded by: `3c5ba21`; merge `b0632c0`.
+
+Normative provenance: broad Cloudflare Workers scaffold is in PR #5 body — `PR-or-review-discussion`; exact compatibility-date/name/plugin-options are `unknown/unsupported in accessible evidence` unless inherited from Stage 0 research.
+
+Historical evidence: `wrangler.jsonc` and `vite.config.ts`.
+
+Current-behavior locations to verify later: current files retain the compatibility date, main entry, and plugin shape while adding later bindings/observability.
+
+Backward dependencies: Cloudflare Workers stack baseline/Stage 0 research.
+
+Forward-dependency candidates: all later Workers previews/deploy/runtime integrations.
+
+Contrary evidence searched/found: no PR #5 review discussion on the exact compatibility date.
+
+Unknowns: exact provenance of `2026-09-09` and plugin option choices.
+
+#### Candidate DLX13-01 — Unavailable explicit locale gets temporary English fallback with preserved path/query
+
+Atomic decision: malformed/unknown/inactive/disabled explicit locale receives `307` to the same route remainder under bootstrap `/en/...` and preserves the query string.
+
+Introduced/changed/recorded by: `8d96e8e` + `e0aa98e`; PR #13 body states the exact fallback/query behavior; merge `0526b29`; method scope later changed by #14.
+
+Normative provenance: PR #13 body — `PR-or-review-discussion`.
+
+Historical evidence: SCAFFOLD and LOCALES route matrix.
+
+Current-behavior locations to verify later: explicit locale resolver and boundary.
+
+Backward dependencies: PR #12 open gate; bootstrap English/registry contracts from ancestry.
+
+Forward-dependency candidates: #14 restricts redirects to GET/HEAD; #16 implements; #22 degraded registry path also falls back to English.
+
+Contrary evidence searched/found: #14 body identifies unsafe ambiguity for state-changing requests under the unrestricted `307` policy.
+
+Unknowns: direct-user provenance.
+
+#### Candidate DLX13-02 — Active alias/deprecated/case variants get permanent canonical redirect
+
+Atomic decision: an active locale reached through alias/deprecated/case representation gets `308` to its canonical locale URL.
+
+Introduced/changed/recorded by: `8d96e8e` + `e0aa98e`; PR #13 body; merge `0526b29`; method scope later changed by #14.
+
+Normative provenance: PR #13 body — `PR-or-review-discussion`; underlying canonicalization requirement predates #13 — `pre-existing-project-contract`.
+
+Historical evidence: SCAFFOLD/LOCALES exact matrix.
+
+Current-behavior locations to verify later: locale parser/registry/resolver.
+
+Backward dependencies: inherited BCP-47/alias contract.
+
+Forward-dependency candidates: #14 GET/HEAD restriction; #16 implementation; #38 persistent canonical-locale handling.
+
+Contrary evidence searched/found: final-head #13 review says formatting-extension tags are not deterministically covered by alias/deprecated/case wording.
+
+Unknowns: exact handling of formatting extensions at this point.
+
+#### Candidate DLX13-03 — Explicit URL locale remains authoritative over preference negotiation
+
+Atomic decision: once an explicit locale segment is present, unavailable/invalid explicit locale does not fall through to `user.locale`, cookie, or `Accept-Language`.
+
+Introduced/changed/recorded by: this principle predates #13; #13 repeats/applies it in `8d96e8e`/`e0aa98e` and PR body; merge `0526b29`.
+
+Normative provenance:
+- parent contract visible in the left side of the diff — `pre-existing-project-contract`.
+- PR #13 body explicitly restates “fallback does not use user/cookie/Accept-Language” — `PR-or-review-discussion`.
+
+Historical evidence: PR body and both changed locale docs.
+
+Current-behavior locations to verify later: resolver/negotiation code.
+
+Backward dependencies: #10/#11 ancestry.
+
+Forward-dependency candidates: #14 retains it under method-aware policy; #16 implements; #53 later adds authenticated locale only to root negotiation.
+
+Contrary evidence searched/found: no review dispute; formatting-extension review concerns canonicalization completeness, not preference fallthrough.
+
+Unknowns: first-introducing ancestor.
+
+#### Candidate DLX13-04 — Locale redirect destination is constrained to an internal Vico path
+
+Atomic decision: locale redirect targets are constructed as internal Vico paths rather than accepting a user-supplied absolute destination, preventing the locale fallback from becoming an open redirect.
+
+Introduced/changed/recorded by: `8d96e8e` + `e0aa98e`; PR #13 body explicitly states internal target/no open-redirect input; merge `0526b29`.
+
+Normative provenance: PR #13 body — `PR-or-review-discussion`.
+
+Historical evidence: SCAFFOLD/LOCALES exact internal-target wording.
+
+Current-behavior locations to verify later: resolver internal location builder and redirect helpers.
+
+Backward dependencies: general SEC-01 abuse boundary.
+
+Forward-dependency candidates: #14 preserves the rule; #16 implements internal location construction; #56 later applies a related internal callback-path constraint to auth controls.
+
+Contrary evidence searched/found: none in the scoped review.
+
+Unknowns: direct-user provenance.
+
+#### Candidate DLX14-01 — Locale correction/fallback redirects are safe-method-only
+
+Atomic decision: only GET/HEAD may use the #13 `307` fallback or `308` canonicalization; redirect-required non-GET/HEAD explicit-locale requests get `404` without `Location`/preference negotiation, while already canonical active locale continues normal route handling.
+
+Introduced/changed/recorded by: `2749e63`; synchronized in `c24b4fb`; PR #14 body states the full method matrix; `d039d12` records project state; merge `7520605`.
+
+Normative provenance: PR #14 body — `PR-or-review-discussion`.
+
+Historical evidence: LOCALES/SCAFFOLD method matrix.
+
+Current-behavior locations to verify later: resolver/boundary.
+
+Backward dependencies: #13 route policy.
+
+Forward-dependency candidates: #16 implements; #22 retains fail-closed mutations under persistent registry behavior; #55 later introduces real forum mutations.
+
+Contrary evidence searched/found: no review rejects this explicit-locale branch; final-head review instead reports a root-negotiation governing-doc conflict.
+
+Unknowns: direct-user provenance.
+
+#### Candidate DLX14-02 — Root language negotiation is GET/HEAD-only
+
+Atomic decision: unprefixed root language negotiation/redirect is navigation behavior limited to GET/HEAD; other methods do not language-negotiate into a mutating locale route.
+
+Introduced/changed/recorded by: `2749e63`/`c24b4fb`; PR #14 body; recorded research in `316a309`; merge `7520605`.
+
+Normative provenance: PR #14 body — `PR-or-review-discussion`.
+
+Historical evidence: LOCALES/SCAFFOLD additions and RESEARCH summary.
+
+Current-behavior locations to verify later: `app/routes/locale-negotiation.ts` and resolver negotiation.
+
+Backward dependencies: #12 root negotiation/no-store baseline.
+
+Forward-dependency candidates: #16 implementation; #53 adds authenticated user locale as an input while retaining explicit URL authority.
+
+Contrary evidence searched/found: final-head #14 review says PROJECT/TRANSLATION_ARCHITECTURE/ROADMAP still described negotiation without the method restriction.
+
+Unknowns: where the governing-document conflict was later reconciled.
+
+#### Candidate DLX14-03 — Server locale guard must terminate redirect-required mutations before action side effects
+
+Atomic decision: the locale guard executes on a server boundary before matched action when correction/fallback would otherwise redirect; tests must prove no action side effect, not merely the response code.
+
+Introduced/changed/recorded by: `2749e63`; acceptance wording in `c24b4fb`; PR #14 body; supporting external evidence recorded in `316a309`; merge `7520605`.
+
+Normative provenance:
+- project requirement in PR #14 body — `PR-or-review-discussion`.
+- RFC 9110/errata and React Router 8.3.1 redirect-source facts cited in `RESEARCH.md` — `external-platform-requirement` provenance as recorded by the PR; factual re-verification deferred.
+
+Historical evidence: LOCALES server-boundary wording and SCAFFOLD mutation-safety test requirement.
+
+Current-behavior locations to verify later: locale-boundary middleware/loader and mutation tests.
+
+Backward dependencies: DLX14-01 and inherited React Router loader/middleware boundary.
+
+Forward-dependency candidates: #16 server guard implementation; #55 forum actions; later mutation routes.
+
+Contrary evidence searched/found: root-governing-doc conflict may affect global method wording but does not itself negate the before-action guard requirement.
+
+Unknowns: complete later-action consumer coverage.
+
+#### Candidate DLX15-01 — Pull-request CI token permission is explicitly least-privilege at this stage
+
+Atomic decision: CI declares top-level `permissions: contents: read` rather than relying on default token permissions.
+
+Introduced/changed/recorded by: `a484b7d`; PR #15 body explicitly states the permission change and rationale; merge `8ea9d32`.
+
+Normative provenance:
+- repository policy statement — PR #15 body, `PR-or-review-discussion`.
+- body claims GitHub least-privilege guidance, but no exact external source is preserved in the inspected PR; therefore no independently established `external-platform-requirement` claim is made here.
+
+Historical evidence: workflow diff.
+
+Current-behavior locations to verify later: current CI now has `actions: read` plus `contents: read`.
+
+Backward dependencies: #5 CI workflow.
+
+Forward-dependency candidates: #44 later adds Actions API needs; #76 later changes live verification placement.
+
+Contrary evidence searched/found: later added `actions: read` shows the permission set changed as CI responsibilities grew; that is later history, not a judgment on #15.
+
+Unknowns: exact external source cited during implementation.
+
+#### Candidate DLX15-02 — Third-party CI actions are pinned to full immutable SHAs with readable version comments
+
+Atomic decision: checkout, pnpm setup, and Node setup action references move from major tags to exact full commit SHAs, with comments retaining the human-readable major version.
+
+Introduced/changed/recorded by: `a484b7d`; PR #15 body states the policy and says tag targets were resolved against official upstream repos; merge `8ea9d32`.
+
+Normative provenance:
+- repository policy/rationale — PR #15 body, `PR-or-review-discussion`.
+- body claims full SHA is the immutable form recommended by GitHub, but exact external citation/output is unavailable here; external authority remains unverified.
+
+Historical evidence: exact three-line action-reference changes.
+
+Current-behavior locations to verify later: current CI and later workflow files.
+
+Backward dependencies: #5 action-tag references.
+
+Forward-dependency candidates: #24 explicitly reuses existing pinned action versions; later workflows can be checked during full coverage.
+
+Contrary evidence searched/found: no PR #15 review comments.
+
+Unknowns: raw upstream tag-resolution evidence.
+
+### Atomicity reconciliation of previously unclassified changes
+
+#### PR #12
+
+- `README.md` link/description change is repository navigation metadata. It records where the architecture contract lives but does not create the underlying architecture; therefore it is D evidence, not a separate architecture candidate.
+- `PROJECT_STATE.md` date/state/next-step lines record the decisions above. They are not duplicated as normative candidates unless they introduce a distinct gate (the pre-1B unavailable-locale gate is already DLX12-12).
+- Reordered/renumbered unchanged ROADMAP items are not treated as newly introduced decisions. The unapproved-feature rule is nevertheless represented as DLX12-19 because this is the control-point baseline and Codex required the F category to account for it.
+- Existing immutable-revision/source-locale lines in Stage 8 were only renumbered around new security items; they remain inherited contracts for later ancestry/cross-stage extraction, not PR #12-created decisions.
+- Existing Stage 1 acceptance items remain inherited; only the newly added cache check and the new sub-PR allocation/full-acceptance sequencing are extracted as PR #12 changes.
+
+#### PR #5
+
+- `.gitignore` entry for `worker-configuration.d.ts` is mechanically tied to `wrangler types` generating a local type artifact and has no independent runtime/public contract found; grouped under DLX5-11/12.
+- `app/entry.client.tsx` `HydratedRouter`/`hydrateRoot`, `startTransition`, and `StrictMode` are grouped into DLX5-02 as client bootstrap. No separate repository requirement or downstream historical dependency was found for those wrapper choices in this block.
+- The single index route, scaffold title/description/body text, standard `Meta/Links/Scripts/ScrollRestoration` shell, and most CSS are grouped under DLX5-02 as disposable scaffold presentation. They create no schema/URL/domain contract beyond the one root scaffold route. The logical `margin-inline` CSS is presentation-only here; no separate route/data/locale contract is inferred from it.
+- `app/scaffold.test.tsx` and `vitest.config.ts` are grouped under DLX5-12: they provide the initial smoke assertion and jsdom test environment for the CI test gate. `environment: jsdom` and `globals: false` are test-runner configuration, not runtime behavior.
+- `vite.config.ts` and `workers/app.ts` are execution-plumbing parts of DLX5-02; exact Cloudflare compatibility identity is separately retained as DLX5-13.
+- `react-router.config.ts` `ssr: true` is part of DLX5-02 because the PR body explicitly defines the scaffold as SSR; it is not a separate decision record.
+- TypeScript flags are grouped only under DLX5-11 with an explicit boundary: `strict/noEmit/verbatimModuleSyntax/checkJs/skipLibCheck` plus Node-vs-Cloudflare composite projects jointly define the compile/typecheck policy. Module/target/path/include flags support those environments and no independent observable runtime policy was found.
+- `pnpm-lock.yaml` is generated resolution/integrity evidence for DLX5-08/09/10, not a per-package decision inventory.
+- HEAD handling, `allReady`, abort timing, and error handling are not dismissed as implementation detail: they are now separate DLX5-03 through DLX5-06 records because each can change independently and affects request/SSR behavior.
+- Static `lang="en"` is separately DLX5-07 because it is observable and later changed by locale implementation.
+
+#### PR #13
+
+- Former `DLX13-03` is split: explicit-URL authority is DLX13-03; internal-only/open-redirect prevention is DLX13-04.
+- Route remainder/query preservation remains with DLX13-01 because it defines the shape of the unavailable-locale fallback destination; changing it changes that redirect contract directly.
+- PROJECT_STATE “Stage 1A merged / next 1B” text is factual state/gate recording, not a separate locale-architecture decision.
+
+#### PR #14
+
+- `docs/translation/RESEARCH.md` additions separate external HTTP/React Router evidence from Vico policy. They are support/provenance for DLX14-01..03, not extra product decisions.
+- PROJECT_STATE wording records the policy/current next step and is not duplicated.
+- The representative method/no-side-effect acceptance checks are kept with DLX14-03 because they are the verification contract for the pre-action guard; no independent feature behavior is introduced by the test list.
+
+#### PR #15
+
+- The human-readable `# v5`/`# v4`/`# v6` comments are part of DLX15-02, not independent decisions.
+- No other file or behavior changed.
+
+### Inherited PR #12 baseline areas requiring a later PR #7–#11 ancestry task
+
+This response does not extract them; it only identifies the inherited areas whose first introduction/acceptance cannot be assigned to PR #12:
+
+- PR #7 area: runtime `LocaleRegistry` vs fixed locale list; generic locale routing; server-side `LocaleResolver`; canonical English UI; request-scoped i18next/react-i18next; dynamic resources/explicit fallback; direction/Unicode/BCP-47/caching/abuse boundaries.
+- PR #8 area: independent `LocalTranslationSource`; source priority/merge; partial/full local packs; `sourceFingerprint` freshness; local-pack validation; local files not defining the registry.
+- PR #9 area: translation architecture entry-point/detail-doc split; 49 component IDs; traceability from component IDs to roadmap stages/acceptance; detail-document ownership.
+- PR #10 area: translation/publication status split; bootstrap active English; explicit-URL authority; Accept-Language/q/wildcard policy; React Router loader/server-round-trip contract; translation locale vs formatting preferences; source-priority/fallback bundle separation; stale fingerprint vs structural validation; cache/source/task/provider boundaries.
+- PR #11 area: synchronization of PROJECT/ROADMAP/SCAFFOLD to the architecture; Stage 1 dependency baseline; generic locale/registry/resolver, canonical UI/local packs/resource loader/request-scoped i18next/identical hydration snapshot as the pre-PR12 scaffold contract; removal of old fixed-locale/remix/browser-detector baseline.
+
+These are ancestry targets, not accepted conclusions about correctness or authority.
+
+### Extraction reconciliation
+
+- unclassified text/changes remaining: none known within the changed files after the atomicity reconciliation above; generated lockfile/package-resolution detail remains evidence rather than one record per transitive package.
+- inaccessible evidence: historical Codex/ChatGPT task transcripts behind task links; off-Git user decisions; old pre-rebuild PR #5 branch state; raw PR #15 upstream-tag lookup output.
+- known contrary/unresolved evidence preserved:
+  - PR #12 final-head first-scaffold contradiction;
+  - PR #13 formatting-extension canonicalization gap;
+  - PR #14 governing-document method-scope conflict.
+- reasons extraction may still be incomplete:
+  - first-introduction/acceptance of inherited PR #12 contracts requires the bounded #7–#11 ancestry task above;
+  - forward dependency lists are candidates, not exhaustive, until every later PR/current consumer is reconciled by the full audit;
+  - no candidate in this response is a correctness or target-state classification.
