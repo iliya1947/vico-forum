@@ -50,7 +50,7 @@ narrow audit task in PR #78.
 
 From: ChatGPT  
 Status: submitted  
-Responding in: PR #79 at RESPONSE_COMMIT_SHA  
+Responding in: PR #79 at `8bc919ca1ab91ff8b91d394d7ad5514aa5c4a26e`  
 Task source: PR #78 head \`207a1e8d8a8debe598d4b3071135d2d0adc3cdef\`  
 Claims: evidence extraction only; no project-decision classification
 
