@@ -9887,3 +9887,136 @@ Forward evidence: PR #64 later changes the query-redaction config path while lea
 - The #40 stale-policy conflict is preserved without adopting the later retrospective verdict.
 - Observability enablement, sampling, redaction, application logging, and execution evidence are separated.
 - No candidate in this response is classified as correct, incorrect, foolish, justified, premature, future-proof, infrastructure drift, approved, superseded target state, or required remedy.
+
+
+## RESPONSE DL-EXTRACT-006/2
+
+From: ChatGPT  
+Status: submitted  
+Responding in: PR #79 at RESPONSE_COMMIT_SHA  
+Task source: PR #78 head 21029413c1270257e74e2cc9e0d8e235a14a327b  
+Scope: narrow atomicity correction to RESPONSE DL-EXTRACT-006/1  
+Claims: evidence extraction only; no correctness, prematurity, future-proofing, infrastructure-drift, approval, remedy, or target-state classification
+
+### Atomic replacement records
+
+#### Candidate EX37-08c1 — Staging uses a dedicated staging Hyperdrive configuration/binding
+
+Atomic topology proposal: Stage 4 staging database access uses staging-specific Hyperdrive configuration/binding rather than the top-level production Hyperdrive binding.
+
+Introduced/changed/recorded by:
+- 0c195e6fb0ac852fd343c9440f68faa5c7963ce5, docs/database/HYPERDRIVE.md;
+- b88b4bd588fd9999718eb69fc3b021480c905524, ROADMAP.md.
+
+Normative provenance: PR-or-review-discussion / assistant-authored repository proposal in PR #37; no staging Hyperdrive resource is created by this documentation-only PR.
+
+Backward links:
+- EX27-07/08 and EX30-09/10 — runtime writes/private data already trigger non-production isolation or disabling the path.
+- EX37-08b — staging DB credentials/roles are staging-only and have no production fallback.
+
+Forward links:
+- EX37-08d — environment-specific build selection is required for the staging Cloudflare environment but is independent from the existence of a dedicated Hyperdrive binding.
+- EX37-08e — the staged acceptance path assumes the selected staging topology is available; disabling non-production use remains the fallback.
+- PR #45 later changes the lifecycle timing of separate staging; that is forward evidence, not retroactive authority.
+
+Evidence limitation: PR #37 changes documentation only and contains no external staging Hyperdrive provisioning evidence.
+
+#### Candidate EX37-08c2 — Staging uses a separate Cloudflare Worker/environment
+
+Atomic topology proposal: Stage 4 staging runs in a separate Cloudflare staging Worker/environment rather than treating an ordinary production-bound branch preview as the auth/private-data acceptance environment.
+
+Introduced/changed/recorded by:
+- 0c195e6fb0ac852fd343c9440f68faa5c7963ce5, docs/database/HYPERDRIVE.md;
+- b88b4bd588fd9999718eb69fc3b021480c905524, ROADMAP.md.
+
+Normative provenance: PR-or-review-discussion / assistant-authored repository proposal in PR #37; no separate staging Worker/environment is created by this documentation-only PR.
+
+Backward links:
+- EX27-07/08 and EX30-09/10 — runtime writes/private data already trigger isolation or disabling non-production execution.
+- EX37-08b — staging must not fall back to production bindings/secrets.
+
+Forward links:
+- EX37-08d — build-time CLOUDFLARE_ENV selection applies to the separate staging environment.
+- EX37-08e — a stable staging URL for OAuth/runtime smoke is tied to the separate staging Worker/environment; disabling non-production use remains the fallback when that acceptance path is unavailable.
+- PR #45 later changes the lifecycle timing of separate staging; that is forward evidence only.
+
+Evidence limitation: PR #37 records the topology but does not provision or smoke-test a separate staging Worker/environment.
+
+#### Candidate EX37-14b1 — Migration evidence binds to the exact checked-out Git SHA
+
+Atomic evidence link: the migration evidence chain records the exact Git SHA checked out by the successful production migration workflow run.
+
+Introduced/changed/recorded by: 855cb53c92dd2035d178c2149fa59f6f004385e4, docs/database/MIGRATIONS.md.
+
+Normative provenance: PR-or-review-discussion / assistant-authored repository proposal in PR #37.
+
+Backward links:
+- EX30-11 — first schema-dependent change already follows migration-first ordering.
+- EX37-14a — the evidence chain identifies the production migration workflow run.
+
+Forward links:
+- EX37-14c — production schema verification is a separate evidence fact.
+- EX37-14d — the schema-dependent runtime rollout/PR must reference the migration evidence.
+- EX37-14e — repository-owned enforcement is intended to prevent a runtime release from claiming an unapplied schema.
+- PR #44 later implements repository-owned migration evidence including migrationSha; #76 later changes live-verification placement without retroactively deciding this record.
+
+Evidence limitation: PR #37 defines the evidence link but does not implement its enforcement.
+
+#### Candidate EX37-14b2 — Migration evidence binds to checked-in Drizzle journal identity/history
+
+Atomic evidence link: the migration evidence chain binds the production migration to the checked-in Drizzle journal identity/history representing the required schema history.
+
+Introduced/changed/recorded by: 855cb53c92dd2035d178c2149fa59f6f004385e4, docs/database/MIGRATIONS.md.
+
+Normative provenance: PR-or-review-discussion / assistant-authored repository proposal in PR #37.
+
+Backward links:
+- EX29-03/04/05/12 — accepted Drizzle journal history is append-only/validated and production verification already compares migration ledger history to the checked-in journal.
+- EX37-14a — the evidence chain identifies the production migration workflow run.
+
+Forward links:
+- EX37-14c — successful production schema verification remains a separate evidence link.
+- EX37-14d — the later schema-dependent runtime rollout/PR references the resulting evidence.
+- EX37-14e — minimal repository-owned enforcement may verify this journal linkage independently of the Git-SHA linkage.
+- PR #44 later implements a journal SHA-256 field/check as part of runtime migration evidence; #76 later changes live-verification placement without retroactively deciding this record.
+
+Evidence limitation: PR #37 defines this evidence link but does not implement it.
+
+### Complete replacement-ID map
+
+- EX37-08c -> EX37-08c1 + EX37-08c2
+- EX37-14b -> EX37-14b1 + EX37-14b2
+
+The two unsuffixed /1 IDs above are superseded labels and must not remain independent records.
+
+### Corrected links and changed-file mappings
+
+1. The PR #37 staging-topology sequence now keeps the decisions independently addressable:
+   - EX37-08a — separate Neon staging project;
+   - EX37-08b — staging-only DB credentials/roles with no production fallback;
+   - EX37-08c1 — dedicated staging Hyperdrive configuration/binding;
+   - EX37-08c2 — separate Cloudflare staging Worker/environment;
+   - EX37-08d — build-time staging environment selection;
+   - EX37-08e — stable staging acceptance path with disabling as fallback.
+2. EX37-08d links specifically forward from EX37-08c2 because build-time CLOUDFLARE_ENV selection concerns the Cloudflare environment. EX37-08c1 remains an independent DB-connection topology decision.
+3. EX37-08e may depend on both EX37-08c1 and EX37-08c2 as parts of the selected staging path, but neither replacement is collapsed back into a single classification outcome.
+4. The migration-evidence chain now reads:
+   - EX37-14a — exact production migration workflow run;
+   - EX37-14b1 — exact checked-out Git SHA;
+   - EX37-14b2 — checked-in Drizzle journal identity/history;
+   - EX37-14c — successful production schema verification;
+   - EX37-14d — reference from schema-dependent runtime rollout/PR;
+   - EX37-14e — smallest repository-owned enforcement.
+5. PR #44 remains forward implementation evidence for both EX37-14b1 and EX37-14b2; later #76 remains forward corrective history about verification placement, not retroactive authority.
+6. PR #37 changed-file mapping becomes:
+   - ROADMAP.md -> EX37-01, EX37-08a/08b/08c1/08c2/08d/08e, EX37-09a/09b, EX37-10/11, EX37-17/18;
+   - docs/database/HYPERDRIVE.md -> EX37-08a/08b/08c1/08c2/08d/08e, EX37-10;
+   - docs/database/MIGRATIONS.md -> EX37-07, EX37-11, EX37-12a..f, EX37-13, EX37-14a/14b1/14b2/14c/14d/14e, EX37-15.
+7. The review/dependency reconciliation statement that PR #37 selected a concrete separate staging topology now refers to EX37-08a/08b/08c1/08c2/08d/08e rather than the superseded EX37-08c composite.
+8. EX37-08e and EX37-12d remain unchanged and are not split further, per Codex review.
+
+### Unchanged /1 material
+
+Every other candidate record, F/A/C/D/O/G/T sweep, provenance/evidence limitation, review conflict, dependency statement, CI/preview evidence statement, changed-file reconciliation entry, stale-policy conflict, Observability decomposition, Stage 5 deferred-consumer treatment, and non-retroactive later-history treatment from RESPONSE DL-EXTRACT-006/1 remains unchanged.
+
+This narrow revision does not expand PR #37-#41 scope and does not classify any decision.
