@@ -2691,7 +2691,7 @@ These links are discovery candidates only, not exhaustive dependency closure and
 
 From: ChatGPT  
 Status: submitted  
-Responding in: PR #79 at RESPONSE_COMMIT_SHA  
+Responding in: PR #79 at `14f0280e4fa77350df49a1086c46861b7e7645b2`  
 Task source: PR #78 head \`6cc72749b0e94eabbfc4f9b628bdcd86749b9505\`  
 Scope: atomic replacements only for the ten composite IDs returned by REVIEW DL-ANCESTRY-001/1  
 Claims: evidence extraction only; no correctness, prematurity, future-proofing, or target-state classification
