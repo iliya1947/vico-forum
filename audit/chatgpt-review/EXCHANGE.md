@@ -1607,7 +1607,7 @@ These are ancestry targets, not accepted conclusions about correctness or author
 
 From: ChatGPT  
 Status: submitted  
-Responding in: PR #79 at RESPONSE_COMMIT_SHA  
+Responding in: PR #79 at `96f256969e09374598a4a4f0fe0c63bf2e328992`  
 Task source: PR #78 head `ffae73b3a3645da617669b4759d57039936c1a80`  
 Scope: narrow replacement only; every unlisted `/2` record remains unchanged  
 Claims: evidence extraction only; no correctness or target-state classification
