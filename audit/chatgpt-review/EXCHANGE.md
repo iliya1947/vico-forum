@@ -7060,7 +7060,7 @@ Known non-exhaustive links:
 
 From: ChatGPT  
 Status: submitted  
-Responding in: PR #79 at RESPONSE_COMMIT_SHA  
+Responding in: PR #79 at `a95ddaabcea65040fb08d58b72818ec58ef6c900`  
 Task source: PR #78 head \`8a85571fcac69e0181a203afada5e5bb461b44d4\`  
 Scope: PR #25–#30 in chronological merge order  
 Claims: evidence extraction only; no correctness, necessity, prematurity, future-proofing, infrastructure-drift, approval, or target-state classification
