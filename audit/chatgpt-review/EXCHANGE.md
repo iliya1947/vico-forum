@@ -2685,3 +2685,433 @@ These links are discovery candidates only, not exhaustive dependency closure and
 - inaccessible evidence: historical ChatGPT/Codex task transcripts behind task links and any off-Git user decisions.
 - unresolved ancestry/control-point issues retained: C7/C8/C9 plan synchronization history, C9 SEC-02 mismatch, C9 local-provenance loss, C10 research-date issue, C11 missing cache acceptance, C11 missing activation scheduling.
 - no correctness/prematurity/future-proof classification is assigned to any AN7/AN8/AN9/AN10/AN11 record.
+
+
+## RESPONSE DL-ANCESTRY-001/2
+
+From: ChatGPT  
+Status: submitted  
+Responding in: PR #79 at RESPONSE_COMMIT_SHA  
+Task source: PR #78 head \`6cc72749b0e94eabbfc4f9b628bdcd86749b9505\`  
+Scope: atomic replacements only for the ten composite IDs returned by REVIEW DL-ANCESTRY-001/1  
+Claims: evidence extraction only; no correctness, prematurity, future-proofing, or target-state classification
+
+### Replacement records for AN7-12
+
+#### Candidate AN7-12a — UI translation and user-content translation are separate domain services
+
+Atomic decision: UI translation and user-generated-content translation have distinct identities, lifecycles, caching/persistence concerns, and service boundaries even when they reuse lower-level provider capability.
+
+First introduced / changed / recorded: PR #7 separates UI and user-content translation services; PR #9 assigns the content side its own \`CNT-*\` detail contract; PR #10 keeps the domains separate while clarifying their different fallback/ingestion behavior; PR #11 schedules them in different implementation stages.
+
+Normative provenance: PR #7 body explicitly states separate services — \`PR-or-review-discussion\`; exact domain/interface detail — \`assistant-authored-proposal\`.
+
+Known forward links: inherited PR #12 control-point contract; later forum/content-translation chains. This record does not itself establish revision identity or original-content fallback.
+
+Contrary/unknown: later reuse of a common provider abstraction does not collapse the two domains and is not treated as proof of original correctness.
+
+#### Candidate AN7-12b — User-content translation identity is bound to an immutable content revision
+
+Atomic decision: a user-content translation is identified against a specific source revision rather than only the mutable topic/post identity.
+
+First introduced / changed / recorded: PR #7 defines content identity with \`contentType + contentId + revisionId + targetLocale\`; PR #9 assigns \`CNT-02\`/\`CNT-06\`; PR #10 later sharpens source-locale correction so semantic correction creates a new revision; PR #11 schedules revision boundaries before full content-translation implementation.
+
+Normative provenance: detailed revision identity in PR #7 architecture — \`assistant-authored-proposal\`; PR #10 correction is later \`PR-or-review-discussion\` evidence, not retroactive authority for PR #7.
+
+Known forward links: later forum immutable-revision/sourceLocale and content-translation persistence chains.
+
+Contrary/unknown: later consumers are dependency evidence only, not proof that the initial revision model was correct.
+
+#### Candidate AN7-12c — Original user content is preserved independently of translated representations
+
+Atomic decision: translation does not replace the original user-authored content; translated representations are secondary data, with the exact miss/failure read fallback clarified later.
+
+First introduced / changed / recorded: PR #7 states that original text is never replaced by translation; PR #9 preserves that contract; PR #10 later adds the explicit current-revision miss/failure fallback now split into AN10-12b; PR #11 carries original-preservation into the project plan.
+
+Normative provenance: PR #7 architecture/body — \`PR-or-review-discussion\` plus \`assistant-authored-proposal\` detail.
+
+Known forward links: AN10-12b and later content-read/presentation chains.
+
+Contrary/unknown: PR #7 establishes preservation but does not by itself establish every later fallback case.
+
+### Replacement records for AN7-13
+
+#### Candidate AN7-13a — Machine-provider capabilities and provenance are encapsulated behind adapters
+
+Atomic decision: provider-specific locale codes, supported pairs/capabilities, request limits, retry classification, provider/model provenance, attribution, and related constraints belong behind machine-provider adapters/router rather than leaking into the translation domain.
+
+First introduced / changed / recorded: PR #7 provider architecture; PR #9 assigns \`PRV-01\`/\`PRV-02\`; PR #10 separates manual/local ingestion from machine adapters and adds data-handling constraints; PR #11 schedules provider integration later.
+
+Normative provenance: PR #7 body explicitly states capability-based provider routing — \`PR-or-review-discussion\`; provider-specific outside constraints recorded in PR #10 research are \`external-platform-requirement\` evidence.
+
+Known forward links: \`DLX12-20\` and later Stage 5 provider-adapter work.
+
+Contrary/unknown: no direct-user decision is visible in the inspected GitHub material.
+
+#### Candidate AN7-13b — Translation providers do not define Vico's supported-locale universe
+
+Atomic decision: whether a locale is valid/registered in Vico is independent of any one provider's support matrix; a hard-coded Cloudflare→Google provider chain must not become the definition of supported locales.
+
+First introduced / changed / recorded: PR #7 explicitly separates Vico locale support from provider capability and rejects a universal hard-coded provider chain; PR #9 preserves the boundary; PR #10 retains provider-independence while separating machine routing from manual ingestion; PR #11 schedules providers after the locale foundation.
+
+Normative provenance: PR #7 body — \`PR-or-review-discussion\`; external provider support limitations recorded later are \`external-platform-requirement\` support, while the locale-universe rule is project-authored.
+
+Known forward links: AN7-01 runtime registry ancestry, \`DLX12-20\`, and later Stage 5 provider policy.
+
+Contrary/unknown: provider fallback policy may change independently without changing this locale-universe boundary.
+
+### Replacement records for AN7-14
+
+#### Candidate AN7-14a — Background translation work has a persistent logical task identity
+
+Atomic decision: background translation work is represented by a stable logical task identity containing enough source/version/target/policy information to refer to and deduplicate the intended work.
+
+First introduced / changed / recorded: PR #7 defines job identity and small queue messages carrying task identity; PR #9 assigns \`JOB-01\`/\`JOB-02\`; PR #10 later adds stronger enqueue/staleness guards without changing the need for persistent identity.
+
+Normative provenance: PR #7 architecture/body — \`PR-or-review-discussion\` plus project-authored detail.
+
+Known forward links: \`DLX12-20\`, AN10-15a/b/c, and the later durable-task chain.
+
+Contrary/unknown: this record does not by itself define retry, reconciliation, or the strength of duplicate-processing guarantees.
+
+#### Candidate AN7-14b — Duplicate delivery must converge to duplicate-safe persistent translation state
+
+Atomic decision: repeated processing of the same logical background translation work must not create duplicate current translation state and must be safe to complete more than once.
+
+First introduced / changed / recorded: PR #7 requires idempotent consumer/upsert behavior for at-least-once delivery; PR #9 assigns \`JOB-03\`; PR #10 narrows the guarantee in AN10-16a and adds race guards separately.
+
+Normative provenance: PR #7 body — \`PR-or-review-discussion\`; Queue duplicate-delivery claims recorded later are \`external-platform-requirement\` evidence.
+
+Known forward links: \`DLX12-20\`, AN10-15c, AN10-16a/b, AN10-17a/b, and later JOB-03 work.
+
+Contrary/unknown: PR #7's wording must not be upgraded into universal exactly-once external provider calls.
+
+#### Candidate AN7-14c — Background translation failures have explicit retry classification and terminal-failure handling
+
+Atomic decision: translation-job failures are classified into retryable/alternate-provider/terminal cases, and production background processing has a DLQ or equivalent observable terminal-failure path.
+
+First introduced / changed / recorded: PR #7 retry/DLQ section; PR #9 assigns \`JOB-04\`; PR #10 expands classifications but does not merge them with identity or reconciliation.
+
+Normative provenance: PR #7 architecture/body — \`PR-or-review-discussion\`; Queue/DLQ platform facts recorded later are \`external-platform-requirement\` evidence.
+
+Known forward links: \`DLX12-20\` and later retry/DLQ implementation chain.
+
+Contrary/unknown: exact retry counts/timing/topology were not fixed by this ancestry record.
+
+#### Candidate AN7-14d — Persistent task state must support recovery/reconciliation of stranded work
+
+Atomic decision: persistent translation-task state is used to discover work that remains pending/processing or otherwise stranded and to reconcile/re-enqueue it safely rather than relying on queue transport alone.
+
+First introduced / changed / recorded: PR #7 establishes persistent task state and failure handling; PR #9 assigns explicit \`JOB-06\` reconciliation/observability; PR #10 later closes the enqueue-failure and lease-recovery cases separately.
+
+Normative provenance: PR #7/PR #9 project-authored contracts — \`PR-or-review-discussion\` where stated in PR descriptions, otherwise \`assistant-authored-proposal\`.
+
+Known forward links: \`DLX12-20\`, AN10-15b, and the later dispatcher/reconciliation chain.
+
+Contrary/unknown: the precise recovery trigger (cron/admin/workflow) remains deliberately unfixed.
+
+### Replacement records for AN7-15
+
+#### Candidate AN7-15a — Bulk locale translation generation is privileged/internal
+
+Atomic decision: bulk locale generation/activation work is not a public anonymous capability and is restricted to an administrative or internal flow.
+
+First introduced / changed / recorded: PR #7 security section; PR #9 carries the security boundary into the split docs; PR #10 retains internal bulk-generation policy; PR #11 schedules generation infrastructure after Stage 1.
+
+Normative provenance: PR #7 body/security contract — \`PR-or-review-discussion\` plus \`assistant-authored-proposal\` detail.
+
+Known forward links: \`DLX12-20\` and later translation-generation administration.
+
+Contrary/unknown: exact administrative role/permission model is not fixed here.
+
+#### Candidate AN7-15b — On-demand user-content translation crosses an authentication/authorization policy boundary
+
+Atomic decision/index claim: on-demand user-content translation generation is not automatically authorized merely because the endpoint/provider exists; an auth/authz product policy boundary is required before permitting the generation operation.
+
+First introduced / changed / recorded: PR #7 security text says user-content translation requests pass auth/rate-limit/dedup according to product rules; PR #9 Component Registry names \`SEC-02\` as auth/rate-limit/dedup, while its provider detail omits auth; PR #10 does not clearly close that omission.
+
+Normative provenance: PR #7/PR #9 text — \`assistant-authored-proposal\`; PR #9 review is \`PR-or-review-discussion\` counter-evidence.
+
+Known forward links: conflict C9-02; the general protected-operation authorization boundary \`DLX12-13b\`; later content-translation access policy.
+
+Contrary/unknown: ancestry proves the registry/earlier auth boundary and the mismatch, not a resolved concrete authorization policy before PR #12.
+
+#### Candidate AN7-15c — Translation generation is subject to rate/budget or anti-abuse limiting
+
+Atomic decision: public/on-demand translation-generation paths have a limiting boundary so ordinary requests cannot cause unbounded external generation cost or abuse.
+
+First introduced / changed / recorded: PR #7 rate-limiting security text; PR #9 \`SEC-02\`; PR #10 adds registered-locale/internal budget/rate policy for self-healing generation.
+
+Normative provenance: PR #7/PR #10 project contract — \`PR-or-review-discussion\` where described; exact limits remain unfixed.
+
+Known forward links: \`DLX12-14b\`, \`DLX12-20\`, and later provider/generation anti-abuse work.
+
+Contrary/unknown: this does not establish a specific algorithm, quota, or production threshold.
+
+#### Candidate AN7-15d — Translation generation requests/tasks are deduplicated
+
+Atomic decision: repeated equivalent requests for translation generation should not fan out into uncontrolled duplicate logical work.
+
+First introduced / changed / recorded: PR #7 requires deduplication for user-content/self-healing work; PR #9 \`SEC-02\`; PR #10 connects controlled enqueue to persistent task identity/idempotency.
+
+Normative provenance: PR #7 architecture — \`assistant-authored-proposal\`; later PR discussion supplies supporting historical context.
+
+Known forward links: \`DLX12-14b\`, AN7-14a/b, and later task-identity/dispatcher work.
+
+Contrary/unknown: request deduplication is distinct from Queue duplicate-delivery idempotency.
+
+#### Candidate AN7-15e — Provider credentials stay server-side and translation APIs are not exposed as a public proxy
+
+Atomic decision: provider credentials/secrets are not shipped to the client, and Vico must not expose external translation providers as an unrestricted public proxy.
+
+First introduced / changed / recorded: PR #7 security section; PR #9 assigns \`SEC-04\` and public-proxy language; PR #10 preserves server-side credentials and provider-data boundaries; PR #11 schedules providers later.
+
+Normative provenance: PR #7/PR #9 project contract — \`PR-or-review-discussion\` plus \`assistant-authored-proposal\` detail.
+
+Known forward links: \`DLX12-20\` and later provider-integration security.
+
+Contrary/unknown: read-only UI resource transport is not part of this record; it remains under AN7-09/AN10-11.
+
+### Replacement records for AN10-04
+
+#### Candidate AN10-04a — Canonicalizable active locale forms redirect to one canonical locale URL
+
+Atomic decision: an active locale expressed through a case variant, alias, or deprecated representation that unambiguously maps to the canonical locale is redirected to the canonical locale URL instead of being served as a second equivalent URL.
+
+First introduced / changed / recorded: PR #10 \`b030474d\`; final locale/research docs preserve it; PR #11 puts canonical redirect behavior into Stage 1 planning.
+
+Normative provenance: PR #10 body — \`PR-or-review-discussion\`; BCP-47/Intl facts are recorded \`external-platform-requirement\` support.
+
+Known forward links: \`DLX13-02\` and later method scoping in \`DLX14-01\`.
+
+Contrary/unknown: PR #10 does not choose the final HTTP redirect status; PR #13 does that later.
+
+#### Candidate AN10-04b — Formatting-only BCP-47 extensions are normalized away from translation bundle identity
+
+Atomic decision: a BCP-47 candidate whose extension changes formatting preferences but not translation identity should resolve/canonicalize to the translation-locale URL unless the project explicitly decides those extensions are public route identity.
+
+First introduced / changed / recorded: PR #10 \`18fca72e\`; final locale/research docs preserve translation-locale versus formatting-preference separation.
+
+Normative provenance: PR #10 project-authored rule — \`PR-or-review-discussion\`; BCP-47/Intl capability is recorded \`external-platform-requirement\` support.
+
+Known forward links: PR #13 formatting-extension review and the locale-formatting boundary \`DLX12-04\`.
+
+Contrary/unknown: later review can find this specific edge case incomplete without affecting alias redirects, q-value handling, or wildcard policy.
+
+#### Candidate AN10-04c — Accept-Language candidates with q=0 are ineligible
+
+Atomic decision: an \`Accept-Language\` range with \`q=0\` is not selected as an acceptable locale preference during no-segment negotiation.
+
+First introduced / changed / recorded: PR #10 \`b030474d\`/research synchronization; PR #11 includes q-value verification in Stage 1 planning.
+
+Normative provenance: HTTP language-weight semantics recorded as \`external-platform-requirement\`; applying them in Vico negotiation is project contract.
+
+Known forward links: \`DLX12-05\` targeted negotiation verification.
+
+Contrary/unknown: no separate direct-user authority is visible.
+
+#### Candidate AN10-04d — Accept-Language wildcard does not select an arbitrary active locale
+
+Atomic decision: \`Accept-Language: *\` does not select a random registered locale; when no more-specific acceptable match resolves, Vico uses its deterministic default English behavior.
+
+First introduced / changed / recorded: PR #10 \`18fca72e\`; final research/stress-test preserves it; PR #11 includes wildcard-default verification in Stage 1 planning.
+
+Normative provenance: wildcard semantics are recorded \`external-platform-requirement\` evidence; deterministic \`en\` selection is a project-authored policy.
+
+Known forward links: \`DLX12-05\` targeted negotiation verification.
+
+Contrary/unknown: this is independent of canonical alias redirects and formatting-extension handling.
+
+### Replacement records for AN10-07
+
+#### Candidate AN10-07a — Locale fallback order is target → explicit registry fallbacks → canonical English
+
+Atomic decision: Vico owns the ordered cross-locale fallback chain and appends canonical English after explicitly configured registry fallbacks instead of relying on implicit locale reduction.
+
+First introduced / changed / recorded: PR #7 introduces project-owned fallback; PR #10 \`5a79b253\` makes the order explicit; final PR #10 docs and PR #11 planning preserve it.
+
+Normative provenance: PR #10 body — \`PR-or-review-discussion\`; i18next behavior is recorded external support rather than authority for the Vico order.
+
+Known forward links: \`DLX12-08\` and \`DLX12-09\`.
+
+Contrary/unknown: this record does not specify source-origin priority inside a locale.
+
+#### Candidate AN10-07b — Within one non-English locale, current local manual outranks persistent manual, which outranks machine
+
+Atomic decision: source-origin priority inside a single non-English locale is local manual → persistent manual → machine, with stale values skipped.
+
+First introduced / changed / recorded: PR #8 introduces the source-priority order; PR #10 separates it from locale fallback in \`5a79b253\`; final docs preserve it; PR #11 maps it to Stage 1/Stage 3.
+
+Normative provenance: PR #8/PR #10 bodies — \`PR-or-review-discussion\` plus project-authored detail.
+
+Known forward links: \`DLX12-08\`.
+
+Contrary/unknown: this does not determine which fallback locale is searched next.
+
+#### Candidate AN10-07c — Fallback-locale resources remain separate bundles and i18next receives the explicit fallback chain
+
+Atomic decision: resources from different locales are not flattened into the target-locale bundle; request-scoped i18next resolves across the explicit project-provided locale chain so each locale's plural/context rules apply to its own resource.
+
+First introduced / changed / recorded: PR #10 \`1d843a58\`/\`5a79b253\` first propose resolving/flattening fallback before i18next with \`fallbackLng:false\`; \`4a54f446\` explicitly supersedes that intermediate model with separate locale bundles and explicit i18next fallback; \`bdc89406\`/\`08ab160\` synchronize the final contract; PR #11 maps it into Stage 1.
+
+Normative provenance: PR #10 body — \`PR-or-review-discussion\`; i18next plural/fallback behavior is recorded \`external-platform-requirement\` evidence.
+
+Known forward links: \`DLX12-08\`, \`DLX12-09\`, and the PR #10 changed-file reconciliation reference formerly pointing to composite AN10-07.
+
+Contrary/unknown: \`1d843a58\`/\`5a79b253\` are explicit superseded counter-history, not merged policy.
+
+### Replacement records for AN10-12
+
+#### Candidate AN10-12a — Equivalent source and target locale suppresses a translation job
+
+Atomic decision: when a known target locale is equivalent to the current source locale, content translation does not create a meaningless generation job and the original content is used.
+
+First introduced / changed / recorded: PR #10 \`1fafd60b\`; final content detail preserves the no-job rule.
+
+Normative provenance: PR #10 corrective contract — \`PR-or-review-discussion\`.
+
+Known forward links: later content-generation/service chain.
+
+Contrary/unknown: this is a generation-decision boundary and does not establish general miss/failure read behavior.
+
+#### Candidate AN10-12b — Missing, unavailable, or invalid current content translation falls back to the original current revision
+
+Atomic decision: if no valid current user-content translation is available, the read path shows original content from the current source revision rather than canonical-English UI text or a translation belonging to an older revision.
+
+First introduced / changed / recorded: original preservation/revision identity exists in PR #7; PR #10 \`1fafd60b\` makes the miss/failure behavior explicit; top-level/project planning later carries it forward.
+
+Normative provenance: PR #10 body explicitly lists original-content fallback — \`PR-or-review-discussion\`.
+
+Known forward links: AN7-12c and later content-read/presentation chain.
+
+Contrary/unknown: no direct PR #12 implementation record; this remains inherited architecture at the control point.
+
+### Replacement records for AN10-15
+
+#### Candidate AN10-15a — Durable translation task state is committed before Queue enqueue
+
+Atomic decision: the dispatcher creates/upserts and commits durable translation-task identity/state before enqueueing a message that refers to that task.
+
+First introduced / changed / recorded: PR #10 \`90a0a775\`; top-level synchronized by \`bdc89406\`; research by \`08ab160\`.
+
+Normative provenance: PR #10 body — \`PR-or-review-discussion\`; DB/Queue ordering is a project-authored boundary informed by recorded Queue behavior.
+
+Known forward links: AN7-14a, \`DLX12-20\`, and later dispatcher/task-persistence work.
+
+Contrary/unknown: this record alone does not define recovery after enqueue failure or duplicate-enqueue handling.
+
+#### Candidate AN10-15b — Failed or unknown enqueue leaves recoverable pending task state for reconciliation
+
+Atomic decision: if durable task commit succeeds but enqueue fails or its outcome is unknown, the task remains recoverable/pending so reconciliation can safely attempt dispatch again.
+
+First introduced / changed / recorded: PR #10 \`90a0a775\` adds the enqueue-failure window to \`JOB-06\`; final provider/research docs preserve it.
+
+Normative provenance: PR #10 body — \`PR-or-review-discussion\`; project recovery rule informed by recorded Queue semantics.
+
+Known forward links: AN7-14d, \`DLX12-20\`, and later reconciliation/dispatcher chain.
+
+Contrary/unknown: exact reconciliation scheduler/mechanism remains unfixed.
+
+#### Candidate AN10-15c — Duplicate enqueue is tolerated through downstream idempotency
+
+Atomic decision: an enqueue retry may result in more than one delivery of the same logical task; duplicate enqueue is acceptable only because downstream task processing is duplicate-safe.
+
+First introduced / changed / recorded: PR #10 \`90a0a775\` explicitly says duplicate enqueue is safe through \`JOB-03\` idempotency; final docs preserve it.
+
+Normative provenance: PR #10 body — \`PR-or-review-discussion\`; at-least-once delivery is recorded \`external-platform-requirement\` support.
+
+Known forward links: AN7-14b, AN10-16a, \`DLX12-20\`, and later JOB-03 work.
+
+Contrary/unknown: this does not claim exactly-once enqueue or exactly-once provider invocation.
+
+### Replacement records for AN10-16
+
+#### Candidate AN10-16a — Queue retries must converge to one correct persistent current state without claiming universal exactly-once provider calls
+
+Atomic decision: duplicate processing is required to preserve one correct current persistent state, while a crash after provider response but before durable commit may still repeat the external call unless the provider supplies its own idempotency guarantee.
+
+First introduced / changed / recorded: PR #7 has simpler idempotent-upsert wording; PR #10 \`0bdd9823\` explicitly narrows the guarantee and records the crash window; final provider/research/top-level docs preserve it.
+
+Normative provenance: PR #10 body — \`PR-or-review-discussion\`; Cloudflare at-least-once semantics recorded as \`external-platform-requirement\` evidence.
+
+Known forward links: AN7-14b, AN10-15c, later JOB-03 implementation chain.
+
+Contrary/unknown: no universal exactly-once external-call guarantee is inferred from Queue or storage idempotency.
+
+#### Candidate AN10-16b — Claim/lease state is a best-effort duplicate-cost reduction mechanism with recovery
+
+Atomic decision: before-provider-call claim/status/lease can reduce unnecessary duplicate external calls, but it is a coordination/cost-control mechanism rather than the persistent-state correctness guarantee itself and needs recovery after crashes.
+
+First introduced / changed / recorded: claim/lease language exists in PR #9 provider detail; PR #10 \`0bdd9823\` weakens “prevents” to “reduces probability” and adds lease-recovery language.
+
+Normative provenance: PR #10 corrective wording — \`PR-or-review-discussion\`; exact lease design remains project-authored.
+
+Known forward links: AN7-14d and later JOB-03/JOB-06 implementation.
+
+Contrary/unknown: claim/lease does not eliminate the provider-response-before-commit crash window.
+
+### Replacement records for AN10-17
+
+#### Candidate AN10-17a — Stale queued task is revalidated before provider invocation
+
+Atomic decision: before invoking an external provider, the consumer reloads durable/current state and checks task terminal state, source revision/fingerprint, generation policy, target-locale eligibility, and whether a higher-priority current manual result makes the machine task obsolete.
+
+First introduced / changed / recorded: PR #10 \`cccb712d\`; final provider/research/top-level docs preserve the preflight.
+
+Normative provenance: PR #10 body — \`PR-or-review-discussion\`; this is a project-authored race/expense guard.
+
+Known forward links: later JOB-03 stale-task handling.
+
+Contrary/unknown: this protects the pre-provider window only and does not by itself fence publication after an in-flight state change.
+
+#### Candidate AN10-17b — Translation result publication is conditional on the task still matching current source/policy state
+
+Atomic decision: after provider response and validation, publication/current write is conditional on the originating task identity and current source/policy state so a result that became stale while in flight cannot become current.
+
+First introduced / changed / recorded: PR #10 \`cccb712d\`; top-level \`9b890790\` and research \`08ab160\` preserve conditional-current publication semantics.
+
+Normative provenance: PR #10 body — \`PR-or-review-discussion\`; exact storage mechanism remains unfixed.
+
+Known forward links: later JOB-03/storage conditional-publication chain.
+
+Contrary/unknown: this protects the post-provider race window and is independent of pre-provider cancellation in AN10-17a.
+
+### Old-ID → replacement-ID map
+
+- \`AN7-12\` → \`AN7-12a\`, \`AN7-12b\`, \`AN7-12c\`
+- \`AN7-13\` → \`AN7-13a\`, \`AN7-13b\`
+- \`AN7-14\` → \`AN7-14a\`, \`AN7-14b\`, \`AN7-14c\`, \`AN7-14d\`
+- \`AN7-15\` → \`AN7-15a\`, \`AN7-15b\`, \`AN7-15c\`, \`AN7-15d\`, \`AN7-15e\`
+- \`AN10-04\` → \`AN10-04a\`, \`AN10-04b\`, \`AN10-04c\`, \`AN10-04d\`
+- \`AN10-07\` → \`AN10-07a\`, \`AN10-07b\`, \`AN10-07c\`
+- \`AN10-12\` → \`AN10-12a\`, \`AN10-12b\`
+- \`AN10-15\` → \`AN10-15a\`, \`AN10-15b\`, \`AN10-15c\`
+- \`AN10-16\` → \`AN10-16a\`, \`AN10-16b\`
+- \`AN10-17\` → \`AN10-17a\`, \`AN10-17b\`
+
+### Corrected references and forward links
+
+Only references affected by the ten splits change:
+
+- Conflict \`C9-02\` now attaches specifically to \`AN7-15b\` (auth/authz), while rate limiting and dedup remain \`AN7-15c\`/\`AN7-15d\`.
+- The read-only UI resource part formerly embedded in \`AN7-15\` remains under \`AN7-09\` and \`AN10-11\`; it is not duplicated as a replacement security record.
+- The PR #10 changed-file/internal-history sentence “final separate-bundle/explicit-fallback semantics are AN10-07” becomes “final separate-bundle/explicit-fallback semantics are \`AN10-07c\`”; \`AN10-07a\` and \`AN10-07b\` hold fallback order and within-locale source priority respectively.
+- Prior forward link \`AN7-08/09, AN8-02/05, AN10-07/10/11 → DLX12-08\` becomes \`AN7-08/09, AN8-02/05, AN10-07a/07b/07c/10/11 → DLX12-08\`.
+- Prior forward link \`AN7-05/07/08, AN10-07, AN11-06 → DLX12-09 and DLX5-09\` becomes \`AN7-05/07/08, AN10-07a/07c, AN11-06 → DLX12-09 and DLX5-09\`; source-origin priority \`AN10-07b\` remains linked to \`DLX12-08\`, not to the i18next runtime record.
+- Prior \`AN7-13\` provider link to \`DLX12-20\` now applies to both \`AN7-13a\` and \`AN7-13b\`.
+- Prior \`AN7-14\` durable-task link now expands to \`AN7-14a/b/c/d\`; PR #10 descendants link by mechanism as recorded above rather than inheriting one bundle verdict.
+- Prior \`AN7-15\` anti-abuse link is decomposed: \`AN7-15b\` → \`DLX12-13b\`; \`AN7-15c/d\` → \`DLX12-14b\`; \`AN7-15a/e\` → \`DLX12-20\`.
+- Prior \`AN10-04\` links are decomposed: \`AN10-04a\` → \`DLX13-02\`/later method scoping; \`AN10-04b\` → PR #13 formatting-extension review + \`DLX12-04\`; \`AN10-04c/d\` → \`DLX12-05\`.
+- \`AN10-12a\` links only to later content-generation/service work; \`AN10-12b\` links to \`AN7-12c\` and later content-read/fallback work.
+- \`AN10-15a\` links to durable task persistence, \`AN10-15b\` to reconciliation, and \`AN10-15c\` to duplicate-safe processing.
+- \`AN10-16a\` is the persistent-state/no-universal-exactly-once guarantee; \`AN10-16b\` is the separate claim/lease cost-control/recovery mechanism.
+- \`AN10-17a\` is the pre-provider stale-task check; \`AN10-17b\` is the post-provider conditional-publication fence.
+- In AN10-19's external-evidence support reference, the former composite references should be read at mechanism granularity: Queue/idempotency evidence supports \`AN7-14a/b/c/d\`, \`AN10-15a/b/c\`, \`AN10-16a/b\`, and \`AN10-17a/b\`; locale/HTTP/i18next evidence supports the corresponding \`AN10-04a/b/c/d\` and \`AN10-07a/c\` records where cited. This is provenance linkage only, not classification.
+
+### Unchanged material confirmation
+
+Every record from \`RESPONSE DL-ANCESTRY-001/1\` not listed in the old-ID map above is unchanged.
+
+All PR #7–#11 category sweeps, preserved conflicts, missing-authority notes, changed-file reconciliation, extraction reconciliation, and provenance limitations from \`/1\` remain unchanged except for the explicit reference substitutions listed in this response.
+
+No correctness, prematurity, future-proofing, target-contract, or post-#12 substantive classification is introduced here.
