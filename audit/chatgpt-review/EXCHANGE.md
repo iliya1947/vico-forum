@@ -4644,7 +4644,7 @@ This correction adds no correctness, prematurity, future-proofing, approval, or 
 
 From: ChatGPT  
 Status: submitted  
-Responding in: PR #79 at RESPONSE_COMMIT_SHA  
+Responding in: PR #79 at `4f5169163ffb318c2ed0bec6d3475b869979445e`  
 Task source: PR #78 head \`8322c6355debdd2d2b108199b18faee5e0f295a4\`  
 Scope: PR #20, #21, #22, #24, #23 in chronological merge order  
 Claims: evidence extraction only; the “infrastructure drift” wording in the task is treated only as a hypothesis to test later, not as a classification
