@@ -7054,3 +7054,893 @@ Known non-exhaustive links:
   - historical GitHub branch-rules enforcement snapshot for PR #30.
 - later code/history was used only to identify known dependency/correction candidates (notably #31/#32, #39, #42 and current migration test/ruleset state), never as retroactive authority.
 - no candidate above is classified as correct, incorrect, necessary, premature, future-proof, infrastructure drift, approved, or target state.
+
+
+## RESPONSE DL-EXTRACT-004/1
+
+From: ChatGPT  
+Status: submitted  
+Responding in: PR #79 at RESPONSE_COMMIT_SHA  
+Task source: PR #78 head \`8a85571fcac69e0181a203afada5e5bb461b44d4\`  
+Scope: PR #25–#30 in chronological merge order  
+Claims: evidence extraction only; no correctness, necessity, prematurity, future-proofing, infrastructure-drift, approval, or target-state classification
+
+### Coverage sweep
+
+#### PR #25 / merge \`d39119a628d0b4eb1b3e8e6a31c4de14923dce3a\`
+
+F: none  
+A: none in application/domain architecture; deployment-path configuration/state is operational  
+C: corrects project state from “PR 2C still in progress/local wrangler auth blocker” to “2C merged, native Workers Builds path configured”  
+D: only \`PROJECT_STATE.md\` changes  
+O: records native GitHub \`main\` → Cloudflare Workers Builds integration, build/deploy commands and pending first native production deploy  
+G: merging/pushing this docs PR to \`main\` is recorded as the trigger for the first native production build; real deployed Hyperdrive smoke remains the Stage 2 completion gate  
+T: no runtime test/build/migration/deploy was run by the docs commit; PR GitHub CI on head \`1758494b\` completed successfully
+
+Evidence inspected:
+- PR body, sole internal commit \`1758494b79712195796c65c93a12c12750488286\`, complete one-file diff.
+- No review threads.
+- Cloudflare bot comment on the PR head records a successful **commit/branch preview** deployment and exposes commit/branch preview URLs. That is external evidence of non-production branch deployment for the PR head, not evidence that the later \`main\` production deployment had already run.
+- No raw Cloudflare production-build log for the subsequent merge-to-main event is attached to this PR material.
+
+Completeness limitations:
+- The configured GitHub/Cloudflare integration details are repository-recorded operational facts; exact dashboard settings are not independently available here.
+- The body explicitly says the docs commit itself ran no build/test/lint/migration/deploy.
+
+#### PR #26 / merge \`fccde6b9891dac691bae43bfe38e785d33b63ae0\`
+
+F: none in code; records deployed behavior/acceptance of existing Stage 2 functionality  
+A: none newly implemented  
+C: second internal commit only fixes wording (“a real” → “real”) and does not alter technical claims  
+D: only \`PROJECT_STATE.md\` changes; Stage 2 is recorded closed and Stage 3 becomes next  
+O: records successful native production build/deploy, active Hyperdrive binding, deployed locale smoke, and Hyperdrive metrics  
+G: records the Stage 2 deployed-acceptance gate as satisfied and removes the Stage 3 blocker  
+T: no build/test/lint/migration/deploy was run by the docs commit; PR CI on final head \`3ff1d69b\` completed successfully
+
+Evidence inspected:
+- PR body, both internal commits \`38f12f7e\` and \`3ff1d69b\`, complete one-file diff.
+- No review threads.
+- Cloudflare bot comment on PR head \`3ff1d69b\` records a successful branch/commit preview deployment, not the prior \`main\` production deployment whose results are described in the state file.
+- No raw production smoke transcript or Hyperdrive metrics export is attached to the PR.
+
+Completeness limitations:
+- The production deploy, route-smoke results and metrics are repository-recorded operational claims unless separately evidenced below.
+- The available Cloudflare PR comment proves a branch-preview deployment of the docs PR, not the production acceptance run being documented.
+
+#### PR #27 / merge \`e734f8fb008b934a1c6002ae80e6a28269e9d753\`
+
+F: none  
+A: release/process contracts only; no runtime/domain implementation  
+C: replaces the runbook's manual \`pnpm exec wrangler deploy\` production path with native Workers Builds from \`main\`; formalizes schema-first and preview-isolation gates  
+D: changes \`AGENTS.md\` and \`docs/database/HYPERDRIVE.md\`  
+O: documents production deployment topology and a conditional preview/non-production use of the production Hyperdrive capability  
+G: introduces explicit migration-only → production migrate/verify → runtime ordering and future preview-isolation triggers  
+T: no code/test/workflow/config behavior changes; PR CI on final head \`9ff30db7\` completed successfully
+
+Evidence inspected:
+- PR body, internal commits \`83eeb23f\` and \`9ff30db7\`, complete two-file diff.
+- No review threads.
+- Cloudflare bot comment records a successful branch/commit preview deployment for the PR head.
+- \`AGENTS.md\` mirrors the same two process gates for Codex; because it is Codex-only instruction, it is historical evidence of process codification, not a separate product decision from the runbook contracts below.
+
+Completeness limitations:
+- The PR changes no production resource setting itself.
+- “Until non-production settings are verified” is an explicit temporary evidence state, not proof of actual preview topology.
+
+#### PR #28 / merge \`2eb1186e85e69c9f32598055b948cfcaa8d23981\`
+
+F: non-English locale requests keep the existing degraded-English behavior, but failure-boundary inputs change  
+A: explicit request-loader configuration boundary, typed registry-availability bridge, transport failure taxonomy, one-per-request degraded telemetry  
+C: addresses the unresolved PR #22/#23 transport-classification gap and removes the hidden Stage 1 healthy config-registry fallback; one new review finding remains unresolved at merge  
+D: no documentation or \`PROJECT_STATE.md\` change in this PR  
+O: no schema/dependency/binding/deployment change; failure behavior affects Hyperdrive/PostgreSQL runtime handling  
+G: missing loader becomes a configuration failure rather than an implicit fallback path  
+T: adds unit coverage across registry/request-context/routes/Hyperdrive plus real \`pg\` connection-failure integration coverage; final PR CI on \`aad8382a\` completed successfully
+
+Evidence inspected:
+- PR body, sole internal commit \`aad8382adec2daf8fcd2510c4f7fa2fdbd7d60b7\`, complete ten-file diff.
+- Codex final-head P2 review: any code-less generic \`Error\` from \`pg.Client.connect()\` is treated as outage, potentially masking non-transient SSL/configuration failures.
+- Cloudflare bot comment records a successful branch/commit preview deployment.
+- Current/later history was sampled only to identify correction candidates: PR #39 later narrows code-less availability to the exact known node-postgres “Connection terminated unexpectedly” case.
+
+Completeness limitations:
+- PR body says official React Router/Cloudflare/pg references were rechecked; those external claims were not independently re-verified in this extraction.
+- The runtime/state changed but \`PROJECT_STATE.md\` was not updated in PR #28; PR #30 later records H1 completion. This is retained as historical documentation-state lag, not classified here.
+
+#### PR #29 / merge \`c31c05097f8af9f14de09b4e45e335014e2830c0\`
+
+F: none  
+A: migration-history identity/integrity contracts and production database verification policy  
+C: hardens both unresolved PR #24 findings (branch/ref safety and weak mutable verifier) but introduces/retains two review conflicts of its own  
+D: updates migration runbook; does **not** update \`PROJECT_STATE.md\` despite operational-state changes  
+O: main-only production migration dispatch, exact dispatched-SHA checkout, stable production DB invariant verification  
+G: append-only migration-history guard becomes required PR CI; production migration execution is restricted to \`main\`  
+T: adds Node migration-history library/self-tests/verifier, required CI guard, production verifier changes, and Vitest exclusion for Node-only self-tests; final CI on \`1d9b849d\` completed successfully
+
+Evidence inspected:
+- PR body, all nine internal commits:
+  \`4f4578ba\`, \`c0516c42\`, \`e9a05591\`, \`a419c4fc\`, \`f6b7bdbd\`, \`6db337af\`, \`cd72c51c\`, \`e8e4bb50\`, \`1d9b849d\`.
+- Complete eight-file diff.
+- Two Codex review findings on \`e8e4bb50\`, neither changed by final \`1d9b849d\`:
+  1. production verifier stops requiring exact mutable locale state, but \`tests/database/migrations.test.ts\` still asserts the exact final ru/he/ka Stage 1 seed, conflicting with the runbook claim that those values may evolve;
+  2. \`PROJECT_STATE.md\` is not synchronized with the new main-only migration guard and required history CI.
+- Current main still contains an exact final locale-state assertion in \`tests/database/migrations.test.ts\`; PR #31 only updates migration count and does not remove that assertion. This is forward/current counter-evidence, not a retroactive verdict.
+- PR #30 later records the H2 workflow/history state in \`PROJECT_STATE.md\`.
+- Cloudflare bot comment records successful branch/commit preview deployment of PR #29.
+
+Completeness limitations:
+- PR body says GitHub \`workflow_dispatch\` and Drizzle \`migrate\` references were rechecked; external documentation was not independently re-verified here.
+- Current branch/ruleset settings are not valid retroactive proof of the PR #29-era state.
+
+#### PR #30 / merge \`907e0822262dd8e34da175ba8d1f21a7ecacb1cb\`
+
+F: none  
+A: none newly implemented; records current/future capability gates  
+C: synchronizes documentation/state after PR #28/#29 hardening and replaces “non-production settings unverified” with a recorded verified branch-build state  
+D: updates \`PROJECT_STATE.md\`, \`README.md\`, and \`docs/database/HYPERDRIVE.md\`  
+O: records branch-preview behavior, no staging binding, production read-only/public-data boundary, and existing Workers/Hyperdrive deployment state  
+G: closes pre-Stage-3 hardening; retains schema-first rollout and makes preview isolation a future gate before writes/private data  
+T: docs-only; PR CI on final head \`a445827b\` completed successfully
+
+Evidence inspected:
+- PR body, internal commits \`d82e36be\`, \`4ca46737\`, \`a445827b\`, complete three-file diff.
+- No review threads.
+- At PR #30 merge, \`wrangler.jsonc\` has only top-level \`HYPERDRIVE\` and no staging environment/binding.
+- Cloudflare bot comments on PRs #25–#30 each record successful branch/commit preview deployments; this is concrete external evidence that non-production branch builds were occurring. It does not expose the exact Cloudflare dashboard toggle value.
+- The GitHub connector cannot read branch-protection details with the installed app (403). Current repository ruleset state is later mutable evidence and is not used to prove or disprove the September 11 historical claim.
+
+Completeness limitations:
+- The claim that GitHub “Protect main” required \`checks\` + \`database\` and up-to-date branches is repository-recorded here; historical branch-protection settings are not independently recoverable with the available permission.
+- Exact Cloudflare Branch-control dashboard settings are not directly accessible; branch-preview bot comments provide behavioral evidence only.
+
+### Candidate atomic decisions — PR #25
+
+#### Candidate EX25-01 — Native Cloudflare Workers Builds from GitHub main becomes the recorded production deployment path
+
+Atomic decision/operational configuration claim: production Worker deployment is configured through Cloudflare's native Git integration from repository \`iliya1947/vico-forum\`, production branch \`main\`.
+
+Introduced/changed/recorded by: \`1758494b\`; merge \`d39119a\`.
+
+Normative provenance: newly recorded operational choice — \`PR-or-review-discussion\` in PR body and project-state text; no direct-user authority found.
+
+Backward dependencies: EX23-04a real production binding and EX23-16 pending deployed acceptance.
+
+Forward candidates: EX26-01 successful native production deploy claim; EX27-01 runbook codification.
+
+Contrary/unknown: Cloudflare bot evidence on PR #25 is a branch-preview deploy, not direct evidence of the subsequent \`main\` production deploy.
+
+#### Candidate EX25-02 — Workers Builds production build command is \`pnpm run build\`
+
+Atomic configuration claim: native Workers Builds uses \`pnpm run build\` as its production build command.
+
+Introduced/changed/recorded by: \`1758494b\`.
+
+Normative provenance: repository-recorded external configuration claim — \`PR-or-review-discussion\`; actual dashboard setting is not independently available.
+
+Forward candidates: later Workers Builds deployments.
+
+#### Candidate EX25-03 — Workers Builds production deploy command is \`npx wrangler deploy\`
+
+Atomic configuration claim: native Workers Builds uses \`npx wrangler deploy\` as its deploy command.
+
+Introduced/changed/recorded by: \`1758494b\`.
+
+Normative provenance: \`PR-or-review-discussion\`; actual Cloudflare setting not independently available here.
+
+Forward candidates: later native production deployments.
+
+#### Candidate EX25-04 — Workers Builds pins PNPM_VERSION=12.3.4
+
+Atomic configuration claim: native Cloudflare build environment pins pnpm \`12.3.4\`.
+
+Introduced/changed/recorded by: \`1758494b\`.
+
+Normative provenance: \`PR-or-review-discussion\`; aligns with existing exact package-manager baseline but is a separate external build configuration claim.
+
+Backward dependencies: \`DLX5-08\` exact toolchain/pnpm baseline.
+
+#### Candidate EX25-05 — Merge/push to main is the trigger for the first native production build
+
+Atomic process/gate: rather than running a local authenticated Wrangler deploy, merge this docs change to \`main\` so the new Git integration receives a push and performs the first production build/deploy.
+
+Introduced/changed/recorded by: \`1758494b\`; PR body.
+
+Normative provenance: \`PR-or-review-discussion\`.
+
+Backward dependencies: EX25-01.
+
+Forward candidates: EX26-01 production deploy completion claim.
+
+#### Candidate EX25-06 — Local \`wrangler whoami\` authentication is no longer the Stage 2 deployment blocker
+
+Atomic state/process correction: once native Workers Builds is connected, lack of local Wrangler authentication is removed as the blocker; the remaining blocker becomes actual native production deploy plus deployed Hyperdrive smoke.
+
+Introduced/changed/recorded by: \`1758494b\`.
+
+Normative provenance: repository historical/state claim — \`PR-or-review-discussion\`.
+
+Backward dependencies: EX23-16 pending remote acceptance.
+
+Forward candidates: EX26-01/EX26-11.
+
+#### Candidate EX25-07 — Real deployed Hyperdrive smoke remains the final Stage 2 acceptance gate after native deploy
+
+Atomic gate: native production deployment alone does not close Stage 2; deployed Hyperdrive-backed behavior still has to be exercised.
+
+Introduced/changed/recorded by: inherited from EX20-02/EX20-30/EX23-16, restated in \`1758494b\`.
+
+Normative provenance: \`pre-existing-project-contract\`.
+
+Forward candidates: EX26-03..10 and EX26-11.
+
+### Candidate atomic decisions — PR #26
+
+#### Candidate EX26-01 — Repository records the first native production build/deploy from main as successful
+
+Atomic operational claim: the GitHub \`main\` → Cloudflare Workers Builds production path successfully produced a production deployment.
+
+Introduced/changed/recorded by: \`38f12f7e\`; wording-only follow-up \`3ff1d69b\`; merge \`fccde6b\`.
+
+Normative provenance: historical repository/PR claim, not direct-user approval.
+
+Backward dependencies: EX25-01/05.
+
+Forward candidates: EX27-01 normal-deploy-path codification.
+
+Contrary/unknown: available Cloudflare bot comment on PR #26 proves only a branch-preview deploy of \`3ff1d69b\`; no raw main production build log is attached here.
+
+#### Candidate EX26-02 — Repository records active production Worker binding HYPERDRIVE → vico-forum-registry
+
+Atomic operational claim: the active Worker deployment is recorded as containing the production \`HYPERDRIVE\` binding to \`vico-forum-registry\`.
+
+Introduced/changed/recorded by: \`38f12f7e\`.
+
+Normative provenance: historical repository claim; EX23-04a/EX23-14 are prior binding/config records.
+
+Backward dependencies: EX23-04a, EX23-14.
+
+External evidence limitation: no raw deployed Worker binding dump is attached.
+
+#### Candidate EX26-03 — Deployed acceptance records active persistent locales he and ru serving successfully
+
+Atomic operational acceptance claim: deployed \`/he/\` and \`/ru/\` requests succeed through the persistent locale registry.
+
+Introduced/changed/recorded by: \`38f12f7e\`.
+
+Normative provenance: operational acceptance claim; underlying behavior is pre-existing EX16/EX22/EX23 contract.
+
+Backward dependencies: EX16-05, EX22 persistent registry, EX23-10 smoke contract.
+
+External evidence limitation: no raw deployed response transcript is attached.
+
+#### Candidate EX26-04 — Deployed acceptance records alias iw canonicalizing to he
+
+Atomic operational acceptance claim: deployed \`/iw/\` follows the canonical alias path to \`/he/\`.
+
+Introduced/changed/recorded by: \`38f12f7e\`.
+
+Backward dependencies: EX16-06, EX23-10.
+
+Normative provenance: operational acceptance claim.
+
+External evidence limitation: no raw deployed response transcript attached.
+
+#### Candidate EX26-05 — Deployed acceptance records inactive and unknown locale fallback to English
+
+Atomic operational acceptance claim: deployed inactive \`/ka/\` and unknown locale requests use the established temporary English fallback.
+
+Introduced/changed/recorded by: \`38f12f7e\`.
+
+Backward dependencies: EX16-07, EX22-12.
+
+Normative provenance: operational acceptance claim.
+
+External evidence limitation: no raw deployed response transcript attached.
+
+#### Candidate EX26-06 — Deployed acceptance records localized unknown-child and technical API 404 behavior
+
+Atomic operational acceptance claim: deployed \`/he/topic\` and \`/api/test\` return HTTP 404 under their respective route boundaries.
+
+Introduced/changed/recorded by: \`38f12f7e\`.
+
+Backward dependencies: EX19-09 and EX16-12.
+
+Normative provenance: operational acceptance claim.
+
+#### Candidate EX26-07 — Deployed acceptance records redirect-required mutation failing closed
+
+Atomic operational acceptance claim: deployed \`POST /IW/\` returns 404 without \`Location\`, confirming no redirect-driven mutation continuation.
+
+Introduced/changed/recorded by: \`38f12f7e\`.
+
+Backward dependencies: EX16-08 / \`DLX14-01/03\`.
+
+Normative provenance: operational acceptance claim.
+
+#### Candidate EX26-08 — Repository records production Hyperdrive query traffic during acceptance
+
+Atomic operational evidence claim: Hyperdrive metrics showed production queries flowing through \`vico-forum-registry\` during the acceptance window.
+
+Introduced/changed/recorded by: \`38f12f7e\`.
+
+Backward dependencies: EX23-08/14 and EX23-16.
+
+Normative provenance: repository-recorded external-metrics claim.
+
+External evidence limitation: no exported Hyperdrive metrics artifact is attached.
+
+#### Candidate EX26-09 — Repository records Hyperdrive query caching disabled during acceptance
+
+Atomic operational evidence claim: acceptance metrics/config are recorded as showing caching disabled.
+
+Introduced/changed/recorded by: \`38f12f7e\`.
+
+Backward dependencies: EX20-05 / EX23-08b.
+
+Normative provenance: repository-recorded external configuration/metrics claim.
+
+External evidence limitation: no raw Cloudflare configuration/metrics artifact attached.
+
+#### Candidate EX26-10 — Repository records zero Hyperdrive errors during acceptance
+
+Atomic operational evidence claim: Hyperdrive metrics are recorded as showing \`0\` errors during the acceptance check.
+
+Introduced/changed/recorded by: \`38f12f7e\`.
+
+Normative provenance: repository-recorded metrics claim.
+
+External evidence limitation: no raw metrics export attached.
+
+#### Candidate EX26-11 — Stage 2 is recorded closed after deployed acceptance
+
+Atomic gate/state transition: the prior real-deployed-Hyperdrive completion gate is declared satisfied and Stage 2 is marked complete.
+
+Introduced/changed/recorded by: \`38f12f7e\`; merge \`fccde6b\`.
+
+Normative provenance: completion rule comes from EX20-02/30 and EX23-16 (\`pre-existing-project-contract\`); satisfaction of the rule is a repository historical claim.
+
+Forward candidates: EX26-12; PR #27 hardening before Stage 3.
+
+#### Candidate EX26-12 — Stage 3 becomes the next active stage with no recorded blocker
+
+Atomic state transition: after Stage 2 closure, the project state moves to Stage 3 persistent UI-translation schema work.
+
+Introduced/changed/recorded by: \`38f12f7e\`.
+
+Normative provenance: roadmap sequencing is \`pre-existing-project-contract\`; the no-blocker state is repository historical recording.
+
+Forward candidates: PR #27–#30 pre-Stage-3 hardening, then PR #31 migration-only Stage 3A.
+
+### Candidate atomic decisions — PR #27
+
+#### Candidate EX27-01 — Native Workers Builds from main is the normal production Worker deployment path
+
+Atomic operational/process contract: normal production Worker deployment is performed by Cloudflare Workers Builds from GitHub \`main\`, not by the runbook's previous manual local Wrangler command.
+
+Introduced/changed/recorded by: \`9ff30db7\`; mirrored context from Stage 2 acceptance.
+
+Normative provenance: newly codified \`assistant-authored-proposal\`/PR text, based on the recorded operational path EX25/EX26.
+
+Forward candidates: subsequent schema/runtime rollout instructions and later production deploys.
+
+#### Candidate EX27-02 — First schema-dependent runtime rollout is migration-only PR → production migration/verification → runtime PR
+
+Atomic rollout contract: the first introduction of production schema required by runtime is split into migration-only change, merge to main, production migrate/verify, then a separate runtime change.
+
+Introduced/changed/recorded by: \`83eeb23f\` in Codex rules and \`9ff30db7\` runbook.
+
+Normative provenance: strengthens EX20-28b (\`pre-existing-project-contract\`) into an explicit per-change release rule; changed docs are historical evidence of codification.
+
+Forward candidates: PR #31 migration-only Stage 3A and PR #32 read-only runtime consumer; later #44/#76 evidence/enforcement history.
+
+#### Candidate EX27-03 — Migration-only schema PR must remain compatible with the currently deployed Worker
+
+Atomic rollout compatibility rule: merging the migration-only PR may itself trigger automatic Workers Builds, so that PR must not make the currently deployed runtime require the not-yet-applied schema.
+
+Introduced/changed/recorded by: \`9ff30db7\`.
+
+Normative provenance: \`assistant-authored-proposal\`, derived from EX25/EX27-01 auto-deploy topology.
+
+Forward candidates: PR #31 explicitly adds schema without runtime reads.
+
+#### Candidate EX27-04 — Preview/non-production builds are provisionally treated as potentially using production HYPERDRIVE
+
+Atomic temporary topology assumption: until non-production build settings are separately verified, preview/non-production uploads are treated as potentially receiving the top-level production Hyperdrive binding.
+
+Introduced/changed/recorded by: \`9ff30db7\`.
+
+Normative provenance: \`assistant-authored-proposal\` under evidence uncertainty.
+
+Forward candidates: EX30-05/06 later replace the “unverified” evidence state with recorded branch-build/topology facts.
+
+#### Candidate EX27-05 — Shared preview access to production DB is allowed only while Worker capability remains read-only
+
+Atomic capability gate: preview/non-production use of the production DB capability is conditionally allowed only while that runtime capability cannot perform INSERT/UPDATE/DELETE.
+
+Introduced/changed/recorded by: \`83eeb23f\` and \`9ff30db7\`.
+
+Normative provenance: \`assistant-authored-proposal\`; builds on EX23-07b read-only production role.
+
+Forward candidates: EX30-07; later staging topology before Stage 4.
+
+#### Candidate EX27-06 — Shared preview access to production DB is allowed only while reachable data is public
+
+Atomic data-sensitivity gate: preview/non-production use of the production binding is conditionally allowed only while exposed production data is public.
+
+Introduced/changed/recorded by: \`83eeb23f\` and \`9ff30db7\`.
+
+Normative provenance: \`assistant-authored-proposal\`.
+
+Forward candidates: EX30-08; later auth/private-data staging work.
+
+#### Candidate EX27-07 — Runtime write capability triggers preview isolation or disabling non-production builds
+
+Atomic future gate: before preview/non-production code gets any production database write capability, isolate it with staging Worker/Hyperdrive/DB or disable the non-production path.
+
+Introduced/changed/recorded by: \`83eeb23f\`, \`9ff30db7\`.
+
+Normative provenance: \`assistant-authored-proposal\`.
+
+Forward candidates: EX30-09 and later pre-Stage-4 staging work.
+
+Contrary/unknown: this is an explicit future gate; absence of staging at PR #27 is not itself classified as a current defect.
+
+#### Candidate EX27-08 — Exposure of non-public production data triggers preview isolation or disabling non-production builds
+
+Atomic future gate: before the bound production database exposes private translation/admin/auth or other non-public data to the Worker, isolate preview/non-production or disable it.
+
+Introduced/changed/recorded by: \`83eeb23f\`, \`9ff30db7\`.
+
+Normative provenance: \`assistant-authored-proposal\`.
+
+Forward candidates: EX30-10 and later staging/auth rollout.
+
+Contrary/unknown: separate from the write-capability trigger in EX27-07.
+
+### Candidate atomic decisions — PR #28
+
+#### Candidate EX28-01 — Registry availability classification adds explicit Node transport error codes
+
+Atomic corrective decision: classify \`ECONNREFUSED\`, \`ETIMEDOUT\`, \`ENOTFOUND\`, \`ECONNRESET\`, and \`EPIPE\` as persistent-registry availability failures.
+
+Introduced/changed/recorded by: \`aad8382a\`; merge \`2eb1186\`.
+
+Normative provenance: implements the unresolved EX22-07/EX23-06 availability boundary — \`pre-existing-project-contract\`; exact code list is corrective implementation.
+
+Forward candidates: PR #39 centralizes/narrows the shared PostgreSQL availability classifier; #42 adds timeout classes.
+
+#### Candidate EX28-02 — Connect-layer availability failures are wrapped in a typed registry infrastructure error
+
+Atomic corrective boundary: a positively classified \`pg.Client.connect()\` availability failure becomes \`RegistryConnectionUnavailableError\`, which the persistent loader maps to \`degraded: unavailable\`.
+
+Introduced/changed/recorded by: \`aad8382a\`.
+
+Normative provenance: EX20-20/21 and EX22-07/08 — \`pre-existing-project-contract\`; typed bridge is implementation.
+
+Forward candidates: PR #39 reuses a centralized availability classifier; later deadline handling.
+
+#### Candidate EX28-03 — Code-bearing authentication and obvious programming failures remain visible at connect boundary
+
+Atomic failure-boundary decision: code-bearing non-availability errors and explicit \`TypeError\`/\`ReferenceError\`/\`SyntaxError\`/\`RangeError\` are rethrown rather than converted to degraded registry availability.
+
+Introduced/changed/recorded by: \`aad8382a\`.
+
+Normative provenance: EX20-21/EX22-08 — \`pre-existing-project-contract\`.
+
+Historical evidence: unit tests cover \`28P01\` and \`TypeError\`.
+
+Forward candidates: PR #39 generalizes/narrows unknown-driver handling.
+
+#### Candidate EX28-04 — Any remaining code-less generic Error from pg connect is treated as unavailable
+
+Atomic implementation choice: after excluding known programming exception classes, a code-less \`Error\` from \`client.connect()\` is treated as a connection outage.
+
+Introduced/changed/recorded by: \`aad8382a\`.
+
+Normative provenance: \`assistant-authored-proposal\` implementation choice.
+
+Contrary evidence: Codex P2 final-head review says code-less SSL/configuration failures can also occur, so this may mask deployment defects. The finding remains unresolved in PR #28.
+
+Forward correction candidate: PR #39 replaces the generic code-less fallback with the exact known node-postgres message \`Connection terminated unexpectedly\`.
+
+No correctness classification is assigned here.
+
+#### Candidate EX28-05 — Missing registry-loader injection fails explicitly instead of using hidden Stage 1 registry fallback
+
+Atomic corrective decision: \`registryForRequest\` requires a RouterContextProvider loader and throws \`RegistryLoaderConfigurationError\` if absent; it no longer returns the old healthy config registry.
+
+Introduced/changed/recorded by: \`aad8382a\`.
+
+Normative provenance: production persistent-registry injection EX23-03 plus fail-visible philosophy EX20-21 — \`pre-existing-project-contract\`; exact configuration error is corrective implementation.
+
+Forward candidates: route tests and later request-scoped DB services follow explicit injection.
+
+#### Candidate EX28-06 — Locale route test fixtures explicitly inject registry state
+
+Atomic test-boundary decision: route unit tests no longer depend on the hidden request-context fallback; they construct a RouterContextProvider and inject the intended registry snapshot.
+
+Introduced/changed/recorded by: \`aad8382a\`.
+
+Normative provenance: test implementation supporting EX28-05.
+
+Forward candidates: later request-context tests.
+
+#### Candidate EX28-07 — Degraded registry emits one structured reason-only event per request loader
+
+Atomic observability decision: each request-scoped Hyperdrive registry loader reports at most one structured \`locale_registry_degraded\` event containing only the degraded reason.
+
+Introduced/changed/recorded by: \`aad8382a\`.
+
+Normative provenance: \`assistant-authored-proposal\`.
+
+Historical evidence: default reporter logs JSON with event/reason; memoized wrapper guards one report; tests assert once.
+
+Forward candidates: PR #33 enables Workers Observability; later translation-store telemetry follows reason/count-only patterns.
+
+#### Candidate EX28-08 — Real pg connection-refusal behavior is covered by PostgreSQL integration test
+
+Atomic test contract: the DB integration suite connects to deliberately unavailable localhost port 1 and requires bootstrap-English \`degraded: unavailable\` plus one degraded report.
+
+Introduced/changed/recorded by: \`aad8382a\`.
+
+Normative provenance: test evidence for EX28-01/02, not independent product authority.
+
+Forward candidates: later database resilience tests.
+
+### Candidate atomic decisions — PR #29
+
+#### Candidate EX29-01 — Accepted migration SQL files are immutable
+
+Atomic migration-history rule: once accepted on \`main\`, an existing \`drizzle/*.sql\` migration cannot be modified, deleted, or renamed; correction is a new forward migration.
+
+Introduced/changed/recorded by: helper \`4f4578ba\`, CI \`a419c4fc\`, docs \`cd72c51c\`; merge \`c31c050\`.
+
+Normative provenance: forward-only history lineage EX20-28a/EX21-06a — \`pre-existing-project-contract\`; exact CI enforcement is new implementation.
+
+Forward candidates: PR #31+ migration-only changes append new SQL; later migration evidence chain.
+
+#### Candidate EX29-02 — Accepted Drizzle snapshots are immutable
+
+Atomic migration-history rule: an accepted \`drizzle/meta/*_snapshot.json\` cannot be modified, deleted, or renamed.
+
+Introduced/changed/recorded by: \`4f4578ba\`, \`a419c4fc\`, \`cd72c51c\`.
+
+Normative provenance: \`assistant-authored-proposal\` enforcement consistent with EX21-06a.
+
+Forward candidates: later migrations append new snapshots.
+
+#### Candidate EX29-03 — Drizzle journal accepted prefix is append-only
+
+Atomic migration-history rule: the current journal cannot delete or rewrite entries already present at the PR merge base.
+
+Introduced/changed/recorded by: \`4f4578ba\`, CI \`a419c4fc\`.
+
+Normative provenance: \`assistant-authored-proposal\`, supporting EX21-06a/EX20-28a.
+
+#### Candidate EX29-04 — Drizzle journal requires contiguous idx, unique tags, and strictly increasing timestamps
+
+Atomic structural validation decision: the complete journal is checked for contiguous indices, unique tags and monotonically increasing safe-integer \`when\` values.
+
+Introduced/changed/recorded by: \`4f4578ba\`; tests \`e9a05591\`.
+
+Normative provenance: \`assistant-authored-proposal\`.
+
+Forward candidates: all later checked-in migration additions.
+
+#### Candidate EX29-05 — Every appended journal entry must match one newly added migration SQL file
+
+Atomic consistency rule: new \`drizzle/*.sql\` tags and appended journal tags must correspond one-to-one.
+
+Introduced/changed/recorded by: \`4f4578ba\`; tests \`e9a05591\`; CI \`a419c4fc\`.
+
+Normative provenance: \`assistant-authored-proposal\`.
+
+Forward candidates: later migration PRs.
+
+#### Candidate EX29-06 — Pull-request migration guard compares candidate history against merge base with full Git history
+
+Atomic enforcement mechanism: required PR verifier uses \`origin/$GITHUB_BASE_REF\`, computes merge base, compares \`drizzle\` name-status including renames, and therefore checkout fetches full history.
+
+Introduced/changed/recorded by: \`c0516c42\`, CI \`a419c4fc\`.
+
+Normative provenance: implementation mechanism for EX29-01..05.
+
+#### Candidate EX29-07 — Required checks job runs migration-history self-tests and verifier
+
+Atomic CI gate: the ordinary required \`checks\` job runs Node self-tests for the guard and then the real branch-vs-base verifier before lint/typecheck/test/build.
+
+Introduced/changed/recorded by: \`a419c4fc\`; Node lint fix \`e8e4bb50\`; Vitest exclusion \`1d9b849d\`.
+
+Normative provenance: \`assistant-authored-proposal\` CI enforcement.
+
+Forward candidates: PR #30 records this hardening state; all later PRs execute the guard.
+
+#### Candidate EX29-08 — Production migration workflow has a hard main-ref execution guard
+
+Atomic operational gate: migration job has \`if: github.ref == 'refs/heads/main'\`, so dispatching another branch/tag does not run migration steps.
+
+Introduced/changed/recorded by: \`f6b7bdbd\`; docs \`cd72c51c\`.
+
+Normative provenance: corrects EX24-01 branch-safety review — \`PR-or-review-discussion\` identifies defect; fix is implementation.
+
+Forward candidates: PR #30 state sync; later migration runs.
+
+#### Candidate EX29-09 — Production migration workflow checks out the exact dispatched github.sha
+
+Atomic operational/evidence decision: the migration job explicitly checks out the dispatched \`github.sha\`.
+
+Introduced/changed/recorded by: \`f6b7bdbd\`; docs \`cd72c51c\`.
+
+Normative provenance: corrective implementation for EX24-01 branch/ref ambiguity.
+
+Forward candidates: later runtime-migration evidence chain (#44/#76).
+
+#### Candidate EX29-10 — Production verifier checks required public.locales column existence/type/nullability instead of exact mutable row state
+
+Atomic verification decision: stable production verification includes the required locale table columns and expected PostgreSQL UDT types/NOT NULL contract.
+
+Introduced/changed/recorded by: \`6db337af\`; docs \`cd72c51c\`.
+
+Normative provenance: corrective response to weak/mutable EX24-08-style state verification; \`assistant-authored-proposal\`.
+
+Forward candidates: PR #31 extends production verification to Stage 3 schema.
+
+#### Candidate EX29-11 — Production verifier checks absence of bootstrap/reserved locale rows
+
+Atomic verification decision: production DB must have no persistent rows whose tag is case-insensitive \`en\`, \`api\`, or \`assets\`.
+
+Introduced/changed/recorded by: \`6db337af\`; docs \`cd72c51c\`.
+
+Normative provenance: EX20-07/EX21-04 \`pre-existing-project-contract\`; verifier implementation is corrective.
+
+#### Candidate EX29-12 — Production verifier continues requiring migration ledger equality to checked-in journal
+
+Atomic verification rule: production \`drizzle.__drizzle_migrations.created_at\` history must equal the checked-in journal \`when\` sequence.
+
+Introduced earlier by PR #24 and retained by PR #29.
+
+Normative provenance: inherited EX24-07 \`pre-existing-project-contract\`.
+
+Historical note: PR #24 P2 review had already noted that timestamp equality alone does not prove SQL/schema contents. PR #29 adds stable schema invariants and immutable-history CI, but this ledger-equality mechanism itself remains unchanged.
+
+#### Candidate EX29-13 — Exact mutable locale-state verification is moved out of production verifier and left to disposable integration tests
+
+Atomic verification-policy change: production migration verification intentionally stops pinning mutable publication/translation status, aliases, native names and presentation metadata; docs say exact initial seed remains covered by clean disposable PostgreSQL integration tests.
+
+Introduced/changed/recorded by: \`6db337af\`, docs \`cd72c51c\`.
+
+Normative provenance: \`assistant-authored-proposal\`.
+
+Contrary evidence: Codex P2 review observes that \`tests/database/migrations.test.ts\` applies the **entire current migration history** and asserts the exact final ru/he/ka state, so a legitimate later migration changing those values would still fail CI. Final PR #29 does not resolve that conflict; current main still contains the exact assertion.
+
+Forward candidates: later migration-history/test cleanup if/when the mutable locale state evolves.
+
+No correctness classification is assigned.
+
+#### Candidate EX29-14 — Node migration-history self-tests are excluded from ordinary Vitest jsdom discovery
+
+Atomic test-topology decision: \`.github/scripts/**\` is excluded from \`vitest.config.ts\` because those Node tests run explicitly with \`node --test\` in the guard step.
+
+Introduced/changed/recorded by: final \`1d9b849d\`.
+
+Normative provenance: mechanical test-runner integration, not a domain/architecture contract.
+
+#### Candidate EX29-15 — PR #29 operational workflow changes are not recorded in PROJECT_STATE at merge
+
+Atomic historical documentation gap: the final PR enforces new main-only migration dispatch, exact-SHA checkout and required migration-history guard, while \`PROJECT_STATE.md\` is unchanged.
+
+Introduced/recorded by: Codex P2 review on \`e8e4bb50\`; final \`1d9b849d\` changes only Vitest config.
+
+Provenance: \`PR-or-review-discussion\` counter-evidence, not a desired project decision.
+
+Forward correction: PR #30 \`a445827b\` records these H2 operational invariants in project state.
+
+### Candidate atomic decisions — PR #30
+
+#### Candidate EX30-01 — Repository records pre-Stage-3 hardening as closed and Stage 3 as next
+
+Atomic state transition: Stage 1, Stage 2 and the dedicated H1/H2 pre-Stage-3 hardening block are recorded complete, with no blocker to start Stage 3.
+
+Introduced/changed/recorded by: README sync \`d82e36be\`, final state \`a445827b\`.
+
+Normative provenance: repository historical/state recording; does not prove correctness of every hardening mechanism.
+
+Forward candidates: PR #31 Stage 3A.
+
+#### Candidate EX30-02 — Project state records H1 registry failure-boundary hardening as completed
+
+Atomic documentation-state sync: \`PROJECT_STATE.md\` records explicit loader failure, transport-outage degradation, auth/programming visibility and one reason-only degraded event as completed H1 behavior.
+
+Introduced/changed/recorded by: \`a445827b\`.
+
+Normative provenance: later repository state recording of PR #28 behavior.
+
+Backward dependencies: EX28-01..08.
+
+Contrary evidence: EX28-04's generic code-less error review remains unresolved at this point; recording “H1 complete” does not erase that review.
+
+Forward correction candidate: PR #39 later narrows code-less availability.
+
+#### Candidate EX30-03 — Project state records required checks as checks + database with up-to-date branch requirement
+
+Atomic operational-state claim: repository state says “Protect main” requires status checks \`checks\` and \`database\` and requires the PR branch to be current with \`main\`.
+
+Introduced/changed/recorded by: \`a445827b\`.
+
+Normative provenance: repository-recorded GitHub configuration claim.
+
+External evidence limitation: branch-protection endpoint is inaccessible to the installed GitHub integration; no September 11 raw ruleset snapshot is attached. Current later ruleset state is not used retroactively.
+
+#### Candidate EX30-04 — Project state records H2 immutable-history/main-only migration hardening as completed
+
+Atomic documentation-state sync: project state records append-only migration history enforcement, main-ref guard, exact dispatch SHA checkout and stable-invariant production verification.
+
+Introduced/changed/recorded by: \`a445827b\`.
+
+Normative provenance: later repository state recording of EX29-01..13.
+
+Contrary evidence: PR #29 review conflict EX29-13 remains; the H2 “complete” state does not resolve that test/document mismatch by itself.
+
+#### Candidate EX30-05 — Repository records Cloudflare non-production branch builds as enabled
+
+Atomic external-state claim: Cloudflare Branch control is recorded as “Builds for non-production branches enabled”.
+
+Introduced/changed/recorded by: \`4ca46737\`, \`a445827b\`.
+
+Normative provenance: repository-recorded external configuration fact.
+
+Available external evidence: Cloudflare bot comments on PRs #25–#30 repeatedly show successful commit and branch preview deployments for non-main PR branches. This supports the fact that non-production branch builds occurred, though it does not expose the exact dashboard toggle value.
+
+#### Candidate EX30-06 — No staging Hyperdrive/DB binding exists in repository configuration at the PR #30 checkpoint
+
+Atomic topology fact: the repository has only the top-level production \`HYPERDRIVE\` binding and no separate staging Worker/Hyperdrive/DB environment configured.
+
+Introduced/changed/recorded by: \`4ca46737\`; verified at merge \`907e082\` from \`wrangler.jsonc\`.
+
+Normative provenance: historical repository/config fact.
+
+Forward candidates: later pre-Stage-4 staging topology work.
+
+#### Candidate EX30-07 — Existing shared preview→production DB topology is accepted only while DB capability stays read-only
+
+Atomic current gate/state: the current preview path is recorded as acceptable under the existing read-only production runtime capability.
+
+Introduced/changed/recorded by: \`4ca46737\`, \`a445827b\`.
+
+Normative provenance: EX27-05 \`pre-existing-project-contract\`; PR #30 records the gate as presently satisfied.
+
+Backward dependencies: EX23-07b read-only role claim.
+
+#### Candidate EX30-08 — Existing shared preview→production DB topology is accepted only while reachable data is public locale-registry data
+
+Atomic current gate/state: preview sharing is recorded as presently acceptable because the bound production data is public locale registry data.
+
+Introduced/changed/recorded by: \`4ca46737\`, \`a445827b\`.
+
+Normative provenance: EX27-06 \`pre-existing-project-contract\`.
+
+Forward candidates: auth/private translation data changes.
+
+#### Candidate EX30-09 — Runtime write capability remains an explicit future trigger for staging isolation or disabling non-production builds
+
+Atomic future gate: before any preview/non-production Worker obtains production DB write capability, configure isolated staging infrastructure or disable non-production builds.
+
+Introduced earlier by EX27-07; retained and made a named future blocker/gate by \`a445827b\`.
+
+Normative provenance: \`pre-existing-project-contract\`.
+
+Forward candidates: later staging/pre-Stage-4 infrastructure work.
+
+#### Candidate EX30-10 — Private production data remains an explicit future trigger for staging isolation or disabling non-production builds
+
+Atomic future gate: before production DB exposure includes private translation/admin/auth/other non-public data, preview/non-production must be isolated or disabled.
+
+Introduced earlier by EX27-08; retained by \`4ca46737\`/\`a445827b\`.
+
+Normative provenance: \`pre-existing-project-contract\`.
+
+Forward candidates: later auth/private-data rollout.
+
+#### Candidate EX30-11 — First Stage 3 schema-dependent change must follow migration-only → production migrate/verify → runtime split
+
+Atomic next-step gate: the project state applies EX27-02 specifically to Stage 3 persistent UI translation schema before \`UiTranslationStore\` and persistent sources.
+
+Introduced/changed/recorded by: \`a445827b\`.
+
+Normative provenance: EX27-02 \`pre-existing-project-contract\`.
+
+Forward consumers: PR #31 migration-only Stage 3A and PR #32 separate runtime sources.
+
+### Changed-file and internal-history reconciliation
+
+#### PR #25
+- \`PROJECT_STATE.md\` → EX25-01..07.
+- No code/config/workflow file changes.
+- Cloudflare bot PR comment is external branch-preview evidence; not a changed file or production-main evidence.
+
+#### PR #26
+- \`PROJECT_STATE.md\` → EX26-01..12.
+- \`3ff1d69b\` only fixes prose and creates no independent technical record.
+- No production artifact/metrics file is added to the repository.
+
+#### PR #27
+- \`AGENTS.md\` mirrors EX27-02, EX27-05, EX27-07, EX27-08 for Codex; it does not create separate product decisions.
+- \`docs/database/HYPERDRIVE.md\` → EX27-01..08.
+- No runtime/config/CI/infrastructure mutation occurs.
+
+#### PR #28
+- \`persistent-registry.ts/test.ts\` → EX28-01/02 and shared degraded classification tests.
+- \`request-context.ts/test.ts\` → EX28-05.
+- route tests + route signature update → EX28-06 plus regression coverage of existing degraded/non-safe policies.
+- \`hyperdrive-registry.ts/test.ts\` → EX28-02/03/04/07.
+- DB integration test → EX28-08.
+- No \`PROJECT_STATE.md\` update; later EX30-02 records H1 state.
+
+#### PR #29
+- migration helper/tests → EX29-01..05.
+- branch verifier → EX29-06.
+- \`ci.yml\` → EX29-06/07.
+- production migration workflow → EX29-08/09.
+- production verifier → EX29-10/11/12/13.
+- migration runbook → EX29-01..05, EX29-08..13.
+- \`vitest.config.ts\` → EX29-14.
+- \`PROJECT_STATE.md\` absent → EX29-15 review gap.
+- \`e8e4bb50\` is lint-only; \`1d9b849d\` is test-discovery-only and does not address the two review findings.
+
+#### PR #30
+- \`README.md\` → EX30-01 high-level state sync.
+- \`docs/database/HYPERDRIVE.md\` → EX30-05..10.
+- \`PROJECT_STATE.md\` → EX30-01..11, including delayed sync of PR #28/#29 state.
+- No runtime/schema/dependency/Worker-binding/CI behavior change.
+
+### Review conflicts, evidence gaps, and superseded history
+
+1. PR #25: branch-preview Cloudflare bot success is not production-main deploy evidence; production build remains explicitly pending in the PR state.
+2. PR #26: production deploy/smoke/metrics are recorded claims without attached raw production logs or metrics exports. PR-head Cloudflare bot comment is a different branch-preview deployment.
+3. PR #27: preview topology is deliberately treated as uncertain until separately verified; do not read this as proof that preview was safe or unsafe at that moment.
+4. PR #28: P2 review on broad code-less \`Error\` classification remains applicable at merge; PR #39 is the known later narrowing correction.
+5. PR #28: runtime failure/state changed without same-PR \`PROJECT_STATE.md\` sync; PR #30 later records H1.
+6. PR #29: exact-mutable-locale integration-test conflict remains at merge and remains visible in current main; no later correction is inferred here.
+7. PR #29: \`PROJECT_STATE.md\` omission remains at merge; PR #30 later records the enforced H2 workflow/history state.
+8. PR #29: production verifier's ledger-timestamp equality remains inherited from EX24-07; immutable-history CI and schema checks add evidence but do not transform timestamps into proof of SQL contents.
+9. PR #30: historical GitHub protection settings cannot be independently read with current connector permissions; later/current ruleset state is not retroactive evidence.
+10. PR #30: repeated Cloudflare bot branch-preview comments are behavioral evidence that non-production branch builds occurred, but they do not expose the exact Branch-control dashboard toggle.
+
+### Backward and forward dependency reconciliation
+
+Known non-exhaustive links:
+
+- EX23-16/EX20-02/EX20-30 → EX25-07 → EX26-03..10 → EX26-11.
+- EX25-01/05 → EX26-01 → EX27-01.
+- EX20-28b → EX27-02/03 → EX30-11 → PR #31 migration-only Stage 3A → PR #32 separate runtime consumer.
+- EX23-07b + public locale-registry scope → EX27-05/06 → EX30-07/08.
+- EX27-07/08 → EX30-09/10 → later staging/pre-Stage-4 topology.
+- EX22-07/EX23-06 → EX28-01/02/03/04 → PR #39 narrower shared PostgreSQL availability classification.
+- EX20-21/EX22-08 → EX28-03/05.
+- EX24-01 review gap → EX29-08/09.
+- EX24-07/08 verification limitations → EX29-10/11/12/13.
+- EX20-28a + EX21-06a → EX29-01..07 → later migration-only PRs.
+- EX29-15 → EX30-04 documentation/state sync.
+- EX28 state omission → EX30-02.
+- EX29-08/09 and EX27-02 later feed the migration→runtime evidence chain (#44/#76), but those later enforcement choices are not applied retroactively here.
+- PR #50 remains outside this block's authority and is not used to classify any rollout/infrastructure record.
+
+### Extraction reconciliation
+
+- unclassified changed files/meaningful changes remaining: none known after reconciliation.
+- generated/mechanical changes without independent records:
+  - PR #29 lint-only \`globalThis\` edit and Vitest exclusion are recorded only where they change execution topology, not as project architecture;
+  - PR #26 wording-only commit has no independent decision;
+  - PR #28 route-test fixture injection is a test-boundary consequence of the explicit-loader contract, not a second production fallback policy.
+- direct-user evidence in this block: none newly found. The earlier generic/data-driven locale decision continues to authorize generic locale capability only and does not approve Cloudflare/Neon deployment, migration gates, telemetry or CI machinery.
+- external evidence available:
+  - Cloudflare bot comments on PRs #25–#30 prove successful branch/commit preview deployments for those heads;
+  - final GitHub PR CI runs for all six heads completed successfully.
+- external evidence unavailable/insufficient:
+  - raw production-main Workers Build logs for EX26-01;
+  - raw deployed HTTP smoke transcript for EX26-03..07;
+  - raw Hyperdrive metrics/config export for EX26-08..10;
+  - historical GitHub branch-protection settings for EX30-03;
+  - direct Cloudflare dashboard Branch-control snapshot for EX30-05.
+- no merge, Cloudflare deployment, green CI, project-state assertion or documentation entry is treated as direct-user approval.
+- no decision above is classified as correct, incorrect, necessary, premature, future-proof, infrastructure drift, approved, or target state.
