@@ -66,11 +66,11 @@ number is lower than the baseline PR number.
 | #17 | `5aa1859` | extraction-complete | `EX17-01..05`, `EX17-06a..b`, `EX17-07`, `EX17-08a..b`, `EX17-09..16` | Two commits, both review defects, superseded state claim, category sweep, and atomic replacement map reviewed. |
 | #18 | `777ef20` | extraction-complete | `EX18-01`, `EX18-02a..b`, `EX18-03` | Docs-only state/deployment claims split from their unavailable external evidence and reviewed. |
 | #19 | `5a3c75a` | extraction-complete | `EX19-01..12` | Twelve commits including empty final commit, corrections, compatibility history, category sweep, and files reviewed. |
-| #20 | `2d0d9e5` | pending | — | — |
-| #21 | `c0e2add` | pending | — | — |
-| #22 | `92b55cd` | pending | — | — |
-| #24 | `87c49c5` | pending | — | Merged before #23. |
-| #23 | `4f1a727` | pending | — | — |
+| #20 | `2d0d9e5` | extraction-complete | `EX20-01..02`, `EX20-03a..e`, `EX20-04..08`, `EX20-09a..b`, `EX20-10..24`, `EX20-25a..c`, `EX20-26..27`, `EX20-28a..b`, `EX20-29..30` | Five-commit preflight, source additions, operational gates, category sweep, and atomic topology/writer/rollout splits reviewed. |
+| #21 | `c0e2add` | extraction-complete | `EX21-01..05`, `EX21-06a..b`, `EX21-07..13` | Schema/migration foundation, fixed repeatability review, CI/tests, and migration-path split reviewed. |
+| #22 | `92b55cd` | extraction-complete | `EX22-01..14`, `EX22-15a..c`, `EX22-16..19` | Persistent registry/writer, fixed hash review, two unresolved reviews, tests, and writer splits reviewed. |
+| #24 | `87c49c5` | extraction-complete | `EX24-01..11` | Merged before #23; manual production workflow and both unresolved review findings reviewed. |
+| #23 | `4f1a727` | extraction-complete | `EX23-01..03`, `EX23-04a..b`, `EX23-05..06`, `EX23-07a..b`, `EX23-08a..b`, `EX23-09..16`, `EX23-17a..c`, `EX23-18` | Four commits, binding correction, unresolved transport review, state-sync history, operational evidence limits, and atomic topology/recovery splits reviewed. |
 | #25 | `d39119a` | pending | — | — |
 | #26 | `fccde6b` | pending | — | — |
 | #27 | `e734f8f` | pending | — | — |

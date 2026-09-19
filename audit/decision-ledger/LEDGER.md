@@ -294,6 +294,122 @@ not ledger records.
 | `EX19-11` | Re-evaluate the route-discovery compatibility setting after applicable upgrades. |
 | `EX19-12` | Add a Workers-runtime localized-routing smoke to pull-request CI. |
 
+### PRs #20–#24/#23 Stage 2 block
+
+Detailed evidence is preserved in PR #79 responses `DL-EXTRACT-003/1` at `4f51691` and
+`DL-EXTRACT-003/2` at `195f62f`, accepted by `REVIEW DL-EXTRACT-003/2`. The ten unsuffixed
+composite IDs listed in that review's replacement map are superseded labels, not ledger records.
+
+| Decision ID | Atomic decision index |
+| --- | --- |
+| `EX20-01` | Stage 2 is decomposed into sequential 2A → 2B → 2C slices. |
+| `EX20-02` | Stage 3 is gated on completion of Stage 2 plus real Hyperdrive acceptance. |
+| `EX20-03a` | PostgreSQL 17 is the Stage 2 persistence engine. |
+| `EX20-03b` | Neon is the managed PostgreSQL provider for Stage 2. |
+| `EX20-03c` | Hyperdrive is the Worker connection/pooling layer. |
+| `EX20-03d` | node-postgres pg is the PostgreSQL driver. |
+| `EX20-03e` | Drizzle is the ORM/migration library. |
+| `EX20-04` | Stage 2 pins exact pg/Drizzle package versions before implementation. |
+| `EX20-05` | Locale registry Hyperdrive disables query caching while retaining Hyperdrive connection pooling. |
+| `EX20-06` | Stage 2 persistent registry uses one physical \`locales\` table. |
+| `EX20-07` | Bootstrap English remains code-owned and must not be persisted as a locale row. |
+| `EX20-08` | SQL enforces only row-local invariants while TypeScript owns whole-graph invariants. |
+| `EX20-09a` | Persistent primary and fallback locale identities use canonical translation identities. |
+| `EX20-09b` | Declared aliases and matchTags are preserved while effective match identity is derived. |
+| `EX20-10` | Initial persistent locale data reproduces ru/he/ka but not English. |
+| `EX20-11` | Async persistence loading occurs before synchronous LocaleRegistry/LocaleResolver consumers. |
+| `EX20-12` | One locale-sensitive request reuses one lazy memoized immutable registry snapshot. |
+| `EX20-13` | Technical routes without locale consumers should not open the registry DB path. |
+| `EX20-14` | Persistent registry clients are request-scoped rather than module-global. |
+| `EX20-15` | Stage 2 does not add a cross-request stale registry cache. |
+| `EX20-16` | Effective registry has deterministic semantic SHA-256 identity. |
+| `EX20-17` | Semantic identity includes full effective graph semantics, including inactive/disabled locales. |
+| `EX20-18` | Semantic serialization uses application-defined deterministic ordering and excludes operational metadata. |
+| `EX20-19` | Registry semantic identity and load health are separate state dimensions. |
+| `EX20-20` | Classified storage/schema/integrity failure publishes only bootstrap English without stale non-English recovery. |
+| `EX20-21` | Unexpected programming failures must not be silently reclassified as degraded DB mode. |
+| `EX20-22` | Degraded explicit non-English safe reads use temporary English fallback with no-store. |
+| `EX20-23` | Degraded locale writes fail closed. |
+| `EX20-24` | Stage 2 production Worker is read-only; DML remains a separate controlled boundary. |
+| `EX20-25a` | Controlled locale writes use SERIALIZABLE transaction isolation. |
+| `EX20-25b` | Controlled locale writes validate the full proposed effective graph before DML. |
+| `EX20-25c` | Controlled locale writer exposes desired-state put/delete mutations and persists only the resulting delta. |
+| `EX20-26` | Controlled writer retries only whole transactions for classified serialization/deadlock failures. |
+| `EX20-27` | Ambiguous commit outcome is reconciled by semantic pre/expected/actual state rather than blind retry. |
+| `EX20-28a` | Production schema evolution/recovery is forward-only. |
+| `EX20-28b` | Required database migration precedes dependent application deployment. |
+| `EX20-29` | Migration/admin credential and production runtime DB capability are separate. |
+| `EX20-30` | Real deployed Hyperdrive smoke is distinct from local Workers override. |
+| `EX21-01` | PR 2A installs the exact PostgreSQL/Drizzle dependency pins and DB command surface. |
+| `EX21-02` | Physical registry schema is one public \`locales\` table with the planned metadata fields. |
+| `EX21-03` | Database constraints enforce the selected row-local scalar/JSON/array invariants. |
+| `EX21-04` | Database rejects bootstrap/reserved exact locale tags as defense in depth. |
+| `EX21-05` | Initial data is a separate migration for exact ru/he/ka state with no English row. |
+| `EX21-06a` | Migration representation is checked-in reviewed SQL plus Drizzle metadata applied through migrate. |
+| `EX21-06b` | Production drizzle-kit push/direct unreviewed schema mutation is excluded. |
+| `EX21-07` | Administrative DATABASE_URL is scoped to migration/local integration tools, not Worker runtime. |
+| `EX21-08` | Forward-only recovery baseline is documented for production schema changes. |
+| `EX21-09` | Disposable database tests are guarded to local host and \`*_test\` database names. |
+| `EX21-10` | Database migration integration test resets both application and Drizzle ledger schemas before clean apply. |
+| `EX21-11` | DB integration suite verifies PostgreSQL 17/UTF-8, migration re-run, seed data and row-local constraints. |
+| `EX21-12` | Database integration tests are isolated from ordinary jsdom unit tests. |
+| `EX21-13` | Required PR CI gains Drizzle metadata validation and PostgreSQL 17 database job. |
+| `EX22-01` | Persistent rows are runtime-parsed into LocaleDefinition before graph publication. |
+| `EX22-02` | Persistent rows are combined with bootstrap English and whole-graph validated before publication. |
+| `EX22-03` | LocaleRegistry domain validation has a dedicated typed error boundary. |
+| `EX22-04` | Persistent registry computes versioned SHA-256 semantic identity from validated effective graph. |
+| `EX22-05` | Semantic identity normalizes nonsemantic ordering while preserving semantic fallback order. |
+| `EX22-06` | Persistent load reports health independently from registry identity. |
+| `EX22-07` | Classified unavailable/schema/integrity load failures degrade to bootstrap-only English. |
+| `EX22-08` | Unexpected load/hashing/programming failures remain visible. |
+| `EX22-09` | Registry request loader memoizes one persistent load promise per service/request. |
+| `EX22-10` | Request context has a persistent-registry loader boundary with Stage 1 config fallback until 2C. |
+| `EX22-11` | Locale routes await request registry without moving DB I/O inside synchronous resolver APIs. |
+| `EX22-12` | Degraded non-English GET/HEAD redirects temporarily to English with no-store. |
+| `EX22-13` | Degraded non-English mutation fails closed. |
+| `EX22-14` | DrizzleLocaleRepository performs a full explicit-column registry read. |
+| `EX22-15a` | ControlledLocaleWriter implements a desired-state put/delete API. |
+| `EX22-15b` | ControlledLocaleWriter validates a full-snapshot proposed graph before mutation. |
+| `EX22-15c` | ControlledLocaleWriter executes each write attempt in a SERIALIZABLE transaction. |
+| `EX22-16` | Controlled writer retries bounded whole units only for serialization/deadlock codes. |
+| `EX22-17` | Ambiguous commit completion is reconciled using semantic pre/expected/actual identities. |
+| `EX22-18` | Rollback failure does not replace the original transaction/commit error. |
+| `EX22-19` | Controlled DML machinery is not exposed as a production Worker write path in 2B. |
+| `EX24-01` | Production DB migration is a manual workflow-dispatch operation. |
+| `EX24-02` | Production migrations run in protected \`production-db\` environment using dedicated Neon admin secret. |
+| `EX24-03` | Production migrations are serialized and not auto-cancelled. |
+| `EX24-04` | Production migration job uses read-only token permission and existing full-SHA action pins. |
+| `EX24-05` | Production workflow validates metadata before migrate and verifies DB afterward. |
+| `EX24-06` | Production verifier checks PostgreSQL 17 and UTF-8. |
+| `EX24-07` | Production verifier compares Drizzle ledger timestamps to checked-in journal. |
+| `EX24-08` | Production verifier checks exact initial ru/he/ka locale state and absence of English. |
+| `EX24-09` | Post-migration verifier is SELECT-only and does not itself mutate production. |
+| `EX24-10` | Production workflow excludes destructive disposable DB tests, push and application deploy. |
+| `EX24-11` | At PR #24 merge, production migration remained explicitly unexecuted. |
+| `EX23-01` | Production registry adapter uses Hyperdrive connection string → request-local pg Client → Drizzle repository. |
+| `EX23-02` | Hyperdrive registry DB access is lazy and memoized per request. |
+| `EX23-03` | Worker creates a RouterContextProvider per request and injects the registry loader from HYPERDRIVE. |
+| `EX23-04a` | Production Worker configuration declares the real HYPERDRIVE binding. |
+| `EX23-04b` | Local CI supplies a Wrangler Hyperdrive connection override. |
+| `EX23-05` | Registry load classifier traverses wrapped error cause chains safely. |
+| `EX23-06` | Socket/DNS transport failures remain outside the merged PR #23 degraded classifier. |
+| `EX23-07a` | Production Worker connectivity is HYPERDRIVE-only and excludes DATABASE_URL. |
+| `EX23-07b` | Production registry database role is read-only and non-owning. |
+| `EX23-08a` | Hyperdrive uses the direct/unpooled Neon origin. |
+| `EX23-08b` | Hyperdrive query caching is disabled for the registry configuration. |
+| `EX23-09` | Local Workers smoke uses disposable PostgreSQL through Wrangler Hyperdrive local override. |
+| `EX23-10` | Reusable local Workers smoke covers persistent locale routing and technical-route behavior. |
+| `EX23-11` | Local Hyperdrive override is explicitly not remote Hyperdrive acceptance. |
+| `EX23-12` | Repository records production migration as successfully applied/verified before Stage 2 deployed acceptance. |
+| `EX23-13` | Repository records a least-privilege \`vico_forum_runtime\` production role as created. |
+| `EX23-14` | Repository records cache-disabled \`vico-forum-registry\` Hyperdrive as created and bound. |
+| `EX23-15` | Repository records successful local Workers/Hyperdrive-override smoke. |
+| `EX23-16` | At PR #23 merge, real deployed workers.dev Hyperdrive smoke remains explicitly outstanding. |
+| `EX23-17a` | Classified registry degradation keeps public English reads available. |
+| `EX23-17b` | Degraded bootstrap behavior does not satisfy release/deployment acceptance. |
+| `EX23-17c` | Registry recovery uses compatible application rollback plus forward database repair/restore, not in-band migration credentials. |
+| `EX23-18` | Production Worker request code does not explicitly close the normal Hyperdrive pg Client after a successful registry read. |
+
 `COVERAGE.md` remains the authoritative working checklist for whether every in-scope PR/commit has
 been examined and whether mixed changes were completely decomposed. A populated ledger alone never
 proves that extraction or dependency discovery is complete.
