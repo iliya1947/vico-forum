@@ -43,11 +43,11 @@ number is lower than the baseline PR number.
 
 | PR | Merge commit | Status | Decision IDs / no-decision evidence | Completeness notes |
 | --- | --- | --- | --- | --- |
-| #12 baseline | `8010bdc` | extracting | `DLX12-*` submission under revision | PR #79 response omitted substantive decisions and mislabelled provenance; see `REVIEW DL-EXTRACT-001/1`. |
-| #5 | `b0632c0` | extracting | `DLX5-*` submission under revision | Merged after #12; implementation-boundary omissions require reconciliation. |
-| #13 | `0526b29` | extracting | `DLX13-*` submission under revision | Candidate decomposition and provenance require correction. |
-| #14 | `7520605` | extracting | `DLX14-*` submission under revision | Evidence sweep received; provenance requires correction. |
-| #15 | `8ea9d32` | extracting | `DLX15-*` submission under revision | Evidence sweep received; provenance requires correction. |
+| #12 baseline | `8010bdc` | extracting | corrected `DLX12-*` inventory under narrow revision | Response `/2` fixes the broad omissions/provenance defect; security decisions still require atomic splitting. |
+| #5 | `b0632c0` | extracting | corrected `DLX5-*` inventory pending block acceptance | Response `/2` accounts for the previously omitted runtime/config boundaries. |
+| #13 | `0526b29` | extracting | corrected `DLX13-*` inventory under narrow revision | Response `/2` splits URL authority from redirect-target safety; inherited no-side-effect contract still needs explicit mapping. |
+| #14 | `7520605` | extracting | corrected `DLX14-*` inventory pending block acceptance | Response `/2` corrects provenance; final acceptance follows the narrow block revision. |
+| #15 | `8ea9d32` | extracting | corrected `DLX15-*` inventory pending block acceptance | Response `/2` corrects provenance; final acceptance follows the narrow block revision. |
 | #16 | `daff15c` | pending | — | — |
 | #17 | `5aa1859` | pending | — | — |
 | #18 | `777ef20` | pending | — | — |
