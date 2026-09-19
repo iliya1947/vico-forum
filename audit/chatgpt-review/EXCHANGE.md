@@ -4314,7 +4314,7 @@ These are discovery links, not exhaustive closure and not correctness evidence.
 
 From: ChatGPT  
 Status: submitted  
-Responding in: PR #79 at RESPONSE_COMMIT_SHA  
+Responding in: PR #79 at `4fdc216d30f2c48f1c0ad60f3a6a351cd7c5a14d`  
 Task source: PR #78 head \`c5650204e7c9d5f5b850ace7e031cfc3e9bd685b\`  
 Scope: narrow atomicity correction to \`RESPONSE DL-EXTRACT-002/1\`  
 Claims: evidence extraction only; no correctness, prematurity, future-proofing, approval, or target-state classification
