@@ -9225,3 +9225,665 @@ The five unsuffixed /1 IDs above are superseded labels and must not remain indep
 Every other candidate record, F/A/C/D/O/G/T sweep, conflict, supersession, external-evidence limitation, changed-file reconciliation statement, future-consumer note, and non-retroactive PR #50 treatment from RESPONSE DL-EXTRACT-005/1 remains unchanged.
 
 This narrow revision does not classify any decision and does not expand the PR #31–#36 extraction scope.
+
+
+## RESPONSE DL-EXTRACT-006/1
+
+From: ChatGPT  
+Status: submitted  
+Responding in: PR #79 at RESPONSE_COMMIT_SHA  
+Task source: PR #78 head 406a2fc84bf59290bc8ba721a08cb74020e5aac7  
+Scope: PRs #37–#41 in chronological merge order  
+Claims: evidence extraction only; no correctness, prematurity, future-proofing, infrastructure-drift, approval, remedy, or target-state classification
+
+### Coverage sweep
+
+#### PR #37 / merge 0cdf9394955f82a3f124ca4a00b112fee6ced786
+
+F: none | A: Stage 3C/Stage 5 ownership boundary; staging/auth runtime capability boundaries | C: pre-Stage-4 audit conclusions and two recorded false-positive closures | D: README, PROJECT_STATE, ROADMAP, HYPERDRIVE, MIGRATIONS, STORAGE_AND_VERSIONING, UI_TRANSLATION | O: staging topology, production privilege verification contract, migration evidence contract | G: mandatory pre-Stage-4 hardening blockers and auth rollout preconditions | T: no executable test/workflow/config implementation in the PR; documentation defines future verification requirements
+
+Evidence inspected:
+- PR body and complete seven-file merge diff.
+- Seven internal commits: 21cc58a, 0c195e6, 855cb53, 0f10600, 5beb142, b88b4bd, 7fdb6c9.
+- No PR review threads or submitted reviews.
+- GitHub Actions CI #69 on final head: checks=success, database=success.
+- Cloudflare bot records a successful commit/branch preview deployment for 7fdb6c9. This is preview execution evidence, not evidence that the documented staging/privilege/migration contracts were externally implemented.
+- Later factual links inspected: PR #42 implements deadline machinery; #43 implements a production privilege verifier; #44 implements migration-evidence machinery; #45 changes the staging lifecycle; #47 selects Better Auth 1.7.4 and adds the auth migration-only foundation; #48/#49 later change production privilege-verifier assumptions; Stage 5 PRs later consume the compiled-bundle foundation.
+- PR #37 states that current external Cloudflare/Neon/Google/pg constraints were independently checked, but no raw research artifact or source snapshot is attached to the PR. No exact Better Auth version/schema is selected by this PR.
+
+Completeness limitations:
+- External production/staging infrastructure was not created or changed by this documentation-only PR.
+- Repository statements about prior manual production grants/checks are historical claims; raw external privilege snapshots are not attached here.
+- Later PR bodies and current history are used only as forward evidence of downstream change, not as retroactive authority.
+
+#### PR #38 / merge 768799ceb11c73f4854a9092ba9b620c0858530d
+
+F: none | A: canonical physical locale identity at write/read persistence boundaries | C: fixes controlled-writer identity mismatch and silent canonicalization of noncanonical stored tags; state-sync review follow-up | D: PROJECT_STATE | O: none | G: removes the canonical-persistence item from the recorded hardening blocker list | T: targeted writer/registry tests
+
+Evidence inspected:
+- PR body and complete six-file merge diff.
+- Seven internal commits: 26fe707, 129de4a, e26e601, 774ee93, aa4d30b, bd9eccb, d182fb4.
+- One P1 review thread on bd9eccb: implementation existed while PROJECT_STATE still called it unresolved. Final commit d182fb4 updates PROJECT_STATE; the GitHub thread remains marked unresolved even though the requested state sync is present in final diff.
+- CI #71: checks=success, database=success.
+- Cloudflare bot records successful commit/branch preview deployment for d182fb4.
+- No schema, migration, dependency, binding, or production infrastructure change.
+
+#### PR #39 / merge af2349d699f91867463abea2aad40ef81ef08a6c
+
+F: none | A: persistent-row failure isolation and PostgreSQL availability classification boundary | C: fixes whole-request failure on expected malformed rows and narrows the earlier broad code-less Error degradation behavior | D: PROJECT_STATE | O: reason/count row telemetry and DB availability degradation | G: removes malformed-row degradation from recorded blocker list | T: targeted source/store/registry failure tests
+
+Evidence inspected:
+- PR body and complete ten-file merge diff.
+- Fifteen internal commits: e252ffa, 33da68e, bbad592, 337b80d, e86a750, 863ab8c, 7e0d547, 0ed6dbc, 9044d6c, d5934cb, e7c7bf1, 42e4cdc, c5e3ab6, 272d60d, f18451d.
+- One unresolved P2 review thread on 272d60d: an invalid/missing origin row can be parsed/reported by both origin-specific adapters, double-counting one physical malformed row.
+- Final commit f18451d changes PROJECT_STATE only; no later PR #39 code commit addresses that review.
+- Current main still composes DatabaseManualTranslationSource and DatabaseMachineTranslationSource over the same store, and the store query returns all approved origins; the invalid-origin branch remains structurally capable of reaching both source adapters. This is current-behavior evidence for the review concern, not a classification.
+- CI #73: checks=success, database=success.
+- Cloudflare bot records successful commit/branch preview deployment for f18451d.
+- PR body says official node-postgres documentation and pg 8.23.0 behavior were checked; no raw external research artifact is attached to the PR.
+
+#### PR #40 / merge 29eccc5f3597f725951ed573b82c31ecb47ea7ff
+
+F: none | A: real manual-pack stale policy/CI expectation | C: removes the runtime-owned intentional stale canary and changes full-pack validation expectation | D: PROJECT_STATE | O: none | G: real manual packs now have a zero-stale CI expectation | T: stale/fallback tests remain with test-local fixtures; real-pack assertion changes to staleKeys={}
+
+Evidence inspected:
+- PR body and complete three-file merge diff.
+- Three internal commits: 659d1db, 72acb20, aff02e1.
+- No review threads or submitted reviews.
+- Pre-change contract checked directly:
+  - PR #17 implemented fingerprint mismatch => stale classification/exclusion => fallback continues.
+  - PR #17 P1 review required stale classification before structural validation.
+  - PR #19 body explicitly says stale packs remain allowed and full-pack CI must not lock an exact/zero stale-key list.
+  - PR #19 code keeps staleKeys as validation output and skips structural validation for stale values.
+  - Immediately before #40, manualTranslationPacks contained an intentional stale ru/common/stageSummary entry and the real-pack CI test said “while allowing stale values”.
+- #40 removes that runtime-owned stale entry and changes the real-pack test to require validateTranslationPacks(manualTranslationPacks) == { staleKeys: {} }.
+- Current main still has no intentional stale entry in manualTranslationPacks and still requires the real-pack validation result to contain no stale keys. At the same time LocalTranslationSource still classifies/excludes stale values and dedicated test-local stale/fallback tests remain. Thus the runtime stale mechanism and the real-pack zero-stale repository expectation coexist.
+- Later PROJECT_HISTORY records #40 as a retrospective correction lead; that text is later-retrospective-summary evidence only and is not used here as authority for classification.
+- CI #74: checks=success, database=success.
+- Cloudflare bot records successful commit/branch preview deployment for aff02e1.
+
+#### PR #41 / merge 2623040568bc20be5f470831c11af3fd335c2aef
+
+F: none | A: application-log allowlist boundary and Workers query-redaction configuration | C: replaces raw SSR error serialization and adds query-string redaction configuration | D: PROJECT_STATE | O: Workers observability/privacy configuration and application logging | G: none | T: wrangler config plus targeted safe-logging tests
+
+Evidence inspected:
+- PR body and complete five-file merge diff.
+- Five internal commits: 857cbcd, e4f9b3b, 459efe3, 8160b5a, 84aad3a.
+- No review threads or submitted reviews.
+- CI #75: checks=success, database=success.
+- Cloudflare bot records successful commit/branch preview deployment for 84aad3a.
+- Inherited Observability enablement EX33-01 and head sampling EX33-02 are untouched; PR body explicitly says no sampling-rate or invocation-log behavior change.
+- PR #41 adds query redaction under observability.logs.redact_query_string. Later PR #64 changes only this configuration path to observability.redact_query_string while leaving enablement/sampling intact. This later Git diff is preserved as forward correction evidence without classifying #41 here.
+- Application logging introduced by #41 is separate from Cloudflare query redaction: reportSsrStreamError emits fixed event/phase/errorKind metadata instead of serializing the thrown value.
+- PR body says Cloudflare observability docs and pinned Wrangler 4.130.0 config were checked; no raw external research artifact is attached to #41.
+
+### Candidate atomic decisions — PR #37
+
+#### Candidate EX37-01 — Stage 3C is primitives; active persisted-bundle publication/read belongs to Stage 5
+
+Atomic decision: documentation narrows Stage 3C to deterministic bundle compiler/identity, persistence adapter, and backend-independent cache/ETag primitives; production SSR remains on raw source merge + request-path compilation, while generation/publish/persisted-bundle runtime consumption is assigned to Stage 5.
+
+Introduced/changed/recorded by: 0f10600, 5beb142, b88b4bd, 7fdb6c9; PR #37 body.
+
+Normative provenance: PR #37 body and documentation are PR-or-review-discussion plus assistant-authored repository proposal/record; forward ownership is also consistent with the intentionally unconnected EX34-17/18/22 history. Merge is not user approval.
+
+Backward dependencies: EX34-07..18, EX34-22.
+
+Forward candidates: Stage 5 generation/publish/read chain, especially later bundle publication/runtime-read PRs.
+
+Contrary evidence searched/found: PR #32 review had questioned the absent persisted-bundle consumer; PR #34 still left it unconnected. PR #37 explicitly assigns that active consumer to Stage 5 rather than treating the absence as a Stage 3 defect.
+
+Unknowns: no direct-user evidence in PR #37 independently authorizes every detailed Stage 3C/5 allocation.
+
+#### Candidate EX37-02 — Repository records the pre-Stage-4 audit as completed
+
+Atomic historical/process claim: PROJECT_STATE records the pre-Stage-4 audit as completed and says runtime persistence/failure boundaries, migration/privilege verification, staging isolation, Stage 3C ownership, and external platform constraints were independently checked.
+
+Introduced/changed/recorded by: 7fdb6c9.
+
+Normative provenance: later repository state claim; the PR body also states the completed-audit synchronization.
+
+Evidence limitation: no standalone audit report or raw external-research bundle is attached.
+
+#### Candidate EX37-03 — Stage 4 is blocked on completion of newly enumerated hardening items
+
+Atomic process gate: Stage 4 may not begin until the PR #37 hardening blocker set is closed.
+
+Introduced/changed/recorded by: 21cc58a, b88b4bd, 7fdb6c9.
+
+Normative provenance: PR-or-review-discussion / assistant-authored proposal in PR #37; EX35-08/11 supply an earlier generic pre-Stage-4 audit/preflight gate, but not this full enumerated blocker set.
+
+Forward evidence: #38/#39/#42/#43/#44 implement members of this set; #45 later changes the staging lifecycle.
+
+#### Candidate EX37-04 — Canonical locale persistence mismatch is made a pre-Stage-4 blocker
+
+Atomic gate: controlled put/delete must canonicalize identity before state comparison/DML and noncanonical physical stored tags must be treated as integrity failure before Stage 4.
+
+Introduced/changed/recorded by: 7fdb6c9; high-level repetition in README 21cc58a.
+
+Forward: PR #38.
+
+#### Candidate EX37-05 — Bounded PostgreSQL localization deadlines are made a pre-Stage-4 blocker
+
+Atomic gate: localization Hyperdrive reads need bounded connect/query/statement deadlines without masking programming/auth failures; concrete values require later staging telemetry.
+
+Introduced/changed/recorded by: 7fdb6c9; README 21cc58a.
+
+Forward: PR #42.
+
+#### Candidate EX37-06 — Malformed persistent translation row isolation is made a pre-Stage-4 blocker
+
+Atomic gate: one malformed persistent UI translation row should be skipped with reason/count telemetry and fallback, while scope/config/programming/unknown failures remain visible.
+
+Introduced/changed/recorded by: 7fdb6c9; README 21cc58a.
+
+Forward: PR #39.
+
+#### Candidate EX37-07 — Production privilege verification becomes a pre-Stage-4 blocker
+
+Atomic gate: manual privilege checks are declared insufficient for Stage 4 auth/private data; production verifier must gain machine-verifiable runtime role/grant/ownership/default-privilege checks.
+
+Introduced/changed/recorded by: 855cb53, 7fdb6c9.
+
+Forward: PR #43, later changed by #48/#49.
+
+#### Candidate EX37-08a — Staging requires a separate Neon project
+
+Atomic infrastructure proposal: Stage 4 staging uses an independently created Neon staging project rather than an ordinary production child branch carrying production rows/credentials.
+
+Introduced/changed/recorded by: 0c195e6, b88b4bd.
+
+Forward: #45 later removes separate staging as an unconditional pre-Stage-4 blocker.
+
+#### Candidate EX37-08b — Staging DB credentials/roles must be staging-only with no production fallback
+
+Atomic capability boundary: staging uses staging-only admin/runtime roles and must not fall back to production database bindings or secrets.
+
+Introduced/changed/recorded by: 0c195e6, b88b4bd.
+
+Forward: later auth/runtime isolation work.
+
+#### Candidate EX37-08c — Staging uses its own Hyperdrive configuration and Cloudflare Worker/environment
+
+Atomic topology proposal: staging DB access is exposed through staging Hyperdrive configuration(s) to a separate Cloudflare staging Worker/environment.
+
+Introduced/changed/recorded by: 0c195e6, b88b4bd.
+
+Forward: #45 lifecycle revision.
+
+#### Candidate EX37-08d — Cloudflare staging environment must be selected at build time
+
+Atomic build contract: with @cloudflare/vite-plugin, the staging environment must be selected during build, exemplified by CLOUDFLARE_ENV=staging before react-router build, rather than only at deploy.
+
+Introduced/changed/recorded by: 0c195e6, b88b4bd.
+
+Evidence limitation: documentation claim only in this PR; no staging build/config is added.
+
+#### Candidate EX37-08e — Stage 4 external auth acceptance requires a stable staging URL or disabling non-production use
+
+Atomic acceptance/process rule: a stable staging URL is required for auth/runtime smoke; until the staging path exists and is smoke-tested, non-production builds must not be used for Stage 4 auth/private-data/runtime-write acceptance, with disabling non-production builds as fallback.
+
+Introduced/changed/recorded by: 0c195e6, b88b4bd.
+
+Forward: #45 changes lifecycle timing while retaining isolation concerns.
+
+#### Candidate EX37-09a — Staging and production OAuth use separate Google Cloud projects/clients/secrets
+
+Atomic external topology proposal: OAuth staging and production use separate Google Cloud projects/clients/secrets.
+
+Introduced/changed/recorded by: b88b4bd.
+
+Normative provenance: assistant-authored/PR #37 proposal; no Google resource change is made here.
+
+#### Candidate EX37-09b — OAuth redirects are exact and environment-specific
+
+Atomic auth configuration contract: staging and production OAuth clients use exact environment-specific redirect URIs.
+
+Introduced/changed/recorded by: b88b4bd.
+
+#### Candidate EX37-10 — Auth runtime DB capability is separate from localization Hyperdrive/role
+
+Atomic capability boundary: Stage 4 auth uses a separate cache-disabled Hyperdrive/least-privilege runtime role rather than broadening localization HYPERDRIVE to auth writes.
+
+Introduced/changed/recorded by: 0c195e6, b88b4bd.
+
+Backward: EX27-07/08, EX30-09/10 separate write/private-data triggers.
+
+Forward: #47+ auth runtime/schema work.
+
+#### Candidate EX37-11 — Exact auth DB grants are deferred until exact Better Auth schema/adapter operations are known
+
+Atomic sequencing rule: do not fix the auth privilege allowlist before selecting/checking the exact Better Auth version, generated schema, and real adapter operations.
+
+Introduced/changed/recorded by: 0c195e6, b88b4bd; PR #37 body.
+
+Backward: EX35-11 exact-version auth preflight.
+
+Forward: #47 selects Better Auth 1.7.4 and materializes schema.
+
+#### Candidate EX37-12a — Production verifier must check dangerous runtime role attributes
+
+Atomic verification requirement: production verification checks that runtime roles lack superuser/admin/bypass-style capabilities.
+
+Introduced/changed/recorded by: 855cb53.
+
+Forward: #43 implementation; #48 later changes membership semantics, not this whole checklist automatically.
+
+#### Candidate EX37-12b — Production verifier must check application schema usage and absence of schema CREATE
+
+Atomic verification requirement: runtime roles have required schema USAGE but no schema CREATE capability.
+
+Introduced/changed/recorded by: 855cb53.
+
+#### Candidate EX37-12c — Production verifier must check application schema/table ownership absence
+
+Atomic verification requirement: runtime roles must not own application schema/tables.
+
+Introduced/changed/recorded by: 855cb53.
+
+#### Candidate EX37-12d — Production verifier must check exact table grants and unrelated cross-domain access
+
+Atomic verification requirement: verifier checks the exact per-capability table privileges and rejects unrelated cross-domain grants.
+
+Introduced/changed/recorded by: 855cb53.
+
+#### Candidate EX37-12e — Production verifier checks sequence privileges only when schema requires them
+
+Atomic verification requirement: sequence privileges are checked conditionally when selected schema operations require them.
+
+Introduced/changed/recorded by: 855cb53.
+
+#### Candidate EX37-12f — Production verifier checks default privileges that could broaden future access
+
+Atomic verification requirement: default ACLs are part of the production privilege verification boundary.
+
+Introduced/changed/recorded by: 855cb53.
+
+#### Candidate EX37-13 — Production role names are environment-specific inputs, not portable migration constants
+
+Atomic configuration rule: production runtime role names must not be hard-coded into portable migration SQL.
+
+Introduced/changed/recorded by: 855cb53.
+
+#### Candidate EX37-14a — Schema-dependent runtime rollout requires traceability to an exact production migration workflow run
+
+Atomic evidence requirement: a runtime rollout depending on schema must identify the production migration workflow run that made the schema safe.
+
+Introduced/changed/recorded by: 855cb53.
+
+Backward: EX30-11 migration-first ordering; this adds evidence linkage beyond ordering.
+
+Forward: #44 implementation; later #76 changes where live verification runs.
+
+#### Candidate EX37-14b — Migration evidence binds to exact checked-out Git SHA and Drizzle journal identity/history
+
+Atomic evidence requirement: migration evidence includes the exact migration SHA plus checked-in journal identity/history.
+
+Introduced/changed/recorded by: 855cb53.
+
+#### Candidate EX37-14c — Migration evidence includes successful production schema verification
+
+Atomic evidence requirement: evidence chain includes successful production schema verification.
+
+Introduced/changed/recorded by: 855cb53.
+
+#### Candidate EX37-14d — Schema-dependent runtime rollout/PR must reference the migration evidence
+
+Atomic linkage requirement: later runtime rollout/PR must carry a reference to the evidence chain.
+
+Introduced/changed/recorded by: 855cb53.
+
+#### Candidate EX37-14e — Add the smallest repository-owned enforcement; no larger orchestrator is required
+
+Atomic enforcement-scope proposal: before the first Stage 4 schema-dependent rollout, add minimal repository-owned enforcement preventing a runtime release from claiming unapplied schema, without requiring a larger deployment orchestrator.
+
+Introduced/changed/recorded by: 855cb53.
+
+Forward: #44 chooses one enforcement location/mechanism; #76 later changes ordinary-PR live-verification placement while retaining evidence machinery.
+
+#### Candidate EX37-15 — Stage 3A migration/grant sequence is rewritten from future instructions to completed history
+
+Atomic historical claim: MIGRATIONS changes Stage 3A from imperative rollout steps to claims that migration ran, verification passed, SELECT grants were applied, privileges were manually checked, and only then runtime merged.
+
+Introduced/changed/recorded by: 855cb53.
+
+Evidence limitation: repository history/state supports that these claims were recorded earlier, but raw external production grant/catalog artifacts are not attached here.
+
+#### Candidate EX37-16a — Repository records nodejs_compat audit finding as a false positive
+
+Atomic review claim: PROJECT_STATE states a nodejs_compat finding was checked and closed as false positive.
+
+Introduced/changed/recorded by: 7fdb6c9.
+
+Evidence limitation: no review thread or separate audit artifact is attached in PR #37.
+
+#### Candidate EX37-16b — Repository records request-scoped client.end audit finding as a false positive
+
+Atomic review claim: PROJECT_STATE states a request-scoped client.end finding was checked and closed as false positive.
+
+Introduced/changed/recorded by: 7fdb6c9.
+
+Evidence limitation: no review thread or separate audit artifact is attached in PR #37.
+
+#### Candidate EX37-17 — Exact-version Better Auth/schema/adapter preflight remains before fixing grants and auth rollout
+
+Atomic sequencing rule: after the new hardening blockers close, Stage 4 starts with exact-version Better Auth + React Router SSR + Workers + Drizzle preflight; actual schema/adapter operations are obtained before final auth grants and auth migration/runtime rollout.
+
+Introduced/changed/recorded by: b88b4bd, 7fdb6c9.
+
+Backward: EX35-11 already required exact-version preflight; PR #37 adds concrete sequencing relative to grants/rollout.
+
+#### Candidate EX37-18 — Stage 4 auth completion requires isolated staging OAuth/session smoke before production rollout
+
+Atomic acceptance rule: Google OAuth, SSR session, and logout must work on isolated staging and then production rollout before Stage 4 completion.
+
+Introduced/changed/recorded by: b88b4bd.
+
+Forward: #45 revisits whether separate staging is an immediate blocker.
+
+### Candidate atomic decisions — PR #38
+
+#### Candidate EX38-01 — Controlled locale put/delete canonicalizes translation identity before state comparison and SQL DML
+
+Atomic correction: normalize desired-state mutation once before transaction attempts, then use that canonical tag consistently for proposed-state replacement and SQL put/delete.
+
+Introduced/changed/recorded by: 26fe707/e26e601; retained in final d182fb4.
+
+Exact earlier defect: prior ControlledLocaleWriter derived state/DML identity from the raw mutation tag, so a canonical-equivalent mixed-case input could fail to replace/delete the same physical identity consistently.
+
+Backward: EX20-09a, EX20-25c, EX22-15a.
+
+#### Candidate EX38-02 — Controlled writes preserve canonical BCP-47 casing rather than blindly lowercasing
+
+Atomic correction: canonicalized translation identity preserves canonical language/script/region casing, demonstrated by ZH-hant-tw => zh-Hant-TW.
+
+Introduced/changed/recorded by: 26fe707/e26e601 plus aa4d30b tests.
+
+#### Candidate EX38-03 — Controlled writes reject formatting extensions before opening a transaction
+
+Atomic write-boundary rule: formatting-extension input is not a persistent translation-locale identity and is rejected before DB transaction/DML.
+
+Introduced/changed/recorded by: e26e601; tests aa4d30b.
+
+Backward: AN10-04b / EX16-01 formatting vs translation identity separation.
+
+#### Candidate EX38-04 — Controlled writes reject bootstrap English before opening a transaction
+
+Atomic write-boundary rule: code-owned bootstrap English cannot be mutated through ControlledLocaleWriter and rejection occurs before transaction.
+
+Introduced/changed/recorded by: e26e601; tests aa4d30b.
+
+Backward: EX20-07.
+
+#### Candidate EX38-05 — Persistent registry load rejects noncanonical physical stored locale tags
+
+Atomic correction: a DB row tag must already equal its canonical translation identity; the loader no longer silently normalizes a physically noncanonical value such as FR or zh-hant-tw.
+
+Introduced/changed/recorded by: 129de4a.
+
+Exact earlier defect: pre-#38 parsePersistentLocaleRow could accept a noncanonical physical spelling when canonicalInput and translationTag agreed after parsing, returning the normalized tag and hiding the storage mismatch.
+
+#### Candidate EX38-06 — Noncanonical physical stored tags enter registry integrity degradation
+
+Atomic failure behavior: a noncanonical physical tag is a RegistryIntegrityError and loadPersistentRegistry degrades to bootstrap English under the existing integrity-degradation boundary.
+
+Introduced/changed/recorded by: 129de4a; test bd9eccb.
+
+This correction does not approve every surrounding registry-degradation policy.
+
+#### Candidate EX38-07 — Canonical persistence regression coverage is added at writer and load boundaries
+
+Atomic test boundary: tests cover mixed-case writes/deletes, canonical script/region casing, formatting-extension rejection, bootstrap-English rejection, noncanonical stored rows, and integrity degradation.
+
+Introduced/changed/recorded by: 774ee93, aa4d30b, bd9eccb.
+
+#### Candidate EX38-08 — Project state records canonical persistence hardening as implemented
+
+Atomic documentation/state update: final commit moves canonical locale persistence from blocker to completed hardening and narrows remaining blockers.
+
+Introduced/changed/recorded by: d182fb4.
+
+Review reference: directly addresses the only P1 review request; thread metadata remains unresolved.
+
+### Candidate atomic decisions — PR #39
+
+#### Candidate EX39-01 — Expected translation-content validation failures get a typed error
+
+Atomic boundary: validateTranslation throws TranslationValidationError for empty/too-long/markup/placeholder/plural validation failures.
+
+Introduced/changed/recorded by: e252ffa.
+
+Purpose in this PR: permits expected row-content validation to degrade per-row without swallowing arbitrary runtime exceptions.
+
+#### Candidate EX39-02 — Malformed individual persistent rows are isolated instead of aborting the whole source load
+
+Atomic correction: expected row parse/validation failures are counted and skipped; other valid rows can still produce resources.
+
+Introduced/changed/recorded by: 33da68e; tests bbad592.
+
+Exact earlier defect: pre-#39 parseApprovedRow/currentStringPayload/validateTranslation errors propagated out of DatabaseTranslationSource.load and could fail the entire request/source result for one malformed persisted row.
+
+Backward: EX32-04..08.
+
+#### Candidate EX39-03 — Approved rows for unknown canonical keys are skipped with an explicit unknown-key issue count
+
+Atomic row policy: historical approved row whose canonical key no longer exists remains unpublished and is now reported as unknown-key rather than silently ignored.
+
+Introduced/changed/recorded by: 33da68e; tests bbad592.
+
+#### Candidate EX39-04 — Unsupported payload shape or invalid translation content is skipped per-row
+
+Atomic row policy: structured/invalid payloads and typed translation-validation failures do not publish and do not abort the whole source load; their reason is aggregated.
+
+Introduced/changed/recorded by: 33da68e after typed error e252ffa.
+
+#### Candidate EX39-05 — Store scope violations remain hard integrity failures
+
+Atomic failure boundary: data returned for a different nonblank locale or unrequested nonblank namespace remains PersistentTranslationIntegrityError and is not converted into a skippable row issue.
+
+Introduced/changed/recorded by: 33da68e preserving EX32-08; regression coverage bbad592.
+
+#### Candidate EX39-06 — Programming/runtime failures during otherwise valid row processing remain visible
+
+Atomic failure boundary: unexpected failures such as crypto runtime errors are rethrown rather than converted into row degradation.
+
+Introduced/changed/recorded by: 33da68e; regression coverage bbad592.
+
+#### Candidate EX39-07 — Skipped-row telemetry is aggregate reason/count metadata without translation payload
+
+Atomic observability rule: each source emits persistent_ui_translation_rows_skipped with origin, skippedRows, and reason counts, not translated content.
+
+Introduced/changed/recorded by: 33da68e.
+
+Review conflict: EX39-11 below records that invalid-origin rows can be counted by both origin-specific sources.
+
+#### Candidate EX39-08 — PostgreSQL availability degradation is limited to known codes plus exact pg code-less termination shape
+
+Atomic correction: isPostgresAvailabilityFailure accepts SQLSTATE class 08, selected server/resource codes, Node transport codes, and code-less Error with exact message Connection terminated unexpectedly; arbitrary code-less Error is not availability.
+
+Introduced/changed/recorded by: 337b80d through d5934cb; final shared use e7c7bf1/42e4cdc/c5e3ab6.
+
+Exact earlier defect: EX28-04 and inherited EX32-17 treated any remaining code-less Error from connect as unavailable, allowing unknown driver/configuration failures to be masked.
+
+This record corrects that specific failure classification only; it does not approve the surrounding degradation architecture.
+
+#### Candidate EX39-09 — Registry and UI-translation adapters share one PostgreSQL availability classifier
+
+Atomic implementation boundary: duplicate connect/read availability logic is consolidated into isPostgresAvailabilityFailure and reused by registry and UI translation Hyperdrive adapters.
+
+Introduced/changed/recorded by: e86a750, 863ab8c, e7c7bf1, 42e4cdc, c5e3ab6.
+
+#### Candidate EX39-10 — Unknown code-less connect failures remain visible
+
+Atomic failure behavior: an unrecognized code-less Error such as driver configuration failure propagates and does not report unavailable.
+
+Introduced/changed/recorded by: 7e0d547, 0ed6dbc, 9044d6c, d5934cb; tests 272d60d.
+
+#### Candidate EX39-11 — Invalid-origin row telemetry can be double-counted across the two source adapters
+
+Atomic open review finding: because manual and machine sources share the same store rows and invalid origin cannot be prefiltered to one source, the same physical malformed-origin row can be parsed/reported once by each adapter.
+
+Recorded by: PR #39 P2 review on 272d60d.
+
+Status in PR #39: unresolved; final f18451d is documentation-only.
+
+Current-behavior check: main still constructs both origin-specific sources over the same UiTranslationStore; DrizzleUiTranslationStore.readApproved does not filter origin. No classification/remedy is made here.
+
+#### Candidate EX39-12 — Project state records persistent translation resilience hardening as completed
+
+Atomic documentation/state update: final state records row isolation, reason/count telemetry, visibility of scope/programming/runtime/auth/unknown failures, and narrowed PostgreSQL availability shapes, then removes malformed-row degradation from the blocker list.
+
+Introduced/changed/recorded by: f18451d.
+
+### Candidate atomic decisions — PR #40
+
+#### Candidate EX40-01 — Remove the intentional stale stageSummary row from runtime-owned manualTranslationPacks
+
+Atomic change: ru/common/stageSummary with sourceFingerprint intentionally-stale is deleted from the real runtime pack.
+
+Introduced/changed/recorded by: 659d1db.
+
+Pre-change evidence:
+- PR #17 runtime explicitly classifies fingerprint mismatch as stale, excludes it, and continues fallback.
+- PR #19 keeps stale pack entries as an allowed state.
+
+No runtime stale-classification code is removed by #40.
+
+#### Candidate EX40-02 — Real manual packs acquire a zero-stale CI expectation
+
+Atomic test/gate change: the full-pack test changes from “validates every real manual pack for CI while allowing stale values” to requiring validateTranslationPacks(manualTranslationPacks) to equal { staleKeys: {} }.
+
+Introduced/changed/recorded by: 72acb20.
+
+Pre-change contrary evidence: PR #19 body explicitly says full-pack CI must not lock an exact stale-key list and stale remains an allowed translation-contract state.
+
+Current consequence: current main retains this zero-stale real-pack assertion.
+
+#### Candidate EX40-03 — Stale/fallback semantics remain covered only through test-local stale fixtures after cleanup
+
+Atomic test-ownership change: stale classification/fallback tests remain, but the runtime-owned intentional stale canary is removed; stale behavior is exercised by test-created packs.
+
+Introduced/changed/recorded by: 659d1db, 72acb20; PR #40 body.
+
+Current behavior: LocalTranslationSource still reports staleKeys, excludes stale values, and allows English fallback; validateTranslationPacks still returns staleKeys rather than throwing merely because a value is stale.
+
+#### Candidate EX40-04 — Project state records zero-stale production-pack cleanup as completed hardening
+
+Atomic documentation/state change: PROJECT_STATE records removal of synthetic stale fixture and states full-pack validation requires no stale keys in real runtime-owned manual packs.
+
+Introduced/changed/recorded by: aff02e1.
+
+Provenance conflict preserved: this state statement follows #40, while #19 previously recorded stale real-pack entries as allowed. Later PROJECT_HISTORY calls #40 a regression, but that is later-retrospective-summary evidence and does not decide classification in this extraction.
+
+### Candidate atomic decisions — PR #41
+
+#### Candidate EX41-01 — Add Workers query-string redaction configuration
+
+Atomic configuration change: wrangler.jsonc adds redact_query_string=true under observability.logs while preserving enabled=true and head_sampling_rate=1.
+
+Introduced/changed/recorded by: 8160b5a.
+
+Backward:
+- EX33-01 Observability enablement is inherited and unchanged.
+- EX33-02 head sampling rate 1 is inherited and unchanged.
+
+Forward contrary/correction evidence: PR #64 later moves redact_query_string from observability.logs to observability.redact_query_string and removes the empty logs block. This is a concrete later config change tied only to redaction placement; it does not alter EX33-01/02.
+
+Evidence limitation in #41: no production log sample proving query-string redaction behavior is attached.
+
+#### Candidate EX41-02 — Raw post-shell SSR errors are replaced with fixed allowlisted structured logging
+
+Atomic application-logging change: entry.server no longer calls console.error(error) after shell render; reportSsrStreamError emits JSON containing only event=ssr_stream_error, phase=after-shell, and classified errorKind.
+
+Introduced/changed/recorded by: 857cbcd then 459efe3; retained final.
+
+Backward: DLX5-06 post-shell error logging behavior.
+
+This application logger is independent from Cloudflare query-redaction configuration.
+
+#### Candidate EX41-03 — Safe-logging tests prohibit serialization of sensitive thrown/request-like values
+
+Atomic test boundary: tests assert OAuth code/state text, bearer-like authorization, cookie values, request URL query values, and non-Error thrown strings are absent from serialized application logs.
+
+Introduced/changed/recorded by: e4f9b3b; final application behavior 459efe3.
+
+#### Candidate EX41-04 — Project state records observability hardening as completed
+
+Atomic documentation/state claim: PROJECT_STATE states Cloudflare query-string redaction and safe SSR structured logging are in effect and that targeted tests prove sensitive values are not serialized.
+
+Introduced/changed/recorded by: 84aad3a.
+
+Forward evidence: PR #64 later changes the query-redaction config path while leaving application logging separate. Therefore this documentation claim must remain independently traceable from EX41-02/03.
+
+### Review-conflict and dependency reconciliation
+
+1. PR #37 has no GitHub review thread. Its new hardening/staging/evidence requirements therefore have no in-PR independent review record. They must retain PR-body/document provenance rather than being treated as inherited merely because ROADMAP/PROJECT_STATE were rewritten.
+2. The generic pre-existing triggers EX27-07/08 and EX30-09/10 said write capability/private data require isolation or disabling non-production paths. PR #37 goes further by selecting a concrete separate staging topology and making it part of the pre-Stage-4 blocker set. Keep those layers separate.
+3. EX35-11 already required exact-version Better Auth/security preflight. PR #37 does not select an exact Better Auth version; it adds sequencing around exact schema/adapter operations, grants, staging, and rollout. PR #47 is later evidence where Better Auth 1.7.4 is actually pinned.
+4. EX34-17/18/22 intentionally left compiled-bundle writes/concrete cache backend/persisted runtime read unconnected. EX37-01 explicitly assigns active publish/runtime consumption to Stage 5. Absence of that consumer in PR #34 remains an intentional staged boundary in this extraction.
+5. PR #38 fixes exact implementation mismatches at canonical persistence boundaries. These fixes do not establish blanket correctness of Stage 2/3 persistence architecture.
+6. PR #38's P1 review is a PROJECT_STATE synchronization issue. Final d182fb4 contains the requested state update although GitHub thread metadata is still unresolved.
+7. PR #39 fixes the broad code-less availability behavior inherited from EX28-04/EX32-17 and isolates expected malformed rows. It does not erase the still-open EX39-11 telemetry-count review.
+8. PR #40 directly conflicts with the earlier #19 stale-pack CI statement at the repository-policy level while leaving runtime stale classification/fallback code intact. That conflict is preserved for later classification.
+9. PR #41 must stay decomposed as: Observability enablement EX33-01; sampling EX33-02; query redaction EX41-01; application logging EX41-02; safe-logging tests EX41-03; state claim EX41-04; CI/preview execution evidence below.
+10. Later #45, #64, #76 and other corrective PRs are forward evidence only. They are not applied retroactively as authority during this extraction.
+
+### Changed-file reconciliation
+
+#### PR #37
+- README.md -> EX37-02/03 and high-level blocker summary.
+- PROJECT_STATE.md -> EX37-01..07, EX37-15, EX37-16a/b, current/next-step gate state.
+- ROADMAP.md -> EX37-01, EX37-08a..e, EX37-09a/b, EX37-10/11, EX37-17/18.
+- docs/database/HYPERDRIVE.md -> EX37-08a..e, EX37-10.
+- docs/database/MIGRATIONS.md -> EX37-07, EX37-11, EX37-12a..f, EX37-13, EX37-14a..e, EX37-15.
+- docs/translation/STORAGE_AND_VERSIONING.md -> EX37-01.
+- docs/translation/UI_TRANSLATION.md -> EX37-01.
+- No product code, schema, dependency, binding, secret, workflow, migration, or deploy implementation is changed.
+
+#### PR #38
+- app/localization/locale.ts -> canonicalizeTranslationLocale used by EX38-01..05.
+- db/locale-repository.ts + tests -> EX38-01..04, EX38-07.
+- app/localization/persistent-registry.ts + tests -> EX38-05/06/07.
+- PROJECT_STATE.md -> EX38-08.
+- No unrelated file remains.
+
+#### PR #39
+- app/localization/sources.ts -> EX39-01.
+- app/localization/persistent-sources.ts + tests -> EX39-02..07 and EX39-11 review location.
+- app/localization/persistent-registry.ts + tests -> EX39-08/10.
+- db/hyperdrive-registry.ts + tests -> EX39-08..10.
+- db/hyperdrive-ui-translations.ts + tests -> EX39-08..10.
+- PROJECT_STATE.md -> EX39-12.
+- Shared-classifier refactors are implementation consolidation for EX39-08/09, not a separate product domain decision.
+
+#### PR #40
+- app/localization/manual-packs.ts -> EX40-01.
+- app/localization/resources.test.ts -> EX40-02/03.
+- PROJECT_STATE.md -> EX40-04.
+
+#### PR #41
+- wrangler.jsonc -> EX41-01; EX33-01/02 remain inherited unchanged.
+- app/entry.server.tsx + app/server-logging.ts -> EX41-02.
+- app/server-logging.test.ts -> EX41-03.
+- PROJECT_STATE.md -> EX41-04.
+
+### CI, preview-deploy, and external-evidence reconciliation
+
+- Final heads for all five PRs have GitHub Actions CI with both checks and database jobs successful: #37 run 69, #38 run 71, #39 run 73, #40 run 74, #41 run 75.
+- Cloudflare bot comments record successful commit/branch preview deployments for each final head. These prove preview deployment execution, not production acceptance, user approval, or correctness of the policy being tested.
+- PR #37 has no attached raw Cloudflare/Neon/Google/pg research package for its documented audit conclusions.
+- PR #39 states exact pg/node-postgres documentation/behavior was checked, but the PR contains no preserved raw external artifact.
+- PR #41 states Cloudflare/Wrangler documentation was checked, but the later #64 config-only change is independent Git evidence that the redaction configuration path changed after #41.
+- No raw production Observability sample is attached to #41 proving query redaction or safe application logging in production.
+
+### Extraction reconciliation
+
+- Internal commit counts: #37=7, #38=7, #39=15, #40=3, #41=5.
+- Review-thread counts: #37=0, #38=1, #39=1, #40=0, #41=0.
+- Full F/A/C/D/O/G/T sweeps are recorded above.
+- Every changed file is mapped to an extracted record or explicitly identified as implementation/test/state support.
+- Stage 3C persisted-bundle runtime consumption remains intentionally deferred to Stage 5 and is not treated as a Stage 3 defect.
+- Exact #38/#39 implementation corrections are tied to their narrow earlier failure boundaries and are not used as blanket architectural approval.
+- The #40 stale-policy conflict is preserved without adopting the later retrospective verdict.
+- Observability enablement, sampling, redaction, application logging, and execution evidence are separated.
+- No candidate in this response is classified as correct, incorrect, foolish, justified, premature, future-proof, infrastructure drift, approved, superseded target state, or required remedy.
