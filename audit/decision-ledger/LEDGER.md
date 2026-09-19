@@ -577,6 +577,79 @@ composite IDs in the replacement map are superseded labels, not ledger records.
 | `EX36-02` | The user creates the Pull Request after Codex branch work. |
 | `EX36-03` | The user performs merge and Codex does not merge. |
 
+
+### PRs #37–#41
+
+Detailed evidence is preserved in PR #79 responses `DL-EXTRACT-006/1` at `f35d1b8` and
+`DL-EXTRACT-006/2` at `9acbe16`, accepted by `REVIEW DL-EXTRACT-006/2`. The unsuffixed
+`EX37-08c` and `EX37-14b` labels are superseded composites, not ledger records.
+
+| Decision ID | Atomic decision index |
+| --- | --- |
+| `EX37-01` | Stage 3C is primitives; active persisted-bundle publication/read belongs to Stage 5. |
+| `EX37-02` | Repository records the pre-Stage-4 audit as completed. |
+| `EX37-03` | Stage 4 is blocked on completion of newly enumerated hardening items. |
+| `EX37-04` | Canonical locale persistence mismatch is made a pre-Stage-4 blocker. |
+| `EX37-05` | Bounded PostgreSQL localization deadlines are made a pre-Stage-4 blocker. |
+| `EX37-06` | Malformed persistent translation row isolation is made a pre-Stage-4 blocker. |
+| `EX37-07` | Production privilege verification becomes a pre-Stage-4 blocker. |
+| `EX37-08a` | Staging requires a separate Neon project. |
+| `EX37-08b` | Staging DB credentials/roles must be staging-only with no production fallback. |
+| `EX37-08c1` | Staging uses a dedicated staging Hyperdrive configuration/binding. |
+| `EX37-08c2` | Staging uses a separate Cloudflare staging Worker/environment. |
+| `EX37-08d` | Cloudflare staging environment must be selected at build time. |
+| `EX37-08e` | Stage 4 external auth acceptance requires a stable staging URL or disabling non-production use. |
+| `EX37-09a` | Staging and production OAuth use separate Google Cloud projects/clients/secrets. |
+| `EX37-09b` | OAuth redirects are exact and environment-specific. |
+| `EX37-10` | Auth runtime DB capability is separate from localization Hyperdrive/role. |
+| `EX37-11` | Exact auth DB grants are deferred until exact Better Auth schema/adapter operations are known. |
+| `EX37-12a` | Production verifier must check dangerous runtime role attributes. |
+| `EX37-12b` | Production verifier must check application schema usage and absence of schema CREATE. |
+| `EX37-12c` | Production verifier must check application schema/table ownership absence. |
+| `EX37-12d` | Production verifier must check exact table grants and unrelated cross-domain access. |
+| `EX37-12e` | Production verifier checks sequence privileges only when schema requires them. |
+| `EX37-12f` | Production verifier checks default privileges that could broaden future access. |
+| `EX37-13` | Production role names are environment-specific inputs, not portable migration constants. |
+| `EX37-14a` | Schema-dependent runtime rollout requires traceability to an exact production migration workflow run. |
+| `EX37-14b1` | Migration evidence binds to the exact checked-out Git SHA. |
+| `EX37-14b2` | Migration evidence binds to checked-in Drizzle journal identity/history. |
+| `EX37-14c` | Migration evidence includes successful production schema verification. |
+| `EX37-14d` | Schema-dependent runtime rollout/PR must reference the migration evidence. |
+| `EX37-14e` | Add the smallest repository-owned enforcement; no larger orchestrator is required. |
+| `EX37-15` | Stage 3A migration/grant sequence is rewritten from future instructions to completed history. |
+| `EX37-16a` | Repository records nodejs_compat audit finding as a false positive. |
+| `EX37-16b` | Repository records request-scoped client.end audit finding as a false positive. |
+| `EX37-17` | Exact-version Better Auth/schema/adapter preflight remains before fixing grants and auth rollout. |
+| `EX37-18` | Stage 4 auth completion requires isolated staging OAuth/session smoke before production rollout. |
+| `EX38-01` | Controlled locale put/delete canonicalizes translation identity before state comparison and SQL DML. |
+| `EX38-02` | Controlled writes preserve canonical BCP-47 casing rather than blindly lowercasing. |
+| `EX38-03` | Controlled writes reject formatting extensions before opening a transaction. |
+| `EX38-04` | Controlled writes reject bootstrap English before opening a transaction. |
+| `EX38-05` | Persistent registry load rejects noncanonical physical stored locale tags. |
+| `EX38-06` | Noncanonical physical stored tags enter registry integrity degradation. |
+| `EX38-07` | Canonical persistence regression coverage is added at writer and load boundaries. |
+| `EX38-08` | Project state records canonical persistence hardening as implemented. |
+| `EX39-01` | Expected translation-content validation failures get a typed error. |
+| `EX39-02` | Malformed individual persistent rows are isolated instead of aborting the whole source load. |
+| `EX39-03` | Approved rows for unknown canonical keys are skipped with an explicit unknown-key issue count. |
+| `EX39-04` | Unsupported payload shape or invalid translation content is skipped per-row. |
+| `EX39-05` | Store scope violations remain hard integrity failures. |
+| `EX39-06` | Programming/runtime failures during otherwise valid row processing remain visible. |
+| `EX39-07` | Skipped-row telemetry is aggregate reason/count metadata without translation payload. |
+| `EX39-08` | PostgreSQL availability degradation is limited to known codes plus exact pg code-less termination shape. |
+| `EX39-09` | Registry and UI-translation adapters share one PostgreSQL availability classifier. |
+| `EX39-10` | Unknown code-less connect failures remain visible. |
+| `EX39-11` | Invalid-origin row telemetry can be double-counted across the two source adapters. |
+| `EX39-12` | Project state records persistent translation resilience hardening as completed. |
+| `EX40-01` | Remove the intentional stale stageSummary row from runtime-owned manualTranslationPacks. |
+| `EX40-02` | Real manual packs acquire a zero-stale CI expectation. |
+| `EX40-03` | Stale/fallback semantics remain covered only through test-local stale fixtures after cleanup. |
+| `EX40-04` | Project state records zero-stale production-pack cleanup as completed hardening. |
+| `EX41-01` | Add Workers query-string redaction configuration. |
+| `EX41-02` | Raw post-shell SSR errors are replaced with fixed allowlisted structured logging. |
+| `EX41-03` | Safe-logging tests prohibit serialization of sensitive thrown/request-like values. |
+| `EX41-04` | Project state records observability hardening as completed. |
+
 `COVERAGE.md` remains the authoritative working checklist for whether every in-scope PR/commit has
 been examined and whether mixed changes were completely decomposed. A populated ledger alone never
 proves that extraction or dependency discovery is complete.

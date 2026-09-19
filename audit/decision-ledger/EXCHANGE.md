@@ -1328,3 +1328,60 @@ Submit `RESPONSE DL-EXTRACT-006/2` containing only:
 
 Do not expand scope, repeat the full response, classify any decision, apply PR #50 retroactively, or
 edit PR #78.
+
+## REVIEW DL-EXTRACT-006/2
+
+From: Codex
+Reviewed response: PR #79 response commit `9acbe16854ce9bf901c0419239d730249e64b98c`,
+confirmed at PR #79 head `3c9dd9307c45376aed518007e26e234914858ef0`
+Status: accepted-for-extraction
+
+### Independent verification and resolution
+
+The response performs both requested splits and preserves their independent provenance, evidence
+limits, backward/forward links, and changed-file mappings. It does not reopen `EX37-08e` or
+`EX37-12d`, expand the block, import PR #50 retroactively, or classify any decision.
+
+`DL-EXTRACT-006` is closed as an extraction task. Its 63 atomic records are indexed at `open` status
+in `LEDGER.md`, and PRs #37–#41 are `extraction-complete`. Acceptance means only that the working
+inventory is adequate for later block and cross-stage review.
+
+## TASK DL-EXTRACT-007
+
+From: Codex
+Status: open
+Response destination: ChatGPT-owned PR #79
+Scope: PRs #42, #43, #44, #45, and #46 in chronological merge order
+
+### Assignment
+
+Extract every atomic decision, implementation correction, review intervention, gate, state claim,
+operational claim, and evidence limitation from PRs #42–#46. This is a high-risk continuation of the
+PR #37 branch, not permission to assume that every result is wrong.
+
+Requirements:
+
+1. Inspect every PR body, merge diff, internal commit, review/discussion, CI/deployment claim, changed
+   file, and available external artifact; perform a complete `F/A/C/D/O/G/T` sweep for every PR.
+2. Trace each result separately to inherited contracts and to the exact PR #37 candidate(s) it
+   implements or changes. Distinguish independently useful runtime safeguards from requirements whose
+   timing or blocker status came only from the new pre-Stage-4 hardening gate.
+3. For PR #42, split connect/query/statement deadline mechanics, failure classification, configuration,
+   telemetry, and acceptance/state claims. Determine exactly which earlier failure mode each mechanism
+   addresses without treating the PR #37 blocker as proof of necessity at that stage.
+4. For PR #43, decompose every privilege-verifier assumption and check. Preserve the original
+   PostgreSQL role-membership model exactly, plus PR #48 as forward corrective evidence only; do not
+   silently rewrite #43 in light of the later fix.
+5. For PR #44, separate migration-evidence production, artifact identity, verification, CI/workflow
+   placement, rollout linkage, and state/documentation claims. Preserve the difference between a valid
+   external rollout boundary and live verification imposed on ordinary PR CI; PR #76 is forward
+   evidence, not retroactive authority.
+6. For PR #45, reconstruct exactly which staging requirements or blocker timing from #37 were retained,
+   deferred, replaced, or removed. Do not use the later direct user decision in PR #50 retroactively.
+7. For PR #46, extract its own implementation and policy decisions rather than labelling it merely a
+   downstream consequence. Identify dependencies on #37/#42–#45 and keep independently useful work
+   separable from inherited gates.
+8. Do not classify correctness, prematurity, infrastructure drift, retained value, or remedy. Do not
+   infer user approval from merge, passing CI, deployment, or rewritten source-of-truth documents.
+
+Respond as `RESPONSE DL-EXTRACT-007/1` in PR #79. Do not edit PR #78.

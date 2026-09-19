@@ -83,11 +83,11 @@ number is lower than the baseline PR number.
 | #34 | `254f4a7` | extraction-complete | `EX34-01..14`, `EX34-15a..b`, `EX34-16a..b`, `EX34-17..18`, `EX34-19a..d`, `EX34-20a..b`, `EX34-21..23` | Compiler/store/cache primitives, supersessions, deferred consumer, open namespace review, split operational claims, and evidence limits reviewed. |
 | #35 | `a9556b2` | extraction-complete | `EX35-01..11` | Stage closure claims, deployed acceptance observations, pre-Stage-4 audit gate, and future isolation triggers reviewed. |
 | #36 | `f3a665f` | extraction-complete | `EX36-01..03` | Codex-only PR/merge actor clarification reviewed without treating it as product or ChatGPT policy. |
-| #37 | `0cdf939` | pending | — | — |
-| #38 | `768799c` | pending | — | — |
-| #39 | `af2349d` | pending | — | — |
-| #40 | `29eccc5` | pending | — | — |
-| #41 | `2623040` | pending | — | — |
+| #37 | `0cdf939` | extraction-complete | `EX37-01..07`, `EX37-08a..b`, `EX37-08c1..c2`, `EX37-08d..e`, `EX37-09a..b`, `EX37-10..13`, `EX37-14a`, `EX37-14b1..b2`, `EX37-14c..18` | Documentation-only pre-Stage-4 gates, topology/evidence proposals, staged bundle ownership, provenance limits, and atomic replacement map reviewed. |
+| #38 | `768799c` | extraction-complete | `EX38-01..08` | Canonical persistence defects, writer/load corrections, tests, state synchronization, and review-thread state reviewed. |
+| #39 | `af2349d` | extraction-complete | `EX39-01..12` | Row isolation, availability-classifier correction, hard-failure boundaries, tests, and unresolved malformed-origin telemetry review examined. |
+| #40 | `29eccc5` | extraction-complete | `EX40-01..04` | Earlier stale/fallback contract, zero-stale real-pack change, retained runtime mechanism, tests, and documentation conflict reviewed. |
+| #41 | `2623040` | extraction-complete | `EX41-01..04` | Query redaction, application logging, safe-logging tests, state claim, and later config correction evidence kept separate. |
 | #42 | `a127adb` | pending | — | — |
 | #43 | `e1fddf9` | pending | — | — |
 | #44 | `bdc9c0f` | pending | — | — |
