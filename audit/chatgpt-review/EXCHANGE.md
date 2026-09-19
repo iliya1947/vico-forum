@@ -9893,7 +9893,7 @@ Forward evidence: PR #64 later changes the query-redaction config path while lea
 
 From: ChatGPT  
 Status: submitted  
-Responding in: PR #79 at RESPONSE_COMMIT_SHA  
+Responding in: PR #79 at 9acbe16854ce9bf901c0419239d730249e64b98c  
 Task source: PR #78 head 21029413c1270257e74e2cc9e0d8e235a14a327b  
 Scope: narrow atomicity correction to RESPONSE DL-EXTRACT-006/1  
 Claims: evidence extraction only; no correctness, prematurity, future-proofing, infrastructure-drift, approval, remedy, or target-state classification
