@@ -35,6 +35,20 @@ Each row must link or include category-sweep evidence recording a result for all
 including explicit `none` results. PR summaries and pre-existing coverage notes cannot substitute for
 the sweep.
 
+## Control-point ancestry coverage
+
+PRs #7–#11 predate the nominal PR #12 audit baseline, but they introduced and synchronized the
+translation contracts inherited by that control point. They are tracked separately from the
+post-baseline chronology so their origin evidence is not mistaken for post-#12 change.
+
+| PR | Merge commit | Status | Decision IDs / no-decision evidence | Completeness notes |
+| --- | --- | --- | --- | --- |
+| #7 | `bdda416` | extraction-complete | `AN7-01..11`, `AN7-12a..c`, `AN7-13a..b`, `AN7-14a..d`, `AN7-15a..e`, `AN7-16` | Architecture introduction, review conflict, category sweep, and atomic replacement map reviewed. |
+| #8 | `f1b169e` | extraction-complete | `AN8-01..06` | Local-source extension, review conflict, category sweep, and changed-file reconciliation reviewed. |
+| #9 | `cc448c0` | extraction-complete | `AN9-01..05`; origin of `DLX-INH-SEC01-01` | Document split, three review conflicts, category sweep, and exact SEC-01 origin reviewed. |
+| #10 | `878c727` | extraction-complete | `AN10-01..03`, `AN10-04a..d`, `AN10-05..06`, `AN10-07a..c`, `AN10-08..11`, `AN10-12a..b`, `AN10-13..14`, `AN10-15a..c`, `AN10-16a..b`, `AN10-17a..b`, `AN10-18..19` | All 24 internal commits, superseded proposals, category sweep, and atomic replacement map reviewed. |
+| #11 | `9fd97e9` | extraction-complete | `AN11-01..06` | Two-commit synchronization, review gaps, category sweep, and changed-file reconciliation reviewed. |
+
 ## Chronological commit/PR coverage
 
 PR numbers are not chronological in every case. This table follows merged commit order after the
@@ -43,7 +57,7 @@ number is lower than the baseline PR number.
 
 | PR | Merge commit | Status | Decision IDs / no-decision evidence | Completeness notes |
 | --- | --- | --- | --- | --- |
-| #12 baseline | `8010bdc` | extracted | `DLX12-01..12`, `DLX12-13a..b`, `DLX12-14a..b`, `DLX12-15`, `DLX12-16a..d`, `DLX12-17..20`, `DLX-INH-SEC01-01` | PR #12 changes are decomposed; inherited control-point contracts still require the bounded #7–#11 ancestry pass before baseline extraction can be complete. |
+| #12 baseline | `8010bdc` | extraction-complete | `DLX12-01..12`, `DLX12-13a..b`, `DLX12-14a..b`, `DLX12-15`, `DLX12-16a..d`, `DLX12-17..20`, `DLX-INH-SEC01-01`; ancestry `AN7-*`–`AN11-*` | PR #12 changes and inherited control-point ancestry are decomposed; correctness and cross-stage dependency review remain open. |
 | #5 | `b0632c0` | extraction-complete | `DLX5-01..13` | Merged after #12; diff/body/internal commit, category sweep, and implementation-boundary reconciliation reviewed. |
 | #13 | `0526b29` | extraction-complete | `DLX13-01..04`; dependency on `DLX-INH-SEC01-01` | Diff/body/internal commits, category sweep, review gap, and inherited no-side-effect relationship reviewed. |
 | #14 | `7520605` | extraction-complete | `DLX14-01..03` | Diff/body/internal commits, category sweep, and governing-document conflict reviewed. |
