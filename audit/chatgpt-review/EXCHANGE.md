@@ -4308,3 +4308,333 @@ These are discovery links, not exhaustive closure and not correctness evidence.
 - external claims not independently re-verified in this extraction:
   - React Router/i18next/HTTP facts and PR #19 upstream issue/fix chronology. They are preserved as the repository/PR's recorded rationale.
 - no candidate in this response is classified as correct, incorrect, premature, future-proof, approved, or target-state.
+
+
+## RESPONSE DL-EXTRACT-002/2
+
+From: ChatGPT  
+Status: submitted  
+Responding in: PR #79 at RESPONSE_COMMIT_SHA  
+Task source: PR #78 head \`c5650204e7c9d5f5b850ace7e031cfc3e9bd685b\`  
+Scope: narrow atomicity correction to \`RESPONSE DL-EXTRACT-002/1\`  
+Claims: evidence extraction only; no correctness, prematurity, future-proofing, approval, or target-state classification
+
+### Replacement records for EX16-09
+
+#### Candidate EX16-09a — Root negotiation uses authenticated locale → cookie → Accept-Language → English source precedence
+
+Atomic decision: when the public request has no locale segment, negotiation checks the authenticated locale source first, then the locale cookie, then acceptable \`Accept-Language\` candidates, and finally bootstrap English; each selected candidate must resolve to an active registry locale.
+
+Introduced/changed/recorded by: \`a0ec4b66\`; merge \`daff15c\`.
+
+Normative provenance:
+- the inherited separation between explicit-URL resolution and no-segment negotiation is \`AN10-03\` — \`pre-existing-project-contract\`;
+- PR #16 body states the authenticated/cookie/header/deterministic-English negotiation order — \`PR-or-review-discussion\`;
+- the exact source order is historical implementation evidence in \`negotiateLocale()\`, not inferred from merge alone.
+
+Historical evidence: \`negotiateLocale()\` checks \`authenticated.locale\`, then \`vico_locale\`, then sorted \`Accept-Language\`, then returns bootstrap English; the priority test exercises authenticated → cookie → header → English.
+
+Current-behavior locations to verify later: \`app/localization/resolver.ts\`; the authenticated source is wired by later auth/session work.
+
+Backward dependencies: \`AN10-03\`.
+
+Forward-dependency candidates: later Stage 4 authenticated user-locale/session integration; current root negotiation.
+
+Contrary evidence searched/found: inactive/unregistered candidates are skipped rather than activated; PR #16 does not yet provide a real authenticated session source.
+
+Unknowns: no separate accepted ancestry ID more granular than the no-segment negotiation boundary was identified for the exact source ordering.
+
+#### Candidate EX16-09b — Accept-Language q=0 ranges are excluded from root negotiation
+
+Atomic decision: an \`Accept-Language\` range with quality zero is not eligible to select a locale during root negotiation.
+
+Introduced/changed/recorded by: \`a0ec4b66\`; merge \`daff15c\`.
+
+Normative provenance: \`AN10-04c\` — \`pre-existing-project-contract\`.
+
+Historical evidence: \`acceptLanguage()\` filters to \`quality > 0\`; PR #16 test covers \`ar;q=0\`.
+
+Current-behavior locations to verify later: \`app/localization/resolver.ts\`.
+
+Backward dependencies: \`AN10-04c\`.
+
+Forward-dependency candidates: later/current root locale negotiation.
+
+Contrary evidence searched/found: malformed q parameters are normalized to quality zero and are likewise filtered out; this response does not create a separate policy record for malformed-q handling because the reviewed split request is specifically the accepted \`q=0\` rule.
+
+Unknowns: none.
+
+#### Candidate EX16-09c — Accept-Language wildcard does not select an arbitrary active locale
+
+Atomic decision: wildcard \`*\` is not resolved to an arbitrary active registry locale; if no concrete acceptable range resolves, negotiation reaches the deterministic English fallback.
+
+Introduced/changed/recorded by: \`a0ec4b66\`; merge \`daff15c\`.
+
+Normative provenance: \`AN10-04d\` — \`pre-existing-project-contract\`.
+
+Historical evidence: \`activeMatch()\` returns no match for \`*\`; wildcard test therefore falls through to bootstrap English.
+
+Current-behavior locations to verify later: \`app/localization/resolver.ts\`.
+
+Backward dependencies: \`AN10-04d\`.
+
+Forward-dependency candidates: later/current root locale negotiation.
+
+Contrary evidence searched/found: no code path enumerates active locales to choose an arbitrary wildcard match.
+
+Unknowns: none.
+
+### Replacement records for EX16-11
+
+#### Candidate EX16-11a — Successful root negotiation uses a temporary canonical-locale redirect and preserves query
+
+Atomic decision: successful root negotiation emits a \`307\` redirect to the selected canonical \`/:locale/\` URL and preserves the request query string in the internal redirect target.
+
+Introduced/changed/recorded by: \`a0ec4b66\`; HEAD coverage \`6cfd0dfb\`; merge \`daff15c\`.
+
+Normative provenance:
+- PR #16 body describes the root negotiation redirect behavior — \`PR-or-review-discussion\`;
+- no distinct accepted ancestry record was identified that independently fixes the exact root \`307\` plus query-preservation response shape.
+
+Historical evidence: \`app/routes/locale-negotiation.ts\` reads \`new URL(request.url).search\` and throws \`redirect('/<canonical-locale>/' + search, { status: 307, ... })\`; GET and HEAD tests verify the redirect.
+
+Current-behavior locations to verify later: root locale-negotiation route.
+
+Backward dependencies: EX16-09a/09b/09c selection rules; EX16-10 safe-method-only negotiation gate.
+
+Forward-dependency candidates: later/current root navigation behavior.
+
+Contrary evidence searched/found: redirect destination is constructed from the resolved registry locale plus request query, not from a user-supplied absolute target.
+
+Unknowns: none.
+
+#### Candidate EX16-11b — Root negotiation response is Cache-Control: no-store
+
+Atomic decision: the request-dependent root negotiation redirect carries \`Cache-Control: no-store\` so one user's cookie/header-derived redirect is not reused as a universal cached redirect.
+
+Introduced/changed/recorded by: \`a0ec4b66\`; HEAD coverage \`6cfd0dfb\`; merge \`daff15c\`.
+
+Normative provenance: \`AN7-11\` and \`DLX12-11\` — \`pre-existing-project-contract\`; PR #16 body also records the non-cacheable redirect — \`PR-or-review-discussion\`.
+
+Historical evidence: \`app/routes/locale-negotiation.ts\` sets \`Cache-Control: no-store\`; tests assert the header.
+
+Current-behavior locations to verify later: root negotiation; later degraded registry fallbacks also use temporary/no-store behavior under a different condition.
+
+Backward dependencies: \`AN7-11\`, \`DLX12-11\`.
+
+Forward-dependency candidates: #22 degraded bootstrap-only registry behavior; current request-dependent root negotiation.
+
+Contrary evidence searched/found: PR #16 does not apply \`no-store\` to ordinary canonical locale pages.
+
+Unknowns: none.
+
+### Replacement records for EX16-13
+
+#### Candidate EX16-13a — Locale boundary server loader guarantees a server round trip for boundary validation/resource work
+
+Atomic decision: the route owning the locale boundary exports a server loader so document requests and client navigations that cross the boundary have a server data path on which locale validation/resource work can run.
+
+Introduced/changed/recorded by: \`a0ec4b66\`; merge \`daff15c\`.
+
+Normative provenance: \`AN7-04\` — \`pre-existing-project-contract\`; PR #16 body states the server locale loader/boundary implementation — \`PR-or-review-discussion\`.
+
+Historical evidence: \`app/routes/locale-boundary.tsx\` exports \`loader()\`; it reuses the already-set locale context or calls the shared guard when needed.
+
+Current-behavior locations to verify later: locale-boundary loader, which later grows resource/auth/store loading responsibilities.
+
+Backward dependencies: \`AN7-04\`.
+
+Forward-dependency candidates: PR #17 resource loading through the locale loader; #22/#23 request-scoped persistent registry loading; later locale-scoped SSR consumers.
+
+Contrary evidence searched/found: middleware is present but is not the only client-navigation/server-round-trip mechanism.
+
+Unknowns: none.
+
+#### Candidate EX16-13b — Resolved locale is propagated through typed React Router request context
+
+Atomic decision: after successful locale resolution, the boundary stores the resolved \`ResolvedLocaleContext\` in a typed React Router request context so downstream server consumers in the same request can retrieve the same locale state.
+
+Introduced/changed/recorded by: \`a0ec4b66\`; merge \`daff15c\`.
+
+Normative provenance: \`AN7-03\` — \`pre-existing-project-contract\`; PR #16 body describes typed locale/formatting context — \`PR-or-review-discussion\`.
+
+Historical evidence: \`request-context.ts\` defines \`createContext<ResolvedLocaleContext>()\`; \`guardLocale()\` calls \`context.set(localeContext, resolution.context)\`; boundary test verifies the stored locale/direction.
+
+Current-behavior locations to verify later: locale request context and locale-boundary loader.
+
+Backward dependencies: \`AN7-03\`.
+
+Forward-dependency candidates: PR #17 loader/runtime consumes the resolved locale state; #22/#23 add adjacent request-scoped registry services without replacing this locale-context propagation.
+
+Contrary evidence searched/found: this record does not include the pre-action mutation guard; that remains under EX16-08 as required by the review.
+
+Unknowns: none.
+
+### Replacement records for EX17-06
+
+#### Candidate EX17-06a — Local translation pack identities must exist in the canonical namespace/key catalog
+
+Atomic decision: a local translation entry is structurally invalid when its namespace or key is absent from the canonical English catalog; identity validation is separate from validating the value's placeholders/markup/size.
+
+Introduced/changed/recorded by: \`bac3954146\`; merge \`5aa1859\`.
+
+Normative provenance: \`AN8-04\`, \`DLX12-07\` — \`pre-existing-project-contract\`; PR #17 body states structural validation — \`PR-or-review-discussion\`.
+
+Historical evidence: \`LocalTranslationSource.load()\` checks canonical namespace and descriptor identity; tests cover an unknown canonical key.
+
+Current-behavior locations to verify later: local-pack identity validation; PR #19 adds whole-pack validation outside the request namespace filter.
+
+Backward dependencies: \`AN8-04\`, \`DLX12-07\`.
+
+Forward-dependency candidates: EX19-02 complete-pack identity validation; later Stage 5 canonical identity/provider boundaries.
+
+Contrary evidence searched/found: PR #17 Codex review P2 shows that an unknown namespace outside the current request's namespace list can be skipped before the identity check. That defect belongs to this identity-validation record, not to value-shape validation.
+
+Unknowns: PR #17 does not establish that every pack must be fully scanned on every SSR request; PR #19 later chooses a separate whole-pack validation boundary.
+
+#### Candidate EX17-06b — Current local translation values must satisfy structural content validation
+
+Atomic decision: a current local translation value is rejected when empty, oversized, contains forbidden markup, has a placeholder-set mismatch, or violates the implemented plural descriptor shape rule.
+
+Introduced/changed/recorded by: \`bac3954146\`; merge \`5aa1859\`.
+
+Normative provenance: \`AN8-04\`, \`DLX12-07\` — \`pre-existing-project-contract\`; PR #17 body states structural validation — \`PR-or-review-discussion\`.
+
+Historical evidence: \`validateTranslation()\` implements empty/length/markup/placeholder/plural checks; tests cover placeholder mismatch.
+
+Current-behavior locations to verify later: translation validation is later extended for structured/provider output.
+
+Backward dependencies: \`AN8-04\`, \`DLX12-07\`.
+
+Forward-dependency candidates: EX19-01 stale-before-structure correction; later Stage 5 provider/structured validation.
+
+Contrary evidence searched/found: PR #17 Codex review P1 shows stale fingerprint comparison occurs after this structural validation, so an obsolete stale value can fail here instead of being classified/excluded as stale. That cross-record interaction is corrected by EX19-01; the identity-validation P2 defect does not belong to this record.
+
+Unknowns: none beyond the separately recorded stale-order interaction.
+
+### Replacement records for EX17-08
+
+#### Candidate EX17-08a — Each translation source exposes content-sensitive current-resource version identity
+
+Atomic decision: a translation source returns a version identity for the current resources it contributes, and that identity must change when the current semantic/resource payload changes rather than depending on a stale stored fingerprint alone.
+
+Introduced/changed/recorded by:
+- \`bac3954146\` introduces \`TranslationSourceResult.version\`, canonical fingerprint concatenation, and local stored-fingerprint concatenation;
+- \`55306b94\` hardens the per-source identity to deterministic SHA-256 over canonical namespace/key/fingerprint parts or local identity/fingerprint/value parts;
+- merge \`5aa1859\`.
+
+Normative provenance: the Stage 1 resource metadata/cache boundary is inherited through \`DLX12-08\` and related ancestry — \`pre-existing-project-contract\`; PR #17 follow-up explicitly states that source version should change with current bundle payload/semantics — \`PR-or-review-discussion\`.
+
+Historical evidence: \`resourceVersion()\` in \`sources.ts\`; canonical version parts use namespace/key/current canonical fingerprint; local version parts use identity/stored current fingerprint/value; regression test proves two current local payloads produce different source versions.
+
+Current-behavior locations to verify later: source versioning is subsequently subsumed by compiled locale/namespace bundle identities.
+
+Backward dependencies: \`DLX12-08\`; the exact version algorithm is PR #17 implementation history.
+
+Forward-dependency candidates: PR #32 persistent translation sources; PR #34 compiled bundle identity; PR #75 persisted-bundle runtime verification.
+
+Contrary evidence searched/found: stale local values do not enter the hardened current-resource version parts; the initial \`bac3954146\` local version could change only with stored fingerprint and is superseded by \`55306b94\`.
+
+Unknowns: no claim is made that the Stage 1 per-source hash is the final cache-key format.
+
+#### Candidate EX17-08b — TranslationResourceLoader snapshots aggregate source version identities per locale
+
+Atomic decision: the Stage 1 loader records the ordered version outputs of all configured sources for each locale in the translation snapshot so downstream code receives aggregate loaded-resource version metadata separately from the resource values themselves.
+
+Introduced/changed/recorded by:
+- \`bac3954146\` introduces \`TranslationSnapshot.bundleVersions: Record<string, string[]>\` and appends each \`result.version\` while walking the source list;
+- \`55306b94\` does not change this aggregation shape; it changes the per-source version values supplied to it;
+- merge \`5aa1859\`.
+
+Normative provenance: \`DLX12-08\` provides the Stage 1 loader/resource-metadata boundary — \`pre-existing-project-contract\`; the exact array-of-source-versions representation is PR #17 implementation history.
+
+Historical evidence: \`TranslationResourceLoader.load()\` executes \`(bundleVersions[tag] ??= []).push(result.version)\` for every source and serializes the result in \`TranslationSnapshot\`.
+
+Current-behavior locations to verify later: this Stage 1 aggregation shape is later replaced/refined by compiled locale/namespace bundle-version metadata.
+
+Backward dependencies: \`DLX12-08\`; depends on EX17-08a source-version outputs but is a separate loader metadata decision.
+
+Forward-dependency candidates:
+- PR #34 explicitly changes \`TranslationSnapshot.bundleVersions\` to \`locale -> namespace -> version\` while introducing deterministic compiled-bundle identity;
+- PR #75 consumes/returns verified persisted compiled bundle versions in the runtime path.
+
+Contrary evidence searched/found: \`55306b94\` hardens source version computation but leaves the loader's aggregate \`string[]\` mechanism unchanged, so the two layers must not share one historical-change record.
+
+Unknowns: the Stage 1 aggregate array is internal snapshot metadata, not asserted as a permanent public contract.
+
+### Replacement records for EX18-02
+
+#### Candidate EX18-02a — Repository records that the first real Cloudflare Worker deployment occurred
+
+Atomic operational fact: PR #18 records that the first real \`vico-forum\` Cloudflare Worker was created/deployed on \`workers.dev\`.
+
+Introduced/changed/recorded by: \`09d5f8e9\`; merge \`777ef20\`.
+
+Normative provenance: the prior requirement to perform a real Workers checkpoint is EX17-16 — \`PR-or-review-discussion\`; the assertion that deployment actually occurred is a repository/PR historical claim, not independently verified external evidence in this task.
+
+Historical evidence: PR #18 body and \`PROJECT_STATE.md\` explicitly state that the Worker was successfully deployed and record the workers.dev URL.
+
+Current-behavior locations to verify later: later project history/state treats a real Workers deployment path as established foundation.
+
+Backward dependencies: EX17-16.
+
+Forward-dependency candidates: EX18-03 Stage 2 preflight transition; later Workers/Hyperdrive deployment work can rely on the existence of an established deployment path without proving this original event.
+
+Contrary evidence searched/found: no Cloudflare deployment log/run artifact is attached to the inspected PR; green GitHub CI for the docs-only commit is not deployment evidence.
+
+Unknowns: the external deployment event cannot be independently reconstructed from the PR materials available in this task.
+
+#### Candidate EX18-02b — Repository records that deployed Workers smoke checks passed
+
+Atomic operational fact: PR #18 separately records that smoke checks against the deployed workers.dev Worker passed for root negotiation, canonical locale redirect, redirect-required mutation failure, and Hebrew RTL/English-fallback behavior.
+
+Introduced/changed/recorded by: \`09d5f8e9\`; merge \`777ef20\`.
+
+Normative provenance: EX17-16 supplies the preceding real-Workers checkpoint requirement — \`PR-or-review-discussion\`; the assertion that deployed smoke passed is a repository/PR historical claim.
+
+Historical evidence: PR #18 body and \`PROJECT_STATE.md\` list the deployed-smoke behaviors as confirmed.
+
+Current-behavior locations to verify later: later history/state records the deployment checkpoint as completed foundation; later runtime/deployment smokes are separate evidence.
+
+Backward dependencies: EX17-16; the smoke assertions exercise behaviors extracted separately in PR #16/#17.
+
+Forward-dependency candidates: EX18-03 Stage 2 transition; later external Hyperdrive/deployment acceptance work.
+
+Contrary evidence searched/found: no raw deployed-smoke transcript or Cloudflare test artifact is attached to PR #18, and docs-head CI does not establish that external requests were executed successfully.
+
+Unknowns: deployed-smoke success cannot be independently reconstructed from the PR materials available in this task.
+
+### Replacement-ID map
+
+- \`EX16-09\` → \`EX16-09a\`, \`EX16-09b\`, \`EX16-09c\`.
+- \`EX16-11\` → \`EX16-11a\`, \`EX16-11b\`.
+- \`EX16-13\` → \`EX16-13a\`, \`EX16-13b\`.
+- \`EX17-06\` → \`EX17-06a\`, \`EX17-06b\`.
+- \`EX17-08\` → \`EX17-08a\`, \`EX17-08b\`.
+- \`EX18-02\` → \`EX18-02a\`, \`EX18-02b\`.
+
+The six unsuffixed IDs above are superseded composite labels and should not be entered as ledger records.
+
+### Corrected links and conflict references
+
+- The PR #17 P2 review finding about unknown/unrequested namespace identity maps to \`EX17-06a\` and its later correction \`EX19-02\`.
+- The PR #17 P1 stale-before-structure interaction maps to \`EX17-06b\` + \`EX17-07\`, with the later ordering correction \`EX19-01\`.
+- \`EX16-09a\` owns negotiation source precedence; \`EX16-09b\` owns \`q=0\`; \`EX16-09c\` owns wildcard behavior. \`EX16-10\` remains the separate safe-method gate.
+- \`EX16-11a\` owns the successful root redirect response shape/query preservation; \`EX16-11b\` owns shared-cache safety through \`no-store\`.
+- \`EX16-13a\` owns the server-loader/server-round-trip boundary; \`EX16-13b\` owns typed locale-context propagation. Pre-action mutation termination remains exclusively under \`EX16-08\`.
+- \`EX17-08a\` owns each source's current-resource version identity; \`EX17-08b\` owns aggregation of those source versions into the Stage 1 loader snapshot. PR #34 is the forward change that replaces/refines the latter into explicit locale/namespace compiled-bundle version metadata.
+- \`EX18-02a\` is only the recorded deployment occurrence; \`EX18-02b\` is only the recorded deployed-smoke success. Lack of raw evidence for either is preserved independently.
+
+Backward/forward reconciliation from \`RESPONSE DL-EXTRACT-002/1\` should therefore read the split IDs wherever those composite IDs appeared:
+- former \`EX16-09\` links are distributed across \`EX16-09a/b/c\` as above;
+- former \`EX16-11\` links are distributed between \`EX16-11a\` and \`EX16-11b\`;
+- former \`EX16-13\` links are distributed between \`EX16-13a\` and \`EX16-13b\`;
+- former \`EX17-06\` links are distributed between \`EX17-06a\` and \`EX17-06b\`;
+- former \`EX17-08\` links are distributed between \`EX17-08a\` and \`EX17-08b\`;
+- former \`EX18-02\` links are distributed between \`EX18-02a\` and \`EX18-02b\`.
+
+### Unchanged material confirmation
+
+Every unlisted candidate, all four PR category sweeps, changed-file reconciliation, preserved conflicts/gaps/superseded history, provenance limitations, inaccessible-evidence notes, direct-user clarification, and all other \`RESPONSE DL-EXTRACT-002/1\` statements remain unchanged.
+
+This correction adds no correctness, prematurity, future-proofing, approval, or target-state classification and does not alter PR #78.
