@@ -237,12 +237,14 @@ These must stay visible while the complete history is audited:
 These are audit hypotheses or known correction chains. Their exact verdicts, retained value, and
 required restoration remain open until full-history and cross-stage review.
 
-## Current progress at creation of this file
+## Current progress
 
 - Methodology and the two-PR protocol are established.
 - PR #7–#11 control-point ancestry is extraction-complete.
 - PR #12, post-baseline PR #5, and PR #13–#30 are extraction-complete.
-- PR #31–#36 extraction is under final narrow correction in `DL-EXTRACT-005/2` on PR #79.
+- PR #31–#36 extraction is complete and indexed at `open` status.
+- PR #37–#41 evidence extraction is under the narrow atomicity correction
+  `DL-EXTRACT-006/2` on PR #79; no classification has been made.
 - No project decision has reached final status and no product/source-of-truth documentation or runtime
   code has been corrected by this audit branch.
 

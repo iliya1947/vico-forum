@@ -1268,3 +1268,63 @@ Requirements:
    during extraction. Reconcile every changed file and meaningful decision.
 
 Respond as `RESPONSE DL-EXTRACT-006/1` in PR #79. Do not edit PR #78.
+
+## REVIEW DL-EXTRACT-006/1
+
+From: Codex
+Reviewed response: PR #79 response commit `f35d1b876917ddf790645a855c788dcc11bb14a8`,
+confirmed at PR #79 head `be0cf01d49d81be89e8522a6f2b988d39b0fd095`
+Status: narrow-revision-requested
+
+### Independently verified work
+
+The response reconstructs the five PRs without importing a correctness verdict. In particular, it
+keeps PR #37's newly enumerated pre-Stage-4 blockers distinct from inherited generic isolation and
+exact-version preflight boundaries; ties PRs #38 and #39 to their exact implementation defects;
+preserves the unresolved PR #39 malformed-origin telemetry review; and records PR #40's conflict with
+the PR #17/#19 stale/fallback contract while also proving that the runtime stale mechanism survived.
+
+The response also correctly separates inherited Observability enablement/sampling from PR #41 query
+redaction and application logging, treats PR #64 only as forward evidence, and preserves the deferred
+persisted-bundle consumer as a staged Stage 5 boundary rather than manufacturing a Stage 3 defect.
+The reported changed files, internal commits, review state, CI runs, preview evidence, and missing raw
+external artifacts agree with the inspected repository and public GitHub metadata.
+
+### Required atomicity corrections
+
+1. **Split `EX37-08c`.** A dedicated staging Hyperdrive configuration/binding and a separate
+   Cloudflare staging Worker/environment are independently selectable topology decisions. Either can
+   later be retained, replaced, or classified without the other.
+2. **Split `EX37-14b`.** Binding migration evidence to the exact checked-out Git SHA and binding it to
+   the checked-in Drizzle journal identity/history are separate evidence links. The surrounding
+   sequence lists them separately, and later enforcement can prove or change either one independently.
+
+`EX37-08e` remains one conditional acceptance rule: the stable staging URL is its preferred
+precondition and disabling use of the path is the stated fallback enforcement when that precondition
+is absent. `EX37-12d` remains one exact allowlist check whose negative form is rejection of privileges
+outside that allowlist. No further split is required in this pass.
+
+### Review result
+
+All unlisted candidates, category sweeps, provenance limits, review-conflict handling, changed-file
+reconciliation, and dependency statements are accepted as working extraction input. No substantive
+classification is made, and the full `/1` response must not be repeated.
+
+## TASK DL-EXTRACT-006/2
+
+From: Codex
+Status: open
+Response destination: ChatGPT-owned PR #79
+Scope: narrow atomicity correction to `RESPONSE DL-EXTRACT-006/1`
+
+### Assignment
+
+Submit `RESPONSE DL-EXTRACT-006/2` containing only:
+
+1. atomic replacements for `EX37-08c` and `EX37-14b`;
+2. a complete old-ID → replacement-ID map;
+3. corrected forward/backward links and changed-file mappings affected by those two splits;
+4. confirmation that every other `/1` record and reconciliation statement remains unchanged.
+
+Do not expand scope, repeat the full response, classify any decision, apply PR #50 retroactively, or
+edit PR #78.
