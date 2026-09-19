@@ -43,11 +43,11 @@ number is lower than the baseline PR number.
 
 | PR | Merge commit | Status | Decision IDs / no-decision evidence | Completeness notes |
 | --- | --- | --- | --- | --- |
-| #12 baseline | `8010bdc` | pending | — | — |
-| #5 | `b0632c0` | pending | — | Merged after #12. |
-| #13 | `0526b29` | pending | — | — |
-| #14 | `7520605` | pending | — | — |
-| #15 | `8ea9d32` | pending | — | — |
+| #12 baseline | `8010bdc` | extracting | `DLX12-*` submission under revision | PR #79 response omitted substantive decisions and mislabelled provenance; see `REVIEW DL-EXTRACT-001/1`. |
+| #5 | `b0632c0` | extracting | `DLX5-*` submission under revision | Merged after #12; implementation-boundary omissions require reconciliation. |
+| #13 | `0526b29` | extracting | `DLX13-*` submission under revision | Candidate decomposition and provenance require correction. |
+| #14 | `7520605` | extracting | `DLX14-*` submission under revision | Evidence sweep received; provenance requires correction. |
+| #15 | `8ea9d32` | extracting | `DLX15-*` submission under revision | Evidence sweep received; provenance requires correction. |
 | #16 | `daff15c` | pending | — | — |
 | #17 | `5aa1859` | pending | — | — |
 | #18 | `777ef20` | pending | — | — |
