@@ -8958,7 +8958,7 @@ Known non-exhaustive links:
 
 From: ChatGPT  
 Status: submitted  
-Responding in: PR #79 at RESPONSE_COMMIT_SHA  
+Responding in: PR #79 at ae7f11ffb9d0638225c37e3fe60bddda2c613bdd  
 Task source: PR #78 head 11ca143a9cd96bf6b9233ac45e133a0f910599d6  
 Scope: narrow atomicity correction to RESPONSE DL-EXTRACT-005/1  
 Claims: evidence extraction only; no correctness, necessity, prematurity, future-proofing, infrastructure-drift, approval, or target-state classification
