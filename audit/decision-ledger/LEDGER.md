@@ -14,12 +14,18 @@ Status: open
 Review horizon: not reviewed
 Preliminary classification: none
 Confidence within reviewed evidence: none
+First introduced by: unknown
+Changed by: unknown
+Recorded or accepted by: unknown
 
 ### Atomic decision
 One decision only; split mixed PRs into separate records.
 
 ### Normative intent evidence
-What was required or explicitly chosen at the relevant time.
+Every item must identify its exact source and one provenance type:
+direct-user-decision | pre-existing-project-contract | PR-or-review-discussion |
+assistant-authored-proposal | external-platform-requirement | later-retrospective-summary.
+The provenance type does not by itself establish authority or correctness.
 
 ### Historical fact evidence
 Exact commits, diffs, discussions, and verification records.
@@ -43,11 +49,15 @@ Current code, tests, schema, workflow, and configuration.
 ### Conflicts and counter-evidence
 Do not resolve silently.
 
+### Deliberate disconfirmation pass
+- preliminary interpretation tested:
+- evidence that would make it wrong:
+- history/code/tests/docs searched:
+- contrary evidence found:
+- effect on preliminary classification:
+
 ### Open questions
 Facts or user choices still required.
-
-### Possible target hypotheses
-Non-final options only; do not select before cross-stage review.
 ```
 
 ## Inventory
@@ -57,3 +67,7 @@ from the first chronological block without closing them before later-stage depen
 `COVERAGE.md` is the authoritative working checklist for whether every in-scope PR/commit has been
 examined and whether mixed changes were completely decomposed. A populated ledger alone never proves
 that extraction or dependency discovery is complete.
+
+Target hypotheses are deliberately absent from the ordinary record template. They may be added only
+after `cross-stage-reviewed`, or recorded as multiple competing possibilities when necessary to frame
+an unresolved question without selecting one.

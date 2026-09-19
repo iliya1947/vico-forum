@@ -16,8 +16,24 @@ outside-scope           explicitly justified; cannot be used merely because a PR
 ```
 
 For `extraction-complete`, the row must identify its ledger decision IDs or explicitly state that the
-change contains no independently meaningful decision. Mixed PRs must include evidence that feature,
-corrective, documentation, operational, and gate-setting changes were considered separately.
+change contains no independently meaningful decision. The same category sweep is mandatory for
+**every** PR; completeness must not depend on recognizing in advance that a PR is mixed.
+
+Required category sweep:
+
+```text
+F  feature/domain
+A  architecture/contract
+C  corrective/review
+D  documentation/state
+O  operational/infrastructure
+G  gate/process
+T  tests/config/workflows
+```
+
+Each row must link or include category-sweep evidence recording a result for all seven categories,
+including explicit `none` results. PR summaries and pre-existing coverage notes cannot substitute for
+the sweep.
 
 ## Chronological commit/PR coverage
 
@@ -27,8 +43,8 @@ number is lower than the baseline PR number.
 
 | PR | Merge commit | Status | Decision IDs / no-decision evidence | Completeness notes |
 | --- | --- | --- | --- | --- |
-| #12 baseline | `8010bdc` | pending | — | Baseline itself must be decomposed into inherited decisions and explicit open gates. |
-| #5 | `b0632c0` | pending | — | Merged after #12; Stage 1A implementation and documentation sync. |
+| #12 baseline | `8010bdc` | pending | — | — |
+| #5 | `b0632c0` | pending | — | Merged after #12. |
 | #13 | `0526b29` | pending | — | — |
 | #14 | `7520605` | pending | — | — |
 | #15 | `8ea9d32` | pending | — | — |
@@ -36,16 +52,16 @@ number is lower than the baseline PR number.
 | #17 | `5aa1859` | pending | — | — |
 | #18 | `777ef20` | pending | — | — |
 | #19 | `5a3c75a` | pending | — | — |
-| #20 | `2d0d9e5` | pending | — | Mixed architecture, stage-scope, operational, and gate-setting change. |
+| #20 | `2d0d9e5` | pending | — | — |
 | #21 | `c0e2add` | pending | — | — |
 | #22 | `92b55cd` | pending | — | — |
 | #24 | `87c49c5` | pending | — | Merged before #23. |
 | #23 | `4f1a727` | pending | — | — |
 | #25 | `d39119a` | pending | — | — |
 | #26 | `fccde6b` | pending | — | — |
-| #27 | `e734f8f` | pending | — | Mixed rollout and preview-isolation policies. |
+| #27 | `e734f8f` | pending | — | — |
 | #28 | `2eb1186` | pending | — | — |
-| #29 | `c31c050` | pending | — | Mixed local history guard and production workflow hardening. |
+| #29 | `c31c050` | pending | — | — |
 | #30 | `907e082` | pending | — | — |
 | #31 | `458db7e` | pending | — | — |
 | #32 | `7048478` | pending | — | — |
@@ -53,20 +69,20 @@ number is lower than the baseline PR number.
 | #34 | `254f4a7` | pending | — | — |
 | #35 | `a9556b2` | pending | — | — |
 | #36 | `f3a665f` | pending | — | — |
-| #37 | `0cdf939` | pending | — | Mixed factual corrections, architecture text, and new hardening gates. |
+| #37 | `0cdf939` | pending | — | — |
 | #38 | `768799c` | pending | — | — |
 | #39 | `af2349d` | pending | — | — |
 | #40 | `29eccc5` | pending | — | — |
-| #41 | `2623040` | pending | — | Mixed application logging and platform configuration. |
+| #41 | `2623040` | pending | — | — |
 | #42 | `a127adb` | pending | — | — |
 | #43 | `e1fddf9` | pending | — | — |
-| #44 | `bdc9c0f` | pending | — | Must separate evidence contract from ordinary-PR live verification policy. |
+| #44 | `bdc9c0f` | pending | — | — |
 | #45 | `19ec4b5` | pending | — | — |
 | #46 | `01ad59a` | pending | — | — |
 | #47 | `ebd0160` | pending | — | — |
 | #48 | `a52d84f` | pending | — | — |
 | #49 | `75faaba` | pending | — | — |
-| #50 | `e26d145` | pending | — | Explicit user reprioritization; do not apply retroactively. |
+| #50 | `e26d145` | pending | — | — |
 | #51 | `d07f81a` | pending | — | — |
 | #52 | `8aed969` | pending | — | — |
 | #53 | `f9f03fb` | pending | — | — |
@@ -75,9 +91,9 @@ number is lower than the baseline PR number.
 | #56 | `950133f` | pending | — | — |
 | #57 | `a5a77fa` | pending | — | — |
 | #58 | `a35c4ce` | pending | — | — |
-| #59 | `a22ae0e` | pending | — | Explicit user-approved product extension; still extract its atomic decisions. |
+| #59 | `a22ae0e` | pending | — | — |
 | #60 | `b51fb66` | pending | — | — |
-| #61 | `a76a102` | pending | — | Mixed feature integration and corrective-review changes. |
+| #61 | `a76a102` | pending | — | — |
 | #63 | `b238df0` | pending | — | Merged before #62. |
 | #62 | `6b10d23` | pending | — | — |
 | #64 | `5a85a03` | pending | — | — |
@@ -85,25 +101,27 @@ number is lower than the baseline PR number.
 | #66 | `9c37549` | pending | — | — |
 | #67 | `6a476d4` | pending | — | — |
 | #68 | `a0215cc` | pending | — | — |
-| #69 | `c12550c` | pending | — | Mixed lifecycle corrections and an internal corrected regression. |
+| #69 | `c12550c` | pending | — | — |
 | #70 | `d84d888` | pending | — | — |
-| #71 | `e3559c3` | pending | — | Mixed feature work and an unsafe supersession attempt removed before merge. |
+| #71 | `e3559c3` | pending | — | — |
 | #72 | `ba41a0c` | pending | — | — |
 | #73 | `1afb0c1` | pending | — | — |
-| #74 | `b5d1f68` | pending | — | Includes repeated restoration of unrelated state wording. |
+| #74 | `b5d1f68` | pending | — | — |
 | #75 | `29f52b9` | pending | — | — |
-| #76 | `1c5255a` | pending | — | Mixed rollout and authorization failure-boundary corrections. |
-| #77 | `3282aa5` | pending | — | Current-state/history split and corrective ledger. |
+| #76 | `1c5255a` | pending | — | — |
+| #77 | `3282aa5` | pending | — | — |
 
 ## Reconciliation gates
 
 - [ ] `git rev-list` after the PR #12 baseline is reconciled to this table.
 - [ ] Every PR head/internal commit sequence has been checked for decisions absent from its squash
       merge diff or summary.
+- [ ] Every row has a recorded `F/A/C/D/O/G/T` category sweep, including explicit `none` results.
 - [ ] Every row is `extraction-complete` or has a reviewed `outside-scope` justification.
 - [ ] Every extracted decision ID appears in `LEDGER.md` exactly once as an atomic record.
 - [ ] Every ledger record maps back to at least one coverage row and all applicable cross-stage chains.
 - [ ] Current code/test/config consumers have been searched for dependencies not explicit in PR text.
 - [ ] Known corrective and revert sequences have been reconciled without treating reverted intermediate
       work as current behavior.
-
+- [ ] Every preliminary classification has a recorded disconfirmation pass documenting what could
+      make it wrong and what contrary evidence was found.

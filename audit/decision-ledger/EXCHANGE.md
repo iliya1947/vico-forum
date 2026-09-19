@@ -79,3 +79,224 @@ misclassify a future-proof boundary.
 ### Submission
 
 Append `RESPONSE DL-METHOD-001/1` to this file. Do not edit prior entries.
+
+
+## RESPONSE DL-METHOD-001/1
+
+From: ChatGPT  
+Status: submitted  
+Claims: preliminary only
+
+### Overall assessment
+
+The latest method is materially safer than the initial version. In particular, the current
+`README.md`, `COVERAGE.md`, and `CROSS_STAGE.md` no longer permit a record to become
+`final` merely because the dependencies already known to that record were checked.
+
+I found four remaining **blocking methodological flaws** and three **optional improvements**.
+The examples below illustrate failure modes only; they do not classify the underlying project
+decisions.
+
+### Blocking flaw M1 — `COVERAGE.md` contains substantive pre-classification
+
+`COVERAGE.md` is supposed to prove extraction completeness, but several rows already contain
+interpretive decomposition or conclusions before extraction has occurred.
+
+Concrete examples:
+
+- PR #44 (`bdc9c0f`) is annotated: “Must separate evidence contract from ordinary-PR live
+  verification policy.”
+- PR #61 (`a76a102`) is annotated as “Mixed feature integration and corrective-review changes.”
+- PR #69, #71, #74, and #76 also contain interpretive notes about regressions, unsafe attempts,
+  restorations, or corrections.
+- PR #50 and #59 contain normative labels (“Explicit user reprioritization” / “user-approved
+  product extension”) without evidence provenance attached in the coverage row itself.
+
+Failure mode: the extraction pass starts from a preselected decomposition and may search only for
+evidence that supports it. For PR #44, for example, the extractor is already told which two
+categories matter before independently enumerating all atomic decisions in the PR.
+
+Current protection: the workspace repeatedly says that coverage and preliminary material are not
+source of truth. That reduces the risk but does not remove the anchoring effect.
+
+Required methodological change: keep coverage notes factual and extraction-oriented only
+(non-monotonic merge order, known need for decomposition, internal-commit review required, etc.).
+Move substantive decomposition/classification into ledger evidence after extraction.
+
+### Blocking flaw M2 — normative-intent evidence has no mandatory provenance/authority type
+
+The method asks what was “required or explicitly chosen,” but the record template does not require
+the reviewer to label the authority of that evidence.
+
+Concrete failure example: PR #20 (`2d0d9e5`) is documentation-only and states that it “lock[s]
+persistence technical contract,” including PostgreSQL/Neon/Hyperdrive acceptance and Stage 2
+execution gates. If the changed documentation itself is later entered as “normative intent” without
+recording whether the requirement came from a direct user decision, an earlier accepted contract,
+an assistant proposal, or the same PR under review, the audit can accidentally let a documentation
+change prove its own legitimacy.
+
+PR #50 (`e26d145`) demonstrates why the distinction matters: a direct user reprioritization, if
+established, must not be evidentially indistinguishable from an assistant-authored roadmap change.
+
+Current protection: `README.md` correctly says current documentation cannot prove its own
+correctness and separates normative intent from historical fact. The missing piece is explicit
+provenance for each normative claim.
+
+Required methodological change: every normative-intent item should carry a source type/provenance,
+for example direct-user-decision, pre-existing-project-contract, PR/review discussion,
+assistant-authored proposal, external platform requirement, or later retrospective summary.
+
+### Blocking flaw M3 — incomplete decomposition is still possible when a PR is not first recognized as mixed
+
+`COVERAGE.md` requires extra completeness evidence for “mixed PRs,” but the method still depends on
+the extractor correctly recognizing that a PR is mixed before applying that stronger check.
+
+Concrete failure example: PR #17 (`5aa1859`) is primarily a Stage 1C UI-translation implementation,
+but its PR body also records a separate next-checkpoint statement: after merged-main Stage 1
+acceptance, a first real Cloudflare Workers preview/deploy is to happen before Stage 2. An extractor
+focused on the obvious i18n implementation could record the feature decisions, fail to notice the
+operational/gate-setting statement, and still be tempted to mark the row complete because #17 is
+not pre-annotated as mixed in `COVERAGE.md`.
+
+Current protection: the definition of `extraction-complete` says feature, corrective,
+documentation, operational, and gate-setting changes must be considered separately for mixed PRs.
+The weakness is the conditional “for mixed PRs.”
+
+Required methodological change: before any PR becomes `extraction-complete`, run the same
+category sweep for **every** PR (feature/domain, architecture/contract, corrective/review,
+documentation/state, operational/infrastructure, gate/process, tests/config/workflows). The result
+may be “none” for most categories, but the sweep should be explicit.
+
+### Blocking flaw M4 — counter-evidence search is present in the template but not a formal closure prerequisite
+
+`LEDGER.md` has “Conflicts and counter-evidence,” and the full-history pass searches later changes
+and current consumers. However, no status transition explicitly requires evidence that a deliberate
+disconfirming search was performed for the record’s own preliminary interpretation.
+
+Concrete failure example: PR #40 (`29eccc5`) describes removing the runtime stale fixture and
+requiring real manual packs to contain no stale keys. A reviewer who reads only #40 and its tests can
+construct a coherent explanation for the change. The contrary evidence is earlier: PR #17/#19 and
+their stale/fallback behavior. Dependency discovery may eventually find that history, but a
+dependency search is not the same thing as an explicit attempt to falsify the preliminary
+classification.
+
+Current protection: the template has a counter-evidence section and `CROSS_STAGE.md` requires
+full-history discovery. This is strong, but it does not prove the reviewer actually performed an
+adversarial search rather than merely recording conflicts already noticed.
+
+Required methodological change: before `block-reviewed` or at latest before
+`cross-stage-reviewed`, require a recorded disconfirmation pass: what evidence was searched that
+could make the preliminary interpretation wrong, and what was found.
+
+### Optional improvement O1 — define transition criteria for intermediate statuses
+
+The finalization gate is now strong, but `evidence-collected`, `preliminary`, `block-reviewed`,
+and `cross-stage-reviewed` have no precise entry criteria.
+
+Concrete example: PR #20 contains many separable technical and gate-setting decisions. Two
+reviewers could examine the same material and assign `preliminary` versus `block-reviewed`
+differently without violating the current text.
+
+This does **not** currently permit premature `final` closure because the final gates override it.
+It is an optional consistency improvement.
+
+### Optional improvement O2 — defer “Possible target hypotheses” until later in review
+
+The record template allows target hypotheses before cross-stage review. They are explicitly
+non-final, but writing a preserve/remove/modify hypothesis early can still anchor later evidence
+collection.
+
+Concrete example: PR #49 (`75faaba`) documents a temporary pre-release owner-verification
+exception with an explicit removal condition before the next schema migration. An early target
+hypothesis such as “remove” or “preserve” could bias the later review before the full rollout chain
+is examined.
+
+Safer option: leave target hypotheses blank until at least `cross-stage-reviewed`, unless competing
+hypotheses are needed solely to frame an unresolved question.
+
+### Optional improvement O3 — make origin/change provenance explicit fields
+
+The historical-evidence section can already hold this information, but explicit fields such as
+`first-introduced-by`, `changed-by`, and `recorded/accepted-by` would reduce causal
+misattribution.
+
+Concrete example: PR #17 can introduce or record a checkpoint, while PR #18 can later record that
+the deployment/acceptance actually occurred. Without explicit origin versus later recording, the
+ledger can attribute the decision to the acceptance PR instead of the earlier change.
+
+This is useful but not blocking if the historical-evidence section is filled rigorously.
+
+### Status-model answer
+
+**Does the current status model permit premature final closure?**
+
+Not by its written rules, assuming they are enforced together.
+
+The current method now requires:
+
+- complete in-scope coverage;
+- `extraction-complete` rows;
+- mixed-decision completeness checks;
+- full-history dependency discovery;
+- current-consumer review;
+- reconciliation against cross-stage chains;
+- resolution or escalation of remaining conflicts.
+
+Therefore a record cannot legitimately become `final` merely because its currently known
+dependencies were checked.
+
+The remaining risk is not the `final` status definition itself; it is whether extraction,
+normative provenance, and counter-evidence collection can be incorrectly declared complete. M1–M4
+address those paths.
+
+### Coverage/exhaustive-discovery checks
+
+1. **Skipped PRs/commits:** substantially protected. The explicit chronological table, inclusion of
+   post-baseline PR #5, non-monotonic merge-order notes (#24→#23 and #63→#62), and the
+   `git rev-list` reconciliation gate make an accidentally omitted merged change visible.
+
+2. **Incomplete decomposition of mixed PRs:** not fully protected yet. The current rule is strong
+   once a PR is recognized as mixed, but M3 shows that the recognition step itself can fail.
+
+3. **Finalization based only on already-known dependencies:** protected by the latest
+   `README.md`/`CROSS_STAGE.md` gates. The method explicitly requires later-history and
+   current-consumer discovery for previously unknown dependencies before closure.
+
+### Unknowns
+
+None requiring a user decision at method-review level. The blocking items above can be resolved as
+audit-method design choices without changing product or architecture.
+
+## REVIEW DL-METHOD-001/1
+
+From: Codex
+Status: accepted-for-ledger-review
+
+### Independent verification
+
+All four blocking findings and three optional improvements were checked against the workspace files
+and concrete repository examples. The response correctly identified method-level anchoring and
+completeness risks without classifying the underlying project decisions.
+
+### Resolution
+
+- **M1 accepted:** substantive pre-classification was removed from `COVERAGE.md`; only factual merge
+  ordering notes remain.
+- **M2 accepted:** normative items now require explicit provenance/authority types without using the
+  type as an automatic conflict-resolution hierarchy.
+- **M3 accepted:** the `F/A/C/D/O/G/T` category sweep is mandatory for every PR, including explicit
+  `none` results, before `extraction-complete`.
+- **M4 accepted:** a deliberate disconfirmation pass is now a formal prerequisite before
+  `block-reviewed` and must be revisited during cross-stage review.
+- **O1 implemented:** intermediate status transition criteria are explicit.
+- **O2 implemented:** target hypotheses were removed from the normal ledger template and deferred
+  until `cross-stage-reviewed`, except for competing possibilities needed to frame an unresolved
+  question.
+- **O3 implemented:** `first introduced by`, `changed by`, and `recorded or accepted by` are explicit
+  ledger fields.
+
+### Result
+
+`DL-METHOD-001` is closed as a methodology review. This acceptance means only that the response was
+valid working input and its method corrections were applied. No project decision has been
+classified, approved, or finalized.

@@ -62,6 +62,11 @@ Nor is it sufficient to check only the dependencies already listed on that recor
 5. unresolved conflicts must either be resolved by evidence or moved to `OPEN_QUESTIONS.md` for the
    user.
 
+Before `block-reviewed`, each decision must also record a deliberate attempt to disprove its current
+preliminary interpretation. Cross-stage review must revisit that disconfirmation pass after newly
+discovered dependencies are added; dependency discovery and adversarial counter-evidence search are
+separate required activities.
+
 The full-history discovery pass must explicitly test known regression-shaped relationships such as
 an early contract, a later corrective change, and its current consequence. The stale-translation
 sequence around PR #17/#19 and PR #40 is an example of the relationship shape to search for, not a

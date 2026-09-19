@@ -54,27 +54,51 @@ awaiting-user
 final
 ```
 
+Transition criteria:
+
+- `open` — the decision is indexed but evidence collection has not completed.
+- `evidence-collected` — the introducing/change history, current behavior, normative provenance,
+  dependencies known so far, and explicit category-sweep evidence have been recorded.
+- `preliminary` — a non-final classification and confidence are stated together with supporting and
+  contrary evidence; no target choice is selected.
+- `block-reviewed` — another review has checked the chronological block, the atomic decomposition,
+  and a deliberate disconfirmation pass. Cross-stage closure is still pending.
+- `cross-stage-review-pending` — all chronological blocks are extracted, but one or more dependency
+  chains or current-consumer searches remain incomplete.
+- `cross-stage-reviewed` — exhaustive coverage, chain reconciliation, current-consumer review, and a
+  recorded disconfirmation pass are complete; unresolved normative choices may still remain.
+- `awaiting-user` — repository evidence cannot resolve a product, architecture, or operational
+  choice that the user must decide.
+- `final` — all completion gates pass and any required user decision is recorded.
+
 `preliminary` and `block-reviewed` are not approvals. A decision cannot become `final` merely because
 every dependency currently recorded on that decision has been checked. Before finalization, the
 workspace must also pass the exhaustive discovery gates in `COVERAGE.md` and `CROSS_STAGE.md`: every
-in-scope PR/commit must be reconciled, mixed PRs must have an explicit extraction-completeness check,
-and current consumers plus later historical changes must be searched for previously unknown
-dependencies. A confident conclusion inside one stage is still only “supported within reviewed
-evidence” until those full-history and cross-stage passes are complete.
+in-scope PR/commit must be reconciled, every PR must have an explicit category sweep and
+extraction-completeness check, and current consumers plus later historical changes must be searched
+for previously unknown dependencies. A confident conclusion inside one stage is still only
+“supported within reviewed evidence” until those full-history and cross-stage passes are complete.
 
 ## Evidence model
 
 Evidence is recorded by question, not by a universal source ranking:
 
-1. **Normative intent:** what was required or explicitly chosen at that time.
+1. **Normative intent:** what was required or explicitly chosen at that time, with the provenance and
+   authority type of every claim recorded explicitly.
 2. **Historical fact:** what commits, diffs, PR discussion, and CI/deployment records prove occurred.
 3. **Current behavior:** what current code, schema, tests, workflows, and configuration do.
-4. **Possible target:** what might now be preserved, changed, deferred, or removed. This remains a
-   hypothesis until the full audit and required user decisions are complete.
+4. **Possible target:** considered only after cross-stage review, except for competing possibilities
+   needed to frame an unresolved question. It remains a hypothesis until the full audit and required
+   user decisions are complete.
 
 Conflicts must be recorded rather than silently resolved. Current documentation cannot prove its own
 correctness, tests can encode regressions, later use does not automatically justify early
 implementation, and complexity alone does not prove an error.
+
+Normative evidence must be labelled rather than flattened into one authority bucket. Allowed source
+types include `direct-user-decision`, `pre-existing-project-contract`, `PR-or-review-discussion`,
+`assistant-authored-proposal`, `external-platform-requirement`, and `later-retrospective-summary`.
+The label records provenance; it does not automatically resolve a conflict or establish correctness.
 
 ## Future-proof review
 
@@ -106,6 +130,11 @@ The audit cannot be declared complete while any of the following remains:
 - a merged commit after the PR #12 baseline is absent from coverage or explicitly justified as
   outside scope;
 - a mixed PR lacks evidence that all independently meaningful decisions were extracted;
+- any PR lacks a completed category sweep across feature/domain, architecture/contract,
+  corrective/review, documentation/state, operational/infrastructure, gate/process, and
+  tests/config/workflows changes;
 - a ledger record has not completed full-history dependency discovery and current-consumer review;
+- a ledger record lacks a deliberate, recorded search for evidence that could disprove its
+  preliminary interpretation;
 - a candidate chain in `CROSS_STAGE.md` has not been reconciled against all ledger records;
 - an unresolved evidence conflict is neither resolved nor recorded in `OPEN_QUESTIONS.md`.
