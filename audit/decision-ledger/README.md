@@ -34,6 +34,8 @@ The audit must determine, decision by decision:
 
 ## Files
 
+- [`PROCESS_CONTEXT.md`](./PROCESS_CONTEXT.md) — durable process rationale, roles, phase sequence,
+  fixed user decisions, continuity rules, and context-loss resume checklist.
 - [`EXCHANGE.md`](./EXCHANGE.md) — Codex-owned task and review log; ChatGPT responses are read from
   PR #79 and are not committed directly to PR #78.
 - [`LEDGER.md`](./LEDGER.md) — atomic decision records and their non-final review state.

@@ -480,6 +480,103 @@ Detailed evidence is preserved in the latest full `DL-EXTRACT-004/1` response at
 | `EX30-10` | Private production data remains an explicit future trigger for staging isolation or disabling non-production builds. |
 | `EX30-11` | First Stage 3 schema-dependent change must follow migration-only → production migrate/verify → runtime split. |
 
+### PRs #31–#36
+
+Detailed evidence is preserved in PR #79 responses `DL-EXTRACT-005/1` at `a6d05b5` and
+`DL-EXTRACT-005/2` at `ae7f11f`, accepted by `REVIEW DL-EXTRACT-005/2`. The five unsuffixed
+composite IDs in the replacement map are superseded labels, not ledger records.
+
+| Decision ID | Atomic decision index |
+| --- | --- |
+| `EX31-01` | Stage 3A is a migration-only schema slice with no Worker runtime dependency. |
+| `EX31-02` | Persistent UI translation candidate identity is locale + namespace + key + origin. |
+| `EX31-03` | Persistent translation origin is restricted to persistent_manual or machine. |
+| `EX31-04` | Persistent translation lifecycle status is draft, approved, or rejected. |
+| `EX31-05` | Persistent translations store lowercase SHA-256 sourceFingerprint. |
+| `EX31-06` | Persistent translation payload accepts string or object JSON shapes. |
+| `EX31-07` | Machine rows require generation policy and provider metadata. |
+| `EX31-08` | Persistent-manual rows must not carry machine-only metadata. |
+| `EX31-09` | Provenance metadata must be a JSON object. |
+| `EX31-10` | Canonical English is excluded from persistent translation rows. |
+| `EX31-11` | Persistent compiled-bundle identity is locale + namespace. |
+| `EX31-12` | Persisted bundle_version is a lowercase SHA-256 hex digest. |
+| `EX31-13` | Persisted compiled resources must be a JSON object. |
+| `EX31-14` | Canonical English is excluded from persistent bundle rows. |
+| `EX31-15` | Production migration verifier checks new table columns, types and nullability. |
+| `EX31-16` | Production migration verifier checks that persistent UI storage contains no English rows. |
+| `EX31-17` | Stage 3A is appended as forward migration 0002 with snapshot/journal history. |
+| `EX31-18` | Disposable PostgreSQL coverage proves new schema constraints and migration-history count. |
+| `EX31-19` | Runtime rollout is blocked until Stage 3A production migration and verification succeed. |
+| `EX31-20` | Runtime role must receive only required SELECT grants on the new tables before runtime rollout. |
+| `EX32-01` | UiTranslationStore reads approved rows by locale and requested namespaces. |
+| `EX32-02` | Persistent manual translations are a distinct TranslationSource adapter. |
+| `EX32-03` | Persistent machine translations are a distinct TranslationSource adapter. |
+| `EX32-04` | Persistent source freshness is enforced against current sourceFingerprint. |
+| `EX32-05` | Approved rows for deleted canonical keys are ignored rather than published. |
+| `EX32-06` | Structured persistent payloads fail closed until structured-message runtime exists. |
+| `EX32-07` | Persistent rows are runtime-parsed for identity, origin, status and fingerprint before use. |
+| `EX32-08` | Store results outside requested locale/namespace scope fail as integrity errors. |
+| `EX32-09` | Loader source priority becomes local manual → persistent manual → machine → English. |
+| `EX32-10` | UI translation store is an explicit typed request-context dependency. |
+| `EX32-11` | Worker injects one Hyperdrive-backed UI translation store per request. |
+| `EX32-12` | Hyperdrive translation store lazily reuses one client and memoizes identical reads per request. |
+| `EX32-13` | English or empty-namespace UI reads do not open persistent translation DB access. |
+| `EX32-14` | Classified PostgreSQL availability failure degrades to no persistent rows with reason-only telemetry. |
+| `EX32-15` | Classified translation-schema mismatch degrades to no persistent rows with reason-only telemetry. |
+| `EX32-16` | Authentication/programming/unknown database failures remain visible. |
+| `EX32-17` | Generic code-less pg connect Error is also classified as unavailable. |
+| `EX32-18a` | Repository records production migration #2 as applied. |
+| `EX32-18b` | Repository records Stage 3A production verification as successful. |
+| `EX32-19` | Repository records runtime SELECT-only grants on both Stage 3A tables as verified. |
+| `EX32-20` | Persisted compiled-bundle runtime consumption is absent from the merged SSR path. |
+| `EX32-21` | Post-merge deployed persistent-source smoke remains the next Stage 3B acceptance step. |
+| `EX33-01` | Workers Observability is enabled in repository-owned Wrangler config. |
+| `EX33-02` | Workers Observability head sampling rate is set to 1. |
+| `EX33-03` | PR #33 leaves PROJECT_STATE unsynchronized with the observability configuration. |
+| `EX34-01` | Logical bundle compiler remains locale-agnostic apart from requiring a nonblank locale identity. |
+| `EX34-02` | Bundle namespace must map to the canonical catalog. |
+| `EX34-03` | Bundle resource keys must map to canonical message descriptors. |
+| `EX34-04` | Bundle compiler validates translation semantics before publishing identity. |
+| `EX34-05` | Bundle version hashes format, locale, namespace, canonical fingerprints and current compiled values. |
+| `EX34-06` | Bundle version input ordering uses deterministic UTF-8 bytewise key ordering. |
+| `EX34-07` | Backend-independent cache identity is locale + namespace + bundleVersion. |
+| `EX34-08` | Bundle semantic version is exposed as a weak HTTP ETag. |
+| `EX34-09` | TranslationSnapshot bundleVersions becomes locale → namespace → semantic version metadata. |
+| `EX34-10` | TranslationResourceLoader computes compiled bundle versions after source merge in the request path. |
+| `EX34-11` | TranslationBundleStore is a backend-independent read/put abstraction. |
+| `EX34-12` | TranslationBundleCache is a separate backend-independent read/put abstraction. |
+| `EX34-13` | Persistent bundle adapter requires canonical non-English translation locale identity. |
+| `EX34-14` | Persistent compiled-bundle read is keyed by locale + namespace. |
+| `EX34-15a` | Persistent bundle read reconstructs and validates string resource shape. |
+| `EX34-15b` | Persistent bundle read recomputes semantic identity and matches stored bundle_version. |
+| `EX34-16a` | Persistent bundle put revalidates content and semantic version before storage. |
+| `EX34-16b` | Persistent bundle put upserts locale+namespace and refreshes compiled_at. |
+| `EX34-17` | Compiled-bundle persistence writes remain outside the production Worker path. |
+| `EX34-18` | Stage 3C does not select a Cloudflare Cache API, KV, or other concrete cache backend. |
+| `EX34-19a` | Repository records creation of a temporary approved production translation row. |
+| `EX34-19b` | Repository records Worker SSR consuming the temporary production translation through Hyperdrive. |
+| `EX34-19c` | Repository records deletion of the temporary production translation row. |
+| `EX34-19d` | Repository records English fallback restored after temporary-row deletion. |
+| `EX34-20a` | Repository records production request events visible in Workers Observability. |
+| `EX34-20b` | Repository records no Worker errors in the checked production Observability sample. |
+| `EX34-21` | Stage 3C is recorded as the remaining compiler/version/cache/ETag primitive slice. |
+| `EX34-22` | Persisted compiled-bundle runtime read remains intentionally unconnected in PR #34. |
+| `EX34-23` | Namespace validation can accept inherited Object.prototype property names. |
+| `EX35-01` | Repository records Stage 3A, 3B and 3C as completed and Stage 3 closed. |
+| `EX35-02` | Final deployed Stage 3 acceptance records English SSR working. |
+| `EX35-03` | Final deployed Stage 3 acceptance records Russian SSR working. |
+| `EX35-04` | Final deployed Stage 3 acceptance records Hebrew SSR working. |
+| `EX35-05` | Final deployed Stage 3 acceptance records Hebrew RTL behavior. |
+| `EX35-06` | Final deployed Stage 3 acceptance records expected English resource fallback. |
+| `EX35-07` | Final deployed Stage 3 acceptance records no Worker errors in the checked Observability sample. |
+| `EX35-08` | Stage 4 is gated on a dedicated pre-Stage-4 audit/hardening pass. |
+| `EX35-09` | Runtime write capability remains a trigger for preview/non-production isolation before Stage 4. |
+| `EX35-10` | Private auth data remains a separate trigger for preview/non-production isolation. |
+| `EX35-11` | Exact-version Better Auth + React Router + Workers + Drizzle/security review is required before Stage 4 implementation. |
+| `EX36-01` | Changes enter main only through a Pull Request. |
+| `EX36-02` | The user creates the Pull Request after Codex branch work. |
+| `EX36-03` | The user performs merge and Codex does not merge. |
+
 `COVERAGE.md` remains the authoritative working checklist for whether every in-scope PR/commit has
 been examined and whether mixed changes were completely decomposed. A populated ledger alone never
 proves that extraction or dependency discovery is complete.

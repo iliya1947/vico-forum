@@ -77,12 +77,12 @@ number is lower than the baseline PR number.
 | #28 | `2eb1186` | extraction-complete | `EX28-01..08` | Failure-boundary correction, unresolved broad code-less-error review, tests, telemetry, and state omission reviewed. |
 | #29 | `c31c050` | extraction-complete | `EX29-01..15` | Nine-commit migration hardening, both remaining review conflicts, evidence limits, and state omission reviewed. |
 | #30 | `907e082` | extraction-complete | `EX30-01..11` | Three-commit state sync, branch-preview evidence, capability gates, and unverifiable settings claims reviewed. |
-| #31 | `458db7e` | pending | — | — |
-| #32 | `7048478` | pending | — | — |
-| #33 | `15e0545` | pending | — | — |
-| #34 | `254f4a7` | pending | — | — |
-| #35 | `a9556b2` | pending | — | — |
-| #36 | `f3a665f` | pending | — | — |
+| #31 | `458db7e` | extraction-complete | `EX31-01..20` | Nine-commit migration-only schema, open English-normalization review, rollout gates, tests, and evidence limits reviewed. |
+| #32 | `7048478` | extraction-complete | `EX32-01..17`, `EX32-18a..b`, `EX32-19..21` | Eighteen commits, corrected rollout state, open future bundle-consumer boundary, degradation lineage, and external claims reviewed. |
+| #33 | `15e0545` | extraction-complete | `EX33-01..03` | Observability configuration, sampling choice, state lag, preview evidence, and missing production evidence reviewed. |
+| #34 | `254f4a7` | extraction-complete | `EX34-01..14`, `EX34-15a..b`, `EX34-16a..b`, `EX34-17..18`, `EX34-19a..d`, `EX34-20a..b`, `EX34-21..23` | Compiler/store/cache primitives, supersessions, deferred consumer, open namespace review, split operational claims, and evidence limits reviewed. |
+| #35 | `a9556b2` | extraction-complete | `EX35-01..11` | Stage closure claims, deployed acceptance observations, pre-Stage-4 audit gate, and future isolation triggers reviewed. |
+| #36 | `f3a665f` | extraction-complete | `EX36-01..03` | Codex-only PR/merge actor clarification reviewed without treating it as product or ChatGPT policy. |
 | #37 | `0cdf939` | pending | — | — |
 | #38 | `768799c` | pending | — | — |
 | #39 | `af2349d` | pending | — | — |
