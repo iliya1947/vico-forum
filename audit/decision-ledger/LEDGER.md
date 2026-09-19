@@ -62,6 +62,19 @@ Facts or user choices still required.
 
 ## Inventory
 
+### Recorded direct user decision — generic locale architecture
+
+The user has explicitly confirmed that Vico must not be capped to the historical `en`/`ru`/`he`
+set. The intended locale architecture is generic and data-driven so further registered locales can
+be added without changing a closed compile-time locale list. The user also identifies the PR #12
+control-point work as part of correcting the earlier assistant-created three-locale limitation.
+
+Provenance: `direct-user-decision`, recorded during review of `DL-EXTRACT-002` after the ancestry
+inventory was created. This authority applies to the generic-locale/no-hard-coded-ceiling lineage,
+including `AN7-01`, the generic route aspect of `AN7-02`, the corresponding PR #11/PR #12
+control-point records, and the implementing direction in PR #16. It is not blanket approval of
+other translation mechanisms or every decision in those PRs.
+
 No decision records have been classified yet. The first chronological block has the following open
 candidate inventory. Each row is an atomic record at `open` status: it indexes what must be traced,
 but does not establish correctness, authority, current implementation, or target state. Detailed

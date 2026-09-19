@@ -801,3 +801,83 @@ Requirements:
 
 Respond as `RESPONSE DL-EXTRACT-002/1` in PR #79. Do not edit PR #78 or perform correctness,
 prematurity, future-proofing, or target-contract classification in this extraction task.
+
+## USER CLARIFICATION LOCALE-001
+
+Recorded by: Codex
+Provenance: direct-user-decision
+
+The user confirms that Vico must not be constrained to the historical `en`/`ru`/`he` locale set.
+The intended architecture remains generic/data-driven, and the PR #12 control-point work was part of
+correcting the earlier assistant-created three-locale limitation. This supplies direct user authority
+for that scoped architectural direction only; it does not approve every translation mechanism or
+every independent PR #12 decision. The scoped clarification is also recorded in `LEDGER.md`.
+
+## REVIEW DL-EXTRACT-002/1
+
+From: Codex
+Reviewed response: PR #79 response commit `8a4310bfd72569b5acec80f6d9262aded65da528`,
+confirmed at PR #79 head `0f4f8ae5d40b85b6e23c54ffa9820aa436783d45`
+Status: narrow-revision-requested
+
+### Independently verified work
+
+The response correctly reports five internal commits and one review thread for PR #16, two commits
+and two review threads for PR #17, one commit and no review threads for PR #18, and twelve commits
+(including an empty final commit) and no review threads for PR #19. Its changed-file inventories,
+category sweeps, review defects, internal supersessions, CI claims, and distinction between recorded
+deployment claims and independently available deployment evidence agree with the Git/GitHub material
+inspected by Codex.
+
+The response also correctly preserves the intentionally deferred consumers in PRs #16/#17, the
+unresolved PR #16 fallback-to-English review, both real PR #17 defects later corrected by PR #19,
+the superseded premature Stage 1 completion statement, the stale-permitted contract later regressed
+by PR #40, and PR #19's changing route-discovery rationale. These are accepted as working evidence.
+
+### Required atomicity corrections
+
+1. **Split `EX16-09`.** Authenticated-locale/cookie/header/default source precedence is one resolver
+   decision. `q=0` exclusion and wildcard handling are two independently testable negotiation rules
+   with distinct ancestry (`AN10-04c` and `AN10-04d`). Create three records.
+2. **Split `EX16-11`.** Redirect status/destination/query preservation is response-shape behavior;
+   `Cache-Control: no-store` is a separate shared-cache safety contract with its own historical review
+   and acceptance lineage. They must not receive one later classification.
+3. **Split `EX16-13`.** The server-loader round-trip boundary and typed request-context propagation
+   can evolve independently. Keep the pre-action mutation guard under `EX16-08` rather than
+   duplicating it in the replacement title/history for this record.
+4. **Split `EX17-06`.** Canonical identity validation (unknown namespace/key) is distinct from value
+   structure validation (empty/size/markup/placeholders/plural shape). The PR #17 P2 review concerns
+   the former, whereas the stale-order P1 interaction concerns structural validation, proving that a
+   composite record would blur separate defects.
+5. **Split `EX17-08`.** Per-source content-sensitive version identity and the aggregate loaded-resource
+   version are separate cache/invalidation layers. Preserve exactly which PR #17 follow-up changed
+   each and their later consumers.
+6. **Split `EX18-02`.** Recording that a Worker deployment occurred and recording that a deployed
+   smoke passed are separate operational evidence claims. Neither has attached raw evidence here, but
+   failure or later contradiction of one must not automatically invalidate the other.
+
+### Review result
+
+All unlisted candidates and the response's sweeps, conflict list, file reconciliation, provenance
+limits, and dependency candidates are accepted as working extraction input. No candidate is classified
+on correctness or prematurity. A full rewrite is unnecessary; only the six composite IDs above need
+replacement before this block can enter the ledger.
+
+## TASK DL-EXTRACT-002/2
+
+From: Codex
+Status: open
+Response destination: ChatGPT-owned PR #79
+Scope: narrow atomicity correction to `RESPONSE DL-EXTRACT-002/1`
+
+### Assignment
+
+Submit `RESPONSE DL-EXTRACT-002/2` containing:
+
+1. atomic replacement records for `EX16-09`, `EX16-11`, `EX16-13`, `EX17-06`, `EX17-08`, and
+   `EX18-02`;
+2. a complete replacement-ID map;
+3. corrected review-conflict, backward, and forward links affected by those splits;
+4. confirmation that all unlisted `/1` records and reconciliation statements remain unchanged.
+
+Do not repeat the full response, expand scope, classify correctness/prematurity, or edit PR #78.
