@@ -8952,3 +8952,276 @@ Known non-exhaustive links:
 - External facts unavailable as raw artifacts include PR #31/#32 production migration/grant evidence and PR #34/#35 production smoke/Observability samples.
 - No meaningful changed file or accepted review conflict is knowingly left unaccounted for.
 - No candidate above is classified as correct, incorrect, necessary, premature, future-proof, infrastructure drift, approved, or target state.
+
+
+## RESPONSE DL-EXTRACT-005/2
+
+From: ChatGPT  
+Status: submitted  
+Responding in: PR #79 at RESPONSE_COMMIT_SHA  
+Task source: PR #78 head 11ca143a9cd96bf6b9233ac45e133a0f910599d6  
+Scope: narrow atomicity correction to RESPONSE DL-EXTRACT-005/1  
+Claims: evidence extraction only; no correctness, necessity, prematurity, future-proofing, infrastructure-drift, approval, or target-state classification
+
+### Atomic replacement records
+
+#### Candidate EX32-18a — Repository records production migration #2 as applied
+
+Atomic operational claim: the final PR #32 project state records the Stage 3A persistent UI translation schema as applied in production through Production database migration #2.
+
+Introduced/changed/recorded by: PR #32 internal commit 43b4da30290513d55df74c010364b636b00b14d8, PROJECT_STATE.md; final PR body/state repeats the claim.
+
+Normative provenance: historical external-operation claim, not normative approval.
+
+Historical evidence: 43b4da30 changes the prior “production migration not yet applied” state to “schema applied in production through Production database migration #2”.
+
+Evidence limitation: the raw production workflow run/artifact is not attached to the PR material reviewed here.
+
+Backward dependencies:
+- EX31-17 — migration 0002 exists in checked-in history.
+- EX31-19 — runtime rollout is gated on production migration and verification.
+
+Forward links:
+- EX32-18b — verifier-success claim is a separate recorded prerequisite.
+- EX32-19 — runtime-role grants are a separate recorded prerequisite.
+- EX32-21 — deployed persistent-source smoke remains the next acceptance step after the runtime merge.
+
+Review reference: the PR #32 rollout-gate P1 review is historically reconciled only by the combined recorded prerequisites EX32-18a, EX32-18b, and EX32-19; none of those external facts is independently proven by the review itself.
+
+#### Candidate EX32-18b — Repository records Stage 3A production verification as successful
+
+Atomic operational claim: the final PR #32 project state records production verification for the Stage 3A migration as completed successfully.
+
+Introduced/changed/recorded by: 43b4da30290513d55df74c010364b636b00b14d8, PROJECT_STATE.md; final PR body/state repeats the claim.
+
+Normative provenance: historical external-verification claim, not normative approval.
+
+Historical evidence: the same state update separately states that production verification completed successfully after the migration.
+
+Evidence limitation: the verifier output/workflow artifact is not attached to the PR material reviewed here.
+
+Backward dependencies:
+- EX31-15/16 — production verifier was extended for the Stage 3A tables and English-row invariant.
+- EX31-19 — successful production verification is part of the runtime-rollout gate.
+
+Forward links:
+- EX32-19 — read-only grants remain separately recorded.
+- EX32-21 — deployed runtime smoke follows after the migration/verification/grant gate.
+
+Review reference: together with EX32-18a and EX32-19, this addresses the factual state mismatch described by the PR #32 rollout-gate P1 review without converting the repository claim into independently verified external evidence.
+
+#### Candidate EX34-15a — Persistent bundle read reconstructs and validates string resource shape
+
+Atomic read-integrity mechanism: after reading a persisted bundle row, the adapter iterates the stored resource object and accepts only string values into the runtime Record<string, string>; unsupported structured values fail before return.
+
+Introduced/changed/recorded by: original bundle store 0031f0ee8662fe25e7034b0ee9a27c4043e19590; retained through final PR #34.
+
+Normative provenance: persistence-adapter integrity implementation around UI-14/STO-05; exact reconstruction mechanism is implementation.
+
+Backward dependencies:
+- EX31-13 — persisted bundle resources are stored as a JSON object.
+- EX34-14 — the row is selected by persistent locale + namespace.
+
+Forward links:
+- EX34-15b — semantic version recomputation uses the reconstructed resources, but remains a separate integrity check.
+- Later Stage 5 persisted-bundle runtime-consumption work may reuse this read boundary.
+
+Review references: no PR #34 review finding specifically targets this reconstruction mechanism; the namespace own-property review remains attached to EX34-23.
+
+#### Candidate EX34-15b — Persistent bundle read recomputes semantic identity and matches stored bundle_version
+
+Atomic read-integrity mechanism: the adapter recompiles the reconstructed persisted bundle and rejects the row if the recomputed semantic bundleVersion differs from stored bundle_version; only a matching verified bundle is returned.
+
+Introduced/changed/recorded by: integrity correction c24c2433a11aca3aeedcce00573199a84a76f825.
+
+Normative provenance: newly authored persistence-integrity protection around the existing bundle-version contract.
+
+Backward dependencies:
+- EX31-12 — persisted bundle_version physical field/format.
+- EX34-04 — compiler validates translation semantics.
+- EX34-05/06 — semantic version preimage and deterministic ordering.
+- EX34-15a — resource reconstruction supplies the candidate content to recompile.
+
+Forward links:
+- Later persisted-bundle runtime consumers can rely on this read-time semantic-integrity boundary, subject to later cross-stage review.
+
+Review references: no separate PR #34 review finding targets version matching; the final namespace review remains EX34-23.
+
+#### Candidate EX34-16a — Persistent bundle put revalidates content and semantic version before storage
+
+Atomic write-integrity mechanism: before persistence, put validates the persistence locale boundary, recompiles the supplied resources, and rejects a supplied bundleVersion that does not match the recomputed semantic version.
+
+Introduced/changed/recorded by:
+- c24c2433a11aca3aeedcce00573199a84a76f825 — adds recompilation/version matching before write.
+- 76328d80fa108f9597385e45ab71824d897cf8ee — moves canonical non-English locale validation to the persistent adapter boundary.
+
+Normative provenance: persistence-adapter integrity implementation; production Worker capability remains separately constrained by EX34-17.
+
+Backward dependencies:
+- EX34-04/05/06 — compiler validation and semantic version identity.
+- EX34-13 — canonical non-English persistent locale boundary.
+- EX31-12/13 — physical version/resources fields.
+
+Forward links:
+- EX34-16b — only validated/recomputed values proceed to persistence mechanics.
+- Future Stage 5 bundle publication may call the put boundary.
+
+#### Candidate EX34-16b — Persistent bundle put upserts locale+namespace and refreshes compiled_at
+
+Atomic persistence mechanism: the adapter inserts a verified bundle and, on locale+namespace conflict, updates bundle_version, resources, and compiled_at for that same composite identity.
+
+Introduced/changed/recorded by: initial store 0031f0ee8662fe25e7034b0ee9a27c4043e19590; later integrity/locale commits change the values admitted to this operation but retain the upsert mechanics.
+
+Normative provenance: physical persistence implementation behind UI-14/STO-05.
+
+Backward dependencies:
+- EX31-11 — bundle table identity is locale + namespace.
+- EX31-12/13 — persisted version/resources fields.
+- EX34-16a — content/version has been validated before persistence.
+
+Forward links:
+- Future Stage 5 publication/runtime chain may use this storage mechanism.
+- EX34-17 remains separate: the put-capable adapter is not wired into the production Worker write path.
+
+#### Candidate EX34-19a — Repository records creation of a temporary approved production translation row
+
+Atomic external operational claim: PR #34 project state records that deployed Stage 3B acceptance used a temporary approved production ru/common/stageSummary translation row.
+
+Introduced/changed/recorded by: PR #34 internal commit 0c0b1ea5cbe4772e7cd0cc378a11b06d04c1ba4a, PROJECT_STATE.md.
+
+Normative provenance: historical external database-operation claim.
+
+Evidence limitation: no raw SQL/catalog/action artifact proving row creation is attached to PR #34.
+
+Backward dependencies:
+- EX32-18a/18b/19 — repository-recorded migration, verification, and read-only runtime grant prerequisites.
+- EX32-01..03 — runtime store/source path to consume an approved persistent row.
+
+Forward links:
+- EX34-19b — SSR-consumption claim refers to the temporary row.
+- EX34-19c — cleanup claims that temporary row was later deleted.
+
+#### Candidate EX34-19b — Repository records Worker SSR consuming the temporary production translation through Hyperdrive
+
+Atomic external operational claim: project state records that the Worker read the temporary ru/common/stageSummary value from production PostgreSQL through Hyperdrive and emitted it in SSR.
+
+Introduced/changed/recorded by: 0c0b1ea5cbe4772e7cd0cc378a11b06d04c1ba4a, PROJECT_STATE.md.
+
+Normative provenance: historical deployed-runtime observation.
+
+Evidence limitation: no raw production request/response, database trace, or Hyperdrive trace is attached to PR #34.
+
+Backward dependencies:
+- EX34-19a — test row is recorded as present.
+- EX32-09/11/12 — persistent sources are wired to SSR through a request-scoped Hyperdrive store.
+
+Forward links:
+- EX35-01 — later Stage 3 closure summary treats Stage 3B as completed.
+- This smoke does not establish persisted compiled-bundle runtime consumption; EX34-22 remains separate.
+
+#### Candidate EX34-19c — Repository records deletion of the temporary production translation row
+
+Atomic external operational claim: project state records that the temporary acceptance row was deleted after the deployed read check.
+
+Introduced/changed/recorded by: 0c0b1ea5cbe4772e7cd0cc378a11b06d04c1ba4a, PROJECT_STATE.md.
+
+Normative provenance: historical external database-operation claim.
+
+Evidence limitation: no raw deletion command/catalog artifact is attached.
+
+Backward dependencies:
+- EX34-19a — the same temporary row was recorded as created.
+
+Forward links:
+- EX34-19d — English-fallback restoration is recorded after deletion.
+
+#### Candidate EX34-19d — Repository records English fallback restored after temporary-row deletion
+
+Atomic external operational claim: after the temporary persistent translation row was removed, project state records that English fallback was restored.
+
+Introduced/changed/recorded by: 0c0b1ea5cbe4772e7cd0cc378a11b06d04c1ba4a, PROJECT_STATE.md.
+
+Normative provenance: historical deployed-runtime observation.
+
+Evidence limitation: no raw post-deletion request/response artifact is attached.
+
+Backward dependencies:
+- EX34-19c — row deletion is the recorded preceding operation.
+- EX32-09/14/15 — loader priority and persistent-source fallback behavior provide the runtime path being exercised.
+- AN10-07a/EX17-09 — explicit locale fallback/English resource lineage.
+
+Forward links:
+- EX35-06 — final Stage 3 deployed acceptance later records expected English fallback separately.
+
+#### Candidate EX34-20a — Repository records production request events visible in Workers Observability
+
+Atomic external operational claim: PR #34 project state records that, after production deployment, Workers Observability showed real production request events.
+
+Introduced/changed/recorded by: 0c0b1ea5cbe4772e7cd0cc378a11b06d04c1ba4a, PROJECT_STATE.md.
+
+Normative provenance: historical external-observation claim.
+
+Evidence limitation: no raw Cloudflare Observability export/dashboard artifact is attached.
+
+Backward dependencies:
+- EX33-01 — repository-owned config enables Workers Observability.
+- EX33-02 — configured head sampling rate is recorded separately.
+
+Forward links:
+- EX35-07 — later Stage 3 acceptance uses an Observability sample for its no-error claim.
+- PR #41 later changes Observability privacy/logging controls; that is later history, not retroactive authority.
+
+#### Candidate EX34-20b — Repository records no Worker errors in the checked production Observability sample
+
+Atomic external operational claim: project state records that the inspected production Observability sample contained no Worker errors.
+
+Introduced/changed/recorded by: 0c0b1ea5cbe4772e7cd0cc378a11b06d04c1ba4a, PROJECT_STATE.md.
+
+Normative provenance: historical external-observation claim.
+
+Evidence limitation: no raw sample/log artifact is attached, and “no errors in checked sample” is narrower than a universal no-error claim.
+
+Backward dependencies:
+- EX34-20a — production events are recorded as visible in Observability.
+
+Forward links:
+- EX35-07 — final Stage 3 acceptance later records no Worker errors in its checked Observability sample.
+- PR #41 later hardens Observability redaction/application logging without retroactively proving this sample claim.
+
+### Complete replacement-ID map
+
+- EX32-18 → EX32-18a + EX32-18b
+- EX34-15 → EX34-15a + EX34-15b
+- EX34-16 → EX34-16a + EX34-16b
+- EX34-19 → EX34-19a + EX34-19b + EX34-19c + EX34-19d
+- EX34-20 → EX34-20a + EX34-20b
+
+The five unsuffixed /1 IDs above are superseded labels and must not remain independent records.
+
+### Corrected links, review references, and file mappings
+
+1. PR #32 rollout-gate P1 review now maps to three distinct recorded prerequisites: EX32-18a (migration applied), EX32-18b (production verifier succeeded), and EX32-19 (runtime grants verified). The separate PR #32 bundle-consumer P2 review remains mapped only to EX32-20.
+2. The prior link EX31-19/20 → EX32-18/19 becomes:
+   - EX31-19 → EX32-18a + EX32-18b;
+   - EX31-20 → EX32-19.
+3. PR #32 PROJECT_STATE.md file mapping becomes EX32-18a/18b/19/21.
+4. PR #34 db/ui-translation-bundle-store.ts and its database tests map to EX34-13/14/15a/15b/16a/16b. The PR #34 inherited-property namespace review still maps to EX34-23, not to these read/write-store splits.
+5. PR #34 PROJECT_STATE.md mapping becomes EX34-19a/19b/19c/19d, EX34-20a/20b, EX34-21, and EX34-22.
+6. The prior Observability chain EX33-01/02 → EX34-20 → EX35-07 becomes:
+   - EX33-01/02 → EX34-20a;
+   - EX34-20a → EX34-20b;
+   - EX34-20b → EX35-07.
+   PR #41 remains later corrective/hardening history for the Observability subsystem, not retroactive authority.
+7. The Stage 3B deployed-smoke chain is now kept fact-by-fact:
+   - EX34-19a temporary row creation;
+   - EX34-19b SSR consumption through the deployed persistent-source path;
+   - EX34-19c temporary row deletion;
+   - EX34-19d restored English fallback.
+   These claims share one repository state source but retain independent evidence/classification outcomes.
+8. EX34-15a and EX34-15b are separate read-integrity mechanisms; EX34-16a and EX34-16b are separate write-integrity versus storage-update mechanisms. Future Stage 5 use may depend on any subset and must not collapse them back into composite verdicts.
+
+### Unchanged /1 material
+
+Every other candidate record, F/A/C/D/O/G/T sweep, conflict, supersession, external-evidence limitation, changed-file reconciliation statement, future-consumer note, and non-retroactive PR #50 treatment from RESPONSE DL-EXTRACT-005/1 remains unchanged.
+
+This narrow revision does not classify any decision and does not expand the PR #31–#36 extraction scope.
