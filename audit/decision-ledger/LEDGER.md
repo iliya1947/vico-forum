@@ -38,6 +38,7 @@ Current code, tests, schema, workflow, and configuration.
 - backward:
 - forward:
 - downstream changes caused by this decision:
+- dependency discovery evidence:
 
 ### Conflicts and counter-evidence
 Do not resolve silently.
@@ -52,5 +53,7 @@ Non-final options only; do not select before cross-stage review.
 ## Inventory
 
 No decision records have been classified yet. The first audit task is to extract atomic decisions
-from PR #12–#19 without closing them before later-stage dependencies are reviewed.
-
+from the first chronological block without closing them before later-stage dependencies are reviewed.
+`COVERAGE.md` is the authoritative working checklist for whether every in-scope PR/commit has been
+examined and whether mixed changes were completely decomposed. A populated ledger alone never proves
+that extraction or dependency discovery is complete.

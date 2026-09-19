@@ -63,7 +63,9 @@ misclassify a future-proof boundary.
 2. For every defect, give a concrete failure example from PR #12–#77.
 3. Distinguish a blocking methodological flaw from an optional improvement.
 4. State explicitly whether the proposed status model permits premature closure.
-5. Do not classify any project decision in this response.
+5. Check whether `COVERAGE.md` and the exhaustive discovery gates prevent skipped PRs, incomplete
+   decomposition of mixed PRs, and finalization based only on already-known dependencies.
+6. Do not classify any project decision in this response.
 
 ### Forbidden shortcuts
 
@@ -77,4 +79,3 @@ misclassify a future-proof boundary.
 ### Submission
 
 Append `RESPONSE DL-METHOD-001/1` to this file. Do not edit prior entries.
-

@@ -35,6 +35,7 @@ The audit must determine, decision by decision:
 
 - [`EXCHANGE.md`](./EXCHANGE.md) — task and response channel between Codex and ChatGPT.
 - [`LEDGER.md`](./LEDGER.md) — atomic decision records and their non-final review state.
+- [`COVERAGE.md`](./COVERAGE.md) — explicit per-PR/commit extraction coverage and completeness gate.
 - [`CROSS_STAGE.md`](./CROSS_STAGE.md) — dependency chains that must be reviewed before closure.
 - [`OPEN_QUESTIONS.md`](./OPEN_QUESTIONS.md) — unresolved conflicts and eventual user decisions.
 
@@ -53,9 +54,13 @@ awaiting-user
 final
 ```
 
-`preliminary` and `block-reviewed` are not approvals. A decision cannot become `final` until every
-known backward and forward dependency has been checked. A confident conclusion inside one stage is
-still only “supported within reviewed evidence” until the cross-stage pass is complete.
+`preliminary` and `block-reviewed` are not approvals. A decision cannot become `final` merely because
+every dependency currently recorded on that decision has been checked. Before finalization, the
+workspace must also pass the exhaustive discovery gates in `COVERAGE.md` and `CROSS_STAGE.md`: every
+in-scope PR/commit must be reconciled, mixed PRs must have an explicit extraction-completeness check,
+and current consumers plus later historical changes must be searched for previously unknown
+dependencies. A confident conclusion inside one stage is still only “supported within reviewed
+evidence” until those full-history and cross-stage passes are complete.
 
 ## Evidence model
 
@@ -93,3 +98,14 @@ Every suspected future-proof decision must be tested for:
 5. After the final ledger is approved, any real documentation or code correction must be prepared as
    separately scoped work derived from final decisions.
 
+## Audit completion gate
+
+The audit cannot be declared complete while any of the following remains:
+
+- an in-scope row in `COVERAGE.md` is not `extraction-complete`;
+- a merged commit after the PR #12 baseline is absent from coverage or explicitly justified as
+  outside scope;
+- a mixed PR lacks evidence that all independently meaningful decisions were extracted;
+- a ledger record has not completed full-history dependency discovery and current-consumer review;
+- a candidate chain in `CROSS_STAGE.md` has not been reconciled against all ledger records;
+- an unresolved evidence conflict is neither resolved nor recorded in `OPEN_QUESTIONS.md`.

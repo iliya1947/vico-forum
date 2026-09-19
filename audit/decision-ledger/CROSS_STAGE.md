@@ -51,6 +51,18 @@ Additional chains must be added whenever evidence reveals a dependency not repre
 ## Closure rule
 
 A ledger record cannot move to `final` merely because its chronological block has been reviewed.
-Every listed backward/forward dependency must be checked, and unresolved conflicts must either be
-resolved by evidence or moved to `OPEN_QUESTIONS.md` for the user.
+Nor is it sufficient to check only the dependencies already listed on that record. Before closure:
 
+1. every in-scope PR/commit must reach `extraction-complete` in `COVERAGE.md`;
+2. later commits and current consumers must be searched for additional references, semantic reuse,
+   corrective changes, workarounds, and contradictory behavior;
+3. every ledger record must be assigned to all applicable subsystem chains, including chains found
+   after this file was created;
+4. each chain must be reviewed from its earliest accepted intent through current code/tests/docs;
+5. unresolved conflicts must either be resolved by evidence or moved to `OPEN_QUESTIONS.md` for the
+   user.
+
+The full-history discovery pass must explicitly test known regression-shaped relationships such as
+an early contract, a later corrective change, and its current consequence. The stale-translation
+sequence around PR #17/#19 and PR #40 is an example of the relationship shape to search for, not a
+pre-approved classification of those decisions.
