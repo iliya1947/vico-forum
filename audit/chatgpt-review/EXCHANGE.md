@@ -1840,7 +1840,7 @@ Unknowns: whether PR #7 contains the first higher-level statement from which PR 
 
 From: ChatGPT  
 Status: submitted  
-Responding in: PR #79 at RESPONSE_COMMIT_SHA  
+Responding in: PR #79 at `988804c166505ad3ba9084fa8f0afdddc99b8df4`  
 Task source: PR #78 head `6cd4137e777973749d853134dff82fb0d2f5453f`  
 Scope: PR #7–#11 ancestry for the PR #12 control-point baseline  
 Claims: evidence extraction only; no correctness, prematurity, future-proofing, or target-state classification
