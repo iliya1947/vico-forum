@@ -5834,3 +5834,428 @@ Known non-exhaustive links:
 - external documentation claims in PR #20/#23 research are preserved as recorded rationale and provenance but are not independently re-verified here.
 - later code/current-main checks were used only to identify forward correction/consumer candidates; they are not used to retroactively classify the decisions in this block.
 - no candidate above is classified as correct, incorrect, necessary, premature, future-proof, infrastructure drift, approved, or target state.
+
+
+## RESPONSE DL-EXTRACT-003/2
+
+From: ChatGPT  
+Status: submitted  
+Responding in: PR #79 at RESPONSE_COMMIT_SHA  
+Task source: PR #78 head \`9f8a802cc2aacdc188723ca3caea177f89b3a6ee\`  
+Scope: narrow atomicity correction to \`RESPONSE DL-EXTRACT-003/1\`  
+Claims: evidence extraction only; no correctness, necessity, prematurity, future-proofing, infrastructure-drift, approval, or target-state classification
+
+### Replacement records for EX20-03
+
+#### Candidate EX20-03a — PostgreSQL 17 is the Stage 2 persistence engine
+
+Atomic decision: persistent locale-registry storage uses PostgreSQL 17 as the database engine.
+
+Introduced/changed/recorded by: research \`093d7143\`, execution plan \`f805f435\`, state \`1ac805a4\`; merge \`2d0d9e5\`.
+
+Normative provenance: the engine choice is an \`assistant-authored-proposal\`; the recorded PostgreSQL/Hyperdrive support intersection is \`external-platform-requirement\` evidence.
+
+Backward dependencies: \`AN11-04\` requires persistent registry after Stage 1 but does not select a database engine.
+
+Forward candidates: #21 schema/migrations and PostgreSQL 17 CI; #22 persistent repository; later DB-backed translation/auth/forum consumers.
+
+Contrary/unknown: the external compatibility evidence recorded in PR #20 was not independently re-verified in this extraction.
+
+#### Candidate EX20-03b — Neon is the managed PostgreSQL provider for Stage 2
+
+Atomic decision: the production PostgreSQL 17 database is hosted on Neon.
+
+Introduced/changed/recorded by: research \`093d7143\`, execution plan \`f805f435\`, state \`1ac805a4\`; merge \`2d0d9e5\`.
+
+Normative provenance: provider selection is an \`assistant-authored-proposal\`; Neon PostgreSQL-version facts are recorded \`external-platform-requirement\` evidence.
+
+Backward dependencies: EX20-03a supplies the chosen database engine; no accepted pre-Stage-2 record selects Neon.
+
+Forward candidates: #23 production provisioning/runbook and direct-origin configuration; #24 migration workflow uses the Neon admin credential; #26 deployed Stage 2 acceptance claim.
+
+Contrary/unknown: PR #20 creates no Neon resource, and no direct-user decision selecting Neon was found in this block.
+
+#### Candidate EX20-03c — Hyperdrive is the Worker connection/pooling layer
+
+Atomic decision: Cloudflare Workers reach the production PostgreSQL service through Cloudflare Hyperdrive rather than a direct Worker-to-origin database connection.
+
+Introduced/changed/recorded by: research \`093d7143\`, execution plan \`f805f435\`, state \`1ac805a4\`; merge \`2d0d9e5\`.
+
+Normative provenance: project topology is an \`assistant-authored-proposal\`; Hyperdrive support/pooling/local-development behavior is recorded \`external-platform-requirement\` evidence.
+
+Backward dependencies: EX20-03a; \`AN11-04\` only stages persistence later and does not require Hyperdrive.
+
+Forward candidates: #23 Worker runtime adapter/binding; #32 persistent UI translation runtime reuse; #42 Hyperdrive deadline/discard hardening.
+
+Contrary/unknown: PR #20 provisions no Hyperdrive resource and does not itself prove remote Hyperdrive acceptance.
+
+#### Candidate EX20-03d — node-postgres pg is the PostgreSQL driver
+
+Atomic decision: use \`pg\`/node-postgres as the PostgreSQL client driver in the Stage 2 runtime/tooling path.
+
+Introduced/changed/recorded by: research \`093d7143\`; merge \`2d0d9e5\`.
+
+Normative provenance: driver selection is an \`assistant-authored-proposal\`; the recorded Cloudflare recommendation/minimum-version compatibility is \`external-platform-requirement\` evidence.
+
+Backward dependencies: EX20-03a/03c define the database and Worker connection layers but do not require this driver.
+
+Forward candidates: #21 exact \`pg\` dependency; #22 repository/writer integration; #23 Hyperdrive request-local client.
+
+Contrary/unknown: exact version pinning remains the separate EX20-04 record.
+
+#### Candidate EX20-03e — Drizzle is the ORM/migration library
+
+Atomic decision: use Drizzle for typed PostgreSQL schema/repository access and the migration toolchain.
+
+Introduced/changed/recorded by: research \`093d7143\`, execution plan \`f805f435\`; merge \`2d0d9e5\`.
+
+Normative provenance: ORM/tooling selection is an \`assistant-authored-proposal\`; recorded Drizzle/Hyperdrive and migration behavior is \`external-platform-requirement\` evidence.
+
+Backward dependencies: EX20-03a; this library choice is independent of Neon and Hyperdrive provider selection.
+
+Forward candidates: #21 schema/config/migration metadata; #22 Drizzle repository; #23 Drizzle-over-Hyperdrive read path.
+
+Contrary/unknown: exact \`drizzle-orm\`/\`drizzle-kit\` pins remain EX20-04 rather than part of this record.
+
+### Replacement records for EX20-09
+
+#### Candidate EX20-09a — Persistent primary and fallback locale identities use canonical translation identities
+
+Atomic decision: physically stored locale primary tags and fallback-chain entries represent canonical translation identities without formatting extensions.
+
+Introduced/changed/recorded by: \`36c2760c\`; merge \`2d0d9e5\`.
+
+Normative provenance: the physical-storage rule is an \`assistant-authored-proposal\`, built on Stage 1 translation-identity canonicalization \`pre-existing-project-contract\`.
+
+Backward dependencies: \`AN10-04b\`, EX16-01 and the Stage 1 registry identity model.
+
+Forward candidates: #21 schema/seed; #22 persistent row parser/writer; #38 canonical physical-persistence correction.
+
+Contrary evidence: PR #22's merged parser/writer did not fully enforce raw physical canonicality; the PR #22 P2 review and later #38 correction attach to this record, not EX20-09b.
+
+#### Candidate EX20-09b — Declared aliases and matchTags are preserved while effective match identity is derived
+
+Atomic decision: persistent \`aliases\` and \`match_tags\` retain their validated declared strings, while runtime matching derives canonical/effective translation identity from those declarations.
+
+Introduced/changed/recorded by: \`36c2760c\`; merge \`2d0d9e5\`.
+
+Normative provenance: this storage/provenance choice is an \`assistant-authored-proposal\`, built on the Stage 1 alias/match registry model \`pre-existing-project-contract\`.
+
+Backward dependencies: \`AN10-05\`, EX16-04.
+
+Forward candidates: #21 seed preserves declared \`iw\`; #22 semantic identity stores declared/effective pairs; later locale-registry consumers.
+
+Contrary/unknown: PR #38's canonical physical-tag correction does not automatically alter this declared-alias preservation choice.
+
+### Replacement records for EX20-25
+
+#### Candidate EX20-25a — Controlled locale writes use SERIALIZABLE transaction isolation
+
+Atomic decision: execute the controlled locale mutation transaction at PostgreSQL \`SERIALIZABLE\` isolation.
+
+Introduced/changed/recorded by: \`36c2760c\`, with PostgreSQL isolation/retry rationale in \`093d7143\`; merge \`2d0d9e5\`.
+
+Normative provenance: transaction-isolation choice is an \`assistant-authored-proposal\`; PostgreSQL serialization semantics are recorded \`external-platform-requirement\` evidence.
+
+Backward dependencies: none beyond the new Stage 2 controlled-writer boundary; EX20-24 separates this writer from production Worker DML.
+
+Forward candidates: #22 \`ControlledLocaleWriter\`; #42 transaction-local timeout additions preserve the isolation protocol.
+
+#### Candidate EX20-25b — Controlled locale writes validate the full proposed effective graph before DML
+
+Atomic decision: read the complete persistent registry state, parse it, apply the desired mutation in memory, assemble/validate the proposed effective graph, and only then issue database mutation.
+
+Introduced/changed/recorded by: \`36c2760c\`; merge \`2d0d9e5\`.
+
+Normative provenance: full-snapshot/whole-graph validation is an \`assistant-authored-proposal\`, building on the existing registry whole-graph invariants \`pre-existing-project-contract\`.
+
+Backward dependencies: \`AN10-05\`, EX16-03/04, EX20-08.
+
+Forward candidates: #22 writer implementation and concurrency tests; #38 canonicalizes mutation identity before the same proposed-graph comparison.
+
+#### Candidate EX20-25c — Controlled locale writer exposes desired-state put/delete mutations and persists only the resulting delta
+
+Atomic decision: the controlled writer accepts a desired \`put\` or \`delete\` locale mutation and, after validation, persists the corresponding exact upsert/delete delta.
+
+Introduced/changed/recorded by: \`36c2760c\`; merge \`2d0d9e5\`.
+
+Normative provenance: mutation-surface choice is an \`assistant-authored-proposal\`.
+
+Backward dependencies: EX20-24 establishes that the writer is a separate controlled boundary rather than ordinary Worker DML.
+
+Forward candidates: #22 \`LocaleDesiredState\`/\`ControlledLocaleWriter\`; #38 canonicalizes put/delete identity.
+
+Contrary/unknown: no direct-user decision selecting this writer API was found.
+
+### Replacement records for EX20-28
+
+#### Candidate EX20-28a — Production schema evolution/recovery is forward-only
+
+Atomic decision: do not use automatic destructive down migration as the production recovery baseline; keep compatible schema during application rollback and recover database state through reviewed forward repair or tested restore.
+
+Introduced/changed/recorded by: roadmap \`f805f435\`, research \`093d7143\`; merge \`2d0d9e5\`.
+
+Normative provenance: recovery/evolution policy is an \`assistant-authored-proposal\`.
+
+Forward candidates: #21 migration runbook; #24 operational migration workflow; later migration-history/privilege/recovery hardening.
+
+Contrary/unknown: this record does not itself impose the separate runtime-rollout ordering in EX20-28b.
+
+#### Candidate EX20-28b — Required database migration precedes dependent application deployment
+
+Atomic decision: apply/verify a required production database migration before deploying application/runtime code that depends on that schema state.
+
+Introduced/changed/recorded by: roadmap \`f805f435\`; merge \`2d0d9e5\`.
+
+Normative provenance: rollout-order rule is an \`assistant-authored-proposal\`.
+
+Forward candidates: #21 runbook; #24 manual production migration path; #27 schema-first release gate; #44 migration→runtime evidence; #76 later correction to where live evidence is enforced.
+
+Contrary/unknown: PR #50 is not applied retroactively to this Stage 2 rule.
+
+### Replacement records for EX21-06
+
+#### Candidate EX21-06a — Migration representation is checked-in reviewed SQL plus Drizzle metadata applied through migrate
+
+Atomic decision: schema evolution is represented by checked-in SQL migrations and Drizzle journal/snapshot metadata, reviewed in Git and applied through the migration path rather than generated ad hoc at production runtime.
+
+Introduced/changed/recorded by: \`a7083465\`; merge \`c0e2add\`.
+
+Normative provenance: PR #20 roadmap already requires reproducible reviewed SQL migrations — \`pre-existing-project-contract\`; the concrete Drizzle metadata representation is implementation history in PR #21.
+
+Forward candidates: #24 workflow runs metadata validation then migrate; #29 later adds append-only/history consistency guards.
+
+Contrary/unknown: this record does not by itself prohibit every direct schema mutation; that prohibition is EX21-06b.
+
+#### Candidate EX21-06b — Production drizzle-kit push/direct unreviewed schema mutation is excluded
+
+Atomic decision: production schema changes do not use \`drizzle-kit push\` as the deployment mechanism; production changes are expected to flow through the reviewed migration history.
+
+Introduced/changed/recorded by: \`a7083465\` runbook/package command surface; merge \`c0e2add\`.
+
+Normative provenance: PR #20 roadmap's explicit “production \`drizzle-kit push\` not use” rule is \`pre-existing-project-contract\`.
+
+Forward candidates: #24 production workflow uses \`db:migrate\`; #29 migration-history hardening; later migration-only release slices.
+
+Contrary/unknown: this does not classify emergency/manual recovery actions; EX20-28a separately governs forward repair/restore policy.
+
+### Replacement records for EX22-15
+
+#### Candidate EX22-15a — ControlledLocaleWriter implements a desired-state put/delete API
+
+Atomic decision: \`ControlledLocaleWriter.apply()\` accepts either \`{ type: "put", locale }\` or \`{ type: "delete", tag }\` as the controlled mutation surface.
+
+Introduced/changed/recorded by: \`69251733\`; merge \`92b55cd\`.
+
+Normative provenance: EX20-25c — \`pre-existing-project-contract\`.
+
+Forward candidates: #38 canonicalizes put/delete identity before state comparison and SQL DML.
+
+#### Candidate EX22-15b — ControlledLocaleWriter validates a full-snapshot proposed graph before mutation
+
+Atomic decision: inside one write attempt, read the full locale dataset, parse it, construct the proposed state after put/delete, and run persistent-registry whole-graph assembly/validation before issuing the SQL upsert/delete.
+
+Introduced/changed/recorded by: \`69251733\`; merge \`92b55cd\`.
+
+Normative provenance: EX20-25b and EX20-08 — \`pre-existing-project-contract\`.
+
+Forward candidates: #38 preserves the graph-validation flow while fixing canonical mutation identity.
+
+Contrary/unknown: this record is separate from the transaction-isolation choice in EX22-15c.
+
+#### Candidate EX22-15c — ControlledLocaleWriter executes each write attempt in a SERIALIZABLE transaction
+
+Atomic decision: each controlled writer attempt begins \`BEGIN ISOLATION LEVEL SERIALIZABLE\` and the whole attempt is retried only under the separate EX22-16 retry rule.
+
+Introduced/changed/recorded by: \`69251733\`; merge \`92b55cd\`.
+
+Normative provenance: EX20-25a — \`pre-existing-project-contract\`.
+
+Forward candidates: #42 adds \`SET LOCAL\` deadlines while explicitly preserving the existing transaction/retry protocol.
+
+### Replacement records for EX23-04
+
+#### Candidate EX23-04a — Production Worker configuration declares the real HYPERDRIVE binding
+
+Atomic decision/configuration boundary: repository Worker configuration contains a concrete \`HYPERDRIVE\` binding ID so the production request path that dereferences \`env.HYPERDRIVE\` has a declared resource.
+
+Introduced/changed/recorded by: correction \`8483b96e\`; merge \`4f1a727\`.
+
+Normative provenance: EX20-03c supplies the selected Hyperdrive layer — \`pre-existing-project-contract\`; the concrete binding ID is operational implementation history.
+
+Historical evidence: \`wrangler.jsonc\` gains the \`HYPERDRIVE\` binding with a real configuration ID.
+
+Review reference: the PR #23 P1 finding that the initial commit dereferenced an undeclared binding maps to EX23-04a; \`8483b96e\` supersedes that intermediate configuration before merge.
+
+Forward candidates: #25 production Workers Builds path; #26 deployed Hyperdrive acceptance claim.
+
+#### Candidate EX23-04b — Local CI supplies a Wrangler Hyperdrive connection override
+
+Atomic decision/test boundary: the database CI job sets \`CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE\` to the disposable PostgreSQL URL so local Workers preview can exercise the same binding name without a remote Hyperdrive service.
+
+Introduced/changed/recorded by: correction \`8483b96e\`; merge \`4f1a727\`.
+
+Normative provenance: EX20-30 — \`pre-existing-project-contract\`; the exact CI environment wiring is implementation/test configuration.
+
+Historical evidence: the database job receives the local override and the Workers smoke moves behind the PostgreSQL setup.
+
+Forward candidates: EX23-09/10 local Workers smoke; EX23-11 preserves that this override is not remote acceptance.
+
+Contrary/unknown: passing this topology does not prove production Hyperdrive pooling/caching/service behavior.
+
+### Replacement records for EX23-07
+
+#### Candidate EX23-07a — Production Worker connectivity is HYPERDRIVE-only and excludes DATABASE_URL
+
+Atomic decision/capability boundary: production Worker code receives the \`HYPERDRIVE\` binding as its registry database connection path and is not configured with the migration/admin \`DATABASE_URL\`.
+
+Introduced/changed/recorded by: code/runbook \`e51cb2f9\`, binding correction \`8483b96e\`; merge \`4f1a727\`.
+
+Normative provenance: EX20-03c and EX20-29 — \`pre-existing-project-contract\`.
+
+Historical evidence: Worker code consumes \`env.HYPERDRIVE.connectionString\`; runbook says \`DATABASE_URL\` is not a Worker secret/variable.
+
+Forward candidates: later Hyperdrive-backed runtime consumers; #32 persistent UI translation store follows the Worker binding path.
+
+Contrary/unknown: this connectivity boundary does not prove the database-side privilege set; that is EX23-07b.
+
+#### Candidate EX23-07b — Production registry database role is read-only and non-owning
+
+Atomic decision/capability boundary: the runtime PostgreSQL role is intended to have only the connection/schema usage/read privileges needed for registry reads and no table ownership or INSERT/UPDATE/DELETE capability.
+
+Introduced/changed/recorded by: runbook \`e51cb2f9\`; production-state claim \`8483b96e\`; merge \`4f1a727\`.
+
+Normative provenance: EX20-24 and EX20-29 — \`pre-existing-project-contract\`.
+
+Historical evidence: docs/state record the \`vico_forum_runtime\` least-privilege role and its SELECT/no-DML boundary.
+
+Forward candidates: #43 production privilege verifier; #48/#49 later verifier corrections; later runtime DB consumers reuse/extend database privilege boundaries.
+
+External evidence limitation: actual production role grants are repository-recorded claims in PR #23; no raw production catalog snapshot is attached here.
+
+### Replacement records for EX23-08
+
+#### Candidate EX23-08a — Hyperdrive uses the direct/unpooled Neon origin
+
+Atomic remote-resource choice: the Hyperdrive configuration is intended to connect to Neon's direct/unpooled endpoint rather than a Neon-side pooled endpoint.
+
+Introduced/changed/recorded by: runbook \`e51cb2f9\`; resource-state claim \`8483b96e\`; merge \`4f1a727\`.
+
+Normative provenance: EX20-03b/03c plus the direct-origin rationale recorded in PR #20 research — \`pre-existing-project-contract\` with underlying \`external-platform-requirement\` evidence.
+
+Forward candidates: #26 deployed Stage 2 acceptance; later Hyperdrive runtime consumers.
+
+External evidence limitation: no raw Neon/Cloudflare resource configuration is attached to PR #23, so the actual remote origin remains a repository-recorded operational claim in this block.
+
+#### Candidate EX23-08b — Hyperdrive query caching is disabled for the registry configuration
+
+Atomic remote-resource choice: the production registry Hyperdrive configuration disables Hyperdrive query caching while retaining Hyperdrive as the connection/pooling layer.
+
+Introduced/changed/recorded by: runbook \`e51cb2f9\`; resource-state claim \`8483b96e\`; merge \`4f1a727\`.
+
+Normative provenance: EX20-05 — \`pre-existing-project-contract\`.
+
+Forward candidates: #26 acceptance/metrics claim; later registry/translation runtime consumers and timeout work.
+
+External evidence limitation: no raw Cloudflare configuration showing the cache setting is attached to PR #23.
+
+### Replacement records for EX23-17
+
+#### Candidate EX23-17a — Classified registry degradation keeps public English reads available
+
+Atomic operational policy: when persistent registry loading is in a classified degraded state, preserve bootstrap-English public read availability rather than making every public request unavailable.
+
+Introduced/changed/recorded by: \`e51cb2f9\` runbook; merge \`4f1a727\`.
+
+Normative provenance: \`AN10-02\`, EX20-20 and EX22-07 — \`pre-existing-project-contract\`.
+
+Forward candidates: later resilience/deadline work and public-read degradation behavior.
+
+Contrary/unknown: this record concerns availability only; it does not say a degraded deployment is accepted.
+
+#### Candidate EX23-17b — Degraded bootstrap behavior does not satisfy release/deployment acceptance
+
+Atomic gate/policy: observing bootstrap-only degraded behavior must not be treated as successful deployment acceptance or grounds to promote/close the release checkpoint.
+
+Introduced/changed/recorded by: \`e51cb2f9\` runbook; merge \`4f1a727\`.
+
+Normative provenance: EX20-02, EX20-20 and EX20-30 — \`pre-existing-project-contract\`.
+
+Forward candidates: #25 retains the remote acceptance gate; #26 later records the deployed Hyperdrive acceptance.
+
+Contrary/unknown: local fallback success or green PR CI does not establish this external acceptance.
+
+#### Candidate EX23-17c — Registry recovery uses compatible application rollback plus forward database repair/restore, not in-band migration credentials
+
+Atomic recovery policy: on persistence failure, keep the migrated schema when rolling back compatible application code, repair/restore database state through the forward-recovery process, and do not grant migration credentials to the Worker for in-band repair.
+
+Introduced/changed/recorded by: \`e51cb2f9\` runbook; merge \`4f1a727\`.
+
+Normative provenance: EX20-28a and EX20-29 — \`pre-existing-project-contract\`.
+
+Forward candidates: later migration/recovery and privilege-verification hardening.
+
+Contrary/unknown: the separate rule that required migrations precede dependent runtime deployment remains EX20-28b and is not folded into this recovery record.
+
+### Old-ID → replacement-ID map
+
+- \`EX20-03\` → \`EX20-03a\`, \`EX20-03b\`, \`EX20-03c\`, \`EX20-03d\`, \`EX20-03e\`.
+- \`EX20-09\` → \`EX20-09a\`, \`EX20-09b\`.
+- \`EX20-25\` → \`EX20-25a\`, \`EX20-25b\`, \`EX20-25c\`.
+- \`EX20-28\` → \`EX20-28a\`, \`EX20-28b\`.
+- \`EX21-06\` → \`EX21-06a\`, \`EX21-06b\`.
+- \`EX22-15\` → \`EX22-15a\`, \`EX22-15b\`, \`EX22-15c\`.
+- \`EX23-04\` → \`EX23-04a\`, \`EX23-04b\`.
+- \`EX23-07\` → \`EX23-07a\`, \`EX23-07b\`.
+- \`EX23-08\` → \`EX23-08a\`, \`EX23-08b\`.
+- \`EX23-17\` → \`EX23-17a\`, \`EX23-17b\`, \`EX23-17c\`.
+
+The ten unsuffixed IDs above are superseded composite labels and should not be entered as ledger records.
+
+### Corrected backward/forward links and review references
+
+- Generic locale/no-hard-coded-ceiling direct-user authority now links to EX20-09a for canonical stored translation identities and EX20-09b for generic alias/match metadata only to the extent those records preserve the generic data-driven registry; it does not approve any provider/runtime choice in EX20-03a..e.
+- EX20-03a (PostgreSQL) → #21 schema/migrations → #22 repository; EX20-03b (Neon) → #23 provisioning/origin claims; EX20-03c (Hyperdrive) → #23 runtime binding/adapter; EX20-03d (\`pg\`) and EX20-03e (Drizzle) → #21 dependency/tooling implementation and #22/#23 database access. EX20-04 remains the independent exact-version-pin record.
+- The PR #22 P2 noncanonical-physical-tag review and later #38 canonical-persistence correction attach to EX20-09a and EX22-01; they do not classify EX20-09b.
+- EX20-25a → EX22-15c; EX20-25b → EX22-15b; EX20-25c → EX22-15a. EX22-16 retry and EX22-17 ambiguous-commit reconciliation remain separate records.
+- EX20-28a → EX21-08 migration/recovery runbook and later forward-repair/history hardening. EX20-28b → #24 migration-before-runtime path, #27 release ordering, #44 evidence linkage and #76's later correction to enforcement location. PR #50 remains non-retroactive.
+- EX21-06a owns checked-in migration representation/history and links forward to #24 metadata/migrate steps plus #29 append-only/history checks. EX21-06b owns exclusion of production \`push\` and links to the production migration workflow path; neither replaces EX20-28a/28b.
+- The PR #23 initial missing-binding P1 review maps to EX23-04a only. EX23-04b is the separate local CI topology and links forward to EX23-09/10/11.
+- EX23-07a owns Worker connection-secret topology and forward runtime consumers. EX23-07b owns database-side least privilege; #43 and later #48/#49 privilege-verifier history attach only to EX23-07b.
+- EX23-08a owns direct Neon origin selection. EX23-08b owns disabled Hyperdrive query caching and retains the EX20-05 lineage.
+- EX23-17a owns English degraded-read availability; EX23-17b owns the “degraded is not successful acceptance/promotion” gate; EX23-17c owns rollback/forward-repair and no in-band migration-credential recovery.
+- The PR #22/#23 transport-availability review findings remain attached to EX22-07/EX23-06 and are unaffected by these splits.
+- The PR #24 branch-safety and migration-verification review findings remain attached to EX24-01/07/08 and are unaffected by these splits.
+
+### Corrected changed-file mappings
+
+#### PR #20
+- \`docs/translation/RESEARCH.md\` → EX20-03a..e, EX20-04, EX20-05, EX20-14, EX20-26/27, EX20-30.
+- \`docs/translation/LOCALES.md\` → EX20-06..08, EX20-09a/b, EX20-10..15, EX20-20..24, EX20-25a/b/c, EX20-26/27.
+- \`ROADMAP.md\` → EX20-01/02, the 2A/2B/2C placement of EX20-03a..e and the other Stage 2 records, plus EX20-28a/b and EX20-29/30.
+- \`STORAGE_AND_VERSIONING.md\` → EX20-16..19 unchanged.
+- \`PROJECT_STATE.md\` → preflight closure/next-2A state unchanged; it records the grouped Stage 2 topology but does not collapse EX20-03a..e back into one decision.
+
+#### PR #21
+- migration SQL and Drizzle metadata/journal → EX21-05 and EX21-06a.
+- \`drizzle.config.ts\`, \`package.json\`, and migration tooling surface → EX21-01, EX21-06a/06b, EX21-07 as applicable.
+- \`docs/database/MIGRATIONS.md\` → EX21-06a/06b, EX21-07/08.
+- all other PR #21 file mappings from \`/1\` remain unchanged.
+
+#### PR #22
+- \`db/locale-repository.ts\` plus database integration tests → EX22-14, EX22-15a/b/c, EX22-16..18.
+- all persistent-registry/request-context/route/project-state mappings from \`/1\` remain unchanged.
+
+#### PR #23
+- \`workers/app.ts\` and \`wrangler.jsonc\` → EX23-03, EX23-04a, EX23-07a, EX23-14 as applicable.
+- CI, \`scripts/smoke-workers.sh\`, and database smoke setup → EX23-04b, EX23-09/10/15.
+- \`docs/database/HYPERDRIVE.md\` → EX23-07a/b, EX23-08a/b, EX23-11, EX23-17a/b/c, EX23-18.
+- \`docs/translation/RESEARCH.md\` → EX23-05 plus the preserved external rationale for EX23-08a/b.
+- project-state operational claims → EX23-12..16 unchanged; where role/resource topology is referenced it maps to EX23-07b and EX23-08a/b respectively.
+- all other PR #23 file mappings from \`/1\` remain unchanged.
+
+### Unchanged material confirmation
+
+Every \`RESPONSE DL-EXTRACT-003/1\` record not listed in the old-ID map remains unchanged. The accepted F/A/C/D/O/G/T sweeps, PR/commit/review counts, provenance limitations, operational-evidence limitations, PR #24/PR #23 state-sync reconciliation, review-conflict list except for the explicit remappings above, dependency statements not affected by these replacements, and extraction-reconciliation statements remain unchanged.
+
+No correctness/prematurity/necessity/future-proofing/infrastructure-drift/target-state classification is added, PR #50 is not applied retroactively, and PR #78 is not edited.
