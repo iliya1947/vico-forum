@@ -15064,3 +15064,113 @@ CI #157 succeeds on head 4be06212fcfa4640d10be26ee131f970376e9d15.
 - Every final changed file in all five PRs is reconciled.
 - No decision in this response is classified as correct, foolish, erroneous, premature, future-proof,
   infrastructure drift, approved target architecture, or requiring remediation.
+
+## RESPONSE DL-EXTRACT-012/1
+
+From: ChatGPT
+Status: submitted
+Responding in: PR #79 at RESPONSE_COMMIT_SHA
+Task source: PR #78 head 259cb5e63580b617d5a3c8928dcbc8e2b51391ff
+Scope: PRs #66–#70 in chronological merge order
+Claims: evidence extraction only; no correctness, prematurity, future-proofing, architecture-approval, remedy, or target-state classification
+
+### Context reset and chronology
+
+The required reset was completed before extraction. The current PR #78 versions of
+`README.md`, `PROCESS_CONTEXT.md`, `COVERAGE.md`, the complete `LEDGER.md`,
+`CROSS_STAGE.md`, `OPEN_QUESTIONS.md`, and the current exchange tail were re-read.
+The current workflow protocols were also re-read in full. For this block, the translation
+architecture entrypoint and the complete relevant detail/state documents were read at the
+PR #69/#70 historical boundary: `TRANSLATION_ARCHITECTURE.md`,
+`docs/translation/PROVIDERS_AND_JOBS.md`, `docs/translation/UI_TRANSLATION.md`,
+`docs/translation/STORAGE_AND_VERSIONING.md`, `ROADMAP.md`, and `PROJECT_STATE.md`.
+Codex remains process lead and PR #78 owner; this response is bounded evidence extraction
+in PR #79 only.
+
+Actual merge chronology:
+
+1. PR #66 — merge `9c37549077e0e6a0f223cb9b5d034247e9403782` — 2026-09-15 17:35:24Z.
+2. PR #67 — merge `6a476d4d1712bd7994c1f00dacb9649fb1492fe0` — 2026-09-15 18:10:25Z.
+3. PR #68 — merge `a0215cc8b72e3221fcaa30e3b2ebc85e75687e09` — 2026-09-16 07:21:59Z.
+4. PR #69 — merge `c12550c3fa1cb371df82a178d20ed7020c33f9ce` — 2026-09-16 08:49:49Z.
+5. PR #70 — merge `d84d8883f456780c3d4228ccafb9825314328999` — 2026-09-16 09:05:55Z.
+
+### Coverage sweep
+
+#### PR #66 / merge 9c37549077e0e6a0f223cb9b5d034247e9403782
+
+F: provider-neutral machine translation routing and provider-output validation boundaries for Stage 5A | A: Vico-locale/domain/message-kind/capability routing, adapter-owned provider mapping, isolated locale rules, shared untrusted-output validator | C: one P1 protected-term fixture failure plus Node typecheck inclusion fixed in-PR; raw provider payload/result typing and unsupported select behavior tightened in the correction commit | D: PROJECT_STATE records PRV-01/PRV-02/UI-12/UI-13 as a bounded local/CI layer and explicitly leaves durable jobs, real providers and publication/runtime switching later | O: no external provider credential, provider call, Queue, migration, schema or dependency operation | G: provider output is untrusted until validation; plural target structure comes from target locale rules; contextual/select remains controlled-unsupported | T: provider routing, locale rules, validation, persistent/bundle fixture regressions, Node typecheck; CI #158 failed and CI #159 passed after corrections
+
+Evidence inspected:
+- PR body, all 12 changed files, both internal commits `1231e7d` and `d735bf4`.
+- Review 4014877637: new protected-term validation exposed existing `common:stageSummary`
+  fixtures that omitted protected term `Stage 1`.
+- Raw CI #158 evidence: database tests failed with
+  `Protected term mismatch: common:stageSummary`; checks also failed TS6307 because the
+  new `translation-validation.ts` and `locale-rules.ts` files were not included in the
+  Node tsconfig project.
+- `d735bf4` updates affected fixtures, adds the new Node files to `tsconfig.node.json`,
+  makes provider result `value` explicitly `unknown`, and adds controlled unsupported handling
+  for `contextual/select`.
+- Final head `d735bf4c92958ace99d75df7baa5f47d10f115d4`; CI #159 has successful
+  `checks` and `database` jobs.
+
+Completeness limits:
+- All provider adapters in the PR are contract/fake boundaries. No real provider API,
+  credential, quota, attribution acceptance or deployed provider smoke is evidenced.
+- The router/validator is behind the dispatcher boundary and does not publish a translation,
+  write a machine result, compile a current bundle, or switch SSR/runtime reads.
+- The PR does not add durable tasks or Queue transport.
+
+#### PR #67 / merge 6a476d4d1712bd7994c1f00dacb9649fb1492fe0
+
+F: first durable UI translation task persistence and transport-neutral dispatcher | A: stable semantic task identity from PR #63 is materialized in PostgreSQL; one durable row per identity; small ID-only enqueue message; persist-before-enqueue ordering | C: one open P2 finding on client-clock duplicate upsert timestamp; no in-PR correction | D: PROJECT_STATE records JOB-01/JOB-02 durable foundation and deferred consumer/lease/reconciliation/provider/publication | O: migration `0007` is repository/local-CI only; no real Cloudflare Queue or external schema rollout | G: durable store validates/recomputes stable identity; Queue delivery is explicitly not treated as exactly-once | T: dispatcher unit tests, PostgreSQL task-store/constraint tests, migration metadata/history; final CI #160 success
+
+Evidence inspected:
+- PR body, all 11 changed files, sole commit `f6b7f32923d5bbb9b5e2a5621bd65cb8fe1a62b6`.
+- Review 4018711812: duplicate `upsertPending()` used application `new Date()` for
+  `updated_at` while `created_at` was database-owned; clock skew could violate
+  `updated_at >= created_at`. No later #67 commit addresses it.
+- Migration `0007_durable_translation_tasks.sql`, Drizzle schema/store, dispatcher contracts,
+  unit tests, DB integration tests and final PROJECT_STATE were read.
+- Final CI #160 has successful `checks` and `database` jobs.
+- The exact project dependency is Drizzle ORM `0.45.2`; its tagged PostgreSQL insert builder
+  accepts SQL expressions through the `onConflictDoUpdate(... set ...)` update-set boundary,
+  relevant to the later PR #69 store-owned-clock correction.
+
+Completeness limits:
+- The code establishes ordered `await upsertPending(job)` before `enqueue({translationTaskId})`;
+  it does not introduce a PostgreSQL/Queue distributed transaction and does not claim one.
+- #67’s “pending after enqueue failure/unknown” state statement is backed here by the
+  dispatcher/unit boundary; fresh independent-connection durability for that failure window
+  is added later in PR #70.
+- Consumer claims, leases, preflight stale checks, retry/DLQ, reconciliation, provider execution,
+  result publication and runtime bundle consumption remain deferred.
+
+#### PR #68 / merge a0215cc8b72e3221fcaa30e3b2ebc85e75687e09
+
+F: first JOB-03 execution claim/lease and stale pre-provider preflight | A: pending/processing/stale lifecycle, claim-token ownership, expired-lease reclaim, duplicate-delivery no-op, pre-provider source/policy/locale/manual revalidation | C: one P1 DB-test clock fixture fixed in-PR; one P2 stale-reactivation lifecycle issue remains to PR #69 | D: PROJECT_STATE records first JOB-03 slice and explicitly leaves provider execution/retry/DLQ/reconciliation/publication/real Queue later | O: migration `0008` only in repository/local CI; no real Queue/provider/external migration | G: consumer claims before preflight and marks stale only through current claim token; exact target manual values suppress machine work; fallback locale is not exact-target evidence | T: consumer unit tests, migration/lifecycle checks, real concurrent PostgreSQL claim/reclaim tests; CI #166 failed, #167 and final #168 passed
+
+Evidence inspected:
+- PR body, all 12 changed files, commits `4aa7606`, `0cbe639`, `05a1103`.
+- Review 4018963640 P1: DB tests passed a fixed time earlier than the inserted task’s
+  database `created_at`, causing the timestamp check to fail. Raw CI #166 confirms the
+  failing `translation_tasks_timestamps_check`. `0cbe639` anchors test claim times to the
+  created task and CI #167 passes.
+- Review 4018963657 P2: once a stable identity was marked `stale`, the #68 `upsertPending`
+  did not reopen it; later planning could enqueue the same ID but `claim()` returned
+  `terminal`. No later #68 commit fixes this.
+- Final head `05a1103cde8a92320e14435699ae8ffbbe1550d0`; final CI #168 has successful
+  `checks` and `database` jobs.
+
+Completeness limits:
+- #68 still uses caller/Worker-supplied wall-clock values for claim/lease/stale timestamps;
+  this is the behavior later changed in #69 and is not rewritten backward here.
+- A stale row is terminal in #68 even for a later fresh plan with the same stable identity;
+  later #69 reactivation is forward evidence only.
+- The consumer stops at a typed eligible execution context. No provider call or post-provider
+  conditional publication exists in this PR.
+
+#### PR #69 / merge c12550c3fa1cb371df82a178d20ed7020c33f9ce
+
+F: lifecycle/eligibility corrections to the durable task/consumer foundation | A: shared planner/consumer generation eligibility, PostgreSQL-owned lifecycle clock, stale identity reactivation only through a fresh plan, preservation of live processing state | C: inherited #67/#68 lifecycle issues corrected; an in-PR missing-return regression fixed after CI; review P1 documents unsynchronized PROJECT_STATE and remains outside #69’s final diff | D: `PROVIDERS_AND_JOBS.md` and `UI_TRANSLATION.md` are synchronized; PROJECT_STATE is not changed in #69 a
