@@ -256,7 +256,9 @@ required restoration remain open until full-history and cross-stage review.
   rows now point to verified current consumers.
 - **Phase 1 is 100% complete.** Phase 2 preliminary classification and deliberate disconfirmation is
   now open. Its first bounded chain (`#17/#19/#40/#77`) has been reviewed without finalizing a target
-  contract. Overall progress through the five-phase audit/restoration process is approximately **21%**;
+  contract. The infrastructure origin block (`#20/#35/#37`) is also preliminarily reviewed, with five
+  records deliberately left unresolved for its downstream chain. Overall progress through the five-phase
+  audit/restoration process is approximately **23%**;
   extraction completion must not be mistaken for completed findings or remediation.
 - No project decision has reached final status and no product/source-of-truth documentation or runtime
   code has been corrected by this audit branch.

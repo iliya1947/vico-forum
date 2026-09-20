@@ -28,6 +28,20 @@ The remaining records reviewed in this chain are supporting contract/current-beh
 their per-record disconfirmation remains indexed by `DL-CLASSIFY-001/1`. No target contract or remedy is
 selected here.
 
+### Infrastructure/hardening origin (`DL-CLASSIFY-002`)
+
+| Records | Preliminary classification | Evidence boundary |
+| --- | --- | --- |
+| most PR #20 records | acceptable architecture or intentional future-proof foundation | The persistence design is not erroneous merely because PR #20 also expanded external acceptance; `EX20-02` remains unresolved separately. |
+| PR #35 records | mostly acceptable low-cost audit/security checkpoint | Evidence does not establish PR #35 itself as the drift origin. |
+| `EX37-04`, `EX37-06` | justified fixes of real defects | Canonical persistence mismatch and malformed-row isolation addressed present defects before Stage 4. |
+| `EX37-08a`, `EX37-08c1`, `EX37-08c2`, `EX37-09a` | dumb corrections to the stage plan | They made one chosen external staging topology mandatory before forum work; the topology can be valid without being a valid current-stage gate. |
+| `EX37-10..14e` | intentional future-proof boundaries | Capability separation, deferred exact grants, privilege invariants, and migration evidence remain reusable; this does not endorse later ordinary-PR live verification. |
+| `EX20-02`, `EX37-02`, `EX37-03`, `EX37-05`, `EX37-07` | insufficient evidence pending downstream review | Their timing, blocker status, and relationship to later implementation must be tested through PR #42–#50 and #76. |
+
+No strict documentation laundering is established in this origin block. Recording newly introduced
+blockers as current policy is not enough to prove they were represented as older requirements.
+
 ## Record template
 
 ```text

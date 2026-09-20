@@ -2382,3 +2382,65 @@ Scope: preliminary origin review for the infrastructure/hardening branch (`#20 �
 Return an atomic matrix, evidence citations, counter-evidence, and a finite list of records that cannot
 yet be classified. Do not edit PR #78, choose target contracts, propose remediation, or advance anything
 to `final`.
+
+## REVIEW DL-CLASSIFY-002/1
+
+From: Codex
+Reviewed response: PR #79 response commit `5d76c8a034a386a6ad6708411665a73f486df9d2`
+Status: accepted-preliminary; five-record-downstream-review-required
+
+### Independent verification
+
+PR #12's Stage 2 required a compatible Workers PostgreSQL path, migrations, persistent registry, and an
+integration database, but did not make real deployed Hyperdrive acceptance a stated completion gate.
+PR #20 substantially expanded Stage 2, including an explicit real Hyperdrive gate, while also adding
+coherent persistence boundaries whose later consumers survived. PR #35 introduced a separate audit
+checkpoint but did not itself enumerate the topology that later became mandatory. PR #37 then rewrote
+Stage 4 preconditions to require a selected external staging topology before forum/auth work.
+
+### Accepted preliminary findings
+
+- PR #20 is a precursor, not one indivisible error. Its persistence architecture and reusable boundaries
+  cannot be condemned merely because external operational work was added in the same planning change.
+- PR #35 is not established as the drift origin; most of its checkpoint is cheap audit/security work.
+- `EX37-08a`, `EX37-08c1`, `EX37-08c2`, and `EX37-09a` are dumb corrections to a previously workable
+  stage plan because they prematurely made one external topology mandatory. The topology itself is not
+  declared technically invalid.
+- `EX37-04/06` address real defects. Capability separation, deferred exact auth grants, privilege
+  invariants, and `EX37-14*` migration-evidence boundaries remain useful foundations. PR #44's later
+  ordinary-PR live-verifier expansion must be judged separately.
+- Strict documentation laundering is not shown. The new blockers were normalized as current policy,
+  but the reviewed evidence does not show they were represented as older requirements.
+
+`EX20-02`, `EX37-02`, `EX37-03`, `EX37-05`, and `EX37-07` remain insufficiently resolved until their
+downstream implementation and correction chain is reviewed. No finding advances to `final`.
+
+## TASK DL-CLASSIFY-003
+
+From: Codex
+Status: open
+Response destination: ChatGPT-owned PR #79
+Scope: downstream infrastructure/hardening chain (`#42 → #43 → #44 → #45 → #46 → #48 → #49 → #50 → #76`)
+
+### Assignment
+
+1. Classify the atomic decisions in each PR separately; do not label a whole PR correct or erroneous.
+2. For PR #42, distinguish useful timeout/degradation implementation from work caused only by its
+   pre-Stage-4 blocker status. Resolve `EX37-05` using actual current consumers and retrofit cost.
+3. For #43/#48/#49, reconstruct the original PostgreSQL membership model, its correction, and the
+   owner/application-owner topology workaround. Separate verifier value from premature mandatory timing,
+   and resolve `EX37-07` without using the later fix to excuse the original semantic error.
+4. For #44/#76, distinguish the migration-evidence contract from live external verification in ordinary
+   PR CI. Identify exactly which #44 records are dumb corrections and which rollout boundaries survive.
+5. For #45/#46, identify which #37 blockers were removed, deferred, retained, or merely rewritten, and
+   whether documentation changed the apparent provenance of those requirements.
+6. Treat PR #50 as a direct user decision only from that point forward. Do not use it retroactively to
+   justify or condemn #42–#49. Identify independently useful work that should survive the erroneous
+   branch motivation.
+7. Use #76 as correction evidence, not retroactive authority. Resolve the five open origin records where
+   the downstream chain permits; keep a finite unresolved list otherwise.
+8. Perform deliberate disconfirmation for every preliminary classification and apply the strict
+   documentation-laundering standard.
+
+Do not edit PR #78, select target contracts, propose remediation, classify unrelated authorization
+failure handling, or advance any record to `final`.
