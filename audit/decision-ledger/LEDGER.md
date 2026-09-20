@@ -760,6 +760,114 @@ composite IDs listed in the `/2` replacement map are superseded labels, not ledg
 | `EX46-07` | TRANSLATION_ARCHITECTURE records implemented Stage 1 as generic-locale, runtime-registry, and without a fixed compile-time locale list. |
 | `EX46-08` | TRANSLATION_ARCHITECTURE delegates factual implementation-state tracking to PROJECT_STATE. |
 
+
+### PRs #47–#50
+
+Detailed evidence is preserved in PR #79 responses `DL-EXTRACT-008/1` at `27d1829` and
+`DL-EXTRACT-008/2` at `0d4c9c0`, accepted by `REVIEW DL-EXTRACT-008/2`. The seven unsuffixed
+composite IDs in the `/2` replacement map are superseded labels, not ledger records; transcription
+duplicates from `/1` likewise create no records.
+
+| Decision ID | Atomic decision index |
+| --- | --- |
+| `EX47-01` | better-auth is pinned at 1.7.4. |
+| `EX47-02` | @better-auth/drizzle-adapter is pinned at 1.7.4. |
+| `EX47-03` | Stage 4A creates Better Auth core user/session/account/verification schema as persistent foundation. |
+| `EX47-04` | Stage 4A includes database-backed Better Auth rate_limit storage. |
+| `EX47-05` | user.locale is nullable Better Auth user metadata. |
+| `EX47-06` | Better Auth user.locale is server-owned input:false metadata. |
+| `EX47-07` | user.locale has no foreign key to persistent locales. |
+| `EX47-08` | Stage 4A is one append-only forward migration 0003. |
+| `EX47-09` | Stage 4A remains migration-only and introduces no Worker auth dependency. |
+| `EX47-10` | Clean PostgreSQL tests verify exact Better Auth table shape. |
+| `EX47-11` | Production verifier expands to exact Better Auth table column shape. |
+| `EX47-12` | Application-table ownership scope expands to include auth tables. |
+| `EX47-13` | Localization runtime relation privileges remain limited to the three localization tables. |
+| `EX47-14` | Existing localization runtime receives no auth-table access. |
+| `EX47-15a` | PR #47 records external application of migration 0003 as a next-step gate. |
+| `EX47-15b` | PR #47 records successful target verification after migration 0003 as a separate next-step gate. |
+| `EX47-16a` | The then-planned runtime/auth PR is gated on a dedicated least-privilege auth runtime role. |
+| `EX47-16b` | The then-planned runtime/auth PR is gated on a separate auth Hyperdrive binding. |
+| `EX47-16c` | The then-planned runtime/auth PR is gated on exact auth database grants. |
+| `EX47-16d` | The then-planned runtime/auth PR is gated on preview isolation. |
+| `EX47-16e` | The then-planned runtime/auth PR is gated on recorded migration evidence. |
+| `EX47-17` | Project state records Stage 4A foundation as implemented while runtime auth remains absent. |
+| `EX48-01` | Privilege snapshot reads the current database owner from pg_database. |
+| `EX48-02` | PR #43 blanket inbound-membership prohibition is replaced. |
+| `EX48-03` | Only the current database owner may be an inbound member of protected runtime/migration roles. |
+| `EX48-04` | Allowed database-owner inbound membership requires ADMIN OPTION. |
+| `EX48-05` | Allowed database-owner inbound membership must not inherit protected-role privileges. |
+| `EX48-06` | Allowed database-owner inbound membership must not permit SET ROLE. |
+| `EX48-07` | Runtime role must remain distinct from current database owner. |
+| `EX48-08` | Migration role must remain distinct from current database owner. |
+| `EX48-09` | Documentation attributes the exception to PostgreSQL 17 creator-admin membership semantics. |
+| `EX48-10` | Targeted fixtures distinguish allowed database-owner admin-only membership from privilege-bearing inbound membership. |
+| `EX49-01` | Application owner is derived from actual required application-table ownership. |
+| `EX49-02` | All required application tables must have exactly one application-owner role. |
+| `EX49-03` | Connection role and application owner become separate verifier concepts. |
+| `EX49-04` | Dedicated migration connection must use the application-owner role. |
+| `EX49-05` | Database-owner connection is allowed only behind an explicit pre-release flag. |
+| `EX49-06` | Runtime role must remain distinct from application owner. |
+| `EX49-07` | Application owner must remain distinct from database owner. |
+| `EX49-08` | Runtime role remains distinct from database owner. |
+| `EX49-09a` | Application-owner login capability is verified instead of arbitrary connection-role login capability. |
+| `EX49-09b` | Dangerous-role-attribute checks follow the application owner instead of arbitrary connection role. |
+| `EX49-10` | Outbound membership allowlist follows the application owner. |
+| `EX49-11` | Corrected database-owner inbound membership semantics apply to runtime and application-owner roles. |
+| `EX49-12` | Every required application table must be owned by the derived application owner. |
+| `EX49-13` | Effective default-ACL verification follows application owner. |
+| `EX49-14` | Early PR #49 owner mode allowed the DB-owner connection through the migration workflow. |
+| `EX49-15` | P1 review identifies mixed ownership if a pending migration runs under database owner. |
+| `EX49-16` | Owner exception is renamed from migration permission to connection permission. |
+| `EX49-17` | Production workflow runs the full verifier before db:migrate in owner mode. |
+| `EX49-18` | Final DB-owner mode is no-op verification/evidence only. |
+| `EX49-19a` | Owner-connection exception must be removed before the next real schema migration. |
+| `EX49-19b` | Owner-connection exception has an absolute deadline before first release or real/private production data. |
+| `EX49-20` | PR #49 records a production-catalog verification claim without raw catalog artifact. |
+| `EX49-21` | PROJECT_STATE remains unsynchronized with the owner-connection operational change. |
+| `EX50-01` | Forum-first local/CI development becomes the direct user-selected pre-release priority. |
+| `EX50-02` | External infrastructure work is deferred closer to dedicated pre-release integration. |
+| `EX50-03` | Existing localization/translation/database foundation is preserved and reused. |
+| `EX50-04` | Minimal future-proof boundaries remain allowed when avoiding expensive retrofit. |
+| `EX50-05` | Ordinary feature merge no longer implies external production rollout. |
+| `EX50-06` | Active development main must be separated from automatic production promotion before forum-code merge. |
+| `EX50-07` | External infrastructure actions require a separate task/explicit user authorization. |
+| `EX50-08` | Development migration and domain/runtime code may be developed together locally/CI. |
+| `EX50-09` | Development migrations need not be immediately applied to Neon. |
+| `EX50-10` | Schema-first ordering is retained for actual external schema-dependent rollout. |
+| `EX50-11` | Migration evidence is scoped to actual external schema dependency rather than every merged migration. |
+| `EX50-12` | Runtime migration evidence remains at 0002 while deployed Worker does not depend on 0003. |
+| `EX50-13` | PR #49 database-owner exception is retained only as no-op verification/evidence. |
+| `EX50-14a` | Later external rollout requires removing the temporary owner-connection exception. |
+| `EX50-14b` | Later external rollout requires restoring/verifying a dedicated least-privilege migration connection. |
+| `EX50-14c` | Later external rollout requires re-verifying the migration-role/application-ownership contract. |
+| `EX50-15` | Target-environment verifier expands for new forum schema only when that schema approaches external rollout. |
+| `EX50-16` | Existing localization runtime role remains read-only and is not mechanically broadened for forum/auth/translation writes. |
+| `EX50-17` | Forum/auth/translation write capabilities are designed from actual query patterns closer to external integration. |
+| `EX50-18` | Preview/private-data isolation-or-disable trigger remains in force. |
+| `EX50-19` | Existing Hyperdrive localization acceptance remains evidence but stops gating every forum feature PR. |
+| `EX50-20` | Localization deadline values are not universal forum/auth SLOs. |
+| `EX50-21` | Historical Stage 4A Better Auth schema remains a completed foundation. |
+| `EX50-22` | Stage 4A no longer dictates the next infrastructure step. |
+| `EX50-23` | Active Stage 4 is reorganized as forum core 4B → 4C → 4D → 4E. |
+| `EX50-24` | Stage 4 completion is a local/CI forum-MVP criterion, not external production rollout. |
+| `EX50-25` | Stage 4B schedules immutable content revision identity as a future-translation foundation. |
+| `EX50-26` | Stage 4B schedules topic title as a separate versioned/translatable unit. |
+| `EX50-27` | Stage 4B schedules source-locale metadata independently from UI locale with und allowed. |
+| `EX50-28` | Stage 4B explicitly excludes production grants, new Hyperdrive, external OAuth/provider resources and deployed smoke. |
+| `EX50-29` | Stage 4D may implement Better Auth runtime/session locally without real Google OAuth acceptance. |
+| `EX50-30` | Automatic translation/background-job implementation moves after working forum core. |
+| `EX50-31` | Stage 6 becomes the dedicated external integration stage. |
+| `EX50-32` | Project state records no product blocker for starting Stage 4B implementation. |
+| `EX50-33` | Auto-deploy separation remains an operational prerequisite before first forum-code merge. |
+| `EX50-34` | PR #50 changes documentation/process only, not runtime/schema/dependencies/workflows/resources. |
+| `EX50-35` | Pending-migration runbook does not yet describe the workflow change needed to pass the current preflight. |
+| `EX50-36a` | Rewritten Stage 5A omits explicit persistence of generationPolicyVersion. |
+| `EX50-36b` | Rewritten Stage 5A omits explicit use of generationPolicyVersion in task/current-publication acceptance. |
+| `EX50-37` | Rewritten Stage 5A work list omits explicit provider/model provenance/attribution persistence/acceptance. |
+| `EX50-38a` | Rewritten Stage 5 completion criteria omit explicit pre-provider stale-task revalidation. |
+| `EX50-38b` | Rewritten Stage 5 completion criteria omit explicit post-provider conditional-current publication. |
+
 `COVERAGE.md` remains the authoritative working checklist for whether every in-scope PR/commit has
 been examined and whether mixed changes were completely decomposed. A populated ledger alone never
 proves that extraction or dependency discovery is complete.

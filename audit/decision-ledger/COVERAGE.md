@@ -93,10 +93,10 @@ number is lower than the baseline PR number.
 | #44 | `bdc9c0f` | extraction-complete | `EX44-01..15` | Evidence artifact/run/history contracts, rollout linkage, ordinary-PR live verification, unresolved advancement review, and PR #76 forward evidence separated. |
 | #45 | `19ec4b5` | extraction-complete | `EX45-01..18`, `EX45-19a..c`, `EX45-20`, `EX45-21a..c`, `EX45-22..24` | Staging lifecycle revision, retained safety boundaries, external observations/limits, state transitions, AGENTS scope, and README conflict reviewed without PR #50 retroactivity. |
 | #46 | `01ad59a` | extraction-complete | `EX46-01..08` | README lifecycle synchronization and independent Stage 1 generic-locale architecture/state-documentation corrections reviewed. |
-| #47 | `ebd0160` | pending | — | — |
-| #48 | `a52d84f` | pending | — | — |
-| #49 | `75faaba` | pending | — | — |
-| #50 | `e26d145` | pending | — | — |
+| #47 | `ebd0160` | extraction-complete | `EX47-01..14`, `EX47-15a..b`, `EX47-16a..e`, `EX47-17` | Exact-version Better Auth schema foundation, retained capability separation, tests/verifiers, external rollout gates, and state claims reviewed. |
+| #48 | `a52d84f` | extraction-complete | `EX48-01..10` | PR #43 blanket inbound-membership defect, database-owner exception semantics, documentation, and targeted fixtures reviewed. |
+| #49 | `75faaba` | extraction-complete | `EX49-01..08`, `EX49-09a..b`, `EX49-10..18`, `EX49-19a..b`, `EX49-20..21` | Connection/database/application-owner topology, superseded owner-migration mode, final no-op mode, both P1 reviews, and evidence limits reviewed. |
+| #50 | `e26d145` | extraction-complete | `EX50-01..13`, `EX50-14a..c`, `EX50-15..35`, `EX50-36a..b`, `EX50-37`, `EX50-38a..b` | Direct user forum-first decision, forward-only authority, postponed operations, retained boundaries/foundations, Stage 4/5/6 scheduling, and all review findings reviewed. |
 | #51 | `d07f81a` | pending | — | — |
 | #52 | `8aed969` | pending | — | — |
 | #53 | `f9f03fb` | pending | — | — |
