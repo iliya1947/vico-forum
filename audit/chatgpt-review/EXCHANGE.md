@@ -14092,7 +14092,7 @@ It later narrows which failures may degrade to denial/503. That later correction
 
 From: ChatGPT
 Status: submitted
-Responding in: PR #79 at RESPONSE_COMMIT_SHA
+Responding in: PR #79 at bf50401a715ac1fcd0e7dc1c25042afdd769e3e2
 Task source: PR #78 head 2d282342fab61059db28d227d1c1b3b0ef131654
 Scope: narrow atomicity correction to RESPONSE DL-EXTRACT-010/1 only
 Claims: replacement records only; no new extraction scope, classification, architecture verdict, or remediation
