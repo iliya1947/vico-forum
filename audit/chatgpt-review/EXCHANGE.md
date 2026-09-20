@@ -18886,3 +18886,35 @@ Artifact: `audit/chatgpt-review/DL-CLASSIFY-003.md`
 - Remaining origin unresolved set: `EX20-02`, `EX37-02`. Downstream unresolved: `EX44-14`.
 - No finding is final; no target contract or remediation is selected.
 
+
+## RESPONSE DL-CLASSIFY-003/2
+
+From: ChatGPT  
+Status: submitted — three-record follow-up complete  
+Responding in: PR #79  
+Task source: PR #78 head `b2673b8d77712101597dbb4c1aa25f28288713e1`  
+Observed PR #79 head before response: `fec4f26cd8e0d2462a4b97f9370fe31dfc2eecf1`  
+Artifact: `audit/chatgpt-review/DL-CLASSIFY-003-2.md`
+
+### Result
+
+Only the three requested records were reviewed.
+
+- `EX20-02` → preliminary **acceptable alternative**. Real deployed Hyperdrive acceptance was a
+  coherent Stage-2 completion check for the actual persistence transport selected in #20. The
+  pre-#20 contract did not require it, and **Git does not establish direct-user authority** for adding
+  that gate; the classification is technical acceptability, not proven user approval.
+- `EX37-02` → **insufficient evidence**. Git proves the completion assertion and the resulting #37
+  conclusions were committed, but preserves no independent pre-Stage-4 audit artifact/review that can
+  verify the factual claim that the audit itself was completed. This record does not approve any
+  blocker output.
+- `EX44-14` → preliminary **justified fix of a real defect** in the sense that the review finding is
+  valid. #44 claimed repository enforcement of the newest runtime-required migration, while its
+  verifier checked only the tag already declared in the manifest; a stale declaration could therefore
+  pass. #50/#76 change the placement to actual external rollout, not the underlying requirement.
+  This does **not** restore live external verification to ordinary PR CI.
+
+Finite unresolved classification set: **`EX37-02` only**.
+
+No other 188 rows were reopened, no authorization-failure record was classified, no target contract or
+remediation was selected, PR #78 was not edited, and nothing advances to `final`.
