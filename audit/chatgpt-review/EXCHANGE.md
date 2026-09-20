@@ -12004,3 +12004,263 @@ Status in PR #50: unresolved/non-outdated.
 - #50 is treated as direct user authority only from #50 forward; detailed roadmap mechanisms retain their own inherited/assistant-authored provenance.
 - #50 superseded timing, postponed external actions, retained safety boundaries, retained foundations, and future-proof Stage 4B foundations are kept separately addressable.
 - No candidate in this response is classified as correct, foolish, erroneous, premature, future-proof, infrastructure drift, target architecture, approved, or requiring a remedy.
+
+
+## RESPONSE DL-EXTRACT-008/2
+
+From: ChatGPT  
+Status: submitted  
+Responding in: PR #79 at RESPONSE_COMMIT_SHA  
+Task source: PR #78 head \`1a00506940ec751369825b12d92333118de195a7\`  
+Scope: atomicity/transcription correction to \`RESPONSE DL-EXTRACT-008/1\` only  
+Claims: extraction correction only; no decision classification or scope expansion
+
+### Atomic replacements
+
+#### EX47-15a — PR #47 records external application of migration 0003 as a next-step gate
+
+Atomic historical gate: after Stage 4A merge, migration \`0003\` was to be applied to the external production/target database before the then-planned separate runtime/auth-capability PR.
+
+Introduced/changed/recorded by: \`595a68f\`; \`PROJECT_STATE.md\`, \`docs/database/MIGRATIONS.md\`.
+
+Backward: migration-first external rollout lineage from \`EX27-02\` and the later migration/evidence machinery referenced by \`EX37-14*\`.
+
+Forward: PR #50 removes this immediate external application as a gate for ordinary local/CI Stage 4 development while retaining it for actual external schema-dependent rollout.
+
+Evidence limit unchanged: PR #47 contains no preserved external migration-run artifact proving that \`0003\` was actually applied.
+
+#### EX47-15b — PR #47 records successful target verification after migration 0003 as a separate next-step gate
+
+Atomic historical gate: after external application of \`0003\`, the resulting target schema was to be successfully verified before the then-planned separate runtime/auth-capability PR.
+
+Introduced/changed/recorded by: \`595a68f\`; \`PROJECT_STATE.md\`, \`docs/database/MIGRATIONS.md\`.
+
+Backward: external verification/evidence lineage from \`EX37-14*\`; operational sequence follows \`EX47-15a\` without merging application and verification into one record.
+
+Forward: PR #50 removes immediate target verification from ordinary local/CI Stage 4 gating while retaining verification for actual external rollout.
+
+Evidence limit unchanged: merge/CI/preview do not prove this target verification occurred.
+
+#### EX47-16a — The then-planned runtime/auth PR is gated on a dedicated least-privilege auth runtime role
+
+Atomic rollout prerequisite: PR #47 state requires a separate auth runtime role before the then-planned external runtime/auth capability.
+
+Introduced/changed/recorded by: \`595a68f\`; \`PROJECT_STATE.md\`.
+
+Backward: auth-capability/least-privilege lineage \`EX37-10/11/17\`.
+
+Forward: PR #50 defers external auth capability provisioning toward later external integration rather than ordinary local/CI forum/auth implementation.
+
+#### EX47-16b — The then-planned runtime/auth PR is gated on a separate auth Hyperdrive binding
+
+Atomic rollout prerequisite: PR #47 state requires a separate auth Hyperdrive capability instead of mechanically reusing/expanding the localization runtime path.
+
+Introduced/changed/recorded by: \`595a68f\`; \`PROJECT_STATE.md\`.
+
+Backward: auth-capability/Hyperdrive lineage \`EX37-10/11/17\`.
+
+Forward: PR #50 postpones provisioning of new external Hyperdrive write capability to later external integration.
+
+#### EX47-16c — The then-planned runtime/auth PR is gated on exact auth database grants
+
+Atomic rollout prerequisite: exact least-privilege auth grants must be established for the separate auth runtime capability.
+
+Introduced/changed/recorded by: \`595a68f\`; \`PROJECT_STATE.md\`.
+
+Backward: auth role/grant lineage \`EX37-10/11/17\`.
+
+Forward: PR #50 retains capability separation but moves real forum/auth grant design/provisioning closer to external integration.
+
+#### EX47-16d — The then-planned runtime/auth PR is gated on preview isolation
+
+Atomic rollout prerequisite: preview/non-production access must satisfy the applicable isolation boundary before the then-planned auth write/private-data capability is exposed.
+
+Introduced/changed/recorded by: \`595a68f\`; \`PROJECT_STATE.md\`.
+
+Backward: retained preview/isolation lineage represented in the earlier Stage 3/pre-Stage-4 boundaries and \`EX45\`.
+
+Forward: PR #50 retains the preview/private-data isolation-or-disable trigger as \`EX50-18\`.
+
+#### EX47-16e — The then-planned runtime/auth PR is gated on recorded migration evidence
+
+Atomic rollout prerequisite: repository/rollout evidence must record the successfully prepared target migration before the then-planned external schema-dependent auth runtime rollout.
+
+Introduced/changed/recorded by: \`595a68f\`; \`PROJECT_STATE.md\`.
+
+Backward: \`EX44\` migration→runtime evidence chain and \`EX37-14*\`.
+
+Forward: PR #50 scopes migration evidence to actual external schema dependency as \`EX50-11\`.
+
+#### EX49-09a — Application-owner login capability is verified instead of arbitrary connection-role login capability
+
+Atomic verifier-target change: \`rolcanlogin\` is required for the derived \`applicationOwnerRole\` (and separately for runtime) rather than treating an allowed database-owner connection as the application owner.
+
+Introduced/changed/recorded by: \`e410fcd\`; retained final.
+
+Backward: depends on \`EX49-01/03\` deriving and separating application owner from current connection role.
+
+Changed-file evidence: \`.github/scripts/production-privileges.mjs\`; targeted fixture coverage in \`.github/scripts/production-privileges.test.mjs\`.
+
+#### EX49-09b — Dangerous-role-attribute checks follow the application owner instead of arbitrary connection role
+
+Atomic verifier-target change: \`rolsuper\`, \`rolcreatedb\`, \`rolcreaterole\`, \`rolreplication\`, and \`rolbypassrls\` checks apply to the derived \`applicationOwnerRole\` (and separately runtime), not to an allowed database-owner connection merely because it is \`current_user\`.
+
+Introduced/changed/recorded by: \`e410fcd\`; retained final.
+
+Backward: depends on \`EX49-01/03\`.
+
+Changed-file evidence: \`.github/scripts/production-privileges.mjs\`; targeted fixtures in \`.github/scripts/production-privileges.test.mjs\`.
+
+#### EX49-19a — Owner-connection exception must be removed before the next real schema migration
+
+Atomic removal condition: final PR #49 documentation requires removal of the temporary database-owner connection exception and restoration of the non-owner migration path before another real schema migration is applied.
+
+Introduced/changed/recorded by: \`40150f4\`; \`docs/database/MIGRATIONS.md\`.
+
+Backward: follows final no-op-only owner mode \`EX49-18\`.
+
+Forward: PR #50 carries this deferred external action into its later integration path.
+
+#### EX49-19b — Owner-connection exception has an absolute deadline before first release or real/private production data
+
+Atomic lifecycle deadline: irrespective of whether another schema migration occurs first, the temporary owner exception must be gone before the first release or before real/private production data is present.
+
+Introduced/changed/recorded by: \`40150f4\`; \`docs/database/MIGRATIONS.md\`.
+
+Backward: follows \`EX49-18\` temporary owner-mode status.
+
+This is a distinct lifecycle deadline from \`EX49-19a\`.
+
+#### EX50-14a — Later external rollout requires removing the temporary owner-connection exception
+
+Atomic deferred action: before the next actual external schema rollout, remove \`PRE_RELEASE_ALLOW_DATABASE_OWNER_CONNECTION=true\` / the temporary owner-connection exception.
+
+Introduced/changed/recorded by: PR #50 \`PROJECT_STATE.md\`, \`ROADMAP.md\`, \`docs/database/MIGRATIONS.md\`.
+
+Backward: \`EX49-18\`, \`EX49-19a/b\`.
+
+#### EX50-14b — Later external rollout requires restoring/verifying a dedicated least-privilege migration connection
+
+Atomic deferred action: restore and verify a dedicated migration connection for real external schema changes rather than using the temporary database-owner no-op connection.
+
+Introduced/changed/recorded by: PR #50 \`PROJECT_STATE.md\`, \`ROADMAP.md\`, \`docs/database/MIGRATIONS.md\`.
+
+Backward: PR #49 application-owner/connection-role topology \`EX49-01..13\` and final owner-mode boundary \`EX49-18\`.
+
+Review relation: \`EX50-35\` remains the separate open P2 finding that the current workflow's pre-\`db:migrate\` exact-journal verifier still needs a future workflow/runbook change for pending migrations even after the dedicated connection is restored.
+
+#### EX50-14c — Later external rollout requires re-verifying the migration-role/application-ownership contract
+
+Atomic deferred action: before applying pending schema externally, re-check the then-current migration role / application ownership contract rather than assuming the historical #49 topology still matches.
+
+Introduced/changed/recorded by: PR #50 \`PROJECT_STATE.md\`, \`ROADMAP.md\`, \`docs/database/MIGRATIONS.md\`.
+
+Backward: \`EX49-01..13\`.
+
+Review relation: \`EX50-35\` remains unchanged and separate.
+
+#### EX50-36a — Rewritten Stage 5A omits explicit persistence of generationPolicyVersion
+
+Atomic open review finding: Stage 5A claims \`STO-03\` but does not explicitly require machine generation/task/current translation state to persist the applicable \`generationPolicyVersion\`.
+
+Recorded by: PR #50 P2 translation-contract review thread.
+
+Independent contract evidence: \`STORAGE_AND_VERSIONING.md\` \`STO-03\` requires a separate generation policy version for machine generation state.
+
+Status: unresolved/non-outdated in PR #50.
+
+#### EX50-36b — Rewritten Stage 5A omits explicit use of generationPolicyVersion in task/current-publication acceptance
+
+Atomic open review finding: Stage 5A does not explicitly require queued-task validity and conditional result publication to compare/use \`generationPolicyVersion\`, so an old policy result must not become current after a policy change requiring regeneration.
+
+Recorded by: the same PR #50 P2 translation-contract review thread as \`EX50-36a\` and \`EX50-37\`.
+
+Independent contract evidence: \`STO-03\` explicitly requires queued task and conditional publication to account for the policy version.
+
+Status: unresolved/non-outdated in PR #50.
+
+#### EX50-38a — Rewritten Stage 5 completion criteria omit explicit pre-provider stale-task revalidation
+
+Atomic open review finding: completion criteria do not explicitly require proving that the consumer re-loads durable/current source state before the provider call and rejects stale/cancelled/ineligible work before making the external call.
+
+Recorded by: PR #50 P2 JOB-03 review thread.
+
+Independent contract evidence: global invariant 20 and \`JOB-03\` require pre-provider source/policy/locale/manual-result revalidation.
+
+Status: unresolved/non-outdated in PR #50.
+
+#### EX50-38b — Rewritten Stage 5 completion criteria omit explicit post-provider conditional-current publication
+
+Atomic open review finding: completion criteria do not explicitly require proving that, after provider response/validation, publication is conditional on the original task/source/policy still being current so stale work cannot overwrite newer source/policy/current manual state.
+
+Recorded by: the same PR #50 P2 JOB-03 review thread as \`EX50-38a\`.
+
+Independent contract evidence: global invariant 20 and \`JOB-03\` require conditional publication after provider response.
+
+Status: unresolved/non-outdated in PR #50.
+
+### Old-ID → replacement-ID map
+
+- \`EX47-15\` → \`EX47-15a\`, \`EX47-15b\`.
+- \`EX47-16\` → \`EX47-16a\`, \`EX47-16b\`, \`EX47-16c\`, \`EX47-16d\`, \`EX47-16e\`.
+- \`EX49-09\` → \`EX49-09a\`, \`EX49-09b\`.
+- \`EX49-19\` → \`EX49-19a\`, \`EX49-19b\`.
+- \`EX50-14\` → \`EX50-14a\`, \`EX50-14b\`, \`EX50-14c\`.
+- \`EX50-36\` → \`EX50-36a\`, \`EX50-36b\`.
+- \`EX50-38\` → \`EX50-38a\`, \`EX50-38b\`.
+
+No other ID is renumbered.
+
+### Corrected dependency, review, file, and range mappings
+
+- PR #47 canonical ID range becomes \`EX47-01..14\`, \`EX47-15a/b\`, \`EX47-16a..e\`, \`EX47-17\`.
+  - \`EX47-15a/b\` retain the old \`EX47-15\` rollout/evidence lineage, with external application and target verification separated.
+  - \`EX47-16a/b/c\` carry the old auth capability/grant lineage; \`EX47-16d\` carries preview-isolation lineage; \`EX47-16e\` carries migration-evidence lineage.
+  - \`docs/database/MIGRATIONS.md\` mapping changes from \`EX47-03..16\` to \`EX47-03..14\`, \`EX47-15a/b\`, \`EX47-16a..e\`.
+  - \`PROJECT_STATE.md\` mapping changes from \`EX47-09/13..17\` to \`EX47-09/13/14\`, \`EX47-15a/b\`, \`EX47-16a..e\`, \`EX47-17\`.
+- PR #49 canonical ID range becomes \`EX49-01..08\`, \`EX49-09a/b\`, \`EX49-10..18\`, \`EX49-19a/b\`, \`EX49-20..21\`.
+  - \`EX49-09a/b\` both depend on the derived application-owner topology \`EX49-01/03\`; no review finding is added.
+  - \`EX49-19a/b\` both follow \`EX49-18\`; \`EX49-19a\` is the next-schema-migration condition and \`EX49-19b\` the release/private-data absolute deadline.
+  - \`.github/scripts/production-privileges.mjs\` mapping changes from \`EX49-01..13\` to \`EX49-01..08\`, \`EX49-09a/b\`, \`EX49-10..13\`.
+  - \`.github/scripts/production-privileges.test.mjs\` targeted mapping changes analogously from \`EX49-02/04..13\` to \`EX49-02/04..08\`, \`EX49-09a/b\`, \`EX49-10..13\`.
+  - \`docs/database/MIGRATIONS.md\` replaces \`EX49-19\` with \`EX49-19a/b\`.
+- PR #50 canonical ID range becomes \`EX50-01..13\`, \`EX50-14a..c\`, \`EX50-15..35\`, \`EX50-36a/b\`, \`EX50-37\`, \`EX50-38a/b\`.
+  - \`EX50-14a/b/c\` replace the old aggregate external-rollout action; \`EX50-35\` remains a separate open review finding and now references the split actions without changing its content.
+  - The second P2 translation-contract review thread maps to \`EX50-36a\`, \`EX50-36b\`, and unchanged \`EX50-37\`.
+  - The third P2 JOB-03 review thread maps to \`EX50-38a/b\`.
+  - \`PROJECT_STATE.md\`, \`ROADMAP.md\`, and \`docs/database/MIGRATIONS.md\` replace old \`EX50-14\` references with \`EX50-14a..c\` where that deferred external-rollout sequence is represented.
+  - \`ROADMAP.md\` review-finding mapping changes from \`EX50-36..38\` to \`EX50-36a/b\`, \`EX50-37\`, \`EX50-38a/b\`.
+- PR #48 IDs and mappings remain unchanged.
+- PR #49 review references remain unchanged: mixed-ownership P1 → \`EX49-15\`; state-sync P1 → \`EX49-21\`.
+- PR #50 first P2 review remains \`EX50-35\`; no new review-thread ID is created by the atomic splits.
+
+### Reconciliation-reference corrections
+
+- Any \`/1\` reference to immediate Stage 4A rollout timing as \`EX47-15/16\` is read canonically as \`EX47-15a/b\` plus \`EX47-16a..e\`.
+- The PR #50 supersession statement that formerly said \`EX47-15/16\` timing is no longer a universal local/CI gate now refers to the full replacement set above; its meaning is otherwise unchanged.
+- Any \`/1\` reference to \`EX50-14\` in the retained actual-external-rollout path is read as \`EX50-14a..c\`.
+- The unchanged \`EX50-22\` forward relation therefore points to the split \`EX47-15a/b\` and \`EX47-16a..e\` historical immediate gates, while \`EX50-10/11/14a..c\` remain the later external-rollout obligations.
+- Review/dependency reconciliation item 9 remains the same proposition, but its STO-03 reference now addresses \`EX50-36a/b\` and its JOB-03 reference addresses \`EX50-38a/b\`; \`EX50-37\` is unchanged.
+- All other dependency and reconciliation statements from \`/1\` remain unchanged.
+
+### Transcription-cleanup map
+
+The following are transcription duplicates only. For each entry, retain one canonical \`/1\` passage and discard every repeated occurrence with its repeated prose/status lines; do not create an ID, dependency, evidence item, or changed-file mapping from the duplicate:
+
+- duplicated \`RESPONSE DL-EXTRACT-008/1\` heading/status/metadata lines → retain the single canonical response header/status block;
+- duplicated PR #47 coverage-section heading/paragraphs → retain the single canonical PR #47 coverage sweep;
+- duplicated \`EX47-01\` passage → retain canonical \`EX47-01\` unchanged;
+- duplicated \`EX49-21\` passage → retain canonical \`EX49-21\` unchanged;
+- duplicated PR #50 coverage/section heading/paragraphs → retain the single canonical PR #50 coverage sweep;
+- duplicated \`EX50-01\` passage → retain canonical \`EX50-01\` unchanged;
+- duplicated \`Changed-file reconciliation\` heading/section and its repeated subordinate paragraphs → retain the single canonical changed-file reconciliation section;
+- duplicated review/dependency reconciliation item 9 → retain its canonical item once, subject only to the ID-reference correction above;
+- duplicated review/dependency reconciliation item 10 → retain canonical item 10 unchanged;
+- duplicated review/dependency reconciliation item 11 → retain canonical item 11 unchanged;
+- any paragraph/status line duplicated only because it belongs to one of the duplicate parent passages above is discarded with that duplicate parent and does not alter canonical content.
+
+### Unchanged remainder
+
+Every other \`RESPONSE DL-EXTRACT-008/1\` record, direct-user provenance boundary, review finding, supersession/history statement, category sweep, CI/deployment/evidence limitation, changed-file reconciliation, and dependency/reconciliation statement remains unchanged except for the explicit old-ID reference substitutions listed above.
+
+No PR #50 rule is applied retroactively to PR #37–#49. No decision is classified here.
