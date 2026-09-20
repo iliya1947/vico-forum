@@ -117,3 +117,145 @@ R6 = 81
 
 Until Codex reviews this response, the accepted numerator remains **1743**. No target contract,
 remediation, product/source-of-truth change, R3/R6 pre-credit, or `final` advancement is proposed.
+
+
+## RESPONSE DL-CLASSIFY-010/2
+
+From: ChatGPT  
+Status: submitted  
+Responding in: PR #79  
+Task source: PR #78 head `8b9d70144cbfa1f2a12bacfff6642d4f5955b1e5`  
+Scope: finite evidence index for accepted-shape `DL-CLASSIFY-010/1`; no new classification
+
+### Immutable evidence artifact
+
+PR #79 commit `683b05c04a87142e4f124eb72d8a925ce50e8484`:
+
+- `audit/chatgpt-review/DL-CLASSIFY-010-2.json`
+
+The artifact preserves the original 134-row classification and supplies the finite defect/fix evidence
+index requested by Codex.
+
+### Six historical real defects
+
+1. `EX22-01` — noncanonical physical locale tags survived PR #22 merge
+   `92b55cdd9c384aedb90858514de8cf6db02c5c86`. Correction:
+   `EX38-05/06`, implementation `129de4ac13dc52fe56294239e8bafb3c46567f35`
+   (regression coverage `bd9eccb3021c94d29f425926eeaaef279e4b7410`). Current parser requires
+   raw stored tag to equal canonical translation identity.
+2. `EX24-01` — the PR #24 workflow could dispatch production migration from a non-main/stale ref.
+   It survived merge `87c49c5241405338d8a2faf400bee7e2053d85d9`. Correction:
+   `EX29-08/09` in `f6b7bdbd93a71773b079164750a569fe6acfa77b` adds the hard
+   `refs/heads/main` guard and exact `github.sha` checkout.
+3. `EX24-07` — timestamp equality alone was insufficient proof of reviewed migration/schema contents
+   and survived PR #24 merge. The correction is layered rather than a deletion of the timestamp check:
+   `EX29-01..07` plus `EX29-10/11`, implemented across
+   `4f4578bae8dc14f59340e0b05c444e5d0f0d0f30`,
+   `c0516c426aeba9a4eefb5a26d73dd527d6eb96ed`,
+   `e9a055914b6ccb64ffb11f722a1d85d634880a29`,
+   `a419c4fc71bb4d5630ef380aad7fa97f7f330e4e`, and
+   `6db337af7772b253ee520345d21aa970ba3fc46b`.
+   `EX29-12` is not counted as a correction: it deliberately retains journal timestamp equality as
+   one check inside the stronger verification model.
+4. `EX23-06` — realistic Node/TCP/DNS transport failures remained outside degradation at PR #23 merge
+   `4f1a727257cca60ca05655743467722451b97851`. Correction: `EX28-01/02` in
+   `aad8382adec2daf8fcd2510c4f7fa2fdbd7d60b7`. PR #39 later refines the separate
+   code-less-error overbreadth introduced by PR #28.
+5. `EX28-04` — catch-all degradation of remaining code-less pg connect `Error` survived PR #28 merge
+   `2eb1186e85e69c9f32598055b948cfcaa8d23981`. Correction:
+   `EX39-08/09/10`, finalized by `d5934cbffef23f41314f009d97d41310ec354b96` and
+   shared by `e7c7bf143255a5ffb85ed902f9e298fc3f987a3b`,
+   `42e4cdc3232d5740699769b7cb49d4c420f66fb4`, and
+   `c5e3ab6284e977ced808cb0f541fee5816ac7886`.
+6. `EX29-15` — PR #29 changed migration CI/workflow state without same-PR `PROJECT_STATE.md`
+   synchronization and survived merge `c31c05097f8af9f14de09b4e45e335014e2830c0`.
+   Correction: `EX30-04` in `a445827b8e7ca266122d2e1c771303cb6c7b1a89`.
+
+All six are historical at the audited current tree; none is promoted to a current R2 defect here.
+
+### Exact ten justified-fix IDs
+
+- `EX21-10` → PR #21 repeatability finding: public reset left
+  `drizzle.__drizzle_migrations`; fixed by `d68795ea9a090ff8890c0a80ad49cb86526282ea`.
+- `EX23-04a` → PR #23 missing real Worker `HYPERDRIVE` binding; fixed by
+  `8483b96e82f490d28e3445f3d422b591b0599f38`.
+- `EX23-04b` → PR #23 missing local-CI Hyperdrive override; fixed by the same `8483b96e...`.
+- `EX28-01` → `EX23-06` known Node transport-code gap; fixed by `aad8382a...`.
+- `EX28-02` → `EX23-06` connect-boundary typing gap; fixed by `aad8382a...`.
+- `EX28-05` → stale transitional `EX22-10` hidden Stage-1 request-registry fallback after #23
+  production injection existed; fixed by `aad8382a...`. This does not reclassify `EX22-10`.
+- `EX29-08` → `EX24-01` missing main-ref guard; fixed by `f6b7bdbd...`.
+- `EX29-09` → `EX24-01` exact-ref checkout ambiguity; fixed by `f6b7bdbd...`.
+- `EX29-10` → concrete `EX24-07` schema/content-proof weakness; stable column/type/nullability
+  verification added by `6db337af...`.
+- `EX29-11` → stable bootstrap/reserved-row invariant was not independently verified once mutable
+  seed-state pinning was removed; added by `6db337af...`. This does not classify all of
+  `EX24-08` as a defect.
+
+No finding and its fix are double-counted as two justified fixes.
+
+### EX29-13 — why it remains insufficient evidence
+
+The current production verifier intentionally avoids pinning mutable locale lifecycle/content fields,
+while the current full-history DB integration test still asserts the exact final `he/ka/ru` rows.
+PR #29 review `discussion_r3989225653` identified that tension.
+
+The strongest competing classification is a real current test/contract defect: a legitimate future
+locale-data migration could be rejected by the exact final-state assertion. The strongest benign
+interpretation is that the test intentionally describes current final state and should evolve in the
+same commit as such a migration.
+
+The missing evidence preventing resolution is finite:
+
+- no accepted/direct-user or inherited contract says whether this exact final-state assertion is
+  permanent or expected to evolve with data migrations;
+- no current migration changes those rows and is demonstrably blocked by the test;
+- no separate durable test-policy artifact resolves seed-boundary versus current-final-state intent.
+
+Classification remains `insufficient-evidence`; no target contract or remediation is selected.
+
+### EX23-18 — lifecycle evidence
+
+Repository facts:
+
+- PR #23 and current `package.json` pin `pg 8.23.0`;
+- PR #23 created the registry loader inside Worker `fetch` and lazily created `pg.Client` inside
+  that request loader; it was not module-global;
+- current `workers/app.ts` still creates the registry loader inside each `fetch`;
+- current `createRequestRegistryLoader` memoizes one load per request-created loader;
+- normal successful registry reads still omit `client.end()`; classified failure cleanup now uses
+  best-effort `client.end()`.
+
+External primary evidence is kept separate from project intent:
+
+- Cloudflare Hyperdrive, **Connection lifecycle**, last updated 2026-04-21:
+  https://developers.cloudflare.com/hyperdrive/concepts/connection-lifecycle/
+  explicitly says Workers-to-Hyperdrive clients are cleaned up at invocation end, that
+  `client.end()` is not required, and that a new client should be created inside each handler
+  invocation rather than global scope.
+- node-postgres Client API:
+  https://node-postgres.com/apis/client
+  defines `client.end()` as explicit disconnect and ordinary examples call it. That is generic
+  driver behavior, not a Workers+Hyperdrive cleanup requirement.
+- node-postgres `pg@8.23.0` changelog entry adds query pipelining and records no version-specific
+  lifecycle override:
+  https://github.com/brianc/node-postgres/blob/master/CHANGELOG.md
+
+Thus the non-defect conclusion is not inferred from project documentation: the actual request-scoped
+implementation matches Cloudflare's platform-specific lifecycle contract. `EX23-18` remains
+`acceptable-alternative`.
+
+### Aggregate reconciliation
+
+The named evidence set reproduces the existing `DL-CLASSIFY-010.json` categories exactly:
+
+- 6 × `real-original-defect`;
+- 10 × `justified-fix-of-real-defect`;
+- 1 × `insufficient-evidence` (`EX29-13`);
+- 1 × `acceptable-alternative` (`EX23-18`).
+
+All 18 named IDs exist in the original 134-row artifact. No ID, category, total, or classification is
+changed. The original R2 totals remain **55 / 27 / 10 / 6 / 35 / 1 / 0 = 134**.
+
+Phase 2 accepted coverage remains **1743 / 2029 = 85.9044%** until Codex accepts R2. No R2 row is
+pre-credited by this evidence-only response.
