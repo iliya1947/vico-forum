@@ -390,3 +390,151 @@ R6 = 81
 
 Until Codex reviews this response, accepted Phase 2 coverage remains **1877 / 2029**.
 No R6 row is pre-credited and nothing advances to `final`.
+
+
+## RESPONSE DL-CLASSIFY-012/1
+
+From: ChatGPT  
+Status: submitted  
+Responding in: PR #79  
+Task source: PR #78 head `2550249583573744278ebb89d83b35f822ef06af`  
+Claims: preliminary only
+
+### Exact expanded R6 scope
+
+`EX77-01`, `EX77-03`, `EX77-04`, `EX77-05`, `EX77-06`, `EX77-07`, `EX77-08`, `EX77-09`, `EX77-10`, `EX77-11`, `EX77-13`, `EX77-14`, `EX77-15`, `EX77-16`, `EX77-17`, `EX77-18`, `EX77-19`, `EX77-20`, `EX77-21`, `EX77-22`, `EX77-23`, `EX77-24`, `EX77-25`, `EX77-26`, `EX77-32`, `EX77-33`, `EX77-34`, `EX77-35`, `EX77-36`, `EX77-37`, `EX77-38`, `EX77-39`, `EX77-40`, `EX77-41`, `EX77-42`, `EX77-43`, `EX77-44`, `EX77-45`, `EX77-46`, `EX77-47`, `EX77-48`, `EX77-49`, `EX77-50`, `EX77-51`, `EX77-52`, `EX77-53`, `EX77-54`, `EX77-55`, `EX77-56`, `EX77-57`, `EX77-58`, `EX77-59`, `EX77-60`, `EX77-61`, `EX77-62`, `EX77-63`, `EX77-64`, `EX77-65`, `EX77-66`, `EX77-67`, `EX77-68`, `EX77-69`, `EX77-70`, `EX77-71`, `EX77-72`, `EX77-73`, `EX77-74`, `EX77-75`, `EX77-76`, `EX77-77`, `EX77-78`, `EX77-79`, `EX77-80`, `EX77-81`, `EX77-82`, `EX77-83`, `EX77-84`, `EX77-85`, `EX77-86`, `EX77-87`, `EX77-88`
+
+Scope proof: **81 IDs / 81 unique / 0 duplicates / 0 missing assignments / 0 already-covered IDs**.
+All 81 were `unreviewed` in the accepted Phase-2 base map.
+
+### Immutable response artifacts
+
+- Machine classification/disconfirmation: PR #79 commit
+  `7b1a3117ceb9548175ee13b5d89e2e4d53d9b70d`,
+  `audit/chatgpt-review/DL-CLASSIFY-012.json`.
+- Narrative evidence/classification: PR #79 commit
+  `185f049b340e68c08fa20b3f93aa6a032c6f98b3`,
+  `audit/chatgpt-review/DL-CLASSIFY-012.md`.
+- Immutable scope source: PR #79 commit
+  `33bc4029a81ccb1c82549b03a7111622816e1f73`,
+  `audit/chatgpt-review/DL-CLASSIFY-COVERAGE-001-2.json`.
+
+### R6 context
+
+R6 is PR #77 only. Its records are documentation/state/history decisions and evidence indexes.
+Every historical/evaluative statement is treated as `later-retrospective-summary`; PROJECT_HISTORY
+does not validate itself.
+
+The already accepted stale-chain `EX77-02`, `EX77-12`, and `EX77-27..31` are outside R6 and
+were not reopened.
+
+### Category totals
+
+| Category | Count |
+| --- | ---: |
+| intentional foundation | 5 |
+| acceptable alternative | 4 |
+| real original defect | 7 |
+| justified fix of a real defect | 8 |
+| reviewed supporting / provenance-only | 56 |
+| insufficient evidence | 1 |
+| dumb correction of correct implementation | 0 |
+| **total** | **81** |
+
+Substantive: **25**, all with explicit deliberate-disconfirmation records.  
+Supporting/provenance-only: **56**.
+
+### Material documentation findings
+
+1. **Current overstatement — `EX77-24`.**  
+   The high-level pre-Stage-4 summary labels PR #40's stale-pack cleanup as a regression. Accepted
+   stale-chain results are narrower: the zero-stale gate is the dumb correction, while cleanup and
+   test-local stale coverage have separate acceptable classifications. This is a documentation
+   overstatement, not a reopening of `EX77-29/30`.
+
+2. **Current PROJECT_HISTORY omissions — `EX77-58`, `EX77-59`.**  
+   The history index omits the already accepted current #72 A→B→A reactivation defect and the #75
+   durable v1→v2 refresh/backfill gap. The underlying runtime verdicts come from accepted
+   `DL-CLASSIFY-007`; R6 adds only the documentation-omission classification.
+
+3. **Current PROJECT_STATE omissions — `EX77-75`, `EX77-76`.**  
+   Final PROJECT_STATE accurately records the implemented generation-ordering and persisted-read
+   mechanisms but omits those same two confirmed current Stage-5A constraints, despite the file's
+   stated role of recording known current limitations.
+
+4. **Historical intermediate history loss — `EX77-16`.**  
+   `bec8226573ba` removed accumulated history before a replacement existed. It was fixed before merge
+   by creating PROJECT_HISTORY and linking it from current documentation.
+
+5. **Historical H-006 provenance defect — `EX77-46`.**  
+   Initial history wording over-attributed PR #61's broad authorization policy to corrective review.
+   `9c1fa304be9d` corrected the record to separate initial implementation from later review broadening.
+
+### Exact justified corrections
+
+`EX77-03`, `EX77-17`, `EX77-18`, `EX77-19`, `EX77-47`, `EX77-48`, `EX77-53`,
+`EX77-56`.
+
+They respectively correct final PR #76 CI evidence, the Stage5-local/Stage6-external state boundary,
+the concrete-provider-adapter route, intermediate history loss, PR #61 provenance, and the omitted
+#69/#71 missing-return intermediate regressions.
+
+### Evidence-limited record
+
+`EX77-65` is **insufficient evidence**. Git proves the history loss and its pre-merge correction,
+but available PR #77 GitHub discussion does not establish that user review specifically detected
+it; the only visible discussion is the Codex usage-limit bot message. A preserved direct-user
+message/review artifact would be needed for that attribution.
+
+Finite unresolved classification list: **empty**. The row itself has a stable
+`insufficient-evidence` classification.
+
+### Reconciliation against accepted chains
+
+- H-002's scoped process-policy conclusion is corroborated by accepted infrastructure findings.
+- H-003, H-004 and H-005 accurately index the accepted observability, privilege and migration-evidence
+  chains.
+- H-006 is accurate after `9c1fa30`; its initial provenance error is separately classified.
+- H-007 accurately indexes #68/#69 after the missing-return episode is restored.
+- H-008 accurately records #71's rejected supersession approach and #72's durable ordering mechanism,
+  but remains incomplete for the later accepted #72 current defect.
+- H-009 is supported historical evidence about documentation rewrites, not runtime behavior.
+- H-010's state/history/contracts responsibility split is supported; only its user-review attribution
+  remains evidence-limited.
+- `EX77-77` is not a stale-current-state defect because the “PR #77 is not merged” statement is
+  explicitly time-local: “at the moment of this record.”
+
+No new runtime defect is inferred from R6.
+
+### Strict laundering
+
+No new strict documentation laundering is confirmed. R6 has overstatement, omission, and a corrected
+causal-provenance error, but none newly represents a later decision as older/original authority.
+The already accepted `EX77-30` result remains unchanged outside R6.
+
+### Full Phase-2 reconciliation
+
+```text
+accepted before R6:
+  classified + disconfirmed = 1673
+  reviewed supporting       =  275
+  covered                   = 1948 / 2029 = 96.0079%
+
+R6:
+  substantive               =   25
+  supporting                =   56
+  covered                   =   81
+
+if accepted:
+  classified + disconfirmed = 1698
+  reviewed supporting       =  331
+  covered                   = 2029 / 2029 = 100%
+  remaining unreviewed      =    0
+```
+
+The base map retains superseded-history metadata for `EX20-02`, `EX37-03`, `EX37-05`,
+`EX37-07`, and `EX44-14`, but their active `classification` and `accepted_source` already point
+to the later accepted results. **No superseded classification is active.**
+
+If Codex accepts R6, Phase 2 classification/disconfirmation coverage can close at **2029/2029**.
+Nothing advances to `final`; no target contract or remediation is selected.
