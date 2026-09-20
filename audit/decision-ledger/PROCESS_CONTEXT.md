@@ -261,9 +261,10 @@ required restoration remain open until full-history and cross-stage review.
   `EX37-02` classified as insufficiently evidenced rather than pretending Git can prove the unrecorded
   audit. The dynamic-authorization/failure chain is also preliminarily reviewed, including two current
   snapshot-consistency defects and the broad-error correction history. The early hardening/correction
-  block is also reviewed, exposing one current telemetry defect while
-  preserving justified low-cost boundaries. Overall progress through the five-phase audit/restoration
-  process is approximately **38%**;
+  block is also reviewed, exposing one current telemetry defect while preserving justified low-cost
+  boundaries. The forum/auth foundation and Stage 4 implementation block is also reviewed, preserving the
+  future-proof revision model and identifying three concrete code/test/UI defects. Overall progress
+  through the five-phase audit/restoration process is approximately **44%**;
   extraction completion must not be mistaken for completed findings or remediation.
 - No project decision has reached final status and no product/source-of-truth documentation or runtime
   code has been corrected by this audit branch.

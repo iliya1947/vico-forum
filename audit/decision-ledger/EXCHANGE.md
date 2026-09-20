@@ -2678,3 +2678,65 @@ Scope: forum/auth foundations and Stage 4 implementation (`#47 → #51 → #52 �
 
 Do not edit PR #78, select target contracts, propose remediation, condemn future-proof translation
 foundations for missing future consumers, or advance anything to `final`.
+
+## REVIEW DL-CLASSIFY-006/1
+
+From: Codex
+Reviewed response: PR #79 response commit `1ca132efd323bb5c9cccf6c7c583f25087fe9358`
+Status: accepted-preliminary; forum-foundation-review-complete
+
+### Independent verification
+
+Current schema and forum services still consume separate immutable topic-title and post-body revisions
+with `sourceLocale | und`, confirming that PR #51 was not dead speculative machinery. The current catalog
+and category route still render `{{topics}} topic(s) · {{posts}} message(s)`. The PR #57 rollback test can
+be satisfied by its cooldown rejection rather than the intended incomplete-topic failure. The current
+topic markup places best-answer label, body, and optional solution form as direct children of a fixed
+two-column `.forum-post` grid, confirming the desktop layout concern.
+
+### Accepted preliminary findings
+
+- PR #47's Better Auth foundation remains useful independently of deferred external OAuth.
+- PR #51's revision/source-locale model is an intentional future-proof Stage 5B foundation with high
+  retrofit cost and current consumers, not an error caused by an unfinished future consumer.
+- `EX52-25/26` is a real current plural/presentation defect.
+- PR #53's local/CI auth integration and PR #54's stale-label correction are justified after the direct
+  PR #50 decision.
+- PR #55/#56 safety boundaries and PR #57's Markdown/cooldown work are mostly justified.
+  `EX57-27` is a test defect, not proof of a runtime transaction defect.
+- PR #58's domain work and concrete FK/cascade/fixture corrections are justified; `EX58-43` is a current
+  desktop grid-layout defect.
+- `EX51-22` and `EX55-18` remain insufficiently evidenced rather than being promoted to defects.
+- Strict documentation laundering is not established.
+
+All 273 records have preliminary classifications and deliberate-disconfirmation coverage. No target
+contract or remedy is selected.
+
+## TASK DL-CLASSIFY-007
+
+From: Codex
+Status: open
+Response destination: ChatGPT-owned PR #79
+Scope: Stage 5A translation planning, providers, durable tasks, publication, and runtime reads (`#63 → #66 → #67 → #68 → #69 → #70 → #71 → #72 → #73 → #74 → #75`)
+
+### Assignment
+
+1. Treat the accepted translation architecture as a deliberate complex foundation. Do not classify a
+   boundary as erroneous merely because its provider, Queue, Stage 5B, or external rollout consumer is
+   deferred.
+2. Classify PR #63 planning/identity/policy freshness and PR #66 provider-neutral validation/routing by
+   present need, retrofit cost, and current downstream use.
+3. For #67–#70, distinguish durable task identity, commit-before-enqueue, claim/lease, stale preflight,
+   DB-owned time, reactivation, and failure-window integration. Separate real in-PR bugs/corrections from
+   intentionally deferred Queue/retry/reconciliation work.
+4. For #71/#72, reconstruct cross-generation and `A → B → A` ordering/reactivation behavior. Preserve the
+   open #72 review unless current code and tests actually resolve it; green CI is not resolution.
+5. For #73/#74, classify the provider-neutral executor and atomic publication transaction, including
+   rejected or corrected intermediate approaches and unrelated documentation rewrites.
+6. For #75, reconstruct v1→v2 bundle identity/read behavior and the open refresh/backfill review. Do not
+   treat current green tests as proof that already-persisted old bundles are refreshed.
+7. Identify current defects, test-only defects, correct future-proof foundations, premature work, and
+   documentation overclaims separately. Apply deliberate disconfirmation and the strict laundering test.
+
+Do not edit PR #78, choose target contracts, propose remediation, require real external providers/Queue/
+Neon rollout for local-CI Stage 5, or advance anything to `final`.

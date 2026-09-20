@@ -94,6 +94,25 @@ laundering: no evidence shows the catch-all policy was presented as an older acc
 This block shows documentation lag and one premature current-state claim, but not strict provenance
 laundering. The demonstrated namespace consequence is validation bypass, not speculative code execution.
 
+### Forum/auth foundations and Stage 4 (`DL-CLASSIFY-006`)
+
+| Records | Preliminary classification | Evidence boundary |
+| --- | --- | --- |
+| PR #47 | useful Better Auth foundation | Schema/runtime boundaries remain useful independently of deferred real OAuth and external rollout. |
+| PR #51 revision model | intentional future-proof foundation | Immutable body/title revisions and independent `sourceLocale | und` avoid an expensive Stage 5B retrofit and have current forum consumers. |
+| `EX51-22` | insufficient evidence | Direct deletion of superseded revisions is observable, but the accepted retention/deletion policy is not established strongly enough to call it a current defect. |
+| PR #52 core reads/UI | mostly correct product implementation | Page-shaped reads and public SSR remain current; individual presentation findings are classified separately. |
+| `EX52-25/26` | real current presentation/i18n defect | The live catalog still renders English `topic(s)` / `message(s)` interpolation rather than plural-aware messages. |
+| PR #53/#54 | justified integration and documentation correction | Session/auth local-CI integration is valid after PR #50; #54 corrected a stale blocker label rather than runtime behavior. |
+| PR #55/#56 | mostly justified write/session safety boundaries | Server-derived actor, same-origin, validation, and locale-safe auth UI remain reusable; `EX55-18` is not proven defective. |
+| PR #57 runtime work | justified Markdown and concurrency safety | Safe rendering and transactional cooldown address real current boundaries. |
+| `EX57-27` | real test defect only | The rollback test can reject for the wrong reason; it does not prove the transaction runtime is broken. |
+| PR #58 domain work | mostly justified product implementation and corrections | Solved/best-answer, FK/cascade, fixtures, and race-sensitive behavior have current consumers. |
+| `EX58-43` | real current desktop layout defect | Best-answer label/body/form are direct children of a two-column post grid and can occupy unintended grid cells/rows. |
+
+No strict documentation laundering is established in this block. Deferred external OAuth remains an
+intentional post-#50 boundary, not evidence that local/CI Stage 4 was incomplete.
+
 ## Record template
 
 ```text
