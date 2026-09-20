@@ -16544,3 +16544,306 @@ Completeness limits:
   it summarizes #72 as a durable ordering replacement but does not record review 4028280128, and it
   does not record #75 review 4029815293. Its omission is not by itself proof that those findings are
   valid or invalid; it is evidence that PROJECT_HISTORY is not an exhaustive review ledger.
+
+### Candidate atomic decisions — PR #71
+
+#### EX71-01 — Migration 0009 adds completed to durable task status
+The lifecycle status set expands from pending/processing/stale to pending/processing/stale/completed.
+
+#### EX71-02 — Migration 0009 adds completed_at
+The new nullable timestamp records successful completion time independently from stale_at.
+
+#### EX71-03 — Completed rows require prior claim history
+The completed lifecycle requires claimed_at to remain present.
+
+#### EX71-04 — Completed rows clear live claim ownership
+Completed requires claim_token and lease_expires_at to be null.
+
+#### EX71-05 — Completed rows cannot also be stale
+The completed lifecycle requires stale_at null.
+
+#### EX71-06 — completed_at cannot precede claimed_at
+The database lifecycle check requires completed_at >= claimed_at.
+
+#### EX71-07 — TranslationTask model adds completed status
+The application durable-task union is extended to represent the new terminal state.
+
+#### EX71-08 — TranslationTask model carries completedAt
+Task parsing/readback now exposes completed_at.
+
+#### EX71-09 — Task parser validates completed lifecycle
+Application integrity validation mirrors the database completed-state shape.
+
+#### EX71-10 — Claim treats completed as terminal
+A completed task is not reclaimed by duplicate Queue delivery.
+
+#### EX71-11 — Duplicate planning does not reopen a completed same identity
+Final #71 upsertPending preserves processing/completed status instead of resetting it.
+
+#### EX71-12 — Canonical UI descriptor source can be structured
+UiMessageDescriptor source is widened so plural source semantics can be represented as a branch map.
+
+#### EX71-13 — sectionCount becomes a canonical plural descriptor
+The former interpolation-style section count is modeled as one structured plural unit.
+
+#### EX71-14 — Structured source participates in source fingerprinting
+Fingerprint serialization is extended so structured canonical semantics have deterministic identity.
+
+#### EX71-15 — ProviderTranslationValue can be string or structured branch map
+Provider/local/persistent translation values acquire one logical structured representation.
+
+#### EX71-16 — Plain provider output must remain a string
+Non-plural descriptors reject structured output.
+
+#### EX71-17 — Plural provider output must be a structured object
+Plural descriptors reject plain output.
+
+#### EX71-18 — Plural output must contain the exact target-locale branch set
+Missing or unexpected plural branches fail validation.
+
+#### EX71-19 — Every plural branch reuses ordinary translation validation
+Size, markup, placeholders, controlled tokens and protected terms are checked per target branch.
+
+#### EX71-20 — Structured persistent translation payloads are accepted for plural descriptors
+Persistent source parsing no longer rejects all object payloads when the canonical descriptor is plural.
+
+#### EX71-21 — Structured payload canonicalization is deterministic
+Structured branch keys are normalized before JSON persistence/version use.
+
+#### EX71-22 — Bundle compilation expands plural units to i18next v4 suffix keys
+One logical plural value becomes key_one/key_few/etc according to target locale rules.
+
+#### EX71-23 — Persisted compiled-bundle verification reconstructs plural units
+Verification groups runtime suffix keys back into a structured value before semantic validation.
+
+#### EX71-24 — Resource loading can carry compiled structured plural resources
+The runtime resource shape remains strings while logical persistent values may remain structured.
+
+#### EX71-25 — Publisher requires machine provenance origin
+UiTranslationResultPublisher rejects a result whose provenance origin is not machine.
+
+#### EX71-26 — Publisher requires a nonblank provider identity
+Provider provenance must name the producing adapter/provider.
+
+#### EX71-27 — Publisher requires a nonblank model identity
+Machine result provenance must include model/version identity as a nonblank string.
+
+#### EX71-28 — Attribution is optional and normalized before persistence
+Only a nonblank trimmed attribution value is copied into provenance metadata.
+
+#### EX71-29 — Provider output is validated before durable publication
+UiTranslationResultPublisher invokes validateProviderOutput before touching the publication store.
+
+#### EX71-30 — Publisher repeats stale/current preflight after provider return
+Source fingerprint, policy, locale eligibility and exact-target manual override checks are rerun after the external-result boundary.
+
+#### EX71-31 — Post-provider stale result uses the current claim token
+A now-stale task is transitioned through markStale(task id, claim token).
+
+#### EX71-32 — Lost stale-transition ownership becomes claim-lost
+If markStale cannot match the live claim, the publisher returns claim-lost.
+
+#### EX71-33 — Machine publication store returns a conditional boolean
+The store reports whether the still-owned task was actually published/completed.
+
+#### EX71-34 — Publication executes inside one PostgreSQL transaction
+Task completion and raw machine-row persistence share one transaction in #71.
+
+#### EX71-35 — Task completion is conditioned on durable task id
+The update must match the claimed task id.
+
+#### EX71-36 — Task completion is conditioned on stable task identity
+The row must still carry the expected taskIdentity.
+
+#### EX71-37 — Task completion requires processing status
+Pending, stale or completed rows cannot pass the publication transition.
+
+#### EX71-38 — Task completion is conditioned on claim token
+A reclaimed/lost execution cannot complete using an old token.
+
+#### EX71-39 — Task completion is conditioned on namespace and key
+The durable task source identity must match the claimed execution context.
+
+#### EX71-40 — Task completion is conditioned on sourceFingerprint
+Publication cannot silently substitute a different source version inside the same claimed row.
+
+#### EX71-41 — Task completion is conditioned on targetLocale
+The claimed target identity is part of the conditional update.
+
+#### EX71-42 — Task completion is conditioned on generationPolicyVersion
+The claimed machine policy identity is part of the conditional update.
+
+#### EX71-43 — Failed conditional completion returns false before raw translation write
+If no task row matches, #71 exits the transaction path without upserting ui_translations.
+
+#### EX71-44 — Published raw result uses machine origin and approved status
+Successful publication writes a current machine candidate as approved.
+
+#### EX71-45 — Published raw result stores the task source fingerprint
+The machine row keeps the exact canonical source identity used by the task.
+
+#### EX71-46 — Published raw result stores the canonicalized provider payload
+Plain or structured value is persisted through canonicalPayload.
+
+#### EX71-47 — Published raw result stores generation policy version
+Machine-currentness provenance includes the policy version that produced it.
+
+#### EX71-48 — Published raw result stores provider and model
+The machine row records provider/model provenance.
+
+#### EX71-49 — Published raw result stores optional attribution metadata
+Normalized attribution is persisted when supplied.
+
+#### EX71-50 — Raw machine publication upserts one locale/namespace/key/machine row
+A later machine result replaces the existing machine-origin row for that UI unit.
+
+#### EX71-51 — Task completion and raw machine-row upsert are atomic in #71
+Failure in the raw-result write rolls the transaction back together with completion.
+
+#### EX71-52 — Lost or reclaimed claim cannot write a raw result
+Claim-token failure leaves the durable task/result state unchanged by the publication store.
+
+#### EX71-53 — Final #71 has no authoritative ordering between different stable task identities
+Different source/policy identities for one logical unit can coexist without a durable current-generation head.
+
+#### EX71-54 — Review 4026927508 identifies old-result overwrite across identities
+The review shows an older claimed task can publish after a newer identity and overwrite the shared machine row.
+
+#### EX71-55 — fa56fff attempts logical-unit supersession during planning
+The intermediate store wraps planning in a transaction and identifies other tasks by kind/namespace/key/target.
+
+#### EX71-56 — fa56fff marks other processing identities stale
+The attempted correction revokes active claims for different identities in the same logical unit.
+
+#### EX71-57 — fa56fff deletes other pending identities
+The attempted correction removes older pending rows so queued deliveries become not-found.
+
+#### EX71-58 — fa56fff then creates/upserts the freshly planned identity
+The new plan becomes the only intended active identity under that intermediate strategy.
+
+#### EX71-59 — 29f446a adds coverage for the attempted supersession model
+Tests are changed to assert the intermediate stale/delete behavior.
+
+#### EX71-60 — b500c79 records the attempted supersession model in documentation
+PROJECT_STATE/docs temporarily describe that strategy as the generation boundary.
+
+#### EX71-61 — 9dd5591 removes the cross-generation supersession mechanism
+The store returns to independent stable identities rather than inferring chronology from a fresh plan.
+
+#### EX71-62 — 9dd5591 removes deletion of other pending identities
+Final #71 does not destroy a different pending identity when another identity is planned.
+
+#### EX71-63 — 9dd5591 removes revocation of other processing claims
+Final #71 does not cancel a different in-flight identity solely because another identity is planned.
+
+#### EX71-64 — 9dd5591 accidentally removes requiredRow return
+The correction leaves requiredRow throwing on missing row but returning undefined on success.
+
+#### EX71-65 — dcf70d8 restores requiredRow return
+The intermediate implementation regression is repaired before merge.
+
+#### EX71-66 — 950485d removes coverage for the rejected supersession model
+Tests no longer assert the unsafe intermediate behavior.
+
+#### EX71-67 — Final generation-isolation test keeps an older completed identity terminal
+Planning the old completed identity again returns the same completed task.
+
+#### EX71-68 — Final generation-isolation test preserves a newer pending identity
+A delayed duplicate plan for the older completed task does not remove the newer pending task.
+
+#### EX71-69 — Final generation-isolation test preserves a newer processing claim
+The same delayed duplicate also leaves a newer processing task/token intact.
+
+#### EX71-70 — Final generation-isolation test does not prove cross-identity publication ordering
+It verifies coexistence/non-destruction, not an authoritative winner when both different identities can publish.
+
+#### EX71-71 — Temporary migration generator is branch-only tooling
+1a60de7 introduces a temporary generator used to produce the forward completion migration.
+
+#### EX71-72 — Temporary migration generator receives an in-branch repair
+7f59b63 fixes that generator before the migration is regenerated.
+
+#### EX71-73 — 6792421 generates checked-in migration 0009 and metadata
+The durable completion schema becomes normal append-only repository history.
+
+#### EX71-74 — Temporary migration generator is removed before merge
+3969c6b removes the branch-only helper after checked-in artifacts exist.
+
+#### EX71-75 — Temporary Stage 5A validation workflow is branch-only
+c7008a9 adds temporary validation while the large slice is being assembled.
+
+#### EX71-76 — Temporary validation workflow is removed before merge
+705c274 removes that temporary workflow so the final PR does not add a permanent CI workflow.
+
+#### EX71-77 — Node typecheck adds publication dependencies
+c7a4780 ensures the new server-only publication modules are part of the Node project.
+
+#### EX71-78 — Machine provenance types are tightened
+2bdb890 aligns provider/model/origin metadata typing with publication persistence.
+
+#### EX71-79 — Auth-control fixture is updated for canonical plural runtime resources
+f9f6fca adapts unrelated route fixture resources to the new sectionCount plural shape.
+
+#### EX71-80 — Forum public-read fixture is updated for canonical plural runtime resources
+0d677b0 adapts forum fixture resources to the new plural shape.
+
+#### EX71-81 — Persistent publication fixtures are typed to the structured-capable boundary
+b4b1c5c fixes fixture typing without changing runtime publication semantics.
+
+#### EX71-82 — Bundle compiler resolves plural rules only for present plural units
+a7d44de avoids requiring locale plural rules when a namespace contains no persisted value for that plural descriptor.
+
+#### EX71-83 — Runtime plural lookup has explicit canonical regression coverage
+0d31e6c verifies i18next resolves the compiled plural suffix resources.
+
+#### EX71-84 — Database publication test covers successful completion and raw persistence
+The PostgreSQL suite verifies completed lifecycle plus provider/model/attribution row state.
+
+#### EX71-85 — Database publication test covers lost claim rejection
+A fabricated stale claim token cannot complete/publish and the real claim remains usable.
+
+#### EX71-86 — Database publication test covers structured plural persistence
+Plural branch JSON is persisted as one machine unit and later read as the same logical structure.
+
+#### EX71-87 — Persisted-bundle tests cover compiled plural representation
+The existing bundle primitive is verified with i18next v4 suffix resources.
+
+#### EX71-88 — Completed same identity remains terminal in database coverage
+After successful publication, upsertPending returns completed and claim returns terminal.
+
+#### EX71-89 — PROVIDERS_AND_JOBS records completed-task terminal semantics
+The detail contract is synchronized with the new completed state and same-identity behavior.
+
+#### EX71-90 — UI_TRANSLATION records structured plural compilation behavior
+The detail contract explains one logical plural payload compiling to locale-specific runtime keys.
+
+#### EX71-91 — PROJECT_STATE records conditional publication as implemented local/CI
+The state document advances Stage 5A to include validated raw machine publication and completed tasks.
+
+#### EX71-92 — PROJECT_STATE after 9dd5591 removes the rejected cross-generation strategy
+e0db850 synchronizes state after the unsafe supersession attempt is removed.
+
+#### EX71-93 — Authoritative different-identity ordering is explicitly deferred from final #71
+The PR body/state names it as later JOB-03 work rather than claiming it solved.
+
+#### EX71-94 — Whole-namespace persisted bundle publication remains deferred after #71
+Raw result publication does not yet rebuild ui_translation_bundles.
+
+#### EX71-95 — Persisted-bundle SSR/runtime consumption remains deferred after #71
+Stage 3C bundle storage is still not the first runtime read path.
+
+#### EX71-96 — Concrete external machine provider remains absent
+Provider-neutral contracts/fakes are used; no real adapter credential/call is added.
+
+#### EX71-97 — Real Queue/retry/DLQ/reconciliation remain absent
+Transport and production recovery machinery remain later Stage 5/Stage 6 concerns.
+
+#### EX71-98 — PR #71 performs no external migration or deployment
+Migration 0009 is validated only through repository/local-CI paths.
+
+#### EX71-99 — CI #188 verifies the corrected code head
+GitHub Actions succeeds on 03214222eefd6033934c3fda5bf088e8842cd069 before final state synchronization.
+
+#### EX71-100 — Final CI #189 is green
+GitHub Actions succeeds on final head e0db850a5a6fa1c8dd34fdb1f3150ec5977de7cf.
+
