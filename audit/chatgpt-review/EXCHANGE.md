@@ -15330,4 +15330,213 @@ The implementation throws `LocaleRulesUnavailableError` rather than substituting
 #### EX66-35 — English locale-rule coverage expects one/other
 The unit test records `["one", "other"]`.
 
-#### EX66-36 — Arabic locale-rule coverage expects the
+#### EX66-36 — Arabic locale-rule coverage expects the six cardinal categories
+The unit test records few/many/one/other/two/zero.
+
+#### EX66-37 — A formatting-extension locale is rejected by the locale-rules boundary
+`en-u-nu-arab` is included in unavailable/invalid coverage.
+
+#### EX66-38 — Translation structural validation is centralized in translation-validation.ts
+Existing source/local-pack validation reuses the shared validator.
+
+#### EX66-39 — Empty translation output is rejected
+`validateTranslation()` requires non-whitespace content.
+
+#### EX66-40 — Translation output has a 10,000-character upper bound in this implementation
+Longer output raises `TranslationValidationError`.
+
+#### EX66-41 — HTML-like markup is rejected
+The validator rejects matching tag-shaped markup.
+
+#### EX66-42 — Placeholder sets must match the descriptor
+Runtime output placeholders are sorted and compared to descriptor placeholders.
+
+#### EX66-43 — Controlled nesting/component tokens must be preserved
+The validator compares `$t(...)` and numeric component-token occurrences to the source.
+
+#### EX66-44 — Every descriptor protected term must remain present
+Missing protected terms produce `Protected term mismatch`.
+
+#### EX66-45 — A plural descriptor must declare the count placeholder
+Plural validation rejects a descriptor without `count`.
+
+#### EX66-46 — Non-plural provider output must be a string
+`validateProviderOutput()` rejects non-string output before shared validation.
+
+#### EX66-47 — Plural provider output must be an object-like branch map
+Arrays/null/non-record values are rejected.
+
+#### EX66-48 — Target plural output must include every required target branch
+The validator computes required branches through `LocaleRulesProvider`.
+
+#### EX66-49 — Target plural output cannot contain unexpected branches
+Actual branch keys must equal the required target set.
+
+#### EX66-50 — Every plural branch must be a string
+Non-string branch values are rejected.
+
+#### EX66-51 — Every plural branch passes the same placeholder/markup/token/protected-term validation
+Structured output does not bypass the plain semantic checks.
+
+#### EX66-52 — The router can return a non-string raw provider payload without trusting it
+The corrected router test returns numeric `42`; validation remains a later boundary.
+
+#### EX66-53 — Initial protected-term validation exposed stale fixtures
+Review 4014877637 identifies `common:stageSummary` fixtures missing protected term `Stage 1`.
+
+#### EX66-54 — CI #158 database job failed on the protected-term mismatch
+Raw CI logs contain `Protected term mismatch: common:stageSummary`.
+
+#### EX66-55 — CI #158 checks job also failed because the new validation/rules files were absent from Node tsconfig
+The raw typecheck failure is TS6307 for the newly imported files.
+
+#### EX66-56 — d735bf4 updates the affected fixtures to preserve the protected term
+Persistent/bundle test values are changed to include `Stage 1`.
+
+#### EX66-57 — d735bf4 adds a protected-term regression assertion
+The corrected test suite explicitly rejects a translation that drops the term.
+
+#### EX66-58 — d735bf4 adds the new validation/rules modules to tsconfig.node.json
+The Node typecheck project now includes them.
+
+#### EX66-59 — PR #66 changes no database schema or migration
+The provider/rules/validation layer is application/test-only.
+
+#### EX66-60 — PR #66 changes no dependency version
+No package dependency is added for provider routing or locale rules.
+
+#### EX66-61 — PROJECT_STATE keeps the provider layer behind TranslationJobDispatcher
+The state document does not connect provider calls to SSR/page requests.
+
+#### EX66-62 — PROJECT_STATE defers durable tasks and Queue work
+JOB-01/JOB-02/JOB-03 are not claimed by #66.
+
+#### EX66-63 — PROJECT_STATE defers real adapters/provider calls
+The provider boundary is implemented without external provider execution.
+
+#### EX66-64 — PROJECT_STATE defers persistence/publication/runtime switching
+No machine result becomes a current runtime translation in #66.
+
+#### EX66-65 — Final PR #66 CI is green
+CI #159 succeeds on head `d735bf4c92958ace99d75df7baa5f47d10f115d4`.
+
+### Candidate atomic decisions — PR #67
+
+#### EX67-01 — Migration 0007 introduces translation_tasks
+The durable job store gets a dedicated PostgreSQL table.
+
+#### EX67-02 — Durable task rows have a database UUID id
+`id` is distinct from the semantic task identity.
+
+#### EX67-03 — task_identity is unique
+The schema enforces one row per stable logical identity.
+
+#### EX67-04 — Durable task state stores translation kind
+The first persisted kind is `ui`.
+
+#### EX67-05 — Durable task state stores source namespace
+The UI source identity is persisted explicitly.
+
+#### EX67-06 — Durable task state stores source key
+Namespace and key remain separate fields.
+
+#### EX67-07 — Durable task state stores source fingerprint
+Source freshness identity from the planner is persisted.
+
+#### EX67-08 — Durable task state stores target locale
+The exact machine target remains part of persisted identity data.
+
+#### EX67-09 — Durable task state stores generationPolicyVersion
+The policy version introduced into planning/freshness is persisted in the task.
+
+#### EX67-10 — PR #67 task status is pending-only
+Migration 0007 and the TypeScript task type expose only `pending`.
+
+#### EX67-11 — Durable task state stores created_at
+The database owns initial creation timestamp through its default.
+
+#### EX67-12 — Durable task state stores updated_at
+A lifecycle/observability timestamp is persisted separately.
+
+#### EX67-13 — task_identity must be lowercase SHA-256 at the DB boundary
+The table has a digest-shape check.
+
+#### EX67-14 — source_fingerprint must be lowercase SHA-256 at the DB boundary
+The schema has the same digest-shape check for source freshness.
+
+#### EX67-15 — translation_kind is constrained to ui
+The first durable schema does not accept content jobs.
+
+#### EX67-16 — source namespace must be nonblank
+The database rejects blank namespace.
+
+#### EX67-17 — source key must be nonblank
+The database rejects blank key.
+
+#### EX67-18 — target locale must be nonblank and not English at the DB boundary
+Migration 0007 excludes empty/trimmed-invalid and lower-case `en`.
+
+#### EX67-19 — generation policy version must be nonblank
+The DB task cannot omit its generation policy identity.
+
+#### EX67-20 — updated_at must not precede created_at
+Migration 0007 adds `translation_tasks_timestamps_check`.
+
+#### EX67-21 — Application validation requires a canonical non-English translation locale
+`validateUiTranslationJobSpecification()` is stricter than the minimal DB target check.
+
+#### EX67-22 — Application validation requires UI kind
+A non-UI task specification is rejected before persistence.
+
+#### EX67-23 — Application validation requires SHA-256 task identity
+The store does not accept an arbitrary logical ID string.
+
+#### EX67-24 — Application validation requires SHA-256 source fingerprint
+The planner/store boundary rechecks source identity shape.
+
+#### EX67-25 — Application validation requires nonblank source namespace/key/policy
+Task specifications are validated before DB insertion.
+
+#### EX67-26 — Store persistence recomputes stable task identity
+`assertStableIdentity()` calls `uiTranslationJobIdentity()` over the task data.
+
+#### EX67-27 — A taskIdentity/data mismatch raises TranslationTaskIntegrityError
+The digest is not accepted solely because its format is valid.
+
+#### EX67-28 — Rows read back from PostgreSQL are revalidated
+`parseTaskRow()` reruns job validation and stable-identity recomputation.
+
+#### EX67-29 — Rows read back must have pending status in #67
+Any other status is a task integrity error at this stage.
+
+#### EX67-30 — Rows read back require UUID and Date identity/timestamps
+The store checks the returned row shape.
+
+#### EX67-31 — Rows read back enforce updatedAt >= createdAt in application code too
+The timestamp invariant exists in both DB and parsing layers.
+
+#### EX67-32 — findById validates UUID task IDs
+Malformed task IDs do not reach the query.
+
+#### EX67-33 — findByIdentity validates SHA-256 identity shape
+Malformed semantic identities do not reach the query.
+
+#### EX67-34 — Duplicate logical planning upserts the existing task identity
+The conflict target is `taskIdentity`.
+
+#### EX67-35 — Duplicate logical planning preserves the same durable task id
+The DB test expects duplicate.id to equal first.id.
+
+#### EX67-36 — Duplicate logical planning leaves one row for that task identity
+The DB test explicitly counts one row.
+
+#### EX67-37 — Store verifies that an upserted row still matches every specification field
+`assertMatchesSpecification()` guards a stable identity conflicting with different task data.
+
+#### EX67-38 — TranslationTaskMessage contains only translationTaskId
+Large source/task state is not copied into the transport message.
+
+#### EX67-39 — TranslationTaskEnqueuer is transport-neutral
+The domain dispatcher has no Cloudflare Queue API type.
+
+#### EX67-40 — The enqueuer contract explicitly allows duplicate or unknown delivery outcome
