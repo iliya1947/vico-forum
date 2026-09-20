@@ -42,6 +42,22 @@ selected here.
 No strict documentation laundering is established in this origin block. Recording newly introduced
 blockers as current policy is not enough to prove they were represented as older requirements.
 
+### Infrastructure/hardening downstream (`DL-CLASSIFY-003/1`)
+
+| Records | Preliminary classification | Evidence boundary |
+| --- | --- | --- |
+| `EX37-03` | dumb correction to the stage plan | The newly enlarged hardening set was made a blanket prerequisite for Stage 4. |
+| `EX37-05` | dumb blocker timing; useful implementation boundary | Bounded database deadlines are useful and still consumed; requiring their external tuning before forum work was premature. |
+| `EX37-07` | dumb blocker timing; useful verifier foundation | Repository-owned privilege verification is valuable, but it need not have blocked local/CI forum development. |
+| `EX43-05` | real implementation defect | The blanket inbound-membership ban modeled PostgreSQL 17 creator membership incorrectly; PR #48 justifiably corrected it. |
+| `EX44-13` | dumb correction to rollout process | It attached live external migration verification to every ordinary PR rather than the actual external schema-dependent rollout boundary. |
+| `EX49-14` | erroneous intermediate workaround | Early PR #49 owner mode could attempt pending migrations through the database owner; later work in the same PR removed that behavior. |
+| PR #76 rollout records | justified correction | Ordinary-PR live verification was removed while the repository-owned evidence contract was retained for a real rollout. |
+| `EX20-02`, `EX37-02`, `EX44-14` | insufficient evidence pending narrow follow-up | These require separate analysis of stage-gate authority, factual-vs-normative status, and future rollout-tag advancement. |
+
+PR #45/#46/#50 explicitly changed the then-current lifecycle. That is evidence against strict
+documentation laundering in this chain, and PR #50 remains authoritative only prospectively.
+
 ## Record template
 
 ```text

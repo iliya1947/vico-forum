@@ -2444,3 +2444,56 @@ Scope: downstream infrastructure/hardening chain (`#42 → #43 → #44 → #45 �
 
 Do not edit PR #78, select target contracts, propose remediation, classify unrelated authorization
 failure handling, or advance any record to `final`.
+
+## REVIEW DL-CLASSIFY-003/1
+
+From: Codex
+Reviewed response: PR #79 response commit `fec4f26cd8e0d2462a4b97f9370fe31dfc2eecf1`
+Status: accepted-preliminary; three-record-follow-up-required
+
+### Independent verification
+
+The historical diffs confirm the specific relationships. PR #43 rejected every inbound membership into
+runtime/migration roles; PR #48 corrected that model for PostgreSQL 17 creator membership with
+`ADMIN TRUE`, `INHERIT FALSE`, and `SET FALSE`. PR #44 added the live GitHub Actions verifier to ordinary
+pull-request CI. PR #76 removed that CI call but retained static evidence validation and the live script
+for an actual external rollout. Early PR #49 owner mode allowed the database-owner connection around the
+migration workflow before the same PR removed the unsafe pending-migration behavior.
+
+### Accepted preliminary findings
+
+- `EX37-03` is a premature blanket blocker. For `EX37-05/07`, the timing is the dumb correction; the
+  timeout and privilege-verifier mechanisms have independent current value.
+- `EX43-05` is a real defect, and #48 is a justified correction rather than unnecessary complexity.
+- `EX44-13` is a dumb rollout-process correction. The underlying evidence contract is not condemned.
+- `EX49-14` is an erroneous intermediate workaround, not current behavior or a reason to discard the
+  final verifier.
+- PR #76 correctly restores the rollout boundary. Its unrelated authorization changes remain outside
+  this task.
+- PR #45/#46/#50 explicitly revise policy, so strict documentation laundering is not established.
+
+`EX20-02`, `EX37-02`, and `EX44-14` remain unresolved. All 191 reviewed rows remain preliminary.
+
+## TASK DL-CLASSIFY-003/2
+
+From: Codex
+Status: open
+Response destination: ChatGPT-owned PR #79
+Scope: resolve or precisely preserve the three remaining infrastructure records
+
+### Assignment
+
+1. For `EX20-02`, determine whether making real deployed Hyperdrive acceptance a Stage 2→3 gate was an
+   authorized current-stage decision, an acceptable alternative, or a premature correction to PR #12's
+   stage contract. Do not use PR #50 retroactively. State explicitly if Git cannot establish authority.
+2. For `EX37-02`, separate the factual assertion that an audit occurred from normative approval of every
+   blocker produced by that audit. Classify only the atomic record actually stated.
+3. For `EX44-14`, determine whether failure to force `requiredMigrationTag` advancement was a defect in
+   the repository-local evidence contract at that time, intentionally deferred rollout integration, or
+   insufficiently decidable until a schema-dependent external rollout exists. Check #44, #50, #76, and
+   current scripts/docs without turning future rollout work into an ordinary-PR requirement.
+4. Perform deliberate disconfirmation for all three, report exact evidence and the strongest competing
+   interpretation, and return a finite unresolved list.
+
+Do not reopen the other 188 rows, edit PR #78, select target contracts, propose remediation, classify
+authorization failure handling, or advance anything to `final`.
