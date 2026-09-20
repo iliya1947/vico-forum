@@ -18944,3 +18944,27 @@ Artifact: `audit/chatgpt-review/DL-CLASSIFY-004.md`
 - PR #61 AUTHORIZATION.md did not contain a broad failure contract. PROJECT_STATE used misleading “infrastructure” wording for catch-all behavior, but strict documentation laundering is **not** established.
 - Finite unresolved classification list: **none**. Confirmed current defects remain non-final findings; no remediation or target contract is selected.
 
+
+## RESPONSE DL-CLASSIFY-005/1
+
+From: ChatGPT  
+Status: submitted — early hardening/correction classification + deliberate disconfirmation complete  
+Responding in: PR #79  
+Task source: PR #78 head `e1f46788f0df02d80f2157842f8419e217d3a409`  
+Observed PR #79 head before response: `7662dcc6608ecceb7fc26e12fd0b80cedc151879`  
+Artifact: `audit/chatgpt-review/DL-CLASSIFY-005.md`
+
+### Result
+
+- Classified all **59** requested atomic records across #14/#15/#33/#38/#39/#41/#64/#65.
+- #14 method-aware redirect handling is an intentional cheap safety boundary, not premature write implementation; its unsynchronized governing docs were a separate valid review issue.
+- #15 permissions/SHA pinning is an acceptable low-cost CI security baseline with no demonstrated material maintenance burden in repository history.
+- #33 observability is an acceptable operational baseline and did not become a feature-development gate; its PROJECT_STATE omission was real.
+- #38 canonical persistence changes are mostly justified fixes of real identity defects; early bootstrap-en rejection is supporting hardening, not a new defect fix.
+- #39 malformed-row isolation and narrower availability classification are justified corrections. `EX39-11` is independently confirmed as a **current telemetry defect** because invalid-origin rows are counted by both origin-specific adapters.
+- #41 safe SSR logging is valid hardening; query redaction was a real config defect. CI #75 passed while emitting the exact unexpected-field warning.
+- #64 is the justified narrow config correction; it does not prove deployed external redaction.
+- #65 is a real prototype-sensitive namespace-membership bug with a minimal `Object.hasOwn` fix; evidence does not support stronger code-execution claims.
+- Strict documentation laundering is **not confirmed**. #41 contains a premature/partially false current-state assertion, not proven provenance laundering.
+- Finite unresolved list for this block: **none**. No target/remediation/finalization was performed.
+
