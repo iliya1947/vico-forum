@@ -14261,7 +14261,7 @@ In particular:
 
 From: ChatGPT
 Status: submitted
-Responding in: PR #79 at a128808214eb9c6a7ae064822e0d35137003ab58
+Responding in: PR #79 at RESPONSE_COMMIT_SHA
 Task source: PR #78 head 526d407d77427a400ea4ee3236c196ca67691371
 Scope: PRs #61, #63, #62, #64, and #65 in actual merge order
 Claims: evidence extraction only; no correctness, prematurity, future-proofing, architecture-approval, remedy, or target-state classification
@@ -14660,8 +14660,8 @@ Stage 4E2b consumes migration 0006 rather than introducing another authorization
 #### EX61-94 — Initial implementation records Stage 4E2b code as present but Stage 4 completion unconfirmed
 08572ef’s PROJECT_STATE explicitly withholds Stage 4 completion because the required PostgreSQL gate had not yet been observed green.
 
-#### EX61-95 — Green CI is the local/CI completion evidence used before the state transition
-The branch later obtains green database/checks evidence; final head 0d38633 is CI #144 success.
+#### EX61-95 — CI #140 is the branch evidence used by the Stage 4 completion state transition
+GitHub Actions CI #140 succeeds on head 0a4b3ba8d1c9358e511c379f315f9c941a4aa991 before the documentation completion commit.
 
 #### EX61-96 — PROJECT_STATE then records Stage 4 complete in the local/CI path
 5b8084d changes the state from “verification pending” to completed forum MVP after CI evidence.
@@ -14680,6 +14680,9 @@ The project state explicitly separates the local/CI forum/authz schema from exte
 
 #### EX61-101 — Production-like deployment acceptance remains Stage 6
 No external deployment is required or evidenced for the Stage 4 local/CI completion claim.
+
+#### EX61-102 — The final PR #61 head is independently green after the later review corrections
+GitHub Actions CI #144 succeeds on final head 0d3863359f02cb230c3d50c10d8f6be03bb8ed5c after the bulk-read, duplicate-slug and public-degradation corrections.
 
 ### Candidate atomic decisions — PR #63
 
@@ -14846,6 +14849,9 @@ No review thread contributes an implementation correction in this PR.
 
 #### EX62-12 — Final PR #62 merged-head CI is green
 CI #155 succeeds on head 17a51dd1b78659813bcdbf6479823f68e09afd5f.
+
+#### EX62-13 — The pre-merge-main documentation head also had a green CI gate
+CI #151 succeeds on 59306310394eaa0dce8708b4c2cec8f5557346ad, the head named in the PR body before later main synchronization.
 
 ### Candidate atomic decisions — PR #64
 
@@ -15029,9 +15035,11 @@ CI #157 succeeds on head 4be06212fcfa4640d10be26ee131f970376e9d15.
 
 ### CI, deployment, and external-evidence reconciliation
 
-- #61 final CI #144: success.
+- #61 CI #140 on 0a4b3ba (the evidence consumed by the Stage 4 completion doc commit): success.
+- #61 final CI #144 on 0d38633 after later in-PR corrections: success.
 - #63 final CI #149: success.
-- #62 final merged-head CI #155: success.
+- #62 CI #151 on 5930631 before later main synchronization: success.
+- #62 final merged-head CI #155 on 17a51dd: success.
 - #64 final CI #156: success.
 - #65 final CI #157: success.
 - CI #155 before #64 is direct raw evidence that Wrangler 4.130.0 warned about the old
