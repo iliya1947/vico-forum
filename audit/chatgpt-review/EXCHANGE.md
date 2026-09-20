@@ -11132,3 +11132,875 @@ EX43-01 is not replaced; only its duplicate prose is discarded.
 Every /1 record not listed in the replacement map remains unchanged. The accepted category sweeps, review-thread handling, CI/preview facts, external-evidence limitations, PR #48/#76 forward-evidence treatment, non-retroactive treatment of PR #50, PR #46 decomposition, and all unaffected reconciliation statements remain exactly as in RESPONSE DL-EXTRACT-007/1.
 
 No replacement above classifies any decision as correct, erroneous, premature, future-proof, infrastructure drift, retained target architecture, approved, or requiring a remedy.
+
+
+## RESPONSE DL-EXTRACT-008/1
+
+From: ChatGPT  
+Status: submitted  
+Responding in: PR #79 at RESPONSE_COMMIT_SHA  
+Task source: PR #78 head c6e76be5cf1d1d5af331e3f9082a245d05a6abb8  
+Scope: PRs #47–#50 in chronological merge order  
+Claims: evidence extraction only; no correctness, foolishness, prematurity, infrastructure-drift, retained-value, remedy, approval, or target-state classification
+
+### Coverage sweep
+
+#### PR #47 / merge ebd01606daf59706b78998b9174c66ccd0d8233e
+
+F: none | A: exact Better Auth 1.7.4 PostgreSQL/Drizzle schema foundation, user locale metadata boundary, runtime-capability separation | C: none in visible GitHub review | D: PROJECT_STATE and MIGRATIONS record Stage 4A migration-only state and next rollout gate | O: production migration/verification is prescribed after merge but not performed by this PR | G: runtime/auth capability remains blocked behind production migration plus separate auth capability/evidence preparation | T: exact dependency pins, Drizzle migration/snapshot/journal, DB integration coverage, production schema verifier, privilege fixtures
+
+Evidence inspected:
+- PR body, complete 12-file merge diff, changed files, sole internal commit 595a68f.
+- No GitHub review threads or submitted reviews.
+- CI #86: checks=success, database=success.
+- Cloudflare bot records a successful commit/branch preview deployment for 595a68f; this is preview execution evidence, not production auth-schema migration evidence.
+- Full PROJECT_STATE and MIGRATIONS state at the PR head, exact schema/migration files, package pins, DB tests, production verifier, and privilege-verifier split were inspected.
+- PR body reports local lint/typecheck/unit/build/db metadata checks; local db:test could not run there because no disposable PostgreSQL was available, while final GitHub database CI passed.
+- No raw exact-version Better Auth research/generator transcript or production migration-run artifact is attached to PR #47.
+
+Completeness limitations:
+- The PR states that its schema is exact for Better Auth 1.7.4 and its Drizzle adapter, but the external source/generator evidence behind that assertion is not preserved in the PR.
+- Merge/CI/preview do not prove migration 0003 was applied to any external target DB.
+- Later PR #53 is forward evidence that Better Auth 1.7.4 runtime later consumed this schema in PostgreSQL integration tests; later use is not used as original authority.
+
+#### PR #48 / merge a52d84f016781be4a86e5474ae0bbdf402e17c63
+
+F: none | A: production privilege verifier membership semantics around database owner, migration role, and localization runtime role | C: replaces PR #43 EX43-05 blanket inbound-membership prohibition with a database-owner-specific exception | D: MIGRATIONS updates the documented privilege model | O: verifier now reads current DB owner from PostgreSQL catalogs | G: none | T: targeted privilege fixtures cover allowed/rejected inbound membership shapes
+
+Evidence inspected:
+- PR body, complete three-file merge diff, sole commit d533a74.
+- No GitHub review threads or submitted reviews.
+- CI #87: checks=success, database=success.
+- Cloudflare bot records successful preview deployment for d533a74.
+- Production privilege implementation/tests and MIGRATIONS were inspected completely for this correction.
+- No secrets, grants, schema, production data, or external resource change is performed by the PR.
+
+Completeness limitations:
+- MIGRATIONS attributes the exception to PostgreSQL 17 creator-role/CREATEROLE semantics, but PR #48 does not attach a raw official-document snapshot or production catalog dump.
+- This extraction records the exact change from #43 without using #48 to retroactively rewrite the #43 record.
+
+#### PR #49 / merge 75faabade90b9375616ddddcf58501abccaf34ab
+
+F: none | A: connection role, database owner, and application-object owner become separate verifier concepts | C: ten-commit in-PR evolution from owner-migration exception to owner-connection/no-op verification; two P1 reviews, one substantively addressed by later commits and one state-sync finding left unaddressed | D: MIGRATIONS rewritten; PROJECT_STATE not updated by this PR | O: protected production workflow gains an explicit owner-connection mode and preflight verifier | G: final owner mode is gated so pending migrations fail before db:migrate | T: expanded privilege tests, verifier env gate, production workflow preflight
+
+Evidence inspected:
+- PR body, complete five-file merge diff, all ten internal commits:
+  e410fcd, f1bf91a, 4a1667a, 668bb1b, 8cf0baf, 4fecd4c, bf4509b, 140a163, c9cd0c1, 40150f4.
+- Two P1 review threads on 8cf0baf remain unresolved/non-outdated in GitHub metadata:
+  1. pending migration under DB-owner connection can create mixed table ownership and fail subsequent ownership verification;
+  2. PROJECT_STATE still describes the old operational privilege model.
+- The first P1 is followed by c9cd0c1 and 40150f4, which change final workflow/docs so owner mode runs the full verifier before db:migrate and therefore cannot apply a pending migration. The second P1 is not followed by any PROJECT_STATE change in #49.
+- CI #93: checks=success, database=success.
+- Cloudflare bot records successful preview deployment for 40150f4.
+- Final production-privileges.mjs, verify-production-migration.mjs, production-db-migrate.yml and MIGRATIONS were inspected.
+- PR body claims read-only production catalog checks confirmed the application-owner/runtime attribute, membership, and default-ACL contract. No raw catalog snapshot is attached.
+
+Observed topology represented by final PR #49:
+- current_user is the connection role;
+- current database owner is a separately queried role;
+- application owner is derived from actual ownership of all required application tables;
+- final verifier requires exactly one application-owner role;
+- PR body identifies the application-owner/migrator responsibility as the existing vico_forum_migrator ownership model;
+- the pre-release secret may use the DB-owner connection only under the explicit exception;
+- final owner-mode workflow is no-op verification/evidence only, not a pending-schema migration path.
+
+Evidence limitation:
+- the exact external role names/topology beyond what the PR body and verifier encode lack an attached raw production catalog dump.
+
+#### PR #50 / merge e26d145609f942f82209057662ea92422efa99f9
+
+F: forum core becomes active product priority and the roadmap is reordered around Stage 4B–4E | A: development migration/local-CI work is separated from actual external rollout; existing foundations and expensive future-proof boundaries are retained without requiring full future subsystems | C: replaces the immediately infrastructure-led next-step policy with forum-first scheduling; three P2 review findings remain open | D: AGENTS, PROJECT, PROJECT_STATE, README, ROADMAP, HYPERDRIVE, MIGRATIONS all rewritten/synchronized | O: external Neon/Hyperdrive/Google/provider rollout is moved to dedicated later integration; active main auto-promotion becomes a separate operational prerequisite | G: Stage 4 local/CI completion no longer depends on external rollout; schema-first/evidence/isolation gates remain for actual external use | T: docs-only PR; no runtime/schema/dependency/workflow/resource change
+
+Evidence inspected:
+- PR body, complete seven-file merge diff, sole commit 7affbc7.
+- All seven changed documents were inspected completely at the PR #50 head. AGENTS is treated only as historical Codex-process evidence, not as instructions to ChatGPT.
+- TRANSLATION_ARCHITECTURE.md, STORAGE_AND_VERSIONING.md and PROVIDERS_AND_JOBS.md were read completely because PR #50 review threads cite their STO-03, STO-06, and JOB-03 contracts.
+- Three P2 review threads remain unresolved/non-outdated:
+  1. the future pending-migration runbook still leaves the current full verifier before db:migrate, whose exact-journal check blocks a pending migration even after restoring a dedicated role;
+  2. rewritten Stage 5A work/acceptance does not explicitly preserve generationPolicyVersion and provider/model provenance requirements;
+  3. rewritten Stage 5 completion criteria do not explicitly preserve the stale-task/conditional-current-publish correctness invariant.
+- The first review concern is directly observable in the PR #49 workflow/verifier retained by #50: verify-production-migration requires target migration history to equal the checked-in journal and executes before db:migrate in the current workflow.
+- The second and third review concerns map to unchanged authoritative translation contracts: STO-03/STO-06 require generation-policy/provenance state, and JOB-03/global invariant 20 require stale-task checks plus conditional current publication.
+- CI #94: checks=success, database=success.
+- Cloudflare bot records successful preview deployment for the docs head; no external infrastructure action is performed by the PR.
+
+Normative provenance boundary:
+- The audit process has a fixed direct-user-decision for PR #50: defer external infrastructure work closer to pre-release and continue forum/product development through local/CI paths. That authority begins at PR #50 and is not applied retroactively to #37–#49.
+- Detailed implementation scheduling and wording inside the seven rewritten documents are still traced separately to inherited project/translation contracts or assistant-authored PR material; direct user authority for the reprioritization is not treated as blanket approval of every detailed roadmap sentence.
+
+### Candidate atomic decisions — PR #47
+
+#### Candidate EX47-01 — better-auth is pinned at 1.7.4
+
+Atomic decision: package.json adds exact dependency better-auth 1.7.4 rather than an unbounded/ranged auth version.
+
+Introduced/changed/recorded by: 595a68f.
+
+Backward: EX35-11 and EX37-17 required exact-version Better Auth preflight before Stage 4 implementation.
+
+Forward: PR #53 later constructs the Better Auth 1.7.4 runtime against this dependency.
+
+Normative provenance: PR-body discussion plus assistant-authored implementation; exact external source evidence is not attached.
+
+#### Candidate EX47-02 — @better-auth/drizzle-adapter is pinned at 1.7.4
+
+Atomic decision: package.json adds exact @better-auth/drizzle-adapter 1.7.4.
+
+Introduced/changed/recorded by: 595a68f.
+
+Backward: EX35-11/EX37-17 exact-version adapter/schema preflight.
+
+Forward: PR #53 later uses the pinned adapter in real PostgreSQL auth integration tests.
+
+#### Candidate EX47-03 — Stage 4A creates Better Auth core user/session/account/verification schema as persistent foundation
+
+Atomic schema foundation: db/schema.ts and migration 0003 add the Better Auth core user, session, account and verification tables with the checked-in column/constraint/index mapping for the pinned stack.
+
+Introduced/changed/recorded by: 595a68f.
+
+Historical evidence: db/schema.ts, 0003 migration, 0003 snapshot, DB integration test and production verifier all encode the table set.
+
+Forward: PR #53 consumes these tables for auth runtime/session; #51 forum authorship uses existing user identity.
+
+This is a schema foundation record, not a runtime-auth record.
+
+#### Candidate EX47-04 — Stage 4A includes database-backed Better Auth rate_limit storage
+
+Atomic schema choice: a persistent rate_limit table with id/key/count/last_request is added for Better Auth database-backed rate limiting.
+
+Introduced/changed/recorded by: 595a68f.
+
+Forward: PR #53 later configures Better Auth runtime against checked-in rate_limit storage.
+
+#### Candidate EX47-05 — user.locale is nullable Better Auth user metadata
+
+Atomic schema choice: user.locale is a nullable text column rather than mandatory identity state.
+
+Introduced/changed/recorded by: 595a68f.
+
+Backward: generic locale/user preference lineage; explicit URL remains authoritative.
+
+Forward: PR #53 later exposes authenticated session locale to root negotiation.
+
+#### Candidate EX47-06 — Better Auth user.locale is server-owned input:false metadata
+
+Atomic auth-boundary choice: betterAuthUserAdditionalFields declares locale required=false and input=false so it is not accepted as ordinary user-provided Better Auth additional-field input.
+
+Introduced/changed/recorded by: 595a68f.
+
+#### Candidate EX47-07 — user.locale has no foreign key to persistent locales
+
+Atomic persistence boundary: the auth user locale column is deliberately not FK-constrained to the persistent locale table.
+
+Introduced/changed/recorded by: 595a68f.
+
+Recorded rationale: bootstrap en is code-owned and absent from persistent locales; runtime locale validation is deferred to the runtime boundary.
+
+Backward: EX20-07 and generic code-owned bootstrap English architecture.
+
+#### Candidate EX47-08 — Stage 4A is one append-only forward migration 0003
+
+Atomic migration representation: the auth schema is appended as 0003_gorgeous_donald_blake with a new Drizzle snapshot/journal entry rather than rewriting accepted history.
+
+Introduced/changed/recorded by: 595a68f.
+
+Backward: EX29-01..05 immutable/append-only migration history.
+
+#### Candidate EX47-09 — Stage 4A remains migration-only and introduces no Worker auth dependency
+
+Atomic stage boundary: the PR adds schema/dependencies/verifiers but no Better Auth initialization, auth routes, OAuth configuration, auth Hyperdrive, auth runtime role/grants, or Worker auth write capability.
+
+Introduced/changed/recorded by: 595a68f; PR body, PROJECT_STATE, MIGRATIONS.
+
+Backward: EX31-01/EX27-02 style migration-first split; EX37-10/11/17 auth capability/grant sequencing.
+
+#### Candidate EX47-10 — Clean PostgreSQL tests verify exact Better Auth table shape
+
+Atomic verification boundary: the disposable DB suite requires the five auth/rate-limit table column/nullability set, selected unique/FK/index constraints, and zero user.locale FK.
+
+Introduced/changed/recorded by: 595a68f.
+
+CI evidence: database job passed on final head.
+
+#### Candidate EX47-11 — Production verifier expands to exact Better Auth table column shape
+
+Atomic external verification contract: verify-production-migration adds the five Stage 4A tables, exact expected column counts/types/nullability, and rejects unexpected column sets.
+
+Introduced/changed/recorded by: 595a68f.
+
+This is separate from whether an external Stage 4A migration was actually run.
+
+#### Candidate EX47-12 — Application-table ownership scope expands to include auth tables
+
+Atomic privilege-verifier scope: applicationTables expands from localization-only tables to include account, rate_limit, session, user and verification for ownership/default-ACL inspection.
+
+Introduced/changed/recorded by: 595a68f.
+
+Forward: this broader ownership set is what PR #49 later uses to derive one application-owner role.
+
+#### Candidate EX47-13 — Localization runtime relation privileges remain limited to the three localization tables
+
+Atomic capability boundary: localizationRuntimeTables is introduced and runtime SELECT allowlist remains locales, ui_translation_bundles and ui_translations even though auth tables now exist.
+
+Introduced/changed/recorded by: 595a68f.
+
+Backward: EX37-10 separate auth runtime capability; EX43-09 exact localization table allowlist.
+
+Forward: PR #50 retains this foundation and Stage 6 later designs forum/auth/write capabilities separately.
+
+#### Candidate EX47-14 — Existing localization runtime receives no auth-table access
+
+Atomic negative capability statement: Stage 4A does not broaden vico_forum_runtime privileges onto the new auth tables.
+
+Introduced/changed/recorded by: 595a68f; implementation and documentation.
+
+This is related to but independently observable from EX47-13 because new auth tables join application ownership scope while remaining outside runtime grants.
+
+#### Candidate EX47-15 — PR #47 records production application/verification of migration 0003 as the next step
+
+Atomic historical gate: PROJECT_STATE/MIGRATIONS say that after Stage 4A merge, the new migration must be applied and verified in production before the separate runtime/auth-capability PR.
+
+Introduced/changed/recorded by: 595a68f.
+
+Backward: EX37-14* migration evidence/rollout machinery and EX27-02 schema-dependent ordering.
+
+Changed forward by: PR #50 later removes immediate external rollout as a gate for ordinary local/CI Stage 4 development while retaining schema-first ordering for actual external rollout.
+
+No external production-migration artifact is attached to #47.
+
+#### Candidate EX47-16 — Separate runtime/auth PR is additionally gated on dedicated auth capability and migration evidence
+
+Atomic rollout gate: PROJECT_STATE requires separate least-privilege auth role/Hyperdrive, exact grants, preview isolation and recorded migration evidence before the then-planned runtime auth PR.
+
+Introduced/changed/recorded by: 595a68f.
+
+Backward: EX37-10/11/17, EX44 evidence chain, EX45 retained auth capability boundaries.
+
+Changed forward by: PR #50 moves these external capability/provisioning requirements to later external integration rather than every local/CI forum/auth implementation PR.
+
+#### Candidate EX47-17 — Project state records Stage 4A foundation as implemented while runtime auth remains absent
+
+Atomic state claim: PROJECT_STATE records the schema foundation as completed and explicitly states Better Auth runtime/OAuth/routes/secrets/auth Hyperdrive/role/grants/write capability are not implemented.
+
+Introduced/changed/recorded by: 595a68f.
+
+### Candidate atomic decisions — PR #48
+
+#### Candidate EX48-01 — Privilege snapshot reads the current database owner from pg_database
+
+Atomic verifier input: readProductionPrivilegeSnapshot queries the owner of current_database and exposes databaseOwnerRole.
+
+Introduced/changed/recorded by: d533a74.
+
+#### Candidate EX48-02 — PR #43 blanket inbound-membership prohibition is replaced
+
+Atomic historical correction: EX43-05 required an empty inbound-membership set for runtime/migration roles; PR #48 replaces that blanket condition with a database-owner-specific admissible shape.
+
+Introduced/changed/recorded by: d533a74.
+
+Forward: PR #49 carries the corrected inbound model onto runtime/application-owner roles.
+
+This does not classify the rest of PR #43's verifier.
+
+#### Candidate EX48-03 — Only the current database owner may be an inbound member of protected runtime/migration roles
+
+Atomic membership identity rule: any inbound membership where the member is not databaseOwnerRole is rejected.
+
+Introduced/changed/recorded by: d533a74.
+
+Backward: supersedes the identity part of EX43-05.
+
+#### Candidate EX48-04 — Allowed database-owner inbound membership requires ADMIN OPTION
+
+Atomic membership option: database-owner inbound membership into runtime or migration role must have admin_option=true.
+
+Introduced/changed/recorded by: d533a74.
+
+#### Candidate EX48-05 — Allowed database-owner inbound membership must not inherit protected-role privileges
+
+Atomic membership option: inherit_option must be false.
+
+Introduced/changed/recorded by: d533a74.
+
+#### Candidate EX48-06 — Allowed database-owner inbound membership must not permit SET ROLE
+
+Atomic membership option: set_option must be false.
+
+Introduced/changed/recorded by: d533a74.
+
+#### Candidate EX48-07 — Runtime role must remain distinct from current database owner
+
+Atomic role-separation check: databaseOwnerRole != runtimeRole.
+
+Introduced/changed/recorded by: d533a74.
+
+#### Candidate EX48-08 — Migration role must remain distinct from current database owner
+
+Atomic role-separation check at this historical point: databaseOwnerRole != migrationRole.
+
+Introduced/changed/recorded by: d533a74.
+
+Changed by: PR #49 later distinguishes connection role from application owner and introduces an explicit pre-release DB-owner connection exception; #48's historical requirement remains recorded as such.
+
+#### Candidate EX48-09 — Documentation attributes the exception to PostgreSQL 17 creator-admin membership semantics
+
+Atomic platform rationale claim: MIGRATIONS states that a CREATEROLE user automatically retains ADMIN OPTION on roles it creates and treats that creator-admin edge as administrative trust rather than inherited runtime privilege.
+
+Introduced/changed/recorded by: d533a74.
+
+Provenance: PR-authored external-platform claim; no raw official-source snapshot is attached to #48.
+
+#### Candidate EX48-10 — Targeted fixtures distinguish allowed database-owner admin-only membership from privilege-bearing inbound membership
+
+Atomic test boundary: tests accept the DB-owner tuple and reject unexpected member, ADMIN=false, INHERIT=true, SET=true, and DB-owner identity collisions with runtime/migration roles.
+
+Introduced/changed/recorded by: d533a74.
+
+### Candidate atomic decisions — PR #49
+
+#### Candidate EX49-01 — Application owner is derived from actual required application-table ownership
+
+Atomic topology/verifier rule: production snapshot queries DISTINCT owners of all applicationTables rather than assuming current_user is the object owner.
+
+Introduced/changed/recorded by: e410fcd; retained final.
+
+Backward: EX47-12 expanded applicationTables to include localization plus Stage 4A auth tables.
+
+#### Candidate EX49-02 — All required application tables must have exactly one application-owner role
+
+Atomic ownership invariant: assertProductionPrivilegeContract requires applicationOwnerRoles.length == 1.
+
+Introduced/changed/recorded by: e410fcd; tests f1bf91a.
+
+Review relationship: the first P1 later identifies why owner-mode application of a pending migration could violate this invariant mid-run.
+
+#### Candidate EX49-03 — Connection role and application owner become separate verifier concepts
+
+Atomic topology distinction: current_user remains the connection role, while privilege/ownership policy is evaluated against the derived application owner role.
+
+Introduced/changed/recorded by: e410fcd.
+
+This changes the PR #43/#48 assumption that the connection/migration role is necessarily the owner whose application privileges are being verified.
+
+#### Candidate EX49-04 — Dedicated migration connection must use the application-owner role
+
+Atomic normal-mode rule: when current_user is not the database owner, it must equal the derived applicationOwnerRole.
+
+Introduced/changed/recorded by: e410fcd.
+
+#### Candidate EX49-05 — Database-owner connection is allowed only behind an explicit pre-release flag
+
+Atomic exception boundary: if current_user equals databaseOwnerRole, assertProductionPrivilegeContract accepts it only when allowDatabaseOwnerConnection is true.
+
+Introduced initially as owner-migration exception by e410fcd/4a1667a; renamed precisely to owner-connection exception by 4fecd4c/140a163.
+
+Final environment control: PRE_RELEASE_ALLOW_DATABASE_OWNER_CONNECTION.
+
+#### Candidate EX49-06 — Runtime role must remain distinct from application owner
+
+Atomic role-separation check: runtimeRole != applicationOwnerRole.
+
+Introduced/changed/recorded by: e410fcd.
+
+#### Candidate EX49-07 — Application owner must remain distinct from database owner
+
+Atomic role-separation check: databaseOwnerRole != applicationOwnerRole.
+
+Introduced/changed/recorded by: e410fcd.
+
+#### Candidate EX49-08 — Runtime role remains distinct from database owner
+
+Atomic retained role-separation check: databaseOwnerRole != runtimeRole.
+
+Introduced earlier by EX48-07; retained/reframed in #49.
+
+#### Candidate EX49-09 — Login/dangerous-attribute verification follows the application owner rather than arbitrary connection role
+
+Atomic verifier-target change: rolcanlogin and dangerous-attribute checks are performed for runtime and applicationOwnerRole; an allowed DB-owner connection is not treated as the application owner whose least-privilege attributes must match.
+
+Introduced/changed/recorded by: e410fcd.
+
+#### Candidate EX49-10 — Outbound membership allowlist follows the application owner
+
+Atomic verifier-target change: MIGRATION_DATABASE_ROLE_MEMBERSHIPS is compared against memberships where member=applicationOwnerRole rather than blindly current_user.
+
+Introduced/changed/recorded by: e410fcd.
+
+Backward: EX43-04a/b.
+
+#### Candidate EX49-11 — Corrected database-owner inbound membership semantics apply to runtime and application-owner roles
+
+Atomic target change: the EX48-03..06 database-owner inbound membership rule is retained but the protected owner-side role is applicationOwnerRole rather than the current connection role.
+
+Introduced/changed/recorded by: e410fcd.
+
+#### Candidate EX49-12 — Every required application table must be owned by the derived application owner
+
+Atomic object-ownership rule: ownership checks require each applicationTables relation to be owned by applicationOwnerRole.
+
+Introduced/changed/recorded by: e410fcd.
+
+#### Candidate EX49-13 — Effective default-ACL verification follows application owner
+
+Atomic default-privilege target: hard-wired/catalog default ACL reconstruction and other-owner checks are evaluated relative to applicationOwnerRole rather than current_user.
+
+Introduced/changed/recorded by: e410fcd.
+
+#### Candidate EX49-14 — Early PR #49 owner mode allowed the DB-owner connection through the migration workflow
+
+Atomic superseded in-PR behavior: commits e410fcd through 8cf0baf/668bb1b introduced an explicit pre-release owner-migration mode and passed its flag to the workflow after/beside db:migrate, allowing the DB-owner connection to be considered for migration execution.
+
+Introduced/changed/recorded by: e410fcd, 4a1667a, 668bb1b, 8cf0baf.
+
+Status within PR #49: superseded by c9cd0c1/40150f4 before merge; retained for historical review causality, not as final behavior.
+
+#### Candidate EX49-15 — P1 review identifies mixed ownership if a pending migration runs under database owner
+
+Atomic review finding: with existing application tables owned by the application owner, running pending 0003 under database-owner current_user would create new tables owned by the DB owner; the subsequent exactly-one-application-owner assertion would fail after the write.
+
+Recorded by: PR #49 P1 review on 8cf0baf.
+
+Historical relationship: this finding targets EX49-14, not the final no-op-only owner mode.
+
+#### Candidate EX49-16 — Owner exception is renamed from migration permission to connection permission
+
+Atomic in-PR semantic narrowing: implementation/env names change from allowDatabaseOwnerMigration / PRE_RELEASE_ALLOW_DATABASE_OWNER_MIGRATIONS to allowDatabaseOwnerConnection / PRE_RELEASE_ALLOW_DATABASE_OWNER_CONNECTION.
+
+Introduced/changed/recorded by: 4fecd4c, bf4509b, 140a163.
+
+This naming change corresponds to the later no-op final boundary and avoids representing DB-owner connection as authority to apply schema.
+
+#### Candidate EX49-17 — Production workflow runs the full verifier before db:migrate in owner mode
+
+Atomic workflow gate: c9cd0c1 adds Verify pre-release owner-mode baseline before Apply migrations, with owner-connection flag enabled.
+
+Introduced/changed/recorded by: c9cd0c1.
+
+Technical consequence represented by the final code: verify-production-migration requires DB migration history to exactly equal the checked-in journal, so a pending checked-in migration fails this preflight before db:migrate.
+
+#### Candidate EX49-18 — Final DB-owner mode is no-op verification/evidence only
+
+Atomic final exception contract: 40150f4 documents that owner connection may only re-run an already-applied history for verification/evidence; it cannot apply pending schema.
+
+Introduced/changed/recorded by: c9cd0c1 + 40150f4.
+
+This supersedes EX49-14 within the same PR.
+
+#### Candidate EX49-19 — Owner exception must be removed before the next real schema migration
+
+Atomic removal condition: final MIGRATIONS says restore a dedicated least-privilege migration connection before the next schema migration.
+
+Introduced/changed/recorded by: 40150f4.
+
+Additional deadline: remove in all cases before first release or real/private production data.
+
+#### Candidate EX49-20 — PR #49 records a production-catalog verification claim without raw catalog artifact
+
+Atomic operational claim: PR body says read-only production catalog checks confirmed current application-owner/runtime attributes, memberships and default privileges satisfy the updated contract.
+
+Recorded by: PR #49 body.
+
+Evidence limitation: no raw catalog output/artifact is attached to the PR.
+
+#### Candidate EX49-21 — PROJECT_STATE remains unsynchronized with the owner-connection operational change
+
+Atomic open review finding/state gap: P1 review states PROJECT_STATE still describes the old runtime/migration-role verification model and does not record the temporary owner exception.
+
+Recorded by: PR #49 P1 review on 8cf0baf.
+
+Status in PR #49: final changed-file set does not include PROJECT_STATE; the finding remains unaddressed within this PR.
+
+### Candidate atomic decisions — PR #50
+
+#### Candidate EX50-01 — Forum-first local/CI development becomes the direct user-selected pre-release priority
+
+Atomic product/process decision: ordinary pre-release work prioritizes building the working forum through reversible local/CI development instead of continuing infrastructure-first progression.
+
+Introduced/recorded by: PR #50 documentation; authority separately fixed in audit PROCESS_CONTEXT as direct-user-decision.
+
+Authority scope: begins at PR #50. It is not retroactive evidence about whether #37–#49 were correct or necessary.
+
+Forward: PR #51 implements forum domain locally/CI without external migration; PR #52–#58 continue forum/auth/product slices along this path.
+
+#### Candidate EX50-02 — External infrastructure work is deferred closer to dedicated pre-release integration
+
+Atomic direct user scheduling decision: Neon external migrations, real Hyperdrive write capabilities, Google OAuth credentials/smoke, provider/Queue provisioning and full external acceptance are moved out of ordinary feature PR gating and toward later pre-release integration.
+
+Introduced/recorded by: PR #50 docs; direct-user-decision provenance fixed by audit process context.
+
+Forward: Stage 6 is the roadmap collection point.
+
+#### Candidate EX50-03 — Existing localization/translation/database foundation is preserved and reused
+
+Atomic preservation rule: completed Stage 0–3 and Stage 4A foundations remain available and should not be rewritten merely because forum development becomes the priority.
+
+Introduced/changed/recorded by: PROJECT, AGENTS, README, ROADMAP.
+
+Provenance: assistant-authored/documented consequence of the user reprioritization plus inherited project contracts; not blanket direct user approval of every historical foundation decision.
+
+#### Candidate EX50-04 — Minimal future-proof boundaries remain allowed when avoiding expensive retrofit
+
+Atomic development principle: PR #50 explicitly permits necessary advance foundation boundaries when postponing them would create expensive identity/schema/contract retrofit, while distinguishing that from implementing the full future subsystem early.
+
+Introduced/changed/recorded by: PROJECT.
+
+Backward: inherited translation revision/future-consumer architecture; consistent with audit future-proof test.
+
+#### Candidate EX50-05 — Ordinary feature merge no longer implies external production rollout
+
+Atomic development/rollout separation: feature schema/runtime changes can merge after local/CI validation without automatically applying them to Neon or production-like runtime.
+
+Introduced/changed/recorded by: AGENTS, PROJECT_STATE, README, ROADMAP, MIGRATIONS.
+
+Direct-user-decision support: within the scoped PR #50 forum-first/local-CI reprioritization.
+
+#### Candidate EX50-06 — Active development main must be separated from automatic production promotion before forum-code merge
+
+Atomic operational prerequisite: before first forum-code merge, active development main must stop auto-promoting each merge to the production Worker, using a then-current Cloudflare mechanism.
+
+Introduced/changed/recorded by: AGENTS, PROJECT_STATE, ROADMAP, HYPERDRIVE.
+
+External action status: PR #50 is docs-only and does not change the Cloudflare setting.
+
+Forward: PR #51 body/state later records closure of this blocker; that later record is forward evidence only.
+
+#### Candidate EX50-07 — External infrastructure actions require a separate task/explicit user authorization
+
+Atomic process boundary: ordinary feature schema/runtime work does not itself authorize production deploy, production migration workflow, Cloudflare/Neon/Google resource changes or equivalent external action.
+
+Introduced/changed/recorded by: AGENTS and PROJECT development principle.
+
+#### Candidate EX50-08 — Development migration and domain/runtime code may be developed together locally/CI
+
+Atomic migration-development rule: a new migration may be merged with runtime/domain code when it is not automatically rolled out externally and local/CI checks prove schema/code consistency.
+
+Introduced/changed/recorded by: MIGRATIONS and ROADMAP.
+
+Changed historical scheduling: this removes migration-only PR as a universal development-PR requirement while leaving it for actual external schema-dependent rollout.
+
+#### Candidate EX50-09 — Development migrations need not be immediately applied to Neon
+
+Atomic environment-decoupling rule: a reviewed migration can exist in repository/local CI history while production-like Neon schema lags active main.
+
+Introduced/changed/recorded by: PROJECT_STATE, MIGRATIONS, HYPERDRIVE.
+
+#### Candidate EX50-10 — Schema-first ordering is retained for actual external schema-dependent rollout
+
+Atomic retained safety boundary: when external runtime really begins depending on new schema, target migration + verification precede that runtime rollout.
+
+Introduced as revised scope by: AGENTS, ROADMAP, HYPERDRIVE, MIGRATIONS.
+
+Backward: EX27-02/03 and migration/evidence lineage.
+
+This is retained rather than postponed away.
+
+#### Candidate EX50-11 — Migration evidence is scoped to actual external schema dependency rather than every merged migration
+
+Atomic evidence-trigger change: runtime migration evidence updates when external runtime begins depending on a migration, not merely when a development migration enters main.
+
+Introduced/changed/recorded by: MIGRATIONS.
+
+Backward: EX44 evidence chain.
+
+#### Candidate EX50-12 — Runtime migration evidence remains at 0002 while deployed Worker does not depend on 0003
+
+Atomic current-state claim: PR #50 records that existing evidence for 0002 remains appropriate because deployed Worker still has no Better Auth 0003 dependency.
+
+Introduced/changed/recorded by: PROJECT_STATE and MIGRATIONS.
+
+Backward: EX47-09 Stage 4A no-runtime-dependency boundary.
+
+#### Candidate EX50-13 — PR #49 database-owner exception is retained only as no-op verification/evidence
+
+Atomic current workflow-state record: #50 preserves the final EX49-18 boundary and states current owner mode cannot apply pending migrations.
+
+Introduced/changed/recorded by: PROJECT_STATE and MIGRATIONS summarizing #49.
+
+#### Candidate EX50-14 — Dedicated migration capability must be restored before the next actual external schema rollout
+
+Atomic deferred operational requirement: before applying new pending schema externally, remove owner exception, restore/verify dedicated least-privilege migration connection, and re-check migration role/ownership contract.
+
+Introduced/changed/recorded by: PROJECT_STATE, ROADMAP Stage 6, MIGRATIONS.
+
+This postpones the infrastructure action; it does not delete the external migration safety boundary.
+
+#### Candidate EX50-15 — Target-environment verifier expands for new forum schema only when that schema approaches external rollout
+
+Atomic verification-timing change: ordinary Stage 4B development does not have to add production role grants/catalog acceptance for forum tables before external rollout is scheduled.
+
+Introduced/changed/recorded by: MIGRATIONS.
+
+#### Candidate EX50-16 — Existing localization runtime role remains read-only and is not mechanically broadened for forum/auth/translation writes
+
+Atomic retained capability boundary: the current runtime role stays scoped to locales, ui_translations and ui_translation_bundles.
+
+Introduced/changed/recorded by: AGENTS, HYPERDRIVE, MIGRATIONS; retains EX47-13/14 and earlier least-privilege lineage.
+
+#### Candidate EX50-17 — Forum/auth/translation write capabilities are designed from actual query patterns closer to external integration
+
+Atomic capability-timing rule: new runtime roles/grants/Hyperdrive bindings are not provisioned during ordinary forum feature development merely to anticipate future writes.
+
+Introduced/changed/recorded by: HYPERDRIVE, MIGRATIONS, Stage 6 roadmap.
+
+#### Candidate EX50-18 — Preview/private-data isolation-or-disable trigger remains in force
+
+Atomic retained safety boundary: if preview/non-production can access production bindings with writes/private data, that path must be isolated or disabled before using the capability; read-only public localization access does not automatically extend to write capabilities.
+
+Introduced/changed/recorded by: AGENTS, HYPERDRIVE; retains EX30-09/10, EX35-09/10, EX45-05.
+
+#### Candidate EX50-19 — Existing Hyperdrive localization acceptance remains evidence but stops gating every forum feature PR
+
+Atomic gate change: the completed real localization Hyperdrive acceptance is retained as foundation evidence, while ordinary Stage 4 forum PRs need not repeat deployed Hyperdrive acceptance.
+
+Introduced/changed/recorded by: PROJECT_STATE, README, HYPERDRIVE.
+
+#### Candidate EX50-20 — Localization deadline values are not universal forum/auth SLOs
+
+Atomic scope boundary: existing 1000/2000/500/1500ms localization deadline stack remains specific to that path; forum/auth paths must not inherit it automatically as architecture.
+
+Introduced/changed/recorded by: HYPERDRIVE.
+
+Backward: EX42/EX45 deadline lineage.
+
+#### Candidate EX50-21 — Historical Stage 4A Better Auth schema remains a completed foundation
+
+Atomic retained-foundation state: ROADMAP/PROJECT_STATE keep Better Auth 1.7.4 schema, rate_limit and user.locale foundation as completed work.
+
+Introduced/changed/recorded by: PR #50 roadmap/state rewrite.
+
+Backward: EX47-03..09.
+
+#### Candidate EX50-22 — Stage 4A no longer dictates the next infrastructure step
+
+Atomic scheduling change: completed Stage 4A no longer means the project must immediately perform its formerly documented production migration/auth-infrastructure rollout before product work.
+
+Introduced/changed/recorded by: ROADMAP, PROJECT_STATE, README, MIGRATIONS.
+
+Changed earlier records: EX47-15/16 immediate gate timing is superseded for local/CI development, while EX50-10/14 retain actual external rollout obligations.
+
+#### Candidate EX50-23 — Active Stage 4 is reorganized as forum core 4B → 4C → 4D → 4E
+
+Atomic roadmap scheduling decision: forum domain foundation, public reading, participation/auth, solved/best-answer/minimal roles become the active product sequence.
+
+Introduced/changed/recorded by: ROADMAP, PROJECT_STATE, README, AGENTS.
+
+Direct-user-decision support: forum/product development priority from PR #50.
+
+#### Candidate EX50-24 — Stage 4 completion is a local/CI forum-MVP criterion, not external production rollout
+
+Atomic stage acceptance rule: Stage 4 is complete when public read, authenticated participation, solved flow and minimal roles work in development/test environment; external deployment is not a Stage 4 completion criterion.
+
+Introduced/changed/recorded by: ROADMAP.
+
+#### Candidate EX50-25 — Stage 4B schedules immutable content revision identity as a future-translation foundation
+
+Atomic roadmap allocation: forum topics/posts must establish immutable revision identity during forum schema work so revision-bound content translation need not retrofit identity later.
+
+Introduced/changed/recorded by: ROADMAP Stage 4B.
+
+Normative provenance: inherited CNT-02 / AN7-12b / AN10-13 translation contracts mapped by PR #50; not newly established merely by the roadmap rewrite.
+
+Forward: PR #51 later implements immutable forum revisions.
+
+#### Candidate EX50-26 — Stage 4B schedules topic title as a separate versioned/translatable unit
+
+Atomic roadmap allocation: topic title must have its own revision/translatable identity or equivalent model preserving CNT-05.
+
+Introduced/changed/recorded by: ROADMAP Stage 4B.
+
+Normative provenance: inherited CNT-05 contract plus PR #50 scheduling.
+
+Forward: PR #51 later implements forum_topic_title_revisions.
+
+#### Candidate EX50-27 — Stage 4B schedules source-locale metadata independently from UI locale with und allowed
+
+Atomic roadmap allocation: sourceLocale belongs to content revision identity, can be und, and is independent of current UI locale.
+
+Introduced/changed/recorded by: ROADMAP Stage 4B.
+
+Normative provenance: inherited CNT-03 contract plus PR #50 scheduling.
+
+Forward: PR #51 later implements source-locale handling.
+
+#### Candidate EX50-28 — Stage 4B explicitly excludes production grants, new Hyperdrive, external OAuth/provider resources and deployed smoke
+
+Atomic stage boundary: forum schema/domain development is intentionally local/CI and does not pull external infrastructure into the slice merely because schema exists.
+
+Introduced/changed/recorded by: ROADMAP Stage 4B and PROJECT_STATE.
+
+#### Candidate EX50-29 — Stage 4D may implement Better Auth runtime/session locally without real Google OAuth acceptance
+
+Atomic stage boundary: Better Auth runtime/session, server-only auth config placeholders and automated auth/session tests belong to local/CI Stage 4D; real Google OAuth credentials/deployed smoke are deferred.
+
+Introduced/changed/recorded by: ROADMAP Stage 4D.
+
+Forward: PR #53 implements Better Auth runtime/session locally; PR #56 adds Google UI controls without real Google credentials.
+
+#### Candidate EX50-30 — Automatic translation/background-job implementation moves after working forum core
+
+Atomic scheduling decision: Stage 5 translation generation, provider adapters, task/job machinery and active bundle publish/read path follow Stage 4 forum MVP rather than gating it.
+
+Introduced/changed/recorded by: ROADMAP, PROJECT_STATE, README.
+
+Existing translation architecture remains source of truth; only implementation timing changes here.
+
+#### Candidate EX50-31 — Stage 6 becomes the dedicated external integration stage
+
+Atomic roadmap boundary: Stage 6 collects pending target migrations, migration evidence, least-privilege runtime capabilities/Hyperdrive, real Google OAuth, Queues/providers, preview isolation, deployed smoke and backup/restore into a production-like candidate.
+
+Introduced/changed/recorded by: ROADMAP, PROJECT_STATE, README.
+
+#### Candidate EX50-32 — Project state records no product blocker for starting Stage 4B implementation
+
+Atomic state claim: PROJECT_STATE says forum-core code may start locally/CI.
+
+Introduced/changed/recorded by: 7affbc7.
+
+This is separate from the operational prerequisite below.
+
+#### Candidate EX50-33 — Auto-deploy separation remains an operational prerequisite before first forum-code merge
+
+Atomic gate/state claim: forum implementation can begin, but first forum-code merge must wait until active development main no longer auto-promotes to the production Worker.
+
+Introduced/changed/recorded by: PROJECT_STATE, ROADMAP, HYPERDRIVE, AGENTS.
+
+External action status: not performed by PR #50.
+
+Forward: PR #51 later records this prerequisite as closed; exact external action remains outside #50.
+
+#### Candidate EX50-34 — PR #50 changes documentation/process only, not runtime/schema/dependencies/workflows/resources
+
+Atomic historical scope fact: the PR itself does not enact the deferred external changes or change product runtime.
+
+Recorded by: PR body and changed-file set.
+
+This prevents later state/document changes from being mistaken for an external infrastructure operation.
+
+#### Candidate EX50-35 — Pending-migration runbook does not yet describe the workflow change needed to pass the current preflight
+
+Atomic open review finding: #50 says to remove owner exception/restore dedicated role and then apply pending schema, but the retained workflow still runs the full verifier before db:migrate and that verifier requires target migration ledger == checked-in journal.
+
+Recorded by: PR #50 P2 review on docs/database/MIGRATIONS.md.
+
+Independent source check: PR #49 final workflow/verifier confirms this preflight shape.
+
+Status in PR #50: unresolved/non-outdated; docs-only PR does not change the workflow.
+
+#### Candidate EX50-36 — Rewritten Stage 5A work list omits explicit generationPolicyVersion persistence/acceptance
+
+Atomic open review finding: Stage 5A claims STO-03 but does not explicitly state that machine UI records/tasks/current publication persist/use generationPolicyVersion.
+
+Recorded by: PR #50 P2 review.
+
+Independent contract evidence: STORAGE_AND_VERSIONING STO-03 requires generationPolicyVersion and requires queued task/conditional publication to account for it.
+
+Status in PR #50: unresolved/non-outdated.
+
+#### Candidate EX50-37 — Rewritten Stage 5A work list omits explicit provider/model provenance/attribution persistence/acceptance
+
+Atomic open review finding: Stage 5A claims STO-06 but does not explicitly require machine UI generation to persist sufficient provider/model/provenance/attribution metadata.
+
+Recorded by: PR #50 P2 review.
+
+Independent contract evidence: STO-01 machine metadata and STO-06 require provider/model, generation policy and attribution/presentation metadata.
+
+Status in PR #50: unresolved/non-outdated.
+
+#### Candidate EX50-38 — Rewritten Stage 5 completion criteria omit explicit stale-task conditional-current-publish correctness
+
+Atomic open review finding: Stage 5 work mentions stale-task guards, but completion criteria do not explicitly require proving that delayed/duplicate work cannot publish over newer source/policy/current manual state.
+
+Recorded by: PR #50 P2 review.
+
+Independent contract evidence: global invariant 20 and JOB-03 require pre-provider stale revalidation plus conditional publication after provider response.
+
+Status in PR #50: unresolved/non-outdated.
+
+### Superseded / postponed / retained reconciliation for PR #50
+
+1. Direct user authority applies to the PR #50 reprioritization itself: forum/product development proceeds local/CI and external infrastructure is deferred closer to pre-release. It does not adjudicate #37–#49 retroactively.
+2. EX47-15/16 immediate Stage 4A external-rollout timing is no longer a universal next-development-step gate after #50. The underlying actual-external-rollout ordering is retained as EX50-10/11/14 rather than deleted.
+3. The deployed environment from the earlier infrastructure branch is no longer required to track every active-main development migration/feature; HYPERDRIVE explicitly allows production-like Neon schema to lag development until external integration.
+4. Existing localization/translation/database foundations are retained as EX50-03/16/19/20/21; #50 is not a blanket rollback of Stage 0–4A work.
+5. Preview/private-data isolation is retained as EX50-18; schema-first external rollout/evidence remains EX50-10/11; least-privilege capability separation remains EX50-16/17.
+6. External provisioning/acceptance for Google OAuth, new Hyperdrive/write roles, provider/Queue credentials, pending Neon migrations and deployed smoke is postponed into Stage 6 by EX50-02/31.
+7. Expensive translation-facing forum identity boundaries are not postponed with external infrastructure: EX50-25/26/27 schedule them into Stage 4B as foundations before their Stage 5 consumers.
+8. PR #50 does not resolve the three open review findings EX50-35..38; they remain separate from the direct-user scheduling decision.
+
+### Review and dependency reconciliation
+
+1. PR #47 implements exact-version schema foundation after EX35-11/EX37-17 but does not implement runtime auth. Later PR #53 is a consumer, not retroactive proof that every #47 detail was necessary.
+2. PR #47 broadens application ownership scope but deliberately keeps localization runtime grants unchanged. This distinction is essential to the #49 application-owner derivation.
+3. PR #48 corrects only the inbound-membership model represented by EX43-05 and adds DB-owner identity. It does not erase EX43-03/04a/04b or other privilege checks.
+4. PR #49 reveals a topology distinction not represented by the older current_user=migration-owner assumption: connection role can be database owner while actual application tables remain under one separate application owner.
+5. The first #49 P1 attaches to superseded EX49-14. The final c9cd0c1/40150f4 design prevents owner mode from reaching a pending migration by requiring exact-journal preflight before db:migrate. GitHub thread metadata staying unresolved does not erase that in-PR code/doc supersession.
+6. The second #49 P1 remains a factual state-sync gap because PROJECT_STATE is not changed by the PR.
+7. PR #50's direct user decision is forward-only. No statement in this response uses forum-first policy to excuse or condemn PR #37–#49.
+8. PR #50 keeps future-proof forum revision/title/source-locale foundations in the near-term product stage while postponing external infrastructure, so future-proof foundation and external rollout timing remain separate audit dimensions.
+9. PR #50 review findings on STO-03/STO-06/JOB-03 are preserved as conflicts with unchanged translation contracts, not silently resolved by the roadmap rewrite.
+10. PR #51 is forward evidence that the forum-first/local-CI path was followed: it introduces forum schema/revision foundations and explicitly performs no Neon migration or other external infrastructure action. This later use is not evidence of original correctness.
+11. PR #53 is forward evidence that Better Auth runtime later used the Stage 4A schema in local/CI; it does not change the historical absence of runtime auth in #47.
+
+### Changed-file reconciliation
+
+#### PR #47
+- package.json -> EX47-01/02.
+- pnpm-lock.yaml -> generated dependency graph resulting from EX47-01/02; no independent project decision beyond exact pins.
+- db/schema.ts -> EX47-03..07.
+- drizzle/0003_gorgeous_donald_blake.sql -> EX47-03/04/05/07/08.
+- drizzle/meta/0003_snapshot.json -> generated Drizzle representation of EX47-03..08; no separate policy decision.
+- drizzle/meta/_journal.json -> EX47-08 append-only history.
+- tests/database/migrations.test.ts -> EX47-10.
+- .github/scripts/verify-production-migration.mjs -> EX47-11.
+- .github/scripts/production-privileges.mjs + tests -> EX47-12..14.
+- docs/database/MIGRATIONS.md -> EX47-03..16 rollout/schema/capability recording.
+- PROJECT_STATE.md -> EX47-09/13..17.
+- All 12 changed files are accounted for.
+
+#### PR #48
+- .github/scripts/production-privileges.mjs -> EX48-01..08.
+- .github/scripts/production-privileges.test.mjs -> EX48-10 and fixture evidence for EX48-03..08.
+- docs/database/MIGRATIONS.md -> EX48-02..09.
+- All three changed files are accounted for.
+
+#### PR #49
+- .github/scripts/production-privileges.mjs -> EX49-01..13 and early/final owner-connection semantics.
+- .github/scripts/production-privileges.test.mjs -> targeted evidence for EX49-02/04..13.
+- .github/scripts/verify-production-migration.mjs -> EX49-05/16/17/18.
+- .github/workflows/production-db-migrate.yml -> EX49-14/17/18.
+- docs/database/MIGRATIONS.md -> EX49-03..05, EX49-14/16/18/19.
+- PROJECT_STATE is intentionally not in the changed set; that absence is the subject of EX49-21.
+- All five changed files are accounted for.
+
+#### PR #50
+- PROJECT.md -> EX50-01..04, EX50-07.
+- PROJECT_STATE.md -> EX50-01/02/05/06/09/12..14/19/21..24/30..34.
+- README.md -> EX50-01/02/03/19/21/23/30/31.
+- ROADMAP.md -> EX50-01/02/05/08/10/21..31 and review findings EX50-36..38.
+- docs/database/HYPERDRIVE.md -> EX50-05/06/09/10/16..20.
+- docs/database/MIGRATIONS.md -> EX50-05/08..17 and review finding EX50-35.
+- AGENTS.md -> historical Codex-process recording of EX50-05/06/07/18/23 and foundation-preservation rule; it is not used as ChatGPT instruction.
+- All seven changed files are accounted for.
+
+### CI, deployment, and external-evidence reconciliation
+
+- Final GitHub Actions runs for #47–#50 all show checks=success and database=success: #47 run 86, #48 run 87, #49 run 93, #50 run 94.
+- Cloudflare bot records successful branch/commit preview deployments for each final head. These do not establish production DB migration, production privilege truth, direct user approval, or policy correctness.
+- #47 contains no preserved production migration run proving 0003 external application; its external rollout instruction is separated from its checked-in schema foundation.
+- #48 contains no raw PostgreSQL documentation/catalog artifact for creator-admin semantics.
+- #49 contains a PR-body claim of read-only production catalog validation but no attached raw catalog snapshot.
+- #50 is docs-only and performs none of the external operational actions it schedules/deferes.
+- Direct-user authority for the #50 reprioritization comes from the audit's fixed user-decision record, not from merge/CI/deploy.
+
+### Extraction reconciliation
+
+- Internal commit counts: #47=1, #48=1, #49=10, #50=1.
+- Review-thread counts: #47=0, #48=0, #49=2, #50=3.
+- Full F/A/C/D/O/G/T sweeps are recorded for each PR.
+- Every changed file is reconciled.
+- #47 exact-version schema foundation is separated from runtime auth, external migration, production grants and evidence gates.
+- #48 preserves the exact #43 blanket-membership model as history and records only the database-owner membership correction.
+- #49 preserves both its superseded owner-migration phase and final owner-connection/no-op phase, plus both P1 reviews.
+- #50 is treated as direct user authority only from #50 forward; detailed roadmap mechanisms retain their own inherited/assistant-authored provenance.
+- #50 superseded timing, postponed external actions, retained safety boundaries, retained foundations, and future-proof Stage 4B foundations are kept separately addressable.
+- No candidate in this response is classified as correct, foolish, erroneous, premature, future-proof, infrastructure drift, target architecture, approved, or requiring a remedy.
