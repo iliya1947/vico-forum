@@ -12936,3 +12936,218 @@ The write path is implemented/tested local/CI under the PR #50 scheduling bounda
 - Public SSR reading, Better Auth runtime/session, blocker-label synchronization and authenticated writes are separate lineages.
 - Real review findings and in-PR corrections remain independently addressable.
 - No decision in this response is classified as correct, erroneous, premature, future-proof, infrastructure drift, approved target architecture, or requiring a remedy.
+
+
+## RESPONSE DL-EXTRACT-009/2
+
+From: ChatGPT  
+Status: submitted  
+Responding in: PR #79 at RESPONSE_COMMIT_SHA  
+Task source: PR #78 head `5633be2cd5d1420d75d3cedff5e4065bf0c947ad`  
+Scope: narrow atomicity correction to `RESPONSE DL-EXTRACT-009/1` only  
+Claims: extraction correction only; no decision classification or scope expansion
+
+### Atomic replacements
+
+#### EX51-20a — Revision-to-owner containment FKs remain immediate
+
+Atomic schema behavior: in the final PR #51 form, `forum_topic_title_revisions.topic_id → forum_topics.id` and `forum_post_revisions.post_id → forum_posts.id` are ordinary immediate foreign keys rather than DEFERRABLE constraints.
+
+Introduced/changed/recorded by: initial migration `83ac9e0` added these containment FKs; final `799aba8` removed the earlier manual `ALTER CONSTRAINT ... DEFERRABLE INITIALLY DEFERRED` statements.
+
+Backward/contrast: distinct from `EX51-19`, where the separate owner→current-revision composite FKs remain `DEFERRABLE INITIALLY DEFERRED`.
+
+Changed-file evidence: `db/schema.ts`, `drizzle/0004_forum_domain_foundation.sql`, generated migration metadata.
+
+No review finding is attached to FK timing itself.
+
+#### EX51-20b — Revision-to-owner containment FKs cascade revision rows with aggregate-owner deletion
+
+Atomic schema behavior: the same revision→owner containment FKs use `ON DELETE CASCADE`, so deleting the owning topic/post removes its contained title/body revisions through the aggregate relationship.
+
+Introduced/changed/recorded by: retained in final `799aba8`; `db/schema.ts` and migration `0004`.
+
+Review relation: this aggregate-owner cascade is distinct from `EX51-22`, which concerns direct deletion of an already-superseded revision. `EX51-23` records the higher-level tested aggregate hierarchy deletion behavior that depends on this cascade contract.
+
+Changed-file evidence: `db/schema.ts`, `drizzle/0004_forum_domain_foundation.sql`, `tests/database/migrations.test.ts`.
+
+#### EX51-33a — PROJECT_STATE records Stage 4B forum foundation as complete for local/CI development
+
+Atomic state claim: PR #51 records the forum schema, repository/service, revision boundaries, migration history and PostgreSQL integration coverage as completed for the Stage 4B local/CI slice.
+
+Introduced/changed/recorded by: PR #51 `PROJECT_STATE.md`.
+
+Normative timing: PR #50 direct-user decision establishes forum-first local/CI scheduling from #50 forward.
+
+This state claim does not by itself assert any external database/runtime rollout.
+
+#### EX51-33b — Stage 4B completion explicitly excludes external production migration/runtime rollout
+
+Atomic state/scope fact: the same PR #51 state records Stage 4B as completed “локально/в CI, без production migration или runtime rollout”; migration `0004` is therefore not claimed externally applied or production-consumed in this slice.
+
+Introduced/changed/recorded by: PR #51 `PROJECT_STATE.md`.
+
+Backward: PR #50 direct-user local/CI scheduling boundary.
+
+Forward: external pending migrations/runtime capabilities remain later external-integration work; their absence here is not converted into a local/CI acceptance defect.
+
+Evidence limit unchanged: PR #51 contains no external Neon migration/deployment artifact.
+
+#### EX51-35a — Stage 4C public reading is selected as the next product slice
+
+Atomic planning statement: after Stage 4B, `PROJECT_STATE.md` selects Stage 4C public reading/classic forum UI as the next active product work.
+
+Introduced/changed/recorded by: PR #51 `PROJECT_STATE.md`.
+
+Forward: PR #52 implements that public read slice.
+
+This next-slice selection is independent from whether blockers were recorded.
+
+#### EX51-35b — PROJECT_STATE records no product or operational blocker for continuing into Stage 4C
+
+Atomic gate/state statement: PR #51’s blocker section states that continuing Stage 4C has no product or operational blockers.
+
+Introduced/changed/recorded by: PR #51 `PROJECT_STATE.md`.
+
+Related evidence: `EX51-34` separately records the user-disabled native Cloudflare Git integration that the state cites when explaining why ordinary main merges no longer auto-deploy.
+
+This blocker claim is independently reviewable from the product-priority choice in `EX51-35a`.
+
+#### EX53-12a — AuthRuntime is a typed request-scoped RouterContextProvider capability
+
+Atomic runtime capability: `authRuntimeContext` stores the request-scoped `AuthRuntime`, and `authRuntimeForRequest` retrieves it for consumers such as the `/api/auth/*` resource route.
+
+Introduced/changed/recorded by: PR #53 `app/auth/request-context.ts`; produced by `initializeAuthContext` before session resolution.
+
+Backward: `EX53-08` defines the AuthRuntime capability surface; `EX53-11` keeps it free of module-global DB connection state.
+
+Forward/consumer: `EX53-15` delegates auth resource requests through this runtime context.
+
+#### EX53-12b — Resolved AuthSession|null is a separate typed request-scoped RouterContextProvider capability
+
+Atomic session capability: `authSessionContext` stores the resolved `AuthSession | null`, and `authSessionForRequest` exposes that result to request consumers independently of the AuthRuntime object.
+
+Introduced/changed/recorded by: PR #53 `app/auth/request-context.ts`; set by `initializeAuthContext` after `runtime.getSession`.
+
+Forward/consumers: `EX53-16` uses the resolved user locale for root negotiation; PR #55 later uses the resolved session as the mutation actor boundary.
+
+#### EX53-26a — Local Better Auth integration verifies guest requests resolve to no session
+
+Atomic integration outcome: with no session cookie, the request-scoped Better Auth runtime returns a resolution whose `session` is `null`.
+
+Introduced/changed/recorded by: PR #53 `tests/database/auth-runtime.test.ts`.
+
+This is a guest/no-session outcome and does not include expiry cleanup behavior.
+
+#### EX53-26b — Local Better Auth integration verifies expired-session cleanup and cookie invalidation
+
+Atomic integration outcome: after the persisted session is forced expired, `getSession` returns `session: null`, emits a session-token `Set-Cookie` clearing/update response, and the expired persisted session row is removed.
+
+Introduced/changed/recorded by: PR #53 `tests/database/auth-runtime.test.ts`.
+
+Backward: session-header propagation path `EX53-19..22`.
+
+This is independently testable from the guest behavior in `EX53-26a`.
+
+#### EX55-24a — Initial post must target the newly created topic
+
+Atomic service invariant: `ForumService.createTopicWithInitialPost` rejects an input whose `initialPost.topicId` does not equal the new topic’s `input.id`.
+
+Introduced/changed/recorded by: PR #55 `db/forum-service.ts`.
+
+Backward: graph transaction `EX55-22`.
+
+The invariant is independent from author matching even though the implementation reports both mismatches through one validation branch/message.
+
+#### EX55-24b — Initial post must use the same author as the newly created topic
+
+Atomic service invariant: `ForumService.createTopicWithInitialPost` rejects an input whose `initialPost.authorId` does not equal the new topic’s `input.authorId`.
+
+Introduced/changed/recorded by: PR #55 `db/forum-service.ts`.
+
+Backward: session-derived actor boundary `EX55-10` and graph transaction `EX55-22`.
+
+This is independent from topic-identity matching in `EX55-24a`.
+
+#### EX55-34a — Sign-in UX remains an unfinished Stage 4D product slice after PR #55
+
+Atomic scheduling/state fact: PR #55 records that sign-in UX is not yet implemented even though the server auth/session foundation and authenticated forum actions exist.
+
+Introduced/changed/recorded by: PR #55 `PROJECT_STATE.md`.
+
+Forward evidence: PR #56 later adds locale-aware Google sign-in/sign-out controls. Later implementation is not treated as retroactive proof of a #55 defect.
+
+#### EX55-34b — Markdown editor/rendering remains an unfinished Stage 4D product slice after PR #55
+
+Atomic scheduling/state fact: PR #55 records Markdown editor/rendering as still unfinished.
+
+Introduced/changed/recorded by: PR #55 `PROJECT_STATE.md`.
+
+Forward evidence: PR #57 later adds safe CommonMark rendering while other editing/product details evolve separately. This is scheduling evidence only.
+
+#### EX55-34c — Solved-topic/best-answer flow remains an unfinished later product slice after PR #55
+
+Atomic scheduling/state fact: PR #55 records solved/best-answer functionality as still unfinished.
+
+Introduced/changed/recorded by: PR #55 `PROJECT_STATE.md`.
+
+Forward evidence: PR #58 later implements the first solved/best-answer Stage 4E slice. Later implementation is not treated as retroactive proof of a #55 defect.
+
+### Old-ID → replacement-ID map
+
+- `EX51-20` → `EX51-20a`, `EX51-20b`.
+- `EX51-33` → `EX51-33a`, `EX51-33b`.
+- `EX51-35` → `EX51-35a`, `EX51-35b`.
+- `EX53-12` → `EX53-12a`, `EX53-12b`.
+- `EX53-26` → `EX53-26a`, `EX53-26b`.
+- `EX55-24` → `EX55-24a`, `EX55-24b`.
+- `EX55-34` → `EX55-34a`, `EX55-34b`, `EX55-34c`.
+
+No other ID is renumbered.
+
+### Corrected dependency, review, changed-file, and range mappings
+
+- PR #51 canonical ID range becomes `EX51-01..19`, `EX51-20a/b`, `EX51-21..32`, `EX51-33a/b`, `EX51-34`, `EX51-35a/b`, `EX51-36..38`.
+  - `EX51-20a` is the final immediate timing of revision→owner FKs and remains distinct from the deferred current-pointer contract `EX51-19`.
+  - `EX51-20b` is the revision→owner cascade contract; `EX51-23` is the higher-level tested aggregate hierarchy deletion behavior that depends on it.
+  - The `EX51-22` review reference remains unchanged: it concerns direct deletion of superseded revisions, not `EX51-20a`; its contrast with intentional aggregate deletion now points to `EX51-20b` plus `EX51-23`.
+  - `EX51-33a` carries local/CI completion status; `EX51-33b` carries the explicit “no production migration/runtime rollout” scope/evidence statement.
+  - `EX51-35a` carries next-slice selection; `EX51-35b` carries the no-blockers statement and its relation to separate `EX51-34`.
+  - `PROJECT_STATE.md` mapping changes from `EX51-33..35` to `EX51-33a/b`, `EX51-34`, `EX51-35a/b`.
+  - `db/schema.ts` mapping replaces `EX51-20` with `EX51-20a/b`.
+  - `drizzle/0004_forum_domain_foundation.sql` mapping replaces `EX51-20` with `EX51-20a/b`.
+  - `tests/database/migrations.test.ts` maps aggregate-cascade coverage to `EX51-20b`/`EX51-23`; no dedicated test is claimed for `EX51-20a` beyond the migration/schema evidence.
+
+- PR #53 canonical ID range becomes `EX53-01..11`, `EX53-12a/b`, `EX53-13..25`, `EX53-26a/b`, `EX53-27..32`.
+  - `EX53-12a` is the AuthRuntime context; `EX53-12b` is the resolved-session context.
+  - `EX53-15` consumes `EX53-12a`; `EX53-16` consumes `EX53-12b`; later PR #55 session-derived mutation identity follows `EX53-12b`.
+  - `app/auth/request-context.ts` mapping changes from `EX53-08/12/14` to `EX53-08`, `EX53-12a/b`, `EX53-14`.
+  - `app/auth/session-context.ts` and its test now also map to `EX53-12a/b` as the producers of both contexts, in addition to unchanged `EX53-13/14` and `EX53-18..22`.
+  - `app/routes/auth-api.ts`/test maps to `EX53-12a` plus unchanged `EX53-15`.
+  - `app/routes/locale-negotiation.ts`/test maps to `EX53-12b` plus unchanged `EX53-16/17`; the locale-boundary test uses the session context fixture and therefore also maps to `EX53-12b`.
+  - `workers/app.ts` mapping replaces the aggregate context reference with `EX53-12a/b`; other runtime/session/cookie/topology mappings remain unchanged.
+  - `tests/database/auth-runtime.test.ts` mapping changes from `EX53-23..26` to `EX53-23..25`, `EX53-26a/b`, plus the unchanged session-cookie correction evidence.
+  - No PR #53 review-thread mapping changes: the preview-isolation P1 remains `EX53-29`; the missing-secret smoke prediction remains `EX53-30` with counter-evidence `EX53-31`.
+
+- PR #55 canonical ID range becomes `EX55-01..23`, `EX55-24a/b`, `EX55-25..33`, `EX55-34a..c`, `EX55-35`.
+  - `EX55-24a` depends on the new-topic graph identity/transaction in `EX55-22`; `EX55-24b` additionally relates to session-derived actor identity `EX55-10`.
+  - `db/forum-service.ts` mapping changes from `EX55-24/26` to `EX55-24a/b`, `EX55-26`.
+  - `PROJECT_STATE.md` mapping changes from `EX55-33..35` to `EX55-33`, `EX55-34a..c`, `EX55-35`.
+  - Forward scheduling references separate cleanly: sign-in UX → `EX55-34a` → PR #56; Markdown rendering → `EX55-34b` → PR #57; solved/best-answer → `EX55-34c` → PR #58.
+  - No PR #55 review-thread mapping changes because PR #55 has no review threads.
+
+### Reconciliation-reference corrections
+
+- Review/dependency reconciliation item 2 remains the same proposition, but its intentional aggregate-deletion contrast is now `EX51-20b` + `EX51-23`; `EX51-20a` is unrelated FK timing.
+- Review/dependency reconciliation item 4’s Stage 4B local/CI-versus-external statement now points explicitly to `EX51-33a/b`; its meaning is otherwise unchanged.
+- Review/dependency reconciliation item 10’s “PR #55 builds on EX53 session identity” now points to the resolved-session capability `EX53-12b`; its independent server-side session/origin enforcement statement remains unchanged.
+- The extraction-reconciliation statement that “Stage 4B absence of Neon rollout is preserved as the PR #50 local/CI scheduling boundary” maps specifically to `EX51-33b`, while local/CI completion maps to `EX51-33a`.
+- The extraction-reconciliation statement separating Better Auth runtime/session lineages is represented by `EX53-12a/b`; no change is made to the surrounding PR #53 findings.
+- The PR #55 unfinished-product scheduling statement is read canonically as separate `EX55-34a/b/c`; write anti-spam/rate limiting remains independently represented by unchanged `EX55-33`.
+- All other `/1` dependencies, review references, changed-file mappings, range statements, category sweeps, CI/external evidence limits, and reconciliation statements remain unchanged.
+
+### Unchanged remainder
+
+Every other `RESPONSE DL-EXTRACT-009/1` record and reconciliation statement remains unchanged. The accepted future-consumer lineage, PR #50 local/CI scheduling boundary, PR #51/52/53 review histories, unexplained successful PR #53 Workers smoke counter-evidence, and distinction between local correctness and deferred external rollout are preserved exactly.
+
+No future consumer is reinterpreted as a current-stage defect, no external rollout requirement is imported into the local/CI slice, and no correctness, future-proofing, infrastructure-drift, approval, target-state, or remedy classification is made here.
