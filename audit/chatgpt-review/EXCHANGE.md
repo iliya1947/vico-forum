@@ -17942,3 +17942,141 @@ The checks verify repository code/docs mechanics, not the truth or authority of 
 #### EX77-88 — Final PR #77 responsibility split is state/history/contracts
 PROJECT_STATE owns current state, PROJECT_HISTORY owns significant historical index, and permanent subsystem contracts remain in their existing source-of-truth documents.
 
+
+
+### Dependency and historical-chain reconciliation
+
+1. AN10-17a/AN10-17b and the PR #50 Stage 5 review gaps EX50-38a/EX50-38b establish separate pre-provider revalidation and post-provider conditional-current publication concerns. PR #63 plans source/policy identity; PR #68/#69 implement pre-provider stale checks; EX71-29..52 implement the post-provider validation/currentness/claim-owned publication boundary. PR #72 then adds an independent durable generation-order fence between different stable identities.
+2. EX63-07..12 define stable semantic UI job identity. PR #67 materializes that identity durably; PR #69 preserves same-identity reactivation semantics for stale work. EX72-01..26 add a separate monotonic generation dimension rather than replacing semantic taskIdentity. The existence of this later ordering layer is therefore not treated as evidence that stable identity itself was a defect.
+3. EX66-01..65 provide provider-neutral routing, locale rules and untrusted-output validation. EX73-01..20 connects those boundaries to the durable consumer and EX71 publisher without selecting a concrete external provider. Real-provider absence remains a deferred consumer, not a current extraction defect.
+4. EX67 durable commit-before-enqueue + EX68 claim/lease/preflight + EX69 lifecycle corrections + EX70 durable survival evidence feed the EX71 completed/publication path. EX72 adds cross-identity ordering; EX73 connects provider execution. These are sequential consumers of the durable-task foundation, not retroactive replacements of the earlier records.
+5. EX71-54 records the different-identity overwrite race. The temporary fa56fff supersession attempt is preserved separately from the final #71 state and must not be mistaken for the design later implemented in #72. EX72's durable generation head is a later implementation with different semantics and its own open EX72-45..53 review chain.
+6. EX34-01..22 provide compiler/version/store primitives and EX32-01..17 provide raw persistent sources. EX74-01..50 turns successful machine publication into atomic whole-namespace persisted bundle publication. EX75-01..55 then makes verified persisted bundles an actual SSR/runtime read input with raw/local/English fallback. This is the planned primitive → publication → consumer chain.
+7. EX75-56..63 remains open through the end of the audited chronology: neither #76 nor #77 changes bundle refresh/backfill behavior, and current main resource-loader.ts is still the #75 blob. The later state/history files therefore do not close the finding merely by describing persisted-bundle runtime reads as implemented.
+8. EX44-01..12 migration-evidence identity/static contract survives #76. EX44-13 ordinary-PR live remote verification is the independently removable part corrected by EX76-01..14. The underlying evidence and actual-rollout verification boundary remain distinct from the removed ordinary-feature-PR gate.
+9. EX61-60..70 preserve the exact broad authorization catch/degradation behavior at #61. EX76-15..56 is the later typed-availability correction. The earlier historical records are not rewritten to look typed retroactively, and the valid goal of controlled degradation for genuine outages is not discarded with the catch-all implementation.
+10. EX77-27..69 indexes many earlier correction chains, but each PROJECT_HISTORY assertion retains later-retrospective-summary provenance. Where earlier extracted Git/review evidence independently supports chronology, that evidence stands on its own; where PROJECT_HISTORY adds an evaluation or motive, the history file does not self-validate it.
+11. EX77-57/58 and EX77-59 are explicit evidence that PROJECT_HISTORY is not an exhaustive audit ledger: it summarizes #72 durable ordering without recording review 4028280128 and does not record #75 review 4029815293. Those omissions do not decide the reviews; they prevent a late history document from laundering absence-of-mention into closure.
+12. The PR #73 and #74 full-file PROJECT_STATE rewrite incidents are documentation-edit history only. Their corrections do not alter the provider executor or bundle-publication runtime mechanisms and must not be merged into those architecture records.
+
+### Changed-file reconciliation
+
+#### PR #71 — all 34 final changed files
+
+- PROJECT_STATE.md -> EX71-60, EX71-91..98: intermediate supersession state, final correction, implemented/deferred Stage 5A boundaries and external limits.
+- app/auth/auth-controls.test.tsx -> EX71-79: canonical plural runtime fixture adaptation.
+- app/forum/public-read.test.tsx -> EX71-80: forum plural runtime fixture adaptation.
+- app/localization/bundles.test.ts -> EX71-22/23/82/83/87: structured compilation and plural verification/runtime behavior.
+- app/localization/bundles.ts -> EX71-22/23/82: structured logical values compile to verified i18next runtime resources.
+- app/localization/catalog.ts -> EX71-12/13: structured canonical source and plural sectionCount descriptor.
+- app/localization/fingerprint.ts -> EX71-14: deterministic structured-source fingerprinting.
+- app/localization/persistent-sources.ts -> EX71-20/21/86: structured persistent payload read/canonicalization and plural persistence path.
+- app/localization/resource-loader.ts -> EX71-24: runtime loader carries compiled structured plural resources.
+- app/localization/resources.test.ts -> EX71-83 and structured source/resource regressions.
+- app/localization/sources.ts -> EX71-15/21: logical source value type and deterministic canonical payload.
+- app/localization/translation-publication.test.ts -> EX71-25..33 and post-provider stale/current/claim-lost unit coverage.
+- app/localization/translation-publication.ts -> EX71-25..33: provider provenance/output validation, repeated preflight, conditional publication orchestration.
+- app/localization/translation-task-consumer.test.ts -> EX71 lifecycle/completed fixture adaptation.
+- app/localization/translation-task-consumer.ts -> EX71-30..32: shared stale-reason reuse after provider return.
+- app/localization/translation-tasks.test.ts -> EX71 completed lifecycle fixture/update coverage.
+- app/localization/translation-tasks.ts -> EX71-07..11: completed task model and terminal claim shape.
+- app/localization/translation-validation.test.ts -> EX71-16..19: structured/plain output validation coverage.
+- app/localization/translation-validation.ts -> EX71-15..19: structured ProviderTranslationValue and exact target plural validation.
+- db/schema.ts -> EX71-01..09: completed/completedAt schema model.
+- db/translation-task-store.ts -> EX71-07..11, EX71-53..70: completed lifecycle, final absence of cross-identity order, intermediate unsafe supersession/removal and helper regression/fix.
+- db/ui-translation-bundle-store.ts -> EX71-23/87: persisted compiled structured-resource verification.
+- db/ui-translation-publication-store.ts -> EX71-33..52/54: transactional claimed-result completion/raw machine publication and the reviewed cross-identity overwrite boundary.
+- docs/translation/PROVIDERS_AND_JOBS.md -> EX71-89/93/97: completed lifecycle, ordering deferral and later job consumers.
+- docs/translation/UI_TRANSLATION.md -> EX71-90/94/95: structured plural compilation and deferred bundle publication/runtime consumption.
+- drizzle/0009_translation_task_completion.sql -> EX71-01..06.
+- drizzle/meta/0009_snapshot.json -> generated schema representation for EX71-01..06.
+- drizzle/meta/_journal.json -> append-only registration of migration 0009, EX71-73.
+- tests/database/migrations.test.ts -> migration-count/history coverage for 0009.
+- tests/database/translation-task-generation-isolation.test.ts -> EX71-67..70 and delayed-duplicate/non-destruction evidence.
+- tests/database/translation-task-store.test.ts -> EX71-01..11/88 completed lifecycle DB coverage.
+- tests/database/ui-translation-bundle-store.test.ts -> EX71-23/87 structured persisted-bundle verification.
+- tests/database/ui-translation-publication-store.test.ts -> EX71-34..52/84..86/88 atomic completion/raw result, claim loss and structured publication.
+- tsconfig.node.json -> EX71-77 publication/server dependency inclusion.
+- Branch-only temporary migration generator and validation workflow are reconciled by EX71-71..76; both are removed before the final changed-file set and are not treated as surviving product/workflow files.
+
+#### PR #72 — all 17 final changed files
+
+- PROJECT_STATE.md -> EX72-44/49/50/54/55 and the local/CI versus external boundary.
+- app/localization/translation-publication.test.ts -> EX72-31..34 publication generation-fence fixture/coverage.
+- app/localization/translation-task-consumer.test.ts -> EX72-27..30 generation-superseded preflight coverage.
+- app/localization/translation-task-consumer.ts -> EX72-27..30.
+- app/localization/translation-tasks.test.ts -> EX72-11/12/27 task generation/interface fixture coverage.
+- app/localization/translation-tasks.ts -> EX72-11/27 generation field and isCurrentGeneration contract.
+- db/schema.ts -> EX72-01..10 generation/head schema representation.
+- db/translation-task-store.ts -> EX72-13..41 and open EX72-45..53 reactivation chain.
+- db/ui-translation-publication-store.ts -> EX72-31..34/39/40 current-generation publication fencing.
+- docs/translation/PROVIDERS_AND_JOBS.md -> EX72-42/43/49/50 durable generation contract and reactivation wording.
+- drizzle/0010_translation_task_generation_order.sql -> EX72-01..10.
+- drizzle/meta/0010_snapshot.json -> generated representation of EX72-01..10.
+- drizzle/meta/_journal.json -> append-only registration of migration 0010.
+- tests/database/migrations.test.ts -> migration-history/count coverage for 0010.
+- tests/database/translation-task-generation-isolation.test.ts -> EX72-35..41 concurrent planning/current publication fencing.
+- tests/database/translation-task-store.test.ts -> generation/head parsing/planning/reactivation DB coverage including the reviewed branch.
+- tests/database/ui-translation-publication-store.test.ts -> current-generation publication fixture/coverage.
+
+#### PR #73 — all four final changed files
+
+- PROJECT_STATE.md -> EX73-25..28/33..37: state synchronization, unrelated rewrite/restoration and deferred external boundaries.
+- app/localization/translation-execution.test.ts -> EX73-16..20: plain/plural, superseded-generation and invalid-output behavior.
+- app/localization/translation-execution.ts -> EX73-01..15/21/22: provider-neutral consumer→router→publisher orchestration.
+- tsconfig.node.json -> EX73-24.
+
+#### PR #74 — all eight final changed files
+
+- PROJECT_STATE.md -> EX74-40..44/47..50: implemented atomic bundle publication, runtime-read deferral and unrelated wording restorations.
+- app/localization/bundles.ts -> EX74-01..05/17/18: exact-locale logical source merge and bundle compilation reuse.
+- db/ui-translation-publication-store.ts -> EX74-06..26/29..33: namespace locking, current/claim fencing, raw result + bundle compilation/upsert in one transaction.
+- docs/translation/STORAGE_AND_VERSIONING.md -> EX74-37/38.
+- docs/translation/UI_TRANSLATION.md -> EX74-39/47.
+- tests/database/translation-task-generation-isolation.test.ts -> generation/publication isolation continuation.
+- tests/database/ui-translation-publication-store.test.ts -> EX74-23..31 rollback/manual/plural/concurrent publication coverage.
+- tsconfig.node.json -> server publication dependency/typecheck inclusion.
+
+#### PR #75 — all 16 final changed files
+
+- PROJECT_STATE.md -> EX75-55/64/65: persisted-read completion claim and external limits.
+- app/localization/bundles.test.ts -> EX75-01..09 code-owned/deploy identity coverage.
+- app/localization/bundles.ts -> EX75-01..11: v2 semantic identity, codeOwnedBundleInputs and read-only reader contract.
+- app/localization/request-context.test.ts -> EX75-48 request capability fixture.
+- app/localization/request-context.ts -> EX75-48.
+- app/localization/resource-loader-bundles.test.ts -> EX75-12..21/45..47 persisted-hit/miss, target/fallback and SSR/hydration coverage.
+- app/localization/resource-loader.ts -> EX75-12..21/47 and open EX75-56..62 miss-without-persisted-refresh boundary.
+- app/routes/locale-boundary.test.ts -> EX75-49 route wiring fixture.
+- app/routes/locale-boundary.tsx -> EX75-49.
+- db/hyperdrive-ui-translations.test.ts -> EX75-30..47 classified degradation, memoization, English no-connect and unclassified failure coverage.
+- db/hyperdrive-ui-translations.ts -> EX75-30..47 request-local raw/bundle reader and failure circuit.
+- db/ui-translation-bundle-store.test.ts -> EX75-22..29 persisted verification/integrity coverage.
+- db/ui-translation-bundle-store.ts -> EX75-22..29.
+- docs/database/HYPERDRIVE.md -> EX75-50/51 existing read-only localization capability scope.
+- docs/translation/STORAGE_AND_VERSIONING.md -> EX75-53 and v2 persisted-runtime contract.
+- docs/translation/UI_TRANSLATION.md -> EX75-54/64/65 runtime hit/miss/fallback/external boundary.
+
+#### PR #76 — all 16 final changed files
+
+- .github/workflows/ci.yml -> EX76-01..05/12..14: remove ordinary-PR live verifier only.
+- PROJECT_STATE.md -> EX76-52/53/61/62: typed authz/current rollout-boundary synchronization and final CI record.
+- app/forum/mutations.server.ts -> EX76-27..30/44.
+- app/forum/public-authz-degradation.test.ts -> EX76-38..43/46.
+- app/forum/write-actions.test.ts -> EX76-27..30/47.
+- app/routes/authorization-admin.test.ts -> EX76-31..37/48.
+- app/routes/authorization-admin.tsx -> EX76-31..37.
+- app/routes/locale-boundary.test.ts -> EX76-38/39/46.
+- app/routes/locale-boundary.tsx -> EX76-38/39/45.
+- app/routes/section.tsx -> EX76-40/41/45.
+- app/routes/topic.tsx -> EX76-42/43/45.
+- db/authorization-service.ts -> EX76-15/16.
+- db/hyperdrive-authorization.test.ts -> EX76-20..26/49.
+- db/hyperdrive-authorization.ts -> EX76-17..26.
+- docs/auth/AUTHORIZATION.md -> EX76-44/45/50/51.
+- docs/database/MIGRATIONS.md -> EX76-06..14/56.
+
+#### PR #77 — all three final changed files
+
+- PROJECT_HISTORY.md -> EX77-19..69/77..80: historical index creation, H-001..H-010 retrospective claims, provenance corrections, history-loss record and authority limitations.
+- PROJECT_STATE.md -> EX77-02..18/70/72..76/88: rebuild to current-state scope, history link, current capabilities/limitations and nearest route.
+- README.md -> EX77-68/71: documentation index link to PROJECT_HISTORY.
