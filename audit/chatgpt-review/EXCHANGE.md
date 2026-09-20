@@ -13151,3 +13151,938 @@ No other ID is renumbered.
 Every other `RESPONSE DL-EXTRACT-009/1` record and reconciliation statement remains unchanged. The accepted future-consumer lineage, PR #50 local/CI scheduling boundary, PR #51/52/53 review histories, unexplained successful PR #53 Workers smoke counter-evidence, and distinction between local correctness and deferred external rollout are preserved exactly.
 
 No future consumer is reinterpreted as a current-stage defect, no external rollout requirement is imported into the local/CI slice, and no correctness, future-proofing, infrastructure-drift, approval, target-state, or remedy classification is made here.
+
+
+## RESPONSE DL-EXTRACT-010/1
+
+From: ChatGPT
+Status: submitted
+Responding in: PR #79 at RESPONSE_COMMIT_SHA
+Task source: PR #78 head 3fdc9daad1909367a900970383d1b35394a7af3e
+Scope: PRs #56–#60 in chronological merge order
+Claims: evidence extraction only; no correctness, prematurity, future-proofing, architecture-approval, infrastructure-drift, remedy, or target-state classification
+
+### Coverage sweep
+
+#### PR #56 / merge 950133f4be25401c906bec475d44e75b4dc9a9ec
+
+F: locale-aware Google sign-in/sign-out controls in the common forum header | A: Better Auth React client boundary, SSR-derived header session snapshot, safe local callback path, client/server session re-synchronization | C: stale HeaderAuthProvider session snapshot found by review and corrected in-PR; loader-data typing correction | D: PROJECT_STATE records Google auth controls present while real OAuth acceptance stays deferred | O: no real Google credentials, external OAuth smoke, deploy, schema, binding, or database change | G: Stage 4D local/CI UX slice; external Google/OAuth acceptance remains Stage 6 | T: LTR/RTL auth-control tests, safe callback tests, pending/error tests, auth→guest server revalidation regression
+
+Evidence inspected:
+- PR body, all eight changed files, four internal commits 88a8968, 953b1a3, ede785c, 39a0fd9.
+- One P2 review on the initial commit: HeaderAuthProvider copied initialUser into state only once, so later server-loader session changes could leave stale authenticated header UI.
+- ede785c synchronizes provider state when initialUser changes; 39a0fd9 adds the router-revalidation regression. The review thread remains unresolved in metadata but is superseded by the later implementation/test commits.
+- Final CI #113: success.
+- No external Google OAuth acceptance/deployment artifact is attached to this PR.
+
+Completeness limits:
+- The PR exercises the Better Auth client adapter with test doubles; it does not prove real Google credentials, redirect registration, provider callback, or deployed logout behavior.
+- Sign-in/sign-out UI readiness is therefore separate from external OAuth readiness.
+
+#### PR #57 / merge a5a77fac4a845094af4b0826d901b0f7221f4329
+
+F: safe Markdown rendering and basic forum write cooldown/anti-spam | A: reusable ForumMarkdown renderer; shared per-author transactional cooldown policy; PostgreSQL user-row mutex | C: one open P2 finding that the rollback integration test can be short-circuited by cooldown before reaching its intended duplicate-write failure | D: PROJECT_STATE records Stage 4D local/CI complete and Stage 4E next | O: no schema migration, external binding/role, Google OAuth, or deploy | G: one topic/reply content mutation per author per 5s; local/CI acceptance only | T: Markdown safety/RTL tests, action 429 tests, deterministic DB policy tests, real concurrent DB test
+
+Evidence inspected:
+- PR body, all 14 changed files, sole commit defd708.
+- Final CI #114: success.
+- One P2 review on final head: the “rolls back incomplete topic” DB test can be rejected by the newly introduced cooldown before the duplicate post-id failure, and the test accepts any rejection, so it may not prove the intended graph rollback path.
+- No later commit exists inside PR #57 to address that review.
+- The final implementation introduces the row-lock concurrency mechanism together with the cooldown policy; no separate earlier PR #57 implementation without serialization exists in the commit history.
+
+Completeness limits:
+- The concurrent DB test proves the final local PostgreSQL policy serializes same-author attempts so only one write graph commits; it does not by itself approve every anti-abuse design choice.
+- The review finding concerns test specificity, not evidence that the final concurrency lock is bypassed.
+- No external production runtime acceptance is claimed.
+
+#### PR #58 / merge a35c4ce9b39a6ae1aa3bd7d05c97d11c8b36590a
+
+F: topic solved state and best-answer author flow | A: persistent solved/best-answer identity, same-topic composite constraint, transaction-locked author/state checks, public read/UI projection | C: initial best-answer FK delete behavior corrected in-PR; test fixture/cooldown isolation corrected in-PR; open P2 UI grid-layout finding | D: PROJECT_STATE records Stage 4E1 local/CI slice complete and minimum roles/moderator/admin as later Stage 4E2 | O: migration 0005 is repository/local-CI only; no external migration/deploy | G: only topic author can manage solution in this slice; broader roles/moderation deferred | T: migration metadata/constraint tests, repository/action tests, solved public UI tests, final DB cascade/consistency coverage
+
+Evidence inspected:
+- PR body, all 15 changed files, commits e8b6b2c, 0ce4208, 9cda880, 239ec21.
+- Initial CI #115 failed in database job; logs show the new solution fixture hit the forum write cooldown and polluted later row-count/revision assertions. The PR body additionally records the initial ON DELETE RESTRICT best-answer FK as a schema defect.
+- Commit 0ce4208 changes the best-answer FK to ON DELETE NO ACTION DEFERRABLE INITIALLY DEFERRED. CI #116 still failed on the solution-test fixture/cooldown path.
+- Commit 9cda880 gives the solution fixture a deterministic advancing clock, asserts exact FK metadata/invalid cross-topic behavior, wraps cleanup, and proves solved-topic cascade deletion. Final CI #118 succeeds.
+- One P2 UI review remains unresolved/non-outdated: adding best-answer label/forms as direct children of the existing two-column .forum-post grid can consume grid cells and misplace the post body/controls. No later #58 commit changes that UI structure.
+
+Completeness limits:
+- The migration comment states Drizzle 0.45.2 cannot represent the circular composite FK with the required deferred semantics; this is recorded as a PR implementation rationale, not independently reclassified here.
+- Moderator/admin solution authority remains deliberately out of #58.
+
+#### PR #59 / merge a22ae0e1353e03d78f4826936399551df573ce37
+
+F: dynamic application authorization becomes an accepted product extension | A: permission-based DB-backed authorization contract, custom roles, editable role grants, per-user overrides, request-time resolver, management UI contract, lockout invariant | C: final docs commit clarifies that role grants are independent and there is no role inheritance | D: PROJECT, PROJECT_STATE, README, ROADMAP and new docs/auth/AUTHORIZATION.md synchronized | O: external first-manager bootstrap explicitly deferred to Stage 6 | G: Stage 4E2 becomes the local/CI implementation stage; real bootstrap/external DB runtime remains later | T: docs-only PR; no code/schema/test implementation
+
+Evidence inspected:
+- PR body, all five changed documents fully, and commits 71ed841, 4e9ca66, d710823.
+- No GitHub review threads/reviews.
+- Final CI #121: success.
+- Audit PROCESS_CONTEXT fixes direct-user provenance for the high-level extension: dynamic roles/permissions, custom roles, and per-user allow/deny are accepted product requirements. That authority begins here and is not used to make every detailed mechanism in AUTHORIZATION.md a direct user decision.
+- d710823 changes the initial prose from role-default shorthand (“moderator includes user”, “admin includes moderator”) to explicit independent grant lists and states that role inheritance is outside the model.
+
+Completeness limits:
+- The detailed catalog, one-role limit, exact precedence, schema shape, lockout mechanism, cache rule, management UI mechanics and bootstrap sequence remain independently reviewable PR/contract decisions.
+- No authorization implementation exists in #59.
+
+#### PR #60 / merge b51fb668c5f10a9163c09bac0868fd4180a6672e
+
+F: Stage 4E2a dynamic authorization backend foundation | A: normalized authz schema, code-backed catalog, resolver/capability interfaces, request-scoped caching, management repository/service, atomic lockout mutation boundary | C: in-PR fixes for missing-user identity resolution and stable custom-role slug identity; final P2 snapshot-consistency review remains open | D: PROJECT_STATE records backend foundation local/CI complete and E2b UI/forum integration next; AGENTS adds a Codex DB-CI gate | O: Worker wires authorization through the existing HYPERDRIVE connection; no separate external authz role/binding/bootstrap | G: local/CI backend foundation only; external authorization bootstrap remains Stage 6 | T: migration 0006, catalog/seed checks, management/override tests, real concurrent last-manager test, identity/rollback tests
+
+Evidence inspected:
+- PR body, all 14 changed files, commits 0570aef, a20570e, 394c8cb, cce9aa4, b2d6b4d, f46e451.
+- One P2 review on the initial implementation remains unresolved/non-outdated: resolveUser obtains role, grants and overrides through multiple statements without a transaction/single snapshot, so concurrent management changes can assemble an effective state that did not coexist.
+- Final code still performs the role query followed by separate grant/override reads in resolveUser; the review is therefore preserved against the exact #60 final behavior.
+- a20570e anchors identity resolution on the Better Auth user table and makes repository.hasPermission a single SQL permission query.
+- 394c8cb removes custom-role slug mutation from the service API and makes createAuthorizationCapability.has call repository.hasPermission rather than its cached resolved state.
+- cce9aa4 upgrades the migration trigger from protecting only built-in role identity to preventing slug/isSystem changes for every role while still allowing deletion only for non-system roles.
+- Initial CI #122 failed only because a validation test used .rejects against a synchronous InvalidAuthorizationInputError. Final f46e451 corrects the assertion and adds identity/lockout tests. Final CI #127: success.
+- PR #61 and PR #76 are used only as forward evidence: #61 later consumes the capability in forum/admin routes and introduces broader failure-degradation behavior; #76 later narrows authorization availability handling with a typed boundary. Neither is imported backward into #60.
+
+Completeness limits:
+- #60 does not implement the management UI, forum permission enforcement, core E2E, or external bootstrap.
+- Worker’s createHyperdriveAuthorization is a separate implementation from createAuthorizationCapability: its per-user request cache resolves the full UserAuthorization once and has() reads that cached result. That exact #60 behavior is preserved rather than normalized to later consumers.
+- No external production authorization DB role/binding/bootstrap acceptance is claimed.
+
+### Candidate atomic decisions — PR #56
+
+#### EX56-01 — Better Auth browser operations are wrapped behind AuthClientActions
+auth-client.ts creates a Better Auth React client and exposes a small signInWithGoogle/signOut interface used by presentation code.
+
+#### EX56-02 — Google sign-in uses Better Auth social sign-in with provider=google
+The browser adapter calls signIn.social with the Google provider rather than constructing OAuth URLs itself.
+
+#### EX56-03 — Sign-out uses the Better Auth client signOut operation
+Header UI delegates logout to Better Auth rather than clearing only local UI state.
+
+#### EX56-04 — LocaleBoundary loader adds only a minimal SSR auth presentation snapshot
+The server loader derives authUser as name-only presentation data from the already-resolved request session.
+
+#### EX56-05 — HeaderAuthProvider owns client presentation state initialized from the SSR snapshot
+AuthControls reads the provider state instead of issuing an unconditional client get-session call on every page.
+
+#### EX56-06 — Initial HeaderAuthProvider state did not follow later loader snapshot changes
+Commit 88a8968 used useState(initialUser) without synchronizing subsequent prop changes.
+
+#### EX56-07 — P2 review identifies stale authenticated-header state after revalidation/navigation
+The review specifically covers server session expiry/revocation or any loader transition from authenticated user to guest while the provider remains mounted.
+
+#### EX56-08 — ede785c synchronizes HeaderAuthProvider state from changed server snapshots
+A useEffect on initialUser updates the local header state after loader revalidation.
+
+#### EX56-09 — 39a0fd9 adds a server-auth-snapshot revalidation regression
+The test moves loader authUser from Ada to null, revalidates the router, and requires sign-in UI with no stale sign-out/user display.
+
+#### EX56-10 — Safe sign-in return paths are limited to the current canonical locale namespace
+safeForumReturnPath accepts only a local path equal to /<locale> or under that exact locale root.
+
+#### EX56-11 — Safe local return paths preserve a valid query string
+When the current path is accepted, a search beginning with ? is carried into the callbackURL.
+
+#### EX56-12 — Protocol-relative/external or other-locale return paths fall back to the current locale root
+The helper rejects //..., paths outside the current locale namespace, and otherwise unsafe location shapes.
+
+#### EX56-13 — Successful sign-out immediately clears authenticated presentation state
+The UI sets the header user to null after Better Auth reports sign-out success.
+
+#### EX56-14 — Successful sign-out triggers React Router revalidation
+The client then revalidates server loaders so presentation state is reconciled with the authoritative session result.
+
+#### EX56-15 — Authentication controls are disabled while an operation is pending
+The pending flag prevents duplicate button execution and swaps the label to the localized pending message.
+
+#### EX56-16 — Authentication client failures expose only a generic localized error
+The UI sets a boolean error state and does not render a thrown provider/error message.
+
+#### EX56-17 — Guest header presentation exposes Sign in with Google
+ForumShell adds AuthControls to the shared forum header and renders the guest action from SSR/session presentation state.
+
+#### EX56-18 — Authenticated header presentation shows user name and Sign out
+The presentation user comes from the server-resolved session snapshot.
+
+#### EX56-19 — Auth-control strings use the existing canonical English/i18n catalog
+signInGoogle, signOut, authPending and authError are added through the current UI catalog; Google is recorded as a protected term for the sign-in source string.
+
+#### EX56-20 — Auth controls are exercised in both LTR and RTL page contexts
+Tests render en/ltr and he/rtl fixtures without introducing locale-specific component branches.
+
+#### EX56-21 — LocaleBoundary loader typing follows the extended loader return shape
+953b1a3 changes useLoaderData from TranslationSnapshot to typeof loader after authUser is added.
+
+#### EX56-22 — PR #56 adds no schema, migration or server auth mechanism
+It consumes the existing #53 Better Auth runtime/session/resource route.
+
+#### EX56-23 — Real Google OAuth credentials and deployed provider smoke remain deferred
+PROJECT_STATE explicitly keeps real OAuth/external acceptance outside this local/CI UI slice.
+
+#### EX56-24 — PROJECT_STATE records Google sign-in/sign-out UX as implemented while Stage 4D remains incomplete
+Markdown and separate forum write anti-spam/rate limiting remain the next Stage 4D work.
+
+### Candidate atomic decisions — PR #57
+
+#### EX57-01 — react-markdown is pinned at 10.1.0 for forum body rendering
+package.json/lock add the exact renderer dependency.
+
+#### EX57-02 — ForumMarkdown is a reusable renderer for persisted post-body content
+TopicRoute stops rendering post originalContent as plain text and delegates it to the shared component.
+
+#### EX57-03 — CommonMark paragraphs/emphasis/lists/inline code/fenced code are enabled through react-markdown
+The renderer keeps the library’s normal markdown element rendering for these tested constructs.
+
+#### EX57-04 — Raw HTML is not turned into active DOM by the forum renderer
+No raw-HTML plugin or dangerouslySetInnerHTML path is added; tests require script/button markup from source text not to become active elements.
+
+#### EX57-05 — ForumMarkdown suppresses image rendering
+The img component returns null, including externally hosted tracking/image markdown.
+
+#### EX57-06 — Unsafe javascript-style link output is not allowed to remain executable
+The security regression requires a markdown javascript URL not to survive as a javascript href.
+
+#### EX57-07 — User links open externally with UGC/noopener/noreferrer/nofollow attributes
+The anchor override sets target=_blank and rel=nofollow noopener noreferrer ugc.
+
+#### EX57-08 — Markdown/code presentation adds wrapping and RTL-safe layout support
+The Stage 4D styles/test cover long code/content and rendering inside an RTL ancestor.
+
+#### EX57-09 — Forum write cooldown is one shared five-second policy for topic/reply content writes
+FORUM_WRITE_COOLDOWN_MS is 5000 and both createTopicWithInitialPost and createPost invoke the same policy.
+
+#### EX57-10 — The write policy clock and cooldown duration are injectable
+ForumWritePolicy allows deterministic database tests without changing production time semantics.
+
+#### EX57-11 — Cooldown rejection uses a typed ForumWriteRateLimitError with retryAfterMs
+The domain error carries the remaining wait time rather than a raw database/provider failure.
+
+#### EX57-12 — Cooldown enforcement runs inside the same PostgreSQL transaction as the forum write
+The check is not a separate preflight outside the transaction.
+
+#### EX57-13 — The existing Better Auth user row is the per-author serialization mutex
+The transaction selects user.id for the actor with FOR UPDATE before reading cooldown history.
+
+#### EX57-14 — Cooldown history is derived from the latest forum_posts.created_at for the same author
+The query orders createdAt/id descending and checks only the actor’s newest content post.
+
+#### EX57-15 — The policy timestamp becomes the createdAt of the committed initial post/reply
+The returned policy now value is passed into the forum_posts insert.
+
+#### EX57-16 — Topic creation and reply creation share the same author cooldown
+A topic’s initial post counts against the same window as a later reply and vice versa.
+
+#### EX57-17 — Different authors do not share a cooldown mutex/history
+The lock and latest-post query are keyed by the actor’s existing user row/id.
+
+#### EX57-18 — Same-author concurrent attempts are serialized before cooldown evaluation
+The row lock prevents two concurrent transactions for one actor from both evaluating the same pre-write state.
+
+Historical note: the lock is introduced together with the cooldown in the sole #57 commit; there is no separate earlier #57 cooldown implementation whose race was later repaired.
+
+#### EX57-19 — Real PostgreSQL concurrency coverage requires only one same-author write graph to commit
+The DB suite opens concurrent operations and checks one success/one rate-limit outcome plus graph integrity.
+
+#### EX57-20 — Cooldown rejection occurs before partial topic/reply graph persistence
+Because the policy check lives at transaction start, a rejected write does not create topic/post/revision rows.
+
+#### EX57-21 — No new schema/migration is introduced for the cooldown
+PROJECT_STATE records existing user row locking and forum_posts author/time history as sufficient for this local/CI policy.
+
+#### EX57-22 — ForumWriteRateLimitError maps to HTTP 429
+runForumMutation adds the rateLimited controlled error branch.
+
+#### EX57-23 — Retry-After is emitted as a positive ceiling in seconds
+The action boundary converts retryAfterMs with ceil(ms/1000) and minimum 1.
+
+#### EX57-24 — Rate-limit responses use localized safe presentation without domain details
+forumWriteError_rateLimited is added to the canonical catalog and tests require the internal cooldown message not to leak.
+
+#### EX57-25 — Markdown security behavior has dedicated DOM tests
+The suite covers active raw HTML, unsafe URL, images, safe HTTPS UGC link attributes and RTL/code rendering.
+
+#### EX57-26 — The DB suite includes deterministic cooldown boundary/rollback/author-isolation cases
+The injected clock tests expiration and shared topic/reply policy without sleeping.
+
+#### EX57-27 — P2 review identifies that the incomplete-topic rollback test can pass for the wrong rejection
+The reviewed test constructs its rollback repository with the real clock after fixture writes using a future-shifted fake clock; cooldown can reject before the intended duplicate-key/graph failure, and the assertion accepts any rejection.
+
+Status: unresolved in PR #57; no in-PR correction follows.
+
+#### EX57-28 — PROJECT_STATE marks Stage 4D complete in the local/CI path
+Auth/session, participation, safe Markdown and transactional per-author cooldown are recorded complete.
+
+#### EX57-29 — Stage 4E solved/best-answer and minimum roles become the next product work
+This is a planning transition separate from the Stage 4D completion fact.
+
+#### EX57-30 — Real Google OAuth and external deployment acceptance remain Stage 6
+No external OAuth/runtime acceptance is pulled into Stage 4D completion.
+
+### Candidate atomic decisions — PR #58
+
+#### EX58-01 — forum_topics gains persistent is_solved state
+Migration/schema adds a non-null boolean default false.
+
+#### EX58-02 — forum_topics gains optional best_answer_post_id
+Best answer is stored as a post identity rather than duplicating answer content.
+
+#### EX58-03 — A best answer is only valid when the topic is solved
+The database CHECK requires best_answer_post_id to be null or is_solved=true.
+
+#### EX58-04 — forum_posts gains unique (topic_id,id) identity for same-topic best-answer enforcement
+The composite unique target allows the topic/best-answer FK to bind answer identity to that topic.
+
+#### EX58-05 — Best-answer database integrity uses composite (topic id, post id) identity
+The manual FK points (forum_topics.id,best_answer_post_id) to forum_posts(topic_id,id), preventing cross-topic best-answer references.
+
+#### EX58-06 — The initial best-answer FK used ON DELETE RESTRICT
+Commit e8b6b2c introduced the circular composite FK with immediate RESTRICT delete behavior.
+
+#### EX58-07 — The initial RESTRICT behavior conflicts with deleting a solved topic whose posts cascade
+The parent topic references one of its own child posts while topic deletion also cascades those posts, so the initial FK delete action blocks the aggregate deletion path.
+
+This is preserved as in-PR correction history; no broader target verdict is made.
+
+#### EX58-08 — 0ce4208 changes the best-answer FK to ON DELETE NO ACTION
+The final constraint no longer uses RESTRICT.
+
+#### EX58-09 — The final best-answer FK is DEFERRABLE INITIALLY DEFERRED
+Constraint checking can wait until transaction end, allowing the topic/post cascade graph to disappear consistently.
+
+#### EX58-10 — The circular deferred best-answer FK remains manual SQL outside Drizzle’s declarative snapshot model
+239ec21 adds the migration comment documenting that the exact deferred invariant is manually asserted by PostgreSQL integration tests.
+
+#### EX58-11 — PostgreSQL tests assert exact best-answer FK metadata
+The final test expects confdeltype=no-action, condeferrable=true and condeferred=true.
+
+#### EX58-12 — PostgreSQL deferred-constraint coverage rejects a cross-topic best-answer
+The test temporarily writes an invalid best_answer_post_id and expects 23503 at deferred commit.
+
+#### EX58-13 — Solved-topic aggregate deletion is explicitly regression-tested
+The final DB test deletes the solved topic and verifies topic/posts/title/body revisions all disappear.
+
+#### EX58-14 — markTopicSolved locks the target topic row
+The repository selects the topic FOR UPDATE before author validation/update.
+
+#### EX58-15 — markTopicSolved requires the actor to equal the topic author
+A non-author receives ForumAuthorizationError.
+
+#### EX58-16 — markTopicSolved distinguishes a missing topic
+Missing target raises ForumEntityNotFoundError.
+
+#### EX58-17 — markTopicSolved sets isSolved=true atomically in its transaction
+The operation does not select a best answer automatically.
+
+#### EX58-18 — selectBestAnswer locks the topic row before checking state
+The solution update serializes competing changes through the topic row.
+
+#### EX58-19 — selectBestAnswer requires the actor to equal the topic author
+This Stage 4E1 slice does not yet use moderator/admin authorization.
+
+#### EX58-20 — Best answer selection requires the topic to already be solved
+An unsolved topic raises ForumStateConflictError.
+
+#### EX58-21 — Best answer selection distinguishes a missing post
+A nonexistent answer post raises ForumEntityNotFoundError.
+
+#### EX58-22 — Best answer selection rejects a post from another topic
+The repository compares the post’s topicId and raises ForumStateConflictError before updating.
+
+#### EX58-23 — An existing best answer can be replaced by another valid post from the same topic
+The operation updates bestAnswerPostId rather than treating the first choice as immutable.
+
+#### EX58-24 — Public ForumTopic/ForumTopicPage carries isSolved and bestAnswerPostId
+The reader exposes solution state to SSR without a separate solution query.
+
+#### EX58-25 — ForumWriter adds markTopicSolved and selectBestAnswer operations
+The request-scoped writer delegates both operations through ForumService/repository.
+
+#### EX58-26 — Topic action introduces explicit markSolved and selectBestAnswer intents
+Reply remains the default/independent mutation intent.
+
+#### EX58-27 — Solution mutations reuse the existing same-origin/session mutation boundary
+The route executes forumMutationGuard/runForumMutation before the writer operation.
+
+#### EX58-28 — Solution actor identity comes only from the resolved Better Auth session
+Forged actorId/authorId form fields are ignored by the action test.
+
+#### EX58-29 — ForumAuthorizationError maps to controlled 403
+The route error union gains forbidden.
+
+#### EX58-30 — ForumStateConflictError maps to controlled 409
+The route error union gains conflict.
+
+#### EX58-31 — Solved state is publicly visible
+Topic SSR renders a solved badge for guests as well as authenticated readers.
+
+#### EX58-32 — A selected best answer is visually marked on the corresponding post
+The matching post receives best-answer class/label.
+
+#### EX58-33 — Topic heading exposes a stable go-to-solution fragment link
+The link targets the selected post anchor.
+
+#### EX58-34 — Only the topic author is offered Stage 4E1 solution-management controls
+The loader computes canManageSolution from session.user.id === topic.authorId.
+
+Presentation visibility is not treated as the server authorization boundary; repository checks remain independent.
+
+#### EX58-35 — Mark-solved control is shown only while the topic is unsolved
+The author gets the markSolved form before solved state.
+
+#### EX58-36 — Best-answer selection controls appear after solved state on non-selected posts
+The topic author can choose or replace the current best answer.
+
+#### EX58-37 — Migration 0005 is append-only checked-in history for solved/best-answer state
+The PR advances schema/snapshot/journal without modifying immutable forum revision payloads.
+
+#### EX58-38 — PR #58 does not change the immutable content revision model
+Solved/best-answer points to topic/post identities and does not rewrite title/body revision storage.
+
+#### EX58-39 — Initial CI #115 fails in the new solution fixture because the forum cooldown fires
+The preserved database log shows ForumWriteRateLimitError in the solution-consistency test.
+
+#### EX58-40 — The failed solution fixture contaminates later shared-fixture assertions
+CI #115/#116 also show revision-count and cascade row-count mismatches after the early solution-test failure.
+
+#### EX58-41 — 9cda880 gives the solution test a deterministic advancing write-policy clock
+The fixture can create the topic/replies without being rejected by the unrelated 5s cooldown.
+
+#### EX58-42 — 9cda880 guarantees cleanup with finally
+The solution graph/users are removed even when an assertion fails.
+
+#### EX58-43 — P2 review records a two-column grid regression in best-answer post presentation
+Best-answer label and solution form are added as extra direct children of .forum-post, whose desktop grid was designed for header+body; the review predicts post content/control placement in unintended grid cells.
+
+Status: unresolved/non-outdated at the final #58 head; later #58 commits do not restructure that UI.
+
+#### EX58-44 — PROJECT_STATE records Stage 4E solved/best-answer author slice implemented local/CI
+The state separates this completed slice from the remaining Stage 4E authorization work.
+
+#### EX58-45 — Minimum roles and moderator/admin authorization remain later Stage 4E2 work
+Broader permission semantics are deliberately not implemented in #58.
+
+#### EX58-46 — Real Google OAuth and external deployment acceptance remain outside this slice
+The same PR #50 local/CI boundary continues through Stage 4E1.
+
+### Candidate atomic decisions — PR #59
+
+#### EX59-01 — Dynamic application authorization is accepted as a product extension from PR #59 forward
+The fixed user decision covers dynamic DB-backed roles/permissions, custom roles and per-user allow/deny rather than only a hard-coded guest/user/moderator/admin scheme.
+
+Normative provenance: direct-user-decision at the extension level only.
+
+#### EX59-02 — Better Auth remains authoritative for authentication/session identity, not application permissions
+Application authorization is a separate server-side domain.
+
+#### EX59-03 — Authorization checks target permissions/capabilities rather than role-name comparisons
+Application code is intended to ask whether a capability is allowed rather than branch on moderator/admin names.
+
+#### EX59-04 — Application roles are dynamic PostgreSQL state
+Roles are not solely code configuration or Better Auth role claims.
+
+#### EX59-05 — Protected site UI must support custom role creation
+Custom roles are an explicit first-release product requirement after the accepted extension.
+
+#### EX59-06 — Custom role display names are editable
+Display presentation is mutable without changing the role’s stable identity.
+
+#### EX59-07 — Permission grants of built-in and custom roles are editable data
+Built-in defaults seed initial state but do not hard-code permanent runtime behavior.
+
+#### EX59-08 — user, moderator and admin remain stable built-in starting roles
+They are system role identities, not the complete role universe.
+
+#### EX59-09 — Built-in roles cannot be deleted
+The contract protects the three system role identities from deletion.
+
+#### EX59-10 — Built-in role stable slugs cannot be changed
+Role display/grants may change while built-in slug identity remains stable.
+
+#### EX59-11 — Custom roles may be deleted only while unassigned
+The contract keeps assigned role references from being silently orphaned/reassigned.
+
+#### EX59-12 — First-release user membership is one assigned role per user
+Multiple simultaneous role membership is outside the current contract.
+
+#### EX59-13 — Guest is absence of authenticated session, not a guest-role database row
+Authorization persistence starts only from authenticated identities.
+
+#### EX59-14 — Authenticated users without an explicit assignment default to built-in user
+The default does not require a user-role row.
+
+#### EX59-15 — Role inheritance is explicitly excluded
+d710823 states every role has its own explicit grant set.
+
+#### EX59-16 — The Stage 4 executable permission catalog is code-backed and finite
+The initial catalog contains forum.topic.create, forum.reply.create, forum.solution.manageOwn, forum.solution.manageAny and access.authorization.manage.
+
+#### EX59-17 — Management UI cannot invent executable permissions from arbitrary strings
+A new protected capability first requires a code-backed catalog key.
+
+#### EX59-18 — forum.solution.manageOwn requires a server-side resource condition
+Permission possession alone is insufficient; the actor must also author the target topic.
+
+#### EX59-19 — Client-provided author/role/permission data is not authorization evidence
+Protected resource conditions use server state/session identity.
+
+#### EX59-20 — Built-in user initial grants are explicit and independent
+The seed grants topic.create, reply.create and solution.manageOwn.
+
+#### EX59-21 — Built-in moderator initial grants are explicit and independent
+The final contract directly lists user-like creation/own-solution grants plus solution.manageAny rather than role inheritance.
+
+#### EX59-22 — Built-in admin initial grants are explicit and independent
+The final contract directly lists the forum grants plus access.authorization.manage.
+
+#### EX59-23 — Built-in grant lists are only initial seed data
+After bootstrap a manager may edit them subject to lockout protection.
+
+#### EX59-24 — Per-user override state supports inherit by absence
+No override row means the role grant remains authoritative for that permission.
+
+#### EX59-25 — Per-user allow can grant a permission independently of the role grant
+The user-specific allow overrides absence of a role grant.
+
+#### EX59-26 — Per-user deny can remove a permission granted by the role
+Explicit deny is a first-class user exception.
+
+#### EX59-27 — Effective permission precedence is deny → allow → role grant → deny by default
+This exact precedence is a contract detail independently reviewable from the high-level user acceptance.
+
+#### EX59-28 — Authorization persistence requires authz_roles
+The role record carries identity, stable slug, display name, system/custom marker and timestamps.
+
+#### EX59-29 — Authorization persistence requires authz_permissions
+The table persists the code-backed catalog identities.
+
+#### EX59-30 — Authorization persistence requires role→permission grants
+authz_role_permissions is a normalized many-to-many grant relation.
+
+#### EX59-31 — Authorization persistence requires one explicit user-role assignment
+authz_user_roles represents the first-release one-role model.
+
+#### EX59-32 — Authorization persistence requires per-user permission overrides
+authz_user_permission_overrides stores allow/deny exceptions.
+
+#### EX59-33 — User role assignments and overrides reference Better Auth user.id
+Application authorization reuses authoritative authenticated identity instead of duplicating user identity.
+
+#### EX59-34 — Application authz tables are not Better Auth Admin plugin schema
+The contract explicitly rejects the plugin’s role model as source of truth for Vico permissions.
+
+#### EX59-35 — Protected-request authorization starts from Better Auth session user.id
+Authentication establishes actor identity; authorization then resolves separately.
+
+#### EX59-36 — Effective authorization state is read from PostgreSQL
+Client input and stale session role/permission claims are not authoritative.
+
+#### EX59-37 — Role/grant/assignment/override changes must affect the next protected request without re-login
+Fresh server-side state is part of the product contract.
+
+#### EX59-38 — Request-scoped authorization caching is allowed only within one request
+The contract does not permit a long-lived permission cache without a separate invalidation design.
+
+#### EX59-39 — Routes/UI/domain code should use one PermissionResolver/authorization capability
+The contract avoids distributed role-name checks across the application.
+
+#### EX59-40 — Protected authorization UI must list roles and role grants
+Role inspection is part of Stage 4E2 management scope.
+
+#### EX59-41 — Protected authorization UI must create custom roles and edit their display names
+Role management is a current product slice after the accepted extension.
+
+#### EX59-42 — Protected authorization UI must edit permission grants for any role including built-ins
+Built-in grants are mutable through the same management boundary.
+
+#### EX59-43 — Protected authorization UI must list users and assign one role
+User assignment is an explicit management capability.
+
+#### EX59-44 — Protected authorization UI must expose inherit/allow/deny per-user permission state
+The UI manages user exceptions rather than only role membership.
+
+#### EX59-45 — Protected authorization UI must show effective permissions
+The manager must be able to observe the resolved result after role+override composition.
+
+#### EX59-46 — Hiding management controls is not an authorization boundary
+Every management mutation must independently recheck current server permission.
+
+#### EX59-47 — Management mutations also retain runtime validation and same-origin/CSRF boundaries
+Authorization does not replace the existing write-security boundary.
+
+#### EX59-48 — access.authorization.manage is the recovery-critical management permission
+Lockout safety is attached specifically to this capability.
+
+#### EX59-49 — After the first manager exists, no management mutation may leave zero effective managers
+The invariant counts effective permission regardless of whether it came from a role grant or user allow.
+
+#### EX59-50 — Initial access-manager bootstrap is server-controlled and external-release work
+Real bootstrap/verification belongs to Stage 6 rather than the local/CI implementation slice.
+
+#### EX59-51 — Local/CI authorization tests may bootstrap through controlled fixtures/direct DB setup
+No public unauthenticated bootstrap endpoint is required or allowed by the contract.
+
+#### EX59-52 — Application role/permission state must not become an authoritative Better Auth session claim
+Any role/permission shown in UI is server-resolved presentation, not a trusted client token.
+
+#### EX59-53 — Stage 4E2 includes authorization foundation, management UI, migration/tests, forum integration and core E2E
+This schedules accepted authorization work into the forum MVP before Stage 5.
+
+#### EX59-54 — Bans/impersonation, edit/delete moderation, reports, reputation, audit log, multiple roles, tenancy and arbitrary executable permissions remain outside Stage 4E2
+These are explicit exclusions requiring separate decisions.
+
+#### EX59-55 — Application authorization roles are distinct from PostgreSQL infrastructure roles/grants
+ROADMAP Stage 6 warns not to conflate dynamic forum roles with DB least-privilege runtime roles.
+
+#### EX59-56 — d710823 replaces implied role inheritance with explicit independent initial grants
+The final PR contract does not use “moderator includes user” or “admin includes moderator” as runtime inheritance semantics.
+
+#### EX59-57 — PR #59 changes contracts/documentation only
+No authorization tables, runtime resolver, routes, tests or external bootstrap are implemented here.
+
+### Candidate atomic decisions — PR #60
+
+#### EX60-01 — Migration 0006 is the append-only authorization backend migration
+The PR extends checked-in Drizzle history rather than rewriting earlier forum/auth migrations.
+
+#### EX60-02 — authz_roles stores role identity separately from permission grants
+Each role has id, unique slug, display name, system/custom flag and timestamps.
+
+#### EX60-03 — Role slugs must be trimmed lowercase-style identifiers matching the fixed slug regex
+The schema/service enforce ^[a-z][a-z0-9-]{0,62}$ and nonblank display names.
+
+#### EX60-04 — authz_permissions persists the code-backed five-key Stage 4 catalog
+The database CHECK rejects permission identities outside the PR #59 catalog.
+
+#### EX60-05 — authz_role_permissions is the role-grant relation
+Its composite primary key prevents duplicate role/permission grants.
+
+#### EX60-06 — authz_user_roles enforces one explicit role assignment per user
+user_id is the primary key and role_id references authz_roles.
+
+#### EX60-07 — authz_user_permission_overrides stores one allow/deny effect per user+permission
+The composite key and CHECK enforce the first-release override model.
+
+#### EX60-08 — Authorization assignment/override rows reference Better Auth users
+User deletion cascades those application authorization rows.
+
+#### EX60-09 — authz_mutation_lock is a seeded singleton serialization row
+id must equal 1 and managers_ever_existed starts false.
+
+#### EX60-10 — Migration 0006 seeds the exact code permission catalog
+The DB seed matches PERMISSION_CATALOG.
+
+#### EX60-11 — Migration 0006 seeds stable built-in user/moderator/admin identities
+The seed uses builtin-user, builtin-moderator and builtin-admin IDs with the contract slugs.
+
+#### EX60-12 — Built-in user grants are seeded explicitly
+The seed matches INITIAL_ROLE_GRANTS.user.
+
+#### EX60-13 — Built-in moderator grants are seeded explicitly without inheritance
+The seed directly stores all four moderator grants.
+
+#### EX60-14 — Built-in admin grants are seeded explicitly without inheritance
+The seed directly stores all five admin grants.
+
+#### EX60-15 — Initial migration protected built-in role deletion/identity
+0570aef’s first trigger prevented system-role deletion and protected system slug/isSystem changes.
+
+#### EX60-16 — cce9aa4 makes slug and isSystem immutable for every role
+The final trigger rejects changing either identity field for built-in or custom roles.
+
+#### EX60-17 — Final trigger still permits deleting non-system custom roles at the schema identity layer
+DELETE is rejected only when OLD.is_system is true; assignment FK rules independently constrain custom deletion.
+
+#### EX60-18 — Custom-role deletion fails while users are assigned
+The role FK is ON DELETE RESTRICT and the repository maps PostgreSQL 23503 to AuthorizationRoleAssignedError.
+
+#### EX60-19 — PERMISSION_CATALOG centralizes the five executable Stage 4 permission keys
+The TypeScript PermissionKey type is derived from the same literal catalog.
+
+#### EX60-20 — INITIAL_ROLE_GRANTS mirrors the independent seeded defaults in code
+user/moderator/admin grants are explicit code data used by tests.
+
+#### EX60-21 — resolveUser returns role identity, explicit-assignment flag, role grants, overrides and effectivePermissions
+The backend exposes both raw composition inputs and the calculated permission set.
+
+#### EX60-22 — Authenticated user without assignment resolves to built-in user
+The final role query coalesces absent authz_user_roles to the role whose slug is user.
+
+#### EX60-23 — Initial 0570aef resolution could resolve the default user role without first proving the Better Auth user exists
+The first query started from authz_roles and absence of an assignment, so an arbitrary unknown userId could reach the default-role branch.
+
+#### EX60-24 — a20570e anchors resolution on the Better Auth user table
+The final query starts from "user" and therefore requires the identity row to exist.
+
+#### EX60-25 — Final resolveUser distinguishes missing user from missing built-in user role
+If the joined role is absent, it probes user existence and raises AuthorizationNotFoundError with the corresponding condition.
+
+#### EX60-26 — Effective permissions apply user override effects on top of explicit role grants
+resolveUser starts from grants, adds allow and removes deny, then returns a sorted set.
+
+#### EX60-27 — P2 review records a multi-statement snapshot-consistency race in resolveUser
+Role selection, grant read and override read are separate statements without an explicit repeatable snapshot; concurrent management writes can yield a composed state that never existed atomically.
+
+Status: still present at the final #60 head. Later PRs are forward evidence only.
+
+#### EX60-28 — repository.hasPermission uses one SQL statement in the final PR
+a20570e changes the check from resolveUser(...).effectivePermissions to effectivePermission(...), evaluating override/assignment/role grant in one statement.
+
+#### EX60-29 — Missing user hasPermission resolves false
+The final single-statement query is anchored on the Better Auth user row; tests cover an unknown user.
+
+#### EX60-30 — listRoles returns system roles first, then slug order
+This is a backend management-read presentation ordering choice.
+
+#### EX60-31 — readRole returns role metadata plus its grant list
+The final implementation performs a role query followed by readRoleGrants.
+
+#### EX60-32 — createCustomRole generates role id server-side and validates slug/display name
+AuthorizationService uses crypto.randomUUID and the service’s input validators.
+
+#### EX60-33 — Initial custom-role rename API allowed changing slug and display name
+0570aef accepted both fields.
+
+#### EX60-34 — a20570e changes the repository rename operation to display-name only
+The storage mutation stops updating slug, although the service signature was corrected separately.
+
+#### EX60-35 — 394c8cb removes slug from the service rename contract
+The public backend service can no longer request a custom slug rename.
+
+#### EX60-36 — cce9aa4 enforces stable custom slugs at the database boundary
+Even direct SQL UPDATE of a custom slug is rejected by the final trigger.
+
+#### EX60-37 — replaceRoleGrants validates every requested key against the code catalog
+Unknown permissions are rejected before repository mutation.
+
+#### EX60-38 — replaceRoleGrants de-duplicates repeated permission inputs
+AuthorizationService passes a Set-normalized grant list.
+
+#### EX60-39 — replaceRoleGrants replaces rather than incrementally patches a role’s grant set
+The repository deletes existing role grants and inserts the requested set in one authorized transaction.
+
+#### EX60-40 — assignUserRole upserts the single explicit user assignment
+Existing role_id is replaced and assigned_at updated.
+
+#### EX60-41 — setUserOverride supports allow and deny rows
+The repository upserts effect for user+permission.
+
+#### EX60-42 — inherit is represented by deleting the user override row
+A null effect removes the override and restores role-based resolution.
+
+#### EX60-43 — AuthorizationService validates nonblank actor/user/role identities at its boundary
+Management calls reject empty text before DB work.
+
+#### EX60-44 — AuthorizationService validates custom role slug syntax
+Only the contract’s stable slug shape can be created.
+
+#### EX60-45 — AuthorizationService validates override permission/effect against the known catalog and allow/deny/null set
+Arbitrary permission strings/effects are rejected.
+
+#### EX60-46 — Every authorization management mutation starts one database transaction
+PostgresAuthorizationRepository.mutate owns begin/commit/rollback and releases the client.
+
+#### EX60-47 — Every management mutation locks the singleton authz_mutation_lock row FOR UPDATE
+This serializes all authorization mutations through one PostgreSQL row.
+
+#### EX60-48 — Management mutation authorization is rechecked from current DB state inside the transaction
+effectivePermission(client, actorId, access.authorization.manage) must be true before operation execution.
+
+#### EX60-49 — Missing/non-manager actor cannot mutate authorization
+The repository raises AuthorizationForbiddenError and rolls back.
+
+#### EX60-50 — Lockout evaluation counts effective access.authorization.manage before and after the mutation
+The count accounts for user overrides and role grants.
+
+#### EX60-51 — Once management capability has existed, a mutation cannot leave zero effective managers
+AuthorizationLockoutError aborts the transaction when the invariant would be crossed.
+
+#### EX60-52 — managers_ever_existed persists that the recovery invariant has become active
+The singleton flag flips true once a mutation observes manager capability before/after.
+
+#### EX60-53 — Concurrent removal of the last two managers is serialized
+The final DB test runs two management mutations through separate pools and requires exactly one success and one AuthorizationLockoutError with one effective manager remaining.
+
+#### EX60-54 — Lockout rejection rolls back the attempted grant change
+The DB tests compare the admin grant set before/after a rejected last-manager mutation.
+
+#### EX60-55 — Authorization repository exposes typed management/domain errors
+Forbidden, lockout, not-found and assigned-role conflict are distinct backend error classes.
+
+#### EX60-56 — Invalid service input uses a typed InvalidAuthorizationInputError
+Catalog/effect/text/slug validation errors are separated from repository failures.
+
+#### EX60-57 — AuthorizationCapability exposes forUser(userId) → PermissionResolver
+The resolver surface has has(permission) and resolve() rather than exposing DB tables to route code.
+
+#### EX60-58 — createAuthorizationCapability caches resolve() by user within that capability instance
+A Map stores the Promise<UserAuthorization> for request-scoped repeated resolve calls.
+
+#### EX60-59 — createAuthorizationCapability.has performs a fresh repository.hasPermission in the final PR
+394c8cb deliberately stops deriving has() from its cached resolve result.
+
+#### EX60-60 — createHyperdriveAuthorization is a separate request capability implementation
+It is the factory wired into workers/app.ts rather than createAuthorizationCapability.
+
+#### EX60-61 — Hyperdrive authorization resolution opens a Pool(max=1) per uncached user resolution and closes it after resolveUser
+The capability has no module-global PostgreSQL pool.
+
+#### EX60-62 — Hyperdrive authorization caches each user’s full resolved authorization for that capability instance
+Its Map stores the resolveUser promise by user id.
+
+#### EX60-63 — Hyperdrive authorization has() reads the cached resolved effectivePermissions in #60
+Unlike createAuthorizationCapability.has, the Worker-wired implementation does not issue repository.hasPermission for every call at this historical point.
+
+This exact #60 behavior is preserved for later freshness/integration review and is not rewritten through #61.
+
+#### EX60-64 — Worker creates the authorization capability from the existing HYPERDRIVE connection string
+workers/app.ts sets authorizationContext beside forum/localization/auth capabilities.
+
+#### EX60-65 — PR #60 introduces no separate external authorization DB role/Hyperdrive binding
+The local/CI backend reuses the current connection capability; external least-privilege runtime design remains Stage 6.
+
+#### EX60-66 — No forum mutation or management route consumes PermissionResolver in PR #60
+The backend foundation exists before its Stage 4E2b UI/forum consumer.
+
+Forward: PR #61 later provides those consumers. Their absence in #60 is not treated as a defect.
+
+#### EX60-67 — External first-manager bootstrap remains unimplemented in #60
+Local tests assign managers directly through controlled database fixtures; real server-controlled bootstrap remains Stage 6.
+
+#### EX60-68 — Migration 0006/DB suite validates exact permission catalog and independent role seeds
+The integration test compares database permissions/grants against PERMISSION_CATALOG and INITIAL_ROLE_GRANTS and rejects an invented permission key.
+
+#### EX60-69 — DB tests exercise custom role lifecycle, assignment and per-user override precedence
+The local/CI suite covers create/display rename/grant replacement/assignment/delete restriction/allow/deny/inherit.
+
+#### EX60-70 — DB tests cover missing-user authorization identity
+The final suite requires resolveUser(missing) to raise AuthorizationNotFoundError and hasPermission(missing) to be false.
+
+#### EX60-71 — DB tests cover stable custom-role slug identity
+The final suite renames displayName while retaining slug and requires direct SQL slug mutation to violate the trigger.
+
+#### EX60-72 — Initial CI #122 fails because a synchronous input-validation exception is asserted with .rejects
+The failure is in test expectation mechanics, not the authorization persistence operation itself.
+
+#### EX60-73 — f46e451 changes that validation assertion to synchronous toThrow
+The final test matches the actual synchronous AuthorizationService validation boundary.
+
+#### EX60-74 — AGENTS adds a Codex-only DB CI readiness rule
+b2d6b4d requires database-changing Codex tasks to treat pnpm db:test/GitHub database job as a merge-readiness gate. This is historical process evidence only; AGENTS is not a ChatGPT instruction.
+
+#### EX60-75 — PROJECT_STATE records Stage 4E2a backend foundation complete local/CI
+Schema, resolver, management backend and lockout coverage are marked implemented.
+
+#### EX60-76 — Stage 4E2b management UI/forum integration/core E2E remain explicitly unfinished
+The next slice must consume the foundation rather than #60 pretending those future consumers already exist.
+
+#### EX60-77 — PR #61 is forward evidence of later PermissionResolver/UI consumption
+It later integrates forum/admin actions and introduces additional failure/degradation behavior. It is not used to rewrite #60’s original resolver/cache/failure semantics.
+
+#### EX60-78 — PR #76 is forward evidence of a later typed authorization-unavailable boundary
+It later narrows which failures may degrade to denial/503. That later correction is not imported into #60’s behavior or used as a current verdict in this extraction.
+
+### Review/dependency reconciliation
+
+1. PR #56 sign-in/sign-out presentation is separated from real OAuth/provider acceptance. EX56-01..21 can be locally exercised without making EX56-23 complete.
+2. EX56-06/07 is historical stale-session UI behavior; EX56-08/09 is the in-PR correction. The unresolved GitHub thread state does not erase the later commits.
+3. PR #57’s concurrency mechanics are part of the initial cooldown implementation, not evidence that every earlier forum writer had a broken cooldown: no cooldown existed in #55. EX57-18/19 prove the new policy’s local concurrency property without serving as blanket approval of the policy architecture.
+4. The real #57 review finding EX57-27 is kept separate from product concurrency: it says one rollback test can succeed for the wrong rejection reason; it does not show same-author cooldown bypass.
+5. PR #58 has three distinct correction/evidence lines: initial FK delete semantics EX58-06/07 → final deferred NO ACTION EX58-08..13; solution-test cooldown/cleanup EX58-39..42; and unresolved UI grid review EX58-43.
+6. PR #59’s high-level authorization extension EX59-01 has direct-user provenance. EX59-02..56 remain detailed product/architecture contract decisions whose correctness is not inferred from that high-level acceptance.
+7. The #59 d710823 correction matters historically: moderator/admin default grants are independent explicit sets, not role inheritance. #60 seeds exactly that final contract.
+8. PR #60 implements a foundation before its accepted Stage 4E2b consumers. EX60-66 is deliberate stage slicing, not an incomplete-consumer defect.
+9. EX60-23/24, EX60-33..36 and EX60-72/73 are in-PR before/after histories and must not be collapsed into the final behavior only.
+10. EX60-27 remains the exact open review against final #60 resolveUser snapshot composition. EX60-28 is a different single-permission query and does not cure resolveUser’s multi-statement snapshot.
+11. createAuthorizationCapability and createHyperdriveAuthorization are not treated as equivalent: EX60-58/59 and EX60-60..63 preserve their distinct #60 cache/freshness behavior.
+12. PR #61/#76 are forward evidence only. Their integration/degradation/typed-failure changes do not retroactively redefine #60.
+13. Across #56–#60, PR #50’s direct-user local/CI scheduling is used only for timing/external scope. It does not waive local correctness, race, authorization, schema, or test defects.
+
+### Changed-file reconciliation
+
+#### PR #56
+- PROJECT_STATE.md -> EX56-22..24 and external OAuth deferral.
+- app/auth/auth-client.ts -> EX56-01..03.
+- app/auth/auth-controls.tsx -> EX56-05, EX56-08, EX56-10..18.
+- app/auth/auth-controls.test.tsx -> EX56-09..18, EX56-20.
+- app/forum/ui.tsx -> EX56-17/18 shared-header placement.
+- app/localization/catalog.ts -> EX56-19.
+- app/routes/locale-boundary.tsx -> EX56-04/05/08/21.
+- app/styles.css -> EX56-17/18/20 presentation.
+- All eight changed files accounted for.
+
+#### PR #57
+- PROJECT_STATE.md -> EX57-21, EX57-28..30.
+- app/forum/markdown.tsx -> EX57-02..08.
+- app/forum/markdown.test.tsx -> EX57-03..08, EX57-25.
+- app/forum/mutations.server.ts -> EX57-22..24.
+- app/forum/write-actions.test.ts -> EX57-22..24.
+- app/localization/catalog.ts -> EX57-24.
+- app/routes/topic.tsx -> EX57-02 and safe Markdown consumption.
+- app/styles.css -> EX57-08.
+- db/forum-write-policy.ts -> EX57-09..11.
+- db/forum-repository.ts -> EX57-12..21.
+- db/hyperdrive-forum.ts -> injectable EX57-09/10 policy plumbing into the runtime writer.
+- package.json + pnpm-lock.yaml -> EX57-01 exact dependency and generated graph.
+- tests/database/migrations.test.ts -> EX57-16..21, EX57-26/27.
+- All 14 changed files accounted for.
+
+#### PR #58
+- PROJECT_STATE.md -> EX58-44..46.
+- app/forum/mutations.server.ts -> EX58-29/30 plus existing mutation boundary reuse.
+- app/forum/public-read.test.tsx -> EX58-31..36 and UI review context.
+- app/forum/write-actions.test.ts -> EX58-26..30.
+- app/localization/catalog.ts -> solved/best-answer/error presentation strings supporting EX58-29..36.
+- app/routes/topic.tsx -> EX58-26..36 and EX58-43 review target.
+- app/styles.css -> EX58-31/32/36 and EX58-43 review target.
+- db/forum-repository.ts -> EX58-14..24.
+- db/forum-service.ts -> validation/delegation for EX58-14..23.
+- db/hyperdrive-forum.ts -> EX58-25.
+- db/schema.ts -> EX58-01..05 and the solved-state CHECK.
+- drizzle/0005_calm_proemial_gods.sql -> EX58-01..13, including EX58-06→08/09 correction history and EX58-10.
+- drizzle/meta/0005_snapshot.json -> generated representation of declarative #58 schema; manual deferred FK remains SQL-only.
+- drizzle/meta/_journal.json -> EX58-37.
+- tests/database/migrations.test.ts -> EX58-11..13, EX58-39..42 and repository/state consistency coverage.
+- All 15 changed files accounted for.
+
+#### PR #59
+- PROJECT.md -> EX59-01..19 and high-level dynamic authorization product boundary.
+- docs/auth/AUTHORIZATION.md -> EX59-02..56 detailed authorization contract.
+- ROADMAP.md -> EX59-01, EX59-35..57, Stage 4E2 scheduling, Stage 6 bootstrap/infrastructure separation.
+- PROJECT_STATE.md -> EX59-01, Stage 4E2 current/next-state recording and external bootstrap deferral.
+- README.md -> documentation navigation/current-stage synchronization; no additional authorization mechanism beyond the same Stage 4E2 schedule.
+- All five changed files accounted for.
+
+#### PR #60
+- AGENTS.md -> EX60-74 historical Codex-only DB-CI process rule.
+- PROJECT_STATE.md -> EX60-65..67, EX60-75/76 and local/CI completion state.
+- app/authorization/catalog.ts -> EX60-19/20.
+- app/authorization/request-context.ts -> EX60-57 plus Worker context surface.
+- db/authorization-repository.ts -> EX60-21..55 and in-PR identity corrections.
+- db/authorization-service.ts -> EX60-32..45, EX60-56..59 and stable-slug correction.
+- db/hyperdrive-authorization.ts -> EX60-60..63.
+- db/schema.ts -> EX60-02..09.
+- drizzle/0006_loving_sentinels.sql -> EX60-01..18 and seed/identity trigger.
+- drizzle/meta/0006_snapshot.json -> generated declarative schema representation; trigger/seed details remain migration SQL.
+- drizzle/meta/_journal.json -> EX60-01 append-only history.
+- tests/database/migrations.test.ts -> EX60-53/54, EX60-68..73 and authorization persistence/identity coverage.
+- tsconfig.node.json -> includes new authorization server modules in the Node typecheck project.
+- workers/app.ts -> EX60-60/64 and request-context wiring.
+- All 14 changed files accounted for.
+
+### CI, deployment, and external-evidence reconciliation
+
+- Final GitHub Actions CI is green for all five heads: #56 run 113, #57 run 114, #58 run 118, #59 run 121, #60 run 127.
+- PR #58 has useful failed-run history: #115 database failed with solution-fixture cooldown plus downstream shared-fixture assertion failures; #116 remained red after the FK fix until the fixture/test isolation work; final #118 is green.
+- PR #60 initial run #122 database failed on the synchronous validation-test assertion; final test correction contributes to green #127.
+- No PR in #56–#60 claims or proves real Google OAuth credentials/deployed OAuth smoke, external application of migrations 0005/0006, dedicated production authorization capability, or real first-manager bootstrap.
+- Local/disposable PostgreSQL and Workers-compatible CI are evidence for the local/CI contracts only.
+- No merge/green CI/later use is treated as direct approval of detailed authorization architecture.
+
+### Extraction reconciliation
+
+- Internal commit counts: #56=4, #57=1, #58=4, #59=3, #60=6.
+- Review-thread counts: #56=1, #57=1, #58=1, #59=0, #60=1.
+- Full F/A/C/D/O/G/T sweeps are recorded for every PR.
+- Every changed file is reconciled.
+- UI readiness and real OAuth acceptance are separate.
+- Markdown safety and write anti-spam/concurrency are separate #57 lines; the open rollback-test problem is not used to deny the proven final same-author serialization behavior.
+- Solved state, best-answer identity/integrity, author mutation rules, public UI, migration correction and test-fixture correction are independently addressable in #58.
+- Dynamic authorization is preserved as an accepted product extension from #59 forward without turning its detailed catalog/precedence/schema/lockout choices into automatic user-approved facts.
+- #60 is preserved exactly as a backend foundation with later consumers, open snapshot review, two distinct capability/cache implementations and in-PR identity corrections; #61/#76 remain forward evidence only.
+- No decision in this response is classified as correct, foolish, erroneous, premature, future-proof, infrastructure drift, approved target architecture, or requiring a remedy.
