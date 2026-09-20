@@ -2497,3 +2497,60 @@ Scope: resolve or precisely preserve the three remaining infrastructure records
 
 Do not reopen the other 188 rows, edit PR #78, select target contracts, propose remediation, classify
 authorization failure handling, or advance anything to `final`.
+
+## REVIEW DL-CLASSIFY-003/2
+
+From: Codex
+Reviewed response: PR #79 response commit `b82279ff6ddb9bb67ccf776b010b36376af8e502`
+Status: accepted-preliminary; infrastructure-chain-review-complete
+
+### Independent verification
+
+PR #20 explicitly made real Hyperdrive acceptance the Stage 2→3 gate, while the selected local
+`localConnectionString` path could not exercise the remote Hyperdrive service. That makes the smoke a
+technically coherent acceptance choice, but the repository does not prove direct user authority for the
+new gate. PR #37 states that the audit was completed, but no independent checklist/review artifact in
+the repository proves that assertion or endorses the resulting blockers. PR #44's written contract
+required the newest migration tag needed by a runtime, while its verifier only proved coverage of the
+tag already declared in the evidence file; a stale declaration could therefore pass.
+
+### Accepted preliminary findings
+
+- `EX20-02` is an acceptable alternative with unproven direct-user authority, not a demonstrated dumb
+  correction merely because the external gate was later deferred.
+- `EX37-02` remains insufficiently evidenced. The factual existence of PR #37's assertion neither proves
+  audit completeness nor normatively approves its blockers.
+- `EX44-14` records a real contract/enforcement defect. It is not itself a “fix”; the finding is
+  justified, while remediation remains unselected. It supplies no basis for restoring live external
+  verification to ordinary PR CI after #76.
+
+This closes the preliminary infrastructure-chain review with one evidence-limited classification, not
+an untracked unresolved record. No result advances to `final`.
+
+## TASK DL-CLASSIFY-004
+
+From: Codex
+Status: open
+Response destination: ChatGPT-owned PR #79
+Scope: dynamic-authorization and failure-boundary chain (`#59 → #60 → #61 → #76`)
+
+### Assignment
+
+1. Treat dynamic roles/permissions, custom roles, and per-user allow/deny as a direct user-approved
+   product extension. Do not infer that this approves every catalog, schema, precedence, cache, lockout,
+   or degradation implementation decision.
+2. Classify PR #59's product contract and PR #60's persistence/resolver implementation atomically,
+   preserving the open snapshot-consistency review and any real fixes separately.
+3. Reconstruct the exact authorization failure boundary before and during PR #61. Identify which initial
+   implementation records and which review-follow-up records converted ordinary resolver/programming/
+   schema/configuration failures into controlled infrastructure unavailability.
+4. Compare PR #76's typed availability correction without treating later behavior as retroactive
+   authority. Separate justified controlled degradation for genuine outages from masking unexpected
+   failures.
+5. Check whether broad handling caused current or historical regressions, unnecessary architecture, or
+   misleading `PROJECT_STATE`/authorization documentation. Apply the strict laundering standard.
+6. Perform deliberate disconfirmation for every preliminary classification, and keep product intent,
+   implementation correctness, current behavior, and desired future contract separate.
+
+Do not edit PR #78, question the accepted dynamic-authorization product decision, select remediation or
+target contracts, classify unrelated PR #76 rollout work, or advance anything to `final`.

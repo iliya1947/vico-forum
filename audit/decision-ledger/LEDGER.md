@@ -53,7 +53,9 @@ blockers as current policy is not enough to prove they were represented as older
 | `EX44-13` | dumb correction to rollout process | It attached live external migration verification to every ordinary PR rather than the actual external schema-dependent rollout boundary. |
 | `EX49-14` | erroneous intermediate workaround | Early PR #49 owner mode could attempt pending migrations through the database owner; later work in the same PR removed that behavior. |
 | PR #76 rollout records | justified correction | Ordinary-PR live verification was removed while the repository-owned evidence contract was retained for a real rollout. |
-| `EX20-02`, `EX37-02`, `EX44-14` | insufficient evidence pending narrow follow-up | These require separate analysis of stage-gate authority, factual-vs-normative status, and future rollout-tag advancement. |
+| `EX20-02` | acceptable alternative, authority not proven | Real Hyperdrive smoke tested the selected production path beyond the local direct-DB override, but Git does not establish direct user approval of making it a stage gate. |
+| `EX37-02` | insufficient evidence | Git proves PR #37 recorded “audit completed,” but contains no independent audit artifact proving completeness or approving the resulting blockers. |
+| `EX44-14` | real contract/enforcement defect | The contract promised newest runtime-required migration enforcement while the verifier trusted the declared tag; this does not justify live external checks in ordinary PR CI. |
 
 PR #45/#46/#50 explicitly changed the then-current lifecycle. That is evidence against strict
 documentation laundering in this chain, and PR #50 remains authoritative only prospectively.

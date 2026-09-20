@@ -257,8 +257,9 @@ required restoration remain open until full-history and cross-stage review.
 - **Phase 1 is 100% complete.** Phase 2 preliminary classification and deliberate disconfirmation is
   now open. Its first bounded chain (`#17/#19/#40/#77`) has been reviewed without finalizing a target
   contract. The infrastructure origin block (`#20/#35/#37`) and its downstream implementation/correction
-  chain across #42–#50/#76 are also preliminarily reviewed, leaving three narrow records unresolved.
-  Overall progress through the five-phase audit/restoration process is approximately **27%**;
+  chain across #42–#50/#76 are also preliminarily reviewed. The final narrow follow-up leaves only
+  `EX37-02` classified as insufficiently evidenced rather than pretending Git can prove the unrecorded
+  audit. Overall progress through the five-phase audit/restoration process is approximately **29%**;
   extraction completion must not be mistaken for completed findings or remediation.
 - No project decision has reached final status and no product/source-of-truth documentation or runtime
   code has been corrected by this audit branch.
