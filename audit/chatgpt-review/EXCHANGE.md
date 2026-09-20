@@ -16847,3 +16847,293 @@ GitHub Actions succeeds on 03214222eefd6033934c3fda5bf088e8842cd069 before final
 #### EX71-100 — Final CI #189 is green
 GitHub Actions succeeds on final head e0db850a5a6fa1c8dd34fdb1f3150ec5977de7cf.
 
+
+### Candidate atomic decisions — PR #72
+
+#### EX72-01 — Migration 0010 adds generation to every durable task
+Each translation_tasks row receives a persistent integer ordering value.
+
+#### EX72-02 — Migration backfills generation per logical UI unit
+The partition key is translation_kind, source_namespace, source_key and target_locale.
+
+#### EX72-03 — Backfill order is created_at then id
+row_number() uses deterministic historical task creation/id ordering inside each unit.
+
+#### EX72-04 — Generation becomes non-null after backfill
+Existing tasks are populated before the NOT NULL constraint is applied.
+
+#### EX72-05 — Generation must be positive
+A database check rejects zero/negative generation values.
+
+#### EX72-06 — Generation is unique inside a logical unit
+A unique constraint prevents two tasks for one unit sharing the same generation.
+
+#### EX72-07 — Migration 0010 creates translation_task_generation_heads
+A separate persistent row owns current_generation for each logical UI unit.
+
+#### EX72-08 — Generation-head identity excludes source fingerprint and policy
+The head key is kind/namespace/key/target locale so different stable identities compete in one ordering domain.
+
+#### EX72-09 — Generation-head current_generation must be positive
+The table has an explicit positive-generation check.
+
+#### EX72-10 — Migration backfills generation heads from maximum task generation
+Each pre-existing unit gets its historical max generation as current.
+
+#### EX72-11 — TranslationTask model carries generation
+The application durable-task type now exposes the persistent ordering number.
+
+#### EX72-12 — Task parser rejects invalid generation
+Non-safe/non-positive generation values are integrity errors.
+
+#### EX72-13 — upsertPending becomes a database transaction
+Planning and head assignment are one atomic unit.
+
+#### EX72-14 — First plan inserts generation head at 1
+onConflictDoNothing distinguishes first logical-unit creation.
+
+#### EX72-15 — Planner locks the generation-head row FOR UPDATE
+The durable head is the serialization point for same-unit planning.
+
+#### EX72-16 — Planner rereads stable identity only after taking the head lock
+Same-identity and different-identity planning races are ordered behind one head row.
+
+#### EX72-17 — Missing or invalid locked head is an integrity error
+Planner does not continue if current_generation is absent/nonpositive.
+
+#### EX72-18 — Existing stable identity is validated against the requested specification
+A hash collision/conflicting task payload cannot be silently reused.
+
+#### EX72-19 — Current stale same identity can be reactivated
+If stale task generation equals current_generation, it is reset to pending with stale/claim metadata cleared.
+
+#### EX72-20 — Non-current stale same identity is returned unchanged
+If its generation is not the current head, #72 does not reopen it.
+
+#### EX72-21 — Existing completed same identity is returned unchanged
+Duplicate planning does not reopen completed work.
+
+#### EX72-22 — Existing processing same identity is returned unchanged
+Duplicate planning preserves an in-flight current task instead of renewing the lease.
+
+#### EX72-23 — First identity in a new unit gets generation 1
+The inserted head and inserted task share the initial generation.
+
+#### EX72-24 — A new different identity gets current generation plus one
+Later source/policy identities advance monotonically.
+
+#### EX72-25 — New different identity advances the durable head
+The generation-head row is updated in the same transaction.
+
+#### EX72-26 — Stable taskIdentity remains semantic rather than chronological
+Generation is a separate durable ordering dimension; the existing hash identity formula is not changed to include sequence time.
+
+#### EX72-27 — TranslationTaskStore adds isCurrentGeneration
+Consumers can query whether a durable task generation still equals its unit head.
+
+#### EX72-28 — Consumer preflight adds generation-superseded stale reason
+A claimed task can be rejected before provider execution solely because a newer generation owns the head.
+
+#### EX72-29 — Generation-currentness is checked after source/policy checks
+The final stale-reason sequence first validates descriptor/fingerprint/policy, then durable generation.
+
+#### EX72-30 — Generation-currentness is checked before locale/manual suppression
+Superseded work can stop before loading exact-target manual sources.
+
+#### EX72-31 — Publication locks the same generation-head row
+The result publication transaction shares the planning serialization point.
+
+#### EX72-32 — Publication requires task generation to equal locked current_generation
+An old generation cannot pass the durable publication fence.
+
+#### EX72-33 — Publication still separately requires claim-token ownership
+Generation currentness does not replace the #71 claim fence.
+
+#### EX72-34 — Superseded publication returns false
+A generation mismatch exits without completing the task or writing machine output.
+
+#### EX72-35 — Concurrent different-identity planning is database-tested
+Separate clients plan two identities for the same unit concurrently.
+
+#### EX72-36 — Concurrent plans receive distinct monotonic generations
+The DB test observes generations 1 and 2 rather than both reading the same prior head.
+
+#### EX72-37 — Exactly one planned generation is current
+The final head points only to the later serialized generation.
+
+#### EX72-38 — Delayed duplicate planning of an older identity does not move the head
+Re-reading the old stable identity returns its existing row instead of making it newest.
+
+#### EX72-39 — Old generation cannot publish after newer planning
+The publication store returns false for the older claimed task once the head advances.
+
+#### EX72-40 — Rejected old publication writes no machine row
+The generation-isolation integration test verifies no stale raw result becomes current.
+
+#### EX72-41 — Superseded old task can still be transitioned stale by its claim owner
+After publication rejection, the old task remains claim-owned until the lifecycle consumer/publisher marks it stale.
+
+#### EX72-42 — PROVIDERS_AND_JOBS documents per-unit durable generation ordering
+The contract records the generation head as the ordering mechanism rather than fingerprint/timestamp comparison.
+
+#### EX72-43 — PROVIDERS_AND_JOBS documents planning/publication lock sharing
+The contract makes the same PostgreSQL head row the serialization boundary for both sides.
+
+#### EX72-44 — PROJECT_STATE records generation ordering as implemented local/CI
+The state document adds migration 0010/current-generation fencing to Stage 5A.
+
+#### EX72-45 — Review 4028280128 identifies A→B→A reactivation starvation
+A fresh plan reverting to an older semantic identity can find that row stale and non-current, so #72 returns it stale instead of making it executable.
+
+#### EX72-46 — The review points at the non-current stale early return
+The existing-row branch only reactivates stale when existing.generation equals currentGeneration.
+
+#### EX72-47 — Dispatcher can enqueue that unchanged stale task
+PersistentTranslationJobDispatcher enqueues the id returned by upsertPending without inspecting status.
+
+#### EX72-48 — Claim treats the re-enqueued stale task as terminal
+The lifecycle therefore cannot execute the reverted A identity under final #72 code.
+
+#### EX72-49 — The finding conflicts with the earlier broad fresh-plan reactivation wording
+PR #69/job docs had recorded that a later eligible fresh planning decision may reactivate the same stable identity.
+
+#### EX72-50 — The #72 docs also narrow reactivation to a stale identity that is itself current
+The final detail text contains this current-generation condition alongside the broader fresh-plan statement.
+
+#### EX72-51 — No code correction follows review 4028280128 inside #72
+The only later commit 4dfbc77 changes state/documentation, not task-store behavior.
+
+#### EX72-52 — No PR #73–#77 code changes translation-task-store
+The final-block changed-file sets contain no later task-store modification.
+
+#### EX72-53 — Current main preserves the #72 task-store blob
+Current db/translation-task-store.ts has the same blob SHA f39c062854cad57fe93081d5034e9ce6122b8197 as PR #72.
+
+#### EX72-54 — Migration 0010 remains local/CI-only in this block
+No external Neon migration acceptance is performed by PR #72.
+
+#### EX72-55 — Real Queue/provider infrastructure remains absent
+The ordering foundation is implemented independently from concrete external consumers.
+
+#### EX72-56 — PostgreSQL 17 primary docs support the row-lock/time primitives used
+Official PG17 docs state FOR UPDATE blocks conflicting writers/lockers and statement_timestamp is statement-start time; this verifies mechanism semantics, not architecture correctness.
+
+#### EX72-57 — CI #190 is green on the code head
+GitHub Actions succeeds on 28f21961d485358bf1c02940f159fa3c8d273b3b.
+
+#### EX72-58 — Final CI #191 is green
+GitHub Actions succeeds on 4dfbc7793d1da952ac881193aad192bd082ec705.
+
+### Candidate atomic decisions — PR #73
+
+#### EX73-01 — UiTranslationTaskExecutor is introduced as a provider-neutral execution orchestrator
+It composes existing durable consumer, provider router and conditional publisher.
+
+#### EX73-02 — Executor consumes the durable message before provider routing
+Claim/preflight remains the first execution phase.
+
+#### EX73-03 — Non-eligible consumer outcomes short-circuit execution
+not-found/already-claimed/terminal/stale/claim-lost are returned without provider invocation.
+
+#### EX73-04 — Eligible execution builds a provider request from canonical task context
+The provider request is not reconstructed from untrusted Queue payload data.
+
+#### EX73-05 — Provider request domain is ui
+The executor uses the UI translation domain explicitly.
+
+#### EX73-06 — Provider request source locale is canonical English
+The machine request uses en as the canonical UI source locale.
+
+#### EX73-07 — Provider request target locale comes from the durable task
+The target is the revalidated task target locale.
+
+#### EX73-08 — Provider request messageKind comes from the canonical descriptor
+Plain/plural/etc identity is source-catalog owned.
+
+#### EX73-09 — Provider operation is derived from message kind
+translationOperation maps descriptor semantics to plain/structured provider capability.
+
+#### EX73-10 — Provider source payload comes from the canonical descriptor
+The executor passes source semantics, not an existing translation, to the adapter.
+
+#### EX73-11 — Plural provider request includes target requiredBranches
+LocaleRulesProvider supplies the complete target-locale plural branch set.
+
+#### EX73-12 — Plain provider request omits requiredBranches
+Structured branch contract is added only where applicable.
+
+#### EX73-13 — TranslationProviderRouter remains the adapter-selection boundary
+The executor does not branch on concrete provider names.
+
+#### EX73-14 — Provider output flows into the existing UiTranslationResultPublisher
+Validation/currentness/claim fencing remain owned by the publication boundary.
+
+#### EX73-15 — Provider output remains untrusted through executor return
+An invalid provider value fails validation before the publication store is invoked.
+
+#### EX73-16 — Superseded generation does not call a provider
+Executor tests make generation-superseded preflight a no-provider path.
+
+#### EX73-17 — Superseded generation does not call publication store
+The stale transition ends before machine-result publication.
+
+#### EX73-18 — Plain eligible task has end-to-end local contract coverage
+Consumer→router→publisher is tested with a fake machine adapter.
+
+#### EX73-19 — Structured plural eligible task carries Russian branch contract
+The test expects few/many/one/other in the routed request.
+
+#### EX73-20 — Invalid provider output test leaves durable publication untouched
+Whitespace output raises TranslationValidationError and no store publish call occurs.
+
+#### EX73-21 — Executor adds no production retry classification
+Provider/router/publisher exceptions are not converted into retry/DLQ semantics here.
+
+#### EX73-22 — Executor adds no durable failure state
+Task lifecycle still has no failed/dead-letter status in PR #73.
+
+#### EX73-23 — PR #73 adds no schema or migration
+The execution connector uses the existing #71/#72 durable/publication foundations.
+
+#### EX73-24 — Node server typecheck includes translation-execution.ts
+tsconfig.node is extended for the new server execution module.
+
+#### EX73-25 — Review 4028574664 identifies stale PROJECT_STATE wording
+The runtime executor existed while state text still called provider execution a future layer.
+
+#### EX73-26 — PROJECT_STATE is updated to distinguish neutral executor from real provider adapter
+Later docs commits close the state mismatch without claiming external provider acceptance.
+
+#### EX73-27 — Full-file state editing accidentally changes unrelated Stage 4 wording
+The intermediate documentation update touches text outside the intended Stage 5 state slice.
+
+#### EX73-28 — a71a0c3 restores the unrelated Stage 4 wording
+The final branch corrects that documentation-only accidental change before merge.
+
+#### EX73-29 — CI #192 fails lint on the initial executor head
+The failure is a code-quality gate rather than a DB/schema failure.
+
+#### EX73-30 — 72efa8d fixes the lint issue
+The code head after lint correction reaches green CI #193.
+
+#### EX73-31 — CI #193 is green on the corrected code head
+Checks/database succeed before state-only follow-ups.
+
+#### EX73-32 — Final CI #195 is green
+GitHub Actions succeeds on final head a71a0c3eecc37e5a8ef490221838d95737f065e6.
+
+#### EX73-33 — Concrete external machine-provider adapter remains absent
+The test adapter proves local contracts, not external provider behavior.
+
+#### EX73-34 — Provider credentials and real provider calls remain absent
+No secret/config/network provider acceptance is part of #73.
+
+#### EX73-35 — Cloudflare Queue binding remains absent
+Execution is callable by transport-neutral message contract only.
+
+#### EX73-36 — Retry/DLQ and persistent reconciliation remain deferred
+The executor does not implement JOB-04/JOB-06.
+
+#### EX73-37 — Persisted bundle runtime switching is not added by #73
+That later Stage 5A consumer remains outside this execution PR.
+
