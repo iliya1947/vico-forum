@@ -1,0 +1,2592 @@
+{
+  "type": "DL-CLASSIFY-010",
+  "status": "submitted-preliminary",
+  "audited_heads": {
+    "pr78": "3d4bf2d0327e5f5c4a4caebef3619f5bb6ece66a",
+    "pr79_base": "d5da3348f6d0fd6b89744ff88a2604b2f6edd6fd"
+  },
+  "immutable_scope_source": {
+    "commit": "33bc4029a81ccb1c82549b03a7111622816e1f73",
+    "path": "audit/chatgpt-review/DL-CLASSIFY-COVERAGE-001-2.json",
+    "block": "R2",
+    "count": 134,
+    "ids": [
+      "EX18-01",
+      "EX18-02a",
+      "EX18-02b",
+      "EX18-03",
+      "EX21-01",
+      "EX21-02",
+      "EX21-03",
+      "EX21-04",
+      "EX21-05",
+      "EX21-06a",
+      "EX21-06b",
+      "EX21-07",
+      "EX21-08",
+      "EX21-09",
+      "EX21-10",
+      "EX21-11",
+      "EX21-12",
+      "EX21-13",
+      "EX22-01",
+      "EX22-02",
+      "EX22-03",
+      "EX22-04",
+      "EX22-05",
+      "EX22-06",
+      "EX22-07",
+      "EX22-08",
+      "EX22-09",
+      "EX22-10",
+      "EX22-11",
+      "EX22-12",
+      "EX22-13",
+      "EX22-14",
+      "EX22-15a",
+      "EX22-15b",
+      "EX22-15c",
+      "EX22-16",
+      "EX22-17",
+      "EX22-18",
+      "EX22-19",
+      "EX24-01",
+      "EX24-02",
+      "EX24-03",
+      "EX24-04",
+      "EX24-05",
+      "EX24-06",
+      "EX24-07",
+      "EX24-08",
+      "EX24-09",
+      "EX24-10",
+      "EX24-11",
+      "EX23-01",
+      "EX23-02",
+      "EX23-03",
+      "EX23-04a",
+      "EX23-04b",
+      "EX23-05",
+      "EX23-06",
+      "EX23-07a",
+      "EX23-07b",
+      "EX23-08a",
+      "EX23-08b",
+      "EX23-09",
+      "EX23-10",
+      "EX23-11",
+      "EX23-12",
+      "EX23-13",
+      "EX23-14",
+      "EX23-15",
+      "EX23-16",
+      "EX23-17a",
+      "EX23-17b",
+      "EX23-17c",
+      "EX23-18",
+      "EX25-01",
+      "EX25-02",
+      "EX25-03",
+      "EX25-04",
+      "EX25-05",
+      "EX25-06",
+      "EX25-07",
+      "EX26-01",
+      "EX26-02",
+      "EX26-03",
+      "EX26-04",
+      "EX26-05",
+      "EX26-06",
+      "EX26-07",
+      "EX26-08",
+      "EX26-09",
+      "EX26-10",
+      "EX26-11",
+      "EX26-12",
+      "EX27-01",
+      "EX27-02",
+      "EX27-03",
+      "EX27-04",
+      "EX27-05",
+      "EX27-06",
+      "EX27-07",
+      "EX27-08",
+      "EX28-01",
+      "EX28-02",
+      "EX28-03",
+      "EX28-04",
+      "EX28-05",
+      "EX28-06",
+      "EX28-07",
+      "EX28-08",
+      "EX29-01",
+      "EX29-02",
+      "EX29-03",
+      "EX29-04",
+      "EX29-05",
+      "EX29-06",
+      "EX29-07",
+      "EX29-08",
+      "EX29-09",
+      "EX29-10",
+      "EX29-11",
+      "EX29-12",
+      "EX29-13",
+      "EX29-14",
+      "EX29-15",
+      "EX30-01",
+      "EX30-02",
+      "EX30-03",
+      "EX30-04",
+      "EX30-05",
+      "EX30-06",
+      "EX30-07",
+      "EX30-08",
+      "EX30-09",
+      "EX30-10",
+      "EX30-11"
+    ]
+  },
+  "scope_validation": {
+    "rows": 134,
+    "unique_ids": 134,
+    "duplicates": [],
+    "missing": [],
+    "out_of_block": [],
+    "already_covered_overlap": []
+  },
+  "block_context": {
+    "chronology": "PR #18 → #21 → #22 → #24 → #23 → #25 → #26 → #27 → #28 → #29 → #30; PR #20 is the already-classified planning/contract bridge.",
+    "theme": "Stage 1 external acceptance handoff; Stage 2 PostgreSQL persistence, registry runtime, migrations, production workflow/Hyperdrive acceptance, preview topology, resilience, migration-history verification and state claims",
+    "dependencies": [
+      "R1 Stage 1 locale/registry baseline",
+      "already-classified EX20-* Stage 2 planning and persistence boundaries",
+      "CROSS_STAGE generic locale/persistent-registry lineage",
+      "already-classified downstream infrastructure/hardening chain EX35/EX37/EX42–EX50/EX76 as forward evidence only"
+    ],
+    "accepted_R1_dependency": "R1 accepted by REVIEW DL-CLASSIFY-008/1.",
+    "accepted_bridge": "EX20-* planning/contract bridge already classified; EX20-02 is an acceptable production-first Stage-2 completion alternative with unproven direct-user authority.",
+    "nonretroactivity": "PR #50 is forward-only and is not used to condemn or excuse R2 timing."
+  },
+  "classification_counts": {
+    "acceptable-alternative": 55,
+    "intentional-foundation": 27,
+    "justified-fix-of-real-defect": 10,
+    "real-original-defect": 6,
+    "reviewed-supporting": 35,
+    "insufficient-evidence": 1,
+    "dumb-correction-of-correct-implementation": 0,
+    "substantive_total": 99,
+    "supporting_total": 35,
+    "total": 134
+  },
+  "preliminary_findings": {
+    "historical_original_defects": [
+      "EX22-01",
+      "EX24-01",
+      "EX24-07",
+      "EX23-06",
+      "EX28-04",
+      "EX29-15"
+    ],
+    "justified_fixes": [
+      "EX21-10",
+      "EX23-04a",
+      "EX23-04b",
+      "EX28-01",
+      "EX28-02",
+      "EX28-05",
+      "EX29-08",
+      "EX29-09",
+      "EX29-10",
+      "EX29-11"
+    ],
+    "insufficient_evidence": [
+      "EX29-13"
+    ],
+    "premature_external_operational_requirements": [],
+    "current_confirmed_R2_defects": [],
+    "current_open_R2_question": [
+      "EX29-13"
+    ],
+    "note": "No R2 external/operational record independently meets the strict premature-work threshold. That does not grant direct-user authority to the old production-first cadence."
+  },
+  "documentation_laundering": {
+    "confirmed": false,
+    "note": "PR #30 state synchronization records earlier hardening/operational state but does not establish those earlier choices as user-approved or inherited requirements. Residual review conflicts remain visible rather than being erased. No checked R2 edit backdates a later correction as an older requirement."
+  },
+  "phase2_if_accepted": {
+    "prior_covered": 1743,
+    "new_covered": 134,
+    "covered": 1877,
+    "canonical": 2029,
+    "coverage_percent": 92.5086,
+    "prior_substantive": 1513,
+    "new_substantive": 99,
+    "substantive": 1612,
+    "prior_supporting": 230,
+    "new_supporting": 35,
+    "supporting": 265,
+    "remaining_unreviewed": 152,
+    "remaining_partition": {
+      "R3": 71,
+      "R6": 81
+    },
+    "note": "Contingent on Codex acceptance of DL-CLASSIFY-010; R3/R6 are not pre-credited."
+  },
+  "disconfirmation_profiles": {
+    "A": {
+      "title": "Persistence/runtime implementation alternative",
+      "strongest_evidence_against": "A conflict with the accepted R1/EX20 contract, a later correction showing the mechanism itself was unsound, or evidence that a replaceable implementation detail became an unnecessary blocker.",
+      "contrary_found": "No such conflict was found for this row. Current consumers or later history preserve the same boundary or replace it without showing the original choice was inherently wrong.",
+      "effect": "Acceptable implementation choice; later survival is supporting consequence, not proof of original authority."
+    },
+    "B": {
+      "title": "Intentional persistence/future-proof foundation",
+      "strongest_evidence_against": "Evidence that the boundary implemented a complete future subsystem too early, forced unrelated product work/external rollout, or had cheap retrofit with no accepted future consumer.",
+      "contrary_found": "These rows establish persistent/schema/identity/capability/concurrency boundaries whose later consumers reuse them. They remained bounded and did not themselves require the future admin/provider product flow.",
+      "effect": "Intentional future-proof foundation. Later reuse supports retrofit-cost/consequence analysis but is not treated as original authority."
+    },
+    "C": {
+      "title": "Production-first Stage 2 operational alternative",
+      "strongest_evidence_against": "Evidence that the external operation was outside the then-selected Stage 2 completion model or that it imposed an unrelated gate beyond the already accepted EX20-02 production-first cadence.",
+      "contrary_found": "EX20-02 is already accepted as a technically coherent Stage-2 completion alternative with unproven direct-user authority. These rows implement that selected path. PR #50 is not applied retroactively.",
+      "effect": "Acceptable operational alternative for that historical cadence; no direct-user authority is inferred."
+    },
+    "D": {
+      "title": "Historical original defect",
+      "strongest_evidence_against": "Evidence that the cited failure mode was impossible, deliberately accepted, or that the later correction changed semantics for unrelated reasons.",
+      "contrary_found": "The relevant PR review/history and later corrective chain reproduce the specific failure mode. The verdict is limited to that defect scope, not the surrounding architecture.",
+      "effect": "Real original defect. Except where separately stated, later history corrected it; no remediation is selected here."
+    },
+    "E": {
+      "title": "Justified correction of a real defect",
+      "strongest_evidence_against": "Evidence that the predecessor behavior was already correct or that this change introduced unnecessary scope unrelated to the verified failure.",
+      "contrary_found": "The predecessor defect is concrete in review/history and the change addresses the same boundary without requiring unrelated subsystem expansion.",
+      "effect": "Justified fix of a real defect."
+    },
+    "F": {
+      "title": "Supporting/provenance-only record",
+      "strongest_evidence_against": "An independent product/architecture mechanism in this row that would require its own correctness verdict.",
+      "contrary_found": "The row records state, scope, CI/deployment observation, evidence limitation, test evidence, or later synchronization. It is not used as self-validating authority for neighboring decisions.",
+      "effect": "Reviewed supporting/provenance evidence only."
+    },
+    "G": {
+      "title": "Evidence-limited test/document contract question",
+      "strongest_evidence_against": "Evidence that current exact-seed assertions are intentionally immutable across future locale lifecycle changes, or conversely a concrete current/future migration that is already blocked by them.",
+      "contrary_found": "Current tests still assert the exact current ru/he/ka final state, while docs treat locale lifecycle data as mutable. But no later migration currently needs different locale data, and ordinary tests can be updated with such a migration.",
+      "effect": "Insufficient evidence to call EX29-13 a present defect or a harmless permanent contract."
+    },
+    "H": {
+      "title": "Hyperdrive client lifecycle alternative",
+      "strongest_evidence_against": "Official/current platform guidance requiring explicit client.end() for per-invocation Hyperdrive clients, or evidence of cross-request client reuse/resource leakage.",
+      "contrary_found": "Current Cloudflare Hyperdrive connection-lifecycle guidance explicitly says Workers-to-Hyperdrive clients are automatically cleaned up at invocation end and client.end() is not required; current code creates a new client per request load.",
+      "effect": "Acceptable alternative; EX23-18 is not established as a current client-leak defect."
+    },
+    "I": {
+      "title": "Safety/test/CI implementation alternative",
+      "strongest_evidence_against": "Evidence that the safety/test mechanism encoded a false product invariant, blocked legitimate current development, or duplicated a future external gate without current need.",
+      "contrary_found": "The mechanism protects local destructive tests, migration metadata/history, or current CI quality without requiring production rollout. Any separate overreach is classified on its own row.",
+      "effect": "Acceptable low-cost safety/test/CI choice."
+    }
+  },
+  "unresolved_ids": [
+    "EX29-13"
+  ],
+  "rows": [
+    {
+      "index": 1,
+      "id": "EX18-01",
+      "atomic_decision": "Record Stage 1 acceptance as completed on merged main.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "F",
+      "current_consumer_state": "historical-only",
+      "current_consumers": []
+    },
+    {
+      "index": 2,
+      "id": "EX18-02a",
+      "atomic_decision": "Record that the first real Cloudflare Worker deployment occurred.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "F",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "wrangler.jsonc"
+      ],
+      "evidence_limit": "Repository records the deployment, but the original raw Cloudflare deployment artifact is not attached to the inspected PR."
+    },
+    {
+      "index": 3,
+      "id": "EX18-02b",
+      "atomic_decision": "Record that deployed Workers smoke checks passed.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "F",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "wrangler.jsonc"
+      ],
+      "evidence_limit": "Repository records deployed smoke success, but the raw deployed-smoke transcript is unavailable."
+    },
+    {
+      "index": 4,
+      "id": "EX18-03",
+      "atomic_decision": "Make Stage 2 persistence preflight the next gate before dependencies/migrations.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "C",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "docs/database/MIGRATIONS.md",
+        ".github/workflows/production-db-migrate.yml"
+      ],
+      "disconfirmation": {
+        "title": "Production-first Stage 2 operational alternative",
+        "strongest_evidence_against": "Evidence that the external operation was outside the then-selected Stage 2 completion model or that it imposed an unrelated gate beyond the already accepted EX20-02 production-first cadence.",
+        "contrary_found": "EX20-02 is already accepted as a technically coherent Stage-2 completion alternative with unproven direct-user authority. These rows implement that selected path. PR #50 is not applied retroactively.",
+        "effect": "Acceptable operational alternative for that historical cadence; no direct-user authority is inferred."
+      }
+    },
+    {
+      "index": 5,
+      "id": "EX21-01",
+      "atomic_decision": "PR 2A installs the exact PostgreSQL/Drizzle dependency pins and DB command surface.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "I",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "disconfirmation": {
+        "title": "Safety/test/CI implementation alternative",
+        "strongest_evidence_against": "Evidence that the safety/test mechanism encoded a false product invariant, blocked legitimate current development, or duplicated a future external gate without current need.",
+        "contrary_found": "The mechanism protects local destructive tests, migration metadata/history, or current CI quality without requiring production rollout. Any separate overreach is classified on its own row.",
+        "effect": "Acceptable low-cost safety/test/CI choice."
+      }
+    },
+    {
+      "index": 6,
+      "id": "EX21-02",
+      "atomic_decision": "Physical registry schema is one public \\`locales\\` table with the planned metadata fields.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "B",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "title": "Intentional persistence/future-proof foundation",
+        "strongest_evidence_against": "Evidence that the boundary implemented a complete future subsystem too early, forced unrelated product work/external rollout, or had cheap retrofit with no accepted future consumer.",
+        "contrary_found": "These rows establish persistent/schema/identity/capability/concurrency boundaries whose later consumers reuse them. They remained bounded and did not themselves require the future admin/provider product flow.",
+        "effect": "Intentional future-proof foundation. Later reuse supports retrofit-cost/consequence analysis but is not treated as original authority."
+      }
+    },
+    {
+      "index": 7,
+      "id": "EX21-03",
+      "atomic_decision": "Database constraints enforce the selected row-local scalar/JSON/array invariants.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "I",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "disconfirmation": {
+        "title": "Safety/test/CI implementation alternative",
+        "strongest_evidence_against": "Evidence that the safety/test mechanism encoded a false product invariant, blocked legitimate current development, or duplicated a future external gate without current need.",
+        "contrary_found": "The mechanism protects local destructive tests, migration metadata/history, or current CI quality without requiring production rollout. Any separate overreach is classified on its own row.",
+        "effect": "Acceptable low-cost safety/test/CI choice."
+      }
+    },
+    {
+      "index": 8,
+      "id": "EX21-04",
+      "atomic_decision": "Database rejects bootstrap/reserved exact locale tags as defense in depth.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "I",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "title": "Safety/test/CI implementation alternative",
+        "strongest_evidence_against": "Evidence that the safety/test mechanism encoded a false product invariant, blocked legitimate current development, or duplicated a future external gate without current need.",
+        "contrary_found": "The mechanism protects local destructive tests, migration metadata/history, or current CI quality without requiring production rollout. Any separate overreach is classified on its own row.",
+        "effect": "Acceptable low-cost safety/test/CI choice."
+      }
+    },
+    {
+      "index": 9,
+      "id": "EX21-05",
+      "atomic_decision": "Initial data is a separate migration for exact ru/he/ka state with no English row.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "I",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "docs/database/MIGRATIONS.md",
+        ".github/workflows/production-db-migrate.yml"
+      ],
+      "disconfirmation": {
+        "title": "Safety/test/CI implementation alternative",
+        "strongest_evidence_against": "Evidence that the safety/test mechanism encoded a false product invariant, blocked legitimate current development, or duplicated a future external gate without current need.",
+        "contrary_found": "The mechanism protects local destructive tests, migration metadata/history, or current CI quality without requiring production rollout. Any separate overreach is classified on its own row.",
+        "effect": "Acceptable low-cost safety/test/CI choice."
+      }
+    },
+    {
+      "index": 10,
+      "id": "EX21-06a",
+      "atomic_decision": "Migration representation is checked-in reviewed SQL plus Drizzle metadata applied through migrate.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "B",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "docs/database/MIGRATIONS.md",
+        ".github/workflows/production-db-migrate.yml"
+      ],
+      "disconfirmation": {
+        "title": "Intentional persistence/future-proof foundation",
+        "strongest_evidence_against": "Evidence that the boundary implemented a complete future subsystem too early, forced unrelated product work/external rollout, or had cheap retrofit with no accepted future consumer.",
+        "contrary_found": "These rows establish persistent/schema/identity/capability/concurrency boundaries whose later consumers reuse them. They remained bounded and did not themselves require the future admin/provider product flow.",
+        "effect": "Intentional future-proof foundation. Later reuse supports retrofit-cost/consequence analysis but is not treated as original authority."
+      }
+    },
+    {
+      "index": 11,
+      "id": "EX21-06b",
+      "atomic_decision": "Production drizzle-kit push/direct unreviewed schema mutation is excluded.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "B",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "disconfirmation": {
+        "title": "Intentional persistence/future-proof foundation",
+        "strongest_evidence_against": "Evidence that the boundary implemented a complete future subsystem too early, forced unrelated product work/external rollout, or had cheap retrofit with no accepted future consumer.",
+        "contrary_found": "These rows establish persistent/schema/identity/capability/concurrency boundaries whose later consumers reuse them. They remained bounded and did not themselves require the future admin/provider product flow.",
+        "effect": "Intentional future-proof foundation. Later reuse supports retrofit-cost/consequence analysis but is not treated as original authority."
+      }
+    },
+    {
+      "index": 12,
+      "id": "EX21-07",
+      "atomic_decision": "Administrative DATABASE_URL is scoped to migration/local integration tools, not Worker runtime.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "B",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "docs/database/MIGRATIONS.md",
+        ".github/workflows/production-db-migrate.yml"
+      ],
+      "disconfirmation": {
+        "title": "Intentional persistence/future-proof foundation",
+        "strongest_evidence_against": "Evidence that the boundary implemented a complete future subsystem too early, forced unrelated product work/external rollout, or had cheap retrofit with no accepted future consumer.",
+        "contrary_found": "These rows establish persistent/schema/identity/capability/concurrency boundaries whose later consumers reuse them. They remained bounded and did not themselves require the future admin/provider product flow.",
+        "effect": "Intentional future-proof foundation. Later reuse supports retrofit-cost/consequence analysis but is not treated as original authority."
+      }
+    },
+    {
+      "index": 13,
+      "id": "EX21-08",
+      "atomic_decision": "Forward-only recovery baseline is documented for production schema changes.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "I",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "disconfirmation": {
+        "title": "Safety/test/CI implementation alternative",
+        "strongest_evidence_against": "Evidence that the safety/test mechanism encoded a false product invariant, blocked legitimate current development, or duplicated a future external gate without current need.",
+        "contrary_found": "The mechanism protects local destructive tests, migration metadata/history, or current CI quality without requiring production rollout. Any separate overreach is classified on its own row.",
+        "effect": "Acceptable low-cost safety/test/CI choice."
+      }
+    },
+    {
+      "index": 14,
+      "id": "EX21-09",
+      "atomic_decision": "Disposable database tests are guarded to local host and \\`*_test\\` database names.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "I",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "title": "Safety/test/CI implementation alternative",
+        "strongest_evidence_against": "Evidence that the safety/test mechanism encoded a false product invariant, blocked legitimate current development, or duplicated a future external gate without current need.",
+        "contrary_found": "The mechanism protects local destructive tests, migration metadata/history, or current CI quality without requiring production rollout. Any separate overreach is classified on its own row.",
+        "effect": "Acceptable low-cost safety/test/CI choice."
+      }
+    },
+    {
+      "index": 15,
+      "id": "EX21-10",
+      "atomic_decision": "Database migration integration test resets both application and Drizzle ledger schemas before clean apply.",
+      "classification": "justified-fix-of-real-defect",
+      "role": "substantive",
+      "profile": "E",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "docs/database/MIGRATIONS.md",
+        ".github/workflows/production-db-migrate.yml"
+      ],
+      "disconfirmation": {
+        "title": "Justified correction of a real defect",
+        "strongest_evidence_against": "Evidence that the predecessor behavior was already correct or that this change introduced unnecessary scope unrelated to the verified failure.",
+        "contrary_found": "The predecessor defect is concrete in review/history and the change addresses the same boundary without requiring unrelated subsystem expansion.",
+        "effect": "Justified fix of a real defect."
+      },
+      "fix_basis": "Fixes the reproducibility bug where dropping only public left drizzle.__drizzle_migrations and made a second db:test skip schema recreation."
+    },
+    {
+      "index": 16,
+      "id": "EX21-11",
+      "atomic_decision": "DB integration suite verifies PostgreSQL 17/UTF-8, migration re-run, seed data and row-local constraints.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "I",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "docs/database/MIGRATIONS.md",
+        ".github/workflows/production-db-migrate.yml"
+      ],
+      "disconfirmation": {
+        "title": "Safety/test/CI implementation alternative",
+        "strongest_evidence_against": "Evidence that the safety/test mechanism encoded a false product invariant, blocked legitimate current development, or duplicated a future external gate without current need.",
+        "contrary_found": "The mechanism protects local destructive tests, migration metadata/history, or current CI quality without requiring production rollout. Any separate overreach is classified on its own row.",
+        "effect": "Acceptable low-cost safety/test/CI choice."
+      }
+    },
+    {
+      "index": 17,
+      "id": "EX21-12",
+      "atomic_decision": "Database integration tests are isolated from ordinary jsdom unit tests.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "I",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "title": "Safety/test/CI implementation alternative",
+        "strongest_evidence_against": "Evidence that the safety/test mechanism encoded a false product invariant, blocked legitimate current development, or duplicated a future external gate without current need.",
+        "contrary_found": "The mechanism protects local destructive tests, migration metadata/history, or current CI quality without requiring production rollout. Any separate overreach is classified on its own row.",
+        "effect": "Acceptable low-cost safety/test/CI choice."
+      }
+    },
+    {
+      "index": 18,
+      "id": "EX21-13",
+      "atomic_decision": "Required PR CI gains Drizzle metadata validation and PostgreSQL 17 database job.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "I",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "title": "Safety/test/CI implementation alternative",
+        "strongest_evidence_against": "Evidence that the safety/test mechanism encoded a false product invariant, blocked legitimate current development, or duplicated a future external gate without current need.",
+        "contrary_found": "The mechanism protects local destructive tests, migration metadata/history, or current CI quality without requiring production rollout. Any separate overreach is classified on its own row.",
+        "effect": "Acceptable low-cost safety/test/CI choice."
+      }
+    },
+    {
+      "index": 19,
+      "id": "EX22-01",
+      "atomic_decision": "Persistent rows are runtime-parsed into LocaleDefinition before graph publication.",
+      "classification": "real-original-defect",
+      "role": "substantive",
+      "profile": "D",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "db/translation-task-store.ts",
+        "app/localization/translation-task-consumer.ts"
+      ],
+      "disconfirmation": {
+        "title": "Historical original defect",
+        "strongest_evidence_against": "Evidence that the cited failure mode was impossible, deliberately accepted, or that the later correction changed semantics for unrelated reasons.",
+        "contrary_found": "The relevant PR review/history and later corrective chain reproduce the specific failure mode. The verdict is limited to that defect scope, not the surrounding architecture.",
+        "effect": "Real original defect. Except where separately stated, later history corrected it; no remediation is selected here."
+      },
+      "defect_scope": {
+        "scope": "persistent-row parser accepted noncanonical physical tags even though the published registry normalized them",
+        "correction": "PR #38 EX38-05/06 rejects noncanonical stored tags and degrades the invalid persistent graph",
+        "current": "historical defect; current parser requires raw tag === canonical tag"
+      }
+    },
+    {
+      "index": 20,
+      "id": "EX22-02",
+      "atomic_decision": "Persistent rows are combined with bootstrap English and whole-graph validated before publication.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "B",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "db/translation-task-store.ts",
+        "app/localization/translation-task-consumer.ts"
+      ],
+      "disconfirmation": {
+        "title": "Intentional persistence/future-proof foundation",
+        "strongest_evidence_against": "Evidence that the boundary implemented a complete future subsystem too early, forced unrelated product work/external rollout, or had cheap retrofit with no accepted future consumer.",
+        "contrary_found": "These rows establish persistent/schema/identity/capability/concurrency boundaries whose later consumers reuse them. They remained bounded and did not themselves require the future admin/provider product flow.",
+        "effect": "Intentional future-proof foundation. Later reuse supports retrofit-cost/consequence analysis but is not treated as original authority."
+      }
+    },
+    {
+      "index": 21,
+      "id": "EX22-03",
+      "atomic_decision": "LocaleRegistry domain validation has a dedicated typed error boundary.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "A",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "disconfirmation": {
+        "title": "Persistence/runtime implementation alternative",
+        "strongest_evidence_against": "A conflict with the accepted R1/EX20 contract, a later correction showing the mechanism itself was unsound, or evidence that a replaceable implementation detail became an unnecessary blocker.",
+        "contrary_found": "No such conflict was found for this row. Current consumers or later history preserve the same boundary or replace it without showing the original choice was inherently wrong.",
+        "effect": "Acceptable implementation choice; later survival is supporting consequence, not proof of original authority."
+      }
+    },
+    {
+      "index": 22,
+      "id": "EX22-04",
+      "atomic_decision": "Persistent registry computes versioned SHA-256 semantic identity from validated effective graph.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "B",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "title": "Intentional persistence/future-proof foundation",
+        "strongest_evidence_against": "Evidence that the boundary implemented a complete future subsystem too early, forced unrelated product work/external rollout, or had cheap retrofit with no accepted future consumer.",
+        "contrary_found": "These rows establish persistent/schema/identity/capability/concurrency boundaries whose later consumers reuse them. They remained bounded and did not themselves require the future admin/provider product flow.",
+        "effect": "Intentional future-proof foundation. Later reuse supports retrofit-cost/consequence analysis but is not treated as original authority."
+      }
+    },
+    {
+      "index": 23,
+      "id": "EX22-05",
+      "atomic_decision": "Semantic identity normalizes nonsemantic ordering while preserving semantic fallback order.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "B",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "disconfirmation": {
+        "title": "Intentional persistence/future-proof foundation",
+        "strongest_evidence_against": "Evidence that the boundary implemented a complete future subsystem too early, forced unrelated product work/external rollout, or had cheap retrofit with no accepted future consumer.",
+        "contrary_found": "These rows establish persistent/schema/identity/capability/concurrency boundaries whose later consumers reuse them. They remained bounded and did not themselves require the future admin/provider product flow.",
+        "effect": "Intentional future-proof foundation. Later reuse supports retrofit-cost/consequence analysis but is not treated as original authority."
+      }
+    },
+    {
+      "index": 24,
+      "id": "EX22-06",
+      "atomic_decision": "Persistent load reports health independently from registry identity.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "B",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "title": "Intentional persistence/future-proof foundation",
+        "strongest_evidence_against": "Evidence that the boundary implemented a complete future subsystem too early, forced unrelated product work/external rollout, or had cheap retrofit with no accepted future consumer.",
+        "contrary_found": "These rows establish persistent/schema/identity/capability/concurrency boundaries whose later consumers reuse them. They remained bounded and did not themselves require the future admin/provider product flow.",
+        "effect": "Intentional future-proof foundation. Later reuse supports retrofit-cost/consequence analysis but is not treated as original authority."
+      }
+    },
+    {
+      "index": 25,
+      "id": "EX22-07",
+      "atomic_decision": "Classified unavailable/schema/integrity load failures degrade to bootstrap-only English.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "A",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "disconfirmation": {
+        "title": "Persistence/runtime implementation alternative",
+        "strongest_evidence_against": "A conflict with the accepted R1/EX20 contract, a later correction showing the mechanism itself was unsound, or evidence that a replaceable implementation detail became an unnecessary blocker.",
+        "contrary_found": "No such conflict was found for this row. Current consumers or later history preserve the same boundary or replace it without showing the original choice was inherently wrong.",
+        "effect": "Acceptable implementation choice; later survival is supporting consequence, not proof of original authority."
+      }
+    },
+    {
+      "index": 26,
+      "id": "EX22-08",
+      "atomic_decision": "Unexpected load/hashing/programming failures remain visible.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "A",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "disconfirmation": {
+        "title": "Persistence/runtime implementation alternative",
+        "strongest_evidence_against": "A conflict with the accepted R1/EX20 contract, a later correction showing the mechanism itself was unsound, or evidence that a replaceable implementation detail became an unnecessary blocker.",
+        "contrary_found": "No such conflict was found for this row. Current consumers or later history preserve the same boundary or replace it without showing the original choice was inherently wrong.",
+        "effect": "Acceptable implementation choice; later survival is supporting consequence, not proof of original authority."
+      }
+    },
+    {
+      "index": 27,
+      "id": "EX22-09",
+      "atomic_decision": "Registry request loader memoizes one persistent load promise per service/request.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "A",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "title": "Persistence/runtime implementation alternative",
+        "strongest_evidence_against": "A conflict with the accepted R1/EX20 contract, a later correction showing the mechanism itself was unsound, or evidence that a replaceable implementation detail became an unnecessary blocker.",
+        "contrary_found": "No such conflict was found for this row. Current consumers or later history preserve the same boundary or replace it without showing the original choice was inherently wrong.",
+        "effect": "Acceptable implementation choice; later survival is supporting consequence, not proof of original authority."
+      }
+    },
+    {
+      "index": 28,
+      "id": "EX22-10",
+      "atomic_decision": "Request context has a persistent-registry loader boundary with Stage 1 config fallback until 2C.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "A",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "title": "Persistence/runtime implementation alternative",
+        "strongest_evidence_against": "A conflict with the accepted R1/EX20 contract, a later correction showing the mechanism itself was unsound, or evidence that a replaceable implementation detail became an unnecessary blocker.",
+        "contrary_found": "No such conflict was found for this row. Current consumers or later history preserve the same boundary or replace it without showing the original choice was inherently wrong.",
+        "effect": "Acceptable implementation choice; later survival is supporting consequence, not proof of original authority."
+      }
+    },
+    {
+      "index": 29,
+      "id": "EX22-11",
+      "atomic_decision": "Locale routes await request registry without moving DB I/O inside synchronous resolver APIs.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "A",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "title": "Persistence/runtime implementation alternative",
+        "strongest_evidence_against": "A conflict with the accepted R1/EX20 contract, a later correction showing the mechanism itself was unsound, or evidence that a replaceable implementation detail became an unnecessary blocker.",
+        "contrary_found": "No such conflict was found for this row. Current consumers or later history preserve the same boundary or replace it without showing the original choice was inherently wrong.",
+        "effect": "Acceptable implementation choice; later survival is supporting consequence, not proof of original authority."
+      }
+    },
+    {
+      "index": 30,
+      "id": "EX22-12",
+      "atomic_decision": "Degraded non-English GET/HEAD redirects temporarily to English with no-store.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "A",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "disconfirmation": {
+        "title": "Persistence/runtime implementation alternative",
+        "strongest_evidence_against": "A conflict with the accepted R1/EX20 contract, a later correction showing the mechanism itself was unsound, or evidence that a replaceable implementation detail became an unnecessary blocker.",
+        "contrary_found": "No such conflict was found for this row. Current consumers or later history preserve the same boundary or replace it without showing the original choice was inherently wrong.",
+        "effect": "Acceptable implementation choice; later survival is supporting consequence, not proof of original authority."
+      }
+    },
+    {
+      "index": 31,
+      "id": "EX22-13",
+      "atomic_decision": "Degraded non-English mutation fails closed.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "A",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "disconfirmation": {
+        "title": "Persistence/runtime implementation alternative",
+        "strongest_evidence_against": "A conflict with the accepted R1/EX20 contract, a later correction showing the mechanism itself was unsound, or evidence that a replaceable implementation detail became an unnecessary blocker.",
+        "contrary_found": "No such conflict was found for this row. Current consumers or later history preserve the same boundary or replace it without showing the original choice was inherently wrong.",
+        "effect": "Acceptable implementation choice; later survival is supporting consequence, not proof of original authority."
+      }
+    },
+    {
+      "index": 32,
+      "id": "EX22-14",
+      "atomic_decision": "DrizzleLocaleRepository performs a full explicit-column registry read.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "A",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "title": "Persistence/runtime implementation alternative",
+        "strongest_evidence_against": "A conflict with the accepted R1/EX20 contract, a later correction showing the mechanism itself was unsound, or evidence that a replaceable implementation detail became an unnecessary blocker.",
+        "contrary_found": "No such conflict was found for this row. Current consumers or later history preserve the same boundary or replace it without showing the original choice was inherently wrong.",
+        "effect": "Acceptable implementation choice; later survival is supporting consequence, not proof of original authority."
+      }
+    },
+    {
+      "index": 33,
+      "id": "EX22-15a",
+      "atomic_decision": "ControlledLocaleWriter implements a desired-state put/delete API.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "B",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "disconfirmation": {
+        "title": "Intentional persistence/future-proof foundation",
+        "strongest_evidence_against": "Evidence that the boundary implemented a complete future subsystem too early, forced unrelated product work/external rollout, or had cheap retrofit with no accepted future consumer.",
+        "contrary_found": "These rows establish persistent/schema/identity/capability/concurrency boundaries whose later consumers reuse them. They remained bounded and did not themselves require the future admin/provider product flow.",
+        "effect": "Intentional future-proof foundation. Later reuse supports retrofit-cost/consequence analysis but is not treated as original authority."
+      }
+    },
+    {
+      "index": 34,
+      "id": "EX22-15b",
+      "atomic_decision": "ControlledLocaleWriter validates a full-snapshot proposed graph before mutation.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "B",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "disconfirmation": {
+        "title": "Intentional persistence/future-proof foundation",
+        "strongest_evidence_against": "Evidence that the boundary implemented a complete future subsystem too early, forced unrelated product work/external rollout, or had cheap retrofit with no accepted future consumer.",
+        "contrary_found": "These rows establish persistent/schema/identity/capability/concurrency boundaries whose later consumers reuse them. They remained bounded and did not themselves require the future admin/provider product flow.",
+        "effect": "Intentional future-proof foundation. Later reuse supports retrofit-cost/consequence analysis but is not treated as original authority."
+      }
+    },
+    {
+      "index": 35,
+      "id": "EX22-15c",
+      "atomic_decision": "ControlledLocaleWriter executes each write attempt in a SERIALIZABLE transaction.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "B",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "disconfirmation": {
+        "title": "Intentional persistence/future-proof foundation",
+        "strongest_evidence_against": "Evidence that the boundary implemented a complete future subsystem too early, forced unrelated product work/external rollout, or had cheap retrofit with no accepted future consumer.",
+        "contrary_found": "These rows establish persistent/schema/identity/capability/concurrency boundaries whose later consumers reuse them. They remained bounded and did not themselves require the future admin/provider product flow.",
+        "effect": "Intentional future-proof foundation. Later reuse supports retrofit-cost/consequence analysis but is not treated as original authority."
+      }
+    },
+    {
+      "index": 36,
+      "id": "EX22-16",
+      "atomic_decision": "Controlled writer retries bounded whole units only for serialization/deadlock codes.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "B",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "disconfirmation": {
+        "title": "Intentional persistence/future-proof foundation",
+        "strongest_evidence_against": "Evidence that the boundary implemented a complete future subsystem too early, forced unrelated product work/external rollout, or had cheap retrofit with no accepted future consumer.",
+        "contrary_found": "These rows establish persistent/schema/identity/capability/concurrency boundaries whose later consumers reuse them. They remained bounded and did not themselves require the future admin/provider product flow.",
+        "effect": "Intentional future-proof foundation. Later reuse supports retrofit-cost/consequence analysis but is not treated as original authority."
+      }
+    },
+    {
+      "index": 37,
+      "id": "EX22-17",
+      "atomic_decision": "Ambiguous commit completion is reconciled using semantic pre/expected/actual identities.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "B",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "disconfirmation": {
+        "title": "Intentional persistence/future-proof foundation",
+        "strongest_evidence_against": "Evidence that the boundary implemented a complete future subsystem too early, forced unrelated product work/external rollout, or had cheap retrofit with no accepted future consumer.",
+        "contrary_found": "These rows establish persistent/schema/identity/capability/concurrency boundaries whose later consumers reuse them. They remained bounded and did not themselves require the future admin/provider product flow.",
+        "effect": "Intentional future-proof foundation. Later reuse supports retrofit-cost/consequence analysis but is not treated as original authority."
+      }
+    },
+    {
+      "index": 38,
+      "id": "EX22-18",
+      "atomic_decision": "Rollback failure does not replace the original transaction/commit error.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "A",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "disconfirmation": {
+        "title": "Persistence/runtime implementation alternative",
+        "strongest_evidence_against": "A conflict with the accepted R1/EX20 contract, a later correction showing the mechanism itself was unsound, or evidence that a replaceable implementation detail became an unnecessary blocker.",
+        "contrary_found": "No such conflict was found for this row. Current consumers or later history preserve the same boundary or replace it without showing the original choice was inherently wrong.",
+        "effect": "Acceptable implementation choice; later survival is supporting consequence, not proof of original authority."
+      }
+    },
+    {
+      "index": 39,
+      "id": "EX22-19",
+      "atomic_decision": "Controlled DML machinery is not exposed as a production Worker write path in 2B.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "B",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "wrangler.jsonc"
+      ],
+      "disconfirmation": {
+        "title": "Intentional persistence/future-proof foundation",
+        "strongest_evidence_against": "Evidence that the boundary implemented a complete future subsystem too early, forced unrelated product work/external rollout, or had cheap retrofit with no accepted future consumer.",
+        "contrary_found": "These rows establish persistent/schema/identity/capability/concurrency boundaries whose later consumers reuse them. They remained bounded and did not themselves require the future admin/provider product flow.",
+        "effect": "Intentional future-proof foundation. Later reuse supports retrofit-cost/consequence analysis but is not treated as original authority."
+      }
+    },
+    {
+      "index": 40,
+      "id": "EX24-01",
+      "atomic_decision": "Production DB migration is a manual workflow-dispatch operation.",
+      "classification": "real-original-defect",
+      "role": "substantive",
+      "profile": "D",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "docs/database/MIGRATIONS.md",
+        ".github/workflows/production-db-migrate.yml"
+      ],
+      "disconfirmation": {
+        "title": "Historical original defect",
+        "strongest_evidence_against": "Evidence that the cited failure mode was impossible, deliberately accepted, or that the later correction changed semantics for unrelated reasons.",
+        "contrary_found": "The relevant PR review/history and later corrective chain reproduce the specific failure mode. The verdict is limited to that defect scope, not the surrounding architecture.",
+        "effect": "Real original defect. Except where separately stated, later history corrected it; no remediation is selected here."
+      },
+      "defect_scope": {
+        "scope": "initial workflow_dispatch form lacked a hard main/ref guard and exact reviewed-ref checkout, so production migration could be dispatched from an unmerged/stale ref",
+        "correction": "PR #29 EX29-08/09 adds main-only execution and exact github.sha checkout",
+        "current": "historical workflow-safety defect; current workflow contains both protections"
+      }
+    },
+    {
+      "index": 41,
+      "id": "EX24-02",
+      "atomic_decision": "Production migrations run in protected \\`production-db\\` environment using dedicated Neon admin secret.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "C",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/server-logging.ts"
+      ],
+      "disconfirmation": {
+        "title": "Production-first Stage 2 operational alternative",
+        "strongest_evidence_against": "Evidence that the external operation was outside the then-selected Stage 2 completion model or that it imposed an unrelated gate beyond the already accepted EX20-02 production-first cadence.",
+        "contrary_found": "EX20-02 is already accepted as a technically coherent Stage-2 completion alternative with unproven direct-user authority. These rows implement that selected path. PR #50 is not applied retroactively.",
+        "effect": "Acceptable operational alternative for that historical cadence; no direct-user authority is inferred."
+      }
+    },
+    {
+      "index": 42,
+      "id": "EX24-03",
+      "atomic_decision": "Production migrations are serialized and not auto-cancelled.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "C",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "docs/database/MIGRATIONS.md",
+        ".github/workflows/production-db-migrate.yml"
+      ],
+      "disconfirmation": {
+        "title": "Production-first Stage 2 operational alternative",
+        "strongest_evidence_against": "Evidence that the external operation was outside the then-selected Stage 2 completion model or that it imposed an unrelated gate beyond the already accepted EX20-02 production-first cadence.",
+        "contrary_found": "EX20-02 is already accepted as a technically coherent Stage-2 completion alternative with unproven direct-user authority. These rows implement that selected path. PR #50 is not applied retroactively.",
+        "effect": "Acceptable operational alternative for that historical cadence; no direct-user authority is inferred."
+      }
+    },
+    {
+      "index": 43,
+      "id": "EX24-04",
+      "atomic_decision": "Production migration job uses read-only token permission and existing full-SHA action pins.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "C",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "db/authorization-service.ts"
+      ],
+      "disconfirmation": {
+        "title": "Production-first Stage 2 operational alternative",
+        "strongest_evidence_against": "Evidence that the external operation was outside the then-selected Stage 2 completion model or that it imposed an unrelated gate beyond the already accepted EX20-02 production-first cadence.",
+        "contrary_found": "EX20-02 is already accepted as a technically coherent Stage-2 completion alternative with unproven direct-user authority. These rows implement that selected path. PR #50 is not applied retroactively.",
+        "effect": "Acceptable operational alternative for that historical cadence; no direct-user authority is inferred."
+      }
+    },
+    {
+      "index": 44,
+      "id": "EX24-05",
+      "atomic_decision": "Production workflow validates metadata before migrate and verifies DB afterward.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "C",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "disconfirmation": {
+        "title": "Production-first Stage 2 operational alternative",
+        "strongest_evidence_against": "Evidence that the external operation was outside the then-selected Stage 2 completion model or that it imposed an unrelated gate beyond the already accepted EX20-02 production-first cadence.",
+        "contrary_found": "EX20-02 is already accepted as a technically coherent Stage-2 completion alternative with unproven direct-user authority. These rows implement that selected path. PR #50 is not applied retroactively.",
+        "effect": "Acceptable operational alternative for that historical cadence; no direct-user authority is inferred."
+      }
+    },
+    {
+      "index": 45,
+      "id": "EX24-06",
+      "atomic_decision": "Production verifier checks PostgreSQL 17 and UTF-8.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "C",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "disconfirmation": {
+        "title": "Production-first Stage 2 operational alternative",
+        "strongest_evidence_against": "Evidence that the external operation was outside the then-selected Stage 2 completion model or that it imposed an unrelated gate beyond the already accepted EX20-02 production-first cadence.",
+        "contrary_found": "EX20-02 is already accepted as a technically coherent Stage-2 completion alternative with unproven direct-user authority. These rows implement that selected path. PR #50 is not applied retroactively.",
+        "effect": "Acceptable operational alternative for that historical cadence; no direct-user authority is inferred."
+      }
+    },
+    {
+      "index": 46,
+      "id": "EX24-07",
+      "atomic_decision": "Production verifier compares Drizzle ledger timestamps to checked-in journal.",
+      "classification": "real-original-defect",
+      "role": "substantive",
+      "profile": "D",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "disconfirmation": {
+        "title": "Historical original defect",
+        "strongest_evidence_against": "Evidence that the cited failure mode was impossible, deliberately accepted, or that the later correction changed semantics for unrelated reasons.",
+        "contrary_found": "The relevant PR review/history and later corrective chain reproduce the specific failure mode. The verdict is limited to that defect scope, not the surrounding architecture.",
+        "effect": "Real original defect. Except where separately stated, later history corrected it; no remediation is selected here."
+      },
+      "defect_scope": {
+        "scope": "timestamp-only Drizzle-ledger comparison was insufficient to establish that production schema/migration contents matched the reviewed repository history",
+        "correction": "PR #29 adds immutable migration-history CI plus stable schema/reserved-row verification while retaining ledger equality as one check",
+        "current": "historical verification weakness; current verification is materially stronger"
+      }
+    },
+    {
+      "index": 47,
+      "id": "EX24-08",
+      "atomic_decision": "Production verifier checks exact initial ru/he/ka locale state and absence of English.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "C",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "title": "Production-first Stage 2 operational alternative",
+        "strongest_evidence_against": "Evidence that the external operation was outside the then-selected Stage 2 completion model or that it imposed an unrelated gate beyond the already accepted EX20-02 production-first cadence.",
+        "contrary_found": "EX20-02 is already accepted as a technically coherent Stage-2 completion alternative with unproven direct-user authority. These rows implement that selected path. PR #50 is not applied retroactively.",
+        "effect": "Acceptable operational alternative for that historical cadence; no direct-user authority is inferred."
+      }
+    },
+    {
+      "index": 48,
+      "id": "EX24-09",
+      "atomic_decision": "Post-migration verifier is SELECT-only and does not itself mutate production.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "C",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "docs/database/MIGRATIONS.md",
+        ".github/workflows/production-db-migrate.yml"
+      ],
+      "disconfirmation": {
+        "title": "Production-first Stage 2 operational alternative",
+        "strongest_evidence_against": "Evidence that the external operation was outside the then-selected Stage 2 completion model or that it imposed an unrelated gate beyond the already accepted EX20-02 production-first cadence.",
+        "contrary_found": "EX20-02 is already accepted as a technically coherent Stage-2 completion alternative with unproven direct-user authority. These rows implement that selected path. PR #50 is not applied retroactively.",
+        "effect": "Acceptable operational alternative for that historical cadence; no direct-user authority is inferred."
+      }
+    },
+    {
+      "index": 49,
+      "id": "EX24-10",
+      "atomic_decision": "Production workflow excludes destructive disposable DB tests, push and application deploy.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "C",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "disconfirmation": {
+        "title": "Production-first Stage 2 operational alternative",
+        "strongest_evidence_against": "Evidence that the external operation was outside the then-selected Stage 2 completion model or that it imposed an unrelated gate beyond the already accepted EX20-02 production-first cadence.",
+        "contrary_found": "EX20-02 is already accepted as a technically coherent Stage-2 completion alternative with unproven direct-user authority. These rows implement that selected path. PR #50 is not applied retroactively.",
+        "effect": "Acceptable operational alternative for that historical cadence; no direct-user authority is inferred."
+      }
+    },
+    {
+      "index": 50,
+      "id": "EX24-11",
+      "atomic_decision": "At PR #24 merge, production migration remained explicitly unexecuted.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "F",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "docs/database/MIGRATIONS.md",
+        ".github/workflows/production-db-migrate.yml"
+      ]
+    },
+    {
+      "index": 51,
+      "id": "EX23-01",
+      "atomic_decision": "Production registry adapter uses Hyperdrive connection string → request-local pg Client → Drizzle repository.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "A",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/translation-execution.ts"
+      ],
+      "disconfirmation": {
+        "title": "Persistence/runtime implementation alternative",
+        "strongest_evidence_against": "A conflict with the accepted R1/EX20 contract, a later correction showing the mechanism itself was unsound, or evidence that a replaceable implementation detail became an unnecessary blocker.",
+        "contrary_found": "No such conflict was found for this row. Current consumers or later history preserve the same boundary or replace it without showing the original choice was inherently wrong.",
+        "effect": "Acceptable implementation choice; later survival is supporting consequence, not proof of original authority."
+      }
+    },
+    {
+      "index": 52,
+      "id": "EX23-02",
+      "atomic_decision": "Hyperdrive registry DB access is lazy and memoized per request.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "A",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "title": "Persistence/runtime implementation alternative",
+        "strongest_evidence_against": "A conflict with the accepted R1/EX20 contract, a later correction showing the mechanism itself was unsound, or evidence that a replaceable implementation detail became an unnecessary blocker.",
+        "contrary_found": "No such conflict was found for this row. Current consumers or later history preserve the same boundary or replace it without showing the original choice was inherently wrong.",
+        "effect": "Acceptable implementation choice; later survival is supporting consequence, not proof of original authority."
+      }
+    },
+    {
+      "index": 53,
+      "id": "EX23-03",
+      "atomic_decision": "Worker creates a RouterContextProvider per request and injects the registry loader from HYPERDRIVE.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "A",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "title": "Persistence/runtime implementation alternative",
+        "strongest_evidence_against": "A conflict with the accepted R1/EX20 contract, a later correction showing the mechanism itself was unsound, or evidence that a replaceable implementation detail became an unnecessary blocker.",
+        "contrary_found": "No such conflict was found for this row. Current consumers or later history preserve the same boundary or replace it without showing the original choice was inherently wrong.",
+        "effect": "Acceptable implementation choice; later survival is supporting consequence, not proof of original authority."
+      }
+    },
+    {
+      "index": 54,
+      "id": "EX23-04a",
+      "atomic_decision": "Production Worker configuration declares the real HYPERDRIVE binding.",
+      "classification": "justified-fix-of-real-defect",
+      "role": "substantive",
+      "profile": "E",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "wrangler.jsonc"
+      ],
+      "disconfirmation": {
+        "title": "Justified correction of a real defect",
+        "strongest_evidence_against": "Evidence that the predecessor behavior was already correct or that this change introduced unnecessary scope unrelated to the verified failure.",
+        "contrary_found": "The predecessor defect is concrete in review/history and the change addresses the same boundary without requiring unrelated subsystem expansion.",
+        "effect": "Justified fix of a real defect."
+      },
+      "fix_basis": "Fixes the PR #23 production/runtime integration defect by actually declaring the HYPERDRIVE binding before Worker code dereferences it."
+    },
+    {
+      "index": 55,
+      "id": "EX23-04b",
+      "atomic_decision": "Local CI supplies a Wrangler Hyperdrive connection override.",
+      "classification": "justified-fix-of-real-defect",
+      "role": "substantive",
+      "profile": "E",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "wrangler.jsonc"
+      ],
+      "disconfirmation": {
+        "title": "Justified correction of a real defect",
+        "strongest_evidence_against": "Evidence that the predecessor behavior was already correct or that this change introduced unnecessary scope unrelated to the verified failure.",
+        "contrary_found": "The predecessor defect is concrete in review/history and the change addresses the same boundary without requiring unrelated subsystem expansion.",
+        "effect": "Justified fix of a real defect."
+      },
+      "fix_basis": "Fixes the corresponding local-CI integration gap by supplying a Hyperdrive local connection override."
+    },
+    {
+      "index": 56,
+      "id": "EX23-05",
+      "atomic_decision": "Registry load classifier traverses wrapped error cause chains safely.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "A",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "title": "Persistence/runtime implementation alternative",
+        "strongest_evidence_against": "A conflict with the accepted R1/EX20 contract, a later correction showing the mechanism itself was unsound, or evidence that a replaceable implementation detail became an unnecessary blocker.",
+        "contrary_found": "No such conflict was found for this row. Current consumers or later history preserve the same boundary or replace it without showing the original choice was inherently wrong.",
+        "effect": "Acceptable implementation choice; later survival is supporting consequence, not proof of original authority."
+      }
+    },
+    {
+      "index": 57,
+      "id": "EX23-06",
+      "atomic_decision": "Socket/DNS transport failures remain outside the merged PR #23 degraded classifier.",
+      "classification": "real-original-defect",
+      "role": "substantive",
+      "profile": "D",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "disconfirmation": {
+        "title": "Historical original defect",
+        "strongest_evidence_against": "Evidence that the cited failure mode was impossible, deliberately accepted, or that the later correction changed semantics for unrelated reasons.",
+        "contrary_found": "The relevant PR review/history and later corrective chain reproduce the specific failure mode. The verdict is limited to that defect scope, not the surrounding architecture.",
+        "effect": "Real original defect. Except where separately stated, later history corrected it; no remediation is selected here."
+      },
+      "defect_scope": {
+        "scope": "realistic TCP/DNS/node-postgres transport failures remained outside degraded-unavailable classification and could turn a promised English fallback into 500",
+        "correction": "PR #28 adds explicit transport codes/typed connection wrapper; PR #39 later narrows code-less availability to known shapes",
+        "current": "historical outage-classification defect; current shared classifier covers known transport shapes without catch-all masking"
+      }
+    },
+    {
+      "index": 58,
+      "id": "EX23-07a",
+      "atomic_decision": "Production Worker connectivity is HYPERDRIVE-only and excludes DATABASE_URL.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "B",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "wrangler.jsonc"
+      ],
+      "disconfirmation": {
+        "title": "Intentional persistence/future-proof foundation",
+        "strongest_evidence_against": "Evidence that the boundary implemented a complete future subsystem too early, forced unrelated product work/external rollout, or had cheap retrofit with no accepted future consumer.",
+        "contrary_found": "These rows establish persistent/schema/identity/capability/concurrency boundaries whose later consumers reuse them. They remained bounded and did not themselves require the future admin/provider product flow.",
+        "effect": "Intentional future-proof foundation. Later reuse supports retrofit-cost/consequence analysis but is not treated as original authority."
+      }
+    },
+    {
+      "index": 59,
+      "id": "EX23-07b",
+      "atomic_decision": "Production registry database role is read-only and non-owning.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "B",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "title": "Intentional persistence/future-proof foundation",
+        "strongest_evidence_against": "Evidence that the boundary implemented a complete future subsystem too early, forced unrelated product work/external rollout, or had cheap retrofit with no accepted future consumer.",
+        "contrary_found": "These rows establish persistent/schema/identity/capability/concurrency boundaries whose later consumers reuse them. They remained bounded and did not themselves require the future admin/provider product flow.",
+        "effect": "Intentional future-proof foundation. Later reuse supports retrofit-cost/consequence analysis but is not treated as original authority."
+      }
+    },
+    {
+      "index": 60,
+      "id": "EX23-08a",
+      "atomic_decision": "Hyperdrive uses the direct/unpooled Neon origin.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "A",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "db/forum-write-policy.ts"
+      ],
+      "disconfirmation": {
+        "title": "Persistence/runtime implementation alternative",
+        "strongest_evidence_against": "A conflict with the accepted R1/EX20 contract, a later correction showing the mechanism itself was unsound, or evidence that a replaceable implementation detail became an unnecessary blocker.",
+        "contrary_found": "No such conflict was found for this row. Current consumers or later history preserve the same boundary or replace it without showing the original choice was inherently wrong.",
+        "effect": "Acceptable implementation choice; later survival is supporting consequence, not proof of original authority."
+      }
+    },
+    {
+      "index": 61,
+      "id": "EX23-08b",
+      "atomic_decision": "Hyperdrive query caching is disabled for the registry configuration.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "A",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "title": "Persistence/runtime implementation alternative",
+        "strongest_evidence_against": "A conflict with the accepted R1/EX20 contract, a later correction showing the mechanism itself was unsound, or evidence that a replaceable implementation detail became an unnecessary blocker.",
+        "contrary_found": "No such conflict was found for this row. Current consumers or later history preserve the same boundary or replace it without showing the original choice was inherently wrong.",
+        "effect": "Acceptable implementation choice; later survival is supporting consequence, not proof of original authority."
+      }
+    },
+    {
+      "index": 62,
+      "id": "EX23-09",
+      "atomic_decision": "Local Workers smoke uses disposable PostgreSQL through Wrangler Hyperdrive local override.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "A",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "wrangler.jsonc"
+      ],
+      "disconfirmation": {
+        "title": "Persistence/runtime implementation alternative",
+        "strongest_evidence_against": "A conflict with the accepted R1/EX20 contract, a later correction showing the mechanism itself was unsound, or evidence that a replaceable implementation detail became an unnecessary blocker.",
+        "contrary_found": "No such conflict was found for this row. Current consumers or later history preserve the same boundary or replace it without showing the original choice was inherently wrong.",
+        "effect": "Acceptable implementation choice; later survival is supporting consequence, not proof of original authority."
+      }
+    },
+    {
+      "index": 63,
+      "id": "EX23-10",
+      "atomic_decision": "Reusable local Workers smoke covers persistent locale routing and technical-route behavior.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "A",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "title": "Persistence/runtime implementation alternative",
+        "strongest_evidence_against": "A conflict with the accepted R1/EX20 contract, a later correction showing the mechanism itself was unsound, or evidence that a replaceable implementation detail became an unnecessary blocker.",
+        "contrary_found": "No such conflict was found for this row. Current consumers or later history preserve the same boundary or replace it without showing the original choice was inherently wrong.",
+        "effect": "Acceptable implementation choice; later survival is supporting consequence, not proof of original authority."
+      }
+    },
+    {
+      "index": 64,
+      "id": "EX23-11",
+      "atomic_decision": "Local Hyperdrive override is explicitly not remote Hyperdrive acceptance.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "F",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ]
+    },
+    {
+      "index": 65,
+      "id": "EX23-12",
+      "atomic_decision": "Repository records production migration as successfully applied/verified before Stage 2 deployed acceptance.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "F",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "docs/database/MIGRATIONS.md",
+        ".github/workflows/production-db-migrate.yml"
+      ],
+      "evidence_limit": "Repository records production migration success; this row is evidence/state provenance rather than independent correctness authority."
+    },
+    {
+      "index": 66,
+      "id": "EX23-13",
+      "atomic_decision": "Repository records a least-privilege \\`vico_forum_runtime\\` production role as created.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "F",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "docs/database/MIGRATIONS.md",
+        ".github/workflows/production-db-migrate.yml"
+      ],
+      "evidence_limit": "Repository records least-privilege runtime-role creation; this is a historical external-state claim."
+    },
+    {
+      "index": 67,
+      "id": "EX23-14",
+      "atomic_decision": "Repository records cache-disabled \\`vico-forum-registry\\` Hyperdrive as created and bound.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "F",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "db/forum-service.ts"
+      ],
+      "evidence_limit": "Repository records Hyperdrive creation/binding; this is a historical external-state claim."
+    },
+    {
+      "index": 68,
+      "id": "EX23-15",
+      "atomic_decision": "Repository records successful local Workers/Hyperdrive-override smoke.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "F",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "wrangler.jsonc"
+      ]
+    },
+    {
+      "index": 69,
+      "id": "EX23-16",
+      "atomic_decision": "At PR #23 merge, real deployed workers.dev Hyperdrive smoke remains explicitly outstanding.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "F",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "wrangler.jsonc"
+      ]
+    },
+    {
+      "index": 70,
+      "id": "EX23-17a",
+      "atomic_decision": "Classified registry degradation keeps public English reads available.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "A",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "title": "Persistence/runtime implementation alternative",
+        "strongest_evidence_against": "A conflict with the accepted R1/EX20 contract, a later correction showing the mechanism itself was unsound, or evidence that a replaceable implementation detail became an unnecessary blocker.",
+        "contrary_found": "No such conflict was found for this row. Current consumers or later history preserve the same boundary or replace it without showing the original choice was inherently wrong.",
+        "effect": "Acceptable implementation choice; later survival is supporting consequence, not proof of original authority."
+      }
+    },
+    {
+      "index": 71,
+      "id": "EX23-17b",
+      "atomic_decision": "Degraded bootstrap behavior does not satisfy release/deployment acceptance.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "A",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "disconfirmation": {
+        "title": "Persistence/runtime implementation alternative",
+        "strongest_evidence_against": "A conflict with the accepted R1/EX20 contract, a later correction showing the mechanism itself was unsound, or evidence that a replaceable implementation detail became an unnecessary blocker.",
+        "contrary_found": "No such conflict was found for this row. Current consumers or later history preserve the same boundary or replace it without showing the original choice was inherently wrong.",
+        "effect": "Acceptable implementation choice; later survival is supporting consequence, not proof of original authority."
+      }
+    },
+    {
+      "index": 72,
+      "id": "EX23-17c",
+      "atomic_decision": "Registry recovery uses compatible application rollback plus forward database repair/restore, not in-band migration credentials.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "A",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "title": "Persistence/runtime implementation alternative",
+        "strongest_evidence_against": "A conflict with the accepted R1/EX20 contract, a later correction showing the mechanism itself was unsound, or evidence that a replaceable implementation detail became an unnecessary blocker.",
+        "contrary_found": "No such conflict was found for this row. Current consumers or later history preserve the same boundary or replace it without showing the original choice was inherently wrong.",
+        "effect": "Acceptable implementation choice; later survival is supporting consequence, not proof of original authority."
+      }
+    },
+    {
+      "index": 73,
+      "id": "EX23-18",
+      "atomic_decision": "Production Worker request code does not explicitly close the normal Hyperdrive pg Client after a successful registry read.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "H",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "title": "Hyperdrive client lifecycle alternative",
+        "strongest_evidence_against": "Official/current platform guidance requiring explicit client.end() for per-invocation Hyperdrive clients, or evidence of cross-request client reuse/resource leakage.",
+        "contrary_found": "Current Cloudflare Hyperdrive connection-lifecycle guidance explicitly says Workers-to-Hyperdrive clients are automatically cleaned up at invocation end and client.end() is not required; current code creates a new client per request load.",
+        "effect": "Acceptable alternative; EX23-18 is not established as a current client-leak defect."
+      },
+      "external_current_evidence": {
+        "source": "Cloudflare Hyperdrive connection lifecycle (official, updated 2026-04-21)",
+        "url": "https://developers.cloudflare.com/hyperdrive/concepts/connection-lifecycle/",
+        "fact": "Workers-to-Hyperdrive database clients are automatically cleaned up at invocation end; explicit client.end() is not required."
+      }
+    },
+    {
+      "index": 74,
+      "id": "EX25-01",
+      "atomic_decision": "Native Cloudflare Workers Builds from GitHub main becomes the recorded production deployment path.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "C",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "wrangler.jsonc"
+      ],
+      "disconfirmation": {
+        "title": "Production-first Stage 2 operational alternative",
+        "strongest_evidence_against": "Evidence that the external operation was outside the then-selected Stage 2 completion model or that it imposed an unrelated gate beyond the already accepted EX20-02 production-first cadence.",
+        "contrary_found": "EX20-02 is already accepted as a technically coherent Stage-2 completion alternative with unproven direct-user authority. These rows implement that selected path. PR #50 is not applied retroactively.",
+        "effect": "Acceptable operational alternative for that historical cadence; no direct-user authority is inferred."
+      }
+    },
+    {
+      "index": 75,
+      "id": "EX25-02",
+      "atomic_decision": "Workers Builds production build command is \\`pnpm run build\\`.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "C",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "wrangler.jsonc"
+      ],
+      "disconfirmation": {
+        "title": "Production-first Stage 2 operational alternative",
+        "strongest_evidence_against": "Evidence that the external operation was outside the then-selected Stage 2 completion model or that it imposed an unrelated gate beyond the already accepted EX20-02 production-first cadence.",
+        "contrary_found": "EX20-02 is already accepted as a technically coherent Stage-2 completion alternative with unproven direct-user authority. These rows implement that selected path. PR #50 is not applied retroactively.",
+        "effect": "Acceptable operational alternative for that historical cadence; no direct-user authority is inferred."
+      }
+    },
+    {
+      "index": 76,
+      "id": "EX25-03",
+      "atomic_decision": "Workers Builds production deploy command is \\`npx wrangler deploy\\`.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "C",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "wrangler.jsonc"
+      ],
+      "disconfirmation": {
+        "title": "Production-first Stage 2 operational alternative",
+        "strongest_evidence_against": "Evidence that the external operation was outside the then-selected Stage 2 completion model or that it imposed an unrelated gate beyond the already accepted EX20-02 production-first cadence.",
+        "contrary_found": "EX20-02 is already accepted as a technically coherent Stage-2 completion alternative with unproven direct-user authority. These rows implement that selected path. PR #50 is not applied retroactively.",
+        "effect": "Acceptable operational alternative for that historical cadence; no direct-user authority is inferred."
+      }
+    },
+    {
+      "index": 77,
+      "id": "EX25-04",
+      "atomic_decision": "Workers Builds pins PNPM_VERSION=12.3.4.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "C",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "wrangler.jsonc"
+      ],
+      "disconfirmation": {
+        "title": "Production-first Stage 2 operational alternative",
+        "strongest_evidence_against": "Evidence that the external operation was outside the then-selected Stage 2 completion model or that it imposed an unrelated gate beyond the already accepted EX20-02 production-first cadence.",
+        "contrary_found": "EX20-02 is already accepted as a technically coherent Stage-2 completion alternative with unproven direct-user authority. These rows implement that selected path. PR #50 is not applied retroactively.",
+        "effect": "Acceptable operational alternative for that historical cadence; no direct-user authority is inferred."
+      }
+    },
+    {
+      "index": 78,
+      "id": "EX25-05",
+      "atomic_decision": "Merge/push to main is the trigger for the first native production build.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "C",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "package.json",
+        ".github/workflows/ci.yml"
+      ],
+      "disconfirmation": {
+        "title": "Production-first Stage 2 operational alternative",
+        "strongest_evidence_against": "Evidence that the external operation was outside the then-selected Stage 2 completion model or that it imposed an unrelated gate beyond the already accepted EX20-02 production-first cadence.",
+        "contrary_found": "EX20-02 is already accepted as a technically coherent Stage-2 completion alternative with unproven direct-user authority. These rows implement that selected path. PR #50 is not applied retroactively.",
+        "effect": "Acceptable operational alternative for that historical cadence; no direct-user authority is inferred."
+      }
+    },
+    {
+      "index": 79,
+      "id": "EX25-06",
+      "atomic_decision": "Local \\`wrangler whoami\\` authentication is no longer the Stage 2 deployment blocker.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "C",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/auth/auth.server.ts"
+      ],
+      "disconfirmation": {
+        "title": "Production-first Stage 2 operational alternative",
+        "strongest_evidence_against": "Evidence that the external operation was outside the then-selected Stage 2 completion model or that it imposed an unrelated gate beyond the already accepted EX20-02 production-first cadence.",
+        "contrary_found": "EX20-02 is already accepted as a technically coherent Stage-2 completion alternative with unproven direct-user authority. These rows implement that selected path. PR #50 is not applied retroactively.",
+        "effect": "Acceptable operational alternative for that historical cadence; no direct-user authority is inferred."
+      }
+    },
+    {
+      "index": 80,
+      "id": "EX25-07",
+      "atomic_decision": "Real deployed Hyperdrive smoke remains the final Stage 2 acceptance gate after native deploy.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "C",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "disconfirmation": {
+        "title": "Production-first Stage 2 operational alternative",
+        "strongest_evidence_against": "Evidence that the external operation was outside the then-selected Stage 2 completion model or that it imposed an unrelated gate beyond the already accepted EX20-02 production-first cadence.",
+        "contrary_found": "EX20-02 is already accepted as a technically coherent Stage-2 completion alternative with unproven direct-user authority. These rows implement that selected path. PR #50 is not applied retroactively.",
+        "effect": "Acceptable operational alternative for that historical cadence; no direct-user authority is inferred."
+      }
+    },
+    {
+      "index": 81,
+      "id": "EX26-01",
+      "atomic_decision": "Repository records the first native production build/deploy from main as successful.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "F",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "package.json",
+        ".github/workflows/ci.yml"
+      ],
+      "evidence_limit": "Production-main build/deploy success is repository-recorded; raw production build logs were not available in extraction."
+    },
+    {
+      "index": 82,
+      "id": "EX26-02",
+      "atomic_decision": "Repository records active production Worker binding HYPERDRIVE → vico-forum-registry.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "F",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "db/forum-service.ts"
+      ],
+      "evidence_limit": "Binding state is repository-recorded external-state evidence."
+    },
+    {
+      "index": 83,
+      "id": "EX26-03",
+      "atomic_decision": "Deployed acceptance records active persistent locales he and ru serving successfully.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "F",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "evidence_limit": "Raw deployed HTTP smoke transcript was not available in extraction."
+    },
+    {
+      "index": 84,
+      "id": "EX26-04",
+      "atomic_decision": "Deployed acceptance records alias iw canonicalizing to he.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "F",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "evidence_limit": "Raw deployed HTTP smoke transcript was not available in extraction."
+    },
+    {
+      "index": 85,
+      "id": "EX26-05",
+      "atomic_decision": "Deployed acceptance records inactive and unknown locale fallback to English.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "F",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "evidence_limit": "Raw deployed HTTP smoke transcript was not available in extraction."
+    },
+    {
+      "index": 86,
+      "id": "EX26-06",
+      "atomic_decision": "Deployed acceptance records localized unknown-child and technical API 404 behavior.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "F",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "evidence_limit": "Raw deployed HTTP smoke transcript was not available in extraction."
+    },
+    {
+      "index": 87,
+      "id": "EX26-07",
+      "atomic_decision": "Deployed acceptance records redirect-required mutation failing closed.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "F",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "evidence_limit": "Raw deployed HTTP smoke transcript was not available in extraction."
+    },
+    {
+      "index": 88,
+      "id": "EX26-08",
+      "atomic_decision": "Repository records production Hyperdrive query traffic during acceptance.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "F",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "evidence_limit": "Raw Hyperdrive metrics/config export was not available in extraction."
+    },
+    {
+      "index": 89,
+      "id": "EX26-09",
+      "atomic_decision": "Repository records Hyperdrive query caching disabled during acceptance.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "F",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "evidence_limit": "Raw Hyperdrive metrics/config export was not available in extraction."
+    },
+    {
+      "index": 90,
+      "id": "EX26-10",
+      "atomic_decision": "Repository records zero Hyperdrive errors during acceptance.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "F",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "evidence_limit": "Raw Hyperdrive metrics/config export was not available in extraction."
+    },
+    {
+      "index": 91,
+      "id": "EX26-11",
+      "atomic_decision": "Stage 2 is recorded closed after deployed acceptance.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "F",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ]
+    },
+    {
+      "index": 92,
+      "id": "EX26-12",
+      "atomic_decision": "Stage 3 becomes the next active stage with no recorded blocker.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "F",
+      "current_consumer_state": "historical-only",
+      "current_consumers": []
+    },
+    {
+      "index": 93,
+      "id": "EX27-01",
+      "atomic_decision": "Native Workers Builds from main is the normal production Worker deployment path.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "C",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "wrangler.jsonc"
+      ],
+      "disconfirmation": {
+        "title": "Production-first Stage 2 operational alternative",
+        "strongest_evidence_against": "Evidence that the external operation was outside the then-selected Stage 2 completion model or that it imposed an unrelated gate beyond the already accepted EX20-02 production-first cadence.",
+        "contrary_found": "EX20-02 is already accepted as a technically coherent Stage-2 completion alternative with unproven direct-user authority. These rows implement that selected path. PR #50 is not applied retroactively.",
+        "effect": "Acceptable operational alternative for that historical cadence; no direct-user authority is inferred."
+      }
+    },
+    {
+      "index": 94,
+      "id": "EX27-02",
+      "atomic_decision": "First schema-dependent runtime rollout is migration-only PR → production migration/verification → runtime PR.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "B",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "docs/database/MIGRATIONS.md",
+        ".github/workflows/production-db-migrate.yml"
+      ],
+      "disconfirmation": {
+        "title": "Intentional persistence/future-proof foundation",
+        "strongest_evidence_against": "Evidence that the boundary implemented a complete future subsystem too early, forced unrelated product work/external rollout, or had cheap retrofit with no accepted future consumer.",
+        "contrary_found": "These rows establish persistent/schema/identity/capability/concurrency boundaries whose later consumers reuse them. They remained bounded and did not themselves require the future admin/provider product flow.",
+        "effect": "Intentional future-proof foundation. Later reuse supports retrofit-cost/consequence analysis but is not treated as original authority."
+      }
+    },
+    {
+      "index": 95,
+      "id": "EX27-03",
+      "atomic_decision": "Migration-only schema PR must remain compatible with the currently deployed Worker.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "B",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "docs/database/MIGRATIONS.md",
+        ".github/workflows/production-db-migrate.yml"
+      ],
+      "disconfirmation": {
+        "title": "Intentional persistence/future-proof foundation",
+        "strongest_evidence_against": "Evidence that the boundary implemented a complete future subsystem too early, forced unrelated product work/external rollout, or had cheap retrofit with no accepted future consumer.",
+        "contrary_found": "These rows establish persistent/schema/identity/capability/concurrency boundaries whose later consumers reuse them. They remained bounded and did not themselves require the future admin/provider product flow.",
+        "effect": "Intentional future-proof foundation. Later reuse supports retrofit-cost/consequence analysis but is not treated as original authority."
+      }
+    },
+    {
+      "index": 96,
+      "id": "EX27-04",
+      "atomic_decision": "Preview/non-production builds are provisionally treated as potentially using production HYPERDRIVE.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "C",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "package.json",
+        ".github/workflows/ci.yml"
+      ],
+      "disconfirmation": {
+        "title": "Production-first Stage 2 operational alternative",
+        "strongest_evidence_against": "Evidence that the external operation was outside the then-selected Stage 2 completion model or that it imposed an unrelated gate beyond the already accepted EX20-02 production-first cadence.",
+        "contrary_found": "EX20-02 is already accepted as a technically coherent Stage-2 completion alternative with unproven direct-user authority. These rows implement that selected path. PR #50 is not applied retroactively.",
+        "effect": "Acceptable operational alternative for that historical cadence; no direct-user authority is inferred."
+      }
+    },
+    {
+      "index": 97,
+      "id": "EX27-05",
+      "atomic_decision": "Shared preview access to production DB is allowed only while Worker capability remains read-only.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "B",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "wrangler.jsonc"
+      ],
+      "disconfirmation": {
+        "title": "Intentional persistence/future-proof foundation",
+        "strongest_evidence_against": "Evidence that the boundary implemented a complete future subsystem too early, forced unrelated product work/external rollout, or had cheap retrofit with no accepted future consumer.",
+        "contrary_found": "These rows establish persistent/schema/identity/capability/concurrency boundaries whose later consumers reuse them. They remained bounded and did not themselves require the future admin/provider product flow.",
+        "effect": "Intentional future-proof foundation. Later reuse supports retrofit-cost/consequence analysis but is not treated as original authority."
+      }
+    },
+    {
+      "index": 98,
+      "id": "EX27-06",
+      "atomic_decision": "Shared preview access to production DB is allowed only while reachable data is public.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "B",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "disconfirmation": {
+        "title": "Intentional persistence/future-proof foundation",
+        "strongest_evidence_against": "Evidence that the boundary implemented a complete future subsystem too early, forced unrelated product work/external rollout, or had cheap retrofit with no accepted future consumer.",
+        "contrary_found": "These rows establish persistent/schema/identity/capability/concurrency boundaries whose later consumers reuse them. They remained bounded and did not themselves require the future admin/provider product flow.",
+        "effect": "Intentional future-proof foundation. Later reuse supports retrofit-cost/consequence analysis but is not treated as original authority."
+      }
+    },
+    {
+      "index": 99,
+      "id": "EX27-07",
+      "atomic_decision": "Runtime write capability triggers preview isolation or disabling non-production builds.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "B",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "package.json",
+        ".github/workflows/ci.yml"
+      ],
+      "disconfirmation": {
+        "title": "Intentional persistence/future-proof foundation",
+        "strongest_evidence_against": "Evidence that the boundary implemented a complete future subsystem too early, forced unrelated product work/external rollout, or had cheap retrofit with no accepted future consumer.",
+        "contrary_found": "These rows establish persistent/schema/identity/capability/concurrency boundaries whose later consumers reuse them. They remained bounded and did not themselves require the future admin/provider product flow.",
+        "effect": "Intentional future-proof foundation. Later reuse supports retrofit-cost/consequence analysis but is not treated as original authority."
+      }
+    },
+    {
+      "index": 100,
+      "id": "EX27-08",
+      "atomic_decision": "Exposure of non-public production data triggers preview isolation or disabling non-production builds.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "B",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "package.json",
+        ".github/workflows/ci.yml"
+      ],
+      "disconfirmation": {
+        "title": "Intentional persistence/future-proof foundation",
+        "strongest_evidence_against": "Evidence that the boundary implemented a complete future subsystem too early, forced unrelated product work/external rollout, or had cheap retrofit with no accepted future consumer.",
+        "contrary_found": "These rows establish persistent/schema/identity/capability/concurrency boundaries whose later consumers reuse them. They remained bounded and did not themselves require the future admin/provider product flow.",
+        "effect": "Intentional future-proof foundation. Later reuse supports retrofit-cost/consequence analysis but is not treated as original authority."
+      }
+    },
+    {
+      "index": 101,
+      "id": "EX28-01",
+      "atomic_decision": "Registry availability classification adds explicit Node transport error codes.",
+      "classification": "justified-fix-of-real-defect",
+      "role": "substantive",
+      "profile": "E",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "title": "Justified correction of a real defect",
+        "strongest_evidence_against": "Evidence that the predecessor behavior was already correct or that this change introduced unnecessary scope unrelated to the verified failure.",
+        "contrary_found": "The predecessor defect is concrete in review/history and the change addresses the same boundary without requiring unrelated subsystem expansion.",
+        "effect": "Justified fix of a real defect."
+      },
+      "fix_basis": "Correctly adds explicit Node transport error codes required by the already-promised degraded-outage behavior."
+    },
+    {
+      "index": 102,
+      "id": "EX28-02",
+      "atomic_decision": "Connect-layer availability failures are wrapped in a typed registry infrastructure error.",
+      "classification": "justified-fix-of-real-defect",
+      "role": "substantive",
+      "profile": "E",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "title": "Justified correction of a real defect",
+        "strongest_evidence_against": "Evidence that the predecessor behavior was already correct or that this change introduced unnecessary scope unrelated to the verified failure.",
+        "contrary_found": "The predecessor defect is concrete in review/history and the change addresses the same boundary without requiring unrelated subsystem expansion.",
+        "effect": "Justified fix of a real defect."
+      },
+      "fix_basis": "Correctly normalizes known connect-layer availability failures into the typed registry infrastructure boundary."
+    },
+    {
+      "index": 103,
+      "id": "EX28-03",
+      "atomic_decision": "Code-bearing authentication and obvious programming failures remain visible at connect boundary.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "I",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/auth/auth.server.ts"
+      ],
+      "disconfirmation": {
+        "title": "Safety/test/CI implementation alternative",
+        "strongest_evidence_against": "Evidence that the safety/test mechanism encoded a false product invariant, blocked legitimate current development, or duplicated a future external gate without current need.",
+        "contrary_found": "The mechanism protects local destructive tests, migration metadata/history, or current CI quality without requiring production rollout. Any separate overreach is classified on its own row.",
+        "effect": "Acceptable low-cost safety/test/CI choice."
+      }
+    },
+    {
+      "index": 104,
+      "id": "EX28-04",
+      "atomic_decision": "Any remaining code-less generic Error from pg connect is treated as unavailable.",
+      "classification": "real-original-defect",
+      "role": "substantive",
+      "profile": "D",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "disconfirmation": {
+        "title": "Historical original defect",
+        "strongest_evidence_against": "Evidence that the cited failure mode was impossible, deliberately accepted, or that the later correction changed semantics for unrelated reasons.",
+        "contrary_found": "The relevant PR review/history and later corrective chain reproduce the specific failure mode. The verdict is limited to that defect scope, not the surrounding architecture.",
+        "effect": "Real original defect. Except where separately stated, later history corrected it; no remediation is selected here."
+      },
+      "defect_scope": {
+        "scope": "catch-all classification of remaining code-less pg connect Error as unavailable could hide SSL/configuration/programming failures as degraded English",
+        "correction": "PR #39 EX39-08/10 narrows code-less availability to exact known termination shape and leaves unknown errors visible",
+        "current": "historical overbroad error-classification defect; current classifier is narrowed"
+      }
+    },
+    {
+      "index": 105,
+      "id": "EX28-05",
+      "atomic_decision": "Missing registry-loader injection fails explicitly instead of using hidden Stage 1 registry fallback.",
+      "classification": "justified-fix-of-real-defect",
+      "role": "substantive",
+      "profile": "E",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "title": "Justified correction of a real defect",
+        "strongest_evidence_against": "Evidence that the predecessor behavior was already correct or that this change introduced unnecessary scope unrelated to the verified failure.",
+        "contrary_found": "The predecessor defect is concrete in review/history and the change addresses the same boundary without requiring unrelated subsystem expansion.",
+        "effect": "Justified fix of a real defect."
+      },
+      "fix_basis": "Removes the stale Stage-2B config fallback after production injection exists, so missing loader wiring fails visibly instead of silently masking misconfiguration."
+    },
+    {
+      "index": 106,
+      "id": "EX28-06",
+      "atomic_decision": "Locale route test fixtures explicitly inject registry state.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "F",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ]
+    },
+    {
+      "index": 107,
+      "id": "EX28-07",
+      "atomic_decision": "Degraded registry emits one structured reason-only event per request loader.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "I",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "title": "Safety/test/CI implementation alternative",
+        "strongest_evidence_against": "Evidence that the safety/test mechanism encoded a false product invariant, blocked legitimate current development, or duplicated a future external gate without current need.",
+        "contrary_found": "The mechanism protects local destructive tests, migration metadata/history, or current CI quality without requiring production rollout. Any separate overreach is classified on its own row.",
+        "effect": "Acceptable low-cost safety/test/CI choice."
+      }
+    },
+    {
+      "index": 108,
+      "id": "EX28-08",
+      "atomic_decision": "Real pg connection-refusal behavior is covered by PostgreSQL integration test.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "F",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ]
+    },
+    {
+      "index": 109,
+      "id": "EX29-01",
+      "atomic_decision": "Accepted migration SQL files are immutable.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "B",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "docs/database/MIGRATIONS.md",
+        ".github/workflows/production-db-migrate.yml"
+      ],
+      "disconfirmation": {
+        "title": "Intentional persistence/future-proof foundation",
+        "strongest_evidence_against": "Evidence that the boundary implemented a complete future subsystem too early, forced unrelated product work/external rollout, or had cheap retrofit with no accepted future consumer.",
+        "contrary_found": "These rows establish persistent/schema/identity/capability/concurrency boundaries whose later consumers reuse them. They remained bounded and did not themselves require the future admin/provider product flow.",
+        "effect": "Intentional future-proof foundation. Later reuse supports retrofit-cost/consequence analysis but is not treated as original authority."
+      }
+    },
+    {
+      "index": 110,
+      "id": "EX29-02",
+      "atomic_decision": "Accepted Drizzle snapshots are immutable.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "B",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "disconfirmation": {
+        "title": "Intentional persistence/future-proof foundation",
+        "strongest_evidence_against": "Evidence that the boundary implemented a complete future subsystem too early, forced unrelated product work/external rollout, or had cheap retrofit with no accepted future consumer.",
+        "contrary_found": "These rows establish persistent/schema/identity/capability/concurrency boundaries whose later consumers reuse them. They remained bounded and did not themselves require the future admin/provider product flow.",
+        "effect": "Intentional future-proof foundation. Later reuse supports retrofit-cost/consequence analysis but is not treated as original authority."
+      }
+    },
+    {
+      "index": 111,
+      "id": "EX29-03",
+      "atomic_decision": "Drizzle journal accepted prefix is append-only.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "B",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "disconfirmation": {
+        "title": "Intentional persistence/future-proof foundation",
+        "strongest_evidence_against": "Evidence that the boundary implemented a complete future subsystem too early, forced unrelated product work/external rollout, or had cheap retrofit with no accepted future consumer.",
+        "contrary_found": "These rows establish persistent/schema/identity/capability/concurrency boundaries whose later consumers reuse them. They remained bounded and did not themselves require the future admin/provider product flow.",
+        "effect": "Intentional future-proof foundation. Later reuse supports retrofit-cost/consequence analysis but is not treated as original authority."
+      }
+    },
+    {
+      "index": 112,
+      "id": "EX29-04",
+      "atomic_decision": "Drizzle journal requires contiguous idx, unique tags, and strictly increasing timestamps.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "B",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "disconfirmation": {
+        "title": "Intentional persistence/future-proof foundation",
+        "strongest_evidence_against": "Evidence that the boundary implemented a complete future subsystem too early, forced unrelated product work/external rollout, or had cheap retrofit with no accepted future consumer.",
+        "contrary_found": "These rows establish persistent/schema/identity/capability/concurrency boundaries whose later consumers reuse them. They remained bounded and did not themselves require the future admin/provider product flow.",
+        "effect": "Intentional future-proof foundation. Later reuse supports retrofit-cost/consequence analysis but is not treated as original authority."
+      }
+    },
+    {
+      "index": 113,
+      "id": "EX29-05",
+      "atomic_decision": "Every appended journal entry must match one newly added migration SQL file.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "B",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "docs/database/MIGRATIONS.md",
+        ".github/workflows/production-db-migrate.yml"
+      ],
+      "disconfirmation": {
+        "title": "Intentional persistence/future-proof foundation",
+        "strongest_evidence_against": "Evidence that the boundary implemented a complete future subsystem too early, forced unrelated product work/external rollout, or had cheap retrofit with no accepted future consumer.",
+        "contrary_found": "These rows establish persistent/schema/identity/capability/concurrency boundaries whose later consumers reuse them. They remained bounded and did not themselves require the future admin/provider product flow.",
+        "effect": "Intentional future-proof foundation. Later reuse supports retrofit-cost/consequence analysis but is not treated as original authority."
+      }
+    },
+    {
+      "index": 114,
+      "id": "EX29-06",
+      "atomic_decision": "Pull-request migration guard compares candidate history against merge base with full Git history.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "I",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "docs/database/MIGRATIONS.md",
+        ".github/workflows/production-db-migrate.yml"
+      ],
+      "disconfirmation": {
+        "title": "Safety/test/CI implementation alternative",
+        "strongest_evidence_against": "Evidence that the safety/test mechanism encoded a false product invariant, blocked legitimate current development, or duplicated a future external gate without current need.",
+        "contrary_found": "The mechanism protects local destructive tests, migration metadata/history, or current CI quality without requiring production rollout. Any separate overreach is classified on its own row.",
+        "effect": "Acceptable low-cost safety/test/CI choice."
+      }
+    },
+    {
+      "index": 115,
+      "id": "EX29-07",
+      "atomic_decision": "Required checks job runs migration-history self-tests and verifier.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "I",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "docs/database/MIGRATIONS.md",
+        ".github/workflows/production-db-migrate.yml"
+      ],
+      "disconfirmation": {
+        "title": "Safety/test/CI implementation alternative",
+        "strongest_evidence_against": "Evidence that the safety/test mechanism encoded a false product invariant, blocked legitimate current development, or duplicated a future external gate without current need.",
+        "contrary_found": "The mechanism protects local destructive tests, migration metadata/history, or current CI quality without requiring production rollout. Any separate overreach is classified on its own row.",
+        "effect": "Acceptable low-cost safety/test/CI choice."
+      }
+    },
+    {
+      "index": 116,
+      "id": "EX29-08",
+      "atomic_decision": "Production migration workflow has a hard main-ref execution guard.",
+      "classification": "justified-fix-of-real-defect",
+      "role": "substantive",
+      "profile": "E",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "docs/database/MIGRATIONS.md",
+        ".github/workflows/production-db-migrate.yml"
+      ],
+      "disconfirmation": {
+        "title": "Justified correction of a real defect",
+        "strongest_evidence_against": "Evidence that the predecessor behavior was already correct or that this change introduced unnecessary scope unrelated to the verified failure.",
+        "contrary_found": "The predecessor defect is concrete in review/history and the change addresses the same boundary without requiring unrelated subsystem expansion.",
+        "effect": "Justified fix of a real defect."
+      },
+      "fix_basis": "Corrects PR #24 workflow branch safety with a hard main-ref execution guard."
+    },
+    {
+      "index": 117,
+      "id": "EX29-09",
+      "atomic_decision": "Production migration workflow checks out the exact dispatched github.sha.",
+      "classification": "justified-fix-of-real-defect",
+      "role": "substantive",
+      "profile": "E",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "docs/database/MIGRATIONS.md",
+        ".github/workflows/production-db-migrate.yml"
+      ],
+      "disconfirmation": {
+        "title": "Justified correction of a real defect",
+        "strongest_evidence_against": "Evidence that the predecessor behavior was already correct or that this change introduced unnecessary scope unrelated to the verified failure.",
+        "contrary_found": "The predecessor defect is concrete in review/history and the change addresses the same boundary without requiring unrelated subsystem expansion.",
+        "effect": "Justified fix of a real defect."
+      },
+      "fix_basis": "Corrects PR #24 ref ambiguity by checking out the exact dispatched github.sha."
+    },
+    {
+      "index": 118,
+      "id": "EX29-10",
+      "atomic_decision": "Production verifier checks required public.locales column existence/type/nullability instead of exact mutable row state.",
+      "classification": "justified-fix-of-real-defect",
+      "role": "substantive",
+      "profile": "E",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "disconfirmation": {
+        "title": "Justified correction of a real defect",
+        "strongest_evidence_against": "Evidence that the predecessor behavior was already correct or that this change introduced unnecessary scope unrelated to the verified failure.",
+        "contrary_found": "The predecessor defect is concrete in review/history and the change addresses the same boundary without requiring unrelated subsystem expansion.",
+        "effect": "Justified fix of a real defect."
+      },
+      "fix_basis": "Strengthens weak PR #24 verification with stable required-column/type/nullability checks rather than mutable row values alone."
+    },
+    {
+      "index": 119,
+      "id": "EX29-11",
+      "atomic_decision": "Production verifier checks absence of bootstrap/reserved locale rows.",
+      "classification": "justified-fix-of-real-defect",
+      "role": "substantive",
+      "profile": "E",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "title": "Justified correction of a real defect",
+        "strongest_evidence_against": "Evidence that the predecessor behavior was already correct or that this change introduced unnecessary scope unrelated to the verified failure.",
+        "contrary_found": "The predecessor defect is concrete in review/history and the change addresses the same boundary without requiring unrelated subsystem expansion.",
+        "effect": "Justified fix of a real defect."
+      },
+      "fix_basis": "Adds stable verification that bootstrap/reserved identities are absent from persistent locales."
+    },
+    {
+      "index": 120,
+      "id": "EX29-12",
+      "atomic_decision": "Production verifier continues requiring migration ledger equality to checked-in journal.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "I",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "docs/database/MIGRATIONS.md",
+        ".github/workflows/production-db-migrate.yml"
+      ],
+      "disconfirmation": {
+        "title": "Safety/test/CI implementation alternative",
+        "strongest_evidence_against": "Evidence that the safety/test mechanism encoded a false product invariant, blocked legitimate current development, or duplicated a future external gate without current need.",
+        "contrary_found": "The mechanism protects local destructive tests, migration metadata/history, or current CI quality without requiring production rollout. Any separate overreach is classified on its own row.",
+        "effect": "Acceptable low-cost safety/test/CI choice."
+      }
+    },
+    {
+      "index": 121,
+      "id": "EX29-13",
+      "atomic_decision": "Exact mutable locale-state verification is moved out of production verifier and left to disposable integration tests.",
+      "classification": "insufficient-evidence",
+      "role": "substantive",
+      "profile": "G",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "title": "Evidence-limited test/document contract question",
+        "strongest_evidence_against": "Evidence that current exact-seed assertions are intentionally immutable across future locale lifecycle changes, or conversely a concrete current/future migration that is already blocked by them.",
+        "contrary_found": "Current tests still assert the exact current ru/he/ka final state, while docs treat locale lifecycle data as mutable. But no later migration currently needs different locale data, and ordinary tests can be updated with such a migration.",
+        "effect": "Insufficient evidence to call EX29-13 a present defect or a harmless permanent contract."
+      },
+      "current_evidence": {
+        "current_test": "tests/database/migrations.test.ts still asserts exact final he/ka/ru rows after applying the entire current migration history",
+        "current_docs": "locale lifecycle remains mutable; production verification intentionally avoids exact mutable locale-state invariants",
+        "impact": "no current migration changes those rows, so a present runtime/CI failure is not demonstrated"
+      }
+    },
+    {
+      "index": 122,
+      "id": "EX29-14",
+      "atomic_decision": "Node migration-history self-tests are excluded from ordinary Vitest jsdom discovery.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "I",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "docs/database/MIGRATIONS.md",
+        ".github/workflows/production-db-migrate.yml"
+      ],
+      "disconfirmation": {
+        "title": "Safety/test/CI implementation alternative",
+        "strongest_evidence_against": "Evidence that the safety/test mechanism encoded a false product invariant, blocked legitimate current development, or duplicated a future external gate without current need.",
+        "contrary_found": "The mechanism protects local destructive tests, migration metadata/history, or current CI quality without requiring production rollout. Any separate overreach is classified on its own row.",
+        "effect": "Acceptable low-cost safety/test/CI choice."
+      }
+    },
+    {
+      "index": 123,
+      "id": "EX29-15",
+      "atomic_decision": "PR #29 operational workflow changes are not recorded in PROJECT_STATE at merge.",
+      "classification": "real-original-defect",
+      "role": "substantive",
+      "profile": "D",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "disconfirmation": {
+        "title": "Historical original defect",
+        "strongest_evidence_against": "Evidence that the cited failure mode was impossible, deliberately accepted, or that the later correction changed semantics for unrelated reasons.",
+        "contrary_found": "The relevant PR review/history and later corrective chain reproduce the specific failure mode. The verdict is limited to that defect scope, not the surrounding architecture.",
+        "effect": "Real original defect. Except where separately stated, later history corrected it; no remediation is selected here."
+      },
+      "defect_scope": {
+        "scope": "PR #29 materially changed required CI and production-migration workflow state without synchronizing PROJECT_STATE at merge",
+        "correction": "PR #30 records the enforced migration-history/main-ref/exact-SHA state",
+        "current": "historical documentation-state defect; later state sync exists"
+      }
+    },
+    {
+      "index": 124,
+      "id": "EX30-01",
+      "atomic_decision": "Repository records pre-Stage-3 hardening as closed and Stage 3 as next.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "F",
+      "current_consumer_state": "historical-only",
+      "current_consumers": []
+    },
+    {
+      "index": 125,
+      "id": "EX30-02",
+      "atomic_decision": "Project state records H1 registry failure-boundary hardening as completed.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "F",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ]
+    },
+    {
+      "index": 126,
+      "id": "EX30-03",
+      "atomic_decision": "Project state records required checks as checks + database with up-to-date branch requirement.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "F",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "evidence_limit": "Historical branch-protection/ruleset state is not independently accessible with current connector permissions."
+    },
+    {
+      "index": 127,
+      "id": "EX30-04",
+      "atomic_decision": "Project state records H2 immutable-history/main-only migration hardening as completed.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "F",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "docs/database/MIGRATIONS.md",
+        ".github/workflows/production-db-migrate.yml"
+      ]
+    },
+    {
+      "index": 128,
+      "id": "EX30-05",
+      "atomic_decision": "Repository records Cloudflare non-production branch builds as enabled.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "F",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "wrangler.jsonc"
+      ],
+      "evidence_limit": "Repeated Cloudflare bot preview deployments support non-production branch builds, but do not expose the exact historical dashboard toggle."
+    },
+    {
+      "index": 129,
+      "id": "EX30-06",
+      "atomic_decision": "No staging Hyperdrive/DB binding exists in repository configuration at the PR #30 checkpoint.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "F",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ]
+    },
+    {
+      "index": 130,
+      "id": "EX30-07",
+      "atomic_decision": "Existing shared preview→production DB topology is accepted only while DB capability stays read-only.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "F",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ]
+    },
+    {
+      "index": 131,
+      "id": "EX30-08",
+      "atomic_decision": "Existing shared preview→production DB topology is accepted only while reachable data is public locale-registry data.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "F",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ]
+    },
+    {
+      "index": 132,
+      "id": "EX30-09",
+      "atomic_decision": "Runtime write capability remains an explicit future trigger for staging isolation or disabling non-production builds.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "F",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "package.json",
+        ".github/workflows/ci.yml"
+      ]
+    },
+    {
+      "index": 133,
+      "id": "EX30-10",
+      "atomic_decision": "Private production data remains an explicit future trigger for staging isolation or disabling non-production builds.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "F",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "package.json",
+        ".github/workflows/ci.yml"
+      ]
+    },
+    {
+      "index": 134,
+      "id": "EX30-11",
+      "atomic_decision": "First Stage 3 schema-dependent change must follow migration-only → production migrate/verify → runtime split.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "F",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "docs/database/MIGRATIONS.md",
+        ".github/workflows/production-db-migrate.yml"
+      ]
+    }
+  ]
+}
