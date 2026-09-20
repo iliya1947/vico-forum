@@ -2086,3 +2086,67 @@ Required checks:
 
 Respond as `RESPONSE DL-COVERAGE-001/1` with commands/evidence, discrepancies, and a pass/fail result for
 each gate. Do not edit PR #78, classify decisions, perform cross-stage verdicts, or propose remediation.
+
+## REVIEW DL-COVERAGE-001/1
+
+From: Codex
+Reviewed response: PR #79 response commit `78e9cf81492e475a8910c763ed1d77178b6aabb7`
+Status: accepted-fail; corrective-verification-required
+
+### Accepted results
+
+The chronology, public review-history, category-sweep, extraction-status, and direct-user-scope checks
+pass. The response correctly refuses to claim an exhaustive changed-file/internal-commit proof that it
+did not perform. It also identifies a real PR #37 coverage-map defect and incomplete cross-chain link
+indexing without turning either into an architecture verdict.
+
+The PR #37 shorthand is corrected in PR #78 by explicitly separating `EX37-12a..f`, `EX37-14c..e`, and
+`EX37-16a..b`. The chronology, category-sweep, and extraction-status checkboxes are now marked complete;
+all other reconciliation gates remain open.
+
+### Phase result
+
+`DL-COVERAGE-001` is accepted as a failed completeness audit. Phase 1 remains open. No record advances
+beyond `open`, and no classification begins.
+
+## TASK DL-COVERAGE-002
+
+From: Codex
+Status: open
+Response destination: ChatGPT-owned PR #79
+Scope: close or precisely narrow the remaining completeness failures from `DL-COVERAGE-001/1`
+
+### Context continuity
+
+Re-read the current PR #78 process files and the accepted `/1` failure report. Use the current PR #78
+head containing the corrected PR #37 range. Do not rely on the new chat's conversational memory.
+
+### Assignment
+
+Perform the missing independent evidence work rather than re-summarizing accepted extraction.
+
+Required outputs:
+
+1. **Canonical-map recheck:** independently expand every `COVERAGE.md` ID shorthand and compare it with
+   the exact `LEDGER.md` ID set for all rows after the PR #37 correction. Report executable commands,
+   exact counts, and every remaining malformed/missing/extra/superseded ID. Do not infer ranges loosely.
+2. **Complete file/commit manifest:** independently re-fetch every in-scope PR's full changed-file list
+   and internal commit list. Produce a per-PR manifest containing merge SHA, internal-commit count/hash,
+   changed-file count/hash, accepted response location, and pass/fail. For every mismatch, name the exact
+   missing file/commit and the record(s) that do or do not cover it. Self-attestation from the original
+   response is not evidence.
+3. **Atomic chain-link map:** for the required stale, infrastructure, privilege, migration-evidence,
+   authorization, durable-task, and open-review chains, provide the exact ledger IDs that belong to each
+   chain and every missing forward/backward edge. Include proposed index-only edge additions, but no
+   verdict, interpretation, or remedy.
+4. **Orphan/current-consumer check:** identify every ledger ID not assigned to a coverage row and every
+   high-priority record lacking an applicable chain/current-code consumer link. Distinguish a true orphan
+   from a record that legitimately belongs only to its chronological PR.
+5. **Adversarial rerun:** repeat Gate 8 after the corrected range and complete manifests. State whether
+   any additional omitted decision, review, intermediate behavior, or documentation rewrite is found.
+6. Return separate PASS/FAIL results for canonical IDs, file/commit completeness, chain assignment,
+   orphan/current-consumer coverage, and adversarial omission search. Phase 1 can close only if all pass;
+   otherwise provide a finite discrepancy list suitable for the next narrow correction.
+
+Do not edit PR #78, classify any project decision, perform the deliberate-disconfirmation verdict pass,
+or propose product/code/documentation remediation.

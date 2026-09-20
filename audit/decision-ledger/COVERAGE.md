@@ -83,7 +83,7 @@ number is lower than the baseline PR number.
 | #34 | `254f4a7` | extraction-complete | `EX34-01..14`, `EX34-15a..b`, `EX34-16a..b`, `EX34-17..18`, `EX34-19a..d`, `EX34-20a..b`, `EX34-21..23` | Compiler/store/cache primitives, supersessions, deferred consumer, open namespace review, split operational claims, and evidence limits reviewed. |
 | #35 | `a9556b2` | extraction-complete | `EX35-01..11` | Stage closure claims, deployed acceptance observations, pre-Stage-4 audit gate, and future isolation triggers reviewed. |
 | #36 | `f3a665f` | extraction-complete | `EX36-01..03` | Codex-only PR/merge actor clarification reviewed without treating it as product or ChatGPT policy. |
-| #37 | `0cdf939` | extraction-complete | `EX37-01..07`, `EX37-08a..b`, `EX37-08c1..c2`, `EX37-08d..e`, `EX37-09a..b`, `EX37-10..13`, `EX37-14a`, `EX37-14b1..b2`, `EX37-14c..18` | Documentation-only pre-Stage-4 gates, topology/evidence proposals, staged bundle ownership, provenance limits, and atomic replacement map reviewed. |
+| #37 | `0cdf939` | extraction-complete | `EX37-01..07`, `EX37-08a..b`, `EX37-08c1..c2`, `EX37-08d..e`, `EX37-09a..b`, `EX37-10..11`, `EX37-12a..f`, `EX37-13`, `EX37-14a`, `EX37-14b1..b2`, `EX37-14c..e`, `EX37-15`, `EX37-16a..b`, `EX37-17..18` | Documentation-only pre-Stage-4 gates, topology/evidence proposals, staged bundle ownership, provenance limits, and atomic replacement map reviewed. |
 | #38 | `768799c` | extraction-complete | `EX38-01..08` | Canonical persistence defects, writer/load corrections, tests, state synchronization, and review-thread state reviewed. |
 | #39 | `af2349d` | extraction-complete | `EX39-01..12` | Row isolation, availability-classifier correction, hard-failure boundaries, tests, and unresolved malformed-origin telemetry review examined. |
 | #40 | `29eccc5` | extraction-complete | `EX40-01..04` | Earlier stale/fallback contract, zero-stale real-pack change, retained runtime mechanism, tests, and documentation conflict reviewed. |
@@ -127,11 +127,11 @@ number is lower than the baseline PR number.
 
 ## Reconciliation gates
 
-- [ ] `git rev-list` after the PR #12 baseline is reconciled to this table.
+- [x] `git rev-list` after the PR #12 baseline is reconciled to this table.
 - [ ] Every PR head/internal commit sequence has been checked for decisions absent from its squash
       merge diff or summary.
-- [ ] Every row has a recorded `F/A/C/D/O/G/T` category sweep, including explicit `none` results.
-- [ ] Every row is `extraction-complete` or has a reviewed `outside-scope` justification.
+- [x] Every row has a recorded `F/A/C/D/O/G/T` category sweep, including explicit `none` results.
+- [x] Every row is `extraction-complete` or has a reviewed `outside-scope` justification.
 - [ ] Every extracted decision ID appears in `LEDGER.md` exactly once as an atomic record.
 - [ ] Every ledger record maps back to at least one coverage row and all applicable cross-stage chains.
 - [ ] Current code/test/config consumers have been searched for dependencies not explicit in PR text.
