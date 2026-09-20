@@ -128,11 +128,11 @@ number is lower than the baseline PR number.
 ## Reconciliation gates
 
 - [x] `git rev-list` after the PR #12 baseline is reconciled to this table.
-- [ ] Every PR head/internal commit sequence has been checked for decisions absent from its squash
+- [x] Every PR head/internal commit sequence has been checked for decisions absent from its squash
       merge diff or summary.
 - [x] Every row has a recorded `F/A/C/D/O/G/T` category sweep, including explicit `none` results.
 - [x] Every row is `extraction-complete` or has a reviewed `outside-scope` justification.
-- [ ] Every extracted decision ID appears in `LEDGER.md` exactly once as an atomic record.
+- [x] Every extracted decision ID appears in `LEDGER.md` exactly once as an atomic record.
 - [ ] Every ledger record maps back to at least one coverage row and all applicable cross-stage chains.
 - [ ] Current code/test/config consumers have been searched for dependencies not explicit in PR text.
 - [ ] Known corrective and revert sequences have been reconciled without treating reverted intermediate
