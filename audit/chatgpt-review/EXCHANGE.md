@@ -15752,4 +15752,209 @@ Consumer preflight explicitly rejects publicationStatus disabled.
 The reason is `manual-translation-exists`.
 
 #### EX68-46 — Exact-target current persistent manual translation makes the machine task stale
-The persistent manual source participates in the
+The persistent manual source participates in the same suppression rule.
+
+#### EX68-47 — Fallback-locale manual resources do not suppress exact-target work
+The preflight loads the task target locale rather than the fallback chain.
+
+#### EX68-48 — Eligible preflight returns the claimed task and canonical descriptor
+The result is a typed execution context rather than provider output.
+
+#### EX68-49 — A stale preflight transition can lose its claim
+If conditional markStale returns false, the consumer reports `claim-lost`.
+
+#### EX68-50 — The consumer remains Queue-independent
+It accepts the small task message contract without a Cloudflare Queue binding.
+
+#### EX68-51 — The consumer remains provider-independent
+No TranslationProviderRouter call is performed in #68.
+
+#### EX68-52 — PR #68 does not perform result validation/publication
+The consumer ends before a provider response exists.
+
+#### EX68-53 — PR #68 does not implement retry/DLQ
+JOB-04 remains deferred.
+
+#### EX68-54 — PR #68 does not implement reconciliation
+JOB-06 remains deferred.
+
+#### EX68-55 — PR #68 does not implement post-provider conditional-current publication
+The PR covers the pre-provider half of the stale/current guard only.
+
+#### EX68-56 — The pre-provider fingerprint check continues the PR #50 stale-source gap closure
+It directly revalidates current source identity before external work would run.
+
+#### EX68-57 — The pre-provider generation-policy check continues the PR #50 policy-staleness gap closure
+A queued task’s persisted policy identity is compared to current generation policy.
+
+#### EX68-58 — The claim uses the stable source/policy identity persisted from PR #63/#67
+The preflight evaluates the same sourceFingerprint/generationPolicyVersion carried by the durable task.
+
+#### EX68-59 — Review 4018963640 identifies a fixed-past-time DB test failure
+The test used a 2026-09-15 12:00Z claim time against a row created later by PostgreSQL.
+
+#### EX68-60 — Raw CI #166 confirms the timestamp fixture failure
+The DB log shows `translation_tasks_timestamps_check` violations with updated_at earlier than created_at.
+
+#### EX68-61 — 0cbe639 derives test claim time from pending.createdAt
+The test correction keeps its synthetic time after database creation.
+
+#### EX68-62 — CI #167 is green after the test-clock correction
+Both required jobs complete successfully.
+
+#### EX68-63 — Review 4018963657 identifies stale-identity non-reactivation
+A later plan with the same stable identity cannot make the #68 stale row executable again.
+
+#### EX68-64 — #68 upsertPending does not reopen stale
+Its conflict update only changes updatedAt.
+
+#### EX68-65 — Re-enqueueing the same stale task id does not self-heal in #68
+The consumer’s claim path returns terminal for that row.
+
+#### EX68-66 — The stale-reactivation finding is not fixed inside PR #68
+No later #68 commit changes upsert lifecycle semantics.
+
+#### EX68-67 — PR #69 later adds fresh-plan stale reactivation
+That behavior is forward evidence only for #68.
+
+#### EX68-68 — PR #68 still inherits the #67 client-clock upsert timestamp behavior
+`upsertPending()` continues to use application `new Date()`.
+
+#### EX68-69 — PR #68 lifecycle claim/stale timestamps also use caller wall clock
+The consumer dependency supplies `now()` to the store.
+
+#### EX68-70 — PROJECT_STATE describes this as the first JOB-03 slice
+It does not declare the full provider/retry/reconciliation/publication pipeline complete.
+
+#### EX68-71 — Migration 0008 is not externally applied by PR #68
+The schema remains local/CI evidence.
+
+#### EX68-72 — Final PR #68 CI is green
+CI #168 succeeds on `05a1103cde8a92320e14435699ae8ffbbe1550d0`.
+
+### Candidate atomic decisions — PR #69
+
+#### EX69-01 — resolveUiTranslationGenerationTarget centralizes UI generation eligibility
+Planner and consumer can call the same predicate.
+
+#### EX69-02 — Generation target input is canonicalized
+The helper starts with `canonicalizeTranslationLocale`.
+
+#### EX69-03 — Generation target must exist in LocaleRegistry
+An unregistered locale returns undefined.
+
+#### EX69-04 — Generation target must be a canonical registry entry
+Alias/non-canonical match kinds are not accepted as the generation identity.
+
+#### EX69-05 — Generation target must equal its canonical candidate
+The helper requires exact canonical tag identity.
+
+#### EX69-06 — Canonical English is not machine-generation eligible
+`en` returns undefined.
+
+#### EX69-07 — Disabled locale is not machine-generation eligible
+publicationStatus disabled returns undefined.
+
+#### EX69-08 — Active registered canonical non-English locale is eligible
+The shared helper does not reject active.
+
+#### EX69-09 — Inactive registered canonical non-English locale is eligible
+Tests explicitly keep pre-publication generation available.
+
+#### EX69-10 — UiTranslationService now uses the shared eligibility predicate
+Planner validation no longer has a separate looser rule.
+
+#### EX69-11 — UiTranslationTaskConsumer now uses the same eligibility predicate
+Preflight compares the helper result to the task target.
+
+#### EX69-12 — #69 closes the planner/consumer disabled-locale divergence inherited from #63/#68
+A disabled locale is no longer plan-eligible only to be rejected later by consumer preflight.
+
+#### EX69-13 — TranslationTaskStore claim no longer accepts a caller timestamp
+The store interface becomes `claim(id, leaseDurationMs)`.
+
+#### EX69-14 — TranslationTaskStore markStale no longer accepts a caller timestamp
+The store owns stale transition timing.
+
+#### EX69-15 — upsertPending uses PostgreSQL statement_timestamp for lifecycle update time
+The conflict-update timestamp is database-owned.
+
+#### EX69-16 — claim uses PostgreSQL statement_timestamp for claimedAt
+Worker wall clock is removed from claim state.
+
+#### EX69-17 — claim derives lease expiration from the same PostgreSQL statement time
+The lease deadline is DB-time plus duration.
+
+#### EX69-18 — expired-lease comparison uses PostgreSQL statement time
+Reclaim is no longer decided against caller wall clock.
+
+#### EX69-19 — markStale uses PostgreSQL statement_timestamp
+StaleAt/updatedAt are set from the database clock.
+
+#### EX69-20 — PostgreSQL 17 defines statement_timestamp as the start of the current statement
+The external primary documentation matches the intended single-statement lifecycle time source.
+
+#### EX69-21 — #69 replaces the #67 duplicate-upsert client clock
+The reviewed `new Date()` update path is removed.
+
+#### EX69-22 — #69 replaces the #68 caller-clock claim lifecycle
+Consumer no longer supplies `now()` for claim/markStale.
+
+#### EX69-23 — A stale row is reactivated only by a later upsertPending planning decision
+The conflict update changes stale status back to pending.
+
+#### EX69-24 — Stale reactivation preserves the existing durable task id
+The store updates the same unique task_identity row.
+
+#### EX69-25 — Stale reactivation preserves the stable task identity
+No new semantic identity is created.
+
+#### EX69-26 — Stale reactivation clears claim token
+The reopened pending row has no execution owner.
+
+#### EX69-27 — Stale reactivation clears claimed_at
+Old claim history is removed from the live pending lifecycle fields.
+
+#### EX69-28 — Stale reactivation clears lease_expires_at
+The reopened task has no old lease.
+
+#### EX69-29 — Stale reactivation clears stale_at
+The live pending state no longer carries terminal stale metadata.
+
+#### EX69-30 — Stale reactivation preserves created_at
+The DB test expects the same creation timestamp.
+
+#### EX69-31 — Old Queue delivery remains terminal before a fresh plan reopens the row
+Calling claim on stale still returns terminal.
+
+#### EX69-32 — A fresh plan can make the same stable identity claimable again
+After `upsertPending(specification)`, claim returns claimed.
+
+#### EX69-33 — Stale reactivation keeps one row for the stable task identity
+The DB test count remains one.
+
+#### EX69-34 — Duplicate planning of a live processing task preserves processing status
+The upsert conflict expression leaves non-stale status unchanged.
+
+#### EX69-35 — Duplicate planning of a live processing task preserves claim token
+The conflict expression only clears token for stale rows.
+
+#### EX69-36 — Duplicate planning of a live processing task preserves claimedAt
+The live owner’s claim start is unchanged.
+
+#### EX69-37 — Duplicate planning of a live processing task preserves leaseExpiresAt
+A duplicate plan does not extend or reset the live lease.
+
+#### EX69-38 — Duplicate planning of a live processing task preserves staleAt null
+The live lifecycle remains processing.
+
+#### EX69-39 — Final #69 duplicate planning preserves processing updatedAt
+`6cbc39a` leaves updatedAt unchanged when current status is processing.
+
+#### EX69-40 — The processing updatedAt preservation has explicit DB regression coverage
+`2df6eb8` checks equality with the claimed task timestamp.
+
+#### EX69-41 — Expired lease reclaim is tested against manipulated database timestamps
+The test sets claimed/lease times with `statement_timestamp()` SQL before reclaim.
+
+###
