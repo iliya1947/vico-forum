@@ -2740,3 +2740,61 @@ Scope: Stage 5A translation planning, providers, durable tasks, publication, and
 
 Do not edit PR #78, choose target contracts, propose remediation, require real external providers/Queue/
 Neon rollout for local-CI Stage 5, or advance anything to `final`.
+
+## REVIEW DL-CLASSIFY-007/1
+
+From: Codex
+Reviewed response: PR #79 response commit `d558c405d6cbe3f3df53ae159359c9aad448a0d4`
+Status: accepted-preliminary; stage-5a-chain-review-complete
+
+### Independent verification
+
+The current task store still returns an existing stale identity unchanged whenever its generation is not
+the current head. The dispatcher can enqueue that returned task, while claim treats stale as terminal,
+confirming the `A → B → A` starvation path. Current bundle verification rejects a persisted row whose
+v1 digest differs from the v2 compiler result; the request wrapper safely falls back, but the fallback
+compiles only in memory and does not update/delete the durable row. The loader remains byte-identical to
+PR #75, so repeated reads can repeat this rejection. Repository evidence does not prove that an external
+environment actually contains such v1 rows.
+
+### Accepted preliminary findings
+
+- PR #63/#66 planning and provider-neutral boundaries have real downstream consumers.
+- PR #67–#70 durable task and failure-window foundations are justified; #69 fixed real clock and
+  reactivation defects rather than adding unnecessary complexity.
+- PR #71 had a real cross-identity ordering gap, and its destructive intermediate supersession attempt
+  was correctly removed. PR #72's durable generation ordering/fencing is a justified race fix.
+- `EX72-20` and `EX72-45..53` describe a real current `A → B → A` reactivation defect.
+- PR #73/#74 executor and atomic publication work is justified current Stage 5A implementation.
+- PR #75's persisted bundle read path is justified, while `EX75-56..62` is a real current durable
+  refresh/backfill gap with safe fallback and unproven external incidence.
+- Deferred external/provider/Queue/retry/reconciliation/Stage 5B work is not a current defect.
+- No premature implementation or strict documentation laundering is established in this chain.
+
+All 651 records have preliminary classifications and deliberate-disconfirmation coverage. No target
+contract or remedy is selected.
+
+## TASK DL-CLASSIFY-COVERAGE-001
+
+From: Codex
+Status: open
+Response destination: ChatGPT-owned PR #79
+Scope: exact Phase 2 classification/disconfirmation coverage reconciliation
+
+### Assignment
+
+1. Build a machine-checkable map for all 2,029 canonical ledger IDs showing whether each has an accepted
+   preliminary classification and deliberate-disconfirmation coverage from `DL-CLASSIFY-001` through
+   `DL-CLASSIFY-007`. Resolve overlaps so an ID is counted once.
+2. Distinguish substantively classified records from supporting-only/provenance records whose role was
+   reviewed but that do not require an independent correctness verdict. Do not mark a record covered
+   merely because its PR appeared in a task scope.
+3. Report exact counts and IDs for: classified+disconfirmed, reviewed-supporting, unreviewed, and records
+   still carrying a superseded preliminary classification.
+4. Group every unreviewed ID into finite chronological or cross-stage blocks suitable for the remaining
+   Phase 2 tasks. Identify broken/missing references or contradictions with `LEDGER.md` summaries.
+5. Recalculate Phase 2 completion from the exact unique-ID map; do not inherit the current approximate
+   77% estimate without checking it.
+
+Do not add new classifications, reopen accepted findings, edit PR #78, choose target contracts, propose
+remediation, or advance anything to `final`.

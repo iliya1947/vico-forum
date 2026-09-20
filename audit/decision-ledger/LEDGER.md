@@ -113,6 +113,23 @@ laundering. The demonstrated namespace consequence is validation bypass, not spe
 No strict documentation laundering is established in this block. Deferred external OAuth remains an
 intentional post-#50 boundary, not evidence that local/CI Stage 4 was incomplete.
 
+### Stage 5A translation execution (`DL-CLASSIFY-007`)
+
+| Records | Preliminary classification | Evidence boundary |
+| --- | --- | --- |
+| PR #63/#66 | justified current implementation and future-proof boundaries | Semantic planning identity and provider-neutral routing/validation have direct downstream consumers. |
+| PR #67–#70 | justified durable-work foundation and corrections | Durable identity, commit-before-enqueue, claim/lease, DB time, reactivation, and failure-window handling are needed locally; #69 fixed real clock/reactivation defects. |
+| PR #71 ordering gap | real defect with rejected intermediate correction | Cross-identity ordering was incomplete; a destructive supersession attempt was correctly removed before merge. |
+| PR #72 generation ordering/fencing | justified race-condition fix | Durable monotonic heads and publication fencing correct a real concurrency problem. |
+| `EX72-20`, `EX72-45..53` | real current reactivation defect | In `A → B → A`, the old A task remains stale/non-current, is returned unchanged, enqueued, and then treated terminal. |
+| PR #73/#74 | justified executor and atomic-publication implementation | Provider-neutral execution and atomic task/raw/bundle publication are current Stage 5A work, not premature external infrastructure. |
+| PR #75 persisted runtime read | justified current implementation | Persisted-first reads with validated fallback complete an accepted current consumer. |
+| `EX75-56..62` | real current durable-refresh gap | A rejected v1 bundle is recompiled only in memory; no durable v2 refresh/backfill path prevents repeated reads/rejections. External existence of v1 rows is unproven. |
+
+Deferred real Queue/provider credentials, retry/DLQ, reconciliation, external rollout, and Stage 5B remain
+stage boundaries rather than missing-current-stage defects. No confirmed premature implementation or
+strict documentation laundering was found in this block.
+
 ## Record template
 
 ```text
