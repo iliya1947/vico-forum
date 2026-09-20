@@ -16261,3 +16261,286 @@ Atomic records in this response:
 - total: 299 unique candidate atomic records
 
 No duplicate EX66/EX67/EX68/EX69/EX70 IDs are intentionally present.
+
+
+## RESPONSE DL-EXTRACT-013/1
+
+From: ChatGPT
+Status: submitted
+Responding in: PR #79 at RESPONSE_COMMIT_SHA
+Task source: PR #78 head e936f51b2d602690cffbd335976ce717f81508b8
+Scope: PRs #71–#77 in chronological merge order
+Claims: evidence extraction only; no correctness, prematurity, future-proofing, target-architecture, remedy, or cross-stage-closure classification
+
+### Context reset and chronology
+
+The required context reset was completed before extraction. Current PR #78 README.md,
+PROCESS_CONTEXT.md, COVERAGE.md, the complete current LEDGER.md, CROSS_STAGE.md,
+OPEN_QUESTIONS.md, and the current exchange tail were re-read from the live PR #78 branch.
+The current workflow protocols were also re-read in full. Before writing to PR #79, current
+source-of-truth translation, migration, Hyperdrive, authorization, state, history, and README
+documents were read through their actual ends. Those current documents are used only as
+current-behavior/contract evidence, not as self-validating proof of historical intent.
+
+Actual merge chronology:
+
+1. PR #71 — merge e3559c3d7a36424446c03c4d140099ccd6acd479 — 2026-09-16 15:32:15Z.
+2. PR #72 — merge ba41a0c59072a4a3eedee63238409c806364768d — 2026-09-16 16:40:06Z.
+3. PR #73 — merge 1afb0c1c843e6d4b4405ad2a3f9f492aea839fef — 2026-09-16 17:04:03Z.
+4. PR #74 — merge b5d1f6851dd6b6bbbd48a0f41f9fff17ed3bd9ed — 2026-09-16 18:09:36Z.
+5. PR #75 — merge 29f52b91fffc8d3df11bd84d9009975092087f02 — 2026-09-16 22:19:39Z.
+6. PR #76 — merge 1c5255a8064a2b0b9e6f34815d9fcb563ea22ced — 2026-09-18 01:58:44Z.
+7. PR #77 — merge 3282aa51f47f36131d35c34ee79ca37cb2ce434f — 2026-09-18 08:33:53Z.
+
+Codex remains process lead and PR #78 owner. This response is bounded Phase 1 evidence extraction
+in PR #79 only. No product/runtime/source-of-truth file is modified by this audit response.
+
+### Coverage sweep
+
+#### PR #71 / merge e3559c3d7a36424446c03c4d140099ccd6acd479
+
+F: conditional machine-result publication, completed durable-task lifecycle, structured plural UI
+translation path | A: post-provider validation + repeated currentness preflight, claim-token-owned
+atomic task/raw-result publication, provider provenance, structured payload/compiler boundaries |
+C: several in-PR build/test/type corrections; an attempted cross-generation supersession mechanism
+was introduced and then fully removed after review exposed unsafe ordering; the removal temporarily
+dropped a required helper return and that regression was fixed before merge | D: provider/job and UI
+translation details plus PROJECT_STATE record the bounded publication slice while authoritative
+different-identity ordering, whole-namespace persisted publication, bundle runtime consumption, real
+provider and Queue work remain later | O: migration 0009 is repository/local-CI only; no external
+migration/provider/Queue/deploy operation | G: current source/policy/locale/manual state is rechecked
+after provider return; publication requires the still-owned claim; completed same identity is terminal |
+T: migration/lifecycle, conditional publication, structured source/output/persistence/compiler/runtime,
+lost-claim and delayed-duplicate coverage; temporary validation workflow removed before merge; CI #188
+on code head and final CI #189 are green.
+
+Evidence inspected:
+- PR body, all 34 final changed files, all 47 internal commits, review/discussion, final/important
+  intermediate diffs, migration 0009, final task/publisher/publication-store/compiler/source code,
+  PostgreSQL tests, and CI records.
+- Review 4026927508 is P1: two different stable identities for one logical UI unit could both retain
+  valid claims, and an older worker could overwrite the newer machine row because #71 had no durable
+  authoritative ordering between those identities.
+- The branch briefly attempted to solve that by fa56fff: mark other processing identities stale
+  and delete other pending identities before upserting the newly planned identity. 9dd5591 removes
+  that mechanism because the identities themselves do not encode chronology. dcf70d8 then restores
+  a requiredRow() return accidentally lost in that removal.
+- Final #71 keeps same-identity durability/terminal semantics but explicitly leaves authoritative
+  ordering between different identities to later work. PR #72 is forward evidence, not imported into
+  #71.
+- GitHub Actions CI #188 succeeds on code head 0321422; final CI #189 succeeds on
+  e0db850a5a6fa1c8dd34fdb1f3150ec5977de7cf.
+
+Completeness limits:
+- No real machine-provider adapter/call, credentials, Cloudflare Queue, retry/DLQ/reconciliation,
+  external migration rollout or deployed translation worker is evidenced.
+- Final #71 does not publish a whole persisted namespace bundle and does not switch SSR/runtime to
+  persisted bundle reads.
+- Final #71 does not solve different-identity generation ordering. That absence is an explicit
+  historical boundary, not by itself a verdict on the preceding durable foundations.
+
+#### PR #72 / merge ba41a0c59072a4a3eedee63238409c806364768d
+
+F: durable ordering/fencing for different stable generations of one logical UI unit | A: persistent
+monotonic generation number, per-unit durable head, row-lock serialization shared by planning and
+publication, current-generation preflight/publication fence | C: one open P1 review identifies an
+A→B→A same-stable-identity reactivation gap; no code correction follows that review inside #72 |
+D: provider/job contract and PROJECT_STATE record the durable generation-order slice | O: migration
+0010 local/CI only; no external rollout/provider/Queue | G: new identities monotonically advance the
+head; old identities cannot move the head by duplicate planning; publication must still own both the
+claim and current generation | T: migration backfill/constraints, concurrent planner ordering,
+publication fencing, stale supersession, and DB coverage; CI #190 and final #191 green.
+
+Evidence inspected:
+- PR body, all 17 final changed files, both internal commits 28f2196 and 4dfbc77, review
+  4028280128, migration 0010, final task store, final publication store, consumer preflight,
+  tests, docs/state, and CI.
+- Migration 0010 backfills generation numbers per (translationKind, namespace, key, targetLocale)
+  using row_number() ordered by created_at,id, makes them positive/non-null/unique in that unit,
+  and creates translation_task_generation_heads with the maximum generation.
+- upsertPending() and publication both lock the same generation-head row with PostgreSQL FOR UPDATE.
+  PostgreSQL 17 primary documentation confirms FOR UPDATE blocks conflicting writers/lockers until
+  transaction end and statement_timestamp() is the start of the current statement.
+- Review 4028280128 identifies a distinct lifecycle gap: after A→B, a later fresh plan returning to A
+  finds the old A identity stale but non-current, returns it unchanged, the dispatcher enqueues that
+  stale task, and claim reports terminal. The only later #72 commit is documentation/state; it does not
+  alter the store.
+- In the final PR #71–#77 range no later code PR modifies db/translation-task-store.ts; its current
+  main blob is exactly the #72 blob f39c062854cad57fe93081d5034e9ce6122b8197.
+- GitHub Actions CI #190 succeeds on code head 28f2196; final CI #191 succeeds on
+  4dfbc7793d1da952ac881193aad192bd082ec705.
+
+Completeness limits:
+- The open A→B→A review remains evidence, not a verdict/remedy.
+- Durable generation ordering is separate from transport/provider availability and remains useful
+  evidence even though those external consumers are absent in this PR.
+
+#### PR #73 / merge 1afb0c1c843e6d4b4405ad2a3f9f492aea839fef
+
+F: provider-neutral task execution pipeline connects claimed/preflight work to provider routing and
+conditional publication | A: executor composes existing consumer → provider router → publisher without
+Queue-specific behavior; provider request is built from canonical source descriptor and target-locale
+rules | C: lint/type/project-state corrections plus restoration of an unrelated PROJECT_STATE wording
+accidentally changed by full-file replacement | D: PROJECT_STATE is synchronized to distinguish the
+new local/CI executor from still-missing concrete external adapter/Queue work | O: no schema/migration,
+provider credentials/calls, Queue resource, or deploy | G: non-eligible/stale generation exits before
+provider call; provider output remains untrusted until publisher validation | T: plain/plural routing,
+superseded-generation no-call, invalid-output no-publication tests; CI #192 failed lint, #193 green
+after code fix, final #195 green.
+
+Evidence inspected:
+- PR body, all four final changed files, six internal commits, review 4028574664, executor and test
+  code, state diffs and CI.
+- Review 4028574664 is a documentation-state finding: code had the executor but PROJECT_STATE still
+  called provider execution future work. The later state commits fix that distinction before merge.
+- a71a0c3 restores unrelated Stage 4 wording changed during the state rewrite; no runtime code is
+  changed by that repair.
+
+Completeness limits:
+- The adapter exercised is fake/contract local test infrastructure. No real provider endpoint,
+  credential, quota/attribution acceptance, Queue binding, retry/DLQ or reconciliation is proven.
+- The executor intentionally propagates provider/router/validation failures; this PR does not add
+  production retry classification.
+
+#### PR #74 / merge b5d1f6851dd6b6bbbd48a0f41f9fff17ed3bd9ed
+
+F: successful machine publication now also rebuilds/persists the whole exact-locale namespace bundle |
+A: task completion, raw machine result, source merge, bundle compilation and bundle upsert share one
+PostgreSQL transaction; publications for different keys in one locale/namespace serialize on the
+namespace set of generation-head rows | C: no runtime review finding; several follow-up documentation
+commits restore unrelated PROJECT_STATE text changed during full-file editing | D: UI/storage contracts
+and PROJECT_STATE record atomic bundle publication while runtime bundle reads remain later | O: no
+schema/migration/external resource/deploy | G: current-generation + claim-token fence remains before
+publication; no advisory lock or Queue ordering is used for correctness | T: manual-priority,
+structured-plural, lost-claim, rollback and concurrent-different-key bundle tests; code CI #196 and
+final CI #200 green.
+
+Evidence inspected:
+- PR body, all eight final changed files, five internal commits, final compiler/publication store,
+  database tests, docs/state and CI.
+- Publication locks all existing generation-head rows for the exact
+  (translationKind, namespace, targetLocale) in deterministic source_key order, then verifies the
+  current key generation, completes the task, upserts the raw machine row, reads approved exact-locale
+  namespace rows, compiles with local manual → persistent manual → current machine, and upserts
+  ui_translation_bundles in the same transaction.
+- Compilation failure rolls back completion, raw result and bundle. Concurrent publications of
+  different keys are tested to converge to one bundle containing both committed values.
+- Documentation-only commits 44b106a, 7351b4a, and dc231a7 successively restore unrelated state
+  wording; those corrections are separate from runtime publication behavior.
+- CI #196 succeeds on code head f7dc2de; final CI #200 succeeds on dc231a7.
+
+Completeness limits:
+- #74 writes persisted bundles but does not yet make SSR/runtime read them.
+- No external provider/Queue/retry/reconciliation or external rollout occurs.
+
+#### PR #75 / merge 29f52b91fffc8d3df11bd84d9009975092087f02
+
+F: SSR/resource loading reads verified persisted compiled bundles first for canonical non-English
+locale/namespace | A: bundle reader split, bundle format v2 current-deploy identity, code-owned
+canonical/local input identity, request-local Hyperdrive reader/failure circuit, raw/local/English
+fallback | C: one open P2 review identifies the absence of a durable v1→v2 bundle refresh/backfill
+path | D: UI/storage/Hyperdrive/state docs record runtime persisted-bundle reads and fallback |
+O: existing read-only localization Hyperdrive capability reused; no new grant/schema/migration/
+external rollout | G: bundle hit avoids raw persistent namespace reads; invalid/classified DB failure
+is a miss/degradation path; unclassified programming/permission failures remain visible | T: persisted
+hit/miss/fallback, target/fallback separation, SSR/hydration plural snapshot, structural/version
+verification, Hyperdrive failure classification, no-English-DB-access tests; final CI #201 green.
+
+Evidence inspected:
+- PR body, all 16 changed files, sole internal commit 9e99ca8, review 4029815293, final bundle/
+  loader/Hyperdrive/store code, tests/docs/state and CI.
+- Bundle format changes from vico-ui-bundle-v1 to vico-ui-bundle-v2; semantic version input now
+  includes a deterministic hash of all canonical descriptor fingerprints plus exact current local
+  manual pack state for that locale/namespace.
+- TranslationResourceLoader attempts persisted bundle reads only for non-English chain members. On
+  a hit it uses runtime-ready resources/version; missing namespaces are rebuilt through ordinary
+  source merge. English remains code-owned and is never read from bundle storage.
+- Invalid persisted structure/version becomes PersistentBundleIntegrityError; the Hyperdrive boundary
+  reports invalid-bundle and returns miss without opening the DB failure circuit. Classified
+  availability/query-timeout/schema failures open the request-local circuit, discard the client
+  best-effort, and leave raw persistent reads unavailable so local/English fallback remains. Unknown
+  permission/programming/configuration failures are rethrown.
+- Review 4029815293 notes that pre-existing v1 rows necessarily fail v2 verification, the miss path
+  recompiles only in memory and never writes a v2 bundle, and completed tasks do not reactivate merely
+  to refresh it. No later PR #76/#77 changes the loader/bundle refresh path; current main
+  resource-loader.ts is exactly the #75 blob 0e84e076a877167394583708fd8aabb25998271c.
+- GitHub Actions CI #201 has both checks and database successful.
+
+Completeness limits:
+- The open v1→v2 refresh finding remains evidence, not a classification/remedy.
+- Persisted bundle runtime reading does not introduce synchronous provider generation in request path.
+- Real external rollout of the newer translation migrations/bundles is not evidenced.
+
+#### PR #76 / merge 1c5255a8064a2b0b9e6f34815d9fcb563ea22ced
+
+F: none new; two corrective boundaries | A: typed authorization-unavailable classification isolates
+dependency availability from denial/unexpected application failures | C: removes PR #44 live external
+migration-evidence verification from ordinary PR CI and narrows PR #61 catch-all authorization
+degradation/503 behavior | D: authorization, migration and PROJECT_STATE text synchronize the narrowed
+boundaries | O: live verifier script/evidence/production migration workflow are retained for actual
+external rollout; no rollout operation occurs | G: ordinary PR CI keeps repository-local migration/
+evidence contract checks but stops calling GitHub Actions API live verifier; protected authz maps only
+typed unavailable to controlled 503 | T: classified-unavailable vs unexpected-error regressions across
+forum/admin/public presentation; code CI #202 and final CI #203 green.
+
+Evidence inspected:
+- PR body, all 16 changed files, commits b4d6bee and 417ca16, full first-commit diff, tests/docs,
+  relationship to accepted #44/#61 records, and CI.
+- .github/workflows/ci.yml removes exactly the Verify migration to runtime evidence step and its
+  GITHUB_TOKEN; migration-history tests, evidence static/unit contract, the evidence manifest and the
+  live verifier script itself are not deleted.
+- AuthorizationUnavailableError is added as a typed boundary. Hyperdrive authorization wraps only
+  known PostgreSQL availability plus connection/query timeout shapes; schema/programming failures
+  remain untyped and are rethrown.
+- Forum permission/solution actions, authorization-admin manager/loader/action, and optional
+  locale/section/topic presentation convert/degrade only AuthorizationUnavailableError; unexpected
+  failures propagate to ordinary application error handling.
+- Code head b4d6bee has green CI #202; the state-only follow-up records final verification, and final
+  417ca16 has green CI #203.
+
+Completeness limits:
+- PR #76 preserves the underlying migration-evidence mechanism and the concept of controlled
+  degradation for genuine outages; it changes where/how broadly they apply.
+- No schema/migration/dependency/translation/provider/production workflow change occurs.
+- This extraction records the correction chain without deciding the eventual cross-stage verdict of
+  the originating #44/#61 decisions.
+
+#### PR #77 / merge 3282aa51f47f36131d35c34ee79ca37cb2ce434f
+
+F/A/O: no runtime/product/schema/migration/dependency/architecture implementation change | C: current
+state/history documentation is repeatedly revised inside the PR to restore lost provenance and correct
+retrospective wording | D: PROJECT_STATE is rebuilt as current-state/limitations/next-route only;
+PROJECT_HISTORY is introduced as a historical index; README links it | G: Git/PR history is explicitly
+declared primary historical evidence and PROJECT_HISTORY explicitly declares itself non-source-of-truth
+for current behavior | T: documentation PR still passes final repository CI #214; no technical Codex
+review was available because the PR comment records review usage-limit exhaustion.
+
+Evidence inspected:
+- PR body, all three changed files, all eleven internal commits, final PROJECT_STATE, full final
+  PROJECT_HISTORY, README, available PR discussion and final CI.
+- bec8226 performs the first large PROJECT_STATE rebuild and removes much accumulated historical
+  narrative before a replacement history file exists.
+- af7825b subsequently creates PROJECT_HISTORY; 95adc2f links it from PROJECT_STATE and 7b9c672
+  from README. Later commits correct PR #61 provenance, restore superseded policy/state-rewrite history,
+  add missing corrective episodes, and record the PR #77 history-loss episode itself.
+- Final PROJECT_HISTORY says directly that it is not current-behavior source of truth and that Git/PR
+  history remains the primary historical source. Therefore every evaluative retrospective statement
+  in that file is treated here as later-retrospective-summary, even when earlier Git evidence
+  independently supports some of its factual components.
+- The repository commit 428df86 says the initial history loss was found by user review before merge.
+  No corresponding technical user-review artifact is present in the available PR #77 discussion;
+  the only PR comment is the automated Codex usage-limit notice. The commit therefore proves that this
+  claim was recorded, not independently that the review artifact exists in GitHub discussion.
+- Final PROJECT_HISTORY retains a time-local H-010 sentence saying PR #77 is not yet merged at the
+  moment of that record; after merge that sentence is historical authoring context, not current
+  merge-state evidence.
+- Final CI #214 has successful checks and database.
+
+Completeness limits:
+- PROJECT_HISTORY cannot validate its own labels such as regression, excessive, error, correct, or
+  claims about original intent. Those are retrospective narrative until independently reconciled with
+  introducing contracts/commits/reviews in later audit phases.
+- The final history document does not enumerate every open review finding in the repository: notably,
+  it summarizes #72 as a durable ordering replacement but does not record review 4028280128, and it
+  does not record #75 review 4029815293. Its omission is not by itself proof that those findings are
+  valid or invalid; it is evidence that PROJECT_HISTORY is not an exhaustive review ledger.
