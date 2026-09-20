@@ -348,3 +348,192 @@ The repository/local-CI runtime path may be ahead of the deployed localization e
 #### EX75-65 — Real provider/Queue acceptance remains outside PR #75
 The request-read slice consumes persisted data but does not prove external generation infrastructure.
 
+
+### Candidate atomic decisions — PR #76
+
+#### EX76-01 — Ordinary pull-request CI removes live migration-evidence verification
+The checks job no longer executes verify-runtime-migration-evidence.mjs on every PR.
+
+#### EX76-02 — Ordinary PR CI no longer needs GITHUB_TOKEN for that live verifier step
+The removed step also removes its token environment input.
+
+#### EX76-03 — Repository-local migration history verification remains in PR CI
+verify-migration-history.mjs is still executed.
+
+#### EX76-04 — Runtime migration-evidence unit/static contract tests remain in PR CI
+runtime-migration-evidence.test.mjs is still executed.
+
+#### EX76-05 — Production privilege contract tests remain in PR CI
+The local fixture/unit verifier coverage is not removed by #76.
+
+#### EX76-06 — Repository-owned runtime migration evidence file is retained
+The correction does not delete the existing evidence manifest.
+
+#### EX76-07 — Live migration-evidence verifier script is retained
+The script remains available for the future actual external rollout boundary.
+
+#### EX76-08 — Production database migration workflow is unchanged by #76
+The correction does not modify the protected workflow that actually migrates/verifies a target DB.
+
+#### EX76-09 — MIGRATIONS moves live GitHub run verification to actual external rollout
+Workflow identity/main/success/ancestry/journal coverage are no longer ordinary feature-PR gates.
+
+#### EX76-10 — Evidence manifest update remains tied to external runtime schema dependency
+The underlying migration→runtime evidence concept is preserved.
+
+#### EX76-11 — Current evidence remains at migration 0002
+PR #76 does not falsely advance external schema acceptance to forum/auth/translation migrations.
+
+#### EX76-12 — PR #44 live-PR verifier placement is the historical source corrected by #76
+This record links the correction to EX44-13 without classifying the entire #44 evidence design.
+
+#### EX76-13 — PR #76 preserves repository-local evidence validation from PR #44
+Static/history integrity remains useful independent of live remote verification.
+
+#### EX76-14 — PR #76 does not remove schema-first external rollout ordering
+Migration/verification still precede an external runtime that depends on the new schema.
+
+#### EX76-15 — AuthorizationUnavailableError is introduced
+Authorization infrastructure unavailability becomes an explicit typed error rather than an arbitrary caught exception.
+
+#### EX76-16 — AuthorizationUnavailableError uses a generic safe message
+Dependency details are kept in cause rather than exposed as the public error message.
+
+#### EX76-17 — Hyperdrive authorization pool construction becomes injectable for tests
+createHyperdriveAuthorization accepts an optional pool factory.
+
+#### EX76-18 — Authorization management operations run inside availability classification wrapper
+The run() path maps dependency outage shapes and rethrows other failures.
+
+#### EX76-19 — Per-user resolution runs inside the same availability classification wrapper
+The request-local cached resolve promise applies the typed boundary.
+
+#### EX76-20 — Availability classifier traverses nested cause chains
+Wrapped pg/driver failures can still be recognized.
+
+#### EX76-21 — Availability classifier guards against cause cycles
+A seen set prevents an adversarial/cyclic cause graph from looping.
+
+#### EX76-22 — Known PostgreSQL availability shapes are classified
+The existing localization PostgreSQL availability helper participates in the authorization boundary.
+
+#### EX76-23 — Known PostgreSQL connection timeout is classified
+Connection deadline failure is mapped to AuthorizationUnavailableError.
+
+#### EX76-24 — Known PostgreSQL query timeout is classified
+Caller/server query timeout shapes can map to AuthorizationUnavailableError.
+
+#### EX76-25 — Schema errors are not authorization availability by default
+The regression test uses 42P01 and expects the original failure to escape.
+
+#### EX76-26 — Programming errors are not authorization availability by default
+A TypeError remains visible rather than becoming controlled 503.
+
+#### EX76-27 — Protected forum permission check maps typed unavailable to 503
+requireForumPermission preserves controlled fail-closed behavior for classified outages.
+
+#### EX76-28 — Protected forum permission check rethrows unexpected errors
+Unknown resolver failures no longer become generic unavailable.
+
+#### EX76-29 — Solution permission resolution maps typed unavailable to 503
+solutionScope preserves controlled outage behavior for the multi-permission path.
+
+#### EX76-30 — Solution permission resolution rethrows unexpected errors
+Unknown failures no longer become a solution unavailable response.
+
+#### EX76-31 — Authorization-admin manager gate maps typed unavailable to 503
+Initial access.authorization.manage resolution keeps outage semantics only for the typed class.
+
+#### EX76-32 — Authorization-admin manager gate rethrows unexpected errors
+Unknown resolver errors leave controlled HTTP mapping and enter ordinary error handling.
+
+#### EX76-33 — Authorization-admin loader maps typed unavailable management read to 503
+A classified outage while reading management state remains controlled.
+
+#### EX76-34 — Authorization-admin loader rethrows unexpected management read errors
+Programming/schema/invariant failures are not hidden as infrastructure outage.
+
+#### EX76-35 — Authorization-admin action retains existing known domain mappings
+Invalid/forbidden/not-found/lockout/assigned-role conflict semantics remain unchanged.
+
+#### EX76-36 — Authorization-admin action maps typed unavailable mutation failure to 503
+A classified dependency outage is still controlled.
+
+#### EX76-37 — Authorization-admin action rethrows unrecognized mutation failure
+The old catch-all final unavailable branch is removed.
+
+#### EX76-38 — Locale header presentation degrades only on typed unavailable
+A real classified outage may hide the management link while preserving public read.
+
+#### EX76-39 — Locale header presentation rethrows unexpected authorization errors
+Presentation-only lookup no longer suppresses arbitrary bugs.
+
+#### EX76-40 — Section presentation degrades only on typed unavailable
+A classified outage hides create-topic control while public section data remains readable.
+
+#### EX76-41 — Section presentation rethrows unexpected authorization errors
+Unexpected errors are not silently converted into canCreateTopic=false.
+
+#### EX76-42 — Topic presentation degrades only on typed unavailable
+A classified outage hides reply/solution controls while public topic read remains available.
+
+#### EX76-43 — Topic presentation rethrows unexpected authorization errors
+Unexpected resolver failures are not silently converted into false permissions.
+
+#### EX76-44 — Permission denial remains distinct from unavailable
+A successfully resolved false permission still produces forbidden/hidden-control semantics without infrastructure classification.
+
+#### EX76-45 — Optional presentation remains non-authoritative
+Protected actions continue to resolve permission independently regardless of hidden/shown controls.
+
+#### EX76-46 — Public-degradation tests now inject both typed outage and ordinary Error
+The suite distinguishes accepted degradation from unexpected error propagation.
+
+#### EX76-47 — Write-action tests distinguish typed outage from unexpected error
+Topic and solution mutation tests prove only the typed class maps to 503.
+
+#### EX76-48 — Authorization-admin tests distinguish typed outage from unexpected error
+Both manager resolution and management operation paths get regression coverage.
+
+#### EX76-49 — Hyperdrive authorization tests distinguish availability from schema/programming failures
+The adapter-level classification boundary has dedicated tests.
+
+#### EX76-50 — AUTHORIZATION adds an explicit failure-semantics section
+The application contract now states denial, typed availability, optional degradation and unexpected-error behavior separately.
+
+#### EX76-51 — Catch-all PermissionResolver suppression is explicitly excluded by the authorization contract
+The docs reject interpreting arbitrary resolver exceptions as availability.
+
+#### EX76-52 — PROJECT_STATE replaces broad infrastructure wording with typed availability state
+The current-state doc synchronizes the #76 runtime correction.
+
+#### EX76-53 — PROJECT_STATE records ordinary PR live migration verification removal
+The state doc also synchronizes the separate rollout-process correction.
+
+#### EX76-54 — PR #61 broad failure records are the historical authz behavior corrected by #76
+The correction maps back to EX61-60..70 without rewriting those earlier records.
+
+#### EX76-55 — PR #76 preserves controlled degradation for genuine outages
+The underlying availability goal is not removed together with catch-all behavior.
+
+#### EX76-56 — PR #76 preserves migration-evidence safety for real rollout
+The live verifier/evidence mechanism remains available at the external schema-dependent boundary.
+
+#### EX76-57 — PR #76 adds no schema or migration
+Both corrections are runtime/workflow/docs/tests changes only.
+
+#### EX76-58 — PR #76 adds no dependency
+Existing PostgreSQL/authorization classifiers and runtime packages are reused.
+
+#### EX76-59 — PR #76 changes no translation architecture
+Stage 5 generation/publication/read behavior is outside this corrective PR.
+
+#### EX76-60 — CI #202 is green on the implementation head
+GitHub Actions succeeds on b4d6beea1c890e4e27b1b2c5de969d4e0be07bd8.
+
+#### EX76-61 — 417ca16 updates state with the final verification evidence
+The follow-up is documentation-only and records the PR verification after CI.
+
+#### EX76-62 — Final CI #203 is green
+Both checks and database jobs succeed on final head 417ca16ef068c70cbb6dfd0fbf26cd79aa4d9ede.
+
