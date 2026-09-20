@@ -15958,3 +15958,194 @@ The live lifecycle remains processing.
 The test sets claimed/lease times with `statement_timestamp()` SQL before reclaim.
 
 ###
+#### EX69-42 — Reclaim replaces the execution claim token
+The PostgreSQL regression expects a newly reclaimed processing task to have a different claim token.
+
+#### EX69-43 — An old claim token cannot finish the reclaimed execution as stale
+Conditional markStale with the pre-reclaim token returns false.
+
+#### EX69-44 — The current claim token can finish the reclaimed execution as stale
+Conditional markStale with the current token succeeds.
+
+#### EX69-45 — A stale task still returns terminal to an old delivery
+The claim path itself does not reactivate stale work.
+
+#### EX69-46 — Review 4018963657’s stale-identity starvation is corrected in #69
+Fresh upsertPending(specification) can reopen the same stale logical task after the earlier delivery has become terminal.
+
+#### EX69-47 — Review 4018711812’s application-clock duplicate-upsert boundary is corrected in #69
+The #67 new Date() conflict update is replaced by PostgreSQL-owned statement time.
+
+#### EX69-48 — #68 caller-owned claim/stale wall-clock semantics are corrected in #69
+Lifecycle ownership moves from consumer now() to the PostgreSQL store.
+
+#### EX69-49 — #68 planner/consumer disabled-locale eligibility divergence is corrected in #69
+Planner and preflight now share one target-eligibility predicate.
+
+#### EX69-50 — bc0806a temporarily removes requiredRow’s return statement
+The helper still declares a TranslationTaskRow return type but reaches the end without returning the validated row.
+
+#### EX69-51 — CI #169 exposes the missing-return regression
+Checks report TS2355 for requiredRow; database tests then observe undefined task results.
+
+#### EX69-52 — f6522c4 restores return row
+The final #69 commit repairs the intermediate regression without changing lifecycle semantics.
+
+#### EX69-53 — Final PR #69 CI is green
+CI #170 succeeds on f6522c4750f91863b78fb41f6cbbc44f8362c639.
+
+#### EX69-54 — PROVIDERS_AND_JOBS documents stale as terminal for the current delivery/retry
+An old Queue message is not itself allowed to return stale work to execution.
+
+#### EX69-55 — PROVIDERS_AND_JOBS documents fresh-plan reactivation as a new planning decision
+Later planning may reopen the same stable identity/id when the work is again eligible.
+
+#### EX69-56 — PROVIDERS_AND_JOBS documents that duplicate planning must not reset or extend a live claim
+The processing owner/lease boundary is separate from planning deduplication.
+
+#### EX69-57 — PROVIDERS_AND_JOBS documents PostgreSQL-owned lifecycle time
+Claim/lease/stale expiration is defined against the database clock rather than Worker wall clocks.
+
+#### EX69-58 — UI_TRANSLATION documents one shared UI generation-eligibility predicate
+Planner and consumer preflight are specified to use the same rule.
+
+#### EX69-59 — UI generation eligibility permits active locale
+An active registered canonical non-English locale remains eligible.
+
+#### EX69-60 — UI generation eligibility permits inactive locale
+Inactive locale can be prepared before publication.
+
+#### EX69-61 — UI generation eligibility rejects disabled locale
+Disabled locale requires an explicit lifecycle change before generation resumes.
+
+#### EX69-62 — PR #69 adds no migration or schema change
+It repairs behavior over the task schema introduced by #67/#68.
+
+#### EX69-63 — PR #69 adds no real Queue/provider execution
+Transport, provider calls, retry/DLQ, reconciliation and publication remain later Stage 5 slices.
+
+#### EX69-64 — PR #69 final diff does not update PROJECT_STATE
+The changed-file set contains code/tests and two translation detail documents, but not the factual state file.
+
+#### EX69-65 — Review 4024162533 identifies the missing PROJECT_STATE synchronization
+The review points to DB clock, shared eligibility, stale reactivation and live-processing preservation as state-changing corrections that should be recorded.
+
+#### EX69-66 — The PROJECT_STATE review finding is not corrected inside PR #69
+No later #69 commit adds the state-file synchronization.
+
+#### EX69-67 — PR #69 body’s “no unresolved findings” claim coexists with review 4024162533
+The historical extraction preserves both artifacts rather than treating the PR-body statement as proof that the review was resolved.
+
+#### EX69-68 — PR #70 later synchronizes PROJECT_STATE with the #69 lifecycle corrections
+That later documentation change is forward evidence and does not alter #69’s final changed-file history.
+
+### Candidate atomic decisions — PR #70
+
+#### EX70-01 — PR #70 adds a PostgreSQL integration test for the enqueue-failure window
+The test uses the real DrizzleTranslationTaskStore and PersistentTranslationJobDispatcher.
+
+#### EX70-02 — The test uses the existing commit-before-enqueue dispatcher order
+Durable upsertPending completes before the enqueuer effect runs.
+
+#### EX70-03 — The enqueue adapter is forced to fail after durable persistence
+Its effect throws enqueue outcome unknown.
+
+#### EX70-04 — The dispatcher propagates the enqueue failure
+The test expects the same failure rather than translating it into success.
+
+#### EX70-05 — A new independent PostgreSQL client is opened after the enqueue failure
+Durability is checked through a fresh database reader, not only the original store object.
+
+#### EX70-06 — The fresh reader finds the task by the same stable identity
+The row remains addressable through taskIdentity.
+
+#### EX70-07 — The surviving task remains pending
+The failure does not move it to processing or terminal state.
+
+#### EX70-08 — The surviving task has no claim token
+No consumer execution owner was created by the failed enqueue attempt.
+
+#### EX70-09 — The surviving task has no claimedAt timestamp
+Claim lifecycle was never entered.
+
+#### EX70-10 — The surviving task has no lease expiration
+There is no live execution lease after enqueue failure.
+
+#### EX70-11 — The surviving task has no stale timestamp
+The durable recovery source remains pending rather than terminal.
+
+#### EX70-12 — The fake enqueuer records no successful message
+Because its effect throws before message recording, queue.messages stays empty.
+
+#### EX70-13 — PR #70 demonstrates durable survival after enqueue failure
+A committed task is visible to a fresh DB connection after the transport attempt fails.
+
+#### EX70-14 — PR #70 does not implement reconciliation
+The surviving pending row is only the recovery source required by future JOB-06.
+
+#### EX70-15 — PR #70 does not prove an ambiguous real Queue acknowledgement
+The transport is still a fake adapter; no Cloudflare Queue send/ack artifact is exercised.
+
+#### EX70-16 — PR #70 does not implement retry or DLQ
+JOB-04 remains outside this test/documentation slice.
+
+#### EX70-17 — PR #70 does not add provider execution or result publication
+The test ends at durable task persistence/transport failure.
+
+#### EX70-18 — PROJECT_STATE records the durable enqueue-failure recovery evidence
+It explicitly names the committed → enqueue failed/unknown window and the fresh-reader pending task.
+
+#### EX70-19 — PROJECT_STATE keeps JOB-06 future
+The state text says the test proves a prerequisite for reconciliation, not reconciliation itself.
+
+#### EX70-20 — PROJECT_STATE synchronizes PostgreSQL-owned lifecycle clock from PR #69
+It records statement-time ownership rather than Worker wall clock.
+
+#### EX70-21 — PROJECT_STATE synchronizes live-processing duplicate-planning semantics from PR #69
+Duplicate planning does not reset or extend a processing claim.
+
+#### EX70-22 — PROJECT_STATE synchronizes shared planner/consumer generation eligibility from PR #69
+Registered canonical non-English active/inactive are allowed and disabled is rejected.
+
+#### EX70-23 — PROJECT_STATE synchronizes stale fresh-plan reactivation from PR #69
+The same stable task identity/id can return to pending only through a later eligible planning decision.
+
+#### EX70-24 — PROJECT_STATE records PR #69 final CI evidence
+It names merge c12550c, final head f6522c4 and CI #170.
+
+#### EX70-25 — PROJECT_STATE records CI #171 for the enqueue-failure integration test
+The test commit d88b342 has successful CI.
+
+#### EX70-26 — Final PR #70 CI is green
+CI #172 succeeds on 026c944c45bca361b032e7a8c4f7ecab1702406c.
+
+#### EX70-27 — PR #70 adds no schema or migration
+The task schema/lifecycle remain those from migrations 0007 and 0008.
+
+#### EX70-28 — PR #70 changes no runtime dispatcher/store implementation
+Its final changed files are the database integration test and PROJECT_STATE.
+
+#### EX70-29 — No review correction is recorded for PR #70
+The PR discussion contains no review finding.
+
+#### EX70-30 — Real Queue/provider external acceptance remains deferred
+This block remains local/CI evidence under the Stage 5/Stage 6 boundary.
+
+### Dependency and historical-chain reconciliation
+
+1. EX50-36a/b, EX50-37, EX50-38a/b remain the earlier roadmap/detail-document omissions: policy persistence, provider provenance, pre-provider stale revalidation and post-provider conditional-current publication were not explicit enough in the PR #50 roadmap rewrite. PRs #63/#66–#70 progressively implement parts of those already-existing translation contracts; they do not retroactively make PR #50 a provider/job implementation PR.
+2. EX63-07..12 → PR #67: the stable specification fields created by the #63 planner become the durable PostgreSQL task identity/data. Durable materialization is a consumer of that future-proof identity rather than evidence that the identity itself was premature.
+3. EX63-13/14 → PR #66/#67: the provider-independent planner and transport-independent dispatcher boundaries are consumed separately by provider routing/validation and durable persistence/enqueueing.
+4. AN7-13a/b, AN10-14 → PR #66: provider capabilities/mapping remain adapter-local and manual/local ingestion remains outside machine-provider routing.
+5. AN10-15a → EX67/EX70: PR #67 implements persistence before enqueue; PR #70 adds real PostgreSQL evidence that the durable task survives the failure window.
+6. AN10-15b, AN7-14d → PR #70: the durable pending row is shown to exist as a future reconciliation source. JOB-06 itself is still absent.
+7. AN10-15c, AN10-16a/b → PR #68/#69: duplicate delivery receives claim/lease/token ownership and state convergence without a claim of exactly-once external provider calls.
+8. AN10-17a, EX50-38a → PR #68: source fingerprint, policy, target eligibility and exact-target manual state are revalidated before any future provider call.
+9. AN10-17b, EX50-38b remains later work in this block: no PR #66–#70 performs the post-provider conditional-current publication half.
+10. PR #67 review 4018711812 → PR #69 DB-clock correction. The client-clock issue is preserved as a concrete inherited lifecycle finding, not a verdict against durable-task identity.
+11. PR #68 review 4018963657 → PR #69 fresh-plan stale reactivation. The stale-starvation issue is preserved as a concrete lifecycle finding, not a verdict against claim/lease or stable task identity.
+12. PR #68 planner/consumer target-eligibility divergence → PR #69 shared predicate. Disabled locale is no longer planned by a looser planner and then rejected by consumer preflight.
+13. PR #69 review 4024162533 → PR #70 PROJECT_STATE synchronization. The state-document lag is distinct from the lifecycle runtime corrections themselves.
+14. TRANSLATION_ARCHITECTURE still requires durable task commit before enqueue, duplicate-safe persistent state, pre-provider revalidation and conditional-current publication. This block implements the first three boundaries partially/fully as described above; conditional publication remains deferred.
+15. Stage 5 remains local/CI implementation while Stage 6 owns real Queue/provider credentials and deployed acceptance. Absence of real Queue/provider artifacts in #66–#70 is therefore kept as a scope boundary rather than converted into a defect record.
+
