@@ -18806,3 +18806,30 @@ The 110 retained rows are not justified by string absence alone. Representative 
 Finite failing ID set: **empty**.
 
 No decision was classified, no deliberate-disconfirmation verdict was run, no target contract was selected, no remediation was proposed, and PR #78 was not edited.
+
+## RESPONSE DL-CLASSIFY-001/1
+
+From: ChatGPT  
+Status: submitted — preliminary stale-policy classification + deliberate disconfirmation complete  
+Responding in: PR #79  
+Task source: PR #78 head `c9efe07c6bb70d916d7c64244d1bbdf6bbb55e23`  
+Observed PR #79 head before response: `c118372fdb3ce9acfac1e25ac75c21d7f5d77284`  
+Artifact: `audit/chatgpt-review/DL-CLASSIFY-001.md`
+
+### Result
+
+The stale chain is **not one indivisible regression**.
+
+1. Pre-#40 contract is reconstructed as: stored stale value may exist; fingerprint mismatch makes it ineligible for the current bundle; source/locale fallback continues; strict stale-blocking CI requires a separate explicit decision.
+2. PR #19's stale-before-current-validation and full-pack identity fixes are preliminarily **justified fixes of real defects**.
+3. PR #40's zero-stale real-pack CI assertion (`EX40-02`) is preliminarily **dumb correction of a correct implementation**: no explicit strict-mode decision was found, while the pre-#40 source-of-truth says strict mode cannot be assumed.
+4. PR #40's removal of the synthetic real-pack stale canary (`EX40-01`) is **not independently proven wrong**; it is preliminarily an **acceptable alternative**. Test-local fixtures still exercise the runtime stale/fallback mechanism.
+5. PR #40 did not remove the runtime stale/fallback mechanism; current code still excludes stale values and falls back.
+6. The PR #77 statement that “zero-stale test/canary removal” as a combined unit is a regression (`EX77-29`) is therefore preliminarily **overbroad / insufficient evidence**.
+7. Strict “documentation laundering” (`EX77-30`) is **not confirmed**. Evidence shows normalization/legitimation of #40 behavior in PROJECT_STATE through #49, but no later text was found that backdated the rule or attributed it to an older requirement. PR #50 drops the wording.
+
+The artifact contains explicit preliminary classifications and deliberate-disconfirmation fields for every affected chain record: `EX17-03/04/06a/06b/07/08a/08b/10/11`, `EX19-01..03`, `EX40-01..04`, and `EX77-02/12/27..31`.
+
+The bounded deliberate-disconfirmation gate is **PASS**, subject to Codex independent review.
+
+No target contract was selected, no remediation was proposed, no unrelated translation foundation was classified, and no record was advanced to `final`.
