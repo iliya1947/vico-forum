@@ -15540,3 +15540,216 @@ Large source/task state is not copied into the transport message.
 The domain dispatcher has no Cloudflare Queue API type.
 
 #### EX67-40 — The enqueuer contract explicitly allows duplicate or unknown delivery outcome
+Its documentation does not assume exactly-once delivery.
+
+#### EX67-41 — PersistentTranslationJobDispatcher processes jobs sequentially
+The loop awaits one job’s persistence/enqueue before advancing.
+
+#### EX67-42 — Dispatcher persists a durable task before enqueue
+`upsertPending(job)` is awaited before the enqueuer is called.
+
+#### EX67-43 — Persistence failure prevents enqueue
+The unit test verifies an upsert exception leaves queue messages empty.
+
+#### EX67-44 — Enqueue failure propagates to the dispatcher caller
+The dispatcher does not swallow the transport error.
+
+#### EX67-45 — The #67 unit fixture remains pending when enqueue throws
+No lifecycle transition follows a failed fake enqueue in that unit test.
+
+#### EX67-46 — Fake enqueuer records a message only after its configured enqueue effect succeeds
+A thrown enqueue effect leaves its in-memory `messages` array empty.
+
+#### EX67-47 — Multiple jobs preserve input enqueue order in the unit boundary
+The dispatcher test observes heading before stageSummary.
+
+#### EX67-48 — The durable identity materializes the PR #63 semantic identity contract
+It persists translation kind, source identity/fingerprint, target locale and generation policy version.
+
+#### EX67-49 — Durable task identity is separate from delivery identity
+Queue messages reference the row UUID, while deduplication uses the stable SHA-256 task identity.
+
+#### EX67-50 — Duplicate planning can enqueue the same durable task id again
+`upsertPending()` deduplicates storage, but the dispatcher still invokes enqueue for each planned dispatch.
+
+#### EX67-51 — PR #67 does not claim exactly-once Queue delivery
+Duplicate delivery safety is assigned to later consumer idempotency.
+
+#### EX67-52 — PR #67 does not add a real Cloudflare Queue adapter
+The only concrete enqueuer in this PR is the fake test adapter.
+
+#### EX67-53 — PR #67 does not add a task consumer or claim/lease state
+JOB-03 execution ownership is deferred.
+
+#### EX67-54 — PR #67 does not execute a translation provider
+The durable task layer remains upstream of provider work.
+
+#### EX67-55 — PR #67 does not conditionally publish a provider result
+The post-provider current-source/current-policy guard remains future work.
+
+#### EX67-56 — PR #67 does not implement reconciliation
+JOB-06 recovery is a later consumer of the durable pending state.
+
+#### EX67-57 — Review 4018711812 identifies client-clock duplicate-upsert timestamp risk
+`updatedAt: new Date()` can precede a database-generated created_at under clock skew.
+
+#### EX67-58 — The #67 timestamp finding is not corrected inside PR #67
+There is no later internal #67 commit after the review.
+
+#### EX67-59 — PR #69 later replaces this client-owned lifecycle timestamp with PostgreSQL statement time
+That later correction is forward evidence only for the #67 record.
+
+#### EX67-60 — PROJECT_STATE records durable task persistence before enqueue
+The Stage 5A state text describes commit-before-enqueue ordering.
+
+#### EX67-61 — PROJECT_STATE records pending survival on enqueue failure/unknown as the intended #67 state
+At this PR boundary the direct failure test is the unit/fake boundary, not the later fresh-DB proof.
+
+#### EX67-62 — Migration 0007 is not externally applied by PR #67
+The project remains on the local/CI pre-release schema path.
+
+#### EX67-63 — PR #67 adds no external Queue/provider resource
+No credential, binding or external smoke is part of completion.
+
+#### EX67-64 — Final PR #67 CI is green
+CI #160 succeeds on `f6b7f32923d5bbb9b5e2a5621bd65cb8fe1a62b6`.
+
+### Candidate atomic decisions — PR #68
+
+#### EX68-01 — Migration 0008 extends task status to pending/processing/stale
+The previous pending-only lifecycle is expanded.
+
+#### EX68-02 — Migration 0008 adds claim_token
+Processing ownership gets a unique token field.
+
+#### EX68-03 — Migration 0008 adds claimed_at
+The first claim time is persisted.
+
+#### EX68-04 — Migration 0008 adds lease_expires_at
+Claim ownership has a persisted lease deadline.
+
+#### EX68-05 — Migration 0008 adds stale_at
+Stale terminal transition time is persisted.
+
+#### EX68-06 — Pending rows require no claim/lease/stale metadata
+The lifecycle check constrains pending state shape.
+
+#### EX68-07 — Processing rows require a claim token
+A processing task without ownership metadata is invalid.
+
+#### EX68-08 — Processing rows require claimed_at
+The lifecycle check requires the claim timestamp.
+
+#### EX68-09 — Processing rows require a lease expiration after claimed_at
+The DB lifecycle constraint requires `lease_expires_at > claimed_at`.
+
+#### EX68-10 — Processing rows cannot have stale_at
+The lifecycle states are mutually constrained.
+
+#### EX68-11 — Stale rows clear claim token
+Terminal stale state does not retain execution ownership.
+
+#### EX68-12 — Stale rows retain claimed_at
+The historical claim time remains present.
+
+#### EX68-13 — Stale rows clear lease_expires_at
+There is no live lease after stale transition.
+
+#### EX68-14 — Stale rows require stale_at >= claimed_at
+The DB constrains stale transition ordering.
+
+#### EX68-15 — claim() validates task UUID
+Malformed task identifiers are rejected.
+
+#### EX68-16 — claim() validates a positive safe-integer lease duration
+Invalid lease lengths are rejected.
+
+#### EX68-17 — PR #68 claim time is supplied by the caller
+The store signature is `claim(id, now, leaseDurationMs)` at this historical boundary.
+
+#### EX68-18 — PR #68 lease expiry is computed from the caller time
+`leaseExpiresAt = now + leaseDurationMs`.
+
+#### EX68-19 — Every successful claim gets a new random UUID claim token
+A reclaim does not reuse previous ownership token.
+
+#### EX68-20 — A pending task is claimable
+The atomic update accepts status pending.
+
+#### EX68-21 — An expired processing task is reclaimable
+The atomic update also accepts processing with `lease_expires_at <= now`.
+
+#### EX68-22 — A live processing task is not updated by a duplicate claim
+If the lease is still live, the update predicate does not match.
+
+#### EX68-23 — Successful claim atomically writes processing ownership metadata
+Status/token/claimedAt/leaseExpiresAt/updatedAt are updated together.
+
+#### EX68-24 — A successful claim returns typed processing state
+The result is `outcome: claimed` plus a non-null claim token.
+
+#### EX68-25 — Claim of a missing id returns not-found
+A failed update is followed by task lookup.
+
+#### EX68-26 — Claim of stale returns terminal
+The old Queue delivery cannot reclaim a stale row.
+
+#### EX68-27 — Claim of a live non-stale row returns already-claimed
+Duplicate live delivery is a no-op outcome.
+
+#### EX68-28 — Concurrent PostgreSQL claim coverage grants exactly one owner
+The DB test runs two stores over separate pool connections.
+
+#### EX68-29 — Concurrent PostgreSQL claim coverage yields one already-claimed duplicate
+The second live delivery does not get an execution token.
+
+#### EX68-30 — Expired lease reclaim produces a different claim token
+The test distinguishes the new owner from the expired owner.
+
+#### EX68-31 — markStale requires task id and claim token
+The stale transition is ownership-conditioned.
+
+#### EX68-32 — markStale updates only a processing row with the current claim token
+An obsolete token cannot complete the newer claim.
+
+#### EX68-33 — markStale clears claim token and lease
+The stale row no longer owns execution.
+
+#### EX68-34 — markStale records staleAt and updatedAt from the caller clock in #68
+This is the historical behavior later moved to PostgreSQL time.
+
+#### EX68-35 — markStale returns false after claim ownership has changed
+The test verifies the expired owner cannot mark the reclaimed task stale.
+
+#### EX68-36 — markStale returns true for the current claim token
+The new owner can perform the stale transition.
+
+#### EX68-37 — A stale task is not reclaimed by later delivery in #68
+The test expects `terminal` after stale transition.
+
+#### EX68-38 — UiTranslationTaskConsumer claims before running stale preflight
+No provider eligibility check runs without execution ownership.
+
+#### EX68-39 — A non-claimed consumer outcome bypasses preflight
+Already-claimed and terminal deliveries do not load manual sources.
+
+#### EX68-40 — Missing canonical descriptor marks the claimed task stale
+The reason is `source-missing`.
+
+#### EX68-41 — Changed canonical source fingerprint marks the claimed task stale
+The reason is `source-changed`.
+
+#### EX68-42 — Changed generation policy marks the claimed task stale
+The reason is `policy-changed`.
+
+#### EX68-43 — Removed/invalid generation target marks the claimed task stale
+The reason is `target-locale-ineligible`.
+
+#### EX68-44 — Disabled target locale is ineligible in the #68 consumer
+Consumer preflight explicitly rejects publicationStatus disabled.
+
+#### EX68-45 — Exact-target current local manual translation makes the machine task stale
+The reason is `manual-translation-exists`.
+
+#### EX68-46 — Exact-target current persistent manual translation makes the machine task stale
+The persistent manual source participates in the
