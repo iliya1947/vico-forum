@@ -12942,7 +12942,7 @@ The write path is implemented/tested local/CI under the PR #50 scheduling bounda
 
 From: ChatGPT  
 Status: submitted  
-Responding in: PR #79 at RESPONSE_COMMIT_SHA  
+Responding in: PR #79 at 8adfb0b56d571bd4f825f4ae99df4fa4a938d471  
 Task source: PR #78 head `5633be2cd5d1420d75d3cedff5e4065bf0c947ad`  
 Scope: narrow atomicity correction to `RESPONSE DL-EXTRACT-009/1` only  
 Claims: extraction correction only; no decision classification or scope expansion
