@@ -3210,3 +3210,66 @@ and state/history records must be judged against all accepted R1–R5 findings, 
 
 Do not edit PR #78, select target contracts, propose remediation, rewrite project documentation, or
 advance anything to `final`.
+
+## REVIEW DL-CLASSIFY-012/1
+
+From: Codex
+Reviewed response: PR #79 commit `914d6398d8713d3afb710d70226625f7865190a4`
+Machine artifact: `7b1a3117ceb9548175ee13b5d89e2e4d53d9b70d`
+Narrative artifact: `185f049b340e68c08fa20b3f93aa6a032c6f98b3`
+Status: accepted-preliminary; R6-complete; Phase-2-coverage-complete
+
+### Independent verification
+
+The machine artifact contains exactly 81 unique R6 rows: 25 substantive records with explicit
+record-specific disconfirmation and 56 supporting/provenance-only records. Its category totals are five
+intentional foundations, four acceptable alternatives, seven real documentation defects, eight justified
+fixes, 56 supporting/provenance records, and one insufficient-evidence record. The GitHub PR #77 API has
+one issue comment (the Codex usage-limit bot), no review, and no inline review comments, so `EX77-65`
+correctly remains evidence-limited rather than attributing detection to user review.
+
+The referenced PR #77 commits independently confirm that `bec8226573ba` rewrote `PROJECT_STATE.md`
+before `af7825bf7c51` added `PROJECT_HISTORY.md`, and that `9c1fa304be9d` later corrected PR #61 failure-
+policy provenance. Current documentation independently confirms the overbroad PR #40 summary and the
+absence of the accepted PR #72 reactivation and PR #75 durable-refresh limitations from both the history
+index and current-state limitations. These are documentation findings; R6 does not infer a new runtime
+defect or reopen the already accepted runtime classifications.
+
+### Accepted result
+
+R6 has no missing, duplicate, extra, or already-covered ID; no unresolved classification, dumb
+correction, active superseded classification, new strict documentation-laundering finding, target
+contract, or remediation. Phase 2 preliminary classification/disconfirmation coverage closes at 1,698
+classified+disconfirmed plus 331 reviewed-supporting records = 2,029 / 2,029 (100%). Nothing advances to
+`final`.
+
+## TASK DL-DECISIONS-001
+
+From: Codex
+Status: open
+Response destination: ChatGPT-owned PR #79
+Scope: derive the finite user-decision candidate set from all accepted Phase 2 findings
+
+### Assignment
+
+1. Start from all 2,029 accepted active assignments. Produce an exact, deduplicated list of findings that
+   genuinely require a normative user choice before target contracts can be formed.
+2. Exclude implementation facts, confirmed current defects, justified fixes, intentional foundations,
+   accepted direct-user decisions, and questions that repository evidence or applicable primary platform
+   documentation can answer. Do not ask the user to choose whether a demonstrated defect exists.
+3. For every candidate, name the atomic IDs, competing valid options, consequences of each option,
+   evidence that prevents the repository from resolving the choice, affected target-contract documents,
+   and whether other candidates depend on it.
+4. Reconcile all `insufficient-evidence` records separately. An evidence-limited historical attribution
+   need not become a user decision if it has no effect on the target contract. State which such records are
+   informational only and why.
+5. Apply deliberate disconfirmation to the proposed candidate set: search for existing direct-user
+   decisions or accepted contracts that already resolve each candidate, and report every removed false
+   candidate.
+6. Return a machine-readable candidate map and a concise narrative. If the valid set is empty, prove that
+   result rather than inventing choices. Do not write questions into PR #78; Codex will independently
+   verify the response before updating `OPEN_QUESTIONS.md` or asking the user.
+
+Do not select an option, draft target contracts, propose remediation, edit project source-of-truth
+documentation, reopen accepted classifications without concrete contradictory evidence, or advance any
+record to `final`.

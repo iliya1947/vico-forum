@@ -265,10 +265,11 @@ required restoration remain open until full-history and cross-stage review.
   boundaries. The forum/auth foundation and Stage 4 implementation block is also reviewed, preserving the
   future-proof revision model and identifying three concrete code/test/UI defects. The Stage 5A chain is
   also reviewed, preserving its durable future-proof foundations while identifying two current defect
-  groups. After accepting R1–R5, including all 71 R3 records, **Phase 2 is 96.0079% complete**: 1,673
-  classified+disconfirmed plus 275 reviewed-supporting records, with 81 unreviewed. The remaining exact
-  partition is R6=81, reviewed last because it contains retrospective/state records that depend on R1–R5;
-  extraction completion must not be mistaken for completed findings or remediation.
+  groups. R6 has now reconciled the retrospective/state records against R1–R5. **Phase 2
+  classification/disconfirmation coverage is complete at 2,029 / 2,029 = 100%**: 1,698
+  classified+disconfirmed plus 331 reviewed-supporting records, with no unreviewed canonical ID and no
+  active superseded classification. This closes preliminary classification coverage only; it must not be
+  mistaken for final findings, approved target contracts, or remediation.
 - No project decision has reached final status and no product/source-of-truth documentation or runtime
   code has been corrected by this audit branch.
 

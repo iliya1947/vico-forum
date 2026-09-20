@@ -194,6 +194,27 @@ R3 contains no dumb correction, insufficient-evidence record, unresolved item, p
 or strict documentation laundering. PR #65 is analogous forward evidence for `EX34-23`, not a correction
 of the still-live `bundles.ts` path.
 
+### R6 retrospective history and state (`DL-CLASSIFY-012`)
+
+| Records | Preliminary classification | Evidence boundary |
+| --- | --- | --- |
+| 5 R6 records | intentional documentation foundations | The state/history/contracts responsibility split and history index are useful, while remaining non-authoritative retrospective summaries. |
+| 4 R6 records | acceptable alternatives | Documentation organization and linking choices are coherent without becoming product or runtime contracts. |
+| `EX77-24` | real current documentation defect | The high-level PR #40 label collapses a mixed change into one regression even though only its zero-stale gate is an accepted dumb correction. |
+| `EX77-58`, `EX77-59` | real current history omissions | `PROJECT_HISTORY.md` omits the accepted current PR #72 reactivation defect and PR #75 durable-refresh gap. |
+| `EX77-75`, `EX77-76` | real current state omissions | `PROJECT_STATE.md` records the implemented mechanisms but omits those two accepted current limitations. |
+| `EX77-16`, `EX77-46` | historical documentation defects | PR #77 temporarily removed accessible history and initially misattributed PR #61's broad failure policy; both were corrected before merge. |
+| 8 R6 records | justified documentation fixes | `EX77-03/17/18/19/47/48/53/56` correct concrete CI, stage-boundary, history, provenance, or omitted-regression records. |
+| `EX77-65` | insufficient evidence | Git proves history loss and its correction, but available PR discussion does not prove that user review specifically detected it. |
+| 56 R6 records | reviewed supporting/provenance | These index chronology, scope, CI, current wording, or accepted chains without supplying independent normative authority. |
+
+R6 contains no dumb correction, unresolved classification, new runtime defect, or newly confirmed strict
+documentation laundering. Its 25 substantive records have recorded deliberate-disconfirmation passes;
+the other 56 are explicitly supporting/provenance-only. With R6 accepted, all 2,029 canonical IDs are
+covered exactly once by an active preliminary classification or reviewed-supporting assignment. Phase 2
+classification/disconfirmation coverage is complete, but no record is `final`, and no target contract or
+remediation has been selected.
+
 ## Record template
 
 ```text
