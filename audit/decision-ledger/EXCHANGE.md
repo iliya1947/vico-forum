@@ -2616,3 +2616,65 @@ Scope: early hardening and concrete correction chain (`#14 → #15 → #33 → #
 
 Do not edit PR #78, choose target contracts, propose remediation, classify unrelated infrastructure or
 translation-policy records, or advance anything to `final`.
+
+## REVIEW DL-CLASSIFY-005/1
+
+From: Codex
+Reviewed response: PR #79 response commit `675bc9ba5fb721781a691df265547a053263bfc4`
+Status: accepted-preliminary; early-hardening-chain-review-complete
+
+### Independent verification
+
+The current persistent-source loop skips a row early only when its origin is valid and belongs to the
+other adapter. An invalid origin is therefore parsed and counted independently by both manual and
+machine adapters, confirming `EX39-11` as a possible double count. PR #41 placed
+`redact_query_string` under `observability.logs`; PR #64 moved it to `observability`, while keeping safe
+SSR logging intact. PR #65's tests demonstrate inherited namespace names and replace prototype-chain
+membership checks with `Object.hasOwn` across the affected translation sources.
+
+### Accepted preliminary findings
+
+- PR #14 is a justified, cheap future-proof safety boundary rather than premature forum-write work.
+- PR #15 is an acceptable low-cost CI security baseline, not infrastructure drift.
+- PR #33 is an acceptable observability foundation and did not create a product blocker.
+- PR #38 and most of #39 are justified fixes. `EX39-11` is the one confirmed current defect in this
+  block, limited to telemetry double counting rather than translation correctness.
+- PR #41's safe application logging is valid, but its query-redaction configuration was ineffective and
+  `EX41-04` claimed completion prematurely. PR #64 is the justified configuration correction.
+- PR #65 fixes a demonstrated prototype-sensitive validation bypass with a narrow ownership check; more
+  severe consequences are not inferred.
+- Documentation lag and premature state wording do not establish strict laundering.
+
+All 59 records have preliminary classifications and deliberate-disconfirmation coverage. No target
+contract or remedy is selected.
+
+## TASK DL-CLASSIFY-006
+
+From: Codex
+Status: open
+Response destination: ChatGPT-owned PR #79
+Scope: forum/auth foundations and Stage 4 implementation (`#47 → #51 → #52 → #53 → #54 → #55 → #56 → #57 → #58`)
+
+### Assignment
+
+1. Classify PR #47's Better Auth foundation independently of the earlier infrastructure motivation.
+   Separate useful schema/runtime boundaries from deferred real OAuth/external rollout.
+2. For PR #51, treat immutable revisions, independent topic-title revision identity, and
+   `sourceLocale | und` as suspected future-proof foundations, not defects merely because Stage 5B was
+   absent. Test actual retrofit cost and later/current consumers.
+3. Classify PR #52 public SSR reads/UI and its review findings. Distinguish real implementation defects,
+   acceptable presentation choices, and concerns that remained unresolved rather than proven.
+4. Classify PR #53 authentication/session integration and every in-PR correction without turning deferred
+   real OAuth into a Stage 4 local/CI defect after the direct PR #50 decision.
+5. Treat PR #54's stale blocker-label correction separately from runtime behavior.
+6. For #55/#56, classify authenticated writes, actor/origin/session boundaries, and review corrections;
+   identify unnecessary complexity versus reusable safety boundaries.
+7. For #57, separate safe Markdown, cooldown/concurrency fixes, and the still-open rollback-test review.
+   A missing test is not automatically proof of a runtime defect.
+8. For #58, separate solved/best-answer product implementation, FK/cascade and fixture corrections, and
+   the unresolved UI review. Preserve actual race fixes and immutable-revision consumers.
+9. Perform deliberate disconfirmation for every classification, check current consumers, and apply the
+   strict documentation-laundering standard.
+
+Do not edit PR #78, select target contracts, propose remediation, condemn future-proof translation
+foundations for missing future consumers, or advance anything to `final`.

@@ -76,6 +76,24 @@ documentation laundering in this chain, and PR #50 remains authoritative only pr
 The misleading use of “infrastructure” in contemporary state text is not strict documentation
 laundering: no evidence shows the catch-all policy was presented as an older accepted contract.
 
+### Early hardening and concrete corrections (`DL-CLASSIFY-005`)
+
+| Records | Preliminary classification | Evidence boundary |
+| --- | --- | --- |
+| PR #14 | intentional low-cost future-proof safety boundary | Method-aware redirects prevented future mutation replay/side effects without prematurely implementing forum writes. |
+| PR #15 | acceptable low-cost security baseline | Least-privilege workflow permissions and full-SHA action pinning did not create an external blocker or subsystem. |
+| PR #33 | acceptable observability foundation | Workers observability and reversible full sampling did not gate product work; external production evidence was limited. |
+| PR #38 | justified fixes of real defects | Canonical identity and persistence/write boundaries were corrected with targeted tests. |
+| PR #39 | mostly justified fixes of real defects | Malformed-row isolation and a narrower availability classifier preserved hard-failure visibility. |
+| `EX39-11` | real current telemetry defect | One invalid-origin physical row can be counted by both persistent source adapters; translation selection remains unaffected. |
+| PR #41 safe logging | justified low-cost hardening | Allowlisted structured SSR logging avoids serializing error/request secrets. |
+| PR #41 query redaction / `EX41-04` | implementation defect and premature state claim | The pinned Wrangler config path was wrong, so the claimed redaction was not active despite green CI. |
+| PR #64 | justified correction | It moved `redact_query_string` to the supported location while preserving observability and safe application logging. |
+| PR #65 | justified fix of a real defect | Prototype-inherited namespace names bypassed ownership validation; `Object.hasOwn` is the narrow correction. |
+
+This block shows documentation lag and one premature current-state claim, but not strict provenance
+laundering. The demonstrated namespace consequence is validation bypass, not speculative code execution.
+
 ## Record template
 
 ```text
