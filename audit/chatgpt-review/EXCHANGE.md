@@ -12264,3 +12264,675 @@ The following are transcription duplicates only. For each entry, retain one cano
 Every other \`RESPONSE DL-EXTRACT-008/1\` record, direct-user provenance boundary, review finding, supersession/history statement, category sweep, CI/deployment/evidence limitation, changed-file reconciliation, and dependency/reconciliation statement remains unchanged except for the explicit old-ID reference substitutions listed above.
 
 No PR #50 rule is applied retroactively to PR #37–#49. No decision is classified here.
+
+
+## RESPONSE DL-EXTRACT-009/1
+
+From: ChatGPT
+Status: submitted
+Responding in: PR #79 at RESPONSE_COMMIT_SHA
+Task source: PR #78 head 361e58f3b617dcc9c80f3aff76b2db6f69675d80
+Scope: PRs #51–#55 in chronological merge order
+Claims: evidence extraction only; no correctness, defect, prematurity, future-proofing, infrastructure-drift, approval, remedy, or target-state classification
+
+### Coverage sweep
+
+#### PR #51 / merge d07f81afceb3010a1dd6bcd7855a95f2ee2f4124
+
+F: Stage 4B forum domain foundation and revision-bound content identity | A: forum schema, repository/service boundary, current-revision model, source-locale boundary | C: in-PR input/schema/test minimization plus two P2 review findings | D: PROJECT_STATE records Stage 4B local/CI completion and the external auto-deploy prerequisite as closed | O: no Neon migration, production migration workflow, deploy, new Hyperdrive, OAuth/provider resource, or other external rollout; native Cloudflare Git integration is recorded as disabled by the user | G: forum development proceeds local/CI under the PR #50 user decision; Stage 4C becomes next | T: forward migration 0004, snapshot/journal, PostgreSQL integration coverage and optimistic-revision tests
+
+Evidence inspected:
+- PR body, complete changed-file set, all five internal commits: 83ac9e0, 4cc97ef, 654aa4e, f11e331, 799aba8.
+- Two P2 review comments on the initial implementation: superseded revision deletion and unbounded/N+1 readHierarchy.
+- Final CI #101: checks=success, database=success.
+- No Cloudflare deployment/preview bot artifact is present for this PR after the recorded disabling of native Git integration.
+- Current accepted migration 0004 still has BEFORE UPDATE immutability triggers and no BEFORE DELETE revision trigger; this is current evidence for the historical deletion-review lineage, not a classification.
+
+Completeness limits:
+- The recorded Cloudflare Git-integration disablement is a repository/user-action claim; no separate raw Cloudflare settings artifact is attached here.
+- PR #51 intentionally does not prove external Neon application of migration 0004; under PR #50 that external action is not a Stage 4B local/CI acceptance requirement.
+- Later Stage 5 consumers do not retroactively determine whether the revision foundations were correct; they are only forward dependency evidence.
+
+#### PR #52 / merge 8aed969967ada3ca5863a58e2a24c8b03a1d5caa
+
+F: Stage 4C public read-only forum SSR and classic navigation/UI | A: page-shaped ForumReader, request-scoped Worker capability, locale-scoped routes, canonical link construction, route error boundary | C: raw-ID path bug found on first commit and fixed in second; count-label/plural review remains open | D: PROJECT_STATE records Stage 4C completed local/CI, but its blocker paragraph still says “continue Stage 4C” | O: forum reads use the existing Hyperdrive connection; no schema/external rollout change | G: read-only forum path only; write/auth participation remains later | T: repository integration tests, LTR/RTL route/UI tests, 404/path-encoding regressions
+
+Evidence inspected:
+- PR body, all 19 changed files, commits 5f083a1 and e7afc1f.
+- Two P2 review comments on first commit: unsafe raw route interpolation and literal “(s)” count labels.
+- The raw-ID review is addressed by e7afc1f with generatePath-based helpers and opaque-ID round-trip coverage; the review thread is outdated.
+- The count-label review remains unresolved/non-outdated.
+- Final CI #103: checks=success, database=success.
+- No external deployment artifact is present; schema 0004 is unchanged.
+
+Completeness limits:
+- No pagination is implemented in this slice; public read queries return ordered full result sets for the selected page/entity. This is extracted as behavior, not classified as a defect.
+- Presentation wording/plural semantics are kept separate from data/routing correctness.
+- PR #51 readHierarchy remains historical code, while PR #52 public routes use separate page-shaped reads; later public behavior does not erase the original #51 review finding.
+
+#### PR #53 / merge f9f03fb0c591eb6df9dc55d950634786650c0c66
+
+F: first Stage 4D Better Auth runtime/session foundation | A: exact checked-in Better Auth schema through Drizzle adapter, request-scoped auth runtime/context, pre-router session resolution, auth resource route, root locale preference | C: in-PR sliding-session cookie propagation fix and node-typecheck fix; two P1 review findings remain visible | D: PROJECT_STATE records Stage 4D started and real Google OAuth/external credentials deferred | O: runtime uses the same env.HYPERDRIVE connection string as existing capabilities; Google settings are server env placeholders; no real OAuth/provisioning/deploy | G: local/CI auth/session only; external OAuth and production infrastructure are explicitly deferred | T: unit/security config tests, real local PostgreSQL Better Auth integration test, Workers local Hyperdrive smoke, node typecheck expansion
+
+Evidence inspected:
+- PR body, all 15 changed files, commits 90f3af9, ed8c59a, 23ffa4f.
+- Two P1 review comments on 90f3af9:
+  1. preview/non-production auth capability shares the fixed HYPERDRIVE binding and could cross the retained production-isolation boundary if such preview is externally used;
+  2. CI Workers smoke appeared not to provide BETTER_AUTH_SECRET.
+- Final CI #106 has both checks and database successful. The database job’s Workers smoke succeeded with the local Hyperdrive override.
+- The final CI workflow at this head declares DATABASE_URL and CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE in the database job but no Better Auth/Google env values. Thus the second review prediction did not manifest in the final CI run; the exact reason is not established by preserved evidence and is not normalized into a verdict here.
+- The first review remains an external-topology/isolation concern; this PR itself performs no non-production external deployment, and PR #51 records native Git integration disabled.
+
+Completeness limits:
+- Local PostgreSQL integration uses explicit non-production Better Auth/Google test values and does not establish real Google OAuth behavior.
+- No separate auth Hyperdrive/role/grants are provisioned in this PR.
+- PR #50’s direct user decision authorizes local/CI scheduling from #50 onward, but does not waive the retained preview/private-data isolation rule or classify the #53 review finding.
+
+#### PR #54 / merge 9a09a2d85e0fb5d143f5394698ec84c48dc99a54
+
+F/A/O/T: none | C/D: one-line project-state label correction | G: the “no blockers” state is preserved; only the active stage name changes from 4C to 4D
+
+Evidence inspected:
+- PR body, sole changed file PROJECT_STATE.md, sole commit e671932.
+- No review threads/comments.
+- Final CI #107: checks=success, database=success.
+
+Historical timing:
+- The label first became stale in PR #52: that PR marked Stage 4C completed and Stage 4D–4E next, but left “Для продолжения Stage 4C ... блокеров нет” unchanged.
+- PR #53 then began Stage 4D while preserving the same stale blocker label.
+- PR #54 changes only Stage 4C → Stage 4D in that sentence; it does not create a new blocker policy or new product/runtime contract.
+
+#### PR #55 / merge 826167b2e35ae607a8013c7dad2a2fadb178bcaa
+
+F: authenticated topic creation with initial post and authenticated replies | A: request-scoped ForumWriter, route mutation boundary, transactional forum graph writes, server-derived actor identity | C: second commit isolates DB test fixture; no GitHub review threads | D: PROJECT_STATE records local/CI forum participation and explicitly leaves sign-in UX, Markdown, write anti-spam/rate limiting, solved/best-answer and later work outstanding | O: writer uses the existing env.HYPERDRIVE connection string; no external write-role/Hyperdrive provisioning or production rollout | G: same-origin + session + input guards; Stage 4D remains incomplete | T: route-action tests plus disposable PostgreSQL persistence/rollback integration coverage
+
+Evidence inspected:
+- PR body, all 14 changed files, commits 89427dd and 43874ac.
+- No review threads or submitted reviews.
+- Final CI #109: checks=success, database=success.
+- No external deployment artifact is present.
+- PR #57 later adds a transactional write-cooldown/concurrency policy that PR #55 explicitly listed as still outstanding. That later feature is forward evidence, not retroactive proof of a #55 defect.
+- The second #55 commit changes only test cleanup/isolation after the integration test creates a runtime topic; it is not a production race correction.
+
+Completeness limits:
+- The write capability is proven in local/disposable PostgreSQL and CI, not against production roles/bindings.
+- No anti-spam/write-rate policy is claimed complete in #55.
+- No distinct production race correction was found inside #55; existing transaction/revision semantics and later #57 concurrency policy remain separate records.
+
+### Candidate atomic decisions — PR #51
+
+#### EX51-01 — Stage 4B adds persistent forum category identity
+forum_categories receives stable text id, nonblank name and created_at.
+
+#### EX51-02 — Forum sections belong to categories with cascade ownership
+forum_sections requires category_id, cascades with category deletion, keeps a nonblank name and category lookup index.
+
+#### EX51-03 — Forum topics belong to sections
+forum_topics requires section_id with cascade behavior from section deletion.
+
+#### EX51-04 — Forum topics are authored by existing Better Auth user identity
+forum_topics.author_id references user.id with delete restrict.
+
+#### EX51-05 — Forum posts belong to topics
+forum_posts requires topic_id and cascades when the containing topic is deleted.
+
+#### EX51-06 — Forum posts are authored by existing Better Auth user identity
+forum_posts.author_id references user.id with delete restrict.
+
+#### EX51-07 — Topic title is a separate revisioned/translatable unit
+forum_topic_title_revisions is separate from forum_topics rather than storing mutable title text on the topic row.
+
+Backward/normative lineage: CNT-05 and the PR #50 Stage 4B foundation schedule. This is a future-consumer identity boundary; absence of Stage 5 consumption in PR #51 is not treated as a defect during extraction.
+
+#### EX51-08 — Post body is stored as immutable revision identity
+forum_post_revisions separates post identity from post-body revisions.
+
+Backward/normative lineage: CNT-02 and the PR #50 Stage 4B foundation schedule.
+
+#### EX51-09 — Forum revision payload preserves original content
+Both title and post-body revisions store original_content as required nonblank content.
+
+#### EX51-10 — Forum revision identity stores source locale independently of current UI locale
+Both revision tables require source_locale.
+
+Backward/normative lineage: CNT-03.
+
+#### EX51-11 — Translation source locale is not foreign-keyed to LocaleRegistry persistence
+There is no FK from forum revision source_locale to locales and no persistent und locale row is required.
+
+Backward: PR #50 Stage 4B sourceLocale | und boundary and code-owned/data-driven locale model.
+
+#### EX51-12 — und is an allowed source-language identity
+ForumService accepts und as the unknown/undetermined source locale for revision data.
+
+#### EX51-13 — Non-und source locales are canonicalized through the existing translation-locale boundary
+4cc97ef replaces the initial already-canonical requirement with canonicalizeTranslationLocale; e.g. EN-us is normalized to en-US.
+
+#### EX51-14 — Formatting/Unicode-extension locale forms are rejected for content source identity
+The service rejects source locale forms outside the translation-locale identity boundary, including formatting extensions.
+
+#### EX51-15 — Topic keeps an explicit current-title-revision pointer
+forum_topics.current_title_revision_id is required.
+
+#### EX51-16 — Post keeps an explicit current-body-revision pointer
+forum_posts.current_revision_id is required.
+
+#### EX51-17 — Current topic-title pointer is owner-matched at the database boundary
+Migration 0004 adds composite FK (topic id, current title revision id) to (revision topic_id, revision id).
+
+#### EX51-18 — Current post-body pointer is owner-matched at the database boundary
+Migration 0004 adds the corresponding composite FK for posts.
+
+#### EX51-19 — Current-revision owner-matching FKs are DEFERRABLE INITIALLY DEFERRED
+The manual migration permits the owner row to point at a revision inserted later in the same transaction and checks the cycle at transaction end.
+
+#### EX51-20 — Revision-to-owner containment FKs remain immediate and cascade on aggregate deletion
+The final 799aba8 form removes the initial deferrability alteration on revision→owner FKs and keeps ON DELETE CASCADE.
+
+This is an in-PR finalization distinct from EX51-19.
+
+#### EX51-21 — Revision rows are protected from in-place UPDATE
+Migration 0004 creates reject_forum_revision_update and BEFORE UPDATE triggers on both revision tables.
+
+#### EX51-22 — P2 review records that superseded revision rows remain directly deletable
+The immutability trigger covers UPDATE only; after a revision is no longer current, the current-pointer FK no longer protects it from direct DELETE.
+
+Status/evidence: unresolved review finding in #51; current accepted migration 0004 still contains no BEFORE DELETE revision trigger. No remedy/classification is selected here.
+
+#### EX51-23 — Aggregate hierarchy deletion intentionally cascades revision history with its owner
+Deleting the forum aggregate owner (category/section/topic/post according to the FK chain) cascades contained revision rows; tests exercise these aggregate deletion paths.
+
+This is separate from direct deletion of a superseded revision in EX51-22.
+
+#### EX51-24 — createTopic creates topic identity and initial title revision atomically
+Repository createTopic uses one DB transaction for the topic row and title revision.
+
+#### EX51-25 — createPost creates post identity and initial body revision atomically
+Repository createPost uses one DB transaction for the post row and body revision.
+
+#### EX51-26 — Topic-title revision append uses optimistic current-pointer compare-and-swap
+reviseTopicTitle inserts a new revision and advances current_title_revision_id only if the expected current revision still matches.
+
+#### EX51-27 — Post-body revision append uses optimistic current-pointer compare-and-swap
+revisePostBody performs the analogous expected-current guard.
+
+#### EX51-28 — Failed optimistic revision advancement aborts the transaction
+A missing compare-and-swap update throws ConcurrentRevisionError, so the just-inserted candidate revision is rolled back rather than left as a successful append.
+
+#### EX51-29 — ForumService validates nonblank entity/parent/content input
+4cc97ef explicitly adds nonblank sectionId/topicId checks in addition to IDs/authors/content checks.
+
+#### EX51-30 — Initial readHierarchy is an unbounded nested hierarchy reader
+The PR #51 helper reads category→sections→topics→posts without a page limit and performs per-topic/per-post follow-up reads.
+
+#### EX51-31 — P2 review records N+1/unbounded readHierarchy scaling risk
+The review specifically targets the sequential unbounded hierarchy helper.
+
+Forward evidence: PR #52 public SSR does not use this helper; it introduces separate page-shaped aggregate reads. That later route choice does not erase the historical #51 review.
+
+#### EX51-32 — Migration 0004 is append-only repository history
+The forum schema enters checked-in Drizzle history as the next forward migration/snapshot/journal entry rather than rewriting accepted migrations.
+
+#### EX51-33 — Stage 4B is accepted by project state as a local/CI foundation, not an external rollout
+PROJECT_STATE records the forum schema/repository/revision work as complete for Stage 4B without production migration/runtime rollout.
+
+Normative timing: direct-user PR #50 local/CI decision from #50 onward.
+
+#### EX51-34 — Native Cloudflare Git integration is recorded as disabled by the user
+PROJECT_STATE changes the pre-first-forum-code auto-promotion prerequisite from open to completed and states main merges no longer auto-deploy.
+
+Evidence limit: no raw Cloudflare configuration artifact is attached to PR #51.
+
+#### EX51-35 — Stage 4C becomes the next active product slice with no recorded product/operational blocker
+PROJECT_STATE moves the next route to public forum reading.
+
+#### EX51-36 — Redundant owner-side composite UNIQUE constraints are removed before merge
+799aba8 removes forum_topics(id,current_title_revision_id) and forum_posts(id,current_revision_id) unique constraints while retaining the revision-side composite keys needed by the current-pointer FKs.
+
+#### EX51-37 — Redundant revision-owner single-column indexes are removed before merge
+799aba8 removes explicit topic_id/post_id revision indexes that duplicated the leading column of the retained composite unique indexes.
+
+#### EX51-38 — An unrelated locale semantic-identity assertion is removed from the forum migration test
+f11e331 reverses the prior test-only addition so forum work does not add an unrelated registry-hash assertion.
+
+### Candidate atomic decisions — PR #52
+
+#### EX52-01 — Public forum reading is exposed through a ForumReader capability
+ForumReader separates public read methods from the broader mutable repository/service surface.
+
+#### EX52-02 — ForumReader is request-context injected
+forumReaderContext and forumReaderForRequest expose the public reader through RouterContextProvider rather than module-global state.
+
+#### EX52-03 — Hyperdrive forum reads create and close a PostgreSQL client per reader operation
+createHyperdriveForumReader wraps every list/read call in its own pg Client lifecycle.
+
+#### EX52-04 — Worker constructs the forum reader from the existing HYPERDRIVE connection
+workers/app.ts adds the capability beside existing registry/translation capabilities without a new external binding.
+
+#### EX52-05 — Forum index lists categories with section counts
+listCategories performs the category summary query and home SSR renders it.
+
+#### EX52-06 — Category page returns sections with aggregate topic/post counts
+readCategory uses joins/grouping for page-shaped section summaries.
+
+#### EX52-07 — Section page returns current topic title, author and post count
+readSection joins the current title revision and Better Auth user and aggregates post counts.
+
+#### EX52-08 — Topic page returns current title, section/category ancestry and author
+readTopicPage assembles the topic header/breadcrumb model.
+
+#### EX52-09 — Topic page returns current post-body revisions with authors
+The topic-page post query joins each post only to its current body revision and author.
+
+#### EX52-10 — Public page-shaped reads replace per-row readHierarchy usage on the Stage 4C route path
+Stage 4C loaders use listCategories/readCategory/readSection/readTopicPage rather than EX51-30 readHierarchy.
+
+This is a public-path architectural change, not a deletion of the older helper.
+
+#### EX52-11 — Forum public collections use deterministic createdAt/id ordering
+Categories/sections/topics/posts are ordered by creation time with id tie-breaks where implemented.
+
+#### EX52-12 — Stage 4C public read lists are not paginated
+The repository methods return all matching sections/topics/posts for the selected entity/page in this slice.
+
+This is extracted behavior only; no defect/presentation verdict is made.
+
+#### EX52-13 — Public forum routes live under the existing canonical locale namespace
+/:locale gains categories/:categoryId, sections/:sectionId and topics/:topicId; technical API remains outside it.
+
+#### EX52-14 — Public forum links preserve the current canonical locale
+Home, breadcrumbs, category/section/topic navigation all carry the locale param selected by the locale boundary.
+
+#### EX52-15 — Initial Stage 4C links interpolate opaque entity IDs directly into paths
+5f083a1 constructs forum links as string templates without path-segment encoding.
+
+#### EX52-16 — P2 review identifies reserved-character path corruption for opaque IDs
+The review notes slash/query/fragment/percent-capable IDs can change route structure because Stage 4B only required nonblank IDs.
+
+#### EX52-17 — Central generatePath helpers replace raw forum path interpolation
+e7afc1f introduces forumIndexPath/forumCategoryPath/forumSectionPath/forumTopicPath and rewires all navigation.
+
+#### EX52-18 — Route-path regression covers opaque IDs as one encoded path segment
+The second commit tests slash/query/fragment/percent/Unicode ID encoding and matchRoutes round-trip.
+
+EX52-15/16 are therefore preserved as in-PR historical defect/review and EX52-17/18 as the in-PR correction, without an external verdict.
+
+#### EX52-19 — Stage 4C adds a classic forum shell and breadcrumbs
+The UI provides common forum header, hierarchy breadcrumbs and classic page framing.
+
+Presentation choice only; no style ranking is made.
+
+#### EX52-20 — Stage 4C adds explicit empty states for categories/sections/topics/posts
+Each public page handles an empty collection without treating it as a route error.
+
+#### EX52-21 — Missing category/section/topic returns route-level 404
+Loaders throw Response 404 for absent entities.
+
+#### EX52-22 — Forum route ErrorBoundary distinguishes 404 from generic read failure
+ForumRouteError renders localized not-found copy for route 404 and generic unavailable copy otherwise.
+
+#### EX52-23 — Locale-scoped catch-all uses the forum localized 404 boundary
+e7afc1f exports ForumRouteError from routes/not-found.ts so unknown locale-scoped URLs avoid the default application error surface.
+
+#### EX52-24 — Canonical English catalog gains Stage 4C forum-read UI descriptors
+The PR adds labels/headings/empty/error/count/author/post-number messages through the existing canonical catalog.
+
+#### EX52-25 — Count strings initially encode English “(s)” through ordinary interpolation
+sectionCount and topicAndPostCount are interpolation messages rather than count-aware plural/select descriptors.
+
+#### EX52-26 — P2 review records count/plural presentation-contract concern
+The review states literal 1 section(s)/topic(s) is poor English and ordinary interpolation does not expose locale plural semantics.
+
+Status: unresolved/non-outdated in PR #52; no correctness classification in this response.
+
+#### EX52-27 — Stage 4C read/UI is exercised in both LTR and RTL fixtures
+Public route/UI tests cover en/ltr and he/rtl while using the existing i18next snapshot boundary.
+
+#### EX52-28 — Stage 4C does not modify forum schema 0004
+PROJECT_STATE and changed files explicitly keep the Stage 4B schema unchanged.
+
+#### EX52-29 — PROJECT_STATE marks Stage 4C completed local/CI
+The state records public SSR pages/navigation as complete and keeps writes/auth for later slices.
+
+#### EX52-30 — The blocker heading becomes stale when Stage 4C is marked complete
+At the final #52 head, PROJECT_STATE says Stage 4C is completed and Stage 4D–4E is next, but the blocker section still says “Для продолжения Stage 4C ... блокеров нет”.
+
+Forward: PR #54 later corrects only this label.
+
+### Candidate atomic decisions — PR #53
+
+#### EX53-01 — Better Auth runtime consumes the checked-in Stage 4A schema through the Drizzle PostgreSQL adapter
+betterAuthOptions configures drizzleAdapter(provider pg) with user/session/account/verification/rateLimit from db/schema.ts.
+
+Backward: EX47 Stage 4A foundation. Later consumption is not treated as retroactive proof of that foundation’s original timing.
+
+#### EX53-02 — Better Auth user additionalFields reuses the server-owned locale definition
+The auth runtime passes betterAuthUserAdditionalFields from the Stage 4A schema boundary.
+
+#### EX53-03 — Better Auth runtime uses database-backed rate limiting
+rateLimit is enabled with storage=database and modelName=rateLimit.
+
+#### EX53-04 — Better Auth client-IP trust is restricted to cf-connecting-ip
+advanced.ipAddress.ipAddressHeaders contains the Cloudflare-sanitized header only.
+
+#### EX53-05 — Better Auth CSRF and origin checks are not disabled
+The exported advanced options do not set disableCSRFCheck or disableOriginCheck; unit tests assert their absence.
+
+#### EX53-06 — Google is configured as a Better Auth social provider from server environment values
+BETTER_AUTH_SECRET, BETTER_AUTH_URL, GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET form the runtime env contract; Google provider consumes the latter two.
+
+#### EX53-07 — Real Google credentials and external OAuth smoke remain deliberately deferred
+PROJECT_STATE explicitly records env placeholders/local tests only.
+
+Normative timing: PR #50 direct-user local/CI scheduling from #50 onward.
+
+#### EX53-08 — Auth runtime is exposed as a request capability
+AuthRuntime contains getSession and generic Better Auth request handling rather than exporting a process-global auth/DB object.
+
+#### EX53-09 — Every auth operation owns a fresh PostgreSQL client
+createHyperdriveAuthRuntime creates/connects/ends a pg Client around each getSession/handler operation.
+
+#### EX53-10 — Auth runtime is instantiated from the existing Worker HYPERDRIVE connection
+workers/app.ts passes env.HYPERDRIVE.connectionString into createHyperdriveAuthRuntime.
+
+This is separate from any later external decision about a dedicated auth binding/role.
+
+#### EX53-11 — No module-global PostgreSQL auth connection is introduced
+Connection/client lifetime stays inside the request capability operation.
+
+#### EX53-12 — Better Auth runtime and resolved session use typed RouterContextProvider contexts
+authRuntimeContext and authSessionContext expose runtime/session to routes and later actions.
+
+#### EX53-13 — Worker resolves the session before React Router handles the request
+initializeAuthContext executes once in workers/app.ts before requestHandler.
+
+#### EX53-14 — Guest, invalid and expired session states are represented as null context rather than blocking public requests
+Session context defaults/stores null and public request handling continues.
+
+#### EX53-15 — /api/auth/* is registered before the generic /api/* catch-all
+Both loader and action delegate the request to the request-scoped Better Auth handler.
+
+#### EX53-16 — Authenticated user.locale becomes the first root-negotiation user preference
+The no-locale root loader supplies session.user.locale to negotiateLocale before cookie/Accept-Language.
+
+#### EX53-17 — Explicit /:locale authority remains outside the authenticated root preference
+The authenticated preference changes only the root negotiation route; explicit locale URLs continue through the existing locale-boundary policy.
+
+#### EX53-18 — Initial pre-routing session lookup did not propagate Better Auth refresh Set-Cookie headers
+90f3af9 originally returned only the session value from auth.api.getSession.
+
+#### EX53-19 — ed8c59a requests Better Auth session response headers
+getSession switches to returnHeaders:true and returns session plus headers.
+
+#### EX53-20 — Only Better Auth Set-Cookie values from pre-routing lookup are copied to the final page response
+withAuthSessionCookies deliberately does not copy get-session Cache-Control/Pragma headers.
+
+#### EX53-21 — Multiple Better Auth Set-Cookie values are preserved
+The helper appends every returned cookie rather than collapsing the header.
+
+#### EX53-22 — Final page cache headers survive auth session refresh
+Unit regression verifies auth endpoint no-store/cache headers do not overwrite the actual page response policy.
+
+#### EX53-23 — Local PostgreSQL integration exercises the real Better Auth 1.7.4 schema/runtime
+tests/database/auth-runtime.test.ts creates an isolated local schema from migration 0003 and runs Better Auth with the actual Drizzle adapter.
+
+#### EX53-24 — Local auth integration proves persisted sign-up/session handling
+The test uses test-only email/password sign-up to obtain a real session cookie and verifies DB session persistence.
+
+#### EX53-25 — Local auth integration proves sliding-session refresh crosses the application response boundary
+The test stages updateAge/expiry conditions, resolves the request session, observes refreshed expiry and Set-Cookie on the final response.
+
+#### EX53-26 — Local auth integration covers guest and expired-session behavior
+The integration verifies guest null session and expired session cleanup/clearing cookie behavior.
+
+#### EX53-27 — Node typecheck explicitly includes auth server/context modules
+23ffa4f extends tsconfig.node.json so the server-only auth runtime is checked by the node project.
+
+#### EX53-28 — PR #53 adds no database schema or migration
+It consumes 0003 rather than adding a new migration.
+
+#### EX53-29 — P1 review records preview-isolation risk from reusing the fixed HYPERDRIVE binding for auth writes
+The review links new /api/auth/* write capability to the previously retained non-production/private-data isolation boundary.
+
+Counter-context: PR #51 records native Cloudflare Git integration disabled and PR #53 performs no external preview deployment. This does not erase the code/topology observation or classify it.
+
+#### EX53-30 — P1 review predicts Workers smoke failure from missing Better Auth secret
+The review notes the CI database job does not define Better Auth env values while every Worker request now constructs auth.
+
+#### EX53-31 — Final CI Workers smoke succeeds despite the env shape cited by EX53-30
+CI #106 database job completed Workers smoke successfully. The inspected workflow still exposes only DB/local-Hyperdrive env at job level and no repository BETTER_AUTH_SECRET occurrence was found.
+
+Evidence limit: preserved evidence does not establish why the prediction did not manifest, so EX53-30 is not silently declared true or false here.
+
+#### EX53-32 — PROJECT_STATE marks Stage 4D runtime/session foundation started/completed as a slice
+It records auth runtime/session resource route and user-locale integration while sign-in/forum write UI remains next.
+
+### Candidate atomic decisions — PR #54
+
+#### EX54-01 — The blocker stage label first becomes stale at PR #52
+PR #52 simultaneously marks Stage 4C complete and leaves the blocker sentence targeted at “continuing Stage 4C”.
+
+#### EX54-02 — PR #53 carries the stale label forward after Stage 4D begins
+The #53 state updates Stage 4D runtime/session progress but leaves the same Stage 4C blocker wording untouched.
+
+#### EX54-03 — PR #54 changes only the blocker target label from Stage 4C to Stage 4D
+The no-product/no-operational-blockers claim and Cloudflare auto-deploy statement are otherwise unchanged.
+
+#### EX54-04 — PR #54 is documentation synchronization rather than a new blocker contract
+No product code, schema, dependency, workflow or runtime behavior changes.
+
+### Candidate atomic decisions — PR #55
+
+#### EX55-01 — ForumWriter is a distinct request capability for forum mutations
+The write surface exposes createTopic and createReply separately from ForumReader.
+
+#### EX55-02 — ForumWriter is injected through RouterContextProvider
+forumWriterContext/forumWriterForRequest provide request-scoped access to mutation capability.
+
+#### EX55-03 — Worker constructs ForumWriter from the existing HYPERDRIVE connection
+The local/CI runtime uses env.HYPERDRIVE.connectionString for forum write capability; no separate external write binding is provisioned in this PR.
+
+#### EX55-04 — Each forum writer operation owns and closes its PostgreSQL client
+createHyperdriveForumWriter wraps each write operation in a new pg Client lifecycle.
+
+#### EX55-05 — Browser-created forum identities are server-generated UUIDs
+Writer generates topic/post/revision IDs instead of accepting them from form input.
+
+#### EX55-06 — Browser-created topic title revisions use sourceLocale und
+The write slice does not infer source language from UI locale.
+
+Backward: EX51 sourceLocale foundation.
+
+#### EX55-07 — Browser-created post/reply revisions use sourceLocale und
+Initial post and reply body revisions use the same unknown-source identity until later detection/translation flows.
+
+#### EX55-08 — Section route action creates a topic plus its initial post
+Authenticated POST on the section route invokes ForumWriter.createTopic and redirects to the created topic.
+
+#### EX55-09 — Topic route action creates a reply
+Authenticated POST on the topic route invokes ForumWriter.createReply and redirects back to the topic.
+
+#### EX55-10 — Mutation actor identity comes only from Better Auth session
+runForumMutation supplies session.user.id to the writer; caller FormData does not select author identity.
+
+#### EX55-11 — Browser forum mutations require exact same Origin as request URL
+requireSameOrigin rejects missing, malformed or cross-origin Origin before mutation execution.
+
+#### EX55-12 — Guest forum mutations return controlled 401
+forumMutationGuard denies absent auth session.
+
+#### EX55-13 — Invalid/missing route params return controlled 400
+Section/topic action validates locale and target IDs before parsing/writing.
+
+#### EX55-14 — Required title/body form values are trimmed and blank values rejected
+requiredFormText performs the route-level form validation.
+
+#### EX55-15 — FormData parse failure returns controlled 400
+Route actions catch formData parsing failure before write execution.
+
+#### EX55-16 — Domain content validation failure maps to controlled 400
+InvalidForumContentError is translated by runForumMutation.
+
+#### EX55-17 — Missing target section/topic maps to controlled 404
+ForumEntityNotFoundError is translated by runForumMutation.
+
+#### EX55-18 — All other writer failures map to generic 503
+The initial mutation error boundary does not further classify unexpected infrastructure/programming failures.
+
+No review finding on this behavior is present in PR #55; it is extracted without a correctness verdict.
+
+#### EX55-19 — Successful topic creation redirects to canonical locale topic path
+The route uses forumTopicPath(locale,newTopicId).
+
+#### EX55-20 — Successful reply redirects to the same canonical locale topic path
+The action preserves the active locale namespace.
+
+#### EX55-21 — Write forms are rendered only when the public loader sees an authenticated session
+Section/topic loaders return authenticated and UI conditionally renders create/reply forms.
+
+Presentation gating is separate from server-side mutation authorization in EX55-10..12.
+
+#### EX55-22 — Topic, title revision, initial post and body revision are created in one transaction
+createTopicWithInitialPost creates the complete initial topic graph atomically.
+
+#### EX55-23 — createTopicWithInitialPost checks target section existence before graph insertion
+Missing section becomes ForumEntityNotFoundError.
+
+#### EX55-24 — Service requires initial post to belong to the new topic and same author
+ForumService rejects mismatched initialPost.topicId/authorId before repository execution.
+
+#### EX55-25 — Reply creation checks topic existence before inserting post/revision
+createPost adds an explicit lookup and ForumEntityNotFoundError path.
+
+#### EX55-26 — ForumService remains the content/source-locale validation boundary for writer-generated revisions
+The writer constructs revision objects, while service normalizeRevision and existing validation still apply.
+
+#### EX55-27 — PostgreSQL integration verifies topic/reply persistence through the runtime writer
+The DB test creates a topic, initial post and reply and reads them back through the public page model.
+
+#### EX55-28 — PostgreSQL integration verifies transaction rollback for incomplete topic graph
+A deliberate duplicate-post-id failure must leave atomic-rollback-topic absent.
+
+#### EX55-29 — Route-action tests verify forged author input is ignored
+The topic-creation test sends authorId=attacker but expects session-user to reach ForumWriter.
+
+#### EX55-30 — Route-action tests verify guest, cross-origin and invalid input cause no write call
+The test asserts controlled statuses and zero writer invocation.
+
+#### EX55-31 — Initial integration test left its created runtime topic in the shared fixture
+89427dd created persistent test data without cleanup.
+
+#### EX55-32 — 43874ac isolates the integration fixture with finally cleanup
+The second commit tracks createdTopicId and deletes it after the test, preventing cross-test state pollution.
+
+This is a test-fixture correction, not a production transaction/race correction.
+
+#### EX55-33 — Separate forum write anti-spam/rate limiting remains explicitly unfinished
+PROJECT_STATE lists separate write anti-spam/rate limiting as next Stage 4D work.
+
+Forward: PR #57 later implements a transactional cooldown and concurrency test. Its later existence is not used to convert this deliberate unfinished slice into a #55 defect.
+
+#### EX55-34 — Sign-in UX, Markdown and solved/best-answer remain explicitly unfinished
+PROJECT_STATE keeps these product slices outside #55.
+
+#### EX55-35 — PR #55 performs no external write-capability provisioning or rollout
+The write path is implemented/tested local/CI under the PR #50 scheduling boundary; production grants, separate write Hyperdrive and external acceptance are not performed here.
+
+### Review/dependency reconciliation
+
+1. EX51-07/08/10–14 are traced to already accepted future translation consumers (CNT-02/CNT-03/CNT-05 and PR #50 Stage 4B scheduling). They are not labeled errors because Stage 5 consumers are absent in #51.
+2. EX51-22 is a separate schema/review issue from the legitimacy of immutable revision identity itself: the review questions deletion protection for historical rows, not whether revision identity should exist.
+3. EX51-30/31 concerns the general hierarchy helper. PR #52’s public route implementation uses EX52-05..10 page-shaped reads instead, so the review’s public-path consequence and the historical helper are not collapsed.
+4. PR #51’s lack of Neon application/deployed smoke is not recorded as a missing Stage 4B acceptance check because PR #50 directly changed the schedule to local/CI development. External rollout remains a later boundary.
+5. EX52-15/16 is an in-PR implementation defect/review history whose concrete correction is EX52-17/18. EX52-25/26 remains a separate presentation/localization review finding and is not conflated with routing correctness.
+6. EX52-30 is the exact origin of the stale “continue Stage 4C” blocker label; PR #53 preserves it and PR #54 corrects only the label.
+7. PR #53 consumes the Stage 4A Better Auth schema without rewriting its origin. Exact runtime consumption is separate from external role/Hyperdrive/grant provisioning.
+8. EX53-29 must be evaluated later against both PR #50’s direct-user local/CI scheduling and its retained preview/private-data isolation boundary. Neither side is used here as an automatic verdict.
+9. EX53-30 is preserved with explicit disconfirming execution evidence EX53-31: final local Workers smoke passed even though the inspected workflow lacks the env values cited by the review. No unsupported explanation is invented.
+10. PR #55 builds on EX53 session identity and EX51 revision transactions. The action/UI presentation check does not replace independent server-side session/origin enforcement.
+11. No real local/CI concurrency failure found in #51–#55 is excused by external deferral. EX51 optimistic revision guards are real local concurrency mechanics; #55 contains no separate production-race correction. The later #57 cooldown is explicitly scheduled work from EX55-33, not silently reclassified as a #55 race fix.
+12. PR #50’s direct user scheduling decision is used only from #50 forward and only for timing/scope; it is not blanket approval of implementation details in #51–#55.
+
+### Changed-file reconciliation
+
+#### PR #51
+- PROJECT_STATE.md -> EX51-33..35 plus recorded external auto-deploy state.
+- db/schema.ts -> EX51-01..18, EX51-20, EX51-36/37.
+- drizzle/0004_forum_domain_foundation.sql -> EX51-01..23, EX51-32, EX51-36/37.
+- drizzle/meta/0004_snapshot.json -> generated Drizzle representation of schema-level records; manual deferrable triggers/FKs remain represented in SQL where Drizzle metadata cannot express them.
+- drizzle/meta/_journal.json -> EX51-32.
+- db/forum-repository.ts -> EX51-24..31.
+- db/forum-service.ts -> EX51-12..14, EX51-29.
+- tests/database/migrations.test.ts -> EX51-11..14, EX51-17..23, EX51-26..29, EX51-36..38 and regression evidence.
+- All eight changed files accounted for.
+
+#### PR #52
+- PROJECT_STATE.md -> EX52-28..30.
+- app/forum/paths.ts -> EX52-17/18.
+- app/forum/public-read.test.tsx -> EX52-13/14, EX52-17..23, EX52-27.
+- app/forum/request-context.ts -> EX52-01/02.
+- app/forum/ui.tsx -> EX52-14, EX52-19..23.
+- app/localization/catalog.ts -> EX52-24..26.
+- app/routes.ts + category/home/section/topic/not-found modules -> EX52-05..09, EX52-13..23.
+- app/routes/not-found.test.ts -> EX52-13/23 route-shape/error regression.
+- app/scaffold.test.tsx -> updated presentation regression for the landing→forum index transition; no independent architecture decision beyond EX52-05/19/24.
+- app/styles.css -> EX52-19 presentation implementation; no independent contract.
+- db/forum-repository.ts -> EX52-01, EX52-05..12.
+- db/hyperdrive-forum.ts -> EX52-03/04.
+- tests/database/migrations.test.ts -> DB evidence for EX52-05..10.
+- workers/app.ts -> EX52-02..04.
+- All 19 changed files accounted for.
+
+#### PR #53
+- PROJECT_STATE.md -> EX53-07/28/32.
+- app/auth/auth.server.ts + auth.server.test.ts -> EX53-01..11.
+- app/auth/request-context.ts -> EX53-08/12/14.
+- app/auth/session-context.ts + test -> EX53-13/14, EX53-18..22.
+- app/routes.ts + auth-api.ts/test -> EX53-15.
+- app/routes/locale-negotiation.ts/test + locale-boundary test -> EX53-16/17.
+- tests/database/auth-runtime.test.ts -> EX53-23..26 and session-cookie correction evidence.
+- tsconfig.node.json -> EX53-27.
+- workers/app.ts -> EX53-09..13, EX53-18..22, and topology underlying EX53-29.
+- All 15 changed files accounted for.
+
+#### PR #54
+- PROJECT_STATE.md -> EX54-03/04; ancestry in EX54-01/02 comes from #52/#53 snapshots.
+- Sole changed file accounted for.
+
+#### PR #55
+- PROJECT_STATE.md -> EX55-33..35 and local/CI completion state.
+- app/forum/mutations.server.ts -> EX55-10..18.
+- app/forum/request-context.ts -> EX55-01/02.
+- db/hyperdrive-forum.ts -> EX55-01, EX55-03..09, EX55-26.
+- db/forum-repository.ts -> EX55-22/23/25.
+- db/forum-service.ts -> EX55-24/26.
+- app/routes/section.tsx + topic.tsx -> EX55-08..21.
+- app/forum/write-actions.test.ts -> EX55-09..20, EX55-29/30.
+- app/forum/public-read.test.tsx -> EX55-21 presentation gating regression.
+- app/localization/catalog.ts -> localized write-form/error strings supporting EX55-12..18/21; no new localization architecture.
+- app/styles.css -> write-form presentation only.
+- tests/database/migrations.test.ts -> EX55-27/28/31/32.
+- workers/app.ts -> EX55-02..04.
+- All 14 changed files accounted for.
+
+### CI, external, and evidence reconciliation
+
+- Final PR CI runs are green in both checks and database jobs: #51 CI 101, #52 CI 103, #53 CI 106, #54 CI 107, #55 CI 109.
+- Unlike the earlier infrastructure branch, no new Cloudflare deployment/preview bot evidence was found in the inspected #51–#55 discussions. This is consistent with the recorded disabling of native Git integration but does not independently prove Cloudflare settings.
+- Database CI uses disposable PostgreSQL/local Hyperdrive topology; it is evidence for local/CI behavior, not Neon production rollout.
+- #51 does not externally apply migration 0004; under PR #50 that is an intentional stage boundary.
+- #53 local auth integration uses test values and exact checked-in schema, while real Google OAuth/external credentials remain untested in this block.
+- #53 final Workers smoke passes despite the missing-secret review prediction; preserved evidence is insufficient to infer the exact mechanism behind that result.
+- #55 write persistence/rollback is proven against disposable PostgreSQL; no production write grants/binding acceptance is claimed.
+
+### Extraction reconciliation
+
+- Internal commit counts: #51=5, #52=2, #53=3, #54=1, #55=2.
+- Review-thread counts: #51=2, #52=2, #53=2, #54=0, #55=0.
+- Full F/A/C/D/O/G/T sweeps are recorded for all five PRs.
+- Every changed file is reconciled.
+- Immutable revisions, separate title revisions and sourceLocale | und are preserved as accepted future-consumer foundations without using their delayed Stage 5 consumer as a defect signal.
+- The Stage 4B absence of Neon rollout is preserved as the PR #50 local/CI scheduling boundary.
+- Public SSR reading, Better Auth runtime/session, blocker-label synchronization and authenticated writes are separate lineages.
+- Real review findings and in-PR corrections remain independently addressable.
+- No decision in this response is classified as correct, erroneous, premature, future-proof, infrastructure drift, approved target architecture, or requiring a remedy.
