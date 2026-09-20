@@ -1,0 +1,328 @@
+{
+  "type": "DL-DECISIONS-001",
+  "status": "submitted-candidate-map",
+  "task_source": {
+    "pr": 78,
+    "head": "363f2011156c9e35fd503fcf9a3f25a266271f20",
+    "task": "DL-DECISIONS-001"
+  },
+  "response_base": {
+    "pr": 79,
+    "head_before_response": "914d6398d8713d3afb710d70226625f7865190a4"
+  },
+  "audited_main": "3282aa51f47f36131d35c34ee79ca37cb2ce434f",
+  "accepted_phase2_input": {
+    "total_active_assignments": 2029,
+    "classified_and_disconfirmed": 1698,
+    "reviewed_supporting": 331,
+    "unreviewed": 0,
+    "active_superseded_classifications": 0,
+    "accepted_through": "REVIEW DL-CLASSIFY-012/1"
+  },
+  "candidate_set_validation": {
+    "candidate_count": 1,
+    "deduplicated": true,
+    "selected_options": [],
+    "target_contracts_drafted": false,
+    "remediation_proposed": false
+  },
+  "candidates": [
+    {
+      "id": "UD-001",
+      "title": "Explicit unavailable-locale safe-read UX",
+      "requires_user_choice": true,
+      "atomic_ids": [
+        "AN11-05",
+        "DLX12-12",
+        "DLX13-01",
+        "EX16-07"
+      ],
+      "scope": "Only GET/HEAD requests whose explicit /:locale candidate is malformed, unknown, inactive, or disabled. It does not reopen canonical active-locale handling, alias/case 308 canonicalization, non-GET/HEAD fail-closed behavior, internal-only redirect targets, or the no-side-effect SEC-01 invariant.",
+      "current_behavior": "GET/HEAD uses a temporary 307 redirect to the equivalent /en/... path, preserving route remainder/query and bypassing preference negotiation.",
+      "options": [
+        {
+          "key": "preserve-307-english-fallback",
+          "description": "Keep the current safe-read policy: malformed/unknown/inactive/disabled explicit locale redirects temporarily with 307 to the same route under canonical English.",
+          "consequences": [
+            "A visitor receives readable English content instead of an unavailable-locale error.",
+            "The requested explicit locale URL is replaced by /en/... for that navigation, while the redirect remains temporary.",
+            "Malformed, unknown, inactive, and disabled explicit locales continue sharing one safe-read fallback policy.",
+            "Existing route remainder/query preservation and SEC-01 no-side-effect behavior remain unchanged."
+          ]
+        },
+        {
+          "key": "return-404-for-unavailable-explicit-locale",
+          "description": "Use strict explicit-URL semantics for safe reads: malformed/unknown/inactive/disabled explicit locale returns 404 instead of redirecting to English.",
+          "consequences": [
+            "The application does not substitute another locale when the user explicitly addressed an unavailable locale URL.",
+            "Inactive/disabled/future locale URLs remain unavailable until publication status permits them.",
+            "Users lose the automatic English fallback for mistyped/unknown locale URLs.",
+            "Non-GET/HEAD behavior remains 404 as today; this option changes only safe-read UX."
+          ]
+        }
+      ],
+      "evidence_preventing_repository_resolution": [
+        "AN11-05 records that PR #11 removed its own prematurely hard-coded unavailable-locale 404 and restored a separate decision gate.",
+        "DLX12-12 required selecting an explicit unavailable-locale policy before Stage 1B but does not provide direct-user authority for a specific option.",
+        "PR #13/#16 implemented the temporary English fallback; EX16-07 is an accepted technically valid alternative, not a direct-user decision.",
+        "Current docs/translation/LOCALES.md encodes the PR #16 choice, but current documentation cannot supply its own missing normative authority.",
+        "The direct-user generic/data-driven-locale decision does not choose unavailable-locale presentation behavior.",
+        "PR #50 product-first/external-infrastructure timing and the dynamic-authorization decision are unrelated to this UX choice."
+      ],
+      "target_contract_documents": [
+        {
+          "path": "docs/translation/LOCALES.md",
+          "affected_contracts": [
+            "LOC-03",
+            "LOC-04",
+            "LOC-05",
+            "SEC-01"
+          ],
+          "role": "primary"
+        },
+        {
+          "path": "TRANSLATION_ARCHITECTURE.md",
+          "affected_contracts": [
+            "global invariant for authoritative explicit locale and fallback behavior"
+          ],
+          "role": "synchronization"
+        },
+        {
+          "path": "PROJECT.md",
+          "affected_contracts": [
+            "high-level explicit-locale/translation contract if wording needs alignment"
+          ],
+          "role": "conditional synchronization"
+        },
+        {
+          "path": "ROADMAP.md",
+          "affected_contracts": [
+            "locale acceptance/test wording only if target restoration changes current behavior"
+          ],
+          "role": "conditional synchronization"
+        }
+      ],
+      "dependencies": {
+        "depends_on_candidates": [],
+        "blocks_candidates": [],
+        "fixed_constraints_not_reopened": [
+          "generic/data-driven locale architecture",
+          "explicit URL locale is authoritative over cookie/header/user negotiation",
+          "active alias/deprecated/case forms use canonical 308 behavior",
+          "redirect-required non-GET/HEAD requests fail closed before action side effects",
+          "redirect targets remain internal Vico paths",
+          "unknown locale requests do not create registry/task/provider/quota side effects"
+        ]
+      },
+      "deliberate_disconfirmation": {
+        "searched_for_existing_resolution": [
+          "fixed direct-user decisions in PROCESS_CONTEXT.md",
+          "accepted R1 classifications for AN11-05, DLX12-12, DLX13-01 and EX16-07",
+          "current PROJECT.md",
+          "current TRANSLATION_ARCHITECTURE.md",
+          "current docs/translation/LOCALES.md",
+          "current ROADMAP.md",
+          "later direct-user PR #50 timing decision",
+          "accepted dynamic-authorization product decision"
+        ],
+        "would_remove_candidate_if": "A direct-user decision or pre-existing accepted contract were found selecting 307 English fallback or 404 for safe unavailable explicit locales after PR #11 restored the decision gate.",
+        "contrary_evidence_found": "Current source-of-truth documentation selects 307 English fallback, and current code consumes it, but provenance traces that choice to assistant/PR-level implementation rather than a direct user decision. No later direct-user choice was found.",
+        "result": "candidate-retained"
+      },
+      "new_designs_not_promoted_to_options": "A state-specific split (for example different behavior for unknown versus inactive/disabled) is technically possible but was not established by the audited decision history; it is not invented as a third candidate option."
+    }
+  ],
+  "removed_false_candidates": [
+    {
+      "id": "RF-001",
+      "title": "Adopt strict zero-stale repository CI or restore permissive stale policy",
+      "atomic_ids": [
+        "EX19-03",
+        "EX40-02",
+        "EX77-29",
+        "EX77-30"
+      ],
+      "removal_reason": "Not a user decision required to form the target. Accepted evidence already classifies EX40-02 as a dumb correction and preserves the earlier permissive stale/fallback contract; a future stricter CI policy would be a separate later product/process decision, not a prerequisite to correcting the audited target."
+    },
+    {
+      "id": "RF-002",
+      "title": "Choose production-first Hyperdrive gate versus product-first local/CI development",
+      "atomic_ids": [
+        "EX20-02",
+        "EX37-03",
+        "EX37-05",
+        "EX37-07",
+        "EX44-13",
+        "EX50-01",
+        "EX50-02",
+        "EX50-24",
+        "EX50-31"
+      ],
+      "removal_reason": "Already resolved prospectively by the direct-user PR #50 decision: product/forum work proceeds local/CI and external integration is Stage 6. Historical authority for EX20-02 remains unproven but does not create a present target-contract choice."
+    },
+    {
+      "id": "RF-003",
+      "title": "Select exact future staging/external topology now",
+      "atomic_ids": [
+        "EX45-08",
+        "EX45-11",
+        "EX50-17",
+        "EX50-31"
+      ],
+      "removal_reason": "Accepted contracts explicitly defer exact external topology to the then-current platform/product requirements. No current target contract needs a topology choice before Stage 6 provisioning."
+    },
+    {
+      "id": "RF-004",
+      "title": "Make exact he/ka/ru final rows a permanent migration-test invariant",
+      "atomic_ids": [
+        "EX29-13"
+      ],
+      "removal_reason": "Evidence-limited test-maintenance policy, not a required product/architecture choice now. No current migration conflicts with the assertion. A future legitimate locale-data migration can supply the concrete evidence needed to decide/update the test without changing the present target architecture."
+    },
+    {
+      "id": "RF-005",
+      "title": "Require permanent retention of every superseded forum revision now",
+      "atomic_ids": [
+        "EX51-22",
+        "EX51-23"
+      ],
+      "removal_reason": "No current application path deletes individual superseded revisions, Stage 5B persistence is not implemented, and aggregate deletion intentionally cascades revision history. The current target can preserve immutable revision identity/no in-place mutation without choosing a permanent data-retention/deletion product policy before an actual consumer requires it."
+    },
+    {
+      "id": "RF-006",
+      "title": "Ask the user how unexpected forum-writer exceptions should map to HTTP",
+      "atomic_ids": [
+        "EX55-18"
+      ],
+      "removal_reason": "This is a technical failure-semantics question, not a normative product choice. Repository evidence already distinguishes typed availability from unexpected errors in authorization, and RFC 9110 distinguishes unexpected server conditions (500) from temporary service unavailability (503). The audit need not ask the user to decide whether a programming/schema error is service unavailability.",
+      "external_primary_evidence": {
+        "source": "RFC 9110 HTTP Semantics §§15.6.1, 15.6.4",
+        "url": "https://www.rfc-editor.org/rfc/rfc9110.html",
+        "fact": "500 represents an unexpected condition preventing fulfillment; 503 represents temporary inability such as overload or scheduled maintenance likely alleviated after delay."
+      }
+    },
+    {
+      "id": "RF-007",
+      "title": "Re-decide dynamic authorization product scope",
+      "atomic_ids": [
+        "EX59-01",
+        "EX59-04",
+        "EX59-05",
+        "EX59-07",
+        "EX59-25",
+        "EX59-26"
+      ],
+      "removal_reason": "Already a direct user-approved product extension. Detailed implementation defects remain engineering findings, not a reason to reopen the product decision."
+    },
+    {
+      "id": "RF-008",
+      "title": "Re-decide generic/data-driven locale architecture",
+      "atomic_ids": [
+        "AN7-01",
+        "AN7-02",
+        "DLX12-03",
+        "EX16-02"
+      ],
+      "removal_reason": "Already a direct user decision. It must not be converted into a new choice merely because adjacent locale mechanisms are acceptable alternatives."
+    },
+    {
+      "id": "RF-009",
+      "title": "Turn historical audit/external-evidence gaps into product choices",
+      "atomic_ids": [
+        "EX37-02",
+        "EX45-15",
+        "EX45-16",
+        "EX45-17",
+        "EX45-18",
+        "EX45-19a",
+        "EX45-19b",
+        "EX45-21a",
+        "EX46-01",
+        "EX49-20",
+        "EX77-65"
+      ],
+      "removal_reason": "These are evidence/provenance limitations about what historical external/audit events can be independently proven. They do not define competing target product/architecture contracts."
+    },
+    {
+      "id": "RF-010",
+      "title": "Ask the user whether retrospective PR #77 labels are historically correct",
+      "atomic_ids": [
+        "EX77-29",
+        "EX77-30",
+        "EX77-65"
+      ],
+      "removal_reason": "Historical attribution/wording uncertainty is informational. Target documentation can state only independently supported facts; no product/architecture choice is needed."
+    }
+  ],
+  "insufficient_evidence_reconciliation": [
+    {
+      "ids": [
+        "EX29-13"
+      ],
+      "disposition": "informational/technical-policy only; no user decision now",
+      "target_contract_effect": "none required before target contracts",
+      "reason": "No current migration demonstrates conflict; exact current-final-state test versus permanent invariant can be resolved when a real data evolution requires it."
+    },
+    {
+      "ids": [
+        "EX37-02"
+      ],
+      "disposition": "historical provenance only",
+      "target_contract_effect": "none",
+      "reason": "Whether the historical pre-Stage-4 audit was independently complete does not choose a present architecture."
+    },
+    {
+      "ids": [
+        "EX45-15",
+        "EX45-16",
+        "EX45-17",
+        "EX45-18",
+        "EX45-19a",
+        "EX45-19b",
+        "EX45-21a",
+        "EX46-01",
+        "EX49-20"
+      ],
+      "disposition": "historical external-evidence limitations",
+      "target_contract_effect": "none",
+      "reason": "Repository claims lack raw external diagnostic/catalog artifacts; present target behavior is determined by current contracts and independently classified mechanisms, not by asking the user to certify old observations."
+    },
+    {
+      "ids": [
+        "EX51-22"
+      ],
+      "disposition": "future integrity/data-retention concern; deferred, not a required current user choice",
+      "target_contract_effect": "preserve immutable revision identity and avoid inventing a permanent retention policy",
+      "reason": "No current per-revision delete consumer and no Stage 5B persistence exists; aggregate deletion is intentionally separate."
+    },
+    {
+      "ids": [
+        "EX55-18"
+      ],
+      "disposition": "technical failure-semantics concern; no user decision",
+      "target_contract_effect": "none at product-choice layer",
+      "reason": "Applicable HTTP semantics and existing typed-availability architecture can guide engineering treatment; the user need not choose whether unexpected programming failures count as temporary service unavailability."
+    },
+    {
+      "ids": [
+        "EX77-29",
+        "EX77-30",
+        "EX77-65"
+      ],
+      "disposition": "retrospective wording/attribution only",
+      "target_contract_effect": "none",
+      "reason": "They concern overbroad regression/laundering/user-review attribution, not competing future product behavior."
+    }
+  ],
+  "completeness_reconciliation": {
+    "insufficient_evidence_ids_expected": 16,
+    "insufficient_evidence_ids_accounted": 16,
+    "candidate_ids": [
+      "UD-001"
+    ],
+    "candidate_count": 1,
+    "candidate_dependencies_acyclic": true,
+    "false_candidates_removed": 10,
+    "result": "finite candidate set = 1"
+  }
+}
