@@ -130,7 +130,7 @@ validation in `db/forum-service.ts`. The absent Stage 5B consumer is an intentio
 
 ```text
 AN7-01/02 → AN10-01..04b → DLX12-01..04
-→ EX13-01..04 → EX16-01..17 → EX20-03a..25c
+→ DLX13-01..04 → EX16-01..17 → EX20-03a..25c
 → EX21-01..13 → EX22-01..19 → EX28-01..08
 → EX38-01..08/EX39-01..12/EX65-01..15
 ```
@@ -146,6 +146,13 @@ requires an exhaustive assignment audit over all 2,029 IDs: each ID must either 
 applicable cross-stage chain or be explicitly marked chronology-only evidence with no cross-stage or
 current-consumer relationship. This section must not be interpreted as satisfying that global gate by
 itself.
+
+For `historical-only`, the audit uses an operational, reproducible negative-evidence standard rather
+than claiming an impossible proof about every conceivable consumer. The assignment must record the
+current-tree paths, symbols, references, and semantically related subsystem surfaces searched, plus the
+reason no applicable live consumer was found. A bare assertion or absence from a single text search is
+insufficient. A later discovered consumer reopens the assignment; it does not make the earlier search a
+false claim about the evidence available at that time.
 
 ## Closure rule
 

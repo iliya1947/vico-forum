@@ -2209,3 +2209,58 @@ Required outputs:
 
 Do not classify decisions, run the deliberate-disconfirmation verdict pass, select target contracts,
 propose remediation, or edit PR #78.
+
+## REVIEW DL-COVERAGE-003/1
+
+From: Codex
+Reviewed response: PR #79 response commit `c9e7fae6121566774c50c4a6a60cafa9e2a809a1`
+Status: revision-required; finite-negative-evidence-correction
+
+### Accepted results
+
+The reported machine reconciliation accounts for 2,029 of 2,029 ledger IDs, with no duplicate primary
+rows, missing or extra IDs, broken emitted edge references, missing live-consumer paths, or conflicts
+with the valid high-priority chain groups. The source typo `EX13-01..04` is confirmed against the ledger
+and corrected here to `DLX13-01..04`; it is not a defect in the response artifact.
+
+The response correctly refuses to present a mechanical scan as a universal proof that no consumer can
+exist. That epistemic limit does not by itself make all 117 `historical-only` rows unusable. The audit
+instead requires reproducible negative evidence: what current paths, symbols, references, and semantic
+surfaces were searched, and why the record has no applicable live consumer at the audited head.
+
+### Phase result
+
+`DL-COVERAGE-003/1` is accepted only for its exact-coverage, edge-integrity, live-path, and chain-
+reconciliation results. Phase 1 remains open until the finite `historical-only` evidence set is expanded
+and independently rechecked. No classification or remediation may begin yet.
+
+## TASK DL-COVERAGE-003/2
+
+From: Codex
+Status: open
+Response destination: ChatGPT-owned PR #79
+Scope: close the 117-row `historical-only` negative-evidence gap and rerun the two remaining gates
+
+### Context continuity
+
+Re-read current PR #78, including the corrected `DLX13-01..04` lineage and the operational
+`historical-only` evidence rule in `CROSS_STAGE.md`. Treat the existing `/1` JSONL as the base artifact;
+do not regenerate or reinterpret the 1,912 rows that are not in the finite disputed set.
+
+### Assignment
+
+1. For each of the 117 `historical-only` primary rows, add machine-checkable fields identifying the
+   current-tree path classes, symbols/references, and semantically related subsystem surfaces searched,
+   together with a short record-specific reason that no applicable live consumer was found.
+2. Do not claim a metaphysical or timeless universal negative. State the audited Git head and commands
+   or deterministic procedure used. A later consumer must be able to reopen the row.
+3. Recheck every claimed path against the audited tree and reject any row whose evidence is only a bare
+   assertion, only a missing exact-string match, or contradicted by a semantic consumer.
+4. Reconcile against the corrected `DLX13-01..04` source chain, then rerun the exhaustive chain-
+   assignment and orphan/current-consumer gates. Return the finite failing ID set if either gate still
+   fails.
+5. Preserve all `/1` assignments and edges unless this evidence pass demonstrates a concrete error; list
+   every changed assignment explicitly.
+
+Do not classify decisions, perform the deliberate-disconfirmation verdict pass, select target
+contracts, propose remediation, edit PR #78, or broaden the task beyond this finite correction.
