@@ -88,11 +88,11 @@ number is lower than the baseline PR number.
 | #39 | `af2349d` | extraction-complete | `EX39-01..12` | Row isolation, availability-classifier correction, hard-failure boundaries, tests, and unresolved malformed-origin telemetry review examined. |
 | #40 | `29eccc5` | extraction-complete | `EX40-01..04` | Earlier stale/fallback contract, zero-stale real-pack change, retained runtime mechanism, tests, and documentation conflict reviewed. |
 | #41 | `2623040` | extraction-complete | `EX41-01..04` | Query redaction, application logging, safe-logging tests, state claim, and later config correction evidence kept separate. |
-| #42 | `a127adb` | pending | — | — |
-| #43 | `e1fddf9` | pending | — | — |
-| #44 | `bdc9c0f` | pending | — | — |
-| #45 | `19ec4b5` | pending | — | — |
-| #46 | `01ad59a` | pending | — | — |
+| #42 | `a127adb` | extraction-complete | `EX42-01..02`, `EX42-03a..c`, `EX42-04..20`, `EX42-21a..b`, `EX42-22` | Deadline mechanics, classifiers, circuit/reconciliation behavior, operational gates, state claims, and unresolved SQL invocation review examined. |
+| #43 | `e1fddf9` | extraction-complete | `EX43-01`, `EX43-02a..c`, `EX43-03`, `EX43-04a..b`, `EX43-05..21` | Exact original privilege and membership model, in-PR grantability correction, workflow placement, state claim, and PR #48 forward evidence reviewed. |
+| #44 | `bdc9c0f` | extraction-complete | `EX44-01..15` | Evidence artifact/run/history contracts, rollout linkage, ordinary-PR live verification, unresolved advancement review, and PR #76 forward evidence separated. |
+| #45 | `19ec4b5` | extraction-complete | `EX45-01..18`, `EX45-19a..c`, `EX45-20`, `EX45-21a..c`, `EX45-22..24` | Staging lifecycle revision, retained safety boundaries, external observations/limits, state transitions, AGENTS scope, and README conflict reviewed without PR #50 retroactivity. |
+| #46 | `01ad59a` | extraction-complete | `EX46-01..08` | README lifecycle synchronization and independent Stage 1 generic-locale architecture/state-documentation corrections reviewed. |
 | #47 | `ebd0160` | pending | — | — |
 | #48 | `a52d84f` | pending | — | — |
 | #49 | `75faaba` | pending | — | — |

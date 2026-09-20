@@ -650,6 +650,116 @@ Detailed evidence is preserved in PR #79 responses `DL-EXTRACT-006/1` at `f35d1b
 | `EX41-03` | Safe-logging tests prohibit serialization of sensitive thrown/request-like values. |
 | `EX41-04` | Project state records observability hardening as completed. |
 
+
+### PRs #42–#46
+
+Detailed evidence is preserved in PR #79 responses `DL-EXTRACT-007/1` at `19dc7c9` and
+`DL-EXTRACT-007/2` at `e310897`, accepted by `REVIEW DL-EXTRACT-007/2`. The six unsuffixed
+composite IDs listed in the `/2` replacement map are superseded labels, not ledger records.
+
+| Decision ID | Atomic decision index |
+| --- | --- |
+| `EX42-01` | Localization pg clients receive a bounded connection timeout. |
+| `EX42-02` | Localization pg clients receive a bounded caller-side query timeout. |
+| `EX42-03a` | Localization runtime-role lock_timeout default is 500ms. |
+| `EX42-03b` | Localization runtime-role statement_timeout default is 1500ms. |
+| `EX42-03c` | Server lock deadline must remain below server statement deadline and caller query deadline. |
+| `EX42-04` | Connection-timeout degradation recognizes only the exact pg code-less timeout-expired shape. |
+| `EX42-05` | Query-timeout degradation recognizes only enumerated caller/server timeout shapes. |
+| `EX42-06` | Cleanup after classified timeout is best-effort and cannot replace the original DB failure. |
+| `EX42-07` | Registry connect/query timeout enters the existing unavailable-registry degradation boundary. |
+| `EX42-08` | Persistent UI reads open a request-local circuit after a classified DB failure. |
+| `EX42-09` | Persistent UI degradation reports the first request-local reason once, including a distinct timeout reason. |
+| `EX42-10` | A classified persistent-UI failure best-effort discards the request client. |
+| `EX42-11` | Controlled locale-writer transactions set wider transaction-local lock and statement deadlines. |
+| `EX42-12` | Writer timeout errors do not join the serialization/deadlock retry allowlist. |
+| `EX42-13` | Exact statement-timeout error during COMMIT enters the existing semantic commit reconciliation path. |
+| `EX42-14` | COMMIT-time statement-timeout reconciliation preserves existing post/pre/third-state semantics. |
+| `EX42-15` | Deadline configuration remains operational role/database state rather than portable migration schema. |
+| `EX42-16` | Effective server deadline settings must be verified on real pooled Hyperdrive sessions. |
+| `EX42-17` | Hyperdrive acceptance must test pooled-session reuse/reset for deadline state leakage. |
+| `EX42-18` | Hyperdrive acceptance must separately prove server statement-timeout behavior. |
+| `EX42-19` | Hyperdrive acceptance must separately prove server lock-timeout behavior. |
+| `EX42-20` | Hyperdrive acceptance must investigate caller query-timeout origin-query fate rather than infer cancellation from client cleanup. |
+| `EX42-21a` | Project state records repository deadline implementation as completed. |
+| `EX42-21b` | Project state retains real Hyperdrive deadline confirmation/calibration as a pre-Stage-4 blocker. |
+| `EX42-22` | Deadline configuration invocation can report success after an ALTER ROLE failure. |
+| `EX43-01` | Production privilege verification derives migration role from current_user and runtime role from environment input. |
+| `EX43-02a` | Runtime and migration roles must be distinct. |
+| `EX43-02b` | Runtime and migration roles must both be login-capable. |
+| `EX43-02c` | Runtime and migration roles must directly lack dangerous PostgreSQL role attributes. |
+| `EX43-03` | Runtime role may have no outbound role memberships. |
+| `EX43-04a` | Migration outbound membership role set must exactly match the environment allowlist. |
+| `EX43-04b` | Each accepted migration outbound membership must use ADMIN=false, INHERIT=true, SET=true. |
+| `EX43-05` | Final PR #43 forbids every inbound membership into runtime or migration roles. |
+| `EX43-06` | Runtime role must not own application schemas/relations. |
+| `EX43-07` | Each then-current localization application table must be owned by migrationRole. |
+| `EX43-08` | Runtime schema privileges are exactly non-grantable USAGE on public. |
+| `EX43-09` | Runtime relation privileges are exactly non-grantable SELECT on the three localization tables. |
+| `EX43-10` | PUBLIC schema privilege is limited to non-grantable USAGE on public. |
+| `EX43-11` | PUBLIC may have no application relation privileges. |
+| `EX43-12` | Runtime and PUBLIC may have no column-level privileges. |
+| `EX43-13` | Effective migration-role default ACLs include hard-wired PostgreSQL defaults and explicit pg_default_acl. |
+| `EX43-14` | The accepted effective defaults are PUBLIC EXECUTE for functions and PUBLIC USAGE for types only. |
+| `EX43-15` | Default ACLs owned by other roles must not broaden future runtime/PUBLIC access. |
+| `EX43-16` | Catalog scanning includes foreign tables when checking ownership and relation grants. |
+| `EX43-17` | Grant options are part of exact schema/relation/default privilege identity. |
+| `EX43-18` | Live privilege verification is integrated into the protected production migration verifier. |
+| `EX43-19` | Ordinary PR CI runs only targeted privilege-contract fixtures, not live production catalog verification. |
+| `EX43-20` | Production workflow receives runtime-role and migration-membership allowlist variables. |
+| `EX43-21` | Project state records production privilege verification implemented and removes that hardening blocker. |
+| `EX44-01` | Runtime migration evidence stores a production migration workflow run ID. |
+| `EX44-02` | Runtime migration evidence stores the exact production migration Git SHA. |
+| `EX44-03` | Runtime migration evidence stores the Drizzle journal SHA-256 at the production migration SHA. |
+| `EX44-04` | Runtime migration evidence declares the newest migration tag required by the runtime. |
+| `EX44-05` | Declared requiredMigrationTag must exist in the current checked-in journal. |
+| `EX44-06` | Referenced migration SHA must be an ancestor of the runtime commit. |
+| `EX44-07` | Journal bytes at migrationSha must match the recorded journal digest. |
+| `EX44-08` | Evidence journal history must exactly cover the current journal prefix through requiredMigrationTag. |
+| `EX44-09` | Referenced GitHub run must be the successful manually dispatched production migration workflow on main at migrationSha. |
+| `EX44-10` | Production migration workflow emits copyable run/SHA/journal evidence only after production verification. |
+| `EX44-11` | Schema-dependent runtime rollout is documented to update the evidence manifest to its newest required migration. |
+| `EX44-12` | Repository-local evidence format/history tests run in ordinary PR CI. |
+| `EX44-13` | Live GitHub Actions migration-evidence verification runs on every ordinary pull_request. |
+| `EX44-14` | requiredMigrationTag is not forced to advance relative to the PR base when a new schema dependency is introduced. |
+| `EX44-15` | Project state records migration evidence implemented and removes the pre-Stage-4 evidence blocker. |
+| `EX45-01` | Current deployed environment may serve as the pre-release production candidate before valuable live data exists. |
+| `EX45-02` | The pre-release production candidate is restricted to test/pre-release identities and data. |
+| `EX45-03` | A standing separate staging environment is no longer a condition for starting Stage 4 before first release. |
+| `EX45-04` | Shared preview access remains accepted only for read-only public localization capability. |
+| `EX45-05` | Preview/non-production auth writes or private-data access still require isolation from production or disabling non-production builds. |
+| `EX45-06` | Post-release production fault injection/destructive infrastructure diagnostics stop once real users or valuable private data exist. |
+| `EX45-07` | Risky post-release DB/Hyperdrive/auth/runtime changes require staging before production rollout. |
+| `EX45-08` | Exact future staging topology is deferred to then-current platform/product requirements. |
+| `EX45-09` | Separate auth runtime Hyperdrive and least-privilege DB role remain required. |
+| `EX45-10` | Exact auth DB grants remain deferred until exact Better Auth version/schema/adapter operations are known. |
+| `EX45-11` | Google OAuth staging/production topology is no longer an unconditional preselected architecture constant. |
+| `EX45-12` | Stage 4 OAuth/session/logout acceptance moves from isolated staging to the current pre-release candidate. |
+| `EX45-13` | Hyperdrive pooling/reset behavior is recorded as an external constraint for deadline acceptance. |
+| `EX45-14` | PostgreSQL advisory locks are excluded from Hyperdrive acceptance/runtime locking. |
+| `EX45-15` | Real deployed origin sessions are recorded with 500ms lock_timeout and 1500ms statement_timeout. |
+| `EX45-16` | Real acceptance records pooled reuse and restoration of role defaults after COMMIT/ROLLBACK. |
+| `EX45-17` | Real acceptance records PostgreSQL statement timeout at approximately 1571ms. |
+| `EX45-18` | Real acceptance records lock timeout at approximately 569ms. |
+| `EX45-19a` | Real acceptance records caller query timeout at approximately 2000ms. |
+| `EX45-19b` | The uniquely identifiable backend was not found after the caller timeout. |
+| `EX45-19c` | Backend absence does not establish which component terminated or cancelled the statement. |
+| `EX45-20` | Diagnostic acceptance does not prove the deployed application's request-local circuit breaker. |
+| `EX45-21a` | Project state records the PostgreSQL deadline acceptance blocker as closed. |
+| `EX45-21b` | Project state records separate staging as no longer a pre-Stage-4 blocker. |
+| `EX45-21c` | Project state records Stage 4 exact-version preflight as the next step. |
+| `EX45-22` | Temporary acceptance-resource cleanup remains operational housekeeping rather than being declared complete. |
+| `EX45-23` | AGENTS.md is explicitly scoped to Codex and not ChatGPT. |
+| `EX45-24` | README still contradicted the new staging lifecycle at PR #45 final head. |
+| `EX46-01` | README records pre-Stage-4 audit/hardening as completed. |
+| `EX46-02` | README records that separate staging is not a pre-first-release Stage 4 start condition. |
+| `EX46-03` | README preserves the preview/non-production isolation-or-disable trigger before auth writes/private data. |
+| `EX46-04` | README records Stage 4 as the next project stage. |
+| `EX46-05` | TRANSLATION_ARCHITECTURE removes an obsolete future instruction to resynchronize project plans before the next implementation PR. |
+| `EX46-06` | TRANSLATION_ARCHITECTURE records that project/roadmap/scaffold synchronization occurred before Stage 1 implementation. |
+| `EX46-07` | TRANSLATION_ARCHITECTURE records implemented Stage 1 as generic-locale, runtime-registry, and without a fixed compile-time locale list. |
+| `EX46-08` | TRANSLATION_ARCHITECTURE delegates factual implementation-state tracking to PROJECT_STATE. |
+
 `COVERAGE.md` remains the authoritative working checklist for whether every in-scope PR/commit has
 been examined and whether mixed changes were completely decomposed. A populated ledger alone never
 proves that extraction or dependency discovery is complete.
