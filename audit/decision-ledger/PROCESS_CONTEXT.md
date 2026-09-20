@@ -250,8 +250,10 @@ required restoration remain open until full-history and cross-stage review.
 - PR #56–#60 extraction is complete and indexed at `open` status.
 - PR #61/#63/#62/#64/#65 extraction is complete and indexed at `open` status.
 - PR #66–#70 extraction is complete and indexed at `open` status.
-- Final PR #71–#77 extraction is active as `DL-EXTRACT-013` on PR #79.
-- Phase 1 chronological extraction is approximately **95% complete by accepted PR-row coverage**. This
+- PR #71–#77 extraction is complete and indexed at `open` status.
+- Chronological extraction inventory is **100% populated**; independent completeness reconciliation is
+  active as `DL-COVERAGE-001` on PR #79.
+- Phase 1 closure is approximately **95% complete** pending that reconciliation. This
   percentage measures inventory coverage only, not classification, restoration, or overall remediation.
 - No project decision has reached final status and no product/source-of-truth documentation or runtime
   code has been corrected by this audit branch.

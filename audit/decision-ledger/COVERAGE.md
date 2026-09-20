@@ -117,13 +117,13 @@ number is lower than the baseline PR number.
 | #68 | `a0215cc` | extraction-complete | `EX68-01..72` | Claim/lease/token lifecycle, stale preflight, concurrency, clock-test correction, stale-reactivation review, deferred publication/retry, and state reviewed. |
 | #69 | `c12550c` | extraction-complete | `EX69-01..68` | Shared eligibility, PostgreSQL lifecycle time, stale reactivation, live-claim preservation, reclaim fencing, concrete corrections, CI regression/fix, and state-sync review reviewed. |
 | #70 | `d84d888` | extraction-complete | `EX70-01..30` | Commit-before-enqueue failure-window integration evidence, durable pending survival, PR #69 state synchronization, deferred reconciliation/retry/provider work, and CI reviewed. |
-| #71 | `e3559c3` | pending | — | — |
-| #72 | `ba41a0c` | pending | — | — |
-| #73 | `1afb0c1` | pending | — | — |
-| #74 | `b5d1f68` | pending | — | — |
-| #75 | `29f52b9` | pending | — | — |
-| #76 | `1c5255a` | pending | — | — |
-| #77 | `3282aa5` | pending | — | — |
+| #71 | `e3559c3` | extraction-complete | `EX71-01..100` | Completed lifecycle, structured results, conditional publication, rejected supersession attempt, open cross-identity ordering review, tests, deferrals, and CI reviewed. |
+| #72 | `ba41a0c` | extraction-complete | `EX72-01..58` | Durable generation ordering/head fencing, planning/publication locking, concurrency, open A→B→A reactivation review, documentation, external limits, and CI reviewed. |
+| #73 | `1afb0c1` | extraction-complete | `EX73-01..37` | Provider-neutral executor pipeline, request/output boundaries, state correction and accidental-doc fix, deferred real provider/Queue/retry, and CI reviewed. |
+| #74 | `b5d1f68` | extraction-complete | `EX74-01..50` | Atomic task/raw/bundle publication, namespace serialization, generation fencing, concurrency tests, repeated unrelated state rewrites, deferred runtime reads, and CI reviewed. |
+| #75 | `29f52b9` | extraction-complete | `EX75-01..65` | Bundle v2 identity, persisted-first exact-locale reads, validation/cache/degradation/fallback, SSR integration, open refresh/backfill review, and external limits reviewed. |
+| #76 | `1c5255a` | extraction-complete | `EX76-01..62` | Ordinary-PR live-verifier removal with rollout safety retained, typed authorization availability correction, route/presentation behavior, tests, state, and CI reviewed. |
+| #77 | `3282aa5` | extraction-complete | `EX77-01..88` | State/history responsibility split, current summaries, retrospective indexes/provenance corrections, omissions/open reviews, documentation-only scope, and CI limits reviewed. |
 
 ## Reconciliation gates
 

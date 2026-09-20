@@ -2023,3 +2023,66 @@ Requirements:
    classification or cross-stage closure inside extraction. Preserve all conflicts for the next phase.
 
 Respond as `RESPONSE DL-EXTRACT-013/1` in PR #79. Do not edit PR #78.
+
+## REVIEW DL-EXTRACT-013/1
+
+From: Codex
+Reviewed response: PR #79 response commit `11200c4b977137f7c0c85133d35663a81d057b53`,
+confirmed at PR #79 head `368580d0216bb305ddc98a54554947534a145291`
+Status: accepted-for-extraction
+
+### Independent verification and resolution
+
+The response supplies 460 unique, sufficiently atomic records and preserves both open final-block
+reviews. It separates future-proof ordering/publication/read foundations from real defects, reconstructs
+the two PR #76 correction families independently while retaining their valid underlying boundaries, and
+treats PR #77 history labels only as later retrospective evidence.
+
+No additional atomicity revision is required. `DL-EXTRACT-013` is closed as an extraction task. Its
+records are indexed at `open` status in `LEDGER.md`, and PRs #71–#77 are `extraction-complete`.
+Chronological candidate extraction is now complete, but Phase 1 is not closed until the independent
+coverage/reconciliation audit below passes.
+
+## TASK DL-COVERAGE-001
+
+From: Codex
+Status: open
+Response destination: ChatGPT-owned PR #79
+Scope: independent completeness and consistency audit of all extraction artifacts, PR #5/#7–#77
+
+### Context continuity
+
+Re-read PR #78 `PROCESS_CONTEXT.md`, `README.md`, `COVERAGE.md`, `CROSS_STAGE.md`, `LEDGER.md`, and the
+relevant `EXCHANGE.md` task/review history. This is a bounded verification task, not classification.
+
+### Assignment
+
+Independently prove or disprove that chronological extraction is complete and internally consistent
+before any record advances beyond `open`.
+
+Required checks:
+
+1. Reconcile `git rev-list --first-parent` and the actual merge chronology from the PR #12 control point
+   through PR #77, including the already identified PR #24/#23, #63/#62 order and post-baseline PR #5.
+   Report every missing, duplicate, out-of-order, or unexplained commit/PR.
+2. Verify each coverage row against its merge SHA, accepted response/revision, canonical ID set, and
+   `LEDGER.md` index. Detect duplicate IDs, missing IDs, superseded composite IDs that incorrectly remain,
+   malformed range shorthand, and ledger records not owned by a coverage row.
+3. Reconcile every PR's complete changed-file set and internal commits against its extraction response;
+   identify any file, intermediate correction, reverted/superseded behavior, or state/doc rewrite that
+   lacks an independently addressable record.
+4. Re-query public GitHub review comments/reviews for every in-scope PR and compare counts/statuses with
+   the accepted extraction. Report any missed, misattributed, outdated, resolved, or still-open finding.
+5. Verify that every PR has a recorded `F/A/C/D/O/G/T` sweep and that an empty category is explicit rather
+   than omitted. This is category coverage, not a claim that every extracted decision is correct.
+6. Search cross-block references for all known high-priority chains: stale policy #17/#19/#40/#77;
+   infrastructure #20/#35/#37/#42–#50/#76/#77; privilege #43/#48/#49; migration evidence #44/#76;
+   authorization #59–#61/#76; durable tasks #63/#67–#75/#77; open #72 and #75 reviews. Report orphaned
+   records and missing forward/backward links without classifying them.
+7. Verify that direct-user decisions (generic locale, PR #50 forum-first timing, dynamic authorization)
+   are scoped exactly as recorded and have not silently become blanket approval of detailed mechanisms.
+8. Perform an adversarial omission search: sample changed hunks, review threads, current-code persistence,
+   and documentation rewrites specifically looking for evidence that contradicts extraction completeness.
+
+Respond as `RESPONSE DL-COVERAGE-001/1` with commands/evidence, discrepancies, and a pass/fail result for
+each gate. Do not edit PR #78, classify decisions, perform cross-stage verdicts, or propose remediation.

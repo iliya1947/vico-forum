@@ -1785,6 +1785,476 @@ do not predetermine classification of the durable-task foundation.
 | `EX70-29` | No review correction is recorded for PR #70. |
 | `EX70-30` | Real Queue/provider external acceptance remains deferred. |
 
+
+### PRs #71–#77
+
+Detailed evidence is preserved in PR #79 response `DL-EXTRACT-013/1` at `11200c4`, accepted by
+`REVIEW DL-EXTRACT-013/1`. Every record remains `open`; PR #77 retrospective labels are indexed only
+as later-retrospective-summary evidence and do not validate themselves.
+
+| Decision ID | Atomic decision index |
+| --- | --- |
+| `EX71-01` | Migration 0009 adds completed to durable task status. |
+| `EX71-02` | Migration 0009 adds completed_at. |
+| `EX71-03` | Completed rows require prior claim history. |
+| `EX71-04` | Completed rows clear live claim ownership. |
+| `EX71-05` | Completed rows cannot also be stale. |
+| `EX71-06` | completed_at cannot precede claimed_at. |
+| `EX71-07` | TranslationTask model adds completed status. |
+| `EX71-08` | TranslationTask model carries completedAt. |
+| `EX71-09` | Task parser validates completed lifecycle. |
+| `EX71-10` | Claim treats completed as terminal. |
+| `EX71-11` | Duplicate planning does not reopen a completed same identity. |
+| `EX71-12` | Canonical UI descriptor source can be structured. |
+| `EX71-13` | sectionCount becomes a canonical plural descriptor. |
+| `EX71-14` | Structured source participates in source fingerprinting. |
+| `EX71-15` | ProviderTranslationValue can be string or structured branch map. |
+| `EX71-16` | Plain provider output must remain a string. |
+| `EX71-17` | Plural provider output must be a structured object. |
+| `EX71-18` | Plural output must contain the exact target-locale branch set. |
+| `EX71-19` | Every plural branch reuses ordinary translation validation. |
+| `EX71-20` | Structured persistent translation payloads are accepted for plural descriptors. |
+| `EX71-21` | Structured payload canonicalization is deterministic. |
+| `EX71-22` | Bundle compilation expands plural units to i18next v4 suffix keys. |
+| `EX71-23` | Persisted compiled-bundle verification reconstructs plural units. |
+| `EX71-24` | Resource loading can carry compiled structured plural resources. |
+| `EX71-25` | Publisher requires machine provenance origin. |
+| `EX71-26` | Publisher requires a nonblank provider identity. |
+| `EX71-27` | Publisher requires a nonblank model identity. |
+| `EX71-28` | Attribution is optional and normalized before persistence. |
+| `EX71-29` | Provider output is validated before durable publication. |
+| `EX71-30` | Publisher repeats stale/current preflight after provider return. |
+| `EX71-31` | Post-provider stale result uses the current claim token. |
+| `EX71-32` | Lost stale-transition ownership becomes claim-lost. |
+| `EX71-33` | Machine publication store returns a conditional boolean. |
+| `EX71-34` | Publication executes inside one PostgreSQL transaction. |
+| `EX71-35` | Task completion is conditioned on durable task id. |
+| `EX71-36` | Task completion is conditioned on stable task identity. |
+| `EX71-37` | Task completion requires processing status. |
+| `EX71-38` | Task completion is conditioned on claim token. |
+| `EX71-39` | Task completion is conditioned on namespace and key. |
+| `EX71-40` | Task completion is conditioned on sourceFingerprint. |
+| `EX71-41` | Task completion is conditioned on targetLocale. |
+| `EX71-42` | Task completion is conditioned on generationPolicyVersion. |
+| `EX71-43` | Failed conditional completion returns false before raw translation write. |
+| `EX71-44` | Published raw result uses machine origin and approved status. |
+| `EX71-45` | Published raw result stores the task source fingerprint. |
+| `EX71-46` | Published raw result stores the canonicalized provider payload. |
+| `EX71-47` | Published raw result stores generation policy version. |
+| `EX71-48` | Published raw result stores provider and model. |
+| `EX71-49` | Published raw result stores optional attribution metadata. |
+| `EX71-50` | Raw machine publication upserts one locale/namespace/key/machine row. |
+| `EX71-51` | Task completion and raw machine-row upsert are atomic in #71. |
+| `EX71-52` | Lost or reclaimed claim cannot write a raw result. |
+| `EX71-53` | Final #71 has no authoritative ordering between different stable task identities. |
+| `EX71-54` | Review 4026927508 identifies old-result overwrite across identities. |
+| `EX71-55` | fa56fff attempts logical-unit supersession during planning. |
+| `EX71-56` | fa56fff marks other processing identities stale. |
+| `EX71-57` | fa56fff deletes other pending identities. |
+| `EX71-58` | fa56fff then creates/upserts the freshly planned identity. |
+| `EX71-59` | 29f446a adds coverage for the attempted supersession model. |
+| `EX71-60` | b500c79 records the attempted supersession model in documentation. |
+| `EX71-61` | 9dd5591 removes the cross-generation supersession mechanism. |
+| `EX71-62` | 9dd5591 removes deletion of other pending identities. |
+| `EX71-63` | 9dd5591 removes revocation of other processing claims. |
+| `EX71-64` | 9dd5591 accidentally removes requiredRow return. |
+| `EX71-65` | dcf70d8 restores requiredRow return. |
+| `EX71-66` | 950485d removes coverage for the rejected supersession model. |
+| `EX71-67` | Final generation-isolation test keeps an older completed identity terminal. |
+| `EX71-68` | Final generation-isolation test preserves a newer pending identity. |
+| `EX71-69` | Final generation-isolation test preserves a newer processing claim. |
+| `EX71-70` | Final generation-isolation test does not prove cross-identity publication ordering. |
+| `EX71-71` | Temporary migration generator is branch-only tooling. |
+| `EX71-72` | Temporary migration generator receives an in-branch repair. |
+| `EX71-73` | 6792421 generates checked-in migration 0009 and metadata. |
+| `EX71-74` | Temporary migration generator is removed before merge. |
+| `EX71-75` | Temporary Stage 5A validation workflow is branch-only. |
+| `EX71-76` | Temporary validation workflow is removed before merge. |
+| `EX71-77` | Node typecheck adds publication dependencies. |
+| `EX71-78` | Machine provenance types are tightened. |
+| `EX71-79` | Auth-control fixture is updated for canonical plural runtime resources. |
+| `EX71-80` | Forum public-read fixture is updated for canonical plural runtime resources. |
+| `EX71-81` | Persistent publication fixtures are typed to the structured-capable boundary. |
+| `EX71-82` | Bundle compiler resolves plural rules only for present plural units. |
+| `EX71-83` | Runtime plural lookup has explicit canonical regression coverage. |
+| `EX71-84` | Database publication test covers successful completion and raw persistence. |
+| `EX71-85` | Database publication test covers lost claim rejection. |
+| `EX71-86` | Database publication test covers structured plural persistence. |
+| `EX71-87` | Persisted-bundle tests cover compiled plural representation. |
+| `EX71-88` | Completed same identity remains terminal in database coverage. |
+| `EX71-89` | PROVIDERS_AND_JOBS records completed-task terminal semantics. |
+| `EX71-90` | UI_TRANSLATION records structured plural compilation behavior. |
+| `EX71-91` | PROJECT_STATE records conditional publication as implemented local/CI. |
+| `EX71-92` | PROJECT_STATE after 9dd5591 removes the rejected cross-generation strategy. |
+| `EX71-93` | Authoritative different-identity ordering is explicitly deferred from final #71. |
+| `EX71-94` | Whole-namespace persisted bundle publication remains deferred after #71. |
+| `EX71-95` | Persisted-bundle SSR/runtime consumption remains deferred after #71. |
+| `EX71-96` | Concrete external machine provider remains absent. |
+| `EX71-97` | Real Queue/retry/DLQ/reconciliation remain absent. |
+| `EX71-98` | PR #71 performs no external migration or deployment. |
+| `EX71-99` | CI #188 verifies the corrected code head. |
+| `EX71-100` | Final CI #189 is green. |
+| `EX72-01` | Migration 0010 adds generation to every durable task. |
+| `EX72-02` | Migration backfills generation per logical UI unit. |
+| `EX72-03` | Backfill order is created_at then id. |
+| `EX72-04` | Generation becomes non-null after backfill. |
+| `EX72-05` | Generation must be positive. |
+| `EX72-06` | Generation is unique inside a logical unit. |
+| `EX72-07` | Migration 0010 creates translation_task_generation_heads. |
+| `EX72-08` | Generation-head identity excludes source fingerprint and policy. |
+| `EX72-09` | Generation-head current_generation must be positive. |
+| `EX72-10` | Migration backfills generation heads from maximum task generation. |
+| `EX72-11` | TranslationTask model carries generation. |
+| `EX72-12` | Task parser rejects invalid generation. |
+| `EX72-13` | upsertPending becomes a database transaction. |
+| `EX72-14` | First plan inserts generation head at 1. |
+| `EX72-15` | Planner locks the generation-head row FOR UPDATE. |
+| `EX72-16` | Planner rereads stable identity only after taking the head lock. |
+| `EX72-17` | Missing or invalid locked head is an integrity error. |
+| `EX72-18` | Existing stable identity is validated against the requested specification. |
+| `EX72-19` | Current stale same identity can be reactivated. |
+| `EX72-20` | Non-current stale same identity is returned unchanged. |
+| `EX72-21` | Existing completed same identity is returned unchanged. |
+| `EX72-22` | Existing processing same identity is returned unchanged. |
+| `EX72-23` | First identity in a new unit gets generation 1. |
+| `EX72-24` | A new different identity gets current generation plus one. |
+| `EX72-25` | New different identity advances the durable head. |
+| `EX72-26` | Stable taskIdentity remains semantic rather than chronological. |
+| `EX72-27` | TranslationTaskStore adds isCurrentGeneration. |
+| `EX72-28` | Consumer preflight adds generation-superseded stale reason. |
+| `EX72-29` | Generation-currentness is checked after source/policy checks. |
+| `EX72-30` | Generation-currentness is checked before locale/manual suppression. |
+| `EX72-31` | Publication locks the same generation-head row. |
+| `EX72-32` | Publication requires task generation to equal locked current_generation. |
+| `EX72-33` | Publication still separately requires claim-token ownership. |
+| `EX72-34` | Superseded publication returns false. |
+| `EX72-35` | Concurrent different-identity planning is database-tested. |
+| `EX72-36` | Concurrent plans receive distinct monotonic generations. |
+| `EX72-37` | Exactly one planned generation is current. |
+| `EX72-38` | Delayed duplicate planning of an older identity does not move the head. |
+| `EX72-39` | Old generation cannot publish after newer planning. |
+| `EX72-40` | Rejected old publication writes no machine row. |
+| `EX72-41` | Superseded old task can still be transitioned stale by its claim owner. |
+| `EX72-42` | PROVIDERS_AND_JOBS documents per-unit durable generation ordering. |
+| `EX72-43` | PROVIDERS_AND_JOBS documents planning/publication lock sharing. |
+| `EX72-44` | PROJECT_STATE records generation ordering as implemented local/CI. |
+| `EX72-45` | Review 4028280128 identifies A→B→A reactivation starvation. |
+| `EX72-46` | The review points at the non-current stale early return. |
+| `EX72-47` | Dispatcher can enqueue that unchanged stale task. |
+| `EX72-48` | Claim treats the re-enqueued stale task as terminal. |
+| `EX72-49` | The finding conflicts with the earlier broad fresh-plan reactivation wording. |
+| `EX72-50` | The #72 docs also narrow reactivation to a stale identity that is itself current. |
+| `EX72-51` | No code correction follows review 4028280128 inside #72. |
+| `EX72-52` | No PR #73–#77 code changes translation-task-store. |
+| `EX72-53` | Current main preserves the #72 task-store blob. |
+| `EX72-54` | Migration 0010 remains local/CI-only in this block. |
+| `EX72-55` | Real Queue/provider infrastructure remains absent. |
+| `EX72-56` | PostgreSQL 17 primary docs support the row-lock/time primitives used. |
+| `EX72-57` | CI #190 is green on the code head. |
+| `EX72-58` | Final CI #191 is green. |
+| `EX73-01` | UiTranslationTaskExecutor is introduced as a provider-neutral execution orchestrator. |
+| `EX73-02` | Executor consumes the durable message before provider routing. |
+| `EX73-03` | Non-eligible consumer outcomes short-circuit execution. |
+| `EX73-04` | Eligible execution builds a provider request from canonical task context. |
+| `EX73-05` | Provider request domain is ui. |
+| `EX73-06` | Provider request source locale is canonical English. |
+| `EX73-07` | Provider request target locale comes from the durable task. |
+| `EX73-08` | Provider request messageKind comes from the canonical descriptor. |
+| `EX73-09` | Provider operation is derived from message kind. |
+| `EX73-10` | Provider source payload comes from the canonical descriptor. |
+| `EX73-11` | Plural provider request includes target requiredBranches. |
+| `EX73-12` | Plain provider request omits requiredBranches. |
+| `EX73-13` | TranslationProviderRouter remains the adapter-selection boundary. |
+| `EX73-14` | Provider output flows into the existing UiTranslationResultPublisher. |
+| `EX73-15` | Provider output remains untrusted through executor return. |
+| `EX73-16` | Superseded generation does not call a provider. |
+| `EX73-17` | Superseded generation does not call publication store. |
+| `EX73-18` | Plain eligible task has end-to-end local contract coverage. |
+| `EX73-19` | Structured plural eligible task carries Russian branch contract. |
+| `EX73-20` | Invalid provider output test leaves durable publication untouched. |
+| `EX73-21` | Executor adds no production retry classification. |
+| `EX73-22` | Executor adds no durable failure state. |
+| `EX73-23` | PR #73 adds no schema or migration. |
+| `EX73-24` | Node server typecheck includes translation-execution.ts. |
+| `EX73-25` | Review 4028574664 identifies stale PROJECT_STATE wording. |
+| `EX73-26` | PROJECT_STATE is updated to distinguish neutral executor from real provider adapter. |
+| `EX73-27` | Full-file state editing accidentally changes unrelated Stage 4 wording. |
+| `EX73-28` | a71a0c3 restores the unrelated Stage 4 wording. |
+| `EX73-29` | CI #192 fails lint on the initial executor head. |
+| `EX73-30` | 72efa8d fixes the lint issue. |
+| `EX73-31` | CI #193 is green on the corrected code head. |
+| `EX73-32` | Final CI #195 is green. |
+| `EX73-33` | Concrete external machine-provider adapter remains absent. |
+| `EX73-34` | Provider credentials and real provider calls remain absent. |
+| `EX73-35` | Cloudflare Queue binding remains absent. |
+| `EX73-36` | Retry/DLQ and persistent reconciliation remain deferred. |
+| `EX73-37` | Persisted bundle runtime switching is not added by #73. |
+| `EX74-01` | compileExactLocaleNamespaceBundle is introduced. |
+| `EX74-02` | Exact-locale compiler merges sources by first-current-value priority. |
+| `EX74-03` | Default publication source order starts with local manual. |
+| `EX74-04` | Persistent manual is second publication source. |
+| `EX74-05` | Current-policy machine is third publication source. |
+| `EX74-06` | Publication transaction expands to include bundle rebuild. |
+| `EX74-07` | Publication locks all existing generation heads for the locale/namespace. |
+| `EX74-08` | Namespace head locks are acquired in deterministic source_key order. |
+| `EX74-09` | The target key head must still match the claimed generation. |
+| `EX74-10` | Lost current generation exits before task completion. |
+| `EX74-11` | Task completion remains claim-token conditioned. |
+| `EX74-12` | Raw machine upsert remains inside the publication transaction. |
+| `EX74-13` | Publication reads all approved raw rows for the exact locale/namespace. |
+| `EX74-14` | Raw namespace rows are deterministically ordered for store reconstruction. |
+| `EX74-15` | Transaction-local read adapter exposes those rows to source adapters. |
+| `EX74-16` | Bundle compilation uses the current task generation policy. |
+| `EX74-17` | Compiled bundle contains exact locale only. |
+| `EX74-18` | Compiled plural values remain runtime i18next suffix resources. |
+| `EX74-19` | Publication upserts ui_translation_bundles by locale/namespace. |
+| `EX74-20` | Bundle upsert stores semantic bundleVersion. |
+| `EX74-21` | Bundle upsert refreshes compiledAt with database statement time. |
+| `EX74-22` | Task completion, raw machine result and bundle write are atomic. |
+| `EX74-23` | Bundle compilation failure rolls back task completion. |
+| `EX74-24` | Bundle compilation failure rolls back raw machine result. |
+| `EX74-25` | Bundle compilation failure leaves no new persisted bundle. |
+| `EX74-26` | Lost claim cannot overwrite an existing persisted bundle. |
+| `EX74-27` | Persistent manual priority is covered in publication DB tests. |
+| `EX74-28` | Structured plural publication is covered end-to-end. |
+| `EX74-29` | Concurrent different-key publications are explicitly tested. |
+| `EX74-30` | Concurrent publications both complete successfully. |
+| `EX74-31` | Concurrent publications converge to a bundle containing both keys. |
+| `EX74-32` | Namespace serialization uses PostgreSQL row locks rather than advisory locks. |
+| `EX74-33` | Correctness does not depend on Queue delivery order. |
+| `EX74-34` | No new schema is required for atomic bundle publication. |
+| `EX74-35` | No new migration is added by PR #74. |
+| `EX74-36` | No new dependency is added by PR #74. |
+| `EX74-37` | STORAGE_AND_VERSIONING records atomic completion/raw/bundle publication. |
+| `EX74-38` | STORAGE_AND_VERSIONING records same-namespace serialization. |
+| `EX74-39` | UI_TRANSLATION records bundle rebuild on successful conditional publication. |
+| `EX74-40` | PROJECT_STATE records persisted bundle publication as implemented. |
+| `EX74-41` | 44b106a restores unrelated PROJECT_STATE wording. |
+| `EX74-42` | 7351b4a further restores exact unrelated wording. |
+| `EX74-43` | dc231a7 restores the exact original unrelated wording. |
+| `EX74-44` | The repeated state corrections do not change runtime publication code. |
+| `EX74-45` | Code CI #196 is green. |
+| `EX74-46` | Final CI #200 is green. |
+| `EX74-47` | Persisted bundle SSR/runtime reads remain deferred after #74. |
+| `EX74-48` | Concrete provider and real Queue remain absent. |
+| `EX74-49` | Retry/DLQ and reconciliation remain deferred. |
+| `EX74-50` | PR #74 performs no external rollout. |
+| `EX75-01` | Bundle semantic format advances to vico-ui-bundle-v2. |
+| `EX75-02` | Bundle v2 includes codeOwnedInputs in semantic versioning. |
+| `EX75-03` | codeOwnedBundleInputs includes every canonical descriptor key. |
+| `EX75-04` | codeOwnedBundleInputs includes every canonical sourceFingerprint. |
+| `EX75-05` | codeOwnedBundleInputs includes exact-locale local manual state. |
+| `EX75-06` | Local manual identity includes saved fingerprint. |
+| `EX75-07` | Local manual identity includes payload. |
+| `EX75-08` | Local structured payload keys are deterministically ordered. |
+| `EX75-09` | Absence of local overrides participates in deploy identity. |
+| `EX75-10` | TranslationBundleReader is split from writable store. |
+| `EX75-11` | TranslationBundleStore extends TranslationBundleReader. |
+| `EX75-12` | TranslationResourceLoader accepts an optional bundle reader. |
+| `EX75-13` | Loader attempts bundle reads for each requested non-English namespace. |
+| `EX75-14` | Canonical English never uses persisted bundle storage. |
+| `EX75-15` | Persisted hit supplies runtime resources directly. |
+| `EX75-16` | Persisted hit supplies stored semantic version metadata. |
+| `EX75-17` | Persisted hit removes that namespace from raw-source work. |
+| `EX75-18` | Missing persisted namespace falls back to the existing raw/source pipeline. |
+| `EX75-19` | Fallback chain members are processed independently. |
+| `EX75-20` | Persisted plural fallback is interpreted under its own locale. |
+| `EX75-21` | SSR and hydration receive the same persisted-bundle snapshot. |
+| `EX75-22` | Drizzle bundle read requires canonical non-English locale identity. |
+| `EX75-23` | Drizzle bundle read requires a nonblank namespace. |
+| `EX75-24` | Bundle read fetches one locale/namespace row. |
+| `EX75-25` | Persisted resources must be a JSON object. |
+| `EX75-26` | Every persisted runtime resource value must be a string. |
+| `EX75-27` | Persisted resources are reverified against current compiler semantics. |
+| `EX75-28` | Stored bundleVersion must equal recomputed current version. |
+| `EX75-29` | Invalid/stale persisted bundle is wrapped in PersistentBundleIntegrityError. |
+| `EX75-30` | Hyperdrive UI store exposes raw and bundle reads through one request capability. |
+| `EX75-31` | Bundle reads are memoized per locale/namespace per request. |
+| `EX75-32` | Raw reads retain namespace-set memoization. |
+| `EX75-33` | UI translation DB connection remains lazy. |
+| `EX75-34` | English bundle read does not connect. |
+| `EX75-35` | Classified connection availability failure degrades to miss. |
+| `EX75-36` | Classified query timeout degrades to miss. |
+| `EX75-37` | Classified schema mismatch degrades to miss. |
+| `EX75-38` | Classified DB failures open one request-local circuit. |
+| `EX75-39` | Classified DB failure best-effort discards the client. |
+| `EX75-40` | Degradation telemetry is reported once per request. |
+| `EX75-41` | Invalid bundle is a distinct degraded reason. |
+| `EX75-42` | Invalid bundle does not open the DB failure circuit. |
+| `EX75-43` | Unclassified permission failure remains visible. |
+| `EX75-44` | Unknown programming failure remains visible. |
+| `EX75-45` | Bundle miss with healthy DB can use raw persistent translations. |
+| `EX75-46` | Bundle DB outage falls back to local manual and canonical English. |
+| `EX75-47` | Translation provider is never called by the request loader. |
+| `EX75-48` | Request context types the persistent store as raw plus bundle reader. |
+| `EX75-49` | Locale boundary passes the bundle reader into TranslationResourceLoader. |
+| `EX75-50` | Existing read-only localization Hyperdrive capability is reused. |
+| `EX75-51` | PR #75 adds no database grant. |
+| `EX75-52` | PR #75 adds no schema or migration. |
+| `EX75-53` | STORAGE_AND_VERSIONING records Stage 5 persisted-first runtime path. |
+| `EX75-54` | UI_TRANSLATION records persisted bundle hit/miss behavior. |
+| `EX75-55` | PROJECT_STATE records persisted-bundle runtime slice as completed local/CI. |
+| `EX75-56` | Review 4029815293 identifies v1→v2 durable refresh gap. |
+| `EX75-57` | The miss path recompiles v1-rejected content only in memory. |
+| `EX75-58` | Completed tasks do not reopen merely to refresh bundle format. |
+| `EX75-59` | Repeated requests can reread and reject the same v1 row. |
+| `EX75-60` | PR #75 contains no follow-up commit after the review. |
+| `EX75-61` | PR #76 and #77 do not modify the bundle refresh path. |
+| `EX75-62` | Current main resource-loader remains byte-identical to #75. |
+| `EX75-63` | Final CI #201 is green despite the open review finding. |
+| `EX75-64` | No external bundle rollout/backfill is evidenced. |
+| `EX75-65` | Real provider/Queue acceptance remains outside PR #75. |
+| `EX76-01` | Ordinary pull-request CI removes live migration-evidence verification. |
+| `EX76-02` | Ordinary PR CI no longer needs GITHUB_TOKEN for that live verifier step. |
+| `EX76-03` | Repository-local migration history verification remains in PR CI. |
+| `EX76-04` | Runtime migration-evidence unit/static contract tests remain in PR CI. |
+| `EX76-05` | Production privilege contract tests remain in PR CI. |
+| `EX76-06` | Repository-owned runtime migration evidence file is retained. |
+| `EX76-07` | Live migration-evidence verifier script is retained. |
+| `EX76-08` | Production database migration workflow is unchanged by #76. |
+| `EX76-09` | MIGRATIONS moves live GitHub run verification to actual external rollout. |
+| `EX76-10` | Evidence manifest update remains tied to external runtime schema dependency. |
+| `EX76-11` | Current evidence remains at migration 0002. |
+| `EX76-12` | PR #44 live-PR verifier placement is the historical source corrected by #76. |
+| `EX76-13` | PR #76 preserves repository-local evidence validation from PR #44. |
+| `EX76-14` | PR #76 does not remove schema-first external rollout ordering. |
+| `EX76-15` | AuthorizationUnavailableError is introduced. |
+| `EX76-16` | AuthorizationUnavailableError uses a generic safe message. |
+| `EX76-17` | Hyperdrive authorization pool construction becomes injectable for tests. |
+| `EX76-18` | Authorization management operations run inside availability classification wrapper. |
+| `EX76-19` | Per-user resolution runs inside the same availability classification wrapper. |
+| `EX76-20` | Availability classifier traverses nested cause chains. |
+| `EX76-21` | Availability classifier guards against cause cycles. |
+| `EX76-22` | Known PostgreSQL availability shapes are classified. |
+| `EX76-23` | Known PostgreSQL connection timeout is classified. |
+| `EX76-24` | Known PostgreSQL query timeout is classified. |
+| `EX76-25` | Schema errors are not authorization availability by default. |
+| `EX76-26` | Programming errors are not authorization availability by default. |
+| `EX76-27` | Protected forum permission check maps typed unavailable to 503. |
+| `EX76-28` | Protected forum permission check rethrows unexpected errors. |
+| `EX76-29` | Solution permission resolution maps typed unavailable to 503. |
+| `EX76-30` | Solution permission resolution rethrows unexpected errors. |
+| `EX76-31` | Authorization-admin manager gate maps typed unavailable to 503. |
+| `EX76-32` | Authorization-admin manager gate rethrows unexpected errors. |
+| `EX76-33` | Authorization-admin loader maps typed unavailable management read to 503. |
+| `EX76-34` | Authorization-admin loader rethrows unexpected management read errors. |
+| `EX76-35` | Authorization-admin action retains existing known domain mappings. |
+| `EX76-36` | Authorization-admin action maps typed unavailable mutation failure to 503. |
+| `EX76-37` | Authorization-admin action rethrows unrecognized mutation failure. |
+| `EX76-38` | Locale header presentation degrades only on typed unavailable. |
+| `EX76-39` | Locale header presentation rethrows unexpected authorization errors. |
+| `EX76-40` | Section presentation degrades only on typed unavailable. |
+| `EX76-41` | Section presentation rethrows unexpected authorization errors. |
+| `EX76-42` | Topic presentation degrades only on typed unavailable. |
+| `EX76-43` | Topic presentation rethrows unexpected authorization errors. |
+| `EX76-44` | Permission denial remains distinct from unavailable. |
+| `EX76-45` | Optional presentation remains non-authoritative. |
+| `EX76-46` | Public-degradation tests now inject both typed outage and ordinary Error. |
+| `EX76-47` | Write-action tests distinguish typed outage from unexpected error. |
+| `EX76-48` | Authorization-admin tests distinguish typed outage from unexpected error. |
+| `EX76-49` | Hyperdrive authorization tests distinguish availability from schema/programming failures. |
+| `EX76-50` | AUTHORIZATION adds an explicit failure-semantics section. |
+| `EX76-51` | Catch-all PermissionResolver suppression is explicitly excluded by the authorization contract. |
+| `EX76-52` | PROJECT_STATE replaces broad infrastructure wording with typed availability state. |
+| `EX76-53` | PROJECT_STATE records ordinary PR live migration verification removal. |
+| `EX76-54` | PR #61 broad failure records are the historical authz behavior corrected by #76. |
+| `EX76-55` | PR #76 preserves controlled degradation for genuine outages. |
+| `EX76-56` | PR #76 preserves migration-evidence safety for real rollout. |
+| `EX76-57` | PR #76 adds no schema or migration. |
+| `EX76-58` | PR #76 adds no dependency. |
+| `EX76-59` | PR #76 changes no translation architecture. |
+| `EX76-60` | CI #202 is green on the implementation head. |
+| `EX76-61` | 417ca16 updates state with the final verification evidence. |
+| `EX76-62` | Final CI #203 is green. |
+| `EX77-01` | PR #77 is documentation-only. |
+| `EX77-02` | 089f11c adds the local-manual stale-policy regression to PROJECT_STATE. |
+| `EX77-03` | 089f11c corrects PR #76 verification from CI #202/code head to final CI #203/head. |
+| `EX77-04` | bec8226 redefines PROJECT_STATE as current-state documentation. |
+| `EX77-05` | bec8226 delegates permanent contracts to subsystem source-of-truth documents. |
+| `EX77-06` | bec8226 removes most PR/commit/CI chronology from PROJECT_STATE. |
+| `EX77-07` | bec8226 condenses current phase to Stage 0–3 foundation, Stage 4 local/CI complete, Stage 5 active, Stage 6 external. |
+| `EX77-08` | bec8226 condenses forum core into current capability summary. |
+| `EX77-09` | bec8226 condenses Stage 5A into current implemented capabilities. |
+| `EX77-10` | bec8226 keeps Stage 5 unfinished work separate. |
+| `EX77-11` | bec8226 keeps external acceptance separate from local/CI Stage 5. |
+| `EX77-12` | bec8226 keeps the #40 stale-policy mismatch as a known current regression. |
+| `EX77-13` | bec8226 condenses CI/migration state. |
+| `EX77-14` | bec8226 condenses external/deployed state. |
+| `EX77-15` | bec8226 ends with a short nearest-route sequence. |
+| `EX77-16` | The first bec8226 rebuild removes historical provenance before a history replacement exists. |
+| `EX77-17` | 8f75a43 separates Stage 5 local/CI implementation from Stage 6 external acceptance. |
+| `EX77-18` | 8f75a43 revises the nearest Stage 5A route to include a concrete provider adapter. |
+| `EX77-19` | af7825b creates PROJECT_HISTORY.md. |
+| `EX77-20` | PROJECT_HISTORY declares itself not source of truth for current behavior. |
+| `EX77-21` | PROJECT_HISTORY declares Git history and PRs primary historical evidence. |
+| `EX77-22` | PROJECT_HISTORY records a Stage 0–1 retrospective summary. |
+| `EX77-23` | PROJECT_HISTORY records a Stage 2–3 retrospective summary. |
+| `EX77-24` | PROJECT_HISTORY records a pre-Stage-4 hardening retrospective summary. |
+| `EX77-25` | PROJECT_HISTORY records a Stage 4 retrospective summary. |
+| `EX77-26` | PROJECT_HISTORY records a Stage 5A retrospective summary. |
+| `EX77-27` | H-001 attributes stale classification/fallback to PR #17. |
+| `EX77-28` | H-001 attributes permissive stale-pack policy to PR #19. |
+| `EX77-29` | H-001 labels PR #40 zero-stale test/canary removal a regression. |
+| `EX77-30` | H-001 says PR #40 PROJECT_STATE laundered cleanup as intended final state. |
+| `EX77-31` | H-001 says the #40 mismatch remains current on 2026-09-18. |
+| `EX77-32` | H-002 indexes PR #37 staging/hardening blockers. |
+| `EX77-33` | H-002 labels the #37 process policy excessive for later solo product-first flow. |
+| `EX77-34` | H-002 records PR #45 as the lifecycle revision. |
+| `EX77-35` | H-002 distinguishes superseded process policy from runtime defect. |
+| `EX77-36` | H-003 records the PR #41 query-redaction path defect. |
+| `EX77-37` | H-003 records PR #64 as the configuration-path correction. |
+| `EX77-38` | H-003 says PR #41 PROJECT_STATE asserted redaction prematurely. |
+| `EX77-39` | H-004 records PR #43 privilege-verifier membership assumptions. |
+| `EX77-40` | H-004 records PR #48 membership correction. |
+| `EX77-41` | H-004 records PR #49 temporary owner verification/no-op exception. |
+| `EX77-42` | H-005 preserves the repository-owned migration-evidence mechanism as useful. |
+| `EX77-43` | H-005 labels ordinary-PR live GitHub Actions verification a boundary error. |
+| `EX77-44` | H-005 records PR #76 removal of live remote verification from ordinary PR CI. |
+| `EX77-45` | H-006 records broad authorization failure semantics as present in PR #61. |
+| `EX77-46` | H-006 initial wording over-attributed the broad policy to corrective review. |
+| `EX77-47` | 9c1fa30 corrects H-006 provenance to include the initial PR #61 implementation. |
+| `EX77-48` | 9c1fa30 separately attributes later optional-presentation broadening to review-follow-up commits. |
+| `EX77-49` | H-006 says no pre-#61 contract required arbitrary resolver errors to equal availability. |
+| `EX77-50` | H-006 records PR #76 typed availability correction. |
+| `EX77-51` | H-007 records PR #68 claim/lease/stale foundation. |
+| `EX77-52` | H-007 records #69 DB-owned clock, live-claim preservation, stale reactivation and shared eligibility changes. |
+| `EX77-53` | e9c2fbc adds the #69 missing-return intermediate regression to history. |
+| `EX77-54` | H-008 records the unsafe #71 cross-generation supersession attempt. |
+| `EX77-55` | H-008 records #72 durable monotonic generation/head replacement. |
+| `EX77-56` | e9c2fbc adds the #71 missing-return intermediate regression to history. |
+| `EX77-57` | H-008 final status says durable replacement ordering was implemented by #72. |
+| `EX77-58` | PROJECT_HISTORY therefore is not exhaustive for #72 review state. |
+| `EX77-59` | PROJECT_HISTORY does not index PR #75 review 4029815293. |
+| `EX77-60` | H-009 records accidental unrelated PROJECT_STATE rewrite in PR #73. |
+| `EX77-61` | d1b452f expands H-009 to include the repeated PR #74 state rewrites. |
+| `EX77-62` | H-009 derives a general caution about full-file documentation replacement. |
+| `EX77-63` | H-010 records that PROJECT_STATE had mixed state, history, policy and roadmap. |
+| `EX77-64` | 428df86 records the intermediate #77 history-loss episode. |
+| `EX77-65` | 428df86 says user review detected that history loss before merge. |
+| `EX77-66` | 428df86 records af7825b as the history-file restoration step. |
+| `EX77-67` | 428df86 records 95adc2f linking history from PROJECT_STATE. |
+| `EX77-68` | 428df86 records 7b9c672 linking history from README. |
+| `EX77-69` | Later #77 commits revise retrospective provenance instead of runtime behavior. |
+| `EX77-70` | 95adc2f makes PROJECT_STATE name PROJECT_HISTORY as historical owner. |
+| `EX77-71` | 7b9c672 adds PROJECT_HISTORY to README documentation index. |
+| `EX77-72` | 01bb2e0 keeps concrete provider adapter in the nearest Stage 5A route. |
+| `EX77-73` | Final PROJECT_STATE records current translation generation ordering as implemented. |
+| `EX77-74` | Final PROJECT_STATE records persisted-bundle runtime reads as implemented. |
+| `EX77-75` | Final PROJECT_STATE does not mention open #72 A→B→A review. |
+| `EX77-76` | Final PROJECT_STATE does not mention open #75 v1→v2 refresh review. |
+| `EX77-77` | Final PROJECT_HISTORY retains a time-local statement that PR #77 is not yet merged. |
+| `EX77-78` | PROJECT_HISTORY evaluative labels are later-retrospective-summary provenance. |
+| `EX77-79` | Factual components of PROJECT_HISTORY may still be independently corroborated. |
+| `EX77-80` | PROJECT_HISTORY is an index, not the audit ledger. |
+| `EX77-81` | PR #77 available discussion has no technical Codex review. |
+| `EX77-82` | PR #77 changes no application code. |
+| `EX77-83` | PR #77 changes no tests. |
+| `EX77-84` | PR #77 changes no schema or migration. |
+| `EX77-85` | PR #77 changes no CI workflow. |
+| `EX77-86` | Final CI #214 is green. |
+| `EX77-87` | Green CI #214 does not validate retrospective architecture labels. |
+| `EX77-88` | Final PR #77 responsibility split is state/history/contracts. |
+
 `COVERAGE.md` remains the authoritative working checklist for whether every in-scope PR/commit has
 been examined and whether mixed changes were completely decomposed. A populated ledger alone never
 proves that extraction or dependency discovery is complete.
