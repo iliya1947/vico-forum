@@ -1,0 +1,1628 @@
+{
+  "type": "DL-CLASSIFY-011",
+  "status": "submitted-preliminary",
+  "audited_heads": {
+    "pr78_task_head": "bf46abc9c2fa6937b304fb089780bda09d3c4d93",
+    "main": "3282aa51f47f36131d35c34ee79ca37cb2ce434f",
+    "pr79_before_response": "3c4f3142bb514cb600ecc400fbdc62b24ff6728c"
+  },
+  "immutable_scope_source": {
+    "commit": "33bc4029a81ccb1c82549b03a7111622816e1f73",
+    "path": "audit/chatgpt-review/DL-CLASSIFY-COVERAGE-001-2.json",
+    "block": "R3"
+  },
+  "scope_validation": {
+    "expected_count": 71,
+    "unique_count": 71,
+    "duplicate_ids": [],
+    "missing_classifications": [],
+    "out_of_scope_classifications": [],
+    "accepted_or_r6_overlap": [],
+    "expanded_ids": [
+      "EX31-01",
+      "EX31-02",
+      "EX31-03",
+      "EX31-04",
+      "EX31-05",
+      "EX31-06",
+      "EX31-07",
+      "EX31-08",
+      "EX31-09",
+      "EX31-10",
+      "EX31-11",
+      "EX31-12",
+      "EX31-13",
+      "EX31-14",
+      "EX31-15",
+      "EX31-16",
+      "EX31-17",
+      "EX31-18",
+      "EX31-19",
+      "EX31-20",
+      "EX32-01",
+      "EX32-02",
+      "EX32-03",
+      "EX32-04",
+      "EX32-05",
+      "EX32-06",
+      "EX32-07",
+      "EX32-08",
+      "EX32-09",
+      "EX32-10",
+      "EX32-11",
+      "EX32-12",
+      "EX32-13",
+      "EX32-14",
+      "EX32-15",
+      "EX32-16",
+      "EX32-17",
+      "EX32-18a",
+      "EX32-18b",
+      "EX32-19",
+      "EX32-20",
+      "EX32-21",
+      "EX34-01",
+      "EX34-02",
+      "EX34-03",
+      "EX34-04",
+      "EX34-05",
+      "EX34-06",
+      "EX34-07",
+      "EX34-08",
+      "EX34-09",
+      "EX34-10",
+      "EX34-11",
+      "EX34-12",
+      "EX34-13",
+      "EX34-14",
+      "EX34-15a",
+      "EX34-15b",
+      "EX34-16a",
+      "EX34-16b",
+      "EX34-17",
+      "EX34-18",
+      "EX34-19a",
+      "EX34-19b",
+      "EX34-19c",
+      "EX34-19d",
+      "EX34-20a",
+      "EX34-20b",
+      "EX34-21",
+      "EX34-22",
+      "EX34-23"
+    ]
+  },
+  "block_context": {
+    "chronology": "PR #31 → #32 → #34; PR #33 is already covered by DL-CLASSIFY-005 and PR #35 is already covered/supporting in DL-CLASSIFY-002.",
+    "theme": "Stage 3 persistent UI translation schema/source/runtime, bundle/compiler/cache identity and persistence primitives, external rollout/evidence boundaries",
+    "dependencies": [
+      "R1 UI translation freshness/fallback/provider foundations",
+      "R2 database/persistence/runtime and rollout boundaries",
+      "CROSS_STAGE storage/bundle and generic-locale lineages",
+      "already-classified Stage 5A consumers EX63/EX66–EX75 as forward evidence only",
+      "already-classified EX65 correction as forward evidence for EX34-23"
+    ],
+    "accepted_before": "1877 / 2029 = 92.5086%",
+    "remaining_before": {
+      "R3": 71,
+      "R6": 81
+    }
+  },
+  "classification_counts": {
+    "acceptable-alternative": 16,
+    "intentional-foundation": 38,
+    "real-original-defect": 5,
+    "reviewed-supporting": 10,
+    "justified-fix-of-real-defect": 2,
+    "substantive_total": 61,
+    "supporting_total": 10,
+    "total": 71
+  },
+  "preliminary_findings": {
+    "current_defects": [
+      "EX31-10",
+      "EX31-14",
+      "EX31-16",
+      "EX34-23"
+    ],
+    "historical_defects": [
+      "EX32-17"
+    ],
+    "justified_in_pr_fixes": [
+      "EX34-15b",
+      "EX34-16a"
+    ],
+    "premature_external_or_infrastructure_records": [],
+    "strict_documentation_laundering": false,
+    "unresolved_ids": []
+  },
+  "material_defect_fix_pairs": [
+    {
+      "defect_ids": [
+        "EX31-10",
+        "EX31-14",
+        "EX31-16"
+      ],
+      "defect": "Whitespace-wrapped English-like locale values bypass both persistent storage English-exclusion checks and the production verifier.",
+      "origin": "PR #31 / review discussion_r3989842261",
+      "survived_merge": "458db7ed8c28153ab7b9e5eba3be0e025c51f926",
+      "fix_ids": [],
+      "current_state": "unfixed at audited main; no migration after 0010 corrects 0002 and current schema/verifier repeat the same untrimmed comparison"
+    },
+    {
+      "defect_ids": [
+        "EX32-17"
+      ],
+      "defect": "Any remaining code-less pg connect Error was treated as availability, masking unknown failures.",
+      "origin": "PR #32 inherited the broad classifier",
+      "fix_ids": [
+        "EX39-08",
+        "EX39-09",
+        "EX39-10"
+      ],
+      "fix_commits": [
+        "d5934cbffef23f41314f009d97d41310ec354b96",
+        "e7c7bf143255a5ffb85ed902f9e298fc3f987a3b",
+        "42e4cdc3232d5740699769b7cb49d4c420f66fb4",
+        "c5e3ab6284e977ced808cb0f541fee5816ac7886"
+      ],
+      "current_state": "fixed; accepted DL-CLASSIFY-005 remains unchanged"
+    },
+    {
+      "defect_ids": [
+        "EX34-23"
+      ],
+      "defect": "Bundle namespace validation accepts inherited Object.prototype names because it indexes canonicalEnglishCatalog directly instead of checking own membership.",
+      "origin": "PR #34 / review discussion_r3991591403",
+      "fix_ids": [],
+      "analogous_fix_ids": [
+        "EX65-06",
+        "EX65-07",
+        "EX65-08",
+        "EX65-09",
+        "EX65-10",
+        "EX65-11"
+      ],
+      "analogous_fix_commits": [
+        "e742d75cdd67a44dd2d8cb930f167b85894730bb",
+        "4be06212fcfa4640d10be26ee131f970376e9d15"
+      ],
+      "current_state": "unfixed in bundles.ts; PR #65 fixed the same bug class only in sources.ts paths"
+    },
+    {
+      "defect_ids": [
+        "PR34-intermediate-read-trust"
+      ],
+      "defect": "Initial PR #34 persisted bundle read trusted stored semantic version/content after only shape reconstruction.",
+      "origin_commit": "0031f0ee8662fe25e7034b0ee9a27c4043e19590",
+      "fix_ids": [
+        "EX34-15b"
+      ],
+      "fix_commits": [
+        "c24c2433a11aca3aeedcce00573199a84a76f825"
+      ],
+      "current_state": "fixed before merge"
+    },
+    {
+      "defect_ids": [
+        "PR34-intermediate-write-trust"
+      ],
+      "defect": "Initial PR #34 bundle put trusted caller-supplied version/content at the persistence boundary.",
+      "origin_commit": "0031f0ee8662fe25e7034b0ee9a27c4043e19590",
+      "fix_ids": [
+        "EX34-16a"
+      ],
+      "fix_commits": [
+        "c24c2433a11aca3aeedcce00573199a84a76f825"
+      ],
+      "current_state": "fixed before merge"
+    }
+  ],
+  "reconciliation": {
+    "accepted_chains_reopened": [],
+    "contradictions": [
+      {
+        "subject": "EX34-23 versus accepted PR #65 correction",
+        "result": "no contradiction",
+        "reason": "DL-CLASSIFY-005 correctly says PR #65 fixed prototype-sensitive namespace checks in CanonicalEnglishSource, LocalTranslationSource and validateTranslationPacks. It did not claim bundles.ts was fixed; current bundles.ts remains a separate affected consumer."
+      }
+    ],
+    "pr50_retroactive_use": false,
+    "later_state_used_as_authority": false
+  },
+  "documentation_laundering": {
+    "confirmed": false,
+    "note": "Current translation docs explicitly distinguish Stage 3C primitives from Stage 5A persisted publication/read activation. Later descriptions do not make PR #31/#32/#34 mechanisms appear older than their introduction. R6 retrospective claims are not pre-credited."
+  },
+  "phase2_if_accepted": {
+    "substantive_before": 1612,
+    "supporting_before": 265,
+    "newly_substantive": 61,
+    "newly_supporting": 10,
+    "substantive_after": 1673,
+    "supporting_after": 275,
+    "covered_after": 1948,
+    "total": 2029,
+    "coverage_percent": 96.0079,
+    "remaining": 81,
+    "remaining_blocks": {
+      "R6": 81
+    }
+  },
+  "profiles": {
+    "F1": {
+      "title": "Persistent translation/storage identity with live downstream use",
+      "strongest_evidence_against": "Evidence that the boundary is unused, duplicates another authority, or materially blocks current development without an accepted consumer.",
+      "contrary_found": "The accepted R1 contracts already require source freshness/origin separation, and current Stage 5/raw/bundle paths still consume the same persistent identities or semantics. Later use is corroboration, not retroactive authority.",
+      "effect": "Intentional foundation; neither complexity nor deferred external rollout makes the boundary a defect."
+    },
+    "F2": {
+      "title": "Bundle/compiler semantic boundary with current runtime consumer",
+      "strongest_evidence_against": "Evidence that the primitive remained dead scaffolding, encoded a closed-locale assumption, or required replacement before any real consumer could use it.",
+      "contrary_found": "Current Stage 5 publication and persisted-first runtime reads reuse the compiler/version/store boundaries. The exact later v2 identity extends rather than invalidates the Stage 3 primitive.",
+      "effect": "Intentional foundation with demonstrated retrofit value."
+    },
+    "F3": {
+      "title": "Failure/integrity boundary retained by current runtime",
+      "strongest_evidence_against": "Evidence that the boundary masks programming/configuration errors or converts an optional dependency into a mandatory outage.",
+      "contrary_found": "Current code keeps unexpected failures visible and degrades only classified storage conditions; the known overbroad code-less branch is separately classified as EX32-17.",
+      "effect": "Intentional failure/integrity foundation."
+    },
+    "A1": {
+      "title": "Historical rollout/process alternative",
+      "strongest_evidence_against": "Evidence that the step was unauthorized mandatory external work unrelated to the then-selected runtime rollout, or that it remains a feature-development gate after the later user reprioritization.",
+      "contrary_found": "Accepted R2 already establishes the then production-first cadence as a coherent alternative with direct-user authority unproven. Current MIGRATIONS keeps schema-first ordering only for actual external schema-dependent rollout.",
+      "effect": "Acceptable historical alternative; no direct-user approval is inferred and PR #50 is not applied retroactively."
+    },
+    "A2": {
+      "title": "Implementation/optimization alternative",
+      "strongest_evidence_against": "Evidence that the mechanism creates correctness loss, hides errors, or imposes material complexity with no current or plausible accepted consumer.",
+      "contrary_found": "Current tests/code retain the mechanism without a demonstrated correctness regression; where a specific defect exists it is classified on its own record.",
+      "effect": "Acceptable implementation alternative."
+    },
+    "A3": {
+      "title": "Deliberate staged deferral",
+      "strongest_evidence_against": "Evidence that the omitted consumer was required for correctness of the then-current Stage 3 slice or that the omission caused a current defect.",
+      "contrary_found": "The later Stage 5A chain explicitly owns persisted bundle publication/runtime reads and now consumes these primitives. Stage 3C was documented as primitives, not end-to-end generation/runtime switching.",
+      "effect": "Acceptable staged boundary, not a missing-current-stage defect."
+    },
+    "D_EN": {
+      "title": "Whitespace-wrapped canonical-English persistence bypass",
+      "strongest_evidence_against": "Evidence that database constraints and verifier trim locale identity before the English comparison, or that another current schema constraint makes whitespace-wrapped values impossible.",
+      "contrary_found": "Current immutable migration and db/schema.ts still use `btrim(locale) <> '' AND lower(locale) <> 'en'`; `' en '` passes. The current production verifier likewise queries `lower(locale) = 'en'` without trimming. No later migration 0011+ exists.",
+      "effect": "Real current defect in the record's English-exclusion/verification implementation."
+    },
+    "D_CODELESS": {
+      "title": "Overbroad code-less PostgreSQL availability classification",
+      "strongest_evidence_against": "Evidence that every code-less pg connect Error denotes availability loss and cannot represent configuration/programming failures.",
+      "contrary_found": "PR #39 explicitly narrowed this behavior; current tests require generic driver/configuration Error to remain visible and accept only known transport/termination shapes.",
+      "effect": "Real historical original defect, corrected later by accepted EX39-08/09/10."
+    },
+    "D_NS": {
+      "title": "Prototype-sensitive bundle namespace validation",
+      "strongest_evidence_against": "Evidence that PR #65 or another later change replaced bundle compiler namespace lookup with own-property membership.",
+      "contrary_found": "PR #65 changed `sources.ts` only. Current `app/localization/bundles.ts` still checks `canonicalEnglishCatalog[namespace]` in `assertBundleScope`/`descriptorMap`, so inherited names can pass the unknown-namespace guard exactly as PR #34 review described.",
+      "effect": "Real current defect in the bundle compiler path. The accepted PR #65 fix is analogous forward evidence, not a fix for this record."
+    },
+    "J_STORE": {
+      "title": "Persisted bundle trust-boundary integrity correction",
+      "strongest_evidence_against": "Evidence that the database adapter could only ever receive compiler-produced, immutable, already-verified rows, making independent read/write verification redundant.",
+      "contrary_found": "The initial PR #34 store accepted stored/supplied version/content directly. Commit c24c2433 added recomputation and version matching at the persistence boundary, which later Stage 5 persisted reads/publication rely on.",
+      "effect": "Justified fix of a concrete in-PR integrity defect."
+    },
+    "S_EXT": {
+      "title": "Repository-recorded external operational evidence",
+      "strongest_evidence_against": "Raw target-environment artifacts that independently prove or contradict the recorded operation/observation.",
+      "contrary_found": "The PR/state records the event, but the inspected repository does not contain the raw migration/grant/request/Observability artifact needed for an independent correctness verdict.",
+      "effect": "Reviewed supporting/provenance-only; not normative authority and not an unresolved architecture choice."
+    },
+    "S_STATE": {
+      "title": "Historical state/progress record",
+      "strongest_evidence_against": "Evidence that the state line itself created a durable technical requirement or was factually contradicted by the same PR.",
+      "contrary_found": "The row records Stage 3C progress/remaining scope; later contracts explicitly separate Stage 3C primitives from Stage 5 activation.",
+      "effect": "Reviewed supporting/provenance-only."
+    }
+  },
+  "rows": [
+    {
+      "index": 1,
+      "id": "EX31-01",
+      "atomic_decision": "Stage 3A is a migration-only schema slice with no Worker runtime dependency.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "A1",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "docs/database/MIGRATIONS.md",
+        ".github/workflows/production-db-migrate.yml"
+      ],
+      "disconfirmation": {
+        "title": "Historical rollout/process alternative",
+        "strongest_evidence_against": "Evidence that the step was unauthorized mandatory external work unrelated to the then-selected runtime rollout, or that it remains a feature-development gate after the later user reprioritization.",
+        "contrary_found": "Accepted R2 already establishes the then production-first cadence as a coherent alternative with direct-user authority unproven. Current MIGRATIONS keeps schema-first ordering only for actual external schema-dependent rollout.",
+        "effect": "Acceptable historical alternative; no direct-user approval is inferred and PR #50 is not applied retroactively."
+      }
+    },
+    {
+      "index": 2,
+      "id": "EX31-02",
+      "atomic_decision": "Persistent UI translation candidate identity is locale + namespace + key + origin.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "F1",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "title": "Persistent translation/storage identity with live downstream use",
+        "strongest_evidence_against": "Evidence that the boundary is unused, duplicates another authority, or materially blocks current development without an accepted consumer.",
+        "contrary_found": "The accepted R1 contracts already require source freshness/origin separation, and current Stage 5/raw/bundle paths still consume the same persistent identities or semantics. Later use is corroboration, not retroactive authority.",
+        "effect": "Intentional foundation; neither complexity nor deferred external rollout makes the boundary a defect."
+      }
+    },
+    {
+      "index": 3,
+      "id": "EX31-03",
+      "atomic_decision": "Persistent translation origin is restricted to persistent_manual or machine.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "F1",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "db/forum-write-policy.ts"
+      ],
+      "disconfirmation": {
+        "title": "Persistent translation/storage identity with live downstream use",
+        "strongest_evidence_against": "Evidence that the boundary is unused, duplicates another authority, or materially blocks current development without an accepted consumer.",
+        "contrary_found": "The accepted R1 contracts already require source freshness/origin separation, and current Stage 5/raw/bundle paths still consume the same persistent identities or semantics. Later use is corroboration, not retroactive authority.",
+        "effect": "Intentional foundation; neither complexity nor deferred external rollout makes the boundary a defect."
+      }
+    },
+    {
+      "index": 4,
+      "id": "EX31-04",
+      "atomic_decision": "Persistent translation lifecycle status is draft, approved, or rejected.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "F1",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "disconfirmation": {
+        "title": "Persistent translation/storage identity with live downstream use",
+        "strongest_evidence_against": "Evidence that the boundary is unused, duplicates another authority, or materially blocks current development without an accepted consumer.",
+        "contrary_found": "The accepted R1 contracts already require source freshness/origin separation, and current Stage 5/raw/bundle paths still consume the same persistent identities or semantics. Later use is corroboration, not retroactive authority.",
+        "effect": "Intentional foundation; neither complexity nor deferred external rollout makes the boundary a defect."
+      }
+    },
+    {
+      "index": 5,
+      "id": "EX31-05",
+      "atomic_decision": "Persistent translations store lowercase SHA-256 sourceFingerprint.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "F1",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/sources.ts"
+      ],
+      "disconfirmation": {
+        "title": "Persistent translation/storage identity with live downstream use",
+        "strongest_evidence_against": "Evidence that the boundary is unused, duplicates another authority, or materially blocks current development without an accepted consumer.",
+        "contrary_found": "The accepted R1 contracts already require source freshness/origin separation, and current Stage 5/raw/bundle paths still consume the same persistent identities or semantics. Later use is corroboration, not retroactive authority.",
+        "effect": "Intentional foundation; neither complexity nor deferred external rollout makes the boundary a defect."
+      }
+    },
+    {
+      "index": 6,
+      "id": "EX31-06",
+      "atomic_decision": "Persistent translation payload accepts string or object JSON shapes.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "F1",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "disconfirmation": {
+        "title": "Persistent translation/storage identity with live downstream use",
+        "strongest_evidence_against": "Evidence that the boundary is unused, duplicates another authority, or materially blocks current development without an accepted consumer.",
+        "contrary_found": "The accepted R1 contracts already require source freshness/origin separation, and current Stage 5/raw/bundle paths still consume the same persistent identities or semantics. Later use is corroboration, not retroactive authority.",
+        "effect": "Intentional foundation; neither complexity nor deferred external rollout makes the boundary a defect."
+      }
+    },
+    {
+      "index": 7,
+      "id": "EX31-07",
+      "atomic_decision": "Machine rows require generation policy and provider metadata.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "F1",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/translation-execution.ts"
+      ],
+      "disconfirmation": {
+        "title": "Persistent translation/storage identity with live downstream use",
+        "strongest_evidence_against": "Evidence that the boundary is unused, duplicates another authority, or materially blocks current development without an accepted consumer.",
+        "contrary_found": "The accepted R1 contracts already require source freshness/origin separation, and current Stage 5/raw/bundle paths still consume the same persistent identities or semantics. Later use is corroboration, not retroactive authority.",
+        "effect": "Intentional foundation; neither complexity nor deferred external rollout makes the boundary a defect."
+      }
+    },
+    {
+      "index": 8,
+      "id": "EX31-08",
+      "atomic_decision": "Persistent-manual rows must not carry machine-only metadata.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "F1",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "disconfirmation": {
+        "title": "Persistent translation/storage identity with live downstream use",
+        "strongest_evidence_against": "Evidence that the boundary is unused, duplicates another authority, or materially blocks current development without an accepted consumer.",
+        "contrary_found": "The accepted R1 contracts already require source freshness/origin separation, and current Stage 5/raw/bundle paths still consume the same persistent identities or semantics. Later use is corroboration, not retroactive authority.",
+        "effect": "Intentional foundation; neither complexity nor deferred external rollout makes the boundary a defect."
+      }
+    },
+    {
+      "index": 9,
+      "id": "EX31-09",
+      "atomic_decision": "Provenance metadata must be a JSON object.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "F1",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/bundles.ts"
+      ],
+      "disconfirmation": {
+        "title": "Persistent translation/storage identity with live downstream use",
+        "strongest_evidence_against": "Evidence that the boundary is unused, duplicates another authority, or materially blocks current development without an accepted consumer.",
+        "contrary_found": "The accepted R1 contracts already require source freshness/origin separation, and current Stage 5/raw/bundle paths still consume the same persistent identities or semantics. Later use is corroboration, not retroactive authority.",
+        "effect": "Intentional foundation; neither complexity nor deferred external rollout makes the boundary a defect."
+      }
+    },
+    {
+      "index": 10,
+      "id": "EX31-10",
+      "atomic_decision": "Canonical English is excluded from persistent translation rows.",
+      "classification": "real-original-defect",
+      "role": "substantive",
+      "profile": "D_EN",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/sources.ts"
+      ],
+      "disconfirmation": {
+        "title": "Whitespace-wrapped canonical-English persistence bypass",
+        "strongest_evidence_against": "Evidence that database constraints and verifier trim locale identity before the English comparison, or that another current schema constraint makes whitespace-wrapped values impossible.",
+        "contrary_found": "Current immutable migration and db/schema.ts still use `btrim(locale) <> '' AND lower(locale) <> 'en'`; `' en '` passes. The current production verifier likewise queries `lower(locale) = 'en'` without trimming. No later migration 0011+ exists.",
+        "effect": "Real current defect in the record's English-exclusion/verification implementation.",
+        "record_specific_evidence": "PR #31 review discussion_r3989842261; current `drizzle/0002_ui_translation_storage.sql` and `db/schema.ts` preserve the flawed predicate."
+      },
+      "current_status": "current defect at audited main: schema allows whitespace-wrapped English-like translation locale"
+    },
+    {
+      "index": 11,
+      "id": "EX31-11",
+      "atomic_decision": "Persistent compiled-bundle identity is locale + namespace.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "F1",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/bundles.ts"
+      ],
+      "disconfirmation": {
+        "title": "Persistent translation/storage identity with live downstream use",
+        "strongest_evidence_against": "Evidence that the boundary is unused, duplicates another authority, or materially blocks current development without an accepted consumer.",
+        "contrary_found": "The accepted R1 contracts already require source freshness/origin separation, and current Stage 5/raw/bundle paths still consume the same persistent identities or semantics. Later use is corroboration, not retroactive authority.",
+        "effect": "Intentional foundation; neither complexity nor deferred external rollout makes the boundary a defect."
+      }
+    },
+    {
+      "index": 12,
+      "id": "EX31-12",
+      "atomic_decision": "Persisted bundle_version is a lowercase SHA-256 hex digest.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "F1",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "disconfirmation": {
+        "title": "Persistent translation/storage identity with live downstream use",
+        "strongest_evidence_against": "Evidence that the boundary is unused, duplicates another authority, or materially blocks current development without an accepted consumer.",
+        "contrary_found": "The accepted R1 contracts already require source freshness/origin separation, and current Stage 5/raw/bundle paths still consume the same persistent identities or semantics. Later use is corroboration, not retroactive authority.",
+        "effect": "Intentional foundation; neither complexity nor deferred external rollout makes the boundary a defect."
+      }
+    },
+    {
+      "index": 13,
+      "id": "EX31-13",
+      "atomic_decision": "Persisted compiled resources must be a JSON object.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "F1",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "disconfirmation": {
+        "title": "Persistent translation/storage identity with live downstream use",
+        "strongest_evidence_against": "Evidence that the boundary is unused, duplicates another authority, or materially blocks current development without an accepted consumer.",
+        "contrary_found": "The accepted R1 contracts already require source freshness/origin separation, and current Stage 5/raw/bundle paths still consume the same persistent identities or semantics. Later use is corroboration, not retroactive authority.",
+        "effect": "Intentional foundation; neither complexity nor deferred external rollout makes the boundary a defect."
+      }
+    },
+    {
+      "index": 14,
+      "id": "EX31-14",
+      "atomic_decision": "Canonical English is excluded from persistent bundle rows.",
+      "classification": "real-original-defect",
+      "role": "substantive",
+      "profile": "D_EN",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/bundles.ts"
+      ],
+      "disconfirmation": {
+        "title": "Whitespace-wrapped canonical-English persistence bypass",
+        "strongest_evidence_against": "Evidence that database constraints and verifier trim locale identity before the English comparison, or that another current schema constraint makes whitespace-wrapped values impossible.",
+        "contrary_found": "Current immutable migration and db/schema.ts still use `btrim(locale) <> '' AND lower(locale) <> 'en'`; `' en '` passes. The current production verifier likewise queries `lower(locale) = 'en'` without trimming. No later migration 0011+ exists.",
+        "effect": "Real current defect in the record's English-exclusion/verification implementation.",
+        "record_specific_evidence": "Same PR #31 review applies independently to `ui_translation_bundles`; current migration/schema preserve the predicate."
+      },
+      "current_status": "current defect at audited main: bundle schema allows whitespace-wrapped English-like locale"
+    },
+    {
+      "index": 15,
+      "id": "EX31-15",
+      "atomic_decision": "Production migration verifier checks new table columns, types and nullability.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "A1",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "docs/database/MIGRATIONS.md",
+        ".github/workflows/production-db-migrate.yml"
+      ],
+      "disconfirmation": {
+        "title": "Historical rollout/process alternative",
+        "strongest_evidence_against": "Evidence that the step was unauthorized mandatory external work unrelated to the then-selected runtime rollout, or that it remains a feature-development gate after the later user reprioritization.",
+        "contrary_found": "Accepted R2 already establishes the then production-first cadence as a coherent alternative with direct-user authority unproven. Current MIGRATIONS keeps schema-first ordering only for actual external schema-dependent rollout.",
+        "effect": "Acceptable historical alternative; no direct-user approval is inferred and PR #50 is not applied retroactively."
+      }
+    },
+    {
+      "index": 16,
+      "id": "EX31-16",
+      "atomic_decision": "Production migration verifier checks that persistent UI storage contains no English rows.",
+      "classification": "real-original-defect",
+      "role": "substantive",
+      "profile": "D_EN",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "docs/database/MIGRATIONS.md",
+        ".github/workflows/production-db-migrate.yml"
+      ],
+      "disconfirmation": {
+        "title": "Whitespace-wrapped canonical-English persistence bypass",
+        "strongest_evidence_against": "Evidence that database constraints and verifier trim locale identity before the English comparison, or that another current schema constraint makes whitespace-wrapped values impossible.",
+        "contrary_found": "Current immutable migration and db/schema.ts still use `btrim(locale) <> '' AND lower(locale) <> 'en'`; `' en '` passes. The current production verifier likewise queries `lower(locale) = 'en'` without trimming. No later migration 0011+ exists.",
+        "effect": "Real current defect in the record's English-exclusion/verification implementation.",
+        "record_specific_evidence": "Same PR #31 review identifies the verifier copy of the bug; current `.github/scripts/verify-production-migration.mjs` still uses `lower(locale) = 'en'` without trim."
+      },
+      "current_status": "current defect at audited main: production verifier misses whitespace-wrapped English-like rows"
+    },
+    {
+      "index": 17,
+      "id": "EX31-17",
+      "atomic_decision": "Stage 3A is appended as forward migration 0002 with snapshot/journal history.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "F1",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "docs/database/MIGRATIONS.md",
+        ".github/workflows/production-db-migrate.yml"
+      ],
+      "disconfirmation": {
+        "title": "Persistent translation/storage identity with live downstream use",
+        "strongest_evidence_against": "Evidence that the boundary is unused, duplicates another authority, or materially blocks current development without an accepted consumer.",
+        "contrary_found": "The accepted R1 contracts already require source freshness/origin separation, and current Stage 5/raw/bundle paths still consume the same persistent identities or semantics. Later use is corroboration, not retroactive authority.",
+        "effect": "Intentional foundation; neither complexity nor deferred external rollout makes the boundary a defect."
+      }
+    },
+    {
+      "index": 18,
+      "id": "EX31-18",
+      "atomic_decision": "Disposable PostgreSQL coverage proves new schema constraints and migration-history count.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "A1",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "docs/database/MIGRATIONS.md",
+        ".github/workflows/production-db-migrate.yml"
+      ],
+      "disconfirmation": {
+        "title": "Historical rollout/process alternative",
+        "strongest_evidence_against": "Evidence that the step was unauthorized mandatory external work unrelated to the then-selected runtime rollout, or that it remains a feature-development gate after the later user reprioritization.",
+        "contrary_found": "Accepted R2 already establishes the then production-first cadence as a coherent alternative with direct-user authority unproven. Current MIGRATIONS keeps schema-first ordering only for actual external schema-dependent rollout.",
+        "effect": "Acceptable historical alternative; no direct-user approval is inferred and PR #50 is not applied retroactively."
+      }
+    },
+    {
+      "index": 19,
+      "id": "EX31-19",
+      "atomic_decision": "Runtime rollout is blocked until Stage 3A production migration and verification succeed.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "A1",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "docs/database/MIGRATIONS.md",
+        ".github/workflows/production-db-migrate.yml"
+      ],
+      "disconfirmation": {
+        "title": "Historical rollout/process alternative",
+        "strongest_evidence_against": "Evidence that the step was unauthorized mandatory external work unrelated to the then-selected runtime rollout, or that it remains a feature-development gate after the later user reprioritization.",
+        "contrary_found": "Accepted R2 already establishes the then production-first cadence as a coherent alternative with direct-user authority unproven. Current MIGRATIONS keeps schema-first ordering only for actual external schema-dependent rollout.",
+        "effect": "Acceptable historical alternative; no direct-user approval is inferred and PR #50 is not applied retroactively."
+      }
+    },
+    {
+      "index": 20,
+      "id": "EX31-20",
+      "atomic_decision": "Runtime role must receive only required SELECT grants on the new tables before runtime rollout.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "F1",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "docs/database/MIGRATIONS.md",
+        ".github/workflows/production-db-migrate.yml"
+      ],
+      "disconfirmation": {
+        "title": "Persistent translation/storage identity with live downstream use",
+        "strongest_evidence_against": "Evidence that the boundary is unused, duplicates another authority, or materially blocks current development without an accepted consumer.",
+        "contrary_found": "The accepted R1 contracts already require source freshness/origin separation, and current Stage 5/raw/bundle paths still consume the same persistent identities or semantics. Later use is corroboration, not retroactive authority.",
+        "effect": "Intentional foundation; neither complexity nor deferred external rollout makes the boundary a defect."
+      }
+    },
+    {
+      "index": 21,
+      "id": "EX32-01",
+      "atomic_decision": "UiTranslationStore reads approved rows by locale and requested namespaces.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "F1",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "title": "Persistent translation/storage identity with live downstream use",
+        "strongest_evidence_against": "Evidence that the boundary is unused, duplicates another authority, or materially blocks current development without an accepted consumer.",
+        "contrary_found": "The accepted R1 contracts already require source freshness/origin separation, and current Stage 5/raw/bundle paths still consume the same persistent identities or semantics. Later use is corroboration, not retroactive authority.",
+        "effect": "Intentional foundation; neither complexity nor deferred external rollout makes the boundary a defect."
+      }
+    },
+    {
+      "index": 22,
+      "id": "EX32-02",
+      "atomic_decision": "Persistent manual translations are a distinct TranslationSource adapter.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "F1",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/translation-execution.ts"
+      ],
+      "disconfirmation": {
+        "title": "Persistent translation/storage identity with live downstream use",
+        "strongest_evidence_against": "Evidence that the boundary is unused, duplicates another authority, or materially blocks current development without an accepted consumer.",
+        "contrary_found": "The accepted R1 contracts already require source freshness/origin separation, and current Stage 5/raw/bundle paths still consume the same persistent identities or semantics. Later use is corroboration, not retroactive authority.",
+        "effect": "Intentional foundation; neither complexity nor deferred external rollout makes the boundary a defect."
+      }
+    },
+    {
+      "index": 23,
+      "id": "EX32-03",
+      "atomic_decision": "Persistent machine translations are a distinct TranslationSource adapter.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "F1",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/translation-execution.ts"
+      ],
+      "disconfirmation": {
+        "title": "Persistent translation/storage identity with live downstream use",
+        "strongest_evidence_against": "Evidence that the boundary is unused, duplicates another authority, or materially blocks current development without an accepted consumer.",
+        "contrary_found": "The accepted R1 contracts already require source freshness/origin separation, and current Stage 5/raw/bundle paths still consume the same persistent identities or semantics. Later use is corroboration, not retroactive authority.",
+        "effect": "Intentional foundation; neither complexity nor deferred external rollout makes the boundary a defect."
+      }
+    },
+    {
+      "index": 24,
+      "id": "EX32-04",
+      "atomic_decision": "Persistent source freshness is enforced against current sourceFingerprint.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "F1",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/bundles.ts"
+      ],
+      "disconfirmation": {
+        "title": "Persistent translation/storage identity with live downstream use",
+        "strongest_evidence_against": "Evidence that the boundary is unused, duplicates another authority, or materially blocks current development without an accepted consumer.",
+        "contrary_found": "The accepted R1 contracts already require source freshness/origin separation, and current Stage 5/raw/bundle paths still consume the same persistent identities or semantics. Later use is corroboration, not retroactive authority.",
+        "effect": "Intentional foundation; neither complexity nor deferred external rollout makes the boundary a defect."
+      }
+    },
+    {
+      "index": 25,
+      "id": "EX32-05",
+      "atomic_decision": "Approved rows for deleted canonical keys are ignored rather than published.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "F1",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "disconfirmation": {
+        "title": "Persistent translation/storage identity with live downstream use",
+        "strongest_evidence_against": "Evidence that the boundary is unused, duplicates another authority, or materially blocks current development without an accepted consumer.",
+        "contrary_found": "The accepted R1 contracts already require source freshness/origin separation, and current Stage 5/raw/bundle paths still consume the same persistent identities or semantics. Later use is corroboration, not retroactive authority.",
+        "effect": "Intentional foundation; neither complexity nor deferred external rollout makes the boundary a defect."
+      }
+    },
+    {
+      "index": 26,
+      "id": "EX32-06",
+      "atomic_decision": "Structured persistent payloads fail closed until structured-message runtime exists.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "A2",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "disconfirmation": {
+        "title": "Implementation/optimization alternative",
+        "strongest_evidence_against": "Evidence that the mechanism creates correctness loss, hides errors, or imposes material complexity with no current or plausible accepted consumer.",
+        "contrary_found": "Current tests/code retain the mechanism without a demonstrated correctness regression; where a specific defect exists it is classified on its own record.",
+        "effect": "Acceptable implementation alternative."
+      }
+    },
+    {
+      "index": 27,
+      "id": "EX32-07",
+      "atomic_decision": "Persistent rows are runtime-parsed for identity, origin, status and fingerprint before use.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "F1",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/sources.ts"
+      ],
+      "disconfirmation": {
+        "title": "Persistent translation/storage identity with live downstream use",
+        "strongest_evidence_against": "Evidence that the boundary is unused, duplicates another authority, or materially blocks current development without an accepted consumer.",
+        "contrary_found": "The accepted R1 contracts already require source freshness/origin separation, and current Stage 5/raw/bundle paths still consume the same persistent identities or semantics. Later use is corroboration, not retroactive authority.",
+        "effect": "Intentional foundation; neither complexity nor deferred external rollout makes the boundary a defect."
+      }
+    },
+    {
+      "index": 28,
+      "id": "EX32-08",
+      "atomic_decision": "Store results outside requested locale/namespace scope fail as integrity errors.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "F1",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "title": "Persistent translation/storage identity with live downstream use",
+        "strongest_evidence_against": "Evidence that the boundary is unused, duplicates another authority, or materially blocks current development without an accepted consumer.",
+        "contrary_found": "The accepted R1 contracts already require source freshness/origin separation, and current Stage 5/raw/bundle paths still consume the same persistent identities or semantics. Later use is corroboration, not retroactive authority.",
+        "effect": "Intentional foundation; neither complexity nor deferred external rollout makes the boundary a defect."
+      }
+    },
+    {
+      "index": 29,
+      "id": "EX32-09",
+      "atomic_decision": "Loader source priority becomes local manual → persistent manual → machine → English.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "F1",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/sources.ts"
+      ],
+      "disconfirmation": {
+        "title": "Persistent translation/storage identity with live downstream use",
+        "strongest_evidence_against": "Evidence that the boundary is unused, duplicates another authority, or materially blocks current development without an accepted consumer.",
+        "contrary_found": "The accepted R1 contracts already require source freshness/origin separation, and current Stage 5/raw/bundle paths still consume the same persistent identities or semantics. Later use is corroboration, not retroactive authority.",
+        "effect": "Intentional foundation; neither complexity nor deferred external rollout makes the boundary a defect."
+      }
+    },
+    {
+      "index": 30,
+      "id": "EX32-10",
+      "atomic_decision": "UI translation store is an explicit typed request-context dependency.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "F1",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/bundles.ts"
+      ],
+      "disconfirmation": {
+        "title": "Persistent translation/storage identity with live downstream use",
+        "strongest_evidence_against": "Evidence that the boundary is unused, duplicates another authority, or materially blocks current development without an accepted consumer.",
+        "contrary_found": "The accepted R1 contracts already require source freshness/origin separation, and current Stage 5/raw/bundle paths still consume the same persistent identities or semantics. Later use is corroboration, not retroactive authority.",
+        "effect": "Intentional foundation; neither complexity nor deferred external rollout makes the boundary a defect."
+      }
+    },
+    {
+      "index": 31,
+      "id": "EX32-11",
+      "atomic_decision": "Worker injects one Hyperdrive-backed UI translation store per request.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "A2",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/bundles.ts"
+      ],
+      "disconfirmation": {
+        "title": "Implementation/optimization alternative",
+        "strongest_evidence_against": "Evidence that the mechanism creates correctness loss, hides errors, or imposes material complexity with no current or plausible accepted consumer.",
+        "contrary_found": "Current tests/code retain the mechanism without a demonstrated correctness regression; where a specific defect exists it is classified on its own record.",
+        "effect": "Acceptable implementation alternative."
+      }
+    },
+    {
+      "index": 32,
+      "id": "EX32-12",
+      "atomic_decision": "Hyperdrive translation store lazily reuses one client and memoizes identical reads per request.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "A2",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/bundles.ts"
+      ],
+      "disconfirmation": {
+        "title": "Implementation/optimization alternative",
+        "strongest_evidence_against": "Evidence that the mechanism creates correctness loss, hides errors, or imposes material complexity with no current or plausible accepted consumer.",
+        "contrary_found": "Current tests/code retain the mechanism without a demonstrated correctness regression; where a specific defect exists it is classified on its own record.",
+        "effect": "Acceptable implementation alternative."
+      }
+    },
+    {
+      "index": 33,
+      "id": "EX32-13",
+      "atomic_decision": "English or empty-namespace UI reads do not open persistent translation DB access.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "A2",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "disconfirmation": {
+        "title": "Implementation/optimization alternative",
+        "strongest_evidence_against": "Evidence that the mechanism creates correctness loss, hides errors, or imposes material complexity with no current or plausible accepted consumer.",
+        "contrary_found": "Current tests/code retain the mechanism without a demonstrated correctness regression; where a specific defect exists it is classified on its own record.",
+        "effect": "Acceptable implementation alternative."
+      }
+    },
+    {
+      "index": 34,
+      "id": "EX32-14",
+      "atomic_decision": "Classified PostgreSQL availability failure degrades to no persistent rows with reason-only telemetry.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "F3",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/server-logging.ts"
+      ],
+      "disconfirmation": {
+        "title": "Failure/integrity boundary retained by current runtime",
+        "strongest_evidence_against": "Evidence that the boundary masks programming/configuration errors or converts an optional dependency into a mandatory outage.",
+        "contrary_found": "Current code keeps unexpected failures visible and degrades only classified storage conditions; the known overbroad code-less branch is separately classified as EX32-17.",
+        "effect": "Intentional failure/integrity foundation."
+      }
+    },
+    {
+      "index": 35,
+      "id": "EX32-15",
+      "atomic_decision": "Classified translation-schema mismatch degrades to no persistent rows with reason-only telemetry.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "A2",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/server-logging.ts"
+      ],
+      "disconfirmation": {
+        "title": "Implementation/optimization alternative",
+        "strongest_evidence_against": "Evidence that the mechanism creates correctness loss, hides errors, or imposes material complexity with no current or plausible accepted consumer.",
+        "contrary_found": "Current tests/code retain the mechanism without a demonstrated correctness regression; where a specific defect exists it is classified on its own record.",
+        "effect": "Acceptable implementation alternative."
+      }
+    },
+    {
+      "index": 36,
+      "id": "EX32-16",
+      "atomic_decision": "Authentication/programming/unknown database failures remain visible.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "F3",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/auth/auth.server.ts"
+      ],
+      "disconfirmation": {
+        "title": "Failure/integrity boundary retained by current runtime",
+        "strongest_evidence_against": "Evidence that the boundary masks programming/configuration errors or converts an optional dependency into a mandatory outage.",
+        "contrary_found": "Current code keeps unexpected failures visible and degrades only classified storage conditions; the known overbroad code-less branch is separately classified as EX32-17.",
+        "effect": "Intentional failure/integrity foundation."
+      }
+    },
+    {
+      "index": 37,
+      "id": "EX32-17",
+      "atomic_decision": "Generic code-less pg connect Error is also classified as unavailable.",
+      "classification": "real-original-defect",
+      "role": "substantive",
+      "profile": "D_CODELESS",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "disconfirmation": {
+        "title": "Overbroad code-less PostgreSQL availability classification",
+        "strongest_evidence_against": "Evidence that every code-less pg connect Error denotes availability loss and cannot represent configuration/programming failures.",
+        "contrary_found": "PR #39 explicitly narrowed this behavior; current tests require generic driver/configuration Error to remain visible and accept only known transport/termination shapes.",
+        "effect": "Real historical original defect, corrected later by accepted EX39-08/09/10.",
+        "record_specific_evidence": "PR #32 inherited the broad code-less connect rule. Accepted DL-CLASSIFY-005/PR #39 correction narrows it; current `db/hyperdrive-ui-translations.test.ts` rejects generic driver/configuration failures from degradation."
+      },
+      "current_status": "historical defect; corrected by PR #39 shared availability classifier and current regression tests"
+    },
+    {
+      "index": 38,
+      "id": "EX32-18a",
+      "atomic_decision": "Repository records production migration #2 as applied.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "S_EXT",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "docs/database/MIGRATIONS.md",
+        ".github/workflows/production-db-migrate.yml"
+      ],
+      "support_review": {
+        "title": "Repository-recorded external operational evidence",
+        "strongest_evidence_against": "Raw target-environment artifacts that independently prove or contradict the recorded operation/observation.",
+        "contrary_found": "The PR/state records the event, but the inspected repository does not contain the raw migration/grant/request/Observability artifact needed for an independent correctness verdict.",
+        "effect": "Reviewed supporting/provenance-only; not normative authority and not an unresolved architecture choice."
+      }
+    },
+    {
+      "index": 39,
+      "id": "EX32-18b",
+      "atomic_decision": "Repository records Stage 3A production verification as successful.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "S_EXT",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "support_review": {
+        "title": "Repository-recorded external operational evidence",
+        "strongest_evidence_against": "Raw target-environment artifacts that independently prove or contradict the recorded operation/observation.",
+        "contrary_found": "The PR/state records the event, but the inspected repository does not contain the raw migration/grant/request/Observability artifact needed for an independent correctness verdict.",
+        "effect": "Reviewed supporting/provenance-only; not normative authority and not an unresolved architecture choice."
+      }
+    },
+    {
+      "index": 40,
+      "id": "EX32-19",
+      "atomic_decision": "Repository records runtime SELECT-only grants on both Stage 3A tables as verified.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "S_EXT",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "docs/database/MIGRATIONS.md",
+        ".github/workflows/production-db-migrate.yml"
+      ],
+      "support_review": {
+        "title": "Repository-recorded external operational evidence",
+        "strongest_evidence_against": "Raw target-environment artifacts that independently prove or contradict the recorded operation/observation.",
+        "contrary_found": "The PR/state records the event, but the inspected repository does not contain the raw migration/grant/request/Observability artifact needed for an independent correctness verdict.",
+        "effect": "Reviewed supporting/provenance-only; not normative authority and not an unresolved architecture choice."
+      }
+    },
+    {
+      "index": 41,
+      "id": "EX32-20",
+      "atomic_decision": "Persisted compiled-bundle runtime consumption is absent from the merged SSR path.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "A3",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/bundles.ts"
+      ],
+      "disconfirmation": {
+        "title": "Deliberate staged deferral",
+        "strongest_evidence_against": "Evidence that the omitted consumer was required for correctness of the then-current Stage 3 slice or that the omission caused a current defect.",
+        "contrary_found": "The later Stage 5A chain explicitly owns persisted bundle publication/runtime reads and now consumes these primitives. Stage 3C was documented as primitives, not end-to-end generation/runtime switching.",
+        "effect": "Acceptable staged boundary, not a missing-current-stage defect.",
+        "record_specific_evidence": "PR #32 review discussion_r3991108174 identified absent compiled-bundle runtime reads; later Stage 3C/Stage 5 contract and current Stage 5A path make that absence a deliberate stage boundary rather than a Stage 3B defect."
+      }
+    },
+    {
+      "index": 42,
+      "id": "EX32-21",
+      "atomic_decision": "Post-merge deployed persistent-source smoke remains the next Stage 3B acceptance step.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "A1",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "disconfirmation": {
+        "title": "Historical rollout/process alternative",
+        "strongest_evidence_against": "Evidence that the step was unauthorized mandatory external work unrelated to the then-selected runtime rollout, or that it remains a feature-development gate after the later user reprioritization.",
+        "contrary_found": "Accepted R2 already establishes the then production-first cadence as a coherent alternative with direct-user authority unproven. Current MIGRATIONS keeps schema-first ordering only for actual external schema-dependent rollout.",
+        "effect": "Acceptable historical alternative; no direct-user approval is inferred and PR #50 is not applied retroactively."
+      }
+    },
+    {
+      "index": 43,
+      "id": "EX34-01",
+      "atomic_decision": "Logical bundle compiler remains locale-agnostic apart from requiring a nonblank locale identity.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "F2",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/bundles.ts"
+      ],
+      "disconfirmation": {
+        "title": "Bundle/compiler semantic boundary with current runtime consumer",
+        "strongest_evidence_against": "Evidence that the primitive remained dead scaffolding, encoded a closed-locale assumption, or required replacement before any real consumer could use it.",
+        "contrary_found": "Current Stage 5 publication and persisted-first runtime reads reuse the compiler/version/store boundaries. The exact later v2 identity extends rather than invalidates the Stage 3 primitive.",
+        "effect": "Intentional foundation with demonstrated retrofit value."
+      }
+    },
+    {
+      "index": 44,
+      "id": "EX34-02",
+      "atomic_decision": "Bundle namespace must map to the canonical catalog.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "F2",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/bundles.ts"
+      ],
+      "disconfirmation": {
+        "title": "Bundle/compiler semantic boundary with current runtime consumer",
+        "strongest_evidence_against": "Evidence that the primitive remained dead scaffolding, encoded a closed-locale assumption, or required replacement before any real consumer could use it.",
+        "contrary_found": "Current Stage 5 publication and persisted-first runtime reads reuse the compiler/version/store boundaries. The exact later v2 identity extends rather than invalidates the Stage 3 primitive.",
+        "effect": "Intentional foundation with demonstrated retrofit value."
+      }
+    },
+    {
+      "index": 45,
+      "id": "EX34-03",
+      "atomic_decision": "Bundle resource keys must map to canonical message descriptors.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "F2",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/bundles.ts"
+      ],
+      "disconfirmation": {
+        "title": "Bundle/compiler semantic boundary with current runtime consumer",
+        "strongest_evidence_against": "Evidence that the primitive remained dead scaffolding, encoded a closed-locale assumption, or required replacement before any real consumer could use it.",
+        "contrary_found": "Current Stage 5 publication and persisted-first runtime reads reuse the compiler/version/store boundaries. The exact later v2 identity extends rather than invalidates the Stage 3 primitive.",
+        "effect": "Intentional foundation with demonstrated retrofit value."
+      }
+    },
+    {
+      "index": 46,
+      "id": "EX34-04",
+      "atomic_decision": "Bundle compiler validates translation semantics before publishing identity.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "F2",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/bundles.ts"
+      ],
+      "disconfirmation": {
+        "title": "Bundle/compiler semantic boundary with current runtime consumer",
+        "strongest_evidence_against": "Evidence that the primitive remained dead scaffolding, encoded a closed-locale assumption, or required replacement before any real consumer could use it.",
+        "contrary_found": "Current Stage 5 publication and persisted-first runtime reads reuse the compiler/version/store boundaries. The exact later v2 identity extends rather than invalidates the Stage 3 primitive.",
+        "effect": "Intentional foundation with demonstrated retrofit value."
+      }
+    },
+    {
+      "index": 47,
+      "id": "EX34-05",
+      "atomic_decision": "Bundle version hashes format, locale, namespace, canonical fingerprints and current compiled values.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "F2",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/bundles.ts"
+      ],
+      "disconfirmation": {
+        "title": "Bundle/compiler semantic boundary with current runtime consumer",
+        "strongest_evidence_against": "Evidence that the primitive remained dead scaffolding, encoded a closed-locale assumption, or required replacement before any real consumer could use it.",
+        "contrary_found": "Current Stage 5 publication and persisted-first runtime reads reuse the compiler/version/store boundaries. The exact later v2 identity extends rather than invalidates the Stage 3 primitive.",
+        "effect": "Intentional foundation with demonstrated retrofit value."
+      }
+    },
+    {
+      "index": 48,
+      "id": "EX34-06",
+      "atomic_decision": "Bundle version input ordering uses deterministic UTF-8 bytewise key ordering.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "F2",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/bundles.ts"
+      ],
+      "disconfirmation": {
+        "title": "Bundle/compiler semantic boundary with current runtime consumer",
+        "strongest_evidence_against": "Evidence that the primitive remained dead scaffolding, encoded a closed-locale assumption, or required replacement before any real consumer could use it.",
+        "contrary_found": "Current Stage 5 publication and persisted-first runtime reads reuse the compiler/version/store boundaries. The exact later v2 identity extends rather than invalidates the Stage 3 primitive.",
+        "effect": "Intentional foundation with demonstrated retrofit value."
+      }
+    },
+    {
+      "index": 49,
+      "id": "EX34-07",
+      "atomic_decision": "Backend-independent cache identity is locale + namespace + bundleVersion.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "F2",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "title": "Bundle/compiler semantic boundary with current runtime consumer",
+        "strongest_evidence_against": "Evidence that the primitive remained dead scaffolding, encoded a closed-locale assumption, or required replacement before any real consumer could use it.",
+        "contrary_found": "Current Stage 5 publication and persisted-first runtime reads reuse the compiler/version/store boundaries. The exact later v2 identity extends rather than invalidates the Stage 3 primitive.",
+        "effect": "Intentional foundation with demonstrated retrofit value."
+      }
+    },
+    {
+      "index": 50,
+      "id": "EX34-08",
+      "atomic_decision": "Bundle semantic version is exposed as a weak HTTP ETag.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "A2",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/bundles.ts"
+      ],
+      "disconfirmation": {
+        "title": "Implementation/optimization alternative",
+        "strongest_evidence_against": "Evidence that the mechanism creates correctness loss, hides errors, or imposes material complexity with no current or plausible accepted consumer.",
+        "contrary_found": "Current tests/code retain the mechanism without a demonstrated correctness regression; where a specific defect exists it is classified on its own record.",
+        "effect": "Acceptable implementation alternative."
+      }
+    },
+    {
+      "index": 51,
+      "id": "EX34-09",
+      "atomic_decision": "TranslationSnapshot bundleVersions becomes locale → namespace → semantic version metadata.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "F2",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "title": "Bundle/compiler semantic boundary with current runtime consumer",
+        "strongest_evidence_against": "Evidence that the primitive remained dead scaffolding, encoded a closed-locale assumption, or required replacement before any real consumer could use it.",
+        "contrary_found": "Current Stage 5 publication and persisted-first runtime reads reuse the compiler/version/store boundaries. The exact later v2 identity extends rather than invalidates the Stage 3 primitive.",
+        "effect": "Intentional foundation with demonstrated retrofit value."
+      }
+    },
+    {
+      "index": 52,
+      "id": "EX34-10",
+      "atomic_decision": "TranslationResourceLoader computes compiled bundle versions after source merge in the request path.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "F2",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/bundles.ts"
+      ],
+      "disconfirmation": {
+        "title": "Bundle/compiler semantic boundary with current runtime consumer",
+        "strongest_evidence_against": "Evidence that the primitive remained dead scaffolding, encoded a closed-locale assumption, or required replacement before any real consumer could use it.",
+        "contrary_found": "Current Stage 5 publication and persisted-first runtime reads reuse the compiler/version/store boundaries. The exact later v2 identity extends rather than invalidates the Stage 3 primitive.",
+        "effect": "Intentional foundation with demonstrated retrofit value."
+      }
+    },
+    {
+      "index": 53,
+      "id": "EX34-11",
+      "atomic_decision": "TranslationBundleStore is a backend-independent read/put abstraction.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "F2",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "disconfirmation": {
+        "title": "Bundle/compiler semantic boundary with current runtime consumer",
+        "strongest_evidence_against": "Evidence that the primitive remained dead scaffolding, encoded a closed-locale assumption, or required replacement before any real consumer could use it.",
+        "contrary_found": "Current Stage 5 publication and persisted-first runtime reads reuse the compiler/version/store boundaries. The exact later v2 identity extends rather than invalidates the Stage 3 primitive.",
+        "effect": "Intentional foundation with demonstrated retrofit value."
+      }
+    },
+    {
+      "index": 54,
+      "id": "EX34-12",
+      "atomic_decision": "TranslationBundleCache is a separate backend-independent read/put abstraction.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "A2",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "disconfirmation": {
+        "title": "Implementation/optimization alternative",
+        "strongest_evidence_against": "Evidence that the mechanism creates correctness loss, hides errors, or imposes material complexity with no current or plausible accepted consumer.",
+        "contrary_found": "Current tests/code retain the mechanism without a demonstrated correctness regression; where a specific defect exists it is classified on its own record.",
+        "effect": "Acceptable implementation alternative."
+      }
+    },
+    {
+      "index": 55,
+      "id": "EX34-13",
+      "atomic_decision": "Persistent bundle adapter requires canonical non-English translation locale identity.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "F2",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/translation-execution.ts"
+      ],
+      "disconfirmation": {
+        "title": "Bundle/compiler semantic boundary with current runtime consumer",
+        "strongest_evidence_against": "Evidence that the primitive remained dead scaffolding, encoded a closed-locale assumption, or required replacement before any real consumer could use it.",
+        "contrary_found": "Current Stage 5 publication and persisted-first runtime reads reuse the compiler/version/store boundaries. The exact later v2 identity extends rather than invalidates the Stage 3 primitive.",
+        "effect": "Intentional foundation with demonstrated retrofit value."
+      }
+    },
+    {
+      "index": 56,
+      "id": "EX34-14",
+      "atomic_decision": "Persistent compiled-bundle read is keyed by locale + namespace.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "F2",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/bundles.ts"
+      ],
+      "disconfirmation": {
+        "title": "Bundle/compiler semantic boundary with current runtime consumer",
+        "strongest_evidence_against": "Evidence that the primitive remained dead scaffolding, encoded a closed-locale assumption, or required replacement before any real consumer could use it.",
+        "contrary_found": "Current Stage 5 publication and persisted-first runtime reads reuse the compiler/version/store boundaries. The exact later v2 identity extends rather than invalidates the Stage 3 primitive.",
+        "effect": "Intentional foundation with demonstrated retrofit value."
+      }
+    },
+    {
+      "index": 57,
+      "id": "EX34-15a",
+      "atomic_decision": "Persistent bundle read reconstructs and validates string resource shape.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "F2",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/bundles.ts"
+      ],
+      "disconfirmation": {
+        "title": "Bundle/compiler semantic boundary with current runtime consumer",
+        "strongest_evidence_against": "Evidence that the primitive remained dead scaffolding, encoded a closed-locale assumption, or required replacement before any real consumer could use it.",
+        "contrary_found": "Current Stage 5 publication and persisted-first runtime reads reuse the compiler/version/store boundaries. The exact later v2 identity extends rather than invalidates the Stage 3 primitive.",
+        "effect": "Intentional foundation with demonstrated retrofit value."
+      }
+    },
+    {
+      "index": 58,
+      "id": "EX34-15b",
+      "atomic_decision": "Persistent bundle read recomputes semantic identity and matches stored bundle_version.",
+      "classification": "justified-fix-of-real-defect",
+      "role": "substantive",
+      "profile": "J_STORE",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/bundles.ts"
+      ],
+      "disconfirmation": {
+        "title": "Persisted bundle trust-boundary integrity correction",
+        "strongest_evidence_against": "Evidence that the database adapter could only ever receive compiler-produced, immutable, already-verified rows, making independent read/write verification redundant.",
+        "contrary_found": "The initial PR #34 store accepted stored/supplied version/content directly. Commit c24c2433 added recomputation and version matching at the persistence boundary, which later Stage 5 persisted reads/publication rely on.",
+        "effect": "Justified fix of a concrete in-PR integrity defect.",
+        "record_specific_evidence": "Initial store commit `0031f0ee...` trusted persisted bundleVersion/content on read; `c24c2433...` recompiles and matches semantic identity."
+      }
+    },
+    {
+      "index": 59,
+      "id": "EX34-16a",
+      "atomic_decision": "Persistent bundle put revalidates content and semantic version before storage.",
+      "classification": "justified-fix-of-real-defect",
+      "role": "substantive",
+      "profile": "J_STORE",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/bundles.ts"
+      ],
+      "disconfirmation": {
+        "title": "Persisted bundle trust-boundary integrity correction",
+        "strongest_evidence_against": "Evidence that the database adapter could only ever receive compiler-produced, immutable, already-verified rows, making independent read/write verification redundant.",
+        "contrary_found": "The initial PR #34 store accepted stored/supplied version/content directly. Commit c24c2433 added recomputation and version matching at the persistence boundary, which later Stage 5 persisted reads/publication rely on.",
+        "effect": "Justified fix of a concrete in-PR integrity defect.",
+        "record_specific_evidence": "Initial store commit `0031f0ee...` accepted caller-supplied bundleVersion/content on put; `c24c2433...` revalidates before persistence."
+      }
+    },
+    {
+      "index": 60,
+      "id": "EX34-16b",
+      "atomic_decision": "Persistent bundle put upserts locale+namespace and refreshes compiled_at.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "F2",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/bundles.ts"
+      ],
+      "disconfirmation": {
+        "title": "Bundle/compiler semantic boundary with current runtime consumer",
+        "strongest_evidence_against": "Evidence that the primitive remained dead scaffolding, encoded a closed-locale assumption, or required replacement before any real consumer could use it.",
+        "contrary_found": "Current Stage 5 publication and persisted-first runtime reads reuse the compiler/version/store boundaries. The exact later v2 identity extends rather than invalidates the Stage 3 primitive.",
+        "effect": "Intentional foundation with demonstrated retrofit value."
+      }
+    },
+    {
+      "index": 61,
+      "id": "EX34-17",
+      "atomic_decision": "Compiled-bundle persistence writes remain outside the production Worker path.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "A3",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/bundles.ts"
+      ],
+      "disconfirmation": {
+        "title": "Deliberate staged deferral",
+        "strongest_evidence_against": "Evidence that the omitted consumer was required for correctness of the then-current Stage 3 slice or that the omission caused a current defect.",
+        "contrary_found": "The later Stage 5A chain explicitly owns persisted bundle publication/runtime reads and now consumes these primitives. Stage 3C was documented as primitives, not end-to-end generation/runtime switching.",
+        "effect": "Acceptable staged boundary, not a missing-current-stage defect."
+      }
+    },
+    {
+      "index": 62,
+      "id": "EX34-18",
+      "atomic_decision": "Stage 3C does not select a Cloudflare Cache API, KV, or other concrete cache backend.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "A3",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "wrangler.jsonc"
+      ],
+      "disconfirmation": {
+        "title": "Deliberate staged deferral",
+        "strongest_evidence_against": "Evidence that the omitted consumer was required for correctness of the then-current Stage 3 slice or that the omission caused a current defect.",
+        "contrary_found": "The later Stage 5A chain explicitly owns persisted bundle publication/runtime reads and now consumes these primitives. Stage 3C was documented as primitives, not end-to-end generation/runtime switching.",
+        "effect": "Acceptable staged boundary, not a missing-current-stage defect."
+      }
+    },
+    {
+      "index": 63,
+      "id": "EX34-19a",
+      "atomic_decision": "Repository records creation of a temporary approved production translation row.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "S_EXT",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "support_review": {
+        "title": "Repository-recorded external operational evidence",
+        "strongest_evidence_against": "Raw target-environment artifacts that independently prove or contradict the recorded operation/observation.",
+        "contrary_found": "The PR/state records the event, but the inspected repository does not contain the raw migration/grant/request/Observability artifact needed for an independent correctness verdict.",
+        "effect": "Reviewed supporting/provenance-only; not normative authority and not an unresolved architecture choice."
+      }
+    },
+    {
+      "index": 64,
+      "id": "EX34-19b",
+      "atomic_decision": "Repository records Worker SSR consuming the temporary production translation through Hyperdrive.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "S_EXT",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "wrangler.jsonc"
+      ],
+      "support_review": {
+        "title": "Repository-recorded external operational evidence",
+        "strongest_evidence_against": "Raw target-environment artifacts that independently prove or contradict the recorded operation/observation.",
+        "contrary_found": "The PR/state records the event, but the inspected repository does not contain the raw migration/grant/request/Observability artifact needed for an independent correctness verdict.",
+        "effect": "Reviewed supporting/provenance-only; not normative authority and not an unresolved architecture choice."
+      }
+    },
+    {
+      "index": 65,
+      "id": "EX34-19c",
+      "atomic_decision": "Repository records deletion of the temporary production translation row.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "S_EXT",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "support_review": {
+        "title": "Repository-recorded external operational evidence",
+        "strongest_evidence_against": "Raw target-environment artifacts that independently prove or contradict the recorded operation/observation.",
+        "contrary_found": "The PR/state records the event, but the inspected repository does not contain the raw migration/grant/request/Observability artifact needed for an independent correctness verdict.",
+        "effect": "Reviewed supporting/provenance-only; not normative authority and not an unresolved architecture choice."
+      }
+    },
+    {
+      "index": 66,
+      "id": "EX34-19d",
+      "atomic_decision": "Repository records English fallback restored after temporary-row deletion.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "S_EXT",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "support_review": {
+        "title": "Repository-recorded external operational evidence",
+        "strongest_evidence_against": "Raw target-environment artifacts that independently prove or contradict the recorded operation/observation.",
+        "contrary_found": "The PR/state records the event, but the inspected repository does not contain the raw migration/grant/request/Observability artifact needed for an independent correctness verdict.",
+        "effect": "Reviewed supporting/provenance-only; not normative authority and not an unresolved architecture choice."
+      }
+    },
+    {
+      "index": 67,
+      "id": "EX34-20a",
+      "atomic_decision": "Repository records production request events visible in Workers Observability.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "S_EXT",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "wrangler.jsonc"
+      ],
+      "support_review": {
+        "title": "Repository-recorded external operational evidence",
+        "strongest_evidence_against": "Raw target-environment artifacts that independently prove or contradict the recorded operation/observation.",
+        "contrary_found": "The PR/state records the event, but the inspected repository does not contain the raw migration/grant/request/Observability artifact needed for an independent correctness verdict.",
+        "effect": "Reviewed supporting/provenance-only; not normative authority and not an unresolved architecture choice."
+      }
+    },
+    {
+      "index": 68,
+      "id": "EX34-20b",
+      "atomic_decision": "Repository records no Worker errors in the checked production Observability sample.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "S_EXT",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "wrangler.jsonc"
+      ],
+      "support_review": {
+        "title": "Repository-recorded external operational evidence",
+        "strongest_evidence_against": "Raw target-environment artifacts that independently prove or contradict the recorded operation/observation.",
+        "contrary_found": "The PR/state records the event, but the inspected repository does not contain the raw migration/grant/request/Observability artifact needed for an independent correctness verdict.",
+        "effect": "Reviewed supporting/provenance-only; not normative authority and not an unresolved architecture choice."
+      }
+    },
+    {
+      "index": 69,
+      "id": "EX34-21",
+      "atomic_decision": "Stage 3C is recorded as the remaining compiler/version/cache/ETag primitive slice.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "S_STATE",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "support_review": {
+        "title": "Historical state/progress record",
+        "strongest_evidence_against": "Evidence that the state line itself created a durable technical requirement or was factually contradicted by the same PR.",
+        "contrary_found": "The row records Stage 3C progress/remaining scope; later contracts explicitly separate Stage 3C primitives from Stage 5 activation.",
+        "effect": "Reviewed supporting/provenance-only."
+      }
+    },
+    {
+      "index": 70,
+      "id": "EX34-22",
+      "atomic_decision": "Persisted compiled-bundle runtime read remains intentionally unconnected in PR #34.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "A3",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/bundles.ts",
+        "app/localization/resource-loader.ts"
+      ],
+      "disconfirmation": {
+        "title": "Deliberate staged deferral",
+        "strongest_evidence_against": "Evidence that the omitted consumer was required for correctness of the then-current Stage 3 slice or that the omission caused a current defect.",
+        "contrary_found": "The later Stage 5A chain explicitly owns persisted bundle publication/runtime reads and now consumes these primitives. Stage 3C was documented as primitives, not end-to-end generation/runtime switching.",
+        "effect": "Acceptable staged boundary, not a missing-current-stage defect.",
+        "record_specific_evidence": "Current `TranslationResourceLoader` now reads persisted bundles; the PR #34 absence was later filled in Stage 5A exactly at the documented consumer boundary."
+      }
+    },
+    {
+      "index": 71,
+      "id": "EX34-23",
+      "atomic_decision": "Namespace validation can accept inherited Object.prototype property names.",
+      "classification": "real-original-defect",
+      "role": "substantive",
+      "profile": "D_NS",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "disconfirmation": {
+        "title": "Prototype-sensitive bundle namespace validation",
+        "strongest_evidence_against": "Evidence that PR #65 or another later change replaced bundle compiler namespace lookup with own-property membership.",
+        "contrary_found": "PR #65 changed `sources.ts` only. Current `app/localization/bundles.ts` still checks `canonicalEnglishCatalog[namespace]` in `assertBundleScope`/`descriptorMap`, so inherited names can pass the unknown-namespace guard exactly as PR #34 review described.",
+        "effect": "Real current defect in the bundle compiler path. The accepted PR #65 fix is analogous forward evidence, not a fix for this record.",
+        "record_specific_evidence": "PR #34 review discussion_r3991591403. PR #65 commits `e742d75c...`/`4be06212...` harden `sources.ts`, not `bundles.ts`; current bundle compiler remains affected."
+      },
+      "current_status": "current defect at audited main: bundle compiler still uses prototype-sensitive namespace lookup"
+    }
+  ]
+}
