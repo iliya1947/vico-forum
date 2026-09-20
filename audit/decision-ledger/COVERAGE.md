@@ -97,11 +97,11 @@ number is lower than the baseline PR number.
 | #48 | `a52d84f` | extraction-complete | `EX48-01..10` | PR #43 blanket inbound-membership defect, database-owner exception semantics, documentation, and targeted fixtures reviewed. |
 | #49 | `75faaba` | extraction-complete | `EX49-01..08`, `EX49-09a..b`, `EX49-10..18`, `EX49-19a..b`, `EX49-20..21` | Connection/database/application-owner topology, superseded owner-migration mode, final no-op mode, both P1 reviews, and evidence limits reviewed. |
 | #50 | `e26d145` | extraction-complete | `EX50-01..13`, `EX50-14a..c`, `EX50-15..35`, `EX50-36a..b`, `EX50-37`, `EX50-38a..b` | Direct user forum-first decision, forward-only authority, postponed operations, retained boundaries/foundations, Stage 4/5/6 scheduling, and all review findings reviewed. |
-| #51 | `d07f81a` | pending | — | — |
-| #52 | `8aed969` | pending | — | — |
-| #53 | `f9f03fb` | pending | — | — |
-| #54 | `9a09a2d` | pending | — | — |
-| #55 | `826167b` | pending | — | — |
+| #51 | `d07f81a` | extraction-complete | `EX51-01..19`, `EX51-20a..b`, `EX51-21..32`, `EX51-33a..b`, `EX51-34`, `EX51-35a..b`, `EX51-36..38` | Forum schema/revision foundations, local/CI boundary, two P2 findings, in-PR minimization, and external-evidence limits reviewed. |
+| #52 | `8aed969` | extraction-complete | `EX52-01..30` | Public SSR reader/routes/UI, page-shaped queries, routing correction, pagination behavior, plural review, and stale state label reviewed. |
+| #53 | `f9f03fb` | extraction-complete | `EX53-01..11`, `EX53-12a..b`, `EX53-13..25`, `EX53-26a..b`, `EX53-27..32` | Better Auth runtime/session contexts, cookie correction, local DB integration, deferred OAuth, two P1 reviews, and smoke counter-evidence reviewed. |
+| #54 | `9a09a2d` | extraction-complete | `EX54-01..04` | Origin, persistence, and documentation-only correction of the stale Stage 4 blocker label reviewed. |
+| #55 | `826167b` | extraction-complete | `EX55-01..23`, `EX55-24a..b`, `EX55-25..33`, `EX55-34a..c`, `EX55-35` | Authenticated writes, actor/origin/error boundaries, graph transactions, test-fixture correction, unfinished slices, and local/CI scope reviewed. |
 | #56 | `950133f` | pending | — | — |
 | #57 | `a5a77fa` | pending | — | — |
 | #58 | `a35c4ce` | pending | — | — |

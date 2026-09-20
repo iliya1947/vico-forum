@@ -868,6 +868,163 @@ duplicates from `/1` likewise create no records.
 | `EX50-38a` | Rewritten Stage 5 completion criteria omit explicit pre-provider stale-task revalidation. |
 | `EX50-38b` | Rewritten Stage 5 completion criteria omit explicit post-provider conditional-current publication. |
 
+
+### PRs #51–#55
+
+Detailed evidence is preserved in PR #79 responses `DL-EXTRACT-009/1` at `4082877` and
+`DL-EXTRACT-009/2` at `8adfb0b`, accepted by `REVIEW DL-EXTRACT-009/2`. The seven unsuffixed
+composite IDs in the `/2` replacement map are superseded labels, not ledger records.
+
+| Decision ID | Atomic decision index |
+| --- | --- |
+| `EX51-01` | Stage 4B adds persistent forum category identity. |
+| `EX51-02` | Forum sections belong to categories with cascade ownership. |
+| `EX51-03` | Forum topics belong to sections. |
+| `EX51-04` | Forum topics are authored by existing Better Auth user identity. |
+| `EX51-05` | Forum posts belong to topics. |
+| `EX51-06` | Forum posts are authored by existing Better Auth user identity. |
+| `EX51-07` | Topic title is a separate revisioned/translatable unit. |
+| `EX51-08` | Post body is stored as immutable revision identity. |
+| `EX51-09` | Forum revision payload preserves original content. |
+| `EX51-10` | Forum revision identity stores source locale independently of current UI locale. |
+| `EX51-11` | Translation source locale is not foreign-keyed to LocaleRegistry persistence. |
+| `EX51-12` | und is an allowed source-language identity. |
+| `EX51-13` | Non-und source locales are canonicalized through the existing translation-locale boundary. |
+| `EX51-14` | Formatting/Unicode-extension locale forms are rejected for content source identity. |
+| `EX51-15` | Topic keeps an explicit current-title-revision pointer. |
+| `EX51-16` | Post keeps an explicit current-body-revision pointer. |
+| `EX51-17` | Current topic-title pointer is owner-matched at the database boundary. |
+| `EX51-18` | Current post-body pointer is owner-matched at the database boundary. |
+| `EX51-19` | Current-revision owner-matching FKs are DEFERRABLE INITIALLY DEFERRED. |
+| `EX51-20a` | Revision-to-owner containment FKs remain immediate. |
+| `EX51-20b` | Revision-to-owner containment FKs cascade revision rows with aggregate-owner deletion. |
+| `EX51-21` | Revision rows are protected from in-place UPDATE. |
+| `EX51-22` | P2 review records that superseded revision rows remain directly deletable. |
+| `EX51-23` | Aggregate hierarchy deletion intentionally cascades revision history with its owner. |
+| `EX51-24` | createTopic creates topic identity and initial title revision atomically. |
+| `EX51-25` | createPost creates post identity and initial body revision atomically. |
+| `EX51-26` | Topic-title revision append uses optimistic current-pointer compare-and-swap. |
+| `EX51-27` | Post-body revision append uses optimistic current-pointer compare-and-swap. |
+| `EX51-28` | Failed optimistic revision advancement aborts the transaction. |
+| `EX51-29` | ForumService validates nonblank entity/parent/content input. |
+| `EX51-30` | Initial readHierarchy is an unbounded nested hierarchy reader. |
+| `EX51-31` | P2 review records N+1/unbounded readHierarchy scaling risk. |
+| `EX51-32` | Migration 0004 is append-only repository history. |
+| `EX51-33a` | PROJECT_STATE records Stage 4B forum foundation as complete for local/CI development. |
+| `EX51-33b` | Stage 4B completion explicitly excludes external production migration/runtime rollout. |
+| `EX51-34` | Native Cloudflare Git integration is recorded as disabled by the user. |
+| `EX51-35a` | Stage 4C public reading is selected as the next product slice. |
+| `EX51-35b` | PROJECT_STATE records no product or operational blocker for continuing into Stage 4C. |
+| `EX51-36` | Redundant owner-side composite UNIQUE constraints are removed before merge. |
+| `EX51-37` | Redundant revision-owner single-column indexes are removed before merge. |
+| `EX51-38` | An unrelated locale semantic-identity assertion is removed from the forum migration test. |
+| `EX52-01` | Public forum reading is exposed through a ForumReader capability. |
+| `EX52-02` | ForumReader is request-context injected. |
+| `EX52-03` | Hyperdrive forum reads create and close a PostgreSQL client per reader operation. |
+| `EX52-04` | Worker constructs the forum reader from the existing HYPERDRIVE connection. |
+| `EX52-05` | Forum index lists categories with section counts. |
+| `EX52-06` | Category page returns sections with aggregate topic/post counts. |
+| `EX52-07` | Section page returns current topic title, author and post count. |
+| `EX52-08` | Topic page returns current title, section/category ancestry and author. |
+| `EX52-09` | Topic page returns current post-body revisions with authors. |
+| `EX52-10` | Public page-shaped reads replace per-row readHierarchy usage on the Stage 4C route path. |
+| `EX52-11` | Forum public collections use deterministic createdAt/id ordering. |
+| `EX52-12` | Stage 4C public read lists are not paginated. |
+| `EX52-13` | Public forum routes live under the existing canonical locale namespace. |
+| `EX52-14` | Public forum links preserve the current canonical locale. |
+| `EX52-15` | Initial Stage 4C links interpolate opaque entity IDs directly into paths. |
+| `EX52-16` | P2 review identifies reserved-character path corruption for opaque IDs. |
+| `EX52-17` | Central generatePath helpers replace raw forum path interpolation. |
+| `EX52-18` | Route-path regression covers opaque IDs as one encoded path segment. |
+| `EX52-19` | Stage 4C adds a classic forum shell and breadcrumbs. |
+| `EX52-20` | Stage 4C adds explicit empty states for categories/sections/topics/posts. |
+| `EX52-21` | Missing category/section/topic returns route-level 404. |
+| `EX52-22` | Forum route ErrorBoundary distinguishes 404 from generic read failure. |
+| `EX52-23` | Locale-scoped catch-all uses the forum localized 404 boundary. |
+| `EX52-24` | Canonical English catalog gains Stage 4C forum-read UI descriptors. |
+| `EX52-25` | Count strings initially encode English “(s)” through ordinary interpolation. |
+| `EX52-26` | P2 review records count/plural presentation-contract concern. |
+| `EX52-27` | Stage 4C read/UI is exercised in both LTR and RTL fixtures. |
+| `EX52-28` | Stage 4C does not modify forum schema 0004. |
+| `EX52-29` | PROJECT_STATE marks Stage 4C completed local/CI. |
+| `EX52-30` | The blocker heading becomes stale when Stage 4C is marked complete. |
+| `EX53-01` | Better Auth runtime consumes the checked-in Stage 4A schema through the Drizzle PostgreSQL adapter. |
+| `EX53-02` | Better Auth user additionalFields reuses the server-owned locale definition. |
+| `EX53-03` | Better Auth runtime uses database-backed rate limiting. |
+| `EX53-04` | Better Auth client-IP trust is restricted to cf-connecting-ip. |
+| `EX53-05` | Better Auth CSRF and origin checks are not disabled. |
+| `EX53-06` | Google is configured as a Better Auth social provider from server environment values. |
+| `EX53-07` | Real Google credentials and external OAuth smoke remain deliberately deferred. |
+| `EX53-08` | Auth runtime is exposed as a request capability. |
+| `EX53-09` | Every auth operation owns a fresh PostgreSQL client. |
+| `EX53-10` | Auth runtime is instantiated from the existing Worker HYPERDRIVE connection. |
+| `EX53-11` | No module-global PostgreSQL auth connection is introduced. |
+| `EX53-12a` | AuthRuntime is a typed request-scoped RouterContextProvider capability. |
+| `EX53-12b` | Resolved AuthSession|null is a separate typed request-scoped RouterContextProvider capability. |
+| `EX53-13` | Worker resolves the session before React Router handles the request. |
+| `EX53-14` | Guest, invalid and expired session states are represented as null context rather than blocking public requests. |
+| `EX53-15` | /api/auth/* is registered before the generic /api/* catch-all. |
+| `EX53-16` | Authenticated user.locale becomes the first root-negotiation user preference. |
+| `EX53-17` | Explicit /:locale authority remains outside the authenticated root preference. |
+| `EX53-18` | Initial pre-routing session lookup did not propagate Better Auth refresh Set-Cookie headers. |
+| `EX53-19` | ed8c59a requests Better Auth session response headers. |
+| `EX53-20` | Only Better Auth Set-Cookie values from pre-routing lookup are copied to the final page response. |
+| `EX53-21` | Multiple Better Auth Set-Cookie values are preserved. |
+| `EX53-22` | Final page cache headers survive auth session refresh. |
+| `EX53-23` | Local PostgreSQL integration exercises the real Better Auth 1.7.4 schema/runtime. |
+| `EX53-24` | Local auth integration proves persisted sign-up/session handling. |
+| `EX53-25` | Local auth integration proves sliding-session refresh crosses the application response boundary. |
+| `EX53-26a` | Local Better Auth integration verifies guest requests resolve to no session. |
+| `EX53-26b` | Local Better Auth integration verifies expired-session cleanup and cookie invalidation. |
+| `EX53-27` | Node typecheck explicitly includes auth server/context modules. |
+| `EX53-28` | PR #53 adds no database schema or migration. |
+| `EX53-29` | P1 review records preview-isolation risk from reusing the fixed HYPERDRIVE binding for auth writes. |
+| `EX53-30` | P1 review predicts Workers smoke failure from missing Better Auth secret. |
+| `EX53-31` | Final CI Workers smoke succeeds despite the env shape cited by EX53-30. |
+| `EX53-32` | PROJECT_STATE marks Stage 4D runtime/session foundation started/completed as a slice. |
+| `EX54-01` | The blocker stage label first becomes stale at PR #52. |
+| `EX54-02` | PR #53 carries the stale label forward after Stage 4D begins. |
+| `EX54-03` | PR #54 changes only the blocker target label from Stage 4C to Stage 4D. |
+| `EX54-04` | PR #54 is documentation synchronization rather than a new blocker contract. |
+| `EX55-01` | ForumWriter is a distinct request capability for forum mutations. |
+| `EX55-02` | ForumWriter is injected through RouterContextProvider. |
+| `EX55-03` | Worker constructs ForumWriter from the existing HYPERDRIVE connection. |
+| `EX55-04` | Each forum writer operation owns and closes its PostgreSQL client. |
+| `EX55-05` | Browser-created forum identities are server-generated UUIDs. |
+| `EX55-06` | Browser-created topic title revisions use sourceLocale und. |
+| `EX55-07` | Browser-created post/reply revisions use sourceLocale und. |
+| `EX55-08` | Section route action creates a topic plus its initial post. |
+| `EX55-09` | Topic route action creates a reply. |
+| `EX55-10` | Mutation actor identity comes only from Better Auth session. |
+| `EX55-11` | Browser forum mutations require exact same Origin as request URL. |
+| `EX55-12` | Guest forum mutations return controlled 401. |
+| `EX55-13` | Invalid/missing route params return controlled 400. |
+| `EX55-14` | Required title/body form values are trimmed and blank values rejected. |
+| `EX55-15` | FormData parse failure returns controlled 400. |
+| `EX55-16` | Domain content validation failure maps to controlled 400. |
+| `EX55-17` | Missing target section/topic maps to controlled 404. |
+| `EX55-18` | All other writer failures map to generic 503. |
+| `EX55-19` | Successful topic creation redirects to canonical locale topic path. |
+| `EX55-20` | Successful reply redirects to the same canonical locale topic path. |
+| `EX55-21` | Write forms are rendered only when the public loader sees an authenticated session. |
+| `EX55-22` | Topic, title revision, initial post and body revision are created in one transaction. |
+| `EX55-23` | createTopicWithInitialPost checks target section existence before graph insertion. |
+| `EX55-24a` | Initial post must target the newly created topic. |
+| `EX55-24b` | Initial post must use the same author as the newly created topic. |
+| `EX55-25` | Reply creation checks topic existence before inserting post/revision. |
+| `EX55-26` | ForumService remains the content/source-locale validation boundary for writer-generated revisions. |
+| `EX55-27` | PostgreSQL integration verifies topic/reply persistence through the runtime writer. |
+| `EX55-28` | PostgreSQL integration verifies transaction rollback for incomplete topic graph. |
+| `EX55-29` | Route-action tests verify forged author input is ignored. |
+| `EX55-30` | Route-action tests verify guest, cross-origin and invalid input cause no write call. |
+| `EX55-31` | Initial integration test left its created runtime topic in the shared fixture. |
+| `EX55-32` | 43874ac isolates the integration fixture with finally cleanup. |
+| `EX55-33` | Separate forum write anti-spam/rate limiting remains explicitly unfinished. |
+| `EX55-34a` | Sign-in UX remains an unfinished Stage 4D product slice after PR #55. |
+| `EX55-34b` | Markdown editor/rendering remains an unfinished Stage 4D product slice after PR #55. |
+| `EX55-34c` | Solved-topic/best-answer flow remains an unfinished later product slice after PR #55. |
+| `EX55-35` | PR #55 performs no external write-capability provisioning or rollout. |
+
 `COVERAGE.md` remains the authoritative working checklist for whether every in-scope PR/commit has
 been examined and whether mixed changes were completely decomposed. A populated ledger alone never
 proves that extraction or dependency discovery is complete.

@@ -1704,3 +1704,62 @@ Submit `RESPONSE DL-EXTRACT-009/2` containing only:
 
 Do not repeat the full response, expand scope, classify the records, reinterpret future consumers as
 current defects, apply external rollout requirements to the local/CI slice, or edit PR #78.
+
+## REVIEW DL-EXTRACT-009/2
+
+From: Codex
+Reviewed response: PR #79 response commit `8adfb0b56d571bd4f825f4ae99df4fa4a938d471`,
+confirmed at PR #79 head `6d8b77fdd894fcec68ceee57cc8f1aa7aeb42003`
+Status: accepted-for-extraction
+
+### Independent verification and resolution
+
+The response performs every requested split, keeps schema timing distinct from cascade behavior,
+separates local/CI completion from external non-rollout, and preserves independent auth/session,
+integration, service-invariant, and product-scheduling records. Its mappings and lineage corrections
+are consistent with the accepted `/1` evidence.
+
+`DL-EXTRACT-009` is closed as an extraction task. Its 147 atomic records are indexed at `open` status
+in `LEDGER.md`, and PRs #51–#55 are `extraction-complete`. Acceptance does not classify the
+future-proof foundations, reviews, or implementation choices.
+
+## TASK DL-EXTRACT-010
+
+From: Codex
+Status: open
+Response destination: ChatGPT-owned PR #79
+Scope: PRs #56, #57, #58, #59, and #60 in chronological merge order
+
+### Assignment
+
+Extract every atomic decision, implementation correction, review intervention, race fix, product
+extension, test/gate, state claim, and evidence limitation from the remainder of Stage 4D and the first
+Stage 4E/authorization block.
+
+Requirements:
+
+1. Inspect every PR body, merge diff, internal commit, review/discussion, CI/deployment claim, changed
+   file, and available external artifact; perform a complete `F/A/C/D/O/G/T` sweep for every PR.
+2. For PR #56, split sign-in/sign-out presentation, locale-aware return behavior, server/session
+   authority, Google-provider configuration boundaries, and explicitly deferred real OAuth credentials
+   or deployed smoke. Do not confuse UI readiness with external OAuth acceptance.
+3. For PR #57, separate safe Markdown behavior, write cooldown/rate policy, transaction/advisory-lock or
+   other concurrency mechanics, race-condition fixes, and tests. A demonstrated local/CI race is a real
+   implementation defect; do not dismiss it as future infrastructure work or inflate the fix into a
+   blanket architecture endorsement.
+4. For PR #58, split solved-topic state, best-answer identity/scope, author permissions, transaction and
+   race behavior, SSR/UI, validation/errors, migrations, tests, and incomplete follow-on work.
+5. Treat PR #59 dynamic roles/permissions, custom roles, and per-user allow/deny as an accepted product
+   extension. Its absence from PR #12 is not an error. Still separate product contract, permission
+   catalog, precedence, administration, lockout/safety, persistence, and delivery sequencing; direct
+   user acceptance of the extension is not blanket approval of every detailed mechanism.
+6. For PR #60, decompose schema/backend/resolver/cache or freshness behavior, built-in/custom role
+   semantics, per-user overrides, bootstrap/migration behavior, management boundaries, failure handling,
+   tests, and state claims. Preserve PR #61 and later typed-boundary correction only as forward evidence;
+   do not rewrite #60 through later behavior.
+7. Keep local/CI completion separate from deferred external roles/bindings/bootstrap. Preserve any
+   intentionally later UI or consumer without calling the foundation incomplete by mistake.
+8. Do not classify correctness, prematurity, future-proofing, approval of details, target architecture,
+   or remedy during extraction.
+
+Respond as `RESPONSE DL-EXTRACT-010/1` in PR #79. Do not edit PR #78.
