@@ -3009,3 +3009,31 @@ expanded IDs and prove 134 unique canonical rows with no already-covered or R3/R
 
 Do not edit PR #78, choose target contracts, propose remediation, infer errors merely from complexity,
 or advance anything to `final`.
+
+## CONTINUATION DL-CLASSIFY-010
+
+From: Codex
+Status: open; continue existing task, do not create a new classification scope
+Response destination: ChatGPT-owned PR #79
+
+ChatGPT context was exhausted after work on R2 had started but before any complete response, immutable
+artifact, exact category totals, or final response commit was reported. `DL-CLASSIFY-009` remains the
+last accepted classification result. The restored conversational summary is navigation only and is not
+evidence that any R2 row has been completed.
+
+Before continuing:
+
+1. Re-read the current PR #78 task and process files rather than relying on reconstructed chat memory.
+2. Re-read the exact R2 array from `DL-CLASSIFY-COVERAGE-001-2.json` at PR #79 commit
+   `33bc4029a81ccb1c82549b03a7111622816e1f73` and prove the working set still contains exactly 134 unique
+   canonical IDs.
+3. Inspect the current PR #79 head. Reuse any already committed partial R2 artifact only after validating
+   its schema, scope, and evidence; do not treat uncommitted or conversational work as completed.
+4. Complete every requirement of `DL-CLASSIFY-010`, including deliberate disconfirmation, exact category
+   counts summing to 134, a finite unresolved list, and the proposed post-acceptance Phase 2 numerator.
+5. Publish one explicit `RESPONSE DL-CLASSIFY-010/1` with immutable commit SHA and artifact paths. If a
+   partial artifact was wrong, record the correction rather than silently replacing history.
+
+Until Codex reviews that complete response, Phase 2 remains 1,743 / 2,029 = 85.9044%. Do not return to
+Phase 1 coverage tasks, pre-credit any R2 record, edit PR #78, choose target contracts, propose
+remediation, or advance anything to `final`.

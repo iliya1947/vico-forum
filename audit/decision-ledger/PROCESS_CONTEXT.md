@@ -269,6 +269,8 @@ required restoration remain open until full-history and cross-stage review.
   classified+disconfirmed plus 230 reviewed-supporting records out of 2,029, with 286 unreviewed. The
   remaining exact partition
   is R2=134, R3=71, and R6=81, with R2 next and R6 last in dependency order;
+  `DL-CLASSIFY-010` R2 work was interrupted by ChatGPT context exhaustion and remains open until a
+  complete 134-ID response is committed and reviewed; no partial conversational work is credited;
   extraction completion must not be mistaken for completed findings or remediation.
 - No project decision has reached final status and no product/source-of-truth documentation or runtime
   code has been corrected by this audit branch.
