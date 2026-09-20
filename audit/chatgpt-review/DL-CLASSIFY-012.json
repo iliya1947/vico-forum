@@ -1,0 +1,1701 @@
+{
+  "type": "DL-CLASSIFY-012",
+  "status": "submitted-preliminary",
+  "audited_heads": {
+    "pr78_task_head": "2550249583573744278ebb89d83b35f822ef06af",
+    "main": "3282aa51f47f36131d35c34ee79ca37cb2ce434f",
+    "pr79_before_response": "94597d0c458e7993b28df3de3904fa9fdcf7a150"
+  },
+  "immutable_scope_source": {
+    "commit": "33bc4029a81ccb1c82549b03a7111622816e1f73",
+    "path": "audit/chatgpt-review/DL-CLASSIFY-COVERAGE-001-2.json",
+    "block": "R6"
+  },
+  "scope_validation": {
+    "expected_count": 81,
+    "unique_count": 81,
+    "duplicate_ids": [],
+    "non_unreviewed_at_phase2_base": [],
+    "missing_assignments": [],
+    "expanded_ids": [
+      "EX77-01",
+      "EX77-03",
+      "EX77-04",
+      "EX77-05",
+      "EX77-06",
+      "EX77-07",
+      "EX77-08",
+      "EX77-09",
+      "EX77-10",
+      "EX77-11",
+      "EX77-13",
+      "EX77-14",
+      "EX77-15",
+      "EX77-16",
+      "EX77-17",
+      "EX77-18",
+      "EX77-19",
+      "EX77-20",
+      "EX77-21",
+      "EX77-22",
+      "EX77-23",
+      "EX77-24",
+      "EX77-25",
+      "EX77-26",
+      "EX77-32",
+      "EX77-33",
+      "EX77-34",
+      "EX77-35",
+      "EX77-36",
+      "EX77-37",
+      "EX77-38",
+      "EX77-39",
+      "EX77-40",
+      "EX77-41",
+      "EX77-42",
+      "EX77-43",
+      "EX77-44",
+      "EX77-45",
+      "EX77-46",
+      "EX77-47",
+      "EX77-48",
+      "EX77-49",
+      "EX77-50",
+      "EX77-51",
+      "EX77-52",
+      "EX77-53",
+      "EX77-54",
+      "EX77-55",
+      "EX77-56",
+      "EX77-57",
+      "EX77-58",
+      "EX77-59",
+      "EX77-60",
+      "EX77-61",
+      "EX77-62",
+      "EX77-63",
+      "EX77-64",
+      "EX77-65",
+      "EX77-66",
+      "EX77-67",
+      "EX77-68",
+      "EX77-69",
+      "EX77-70",
+      "EX77-71",
+      "EX77-72",
+      "EX77-73",
+      "EX77-74",
+      "EX77-75",
+      "EX77-76",
+      "EX77-77",
+      "EX77-78",
+      "EX77-79",
+      "EX77-80",
+      "EX77-81",
+      "EX77-82",
+      "EX77-83",
+      "EX77-84",
+      "EX77-85",
+      "EX77-86",
+      "EX77-87",
+      "EX77-88"
+    ]
+  },
+  "block_context": {
+    "chronology": "PR #77 only.",
+    "theme": "documentation-only current-state/history responsibility split, retrospective indexes, provenance claims, omissions, scope/CI facts and cross-chain historical summaries",
+    "dependencies": [
+      "all underlying stale-policy, infrastructure, authorization and durable-task chains already classified",
+      "R1/R2/R3 remaining early historical foundations and operational evidence",
+      "R4 stage/process handoff",
+      "R5 residual PR #76 scope fact"
+    ],
+    "accepted_before": "1948 / 2029 = 96.0079%",
+    "remaining_before": {
+      "R6": 81
+    }
+  },
+  "classification_counts": {
+    "reviewed-supporting": 56,
+    "justified-fix-of-real-defect": 8,
+    "intentional-foundation": 5,
+    "acceptable-alternative": 4,
+    "real-original-defect": 7,
+    "insufficient-evidence": 1,
+    "dumb-correction-of-correct-implementation": 0,
+    "substantive_total": 25,
+    "supporting_total": 56,
+    "total": 81
+  },
+  "preliminary_findings": {
+    "current_documentation_defects": [
+      "EX77-24",
+      "EX77-58",
+      "EX77-59",
+      "EX77-75",
+      "EX77-76"
+    ],
+    "historical_documentation_defects_fixed_before_merge": [
+      "EX77-16",
+      "EX77-46"
+    ],
+    "justified_documentation_corrections": [
+      "EX77-03",
+      "EX77-17",
+      "EX77-18",
+      "EX77-19",
+      "EX77-47",
+      "EX77-48",
+      "EX77-53",
+      "EX77-56"
+    ],
+    "evidence_limited": [
+      "EX77-65"
+    ],
+    "current_runtime_defects_newly_inferred_from_r6": [],
+    "dumb_corrections": [],
+    "strict_documentation_laundering": false,
+    "unresolved_classification_ids": []
+  },
+  "material_documentation_findings": [
+    {
+      "defect_ids": [
+        "EX77-16"
+      ],
+      "defect": "bec8226 removed accumulated historical provenance before a replacement history document existed.",
+      "corrections": [
+        "EX77-19",
+        "EX77-67",
+        "EX77-68"
+      ],
+      "commits": [
+        "af7825bf7c51c6292f3f06e38b30e8c33890c784",
+        "95adc2fa2a12e596c827da13fac92f0771c1ea1b",
+        "7b9c6721f139774c2342e07b84dee2f755f6584a"
+      ],
+      "current_state": "fixed before merge; EX77-64/66 later index the episode/restoration"
+    },
+    {
+      "defect_ids": [
+        "EX77-24"
+      ],
+      "defect": "The high-level pre-Stage-4 summary labels PR #40 stale-pack cleanup as a regression, broader than the accepted mixed stale-chain result.",
+      "corrections": [],
+      "current_state": "current documentation overstatement; detailed EX77-29/30 classifications remain unchanged and are not reopened"
+    },
+    {
+      "defect_ids": [
+        "EX77-46"
+      ],
+      "defect": "Initial H-006 wording over-attributed PR #61 broad authorization failure policy to corrective review.",
+      "corrections": [
+        "EX77-47",
+        "EX77-48"
+      ],
+      "commits": [
+        "9c1fa304be9d7d24129bd5b731a442370b25545e"
+      ],
+      "current_state": "fixed before merge"
+    },
+    {
+      "defect_ids": [
+        "EX77-58",
+        "EX77-75"
+      ],
+      "defect": "PROJECT_HISTORY and PROJECT_STATE omit the accepted current PR #72 A→B→A reactivation defect.",
+      "underlying_runtime_ids": [
+        "EX72-20",
+        "EX72-45",
+        "EX72-46",
+        "EX72-47",
+        "EX72-48",
+        "EX72-49",
+        "EX72-50",
+        "EX72-51",
+        "EX72-52",
+        "EX72-53"
+      ],
+      "corrections": [],
+      "current_state": "current documentation omissions; underlying runtime classification is inherited from accepted DL-CLASSIFY-007, not re-derived here"
+    },
+    {
+      "defect_ids": [
+        "EX77-59",
+        "EX77-76"
+      ],
+      "defect": "PROJECT_HISTORY and PROJECT_STATE omit the accepted current PR #75 durable v1→v2 refresh/backfill gap.",
+      "underlying_runtime_ids": [
+        "EX75-56",
+        "EX75-57",
+        "EX75-58",
+        "EX75-59",
+        "EX75-60",
+        "EX75-61",
+        "EX75-62"
+      ],
+      "corrections": [],
+      "current_state": "current documentation omissions; external incidence remains unproven exactly as accepted in DL-CLASSIFY-007"
+    },
+    {
+      "defect_ids": [],
+      "defect": "Intermediate PROJECT_STATE wording after bec8226 blurred completed Stage 5A work versus remaining local adapter work and Stage 6 external acceptance.",
+      "corrections": [
+        "EX77-17",
+        "EX77-18"
+      ],
+      "commits": [
+        "8f75a4337dccd3008e31f1626e55ca703ef1f424"
+      ],
+      "current_state": "fixed before merge"
+    },
+    {
+      "defect_ids": [],
+      "defect": "Earlier PR #76 verification wording cited CI #202/code head instead of the final CI #203/final head.",
+      "corrections": [
+        "EX77-03"
+      ],
+      "commits": [
+        "089f11c1f9bec3bfc4d934b68dca6564b7d5b77f"
+      ],
+      "current_state": "fixed before merge"
+    },
+    {
+      "defect_ids": [],
+      "defect": "Initial PROJECT_HISTORY omitted independently confirmed #69 and #71 missing-return intermediate regressions.",
+      "corrections": [
+        "EX77-53",
+        "EX77-56"
+      ],
+      "commits": [
+        "e9c2fbc1bb55475700054f5b34f6370a39cd4bd6"
+      ],
+      "current_state": "fixed before merge"
+    }
+  ],
+  "evidence_limited_findings": [
+    {
+      "id": "EX77-65",
+      "claim": "A user review detected the intermediate PR #77 history loss before merge.",
+      "strongest_supported_alternative": "The history loss was detected before merge, but GitHub-visible evidence does not establish who detected it.",
+      "missing_evidence": "A preserved direct user message/review/task artifact or PR discussion linking the detection to the user.",
+      "current_status": "insufficient-evidence; does not affect the independently proven history-loss defect or its correction"
+    }
+  ],
+  "strict_laundering": {
+    "confirmed": false,
+    "reasoning": "R6 contains retrospective overstatement, omission, and one corrected causal-provenance error, but none of these newly represents a later decision as older/original authority under the accepted strict test. The excluded stale-chain EX77-30 retains its already accepted insufficient-evidence classification and is not reopened."
+  },
+  "phase2_reconciliation": {
+    "accepted_before": {
+      "classified_disconfirmed": 1673,
+      "reviewed_supporting": 275,
+      "covered": 1948,
+      "total": 2029
+    },
+    "r6_new": {
+      "substantive": 25,
+      "supporting": 56,
+      "covered": 81
+    },
+    "after_if_accepted": {
+      "classified_disconfirmed": 1698,
+      "reviewed_supporting": 331,
+      "covered": 2029,
+      "total": 2029,
+      "coverage_percent": 100
+    },
+    "remaining_unreviewed": 0,
+    "superseded_history_note": "The exact base map retains superseded-history metadata for EX20-02, EX37-03, EX37-05, EX37-07 and EX44-14, but each row's active classification/accepted_source is already the later accepted result. No superseded classification is active.",
+    "phase2_can_close_if_codex_accepts": true
+  },
+  "profiles": {
+    "DOC-FOUNDATION": {
+      "title": "Documentation responsibility/provenance foundation",
+      "strongest_evidence_against": "Evidence that separating current state, historical index and subsystem contracts destroys required provenance, creates competing current sources of truth, or makes current project status harder to reconstruct.",
+      "contrary_found": "Final PR #77 links PROJECT_HISTORY from both PROJECT_STATE and README, explicitly keeps Git/PRs primary historical evidence, and leaves permanent contracts in their subsystem documents. The audit itself could reconstruct the relevant chains from primary evidence.",
+      "effect": "Intentional documentation foundation; this does not grant authority to the retrospective conclusions stored in the index."
+    },
+    "DOC-ALTERNATIVE": {
+      "title": "Documentation organization/planning alternative",
+      "strongest_evidence_against": "Evidence that removing chronology from PROJECT_STATE, shortening the nearest route, or adding history links hides a required current constraint or contradicts an accepted stage boundary.",
+      "contrary_found": "The structural choices are compatible with the accepted product-first Stage 5/Stage 6 split. Specific omitted current defects are classified separately rather than used to condemn the organization model itself.",
+      "effect": "Acceptable documentation/process alternative."
+    },
+    "DEF-HISTORY-LOSS": {
+      "title": "Intermediate history-loss defect",
+      "strongest_evidence_against": "Evidence that all removed PROJECT_STATE provenance already had a durable, linked historical owner before bec8226 landed.",
+      "contrary_found": "bec8226 removed the accumulated chronology before PROJECT_HISTORY existed; af7825b and later link commits were required afterward to restore an accessible history path.",
+      "effect": "Real historical documentation defect inside PR #77, fixed before merge."
+    },
+    "DEF-PR40-SUMMARY": {
+      "title": "Overbroad PR #40 retrospective label",
+      "strongest_evidence_against": "A reading in which the summary's `stale-pack cleanup, later recognized regression` refers only to the independently proven zero-stale gate and not to the mixed PR #40 cleanup/canary changes as a whole.",
+      "contrary_found": "The accepted stale-chain result classifies EX40-02 as the dumb correction but EX40-01 and EX40-03 as acceptable alternatives and keeps EX77-29/30 evidence-limited. The high-level PROJECT_HISTORY bullet collapses those mixed outcomes into one regression label.",
+      "effect": "Real current documentation overstatement. This does not reopen the already accepted stale-chain IDs."
+    },
+    "DEF-AUTHZ-PROVENANCE": {
+      "title": "Incorrect PR #61 causal attribution",
+      "strongest_evidence_against": "Evidence that broad authorization failure handling first appeared only in review-follow-up commits.",
+      "contrary_found": "The first PR #61 implementation already mapped arbitrary resolver failures to controlled unavailability in protected paths; later review follow-ups broadened optional-presentation suppression. Commit 9c1fa30 corrected this exact provenance.",
+      "effect": "Real historical documentation defect, corrected before PR #77 merge."
+    },
+    "DEF-HISTORY-OMISSION": {
+      "title": "PROJECT_HISTORY omission of an accepted current defect",
+      "strongest_evidence_against": "Evidence that the omitted PR review was resolved by later code, was only a speculative review concern, or was outside the history file's stated purpose.",
+      "contrary_found": "Accepted DL-CLASSIFY-007 independently confirms both the #72 A→B→A starvation path and #75 durable v1→v2 refresh gap as current defects. PROJECT_HISTORY says it indexes significant regressions and known historical problems still unfixed, yet neither review is indexed.",
+      "effect": "Real current documentation-completeness defect; it does not independently prove or enlarge the underlying runtime defect."
+    },
+    "DEF-STATE-OMISSION": {
+      "title": "PROJECT_STATE omission of an accepted current constraint",
+      "strongest_evidence_against": "Evidence that the omitted review does not describe current behavior, was fixed before main, or is irrelevant to PROJECT_STATE's stated role of recording known current constraints.",
+      "contrary_found": "Accepted DL-CLASSIFY-007 confirms both defects remain in current main. Final PROJECT_STATE describes Stage 5A capabilities and known current limitations but names only the stale-pack regression, omitting these two confirmed Stage 5A constraints.",
+      "effect": "Real current documentation-state omission; no runtime conclusion is inferred beyond the already accepted underlying findings."
+    },
+    "FIX-CI": {
+      "title": "Factual CI/state correction",
+      "strongest_evidence_against": "Evidence that CI #202/code head was already the final PR #76 acceptance evidence or that CI #203/final head did not exist.",
+      "contrary_found": "Accepted PR #76 extraction/classification records final CI #203 on final head; 089f11c changes the stale code-head reference to that final evidence.",
+      "effect": "Justified documentation correction of a factual state defect."
+    },
+    "FIX-STAGE": {
+      "title": "Stage 5 local/CI versus Stage 6 external state correction",
+      "strongest_evidence_against": "Evidence that concrete provider-adapter implementation was external-only Stage 6 work, or that real Queue/provider acceptance was required to complete ordinary Stage 5 local/CI work.",
+      "contrary_found": "The accepted PR #50 boundary and current ROADMAP separate local/CI Stage 5 implementation from Stage 6 external acceptance; 8f75a43 corrects the rebuilt state to keep the concrete adapter local while deferring real bindings/credentials/smoke.",
+      "effect": "Justified correction of intermediate PROJECT_STATE wording/route."
+    },
+    "FIX-HISTORY": {
+      "title": "Restoration of lost or omitted significant history",
+      "strongest_evidence_against": "Evidence that the restored episode was factually unsupported, trivial to the history file's stated purpose, or already indexed elsewhere.",
+      "contrary_found": "The restored history is independently present in Git/accepted audit findings: PR #77's own history-loss episode, PR #61 provenance split, and the #69/#71 missing-return regressions are all corroborated by commits/reviews.",
+      "effect": "Justified documentation correction; it does not make the retrospective file authority for the underlying event."
+    },
+    "INSUF-USER-REVIEW": {
+      "title": "Uncorroborated user-review attribution",
+      "strongest_evidence_against": "A preserved user message, task artifact, or PR discussion showing that the user specifically detected the history-loss episode before merge.",
+      "contrary_found": "Git proves the history loss and its later correction, but the available PR #77 GitHub discussion contains only the Codex usage-limit bot message. The later PROJECT_HISTORY assertion cannot prove its own `user review` attribution.",
+      "effect": "Insufficient evidence for who detected the defect; the defect and correction themselves remain independently supported."
+    }
+  },
+  "rows": [
+    {
+      "index": 1,
+      "id": "EX77-01",
+      "atomic_decision": "PR #77 is documentation-only.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "SUPPORT",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "support_basis": {
+        "title": "Corroborated retrospective/scope/provenance record",
+        "evidence_rule": "PR #77 prose is treated only as later-retrospective-summary. The row is credited as supporting only where its factual component is corroborated by accepted R1–R5 findings, current Git scope/code, or PR #77 commit topology; it supplies no new normative authority.",
+        "record_specific_evidence": null
+      }
+    },
+    {
+      "index": 2,
+      "id": "EX77-03",
+      "atomic_decision": "089f11c corrects PR #76 verification from CI #202/code head to final CI #203/head.",
+      "classification": "justified-fix-of-real-defect",
+      "role": "substantive",
+      "profile": "FIX-CI",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "disconfirmation": {
+        "title": "Factual CI/state correction",
+        "strongest_evidence_against": "Evidence that CI #202/code head was already the final PR #76 acceptance evidence or that CI #203/final head did not exist.",
+        "contrary_found": "Accepted PR #76 extraction/classification records final CI #203 on final head; 089f11c changes the stale code-head reference to that final evidence.",
+        "effect": "Justified documentation correction of a factual state defect.",
+        "record_specific_evidence": "089f11c replaces CI #202 / code-head wording with final CI #203 / final PR #76 head."
+      }
+    },
+    {
+      "index": 3,
+      "id": "EX77-04",
+      "atomic_decision": "bec8226 redefines PROJECT_STATE as current-state documentation.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "DOC-FOUNDATION",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "disconfirmation": {
+        "title": "Documentation responsibility/provenance foundation",
+        "strongest_evidence_against": "Evidence that separating current state, historical index and subsystem contracts destroys required provenance, creates competing current sources of truth, or makes current project status harder to reconstruct.",
+        "contrary_found": "Final PR #77 links PROJECT_HISTORY from both PROJECT_STATE and README, explicitly keeps Git/PRs primary historical evidence, and leaves permanent contracts in their subsystem documents. The audit itself could reconstruct the relevant chains from primary evidence.",
+        "effect": "Intentional documentation foundation; this does not grant authority to the retrospective conclusions stored in the index."
+      }
+    },
+    {
+      "index": 4,
+      "id": "EX77-05",
+      "atomic_decision": "bec8226 delegates permanent contracts to subsystem source-of-truth documents.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "DOC-FOUNDATION",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "disconfirmation": {
+        "title": "Documentation responsibility/provenance foundation",
+        "strongest_evidence_against": "Evidence that separating current state, historical index and subsystem contracts destroys required provenance, creates competing current sources of truth, or makes current project status harder to reconstruct.",
+        "contrary_found": "Final PR #77 links PROJECT_HISTORY from both PROJECT_STATE and README, explicitly keeps Git/PRs primary historical evidence, and leaves permanent contracts in their subsystem documents. The audit itself could reconstruct the relevant chains from primary evidence.",
+        "effect": "Intentional documentation foundation; this does not grant authority to the retrospective conclusions stored in the index."
+      }
+    },
+    {
+      "index": 5,
+      "id": "EX77-06",
+      "atomic_decision": "bec8226 removes most PR/commit/CI chronology from PROJECT_STATE.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "DOC-ALTERNATIVE",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "disconfirmation": {
+        "title": "Documentation organization/planning alternative",
+        "strongest_evidence_against": "Evidence that removing chronology from PROJECT_STATE, shortening the nearest route, or adding history links hides a required current constraint or contradicts an accepted stage boundary.",
+        "contrary_found": "The structural choices are compatible with the accepted product-first Stage 5/Stage 6 split. Specific omitted current defects are classified separately rather than used to condemn the organization model itself.",
+        "effect": "Acceptable documentation/process alternative."
+      }
+    },
+    {
+      "index": 6,
+      "id": "EX77-07",
+      "atomic_decision": "bec8226 condenses current phase to Stage 0–3 foundation, Stage 4 local/CI complete, Stage 5 active, Stage 6 external.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "SUPPORT",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "support_basis": {
+        "title": "Corroborated retrospective/scope/provenance record",
+        "evidence_rule": "PR #77 prose is treated only as later-retrospective-summary. The row is credited as supporting only where its factual component is corroborated by accepted R1–R5 findings, current Git scope/code, or PR #77 commit topology; it supplies no new normative authority.",
+        "record_specific_evidence": null
+      }
+    },
+    {
+      "index": 7,
+      "id": "EX77-08",
+      "atomic_decision": "bec8226 condenses forum core into current capability summary.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "SUPPORT",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "db/forum-service.ts"
+      ],
+      "support_basis": {
+        "title": "Corroborated retrospective/scope/provenance record",
+        "evidence_rule": "PR #77 prose is treated only as later-retrospective-summary. The row is credited as supporting only where its factual component is corroborated by accepted R1–R5 findings, current Git scope/code, or PR #77 commit topology; it supplies no new normative authority.",
+        "record_specific_evidence": null
+      }
+    },
+    {
+      "index": 8,
+      "id": "EX77-09",
+      "atomic_decision": "bec8226 condenses Stage 5A into current implemented capabilities.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "SUPPORT",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "support_basis": {
+        "title": "Corroborated retrospective/scope/provenance record",
+        "evidence_rule": "PR #77 prose is treated only as later-retrospective-summary. The row is credited as supporting only where its factual component is corroborated by accepted R1–R5 findings, current Git scope/code, or PR #77 commit topology; it supplies no new normative authority.",
+        "record_specific_evidence": null
+      }
+    },
+    {
+      "index": 9,
+      "id": "EX77-10",
+      "atomic_decision": "bec8226 keeps Stage 5 unfinished work separate.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "SUPPORT",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "support_basis": {
+        "title": "Corroborated retrospective/scope/provenance record",
+        "evidence_rule": "PR #77 prose is treated only as later-retrospective-summary. The row is credited as supporting only where its factual component is corroborated by accepted R1–R5 findings, current Git scope/code, or PR #77 commit topology; it supplies no new normative authority.",
+        "record_specific_evidence": null
+      }
+    },
+    {
+      "index": 10,
+      "id": "EX77-11",
+      "atomic_decision": "bec8226 keeps external acceptance separate from local/CI Stage 5.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "SUPPORT",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "support_basis": {
+        "title": "Corroborated retrospective/scope/provenance record",
+        "evidence_rule": "PR #77 prose is treated only as later-retrospective-summary. The row is credited as supporting only where its factual component is corroborated by accepted R1–R5 findings, current Git scope/code, or PR #77 commit topology; it supplies no new normative authority.",
+        "record_specific_evidence": null
+      }
+    },
+    {
+      "index": 11,
+      "id": "EX77-13",
+      "atomic_decision": "bec8226 condenses CI/migration state.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "SUPPORT",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "docs/database/MIGRATIONS.md",
+        ".github/workflows/production-db-migrate.yml"
+      ],
+      "support_basis": {
+        "title": "Corroborated retrospective/scope/provenance record",
+        "evidence_rule": "PR #77 prose is treated only as later-retrospective-summary. The row is credited as supporting only where its factual component is corroborated by accepted R1–R5 findings, current Git scope/code, or PR #77 commit topology; it supplies no new normative authority.",
+        "record_specific_evidence": null
+      }
+    },
+    {
+      "index": 12,
+      "id": "EX77-14",
+      "atomic_decision": "bec8226 condenses external/deployed state.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "SUPPORT",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "support_basis": {
+        "title": "Corroborated retrospective/scope/provenance record",
+        "evidence_rule": "PR #77 prose is treated only as later-retrospective-summary. The row is credited as supporting only where its factual component is corroborated by accepted R1–R5 findings, current Git scope/code, or PR #77 commit topology; it supplies no new normative authority.",
+        "record_specific_evidence": null
+      }
+    },
+    {
+      "index": 13,
+      "id": "EX77-15",
+      "atomic_decision": "bec8226 ends with a short nearest-route sequence.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "DOC-ALTERNATIVE",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "disconfirmation": {
+        "title": "Documentation organization/planning alternative",
+        "strongest_evidence_against": "Evidence that removing chronology from PROJECT_STATE, shortening the nearest route, or adding history links hides a required current constraint or contradicts an accepted stage boundary.",
+        "contrary_found": "The structural choices are compatible with the accepted product-first Stage 5/Stage 6 split. Specific omitted current defects are classified separately rather than used to condemn the organization model itself.",
+        "effect": "Acceptable documentation/process alternative."
+      }
+    },
+    {
+      "index": 14,
+      "id": "EX77-16",
+      "atomic_decision": "The first bec8226 rebuild removes historical provenance before a history replacement exists.",
+      "classification": "real-original-defect",
+      "role": "substantive",
+      "profile": "DEF-HISTORY-LOSS",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "disconfirmation": {
+        "title": "Intermediate history-loss defect",
+        "strongest_evidence_against": "Evidence that all removed PROJECT_STATE provenance already had a durable, linked historical owner before bec8226 landed.",
+        "contrary_found": "bec8226 removed the accumulated chronology before PROJECT_HISTORY existed; af7825b and later link commits were required afterward to restore an accessible history path.",
+        "effect": "Real historical documentation defect inside PR #77, fixed before merge.",
+        "record_specific_evidence": "bec8226 removes historical chronology; PROJECT_HISTORY does not exist until the later af7825b commit."
+      }
+    },
+    {
+      "index": 15,
+      "id": "EX77-17",
+      "atomic_decision": "8f75a43 separates Stage 5 local/CI implementation from Stage 6 external acceptance.",
+      "classification": "justified-fix-of-real-defect",
+      "role": "substantive",
+      "profile": "FIX-STAGE",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "disconfirmation": {
+        "title": "Stage 5 local/CI versus Stage 6 external state correction",
+        "strongest_evidence_against": "Evidence that concrete provider-adapter implementation was external-only Stage 6 work, or that real Queue/provider acceptance was required to complete ordinary Stage 5 local/CI work.",
+        "contrary_found": "The accepted PR #50 boundary and current ROADMAP separate local/CI Stage 5 implementation from Stage 6 external acceptance; 8f75a43 corrects the rebuilt state to keep the concrete adapter local while deferring real bindings/credentials/smoke.",
+        "effect": "Justified correction of intermediate PROJECT_STATE wording/route.",
+        "record_specific_evidence": "8f75a43 changes `Stage 5A already implemented` to `implemented part` and moves real Queue/provider acceptance to Stage 6."
+      }
+    },
+    {
+      "index": 16,
+      "id": "EX77-18",
+      "atomic_decision": "8f75a43 revises the nearest Stage 5A route to include a concrete provider adapter.",
+      "classification": "justified-fix-of-real-defect",
+      "role": "substantive",
+      "profile": "FIX-STAGE",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/translation-execution.ts"
+      ],
+      "disconfirmation": {
+        "title": "Stage 5 local/CI versus Stage 6 external state correction",
+        "strongest_evidence_against": "Evidence that concrete provider-adapter implementation was external-only Stage 6 work, or that real Queue/provider acceptance was required to complete ordinary Stage 5 local/CI work.",
+        "contrary_found": "The accepted PR #50 boundary and current ROADMAP separate local/CI Stage 5 implementation from Stage 6 external acceptance; 8f75a43 corrects the rebuilt state to keep the concrete adapter local while deferring real bindings/credentials/smoke.",
+        "effect": "Justified correction of intermediate PROJECT_STATE wording/route.",
+        "record_specific_evidence": "8f75a43 restores concrete machine-provider adapter as remaining local/CI Stage 5A work while external credentials/calls remain Stage 6."
+      }
+    },
+    {
+      "index": 17,
+      "id": "EX77-19",
+      "atomic_decision": "af7825b creates PROJECT_HISTORY.md.",
+      "classification": "justified-fix-of-real-defect",
+      "role": "substantive",
+      "profile": "FIX-HISTORY",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "disconfirmation": {
+        "title": "Restoration of lost or omitted significant history",
+        "strongest_evidence_against": "Evidence that the restored episode was factually unsupported, trivial to the history file's stated purpose, or already indexed elsewhere.",
+        "contrary_found": "The restored history is independently present in Git/accepted audit findings: PR #77's own history-loss episode, PR #61 provenance split, and the #69/#71 missing-return regressions are all corroborated by commits/reviews.",
+        "effect": "Justified documentation correction; it does not make the retrospective file authority for the underlying event.",
+        "record_specific_evidence": "af7825b creates PROJECT_HISTORY after the intermediate history-loss state."
+      }
+    },
+    {
+      "index": 18,
+      "id": "EX77-20",
+      "atomic_decision": "PROJECT_HISTORY declares itself not source of truth for current behavior.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "DOC-FOUNDATION",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "disconfirmation": {
+        "title": "Documentation responsibility/provenance foundation",
+        "strongest_evidence_against": "Evidence that separating current state, historical index and subsystem contracts destroys required provenance, creates competing current sources of truth, or makes current project status harder to reconstruct.",
+        "contrary_found": "Final PR #77 links PROJECT_HISTORY from both PROJECT_STATE and README, explicitly keeps Git/PRs primary historical evidence, and leaves permanent contracts in their subsystem documents. The audit itself could reconstruct the relevant chains from primary evidence.",
+        "effect": "Intentional documentation foundation; this does not grant authority to the retrospective conclusions stored in the index."
+      }
+    },
+    {
+      "index": 19,
+      "id": "EX77-21",
+      "atomic_decision": "PROJECT_HISTORY declares Git history and PRs primary historical evidence.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "DOC-FOUNDATION",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "disconfirmation": {
+        "title": "Documentation responsibility/provenance foundation",
+        "strongest_evidence_against": "Evidence that separating current state, historical index and subsystem contracts destroys required provenance, creates competing current sources of truth, or makes current project status harder to reconstruct.",
+        "contrary_found": "Final PR #77 links PROJECT_HISTORY from both PROJECT_STATE and README, explicitly keeps Git/PRs primary historical evidence, and leaves permanent contracts in their subsystem documents. The audit itself could reconstruct the relevant chains from primary evidence.",
+        "effect": "Intentional documentation foundation; this does not grant authority to the retrospective conclusions stored in the index."
+      }
+    },
+    {
+      "index": 20,
+      "id": "EX77-22",
+      "atomic_decision": "PROJECT_HISTORY records a Stage 0–1 retrospective summary.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "SUPPORT",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "support_basis": {
+        "title": "Corroborated retrospective/scope/provenance record",
+        "evidence_rule": "PR #77 prose is treated only as later-retrospective-summary. The row is credited as supporting only where its factual component is corroborated by accepted R1–R5 findings, current Git scope/code, or PR #77 commit topology; it supplies no new normative authority.",
+        "record_specific_evidence": null
+      }
+    },
+    {
+      "index": 21,
+      "id": "EX77-23",
+      "atomic_decision": "PROJECT_HISTORY records a Stage 2–3 retrospective summary.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "SUPPORT",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "support_basis": {
+        "title": "Corroborated retrospective/scope/provenance record",
+        "evidence_rule": "PR #77 prose is treated only as later-retrospective-summary. The row is credited as supporting only where its factual component is corroborated by accepted R1–R5 findings, current Git scope/code, or PR #77 commit topology; it supplies no new normative authority.",
+        "record_specific_evidence": null
+      }
+    },
+    {
+      "index": 22,
+      "id": "EX77-24",
+      "atomic_decision": "PROJECT_HISTORY records a pre-Stage-4 hardening retrospective summary.",
+      "classification": "real-original-defect",
+      "role": "substantive",
+      "profile": "DEF-PR40-SUMMARY",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "disconfirmation": {
+        "title": "Overbroad PR #40 retrospective label",
+        "strongest_evidence_against": "A reading in which the summary's `stale-pack cleanup, later recognized regression` refers only to the independently proven zero-stale gate and not to the mixed PR #40 cleanup/canary changes as a whole.",
+        "contrary_found": "The accepted stale-chain result classifies EX40-02 as the dumb correction but EX40-01 and EX40-03 as acceptable alternatives and keeps EX77-29/30 evidence-limited. The high-level PROJECT_HISTORY bullet collapses those mixed outcomes into one regression label.",
+        "effect": "Real current documentation overstatement. This does not reopen the already accepted stale-chain IDs.",
+        "record_specific_evidence": "Current PROJECT_HISTORY stage summary labels `PR #40 — stale-pack cleanup, later recognized regression`, broader than the accepted mixed PR #40 result."
+      }
+    },
+    {
+      "index": 23,
+      "id": "EX77-25",
+      "atomic_decision": "PROJECT_HISTORY records a Stage 4 retrospective summary.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "SUPPORT",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "support_basis": {
+        "title": "Corroborated retrospective/scope/provenance record",
+        "evidence_rule": "PR #77 prose is treated only as later-retrospective-summary. The row is credited as supporting only where its factual component is corroborated by accepted R1–R5 findings, current Git scope/code, or PR #77 commit topology; it supplies no new normative authority.",
+        "record_specific_evidence": null
+      }
+    },
+    {
+      "index": 24,
+      "id": "EX77-26",
+      "atomic_decision": "PROJECT_HISTORY records a Stage 5A retrospective summary.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "SUPPORT",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "support_basis": {
+        "title": "Corroborated retrospective/scope/provenance record",
+        "evidence_rule": "PR #77 prose is treated only as later-retrospective-summary. The row is credited as supporting only where its factual component is corroborated by accepted R1–R5 findings, current Git scope/code, or PR #77 commit topology; it supplies no new normative authority.",
+        "record_specific_evidence": null
+      }
+    },
+    {
+      "index": 25,
+      "id": "EX77-32",
+      "atomic_decision": "H-002 indexes PR #37 staging/hardening blockers.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "SUPPORT",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "support_basis": {
+        "title": "Corroborated retrospective/scope/provenance record",
+        "evidence_rule": "PR #77 prose is treated only as later-retrospective-summary. The row is credited as supporting only where its factual component is corroborated by accepted R1–R5 findings, current Git scope/code, or PR #77 commit topology; it supplies no new normative authority.",
+        "record_specific_evidence": null
+      }
+    },
+    {
+      "index": 26,
+      "id": "EX77-33",
+      "atomic_decision": "H-002 labels the #37 process policy excessive for later solo product-first flow.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "SUPPORT",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "support_basis": {
+        "title": "Corroborated retrospective/scope/provenance record",
+        "evidence_rule": "PR #77 prose is treated only as later-retrospective-summary. The row is credited as supporting only where its factual component is corroborated by accepted R1–R5 findings, current Git scope/code, or PR #77 commit topology; it supplies no new normative authority.",
+        "record_specific_evidence": null
+      }
+    },
+    {
+      "index": 27,
+      "id": "EX77-34",
+      "atomic_decision": "H-002 records PR #45 as the lifecycle revision.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "SUPPORT",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "support_basis": {
+        "title": "Corroborated retrospective/scope/provenance record",
+        "evidence_rule": "PR #77 prose is treated only as later-retrospective-summary. The row is credited as supporting only where its factual component is corroborated by accepted R1–R5 findings, current Git scope/code, or PR #77 commit topology; it supplies no new normative authority.",
+        "record_specific_evidence": null
+      }
+    },
+    {
+      "index": 28,
+      "id": "EX77-35",
+      "atomic_decision": "H-002 distinguishes superseded process policy from runtime defect.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "SUPPORT",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "support_basis": {
+        "title": "Corroborated retrospective/scope/provenance record",
+        "evidence_rule": "PR #77 prose is treated only as later-retrospective-summary. The row is credited as supporting only where its factual component is corroborated by accepted R1–R5 findings, current Git scope/code, or PR #77 commit topology; it supplies no new normative authority.",
+        "record_specific_evidence": null
+      }
+    },
+    {
+      "index": 29,
+      "id": "EX77-36",
+      "atomic_decision": "H-003 records the PR #41 query-redaction path defect.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "SUPPORT",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/server-logging.ts"
+      ],
+      "support_basis": {
+        "title": "Corroborated retrospective/scope/provenance record",
+        "evidence_rule": "PR #77 prose is treated only as later-retrospective-summary. The row is credited as supporting only where its factual component is corroborated by accepted R1–R5 findings, current Git scope/code, or PR #77 commit topology; it supplies no new normative authority.",
+        "record_specific_evidence": null
+      }
+    },
+    {
+      "index": 30,
+      "id": "EX77-37",
+      "atomic_decision": "H-003 records PR #64 as the configuration-path correction.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "SUPPORT",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "support_basis": {
+        "title": "Corroborated retrospective/scope/provenance record",
+        "evidence_rule": "PR #77 prose is treated only as later-retrospective-summary. The row is credited as supporting only where its factual component is corroborated by accepted R1–R5 findings, current Git scope/code, or PR #77 commit topology; it supplies no new normative authority.",
+        "record_specific_evidence": null
+      }
+    },
+    {
+      "index": 31,
+      "id": "EX77-38",
+      "atomic_decision": "H-003 says PR #41 PROJECT_STATE asserted redaction prematurely.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "SUPPORT",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/server-logging.ts"
+      ],
+      "support_basis": {
+        "title": "Corroborated retrospective/scope/provenance record",
+        "evidence_rule": "PR #77 prose is treated only as later-retrospective-summary. The row is credited as supporting only where its factual component is corroborated by accepted R1–R5 findings, current Git scope/code, or PR #77 commit topology; it supplies no new normative authority.",
+        "record_specific_evidence": null
+      }
+    },
+    {
+      "index": 32,
+      "id": "EX77-39",
+      "atomic_decision": "H-004 records PR #43 privilege-verifier membership assumptions.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "SUPPORT",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "docs/database/MIGRATIONS.md",
+        ".github/workflows/production-db-migrate.yml"
+      ],
+      "support_basis": {
+        "title": "Corroborated retrospective/scope/provenance record",
+        "evidence_rule": "PR #77 prose is treated only as later-retrospective-summary. The row is credited as supporting only where its factual component is corroborated by accepted R1–R5 findings, current Git scope/code, or PR #77 commit topology; it supplies no new normative authority.",
+        "record_specific_evidence": null
+      }
+    },
+    {
+      "index": 33,
+      "id": "EX77-40",
+      "atomic_decision": "H-004 records PR #48 membership correction.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "SUPPORT",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "support_basis": {
+        "title": "Corroborated retrospective/scope/provenance record",
+        "evidence_rule": "PR #77 prose is treated only as later-retrospective-summary. The row is credited as supporting only where its factual component is corroborated by accepted R1–R5 findings, current Git scope/code, or PR #77 commit topology; it supplies no new normative authority.",
+        "record_specific_evidence": null
+      }
+    },
+    {
+      "index": 34,
+      "id": "EX77-41",
+      "atomic_decision": "H-004 records PR #49 temporary owner verification/no-op exception.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "SUPPORT",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "support_basis": {
+        "title": "Corroborated retrospective/scope/provenance record",
+        "evidence_rule": "PR #77 prose is treated only as later-retrospective-summary. The row is credited as supporting only where its factual component is corroborated by accepted R1–R5 findings, current Git scope/code, or PR #77 commit topology; it supplies no new normative authority.",
+        "record_specific_evidence": null
+      }
+    },
+    {
+      "index": 35,
+      "id": "EX77-42",
+      "atomic_decision": "H-005 preserves the repository-owned migration-evidence mechanism as useful.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "SUPPORT",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "docs/database/MIGRATIONS.md",
+        ".github/workflows/production-db-migrate.yml"
+      ],
+      "support_basis": {
+        "title": "Corroborated retrospective/scope/provenance record",
+        "evidence_rule": "PR #77 prose is treated only as later-retrospective-summary. The row is credited as supporting only where its factual component is corroborated by accepted R1–R5 findings, current Git scope/code, or PR #77 commit topology; it supplies no new normative authority.",
+        "record_specific_evidence": null
+      }
+    },
+    {
+      "index": 36,
+      "id": "EX77-43",
+      "atomic_decision": "H-005 labels ordinary-PR live GitHub Actions verification a boundary error.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "SUPPORT",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "support_basis": {
+        "title": "Corroborated retrospective/scope/provenance record",
+        "evidence_rule": "PR #77 prose is treated only as later-retrospective-summary. The row is credited as supporting only where its factual component is corroborated by accepted R1–R5 findings, current Git scope/code, or PR #77 commit topology; it supplies no new normative authority.",
+        "record_specific_evidence": null
+      }
+    },
+    {
+      "index": 37,
+      "id": "EX77-44",
+      "atomic_decision": "H-005 records PR #76 removal of live remote verification from ordinary PR CI.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "SUPPORT",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "support_basis": {
+        "title": "Corroborated retrospective/scope/provenance record",
+        "evidence_rule": "PR #77 prose is treated only as later-retrospective-summary. The row is credited as supporting only where its factual component is corroborated by accepted R1–R5 findings, current Git scope/code, or PR #77 commit topology; it supplies no new normative authority.",
+        "record_specific_evidence": null
+      }
+    },
+    {
+      "index": 38,
+      "id": "EX77-45",
+      "atomic_decision": "H-006 records broad authorization failure semantics as present in PR #61.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "SUPPORT",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "db/authorization-service.ts"
+      ],
+      "support_basis": {
+        "title": "Corroborated retrospective/scope/provenance record",
+        "evidence_rule": "PR #77 prose is treated only as later-retrospective-summary. The row is credited as supporting only where its factual component is corroborated by accepted R1–R5 findings, current Git scope/code, or PR #77 commit topology; it supplies no new normative authority.",
+        "record_specific_evidence": null
+      }
+    },
+    {
+      "index": 39,
+      "id": "EX77-46",
+      "atomic_decision": "H-006 initial wording over-attributed the broad policy to corrective review.",
+      "classification": "real-original-defect",
+      "role": "substantive",
+      "profile": "DEF-AUTHZ-PROVENANCE",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "disconfirmation": {
+        "title": "Incorrect PR #61 causal attribution",
+        "strongest_evidence_against": "Evidence that broad authorization failure handling first appeared only in review-follow-up commits.",
+        "contrary_found": "The first PR #61 implementation already mapped arbitrary resolver failures to controlled unavailability in protected paths; later review follow-ups broadened optional-presentation suppression. Commit 9c1fa30 corrected this exact provenance.",
+        "effect": "Real historical documentation defect, corrected before PR #77 merge.",
+        "record_specific_evidence": "Initial H-006 text attributed broad behavior to corrective review; 9c1fa30 later establishes initial implementation plus review broadening."
+      }
+    },
+    {
+      "index": 40,
+      "id": "EX77-47",
+      "atomic_decision": "9c1fa30 corrects H-006 provenance to include the initial PR #61 implementation.",
+      "classification": "justified-fix-of-real-defect",
+      "role": "substantive",
+      "profile": "FIX-HISTORY",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "disconfirmation": {
+        "title": "Restoration of lost or omitted significant history",
+        "strongest_evidence_against": "Evidence that the restored episode was factually unsupported, trivial to the history file's stated purpose, or already indexed elsewhere.",
+        "contrary_found": "The restored history is independently present in Git/accepted audit findings: PR #77's own history-loss episode, PR #61 provenance split, and the #69/#71 missing-return regressions are all corroborated by commits/reviews.",
+        "effect": "Justified documentation correction; it does not make the retrospective file authority for the underlying event.",
+        "record_specific_evidence": "9c1fa30 explicitly adds the first PR #61 commit as origin evidence."
+      }
+    },
+    {
+      "index": 41,
+      "id": "EX77-48",
+      "atomic_decision": "9c1fa30 separately attributes later optional-presentation broadening to review-follow-up commits.",
+      "classification": "justified-fix-of-real-defect",
+      "role": "substantive",
+      "profile": "FIX-HISTORY",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "disconfirmation": {
+        "title": "Restoration of lost or omitted significant history",
+        "strongest_evidence_against": "Evidence that the restored episode was factually unsupported, trivial to the history file's stated purpose, or already indexed elsewhere.",
+        "contrary_found": "The restored history is independently present in Git/accepted audit findings: PR #77's own history-loss episode, PR #61 provenance split, and the #69/#71 missing-return regressions are all corroborated by commits/reviews.",
+        "effect": "Justified documentation correction; it does not make the retrospective file authority for the underlying event.",
+        "record_specific_evidence": "9c1fa30 separately maps later optional-presentation broadening to review-follow-up commits."
+      }
+    },
+    {
+      "index": 42,
+      "id": "EX77-49",
+      "atomic_decision": "H-006 says no pre-#61 contract required arbitrary resolver errors to equal availability.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "SUPPORT",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "support_basis": {
+        "title": "Corroborated retrospective/scope/provenance record",
+        "evidence_rule": "PR #77 prose is treated only as later-retrospective-summary. The row is credited as supporting only where its factual component is corroborated by accepted R1–R5 findings, current Git scope/code, or PR #77 commit topology; it supplies no new normative authority.",
+        "record_specific_evidence": null
+      }
+    },
+    {
+      "index": 43,
+      "id": "EX77-50",
+      "atomic_decision": "H-006 records PR #76 typed availability correction.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "SUPPORT",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "db/authorization-service.ts"
+      ],
+      "support_basis": {
+        "title": "Corroborated retrospective/scope/provenance record",
+        "evidence_rule": "PR #77 prose is treated only as later-retrospective-summary. The row is credited as supporting only where its factual component is corroborated by accepted R1–R5 findings, current Git scope/code, or PR #77 commit topology; it supplies no new normative authority.",
+        "record_specific_evidence": null
+      }
+    },
+    {
+      "index": 44,
+      "id": "EX77-51",
+      "atomic_decision": "H-007 records PR #68 claim/lease/stale foundation.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "SUPPORT",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "db/translation-task-store.ts",
+        "app/localization/translation-task-consumer.ts"
+      ],
+      "support_basis": {
+        "title": "Corroborated retrospective/scope/provenance record",
+        "evidence_rule": "PR #77 prose is treated only as later-retrospective-summary. The row is credited as supporting only where its factual component is corroborated by accepted R1–R5 findings, current Git scope/code, or PR #77 commit topology; it supplies no new normative authority.",
+        "record_specific_evidence": null
+      }
+    },
+    {
+      "index": 45,
+      "id": "EX77-52",
+      "atomic_decision": "H-007 records #69 DB-owned clock, live-claim preservation, stale reactivation and shared eligibility changes.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "SUPPORT",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "db/translation-task-store.ts",
+        "app/localization/translation-task-consumer.ts"
+      ],
+      "support_basis": {
+        "title": "Corroborated retrospective/scope/provenance record",
+        "evidence_rule": "PR #77 prose is treated only as later-retrospective-summary. The row is credited as supporting only where its factual component is corroborated by accepted R1–R5 findings, current Git scope/code, or PR #77 commit topology; it supplies no new normative authority.",
+        "record_specific_evidence": null
+      }
+    },
+    {
+      "index": 46,
+      "id": "EX77-53",
+      "atomic_decision": "e9c2fbc adds the #69 missing-return intermediate regression to history.",
+      "classification": "justified-fix-of-real-defect",
+      "role": "substantive",
+      "profile": "FIX-HISTORY",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "disconfirmation": {
+        "title": "Restoration of lost or omitted significant history",
+        "strongest_evidence_against": "Evidence that the restored episode was factually unsupported, trivial to the history file's stated purpose, or already indexed elsewhere.",
+        "contrary_found": "The restored history is independently present in Git/accepted audit findings: PR #77's own history-loss episode, PR #61 provenance split, and the #69/#71 missing-return regressions are all corroborated by commits/reviews.",
+        "effect": "Justified documentation correction; it does not make the retrospective file authority for the underlying event.",
+        "record_specific_evidence": "e9c2fbc adds the independently evidenced PR #69 missing-return intermediate regression."
+      }
+    },
+    {
+      "index": 47,
+      "id": "EX77-54",
+      "atomic_decision": "H-008 records the unsafe #71 cross-generation supersession attempt.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "SUPPORT",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "support_basis": {
+        "title": "Corroborated retrospective/scope/provenance record",
+        "evidence_rule": "PR #77 prose is treated only as later-retrospective-summary. The row is credited as supporting only where its factual component is corroborated by accepted R1–R5 findings, current Git scope/code, or PR #77 commit topology; it supplies no new normative authority.",
+        "record_specific_evidence": null
+      }
+    },
+    {
+      "index": 48,
+      "id": "EX77-55",
+      "atomic_decision": "H-008 records #72 durable monotonic generation/head replacement.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "SUPPORT",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "db/translation-task-store.ts",
+        "app/localization/translation-task-consumer.ts"
+      ],
+      "support_basis": {
+        "title": "Corroborated retrospective/scope/provenance record",
+        "evidence_rule": "PR #77 prose is treated only as later-retrospective-summary. The row is credited as supporting only where its factual component is corroborated by accepted R1–R5 findings, current Git scope/code, or PR #77 commit topology; it supplies no new normative authority.",
+        "record_specific_evidence": null
+      }
+    },
+    {
+      "index": 49,
+      "id": "EX77-56",
+      "atomic_decision": "e9c2fbc adds the #71 missing-return intermediate regression to history.",
+      "classification": "justified-fix-of-real-defect",
+      "role": "substantive",
+      "profile": "FIX-HISTORY",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "disconfirmation": {
+        "title": "Restoration of lost or omitted significant history",
+        "strongest_evidence_against": "Evidence that the restored episode was factually unsupported, trivial to the history file's stated purpose, or already indexed elsewhere.",
+        "contrary_found": "The restored history is independently present in Git/accepted audit findings: PR #77's own history-loss episode, PR #61 provenance split, and the #69/#71 missing-return regressions are all corroborated by commits/reviews.",
+        "effect": "Justified documentation correction; it does not make the retrospective file authority for the underlying event.",
+        "record_specific_evidence": "e9c2fbc adds the independently evidenced PR #71 missing-return intermediate regression."
+      }
+    },
+    {
+      "index": 50,
+      "id": "EX77-57",
+      "atomic_decision": "H-008 final status says durable replacement ordering was implemented by #72.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "SUPPORT",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "db/translation-task-store.ts",
+        "app/localization/translation-task-consumer.ts"
+      ],
+      "support_basis": {
+        "title": "Corroborated retrospective/scope/provenance record",
+        "evidence_rule": "PR #77 prose is treated only as later-retrospective-summary. The row is credited as supporting only where its factual component is corroborated by accepted R1–R5 findings, current Git scope/code, or PR #77 commit topology; it supplies no new normative authority.",
+        "record_specific_evidence": null
+      }
+    },
+    {
+      "index": 51,
+      "id": "EX77-58",
+      "atomic_decision": "PROJECT_HISTORY therefore is not exhaustive for #72 review state.",
+      "classification": "real-original-defect",
+      "role": "substantive",
+      "profile": "DEF-HISTORY-OMISSION",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "disconfirmation": {
+        "title": "PROJECT_HISTORY omission of an accepted current defect",
+        "strongest_evidence_against": "Evidence that the omitted PR review was resolved by later code, was only a speculative review concern, or was outside the history file's stated purpose.",
+        "contrary_found": "Accepted DL-CLASSIFY-007 independently confirms both the #72 A→B→A starvation path and #75 durable v1→v2 refresh gap as current defects. PROJECT_HISTORY says it indexes significant regressions and known historical problems still unfixed, yet neither review is indexed.",
+        "effect": "Real current documentation-completeness defect; it does not independently prove or enlarge the underlying runtime defect.",
+        "record_specific_evidence": "Current PROJECT_HISTORY H-008 does not record review 4028280128 or the accepted A→B→A current defect."
+      }
+    },
+    {
+      "index": 52,
+      "id": "EX77-59",
+      "atomic_decision": "PROJECT_HISTORY does not index PR #75 review 4029815293.",
+      "classification": "real-original-defect",
+      "role": "substantive",
+      "profile": "DEF-HISTORY-OMISSION",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "disconfirmation": {
+        "title": "PROJECT_HISTORY omission of an accepted current defect",
+        "strongest_evidence_against": "Evidence that the omitted PR review was resolved by later code, was only a speculative review concern, or was outside the history file's stated purpose.",
+        "contrary_found": "Accepted DL-CLASSIFY-007 independently confirms both the #72 A→B→A starvation path and #75 durable v1→v2 refresh gap as current defects. PROJECT_HISTORY says it indexes significant regressions and known historical problems still unfixed, yet neither review is indexed.",
+        "effect": "Real current documentation-completeness defect; it does not independently prove or enlarge the underlying runtime defect.",
+        "record_specific_evidence": "Current PROJECT_HISTORY has no PR #75 review 4029815293 entry or accepted durable refresh-gap status."
+      }
+    },
+    {
+      "index": 53,
+      "id": "EX77-60",
+      "atomic_decision": "H-009 records accidental unrelated PROJECT_STATE rewrite in PR #73.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "SUPPORT",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "support_basis": {
+        "title": "Corroborated retrospective/scope/provenance record",
+        "evidence_rule": "PR #77 prose is treated only as later-retrospective-summary. The row is credited as supporting only where its factual component is corroborated by accepted R1–R5 findings, current Git scope/code, or PR #77 commit topology; it supplies no new normative authority.",
+        "record_specific_evidence": null
+      }
+    },
+    {
+      "index": 54,
+      "id": "EX77-61",
+      "atomic_decision": "d1b452f expands H-009 to include the repeated PR #74 state rewrites.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "SUPPORT",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "support_basis": {
+        "title": "Corroborated retrospective/scope/provenance record",
+        "evidence_rule": "PR #77 prose is treated only as later-retrospective-summary. The row is credited as supporting only where its factual component is corroborated by accepted R1–R5 findings, current Git scope/code, or PR #77 commit topology; it supplies no new normative authority.",
+        "record_specific_evidence": null
+      }
+    },
+    {
+      "index": 55,
+      "id": "EX77-62",
+      "atomic_decision": "H-009 derives a general caution about full-file documentation replacement.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "SUPPORT",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "support_basis": {
+        "title": "Corroborated retrospective/scope/provenance record",
+        "evidence_rule": "PR #77 prose is treated only as later-retrospective-summary. The row is credited as supporting only where its factual component is corroborated by accepted R1–R5 findings, current Git scope/code, or PR #77 commit topology; it supplies no new normative authority.",
+        "record_specific_evidence": null
+      }
+    },
+    {
+      "index": 56,
+      "id": "EX77-63",
+      "atomic_decision": "H-010 records that PROJECT_STATE had mixed state, history, policy and roadmap.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "SUPPORT",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "support_basis": {
+        "title": "Corroborated retrospective/scope/provenance record",
+        "evidence_rule": "PR #77 prose is treated only as later-retrospective-summary. The row is credited as supporting only where its factual component is corroborated by accepted R1–R5 findings, current Git scope/code, or PR #77 commit topology; it supplies no new normative authority.",
+        "record_specific_evidence": null
+      }
+    },
+    {
+      "index": 57,
+      "id": "EX77-64",
+      "atomic_decision": "428df86 records the intermediate #77 history-loss episode.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "SUPPORT",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "support_basis": {
+        "title": "Corroborated retrospective/scope/provenance record",
+        "evidence_rule": "PR #77 prose is treated only as later-retrospective-summary. The row is credited as supporting only where its factual component is corroborated by accepted R1–R5 findings, current Git scope/code, or PR #77 commit topology; it supplies no new normative authority.",
+        "record_specific_evidence": null
+      }
+    },
+    {
+      "index": 58,
+      "id": "EX77-65",
+      "atomic_decision": "428df86 says user review detected that history loss before merge.",
+      "classification": "insufficient-evidence",
+      "role": "substantive",
+      "profile": "INSUF-USER-REVIEW",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "disconfirmation": {
+        "title": "Uncorroborated user-review attribution",
+        "strongest_evidence_against": "A preserved user message, task artifact, or PR discussion showing that the user specifically detected the history-loss episode before merge.",
+        "contrary_found": "Git proves the history loss and its later correction, but the available PR #77 GitHub discussion contains only the Codex usage-limit bot message. The later PROJECT_HISTORY assertion cannot prove its own `user review` attribution.",
+        "effect": "Insufficient evidence for who detected the defect; the defect and correction themselves remain independently supported.",
+        "record_specific_evidence": "PR #77 GitHub discussion exposes no technical user-review comment; only the later retrospective text makes the attribution."
+      }
+    },
+    {
+      "index": 59,
+      "id": "EX77-66",
+      "atomic_decision": "428df86 records af7825b as the history-file restoration step.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "SUPPORT",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "support_basis": {
+        "title": "Corroborated retrospective/scope/provenance record",
+        "evidence_rule": "PR #77 prose is treated only as later-retrospective-summary. The row is credited as supporting only where its factual component is corroborated by accepted R1–R5 findings, current Git scope/code, or PR #77 commit topology; it supplies no new normative authority.",
+        "record_specific_evidence": null
+      }
+    },
+    {
+      "index": 60,
+      "id": "EX77-67",
+      "atomic_decision": "428df86 records 95adc2f linking history from PROJECT_STATE.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "DOC-ALTERNATIVE",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "disconfirmation": {
+        "title": "Documentation organization/planning alternative",
+        "strongest_evidence_against": "Evidence that removing chronology from PROJECT_STATE, shortening the nearest route, or adding history links hides a required current constraint or contradicts an accepted stage boundary.",
+        "contrary_found": "The structural choices are compatible with the accepted product-first Stage 5/Stage 6 split. Specific omitted current defects are classified separately rather than used to condemn the organization model itself.",
+        "effect": "Acceptable documentation/process alternative."
+      }
+    },
+    {
+      "index": 61,
+      "id": "EX77-68",
+      "atomic_decision": "428df86 records 7b9c672 linking history from README.",
+      "classification": "acceptable-alternative",
+      "role": "substantive",
+      "profile": "DOC-ALTERNATIVE",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "disconfirmation": {
+        "title": "Documentation organization/planning alternative",
+        "strongest_evidence_against": "Evidence that removing chronology from PROJECT_STATE, shortening the nearest route, or adding history links hides a required current constraint or contradicts an accepted stage boundary.",
+        "contrary_found": "The structural choices are compatible with the accepted product-first Stage 5/Stage 6 split. Specific omitted current defects are classified separately rather than used to condemn the organization model itself.",
+        "effect": "Acceptable documentation/process alternative."
+      }
+    },
+    {
+      "index": 62,
+      "id": "EX77-69",
+      "atomic_decision": "Later #77 commits revise retrospective provenance instead of runtime behavior.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "SUPPORT",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "support_basis": {
+        "title": "Corroborated retrospective/scope/provenance record",
+        "evidence_rule": "PR #77 prose is treated only as later-retrospective-summary. The row is credited as supporting only where its factual component is corroborated by accepted R1–R5 findings, current Git scope/code, or PR #77 commit topology; it supplies no new normative authority.",
+        "record_specific_evidence": null
+      }
+    },
+    {
+      "index": 63,
+      "id": "EX77-70",
+      "atomic_decision": "95adc2f makes PROJECT_STATE name PROJECT_HISTORY as historical owner.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "SUPPORT",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "support_basis": {
+        "title": "Corroborated retrospective/scope/provenance record",
+        "evidence_rule": "PR #77 prose is treated only as later-retrospective-summary. The row is credited as supporting only where its factual component is corroborated by accepted R1–R5 findings, current Git scope/code, or PR #77 commit topology; it supplies no new normative authority.",
+        "record_specific_evidence": null
+      }
+    },
+    {
+      "index": 64,
+      "id": "EX77-71",
+      "atomic_decision": "7b9c672 adds PROJECT_HISTORY to README documentation index.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "SUPPORT",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "support_basis": {
+        "title": "Corroborated retrospective/scope/provenance record",
+        "evidence_rule": "PR #77 prose is treated only as later-retrospective-summary. The row is credited as supporting only where its factual component is corroborated by accepted R1–R5 findings, current Git scope/code, or PR #77 commit topology; it supplies no new normative authority.",
+        "record_specific_evidence": null
+      }
+    },
+    {
+      "index": 65,
+      "id": "EX77-72",
+      "atomic_decision": "01bb2e0 keeps concrete provider adapter in the nearest Stage 5A route.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "SUPPORT",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/translation-execution.ts"
+      ],
+      "support_basis": {
+        "title": "Corroborated retrospective/scope/provenance record",
+        "evidence_rule": "PR #77 prose is treated only as later-retrospective-summary. The row is credited as supporting only where its factual component is corroborated by accepted R1–R5 findings, current Git scope/code, or PR #77 commit topology; it supplies no new normative authority.",
+        "record_specific_evidence": null
+      }
+    },
+    {
+      "index": 66,
+      "id": "EX77-73",
+      "atomic_decision": "Final PROJECT_STATE records current translation generation ordering as implemented.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "SUPPORT",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "db/translation-task-store.ts",
+        "app/localization/translation-task-consumer.ts"
+      ],
+      "support_basis": {
+        "title": "Corroborated retrospective/scope/provenance record",
+        "evidence_rule": "PR #77 prose is treated only as later-retrospective-summary. The row is credited as supporting only where its factual component is corroborated by accepted R1–R5 findings, current Git scope/code, or PR #77 commit topology; it supplies no new normative authority.",
+        "record_specific_evidence": null
+      }
+    },
+    {
+      "index": 67,
+      "id": "EX77-74",
+      "atomic_decision": "Final PROJECT_STATE records persisted-bundle runtime reads as implemented.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "SUPPORT",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/bundles.ts",
+        "app/localization/resource-loader.ts"
+      ],
+      "support_basis": {
+        "title": "Corroborated retrospective/scope/provenance record",
+        "evidence_rule": "PR #77 prose is treated only as later-retrospective-summary. The row is credited as supporting only where its factual component is corroborated by accepted R1–R5 findings, current Git scope/code, or PR #77 commit topology; it supplies no new normative authority.",
+        "record_specific_evidence": null
+      }
+    },
+    {
+      "index": 68,
+      "id": "EX77-75",
+      "atomic_decision": "Final PROJECT_STATE does not mention open #72 A→B→A review.",
+      "classification": "real-original-defect",
+      "role": "substantive",
+      "profile": "DEF-STATE-OMISSION",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "disconfirmation": {
+        "title": "PROJECT_STATE omission of an accepted current constraint",
+        "strongest_evidence_against": "Evidence that the omitted review does not describe current behavior, was fixed before main, or is irrelevant to PROJECT_STATE's stated role of recording known current constraints.",
+        "contrary_found": "Accepted DL-CLASSIFY-007 confirms both defects remain in current main. Final PROJECT_STATE describes Stage 5A capabilities and known current limitations but names only the stale-pack regression, omitting these two confirmed Stage 5A constraints.",
+        "effect": "Real current documentation-state omission; no runtime conclusion is inferred beyond the already accepted underlying findings.",
+        "record_specific_evidence": "Final PROJECT_STATE lists Stage 5A ordering as implemented but omits the accepted current A→B→A reactivation defect."
+      }
+    },
+    {
+      "index": 69,
+      "id": "EX77-76",
+      "atomic_decision": "Final PROJECT_STATE does not mention open #75 v1→v2 refresh review.",
+      "classification": "real-original-defect",
+      "role": "substantive",
+      "profile": "DEF-STATE-OMISSION",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "disconfirmation": {
+        "title": "PROJECT_STATE omission of an accepted current constraint",
+        "strongest_evidence_against": "Evidence that the omitted review does not describe current behavior, was fixed before main, or is irrelevant to PROJECT_STATE's stated role of recording known current constraints.",
+        "contrary_found": "Accepted DL-CLASSIFY-007 confirms both defects remain in current main. Final PROJECT_STATE describes Stage 5A capabilities and known current limitations but names only the stale-pack regression, omitting these two confirmed Stage 5A constraints.",
+        "effect": "Real current documentation-state omission; no runtime conclusion is inferred beyond the already accepted underlying findings.",
+        "record_specific_evidence": "Final PROJECT_STATE lists persisted-bundle runtime reads as implemented but omits the accepted current v1→v2 durable refresh/backfill gap."
+      }
+    },
+    {
+      "index": 70,
+      "id": "EX77-77",
+      "atomic_decision": "Final PROJECT_HISTORY retains a time-local statement that PR #77 is not yet merged.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "SUPPORT",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "support_basis": {
+        "title": "Corroborated retrospective/scope/provenance record",
+        "evidence_rule": "PR #77 prose is treated only as later-retrospective-summary. The row is credited as supporting only where its factual component is corroborated by accepted R1–R5 findings, current Git scope/code, or PR #77 commit topology; it supplies no new normative authority.",
+        "record_specific_evidence": null
+      }
+    },
+    {
+      "index": 71,
+      "id": "EX77-78",
+      "atomic_decision": "PROJECT_HISTORY evaluative labels are later-retrospective-summary provenance.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "SUPPORT",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "support_basis": {
+        "title": "Corroborated retrospective/scope/provenance record",
+        "evidence_rule": "PR #77 prose is treated only as later-retrospective-summary. The row is credited as supporting only where its factual component is corroborated by accepted R1–R5 findings, current Git scope/code, or PR #77 commit topology; it supplies no new normative authority.",
+        "record_specific_evidence": null
+      }
+    },
+    {
+      "index": 72,
+      "id": "EX77-79",
+      "atomic_decision": "Factual components of PROJECT_HISTORY may still be independently corroborated.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "SUPPORT",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "support_basis": {
+        "title": "Corroborated retrospective/scope/provenance record",
+        "evidence_rule": "PR #77 prose is treated only as later-retrospective-summary. The row is credited as supporting only where its factual component is corroborated by accepted R1–R5 findings, current Git scope/code, or PR #77 commit topology; it supplies no new normative authority.",
+        "record_specific_evidence": null
+      }
+    },
+    {
+      "index": 73,
+      "id": "EX77-80",
+      "atomic_decision": "PROJECT_HISTORY is an index, not the audit ledger.",
+      "classification": "intentional-foundation",
+      "role": "substantive",
+      "profile": "DOC-FOUNDATION",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "disconfirmation": {
+        "title": "Documentation responsibility/provenance foundation",
+        "strongest_evidence_against": "Evidence that separating current state, historical index and subsystem contracts destroys required provenance, creates competing current sources of truth, or makes current project status harder to reconstruct.",
+        "contrary_found": "Final PR #77 links PROJECT_HISTORY from both PROJECT_STATE and README, explicitly keeps Git/PRs primary historical evidence, and leaves permanent contracts in their subsystem documents. The audit itself could reconstruct the relevant chains from primary evidence.",
+        "effect": "Intentional documentation foundation; this does not grant authority to the retrospective conclusions stored in the index."
+      }
+    },
+    {
+      "index": 74,
+      "id": "EX77-81",
+      "atomic_decision": "PR #77 available discussion has no technical Codex review.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "SUPPORT",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "support_basis": {
+        "title": "Corroborated retrospective/scope/provenance record",
+        "evidence_rule": "PR #77 prose is treated only as later-retrospective-summary. The row is credited as supporting only where its factual component is corroborated by accepted R1–R5 findings, current Git scope/code, or PR #77 commit topology; it supplies no new normative authority.",
+        "record_specific_evidence": null
+      }
+    },
+    {
+      "index": 75,
+      "id": "EX77-82",
+      "atomic_decision": "PR #77 changes no application code.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "SUPPORT",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "support_basis": {
+        "title": "Corroborated retrospective/scope/provenance record",
+        "evidence_rule": "PR #77 prose is treated only as later-retrospective-summary. The row is credited as supporting only where its factual component is corroborated by accepted R1–R5 findings, current Git scope/code, or PR #77 commit topology; it supplies no new normative authority.",
+        "record_specific_evidence": null
+      }
+    },
+    {
+      "index": 76,
+      "id": "EX77-83",
+      "atomic_decision": "PR #77 changes no tests.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "SUPPORT",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "support_basis": {
+        "title": "Corroborated retrospective/scope/provenance record",
+        "evidence_rule": "PR #77 prose is treated only as later-retrospective-summary. The row is credited as supporting only where its factual component is corroborated by accepted R1–R5 findings, current Git scope/code, or PR #77 commit topology; it supplies no new normative authority.",
+        "record_specific_evidence": null
+      }
+    },
+    {
+      "index": 77,
+      "id": "EX77-84",
+      "atomic_decision": "PR #77 changes no schema or migration.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "SUPPORT",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "docs/database/MIGRATIONS.md",
+        ".github/workflows/production-db-migrate.yml"
+      ],
+      "support_basis": {
+        "title": "Corroborated retrospective/scope/provenance record",
+        "evidence_rule": "PR #77 prose is treated only as later-retrospective-summary. The row is credited as supporting only where its factual component is corroborated by accepted R1–R5 findings, current Git scope/code, or PR #77 commit topology; it supplies no new normative authority.",
+        "record_specific_evidence": null
+      }
+    },
+    {
+      "index": 78,
+      "id": "EX77-85",
+      "atomic_decision": "PR #77 changes no CI workflow.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "SUPPORT",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "support_basis": {
+        "title": "Corroborated retrospective/scope/provenance record",
+        "evidence_rule": "PR #77 prose is treated only as later-retrospective-summary. The row is credited as supporting only where its factual component is corroborated by accepted R1–R5 findings, current Git scope/code, or PR #77 commit topology; it supplies no new normative authority.",
+        "record_specific_evidence": null
+      }
+    },
+    {
+      "index": 79,
+      "id": "EX77-86",
+      "atomic_decision": "Final CI #214 is green.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "SUPPORT",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "support_basis": {
+        "title": "Corroborated retrospective/scope/provenance record",
+        "evidence_rule": "PR #77 prose is treated only as later-retrospective-summary. The row is credited as supporting only where its factual component is corroborated by accepted R1–R5 findings, current Git scope/code, or PR #77 commit topology; it supplies no new normative authority.",
+        "record_specific_evidence": null
+      }
+    },
+    {
+      "index": 80,
+      "id": "EX77-87",
+      "atomic_decision": "Green CI #214 does not validate retrospective architecture labels.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "SUPPORT",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "support_basis": {
+        "title": "Corroborated retrospective/scope/provenance record",
+        "evidence_rule": "PR #77 prose is treated only as later-retrospective-summary. The row is credited as supporting only where its factual component is corroborated by accepted R1–R5 findings, current Git scope/code, or PR #77 commit topology; it supplies no new normative authority.",
+        "record_specific_evidence": null
+      }
+    },
+    {
+      "index": 81,
+      "id": "EX77-88",
+      "atomic_decision": "Final PR #77 responsibility split is state/history/contracts.",
+      "classification": "reviewed-supporting",
+      "role": "supporting/provenance-only",
+      "profile": "SUPPORT",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "support_basis": {
+        "title": "Corroborated retrospective/scope/provenance record",
+        "evidence_rule": "PR #77 prose is treated only as later-retrospective-summary. The row is credited as supporting only where its factual component is corroborated by accepted R1–R5 findings, current Git scope/code, or PR #77 commit topology; it supplies no new normative authority.",
+        "record_specific_evidence": null
+      }
+    }
+  ]
+}
