@@ -157,6 +157,27 @@ documentation laundering was found.
 PR #62 did not introduce a new architecture, and R4/R5 contain no defect, dumb correction,
 insufficient-evidence record, unresolved item, or strict documentation laundering.
 
+### R2 persistence and deployment foundation (`DL-CLASSIFY-010`)
+
+| Records | Preliminary classification | Evidence boundary |
+| --- | --- | --- |
+| 55 R2 records | acceptable alternatives | The implementation/operational choices were coherent for the selected persistence path and are not errors merely because external work was later deferred. |
+| 27 R2 records | intentional foundations | Persistent registry, migration, request-scope, validation, and related boundaries have high retrofit cost or current consumers. |
+| `EX22-01` | historical real defect | Noncanonical physical stored locale identity could publish under its canonical identity; `EX38-05/06` corrected parsing/integrity handling. |
+| `EX24-01` | historical workflow defect | Manual migration dispatch lacked a main-ref/exact-SHA boundary; `EX29-08/09` corrected it. |
+| `EX24-07` | historical evidence defect | Timestamp equality alone was weak schema/content proof; immutable-history and stable-invariant checks added the missing evidence layers. |
+| `EX23-06` | historical availability defect | Realistic Node transport failures were omitted; `EX28-01/02` added explicit classification and typed wrapping. |
+| `EX28-04` | historical overbroad-classification defect | Every remaining code-less connect error was hidden as unavailable; `EX39-08..10` narrowed the boundary. |
+| `EX29-15` | historical documentation-state defect | Material workflow safety changes merged without state synchronization; `EX30-04` recorded the resulting state. |
+| ten named R2 records | justified fixes of real defects | `EX21-10`, `EX23-04a/b`, `EX28-01/02/05`, and `EX29-08/09/10/11` each have a named predecessor defect/finding. |
+| `EX29-13` | insufficient evidence | Exact final locale-row assertions may be either evolving current-final-state tests or an unintended freeze; no accepted test-policy authority or conflicting data migration resolves this. |
+| `EX23-18` | acceptable alternative | The client is created within a Worker invocation/request loader; no repository evidence establishes a leak from omitting normal-path `client.end()`. |
+| 35 R2 records | reviewed supporting/provenance | External execution/state and chronology support the chain but need no independent correctness verdict. |
+
+R2 contains no confirmed current defect or dumb correction. Later current behavior corroborates fixes but
+does not retroactively supply authority for their original timing. Strict documentation laundering is not
+established.
+
 ## Record template
 
 ```text
