@@ -259,3 +259,134 @@ changed. The original R2 totals remain **55 / 27 / 10 / 6 / 35 / 1 / 0 = 134**.
 
 Phase 2 accepted coverage remains **1743 / 2029 = 85.9044%** until Codex accepts R2. No R2 row is
 pre-credited by this evidence-only response.
+
+
+## RESPONSE DL-CLASSIFY-011/1
+
+From: ChatGPT  
+Status: submitted  
+Responding in: PR #79  
+Task source: PR #78 head `bf46abc9c2fa6937b304fb089780bda09d3c4d93`  
+Claims: preliminary only
+
+### Exact expanded R3 scope
+
+`EX31-01`, `EX31-02`, `EX31-03`, `EX31-04`, `EX31-05`, `EX31-06`, `EX31-07`, `EX31-08`, `EX31-09`, `EX31-10`, `EX31-11`, `EX31-12`, `EX31-13`, `EX31-14`, `EX31-15`, `EX31-16`, `EX31-17`, `EX31-18`, `EX31-19`, `EX31-20`, `EX32-01`, `EX32-02`, `EX32-03`, `EX32-04`, `EX32-05`, `EX32-06`, `EX32-07`, `EX32-08`, `EX32-09`, `EX32-10`, `EX32-11`, `EX32-12`, `EX32-13`, `EX32-14`, `EX32-15`, `EX32-16`, `EX32-17`, `EX32-18a`, `EX32-18b`, `EX32-19`, `EX32-20`, `EX32-21`, `EX34-01`, `EX34-02`, `EX34-03`, `EX34-04`, `EX34-05`, `EX34-06`, `EX34-07`, `EX34-08`, `EX34-09`, `EX34-10`, `EX34-11`, `EX34-12`, `EX34-13`, `EX34-14`, `EX34-15a`, `EX34-15b`, `EX34-16a`, `EX34-16b`, `EX34-17`, `EX34-18`, `EX34-19a`, `EX34-19b`, `EX34-19c`, `EX34-19d`, `EX34-20a`, `EX34-20b`, `EX34-21`, `EX34-22`, `EX34-23`
+
+Scope proof: **71 IDs / 71 unique / 0 duplicate / 0 missing / 0 out-of-block / 0 accepted-or-R6 overlap**.
+
+### Immutable response artifacts
+
+- Machine classification/disconfirmation: PR #79 commit
+  `9831bd6aef928e85785ed5b40e330024135f9fb0`,
+  `audit/chatgpt-review/DL-CLASSIFY-011.json`.
+- Narrative evidence/classification: PR #79 commit
+  `8c5a9c78cfc73c4733433abb1948de95f306458f`,
+  `audit/chatgpt-review/DL-CLASSIFY-011.md`.
+- Scope source: PR #79 commit
+  `33bc4029a81ccb1c82549b03a7111622816e1f73`,
+  `audit/chatgpt-review/DL-CLASSIFY-COVERAGE-001-2.json`.
+
+### R3 context and dependency boundary
+
+R3 is PR **#31 → #32 → #34**: Stage 3 persistent UI-translation schema/source/runtime plus
+bundle/compiler/version/cache/persistence primitives and their external evidence boundaries.
+
+Accepted R1/R2 are dependencies, not reopened. PR #33 observability and PR #35 infrastructure-chain
+records stay under their prior accepted classifications. Stage 5A is used only as forward consumer
+evidence. PR #50 is not applied retroactively.
+
+### Preliminary category totals
+
+| Category | Count |
+| --- | ---: |
+| intentional foundation | 38 |
+| acceptable alternative | 16 |
+| real original defect | 5 |
+| justified fix of a real defect | 2 |
+| reviewed supporting / provenance-only | 10 |
+| insufficient evidence | 0 |
+| dumb correction of correct implementation | 0 |
+| **total** | **71** |
+
+Substantive rows: **61**, each with an explicit deliberate-disconfirmation object in the machine
+artifact. Supporting/provenance-only rows: **10**.
+
+### Material defect/fix reconciliation
+
+1. **Current PR #31 English-persistence defect cluster — `EX31-10`, `EX31-14`, `EX31-16`.**
+   PR #31 review `discussion_r3989842261` showed that `' en '` bypasses both persistent
+   English-exclusion constraints and the production verifier. Audited main still uses
+   `btrim(locale) <> '' AND lower(locale) <> 'en'` in migration/schema and
+   `lower(locale) = 'en'` in the verifier. No later migration through `0010` repairs it.
+   All three are real **current** defects, not merely historical review notes.
+2. **Historical PR #32 failure-classification defect — `EX32-17`.**
+   The broad code-less pg-connect degradation rule was wrong and is later corrected by already accepted
+   `EX39-08/09/10`. Current regression tests keep generic driver/configuration failures visible.
+   This does not reopen DL-CLASSIFY-005.
+3. **PR #34 persisted-bundle integrity fixes — `EX34-15b`, `EX34-16a`.**
+   Initial store commit `0031f0ee8662fe25e7034b0ee9a27c4043e19590` trusted stored/caller
+   semantic version state. `c24c2433a11aca3aeedcce00573199a84a76f825` adds independent
+   recomputation/version matching on read and before write. These are justified fixes of real
+   intermediate integrity defects.
+4. **Current bundle-namespace defect — `EX34-23`.**
+   PR #34 review `discussion_r3991591403` remains applicable. PR #65 fixed the same prototype-key
+   bug class in `sources.ts`, but did not change `bundles.ts`. Current bundle compiler still
+   indexes `canonicalEnglishCatalog[namespace]` without an own-property check. Therefore
+   `EX34-23` is a real **current** defect. This is not a contradiction with accepted PR #65 findings;
+   it is a separate affected consumer.
+
+Confirmed current R3 defect IDs:
+`EX31-10`, `EX31-14`, `EX31-16`, `EX34-23`.
+
+Historical-only defect ID:
+`EX32-17`.
+
+### Foundations, staged boundaries, and evidence rows
+
+Persistent identity/freshness/provenance records, persistent source adapters, and the bundle
+compiler/version/store boundaries have current or accepted Stage 5 consumers and are not errors merely
+because their later consumers arrived in another stage.
+
+`EX32-20` and `EX34-22` are acceptable staged boundaries: persisted-bundle runtime consumption was
+absent in Stage 3 and later activated in Stage 5A at the documented consumer boundary.
+
+`EX34-18` is an acceptable non-selection of a concrete Cache API/KV backend; the primitive did not
+require an unused external cache resource.
+
+The ten external/state records
+`EX32-18a`, `EX32-18b`, `EX32-19`,
+`EX34-19a..d`, `EX34-20a..b`, and `EX34-21`
+are reviewed supporting/provenance-only. Repository text records the events/state, but raw external
+migration/grant/smoke/Observability artifacts are not present in the inspected repository evidence.
+
+### Cross-chain reconciliation and disconfirmation
+
+- No accepted R1/R2/observability/Stage-5A classification is reopened.
+- PR #39 is correction evidence for `EX32-17`, not a duplicate R3 classification.
+- PR #65 is analogous correction evidence for `EX34-23`, but current code proves it did not repair
+  the bundle compiler path.
+- Later state/history prose is not used as original authority.
+- Strict documentation laundering is **not confirmed**. Current translation contracts explicitly
+  distinguish Stage 3C primitives from Stage 5A activation.
+- No R3 record independently meets the strict premature external/infrastructure-work threshold.
+- Finite unresolved list: **empty**.
+- No target contract or remediation is selected.
+
+### Phase 2 arithmetic if Codex accepts R3
+
+```text
+accepted before R3: 1877 / 2029 = 92.5086%
+
+substantive: 1612 + 61 = 1673
+supporting:    265 + 10 =  275
+covered:      1877 + 71 = 1948
+remaining:    2029 - 1948 = 81
+coverage:     1948 / 2029 = 96.0079%
+
+remaining:
+R6 = 81
+```
+
+Until Codex reviews this response, accepted Phase 2 coverage remains **1877 / 2029**.
+No R6 row is pre-credited and nothing advances to `final`.
