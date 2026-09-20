@@ -133,9 +133,13 @@ number is lower than the baseline PR number.
 - [x] Every row has a recorded `F/A/C/D/O/G/T` category sweep, including explicit `none` results.
 - [x] Every row is `extraction-complete` or has a reviewed `outside-scope` justification.
 - [x] Every extracted decision ID appears in `LEDGER.md` exactly once as an atomic record.
-- [ ] Every ledger record maps back to at least one coverage row and all applicable cross-stage chains.
-- [ ] Current code/test/config consumers have been searched for dependencies not explicit in PR text.
-- [ ] Known corrective and revert sequences have been reconciled without treating reverted intermediate
+- [x] Every ledger record maps back to at least one coverage row and all applicable cross-stage chains.
+- [x] Current code/test/config consumers have been searched for dependencies not explicit in PR text.
+- [x] Known corrective and revert sequences have been reconciled without treating reverted intermediate
       work as current behavior.
 - [ ] Every preliminary classification has a recorded disconfirmation pass documenting what could
       make it wrong and what contrary evidence was found.
+
+The remaining unchecked gate belongs to Phase 2 classification: no record has a preliminary
+classification yet, so there is nothing to disconfirm during extraction. Phase 1 closed after
+`DL-COVERAGE-003/2`; opening a classification later must not bypass this gate.

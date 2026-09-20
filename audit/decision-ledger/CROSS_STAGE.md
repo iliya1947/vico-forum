@@ -139,13 +139,13 @@ Current consumers include `app/localization/registry.ts` and
 `app/localization/persistent-registry.ts`. Generic-locale direct-user authority does not approve every
 mechanism in this lineage.
 
-## Global assignment still pending
+## Global assignment
 
-The high-priority and previously coarse-only chains above are now atomically indexed. Phase 1 still
-requires an exhaustive assignment audit over all 2,029 IDs: each ID must either belong to every
-applicable cross-stage chain or be explicitly marked chronology-only evidence with no cross-stage or
-current-consumer relationship. This section must not be interpreted as satisfying that global gate by
-itself.
+The high-priority and previously coarse-only chains above are atomically indexed. `DL-COVERAGE-003`
+accounted for all 2,029 IDs exactly once as primary rows and assigned additional applicable chains and
+current consumers. Its negative-evidence correction retained 110 `historical-only` rows and corrected
+seven rows to live consumers. The machine assignment remains an evidence index, not an architectural
+verdict or source of authority.
 
 For `historical-only`, the audit uses an operational, reproducible negative-evidence standard rather
 than claiming an impossible proof about every conceivable consumer. The assignment must record the

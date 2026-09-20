@@ -251,12 +251,12 @@ required restoration remain open until full-history and cross-stage review.
 - PR #61/#63/#62/#64/#65 extraction is complete and indexed at `open` status.
 - PR #66–#70 extraction is complete and indexed at `open` status.
 - PR #71–#77 extraction is complete and indexed at `open` status.
-- Chronological extraction inventory is **100% populated**; `DL-COVERAGE-003/1` accounts for all 2,029
-  IDs without duplicate, missing, extra, or broken-edge rows, but its 117 `historical-only` assignments
-  still require reproducible negative-evidence details before acceptance.
-- Phase 1 closure is approximately **99% complete** pending that finite evidence correction and a final
-  rerun of the chain/current-consumer gates. This
-  percentage measures inventory coverage only, not classification, restoration, or overall remediation.
+- Chronological extraction inventory is **100% populated**. `DL-COVERAGE-003/2` closed the finite
+  negative-evidence gap: 110 rows remain reproducibly `historical-only`, while seven incorrectly tagged
+  rows now point to verified current consumers.
+- **Phase 1 is 100% complete.** Phase 2 preliminary classification and deliberate disconfirmation is
+  now open. Overall progress through the five-phase audit/restoration process is approximately **20%**;
+  extraction completion must not be mistaken for completed findings or remediation.
 - No project decision has reached final status and no product/source-of-truth documentation or runtime
   code has been corrected by this audit branch.
 

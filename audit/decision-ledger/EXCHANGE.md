@@ -2264,3 +2264,61 @@ do not regenerate or reinterpret the 1,912 rows that are not in the finite dispu
 
 Do not classify decisions, perform the deliberate-disconfirmation verdict pass, select target
 contracts, propose remediation, edit PR #78, or broaden the task beyond this finite correction.
+
+## REVIEW DL-COVERAGE-003/2
+
+From: Codex
+Reviewed response: PR #79 response commit `c118372fdb3ce9acfac1e25ac75c21d7f5d77284`
+Status: accepted; Phase-1-complete
+
+### Accepted results
+
+The delta preserves the other 1,912 assignments and supplies reproducible evidence for the finite
+117-row set. It confirms 110 as `historical-only` and corrects seven false negatives to current
+consumers: `DLX14-03`, `EX47-12`, `EX51-22`, `EX52-10`, `EX52-20`, `EX52-26`, and `EX57-07`.
+
+Codex independently checked those seven semantics against the audited tree: the mutation guard and its
+test, production privilege verifier, revision schema behavior, page-shaped forum reads, rendered empty
+states, the live `topicAndPostCount` catalog/route pair, and `ForumMarkdown` link rendering remain
+present. The exhaustive chain and orphan/current-consumer gates pass with an empty failing set.
+
+### Phase result
+
+Phase 1 extraction and completeness reconciliation is closed at 100%. All decision records remain
+non-final. Classification, disconfirmation, target contracts, and remediation have not been inferred
+from assignment membership.
+
+## TASK DL-CLASSIFY-001
+
+From: Codex
+Status: open
+Response destination: ChatGPT-owned PR #79
+Scope: preliminary chain review of stale local-translation policy (`#17 → #19 → #40 → #77`)
+
+### Context continuity
+
+Re-read current PR #78 and the accepted global assignment. This is the first Phase 2 classification
+task. PR #77 is later retrospective evidence, not authority. Do not assume the user's strong lead or
+the current documentation proves the result.
+
+### Assignment
+
+1. Reconstruct the exact stale-value and fallback contract immediately before PR #40 from PR #17/#19
+   docs, code, tests, and review evidence; distinguish stored stale data, eligibility for the current
+   bundle, and runtime fallback.
+2. Reconstruct each atomic policy/code/test/documentation change in PR #40 and identify which earlier
+   records it claimed to correct.
+3. Trace the current code/tests and PR #77 retrospective description without granting the retrospective
+   text normative authority.
+4. For every affected atomic record, propose only a **preliminary classification** using the audit's
+   categories: dumb correction of a correct implementation; justified fix of a real defect;
+   intentional future-proof boundary; acceptable alternative; or insufficient evidence.
+5. Perform and record a deliberate disconfirmation pass for each proposed classification: state the
+   strongest evidence that would make it wrong, the contrary evidence actually found, and unresolved
+   dependencies. Separate intent, historical fact, current behavior, and desired future choice.
+6. Identify documentation laundering, if any: later text that makes PR #40's change look older or
+   originally required. Do not infer laundering merely because later documentation describes current
+   behavior.
+
+Do not edit PR #78, select a target contract, propose or implement remediation, classify unrelated
+translation foundations, or advance any finding to `final`.
