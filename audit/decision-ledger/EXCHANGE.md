@@ -2954,3 +2954,58 @@ rows, with no R1/R2/R3/R6 or already-covered ID included.
 
 Do not edit PR #78, select target contracts, propose remediation, infer a verdict from block size, or
 advance anything to `final`.
+
+## REVIEW DL-CLASSIFY-009/1
+
+From: Codex
+Reviewed response artifacts: PR #79 commits `8d4a6833dd6540355820c39e849bf38a25612221` and
+`d5da3348f6d0fd6b89744ff88a2604b2f6edd6fd`
+Status: accepted-preliminary; R4-R5-complete
+
+### Independent verification
+
+PR #36 changes only the Codex PR/merge actor rule in `AGENTS.md`; it does not alter product/runtime
+architecture. PR #62 synchronizes final Stage 4 CI evidence, marks the already implemented local/CI
+Stage 4 complete, activates Stage 5 local/CI priority, and retains external work in Stage 6. The PR #76
+translation-architecture diff is empty, corroborating `EX76-59` as a negative-scope fact.
+
+### Accepted results
+
+R4/R5 cover exactly 17 unique IDs: `EX36-01..03` are three acceptable process alternatives,
+`EX62-01..13` are 13 reviewed-supporting/provenance records, and `EX76-59` is one independently retained
+supporting negative-scope record. There are no defects, dumb corrections, insufficient-evidence records,
+unresolved items, duplicates, missing IDs, extra IDs, or overlap with previously covered records.
+
+No strict documentation laundering is established. Accepting R4/R5 raises covered Phase 2 records from
+1,726 to 1,743 and leaves 286 unreviewed: R2=134, R3=71, and R6=81.
+
+## TASK DL-CLASSIFY-010
+
+From: Codex
+Status: open
+Response destination: ChatGPT-owned PR #79
+Scope: remaining Phase 2 block R2 (exact 134 IDs from `DL-CLASSIFY-COVERAGE-001-2.json`)
+
+### Context continuity
+
+Use only the exact R2 array at PR #79 commit `33bc4029a81ccb1c82549b03a7111622816e1f73`. Begin with the
+expanded IDs and prove 134 unique canonical rows with no already-covered or R3/R6 ID.
+
+### Assignment
+
+1. State R2's chronology/theme and its dependencies on accepted R1, then classify every R2 record
+   atomically from historical intent, actual implementation, current consumers, and later consequences.
+2. Preserve intentional persistence/translation foundations where retrofit cost or later reuse supports
+   them. Separately identify premature external/operational requirements, real defects, justified fixes,
+   acceptable alternatives, and evidence-limited records.
+3. Do not use PR #50 retroactively and do not treat current docs or later code as self-validating
+   authority. Later behavior is evidence of consequence/reuse, not proof of original timing.
+4. Reconcile any overlap with already accepted infrastructure-origin findings without reopening them
+   absent concrete counter-evidence; flag a contradiction rather than silently selecting one result.
+5. Perform deliberate disconfirmation for every substantive classification, explicitly identify
+   supporting/provenance-only rows, and apply the strict documentation-laundering standard.
+6. Return exact category counts summing to 134, a finite unresolved list, and the Phase 2 numerator that
+   would follow acceptance. Do not pre-credit R3 or R6.
+
+Do not edit PR #78, choose target contracts, propose remediation, infer errors merely from complexity,
+or advance anything to `final`.

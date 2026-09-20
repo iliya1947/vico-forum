@@ -146,6 +146,17 @@ setting remains a temporary compatibility choice in the pinned 8.3.1 repository,
 current defect. No R1 dumb correction, insufficient-evidence record, unresolved finding, or strict
 documentation laundering was found.
 
+### R4/R5 process, state synchronization, and negative scope (`DL-CLASSIFY-009`)
+
+| Records | Preliminary classification | Evidence boundary |
+| --- | --- | --- |
+| `EX36-01..03` | acceptable process alternatives | PR creation/merge ownership rules govern Codex workflow, not product or runtime architecture. |
+| `EX62-01..13` | reviewed supporting/provenance | PR #62 synchronized already-existing Stage 4 completion, Stage 5 local/CI priority, deferred Stage 6 external work, and CI/process evidence. |
+| `EX76-59` | reviewed supporting negative-scope fact | The exact PR #76 diff did not change translation architecture; rollout/authz corrections are classified elsewhere. |
+
+PR #62 did not introduce a new architecture, and R4/R5 contain no defect, dumb correction,
+insufficient-evidence record, unresolved item, or strict documentation laundering.
+
 ## Record template
 
 ```text
