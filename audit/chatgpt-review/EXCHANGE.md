@@ -537,3 +537,270 @@ The follow-up is documentation-only and records the PR verification after CI.
 #### EX76-62 — Final CI #203 is green
 Both checks and database jobs succeed on final head 417ca16ef068c70cbb6dfd0fbf26cd79aa4d9ede.
 
+
+### Candidate atomic decisions — PR #77
+
+#### EX77-01 — PR #77 is documentation-only
+The final diff adds/rewrites PROJECT_HISTORY, PROJECT_STATE and README without runtime/schema/workflow/dependency changes.
+
+#### EX77-02 — 089f11c adds the local-manual stale-policy regression to PROJECT_STATE
+The state file starts explicitly recording the current #40 stale-coverage mismatch.
+
+#### EX77-03 — 089f11c corrects PR #76 verification from CI #202/code head to final CI #203/head
+The current-state evidence is synchronized to the final #76 branch rather than its pre-doc code head.
+
+#### EX77-04 — bec8226 redefines PROJECT_STATE as current-state documentation
+The rewritten file says it should contain current facts, known current limitations and nearest route.
+
+#### EX77-05 — bec8226 delegates permanent contracts to subsystem source-of-truth documents
+Architecture/policy detail is removed from PROJECT_STATE ownership.
+
+#### EX77-06 — bec8226 removes most PR/commit/CI chronology from PROJECT_STATE
+The first rebuild intentionally strips accumulated historical detail.
+
+#### EX77-07 — bec8226 condenses current phase to Stage 0–3 foundation, Stage 4 local/CI complete, Stage 5 active, Stage 6 external
+The state file becomes stage-status oriented rather than chronological.
+
+#### EX77-08 — bec8226 condenses forum core into current capability summary
+Detailed implementation chronology is replaced by present Stage 4 behavior.
+
+#### EX77-09 — bec8226 condenses Stage 5A into current implemented capabilities
+Provider-neutral planning/tasks/order/execution/publication/bundle runtime are summarized without individual PR history.
+
+#### EX77-10 — bec8226 keeps Stage 5 unfinished work separate
+Retry/DLQ, reconciliation, concrete provider adapter and Stage 5B remain explicit next work.
+
+#### EX77-11 — bec8226 keeps external acceptance separate from local/CI Stage 5
+Real Queue/provider credentials/calls and deployed smoke remain Stage 6.
+
+#### EX77-12 — bec8226 keeps the #40 stale-policy mismatch as a known current regression
+The rewrite does not erase that currently known code/test state.
+
+#### EX77-13 — bec8226 condenses CI/migration state
+Ordinary PR checks and external migration evidence status remain current-state facts.
+
+#### EX77-14 — bec8226 condenses external/deployed state
+Repository/local-CI may lead external schema/runtime and pending external acceptance remains listed.
+
+#### EX77-15 — bec8226 ends with a short nearest-route sequence
+The state file moves long roadmap/history detail out of the immediate current-state surface.
+
+#### EX77-16 — The first bec8226 rebuild removes historical provenance before a history replacement exists
+At that intermediate commit, removed corrective chronology is not yet preserved in PROJECT_HISTORY because that file does not exist.
+
+#### EX77-17 — 8f75a43 separates Stage 5 local/CI implementation from Stage 6 external acceptance
+Concrete provider adapter implementation remains local/CI Stage 5 work while real credentials/calls/Queue deployed smoke are Stage 6.
+
+#### EX77-18 — 8f75a43 revises the nearest Stage 5A route to include a concrete provider adapter
+The route does not equate implementing an adapter with performing external acceptance.
+
+#### EX77-19 — af7825b creates PROJECT_HISTORY.md
+A dedicated historical index is introduced after the initial state rebuild.
+
+#### EX77-20 — PROJECT_HISTORY declares itself not source of truth for current behavior
+The file points current contracts to PROJECT/ROADMAP/translation/auth/database/state documents.
+
+#### EX77-21 — PROJECT_HISTORY declares Git history and PRs primary historical evidence
+The file self-limits its own authority to an index for recovering context.
+
+#### EX77-22 — PROJECT_HISTORY records a Stage 0–1 retrospective summary
+It attributes locale/i18n foundation and stale semantics to early PR history.
+
+#### EX77-23 — PROJECT_HISTORY records a Stage 2–3 retrospective summary
+It indexes PostgreSQL/persistent translation/bundle primitives and says active bundle publication/read was left to Stage 5.
+
+#### EX77-24 — PROJECT_HISTORY records a pre-Stage-4 hardening retrospective summary
+It indexes PR #37–#49 and states some choices were later narrowed/corrected.
+
+#### EX77-25 — PROJECT_HISTORY records a Stage 4 retrospective summary
+It indexes forum-core PRs and says PR #61 later required failure-semantics correction.
+
+#### EX77-26 — PROJECT_HISTORY records a Stage 5A retrospective summary
+It indexes #63/#66–#75 as the UI translation generation/runtime sequence.
+
+#### EX77-27 — H-001 attributes stale classification/fallback to PR #17
+This is a later-retrospective-summary claim whose factual component can be checked against earlier extraction.
+
+#### EX77-28 — H-001 attributes permissive stale-pack policy to PR #19
+The history says full-pack CI was not intended to require zero stale keys.
+
+#### EX77-29 — H-001 labels PR #40 zero-stale test/canary removal a regression
+The word regression is a #77 retrospective evaluation, not self-validating authority.
+
+#### EX77-30 — H-001 says PR #40 PROJECT_STATE laundered cleanup as intended final state
+The history explicitly claims provenance distortion; that evaluative causal statement requires earlier-chain reconciliation.
+
+#### EX77-31 — H-001 says the #40 mismatch remains current on 2026-09-18
+This aligns with final PROJECT_STATE's known-regression section but is still a late state/history claim.
+
+#### EX77-32 — H-002 indexes PR #37 staging/hardening blockers
+It records the earlier process policy as a historical object.
+
+#### EX77-33 — H-002 labels the #37 process policy excessive for later solo product-first flow
+This is a retrospective architecture/process evaluation, not proof of the original policy's correctness or error.
+
+#### EX77-34 — H-002 records PR #45 as the lifecycle revision
+It says separate staging stopped being a pre-Stage-4 blocker while preview/private-write isolation remained.
+
+#### EX77-35 — H-002 distinguishes superseded process policy from runtime defect
+That categorization is authored retrospectively in #77.
+
+#### EX77-36 — H-003 records the PR #41 query-redaction path defect
+It says pinned Wrangler ignored the nested path later corrected by #64.
+
+#### EX77-37 — H-003 records PR #64 as the configuration-path correction
+The history points to the concrete later implementation fix.
+
+#### EX77-38 — H-003 says PR #41 PROJECT_STATE asserted redaction prematurely
+This is a later-retrospective documentation/provenance claim.
+
+#### EX77-39 — H-004 records PR #43 privilege-verifier membership assumptions
+The history summarizes the earlier production role model.
+
+#### EX77-40 — H-004 records PR #48 membership correction
+It says narrow database-owner inbound membership semantics replaced the blanket assumption.
+
+#### EX77-41 — H-004 records PR #49 temporary owner verification/no-op exception
+It preserves the distinction between verification exception and real migration capability.
+
+#### EX77-42 — H-005 preserves the repository-owned migration-evidence mechanism as useful
+The history does not say all #44 work was wrong; it singles out ordinary-PR live verification placement.
+
+#### EX77-43 — H-005 labels ordinary-PR live GitHub Actions verification a boundary error
+This is a #77 retrospective evaluation linked to the concrete #76 correction.
+
+#### EX77-44 — H-005 records PR #76 removal of live remote verification from ordinary PR CI
+It also lists retained static/history/evidence/live-verifier pieces.
+
+#### EX77-45 — H-006 records broad authorization failure semantics as present in PR #61
+The history names the earlier behavior later narrowed by #76.
+
+#### EX77-46 — H-006 initial wording over-attributed the broad policy to corrective review
+The first PROJECT_HISTORY version described corrective-review as progressively adding the broad behavior.
+
+#### EX77-47 — 9c1fa30 corrects H-006 provenance to include the initial PR #61 implementation
+It records that requireForumPermission/solutionScope and generic mutation fallback were broad from the first commit.
+
+#### EX77-48 — 9c1fa30 separately attributes later optional-presentation broadening to review-follow-up commits
+20642f7 and 0d38633 are named as later expansion points.
+
+#### EX77-49 — H-006 says no pre-#61 contract required arbitrary resolver errors to equal availability
+This is a later retrospective normative claim that must be tested against earlier contracts rather than trusted from #77 alone.
+
+#### EX77-50 — H-006 records PR #76 typed availability correction
+The history summarizes classified outage vs unexpected-error behavior.
+
+#### EX77-51 — H-007 records PR #68 claim/lease/stale foundation
+It indexes the lifecycle state before corrective PR #69.
+
+#### EX77-52 — H-007 records #69 DB-owned clock, live-claim preservation, stale reactivation and shared eligibility changes
+Those are retrospective summaries of the #69 correction chain.
+
+#### EX77-53 — e9c2fbc adds the #69 missing-return intermediate regression to history
+The file records that f6522c4 restored requiredRow before merge.
+
+#### EX77-54 — H-008 records the unsafe #71 cross-generation supersession attempt
+The history says an unsafe ordering approach was introduced and removed before merge.
+
+#### EX77-55 — H-008 records #72 durable monotonic generation/head replacement
+It summarizes row-lock serialization and publication fencing.
+
+#### EX77-56 — e9c2fbc adds the #71 missing-return intermediate regression to history
+The history records dcf70d8 as the pre-merge repair.
+
+#### EX77-57 — H-008 final status says durable replacement ordering was implemented by #72
+This late summary does not mention the open #72 A→B→A review 4028280128.
+
+#### EX77-58 — PROJECT_HISTORY therefore is not exhaustive for #72 review state
+Its durable-order summary cannot be used to infer that every lifecycle consequence of #72 was accepted or fixed.
+
+#### EX77-59 — PROJECT_HISTORY does not index PR #75 review 4029815293
+The later history likewise cannot be used to infer closure of the v1→v2 refresh finding.
+
+#### EX77-60 — H-009 records accidental unrelated PROJECT_STATE rewrite in PR #73
+The history treats the full-file documentation edit as a separate corrective episode.
+
+#### EX77-61 — d1b452f expands H-009 to include the repeated PR #74 state rewrites
+It names 44b106a, 7351b4a and dc231a7 as successive restoration commits.
+
+#### EX77-62 — H-009 derives a general caution about full-file documentation replacement
+That process lesson is retrospective narrative, not a historical implementation fact by itself.
+
+#### EX77-63 — H-010 records that PROJECT_STATE had mixed state, history, policy and roadmap
+This is the rationale offered for splitting current state from history.
+
+#### EX77-64 — 428df86 records the intermediate #77 history-loss episode
+It says bec8226 removed historical material before PROJECT_HISTORY existed.
+
+#### EX77-65 — 428df86 says user review detected that history loss before merge
+The commit proves the claim was written; no matching technical user-review artifact is present in available PR #77 discussion.
+
+#### EX77-66 — 428df86 records af7825b as the history-file restoration step
+PROJECT_HISTORY becomes the replacement location for significant chronology.
+
+#### EX77-67 — 428df86 records 95adc2f linking history from PROJECT_STATE
+The current state document gains a direct pointer to the historical index.
+
+#### EX77-68 — 428df86 records 7b9c672 linking history from README
+The repository documentation index exposes PROJECT_HISTORY.
+
+#### EX77-69 — Later #77 commits revise retrospective provenance instead of runtime behavior
+9c1fa30/d1b452f/e9c2fbc/428df86 alter historical narrative only.
+
+#### EX77-70 — 95adc2f makes PROJECT_STATE name PROJECT_HISTORY as historical owner
+The state document delegates significant historical/corrective chains away from current-state sections.
+
+#### EX77-71 — 7b9c672 adds PROJECT_HISTORY to README documentation index
+The new historical file becomes discoverable from the project entrypoint.
+
+#### EX77-72 — 01bb2e0 keeps concrete provider adapter in the nearest Stage 5A route
+The final route distinguishes implementing the adapter from real external provider acceptance.
+
+#### EX77-73 — Final PROJECT_STATE records current translation generation ordering as implemented
+The current-state summary includes durable monotonic generations/current-generation fencing.
+
+#### EX77-74 — Final PROJECT_STATE records persisted-bundle runtime reads as implemented
+The current-state summary treats PR #75 runtime-first bundle reads as present local/CI.
+
+#### EX77-75 — Final PROJECT_STATE does not mention open #72 A→B→A review
+Absence from current state is not evidence that the review was resolved.
+
+#### EX77-76 — Final PROJECT_STATE does not mention open #75 v1→v2 refresh review
+Absence from current state is not evidence that the persistence-refresh finding was resolved.
+
+#### EX77-77 — Final PROJECT_HISTORY retains a time-local statement that PR #77 is not yet merged
+At authoring time this described the open PR; after merge it is historical context, not current merge-state evidence.
+
+#### EX77-78 — PROJECT_HISTORY evaluative labels are later-retrospective-summary provenance
+Terms such as regression, excessive, error, correct, or provenance distortion are not upgraded to direct-user/pre-existing-contract authority by being committed.
+
+#### EX77-79 — Factual components of PROJECT_HISTORY may still be independently corroborated
+Earlier PR diffs/reviews/CI can support particular chronology without making the #77 narrative itself authoritative.
+
+#### EX77-80 — PROJECT_HISTORY is an index, not the audit ledger
+It omits some known review findings and is not designed to satisfy the audit's exhaustive discovery gate.
+
+#### EX77-81 — PR #77 available discussion has no technical Codex review
+The only comment records Codex review usage-limit exhaustion.
+
+#### EX77-82 — PR #77 changes no application code
+No current behavior is altered directly by this docs split.
+
+#### EX77-83 — PR #77 changes no tests
+The docs-only PR does not add targeted historical/provenance verification tests.
+
+#### EX77-84 — PR #77 changes no schema or migration
+Migration history 0000–0010 is untouched.
+
+#### EX77-85 — PR #77 changes no CI workflow
+Repository checks run normally but no new gate is created.
+
+#### EX77-86 — Final CI #214 is green
+Both checks and database jobs succeed on final head 01bb2e0a97d8e506416c1ab7ede6396c47539f86.
+
+#### EX77-87 — Green CI #214 does not validate retrospective architecture labels
+The checks verify repository code/docs mechanics, not the truth or authority of PROJECT_HISTORY evaluations.
+
+#### EX77-88 — Final PR #77 responsibility split is state/history/contracts
+PROJECT_STATE owns current state, PROJECT_HISTORY owns significant historical index, and permanent subsystem contracts remain in their existing source-of-truth documents.
+
