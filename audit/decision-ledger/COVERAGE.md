@@ -107,11 +107,11 @@ number is lower than the baseline PR number.
 | #58 | `a35c4ce` | extraction-complete | `EX58-01..45`, `EX58-46a..b` | Solved/best-answer schema and mutations, FK/cascade correction, fixture correction, open UI review, state, and external boundaries reviewed. |
 | #59 | `a22ae0e` | extraction-complete | `EX59-01..52`, `EX59-53a..e`, `EX59-54..57` | Accepted dynamic-authorization extension, detailed catalog/precedence/persistence/safety contract, delivery slices, exclusions, and provenance boundaries reviewed. |
 | #60 | `b51fb66` | extraction-complete | `EX60-01..67`, `EX60-68a..b`, `EX60-69a..c`, `EX60-70..75`, `EX60-76a..c`, `EX60-77..78` | Authorization schema/backend/resolver/cache behaviors, lockout invariants, open snapshot review, tests, unfinished consumers, and forward evidence reviewed. |
-| #61 | `a76a102` | pending | — | — |
-| #63 | `b238df0` | pending | — | Merged before #62. |
-| #62 | `6b10d23` | pending | — | — |
-| #64 | `5a85a03` | pending | — | — |
-| #65 | `0a9ed91` | pending | — | — |
+| #61 | `a76a102` | extraction-complete | `EX61-01..102` | Authorization/forum/admin integration, broad failure/degradation boundaries, review corrections, connected E2E, state closure, and deferred external work reviewed. |
+| #63 | `b238df0` | extraction-complete | `EX63-01..42` | Merged before #62; exact-locale planning, identity/policy freshness, in-PR corrections, provider/transport boundaries, deferred consumers, and local/CI gate reviewed. |
+| #62 | `6b10d23` | extraction-complete | `EX62-01..13` | Post-#63 branch synchronization, Stage 4 evidence finalization, Stage 5 priority/local-CI documentation, process-only guidance, and CI history reviewed. |
+| #64 | `5a85a03` | extraction-complete | `EX64-01..12` | Exact Wrangler query-redaction path defect/fix, unchanged observability/logging layers, CI warning evidence, and external-evidence limit reviewed. |
+| #65 | `0a9ed91` | extraction-complete | `EX65-01..15` | Prototype-sensitive namespace ownership bug, demonstrated consequence/limits, shared Object.hasOwn correction, regression coverage, and scope reviewed. |
 | #66 | `9c37549` | pending | — | — |
 | #67 | `6a476d4` | pending | — | — |
 | #68 | `a0215cc` | pending | — | — |

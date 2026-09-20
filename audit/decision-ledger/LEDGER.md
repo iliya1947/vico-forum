@@ -1283,6 +1283,199 @@ composite IDs in the `/2` replacement map are superseded labels, not ledger reco
 | `EX60-77` | PR #61 is forward evidence of later PermissionResolver/UI consumption. |
 | `EX60-78` | PR #76 is forward evidence of a later typed authorization-unavailable boundary. |
 
+
+### PRs #61, #63, #62, #64, and #65
+
+Detailed evidence is preserved in PR #79 response `DL-EXTRACT-011/1` at `1d76984`, accepted by
+`REVIEW DL-EXTRACT-011/1`. The index follows actual merge order; every record remains `open`.
+
+| Decision ID | Atomic decision index |
+| --- | --- |
+| `EX61-01` | Authorization request context now exposes the management-capable authorization interface. |
+| `EX61-02` | Topic creation requires effective forum.topic.create. |
+| `EX61-03` | Reply creation requires effective forum.reply.create. |
+| `EX61-04` | Forum authorization actor identity remains session-derived. |
+| `EX61-05` | Solution scope is derived server-side from effective permissions. |
+| `EX61-06` | forum.solution.manageAny takes precedence over manageOwn. |
+| `EX61-07` | forum.solution.manageOwn yields the repository own scope. |
+| `EX61-08` | Missing both solution permissions yields controlled 403. |
+| `EX61-09` | Repository own scope preserves topic-author enforcement. |
+| `EX61-10` | Repository any scope permits non-author solution management. |
+| `EX61-11` | Topic row locking remains inside solution mutations. |
+| `EX61-12` | Solved-state validation remains in the repository. |
+| `EX61-13` | Best-answer post existence remains a repository invariant. |
+| `EX61-14` | Best-answer same-topic membership remains a repository invariant. |
+| `EX61-15` | Section presentation is permission-aware. |
+| `EX61-16` | Topic reply presentation is permission-aware. |
+| `EX61-17` | Topic solution presentation is permission- and ownership-aware. |
+| `EX61-18` | The common header gets an authorization-management affordance. |
+| `EX61-19` | The management link is not the protected-route boundary. |
+| `EX61-20` | PR #61 registers /:locale/admin/authorization. |
+| `EX61-21` | Authorization management loader independently requires a session. |
+| `EX61-22` | Authorization management action independently requires a session. |
+| `EX61-23` | Management loader requires effective access.authorization.manage. |
+| `EX61-24` | Management action requires effective access.authorization.manage. |
+| `EX61-25` | Management mutations retain same-origin enforcement. |
+| `EX61-26` | Management mutation fields are runtime-validated. |
+| `EX61-27` | Management UI lists roles and their grants. |
+| `EX61-28` | Management UI creates custom roles. |
+| `EX61-29` | Management UI renames custom role display names. |
+| `EX61-30` | Management UI deletes eligible custom roles. |
+| `EX61-31` | Management UI replaces grants for built-in and custom roles. |
+| `EX61-32` | Management UI assigns one role to a user. |
+| `EX61-33` | Management UI exposes inherit/allow/deny user overrides. |
+| `EX61-34` | Management UI displays effective permissions. |
+| `EX61-35` | listUsers adds a minimal Better Auth user read model. |
+| `EX61-36` | listUsers distinguishes explicit from default role assignment. |
+| `EX61-37` | readManagementState bulk-loads roles. |
+| `EX61-38` | readManagementState bulk-loads users. |
+| `EX61-39` | readManagementState bulk-loads all role grants. |
+| `EX61-40` | readManagementState bulk-loads all user overrides. |
+| `EX61-41` | readManagementState assembles effective state in memory. |
+| `EX61-42` | The four-query management read is not wrapped in a repository transaction. |
+| `EX61-43` | Hyperdrive management operations use a bounded per-operation pool. |
+| `EX61-44` | Hyperdrive PermissionResolver retains request-instance user caching. |
+| `EX61-45` | Hyperdrive has() consumes the cached resolved effectivePermissions in PR #61. |
+| `EX61-46` | Authorization mutations still recheck manager capability inside the DB transaction. |
+| `EX61-47` | Authorization mutations still serialize on authz_mutation_lock. |
+| `EX61-48` | The last-manager lockout invariant remains active. |
+| `EX61-49` | Lockout maps to controlled 409 in the management route. |
+| `EX61-50` | Assigned custom-role deletion maps to controlled 409. |
+| `EX61-51` | Missing authorization entity maps to controlled 404. |
+| `EX61-52` | Service input errors map to controlled 400. |
+| `EX61-53` | Initial duplicate-role slug behavior fell through to 503. |
+| `EX61-54` | PR review identifies duplicate slug as a non-retryable input conflict. |
+| `EX61-55` | 20642f7 classifies only authz_roles_slug_unique 23505 as role-slug conflict. |
+| `EX61-56` | Duplicate role slug maps to controlled 400 after the correction. |
+| `EX61-57` | Initial admin state loading fanned out per role and per user. |
+| `EX61-58` | PR review identifies the management connection/query fan-out. |
+| `EX61-59` | 20642f7 replaces the fan-out with one readManagementState capability call. |
+| `EX61-60` | Initial management permission resolver failures are broadly converted to 503. |
+| `EX61-61` | PR #61 tests the broad manager resolver mapping with a generic Error. |
+| `EX61-62` | Forum topic/reply permission resolver failures are broadly converted to 503. |
+| `EX61-63` | Solution permission resolver failures are broadly converted to 503. |
+| `EX61-64` | Management state-read failures are broadly converted to 503. |
+| `EX61-65` | Unrecognized management mutation failures are broadly converted to 503. |
+| `EX61-66` | First optional header authorization lookup could take down public locale routes. |
+| `EX61-67` | 20642f7 makes the optional header lookup fail closed on any caught error. |
+| `EX61-68` | Child public loaders still failed after the first header correction. |
+| `EX61-69` | 0d38633 makes section presentation fail closed on any authz exception. |
+| `EX61-70` | 0d38633 makes topic presentation fail closed on any authz exception. |
+| `EX61-71` | PR #76 is forward evidence that #61’s unavailability boundary was later narrowed. |
+| `EX61-72` | PR #61 adds explicit permission-denial route coverage. |
+| `EX61-73` | PR #61 tests server-derived solution scope and forged-field rejection. |
+| `EX61-74` | PR #61 expands DB solution coverage for scope any. |
+| `EX61-75` | PR #61 adds connected Stage 4 PostgreSQL flow coverage. |
+| `EX61-76` | Connected coverage observes role assignment on a later request. |
+| `EX61-77` | Connected coverage observes role-grant removal and restoration on later requests. |
+| `EX61-78` | Connected coverage observes per-user deny, inherit and allow on later requests. |
+| `EX61-79` | Connected coverage rejects forged authorization fields. |
+| `EX61-80` | Stage 4 DB E2E actions are extracted into a server-only module. |
+| `EX61-81` | Section route re-exports the shared server action. |
+| `EX61-82` | Topic route re-exports the shared server action. |
+| `EX61-83` | DB E2E stops importing route JSX/loaders. |
+| `EX61-84` | Node typecheck explicitly includes the server forum integration modules. |
+| `EX61-85` | Connected E2E explicitly asserts persisted reply body. |
+| `EX61-86` | Forum mutation failure headers are made Node-safe. |
+| `EX61-87` | Stage 4 DB E2E requires a narrowed string DATABASE_URL. |
+| `EX61-88` | PR #61 adds regression coverage for optional authorization degradation. |
+| `EX61-89` | PR #61 adds repository regression coverage for bulk management reads. |
+| `EX61-90` | PR #61 adds repository/route regression coverage for duplicate slug classification. |
+| `EX61-91` | PR #61 adds authorization-management catalog strings. |
+| `EX61-92` | PR #61 adds management-page presentation styles. |
+| `EX61-93` | PR #61 adds no database schema or migration. |
+| `EX61-94` | Initial implementation records Stage 4E2b code as present but Stage 4 completion unconfirmed. |
+| `EX61-95` | CI #140 is the branch evidence used by the Stage 4 completion state transition. |
+| `EX61-96` | PROJECT_STATE then records Stage 4 complete in the local/CI path. |
+| `EX61-97` | PROJECT_STATE/README make Stage 5 the next product stage. |
+| `EX61-98` | Real Google OAuth acceptance remains Stage 6. |
+| `EX61-99` | External authorization bootstrap remains Stage 6. |
+| `EX61-100` | Pending production migrations remain Stage 6. |
+| `EX61-101` | Production-like deployment acceptance remains Stage 6. |
+| `EX61-102` | The final PR #61 head is independently green after the later review corrections. |
+| `EX63-01` | Stage 5A planning accepts only a registered canonical target locale. |
+| `EX63-02` | Canonical English is rejected as a machine-translation target. |
+| `EX63-03` | Unknown or invalid target locales fail before persistent translation reads. |
+| `EX63-04` | Generation scope is limited to canonical UI namespaces. |
+| `EX63-05` | Duplicate requested namespaces are de-duplicated. |
+| `EX63-06` | Namespace planning order is deterministic. |
+| `EX63-07` | Job source identity is namespace plus key. |
+| `EX63-08` | Job source freshness identity includes sourceFingerprint. |
+| `EX63-09` | Job target identity includes canonical targetLocale. |
+| `EX63-10` | Job generation identity includes generationPolicyVersion. |
+| `EX63-11` | UI job identity includes a format/version prefix. |
+| `EX63-12` | taskIdentity is SHA-256 of the stable ordered identity tuple. |
+| `EX63-13` | The planner is provider-independent. |
+| `EX63-14` | The dispatcher boundary is transport-independent. |
+| `EX63-15` | plan() can produce jobs without dispatch. |
+| `EX63-16` | planAndDispatch dispatches only a non-empty plan. |
+| `EX63-17` | Generation availability is evaluated against the exact target locale only. |
+| `EX63-18` | A current exact-target local manual value suppresses generation. |
+| `EX63-19` | A current exact-target persistent manual value suppresses generation. |
+| `EX63-20` | A current exact-target machine value under the requested policy suppresses duplicate generation. |
+| `EX63-21` | A source-stale local manual value does not suppress regeneration. |
+| `EX63-22` | A source-stale persistent manual value does not suppress regeneration. |
+| `EX63-23` | A source-stale machine value does not suppress regeneration. |
+| `EX63-24` | Initial #63 machine suppression ignored generation-policy staleness. |
+| `EX63-25` | Review 4011998128 identifies generation-policy freshness as missing. |
+| `EX63-26` | PersistentUiTranslationRow gains generationPolicyVersion. |
+| `EX63-27` | DrizzleUiTranslationStore returns generation_policy_version. |
+| `EX63-28` | DatabaseMachineTranslationSource can require a generation policy version. |
+| `EX63-29` | Persistent manual suppression remains independent of generation policy. |
+| `EX63-30` | A policy-stale machine value yields regeneration without requiring source change. |
+| `EX63-31` | Initial new-planner namespace membership was prototype-sensitive. |
+| `EX63-32` | 47cd2b4 changes new-planner namespace membership to Object.hasOwn. |
+| `EX63-33` | Prototype-collision regression covers toString, constructor, __proto__ and hasOwnProperty. |
+| `EX63-34` | 1d0d204 preserves UiNamespace typing after runtime validation. |
+| `EX63-35` | Durable task persistence is deliberately not implemented in PR #63. |
+| `EX63-36` | Queue enqueueing is deliberately not implemented in PR #63. |
+| `EX63-37` | Provider execution is deliberately not implemented in PR #63. |
+| `EX63-38` | Result publication/conditional publish is deliberately not implemented in PR #63. |
+| `EX63-39` | SSR/runtime translation reads are not switched to generation. |
+| `EX63-40` | PR #63 introduces no schema/migration/dependency change. |
+| `EX63-41` | PROJECT_STATE records this as the first limited Stage 5A generation step. |
+| `EX63-42` | Final PR #63 local/CI gate is green. |
+| `EX62-01` | PROJECT_STATE replaces provisional Stage 4 CI evidence with final PR #61 CI #144. |
+| `EX62-02` | ROADMAP records Stage 4 as completed in the local/CI path. |
+| `EX62-03` | ROADMAP records external production rollout as outside the Stage 4 completion criterion. |
+| `EX62-04` | ROADMAP activates Stage 5 as current product priority. |
+| `EX62-05` | ROADMAP keeps Stage 5 on the local/CI product path. |
+| `EX62-06` | AGENTS updates Codex-only current-priority guidance from Stage 4 to Stage 5. |
+| `EX62-07` | The AGENTS change is a process instruction, not a new product/runtime mechanism. |
+| `EX62-08` | Merge-main commit 424d65e imports already-merged PR #63 work into the #62 branch. |
+| `EX62-09` | 17a51dd preserves PR #63’s Stage 5A state after branch synchronization. |
+| `EX62-10` | PR #62 final diff changes only AGENTS.md, PROJECT_STATE.md and ROADMAP.md. |
+| `EX62-11` | PR #62 has no review intervention. |
+| `EX62-12` | Final PR #62 merged-head CI is green. |
+| `EX62-13` | The pre-merge-main documentation head also had a green CI gate. |
+| `EX64-01` | PR #41 introduced query-redaction intent in wrangler.jsonc. |
+| `EX64-02` | PR #41 placed redact_query_string under observability.logs. |
+| `EX64-03` | Wrangler 4.130.0 did not recognize that nested field. |
+| `EX64-04` | The warning existed even though the affected CI jobs were green. |
+| `EX64-05` | PR #64 moves redact_query_string to observability.redact_query_string. |
+| `EX64-06` | PR #64 removes the now-empty observability.logs object. |
+| `EX64-07` | Observability enabled remains true. |
+| `EX64-08` | Observability head_sampling_rate remains 1. |
+| `EX64-09` | PR #41 application SSR logging hardening is independent of this config fix. |
+| `EX64-10` | PR #41’s PROJECT_STATE observability-hardening text is not edited by #64. |
+| `EX64-11` | Final CI #156 accepts the corrected config without the prior warning. |
+| `EX64-12` | PR #64 does not prove deployed external redaction behavior. |
+| `EX65-01` | CanonicalEnglishSource had a prototype-sensitive namespace lookup. |
+| `EX65-02` | LocalTranslationSource used prototype-sensitive namespace membership. |
+| `EX65-03` | validateTranslationPacks used the same prototype-sensitive membership. |
+| `EX65-04` | The demonstrated consequence is non-canonical namespace acceptance at validation boundaries. |
+| `EX65-05` | The inspected evidence does not establish code execution from the namespace bug. |
+| `EX65-06` | PR #65 centralizes namespace ownership in isCanonicalUiNamespace. |
+| `EX65-07` | isCanonicalUiNamespace uses Object.hasOwn. |
+| `EX65-08` | CanonicalEnglishSource validates ownership before catalog indexing. |
+| `EX65-09` | LocalTranslationSource validates ownership with the same guard. |
+| `EX65-10` | validateTranslationPacks validates ownership with the same guard. |
+| `EX65-11` | Regression coverage tests four inherited Object.prototype names across all three paths. |
+| `EX65-12` | PR #63 is earlier evidence of the same bug class in a different new consumer. |
+| `EX65-13` | PR #65 changes no schema/dependency/Queue/provider/runtime-publish behavior. |
+| `EX65-14` | PROJECT_STATE is intentionally unchanged in PR #65. |
+| `EX65-15` | Final PR #65 local/CI gate is green. |
+
 `COVERAGE.md` remains the authoritative working checklist for whether every in-scope PR/commit has
 been examined and whether mixed changes were completely decomposed. A populated ledger alone never
 proves that extraction or dependency discovery is complete.
