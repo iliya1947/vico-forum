@@ -1,0 +1,306 @@
+{
+  "type": "DL-CLASSIFY-010-2-evidence-index",
+  "status": "submitted-evidence-only",
+  "task_source": {
+    "pr": 78,
+    "head": "8b9d70144cbfa1f2a12bacfff6642d4f5955b1e5",
+    "task": "DL-CLASSIFY-010/2"
+  },
+  "response_base": {
+    "pr": 79,
+    "head_before_response": "121fe87e448a10cbf27fc407fce735305618dc69",
+    "classification_artifact": "audit/chatgpt-review/DL-CLASSIFY-010.json",
+    "classification_commit": "1931ca38ccd8d9d003f3c309d01305973a17c2e1",
+    "narrative_artifact": "audit/chatgpt-review/DL-CLASSIFY-010.md",
+    "narrative_commit": "6498b6039a1e3de3a8a1028491e533fc7a56fa87"
+  },
+  "audited_main": "3282aa51f47f36131d35c34ee79ca37cb2ce434f",
+  "classification_changes": false,
+  "original_counts_reproduced": {
+    "acceptable-alternative": 55,
+    "intentional-foundation": 27,
+    "justified-fix-of-real-defect": 10,
+    "real-original-defect": 6,
+    "reviewed-supporting": 35,
+    "insufficient-evidence": 1,
+    "dumb-correction-of-correct-implementation": 0,
+    "substantive_total": 99,
+    "supporting_total": 35,
+    "total": 134
+  },
+  "historical_real_defects": [
+    {
+      "id": "EX22-01",
+      "historical_behavior": "PR #22 parsed persistent rows through canonicalization but did not require the physical stored tag itself to already be canonical. A raw key such as iw could publish as he while later writer operations addressed the canonical key.",
+      "origin_commit": "6925173352b01e7b8961d136ff3c04c1c0b03bff",
+      "review_evidence": "PR #22 discussion_r3985392135",
+      "survived_merge": true,
+      "defective_merge": "92b55cdd9c384aedb90858514de8cf6db02c5c86",
+      "correcting_ids": [
+        "EX38-05",
+        "EX38-06"
+      ],
+      "correcting_commits": [
+        "129de4ac13dc52fe56294239e8bafb3c46567f35"
+      ],
+      "supporting_test_commit": "bd9eccb3021c94d29f425926eeaaef279e4b7410",
+      "current_status": "historical-only defect; current parsePersistentLocaleRow requires raw tag === canonical tag and routes noncanonical stored identity through integrity degradation"
+    },
+    {
+      "id": "EX24-01",
+      "historical_behavior": "The initial manual production migration workflow could be dispatched from a non-main/stale ref and checkout implicitly followed the dispatch ref; manual dispatch itself was not the defect, the missing reviewed-ref boundary was.",
+      "origin_commit": "f118cd2cba070c0df1cd34520c29db887e6a5a57",
+      "review_evidence": "PR #24 discussion_r3986483298",
+      "survived_merge": true,
+      "defective_merge": "87c49c5241405338d8a2faf400bee7e2053d85d9",
+      "correcting_ids": [
+        "EX29-08",
+        "EX29-09"
+      ],
+      "correcting_commits": [
+        "f6b7bdbd93a71773b079164750a569fe6acfa77b"
+      ],
+      "current_status": "historical workflow-safety defect; current production-db-migrate.yml has refs/heads/main guard and checks out exact github.sha"
+    },
+    {
+      "id": "EX24-07",
+      "historical_behavior": "PR #24 used Drizzle ledger created_at equality with the checked-in journal as migration-history verification. Timestamp equality alone could not prove that reviewed SQL/schema contents matched the deployed schema.",
+      "origin_commit": "f118cd2cba070c0df1cd34520c29db887e6a5a57",
+      "review_evidence": "PR #24 discussion_r3986483302",
+      "survived_merge": true,
+      "defective_merge": "87c49c5241405338d8a2faf400bee7e2053d85d9",
+      "correcting_ids": [
+        "EX29-01",
+        "EX29-02",
+        "EX29-03",
+        "EX29-04",
+        "EX29-05",
+        "EX29-06",
+        "EX29-07",
+        "EX29-10",
+        "EX29-11"
+      ],
+      "correcting_commits": [
+        "4f4578bae8dc14f59340e0b05c444e5d0f0d0f30",
+        "c0516c426aeba9a4eefb5a26d73dd527d6eb96ed",
+        "e9a055914b6ccb64ffb11f722a1d85d634880a29",
+        "a419c4fc71bb4d5630ef380aad7fa97f7f330e4e",
+        "6db337af7772b253ee520345d21aa970ba3fc46b"
+      ],
+      "current_status": "the defective condition 'timestamp equality as the only meaningful content/schema proof' is historical; timestamp equality itself survives as EX29-12/current verifier but is now supplemented by immutable-history enforcement and stable schema/reserved-row checks",
+      "correction_note": "EX29-12 is deliberately not listed as a correcting ID because it retains the timestamp check; the correction is the additional evidence layer around it."
+    },
+    {
+      "id": "EX23-06",
+      "historical_behavior": "The merged PR #23 degraded classifier traversed wrapped PostgreSQL errors but still omitted realistic Node/TCP/DNS transport codes such as ECONNREFUSED, ENOTFOUND and ETIMEDOUT, so an origin outage could escape the promised unavailable fallback.",
+      "origin_commit": "e51cb2f9f3716eef099d58199cc5281682e465db",
+      "review_evidence": "PR #23 discussion_r3985756439",
+      "survived_merge": true,
+      "defective_merge": "4f1a727257cca60ca05655743467722451b97851",
+      "correcting_ids": [
+        "EX28-01",
+        "EX28-02"
+      ],
+      "correcting_commits": [
+        "aad8382adec2daf8fcd2510c4f7fa2fdbd7d60b7"
+      ],
+      "later_refinement_ids": [
+        "EX39-08",
+        "EX39-09",
+        "EX39-10"
+      ],
+      "current_status": "historical transport-classification defect; known transport shapes are classified by the current shared PostgreSQL availability boundary. PR #39 later narrowed a separate overbroad code-less branch introduced in PR #28."
+    },
+    {
+      "id": "EX28-04",
+      "historical_behavior": "PR #28 treated every remaining code-less generic Error from pg connect as unavailable. That could mask non-availability failures such as SSL/configuration/programming errors behind degraded English.",
+      "origin_commit": "aad8382adec2daf8fcd2510c4f7fa2fdbd7d60b7",
+      "review_evidence": "PR #28 discussion_r3989096614",
+      "survived_merge": true,
+      "defective_merge": "2eb1186e85e69c9f32598055b948cfcaa8d23981",
+      "correcting_ids": [
+        "EX39-08",
+        "EX39-09",
+        "EX39-10"
+      ],
+      "correcting_commits": [
+        "337b80d41686fa2e0c42b475a166c63c67ed21a5",
+        "d5934cbffef23f41314f009d97d41310ec354b96",
+        "e7c7bf143255a5ffb85ed902f9e298fc3f987a3b",
+        "42e4cdc3232d5740699769b7cb49d4c420f66fb4",
+        "c5e3ab6284e977ced808cb0f541fee5816ac7886"
+      ],
+      "supporting_test_commits": [
+        "7e0d547c0902c2345c1c6596233b94fdf73fe192",
+        "0ed6dbcb02e787d0a31b15cbf1ab90f87883df1c",
+        "9044d6c05e064ce998500ca4ab137e6f3af376b0",
+        "272d60d7777cf690fb5aa3a560e4fbf4e169d6c2"
+      ],
+      "current_status": "historical overbroad classification defect; current shared classifier accepts known PostgreSQL/transport shapes plus the exact known code-less termination message and leaves unknown code-less errors visible"
+    },
+    {
+      "id": "EX29-15",
+      "historical_behavior": "PR #29 materially changed required migration-history CI plus production main-ref/exact-SHA workflow safety but merged without synchronizing PROJECT_STATE.",
+      "review_evidence": "PR #29 discussion_r3989225657 on e8e4bb5051012c140afff8f79066d1f42a8e91e0",
+      "survived_merge": true,
+      "defective_merge": "c31c05097f8af9f14de09b4e45e335014e2830c0",
+      "correcting_ids": [
+        "EX30-04"
+      ],
+      "correcting_commits": [
+        "a445827b8e7ca266122d2e1c771303cb6c7b1a89"
+      ],
+      "current_status": "historical documentation-state defect; PR #30 recorded the enforced H2 migration-history/main-ref/exact-SHA state"
+    }
+  ],
+  "justified_fixes": [
+    {
+      "id": "EX21-10",
+      "commit": "d68795ea9a090ff8890c0a80ad49cb86526282ea",
+      "fixes": "PR #21 repeatability defect identified in discussion_r3985164890: dropping only public left drizzle.__drizzle_migrations, so a second db:test could skip migrations and fail to recreate locales.",
+      "predecessor": "initial PR #21 commit a7083465f4a6d12c2b4454b0451dddfe7667682c"
+    },
+    {
+      "id": "EX23-04a",
+      "commit": "8483b96e82f490d28e3445f3d422b591b0599f38",
+      "fixes": "PR #23 P1 integration finding discussion_r3985756436: Worker code dereferenced env.HYPERDRIVE while repository production Worker config had no HYPERDRIVE binding."
+    },
+    {
+      "id": "EX23-04b",
+      "commit": "8483b96e82f490d28e3445f3d422b591b0599f38",
+      "fixes": "The local-CI half of the same PR #23 P1 finding: Workers smoke had no local Hyperdrive override, so the binding-shaped path could not run against disposable PostgreSQL."
+    },
+    {
+      "id": "EX28-01",
+      "commit": "aad8382adec2daf8fcd2510c4f7fa2fdbd7d60b7",
+      "fixes": "EX23-06 / PR #23 discussion_r3985756439 by adding explicit Node transport availability codes."
+    },
+    {
+      "id": "EX28-02",
+      "commit": "aad8382adec2daf8fcd2510c4f7fa2fdbd7d60b7",
+      "fixes": "EX23-06 at the connection boundary by wrapping positively identified connect-level availability failures in a typed RegistryConnectionUnavailableError."
+    },
+    {
+      "id": "EX28-05",
+      "commit": "aad8382adec2daf8fcd2510c4f7fa2fdbd7d60b7",
+      "fixes": "The now-stale transitional EX22-10 request-context fallback after PR #23 production loader injection existed: missing registry-loader wiring could otherwise silently fall back to Stage 1 config instead of exposing a configuration error.",
+      "note": "This does not reclassify EX22-10 itself as a historical defect; it identifies the concrete stale-fallback condition corrected by EX28-05."
+    },
+    {
+      "id": "EX29-08",
+      "commit": "f6b7bdbd93a71773b079164750a569fe6acfa77b",
+      "fixes": "EX24-01 / PR #24 discussion_r3986483298 by adding a hard refs/heads/main execution guard."
+    },
+    {
+      "id": "EX29-09",
+      "commit": "f6b7bdbd93a71773b079164750a569fe6acfa77b",
+      "fixes": "The exact-ref half of EX24-01: production migration checkout is pinned to dispatched github.sha instead of implicitly following the triggering ref."
+    },
+    {
+      "id": "EX29-10",
+      "commit": "6db337af7772b253ee520345d21aa970ba3fc46b",
+      "fixes": "A concrete part of EX24-07's weak content/schema proof by checking stable required public.locales column existence, types and nullability in target DB."
+    },
+    {
+      "id": "EX29-11",
+      "commit": "6db337af7772b253ee520345d21aa970ba3fc46b",
+      "fixes": "The stable-invariant gap in the PR #24 production verifier: bootstrap/reserved locale exclusion is asserted directly instead of depending on exact mutable seed-state matching.",
+      "predecessor_contracts": [
+        "EX20-07",
+        "EX21-04"
+      ],
+      "note": "This does not classify the whole EX24-08 exact-seed check as a real defect; it identifies the stable invariant extracted into a durable verifier check."
+    }
+  ],
+  "evidence_limited": {
+    "id": "EX29-13",
+    "classification": "insufficient-evidence",
+    "evidence_for_current_tension": [
+      "PR #29 discussion_r3989225653 explicitly reports that tests/database/migrations.test.ts applies the complete migration history and then asserts exact final locale rows.",
+      "Current tests/database/migrations.test.ts still asserts exact final he/ka/ru publication/translation status, aliases, names and metadata after applying all migrations.",
+      "Current docs/database/MIGRATIONS.md says the production verifier intentionally does not pin mutable locale publication/translation state, aliases, native names or presentation metadata.",
+      "Current migration history at audited main does not contain a later migration that changes those he/ka/ru values, so no present CI failure caused by legitimate locale-data evolution is demonstrated."
+    ],
+    "strongest_competing_classification": "real current test/contract defect: the full-history integration test can be read as freezing data the documented migration policy says may evolve, so a legitimate later data migration could be rejected unless the test changes with it",
+    "competing_benign_interpretation": "acceptable current-final-state test: the assertion may intentionally describe the current post-migration state and be updated in the same change as any future legitimate data migration",
+    "missing_fact_or_authority_preventing_resolution": [
+      "No accepted/direct-user or pre-existing contract states whether the exact final he/ka/ru assertion must remain invariant across future data migrations or is expected to evolve with them.",
+      "No current migration actually changes those rows and is demonstrably blocked by the test.",
+      "No separate durable test-policy artifact resolves whether seed-boundary verification versus current-final-state verification is intended."
+    ],
+    "current_status": "evidence-limited only; no remediation or target contract selected"
+  },
+  "ex23_18_lifecycle": {
+    "id": "EX23-18",
+    "classification": "acceptable-alternative",
+    "project_pins": {
+      "historical_pr23_pg": "8.23.0",
+      "current_pg": "8.23.0",
+      "current_wrangler": "4.130.0"
+    },
+    "repository_behavior": [
+      "At PR #23 merge, workers/app.ts created the registry loader inside the Worker fetch handler and db/hyperdrive-registry.ts created pg.Client lazily inside that request loader; there was no module-global pg client.",
+      "Current workers/app.ts still creates createHyperdriveRegistryLoader(connectionString) inside fetch for every invocation.",
+      "Current createRequestRegistryLoader memoizes one load Promise inside that request-created loader.",
+      "Current db/hyperdrive-registry.ts still does not call client.end() on the normal successful read path; classified failure paths call bestEffortDiscardClient(), which invokes client.end() best-effort."
+    ],
+    "external_primary_evidence": [
+      {
+        "source": "Cloudflare Hyperdrive Connection lifecycle",
+        "url": "https://developers.cloudflare.com/hyperdrive/concepts/connection-lifecycle/",
+        "last_updated": "2026-04-21",
+        "relevance": "Cloudflare states that Worker-side database clients are cleaned up automatically at invocation end, explicitly says client.end() is not required for Workers-to-Hyperdrive connections, and recommends creating a new client inside each handler invocation rather than global scope."
+      },
+      {
+        "source": "node-postgres Client API",
+        "url": "https://node-postgres.com/apis/client",
+        "relevance": "Generic node-postgres documentation defines client.end() as disconnecting the client and ordinary examples call it. This is generic driver behavior, not a Workers+Hyperdrive lifecycle requirement."
+      },
+      {
+        "source": "node-postgres CHANGELOG",
+        "url": "https://github.com/brianc/node-postgres/blob/master/CHANGELOG.md",
+        "relevance": "The pinned pg 8.23.0 release entry adds query pipelining; it does not introduce a version-specific lifecycle rule overriding the platform-specific Hyperdrive guidance."
+      }
+    ],
+    "intent_boundary": "Repository PR #20/#23 material recorded request-scoped Hyperdrive lifecycle rationale, but that project text is historical intent/evidence rather than self-validating authority. The non-defect conclusion is grounded in the actual request-scoped implementation plus Cloudflare's platform-specific primary documentation.",
+    "strongest_contrary_evidence": "Generic node-postgres examples call client.end() and Client API exposes explicit disconnect. That would matter in a traditional long-lived server process, but does not contradict Cloudflare's explicit Workers-to-Hyperdrive cleanup rule for this request-scoped implementation.",
+    "result": "No current or historical client-leak defect is established for EX23-18; classification remains acceptable-alternative."
+  },
+  "aggregate_reconciliation": {
+    "named_records": 18,
+    "named_category_counts": {
+      "real-original-defect": 6,
+      "justified-fix-of-real-defect": 10,
+      "insufficient-evidence": 1,
+      "acceptable-alternative": 1
+    },
+    "expected_named_ids": [
+      "EX22-01",
+      "EX24-01",
+      "EX24-07",
+      "EX23-06",
+      "EX28-04",
+      "EX29-15",
+      "EX21-10",
+      "EX23-04a",
+      "EX23-04b",
+      "EX28-01",
+      "EX28-02",
+      "EX28-05",
+      "EX29-08",
+      "EX29-09",
+      "EX29-10",
+      "EX29-11",
+      "EX29-13",
+      "EX23-18"
+    ],
+    "all_named_ids_present_in_original_134_row_artifact": true,
+    "category_or_id_changes": [],
+    "discrepancy": null
+  },
+  "phase2_coverage": {
+    "accepted_before_codex_review": "1743 / 2029 = 85.9044%",
+    "changed_by_this_response": false,
+    "note": "No R2 row is pre-credited by this evidence-only response."
+  }
+}
