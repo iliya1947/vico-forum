@@ -1025,6 +1025,264 @@ composite IDs in the `/2` replacement map are superseded labels, not ledger reco
 | `EX55-34c` | Solved-topic/best-answer flow remains an unfinished later product slice after PR #55. |
 | `EX55-35` | PR #55 performs no external write-capability provisioning or rollout. |
 
+
+### PRs #56–#60
+
+Detailed evidence is preserved in PR #79 responses `DL-EXTRACT-010/1` at `a1c6dcc` and
+`DL-EXTRACT-010/2` at `bf50401`, accepted by `REVIEW DL-EXTRACT-010/2`. The eight unsuffixed
+composite IDs in the `/2` replacement map are superseded labels, not ledger records.
+
+| Decision ID | Atomic decision index |
+| --- | --- |
+| `EX56-01` | Better Auth browser operations are wrapped behind AuthClientActions. |
+| `EX56-02` | Google sign-in uses Better Auth social sign-in with provider=google. |
+| `EX56-03` | Sign-out uses the Better Auth client signOut operation. |
+| `EX56-04` | LocaleBoundary loader adds only a minimal SSR auth presentation snapshot. |
+| `EX56-05` | HeaderAuthProvider owns client presentation state initialized from the SSR snapshot. |
+| `EX56-06` | Initial HeaderAuthProvider state did not follow later loader snapshot changes. |
+| `EX56-07` | P2 review identifies stale authenticated-header state after revalidation/navigation. |
+| `EX56-08` | ede785c synchronizes HeaderAuthProvider state from changed server snapshots. |
+| `EX56-09` | 39a0fd9 adds a server-auth-snapshot revalidation regression. |
+| `EX56-10` | Safe sign-in return paths are limited to the current canonical locale namespace. |
+| `EX56-11` | Safe local return paths preserve a valid query string. |
+| `EX56-12` | Protocol-relative/external or other-locale return paths fall back to the current locale root. |
+| `EX56-13` | Successful sign-out immediately clears authenticated presentation state. |
+| `EX56-14` | Successful sign-out triggers React Router revalidation. |
+| `EX56-15` | Authentication controls are disabled while an operation is pending. |
+| `EX56-16` | Authentication client failures expose only a generic localized error. |
+| `EX56-17` | Guest header presentation exposes Sign in with Google. |
+| `EX56-18` | Authenticated header presentation shows user name and Sign out. |
+| `EX56-19` | Auth-control strings use the existing canonical English/i18n catalog. |
+| `EX56-20` | Auth controls are exercised in both LTR and RTL page contexts. |
+| `EX56-21` | LocaleBoundary loader typing follows the extended loader return shape. |
+| `EX56-22` | PR #56 adds no schema, migration or server auth mechanism. |
+| `EX56-23` | Real Google OAuth credentials and deployed provider smoke remain deferred. |
+| `EX56-24a` | PROJECT_STATE records Google sign-in/sign-out UX as implemented. |
+| `EX56-24b` | PROJECT_STATE still records Stage 4D as incomplete after the auth-UX slice. |
+| `EX57-01` | react-markdown is pinned at 10.1.0 for forum body rendering. |
+| `EX57-02` | ForumMarkdown is a reusable renderer for persisted post-body content. |
+| `EX57-03` | CommonMark paragraphs/emphasis/lists/inline code/fenced code are enabled through react-markdown. |
+| `EX57-04` | Raw HTML is not turned into active DOM by the forum renderer. |
+| `EX57-05` | ForumMarkdown suppresses image rendering. |
+| `EX57-06` | Unsafe javascript-style link output is not allowed to remain executable. |
+| `EX57-07` | User links open externally with UGC/noopener/noreferrer/nofollow attributes. |
+| `EX57-08` | Markdown/code presentation adds wrapping and RTL-safe layout support. |
+| `EX57-09` | Forum write cooldown is one shared five-second policy for topic/reply content writes. |
+| `EX57-10` | The write policy clock and cooldown duration are injectable. |
+| `EX57-11` | Cooldown rejection uses a typed ForumWriteRateLimitError with retryAfterMs. |
+| `EX57-12` | Cooldown enforcement runs inside the same PostgreSQL transaction as the forum write. |
+| `EX57-13` | The existing Better Auth user row is the per-author serialization mutex. |
+| `EX57-14` | Cooldown history is derived from the latest forum_posts.created_at for the same author. |
+| `EX57-15` | The policy timestamp becomes the createdAt of the committed initial post/reply. |
+| `EX57-16` | Topic creation and reply creation share the same author cooldown. |
+| `EX57-17` | Different authors do not share a cooldown mutex/history. |
+| `EX57-18` | Same-author concurrent attempts are serialized before cooldown evaluation. |
+| `EX57-19` | Real PostgreSQL concurrency coverage requires only one same-author write graph to commit. |
+| `EX57-20` | Cooldown rejection occurs before partial topic/reply graph persistence. |
+| `EX57-21` | No new schema/migration is introduced for the cooldown. |
+| `EX57-22` | ForumWriteRateLimitError maps to HTTP 429. |
+| `EX57-23` | Retry-After is emitted as a positive ceiling in seconds. |
+| `EX57-24` | Rate-limit responses use localized safe presentation without domain details. |
+| `EX57-25` | Markdown security behavior has dedicated DOM tests. |
+| `EX57-26` | The DB suite includes deterministic cooldown boundary/rollback/author-isolation cases. |
+| `EX57-27` | P2 review identifies that the incomplete-topic rollback test can pass for the wrong rejection. |
+| `EX57-28` | PROJECT_STATE marks Stage 4D complete in the local/CI path. |
+| `EX57-29a` | Solved/best-answer becomes a distinct next product slice after Stage 4D completion. |
+| `EX57-29b` | Minimum-role/authorization work remains a distinct later Stage 4E slice. |
+| `EX57-30a` | Real Google OAuth acceptance remains deferred to Stage 6. |
+| `EX57-30b` | General external deployment acceptance remains deferred to Stage 6. |
+| `EX58-01` | forum_topics gains persistent is_solved state. |
+| `EX58-02` | forum_topics gains optional best_answer_post_id. |
+| `EX58-03` | A best answer is only valid when the topic is solved. |
+| `EX58-04` | forum_posts gains unique (topic_id,id) identity for same-topic best-answer enforcement. |
+| `EX58-05` | Best-answer database integrity uses composite (topic id, post id) identity. |
+| `EX58-06` | The initial best-answer FK used ON DELETE RESTRICT. |
+| `EX58-07` | The initial RESTRICT behavior conflicts with deleting a solved topic whose posts cascade. |
+| `EX58-08` | 0ce4208 changes the best-answer FK to ON DELETE NO ACTION. |
+| `EX58-09` | The final best-answer FK is DEFERRABLE INITIALLY DEFERRED. |
+| `EX58-10` | The circular deferred best-answer FK remains manual SQL outside Drizzle’s declarative snapshot model. |
+| `EX58-11` | PostgreSQL tests assert exact best-answer FK metadata. |
+| `EX58-12` | PostgreSQL deferred-constraint coverage rejects a cross-topic best-answer. |
+| `EX58-13` | Solved-topic aggregate deletion is explicitly regression-tested. |
+| `EX58-14` | markTopicSolved locks the target topic row. |
+| `EX58-15` | markTopicSolved requires the actor to equal the topic author. |
+| `EX58-16` | markTopicSolved distinguishes a missing topic. |
+| `EX58-17` | markTopicSolved sets isSolved=true atomically in its transaction. |
+| `EX58-18` | selectBestAnswer locks the topic row before checking state. |
+| `EX58-19` | selectBestAnswer requires the actor to equal the topic author. |
+| `EX58-20` | Best answer selection requires the topic to already be solved. |
+| `EX58-21` | Best answer selection distinguishes a missing post. |
+| `EX58-22` | Best answer selection rejects a post from another topic. |
+| `EX58-23` | An existing best answer can be replaced by another valid post from the same topic. |
+| `EX58-24` | Public ForumTopic/ForumTopicPage carries isSolved and bestAnswerPostId. |
+| `EX58-25` | ForumWriter adds markTopicSolved and selectBestAnswer operations. |
+| `EX58-26` | Topic action introduces explicit markSolved and selectBestAnswer intents. |
+| `EX58-27` | Solution mutations reuse the existing same-origin/session mutation boundary. |
+| `EX58-28` | Solution actor identity comes only from the resolved Better Auth session. |
+| `EX58-29` | ForumAuthorizationError maps to controlled 403. |
+| `EX58-30` | ForumStateConflictError maps to controlled 409. |
+| `EX58-31` | Solved state is publicly visible. |
+| `EX58-32` | A selected best answer is visually marked on the corresponding post. |
+| `EX58-33` | Topic heading exposes a stable go-to-solution fragment link. |
+| `EX58-34` | Only the topic author is offered Stage 4E1 solution-management controls. |
+| `EX58-35` | Mark-solved control is shown only while the topic is unsolved. |
+| `EX58-36` | Best-answer selection controls appear after solved state on non-selected posts. |
+| `EX58-37` | Migration 0005 is append-only checked-in history for solved/best-answer state. |
+| `EX58-38` | PR #58 does not change the immutable content revision model. |
+| `EX58-39` | Initial CI #115 fails in the new solution fixture because the forum cooldown fires. |
+| `EX58-40` | The failed solution fixture contaminates later shared-fixture assertions. |
+| `EX58-41` | 9cda880 gives the solution test a deterministic advancing write-policy clock. |
+| `EX58-42` | 9cda880 guarantees cleanup with finally. |
+| `EX58-43` | P2 review records a two-column grid regression in best-answer post presentation. |
+| `EX58-44` | PROJECT_STATE records Stage 4E solved/best-answer author slice implemented local/CI. |
+| `EX58-45` | Minimum roles and moderator/admin authorization remain later Stage 4E2 work. |
+| `EX58-46a` | Real Google OAuth acceptance remains outside the solved/best-answer slice. |
+| `EX58-46b` | General external deployment acceptance remains outside the solved/best-answer slice. |
+| `EX59-01` | Dynamic application authorization is accepted as a product extension from PR #59 forward. |
+| `EX59-02` | Better Auth remains authoritative for authentication/session identity, not application permissions. |
+| `EX59-03` | Authorization checks target permissions/capabilities rather than role-name comparisons. |
+| `EX59-04` | Application roles are dynamic PostgreSQL state. |
+| `EX59-05` | Protected site UI must support custom role creation. |
+| `EX59-06` | Custom role display names are editable. |
+| `EX59-07` | Permission grants of built-in and custom roles are editable data. |
+| `EX59-08` | user, moderator and admin remain stable built-in starting roles. |
+| `EX59-09` | Built-in roles cannot be deleted. |
+| `EX59-10` | Built-in role stable slugs cannot be changed. |
+| `EX59-11` | Custom roles may be deleted only while unassigned. |
+| `EX59-12` | First-release user membership is one assigned role per user. |
+| `EX59-13` | Guest is absence of authenticated session, not a guest-role database row. |
+| `EX59-14` | Authenticated users without an explicit assignment default to built-in user. |
+| `EX59-15` | Role inheritance is explicitly excluded. |
+| `EX59-16` | The Stage 4 executable permission catalog is code-backed and finite. |
+| `EX59-17` | Management UI cannot invent executable permissions from arbitrary strings. |
+| `EX59-18` | forum.solution.manageOwn requires a server-side resource condition. |
+| `EX59-19` | Client-provided author/role/permission data is not authorization evidence. |
+| `EX59-20` | Built-in user initial grants are explicit and independent. |
+| `EX59-21` | Built-in moderator initial grants are explicit and independent. |
+| `EX59-22` | Built-in admin initial grants are explicit and independent. |
+| `EX59-23` | Built-in grant lists are only initial seed data. |
+| `EX59-24` | Per-user override state supports inherit by absence. |
+| `EX59-25` | Per-user allow can grant a permission independently of the role grant. |
+| `EX59-26` | Per-user deny can remove a permission granted by the role. |
+| `EX59-27` | Effective permission precedence is deny → allow → role grant → deny by default. |
+| `EX59-28` | Authorization persistence requires authz_roles. |
+| `EX59-29` | Authorization persistence requires authz_permissions. |
+| `EX59-30` | Authorization persistence requires role→permission grants. |
+| `EX59-31` | Authorization persistence requires one explicit user-role assignment. |
+| `EX59-32` | Authorization persistence requires per-user permission overrides. |
+| `EX59-33` | User role assignments and overrides reference Better Auth user.id. |
+| `EX59-34` | Application authz tables are not Better Auth Admin plugin schema. |
+| `EX59-35` | Protected-request authorization starts from Better Auth session user.id. |
+| `EX59-36` | Effective authorization state is read from PostgreSQL. |
+| `EX59-37` | Role/grant/assignment/override changes must affect the next protected request without re-login. |
+| `EX59-38` | Request-scoped authorization caching is allowed only within one request. |
+| `EX59-39` | Routes/UI/domain code should use one PermissionResolver/authorization capability. |
+| `EX59-40` | Protected authorization UI must list roles and role grants. |
+| `EX59-41` | Protected authorization UI must create custom roles and edit their display names. |
+| `EX59-42` | Protected authorization UI must edit permission grants for any role including built-ins. |
+| `EX59-43` | Protected authorization UI must list users and assign one role. |
+| `EX59-44` | Protected authorization UI must expose inherit/allow/deny per-user permission state. |
+| `EX59-45` | Protected authorization UI must show effective permissions. |
+| `EX59-46` | Hiding management controls is not an authorization boundary. |
+| `EX59-47` | Management mutations also retain runtime validation and same-origin/CSRF boundaries. |
+| `EX59-48` | access.authorization.manage is the recovery-critical management permission. |
+| `EX59-49` | After the first manager exists, no management mutation may leave zero effective managers. |
+| `EX59-50` | Initial access-manager bootstrap is server-controlled and external-release work. |
+| `EX59-51` | Local/CI authorization tests may bootstrap through controlled fixtures/direct DB setup. |
+| `EX59-52` | Application role/permission state must not become an authoritative Better Auth session claim. |
+| `EX59-53a` | Stage 4E2 schedules an authorization backend foundation. |
+| `EX59-53b` | Stage 4E2 schedules a protected authorization management UI. |
+| `EX59-53c` | Stage 4E2 schedules forum authorization integration through the PermissionResolver boundary. |
+| `EX59-53d` | Stage 4E2 schedules authorization migration and database/integration testing. |
+| `EX59-53e` | Stage 4E2 schedules core authorization/forum E2E coverage. |
+| `EX59-54` | Bans/impersonation, edit/delete moderation, reports, reputation, audit log, multiple roles, tenancy and arbitrary executable permissions remain outside Stage 4E2. |
+| `EX59-55` | Application authorization roles are distinct from PostgreSQL infrastructure roles/grants. |
+| `EX59-56` | d710823 replaces implied role inheritance with explicit independent initial grants. |
+| `EX59-57` | PR #59 changes contracts/documentation only. |
+| `EX60-01` | Migration 0006 is the append-only authorization backend migration. |
+| `EX60-02` | authz_roles stores role identity separately from permission grants. |
+| `EX60-03` | Role slugs must be trimmed lowercase-style identifiers matching the fixed slug regex. |
+| `EX60-04` | authz_permissions persists the code-backed five-key Stage 4 catalog. |
+| `EX60-05` | authz_role_permissions is the role-grant relation. |
+| `EX60-06` | authz_user_roles enforces one explicit role assignment per user. |
+| `EX60-07` | authz_user_permission_overrides stores one allow/deny effect per user+permission. |
+| `EX60-08` | Authorization assignment/override rows reference Better Auth users. |
+| `EX60-09` | authz_mutation_lock is a seeded singleton serialization row. |
+| `EX60-10` | Migration 0006 seeds the exact code permission catalog. |
+| `EX60-11` | Migration 0006 seeds stable built-in user/moderator/admin identities. |
+| `EX60-12` | Built-in user grants are seeded explicitly. |
+| `EX60-13` | Built-in moderator grants are seeded explicitly without inheritance. |
+| `EX60-14` | Built-in admin grants are seeded explicitly without inheritance. |
+| `EX60-15` | Initial migration protected built-in role deletion/identity. |
+| `EX60-16` | cce9aa4 makes slug and isSystem immutable for every role. |
+| `EX60-17` | Final trigger still permits deleting non-system custom roles at the schema identity layer. |
+| `EX60-18` | Custom-role deletion fails while users are assigned. |
+| `EX60-19` | PERMISSION_CATALOG centralizes the five executable Stage 4 permission keys. |
+| `EX60-20` | INITIAL_ROLE_GRANTS mirrors the independent seeded defaults in code. |
+| `EX60-21` | resolveUser returns role identity, explicit-assignment flag, role grants, overrides and effectivePermissions. |
+| `EX60-22` | Authenticated user without assignment resolves to built-in user. |
+| `EX60-23` | Initial 0570aef resolution could resolve the default user role without first proving the Better Auth user exists. |
+| `EX60-24` | a20570e anchors resolution on the Better Auth user table. |
+| `EX60-25` | Final resolveUser distinguishes missing user from missing built-in user role. |
+| `EX60-26` | Effective permissions apply user override effects on top of explicit role grants. |
+| `EX60-27` | P2 review records a multi-statement snapshot-consistency race in resolveUser. |
+| `EX60-28` | repository.hasPermission uses one SQL statement in the final PR. |
+| `EX60-29` | Missing user hasPermission resolves false. |
+| `EX60-30` | listRoles returns system roles first, then slug order. |
+| `EX60-31` | readRole returns role metadata plus its grant list. |
+| `EX60-32` | createCustomRole generates role id server-side and validates slug/display name. |
+| `EX60-33` | Initial custom-role rename API allowed changing slug and display name. |
+| `EX60-34` | a20570e changes the repository rename operation to display-name only. |
+| `EX60-35` | 394c8cb removes slug from the service rename contract. |
+| `EX60-36` | cce9aa4 enforces stable custom slugs at the database boundary. |
+| `EX60-37` | replaceRoleGrants validates every requested key against the code catalog. |
+| `EX60-38` | replaceRoleGrants de-duplicates repeated permission inputs. |
+| `EX60-39` | replaceRoleGrants replaces rather than incrementally patches a role’s grant set. |
+| `EX60-40` | assignUserRole upserts the single explicit user assignment. |
+| `EX60-41` | setUserOverride supports allow and deny rows. |
+| `EX60-42` | inherit is represented by deleting the user override row. |
+| `EX60-43` | AuthorizationService validates nonblank actor/user/role identities at its boundary. |
+| `EX60-44` | AuthorizationService validates custom role slug syntax. |
+| `EX60-45` | AuthorizationService validates override permission/effect against the known catalog and allow/deny/null set. |
+| `EX60-46` | Every authorization management mutation starts one database transaction. |
+| `EX60-47` | Every management mutation locks the singleton authz_mutation_lock row FOR UPDATE. |
+| `EX60-48` | Management mutation authorization is rechecked from current DB state inside the transaction. |
+| `EX60-49` | Missing/non-manager actor cannot mutate authorization. |
+| `EX60-50` | Lockout evaluation counts effective access.authorization.manage before and after the mutation. |
+| `EX60-51` | Once management capability has existed, a mutation cannot leave zero effective managers. |
+| `EX60-52` | managers_ever_existed persists that the recovery invariant has become active. |
+| `EX60-53` | Concurrent removal of the last two managers is serialized. |
+| `EX60-54` | Lockout rejection rolls back the attempted grant change. |
+| `EX60-55` | Authorization repository exposes typed management/domain errors. |
+| `EX60-56` | Invalid service input uses a typed InvalidAuthorizationInputError. |
+| `EX60-57` | AuthorizationCapability exposes forUser(userId) → PermissionResolver. |
+| `EX60-58` | createAuthorizationCapability caches resolve() by user within that capability instance. |
+| `EX60-59` | createAuthorizationCapability.has performs a fresh repository.hasPermission in the final PR. |
+| `EX60-60` | createHyperdriveAuthorization is a separate request capability implementation. |
+| `EX60-61` | Hyperdrive authorization resolution opens a Pool(max=1) per uncached user resolution and closes it after resolveUser. |
+| `EX60-62` | Hyperdrive authorization caches each user’s full resolved authorization for that capability instance. |
+| `EX60-63` | Hyperdrive authorization has() reads the cached resolved effectivePermissions in #60. |
+| `EX60-64` | Worker creates the authorization capability from the existing HYPERDRIVE connection string. |
+| `EX60-65` | PR #60 introduces no separate external authorization DB role/Hyperdrive binding. |
+| `EX60-66` | No forum mutation or management route consumes PermissionResolver in PR #60. |
+| `EX60-67` | External first-manager bootstrap remains unimplemented in #60. |
+| `EX60-68a` | DB tests validate the exact code-backed permission catalog. |
+| `EX60-68b` | DB tests validate independent built-in role seeds and their exact grant sets. |
+| `EX60-69a` | DB tests exercise custom-role lifecycle behavior. |
+| `EX60-69b` | DB tests exercise explicit user-role assignment behavior. |
+| `EX60-69c` | DB tests exercise per-user override precedence behavior. |
+| `EX60-70` | DB tests cover missing-user authorization identity. |
+| `EX60-71` | DB tests cover stable custom-role slug identity. |
+| `EX60-72` | Initial CI #122 fails because a synchronous input-validation exception is asserted with .rejects. |
+| `EX60-73` | f46e451 changes that validation assertion to synchronous toThrow. |
+| `EX60-74` | AGENTS adds a Codex-only DB CI readiness rule. |
+| `EX60-75` | PROJECT_STATE records Stage 4E2a backend foundation complete local/CI. |
+| `EX60-76a` | Protected authorization management UI remains unfinished after PR #60. |
+| `EX60-76b` | Forum actions/UI remain unfinished consumers of PermissionResolver after PR #60. |
+| `EX60-76c` | Core authorization/forum E2E remains unfinished after PR #60. |
+| `EX60-77` | PR #61 is forward evidence of later PermissionResolver/UI consumption. |
+| `EX60-78` | PR #76 is forward evidence of a later typed authorization-unavailable boundary. |
+
 `COVERAGE.md` remains the authoritative working checklist for whether every in-scope PR/commit has
 been examined and whether mixed changes were completely decomposed. A populated ledger alone never
 proves that extraction or dependency discovery is complete.

@@ -1832,3 +1832,67 @@ Submit `RESPONSE DL-EXTRACT-010/2` containing only:
 
 Do not repeat the full response, expand scope, classify decisions, retract the accepted dynamic-
 authorization product extension, import PR #61/#76 behavior backward, or edit PR #78.
+
+## REVIEW DL-EXTRACT-010/2
+
+From: Codex
+Reviewed response: PR #79 response commit `bf50401a715ac1fcd0e7dc1c25042afdd769e3e2`,
+confirmed at PR #79 head `3f343baba2aea69ef1fdd07230a8423e40777351`
+Status: accepted-for-extraction
+
+### Independent verification and resolution
+
+The response performs all eight requested splits, preserves the accepted high-level authorization
+extension without converting detailed mechanisms into user-approved facts, and keeps PR #61/#76 as
+forward evidence only. The replacement map, delivery/test/consumer distinctions, mappings, and ranges
+are consistent with the accepted `/1` evidence.
+
+`DL-EXTRACT-010` is closed as an extraction task. Its 248 atomic records are indexed at `open` status
+in `LEDGER.md`, and PRs #56–#60 are `extraction-complete`. This remains evidence inventory, not an
+authorization-architecture verdict.
+
+## TASK DL-EXTRACT-011
+
+From: Codex
+Status: open
+Response destination: ChatGPT-owned PR #79
+Scope: PRs #61, #63, #62, #64, and #65 in actual chronological merge order
+
+### Context-reset requirement
+
+Before working, re-read PR #78 `PROCESS_CONTEXT.md`, `README.md`, the current `COVERAGE.md`, the relevant
+`LEDGER.md` indexes, and the tail of this file. ChatGPT is a bounded evidence/review contributor; Codex
+leads the audit. Do not reconstruct method or authority from conversational memory.
+
+### Assignment
+
+Extract every atomic decision, implementation correction, review intervention, failure boundary,
+future-proof translation mechanism, state claim, test/gate, and evidence limitation from this block.
+
+Requirements:
+
+1. Inspect every PR body, merge diff, internal commit, review/discussion, CI/deployment claim, changed
+   file, and available external artifact; perform a complete `F/A/C/D/O/G/T` sweep for every PR.
+2. For PR #61, reconstruct the exact authorization integration and failure behavior at merge time.
+   Separate resolver/cache consumption, forum/admin permission checks, UI management, lockout behavior,
+   403/503/degradation handling, tests, and state claims.
+3. Preserve the known high-priority lead: controlled degradation for real authorization-infrastructure
+   outage was broadened so ordinary resolver/programming/schema/configuration failures could be treated
+   as unavailability. Do not import the later typed correction backward; use PR #76 only as forward
+   evidence and do not classify/remedy the issue yet.
+4. Process PR #63 before PR #62 because that is merge chronology. For #63, separate exact-locale task
+   planning, source/policy/generation identity, provider-neutral boundaries, durable/future job concerns,
+   stale/current publication guards, and deliberately later consumers. Complexity or delayed execution
+   alone is not a defect.
+5. For PR #62, identify exactly which Stage 5 state/roadmap/docs claims it synchronizes after #63 and
+   whether any statement is merely documentation state rather than a new architecture decision.
+6. For PR #64, reconstruct the exact Cloudflare configuration-path defect in PR #41, its concrete fix,
+   verification evidence, and any state/history consequence. Keep query redaction separate from
+   application logging and Observability enablement/sampling.
+7. For PR #65, reconstruct the inherited-property namespace-key defect, its actual runtime/security or
+   integrity consequence, the precise ownership-check correction, and regression coverage. Do not use
+   a real implementation bug as blanket criticism of generic locale/translation architecture.
+8. Preserve local/CI versus external rollout boundaries and all intentionally later consumers. Do not
+   classify correctness, prematurity, future-proofing, target architecture, or remedy during extraction.
+
+Respond as `RESPONSE DL-EXTRACT-011/1` in PR #79. Do not edit PR #78.

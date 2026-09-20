@@ -102,11 +102,11 @@ number is lower than the baseline PR number.
 | #53 | `f9f03fb` | extraction-complete | `EX53-01..11`, `EX53-12a..b`, `EX53-13..25`, `EX53-26a..b`, `EX53-27..32` | Better Auth runtime/session contexts, cookie correction, local DB integration, deferred OAuth, two P1 reviews, and smoke counter-evidence reviewed. |
 | #54 | `9a09a2d` | extraction-complete | `EX54-01..04` | Origin, persistence, and documentation-only correction of the stale Stage 4 blocker label reviewed. |
 | #55 | `826167b` | extraction-complete | `EX55-01..23`, `EX55-24a..b`, `EX55-25..33`, `EX55-34a..c`, `EX55-35` | Authenticated writes, actor/origin/error boundaries, graph transactions, test-fixture correction, unfinished slices, and local/CI scope reviewed. |
-| #56 | `950133f` | pending | — | — |
-| #57 | `a5a77fa` | pending | — | — |
-| #58 | `a35c4ce` | pending | — | — |
-| #59 | `a22ae0e` | pending | — | — |
-| #60 | `b51fb66` | pending | — | — |
+| #56 | `950133f` | extraction-complete | `EX56-01..23`, `EX56-24a..b` | Browser auth controls, locale-safe returns, in-PR session-state correction, deferred OAuth, UI tests, and state claims reviewed. |
+| #57 | `a5a77fa` | extraction-complete | `EX57-01..28`, `EX57-29a..b`, `EX57-30a..b` | Safe Markdown, transactional cooldown/concurrency, HTTP behavior, open rollback-test review, completion state, and deferred work reviewed. |
+| #58 | `a35c4ce` | extraction-complete | `EX58-01..45`, `EX58-46a..b` | Solved/best-answer schema and mutations, FK/cascade correction, fixture correction, open UI review, state, and external boundaries reviewed. |
+| #59 | `a22ae0e` | extraction-complete | `EX59-01..52`, `EX59-53a..e`, `EX59-54..57` | Accepted dynamic-authorization extension, detailed catalog/precedence/persistence/safety contract, delivery slices, exclusions, and provenance boundaries reviewed. |
+| #60 | `b51fb66` | extraction-complete | `EX60-01..67`, `EX60-68a..b`, `EX60-69a..c`, `EX60-70..75`, `EX60-76a..c`, `EX60-77..78` | Authorization schema/backend/resolver/cache behaviors, lockout invariants, open snapshot review, tests, unfinished consumers, and forward evidence reviewed. |
 | #61 | `a76a102` | pending | — | — |
 | #63 | `b238df0` | pending | — | Merged before #62. |
 | #62 | `6b10d23` | pending | — | — |
