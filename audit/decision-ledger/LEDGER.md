@@ -178,6 +178,22 @@ R2 contains no confirmed current defect or dumb correction. Later current behavi
 does not retroactively supply authority for their original timing. Strict documentation laundering is not
 established.
 
+### R3 persistent translation and bundle foundations (`DL-CLASSIFY-011`)
+
+| Records | Preliminary classification | Evidence boundary |
+| --- | --- | --- |
+| 38 R3 records | intentional foundations | Persistent translation identity/storage, source adapters, compiler/version/cache, and bundle-store boundaries have accepted ancestry and current Stage 5A consumers. |
+| 16 R3 records | acceptable alternatives | Staged rollout, operational, and implementation choices are coherent without becoming current-stage external requirements. |
+| `EX31-10`, `EX31-14`, `EX31-16` | real current storage/verifier defects | Whitespace-wrapped English locale values pass the persistent translation/bundle checks and the production verifier because comparison does not trim before `lower(...) = 'en'`. |
+| `EX34-23` | real current bundle-namespace defect | `bundles.ts` indexes `canonicalEnglishCatalog[namespace]` without own-property validation; PR #65 fixed analogous `sources.ts` paths only. |
+| `EX32-17` | historical real defect | Broad code-less PostgreSQL failure classification was later corrected by `EX39-08..10`. |
+| `EX34-15b`, `EX34-16a` | justified in-PR fixes | Read and write persistence boundaries now recompute/verify bundle semantics instead of trusting stored or caller-supplied versions/content. |
+| 10 R3 records | reviewed supporting/provenance | Rollout/evidence chronology supports the block without requiring separate correctness verdicts. |
+
+R3 contains no dumb correction, insufficient-evidence record, unresolved item, premature external work,
+or strict documentation laundering. PR #65 is analogous forward evidence for `EX34-23`, not a correction
+of the still-live `bundles.ts` path.
+
 ## Record template
 
 ```text
