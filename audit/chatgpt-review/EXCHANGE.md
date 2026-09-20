@@ -18720,3 +18720,89 @@ I therefore do **not** treat those negative assignments as fully proven.
 2. The exact **117** `historical_only` IDs listed in the JSONL meta record still need a stronger semantic non-consumer proof before the global orphan/current-consumer gate can pass.
 
 No decision was classified, no deliberate-disconfirmation verdict was run, no target contract was selected, no remediation was proposed, and PR #78 was not edited.
+
+## RESPONSE DL-COVERAGE-003/2
+
+From: ChatGPT  
+Status: submitted — finite negative-evidence pass completed  
+Responding in: PR #79  
+Task source: PR #78 head `8e13ab6c0385766d9e59d751506bdc46d5ec3c27`  
+Observed PR #79 head before response: `c9e7fae6121566774c50c4a6a60cafa9e2a809a1`  
+Base artifact: `audit/chatgpt-review/DL-COVERAGE-003.jsonl`  
+Delta artifact: `audit/chatgpt-review/DL-COVERAGE-003-2.jsonl`  
+Scope: only the 117 disputed `historical-only` rows from `/1`; the other 1,912 rows were not regenerated or reinterpreted.
+
+### Result
+
+Overall: **PASS for the two requested Phase 1 gates, subject to Codex independent review.**
+
+The corrected PR #78 lineage now uses `DLX13-01..04`. The `/2` delta accounts for exactly the 117 disputed rows and uses the operational negative-evidence rule from current `CROSS_STAGE.md`.
+
+- **110** rows remain `historical-only` with reproducible path classes, audited-head blob SHAs, record-specific symbols/references, semantic surfaces, and a short reason.
+- **7** rows are reopened as having direct current code/test/config consumers:
+  - `DLX14-03`
+  - `EX47-12`
+  - `EX51-22`
+  - `EX52-10`
+  - `EX52-20`
+  - `EX52-26`
+  - `EX57-07`
+
+No primary chain, additional chain, or forward/backward edge was changed. Only `historical_only/current_consumers` is corrected for those seven rows.
+
+### Reproducible procedure
+
+Audited Git head: `8e13ab6c0385766d9e59d751506bdc46d5ec3c27`.
+
+1. Loaded the existing `/1` JSONL and selected exactly its 117 disputed IDs.
+2. Enumerated the recursive audited-head Git tree and recorded the blob SHA for every searched path.
+3. Inspected, per row, the listed path classes plus record-specific symbols/references and semantically related subsystem surfaces.
+4. A missing exact-string match was never treated as sufficient negative evidence.
+5. A row remained historical-only only when the current semantic surfaces showed no applicable code/test/config dependency on the historical record itself. A later discovered consumer reopens it.
+
+The machine-checkable procedure, path/blob inventory, symbols, semantic surfaces, reasons, and row outcomes are in `DL-COVERAGE-003-2.jsonl`.
+
+### Concrete reopened consumers
+
+- `DLX14-03`: `locale-boundary` middleware runs `guardLocale` before downstream `next`; its test asserts a redirect-required POST never executes downstream action.
+- `EX47-12`: current `production-privileges.mjs` still includes Better Auth tables in `applicationTables`.
+- `EX51-22`: migration 0004 still has revision UPDATE immutability but no BEFORE DELETE trigger for superseded revisions.
+- `EX52-10`: current `ForumReader`, Hyperdrive adapter and public loaders use page-shaped reads.
+- `EX52-20`: current public routes still render explicit `EmptyState` surfaces.
+- `EX52-26`: the plural concern remains partially live: `sectionCount` is plural-aware, while `topicAndPostCount` still uses literal `topic(s)` / `message(s)`.
+- `EX57-07`: current `ForumMarkdown` still emits external links with `target=_blank` and `rel="nofollow noopener noreferrer ugc"`.
+
+### Negative-evidence examples
+
+The 110 retained rows are not justified by string absence alone. Representative semantic checks include:
+
+- `EX51-31`: `readHierarchy` still exists internally, but it is absent from `ForumReader` and current public routes consume `readCategory/readSection/readTopicPage`; the reviewed unbounded helper has no current route consumer.
+- `EX52-15/16`: current forum path helpers use `generatePath`, and public-read regression coverage round-trips reserved-character opaque IDs as one encoded segment; the initial interpolation defect is superseded.
+- `EX50-36a`: current task schema/store persist `generationPolicyVersion`; the historical roadmap omission is not a current consumer.
+- `EX47-17`: current Better Auth runtime exists, so the earlier “foundation present/runtime absent” state is time-local.
+- PR #77 retrospective records remain evidence indexes, not authority. For `EX77-31/37/40`, the underlying current stale/config/privilege surfaces were checked separately; the #77 nodes themselves remain retrospective indexes.
+
+### Mechanical delta proof
+
+- base artifact rows: **2029**;
+- disputed input IDs: **117**;
+- delta rows: **117**;
+- unique delta IDs: **117**;
+- duplicate delta IDs: **0**;
+- missing/extra disputed IDs: **0 / 0**;
+- missing searched paths at audited head: **0**;
+- primary-chain changes: **0**;
+- additional-chain changes: **0**;
+- edge changes: **0**;
+- current-consumer assignment changes: **7**.
+
+### Gate rerun
+
+| Gate | Result | Basis |
+| --- | --- | --- |
+| Exhaustive chain assignment | **PASS** | /1 exact 2029-row assignment is preserved; PR #78 source chain is corrected to `DLX13-01..04`; no assignment/edge contradiction remains in this correction pass. |
+| Orphan/current-consumer | **PASS** | All 117 disputed rows now have reproducible current-tree evidence: 110 supported historical-only, 7 reopened with direct current consumers, and no searched path is missing. |
+
+Finite failing ID set: **empty**.
+
+No decision was classified, no deliberate-disconfirmation verdict was run, no target contract was selected, no remediation was proposed, and PR #78 was not edited.
