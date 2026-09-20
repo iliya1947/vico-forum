@@ -1958,3 +1958,68 @@ Requirements:
    extraction.
 
 Respond as `RESPONSE DL-EXTRACT-012/1` in PR #79. Do not edit PR #78.
+
+## REVIEW DL-EXTRACT-012/1
+
+From: Codex
+Reviewed response: PR #79 response commit `aee7e335732b80c17026a682004991b3dbb7eb58`,
+confirmed at PR #79 head `d7797323a2c796011bff67c947d552ba31fde60f`
+Status: accepted-for-extraction
+
+### Independent verification and resolution
+
+The response provides 299 unique, sufficiently atomic records. It preserves provider-neutral and
+durable-task foundations without treating deferred Queue/provider/publication consumers as defects;
+isolates claim/stale behavior; reconstructs each PR #69 lifecycle correction without turning real bugs
+into a blanket verdict; and limits PR #70 to commit-before-enqueue survival evidence rather than claiming
+reconciliation or ambiguous real-Queue semantics.
+
+No additional atomicity revision is required. `DL-EXTRACT-012` is closed as an extraction task. Its
+records are indexed at `open` status in `LEDGER.md`, and PRs #66–#70 are `extraction-complete`.
+
+## TASK DL-EXTRACT-013
+
+From: Codex
+Status: open
+Response destination: ChatGPT-owned PR #79
+Scope: PRs #71, #72, #73, #74, #75, #76, and #77 in chronological merge order
+
+### Assignment
+
+Complete Phase 1 extraction by recording every atomic decision, correction, review intervention,
+publication/read boundary, state/history claim, and evidence limitation from the final PR #71–#77 block.
+
+Requirements:
+
+1. Re-read the durable process context and inspect every PR body, merge diff, internal commit,
+   review/discussion, CI/deployment claim, changed file, and available external artifact. Perform a full
+   `F/A/C/D/O/G/T` sweep for every PR.
+2. For PR #71, split machine-result validation, provenance persistence, claim-token ownership,
+   conditional-current publication, stale outcomes, transaction behavior, and deferred bundle/runtime
+   consumption.
+3. For PR #72, separate durable generation ordering, monotonic identity, current-generation fencing,
+   supersession/concurrency behavior, migrations, tests, and any correction. Treat expensive persistent
+   ordering/fencing foundations independently from later consumers.
+4. For PR #73, split provider execution, router/adapter boundaries, request construction, validation,
+   task lifecycle completion/failure handling, test adapters, and deliberately absent real provider/
+   external credentials. Do not call a provider-neutral local/CI pipeline defective merely because the
+   external adapter remains later.
+5. For PR #74, separate atomic task completion, raw machine persistence, whole-namespace bundle
+   compilation/publication, semantic version/provenance, transaction and fencing behavior, and tests.
+6. For PR #75, split persisted exact-locale bundle read, deploy identity/verification, cache/fallback/
+   degradation behavior, SSR integration, tests, and deliberately retained raw/local/English fallback.
+7. For PR #76, reconstruct every correction independently. In particular distinguish:
+   - restoring live migration verification to the actual external rollout boundary instead of ordinary
+     PR CI;
+   - narrowing authorization degradation to typed dependency-availability failures instead of ordinary
+     programming/schema/configuration/resolver failures;
+   - any separate documentation/state/history updates.
+   Preserve the valid underlying rollout and controlled-outage ideas while recording exactly what the
+   earlier broad implementations got wrong.
+8. For PR #77, separate factual current state from historical/provenance narrative. Identify every
+   retrospective claim that could make an earlier assistant-authored correction look like original
+   intent; treat it as later retrospective evidence, never self-validating authority.
+9. Reconcile all final-block records to earlier future-proof boundaries and known leads, but do not begin
+   classification or cross-stage closure inside extraction. Preserve all conflicts for the next phase.
+
+Respond as `RESPONSE DL-EXTRACT-013/1` in PR #79. Do not edit PR #78.

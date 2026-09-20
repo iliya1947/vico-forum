@@ -112,11 +112,11 @@ number is lower than the baseline PR number.
 | #62 | `6b10d23` | extraction-complete | `EX62-01..13` | Post-#63 branch synchronization, Stage 4 evidence finalization, Stage 5 priority/local-CI documentation, process-only guidance, and CI history reviewed. |
 | #64 | `5a85a03` | extraction-complete | `EX64-01..12` | Exact Wrangler query-redaction path defect/fix, unchanged observability/logging layers, CI warning evidence, and external-evidence limit reviewed. |
 | #65 | `0a9ed91` | extraction-complete | `EX65-01..15` | Prototype-sensitive namespace ownership bug, demonstrated consequence/limits, shared Object.hasOwn correction, regression coverage, and scope reviewed. |
-| #66 | `9c37549` | pending | — | — |
-| #67 | `6a476d4` | pending | — | — |
-| #68 | `a0215cc` | pending | — | — |
-| #69 | `c12550c` | pending | — | — |
-| #70 | `d84d888` | pending | — | — |
+| #66 | `9c37549` | extraction-complete | `EX66-01..65` | Provider-neutral routing, locale rules, output validation, plural/structured boundaries, in-PR fixture/typecheck fixes, deferred adapters, and CI reviewed. |
+| #67 | `6a476d4` | extraction-complete | `EX67-01..64` | Durable task schema/identity, commit-before-enqueue dispatcher, idempotency, review finding, deferred Queue/consumer/provider/publication, state, and CI reviewed. |
+| #68 | `a0215cc` | extraction-complete | `EX68-01..72` | Claim/lease/token lifecycle, stale preflight, concurrency, clock-test correction, stale-reactivation review, deferred publication/retry, and state reviewed. |
+| #69 | `c12550c` | extraction-complete | `EX69-01..68` | Shared eligibility, PostgreSQL lifecycle time, stale reactivation, live-claim preservation, reclaim fencing, concrete corrections, CI regression/fix, and state-sync review reviewed. |
+| #70 | `d84d888` | extraction-complete | `EX70-01..30` | Commit-before-enqueue failure-window integration evidence, durable pending survival, PR #69 state synchronization, deferred reconciliation/retry/provider work, and CI reviewed. |
 | #71 | `e3559c3` | pending | — | — |
 | #72 | `ba41a0c` | pending | — | — |
 | #73 | `1afb0c1` | pending | — | — |

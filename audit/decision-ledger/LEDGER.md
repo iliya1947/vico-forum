@@ -1476,6 +1476,315 @@ Detailed evidence is preserved in PR #79 response `DL-EXTRACT-011/1` at `1d76984
 | `EX65-14` | PROJECT_STATE is intentionally unchanged in PR #65. |
 | `EX65-15` | Final PR #65 local/CI gate is green. |
 
+
+### PRs #66–#70
+
+Detailed evidence is preserved in PR #79 response `DL-EXTRACT-012/1` at `aee7e33`, accepted by
+`REVIEW DL-EXTRACT-012/1`. Every record remains `open`; later consumers and genuine lifecycle fixes
+do not predetermine classification of the durable-task foundation.
+
+| Decision ID | Atomic decision index |
+| --- | --- |
+| `EX66-01` | Machine translation routing has a provider-neutral request contract. |
+| `EX66-02` | Translation domain distinguishes UI from content. |
+| `EX66-03` | Translation operation distinguishes plain from structured. |
+| `EX66-04` | Router requests carry Vico source and target locale tags. |
+| `EX66-05` | Router requests carry the canonical message kind. |
+| `EX66-06` | Router requests can carry a plain source string. |
+| `EX66-07` | Router requests can carry a structured source map. |
+| `EX66-08` | Structured requests can carry required branch identities. |
+| `EX66-09` | Provider result payload is untrusted at the router boundary. |
+| `EX66-10` | Provider result provenance includes provider identity. |
+| `EX66-11` | Provider result provenance includes model identity. |
+| `EX66-12` | Provider result provenance records machine origin. |
+| `EX66-13` | Provider result provenance can carry attribution. |
+| `EX66-14` | Provider adapters declare capability through supports(). |
+| `EX66-15` | Provider adapters execute through translate(). |
+| `EX66-16` | Provider locale-code mapping stays behind the adapter. |
+| `EX66-17` | TranslationProviderRouter selects the first supporting adapter. |
+| `EX66-18` | No supporting adapter produces a controlled unsupported-provider error. |
+| `EX66-19` | Declared operation must match message-kind-derived operation. |
+| `EX66-20` | Plain message kind maps to plain operation. |
+| `EX66-21` | Interpolation message kind maps to plain operation. |
+| `EX66-22` | Plural message kind maps to structured operation. |
+| `EX66-23` | Rich message kind maps to structured operation. |
+| `EX66-24` | Contextual/select machine translation is controlled-unsupported in this slice. |
+| `EX66-25` | A locale-pair-incompatible adapter is not selected. |
+| `EX66-26` | A plain-only adapter is not selected for a plural structured request. |
+| `EX66-27` | PR #66 contains no real machine provider adapter or credential. |
+| `EX66-28` | LocaleRulesProvider isolates locale-rule lookup from translation validation. |
+| `EX66-29` | IntlLocaleRulesProvider canonicalizes the requested translation locale. |
+| `EX66-30` | Intl locale support is checked before plural-rule construction. |
+| `EX66-31` | Locale rules use cardinal plural categories. |
+| `EX66-32` | Locale rules require an `other` branch. |
+| `EX66-33` | Returned plural branches are deterministically sorted. |
+| `EX66-34` | Invalid or unsupported locale rules fail without English fallback. |
+| `EX66-35` | English locale-rule coverage expects one/other. |
+| `EX66-36` | Arabic locale-rule coverage expects the six cardinal categories. |
+| `EX66-37` | A formatting-extension locale is rejected by the locale-rules boundary. |
+| `EX66-38` | Translation structural validation is centralized in translation-validation.ts. |
+| `EX66-39` | Empty translation output is rejected. |
+| `EX66-40` | Translation output has a 10,000-character upper bound in this implementation. |
+| `EX66-41` | HTML-like markup is rejected. |
+| `EX66-42` | Placeholder sets must match the descriptor. |
+| `EX66-43` | Controlled nesting/component tokens must be preserved. |
+| `EX66-44` | Every descriptor protected term must remain present. |
+| `EX66-45` | A plural descriptor must declare the count placeholder. |
+| `EX66-46` | Non-plural provider output must be a string. |
+| `EX66-47` | Plural provider output must be an object-like branch map. |
+| `EX66-48` | Target plural output must include every required target branch. |
+| `EX66-49` | Target plural output cannot contain unexpected branches. |
+| `EX66-50` | Every plural branch must be a string. |
+| `EX66-51` | Every plural branch passes the same placeholder/markup/token/protected-term validation. |
+| `EX66-52` | The router can return a non-string raw provider payload without trusting it. |
+| `EX66-53` | Initial protected-term validation exposed stale fixtures. |
+| `EX66-54` | CI #158 database job failed on the protected-term mismatch. |
+| `EX66-55` | CI #158 checks job also failed because the new validation/rules files were absent from Node tsconfig. |
+| `EX66-56` | d735bf4 updates the affected fixtures to preserve the protected term. |
+| `EX66-57` | d735bf4 adds a protected-term regression assertion. |
+| `EX66-58` | d735bf4 adds the new validation/rules modules to tsconfig.node.json. |
+| `EX66-59` | PR #66 changes no database schema or migration. |
+| `EX66-60` | PR #66 changes no dependency version. |
+| `EX66-61` | PROJECT_STATE keeps the provider layer behind TranslationJobDispatcher. |
+| `EX66-62` | PROJECT_STATE defers durable tasks and Queue work. |
+| `EX66-63` | PROJECT_STATE defers real adapters/provider calls. |
+| `EX66-64` | PROJECT_STATE defers persistence/publication/runtime switching. |
+| `EX66-65` | Final PR #66 CI is green. |
+| `EX67-01` | Migration 0007 introduces translation_tasks. |
+| `EX67-02` | Durable task rows have a database UUID id. |
+| `EX67-03` | task_identity is unique. |
+| `EX67-04` | Durable task state stores translation kind. |
+| `EX67-05` | Durable task state stores source namespace. |
+| `EX67-06` | Durable task state stores source key. |
+| `EX67-07` | Durable task state stores source fingerprint. |
+| `EX67-08` | Durable task state stores target locale. |
+| `EX67-09` | Durable task state stores generationPolicyVersion. |
+| `EX67-10` | PR #67 task status is pending-only. |
+| `EX67-11` | Durable task state stores created_at. |
+| `EX67-12` | Durable task state stores updated_at. |
+| `EX67-13` | task_identity must be lowercase SHA-256 at the DB boundary. |
+| `EX67-14` | source_fingerprint must be lowercase SHA-256 at the DB boundary. |
+| `EX67-15` | translation_kind is constrained to ui. |
+| `EX67-16` | source namespace must be nonblank. |
+| `EX67-17` | source key must be nonblank. |
+| `EX67-18` | target locale must be nonblank and not English at the DB boundary. |
+| `EX67-19` | generation policy version must be nonblank. |
+| `EX67-20` | updated_at must not precede created_at. |
+| `EX67-21` | Application validation requires a canonical non-English translation locale. |
+| `EX67-22` | Application validation requires UI kind. |
+| `EX67-23` | Application validation requires SHA-256 task identity. |
+| `EX67-24` | Application validation requires SHA-256 source fingerprint. |
+| `EX67-25` | Application validation requires nonblank source namespace/key/policy. |
+| `EX67-26` | Store persistence recomputes stable task identity. |
+| `EX67-27` | A taskIdentity/data mismatch raises TranslationTaskIntegrityError. |
+| `EX67-28` | Rows read back from PostgreSQL are revalidated. |
+| `EX67-29` | Rows read back must have pending status in #67. |
+| `EX67-30` | Rows read back require UUID and Date identity/timestamps. |
+| `EX67-31` | Rows read back enforce updatedAt >= createdAt in application code too. |
+| `EX67-32` | findById validates UUID task IDs. |
+| `EX67-33` | findByIdentity validates SHA-256 identity shape. |
+| `EX67-34` | Duplicate logical planning upserts the existing task identity. |
+| `EX67-35` | Duplicate logical planning preserves the same durable task id. |
+| `EX67-36` | Duplicate logical planning leaves one row for that task identity. |
+| `EX67-37` | Store verifies that an upserted row still matches every specification field. |
+| `EX67-38` | TranslationTaskMessage contains only translationTaskId. |
+| `EX67-39` | TranslationTaskEnqueuer is transport-neutral. |
+| `EX67-40` | The enqueuer contract explicitly allows duplicate or unknown delivery outcome. |
+| `EX67-41` | PersistentTranslationJobDispatcher processes jobs sequentially. |
+| `EX67-42` | Dispatcher persists a durable task before enqueue. |
+| `EX67-43` | Persistence failure prevents enqueue. |
+| `EX67-44` | Enqueue failure propagates to the dispatcher caller. |
+| `EX67-45` | The #67 unit fixture remains pending when enqueue throws. |
+| `EX67-46` | Fake enqueuer records a message only after its configured enqueue effect succeeds. |
+| `EX67-47` | Multiple jobs preserve input enqueue order in the unit boundary. |
+| `EX67-48` | The durable identity materializes the PR #63 semantic identity contract. |
+| `EX67-49` | Durable task identity is separate from delivery identity. |
+| `EX67-50` | Duplicate planning can enqueue the same durable task id again. |
+| `EX67-51` | PR #67 does not claim exactly-once Queue delivery. |
+| `EX67-52` | PR #67 does not add a real Cloudflare Queue adapter. |
+| `EX67-53` | PR #67 does not add a task consumer or claim/lease state. |
+| `EX67-54` | PR #67 does not execute a translation provider. |
+| `EX67-55` | PR #67 does not conditionally publish a provider result. |
+| `EX67-56` | PR #67 does not implement reconciliation. |
+| `EX67-57` | Review 4018711812 identifies client-clock duplicate-upsert timestamp risk. |
+| `EX67-58` | The #67 timestamp finding is not corrected inside PR #67. |
+| `EX67-59` | PR #69 later replaces this client-owned lifecycle timestamp with PostgreSQL statement time. |
+| `EX67-60` | PROJECT_STATE records durable task persistence before enqueue. |
+| `EX67-61` | PROJECT_STATE records pending survival on enqueue failure/unknown as the intended #67 state. |
+| `EX67-62` | Migration 0007 is not externally applied by PR #67. |
+| `EX67-63` | PR #67 adds no external Queue/provider resource. |
+| `EX67-64` | Final PR #67 CI is green. |
+| `EX68-01` | Migration 0008 extends task status to pending/processing/stale. |
+| `EX68-02` | Migration 0008 adds claim_token. |
+| `EX68-03` | Migration 0008 adds claimed_at. |
+| `EX68-04` | Migration 0008 adds lease_expires_at. |
+| `EX68-05` | Migration 0008 adds stale_at. |
+| `EX68-06` | Pending rows require no claim/lease/stale metadata. |
+| `EX68-07` | Processing rows require a claim token. |
+| `EX68-08` | Processing rows require claimed_at. |
+| `EX68-09` | Processing rows require a lease expiration after claimed_at. |
+| `EX68-10` | Processing rows cannot have stale_at. |
+| `EX68-11` | Stale rows clear claim token. |
+| `EX68-12` | Stale rows retain claimed_at. |
+| `EX68-13` | Stale rows clear lease_expires_at. |
+| `EX68-14` | Stale rows require stale_at >= claimed_at. |
+| `EX68-15` | claim() validates task UUID. |
+| `EX68-16` | claim() validates a positive safe-integer lease duration. |
+| `EX68-17` | PR #68 claim time is supplied by the caller. |
+| `EX68-18` | PR #68 lease expiry is computed from the caller time. |
+| `EX68-19` | Every successful claim gets a new random UUID claim token. |
+| `EX68-20` | A pending task is claimable. |
+| `EX68-21` | An expired processing task is reclaimable. |
+| `EX68-22` | A live processing task is not updated by a duplicate claim. |
+| `EX68-23` | Successful claim atomically writes processing ownership metadata. |
+| `EX68-24` | A successful claim returns typed processing state. |
+| `EX68-25` | Claim of a missing id returns not-found. |
+| `EX68-26` | Claim of stale returns terminal. |
+| `EX68-27` | Claim of a live non-stale row returns already-claimed. |
+| `EX68-28` | Concurrent PostgreSQL claim coverage grants exactly one owner. |
+| `EX68-29` | Concurrent PostgreSQL claim coverage yields one already-claimed duplicate. |
+| `EX68-30` | Expired lease reclaim produces a different claim token. |
+| `EX68-31` | markStale requires task id and claim token. |
+| `EX68-32` | markStale updates only a processing row with the current claim token. |
+| `EX68-33` | markStale clears claim token and lease. |
+| `EX68-34` | markStale records staleAt and updatedAt from the caller clock in #68. |
+| `EX68-35` | markStale returns false after claim ownership has changed. |
+| `EX68-36` | markStale returns true for the current claim token. |
+| `EX68-37` | A stale task is not reclaimed by later delivery in #68. |
+| `EX68-38` | UiTranslationTaskConsumer claims before running stale preflight. |
+| `EX68-39` | A non-claimed consumer outcome bypasses preflight. |
+| `EX68-40` | Missing canonical descriptor marks the claimed task stale. |
+| `EX68-41` | Changed canonical source fingerprint marks the claimed task stale. |
+| `EX68-42` | Changed generation policy marks the claimed task stale. |
+| `EX68-43` | Removed/invalid generation target marks the claimed task stale. |
+| `EX68-44` | Disabled target locale is ineligible in the #68 consumer. |
+| `EX68-45` | Exact-target current local manual translation makes the machine task stale. |
+| `EX68-46` | Exact-target current persistent manual translation makes the machine task stale. |
+| `EX68-47` | Fallback-locale manual resources do not suppress exact-target work. |
+| `EX68-48` | Eligible preflight returns the claimed task and canonical descriptor. |
+| `EX68-49` | A stale preflight transition can lose its claim. |
+| `EX68-50` | The consumer remains Queue-independent. |
+| `EX68-51` | The consumer remains provider-independent. |
+| `EX68-52` | PR #68 does not perform result validation/publication. |
+| `EX68-53` | PR #68 does not implement retry/DLQ. |
+| `EX68-54` | PR #68 does not implement reconciliation. |
+| `EX68-55` | PR #68 does not implement post-provider conditional-current publication. |
+| `EX68-56` | The pre-provider fingerprint check continues the PR #50 stale-source gap closure. |
+| `EX68-57` | The pre-provider generation-policy check continues the PR #50 policy-staleness gap closure. |
+| `EX68-58` | The claim uses the stable source/policy identity persisted from PR #63/#67. |
+| `EX68-59` | Review 4018963640 identifies a fixed-past-time DB test failure. |
+| `EX68-60` | Raw CI #166 confirms the timestamp fixture failure. |
+| `EX68-61` | 0cbe639 derives test claim time from pending.createdAt. |
+| `EX68-62` | CI #167 is green after the test-clock correction. |
+| `EX68-63` | Review 4018963657 identifies stale-identity non-reactivation. |
+| `EX68-64` | #68 upsertPending does not reopen stale. |
+| `EX68-65` | Re-enqueueing the same stale task id does not self-heal in #68. |
+| `EX68-66` | The stale-reactivation finding is not fixed inside PR #68. |
+| `EX68-67` | PR #69 later adds fresh-plan stale reactivation. |
+| `EX68-68` | PR #68 still inherits the #67 client-clock upsert timestamp behavior. |
+| `EX68-69` | PR #68 lifecycle claim/stale timestamps also use caller wall clock. |
+| `EX68-70` | PROJECT_STATE describes this as the first JOB-03 slice. |
+| `EX68-71` | Migration 0008 is not externally applied by PR #68. |
+| `EX68-72` | Final PR #68 CI is green. |
+| `EX69-01` | resolveUiTranslationGenerationTarget centralizes UI generation eligibility. |
+| `EX69-02` | Generation target input is canonicalized. |
+| `EX69-03` | Generation target must exist in LocaleRegistry. |
+| `EX69-04` | Generation target must be a canonical registry entry. |
+| `EX69-05` | Generation target must equal its canonical candidate. |
+| `EX69-06` | Canonical English is not machine-generation eligible. |
+| `EX69-07` | Disabled locale is not machine-generation eligible. |
+| `EX69-08` | Active registered canonical non-English locale is eligible. |
+| `EX69-09` | Inactive registered canonical non-English locale is eligible. |
+| `EX69-10` | UiTranslationService now uses the shared eligibility predicate. |
+| `EX69-11` | UiTranslationTaskConsumer now uses the same eligibility predicate. |
+| `EX69-12` | #69 closes the planner/consumer disabled-locale divergence inherited from #63/#68. |
+| `EX69-13` | TranslationTaskStore claim no longer accepts a caller timestamp. |
+| `EX69-14` | TranslationTaskStore markStale no longer accepts a caller timestamp. |
+| `EX69-15` | upsertPending uses PostgreSQL statement_timestamp for lifecycle update time. |
+| `EX69-16` | claim uses PostgreSQL statement_timestamp for claimedAt. |
+| `EX69-17` | claim derives lease expiration from the same PostgreSQL statement time. |
+| `EX69-18` | expired-lease comparison uses PostgreSQL statement time. |
+| `EX69-19` | markStale uses PostgreSQL statement_timestamp. |
+| `EX69-20` | PostgreSQL 17 defines statement_timestamp as the start of the current statement. |
+| `EX69-21` | #69 replaces the #67 duplicate-upsert client clock. |
+| `EX69-22` | #69 replaces the #68 caller-clock claim lifecycle. |
+| `EX69-23` | A stale row is reactivated only by a later upsertPending planning decision. |
+| `EX69-24` | Stale reactivation preserves the existing durable task id. |
+| `EX69-25` | Stale reactivation preserves the stable task identity. |
+| `EX69-26` | Stale reactivation clears claim token. |
+| `EX69-27` | Stale reactivation clears claimed_at. |
+| `EX69-28` | Stale reactivation clears lease_expires_at. |
+| `EX69-29` | Stale reactivation clears stale_at. |
+| `EX69-30` | Stale reactivation preserves created_at. |
+| `EX69-31` | Old Queue delivery remains terminal before a fresh plan reopens the row. |
+| `EX69-32` | A fresh plan can make the same stable identity claimable again. |
+| `EX69-33` | Stale reactivation keeps one row for the stable task identity. |
+| `EX69-34` | Duplicate planning of a live processing task preserves processing status. |
+| `EX69-35` | Duplicate planning of a live processing task preserves claim token. |
+| `EX69-36` | Duplicate planning of a live processing task preserves claimedAt. |
+| `EX69-37` | Duplicate planning of a live processing task preserves leaseExpiresAt. |
+| `EX69-38` | Duplicate planning of a live processing task preserves staleAt null. |
+| `EX69-39` | Final #69 duplicate planning preserves processing updatedAt. |
+| `EX69-40` | The processing updatedAt preservation has explicit DB regression coverage. |
+| `EX69-41` | Expired lease reclaim is tested against manipulated database timestamps. |
+| `EX69-42` | Reclaim replaces the execution claim token. |
+| `EX69-43` | An old claim token cannot finish the reclaimed execution as stale. |
+| `EX69-44` | The current claim token can finish the reclaimed execution as stale. |
+| `EX69-45` | A stale task still returns terminal to an old delivery. |
+| `EX69-46` | Review 4018963657’s stale-identity starvation is corrected in #69. |
+| `EX69-47` | Review 4018711812’s application-clock duplicate-upsert boundary is corrected in #69. |
+| `EX69-48` | #68 caller-owned claim/stale wall-clock semantics are corrected in #69. |
+| `EX69-49` | #68 planner/consumer disabled-locale eligibility divergence is corrected in #69. |
+| `EX69-50` | bc0806a temporarily removes requiredRow’s return statement. |
+| `EX69-51` | CI #169 exposes the missing-return regression. |
+| `EX69-52` | f6522c4 restores return row. |
+| `EX69-53` | Final PR #69 CI is green. |
+| `EX69-54` | PROVIDERS_AND_JOBS documents stale as terminal for the current delivery/retry. |
+| `EX69-55` | PROVIDERS_AND_JOBS documents fresh-plan reactivation as a new planning decision. |
+| `EX69-56` | PROVIDERS_AND_JOBS documents that duplicate planning must not reset or extend a live claim. |
+| `EX69-57` | PROVIDERS_AND_JOBS documents PostgreSQL-owned lifecycle time. |
+| `EX69-58` | UI_TRANSLATION documents one shared UI generation-eligibility predicate. |
+| `EX69-59` | UI generation eligibility permits active locale. |
+| `EX69-60` | UI generation eligibility permits inactive locale. |
+| `EX69-61` | UI generation eligibility rejects disabled locale. |
+| `EX69-62` | PR #69 adds no migration or schema change. |
+| `EX69-63` | PR #69 adds no real Queue/provider execution. |
+| `EX69-64` | PR #69 final diff does not update PROJECT_STATE. |
+| `EX69-65` | Review 4024162533 identifies the missing PROJECT_STATE synchronization. |
+| `EX69-66` | The PROJECT_STATE review finding is not corrected inside PR #69. |
+| `EX69-67` | PR #69 body’s “no unresolved findings” claim coexists with review 4024162533. |
+| `EX69-68` | PR #70 later synchronizes PROJECT_STATE with the #69 lifecycle corrections. |
+| `EX70-01` | PR #70 adds a PostgreSQL integration test for the enqueue-failure window. |
+| `EX70-02` | The test uses the existing commit-before-enqueue dispatcher order. |
+| `EX70-03` | The enqueue adapter is forced to fail after durable persistence. |
+| `EX70-04` | The dispatcher propagates the enqueue failure. |
+| `EX70-05` | A new independent PostgreSQL client is opened after the enqueue failure. |
+| `EX70-06` | The fresh reader finds the task by the same stable identity. |
+| `EX70-07` | The surviving task remains pending. |
+| `EX70-08` | The surviving task has no claim token. |
+| `EX70-09` | The surviving task has no claimedAt timestamp. |
+| `EX70-10` | The surviving task has no lease expiration. |
+| `EX70-11` | The surviving task has no stale timestamp. |
+| `EX70-12` | The fake enqueuer records no successful message. |
+| `EX70-13` | PR #70 demonstrates durable survival after enqueue failure. |
+| `EX70-14` | PR #70 does not implement reconciliation. |
+| `EX70-15` | PR #70 does not prove an ambiguous real Queue acknowledgement. |
+| `EX70-16` | PR #70 does not implement retry or DLQ. |
+| `EX70-17` | PR #70 does not add provider execution or result publication. |
+| `EX70-18` | PROJECT_STATE records the durable enqueue-failure recovery evidence. |
+| `EX70-19` | PROJECT_STATE keeps JOB-06 future. |
+| `EX70-20` | PROJECT_STATE synchronizes PostgreSQL-owned lifecycle clock from PR #69. |
+| `EX70-21` | PROJECT_STATE synchronizes live-processing duplicate-planning semantics from PR #69. |
+| `EX70-22` | PROJECT_STATE synchronizes shared planner/consumer generation eligibility from PR #69. |
+| `EX70-23` | PROJECT_STATE synchronizes stale fresh-plan reactivation from PR #69. |
+| `EX70-24` | PROJECT_STATE records PR #69 final CI evidence. |
+| `EX70-25` | PROJECT_STATE records CI #171 for the enqueue-failure integration test. |
+| `EX70-26` | Final PR #70 CI is green. |
+| `EX70-27` | PR #70 adds no schema or migration. |
+| `EX70-28` | PR #70 changes no runtime dispatcher/store implementation. |
+| `EX70-29` | No review correction is recorded for PR #70. |
+| `EX70-30` | Real Queue/provider external acceptance remains deferred. |
+
 `COVERAGE.md` remains the authoritative working checklist for whether every in-scope PR/commit has
 been examined and whether mixed changes were completely decomposed. A populated ledger alone never
 proves that extraction or dependency discovery is complete.
