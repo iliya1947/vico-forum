@@ -18833,3 +18833,34 @@ The artifact contains explicit preliminary classifications and deliberate-discon
 The bounded deliberate-disconfirmation gate is **PASS**, subject to Codex independent review.
 
 No target contract was selected, no remediation was proposed, no unrelated translation foundation was classified, and no record was advanced to `final`.
+
+## RESPONSE DL-CLASSIFY-002/1
+
+From: ChatGPT  
+Status: submitted — preliminary infrastructure/hardening origin classification + deliberate disconfirmation complete  
+Responding in: PR #79  
+Task source: PR #78 head `f4267e22496b295724bf9794c344d86a0f35d324`  
+Observed PR #79 head before response: `0f8613215e5b21c46c216bbba63a8758e0684629`  
+Artifact: `audit/chatgpt-review/DL-CLASSIFY-002.md`
+
+### Result
+
+The evidence does **not** support classifying the whole `#20 → #35 → #37` chain as one infrastructure mistake.
+
+1. **PR #20 is a precursor, not a proven bad branch.** Its persistence architecture mostly implements the already accepted Stage 2 PostgreSQL/Drizzle/persistent-Registry work or bounded future foundations. `EX20-02` (real Hyperdrive acceptance as a Stage 2→3 gate) remains insufficient-evidence because the gate was new, but the then-current project also had a plausible production-first cadence.
+2. **PR #35 is not a proven drift origin.** The dedicated audit is a cheap process checkpoint; write/private-data isolation triggers already existed; exact-version auth/security review was already required by the old Stage 4 roadmap.
+3. **PR #37 is the first point in this bounded chain with specific preliminary dumb-correction findings.** The error is not hardening generally. It is making one concretely selected external staging topology mandatory before Stage 4 product implementation:
+   - `EX37-08a` separate Neon staging project;
+   - `EX37-08c1` dedicated staging Hyperdrive;
+   - `EX37-08c2` separate staging Worker/environment;
+   - `EX37-09a` preselected separate Google Cloud project/client topology.
+   Existing pre-#37 safety policy already allowed the cheaper safe alternative: isolate non-production **or disable it** when writes/private data appeared. #45 later removes standing separate staging as a start condition; this is forward evidence only.
+4. The same PR #37 also contains independently valuable work: `EX37-04/06` are preliminarily justified fixes of current persistence defects; auth DB capability separation, deferred exact grants, privilege-verifier invariants, and `EX37-14*` migration-evidence linkage are reusable/future-proof boundaries.
+5. #44's later “live verifier in every PR” mistake is **not** attributed back to #37's migration-evidence concept. #76 preserves the evidence format/verifier for actual external rollout while removing remote verification from ordinary PR CI.
+6. Strict documentation laundering is **not confirmed**. The chain normalized new blockers as current policy, but did not make them appear older or originally required.
+
+Finite unresolved IDs: `EX20-02`, `EX37-02`, `EX37-03`, `EX37-05`, `EX37-07`.
+
+The artifact contains the full atomic matrix, source/provenance boundary, current-survival checks, forward evidence, and deliberate disconfirmation for each proposed classification.
+
+No target contract was selected, no remediation was proposed, no later PR decision was classified, and no record was advanced to `final`.
