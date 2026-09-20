@@ -18185,3 +18185,154 @@ PROJECT_STATE owns current state, PROJECT_HISTORY owns significant historical in
 - PR #77 retrospective assertions remain later-retrospective-summary evidence and do not become self-confirming audit verdicts.
 - No record in this response classifies correctness, foolishness, prematurity, future-proofing quality, approved target architecture, required remedy, or final cross-stage status.
 - Completion of this response would complete chronological candidate extraction through PR #77 only. The PR #78 reconciliation gates, full-history/current-consumer discovery, cross-stage review and deliberate disconfirmation remain separate subsequent Phase 1 work.
+
+## RESPONSE DL-COVERAGE-001/1
+
+From: ChatGPT  
+Status: submitted — completeness audit does not pass  
+Responding in: PR #79  
+Task source: PR #78 head `40c24bc10c20cf674b825345153b1b4224b14336`  
+Observed PR #79 head before response: `368580d0216bb305ddc98a54554947534a145291`  
+Scope: independent completeness/consistency verification only; no classification, cross-stage verdict, target choice, or remedy
+
+### Result
+
+Overall: **FAIL**. Chronological extraction remains a candidate inventory at `open` status. No record should advance on the basis of this coverage pass.
+
+The failure is reconciliation-level, not a finding that any extracted architecture decision is correct or incorrect.
+
+### Gate 1 — first-parent chronology and merge order
+
+**PASS.**
+
+The execution checkout could not clone GitHub because outbound DNS resolution for `github.com` was unavailable, so the literal local `git rev-list --first-parent` command could not be run. The same first-parent chain was independently reconstructed from the public GitHub commit collection and each commit's parent SHA.
+
+From PR #12 through PR #77 the chain is linear and matches `COVERAGE.md`, including the non-numeric-order cases:
+
+- `#12 8010bdce → #5 b0632c02 → #13 ...`
+- `#22 92b55cdd → #24 87c49c52 → #23 4f1a7272 → #25 ...`
+- `#61 a76a102e → #63 b238df02 → #62 6b10d237 → #64 ...`
+- final chain `#71 e3559c3d → #72 ba41a0c5 → #73 1afb0c1c → #74 b5d1f685 → #75 29f52b91 → #76 1c5255a8 → #77 3282aa51`.
+
+Control-point ancestry `#7 bdda416d → #8 f1b169e6 → #9 cc448c0d → #10 878c727e → #11 9fd97e9f → #12 8010bdce` also matches the separate ancestry table.
+
+No missing, duplicate, out-of-order, or unexplained merged PR was found in that GitHub first-parent sequence.
+
+### Gate 2 — coverage rows, merge SHAs, canonical IDs and ledger ownership
+
+**FAIL.**
+
+Positive checks:
+
+- all 72 coverage rows are `extraction-complete`;
+- `LEDGER.md` contains 2029 indexed atomic IDs;
+- no duplicate ledger ID was found;
+- PR #71–#77 counts match the accepted `DL-EXTRACT-013/1` set: 100/58/37/50/65/62/88 = 460;
+- no other coverage row produced a canonical-set mismatch in the range reconciliation.
+
+Confirmed discrepancy: the PR #37 coverage shorthand is not a valid exact representation of its ledger ID set.
+
+Current row:
+
+`EX37-01..07, EX37-08a..b, EX37-08c1..c2, EX37-08d..e, EX37-09a..b, EX37-10..13, EX37-14a, EX37-14b1..b2, EX37-14c..18`
+
+But the ledger contains split IDs including:
+
+- `EX37-12a..f`, not composite `EX37-12`;
+- `EX37-14c`, `EX37-14d`, `EX37-14e`, `EX37-15`, `EX37-16a`, `EX37-16b`, `EX37-17`, `EX37-18`.
+
+Therefore `EX37-10..13` incorrectly implies a superseded/nonexistent composite `EX37-12`, and `EX37-14c..18` is malformed/ambiguous across suffixed and unsuffixed IDs. This is a coverage-map consistency defect; it does not classify any PR #37 decision.
+
+### Gate 3 — complete changed-file/internal-commit reconciliation
+
+**FAIL — independent exhaustive proof not established in this pass.**
+
+The accepted extraction responses contain per-PR changed-file and internal-commit reconciliation, and fresh GitHub metadata/adversarial checks on mixed/high-risk blocks were consistent with those responses. In particular, the final blocks explicitly account for all final changed files (#61=29, #63=7, #62=3, #64=1, #65=2, #66=12, #67=11, #68=12, #69=9, #70=2, #71=34, #72=17, #73=4, #74=8, #75=16, #76=16, #77=3), and their intermediate correction histories remain separately indexed.
+
+However, this coverage task requires an independent complete re-query of **every** PR's full changed-file set and every internal commit, not reliance on the already accepted extraction response as its own proof. The available connector audit in this pass did not independently re-fetch every filename and every internal commit for all 72 rows. Accordingly this gate cannot be marked PASS without overstating the evidence.
+
+No specific additional omitted file/commit decision was confirmed beyond the PR #37 map defect above.
+
+### Gate 4 — public GitHub review comments/reviews and statuses
+
+**PASS.**
+
+Public GitHub review comments were re-queried across every in-scope PR, with thread status checked for every PR that has inline review threads.
+
+The accepted extraction preserves the material review history, including:
+
+- corrected/outdated historical findings such as PR #21, #43, #52 and part of #68;
+- PR #61's correction cycle, whose four surviving review threads are resolved/outdated while the merged discussion timeline contains the follow-up comments/reviews;
+- PR #71 review `4026927508` and its attempted-then-removed supersession implementation;
+- PR #72 review `4028280128` remains unresolved/not-outdated;
+- PR #73 review `4028574664` is the state-synchronization finding and its later correction is preserved;
+- PR #75 review `4029815293` remains unresolved/not-outdated;
+- PR #74/#76 have no inline technical review thread;
+- PR #77 has no technical review thread/submission; the available discussion is the automated usage-limit notice.
+
+No public review finding was found that is absent from the accepted extraction, and no currently open #72/#75 finding was silently converted into a closed one.
+
+### Gate 5 — F/A/C/D/O/G/T category sweep
+
+**PASS.**
+
+The PR #79 extraction artifact contains all seven category outcomes for every in-scope PR #5/#7–#77.
+
+Grouped explicit-none forms were counted as explicit category results, e.g.:
+
+- PR #54: `F/A/O/T: none | C/D: ... | G: ...`;
+- PR #77: `F/A/O: no runtime/product/schema/migration/dependency/architecture implementation change | C: ... | D: ... | G: ... | T: ...`.
+
+After accounting for grouped forms, no PR is missing F, A, C, D, O, G, or T.
+
+### Gate 6 — known cross-block chains and orphan/link reconciliation
+
+**FAIL.**
+
+The relevant decisions are present, but atomic forward/backward link coverage is not complete enough to close the reconciliation gate.
+
+Examples:
+
+- stale policy `#17/#19/#40/#77`: PR #77 retrospective records point back to #17/#19/#40, but the earlier atomic records do not consistently carry corresponding forward links through the chain;
+- privilege `#43/#48/#49`: `EX48-02` points back to #43, while the #43 records do not carry a corresponding forward correction link and the #49 continuation is not fully represented as a symmetric atomic chain;
+- migration evidence `#44/#76`: `EX76-12/13` point back to #44, but the #44 records do not themselves point forward to the #76 correction;
+- authorization `#59–#61/#76` is better connected (`EX60-77/78`, `EX61-71`, `EX76-54`);
+- durable-task history `#63/#67–#75/#77` contains many explicit links, including #67→#63/#69, #68→#69, #69→#68/#70, #72 current-code persistence, #75→#77, and #77 retrospective references, but this does not eliminate the missing links in the other required chains.
+
+`CROSS_STAGE.md` currently names subsystem chains at a coarse level; it does not yet assign every atomic ledger record to all applicable chains. Thus orphan/missing-link reconciliation is not complete. This is only a dependency-index completeness finding; no chain verdict is made.
+
+### Gate 7 — direct-user-decision scope boundaries
+
+**PASS.**
+
+The recorded boundaries remain narrow:
+
+- generic/data-driven locale authority applies to the no-hard-coded-locale-ceiling lineage and explicitly does **not** approve every translation mechanism;
+- PR #50 forum-first/external-infrastructure timing is explicitly forward-only from PR #50 and is not used retroactively;
+- dynamic roles/permissions/custom roles/per-user allow/deny are recorded as an accepted product extension, without turning that acceptance into blanket authority for every detailed mechanism in PR #59–#61.
+
+No direct-user decision was found silently widened into universal approval of an implementation family.
+
+### Gate 8 — adversarial omission search
+
+**FAIL.**
+
+Adversarial checks included merge-parent chronology, canonical-ID/range reconciliation, public review-thread state, grouped F/A/C/D/O/G/T forms, high-priority correction chains, and final-block persistence/open-review evidence.
+
+The search found the PR #37 canonical-range inconsistency described under Gate 2. That is enough to disprove the stronger claim that all extraction artifacts are already internally consistent.
+
+No additional missing architecture/runtime decision was confirmed by the sampled adversarial checks.
+
+### Coverage conclusion
+
+Pass: gates 1, 4, 5, 7.  
+Fail: gates 2, 3, 6, 8.
+
+Therefore:
+
+- chronological candidate extraction can remain 100% populated;
+- Phase 1 completeness/reconciliation is **not closed**;
+- no ledger record should advance beyond `open` on the basis of `DL-COVERAGE-001`;
+- this response does not classify PR #37, any infrastructure chain, stale policy, authorization behavior, durable-task design, or any other project decision;
+- no remedy or target architecture is proposed here.
+
