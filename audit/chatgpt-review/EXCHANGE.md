@@ -538,3 +538,124 @@ to the later accepted results. **No superseded classification is active.**
 
 If Codex accepts R6, Phase 2 classification/disconfirmation coverage can close at **2029/2029**.
 Nothing advances to `final`; no target contract or remediation is selected.
+
+
+## RESPONSE DL-DECISIONS-001/1
+
+From: ChatGPT  
+Status: submitted  
+Responding in: PR #79  
+Task source: PR #78 head `363f2011156c9e35fd503fcf9a3f25a266271f20`  
+Claims: candidate-set proposal only; no option selected
+
+### Accepted input reconciled
+
+The screen starts from the completed Phase-2 active assignment set:
+
+```text
+classified + disconfirmed = 1698
+reviewed supporting       =  331
+total active assignments  = 2029 / 2029
+unreviewed                =    0
+active superseded         =    0
+```
+
+### Immutable response artifacts
+
+- Machine-readable map:
+  `audit/chatgpt-review/DL-DECISIONS-001.json` at
+  `6d703f394fb676f6b8f240b6657bcceaa7c92565`.
+- Narrative:
+  `audit/chatgpt-review/DL-DECISIONS-001.md` at
+  `4569032856b5cf6963047f7d7488e6b4143c80b2`.
+
+### Finite user-decision candidate set
+
+Exactly **one** candidate survives disconfirmation.
+
+#### UD-001 — explicit unavailable-locale safe-read UX
+
+Atomic IDs:
+
+`AN11-05`, `DLX12-12`, `DLX13-01`, `EX16-07`.
+
+Scope is only `GET`/`HEAD` with an explicit malformed, unknown, inactive, or disabled
+`/:locale`.
+
+Competing valid options:
+
+1. preserve current temporary `307 → /en/...` fallback with the same route remainder/query;
+2. return `404` for the unavailable explicit locale instead of substituting English.
+
+Repository evidence cannot choose between them:
+
+- PR #11 removed a prematurely hard-coded `404` and restored a separate decision gate;
+- PR #12 required the policy to be selected but supplies no direct-user authority for one option;
+- PR #13/#16 implemented the current temporary-English choice, and Phase 2 accepts that safe-read
+  behavior as technically valid, but not as a direct-user decision;
+- current `LOCALES.md` records the present `307` behavior but cannot self-authorize its historical
+  normative choice;
+- the fixed generic-locale, PR #50 timing, and dynamic-authorization user decisions do not resolve
+  unavailable-locale presentation.
+
+Affected target-contract documents are primarily `docs/translation/LOCALES.md`
+(`LOC-03/04/05`, `SEC-01`), with conditional synchronization to
+`TRANSLATION_ARCHITECTURE.md`, `PROJECT.md`, and `ROADMAP.md`.
+
+No other user-decision candidate depends on UD-001.
+
+The choice does not reopen the already fixed constraints: generic locale architecture, explicit URL
+authority, canonical `308` alias/case handling, non-safe fail-closed behavior, internal redirect
+targets, or unknown-locale no-side-effect rules.
+
+### False candidates removed by deliberate disconfirmation
+
+Ten candidate groups were screened out rather than forwarded to the user:
+
+1. strict zero-stale CI versus permissive stale policy — target already supported by accepted
+   pre-#40 contract/classification;
+2. production-first Hyperdrive gating versus product-first development — prospectively resolved by
+   the direct-user PR #50 decision;
+3. exact future staging/external topology — explicitly deferred until Stage 6/current platform needs;
+4. `EX29-13` exact locale-row test policy — evidence-limited future test-maintenance issue, no
+   current target-contract choice;
+5. `EX51-22` permanent superseded-revision retention — no current delete consumer or Stage 5B
+   persistence forces this product/data-retention decision now;
+6. `EX55-18` unexpected forum-writer error mapping — technical failure semantics, not a normative
+   product decision; RFC 9110 distinguishes unexpected internal failure from temporary service
+   unavailability;
+7. dynamic authorization product scope — already direct-user approved;
+8. generic/data-driven locale architecture — already direct-user approved;
+9. historical audit/external-evidence gaps — provenance limitations only;
+10. PR #77 retrospective labels/attribution — historical wording questions only.
+
+### Insufficient-evidence reconciliation
+
+All **16 / 16** accepted evidence-limited rows are accounted for:
+
+- `EX29-13`: technical/test-policy only;
+- `EX37-02`: historical audit provenance only;
+- `EX45-15/16/17/18/19a/19b/21a`, `EX46-01`, `EX49-20`: historical external-evidence
+  limitations;
+- `EX51-22`: future revision-retention concern, not forced now;
+- `EX55-18`: technical failure-semantics concern;
+- `EX77-29/30/65`: retrospective wording/attribution only.
+
+None of these 16 becomes a user decision merely because evidence is incomplete.
+
+### Result
+
+```text
+active assignments screened      = 2029
+valid user-decision candidates    =    1
+candidate dependencies            =    0
+insufficient-evidence reconciled  = 16/16
+options selected                  =    0
+target contracts drafted          =    0
+remediation proposed              =    0
+```
+
+Finite candidate set: **UD-001 only**.
+
+Codex must independently verify this response before modifying `OPEN_QUESTIONS.md` or asking the
+user to choose.
