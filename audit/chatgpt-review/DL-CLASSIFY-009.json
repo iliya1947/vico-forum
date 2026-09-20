@@ -1,0 +1,316 @@
+{
+  "type": "DL-CLASSIFY-009",
+  "status": "submitted-preliminary",
+  "audited_heads": {
+    "pr78": "3a496f351b57af9418bab129d41f0be4a700852c",
+    "pr79_base": "2d5df052effb5db9c61e36cfeaeba05e2f8b8cf9"
+  },
+  "immutable_scope_source": {
+    "commit": "33bc4029a81ccb1c82549b03a7111622816e1f73",
+    "path": "audit/chatgpt-review/DL-CLASSIFY-COVERAGE-001-2.json",
+    "blocks": [
+      "R4",
+      "R5"
+    ],
+    "R4_count": 16,
+    "R5_count": 1,
+    "total": 17,
+    "ids": [
+      "EX36-01",
+      "EX36-02",
+      "EX36-03",
+      "EX62-01",
+      "EX62-02",
+      "EX62-03",
+      "EX62-04",
+      "EX62-05",
+      "EX62-06",
+      "EX62-07",
+      "EX62-08",
+      "EX62-09",
+      "EX62-10",
+      "EX62-11",
+      "EX62-12",
+      "EX62-13",
+      "EX76-59"
+    ]
+  },
+  "scope_validation": {
+    "rows": 17,
+    "unique_ids": 17,
+    "duplicates": [],
+    "missing": [],
+    "out_of_block": [],
+    "already_covered_overlap": []
+  },
+  "block_context": {
+    "R4": {
+      "chronology": "PR #36 and PR #62; PR #62 merged after PR #63 and synchronizes the Stage 4→5 handoff.",
+      "theme": "PR/merge actor process rules plus documentation/state/roadmap handoff from completed local/CI Stage 4 into Stage 5.",
+      "dependencies": [
+        "PR #36 is Codex-process-only, not product authority",
+        "PR #62 consumes already-classified PR #61 Stage 4 completion and PR #63 Stage 5A state",
+        "PR #50 already owns the local/CI-vs-external scheduling boundary"
+      ]
+    },
+    "R5": {
+      "chronology": "PR #76 only.",
+      "theme": "Independent negative scope fact: PR #76 changes no translation architecture.",
+      "dependencies": [
+        "exact PR #76 diff/scope",
+        "rollout findings already classified by DL-CLASSIFY-003",
+        "authorization failure findings already classified by DL-CLASSIFY-004"
+      ]
+    }
+  },
+  "classification_counts": {
+    "acceptable-alternative": 3,
+    "reviewed-supporting": 14,
+    "intentional-foundation": 0,
+    "justified-fix-of-real-defect": 0,
+    "real-original-defect": 0,
+    "dumb-correction-of-correct-implementation": 0,
+    "insufficient-evidence": 0,
+    "substantive_total": 3,
+    "supporting_total": 14,
+    "total": 17
+  },
+  "unresolved_ids": [],
+  "documentation_laundering": {
+    "confirmed": false,
+    "note": "PR #36 is a transparent Codex-process clarification. PR #62 explicitly synchronizes present state after Stage 4 completion/PR #63 branch history and does not backdate the Stage 4→5 boundary or present it as an older requirement. PR #76 explicitly states translation architecture is unchanged."
+  },
+  "phase2_if_accepted": {
+    "prior_covered": 1726,
+    "new_covered": 17,
+    "covered": 1743,
+    "canonical": 2029,
+    "coverage_percent": 85.9044,
+    "prior_substantive": 1510,
+    "new_substantive": 3,
+    "substantive": 1513,
+    "prior_supporting": 216,
+    "new_supporting": 14,
+    "supporting": 230,
+    "remaining_unreviewed": 286,
+    "remaining_partition": {
+      "R2": 134,
+      "R3": 71,
+      "R6": 81
+    },
+    "note": "Contingent on Codex acceptance of DL-CLASSIFY-009; R2/R3/R6 are not pre-credited."
+  },
+  "rows": [
+    {
+      "id": "EX36-01",
+      "block": "R4",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "Changes enter main only through a Pull Request.",
+      "historical_evidence": "PR #36 changes only Codex workflow guidance, clarifying that changes reach main through a PR; no runtime/product file changes.",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "disconfirmation": {
+        "strongest_evidence_against": "Evidence that this process rule contradicted a user-controlled workflow, forced unsafe automation, or was later reverted because direct-to-main changes were required.",
+        "contrary_found": "No such repository evidence was found. The rule affects collaboration/process only and does not gate product architecture or runtime behavior.",
+        "effect": "Acceptable process choice; not a product/runtime authority."
+      }
+    },
+    {
+      "id": "EX36-02",
+      "block": "R4",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "The user creates the Pull Request after Codex branch work.",
+      "historical_evidence": "PR #36 explicitly narrows the actor split: Codex prepares branch work; the user creates the PR.",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "disconfirmation": {
+        "strongest_evidence_against": "Evidence that Codex was required to create PRs for correctness or that assigning PR creation to the user caused a technical/project-state defect.",
+        "contrary_found": "No such evidence was found. PR creation is an actor/process allocation, not a product mechanism.",
+        "effect": "Acceptable process choice with no demonstrated technical defect."
+      }
+    },
+    {
+      "id": "EX36-03",
+      "block": "R4",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "The user performs merge and Codex does not merge.",
+      "historical_evidence": "PR #36 explicitly assigns merge authority to the user and forbids Codex from merging.",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "disconfirmation": {
+        "strongest_evidence_against": "Evidence that this actor boundary conflicted with required automation or prevented a necessary repository operation.",
+        "contrary_found": "No such evidence was found. The rule preserves user control and changes no product/runtime contract.",
+        "effect": "Acceptable process choice; no correction chain establishes it as defective."
+      }
+    },
+    {
+      "id": "EX62-01",
+      "block": "R4",
+      "role": "supporting/provenance-only",
+      "classification": "reviewed-supporting",
+      "atomic_decision": "PROJECT_STATE replaces provisional Stage 4 CI evidence with final PR #61 CI #144.",
+      "historical_evidence": "PR #62 updates only the recorded Stage 4 verification from provisional branch evidence to the final PR #61 head/CI evidence.",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "support_basis": "Historical verification/state synchronization. It records evidence consumed by a state claim but is not independent authority for Stage 4 architecture or correctness."
+    },
+    {
+      "id": "EX62-02",
+      "block": "R4",
+      "role": "supporting/provenance-only",
+      "classification": "reviewed-supporting",
+      "atomic_decision": "ROADMAP records Stage 4 as completed in the local/CI path.",
+      "historical_evidence": "PR #62 turns the Stage 4 roadmap section into a completion record after PR #61 local/CI completion.",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "support_basis": "State synchronization of an already-established local/CI completion criterion; it does not introduce a new Stage 4 contract."
+    },
+    {
+      "id": "EX62-03",
+      "block": "R4",
+      "role": "supporting/provenance-only",
+      "classification": "reviewed-supporting",
+      "atomic_decision": "ROADMAP records external production rollout as outside the Stage 4 completion criterion.",
+      "historical_evidence": "PR #62 preserves the already-established PR #50 local/CI-vs-external boundary while marking Stage 4 complete.",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "docs/database/MIGRATIONS.md",
+        ".github/workflows/production-db-migrate.yml"
+      ],
+      "support_basis": "Contract/state synchronization of the already-classified EX50-24/EX50-31 boundary. Current migration docs still separate local/CI development from external schema-dependent rollout."
+    },
+    {
+      "id": "EX62-04",
+      "block": "R4",
+      "role": "supporting/provenance-only",
+      "classification": "reviewed-supporting",
+      "atomic_decision": "ROADMAP activates Stage 5 as current product priority.",
+      "historical_evidence": "After Stage 4 local/CI completion, PR #62 changes the roadmap's active priority to Stage 5.",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "support_basis": "Time-local roadmap/state transition, not an independent architecture verdict. Current ROADMAP and PROJECT_STATE still record Stage 5 as active."
+    },
+    {
+      "id": "EX62-05",
+      "block": "R4",
+      "role": "supporting/provenance-only",
+      "classification": "reviewed-supporting",
+      "atomic_decision": "ROADMAP keeps Stage 5 on the local/CI product path.",
+      "historical_evidence": "PR #62 states that Stage 5 implementation proceeds locally/in CI without requiring real provider/Queue/external rollout for each feature PR.",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "support_basis": "Synchronization of the already-accepted PR #50 product-first/local-CI scheduling boundary, not a newly introduced mechanism."
+    },
+    {
+      "id": "EX62-06",
+      "block": "R4",
+      "role": "supporting/provenance-only",
+      "classification": "reviewed-supporting",
+      "atomic_decision": "AGENTS updates Codex-only current-priority guidance from Stage 4 to Stage 5.",
+      "historical_evidence": "PR #62 updates Codex-only guidance to match the Stage 4→5 state transition.",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "support_basis": "Process/state synchronization only. AGENTS is Codex-only and does not establish product/runtime authority."
+    },
+    {
+      "id": "EX62-07",
+      "block": "R4",
+      "role": "supporting/provenance-only",
+      "classification": "reviewed-supporting",
+      "atomic_decision": "The AGENTS change is a process instruction, not a new product/runtime mechanism.",
+      "historical_evidence": "PR #62 changes documentation/guidance only; no product code, schema, dependency, or runtime behavior is introduced by this record.",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "support_basis": "Scope/provenance fact identifying the instruction as process-only."
+    },
+    {
+      "id": "EX62-08",
+      "block": "R4",
+      "role": "supporting/provenance-only",
+      "classification": "reviewed-supporting",
+      "atomic_decision": "Merge-main commit 424d65e imports already-merged PR #63 work into the #62 branch.",
+      "historical_evidence": "Accepted extraction attributes imported translation implementation to PR #63 rather than PR #62.",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "support_basis": "Branch-history/provenance fact preventing duplicate attribution."
+    },
+    {
+      "id": "EX62-09",
+      "block": "R4",
+      "role": "supporting/provenance-only",
+      "classification": "reviewed-supporting",
+      "atomic_decision": "17a51dd preserves PR #63’s Stage 5A state after branch synchronization.",
+      "historical_evidence": "After branch synchronization, PROJECT_STATE retains the Stage 5A planning state already introduced by PR #63.",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "support_basis": "State-preservation/provenance fact; no independent correctness claim."
+    },
+    {
+      "id": "EX62-10",
+      "block": "R4",
+      "role": "supporting/provenance-only",
+      "classification": "reviewed-supporting",
+      "atomic_decision": "PR #62 final diff changes only AGENTS.md, PROJECT_STATE.md and ROADMAP.md.",
+      "historical_evidence": "The final PR #62 diff is documentation/process-only.",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "support_basis": "Exact scope fact used to prevent attributing product/runtime changes to PR #62."
+    },
+    {
+      "id": "EX62-11",
+      "block": "R4",
+      "role": "supporting/provenance-only",
+      "classification": "reviewed-supporting",
+      "atomic_decision": "PR #62 has no review intervention.",
+      "historical_evidence": "No PR #62 review thread contributes a correction.",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "support_basis": "Review-history fact only."
+    },
+    {
+      "id": "EX62-12",
+      "block": "R4",
+      "role": "supporting/provenance-only",
+      "classification": "reviewed-supporting",
+      "atomic_decision": "Final PR #62 merged-head CI is green.",
+      "historical_evidence": "GitHub Actions for final head 17a51dd1b78659813bcdbf6479823f68e09afd5f reports CI success.",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "support_basis": "Verification fact. Green CI corroborates branch health but is not correctness authority for neighboring roadmap claims."
+    },
+    {
+      "id": "EX62-13",
+      "block": "R4",
+      "role": "supporting/provenance-only",
+      "classification": "reviewed-supporting",
+      "atomic_decision": "The pre-merge-main documentation head also had a green CI gate.",
+      "historical_evidence": "GitHub Actions for 59306310394eaa0dce8708b4c2cec8f5557346ad reports CI success.",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "support_basis": "Historical verification fact for the pre-sync documentation head."
+    },
+    {
+      "id": "EX76-59",
+      "block": "R5",
+      "role": "supporting/provenance-only",
+      "classification": "reviewed-supporting",
+      "atomic_decision": "PR #76 changes no translation architecture.",
+      "historical_evidence": "PR #76 changed rollout-CI placement, authorization failure typing/consumers, tests and auth/database/state docs; its changed-file set contains no translation architecture contract or translation implementation change.",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "db/authorization-service.ts"
+      ],
+      "support_basis": "Negative scope/provenance fact. It prevents authorization/rollout corrections from being misread as a translation-architecture correction; it is not an independent correctness verdict.",
+      "disconfirmation": {
+        "strongest_evidence_against": "A PR #76 diff or commit that changes translation architecture, translation domain behavior, or translation subsystem contracts.",
+        "contrary_found": "None found in the exact PR #76 changed-file set/diff. Translation architecture is explicitly stated unchanged.",
+        "effect": "Keep as reviewed supporting scope evidence; do not merge it into R4 or infer a translation verdict."
+      }
+    }
+  ]
+}
