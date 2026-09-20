@@ -10887,3 +10887,248 @@ Introduced/changed/recorded by: f9e1f43.
 - PR #45 reconstructs retained versus changed staging/auth/OAuth boundaries without using PR #50.
 - PR #46 is decomposed into its own lifecycle-document and Stage-1-architecture synchronization decisions.
 - No record in this response is classified as correct, incorrect, foolish, justified, premature, future-proof, infrastructure drift, retained target architecture, approved, or requiring a remedy.
+
+
+## RESPONSE DL-EXTRACT-007/2
+
+From: ChatGPT  
+Status: submitted  
+Responding in: PR #79 at RESPONSE_COMMIT_SHA  
+Task source: PR #78 head 3287e3edc3283497f1079e218d7af01d8bc1a4a3  
+Scope: narrow atomicity and transcription correction to RESPONSE DL-EXTRACT-007/1  
+Claims: extraction correction only; no correctness, prematurity, infrastructure-drift, retained-value, remedy, approval, or target-state classification
+
+### Replacement records
+
+#### Candidate EX42-03a — Localization runtime-role lock_timeout default is 500ms
+
+Atomic operational configuration: the repository configures the localization runtime role's per-role/per-database lock_timeout default as 500ms.
+
+Introduced/changed/recorded by: 499755f; scripts/configure-localization-deadlines.sql, db/postgres-deadlines.ts, and docs/database/HYPERDRIVE.md.
+
+Backward: EX37-05 named bounded PostgreSQL localization deadlines as a pre-Stage-4 hardening item.
+
+Forward: EX42-19 requires real Hyperdrive lock-timeout acceptance; EX45-15 later records the effective server defaults and EX45-18 records the lock-timeout observation.
+
+Evidence limit unchanged from /1: PR #42 proves repository configuration, not that the external ALTER ROLE operation had already succeeded.
+
+#### Candidate EX42-03b — Localization runtime-role statement_timeout default is 1500ms
+
+Atomic operational configuration: the repository configures the localization runtime role's per-role/per-database statement_timeout default as 1500ms.
+
+Introduced/changed/recorded by: 499755f; scripts/configure-localization-deadlines.sql, db/postgres-deadlines.ts, and docs/database/HYPERDRIVE.md.
+
+Backward: EX37-05.
+
+Forward: EX42-18 requires real Hyperdrive statement-timeout acceptance; EX45-15 later records the effective server defaults and EX45-17 records the statement-timeout observation.
+
+Evidence limit unchanged from /1: repository configuration is not external-application evidence.
+
+#### Candidate EX42-03c — Server lock deadline must remain below server statement deadline and caller query deadline
+
+Atomic ordering contract: the documented runtime read deadline stack requires lock_timeout < statement_timeout < query_timeout; with the PR #42 values this is 500ms < 1500ms < 2000ms.
+
+Introduced/changed/recorded by: 499755f; db/postgres-deadlines.ts/tests and docs/database/HYPERDRIVE.md.
+
+Backward: EX37-05; depends on EX42-02, EX42-03a, and EX42-03b.
+
+Forward: EX42-18 explicitly requires server statement timeout before caller query timeout, while EX42-19 separately tests the lower lock timeout; PR #45 later records those observations as EX45-17 and EX45-18.
+
+#### Candidate EX42-21a — Project state records repository deadline implementation as completed
+
+Atomic state claim: PROJECT_STATE.md moves from “add bounded PostgreSQL deadlines” to recording the deadline runtime/configuration hardening as implemented.
+
+Introduced/changed/recorded by: 499755f; b79ec7e updates the completed summary for COMMIT-time statement-timeout reconciliation.
+
+Backward: EX37-05 and the implemented mechanisms EX42-01, EX42-02, EX42-03a..c, EX42-04..15.
+
+Forward: PR #45 later retains those mechanisms while recording external acceptance separately.
+
+This state claim is separate from whether the external acceptance blocker remained open.
+
+#### Candidate EX42-21b — Project state retains real Hyperdrive deadline confirmation/calibration as a pre-Stage-4 blocker
+
+Atomic gate/state claim: after repository deadline implementation, PROJECT_STATE.md still requires real Hyperdrive confirmation/calibration of role/database deadlines, pool reuse/reset, and caller-timeout origin-query behavior before the then-recorded Stage 4 transition.
+
+Introduced/changed/recorded by: 499755f.
+
+Backward: EX37-03, EX37-05, and acceptance requirements EX42-16..20.
+
+Forward: PR #45 records external observations in EX45-15..18, EX45-19a..c, and EX45-20, then separately records closure of this blocker as EX45-21a.
+
+#### Candidate EX43-02a — Runtime and migration roles must be distinct
+
+Atomic verifier requirement: assertProductionPrivilegeContract requires runtimeRole != migrationRole.
+
+Introduced/changed/recorded by: 5f5fae1.
+
+Backward: the earlier runtime-versus-migration capability separation is recorded by EX20-29; no earlier accepted record separately states this exact verifier inequality.
+
+Forward: later membership/ownership corrections do not rewrite this PR #43 requirement.
+
+#### Candidate EX43-02b — Runtime and migration roles must both be login-capable
+
+Atomic verifier requirement: the located runtime and migration roles must each have rolcanlogin = true.
+
+Introduced/changed/recorded by: 5f5fae1.
+
+Backward: this operationalizes the already separate migration/runtime credential topology (EX20-29, EX23-07b), but no earlier accepted atomic record separately states rolcanlogin=true for both roles.
+
+#### Candidate EX43-02c — Runtime and migration roles must directly lack dangerous PostgreSQL role attributes
+
+Atomic verifier requirement: both roles must directly have rolsuper, rolcreatedb, rolcreaterole, rolreplication, and rolbypassrls set to false.
+
+Introduced/changed/recorded by: 5f5fae1.
+
+Backward: EX37-12a requires dangerous runtime-role attribute verification; PR #43 extends the direct-attribute check to the migration role as well.
+
+#### Candidate EX43-04a — Migration outbound membership role set must exactly match the environment allowlist
+
+Atomic membership requirement: the set of roles where member = migrationRole must exactly match MIGRATION_DATABASE_ROLE_MEMBERSHIPS; unexpected or missing role names fail verification.
+
+Introduced/changed/recorded by: 5f5fae1.
+
+The exact option tuple is no longer part of this record.
+
+Forward: PR #48 changes the separate inbound-membership model from EX43-05; it does not retroactively rewrite this outbound allowlist record.
+
+#### Candidate EX43-04b — Each accepted migration outbound membership must use ADMIN=false, INHERIT=true, SET=true
+
+Atomic membership-option requirement: after 1674d34, each migration-role membership admitted by the allowlist is compared with the exact option tuple ADMIN FALSE, INHERIT TRUE, SET TRUE.
+
+Introduced/changed/recorded by: 1674d34.
+
+Backward: EX43-04a determines which outbound memberships are allowed; this record determines their required option semantics.
+
+Forward: PR #48's later correction concerns the separate inbound membership model and is not used to normalize this PR #43 requirement retroactively.
+
+#### Candidate EX45-19a — Real acceptance records caller query timeout at approximately 2000ms
+
+Atomic operational observation: with the server-side statement deadline intentionally longer than the client deadline, the diagnostic run is recorded as failing with Query read timeout after approximately 2000ms.
+
+Introduced/changed/recorded by: 5349e54 and 074bbf6.
+
+Backward: EX42-02 defines the 2000ms caller query timeout; EX42-20 requires a caller-timeout origin-query-fate diagnostic.
+
+Evidence limitation unchanged from /1: raw diagnostic telemetry is not attached to PR #45.
+
+#### Candidate EX45-19b — The uniquely identifiable backend was not found after the caller timeout
+
+Atomic operational observation: after the recorded caller-side timeout, the uniquely identifiable backend was not found in pg_stat_activity.
+
+Introduced/changed/recorded by: 5349e54 and 074bbf6.
+
+Backward: EX42-20.
+
+Evidence limitation unchanged from /1: this is a repository-recorded observation without the raw diagnostic log bundle.
+
+#### Candidate EX45-19c — Backend absence does not establish which component terminated or cancelled the statement
+
+Atomic evidence limit: PR #45 explicitly refuses to infer a cancellation/termination mechanism from EX45-19b; absence from pg_stat_activity does not establish which component ended the backend statement.
+
+Introduced/changed/recorded by: 5349e54 and 074bbf6.
+
+Backward: EX42-20 already required observing origin-query fate without inferring cancellation merely from Worker/client cleanup.
+
+This record is an evidence-scope limit, not a second operational outcome.
+
+#### Candidate EX45-21a — Project state records the PostgreSQL deadline acceptance blocker as closed
+
+Atomic state/gate claim: PROJECT_STATE.md records mandatory pre-Stage-4 PostgreSQL deadline acceptance as completed and states that no deadline blocker remains.
+
+Introduced/changed/recorded by: 074bbf6.
+
+Backward: EX37-05, EX42-16..20, and the recorded PR #45 acceptance observations EX45-15..18, EX45-19a..c, EX45-20.
+
+Forward: EX46-01 later synchronizes README with the completed hardening state.
+
+#### Candidate EX45-21b — Project state records separate staging as no longer a pre-Stage-4 blocker
+
+Atomic state/gate claim: PROJECT_STATE.md states that a separate staging environment is no longer a mandatory pre-Stage-4 blocker for the pre-release path.
+
+Introduced/changed/recorded by: 074bbf6.
+
+Backward: policy change EX45-03 and the earlier staging blocker lineage EX37-08a..e/EX37-18.
+
+Forward: EX46-02 later synchronizes README with this changed staging status.
+
+No PR #50 authority is applied retroactively.
+
+#### Candidate EX45-21c — Project state records Stage 4 exact-version preflight as the next step
+
+Atomic planning/state claim: PROJECT_STATE.md makes exact-version Better Auth + React Router SSR + Cloudflare Workers + Drizzle preflight the next project step.
+
+Introduced/changed/recorded by: 074bbf6.
+
+Backward: recorded closure/change of the immediate deadline and staging gates (EX45-21a, EX45-21b) together with the already-recorded privilege/evidence hardening state (EX43-21, EX44-15).
+
+Forward: EX46-04 later records Stage 4 as the next stage in README.
+
+This is a project-state statement, not evidence of user approval for the preceding hardening decisions.
+
+### Canonical EX43-01
+
+EX43-01 remains one unchanged candidate:
+
+EX43-01 — Production privilege verification derives migration role from current_user and runtime role from environment input.
+
+Atomic verifier input model: protected production verification reads the migration connection identity from PostgreSQL and takes RUNTIME_DATABASE_ROLE as the environment-specific runtime role.
+
+Introduced/changed/recorded by: 5f5fae1.
+
+Backward: EX37-13.
+
+The repeated /1 prose was transcription duplication only. It does not create, replace, or imply a second decision ID.
+
+### Replacement-ID map
+
+| Superseded /1 ID | Replacement IDs |
+| --- | --- |
+| EX42-03 | EX42-03a, EX42-03b, EX42-03c |
+| EX42-21 | EX42-21a, EX42-21b |
+| EX43-02 | EX43-02a, EX43-02b, EX43-02c |
+| EX43-04 | EX43-04a, EX43-04b |
+| EX45-19 | EX45-19a, EX45-19b, EX45-19c |
+| EX45-21 | EX45-21a, EX45-21b, EX45-21c |
+
+EX43-01 is not replaced; only its duplicate prose is discarded.
+
+### Corrected dependencies and range references
+
+1. Any /1 reference to EX42-03 as the two configured server defaults becomes EX42-03a + EX42-03b; any reference to their ordering against caller query_timeout becomes EX42-03c.
+2. The /1 runtime-mechanism range EX42-01..15 is now EX42-01, EX42-02, EX42-03a..c, EX42-04..15.
+3. EX42-16 is separate from repository configuration EX42-03a/EX42-03b; where ordering is relevant it additionally depends on EX42-03c.
+4. The /1 statement that PR #42 leaves external acceptance/calibration as a blocker in EX42-16..21 becomes EX42-16..20 + EX42-21b; EX42-21a is the separate completed-implementation state claim.
+5. The PR #43 historical membership summary becomes: runtime no outbound memberships (EX43-03); migration outbound membership set is an exact environment allowlist (EX43-04a); accepted outbound memberships have the exact option tuple (EX43-04b); final PR #43 forbids all inbound memberships into runtime/migration (EX43-05). PR #48 remains forward corrective evidence only for EX43-05.
+6. The PR #45 deadline-observation lineage becomes EX45-15..18, EX45-19a..c, EX45-20; later state closure of the deadline gate is EX45-21a, staging-gate removal is EX45-21b, and “Stage 4 next” is EX45-21c.
+7. EX46-01's generic PR #45 state-transition dependency is narrowed to the completed-hardening/deadline state represented by EX45-21a plus its already listed #38/#39/#42/#43 lineage.
+8. EX46-02 depends on the underlying policy change EX45-03 and its state recording EX45-21b.
+9. EX46-04 depends on the planning/state claim EX45-21c.
+
+### Corrected changed-file mappings
+
+#### PR #42
+- db/postgres-deadlines.ts + tests -> EX42-01, EX42-02, EX42-03a..c, EX42-04..06.
+- scripts/configure-localization-deadlines.sql -> EX42-03a, EX42-03b, EX42-15, plus review finding EX42-22; the script does not independently state the ordering contract EX42-03c.
+- docs/database/HYPERDRIVE.md -> EX42-01, EX42-02, EX42-03a..c, EX42-15..20, EX42-22.
+- docs/database/MIGRATIONS.md -> EX42-15 and operational ownership/reference for EX42-03a/EX42-03b; it does not independently state EX42-03c.
+- PROJECT_STATE.md -> EX42-21a, EX42-21b.
+- All other PR #42 file mappings from /1 remain unchanged.
+
+#### PR #43
+- .github/scripts/production-privileges.mjs + tests -> EX43-02a..c, EX43-03, EX43-04a..b, EX43-05..17.
+- docs/database/MIGRATIONS.md -> EX43-01, EX43-02a..c, EX43-03, EX43-04a..b, EX43-05..20.
+- All other PR #43 file mappings from /1 remain unchanged.
+
+#### PR #45
+- docs/database/HYPERDRIVE.md -> EX45-01..18, EX45-19a..c, EX45-20 except for records already mapped exclusively to ROADMAP/PROJECT_STATE/AGENTS in /1.
+- PROJECT_STATE.md -> EX45-01..05, EX45-15..18, EX45-19a..c, EX45-20, EX45-21a..c, EX45-22.
+- ROADMAP.md -> EX45-01..12 unchanged.
+- AGENTS.md -> EX45-23 unchanged.
+- EX45-24 remains the review finding about unchanged README, as in /1.
+
+### Unchanged material
+
+Every /1 record not listed in the replacement map remains unchanged. The accepted category sweeps, review-thread handling, CI/preview facts, external-evidence limitations, PR #48/#76 forward-evidence treatment, non-retroactive treatment of PR #50, PR #46 decomposition, and all unaffected reconciliation statements remain exactly as in RESPONSE DL-EXTRACT-007/1.
+
+No replacement above classifies any decision as correct, erroneous, premature, future-proof, infrastructure drift, retained target architecture, approved, or requiring a remedy.
