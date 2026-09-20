@@ -18336,3 +18336,298 @@ Therefore:
 - this response does not classify PR #37, any infrastructure chain, stale policy, authorization behavior, durable-task design, or any other project decision;
 - no remedy or target architecture is proposed here.
 
+## RESPONSE DL-COVERAGE-002/1
+
+From: ChatGPT  
+Status: submitted — reconciliation still has bounded index/current-consumer gaps  
+Responding in: PR #79  
+Task source: PR #78 head `58d5cc1b7c85eb18f261284e4c2d192b6246b825`  
+Observed PR #79 head before response: `78e9cf81492e475a8910c763ed1d77178b6aabb7`  
+Scope: completeness/reconciliation only; no classification, target choice, cross-stage verdict, or remediation
+
+### Result
+
+Overall: **FAIL, narrowed to chain assignment and global orphan/current-consumer indexing.**
+
+The PR #37 canonical-map defect from `DL-COVERAGE-001` is corrected. Fresh GitHub manifests now reconcile every in-scope PR's changed-file list and internal-commit list. The repeat adversarial pass found no additional independently meaningful decision omitted from the accepted candidate inventory.
+
+All 2029 ledger records remain `open`.
+
+### Gate A — canonical IDs
+
+**PASS.**
+
+A strict parser expanded only these supported canonical forms:
+
+- plain ID;
+- numeric range such as `EX71-01..100`;
+- same-number letter range such as `EX37-12a..f`;
+- same-number letter+numeric range such as `EX37-08c1..c2`.
+
+It did not infer mixed/suffixed ranges.
+
+Result on current PR #78:
+
+- coverage rows: **72**;
+- ledger IDs: **2029**;
+- expanded ownership entries: **2029**;
+- unique expanded ownership IDs: **2029**;
+- malformed ranges: **0**;
+- duplicate coverage ownership: **0**;
+- coverage IDs absent from ledger: **0**;
+- ledger IDs absent from coverage ownership: **0**.
+
+The corrected PR #37 row expands to exactly 35 IDs and no longer implies a composite `EX37-12` or mixed `EX37-14c..18`.
+
+### Gate B — full changed-file/internal-commit manifest
+
+**PASS.**
+
+Evidence was re-fetched from GitHub for every in-scope PR through:
+
+- `GET /repos/iliya1947/vico-forum/pulls/<PR>/files?per_page=100`;
+- `GET /repos/iliya1947/vico-forum/pulls/<PR>/commits?per_page=100`;
+- main first-parent merge commits for the merge SHA;
+- targeted PR patches and individual internal-commit diffs for paths/commits not literally named in the accepted response text.
+
+No PR exceeded 100 files or 100 internal commits (maximum observed: 34 files, 47 commits), so the single-page collections are complete.
+
+Hashes below are FNV-1a-64 over newline-joined values: sorted exact filenames for the file hash and GitHub-returned internal-commit order using full SHA for the commit hash. The accepted-response column is used only as the reconciliation target; its prior self-attestation was not used as proof of the fresh manifest.
+
+| PR | merge SHA | files count/hash | internal commits count/hash | accepted response location | result |
+| --- | --- | --- | --- | --- | --- |
+| #5 | `b0632c024e8fff0aca07d815cb48bed1ef9cc954` | 25 / `59144a184bb0ca70` | 1 / `dda336827c5f6113` | `DL-EXTRACT-001/3@96f2569` | PASS |
+| #7 | `bdda416d9874599e4a51157bcdbbdecff1abb683` | 1 / `0aaa9db39620333f` | 1 / `53c3946641583458` | `DL-ANCESTRY-001/2@14f0280` | PASS |
+| #8 | `f1b169e651ef01ac553a800c859bb5336730bf89` | 1 / `0aaa9db39620333f` | 1 / `f70f694b5965ea9b` | `DL-ANCESTRY-001/2@14f0280` | PASS |
+| #9 | `cc448c0db5424cdd589a08c05b5f5b0db1762884` | 7 / `fb4460d8fb044ac5` | 1 / `ff8f71427676bcb4` | `DL-ANCESTRY-001/2@14f0280` | PASS |
+| #10 | `878c727e46a5b8e9fbcad63b0cce515fa0892c98` | 7 / `fb4460d8fb044ac5` | 24 / `ee0df05461ca1661` | `DL-ANCESTRY-001/2@14f0280` | PASS |
+| #11 | `9fd97e9f6206b49dd05bf88a5d6e2089c8c175e4` | 3 / `2dd9a966a312acb5` | 2 / `ccacc4a2eb1fbd9c` | `DL-ANCESTRY-001/2@14f0280` | PASS |
+| #12 | `8010bdce49274e50c8f6035604daa64c2ddfcfc1` | 4 / `9932073e5c909a98` | 4 / `d03f3c9af99e50fd` | `DL-EXTRACT-001/3@96f2569` | PASS |
+| #13 | `0526b29078db82169b316d1c788b083167d7f84f` | 3 / `34f55a775dac753a` | 3 / `83c5f651df61328f` | `DL-EXTRACT-001/3@96f2569` | PASS |
+| #14 | `752060513bd8b632d026a3fb42cee32e15f579e0` | 4 / `788ba65bce091e8c` | 4 / `7aa627f8b364754c` | `DL-EXTRACT-001/3@96f2569` | PASS |
+| #15 | `8ea9d3267870584df4114087f7e0e572f23b1ecf` | 1 / `fce4a3ab2d4ded6e` | 1 / `cdffb803e81bd72c` | `DL-EXTRACT-001/3@96f2569` | PASS |
+| #16 | `daff15c5ec937ffcfd4ee8908975290a516031bd` | 17 / `f24da584b7348269` | 5 / `60ac490d8864a491` | `DL-EXTRACT-002/2@4fdc216` | PASS |
+| #17 | `5aa1859759387e38a248588fa8deddd49323b488` | 12 / `f4b7677b581e7da9` | 2 / `7ff49ad26c5fba6e` | `DL-EXTRACT-002/2@4fdc216` | PASS |
+| #18 | `777ef2074299a0b5d91c46dce418f0828232a81f` | 1 / `6ab604f4676a6d89` | 1 / `5c9f5c19c743f2a3` | `DL-EXTRACT-002/2@4fdc216` | PASS |
+| #19 | `5a3c75ab5af276a311e8dfbb491fda1442554113` | 18 / `3502a7383c06e0ff` | 12 / `1aae148d865f41d5` | `DL-EXTRACT-002/2@4fdc216` | PASS |
+| #20 | `2d0d9e57811ca2e2eea4981cda8b4fe0ad3d53f8` | 5 / `7e9186d166468d65` | 5 / `e78f27adc8b10f27` | `DL-EXTRACT-003/2@195f62f` | PASS |
+| #21 | `c0e2add30c2e9bd634ca1a1d9945f3df8a7f5f90` | 16 / `80c488a5cea85a44` | 2 / `a5c21472b053353e` | `DL-EXTRACT-003/2@195f62f` | PASS |
+| #22 | `92b55cdd9c384aedb90858514de8cf6db02c5c86` | 12 / `fc3e440e9c30b071` | 2 / `74d0814987207959` | `DL-EXTRACT-003/2@195f62f` | PASS |
+| #23 | `4f1a727257cca60ca05655743467722451b97851` | 13 / `ad1958963b47cd57` | 4 / `9f0ea23b7a2f1dd9` | `DL-EXTRACT-003/2@195f62f` | PASS |
+| #24 | `87c49c5241405338d8a2faf400bee7e2053d85d9` | 4 / `9b80bbd3233ada53` | 1 / `afda184a737575b1` | `DL-EXTRACT-003/2@195f62f` | PASS |
+| #25 | `d39119a628d0b4eb1b3e8e6a31c4de14923dce3a` | 1 / `6ab604f4676a6d89` | 1 / `f0a01899844def6b` | `DL-EXTRACT-004/1@a95ddaa` | PASS |
+| #26 | `fccde6b9891dac691bae43bfe38e785d33b63ae0` | 1 / `6ab604f4676a6d89` | 2 / `37e54eb9491540df` | `DL-EXTRACT-004/1@a95ddaa` | PASS |
+| #27 | `e734f8fb008b934a1c6002ae80e6a28269e9d753` | 2 / `35a74fe29bc3be05` | 2 / `49f1dcb092ba275b` | `DL-EXTRACT-004/1@a95ddaa` | PASS |
+| #28 | `2eb1186e85e69c9f32598055b948cfcaa8d23981` | 10 / `cdf5e05a24261431` | 1 / `88cb0a103efeccc4` | `DL-EXTRACT-004/1@a95ddaa` | PASS |
+| #29 | `c31c05097f8af9f14de09b4e45e335014e2830c0` | 8 / `6e256f4c17eb6d0a` | 9 / `bb98a3184c56a23b` | `DL-EXTRACT-004/1@a95ddaa` | PASS |
+| #30 | `907e0822262dd8e34da175ba8d1f21a7ecacb1cb` | 3 / `e7c0ece8ab758ff7` | 3 / `12e5ad598062ad2c` | `DL-EXTRACT-004/1@a95ddaa` | PASS |
+| #31 | `458db7ed8c28153ab7b9e5eba3be0e025c51f926` | 9 / `0d7e59588f4e5e63` | 9 / `545fe2502b13bcf4` | `DL-EXTRACT-005/2@ae7f11f` | PASS |
+| #32 | `7048478fc86cd8503d29169363dcd0ce7e0739ac` | 12 / `bb3cfb7eaf376c68` | 18 / `8c202b83fa809832` | `DL-EXTRACT-005/2@ae7f11f` | PASS |
+| #33 | `15e05452fbc386cd1d8cc853672b846b49099080` | 1 / `5e426ca091cbaff8` | 1 / `6fda4ecc1dea3c1c` | `DL-EXTRACT-005/2@ae7f11f` | PASS |
+| #34 | `254f4a7d169cf1025242cc98875afa7e040386a5` | 9 / `1aedd369fe4124bc` | 18 / `08f8356a53816edf` | `DL-EXTRACT-005/2@ae7f11f` | PASS |
+| #35 | `a9556b231286c4abd8b643100c30f6e0bfabbe1b` | 1 / `6ab604f4676a6d89` | 1 / `ef15300aefcc2be5` | `DL-EXTRACT-005/2@ae7f11f` | PASS |
+| #36 | `f3a665fd3b911682a1509a0793db61bfc57f64bc` | 1 / `e7d100b4c8851964` | 1 / `0807da7910287487` | `DL-EXTRACT-005/2@ae7f11f` | PASS |
+| #37 | `0cdf9394955f82a3f124ca4a00b112fee6ced786` | 7 / `96a8ef28f517e75a` | 7 / `74813457a7d8db33` | `DL-EXTRACT-006/2@9acbe16` | PASS |
+| #38 | `768799ceb11c73f4854a9092ba9b620c0858530d` | 6 / `d7b468f50f2c77ec` | 7 / `d0596ae329dbabd5` | `DL-EXTRACT-006/2@9acbe16` | PASS |
+| #39 | `af2349d699f91867463abea2aad40ef81ef08a6c` | 10 / `3be1ef68d7615e9c` | 15 / `8fa19fa7b7250b96` | `DL-EXTRACT-006/2@9acbe16` | PASS |
+| #40 | `29eccc5f3597f725951ed573b82c31ecb47ea7ff` | 3 / `c9b7f02e5c6040e9` | 3 / `8f955813aff4d5b9` | `DL-EXTRACT-006/2@9acbe16` | PASS |
+| #41 | `2623040568bc20be5f470831c11af3fd335c2aef` | 5 / `035bf8c93affbff8` | 5 / `838985b198429b87` | `DL-EXTRACT-006/2@9acbe16` | PASS |
+| #42 | `a127adb6c5113e2c717de4829adc322140393b9a` | 12 / `80226dbc5ea1b4ed` | 3 / `ee2845a239af9950` | `DL-EXTRACT-007/2@e310897` | PASS |
+| #43 | `e1fddf9fb3073a893f2ffb3fdd5496d4e2a43d1d` | 7 / `0c4b3df3b0d06806` | 3 / `72a750d1715b6233` | `DL-EXTRACT-007/2@e310897` | PASS |
+| #44 | `bdc9c0faec563a42c9bbf7e8fa83e59566da674c` | 8 / `0bbf086b8ca01544` | 2 / `31802d78914d258d` | `DL-EXTRACT-007/2@e310897` | PASS |
+| #45 | `19ec4b58c4f0c16ad309112ad7a4f6d7f275c3d4` | 4 / `734be77b9de13ba8` | 4 / `a6957fe9d6584323` | `DL-EXTRACT-007/2@e310897` | PASS |
+| #46 | `01ad59a1d7eabf87f5d30cf3b997e0db90e52163` | 2 / `1430cecfc7b3fb84` | 2 / `a59aea79ef0edbdf` | `DL-EXTRACT-007/2@e310897` | PASS |
+| #47 | `ebd01606daf59706b78998b9174c66ccd0d8233e` | 12 / `4ea4294378d16d52` | 1 / `f29a15605433e019` | `DL-EXTRACT-008/2@0d4c9c0` | PASS |
+| #48 | `a52d84f016781be4a86e5474ae0bbdf402e17c63` | 3 / `bbabc1ba54fbaa93` | 1 / `577b65be9a44184c` | `DL-EXTRACT-008/2@0d4c9c0` | PASS |
+| #49 | `75faabade90b9375616ddddcf58501abccaf34ab` | 5 / `5505224c92dd94d5` | 10 / `dbd8ea2a07d70130` | `DL-EXTRACT-008/2@0d4c9c0` | PASS |
+| #50 | `e26d145609f942f82209057662ea92422efa99f9` | 7 / `34f6a45e1cce0e13` | 1 / `cb80ffd33db6e673` | `DL-EXTRACT-008/2@0d4c9c0` | PASS |
+| #51 | `d07f81afceb3010a1dd6bcd7855a95f2ee2f4124` | 8 / `0e477c889c1e6890` | 5 / `e830abbbde67dc82` | `DL-EXTRACT-009/2@8adfb0b` | PASS |
+| #52 | `8aed969967ada3ca5863a58e2a24c8b03a1d5caa` | 19 / `1af4357e05b15e3a` | 2 / `402f0d1d17541780` | `DL-EXTRACT-009/2@8adfb0b` | PASS |
+| #53 | `f9f03fb0c591eb6df9dc55d950634786650c0c66` | 15 / `1a5bb057cc0a238d` | 3 / `40383491c3d14ae0` | `DL-EXTRACT-009/2@8adfb0b` | PASS |
+| #54 | `9a09a2d85e0fb5fa6d0b71904ce6a36e5553c5bb` | 1 / `6ab604f4676a6d89` | 1 / `908f92c4c708468a` | `DL-EXTRACT-009/2@8adfb0b` | PASS |
+| #55 | `826167b2e35ae607a8013c7dad2a2fadb178bcaa` | 14 / `03e8bd985531e99e` | 2 / `29ff4d42fbd07512` | `DL-EXTRACT-009/2@8adfb0b` | PASS |
+| #56 | `950133f4be25401c906bec475d44e75b4dc9a9ec` | 8 / `bb2ea333241c980a` | 4 / `457f00cb73b870cd` | `DL-EXTRACT-010/2@bf50401` | PASS |
+| #57 | `a5a77fac4a845094af4b0826d901b0f7221f4329` | 14 / `321212e7900bd241` | 1 / `a140b1146af2ffb4` | `DL-EXTRACT-010/2@bf50401` | PASS |
+| #58 | `a35c4cee5c4eb569eb21f2c9e5f6e3fba939ac60` | 15 / `0392173007de3c3a` | 4 / `fd043586414a299a` | `DL-EXTRACT-010/2@bf50401` | PASS |
+| #59 | `a22ae0e3f06919b9941bdecea9d4045902c1e449` | 5 / `52cc13ed845b3ebc` | 3 / `b72c04bed2ea52cd` | `DL-EXTRACT-010/2@bf50401` | PASS |
+| #60 | `b51fb66853f7b4b1b3413b0803e75f4a7ddcddbe` | 14 / `56200abce2033f15` | 6 / `43c204dc0d01338c` | `DL-EXTRACT-010/2@bf50401` | PASS |
+| #61 | `a76a102ed0ebc278c8ed9cb40ebc94bcb0e9b50b` | 29 / `828f6c60ef93671e` | 17 / `49f9c9b1503e27c1` | `DL-EXTRACT-011/1@1d76984` | PASS |
+| #62 | `6b10d237dcb2b67932196f39b6c9d39174806273` | 3 / `016cf0585dbdff91` | 5 / `2413a4cf92415108` | `DL-EXTRACT-011/1@1d76984` | PASS |
+| #63 | `b238df025efafcdc92cc5297bcdfc2fee2b89068` | 7 / `567f3d4a3b719f28` | 4 / `6bd71a12a936433d` | `DL-EXTRACT-011/1@1d76984` | PASS |
+| #64 | `5a85a0340d0b2d62cf53e95fc9b7e6b8ad72a4ed` | 1 / `5e426ca091cbaff8` | 3 / `7ab2b615ff75c078` | `DL-EXTRACT-011/1@1d76984` | PASS |
+| #65 | `0a9ed9146a3c887b44bb6f7a50bc3e1c4237bcb6` | 2 / `34968768ea96bca8` | 2 / `9dd111a53a7c99fc` | `DL-EXTRACT-011/1@1d76984` | PASS |
+| #66 | `9c37549077e0e6a0f223cb9b5d034247e9403782` | 12 / `016dca39f417e0bc` | 2 / `18da4938be73b0e6` | `DL-EXTRACT-012/1@aee7e33` | PASS |
+| #67 | `6a476d4d1712bd7994c1f00dacb9649fb1492fe0` | 11 / `26db2e0fdcd8c599` | 1 / `409653201098d28b` | `DL-EXTRACT-012/1@aee7e33` | PASS |
+| #68 | `a0215cc8b72e3221fcaa30e3b2ebc85e75687e09` | 12 / `d1e884f5ce8167ef` | 3 / `ea5bcbc1f1008600` | `DL-EXTRACT-012/1@aee7e33` | PASS |
+| #69 | `c12550c3fa1cb371df82a178d20ed7020c33f9ce` | 9 / `0e6b2c1f9fc02b70` | 12 / `024b5633e8c085cb` | `DL-EXTRACT-012/1@aee7e33` | PASS |
+| #70 | `d84d8883f456780c3d4228ccafb9825314328999` | 2 / `0312bbedb5eb3c25` | 2 / `924fb5d0a6ac9d32` | `DL-EXTRACT-012/1@aee7e33` | PASS |
+| #71 | `e3559c3d7a36424446c03c4d140099ccd6acd479` | 34 / `8fef89c5af79b5de` | 47 / `9fe7a6c51c7e7010` | `DL-EXTRACT-013/1@11200c4` | PASS |
+| #72 | `ba41a0c59072a4a3eedee63238409c806364768d` | 17 / `efcca034bc7ad013` | 2 / `a36746d21128e65c` | `DL-EXTRACT-013/1@11200c4` | PASS |
+| #73 | `1afb0c1c843e6d4b4405ad2a3f9f492aea839fef` | 4 / `4c48b941f1733838` | 6 / `7df123eb0c518ab7` | `DL-EXTRACT-013/1@11200c4` | PASS |
+| #74 | `b5d1f6851dd6b6bbbd48a0f41f9fff17ed3bd9ed` | 8 / `febd2ca7a3247e23` | 5 / `df5237a236a4d557` | `DL-EXTRACT-013/1@11200c4` | PASS |
+| #75 | `29f52b91fffc8d3df11bd84d9009975092087f02` | 16 / `d703d4006bded270` | 1 / `dd02408191b2afae` | `DL-EXTRACT-013/1@11200c4` | PASS |
+| #76 | `1c5255a8064a2b0b9e6f34815d9fcb563ea22ced` | 16 / `a0a239934de66bae` | 2 / `0309c589171d4c4e` | `DL-EXTRACT-013/1@11200c4` | PASS |
+| #77 | `3282aa51f47f36131d35c34ee79ca37cb2ce434f` | 3 / `b2176fb21df20839` | 11 / `273244501786b94b` | `DL-EXTRACT-013/1@11200c4` | PASS |
+
+Fresh path/SHA reconciliation found literal path/commit omissions in old prose for several PRs, but targeted patch/commit inspection mapped them to already-existing atomic records rather than new decisions. This included, among others:
+
+- PR #5 scaffold presentation/lint files;
+- PR #9/#10 split translation-detail documents;
+- PR #16/#17/#19 locale/runtime/tests;
+- PR #20–#24 migration/schema/generated/test/workflow files;
+- PR #28/#29 failure-boundary and migration-history implementation/tests;
+- PR #31/#32/#34 translation schema/source/bundle generated/tests;
+- PR #38/#39 correction tests;
+- PR #42–#44 deadline/privilege/evidence tests;
+- PR #52/#53/#55 route/auth/write tests and route implementation;
+- internal commits not literally named by SHA in PR #10, #32, #34, #71, #73 and #74.
+
+Representative adversarial commit inspection included PR #10 `2915def`, PR #32 `b0c9676`/`3d33708`/`00539e3`/`2d4e358`/`97425ce`, PR #34 `234bd58`/`575cbca`/`ed1c1b4`/`74c8546`/`120dc1e`/`14b776c`, the previously unnamed PR #71 structured-source/completion/publication/test/doc sequence, PR #73 executor/test/typecheck/state commits, and PR #74 CI-state commit. No additional independently addressable decision was found.
+
+### Gate C — atomic chain assignment
+
+**FAIL.**
+
+The evidence graph is present, but `CROSS_STAGE.md` is still a coarse subsystem index. It does not yet carry the atomic forward/backward edges required by the completion gate.
+
+The following is the explicit high-priority chain map and the missing index-level edges. The arrows below mean historical/dependency linkage only; they do not classify either endpoint.
+
+#### Stale policy
+
+Atomic chain:
+
+`EX17-03/04/06a/06b/07/08a/08b/10/11 → EX19-01..03 → EX40-01..04 → EX77-02/12/27..31`
+
+Current consumers checked: `app/localization/sources.ts`, `app/localization/manual-packs.ts`, `app/localization/resource-loader.ts`.
+
+Missing index edges:
+
+- forward link from the PR #17 freshness/fallback records to `EX19-01..03`;
+- forward/backward link between `EX19-03` and `EX40-01..04`;
+- forward link from `EX40-01..04` to the later #77 state/history references. #77 already contains retrospective backlinks, but those are later-retrospective evidence rather than a complete bidirectional chain index.
+
+#### Infrastructure/hardening
+
+Core chain anchors:
+
+- `EX20-02/28a/28b/29/30 → EX35-08..11 → EX37-02..18`;
+- deadline branch: `EX37-05 → EX42-01..22 → EX45-13..20/21a`;
+- privilege branch: `EX37-07/12a..f/13 → EX43-01..21 → EX48-01..10 → EX49-01..21`;
+- migration-evidence branch: `EX37-14a..e → EX44-01..15 → EX76-01..14/53/56`;
+- environment/lifecycle branch: `EX37-08a..e/09a..b/18 → EX45-01..12/21b..c → EX50-01..24/28..34`;
+- #77 retrospective index: `EX77-32..44`.
+
+Current consumers checked: `.github/workflows/ci.yml`, `.github/scripts/production-privileges.mjs`, `.github/scripts/runtime-migration-evidence.mjs`, `.github/scripts/verify-runtime-migration-evidence.mjs`, `.github/runtime-migration-evidence.json`, and `docs/database/MIGRATIONS.md`.
+
+Missing index edges are the branch transitions above, especially #20/#35→#37, #37→#42/#43/#44/#45, #43→#48→#49, #44→#76, and #45→#50. These are link omissions only.
+
+#### Privilege
+
+Atomic chain:
+
+`EX43-01..21 → EX48-01..10 → EX49-01..21`
+
+Current consumer: `.github/scripts/production-privileges.mjs`.
+
+Specific missing edges:
+
+- `EX43-05 → EX48-02..06` for the inbound-membership correction;
+- `EX48-01..10 → EX49-01..13` for the database-owner/application-owner topology continuation;
+- corresponding backward index links from the #49 ownership records to the #48 correction set.
+
+#### Migration evidence
+
+Atomic chain:
+
+`EX44-01..15 → EX76-01..14/53/56`
+
+Current behavior checked: ordinary PR CI retains local/static evidence tests but no live Actions-run verification; the live verifier script and repository-owned evidence remain available for the external rollout boundary.
+
+Specific missing edges:
+
+- `EX44-13 → EX76-01/02/09/12`;
+- `EX44-01..12 → EX76-03..13`.
+
+`EX44-14` remains its own historical advancement finding; this response does not claim PR #76 resolved it.
+
+#### Authorization
+
+Atomic chain:
+
+`EX59-01..57 → EX60-01..67/68a..b/69a..c/70..75/76a..c/77..78 → EX61-01..102 → EX76-15..55/57..58/60..62`
+
+Current consumers checked: `db/authorization-service.ts`, `db/hyperdrive-authorization.ts`, `app/routes/locale-boundary.tsx` and the forum/admin authorization route layer.
+
+Existing useful links include `EX60-77` to #61, `EX60-78` to #76, `EX61-71` to #76, and `EX76-54` back to #61. Missing index coverage remains at the broad contract→backend (#59→#60), backend→route/UI (#60→#61), and the detailed broad-failure→typed-availability (#61→#76) record sets.
+
+#### Durable tasks/publication/runtime
+
+Atomic chain:
+
+`EX63-01..42 → EX67-01..64 → EX68-01..72 → EX69-01..68 → EX70-01..30 → EX71-01..100 → EX72-01..58 → EX73-01..37 → EX74-01..50 → EX75-01..65`
+
+Secondary provider dependency: `EX66-01..65 → EX73-04..15`.
+
+#77 state/history references: `EX77-09/10/17/18/26/51..61/72..76`.
+
+Current consumers checked: `db/translation-task-store.ts`, `app/localization/translation-task-consumer.ts`, `app/localization/translation-execution.ts`, `db/ui-translation-publication-store.ts`, `app/localization/bundles.ts`, `app/localization/resource-loader.ts`, `db/ui-translation-bundle-store.ts`, and `db/hyperdrive-ui-translations.ts`.
+
+Existing ledger records already carry several local forward/back references (#67↔#63/#69, #68↔#69, #69→#70, #72/#75 current persistence checks). The missing index work is to make the main transitions above explicit rather than relying on prose inside individual records.
+
+#### Open review chains
+
+- PR #72: `EX72-45..53` → current `db/translation-task-store.ts` / `app/localization/translation-task-consumer.ts`.
+- PR #75: `EX75-56..62` → current `app/localization/bundles.ts`, `app/localization/resource-loader.ts`, `db/ui-translation-bundle-store.ts`, `db/hyperdrive-ui-translations.ts`.
+
+Fresh current-code inspection still shows the code paths described by both review records. This is current-consumer evidence only; it is not a validity verdict or remedy.
+
+### Gate D — orphan/current-consumer reconciliation
+
+**FAIL.**
+
+Coverage ownership itself has no orphan:
+
+- every one of the 2029 ledger IDs belongs to exactly one coverage row;
+- no duplicate coverage owner exists.
+
+For the high-priority live chains above, current code/config consumers were found where expected. Historical-only CI/review/doc/intermediate records appropriately have no runtime consumer and should remain chain/history nodes rather than being called defects.
+
+However the **global** ledger-to-all-applicable-chain/current-consumer gate is not yet complete. Two concrete non-high-priority coarse chains prove that atomic indexing is still missing:
+
+- content-translation/future-consumer lineage: `AN10-12b/13 → EX50-25..27 → EX51-07..12`; current consumers include the forum revision tables in `db/schema.ts` and source-locale validation in `db/forum-service.ts`;
+- generic-locale/persistent-registry lineage still exists as a coarse `CROSS_STAGE.md` chain without atomic assignment; current consumers remain `app/localization/registry.ts` and `app/localization/persistent-registry.ts`.
+
+These are not true evidence orphans; they are **unindexed cross-stage relationships**. Because the completion rule requires every record to map to all applicable chains, this gate cannot pass yet.
+
+### Gate E — repeated adversarial omission search
+
+**PASS.**
+
+After the PR #37 range fix and after obtaining the complete fresh manifests, the adversarial pass deliberately targeted:
+
+- changed files not literally named in prior response prose;
+- internal commits whose SHA was not literally named in the accepted response text;
+- generated/schema/config/test files;
+- intermediate corrections that disappeared from final squash behavior;
+- current persistence of the stale-policy, privilege, migration-evidence, authorization, durable-task, #72-review and #75-review paths.
+
+No new independently meaningful decision was found that requires a new ledger ID. The discrepancies found were traceability/indexing gaps, not missing chronological extraction records.
+
+### Final gate table
+
+| Gate | Result | Reason |
+| --- | --- | --- |
+| Canonical IDs | **PASS** | 2029/2029 strict expansion; no malformed, duplicate, missing, extra, or unowned ID. |
+| File/commit completeness | **PASS** | Fresh complete GitHub manifests for all 72 PRs; targeted patch/commit reconciliation found no new atomic omission. |
+| Chain assignment | **FAIL** | Atomic forward/backward edges are still not indexed in `CROSS_STAGE.md`/ledger dependency structure. |
+| Orphan/current-consumer | **FAIL** | No coverage orphan, but all-applicable-chain/current-consumer indexing is not globally complete; concrete content/locale lineages remain coarse-only. |
+| Adversarial omission | **PASS** | Repeat search after #37 fix/full manifest found no additional atomic extraction omission. |
+
+### Coverage conclusion
+
+Chronological extraction remains **100% populated** and its canonical/file/commit completeness now passes this independent recheck.
+
+Phase 1 still must **not** close on this response because chain/orphan indexing remains incomplete. The finite index-only links above are the remaining evidence-graph work identified by `DL-COVERAGE-002`.
+
+No record is classified, no remediation is proposed, and PR #78 was not edited.
+
