@@ -14086,3 +14086,172 @@ It later narrows which failures may degrade to denial/503. That later correction
 - Dynamic authorization is preserved as an accepted product extension from #59 forward without turning its detailed catalog/precedence/schema/lockout choices into automatic user-approved facts.
 - #60 is preserved exactly as a backend foundation with later consumers, open snapshot review, two distinct capability/cache implementations and in-PR identity corrections; #61/#76 remain forward evidence only.
 - No decision in this response is classified as correct, foolish, erroneous, premature, future-proof, infrastructure drift, approved target architecture, or requiring a remedy.
+
+
+## RESPONSE DL-EXTRACT-010/2
+
+From: ChatGPT
+Status: submitted
+Responding in: PR #79 at RESPONSE_COMMIT_SHA
+Task source: PR #78 head 2d282342fab61059db28d227d1c1b3b0ef131654
+Scope: narrow atomicity correction to RESPONSE DL-EXTRACT-010/1 only
+Claims: replacement records only; no new extraction scope, classification, architecture verdict, or remediation
+
+### Atomic replacements
+
+#### EX56-24a — PROJECT_STATE records Google sign-in/sign-out UX as implemented
+The state file records the shared forum-header Google sign-in/sign-out controls as present, using the SSR session snapshot, locale-aware callback behavior, and client-side synchronization after sign-out.
+
+#### EX56-24b — PROJECT_STATE still records Stage 4D as incomplete after the auth-UX slice
+Markdown rendering and separate forum write anti-spam/rate limiting remain unfinished Stage 4D work after PR #56.
+
+#### EX57-29a — Solved/best-answer becomes a distinct next product slice after Stage 4D completion
+PROJECT_STATE advances the product route from completed local/CI Stage 4D to solved/best-answer work.
+
+Forward evidence: PR #58 implements this slice.
+
+#### EX57-29b — Minimum-role/authorization work remains a distinct later Stage 4E slice
+PROJECT_STATE separately leaves minimum roles/moderator-admin authorization after solved/best-answer rather than making it part of that first Stage 4E slice.
+
+Forward evidence: PR #59 later changes/expands this product requirement to the accepted dynamic-authorization extension; that later decision does not alter the historical #57 state claim.
+
+#### EX57-30a — Real Google OAuth acceptance remains deferred to Stage 6
+Completion of local/CI Stage 4D does not require real Google OAuth credentials/provider acceptance.
+
+#### EX57-30b — General external deployment acceptance remains deferred to Stage 6
+Completion of local/CI Stage 4D does not require the broader external deployment/pre-release acceptance path.
+
+#### EX58-46a — Real Google OAuth acceptance remains outside the solved/best-answer slice
+PR #58 does not make real Google OAuth credentials/provider smoke a prerequisite for the local/CI Stage 4E1 solved-topic work.
+
+#### EX58-46b — General external deployment acceptance remains outside the solved/best-answer slice
+PR #58 likewise does not require the broader external deployment/pre-release acceptance path for Stage 4E1.
+
+#### EX59-53a — Stage 4E2 schedules an authorization backend foundation
+The contract requires the server-side application authorization foundation needed to resolve and manage effective permissions.
+
+#### EX59-53b — Stage 4E2 schedules a protected authorization management UI
+The contract separately requires locale-aware protected role/user permission administration through the site.
+
+#### EX59-53c — Stage 4E2 schedules forum authorization integration through the PermissionResolver boundary
+Protected forum actions must be moved from the earlier author/session-only checks to the accepted server-side permission model.
+
+#### EX59-53d — Stage 4E2 schedules authorization migration and database/integration testing
+Persistence/migration work and tests of the authorization invariants are an independently deliverable part of the Stage 4E2 contract.
+
+#### EX59-53e — Stage 4E2 schedules core authorization/forum E2E coverage
+The stage separately requires end-to-end coverage of the completed forum core and effective permission behavior.
+
+#### EX60-68a — DB tests validate the exact code-backed permission catalog
+The integration suite compares authz_permissions with PERMISSION_CATALOG and rejects an invented permission key.
+
+#### EX60-68b — DB tests validate independent built-in role seeds and their exact grant sets
+The integration suite reads the seeded system roles/grants and compares them with INITIAL_ROLE_GRANTS, preserving the non-inheritance contract.
+
+#### EX60-69a — DB tests exercise custom-role lifecycle behavior
+The local/CI suite covers custom-role creation, display-name change, role-grant replacement, assigned-role delete restriction, later unassignment, and deletion.
+
+#### EX60-69b — DB tests exercise explicit user-role assignment behavior
+The suite assigns a user to the custom role and later reassigns the user to the built-in user role.
+
+#### EX60-69c — DB tests exercise per-user override precedence behavior
+The suite verifies per-user allow, deny, and inherit-by-removal effects against the role grants.
+
+#### EX60-76a — Protected authorization management UI remains unfinished after PR #60
+The backend foundation does not yet expose the Stage 4E2 management site/routes.
+
+Forward evidence only: PR #61 later adds the management UI.
+
+#### EX60-76b — Forum actions/UI remain unfinished consumers of PermissionResolver after PR #60
+PR #60 does not yet move protected forum mutations/presentation to the new authorization capability.
+
+Forward evidence only: PR #61 later performs this integration.
+
+#### EX60-76c — Core authorization/forum E2E remains unfinished after PR #60
+PR #60 has backend/database integration coverage but not the Stage 4 completion E2E required by the #59 delivery contract.
+
+Forward evidence only: PR #61 later adds connected Stage 4 coverage.
+
+### Old-ID → replacement-ID map
+
+- EX56-24 → EX56-24a, EX56-24b
+- EX57-29 → EX57-29a, EX57-29b
+- EX57-30 → EX57-30a, EX57-30b
+- EX58-46 → EX58-46a, EX58-46b
+- EX59-53 → EX59-53a, EX59-53b, EX59-53c, EX59-53d, EX59-53e
+- EX60-68 → EX60-68a, EX60-68b
+- EX60-69 → EX60-69a, EX60-69b, EX60-69c
+- EX60-76 → EX60-76a, EX60-76b, EX60-76c
+
+The eight unsuffixed IDs above are superseded only as atomic labels. Their accepted evidence is retained through the listed replacements.
+
+### Corrected dependencies and canonical references
+
+1. EX56-24a is the state claim corresponding to the auth presentation work in EX56-17/18 and its synchronization history in EX56-06..09. EX56-24b is an independent Stage 4D incompleteness/state claim; completion of EX56-24a does not imply completion of EX56-24b.
+2. EX57-28 remains the Stage 4D local/CI completion claim. Its next-work edges now split into EX57-29a (solved/best-answer; forward #58) and EX57-29b (minimum-role/authorization; later expanded by the direct-user #59 decision).
+3. Deferred external work after #57 is now represented independently by EX57-30a (real Google OAuth acceptance) and EX57-30b (broader external deployment acceptance).
+4. The same Stage 4E1 boundary after #58 is represented independently by EX58-46a (real Google OAuth acceptance) and EX58-46b (broader external deployment acceptance).
+5. EX59-53a..e replace the single Stage 4E2 delivery bundle. Forward evidence stays directional: #60 later implements backend foundation plus migration/database tests (EX59-53a/d); #61 later consumes the contract in management UI, forum integration and connected E2E (EX59-53b/c/e). These later PRs are not imported backward as proof of correctness of the #59 details.
+6. EX60-68a and EX60-68b are separate database-test outcomes. Neither changes the cohesive seed-grant records EX60-12..14 or permission-catalog implementation records EX60-04/10/19.
+7. EX60-69a, EX60-69b and EX60-69c separate three behaviors within the same database test block. The effective precedence contract itself remains the accepted cohesive EX59-27 / implementation EX60-26 record and is not mechanically split.
+8. EX60-75 remains the state claim that the backend foundation is complete local/CI. Its unfinished-consumer edge now fans out to EX60-76a (management UI), EX60-76b (forum authorization integration), and EX60-76c (core authorization/forum E2E).
+9. EX60-66 remains the historical “no consumer yet” foundation fact and is consistent specifically with EX60-76a/b; EX60-76c separately records missing end-to-end stage completion.
+10. EX60-77/#61 remains forward evidence for EX60-76a/b/c. EX60-78/#76 remains forward evidence only for the later typed availability boundary and does not alter any of these split records.
+
+### Review-reference correction
+
+No review finding ID is replaced by this revision. The accepted review references remain:
+- EX56-07 for the stale header-session presentation review, corrected in-PR by EX56-08/09;
+- EX57-27 for the rollback-test-specificity finding;
+- EX58-43 for the unresolved best-answer grid presentation finding;
+- EX60-27 for the unresolved multi-statement resolveUser snapshot finding.
+
+None of EX56-24, EX57-29/30, EX58-46, EX59-53, EX60-68/69, or EX60-76 was itself a review-finding record; their replacements do not change those review histories.
+
+### Corrected changed-file mappings
+
+#### PR #56
+- PROJECT_STATE.md -> EX56-22, EX56-23, EX56-24a, EX56-24b.
+- All other PR #56 changed-file mappings remain unchanged.
+
+#### PR #57
+- PROJECT_STATE.md -> EX57-21, EX57-28, EX57-29a, EX57-29b, EX57-30a, EX57-30b.
+- All other PR #57 changed-file mappings remain unchanged.
+
+#### PR #58
+- PROJECT_STATE.md -> EX58-44, EX58-45, EX58-46a, EX58-46b.
+- All other PR #58 changed-file mappings remain unchanged.
+
+#### PR #59
+- docs/auth/AUTHORIZATION.md -> EX59-02..52, EX59-53a, EX59-53b, EX59-53c, EX59-53d, EX59-53e, EX59-54..56 detailed authorization contract.
+- ROADMAP.md -> EX59-01, EX59-35..52, EX59-53a, EX59-53b, EX59-53c, EX59-53d, EX59-53e, EX59-54..57, Stage 4E2 scheduling and Stage 6 bootstrap/infrastructure separation.
+- PROJECT_STATE.md -> EX59-01, EX59-53a..e as the scheduled Stage 4E2 delivery boundary, and external-bootstrap deferral already represented by EX59-50.
+- README.md -> EX59-53a..e at the Stage 4E2 scheduling level; no additional mechanism is introduced there.
+- PROJECT.md mapping from /1 remains unchanged.
+
+#### PR #60
+- PROJECT_STATE.md -> EX60-65..67, EX60-75, EX60-76a, EX60-76b, EX60-76c.
+- tests/database/migrations.test.ts -> EX60-53/54, EX60-68a, EX60-68b, EX60-69a, EX60-69b, EX60-69c, EX60-70..73.
+- All other PR #60 changed-file mappings remain unchanged.
+
+### Corrected canonical ranges
+
+For any later index/range shorthand derived from RESPONSE DL-EXTRACT-010/1:
+- PR #56 canonical tail is EX56-22..23, EX56-24a..b.
+- PR #57 canonical tail is EX57-28, EX57-29a..b, EX57-30a..b.
+- PR #58 canonical tail is EX58-44..45, EX58-46a..b.
+- PR #59 around the delivery record is EX59-52, EX59-53a..e, EX59-54..57.
+- PR #60 test range is EX60-68a..b, EX60-69a..c, EX60-70..73.
+- PR #60 completion/consumer tail is EX60-75, EX60-76a..c, EX60-77..78.
+
+### Unchanged /1 material
+
+All other RESPONSE DL-EXTRACT-010/1 records, F/A/C/D/O/G/T sweeps, CI facts, review histories, direct-user provenance for the high-level dynamic-authorization product extension, changed-file reconciliation, evidence limitations, and no-classification statements remain unchanged.
+
+In particular:
+- EX59-27 permission precedence remains cohesive.
+- EX60-12..14 exact independent seed grant lists remain cohesive.
+- EX60-46..54 transaction/serialization/lockout invariants remain cohesive.
+- EX60-27 resolver snapshot shape/review remains cohesive and open against final #60 behavior.
+- PR #61 and #76 remain forward evidence only.
+- No verdict, target architecture, remediation, or retraction of the accepted dynamic-authorization extension is introduced.
