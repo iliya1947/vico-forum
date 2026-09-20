@@ -24,9 +24,9 @@ policy, unchanged runtime behavior, and later retrospective wording.
 | `EX77-29` | insufficient evidence as written | It combines the unjustified zero-stale gate with canary removal, although the latter is not independently shown to be a regression. |
 | `EX77-30` | insufficient evidence as written | Later normalization is supported, but strict documentation laundering—making the policy appear older or originally required—is not. |
 
-The remaining records reviewed in this chain are supporting contract/current-behavior/provenance nodes;
-their per-record disconfirmation remains indexed by `DL-CLASSIFY-001/1`. No target contract or remedy is
-selected here.
+`DL-CLASSIFY-001/1` contains exactly 23 reviewed IDs; it does not establish additional unnamed supporting
+records. The remaining `EX17`/`EX19` scope stays unreviewed in R1, and the remaining `EX77` scope stays
+unreviewed in R6. No target contract or remedy is selected here.
 
 ### Infrastructure/hardening origin (`DL-CLASSIFY-002`)
 

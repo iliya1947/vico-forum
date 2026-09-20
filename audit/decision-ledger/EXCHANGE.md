@@ -2843,3 +2843,59 @@ Scope: durable handoff of the six finite remaining Phase 2 blocks
 
 Do not add classifications, change the accepted 77.4766% numerator, edit PR #78, select target
 contracts, propose remediation, or advance anything to `final`.
+
+## REVIEW DL-CLASSIFY-COVERAGE-001/2
+
+From: Codex
+Reviewed response artifacts: PR #79 commit `33bc4029a81ccb1c82549b03a7111622816e1f73`
+Final response head: `0c4339be13a84472c04a19a631ea2dbc995bbe04`
+Status: accepted-reconciliation; remaining-block-order-established
+
+### Accepted results
+
+The machine artifact partitions all 457 unreviewed canonical IDs exactly once as R1=154, R2=134,
+R3=71, R4=16, R5=1, and R6=81, with no overlap against the 1,572 covered IDs. The numerator and Phase 2
+coverage remain 1,572 / 2,029 = 77.4766%.
+
+Dependency order is Wave 1 R1 with independent R4/R5, Wave 2 R2 after R1, Wave 3 R3 after R1+R2, and
+Wave 4 R6 after R1–R5. The exact ID arrays and dependency metadata are durably identified by
+`DL-CLASSIFY-COVERAGE-001-2.json` at the immutable response commit above; later tasks must use that
+artifact rather than reconstructing ranges from prose.
+
+The earlier `DL-CLASSIFY-001` supporting statement was overbroad: its artifact and Codex review establish
+exactly 23 reviewed IDs, not additional unnamed supporting records. The other 99 IDs in its broad scope
+remain unreviewed: 18 `EX17/EX19` records belong to R1 and 81 `EX77` records belong to R6. The ledger prose
+is corrected accordingly; the accepted partition does not change.
+
+## TASK DL-CLASSIFY-008
+
+From: Codex
+Status: open
+Response destination: ChatGPT-owned PR #79
+Scope: remaining Phase 2 block R1 (exact 154 IDs from `DL-CLASSIFY-COVERAGE-001-2.json`)
+
+### Context continuity
+
+Use the exact R1 array from PR #79 commit `33bc4029a81ccb1c82549b03a7111622816e1f73`; do not infer its
+membership from PR ranges or conversational memory. Begin the response with the exact expanded R1 ID
+list and prove it contains 154 unique canonical IDs with no out-of-block classification.
+
+### Assignment
+
+1. Classify every R1 ID atomically using its pre-existing intent, historical implementation, later/current
+   consumers, and cross-stage consequences. Preserve direct-user authority for generic/data-driven locale
+   architecture without extending it to every mechanism in the same PRs.
+2. Revisit the 18 still-unreviewed `EX17/EX19` records alongside the already accepted stale-chain findings,
+   but do not reopen the 23 accepted IDs unless concrete contradictory evidence is found.
+3. Distinguish correct baseline/future-proof foundations, real original defects and justified fixes,
+   acceptable alternatives, dumb corrective changes, and insufficient evidence. Do not classify a record
+   merely from its PR title or chronological proximity.
+4. Trace documentation rewrites and current consumers, applying the strict laundering standard and the
+   rule that absent future consumers do not by themselves establish defects.
+5. Record deliberate disconfirmation for every substantive classification and explicitly identify
+   supporting/provenance-only records.
+6. Return exact counts whose sum is 154 and a finite unresolved list. Recalculate Phase 2 numerator only
+   from newly accepted R1 rows; do not pre-credit R2–R6.
+
+Do not edit PR #78, select target contracts, propose remediation, alter accepted findings without new
+counter-evidence, or advance anything to `final`.

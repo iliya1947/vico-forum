@@ -267,6 +267,8 @@ required restoration remain open until full-history and cross-stage review.
   also reviewed, preserving its durable future-proof foundations while identifying two current defect
   groups. Exact reconciliation now places **Phase 2 preliminary classification at 77.4766% complete**:
   1,366 classified+disconfirmed plus 206 reviewed-supporting records out of 2,029, with 457 unreviewed;
+  the remaining exact partition is R1=154, R2=134, R3=71, R4=16, R5=1, and R6=81, with R1 first and
+  R6 last in dependency order;
   extraction completion must not be mistaken for completed findings or remediation.
 - No project decision has reached final status and no product/source-of-truth documentation or runtime
   code has been corrected by this audit branch.
