@@ -259,7 +259,9 @@ required restoration remain open until full-history and cross-stage review.
   contract. The infrastructure origin block (`#20/#35/#37`) and its downstream implementation/correction
   chain across #42–#50/#76 are also preliminarily reviewed. The final narrow follow-up leaves only
   `EX37-02` classified as insufficiently evidenced rather than pretending Git can prove the unrecorded
-  audit. Overall progress through the five-phase audit/restoration process is approximately **29%**;
+  audit. The dynamic-authorization/failure chain is also preliminarily reviewed, including two current
+  snapshot-consistency defects and the broad-error correction history. Overall progress through the
+  five-phase audit/restoration process is approximately **34%**;
   extraction completion must not be mistaken for completed findings or remediation.
 - No project decision has reached final status and no product/source-of-truth documentation or runtime
   code has been corrected by this audit branch.

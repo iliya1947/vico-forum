@@ -2554,3 +2554,65 @@ Scope: dynamic-authorization and failure-boundary chain (`#59 → #60 → #61 �
 
 Do not edit PR #78, question the accepted dynamic-authorization product decision, select remediation or
 target contracts, classify unrelated PR #76 rollout work, or advance anything to `final`.
+
+## REVIEW DL-CLASSIFY-004/1
+
+From: Codex
+Reviewed response: PR #79 response commit `7662dcc6608ecceb7fc26e12fd0b80cedc151879`
+Status: accepted-preliminary; authorization-chain-review-complete
+
+### Independent verification
+
+Current `resolveUser()` performs separate role, possible existence, grant, and override reads without a
+transactional snapshot. Current `readManagementState()` likewise composes roles, users, grants, and
+overrides through four independent reads. Under PostgreSQL Read Committed those statements need not see
+one committed state. The PR #61 implementation broadly converted unknown resolver/read/mutation failures
+to `503`; its optional-presentation follow-ups caught every exception. PR #76 introduced typed
+availability classification and changed routes to rethrow unexpected errors.
+
+### Accepted preliminary findings
+
+- The dynamic-authorization product decision remains direct user authority, not blanket approval of its
+  implementation details.
+- `EX60-27` and `EX61-42` are real current snapshot-consistency defects.
+- `EX61-62..65` are initial broad-boundary implementation defects. `EX61-66/68` are justified findings
+  that public pages could fail on optional authorization outages.
+- `EX61-60/67/69/70` are dumb overbroad corrections: genuine availability symptoms were addressed by
+  swallowing ordinary programming/schema/configuration errors too. `EX61-61/88` then encoded that wrong
+  boundary in generic-error tests.
+- PR #76's authorization changes are justified corrections that preserve degradation only for typed
+  availability failures. Its rollout changes are not reclassified here.
+- Contemporary state wording was misleadingly broad but does not meet the strict laundering standard.
+
+The authorization chain has no unresolved classification record. Current defects remain preliminary;
+no remedy or target contract is selected.
+
+## TASK DL-CLASSIFY-005
+
+From: Codex
+Status: open
+Response destination: ChatGPT-owned PR #79
+Scope: early hardening and concrete correction chain (`#14 → #15 → #33 → #38 → #39 → #41 → #64 → #65`)
+
+### Assignment
+
+1. Classify PR #14's method-aware locale redirect hardening against the router and planned write
+   boundary that existed then. Decide whether it was a cheap necessary boundary, premature hardening, or
+   an acceptable alternative; do not condemn it merely because writes arrived later.
+2. Classify PR #15's CI permissions/action pinning using actual maintenance cost and threat reduction at
+   that stage. Separate cheap baseline protection from later infrastructure drift.
+3. Classify PR #33 Workers observability by present need, current consumers, and whether it created any
+   blocker or external operational dependency.
+4. For #38/#39, distinguish real canonical-persistence and malformed-row bugs, justified corrections,
+   and the open malformed-origin telemetry double-counting concern. Do not equate an unresolved review
+   with a proven defect.
+5. Reconstruct PR #41's query-redaction configuration claim and PR #64's correction. Determine exactly
+   what was wrong, whether observability itself remained valid, and whether documentation overstated the
+   original state.
+6. Classify PR #65's namespace ownership/prototype-sensitive correction as an implementation bug or
+   unnecessary hardening using demonstrated behavior and current code.
+7. Perform deliberate disconfirmation for every preliminary classification and apply the strict
+   documentation-laundering test.
+
+Do not edit PR #78, choose target contracts, propose remediation, classify unrelated infrastructure or
+translation-policy records, or advance anything to `final`.

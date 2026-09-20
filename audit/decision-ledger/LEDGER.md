@@ -60,6 +60,22 @@ blockers as current policy is not enough to prove they were represented as older
 PR #45/#46/#50 explicitly changed the then-current lifecycle. That is evidence against strict
 documentation laundering in this chain, and PR #50 remains authoritative only prospectively.
 
+### Dynamic authorization and failure boundaries (`DL-CLASSIFY-004`)
+
+| Records | Preliminary classification | Evidence boundary |
+| --- | --- | --- |
+| PR #59 product decision | direct user-approved extension | Dynamic roles/permissions, custom roles, and per-user allow/deny are accepted; individual implementation choices still require evidence. |
+| `EX60-27` | real current implementation defect | `resolveUser()` composes role, grants, and overrides across multiple Read Committed statements without one stable snapshot. |
+| `EX61-42` | real current implementation defect | `readManagementState()` composes its management view across four queries without one stable snapshot. |
+| `EX61-62..65` | original implementation defects | Initial forum/admin integration converted arbitrary resolver/read/mutation errors to infrastructure-style `503`. |
+| `EX61-66`, `EX61-68` | justified review findings | Optional authorization failures could incorrectly take down otherwise public locale/section/topic reads. |
+| `EX61-60`, `EX61-67`, `EX61-69`, `EX61-70` | dumb overbroad corrections | They solved availability symptoms by suppressing every error, including programming/schema/configuration failures. |
+| `EX61-61`, `EX61-88` | downstream tests of the wrong boundary | Generic `Error` fixtures normalized the overbroad degradation behavior rather than distinguishing availability. |
+| PR #76 authorization records | justified correction | Typed availability restores controlled degradation for genuine outages and leaves unexpected failures visible. |
+
+The misleading use of “infrastructure” in contemporary state text is not strict documentation
+laundering: no evidence shows the catch-all policy was presented as an older accepted contract.
+
 ## Record template
 
 ```text
