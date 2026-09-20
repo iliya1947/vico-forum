@@ -15134,9 +15134,9 @@ Evidence inspected:
 - Migration `0007_durable_translation_tasks.sql`, Drizzle schema/store, dispatcher contracts,
   unit tests, DB integration tests and final PROJECT_STATE were read.
 - Final CI #160 has successful `checks` and `database` jobs.
-- The exact project dependency is Drizzle ORM `0.45.2`; its tagged PostgreSQL insert builder
-  accepts SQL expressions through the `onConflictDoUpdate(... set ...)` update-set boundary,
-  relevant to the later PR #69 store-owned-clock correction.
+- The historical project dependency is pinned to Drizzle ORM `0.45.2`; repository compilation/tests
+  exercise the SQL-expression `onConflictDoUpdate(... set ...)` form used by the later #69 correction.
+  Exact tagged upstream 0.45.2 source was not independently retrieved in this extraction.
 
 Completeness limits:
 - The code establishes ordered `await upsertPending(job)` before `enqueue({translationTaskId})`;
@@ -15188,9 +15188,9 @@ Evidence inspected:
 - PostgreSQL 17 official documentation was checked: `statement_timestamp()` is the start
   time of the current statement. This matches the repository’s use of a database-owned
   per-statement time source for task lifecycle transitions.
-- Project dependency evidence confirms Drizzle ORM `0.45.2`; its tagged PostgreSQL insert/upsert
-  source accepts SQL expressions in update sets, matching the implementation form used by
-  the conflict update.
+- Project dependency evidence confirms Drizzle ORM `0.45.2`; repository compilation/tests exercise
+  the SQL-expression update-set form used by the conflict update. Exact tagged upstream 0.45.2
+  source was not independently retrieved in this extraction.
 
 Completeness limits:
 - The #69 PR body says no unresolved findings remain, but the PR discussion still contains
@@ -16149,3 +16149,115 @@ This block remains local/CI evidence under the Stage 5/Stage 6 boundary.
 14. TRANSLATION_ARCHITECTURE still requires durable task commit before enqueue, duplicate-safe persistent state, pre-provider revalidation and conditional-current publication. This block implements the first three boundaries partially/fully as described above; conditional publication remains deferred.
 15. Stage 5 remains local/CI implementation while Stage 6 owns real Queue/provider credentials and deployed acceptance. Absence of real Queue/provider artifacts in #66–#70 is therefore kept as a scope boundary rather than converted into a defect record.
 
+
+### Changed-file reconciliation
+
+#### PR #66 — all 12 changed files
+
+- PROJECT_STATE.md -> EX66 records for the bounded PRV/UI validation layer and deferred durable/provider/runtime consumers.
+- app/localization/bundles.test.ts -> protected-term validation fixture correction.
+- app/localization/locale-rules.test.ts -> target plural-rule and unsupported-locale coverage.
+- app/localization/locale-rules.ts -> LocaleRulesProvider/Intl cardinal rule boundary.
+- app/localization/persistent-sources.test.ts -> protected-term validation applied to persistent resources.
+- app/localization/sources.ts -> shared TranslationValidationError/validateTranslation extraction.
+- app/localization/translation-provider.test.ts -> routing, locale mapping, capability, unsupported kind and untrusted-result coverage.
+- app/localization/translation-provider.ts -> provider-neutral request/adapter/router/provenance contracts.
+- app/localization/translation-validation.test.ts -> plain/structured/plural provider-output validation coverage.
+- app/localization/translation-validation.ts -> shared untrusted-output validation boundary.
+- tests/database/ui-translation-bundle-store.test.ts -> protected-term-valid persisted bundle fixture.
+- tsconfig.node.json -> Node project inclusion for the new validation/rules modules.
+
+#### PR #67 — all 11 changed files
+
+- PROJECT_STATE.md -> JOB-01/JOB-02 durable-foundation state and deferred consumers.
+- app/localization/translation-tasks.test.ts -> dispatcher ordering/failure/sequential behavior.
+- app/localization/translation-tasks.ts -> task/store/message/enqueuer/dispatcher contracts and job-spec validation.
+- db/schema.ts -> translation_tasks Drizzle schema.
+- db/translation-task-store.ts -> durable store/upsert/find/integrity boundaries and the reviewed client-clock conflict update.
+- drizzle/0007_durable_translation_tasks.sql -> first durable task table migration.
+- drizzle/meta/0007_snapshot.json -> generated migration snapshot.
+- drizzle/meta/_journal.json -> migration 0007 journal entry.
+- tests/database/migrations.test.ts -> migration-count/history expectation.
+- tests/database/translation-task-store.test.ts -> PostgreSQL durable identity, duplicate-upsert and constraint coverage.
+- tsconfig.node.json -> Node typecheck inclusion for task modules.
+
+#### PR #68 — all 12 changed files
+
+- PROJECT_STATE.md -> first JOB-03 claim/preflight state and CI evidence.
+- app/localization/translation-task-consumer.test.ts -> stale-reason, exact-target and no-preflight duplicate/terminal coverage.
+- app/localization/translation-task-consumer.ts -> claim-first stale preflight and eligible execution context.
+- app/localization/translation-tasks.test.ts -> task mocks updated for lifecycle fields/store methods.
+- app/localization/translation-tasks.ts -> pending/processing/stale types plus claim/markStale store contract.
+- db/schema.ts -> claim token/time/lease/stale fields and lifecycle constraints.
+- db/translation-task-store.ts -> atomic claim/reclaim and claim-token-guarded stale transition.
+- drizzle/0008_translation_task_claim_lease.sql -> lifecycle migration.
+- drizzle/meta/0008_snapshot.json -> generated lifecycle snapshot.
+- drizzle/meta/_journal.json -> migration 0008 journal entry.
+- tests/database/migrations.test.ts -> migration-count/history expectation.
+- tests/database/translation-task-store.test.ts -> schema, concurrent claim, reclaim and terminal-stale DB coverage.
+
+#### PR #69 — all nine changed files
+
+- app/localization/translation-task-consumer.test.ts -> store-owned clock API/shared eligibility regressions.
+- app/localization/translation-task-consumer.ts -> removes caller clock and consumes shared target eligibility.
+- app/localization/translation-tasks.ts -> store claim/markStale signatures become clock-free to callers.
+- app/localization/ui-translation-service.test.ts -> inactive/disabled/shared generation-eligibility coverage.
+- app/localization/ui-translation-service.ts -> resolveUiTranslationGenerationTarget shared predicate.
+- db/translation-task-store.ts -> PostgreSQL clock, stale reactivation, processing preservation and final requiredRow repair.
+- docs/translation/PROVIDERS_AND_JOBS.md -> lifecycle terminal/reactivation/DB-clock semantics.
+- docs/translation/UI_TRANSLATION.md -> shared active/inactive/disabled generation eligibility.
+- tests/database/translation-task-store.test.ts -> live processing preservation, DB-time reclaim and same-identity reactivation coverage.
+- PROJECT_STATE.md is absent from the #69 changed-file set, matching review 4024162533.
+
+#### PR #70 — both changed files
+
+- tests/database/translation-task-store.test.ts -> fresh-connection durable survival after forced enqueue failure.
+- PROJECT_STATE.md -> PR #69 state synchronization plus enqueue-failure recovery evidence.
+
+### Review-reference reconciliation
+
+- PR #66 review 4014877637 -> protected-term enforcement exposed stale fixtures; d735bf4 updates valid fixtures and adds negative coverage.
+- PR #67 review 4018711812 -> client-clock duplicate upsert timestamp risk remains open in #67; PR #69 replaces that path with PostgreSQL statement time.
+- PR #68 review 4018963640 -> fixed-past DB-test claim time; 0cbe639 anchors the fixture after database creation and CI #167 passes.
+- PR #68 review 4018963657 -> stale identity cannot be rescheduled in #68; PR #69 later reactivates stale only through a fresh planning upsert.
+- PR #69 review 4024162533 -> factual PROJECT_STATE lag; no #69 commit fixes it, and PR #70 later synchronizes the state document.
+- PR #70 has no review finding in the inspected discussion history.
+
+### CI and external-evidence reconciliation
+
+- PR #66 initial CI #158: failure. Raw logs show protected-term mismatch for common:stageSummary and TS6307 for the two newly introduced Node modules.
+- PR #66 final CI #159: success.
+- PR #67 final CI #160: success despite the later review finding on the client-clock conflict update.
+- PR #68 CI #166: failure. Raw database logs show translation_tasks_timestamps_check because the fixed test claim time predates database-created rows.
+- PR #68 CI #167 on 0cbe639: success after the fixture correction.
+- PR #68 final CI #168 on 05a1103: success.
+- PR #69 CI #169 on c1a3a25: failure. Checks report TS2355 for requiredRow; database tests observe undefined task results.
+- PR #69 final CI #170 on f6522c4: success.
+- PR #70 CI #171 on d88b342: success for the new enqueue-failure integration evidence.
+- PR #70 final CI #172 on 026c944: success.
+- PostgreSQL 17 primary documentation confirms statement_timestamp() represents the start of the current statement; this is the external database-time fact used by #69’s lifecycle implementation.
+- package.json at the historical boundary pins drizzle-orm 0.45.2. The repository code compiles/tests the SQL-expression conflict-update form against that pinned dependency. Exact tagged upstream 0.45.2 source was not independently retrieved in this extraction, so no stronger upstream-source claim is made here.
+- No real Cloudflare Queue, real provider credential/call, external schema rollout, deployed translation worker, retry/DLQ, reconciliation loop or result-publication artifact exists in PR #66–#70.
+
+### F/A/C/D/O/G/T completeness reconciliation
+
+- PR #66: F provider routing/validation; A adapter/rules/validator abstractions; C review/CI corrections; D bounded Stage 5A state; O no external provider/Queue/schema operation; G trust/structured-message rules; T unit/DB/typecheck CI evidence.
+- PR #67: F durable task persistence/dispatch; A task/store/enqueuer abstractions; C open client-clock finding; D JOB-01/JOB-02 state; O migration local/CI only and no real Queue; G stable identity/idempotency/persist-before-enqueue; T unit/DB/migration CI evidence.
+- PR #68: F claim/lease/stale preflight; A consumer/store lifecycle; C test-clock correction plus open stale-reactivation finding; D first JOB-03 state; O migration local/CI only and no real provider/Queue; G token ownership/exact-target stale checks; T concurrent DB/preflight CI evidence.
+- PR #69: F lifecycle/eligibility repairs; A shared eligibility and DB-owned time; C inherited corrections plus intermediate missing-return regression; D detail docs updated while PROJECT_STATE lags; O no schema/external operation; G stale reactivation/live-processing preservation; T DB/planner/consumer CI evidence.
+- PR #70: F durability evidence/state synchronization; A no new runtime mechanism; C no review correction; D PROJECT_STATE catches up; O no schema/external operation; G pending task as future recovery source; T fresh-DB failure-window test/CI.
+- Every final changed file across all five PRs is accounted for.
+- The extraction preserves current-stage defects as concrete review/lifecycle records and preserves deferred Queue/provider/publication/reconciliation consumers as deferred scope. It does not infer a verdict from either complexity or deferral.
+- No record in this response declares correctness, foolishness, prematurity, future-proofing quality, architecture approval, required remediation or target architecture.
+
+### Response completeness
+
+Atomic records in this response:
+- PR #66: 65
+- PR #67: 64
+- PR #68: 72
+- PR #69: 68
+- PR #70: 30
+- total: 299 unique candidate atomic records
+
+No duplicate EX66/EX67/EX68/EX69/EX70 IDs are intentionally present.
