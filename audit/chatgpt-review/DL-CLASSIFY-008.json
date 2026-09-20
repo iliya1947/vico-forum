@@ -1,0 +1,2866 @@
+{
+  "type": "DL-CLASSIFY-008",
+  "status": "submitted-preliminary",
+  "audited_heads": {
+    "pr78": "e13f605ab12f833ef5d4f81e6062e729e754cf46",
+    "pr79_base": "0c4339be13a84472c04a19a631ea2dbc995bbe04"
+  },
+  "immutable_scope_source": {
+    "commit": "33bc4029a81ccb1c82549b03a7111622816e1f73",
+    "path": "audit/chatgpt-review/DL-CLASSIFY-COVERAGE-001-2.json",
+    "block": "R1",
+    "count": 154,
+    "unique_count": 154,
+    "ids": [
+      "AN7-01",
+      "AN7-02",
+      "AN7-03",
+      "AN7-04",
+      "AN7-05",
+      "AN7-06",
+      "AN7-07",
+      "AN7-08",
+      "AN7-09",
+      "AN7-10",
+      "AN7-11",
+      "AN7-12a",
+      "AN7-12b",
+      "AN7-12c",
+      "AN7-13a",
+      "AN7-13b",
+      "AN7-14a",
+      "AN7-14b",
+      "AN7-14c",
+      "AN7-14d",
+      "AN7-15a",
+      "AN7-15b",
+      "AN7-15c",
+      "AN7-15d",
+      "AN7-15e",
+      "AN7-16",
+      "AN8-01",
+      "AN8-02",
+      "AN8-03",
+      "AN8-04",
+      "AN8-05",
+      "AN8-06",
+      "AN9-01",
+      "AN9-02",
+      "AN9-03",
+      "AN9-04",
+      "AN9-05",
+      "AN10-01",
+      "AN10-02",
+      "AN10-03",
+      "AN10-04a",
+      "AN10-04b",
+      "AN10-04c",
+      "AN10-04d",
+      "AN10-05",
+      "AN10-06",
+      "AN10-07a",
+      "AN10-07b",
+      "AN10-07c",
+      "AN10-08",
+      "AN10-09",
+      "AN10-10",
+      "AN10-11",
+      "AN10-12a",
+      "AN10-12b",
+      "AN10-13",
+      "AN10-14",
+      "AN10-15a",
+      "AN10-15b",
+      "AN10-15c",
+      "AN10-16a",
+      "AN10-16b",
+      "AN10-17a",
+      "AN10-17b",
+      "AN10-18",
+      "AN10-19",
+      "AN11-01",
+      "AN11-02",
+      "AN11-03",
+      "AN11-04",
+      "AN11-05",
+      "AN11-06",
+      "DLX12-01",
+      "DLX12-02",
+      "DLX12-03",
+      "DLX12-04",
+      "DLX12-05",
+      "DLX12-06",
+      "DLX12-07",
+      "DLX12-08",
+      "DLX12-09",
+      "DLX12-10",
+      "DLX12-11",
+      "DLX12-12",
+      "DLX12-13a",
+      "DLX12-13b",
+      "DLX12-14a",
+      "DLX12-14b",
+      "DLX12-15",
+      "DLX12-16a",
+      "DLX12-16b",
+      "DLX12-16c",
+      "DLX12-16d",
+      "DLX12-17",
+      "DLX12-18",
+      "DLX12-19",
+      "DLX12-20",
+      "DLX-INH-SEC01-01",
+      "DLX5-01",
+      "DLX5-02",
+      "DLX5-03",
+      "DLX5-04",
+      "DLX5-05",
+      "DLX5-06",
+      "DLX5-07",
+      "DLX5-08",
+      "DLX5-09",
+      "DLX5-10",
+      "DLX5-11",
+      "DLX5-12",
+      "DLX5-13",
+      "DLX13-01",
+      "DLX13-02",
+      "DLX13-03",
+      "DLX13-04",
+      "EX16-01",
+      "EX16-02",
+      "EX16-03",
+      "EX16-04",
+      "EX16-05",
+      "EX16-06",
+      "EX16-07",
+      "EX16-08",
+      "EX16-09a",
+      "EX16-09b",
+      "EX16-09c",
+      "EX16-10",
+      "EX16-11a",
+      "EX16-11b",
+      "EX16-12",
+      "EX16-13a",
+      "EX16-13b",
+      "EX16-14",
+      "EX16-15",
+      "EX16-16",
+      "EX16-17",
+      "EX17-01",
+      "EX17-02",
+      "EX17-05",
+      "EX17-09",
+      "EX17-12",
+      "EX17-13",
+      "EX17-14",
+      "EX17-15",
+      "EX17-16",
+      "EX19-04",
+      "EX19-05",
+      "EX19-06",
+      "EX19-07",
+      "EX19-08",
+      "EX19-09",
+      "EX19-10",
+      "EX19-11",
+      "EX19-12"
+    ]
+  },
+  "scope_validation": {
+    "classified_rows": 154,
+    "unique_classified_ids": 154,
+    "out_of_block_ids": [],
+    "missing_r1_ids": [],
+    "duplicate_ids": []
+  },
+  "classification_counts": {
+    "intentional-foundation": 74,
+    "acceptable-alternative": 56,
+    "reviewed-supporting": 10,
+    "justified-fix-of-real-defect": 12,
+    "real-original-defect": 2,
+    "substantive_total": 144,
+    "supporting_total": 10,
+    "total": 154
+  },
+  "unresolved_ids": [],
+  "dumb_correction_ids": [],
+  "insufficient_evidence_ids": [],
+  "direct_user_authority_ids": [
+    "AN7-01",
+    "AN7-02",
+    "AN11-03",
+    "DLX12-03",
+    "EX16-02",
+    "EX16-12"
+  ],
+  "accepted_stale_chain_boundary": {
+    "reopened_accepted_ids": [],
+    "note": "The 23 IDs accepted in DL-CLASSIFY-001 are outside R1 and remain untouched. Only the 18 residual EX17/EX19 IDs present in the immutable R1 array are classified here."
+  },
+  "current_consumer_reconciliation": {
+    "live_count": 140,
+    "historical_only_count": 14,
+    "historical_only_ids": [
+      "AN7-16",
+      "AN9-01",
+      "AN9-02",
+      "AN9-03",
+      "AN9-05",
+      "AN10-19",
+      "AN11-01",
+      "AN11-02",
+      "DLX12-10",
+      "DLX12-19",
+      "DLX5-01",
+      "DLX5-07",
+      "EX17-15",
+      "EX17-16"
+    ],
+    "note": "Consumer state comes from accepted DL-COVERAGE-003 + /2 and was cross-checked against the current R1 source-of-truth/runtime surfaces. Live use is corroboration, not authority."
+  },
+  "documentation_laundering": {
+    "confirmed": false,
+    "note": "R1 contains transparent rewrites/corrections and several documentation inconsistencies, but no checked later text backdates a correction or represents a newly introduced rule as an older accepted requirement. PR #10 research-date quality conflict is provenance quality, not laundering."
+  },
+  "external_verification": {
+    "checked_on": "2026-09-20",
+    "react_router": {
+      "project_version": "8.3.1",
+      "upstream_prs": [
+        "#15395",
+        "#15489"
+      ],
+      "merged_date": "2026-09-10",
+      "released_in": "8.4.0",
+      "conclusion": "EX19-10 remains an acceptable temporary pinned-version compatibility choice; EX19-11 remains an upgrade-triggered reevaluation condition."
+    }
+  },
+  "phase2_if_accepted": {
+    "prior_covered": 1572,
+    "new_r1_covered": 154,
+    "covered": 1726,
+    "canonical": 2029,
+    "coverage_percent": 85.0665,
+    "prior_substantive": 1366,
+    "new_substantive": 144,
+    "substantive": 1510,
+    "prior_supporting": 206,
+    "new_supporting": 10,
+    "supporting": 216,
+    "remaining_unreviewed": 303,
+    "note": "This is arithmetic contingent on Codex acceptance of this R1 response; the currently accepted numerator remains 1572 until review."
+  },
+  "rows": [
+    {
+      "id": "AN7-01",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Replace the closed locale list with a runtime locale registry.",
+      "direct_user_authority_scope": "generic/data-driven locale direction only",
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "Earlier fixed en/ru/he project plans conflict with this direction, but USER CLARIFICATION LOCALE-001 supplies direct authority for the generic/data-driven no-ceiling architecture; current registry remains data-driven.",
+        "effect": "retain foundation classification; authority is scoped only to the generic-locale direction."
+      }
+    },
+    {
+      "id": "AN7-02",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Use a generic locale namespace while keeping technical routes outside it.",
+      "direct_user_authority_scope": "generic/data-driven locale direction only",
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "Direct user authority covers the generic locale namespace aspect only; it does not approve every technical-route or resolver detail.",
+        "effect": "retain foundation classification with scoped authority."
+      }
+    },
+    {
+      "id": "AN7-03",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Resolve locale server-side into typed request context.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: app/localization/registry.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "AN7-04",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Require locale-changing navigation to cross the server locale boundary.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: app/localization/registry.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "AN7-05",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "Keep remix-i18next outside locale source-of-truth ownership.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A pre-existing contract requiring a materially different choice, a concrete historical/current defect caused by this choice, or lock-in/complexity disproportionate to the pre-release stage.",
+        "contrary_found": "live consumers: app/localization/registry.ts. No evidence requires treating this choice as erroneous; authority may remain assistant/PR-level rather than direct-user.",
+        "effect": "Acceptable-alternative classification retained without elevating it to user-approved architecture."
+      }
+    },
+    {
+      "id": "AN7-06",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Use canonical English as the sole developer-maintained UI source.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/sources.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: app/localization/sources.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "AN7-07",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Use request-scoped i18next with identical SSR/hydration locale-resource state.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: app/localization/registry.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "AN7-08",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Let Vico own explicit fallback rather than implicit i18next locale reduction.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: app/localization/registry.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "AN7-09",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Separate request-time resource reads from translation generation behind the loader.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: app/localization/registry.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "AN7-10",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Derive direction and Unicode behavior from data rather than language special cases.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: app/localization/registry.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "AN7-11",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Prevent request-dependent root negotiation from becoming a universal cached redirect.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: app/localization/registry.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "AN7-12a",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Keep UI translation and user-content translation as separate domain services.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "db/schema.ts",
+        "db/forum-service.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: db/schema.ts, db/forum-service.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "AN7-12b",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Bind user-content translation identity to an immutable content revision.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "db/schema.ts",
+        "db/forum-service.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: db/schema.ts, db/forum-service.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "AN7-12c",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Preserve original user content independently of translated representations.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: app/localization/registry.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "AN7-13a",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Encapsulate machine-provider capabilities and provenance behind adapters.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/translation-execution.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: app/localization/translation-execution.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "AN7-13b",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Keep provider support matrices from defining Vico's supported-locale universe.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/translation-execution.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: app/localization/translation-execution.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "AN7-14a",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Give background translation work a persistent logical task identity.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: app/localization/registry.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "AN7-14b",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Make duplicate delivery converge to duplicate-safe persistent translation state.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: app/localization/registry.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "AN7-14c",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Classify retryable/terminal translation failures and provide terminal-failure handling.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: app/localization/registry.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "AN7-14d",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Support recovery and reconciliation of stranded persistent translation work.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "db/translation-task-store.ts",
+        "app/localization/translation-task-consumer.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: db/translation-task-store.ts, app/localization/translation-task-consumer.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "AN7-15a",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Restrict bulk locale translation generation to privileged/internal flows.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: app/localization/registry.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "AN7-15b",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Put on-demand content translation behind an authentication/authorization policy boundary.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "db/authorization-service.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "PR #9 split left SEC-02 authentication wording inconsistent between the component index and provider detail; no concrete Stage 5B auth policy was thereby established.",
+        "effect": "the high-level protected-operation boundary remains a future safety foundation; the missing concrete policy is not treated as implemented."
+      }
+    },
+    {
+      "id": "AN7-15c",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Apply rate, budget, or anti-abuse limits to translation generation.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "db/forum-write-policy.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: db/forum-write-policy.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "AN7-15d",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Deduplicate equivalent translation-generation requests/tasks.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: app/localization/registry.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "AN7-15e",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Keep provider credentials server-side and avoid an unrestricted public translation proxy.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/translation-execution.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: app/localization/translation-execution.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "AN7-16",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "Establish translation boundaries in Stage 1 without provisioning later infrastructure.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "disconfirmation": {
+        "strongest_evidence_against": "A pre-existing contract requiring a materially different choice, a concrete historical/current defect caused by this choice, or lock-in/complexity disproportionate to the pre-release stage.",
+        "contrary_found": "historical-only. No evidence requires treating this choice as erroneous; authority may remain assistant/PR-level rather than direct-user.",
+        "effect": "Acceptable-alternative classification retained without elevating it to user-approved architecture."
+      }
+    },
+    {
+      "id": "AN8-01",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Treat partial local UI packs as an independent source that does not activate locales.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: app/localization/registry.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "AN8-02",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "Define explicit UI source priority within a locale.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/sources.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A pre-existing contract requiring a materially different choice, a concrete historical/current defect caused by this choice, or lock-in/complexity disproportionate to the pre-release stage.",
+        "contrary_found": "live consumers: app/localization/sources.ts. No evidence requires treating this choice as erroneous; authority may remain assistant/PR-level rather than direct-user.",
+        "effect": "Acceptable-alternative classification retained without elevating it to user-approved architecture."
+      }
+    },
+    {
+      "id": "AN8-03",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Bind local/manual freshness to the canonical source fingerprint.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/sources.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: app/localization/sources.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "AN8-04",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Require local-pack structural validation while treating stale policy separately.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/sources.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: app/localization/sources.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "AN8-05",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Use local resources as a storage-outage fallback without making them registry state.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: app/localization/registry.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "AN8-06",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "Expose local source identity and provenance as metadata.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/sources.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A pre-existing contract requiring a materially different choice, a concrete historical/current defect caused by this choice, or lock-in/complexity disproportionate to the pre-release stage.",
+        "contrary_found": "PR #9 lost the exact local pack/path provenance wording and PR #10 restored broader manual-origin/audit semantics rather than the identical PR #8 representation.",
+        "effect": "acceptable early provenance design; no claim that its exact representation remains current."
+      }
+    },
+    {
+      "id": "AN9-01",
+      "role": "supporting/provenance-only",
+      "classification": "reviewed-supporting",
+      "atomic_decision": "Split translation architecture into a short entry contract and single-owner details.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "disconfirmation": {
+        "strongest_evidence_against": "Evidence that this record itself establishes a runtime/product correctness requirement rather than history/provenance/process indexing.",
+        "contrary_found": "historical-only. Its role is evidentiary/process context; related substantive mechanisms are classified under their own IDs.",
+        "effect": "No independent correctness verdict; count only as reviewed-supporting."
+      }
+    },
+    {
+      "id": "AN9-02",
+      "role": "supporting/provenance-only",
+      "classification": "reviewed-supporting",
+      "atomic_decision": "Index mandatory translation contracts with stable component IDs.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "disconfirmation": {
+        "strongest_evidence_against": "Evidence that this record itself establishes a runtime/product correctness requirement rather than history/provenance/process indexing.",
+        "contrary_found": "historical-only. Its role is evidentiary/process context; related substantive mechanisms are classified under their own IDs.",
+        "effect": "No independent correctness verdict; count only as reviewed-supporting."
+      }
+    },
+    {
+      "id": "AN9-03",
+      "role": "supporting/provenance-only",
+      "classification": "reviewed-supporting",
+      "atomic_decision": "Require component-to-roadmap traceability before implementation.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "disconfirmation": {
+        "strongest_evidence_against": "Evidence that this record itself establishes a runtime/product correctness requirement rather than history/provenance/process indexing.",
+        "contrary_found": "historical-only. Its role is evidentiary/process context; related substantive mechanisms are classified under their own IDs.",
+        "effect": "No independent correctness verdict; count only as reviewed-supporting."
+      }
+    },
+    {
+      "id": "AN9-04",
+      "role": "supporting/provenance-only",
+      "classification": "reviewed-supporting",
+      "atomic_decision": "Index SEC-02 as authentication, limiting, and deduplication for generation.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/auth/auth.server.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "Evidence that this record itself establishes a runtime/product correctness requirement rather than history/provenance/process indexing.",
+        "contrary_found": "PR #9 component index named authentication/limiting/dedup while the provider detail omitted authentication.",
+        "effect": "supporting/provenance only; the substantive security boundaries are classified under AN7-15b/c/d."
+      }
+    },
+    {
+      "id": "AN9-05",
+      "role": "supporting/provenance-only",
+      "classification": "reviewed-supporting",
+      "atomic_decision": "Synchronize project plans to the split architecture before implementation.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "disconfirmation": {
+        "strongest_evidence_against": "Evidence that this record itself establishes a runtime/product correctness requirement rather than history/provenance/process indexing.",
+        "contrary_found": "historical-only. Its role is evidentiary/process context; related substantive mechanisms are classified under their own IDs.",
+        "effect": "No independent correctness verdict; count only as reviewed-supporting."
+      }
+    },
+    {
+      "id": "AN10-01",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Separate translation readiness from locale publication status.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "db/translation-task-store.ts",
+        "app/localization/translation-task-consumer.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: db/translation-task-store.ts, app/localization/translation-task-consumer.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "AN10-02",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Keep canonical English resolvable as a bootstrap registry entry during registry outage.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/sources.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: app/localization/sources.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "AN10-03",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Separate authoritative explicit-URL resolution from no-segment negotiation.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: app/localization/registry.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "AN10-04a",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "Redirect canonicalizable active locale forms to one canonical locale URL.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A pre-existing contract requiring a materially different choice, a concrete historical/current defect caused by this choice, or lock-in/complexity disproportionate to the pre-release stage.",
+        "contrary_found": "live consumers: app/localization/registry.ts. No evidence requires treating this choice as erroneous; authority may remain assistant/PR-level rather than direct-user.",
+        "effect": "Acceptable-alternative classification retained without elevating it to user-approved architecture."
+      }
+    },
+    {
+      "id": "AN10-04b",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Normalize formatting-only BCP-47 extensions away from translation-bundle identity.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/bundles.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: app/localization/bundles.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "AN10-04c",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "Treat Accept-Language candidates with `q=0` as ineligible.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A pre-existing contract requiring a materially different choice, a concrete historical/current defect caused by this choice, or lock-in/complexity disproportionate to the pre-release stage.",
+        "contrary_found": "live consumers: app/localization/registry.ts. No evidence requires treating this choice as erroneous; authority may remain assistant/PR-level rather than direct-user.",
+        "effect": "Acceptable-alternative classification retained without elevating it to user-approved architecture."
+      }
+    },
+    {
+      "id": "AN10-04d",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "Prevent Accept-Language wildcard from selecting an arbitrary active locale.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A pre-existing contract requiring a materially different choice, a concrete historical/current defect caused by this choice, or lock-in/complexity disproportionate to the pre-release stage.",
+        "contrary_found": "live consumers: app/localization/registry.ts. No evidence requires treating this choice as erroneous; authority may remain assistant/PR-level rather than direct-user.",
+        "effect": "Acceptable-alternative classification retained without elevating it to user-approved architecture."
+      }
+    },
+    {
+      "id": "AN10-05",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Validate locale fallback and alias graphs structurally.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: app/localization/registry.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "AN10-06",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Keep explicit locale-sensitive formatting context identical across SSR/hydration.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: app/localization/registry.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "AN10-07a",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "Order locale fallback as target, registry fallbacks, then canonical English.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/sources.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A pre-existing contract requiring a materially different choice, a concrete historical/current defect caused by this choice, or lock-in/complexity disproportionate to the pre-release stage.",
+        "contrary_found": "live consumers: app/localization/sources.ts. No evidence requires treating this choice as erroneous; authority may remain assistant/PR-level rather than direct-user.",
+        "effect": "Acceptable-alternative classification retained without elevating it to user-approved architecture."
+      }
+    },
+    {
+      "id": "AN10-07b",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "Order current local manual above persistent manual above machine within a locale.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A pre-existing contract requiring a materially different choice, a concrete historical/current defect caused by this choice, or lock-in/complexity disproportionate to the pre-release stage.",
+        "contrary_found": "live consumers: app/localization/registry.ts. No evidence requires treating this choice as erroneous; authority may remain assistant/PR-level rather than direct-user.",
+        "effect": "Acceptable-alternative classification retained without elevating it to user-approved architecture."
+      }
+    },
+    {
+      "id": "AN10-07c",
+      "role": "substantive",
+      "classification": "justified-fix-of-real-defect",
+      "atomic_decision": "Keep fallback locales in separate bundles and give i18next the explicit chain.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "Evidence that the predecessor already satisfied the same invariant, that the reported defect was only hypothetical, or that the correction changed unrelated valid behavior.",
+        "contrary_found": "PR #10 intermediate commits flattened fallback before i18next with fallbackLng:false; commit 4a54f446 superseded that model after identifying locale-specific plural/context correctness concerns.",
+        "effect": "justified correction; final separate-bundle/explicit-chain model remains current."
+      }
+    },
+    {
+      "id": "AN10-08",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Distinguish stale translations from structurally invalid translations.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/sources.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: app/localization/sources.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "AN10-09",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Prevent silent refresh of manual/local source fingerprints.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/sources.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: app/localization/sources.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "AN10-10",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Treat the translation-bundle cache as an optimization rather than a source.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/bundles.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: app/localization/bundles.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "AN10-11",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Keep optional UI-resource transport validated, read-only, and generation-free.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: app/localization/registry.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "AN10-12a",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "Suppress translation jobs when source and target locale are equivalent.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A pre-existing contract requiring a materially different choice, a concrete historical/current defect caused by this choice, or lock-in/complexity disproportionate to the pre-release stage.",
+        "contrary_found": "live consumers: app/localization/registry.ts. No evidence requires treating this choice as erroneous; authority may remain assistant/PR-level rather than direct-user.",
+        "effect": "Acceptable-alternative classification retained without elevating it to user-approved architecture."
+      }
+    },
+    {
+      "id": "AN10-12b",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Fall back to original current-revision content when current translation is unavailable.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "db/schema.ts",
+        "db/forum-service.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: db/schema.ts, db/forum-service.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "AN10-13",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Create a new immutable revision for semantic source-locale correction.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "db/schema.ts",
+        "db/forum-service.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: db/schema.ts, db/forum-service.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "AN10-14",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Separate machine-provider routing from manual/local ingestion.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/translation-execution.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: app/localization/translation-execution.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "AN10-15a",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Commit durable translation-task state before Queue enqueue.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "db/translation-task-store.ts",
+        "app/localization/translation-task-consumer.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: db/translation-task-store.ts, app/localization/translation-task-consumer.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "AN10-15b",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Leave failed or unknown enqueue outcomes recoverable through pending task state.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "db/translation-task-store.ts",
+        "app/localization/translation-task-consumer.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: db/translation-task-store.ts, app/localization/translation-task-consumer.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "AN10-15c",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Tolerate duplicate enqueue only through downstream idempotency.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "db/translation-task-store.ts",
+        "app/localization/translation-task-consumer.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: db/translation-task-store.ts, app/localization/translation-task-consumer.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "AN10-16a",
+      "role": "substantive",
+      "classification": "justified-fix-of-real-defect",
+      "atomic_decision": "Converge retries to correct persistent state without promising exactly-once provider calls.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/translation-execution.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "Evidence that the predecessor already satisfied the same invariant, that the reported defect was only hypothetical, or that the correction changed unrelated valid behavior.",
+        "contrary_found": "Earlier wording could be read as preventing duplicate provider calls universally; PR #10 explicitly narrowed the guarantee to persistent-state convergence and preserved the provider-response-before-commit crash window.",
+        "effect": "justified contract correction, not extra complexity."
+      }
+    },
+    {
+      "id": "AN10-16b",
+      "role": "substantive",
+      "classification": "justified-fix-of-real-defect",
+      "atomic_decision": "Treat claim/lease as best-effort duplicate-cost reduction with recovery.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "db/translation-task-store.ts",
+        "app/localization/translation-task-consumer.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "Evidence that the predecessor already satisfied the same invariant, that the reported defect was only hypothetical, or that the correction changed unrelated valid behavior.",
+        "contrary_found": "Earlier claim/lease wording overstated prevention; PR #10 narrowed it to duplicate-cost reduction with crash recovery.",
+        "effect": "justified contract correction."
+      }
+    },
+    {
+      "id": "AN10-17a",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Revalidate stale queued work before invoking a provider.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/translation-execution.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: app/localization/translation-execution.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "AN10-17b",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Conditionally publish only if task, source, and policy state remain current.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "db/translation-task-store.ts",
+        "app/localization/translation-task-consumer.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: db/translation-task-store.ts, app/localization/translation-task-consumer.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "AN10-18",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Make locale activation an explicit controlled publication transition.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "db/translation-task-store.ts",
+        "app/localization/translation-task-consumer.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "PR #11 review showed activation flow was mapped but not actually scheduled; current publication-status model survives, while the concrete persistent activation flow belongs to later persistence history.",
+        "effect": "retain as future-proof publication boundary, not as proof that activation tooling was implemented in R1."
+      }
+    },
+    {
+      "id": "AN10-19",
+      "role": "supporting/provenance-only",
+      "classification": "reviewed-supporting",
+      "atomic_decision": "Separate external research evidence from Vico project decisions.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "disconfirmation": {
+        "strongest_evidence_against": "Evidence that this record itself establishes a runtime/product correctness requirement rather than history/provenance/process indexing.",
+        "contrary_found": "PR #10 research carried a disputed/future-dated verification date in intermediate history.",
+        "effect": "supporting provenance-method record only; the disputed date is not used as authority for external facts."
+      }
+    },
+    {
+      "id": "AN11-01",
+      "role": "supporting/provenance-only",
+      "classification": "reviewed-supporting",
+      "atomic_decision": "Synchronize project, roadmap, and scaffold source-of-truth structure.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "disconfirmation": {
+        "strongest_evidence_against": "Evidence that this record itself establishes a runtime/product correctness requirement rather than history/provenance/process indexing.",
+        "contrary_found": "historical-only. Its role is evidentiary/process context; related substantive mechanisms are classified under their own IDs.",
+        "effect": "No independent correctness verdict; count only as reviewed-supporting."
+      }
+    },
+    {
+      "id": "AN11-02",
+      "role": "supporting/provenance-only",
+      "classification": "reviewed-supporting",
+      "atomic_decision": "Assign every translation component to an implementation stage.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "disconfirmation": {
+        "strongest_evidence_against": "Evidence that this record itself establishes a runtime/product correctness requirement rather than history/provenance/process indexing.",
+        "contrary_found": "PR #11 review found LOC-08 cache acceptance and LOC-09 activation scheduling incomplete despite component-to-stage mapping.",
+        "effect": "supporting traceability fact only; it does not prove the mapped work was complete."
+      }
+    },
+    {
+      "id": "AN11-03",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "Put locale/UI foundations in Stage 1 while excluding later infrastructure.",
+      "direct_user_authority_scope": "generic/data-driven locale direction only",
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A pre-existing contract requiring a materially different choice, a concrete historical/current defect caused by this choice, or lock-in/complexity disproportionate to the pre-release stage.",
+        "contrary_found": "live consumers: app/localization/registry.ts. No evidence requires treating this choice as erroneous; authority may remain assistant/PR-level rather than direct-user.",
+        "effect": "Acceptable-alternative classification retained without elevating it to user-approved architecture."
+      }
+    },
+    {
+      "id": "AN11-04",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "Stage persistent registry/resources/providers/content translation after Stage 1.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "db/schema.ts",
+        "db/forum-service.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A pre-existing contract requiring a materially different choice, a concrete historical/current defect caused by this choice, or lock-in/complexity disproportionate to the pre-release stage.",
+        "contrary_found": "live consumers: db/schema.ts, db/forum-service.ts. No evidence requires treating this choice as erroneous; authority may remain assistant/PR-level rather than direct-user.",
+        "effect": "Acceptable-alternative classification retained without elevating it to user-approved architecture."
+      }
+    },
+    {
+      "id": "AN11-05",
+      "role": "substantive",
+      "classification": "justified-fix-of-real-defect",
+      "atomic_decision": "Leave unknown/inactive explicit-locale UX unresolved until a separate decision.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "db/forum-service.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "Evidence that the predecessor already satisfied the same invariant, that the reported defect was only hypothetical, or that the correction changed unrelated valid behavior.",
+        "contrary_found": "PR #11 first internal commit hard-coded 404 for unavailable explicit locales; the second commit deliberately removed that choice before merge.",
+        "effect": "justified correction of a premature product-policy choice."
+      }
+    },
+    {
+      "id": "AN11-06",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "Remove remix/browser detector while retaining exact i18next/react-i18next runtime.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-ANCESTRY-001/1+/2 evidence for PR #7–#11, plus current source-of-truth/current-consumer check",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A pre-existing contract requiring a materially different choice, a concrete historical/current defect caused by this choice, or lock-in/complexity disproportionate to the pre-release stage.",
+        "contrary_found": "live consumers: app/localization/registry.ts. No evidence requires treating this choice as erroneous; authority may remain assistant/PR-level rather than direct-user.",
+        "effect": "Acceptable-alternative classification retained without elevating it to user-approved architecture."
+      }
+    },
+    {
+      "id": "DLX12-01",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "Split Stage 1 into sequential 1A, 1B, and 1C delivery boundaries.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-001/2+/3 evidence for PR #12 control point, plus current stage/contracts",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A pre-existing contract requiring a materially different choice, a concrete historical/current defect caused by this choice, or lock-in/complexity disproportionate to the pre-release stage.",
+        "contrary_found": "PR #12 split Stage 1 into 1A/1B/1C while an older ROADMAP sentence still required locale/i18n from the first scaffold.",
+        "effect": "the split itself is an acceptable delivery decomposition; the documentation inconsistency is separately corrected by DLX5-01."
+      }
+    },
+    {
+      "id": "DLX12-02",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "Limit Stage 1A to the technical scaffold and quality gates.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-001/2+/3 evidence for PR #12 control point, plus current stage/contracts",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A pre-existing contract requiring a materially different choice, a concrete historical/current defect caused by this choice, or lock-in/complexity disproportionate to the pre-release stage.",
+        "contrary_found": "Same PR #12 first-scaffold contradiction existed.",
+        "effect": "technical-only 1A remains an acceptable reversible delivery slice, not a finding that the older locale contract was wrong."
+      }
+    },
+    {
+      "id": "DLX12-03",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "Assign generic locale routing, registry, and resolver work to 1B.",
+      "direct_user_authority_scope": "generic/data-driven locale direction only",
+      "historical_evidence": "accepted DL-EXTRACT-001/2+/3 evidence for PR #12 control point, plus current stage/contracts",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A pre-existing contract requiring a materially different choice, a concrete historical/current defect caused by this choice, or lock-in/complexity disproportionate to the pre-release stage.",
+        "contrary_found": "live consumers: app/localization/registry.ts. No evidence requires treating this choice as erroneous; authority may remain assistant/PR-level rather than direct-user.",
+        "effect": "Acceptable-alternative classification retained without elevating it to user-approved architecture."
+      }
+    },
+    {
+      "id": "DLX12-04",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "Assign direction, HTML locale metadata, formatting context, and Unicode foundation to 1B.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-001/2+/3 evidence for PR #12 control point, plus current stage/contracts",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A pre-existing contract requiring a materially different choice, a concrete historical/current defect caused by this choice, or lock-in/complexity disproportionate to the pre-release stage.",
+        "contrary_found": "live consumers: app/localization/registry.ts. No evidence requires treating this choice as erroneous; authority may remain assistant/PR-level rather than direct-user.",
+        "effect": "Acceptable-alternative classification retained without elevating it to user-approved architecture."
+      }
+    },
+    {
+      "id": "DLX12-05",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "Require targeted routing, negotiation, and cache verification in 1B.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-001/2+/3 evidence for PR #12 control point, plus current stage/contracts",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A pre-existing contract requiring a materially different choice, a concrete historical/current defect caused by this choice, or lock-in/complexity disproportionate to the pre-release stage.",
+        "contrary_found": "live consumers: app/localization/registry.ts. No evidence requires treating this choice as erroneous; authority may remain assistant/PR-level rather than direct-user.",
+        "effect": "Acceptable-alternative classification retained without elevating it to user-approved architecture."
+      }
+    },
+    {
+      "id": "DLX12-06",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "Assign the canonical English catalog and typed message descriptors to 1C.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-001/2+/3 evidence for PR #12 control point, plus current stage/contracts",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/sources.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A pre-existing contract requiring a materially different choice, a concrete historical/current defect caused by this choice, or lock-in/complexity disproportionate to the pre-release stage.",
+        "contrary_found": "live consumers: app/localization/sources.ts. No evidence requires treating this choice as erroneous; authority may remain assistant/PR-level rather than direct-user.",
+        "effect": "Acceptable-alternative classification retained without elevating it to user-approved architecture."
+      }
+    },
+    {
+      "id": "DLX12-07",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "Assign partial local packs, fingerprint freshness, and structural validation to 1C.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-001/2+/3 evidence for PR #12 control point, plus current stage/contracts",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/sources.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A pre-existing contract requiring a materially different choice, a concrete historical/current defect caused by this choice, or lock-in/complexity disproportionate to the pre-release stage.",
+        "contrary_found": "live consumers: app/localization/sources.ts. No evidence requires treating this choice as erroneous; authority may remain assistant/PR-level rather than direct-user.",
+        "effect": "Acceptable-alternative classification retained without elevating it to user-approved architecture."
+      }
+    },
+    {
+      "id": "DLX12-08",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "Assign resource-loader priority and explicit fallback resources to 1C.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-001/2+/3 evidence for PR #12 control point, plus current stage/contracts",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/sources.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A pre-existing contract requiring a materially different choice, a concrete historical/current defect caused by this choice, or lock-in/complexity disproportionate to the pre-release stage.",
+        "contrary_found": "live consumers: app/localization/sources.ts. No evidence requires treating this choice as erroneous; authority may remain assistant/PR-level rather than direct-user.",
+        "effect": "Acceptable-alternative classification retained without elevating it to user-approved architecture."
+      }
+    },
+    {
+      "id": "DLX12-09",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "Assign request-scoped i18next and the identical SSR/hydration resource snapshot to 1C.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-001/2+/3 evidence for PR #12 control point, plus current stage/contracts",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A pre-existing contract requiring a materially different choice, a concrete historical/current defect caused by this choice, or lock-in/complexity disproportionate to the pre-release stage.",
+        "contrary_found": "PR #12 review specifically called out moving canonical English/request-scoped i18next to 1C against stale first-scaffold wording.",
+        "effect": "allocation is acceptable; DLX5-01 is the justified documentation correction."
+      }
+    },
+    {
+      "id": "DLX12-10",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "Require full Stage 1 acceptance after 1C and before Stage 2.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-001/2+/3 evidence for PR #12 control point, plus current stage/contracts",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "disconfirmation": {
+        "strongest_evidence_against": "A pre-existing contract requiring a materially different choice, a concrete historical/current defect caused by this choice, or lock-in/complexity disproportionate to the pre-release stage.",
+        "contrary_found": "historical-only. No evidence requires treating this choice as erroneous; authority may remain assistant/PR-level rather than direct-user.",
+        "effect": "Acceptable-alternative classification retained without elevating it to user-approved architecture."
+      }
+    },
+    {
+      "id": "DLX12-11",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Use `Cache-Control: no-store` as the Stage 1 root-negotiation baseline.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-001/2+/3 evidence for PR #12 control point, plus current stage/contracts",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "PR #11 had mapped LOC-08 without an executable cache-safety task/test.",
+        "effect": "the explicit no-store baseline closes that concrete acceptance gap with a minimal safety rule."
+      }
+    },
+    {
+      "id": "DLX12-12",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "Select the explicit unavailable-locale policy before implementing 1B.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-001/2+/3 evidence for PR #12 control point, plus current stage/contracts",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A pre-existing contract requiring a materially different choice, a concrete historical/current defect caused by this choice, or lock-in/complexity disproportionate to the pre-release stage.",
+        "contrary_found": "live consumers: app/localization/registry.ts. No evidence requires treating this choice as erroneous; authority may remain assistant/PR-level rather than direct-user.",
+        "effect": "Acceptable-alternative classification retained without elevating it to user-approved architecture."
+      }
+    },
+    {
+      "id": "DLX12-13a",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Runtime-validate external and user-controlled data at system boundaries.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-001/2+/3 evidence for PR #12 control point, plus current stage/contracts",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/server-logging.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: app/server-logging.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "DLX12-13b",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Authorize protected operations on the server.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-001/2+/3 evidence for PR #12 control point, plus current stage/contracts",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "db/authorization-service.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: db/authorization-service.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "DLX12-14a",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Protect state-changing browser actions with applicable origin/CSRF controls.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-001/2+/3 evidence for PR #12 control point, plus current stage/contracts",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "db/forum-write-policy.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: db/forum-write-policy.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "DLX12-14b",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Apply basic rate limiting or anti-spam to public write/generation boundaries.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-001/2+/3 evidence for PR #12 control point, plus current stage/contracts",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "db/forum-write-policy.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: db/forum-write-policy.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "DLX12-15",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Verify exact-version Better Auth security behavior without treating it as forum-action protection.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-001/2+/3 evidence for PR #12 control point, plus current stage/contracts",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/auth/auth.server.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: app/auth/auth.server.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "DLX12-16a",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Runtime-validate Stage 8 topic/reply writes on the server.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-001/2+/3 evidence for PR #12 control point, plus current stage/contracts",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "db/forum-service.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: db/forum-service.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "DLX12-16b",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Authorize Stage 8 topic/reply writes on the server.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-001/2+/3 evidence for PR #12 control point, plus current stage/contracts",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "db/authorization-service.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: db/authorization-service.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "DLX12-16c",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Apply origin/CSRF protection and negative tests to Stage 8 topic/reply browser writes.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-001/2+/3 evidence for PR #12 control point, plus current stage/contracts",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "db/forum-service.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: db/forum-service.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "DLX12-16d",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Apply basic anti-abuse limits and normal-path tests to Stage 8 topic/reply writes.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-001/2+/3 evidence for PR #12 control point, plus current stage/contracts",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "db/forum-service.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: db/forum-service.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "DLX12-17",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Apply common state-changing-request protection to solved/best-answer mutations.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-001/2+/3 evidence for PR #12 control point, plus current stage/contracts",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "db/forum-service.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: db/forum-service.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "DLX12-18",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Include write-boundary security controls in the production-readiness gate.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-001/2+/3 evidence for PR #12 control point, plus current stage/contracts",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "db/forum-write-policy.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "PR #50 later moves external rollout closer to pre-release.",
+        "effect": "write-boundary security remains a release-readiness foundation; this does not restore unrelated external rollout gates."
+      }
+    },
+    {
+      "id": "DLX12-19",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "Exclude unapproved search, complaints, blocks, audit log, and other unrecorded features.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-001/2+/3 evidence for PR #12 control point, plus current stage/contracts",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "disconfirmation": {
+        "strongest_evidence_against": "A pre-existing contract requiring a materially different choice, a concrete historical/current defect caused by this choice, or lock-in/complexity disproportionate to the pre-release stage.",
+        "contrary_found": "historical-only. No evidence requires treating this choice as erroneous; authority may remain assistant/PR-level rather than direct-user.",
+        "effect": "Acceptable-alternative classification retained without elevating it to user-approved architecture."
+      }
+    },
+    {
+      "id": "DLX12-20",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "Keep persistence, auth, providers, and external production setup outside Stage 1.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-001/2+/3 evidence for PR #12 control point, plus current stage/contracts",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A pre-existing contract requiring a materially different choice, a concrete historical/current defect caused by this choice, or lock-in/complexity disproportionate to the pre-release stage.",
+        "contrary_found": "live consumers: .github/workflows/ci.yml. No evidence requires treating this choice as erroneous; authority may remain assistant/PR-level rather than direct-user.",
+        "effect": "Acceptable-alternative classification retained without elevating it to user-approved architecture."
+      }
+    },
+    {
+      "id": "DLX-INH-SEC01-01",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Unknown locale requests must not create registry/translation tasks, invoke providers, or consume translation quota.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted inherited SEC-01 ancestry from PR #9 through PR #13 plus current no-side-effect architecture",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "db/translation-task-store.ts",
+        "app/localization/translation-task-consumer.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: db/translation-task-store.ts, app/localization/translation-task-consumer.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "DLX5-01",
+      "role": "substantive",
+      "classification": "justified-fix-of-real-defect",
+      "atomic_decision": "Reconcile the roadmap so Stage 1A is technical-only.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-001/2 evidence for rebuilt post-baseline PR #5 plus current scaffold/config",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "disconfirmation": {
+        "strongest_evidence_against": "Evidence that the predecessor already satisfied the same invariant, that the reported defect was only hypothetical, or that the correction changed unrelated valid behavior.",
+        "contrary_found": "Would be unnecessary if PR #12 had synchronized ROADMAP with its own Stage 1 split; the accepted PR #12 review proves it had not.",
+        "effect": "justified documentation/process correction."
+      }
+    },
+    {
+      "id": "DLX5-02",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "Establish React Router Framework SSR on a Cloudflare Worker request handler.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-001/2 evidence for rebuilt post-baseline PR #5 plus current scaffold/config",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "wrangler.jsonc"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A pre-existing contract requiring a materially different choice, a concrete historical/current defect caused by this choice, or lock-in/complexity disproportionate to the pre-release stage.",
+        "contrary_found": "live consumers: wrangler.jsonc. No evidence requires treating this choice as erroneous; authority may remain assistant/PR-level rather than direct-user.",
+        "effect": "Acceptable-alternative classification retained without elevating it to user-approved architecture."
+      }
+    },
+    {
+      "id": "DLX5-03",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "Return HEAD document status and headers without a body.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-001/2 evidence for rebuilt post-baseline PR #5 plus current scaffold/config",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A pre-existing contract requiring a materially different choice, a concrete historical/current defect caused by this choice, or lock-in/complexity disproportionate to the pre-release stage.",
+        "contrary_found": "live consumers: .github/workflows/ci.yml. No evidence requires treating this choice as erroneous; authority may remain assistant/PR-level rather than direct-user.",
+        "effect": "Acceptable-alternative classification retained without elevating it to user-approved architecture."
+      }
+    },
+    {
+      "id": "DLX5-04",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "Await `allReady` before returning the server-rendered response.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-001/2 evidence for rebuilt post-baseline PR #5 plus current scaffold/config",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A pre-existing contract requiring a materially different choice, a concrete historical/current defect caused by this choice, or lock-in/complexity disproportionate to the pre-release stage.",
+        "contrary_found": "live consumers: .github/workflows/ci.yml. No evidence requires treating this choice as erroneous; authority may remain assistant/PR-level rather than direct-user.",
+        "effect": "Acceptable-alternative classification retained without elevating it to user-approved architecture."
+      }
+    },
+    {
+      "id": "DLX5-05",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "Introduce fixed SSR render-abort timing.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-001/2 evidence for rebuilt post-baseline PR #5 plus current scaffold/config",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "wrangler.jsonc"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A pre-existing contract requiring a materially different choice, a concrete historical/current defect caused by this choice, or lock-in/complexity disproportionate to the pre-release stage.",
+        "contrary_found": "No historical authority fixes the exact 5s named timeout/6s abort signal, and no current incident proves those values optimal.",
+        "effect": "acceptable reversible scaffold choice only; no stronger correctness/authority claim."
+      }
+    },
+    {
+      "id": "DLX5-06",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "Set status 500 for render errors and log post-shell errors.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-001/2 evidence for rebuilt post-baseline PR #5 plus current scaffold/config",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A pre-existing contract requiring a materially different choice, a concrete historical/current defect caused by this choice, or lock-in/complexity disproportionate to the pre-release stage.",
+        "contrary_found": "live consumers: .github/workflows/ci.yml. No evidence requires treating this choice as erroneous; authority may remain assistant/PR-level rather than direct-user.",
+        "effect": "Acceptable-alternative classification retained without elevating it to user-approved architecture."
+      }
+    },
+    {
+      "id": "DLX5-07",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "Use temporary static English root HTML metadata in Stage 1A.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-001/2 evidence for rebuilt post-baseline PR #5 plus current scaffold/config",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "disconfirmation": {
+        "strongest_evidence_against": "A pre-existing contract requiring a materially different choice, a concrete historical/current defect caused by this choice, or lock-in/complexity disproportionate to the pre-release stage.",
+        "contrary_found": "historical-only. No evidence requires treating this choice as erroneous; authority may remain assistant/PR-level rather than direct-user.",
+        "effect": "Acceptable-alternative classification retained without elevating it to user-approved architecture."
+      }
+    },
+    {
+      "id": "DLX5-08",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "Pin exact runtime, package-manager, and dependency versions.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-001/2 evidence for rebuilt post-baseline PR #5 plus current scaffold/config",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "package.json",
+        ".github/workflows/ci.yml"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A pre-existing contract requiring a materially different choice, a concrete historical/current defect caused by this choice, or lock-in/complexity disproportionate to the pre-release stage.",
+        "contrary_found": "live consumers: package.json, .github/workflows/ci.yml. No evidence requires treating this choice as erroneous; authority may remain assistant/PR-level rather than direct-user.",
+        "effect": "Acceptable-alternative classification retained without elevating it to user-approved architecture."
+      }
+    },
+    {
+      "id": "DLX5-09",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "Install i18next/react-i18next in 1A while deferring their UI runtime to 1C.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-001/2 evidence for rebuilt post-baseline PR #5 plus current scaffold/config",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A pre-existing contract requiring a materially different choice, a concrete historical/current defect caused by this choice, or lock-in/complexity disproportionate to the pre-release stage.",
+        "contrary_found": "PR #5 excluded locale runtime from 1A while still preinstalling i18next/react-i18next.",
+        "effect": "acceptable low-cost dependency preinstallation because the packages were already required by Stage 1C; not evidence that locale runtime existed in 1A."
+      }
+    },
+    {
+      "id": "DLX5-10",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "Define the pnpm native-build allowlist and release-age exclusions.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-001/2 evidence for rebuilt post-baseline PR #5 plus current scaffold/config",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "package.json",
+        ".github/workflows/ci.yml"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A pre-existing contract requiring a materially different choice, a concrete historical/current defect caused by this choice, or lock-in/complexity disproportionate to the pre-release stage.",
+        "contrary_found": "live consumers: package.json, .github/workflows/ci.yml. No evidence requires treating this choice as erroneous; authority may remain assistant/PR-level rather than direct-user.",
+        "effect": "Acceptable-alternative classification retained without elevating it to user-approved architecture."
+      }
+    },
+    {
+      "id": "DLX5-11",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "Use a strict no-emit TypeScript project-reference split for config and Worker/app code.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-001/2 evidence for rebuilt post-baseline PR #5 plus current scaffold/config",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "wrangler.jsonc"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A pre-existing contract requiring a materially different choice, a concrete historical/current defect caused by this choice, or lock-in/complexity disproportionate to the pre-release stage.",
+        "contrary_found": "live consumers: wrangler.jsonc. No evidence requires treating this choice as erroneous; authority may remain assistant/PR-level rather than direct-user.",
+        "effect": "Acceptable-alternative classification retained without elevating it to user-approved architecture."
+      }
+    },
+    {
+      "id": "DLX5-12",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "Run frozen install, lint, typecheck, tests, and build in pull-request CI.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-001/2 evidence for rebuilt post-baseline PR #5 plus current scaffold/config",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "package.json",
+        ".github/workflows/ci.yml"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A pre-existing contract requiring a materially different choice, a concrete historical/current defect caused by this choice, or lock-in/complexity disproportionate to the pre-release stage.",
+        "contrary_found": "live consumers: package.json, .github/workflows/ci.yml. No evidence requires treating this choice as erroneous; authority may remain assistant/PR-level rather than direct-user.",
+        "effect": "Acceptable-alternative classification retained without elevating it to user-approved architecture."
+      }
+    },
+    {
+      "id": "DLX5-13",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "Fix the initial Cloudflare runtime identity and compatibility configuration.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-001/2 evidence for rebuilt post-baseline PR #5 plus current scaffold/config",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "wrangler.jsonc"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A pre-existing contract requiring a materially different choice, a concrete historical/current defect caused by this choice, or lock-in/complexity disproportionate to the pre-release stage.",
+        "contrary_found": "live consumers: wrangler.jsonc. No evidence requires treating this choice as erroneous; authority may remain assistant/PR-level rather than direct-user.",
+        "effect": "Acceptable-alternative classification retained without elevating it to user-approved architecture."
+      }
+    },
+    {
+      "id": "DLX13-01",
+      "role": "substantive",
+      "classification": "real-original-defect",
+      "atomic_decision": "Redirect unavailable explicit locale to bootstrap English temporarily while preserving path/query.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-001/2 evidence for PR #13 plus PR #14 forward correction/current resolver",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "Evidence that the original contract already contained the later safety condition or that the later correction was unrelated to a concrete unsafe/inconsistent behavior.",
+        "contrary_found": "PR #13 stated redirect fallback without method restriction; PR #14 immediately added GET/HEAD-only handling after identifying state-changing redirect/replay risk.",
+        "effect": "historical PR #13 contract defect; safe-read fallback itself is preserved by the later correction."
+      }
+    },
+    {
+      "id": "DLX13-02",
+      "role": "substantive",
+      "classification": "real-original-defect",
+      "atomic_decision": "Permanently redirect active alias/deprecated/case representations to their canonical locale URL.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-001/2 evidence for PR #13 plus PR #14 forward correction/current resolver",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "Evidence that the original contract already contained the later safety condition or that the later correction was unrelated to a concrete unsafe/inconsistent behavior.",
+        "contrary_found": "PR #13 canonical redirect was likewise unqualified by method; PR #14 restricts redirect-required mutations.",
+        "effect": "historical PR #13 contract defect; canonicalization for safe methods remains valid."
+      }
+    },
+    {
+      "id": "DLX13-03",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Keep an explicit URL locale authoritative over preference negotiation.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-001/2 evidence for PR #13 plus PR #14 forward correction/current resolver",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "Later method scoping changes redirect eligibility but never makes cookie/header preference override an explicit URL locale.",
+        "effect": "retain explicit-URL authority foundation."
+      }
+    },
+    {
+      "id": "DLX13-04",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Constrain locale redirect destinations to internal Vico paths.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-001/2 evidence for PR #13 plus PR #14 forward correction/current resolver",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "No reviewed history found a need for user-supplied absolute locale redirect destinations.",
+        "effect": "retain narrow open-redirect safety boundary."
+      }
+    },
+    {
+      "id": "EX16-01",
+      "role": "substantive",
+      "classification": "justified-fix-of-real-defect",
+      "atomic_decision": "Separate locale translation identity from formatting extensions.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-002/1+/2 evidence for PR #16 plus current locale implementation",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "Evidence that the predecessor already satisfied the same invariant, that the reported defect was only hypothetical, or that the correction changed unrelated valid behavior.",
+        "contrary_found": "PR #13 review found formatting-extension tags were not deterministically covered by the earlier route-policy wording.",
+        "effect": "PR #16 implementation is a justified closure of that concrete contract gap."
+      }
+    },
+    {
+      "id": "EX16-02",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Use a data-driven in-memory Stage 1 registry with bootstrap English.",
+      "direct_user_authority_scope": "generic/data-driven locale direction only",
+      "historical_evidence": "accepted DL-EXTRACT-002/1+/2 evidence for PR #16 plus current locale implementation",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: app/localization/registry.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "EX16-03",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "Reject duplicate, self, missing, and cyclic registry fallback edges.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-002/1+/2 evidence for PR #16 plus current locale implementation",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A pre-existing contract requiring a materially different choice, a concrete historical/current defect caused by this choice, or lock-in/complexity disproportionate to the pre-release stage.",
+        "contrary_found": "PR #16 review argued every non-English configured fallback chain should terminate at English; current and historical resource-loader semantics append canonical English after explicit registry fallbacks, so that extra graph invariant is not required for fallback correctness.",
+        "effect": "retain existing duplicate/self/missing/cycle validation as an acceptable graph policy; do not promote the review concern to a defect."
+      }
+    },
+    {
+      "id": "EX16-04",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Require unambiguous registry alias and match identities.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-002/1+/2 evidence for PR #16 plus current locale implementation",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: app/localization/registry.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "EX16-05",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "Determine explicit-locale availability from active publication status.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-002/1+/2 evidence for PR #16 plus current locale implementation",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "db/translation-task-store.ts",
+        "app/localization/translation-task-consumer.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A pre-existing contract requiring a materially different choice, a concrete historical/current defect caused by this choice, or lock-in/complexity disproportionate to the pre-release stage.",
+        "contrary_found": "live consumers: db/translation-task-store.ts, app/localization/translation-task-consumer.ts. No evidence requires treating this choice as erroneous; authority may remain assistant/PR-level rather than direct-user.",
+        "effect": "Acceptable-alternative classification retained without elevating it to user-approved architecture."
+      }
+    },
+    {
+      "id": "EX16-06",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "Permanently redirect safe canonicalizable locale forms to an internal canonical URL.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-002/1+/2 evidence for PR #16 plus current locale implementation",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A pre-existing contract requiring a materially different choice, a concrete historical/current defect caused by this choice, or lock-in/complexity disproportionate to the pre-release stage.",
+        "contrary_found": "live consumers: app/localization/registry.ts. No evidence requires treating this choice as erroneous; authority may remain assistant/PR-level rather than direct-user.",
+        "effect": "Acceptable-alternative classification retained without elevating it to user-approved architecture."
+      }
+    },
+    {
+      "id": "EX16-07",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "Temporarily redirect safe unavailable explicit locales to bootstrap English without preference negotiation.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-002/1+/2 evidence for PR #16 plus current locale implementation",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A pre-existing contract requiring a materially different choice, a concrete historical/current defect caused by this choice, or lock-in/complexity disproportionate to the pre-release stage.",
+        "contrary_found": "live consumers: app/localization/registry.ts. No evidence requires treating this choice as erroneous; authority may remain assistant/PR-level rather than direct-user.",
+        "effect": "Acceptable-alternative classification retained without elevating it to user-approved architecture."
+      }
+    },
+    {
+      "id": "EX16-08",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "Fail redirect-required non-safe explicit locale requests before matched actions.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-002/1+/2 evidence for PR #16 plus current locale implementation",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A pre-existing contract requiring a materially different choice, a concrete historical/current defect caused by this choice, or lock-in/complexity disproportionate to the pre-release stage.",
+        "contrary_found": "live consumers: app/localization/registry.ts. No evidence requires treating this choice as erroneous; authority may remain assistant/PR-level rather than direct-user.",
+        "effect": "Acceptable-alternative classification retained without elevating it to user-approved architecture."
+      }
+    },
+    {
+      "id": "EX16-09a",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "Negotiate root locale in authenticated, cookie, header, English precedence.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-002/1+/2 evidence for PR #16 plus current locale implementation",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/auth/auth.server.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A pre-existing contract requiring a materially different choice, a concrete historical/current defect caused by this choice, or lock-in/complexity disproportionate to the pre-release stage.",
+        "contrary_found": "PR #16 had no real authenticated session producer yet.",
+        "effect": "acceptable preference-order foundation with a later real auth consumer; absence of auth at PR #16 is not a defect."
+      }
+    },
+    {
+      "id": "EX16-09b",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "Exclude Accept-Language ranges with `q=0`.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-002/1+/2 evidence for PR #16 plus current locale implementation",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A pre-existing contract requiring a materially different choice, a concrete historical/current defect caused by this choice, or lock-in/complexity disproportionate to the pre-release stage.",
+        "contrary_found": "live consumers: app/localization/registry.ts. No evidence requires treating this choice as erroneous; authority may remain assistant/PR-level rather than direct-user.",
+        "effect": "Acceptable-alternative classification retained without elevating it to user-approved architecture."
+      }
+    },
+    {
+      "id": "EX16-09c",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "Prevent wildcard from selecting an arbitrary active locale.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-002/1+/2 evidence for PR #16 plus current locale implementation",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A pre-existing contract requiring a materially different choice, a concrete historical/current defect caused by this choice, or lock-in/complexity disproportionate to the pre-release stage.",
+        "contrary_found": "live consumers: app/localization/registry.ts. No evidence requires treating this choice as erroneous; authority may remain assistant/PR-level rather than direct-user.",
+        "effect": "Acceptable-alternative classification retained without elevating it to user-approved architecture."
+      }
+    },
+    {
+      "id": "EX16-10",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Restrict root language negotiation to GET/HEAD.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-002/1+/2 evidence for PR #16 plus current locale implementation",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: app/localization/registry.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "EX16-11a",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "Use a temporary canonical-locale root redirect and preserve query.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-002/1+/2 evidence for PR #16 plus current locale implementation",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A pre-existing contract requiring a materially different choice, a concrete historical/current defect caused by this choice, or lock-in/complexity disproportionate to the pre-release stage.",
+        "contrary_found": "live consumers: app/localization/registry.ts. No evidence requires treating this choice as erroneous; authority may remain assistant/PR-level rather than direct-user.",
+        "effect": "Acceptable-alternative classification retained without elevating it to user-approved architecture."
+      }
+    },
+    {
+      "id": "EX16-11b",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "Mark root negotiation responses `Cache-Control: no-store`.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-002/1+/2 evidence for PR #16 plus current locale implementation",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A pre-existing contract requiring a materially different choice, a concrete historical/current defect caused by this choice, or lock-in/complexity disproportionate to the pre-release stage.",
+        "contrary_found": "live consumers: app/localization/registry.ts. No evidence requires treating this choice as erroneous; authority may remain assistant/PR-level rather than direct-user.",
+        "effect": "Acceptable-alternative classification retained without elevating it to user-approved architecture."
+      }
+    },
+    {
+      "id": "EX16-12",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Put public UI behind a generic locale boundary and technical APIs outside it.",
+      "direct_user_authority_scope": "generic/data-driven locale direction only",
+      "historical_evidence": "accepted DL-EXTRACT-002/1+/2 evidence for PR #16 plus current locale implementation",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: app/localization/registry.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "EX16-13a",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Use a locale-boundary server loader to guarantee the server round trip.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-002/1+/2 evidence for PR #16 plus current locale implementation",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: app/localization/registry.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "EX16-13b",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Propagate resolved locale through typed request context.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-002/1+/2 evidence for PR #16 plus current locale implementation",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "db/forum-service.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: db/forum-service.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "EX16-14",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Derive SSR document `lang` and `dir` from resolved locale context.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-002/1+/2 evidence for PR #16 plus current locale implementation",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "db/forum-service.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: db/forum-service.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "EX16-15",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "Use explicit formatting preferences with deterministic UTC as the Stage 1 baseline.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-002/1+/2 evidence for PR #16 plus current locale implementation",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A pre-existing contract requiring a materially different choice, a concrete historical/current defect caused by this choice, or lock-in/complexity disproportionate to the pre-release stage.",
+        "contrary_found": "UTC is only the Stage 1 deterministic baseline and is not user-timezone inference.",
+        "effect": "acceptable baseline; no claim it is the final user timezone policy."
+      }
+    },
+    {
+      "id": "EX16-16",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "Begin direction-neutral CSS with logical text alignment.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-002/1+/2 evidence for PR #16 plus current locale implementation",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A pre-existing contract requiring a materially different choice, a concrete historical/current defect caused by this choice, or lock-in/complexity disproportionate to the pre-release stage.",
+        "contrary_found": "live consumers: app/localization/registry.ts. No evidence requires treating this choice as erroneous; authority may remain assistant/PR-level rather than direct-user.",
+        "effect": "Acceptable-alternative classification retained without elevating it to user-approved architecture."
+      }
+    },
+    {
+      "id": "EX16-17",
+      "role": "supporting/provenance-only",
+      "classification": "reviewed-supporting",
+      "atomic_decision": "Advance from completed 1B to 1C without declaring all of Stage 1 complete.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-002/1+/2 evidence for PR #16 plus current locale implementation",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "Evidence that this record itself establishes a runtime/product correctness requirement rather than history/provenance/process indexing.",
+        "contrary_found": "This is a time-local state transition rather than an independent architecture mechanism.",
+        "effect": "reviewed-supporting only."
+      }
+    },
+    {
+      "id": "EX17-01",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Make the canonical English catalog executable runtime data.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-002/1+/2 evidence for PR #17 plus accepted stale-chain context/current UI translation implementation",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/sources.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: app/localization/sources.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "EX17-02",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Give UI descriptors typed semantic translation metadata.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-002/1+/2 evidence for PR #17 plus accepted stale-chain context/current UI translation implementation",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: app/localization/registry.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "EX17-05",
+      "role": "substantive",
+      "classification": "justified-fix-of-real-defect",
+      "atomic_decision": "Prevent local sources from overriding canonical English.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-002/1+/2 evidence for PR #17 plus accepted stale-chain context/current UI translation implementation",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/sources.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "Evidence that the predecessor already satisfied the same invariant, that the reported defect was only hypothetical, or that the correction changed unrelated valid behavior.",
+        "contrary_found": "Initial local-source behavior could permit an accidental English local pack to compete with canonical English; corrective commit 55306b94 adds the explicit empty-English branch and regression.",
+        "effect": "justified in-PR fix of the canonical-English authority invariant."
+      }
+    },
+    {
+      "id": "EX17-09",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Keep fallback-locale resources in separate loader bundles.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-002/1+/2 evidence for PR #17 plus accepted stale-chain context/current UI translation implementation",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: app/localization/registry.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "EX17-12",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Create isolated request-scoped i18next runtimes with explicit fallback.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-002/1+/2 evidence for PR #17 plus accepted stale-chain context/current UI translation implementation",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: app/localization/registry.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "EX17-13",
+      "role": "substantive",
+      "classification": "intentional-foundation",
+      "atomic_decision": "Reuse one serialized locale/resource/formatting snapshot across SSR and hydration.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-002/1+/2 evidence for PR #17 plus accepted stale-chain context/current UI translation implementation",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A conflicting accepted contract, later replacement for incompatibility, absence of any real/future consumer combined with meaningful current-stage cost, or evidence that the record implemented a full deferred subsystem instead of a minimal boundary.",
+        "contrary_found": "live consumers: app/localization/registry.ts. No such disqualifying evidence was found in the accepted extraction, current contracts, or checked implementation.",
+        "effect": "Foundation classification retained; later use is corroboration, not authority."
+      }
+    },
+    {
+      "id": "EX17-14",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "Move scaffold UI strings onto the translation runtime.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-002/1+/2 evidence for PR #17 plus accepted stale-chain context/current UI translation implementation",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A pre-existing contract requiring a materially different choice, a concrete historical/current defect caused by this choice, or lock-in/complexity disproportionate to the pre-release stage.",
+        "contrary_found": "The PR moves scaffold UI strings but not every document metadata string onto i18n.",
+        "effect": "acceptable incremental Stage 1C application; no claim of total-site localization."
+      }
+    },
+    {
+      "id": "EX17-15",
+      "role": "supporting/provenance-only",
+      "classification": "reviewed-supporting",
+      "atomic_decision": "Defer full Stage 1 acceptance until 1C is merged to main.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-002/1+/2 evidence for PR #17 plus accepted stale-chain context/current UI translation implementation",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "disconfirmation": {
+        "strongest_evidence_against": "Evidence that this record itself establishes a runtime/product correctness requirement rather than history/provenance/process indexing.",
+        "contrary_found": "This is a time-local Stage 1 acceptance-state statement and its earlier contradictory in-PR wording was superseded before merge.",
+        "effect": "reviewed-supporting only."
+      }
+    },
+    {
+      "id": "EX17-16",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "Require a real Workers checkpoint after Stage 1 acceptance and before Stage 2.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-002/1+/2 evidence for PR #17 plus accepted stale-chain context/current UI translation implementation",
+      "current_consumer_state": "historical-only",
+      "current_consumers": [],
+      "disconfirmation": {
+        "strongest_evidence_against": "A pre-existing contract requiring a materially different choice, a concrete historical/current defect caused by this choice, or lock-in/complexity disproportionate to the pre-release stage.",
+        "contrary_found": "No direct-user authority for a mandatory real Workers checkpoint is visible, and the checkpoint is external to local unit behavior.",
+        "effect": "acceptable alternative acceptance gate: it was bounded, actually exercised by PR #18, and did not itself preselect later database/provider topology."
+      }
+    },
+    {
+      "id": "EX19-04",
+      "role": "substantive",
+      "classification": "justified-fix-of-real-defect",
+      "atomic_decision": "Reserve exact canonicalized technical top-level locale identities.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-002/1+/2 evidence for PR #19 plus before/after implementation/current code",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "Evidence that the predecessor already satisfied the same invariant, that the reported defect was only hypothetical, or that the correction changed unrelated valid behavior.",
+        "contrary_found": "Before PR #19 the registry accepted canonical/alias identities colliding with top-level technical routes such as api/assets.",
+        "effect": "justified fix of a real routing/registry integrity gap."
+      }
+    },
+    {
+      "id": "EX19-05",
+      "role": "substantive",
+      "classification": "justified-fix-of-real-defect",
+      "atomic_decision": "Detach and freeze runtime registry snapshots and matches.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-002/1+/2 evidence for PR #19 plus before/after implementation/current code",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "Evidence that the predecessor already satisfied the same invariant, that the reported defect was only hypothetical, or that the correction changed unrelated valid behavior.",
+        "contrary_found": "Before PR #19 find()/activeLocales() exposed mutable internal LocaleDefinition objects/arrays by reference.",
+        "effect": "justified fix of a real registry-state mutation leak."
+      }
+    },
+    {
+      "id": "EX19-06",
+      "role": "substantive",
+      "classification": "justified-fix-of-real-defect",
+      "atomic_decision": "Expose locale definition identity/state fields as compile-time readonly.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-002/1+/2 evidence for PR #19 plus before/after implementation/current code",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "Evidence that the predecessor already satisfied the same invariant, that the reported defect was only hypothetical, or that the correction changed unrelated valid behavior.",
+        "contrary_found": "Before PR #19 LocaleMatch/LocaleDefinition consumer-facing mutability was not fully reflected as readonly in the type contract.",
+        "effect": "justified type-level correction supporting the runtime immutability boundary."
+      }
+    },
+    {
+      "id": "EX19-07",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "Type-check i18next namespaces/keys from the canonical catalog shape.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-002/1+/2 evidence for PR #19 plus before/after implementation/current code",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A pre-existing contract requiring a materially different choice, a concrete historical/current defect caused by this choice, or lock-in/complexity disproportionate to the pre-release stage.",
+        "contrary_found": "live consumers: app/localization/registry.ts. No evidence requires treating this choice as erroneous; authority may remain assistant/PR-level rather than direct-user.",
+        "effect": "Acceptable-alternative classification retained without elevating it to user-approved architecture."
+      }
+    },
+    {
+      "id": "EX19-08",
+      "role": "substantive",
+      "classification": "justified-fix-of-real-defect",
+      "atomic_decision": "Make the locale landing page an index child rather than a catch-all.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-002/1+/2 evidence for PR #19 plus before/after implementation/current code",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "Evidence that the predecessor already satisfied the same invariant, that the reported defect was only hypothetical, or that the correction changed unrelated valid behavior.",
+        "contrary_found": "Before PR #19 the localized child route was route('*', home), so arbitrary localized descendants matched Home.",
+        "effect": "justified route correction."
+      }
+    },
+    {
+      "id": "EX19-09",
+      "role": "substantive",
+      "classification": "justified-fix-of-real-defect",
+      "atomic_decision": "Return a real HTTP 404 for unknown localized child routes.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-002/1+/2 evidence for PR #19 plus before/after implementation/current code",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "Evidence that the predecessor already satisfied the same invariant, that the reported defect was only hypothetical, or that the correction changed unrelated valid behavior.",
+        "contrary_found": "Before PR #19 no dedicated localized catch-all loader produced a real HTTP 404.",
+        "effect": "justified route correction paired with EX19-08."
+      }
+    },
+    {
+      "id": "EX19-10",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "Temporarily force initial-manifest route discovery on React Router 8.3.1.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-002/1+/2 evidence for PR #19 plus before/after implementation/current code",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        "app/localization/registry.ts"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A pre-existing contract requiring a materially different choice, a concrete historical/current defect caused by this choice, or lock-in/complexity disproportionate to the pre-release stage.",
+        "contrary_found": "Final PR #19 research did not prove Vico itself reproduced the upstream lazy-discovery failure. Upstream fixes #15395 and #15489 were merged 2026-09-10 and shipped in React Router 8.4.0; Vico remains pinned to 8.3.1.",
+        "effect": "acceptable temporary compatibility alternative at the audited project version, not a Vico defect finding."
+      }
+    },
+    {
+      "id": "EX19-11",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "Re-evaluate the route-discovery compatibility setting after applicable upgrades.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-002/1+/2 evidence for PR #19 plus before/after implementation/current code",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A pre-existing contract requiring a materially different choice, a concrete historical/current defect caused by this choice, or lock-in/complexity disproportionate to the pre-release stage.",
+        "contrary_found": "Upstream 8.4.0 now contains the referenced fixes, but Vico has not upgraded from 8.3.1.",
+        "effect": "retain as an upgrade-triggered reevaluation condition; it does not require changing the current pinned-version configuration in this task."
+      }
+    },
+    {
+      "id": "EX19-12",
+      "role": "substantive",
+      "classification": "acceptable-alternative",
+      "atomic_decision": "Add a Workers-runtime localized-routing smoke to pull-request CI.",
+      "direct_user_authority_scope": null,
+      "historical_evidence": "accepted DL-EXTRACT-002/1+/2 evidence for PR #19 plus before/after implementation/current code",
+      "current_consumer_state": "live-consumer-indexed",
+      "current_consumers": [
+        ".github/workflows/ci.yml"
+      ],
+      "disconfirmation": {
+        "strongest_evidence_against": "A pre-existing contract requiring a materially different choice, a concrete historical/current defect caused by this choice, or lock-in/complexity disproportionate to the pre-release stage.",
+        "contrary_found": "Local Workers smoke is not equivalent to real deployed Cloudflare acceptance.",
+        "effect": "acceptable low-cost runtime-specific CI check; no external-acceptance claim."
+      }
+    }
+  ]
+}
