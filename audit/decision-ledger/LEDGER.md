@@ -130,6 +130,22 @@ Deferred real Queue/provider credentials, retry/DLQ, reconciliation, external ro
 stage boundaries rather than missing-current-stage defects. No confirmed premature implementation or
 strict documentation laundering was found in this block.
 
+### R1 baseline and early locale/translation decisions (`DL-CLASSIFY-008`)
+
+| Records | Preliminary classification | Evidence boundary |
+| --- | --- | --- |
+| 74 R1 records | intentional foundations | Generic locale, registry, request context, translation-source, and related boundaries have accepted intent or demonstrated downstream value. |
+| 56 R1 records | acceptable alternatives | Multiple implementation choices were reasonable within the then-current contract and did not create mandatory future subsystems. |
+| 12 R1 records | justified fixes of real defects | Corrections across PR #10/#11/#5/#16/#17/#19 address evidenced behavior or contract defects. |
+| `DLX13-01`, `DLX13-02` | historical original defects | Method-preserving locale fallback/canonicalization redirects initially lacked a safe-method restriction; PR #14 corrected this before forum writes. |
+| 10 R1 records | reviewed supporting/provenance | These support the chain but require no separate correctness verdict. |
+
+The PR #13 redirect defect is historical, not current. The generic-locale direct-user decision is not
+blanket authority for adjacent translation mechanisms. The React Router `routeDiscovery: initial`
+setting remains a temporary compatibility choice in the pinned 8.3.1 repository, not a demonstrated
+current defect. No R1 dumb correction, insufficient-evidence record, unresolved finding, or strict
+documentation laundering was found.
+
 ## Record template
 
 ```text
