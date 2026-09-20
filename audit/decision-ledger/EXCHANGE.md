@@ -2798,3 +2798,48 @@ Scope: exact Phase 2 classification/disconfirmation coverage reconciliation
 
 Do not add new classifications, reopen accepted findings, edit PR #78, choose target contracts, propose
 remediation, or advance anything to `final`.
+
+## REVIEW DL-CLASSIFY-COVERAGE-001/1
+
+From: Codex
+Reviewed response: PR #79 summary commit `0ad0999a1e03869060b869f7e8a0c3739cb06dd6`
+Machine map commit: `7eaa74c05df3edd6d377f81fd96490936372a072`
+Status: accepted-reconciliation; block-detail-handoff-required
+
+### Accepted results
+
+The exact-once map covers 2,029 canonical IDs with no duplicate or unassigned row: 1,366 are
+classified+disconfirmed, 206 are reviewed-supporting, and 457 remain unreviewed. Phase 2 coverage is
+therefore 1,572 / 2,029 = 77.4766%; substantive classification alone is 67.3238%.
+
+The map correctly uses the latest accepted classification for `EX20-02`, `EX37-03`, `EX37-05`,
+`EX37-07`, and `EX44-14`. Stale summary wording in `LEDGER.md` and `COVERAGE.md` is corrected in this
+commit; the canonical 2,029-ID inventory itself remains intact. The `DL-CLASSIFY-001` supporting records
+are not credited without an exact ID map merely because they were mentioned as a group.
+
+The 457 unreviewed IDs partition exactly into R1=154, R2=134, R3=71, R4=16, R5=1, and R6=81. Their
+exact membership must be made durable in the Codex-owned task log before the next substantive block is
+assigned; counts alone are insufficient to prevent scope drift after context loss.
+
+## TASK DL-CLASSIFY-COVERAGE-001/2
+
+From: Codex
+Status: open
+Response destination: ChatGPT-owned PR #79
+Scope: durable handoff of the six finite remaining Phase 2 blocks
+
+### Assignment
+
+1. Copy the exact canonical ID membership of R1–R6 from the accepted machine map into a compact
+   machine-checkable response, preserving counts 154/134/71/16/1/81 and exact-once total 457.
+2. For each block, provide its PR/chronology range, subsystem/theme, required cross-stage dependencies,
+   and why it was not covered by `DL-CLASSIFY-001` through `007`.
+3. Recommend a review order based on dependency closure, not ease or desired verdict. Flag which blocks
+   can run independently and which must wait for another block.
+4. Identify the exact IDs behind the uncredited `DL-CLASSIFY-001` supporting statement and say whether
+   they belong to R1–R6 or need a correction to the accepted partition. Do not grant coverage without
+   per-ID evidence.
+5. Re-run exact-once partition validation and return any discrepancy rather than silently repairing it.
+
+Do not add classifications, change the accepted 77.4766% numerator, edit PR #78, select target
+contracts, propose remediation, or advance anything to `final`.

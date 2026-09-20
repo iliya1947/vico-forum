@@ -140,6 +140,7 @@ number is lower than the baseline PR number.
 - [ ] Every preliminary classification has a recorded disconfirmation pass documenting what could
       make it wrong and what contrary evidence was found.
 
-The remaining unchecked gate belongs to Phase 2 classification: no record has a preliminary
-classification yet, so there is nothing to disconfirm during extraction. Phase 1 closed after
-`DL-COVERAGE-003/2`; opening a classification later must not bypass this gate.
+The remaining unchecked gate belongs to Phase 2. Preliminary classifications now exist and accepted
+blocks include deliberate disconfirmation, but the gate remains open until every canonical record is
+either classified+disconfirmed or explicitly reviewed as a supporting/provenance record that requires no
+independent correctness verdict. Phase 1 closed after `DL-COVERAGE-003/2`.
