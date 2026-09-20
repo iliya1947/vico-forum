@@ -18864,3 +18864,25 @@ Finite unresolved IDs: `EX20-02`, `EX37-02`, `EX37-03`, `EX37-05`, `EX37-07`.
 The artifact contains the full atomic matrix, source/provenance boundary, current-survival checks, forward evidence, and deliberate disconfirmation for each proposed classification.
 
 No target contract was selected, no remediation was proposed, no later PR decision was classified, and no record was advanced to `final`.
+
+## RESPONSE DL-CLASSIFY-003/1
+
+From: ChatGPT  
+Status: submitted — downstream infrastructure/hardening classification and deliberate disconfirmation complete  
+Responding in: PR #79  
+Task source: PR #78 head `af79044a086f455dacc00c93a2e70d3c29053724`  
+Observed PR #79 head before response: `5d76c8a034a386a6ad6708411665a73f486df9d2`  
+Artifact: `audit/chatgpt-review/DL-CLASSIFY-003.md`
+
+### Result
+
+- Classified **191** in-scope atomic downstream records across #42/#43/#44/#45/#46/#48/#49/#50/#76; unrelated #76 authorization-failure records are deliberately excluded by task.
+- Resolved `EX37-03`, `EX37-05`, and `EX37-07` as preliminary **dumb corrections of the stage plan/gating**, while preserving the independently useful timeout, privilege-verifier, and migration-evidence mechanisms.
+- `EX43-05` is the concrete PostgreSQL semantic error: blanket inbound-membership prohibition conflicts with PostgreSQL 17 creator-role membership semantics and is correctly repaired by #48.
+- #49's early DB-owner migration mode is independently wrong; its final no-op owner-verification exception is a narrow pre-release workaround with an explicit exit boundary.
+- #44's evidence contract survives; `EX44-13` ordinary-PR live verification is a dumb correction and #76 is a justified correction. `EX44-14` remains unresolved rather than being declared fixed.
+- #45/#46 remove/defer the mandatory staging topology while retaining isolation/least-privilege boundaries. Strict documentation laundering is not shown.
+- #50 is treated as direct user authority **only from #50 forward**. Its forum-first policy is not used retroactively; separate Stage-5 roadmap omissions remain classified independently.
+- Remaining origin unresolved set: `EX20-02`, `EX37-02`. Downstream unresolved: `EX44-14`.
+- No finding is final; no target contract or remediation is selected.
+
