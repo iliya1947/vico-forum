@@ -18080,3 +18080,108 @@ PROJECT_STATE owns current state, PROJECT_HISTORY owns significant historical in
 - PROJECT_HISTORY.md -> EX77-19..69/77..80: historical index creation, H-001..H-010 retrospective claims, provenance corrections, history-loss record and authority limitations.
 - PROJECT_STATE.md -> EX77-02..18/70/72..76/88: rebuild to current-state scope, history link, current capabilities/limitations and nearest route.
 - README.md -> EX77-68/71: documentation index link to PROJECT_HISTORY.
+
+
+
+### Review-reference reconciliation
+
+- PR #71 review 4026927508 -> EX71-54. The branch first attempts fa56fff/EX71-55..60, then removes that unsafe cross-generation supersession through EX71-61..66. Final #71 keeps the underlying different-identity ordering problem explicit as EX71-53/70/93; PR #72 is later forward evidence.
+- PR #72 review 4028280128 -> EX72-45..53. The reviewed implementation remains the final task-store behavior; the only later #72 commit is documentation/state. No PR #73–#77 changes that store. This review therefore stays visible as unresolved historical evidence, without a Phase 1 verdict or remedy.
+- PR #73 review 4028574664 -> EX73-25. EX73-26 synchronizes PROJECT_STATE before merge. EX73-27/28 separately preserve the accidental unrelated state rewrite/restoration history rather than treating it as part of the executor architecture.
+- PR #74 has no PR review thread. Its corrective history is the in-branch documentation rewrite/restoration sequence EX74-41..44.
+- PR #75 review 4029815293 -> EX75-56..62. No follow-up commit exists in #75 and #76/#77 do not change the bundle refresh path. The finding remains open evidence despite final green CI.
+- PR #76 has no PR review thread. The PR itself is a corrective implementation tied to the already-extracted PR #44 and PR #61 histories.
+- PR #77 has no technical review thread/review submission. The available PR discussion contains the automated Codex usage-limit notice. EX77-65 therefore records only that commit 428df86 says user review found the intermediate history loss; it does not invent an unavailable GitHub review artifact.
+
+### CI and external-evidence reconciliation
+
+- PR #71: CI #188 succeeds on corrected code head 03214222eefd6033934c3fda5bf088e8842cd069; final CI #189 succeeds on e0db850a5a6fa1c8dd34fdb1f3150ec5977de7cf.
+- PR #72: CI #190 succeeds on code head 28f21961d485358bf1c02940f159fa3c8d273b3b; final CI #191 succeeds on 4dfbc7793d1da952ac881193aad192bd082ec705.
+- PR #73: CI #192 fails lint on the initial execution head; CI #193 succeeds after the code correction; final CI #195 succeeds on a71a0c3eecc37e5a8ef490221838d95737f065e6.
+- PR #74: CI #196 succeeds on runtime code head f7dc2de; final CI #200 succeeds on dc231a79545f0a060b58c06024568362ce84321d after documentation-only restorations.
+- PR #75: final CI #201 succeeds on 9e99ca8a30a4dc25c1fd1d1ba31efc7705fe1668. The green run does not by itself resolve review 4029815293.
+- PR #76: CI #202 succeeds on implementation head b4d6beea1c890e4e27b1b2c5de969d4e0be07bd8; final CI #203 succeeds on 417ca16ef068c70cbb6dfd0fbf26cd79aa4d9ede after state synchronization.
+- PR #77: final CI #214 succeeds on 01bb2e0a97d8e506416c1ab7ede6396c47539f86. This verifies repository checks, not the authority/correctness of retrospective PROJECT_HISTORY labels.
+- PostgreSQL 17 primary documentation was checked for the row-lock and statement_timestamp primitives used by the generation/publication lifecycle. Those external semantics support the factual mechanism descriptions only; they do not select an architecture verdict.
+- The public Drizzle ORM tag 0.45.2 resolves to upstream commit 273c78071d4841b497f5144734b38294df7ec64b. The audited repository's exact-version code/tests/CI provide the concrete project evidence; no broader upstream architecture claim is inferred here.
+- No PR #71–#77 provides real Cloudflare Queue binding/delivery, external machine-provider credentials/calls, production retry/DLQ/reconciliation, or deployed provider/Queue smoke.
+- No PR #71–#75 performs the external application of translation migrations 0009/0010 or proves a production bundle backfill/refresh.
+- PR #76 performs no external migration or authorization deployment acceptance; it changes repository runtime/workflow boundaries.
+- PR #77 performs no external operation.
+
+### F/A/C/D/O/G/T completeness reconciliation
+
+- PR #71:
+  - F — completed durable task lifecycle, conditional raw machine publication, structured plural UI values.
+  - A — post-provider validation/currentness, claim-token conditional transaction, provenance/payload boundaries.
+  - C — P1 different-identity overwrite review, unsafe supersession attempt/removal, accidental requiredRow regression/fix, temporary tooling/workflow corrections.
+  - D — provider/job/UI/state synchronization and final ordering/bundle/runtime deferrals.
+  - O — migration 0009 local/CI only; no provider/Queue/external migration/deploy.
+  - G — repeated stale/current checks, terminal completed identity, conditional claim-owned publication.
+  - T — migration/task/publication/plural/generation-isolation tests, temporary validation workflow history, CI #188/#189.
+- PR #72:
+  - F — durable per-unit generation ordering and current-generation fencing.
+  - A — monotonic generation + durable head + shared planning/publication row lock.
+  - C — open P1 A→B→A reactivation review with no in-block code correction.
+  - D — provider/job and state synchronization.
+  - O — migration 0010 local/CI only; no external provider/Queue/rollout.
+  - G — head serialization, current-generation preflight/publication fence, old duplicate cannot advance head.
+  - T — migration/backfill, concurrent planning and publication-fence tests, CI #190/#191.
+- PR #73:
+  - F — provider-neutral executor pipeline.
+  - A — consumer→router→publisher composition and canonical request construction.
+  - C — lint correction, state review correction, unrelated state wording restoration.
+  - D — executor versus real-provider/Queue state distinction.
+  - O — none; no schema/migration/provider/Queue/deploy.
+  - G — stale/noneligible preflight before provider; untrusted result before publication.
+  - T — plain/plural/superseded/invalid-output unit coverage, CI #192/#193/#195.
+- PR #74:
+  - F — whole exact-locale namespace bundle publication.
+  - A — completion/raw result/bundle compile+upsert in one PostgreSQL transaction and namespace serialization.
+  - C — documentation-only unrelated wording restoration sequence.
+  - D — storage/UI/state publication contract, runtime-read still deferred.
+  - O — none; no schema/migration/external resource/deploy.
+  - G — generation+claim fencing and deterministic PostgreSQL row locking.
+  - T — rollback/manual/plural/concurrent publication DB coverage, CI #196/#200.
+- PR #75:
+  - F — persisted exact-locale compiled-bundle SSR/runtime reads.
+  - A — v2 deploy identity, read-only bundle interface, persistent-first loader and request-local Hyperdrive degradation/fallback.
+  - C — open P2 v1→v2 persisted refresh/backfill finding.
+  - D — UI/storage/Hyperdrive/state runtime-read contracts.
+  - O — reuse of existing read-only localization Hyperdrive; no new grant/schema/migration/external rollout.
+  - G — current bundle verification, classified degradation/circuit, unknown failures visible, no request-path provider generation.
+  - T — hit/miss/fallback/plural/SSR-hydration/integrity/degradation tests, CI #201.
+- PR #76:
+  - F — none new.
+  - A — typed authorization-unavailable boundary.
+  - C — separate correction of PR #44 ordinary-PR live rollout verification and PR #61 catch-all authorization failure behavior.
+  - D — migration/auth/state synchronization.
+  - O — live verifier/evidence retained for actual external rollout; no external operation.
+  - G — repository-local PR checks separated from live rollout evidence; typed outages only map/degrade as unavailable.
+  - T — authorization adapter/routes/presentation regressions and CI #202/#203.
+- PR #77:
+  - F — none.
+  - A — no runtime architecture implementation; documentation responsibility split only.
+  - C — historical/provenance wording corrections and intermediate history-loss restoration.
+  - D — PROJECT_STATE current-state rebuild, PROJECT_HISTORY historical index, README link.
+  - O — none.
+  - G — Git/PR declared primary historical evidence; PROJECT_HISTORY explicitly non-authoritative for current behavior.
+  - T — no new product tests/workflow; ordinary final CI #214 only.
+
+### Response completeness
+
+- PR #71: EX71-01..100 — 100 atomic candidate records.
+- PR #72: EX72-01..58 — 58 atomic candidate records.
+- PR #73: EX73-01..37 — 37 atomic candidate records.
+- PR #74: EX74-01..50 — 50 atomic candidate records.
+- PR #75: EX75-01..65 — 65 atomic candidate records.
+- PR #76: EX76-01..62 — 62 atomic candidate records.
+- PR #77: EX77-01..88 — 88 atomic candidate records.
+- Total: 460 unique candidate atomic records.
+- No duplicate or missing EX71/EX72/EX73/EX74/EX75/EX76/EX77 sequence IDs are present.
+- Every final changed file in PR #71–#77 is reconciled above; branch-only temporary files/workflows in #71 are separately reconciled.
+- All available review findings are mapped explicitly. Open #72/#75 findings remain open evidence; green CI and later documentation do not silently close them.
+- PR #76's two correction families remain separate and retain the underlying useful mechanisms instead of blanket-removing rollout evidence or outage degradation.
+- PR #77 retrospective assertions remain later-retrospective-summary evidence and do not become self-confirming audit verdicts.
+- No record in this response classifies correctness, foolishness, prematurity, future-proofing quality, approved target architecture, required remedy, or final cross-stage status.
+- Completion of this response would complete chronological candidate extraction through PR #77 only. The PR #78 reconciliation gates, full-history/current-consumer discovery, cross-stage review and deliberate disconfirmation remain separate subsequent Phase 1 work.
