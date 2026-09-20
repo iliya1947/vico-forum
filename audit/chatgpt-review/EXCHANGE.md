@@ -18918,3 +18918,29 @@ Finite unresolved classification set: **`EX37-02` only**.
 
 No other 188 rows were reopened, no authorization-failure record was classified, no target contract or
 remediation was selected, PR #78 was not edited, and nothing advances to `final`.
+
+## RESPONSE DL-CLASSIFY-004/1
+
+From: ChatGPT  
+Status: submitted — authorization/failure-boundary classification + deliberate disconfirmation complete  
+Responding in: PR #79  
+Task source: PR #78 head `5b3006c9845338d64ea85ed44c9c3b0fb38655cd`  
+Observed PR #79 head before response: `b82279ff6ddb9bb67ccf776b010b36376af8e502`  
+Artifact: `audit/chatgpt-review/DL-CLASSIFY-004.md`
+
+### Result
+
+- Classified **291** authorization-chain atomic rows across #59/#60/#61 and authorization-only #76. Rollout/translation rows from #76 are excluded.
+- The dynamic roles/custom roles/editable permissions/per-user allow-deny product decision remains fixed user authority; no blanket authority is transferred to implementation details.
+- PR #60 is mostly a valid backend foundation, but the open `EX60-27` snapshot-consistency finding is **real and current**. `resolveUser()` still combines multiple PostgreSQL statements without a stable read snapshot.
+- PR #61 broad failure handling is not one review-created mistake:
+  - `EX61-62..65` already existed in the initial implementation;
+  - `EX61-60` was a later review-era broad manager-resolver mapping;
+  - review findings `EX61-66/68` correctly identified genuine public-read outage problems;
+  - fixes `EX61-67/69/70` were overbroad because they caught every error rather than classified availability failures;
+  - generic-Error tests `EX61-61/88` encoded the masking behavior.
+- `EX61-42` is a second **current** snapshot-consistency defect: bulk management state is four independent SELECTs without a stable snapshot.
+- PR #76 is a justified prospective correction: typed PostgreSQL/Hyperdrive availability failures degrade/503, while schema/programming/configuration/unexpected errors rethrow.
+- PR #61 AUTHORIZATION.md did not contain a broad failure contract. PROJECT_STATE used misleading “infrastructure” wording for catch-all behavior, but strict documentation laundering is **not** established.
+- Finite unresolved classification list: **none**. Confirmed current defects remain non-final findings; no remediation or target contract is selected.
+
