@@ -5,6 +5,29 @@
 > Every entry remains open until the complete cross-stage review. No block-local classification is a
 > final verdict.
 
+## Phase 2 preliminary findings
+
+These findings are non-final. They preserve the distinction between a changed fixture, a changed CI
+policy, unchanged runtime behavior, and later retrospective wording.
+
+### Stale local-translation chain (`DL-CLASSIFY-001`)
+
+| Record | Preliminary classification | Evidence boundary |
+| --- | --- | --- |
+| `EX19-01` | justified fix of a real defect | Corrected validation ordering so stale obsolete values are classified before current-value structural validation. |
+| `EX19-02` | justified fix of a real defect | Preserved stale exclusion and fallback behavior with direct regression coverage. |
+| `EX19-03` | acceptable architectural policy at that time | Real manual packs could contain stale entries while CI reported them; no pre-#40 zero-stale gate was found. |
+| `EX40-01` | acceptable alternative | Removing a synthetic stale value from a production-owned pack is not by itself shown to violate the runtime contract. |
+| `EX40-02` | dumb correction of a correct implementation | Requiring exact zero stale keys for real packs silently replaced the prior permissive CI policy without separate authority. |
+| `EX40-03` | acceptable alternative | Test-local fixtures continued exercising stale exclusion and fallback after removal of the production canary. |
+| `EX40-04` | factual description, not normative authority | Accurately described the post-#40 state but cannot prove that the new policy was previously required. |
+| `EX77-29` | insufficient evidence as written | It combines the unjustified zero-stale gate with canary removal, although the latter is not independently shown to be a regression. |
+| `EX77-30` | insufficient evidence as written | Later normalization is supported, but strict documentation laundering—making the policy appear older or originally required—is not. |
+
+The remaining records reviewed in this chain are supporting contract/current-behavior/provenance nodes;
+their per-record disconfirmation remains indexed by `DL-CLASSIFY-001/1`. No target contract or remedy is
+selected here.
+
 ## Record template
 
 ```text

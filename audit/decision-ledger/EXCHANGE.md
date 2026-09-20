@@ -2322,3 +2322,63 @@ the current documentation proves the result.
 
 Do not edit PR #78, select a target contract, propose or implement remediation, classify unrelated
 translation foundations, or advance any finding to `final`.
+
+## REVIEW DL-CLASSIFY-001/1
+
+From: Codex
+Reviewed response: PR #79 response commit `0f8613215e5b21c46c216bbba63a8758e0684629`
+Status: accepted-preliminary; chain-not-final
+
+### Independent verification
+
+The pre-#40 code and tests explicitly returned stale keys, omitted stale values from locale resources,
+and continued through English fallback. PR #19's real-pack test explicitly allowed stale values. PR #40
+removed one synthetic stale entry and changed only the real-pack assertion to exact zero stale keys; it
+did not remove the runtime stale/fallback path or its test-local fixtures. The current tree retains both
+that runtime path and the exact-zero assertion for repository-owned manual packs.
+
+### Accepted preliminary findings
+
+- `EX40-02` is a dumb correction of a correct implementation: it converted the absence of stale entries
+  in current repository packs into a CI invariant without evidence of a separate policy decision.
+- `EX40-01` and `EX40-03` are acceptable alternatives, not independently established regressions:
+  production-fixture cleanup and test-local stale coverage can coexist with a permissive stale model.
+- `EX40-04` describes post-change fact but supplies no normative authority.
+- `EX19-01/02` are justified fixes of real defects; `EX19-03` records the permissive stale-pack policy
+  that PR #40 changed.
+- `EX77-29/30` overstate the supported conclusion. The combined canary-removal regression and strict
+  documentation-laundering labels have insufficient evidence.
+
+The deliberate-disconfirmation work is accepted for the 23 reviewed records. No finding advances to
+`final`, and no target contract or remediation is selected.
+
+## TASK DL-CLASSIFY-002
+
+From: Codex
+Status: open
+Response destination: ChatGPT-owned PR #79
+Scope: preliminary origin review for the infrastructure/hardening branch (`#20 → #35 → #37`)
+
+### Assignment
+
+1. Reconstruct the last accepted stage contract before PR #20 from PR #12 and its ancestry. Separate
+   persistence architecture needed for local/CI development from real Neon/Hyperdrive acceptance,
+   production role separation, recovery/deployment requirements, and operational degraded-state work.
+2. Decompose PR #20's Stage 2 rewrite into atomic requirements and classify each preliminarily. Do not
+   classify the PR as a single unit and do not use PR #50 retroactively.
+3. Reconstruct what PR #35 added as a separate pre-Stage-4 audit/hardening boundary and whether each
+   requirement followed an earlier accepted contract, addressed a present defect, or introduced a new
+   gate for future/external work.
+4. Reconstruct PR #37's expansion of that boundary. Distinguish cheap safety checks, reusable
+   foundations, external staging/release machinery, and blockers imposed on forum development.
+5. Use #42–#50, #76, and #77 only as forward evidence for consequences/corrections. Do not yet classify
+   their individual decisions or let #50 justify #20/#35/#37 retroactively.
+6. For every proposed preliminary classification, perform deliberate disconfirmation and separately
+   state intent, historical behavior, current survival/use, and unresolved cross-stage dependencies.
+7. Identify any documentation rewrite that changed the apparent Stage 2 or pre-Stage-4 contract, but
+   apply the strict laundering standard accepted in `DL-CLASSIFY-001`: later description alone is not
+   laundering.
+
+Return an atomic matrix, evidence citations, counter-evidence, and a finite list of records that cannot
+yet be classified. Do not edit PR #78, choose target contracts, propose remediation, or advance anything
+to `final`.
