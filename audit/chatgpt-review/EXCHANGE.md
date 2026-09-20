@@ -15173,4 +15173,161 @@ Completeness limits:
 
 #### PR #69 / merge c12550c3fa1cb371df82a178d20ed7020c33f9ce
 
-F: lifecycle/eligibility corrections to the durable task/consumer foundation | A: shared planner/consumer generation eligibility, PostgreSQL-owned lifecycle clock, stale identity reactivation only through a fresh plan, preservation of live processing state | C: inherited #67/#68 lifecycle issues corrected; an in-PR missing-return regression fixed after CI; review P1 documents unsynchronized PROJECT_STATE and remains outside #69’s final diff | D: `PROVIDERS_AND_JOBS.md` and `UI_TRANSLATION.md` are synchronized; PROJECT_STATE is not changed in #69 a
+F: lifecycle/eligibility corrections to the durable task/consumer foundation | A: shared planner/consumer generation eligibility, PostgreSQL-owned lifecycle clock, stale identity reactivation only through a fresh plan, preservation of live processing state | C: inherited #67/#68 lifecycle issues corrected; an in-PR missing-return regression fixed after CI; review P1 documents unsynchronized PROJECT_STATE and remains outside #69’s final diff | D: `PROVIDERS_AND_JOBS.md` and `UI_TRANSLATION.md` are synchronized; PROJECT_STATE is not changed in #69 and is synchronized in #70 | O: no migration/schema/dependency/real Queue/provider/publication operation | G: active/inactive registered canonical non-English locales are generation-eligible; disabled is not; stale old delivery stays terminal while later fresh planning may reactivate same identity | T: planner/consumer tests and PostgreSQL concurrent claim/DB-clock/reclaim/reactivation tests; CI #169 failed on a missing return, final CI #170 passed
+
+Evidence inspected:
+- PR body, all nine changed files, all 12 internal commits:
+  `7893dcc`, `bc26cdb`, `bc0806a`, `ebb5ce0`, `3aae314`, `671fbec`, `4bcb955`,
+  `6cbc39a`, `2df6eb8`, `dd3d872`, `c1a3a25`, `f6522c4`.
+- Review 4024162533 P1: lifecycle/eligibility changes altered factual project state while
+  `PROJECT_STATE.md` remained unchanged. The final #69 changed-file set contains no
+  PROJECT_STATE update; #70 later performs that synchronization.
+- CI #169 on `c1a3a25` failed TypeScript because `requiredRow()` no longer returned its
+  `TranslationTaskRow`. `f6522c4` restores `return row`; final CI #170 has successful
+  `checks` and `database` jobs.
+- PostgreSQL 17 official documentation was checked: `statement_timestamp()` is the start
+  time of the current statement. This matches the repository’s use of a database-owned
+  per-statement time source for task lifecycle transitions.
+- Project dependency evidence confirms Drizzle ORM `0.45.2`; its tagged PostgreSQL insert/upsert
+  source accepts SQL expressions in update sets, matching the implementation form used by
+  the conflict update.
+
+Completeness limits:
+- The #69 PR body says no unresolved findings remain, but the PR discussion still contains
+  review 4024162533 and the final diff does not add PROJECT_STATE. The historical record
+  therefore preserves both artifacts rather than silently reconciling them.
+- The PR does not add a real Queue adapter, provider execution, retry/DLQ/reconciliation,
+  completion state, post-provider conditional-current publication or runtime bundle switching.
+- No migration is added; #69 changes behavior over schema introduced by #67/#68.
+
+#### PR #70 / merge d84d8883f456780c3d4228ccafb9825314328999
+
+F: integration evidence for the durable commit-before-enqueue failure window plus state synchronization | A: no new runtime architecture mechanism; exercises the existing persistent dispatcher/store through an enqueue failure and a fresh database reader | C: no review finding; PROJECT_STATE absorbs the factual lifecycle/eligibility state left unsynchronized in #69 | D: records PR #69 lifecycle semantics and the fresh-DB enqueue-failure proof; explicitly says reconciliation is still future JOB-06 | O: no schema/migration/dependency/real transport/provider operation | G: durable task is recovery source, Queue remains transport; proof is prerequisite for reconciliation rather than reconciliation itself | T: PostgreSQL integration test on real task store, forced enqueue failure, independent fresh client read; CI #171 and final #172 success
+
+Evidence inspected:
+- PR body, both changed files, commits `d88b342` and `026c944`.
+- The DB test persists through `PersistentTranslationJobDispatcher`, forces the fake enqueuer
+  to throw, observes the same thrown error, opens a new PostgreSQL client, and reads the
+  same stable identity as `pending` with null claim/lease/stale metadata.
+- The fake enqueuer records a message only after its effect succeeds, so this test’s
+  `queue.messages` remains empty while the durable row survives.
+- `PROJECT_STATE.md` synchronizes PR #69’s PostgreSQL-owned clock, shared generation
+  eligibility, live-processing preservation and fresh-plan stale reactivation; it also
+  records the durable failure-window proof as a prerequisite for future JOB-06.
+- CI #171 succeeds on the test commit `d88b342`; final CI #172 succeeds on
+  `026c944c45bca361b032e7a8c4f7ecab1702406c`, with successful `checks` and `database`.
+
+Completeness limits:
+- The test proves durable survival/visibility after enqueue failure, not an implemented
+  reconciliation loop.
+- No actual Cloudflare Queue send, ambiguous external Queue acknowledgement, retry, DLQ,
+  re-enqueue scheduler, provider call, publication or deployed acceptance is exercised.
+
+### Candidate atomic decisions — PR #66
+
+#### EX66-01 — Machine translation routing has a provider-neutral request contract
+`MachineTranslationRequest` contains domain data rather than provider-specific request fields.
+
+#### EX66-02 — Translation domain distinguishes UI from content
+The router request domain is `ui | content`.
+
+#### EX66-03 — Translation operation distinguishes plain from structured
+The router request operation is `plain | structured`.
+
+#### EX66-04 — Router requests carry Vico source and target locale tags
+`sourceLocale` and `targetLocale` are passed through the domain request boundary.
+
+#### EX66-05 — Router requests carry the canonical message kind
+Provider capability selection can inspect `messageKind`.
+
+#### EX66-06 — Router requests can carry a plain source string
+Plain operations use a string source representation.
+
+#### EX66-07 — Router requests can carry a structured source map
+Structured operations can carry a record of branches.
+
+#### EX66-08 — Structured requests can carry required branch identities
+`requiredBranches` is an optional request field.
+
+#### EX66-09 — Provider result payload is untrusted at the router boundary
+Final `MachineTranslationResult.value` is typed `unknown`.
+
+#### EX66-10 — Provider result provenance includes provider identity
+Machine result metadata carries `provider`.
+
+#### EX66-11 — Provider result provenance includes model identity
+Machine result metadata carries `model`.
+
+#### EX66-12 — Provider result provenance records machine origin
+The origin literal is `machine`.
+
+#### EX66-13 — Provider result provenance can carry attribution
+`attribution` is optional metadata.
+
+#### EX66-14 — Provider adapters declare capability through supports()
+The router does not hard-code a provider support matrix.
+
+#### EX66-15 — Provider adapters execute through translate()
+External/provider-specific execution remains behind the adapter interface.
+
+#### EX66-16 — Provider locale-code mapping stays behind the adapter
+The router passes Vico locale tags; tests keep provider-specific mapped codes inside an adapter.
+
+#### EX66-17 — TranslationProviderRouter selects the first supporting adapter
+Routing uses ordered `find(candidate => candidate.supports(request))`.
+
+#### EX66-18 — No supporting adapter produces a controlled unsupported-provider error
+The router throws `UnsupportedTranslationProviderError`.
+
+#### EX66-19 — Declared operation must match message-kind-derived operation
+A mismatched request is rejected before adapter support checks.
+
+#### EX66-20 — Plain message kind maps to plain operation
+`translationOperation("plain")` returns `plain`.
+
+#### EX66-21 — Interpolation message kind maps to plain operation
+`translationOperation("interpolation")` returns `plain`.
+
+#### EX66-22 — Plural message kind maps to structured operation
+`translationOperation("plural")` returns `structured`.
+
+#### EX66-23 — Rich message kind maps to structured operation
+`translationOperation("rich")` returns `structured`.
+
+#### EX66-24 — Contextual/select machine translation is controlled-unsupported in this slice
+`translationOperation("contextual/select")` throws `UnsupportedTranslationMessageKindError`.
+
+#### EX66-25 — A locale-pair-incompatible adapter is not selected
+Routing tests reject an adapter whose `supports()` does not accept the requested Vico pair.
+
+#### EX66-26 — A plain-only adapter is not selected for a plural structured request
+Capability routing includes operation compatibility.
+
+#### EX66-27 — PR #66 contains no real machine provider adapter or credential
+Tests use fake/contract adapters only.
+
+#### EX66-28 — LocaleRulesProvider isolates locale-rule lookup from translation validation
+Plural branch discovery is exposed through a small interface.
+
+#### EX66-29 — IntlLocaleRulesProvider canonicalizes the requested translation locale
+Invalid canonicalization becomes a controlled unavailable-rules result.
+
+#### EX66-30 — Intl locale support is checked before plural-rule construction
+The implementation requires `supportedLocalesOf([canonicalLocale]).length === 1`.
+
+#### EX66-31 — Locale rules use cardinal plural categories
+`Intl.PluralRules(..., { type: "cardinal" })` is the implemented rule source.
+
+#### EX66-32 — Locale rules require an `other` branch
+An empty category set or one without `other` is rejected.
+
+#### EX66-33 — Returned plural branches are deterministically sorted
+The provider sorts the resolved category list.
+
+#### EX66-34 — Invalid or unsupported locale rules fail without English fallback
+The implementation throws `LocaleRulesUnavailableError` rather than substituting English rules.
+
+#### EX66-35 — English locale-rule coverage expects one/other
+The unit test records `["one", "other"]`.
+
+#### EX66-36 — Arabic locale-rule coverage expects the
