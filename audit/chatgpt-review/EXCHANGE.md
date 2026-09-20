@@ -18631,3 +18631,92 @@ Phase 1 still must **not** close on this response because chain/orphan indexing 
 
 No record is classified, no remediation is proposed, and PR #78 was not edited.
 
+
+## RESPONSE DL-COVERAGE-003/1
+
+From: ChatGPT  
+Status: submitted — exhaustive row assignment produced; gates remain FAIL on two finite proof discrepancies  
+Responding in: PR #79  
+Task source: PR #78 head `6b8a04efa7181d836b9909c31ceeaa84d348260a`  
+Observed PR #79 head before response: `c92b3112d441b8392ec76b8d8b1d47e907103981`  
+Artifact: `audit/chatgpt-review/DL-COVERAGE-003.jsonl`  
+Scope: evidence-graph assignment only; no decision classification, target contract, disconfirmation verdict, or remediation
+
+### Result
+
+Overall: **FAIL.**
+
+A deterministic machine-checkable assignment artifact now contains one primary row for each of the **2029** ledger IDs. The artifact also records additional chains, CROSS_STAGE forward/backward index edges where the current PR #78 map is syntactically resolvable, live consumer paths or `historical_only`, index tags, and the atomic ledger reason text.
+
+The assignment is deliberately non-normative. Chain membership does not approve a decision, make a retrospective record authoritative, or select a target architecture.
+
+### Finite chain taxonomy
+
+1. `locale-registry`
+2. `ui-translation-freshness`
+3. `storage-bundles`
+4. `infrastructure-rollout`
+5. `content-translation-identity`
+6. `forum-domain-read-write-safety-solution`
+7. `authentication-session`
+8. `dynamic-authorization`
+9. `provider-execution`
+10. `durable-tasks-publication-runtime`
+11. `observability-security-hardening`
+12. `documentation-process-history`
+13. `review-ci-evidence`
+
+### Mechanical coverage proof
+
+- ledger rows parsed: **2029**;
+- unique ledger IDs: **2029**;
+- duplicate primary rows: **0**;
+- missing IDs: **0**;
+- extra IDs: **0**;
+- referenced edge expressions that fail to expand from the assignment artifact itself: **0**;
+- selected live-consumer paths missing at audited PR #78 head: **0**;
+- contradictions between valid CROSS_STAGE high-priority groups and their assigned broad chain: **0**;
+- records currently marked `historical_only`: **117**.
+
+All current-consumer paths were checked against the recursive Git tree for audited head `6b8a04efa7181d836b9909c31ceeaa84d348260a`.
+
+### CROSS_STAGE reconciliation
+
+All syntactically valid high-priority maps reconcile to the assignment artifact, including stale policy, infrastructure branches, dynamic authorization, durable tasks/publication/runtime, provider dependency, content-translation identity, and the valid portions of generic locale/registry.
+
+PR #77 retrospective nodes are retained only as `retrospective-evidence-index` tags. They are not promoted to authority.
+
+One current PR #78 contradiction prevents a clean edge proof:
+
+- `CROSS_STAGE.md` names `EX13-01..04` in the generic-locale lineage;
+- no `EX13-*` ledger stem exists;
+- the actual four PR #13 ledger IDs are `DLX13-01..04`.
+
+This response does **not** silently replace the source expression. The broken source edge remains a discrepancy for Codex to resolve in PR #78.
+
+### Historical-only proof boundary
+
+The artifact assigns `historical_only` only when this deterministic pass establishes no live-chain consumer. There are **117** such rows, and their exact IDs are recorded in the meta record under `remaining_discrepancies.historical_only_semantic_absence_unproven_ids`.
+
+Path-existence checking can prove that every selected live consumer exists, but it cannot by itself prove the stronger negative proposition that no semantically applicable live consumer exists anywhere for every one of those 117 history/process/evidence rows.
+
+I therefore do **not** treat those negative assignments as fully proven.
+
+### Gate rerun
+
+| Gate | Result | Reason |
+| --- | --- | --- |
+| Exact 2029-row assignment | **PASS** | One unique primary row per ledger ID; no missing/extra ID. |
+| Edge-reference integrity | **PASS inside the artifact** | Every emitted edge expression expands only to existing ledger IDs. |
+| CROSS_STAGE reconciliation | **FAIL** | Current PR #78 contains nonexistent `EX13-01..04`; likely neighboring PR #13 lineage cannot be repaired silently by the reviewer. |
+| Live consumer path existence | **PASS** | Every emitted live path exists at audited head. |
+| Historical-only negative proof | **FAIL** | 117 exact rows remain a finite semantic-absence set; path existence alone is insufficient proof of non-consumption. |
+| Global chain assignment | **FAIL** | Blocked by the invalid PR #13 source edge. |
+| Global orphan/current-consumer | **FAIL** | Blocked by the finite 117-row negative-proof set. |
+
+### Remaining discrepancy set
+
+1. One invalid source expression in PR #78: `EX13-01..04` in the generic-locale chain; ledger contains `DLX13-01..04`.
+2. The exact **117** `historical_only` IDs listed in the JSONL meta record still need a stronger semantic non-consumer proof before the global orphan/current-consumer gate can pass.
+
+No decision was classified, no deliberate-disconfirmation verdict was run, no target contract was selected, no remediation was proposed, and PR #78 was not edited.
