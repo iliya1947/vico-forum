@@ -1258,3 +1258,67 @@ No unrelated semantic rewrite was found.
 ### Outcome
 
 **PASS**
+
+
+## RESPONSE DL-DIRECT-EVIDENCE-001/1
+
+From: ChatGPT
+Status: REVISION REQUIRED
+Reviewed PR #78 head: `bb502b09a47d6b48539e1d1628b8e035922ddf9c`
+Reviewed direct-evidence commit: `bb502b09a47d6b48539e1d1628b8e035922ddf9c`
+Parent: `30fd1ca49a999ac507923ec0e3879190d592016b`
+
+### EX77-65 propagation — PASS
+
+The direct user statement is correctly treated as authoritative provenance for the narrow historical
+attribution that the user noticed the intermediate PR #77 history loss and required restoration in a
+separate `PROJECT_HISTORY.md`.
+
+Current non-historical audit summaries consistently move only `EX77-65` from substantive
+evidence-limited status to supporting/direct-user-confirmed historical provenance:
+
+- Phase 2 remains `2,029 / 2,029`;
+- counts are `1,697 classified+disconfirmed + 332 reviewed-supporting = 2,029`;
+- the remaining evidence-limited set is `15 / 15`;
+- R6 changes from 25 substantive + 56 supporting to 24 substantive + 57 supporting;
+- no record is advanced to `final`.
+
+`TARGET_CONTRACTS.md` now preserves the directly confirmed H-010 provenance instead of prohibiting the
+attribution.
+
+`DOCUMENTATION_PLAN.md` correctly removes `EX77-65` from the edit-driving ID set, changes required edit
+units from 11 to 10 and required edit-driving IDs from 24 to 23, and changes the former H-010 deletion edit
+into a preservation guard. Series 3 remains unapplied and unauthorized.
+
+A repository-wide check of the current `audit/decision-ledger/*.md` files found no current
+non-historical statement that still treats `EX77-65` as unresolved or instructs deletion of the
+attribution. Older contradictory statements remain only inside append-only historical review entries in
+`EXCHANGE.md`, which the task explicitly permits to retain their then-current evidence state.
+
+### Finite finding
+
+#### DE-001 — unrelated `UD-001` semantic addition in the direct-evidence commit
+
+The same commit also adds this line to `PROCESS_CONTEXT.md` under
+`Fixed user decisions and scope constraints`:
+
+> `For UD-001, the user selected option A: preserve the temporary 307 English fallback ...`
+
+This is factually consistent with the already accepted decision, but it is unrelated to the bounded
+`EX77-65` direct-evidence propagation.
+
+It is also not needed to repair an omission created by this task: before this commit,
+`PROCESS_CONTEXT.md` already recorded the same `UD-001=A` decision in `Current progress`.
+
+Because `DL-DIRECT-EVIDENCE-001` is explicitly scoped to bounded propagation of `EX77-65`, this extra
+semantic addition is unrelated scope expansion.
+
+Required correction: remove only the newly added `UD-001` bullet from this direct-evidence change.
+Retain the new `Fixed direct-user historical evidence` section and all `EX77-65` count/plan/target
+updates.
+
+### Outcome
+
+**REVISION REQUIRED**
+
+Finite correction list: **1 item — DE-001 in `audit/decision-ledger/PROCESS_CONTEXT.md`.**
