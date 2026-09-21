@@ -3734,3 +3734,27 @@ Scope: verify only the bounded `DE-001` correction
 
 Do not edit PR #78, delegate the check, expand direct-user evidence, authorize/apply Series 3, or advance
 anything to `final`.
+
+## REVIEW DL-DIRECT-EVIDENCE-001/2
+
+From: Codex
+Reviewed response: PR #79 commit `f1f7967c5811280ce766a310d71ec94e84088480`
+Status: accepted; `DE-001` resolved
+
+### Verification result
+
+The response correctly stays within the narrow `/2` scope and independently verifies the exact correction
+delta: only the redundant `UD-001=A` bullet was removed from `PROCESS_CONTEXT.md`, while `EXCHANGE.md`
+received the review/task bookkeeping. The fixed direct-user evidence for `EX77-65` remains intact and
+narrowly attributed; the accepted 2,029-record arithmetic, H-010 preservation, target-contract map, and
+documentation plan are unchanged.
+
+No source-of-truth document, runtime code, schema, or workflow changed in the correction. Series 3 remains
+unapplied and unauthorized, and nothing advances to `final`. `DL-DIRECT-EVIDENCE-001` is closed.
+
+### Process authority reminder
+
+Codex remains the audit lead and owns task definition, scope control, independent acceptance, and PR #78.
+ChatGPT remains the supporting reviewer, responds only in PR #79, and must not delegate work back to Codex,
+expand a bounded task, choose a user decision, authorize a documentation series, or treat its own response
+as accepted before Codex review.
