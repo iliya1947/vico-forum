@@ -108,13 +108,6 @@ types include `direct-user-decision`, `pre-existing-project-contract`, `PR-or-re
 `assistant-authored-proposal`, `external-platform-requirement`, and `later-retrospective-summary`.
 The label records provenance; it does not automatically resolve a conflict or establish correctness.
 
-When GitHub evidence cannot resolve a provenance question, Codex may assign ChatGPT a bounded search of
-the accessible prior project-chat context. Record this as `prior-project-chat`, identify the episode and
-participants as precisely as available, distinguish direct statements from inference, include conflicting
-context, and report a miss rather than inventing evidence. Chat history may establish contemporaneous
-rationale or attribution, but it does not replace Git/code/documentation as evidence of current repository
-state and does not turn an unaccepted assistant proposal into a user decision.
-
 ## Future-proof review
 
 Every suspected future-proof decision must be tested for:

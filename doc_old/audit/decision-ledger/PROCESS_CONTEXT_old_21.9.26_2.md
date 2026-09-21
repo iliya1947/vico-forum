@@ -110,18 +110,9 @@ Do not use one universal source ranking. Record evidence by the question it answ
 
 Allowed provenance labels include `direct-user-decision`, `pre-existing-project-contract`,
 `PR-or-review-discussion`, `assistant-authored-proposal`, `external-platform-requirement`, and
-`later-retrospective-summary`. For this audit, `prior-project-chat` is also allowed when ChatGPT can retrieve
-the relevant prior project conversation. It may establish who said what, the reasons discussed at the time,
-whether a choice was temporary/final/compromise, explicit user acceptance, discovery attribution, and
-whether an argument appeared only later. The response must identify the episode as precisely as available,
-separate direct statements from reconstruction, report contrary/ambiguous context, and say explicitly when
-the accessible chat history is insufficient.
-
-Prior-chat evidence supplements rather than replaces Git/PR/code/documentation evidence. It cannot prove
-the repository's current code or state, and an assistant-authored chat proposal is not a user decision
-unless the available conversation records user acceptance. A committed document proves that text was
-committed; it does not prove that the text had user authority or was correct. Merge, green CI, deployment,
-and later use likewise do not establish approval or correctness.
+`later-retrospective-summary`. A committed document proves that text was committed; it does not prove
+that the text had user authority or was correct. Merge, green CI, deployment, and later use likewise
+do not establish approval or correctness.
 
 Conflicts must remain visible. Current documentation cannot validate its own history, tests can encode
 regressions, state files can contain false or laundered conclusions, and later corrections must not be
