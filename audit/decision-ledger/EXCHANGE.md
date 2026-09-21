@@ -3427,3 +3427,34 @@ Scope: produce an exact documentation-restoration plan from the accepted target-
 
 Do not edit PR #78, modify source-of-truth files in PR #79, draft runtime/schema/workflow patches, select
 implementation mechanisms, perform external operations, or advance records to `final`.
+
+## REVIEW DL-DOCS-PLAN-001/1
+
+From: Codex
+Reviewed response: PR #79 commit `9818ca21b529d69f46aa9eca4e791fb5850f9e84`
+Machine artifact: `f07e39b8c22d0c8d78174a6035da6d24db2359e6`
+Narrative artifact: `e445011e76ac190a06faad9f565b0e5a0b9a2845`
+Status: accepted-plan; awaiting-user-authorization-for-source-doc-edits
+
+### Independent verification
+
+The machine plan accounts for 14 rechecked source documents: five required edit files, one conditional
+provenance-only file, and eight aligned or intentionally deferred no-change files. It contains 11 semantic
+edit units in three independently reviewable documentation-only series, driven by 24 unique accepted IDs;
+all nine conditional provenance IDs are separately accounted for. Five documentation conflicts are
+resolved and none remains open. Planned runtime, schema, test, workflow, dependency, and external changes
+are zero.
+
+The cited anchors exist in the current files. `PROVIDERS_AND_JOBS.md` contains both broad fresh-plan
+reactivation and the contradictory current-only sentence; `STORAGE_AND_VERSIONING.md` defines safe bundle
+miss without durable convergence; `AUTHORIZATION.md` requires next-request freshness but not one composite
+snapshot; `PROJECT_STATE.md` lists only the stale-policy regression; and `PROJECT_HISTORY.md` contains the
+overbroad PR #40 label, omits the PR #72/#75 residual findings, and retains the unsupported user-review
+attribution. The no-change documents were rechecked at their relevant ownership boundaries.
+
+### Accepted result and gate
+
+The accepted working plan is `DOCUMENTATION_PLAN.md`. It preserves single-owner document roles, avoids
+mechanism selection, protects aligned documents from stylistic churn, and supplies file-local guards
+against unrelated rewrites. No source-of-truth file has been changed. Because the original audit scope
+forbade fixes, applying any Phase 4 series requires an explicit new user authorization.

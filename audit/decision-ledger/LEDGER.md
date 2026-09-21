@@ -244,6 +244,16 @@ The accepted working map is maintained in `TARGET_CONTRACTS.md`. It is not a pro
 does not authorize documentation edits, implementation mechanics, external operations, or final ledger
 status. Its role is to constrain the next documentation-restoration plan against the completed audit.
 
+### Documentation-restoration planning (`DL-DOCS-PLAN-001`)
+
+The independently reviewed plan identifies five required semantic edit files, one conditional
+provenance-only file, and eight aligned/no-change documents. Its 11 edit units are divided into three
+documentation-only series with file-local diff guards. The durable working plan is
+`DOCUMENTATION_PLAN.md`.
+
+No source-of-truth documentation has been changed. Applying the plan is a separate Phase 4 action and
+remains gated on explicit user authorization.
+
 ## Record template
 
 ```text

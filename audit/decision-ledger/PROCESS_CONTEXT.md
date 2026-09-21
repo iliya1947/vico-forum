@@ -178,7 +178,7 @@ Using the completed audit and recorded user decisions, define what should remain
 what must be restored, and which work belongs to future stages. A target hypothesis must not steer the
 evidence extraction that is supposed to test it.
 
-### Phase 4 — Documentation restoration (next; planning only until reviewed)
+### Phase 4 — Documentation restoration (plan complete; awaiting user authorization)
 
 Repair product, architecture, roadmap, subsystem, history, and state documentation to reflect the
 approved target. Do not roll all documentation back mechanically to PR #12, and do not use current
@@ -277,7 +277,8 @@ required restoration remain open until full-history and cross-stage review.
 - Target-contract formation is complete: 13 subsystem contracts and 51 target states reconcile all
   accepted bad corrections, current defects, evidence limits, stage boundaries, and user decisions with
   no unresolved target conflict. The accepted working map is `TARGET_CONTRACTS.md`; exact documentation
-  restoration planning is next, but no source-of-truth document has been changed.
+  restoration planning is complete in `DOCUMENTATION_PLAN.md`, but no source-of-truth document has been
+  changed. Applying its three documentation-only series requires explicit user authorization.
 - No project decision has reached final status and no product/source-of-truth documentation or runtime
   code has been corrected by this audit branch.
 
