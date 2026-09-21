@@ -130,6 +130,7 @@ restoration must not rewrite them for stylistic consistency.
 
 The plan is complete and independently reviewed. The user authorized Series 1 on 2026-09-21; its bounded
 documentation changes have been applied in PR #78 and independently accepted after correction of the
-audit-only `DR-001` progress statement. Series 2 and Series 3 remain unapplied and require subsequent
-authorization/review according to the process. Each series must remain documentation-only, use a full-file
-diff guard against unrelated rewrites, and be reviewed before the next series begins.
+audit-only `DR-001` progress statement. The user then authorized Series 2 on 2026-09-21; its bounded
+`docs/auth/AUTHORIZATION.md` change is applied in PR #78 and awaits independent review. Series 3 remains
+unapplied and requires subsequent authorization/review. Each series must remain documentation-only, use a
+full-file diff guard against unrelated rewrites, and be reviewed before the next series begins.

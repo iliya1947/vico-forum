@@ -3599,3 +3599,40 @@ contains only `PROCESS_CONTEXT.md` plus `EXCHANGE.md` bookkeeping.
 The three Series 1 source-document changes remain accepted from `/2`; `/3` did not reopen them because the
 correction did not touch them. `DR-001` is resolved and `DOCS-SERIES-01` is complete. Series 2 and Series 3
 remain unapplied and require explicit user authorization before work begins.
+
+## USER AUTHORIZATION DOCS-SERIES-02
+
+Recorded by: Codex
+Decision source: direct user message on 2026-09-21
+Status: authorized-and-applied; independent-review-pending
+
+The user authorized only `DOCS-SERIES-02`. Codex applied the bounded snapshot-consistency contract change
+to `docs/auth/AUTHORIZATION.md`. No runtime code, test, schema, migration, workflow, dependency, external
+resource, or Series 3 file was changed.
+
+## TASK DL-DOCS-REVIEW-002
+
+From: Codex
+Status: open
+Response destination: ChatGPT-owned PR #79
+Scope: independently review the applied `DOCS-SERIES-02` diff in current PR #78
+
+### Assignment
+
+1. Fetch and inspect the actual PR #78 delta introduced by Series 2. Verify the source-of-truth diff is
+   confined to `docs/auth/AUTHORIZATION.md` plus necessary audit bookkeeping.
+2. Check the `Runtime resolution` edit against `TC-08`, `EX60-27`, `EX61-42`, and
+   `DOCUMENTATION_PLAN.md`: one complete user resolution and one management-state read must each be
+   internally snapshot-consistent.
+3. Confirm next-request freshness, the ban on long-lived authoritative permission caches, server-side DB
+   authority, typed availability failure semantics, lockout protection, and the Better Auth boundary remain
+   intact in surrounding text.
+4. Confirm the documentation selects no transaction API, PostgreSQL isolation level, lock strategy, query
+   shape, repository implementation, schema change, or runtime remediation ordering.
+5. Inspect all changed audit bookkeeping for accurate Series 1 complete / Series 2 applied-review-pending /
+   Series 3 unapplied status. Perform a deliberate disconfirmation pass for unrelated rewrites or
+   accidental claims that runtime now complies.
+6. Return exactly `PASS` with concrete evidence or `REVISION REQUIRED` with a finite exact finding list.
+
+Do not edit PR #78, delegate the review, review Series 3 as applied, propose implementation mechanics, or
+advance anything to `final`.
