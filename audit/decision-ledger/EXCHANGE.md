@@ -3458,3 +3458,43 @@ The accepted working plan is `DOCUMENTATION_PLAN.md`. It preserves single-owner 
 mechanism selection, protects aligned documents from stylistic churn, and supplies file-local guards
 against unrelated rewrites. No source-of-truth file has been changed. Because the original audit scope
 forbade fixes, applying any Phase 4 series requires an explicit new user authorization.
+
+## USER AUTHORIZATION DOCS-SERIES-01
+
+Recorded by: Codex
+Decision source: direct user message on 2026-09-21
+Status: authorized-and-applied; independent-review-pending
+
+The user authorized only `DOCS-SERIES-01`. Codex applied bounded documentation changes to:
+
+- `docs/translation/PROVIDERS_AND_JOBS.md`;
+- `docs/translation/STORAGE_AND_VERSIONING.md`;
+- `PROJECT_STATE.md`.
+
+No runtime code, test, schema, migration, workflow, dependency, external resource, or Series 2/3 file was
+changed.
+
+## TASK DL-DOCS-REVIEW-001
+
+From: Codex
+Status: open
+Response destination: ChatGPT-owned PR #79
+Scope: independently review the applied `DOCS-SERIES-01` diff in current PR #78
+
+### Assignment
+
+1. Verify the PR #78 diff is confined to the three authorized source documents plus Codex audit-workspace
+   bookkeeping. Reject any unrelated semantic rewrite.
+2. Check `PROVIDERS_AND_JOBS.md` against `TC-10` and `EX72-20/45..50`: fresh planning must support
+   `A → B → A`, while old Queue delivery cannot self-reactivate, completed remains terminal, and
+   monotonic/claim/publication fencing remains intact. Flag any accidental implementation-mechanism choice.
+3. Check `STORAGE_AND_VERSIONING.md` against `TC-03` and `EX75-56..59`: immediate safe miss/fallback and
+   no request-time provider call remain; durable convergence is required without selecting refresh,
+   backfill, deletion, migration, or orchestration mechanics.
+4. Check `PROJECT_STATE.md` for factual current-state wording: retain the PR #40 limitation, disclose the
+   PR #72/#75 limitations, preserve implemented capability bullets, avoid historical narrative, and avoid
+   roadmap/remediation ordering.
+5. Reconcile cross-document terminology and distinguish contract target from current noncompliance. Run a
+   deliberate disconfirmation pass for overclaiming, contradiction, or premature mechanism selection.
+6. Return PASS or a finite correction list. Do not edit PR #78, propose runtime remediation, review Series
+   2/3 as applied, or advance any record to `final`.

@@ -161,9 +161,13 @@ claim/lease/stale/completion timestamps, которые определяют lif
 durable generation head и монотонный номер каждой впервые увиденной stable identity. Planning
 новой identity и conditional publication берут row lock одного head в общей transaction
 boundary. Поэтому concurrent planning сериализуется в однозначный persistent порядок, а
-publication разрешена только task, чей номер всё ещё равен `currentGeneration`. Повтор уже
-известной старой identity сохраняет исходный номер и не передвигает head: `stale` identity
-может быть reactivated только пока она сама остаётся current; `completed` остаётся terminal.
+publication разрешена только task, чей номер всё ещё равен `currentGeneration`. Само обнаружение
+уже известной stale identity или старая Queue delivery не передвигают head и не делают stale work
+актуальной. Но более поздний eligible fresh generation plan может снова выбрать ту же stable
+identity после промежуточной identity (`A → B → A`). Такая новая planning decision обязана
+получить более новый authoritative ordering position и может сделать stale identity
+current/reactivated, не переиспользуя её старую позицию. Точное storage/schema представление новой
+planning occurrence не является частью этого контракта. `completed` identity остаётся terminal.
 `sourceFingerprint`, `taskIdentity` и `generationPolicyVersion` участвуют в identity/validation,
 но не сравниваются как хронологические значения.
 
