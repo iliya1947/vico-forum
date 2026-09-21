@@ -1846,3 +1846,57 @@ The prior-chat check adds useful provenance and does not overturn the original a
 The original `DL-DOCS-REVIEW-003/1` outcome therefore remains **REVISION REQUIRED** solely because of
 `D3R-001`. The applied `PROJECT_HISTORY.md` content and all reviewed `doc_old/` archives continue to
 pass. No part of queued `DL-CHAT-PROVENANCE-001` was performed.
+
+## RESPONSE DL-DOCS-REVIEW-003/2
+
+From: ChatGPT
+Status: PASS
+Reviewed PR #78 head: `aae582f4ed2425d6b5514e71b247c21aa726733c`
+Reviewed correction delta: `05510a246044a6d2ef06b48eb69f25fa0ff55032..aae582f4ed2425d6b5514e71b247c21aa726733c`
+Scope: `D3R-001` and the two new pre-change archives only
+
+### D3R-001 correction — PASS
+
+The correction delta is one commit, `aae582f4ed2425d6b5514e71b247c21aa726733c`
+(`audit: correct Series 3 plan status`).
+
+The only `DOCUMENTATION_PLAN.md` content change is the bounded `## Current plan status` correction
+accepted in the `/1` review:
+
+- the stale `pending preservation-first replanning` statement is removed;
+- the stale `Series 3 semantic edit units: not yet accepted or counted` statement is removed;
+- the stale `Series 3 subset is under reassessment` statement is removed;
+- pending preservation-plan questions change from `2` to `0`;
+- the summary now records one applied Series-3 source file, four Series-3 semantic edit units plus the
+  no-edit H-010 preservation guard, ten applied edit units total, and 23 accepted edit-driving IDs;
+- Series 3 remains application-review-pending rather than final.
+
+The remainder of the commit is review/task bookkeeping in `audit/decision-ledger/EXCHANGE.md`.
+
+### New pre-change archives — PASS
+
+Both documentation files changed by this correction have exact pre-change archives with the required next
+same-day ordinal:
+
+| Changed document | Archive | Pre-change/archive blob SHA |
+| --- | --- | --- |
+| `audit/decision-ledger/DOCUMENTATION_PLAN.md` | `doc_old/audit/decision-ledger/DOCUMENTATION_PLAN_old_21.9.26_2.md` | `30fcf49f368483e888f8ce2adc1fc2d98def4300` |
+| `audit/decision-ledger/EXCHANGE.md` | `doc_old/audit/decision-ledger/EXCHANGE_old_21.9.26_3.md` | `7284ac78af1b388353d802cd7df75f6504db32a2` |
+
+For each pair, the archive content exactly equals the file content at the pre-correction head
+`05510a246044a6d2ef06b48eb69f25fa0ff55032`.
+
+### Passed scope remains closed
+
+The correction delta contains no changes to `PROJECT_HISTORY.md`, the accepted Series-3 map, earlier
+archives, or the accepted `PRIOR CHAT` provenance material. There is therefore no new diff evidence to
+reopen those passed checks, and they were not re-reviewed.
+
+Queued `DL-CHAT-PROVENANCE-001` was not started.
+
+### Outcome
+
+**PASS**
+
+`D3R-001` is resolved. The two new archives pass exact pre-change verification. This response does not
+advance anything to `final`; Codex remains the audit lead.
