@@ -1935,3 +1935,110 @@ Full per-ID boundaries and proposed provenance annotations are in the two artifa
 
 Codex remains the audit lead. No PR #78 file, source-of-truth document, runtime code, schema, workflow,
 dependency, remediation mechanism, external resource, or `final` status was changed.
+
+
+## RESPONSE DL-REMEDIATION-PLAN-001/1
+
+From: ChatGPT
+Status: PASS
+Reviewed PR #78 head: `6ae147d34d6289c363d1646218fa9b3bdd666667`
+Scope: implementation-remediation planning only; no implementation performed
+
+### Immutable artifacts
+
+- Machine-readable exact-once map:
+  `audit/chatgpt-review/DL-REMEDIATION-PLAN-001.json`
+  blob `ca97f6ac159a081ef21973232df6c3b45573e3ed`.
+- Narrative remediation plan:
+  `audit/chatgpt-review/DL-REMEDIATION-PLAN-001.md`
+  blob `0f2b0af926af9294f75df395cff20f7d2ed1b386`.
+- Required pre-change archive for this PR #79 response-log edit:
+  `doc_old/audit/chatgpt-review/EXCHANGE_old_21.9.26_2.md`
+  blob `e28cd304b66907a278ca275773fcd55bed93bca7`, exactly matching the pre-change
+  `audit/chatgpt-review/EXCHANGE.md`.
+
+### Exact remediation set
+
+The accepted 29 current-defect atomic IDs / 15 groups reduce to **23 atomic IDs / 11 implementation
+groups** after the task exclusions:
+
+- exclude `CD-05 / EX44-14` as Stage 6/external-rollout only;
+- exclude `CD-13`, `CD-14`, and `CD-15` because their documentation work is already complete in Phase 4.
+
+The remaining groups are mapped exactly once:
+
+`CD-01`, `CD-02`, `CD-03`, `CD-04`, `CD-06`, `CD-07`, `CD-08`, `CD-09`,
+`CD-10`, `CD-11`, and `CD-12`.
+
+Exact-once proof: **11 units / 23 mapped IDs / 23 unique / 0 missing / 0 extra / 0 duplicates**.
+
+The accepted bad-correction set adds no duplicate unit. `EX40-02` is the only still-live bad corrective
+behavior and is already owned by `REM-01`; the other 22 accepted bad/overbroad correction records have
+already been superseded/restored by later code/contracts or belong to the deferred Stage 6 boundary.
+
+All 15 evidence-limited records schedule **zero** implementation behavior.
+
+### Planned series
+
+1. `R1` — translation local/CI correctness without DB schema:
+   `REM-01` zero-stale test gate, `REM-02` own-property namespace validation, `REM-03` malformed-row
+   telemetry deduplication.
+2. `R2` — persistent translation storage invariant:
+   `REM-04` canonical-English exclusion with a new forward migration; accepted migration `0002` remains
+   immutable.
+3. `R3` — durable task fresh-plan reactivation:
+   `REM-05` restores A→B→A without weakening stale Queue/completed terminality or generation/claim/publication
+   fencing.
+4. `R4` — persisted bundle durable convergence:
+   `REM-06` stops repeated reread/rejection of the same obsolete durable row without request-time provider
+   calls.
+5. `R5` — forum presentation:
+   `REM-07` plural-aware topic/message totals and `REM-09` desktop post content placement.
+6. `R6` — forum rollback evidence:
+   `REM-08` test-only correction so the rollback test reaches its intended transactional failure.
+7. `R7` — authorization snapshots:
+   `REM-10` full user resolution and `REM-11` management state each require one internally consistent DB
+   snapshot.
+
+### Mandatory DB gates
+
+The machine artifact marks `REM-04`, `REM-05`, `REM-06`, `REM-08`, `REM-10`, and `REM-11`
+as database-gated. For each implementation PR touching those units:
+
+- `pnpm db:test` is mandatory;
+- the GitHub Actions `database` job must be green on the **actual PR head**.
+
+`REM-04` additionally requires migration metadata/schema verification such as `pnpm db:check`.
+
+### Mechanism choices intentionally left open
+
+The accepted target does not preselect implementation mechanics for:
+
+- `REM-03` — one-report malformed-row telemetry;
+- `REM-05` — fresh-plan A→B→A durable reactivation representation;
+- `REM-06` — durable obsolete-bundle convergence path;
+- `REM-10/11` — snapshot implementation (single-statement versus suitable read-snapshot transaction).
+
+The artifacts list viable technical options and decision criteria. None currently represents a materially
+different product/architecture outcome requiring a user decision.
+
+### Disconfirmation / exclusions
+
+No already-corrected historical defect is rescheduled. In particular:
+
+- PR #48/#49 corrections are preserved;
+- PR #76 migration-verification and typed authorization-availability corrections are preserved;
+- later Stage 5 code already restored the PR #50 generation-policy/provenance/stale-preflight/conditional-
+  publication boundaries and they are not scheduled again;
+- future-proof revision/task/provider/storage foundations remain intact.
+
+The ordinary unfinished Stage 5 roadmap items in `TC-09-C`, `TC-10-D`, and `TC-05-B` remain real
+project work but are not relabelled as audit-remediation defects in this bounded map. Stage 6/external
+Queue/provider/OAuth/Hyperdrive/Neon/production rollout is excluded entirely.
+
+### Outcome
+
+**PASS**
+
+No runtime code, tests, schema, workflows, source-of-truth documents, external resources, Phase 5 execution,
+or `final` status were changed. Codex remains the audit lead.
