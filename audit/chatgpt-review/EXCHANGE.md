@@ -1546,3 +1546,80 @@ concise historical links for PR #72/#75, and leave full current-state material i
 
 After the three plan/determinism corrections above, Codex can resubmit the bounded plan for review.
 This response does not authorize or apply `DOCS-SERIES-03`.
+
+
+## RESPONSE DL-DOCS-PLAN-002/2
+
+From: ChatGPT
+Status: PASS
+Reviewed PR #78 head: `dcf01e576d37c85927e3d2f1546851b7917f2077`
+Reviewed correction delta: `8bb90c3850001d2184e325d383fdb917805c4d63..dcf01e576d37c85927e3d2f1546851b7917f2077`
+Scope: accepted finite Series-3 map and direct-user archive-name correction only
+
+### Scope verification
+
+The correction delta is exactly one commit and changes only four audit-workspace files:
+
+- `audit/decision-ledger/DOCUMENTATION_PLAN.md`;
+- `audit/decision-ledger/EXCHANGE.md`;
+- `audit/decision-ledger/PROCESS_CONTEXT.md`;
+- `audit/decision-ledger/README.md`.
+
+No source-of-truth document changed. `PROJECT_HISTORY.md`, `PROJECT_STATE.md`, runtime code, tests,
+schema, workflows, dependencies, and external resources are untouched. No `doc_old/` archive was created.
+
+### Finite Series-3 map — PASS
+
+The current finite map preserves the accepted preservation-first result:
+
+- the existing high-level PR #40 historical wording remains visible and receives only a later dated audit
+  reassessment;
+- H-001 and its original chronology/conclusions remain visible; the later reassessment narrows the accepted
+  defect to the zero-stale gate and records that canary removal is not independently established as
+  defective and strict laundering/backdating was not proven;
+- H-008 remains intact and receives only a concise historical PR #72 relationship link;
+- H-010 remains unchanged and preserves the directly confirmed user-review attribution;
+- H-001..H-010 remain stable; PR #75 is represented additively as H-011 rather than by renumbering existing
+  history;
+- every reassessment is required to be explicitly dated and labelled as subsequent, so later audit
+  conclusions are not retroactively presented as knowledge held at the original PR date.
+
+### PR #72 / PR #75 ownership — PASS
+
+The plan limits PROJECT_HISTORY additions to concise historical discovery/relationship links:
+
+- PR #72: ordering/fencing remains a justified correction; history records only that its review exposed
+  the residual fresh-plan `A → B → A` gap and that the audited #72–#77 chain did not close it;
+- PR #75: history records only that persisted verified-bundle runtime reads were introduced, review exposed
+  the durable convergence gap, and the later audit confirmed that relationship.
+
+Detailed current behavior, current status, remediation choices, storage/schema mechanics, and Series
+bookkeeping are explicitly excluded from PROJECT_HISTORY and remain owned by `PROJECT_STATE.md` and the
+subsystem contracts. No full current limitation is proposed for duplication.
+
+### Direct-user archive naming — PASS
+
+The current rule is deterministic and matches the user's decision:
+
+- preserve the original relative directory under `doc_old/`;
+- append `_old_D.M.YY_N` immediately before the extension;
+- `N` is per document and per date;
+- numbering starts at `1`;
+- each additional same-document/same-date edit increments the ordinal;
+- choose the next sequence before editing;
+- never overwrite an existing archive.
+
+The examples correctly use
+`doc_old/PROJECT_HISTORY_old_21.9.26_1.md`,
+`doc_old/PROJECT_HISTORY_old_21.9.26_2.md`, and
+`doc_old/docs/auth/AUTHORIZATION_old_21.9.26_1.md`.
+
+Per the user's resolution, `DP2-002` and `DP2-003` are not reopened. The current correction delta
+introduces no new concrete contradiction requiring either issue to be revisited.
+
+### Outcome
+
+**PASS**
+
+`DL-DOCS-PLAN-002/2` passes. This response does not authorize or apply `DOCS-SERIES-03`, does not
+create `doc_old/`, and does not modify any source-of-truth document.
