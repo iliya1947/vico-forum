@@ -246,23 +246,6 @@ The accepted working map is maintained in `TARGET_CONTRACTS.md`. It is not a pro
 does not authorize documentation edits, implementation mechanics, external operations, or final ledger
 status. Its role is to constrain the next documentation-restoration plan against the completed audit.
 
-### Prior-project-chat provenance recheck (`DL-CHAT-PROVENANCE-001`)
-
-The finite 15-record evidence-limited set was rechecked exactly once against ChatGPT's accessible prior
-project-chat context. The set is the accepted 16-ID target set minus `EX77-65`, whose later direct-user
-evidence had already moved it to reviewed-supporting provenance. Coverage passed at 15 rows / 15 unique /
-zero missing / zero extra / zero duplicates.
-
-Results: seven `direct-chat-evidence`, seven `supporting-only`, zero `contradictory`, and one explicit
-`no-sufficient-chat-evidence`. The strongest new material is contemporaneous PR #45 discussion, but it
-records reported observations and acceptance context rather than the raw external diagnostic/run/session
-artifacts required by the accepted disconfirmation profiles. Therefore all 15 classifications remain
-`insufficient-evidence`; only their provenance annotations become more precise.
-
-Phase 2 arithmetic remains 1,697 classified+disconfirmed plus 332 reviewed-supporting = 2,029. No target
-contract changes, remediation choice, Phase 5 implementation, or `final` advancement follows from this
-supplemental provenance pass.
-
 ### Documentation-restoration planning (`DL-DOCS-PLAN-001`)
 
 The independently reviewed plan identifies five required semantic edit files, one conditional
@@ -271,12 +254,11 @@ its 10 edit units are divided into three
 documentation-only series with file-local diff guards. The durable working plan is
 `DOCUMENTATION_PLAN.md`.
 
-Series 1 was applied and independently accepted: the Stage 5A provider/jobs and storage contracts were
-restored and their current implementation limitations were added to `PROJECT_STATE.md`. Series 2 was
+Series 1 has now been applied and independently accepted: the Stage 5A provider/jobs and storage contracts
+were restored and their current implementation limitations were added to `PROJECT_STATE.md`. Series 2 was
 authorized, applied, and independently accepted: `docs/auth/AUTHORIZATION.md` now owns the composite
-snapshot-consistency target while runtime noncompliance remains open. The revised preservation-first Series
-3 was also authorized, applied with pre-change archives, and independently accepted after its narrow
-bookkeeping correction. No runtime remediation has begun.
+snapshot-consistency target while runtime noncompliance remains open. Series 3 remains unapplied and gated
+on explicit user authorization. No runtime remediation has begun.
 
 ## Record template
 
