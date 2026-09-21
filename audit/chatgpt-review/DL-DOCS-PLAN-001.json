@@ -1,0 +1,613 @@
+{
+  "type": "DL-DOCS-PLAN-001",
+  "status": "submitted-documentation-restoration-plan",
+  "task_source": {
+    "pr": 78,
+    "head": "c3fa8881edf7f93c3ff150c57ff6b610e84e5dda",
+    "task": "DL-DOCS-PLAN-001"
+  },
+  "response_base": {
+    "pr": 79,
+    "head_before_response": "8b8e9f95d4c316ba5e1fd370c387f5d2cc3e3470"
+  },
+  "audited_main": "3282aa51f47f36131d35c34ee79ca37cb2ce434f",
+  "accepted_target": {
+    "source": "audit/decision-ledger/TARGET_CONTRACTS.md",
+    "pr78_head": "c3fa8881edf7f93c3ff150c57ff6b610e84e5dda",
+    "phase": "Phase 3 complete"
+  },
+  "protocol_application": {
+    "P1": false,
+    "P2": true,
+    "P3": "audit-response will require Codex independent review before source-doc changes",
+    "P4": false,
+    "reason_P4": "User requested the bounded DL-DOCS-PLAN-001 task, not a full documentation audit."
+  },
+  "source_document_review": {
+    "fully_rechecked_count": 14,
+    "required_edit_files": [
+      "docs/translation/PROVIDERS_AND_JOBS.md",
+      "docs/translation/STORAGE_AND_VERSIONING.md",
+      "docs/auth/AUTHORIZATION.md",
+      "PROJECT_STATE.md",
+      "PROJECT_HISTORY.md"
+    ],
+    "conditional_provenance_files": [
+      "docs/database/HYPERDRIVE.md"
+    ],
+    "no_change_files": [
+      "docs/translation/UI_TRANSLATION.md",
+      "docs/translation/LOCALES.md",
+      "docs/database/MIGRATIONS.md",
+      "PROJECT.md",
+      "ROADMAP.md",
+      "TRANSLATION_ARCHITECTURE.md",
+      "README.md",
+      "docs/translation/CONTENT_TRANSLATION.md"
+    ],
+    "documents": [
+      "PROJECT_HISTORY.md",
+      "PROJECT_STATE.md",
+      "docs/translation/PROVIDERS_AND_JOBS.md",
+      "docs/translation/STORAGE_AND_VERSIONING.md",
+      "docs/auth/AUTHORIZATION.md",
+      "docs/database/HYPERDRIVE.md",
+      "docs/translation/UI_TRANSLATION.md",
+      "docs/translation/LOCALES.md",
+      "docs/database/MIGRATIONS.md",
+      "PROJECT.md",
+      "ROADMAP.md",
+      "TRANSLATION_ARCHITECTURE.md",
+      "README.md",
+      "docs/translation/CONTENT_TRANSLATION.md"
+    ]
+  },
+  "edit_files": [
+    {
+      "path": "docs/translation/PROVIDERS_AND_JOBS.md",
+      "category": "required-correction",
+      "target_contracts": [
+        "TC-10"
+      ],
+      "atomic_ids": [
+        "EX72-20",
+        "EX72-45",
+        "EX72-46",
+        "EX72-47",
+        "EX72-48",
+        "EX72-49",
+        "EX72-50"
+      ],
+      "exact_current_anchors": [
+        "## Idempotency и stale-task guards (`JOB-03`)",
+        "`stale/cancelled` является terminal состоянием для текущей Queue delivery и её retry ... Если более поздний fresh generation plan снова определяет ровно ту же identity как актуальную ... durable store может атомарно вернуть соответствующую stale task в `pending` ...",
+        "Повтор уже известной старой identity сохраняет исходный номер и не передвигает head: `stale` identity может быть reactivated только пока она сама остаётся current; `completed` остаётся terminal."
+      ],
+      "why_existing_wording_is_insufficient": "The section already states the broad fresh-plan reactivation rule, but its later generation-order paragraph narrows reactivation to an identity that is already current. Accepted EX72-49/50 confirms this is an unresolved contract contradiction, not merely incomplete prose.",
+      "replacement_semantics": [
+        "Keep stale Queue delivery/retry terminal: a delivery must never self-reactivate its stale task.",
+        "Keep completed stable identity terminal.",
+        "A later fresh planning decision may select the same previously stale stable identity after an intervening identity (A→B→A).",
+        "Monotonic ordering/current-generation and claim fencing must still distinguish the newer planning decision from older work; documentation must not require an old ordering position/head rule that makes A→B→A impossible.",
+        "Do not specify whether the implementation updates a row generation, creates a planning occurrence, changes head representation, or uses another mechanism; that belongs to Phase 5 remediation."
+      ],
+      "cross_document_sync": [
+        "PROJECT_STATE.md current limitation disclosure",
+        "PROJECT_HISTORY.md PR #72 current finding"
+      ],
+      "verification": [
+        "Future diff must be confined to the JOB-03 stale/reactivation/generation-order paragraph plus mechanical file metadata if used.",
+        "JOB-01/02/04/05/06, provider routing, security, and exactly-once disclaimer must remain unchanged.",
+        "The final text must contain both constraints: stale Queue delivery cannot self-reactivate, and fresh planning can make A current again after A→B.",
+        "Reject any wording that selects an implementation/schema mechanism."
+      ],
+      "disconfirmation": "No existing later wording resolves this: the first paragraph says broad fresh-plan reactivation, while the later paragraph explicitly re-narrows it. The edit is required by accepted current defect/contract-conflict IDs and does not promote supporting EX72-51..53 into new requirements."
+    },
+    {
+      "path": "docs/translation/STORAGE_AND_VERSIONING.md",
+      "category": "required-correction",
+      "target_contracts": [
+        "TC-03"
+      ],
+      "atomic_ids": [
+        "EX75-56",
+        "EX75-57",
+        "EX75-58",
+        "EX75-59"
+      ],
+      "supporting_ids": [
+        "EX75-60",
+        "EX75-61",
+        "EX75-62"
+      ],
+      "exact_current_anchors": [
+        "## Bundles и cache (`STO-05`)",
+        "### Stage 3C / Stage 5 implementation boundary",
+        "Runtime пересчитывает эту identity из текущего deploy при verification. Поэтому изменение либо удаление local override меняет ожидаемую version, и старый bundle уходит в miss path."
+      ],
+      "why_existing_wording_is_insufficient": "Current text correctly defines immediate safe miss/fallback but never requires durable convergence of an obsolete persisted bundle. Accepted EX75-56..59 confirms repeated requests can otherwise continue encountering the same obsolete row.",
+      "replacement_semantics": [
+        "Keep the current safe miss behavior as the request-time availability fallback.",
+        "Add a storage-level invariant that a persisted bundle rejected because its format/current-deploy semantic identity is obsolete must have a durable convergence path to a current representation.",
+        "Repeated ordinary reads must not be the only mechanism indefinitely encountering/rejecting the same obsolete row.",
+        "The convergence path must not require a provider call from the request path.",
+        "Do not choose refresh trigger, backfill job, delete-and-rebuild strategy, migration shape, or orchestration in documentation restoration; exact mechanics remain Phase 5."
+      ],
+      "cross_document_sync": [
+        "PROJECT_STATE.md current limitation disclosure",
+        "PROJECT_HISTORY.md PR #75 current finding"
+      ],
+      "verification": [
+        "Future diff must be confined to STO-05 Stage 3C/Stage 5 bundle-currentness/convergence text plus mechanical metadata if used.",
+        "Cache identity, LocaleRegistry semantic identity, provenance, and PostgreSQL/sorting sections must remain unchanged.",
+        "Text must distinguish immediate safe miss from durable repair/convergence.",
+        "Reject any wording that calls a provider in request path or selects a specific background mechanism."
+      ],
+      "disconfirmation": "UI_TRANSLATION.md already correctly owns the immediate safe miss/fallback behavior; duplicating durable repair there would violate single-owner responsibility. STO-05 is the correct owner and currently lacks the durable-convergence invariant."
+    },
+    {
+      "path": "docs/auth/AUTHORIZATION.md",
+      "category": "required-correction",
+      "target_contracts": [
+        "TC-08"
+      ],
+      "atomic_ids": [
+        "EX60-27",
+        "EX61-42"
+      ],
+      "exact_current_anchors": [
+        "## Runtime resolution",
+        "2. Effective authorization state читается server-side из PostgreSQL.",
+        "4. Изменение role grant, user role или user override должно действовать на следующий защищённый request без logout/login.",
+        "5. Допустим request-scoped resolver/cache только внутри одного request; long-lived permission cache без отдельного invalidation contract не допускается."
+      ],
+      "why_existing_wording_is_insufficient": "Next-request freshness and request-scoped caching do not require one composite resolution to observe one internally consistent database snapshot. Accepted EX60-27 and EX61-42 are current defects in the multi-read user-resolution and management-state paths.",
+      "replacement_semantics": [
+        "Add an invariant that one full user authorization resolution (role assignment, role grants, user overrides, effective permissions) is internally consistent as one database snapshot.",
+        "Add an invariant that one authorization-management state read (roles, users/assignments, grants, overrides, effective permissions) is internally consistent as one database snapshot.",
+        "Preserve next-request freshness: these consistency guarantees must not become a long-lived cross-request permission cache.",
+        "Do not prescribe transaction API, PostgreSQL isolation level, lock strategy, query shape, or repository implementation in the documentation plan."
+      ],
+      "cross_document_sync": [],
+      "verification": [
+        "Future diff must be confined to Runtime resolution plus mechanical metadata if used.",
+        "Failure semantics, management UI behavior, lockout protection, Better Auth boundary, and Stage 4E2 scope must remain unchanged.",
+        "Text must state snapshot consistency without weakening the requirement that DB changes apply on the next protected request.",
+        "Reject SERIALIZABLE/REPEATABLE READ/transaction implementation mandates unless independently justified in Phase 5."
+      ],
+      "disconfirmation": "The existing contract has freshness and cache-lifetime rules but no composite-snapshot rule. The edit is therefore not stylistic and does not reopen the direct-user-approved authorization model."
+    },
+    {
+      "path": "PROJECT_STATE.md",
+      "category": "required-current-defect-disclosure",
+      "target_contracts": [
+        "TC-12",
+        "TC-10",
+        "TC-03"
+      ],
+      "atomic_ids": [
+        "EX77-75",
+        "EX77-76",
+        "EX72-20",
+        "EX72-45",
+        "EX72-46",
+        "EX72-47",
+        "EX72-48",
+        "EX72-49",
+        "EX72-50",
+        "EX75-56",
+        "EX75-57",
+        "EX75-58",
+        "EX75-59"
+      ],
+      "edit_units": [
+        {
+          "id": "STATE-01",
+          "current_anchor": "## Известная текущая regression",
+          "replacement_semantics": "Convert the singular section into a plural known-current-limitations/regressions section while preserving the existing local-manual stale-policy disclosure."
+        },
+        {
+          "id": "STATE-02",
+          "current_anchor": "No current subsection exists for PR #72 A→B→A reactivation.",
+          "replacement_semantics": "Add a concise factual current limitation: the durable ordering/fencing foundation exists, but a fresh A→B→A plan cannot currently reactivate the earlier stale A identity. State that the target preserves stale-delivery/completed terminality and safety fencing; do not state a remediation mechanism."
+        },
+        {
+          "id": "STATE-03",
+          "current_anchor": "No current subsection exists for PR #75 obsolete persisted-bundle convergence.",
+          "replacement_semantics": "Add a concise factual current limitation: invalid/obsolete persisted bundle is safely missed/fallbacked, but there is no durable refresh/backfill/convergence path, so the obsolete row can persist across requests. Do not select the repair mechanism."
+        }
+      ],
+      "why_existing_wording_is_insufficient": "PROJECT_STATE explicitly owns known current constraints but currently lists only the PR #40 stale regression. Accepted EX77-75/76 are documentation defects proving omission of the still-current PR #72/#75 Stage-5A limitations.",
+      "cross_document_sync": [
+        "docs/translation/PROVIDERS_AND_JOBS.md",
+        "docs/translation/STORAGE_AND_VERSIONING.md",
+        "PROJECT_HISTORY.md"
+      ],
+      "verification": [
+        "Future diff must be limited to the known-current-limitations section plus mechanical last-updated metadata; the implemented Stage 4/5 capability lists and External/deployed state must remain semantically unchanged.",
+        "Do not add historical commit/CI narrative; that belongs to PROJECT_HISTORY.md.",
+        "Do not add authorization snapshot defects here: the accepted target map requires their contract correction in AUTHORIZATION.md but did not establish a PROJECT_STATE omission for them.",
+        "Do not reorder Phase-5 remediation in 'Ближайший маршрут'; documentation restoration is not an implementation plan."
+      ],
+      "disconfirmation": "The Stage-5A capability bullets remain true foundations and need not be deleted. The required correction is disclosure of the limitations alongside them, not rewriting implemented capabilities as absent."
+    },
+    {
+      "path": "PROJECT_HISTORY.md",
+      "category": "required-history-correction-and-provenance",
+      "target_contracts": [
+        "TC-12",
+        "TC-02",
+        "TC-10",
+        "TC-03"
+      ],
+      "atomic_ids": [
+        "EX40-01",
+        "EX40-02",
+        "EX40-03",
+        "EX77-24",
+        "EX77-29",
+        "EX77-30",
+        "EX72-20",
+        "EX72-45",
+        "EX72-46",
+        "EX72-47",
+        "EX72-48",
+        "EX72-49",
+        "EX72-50",
+        "EX77-58",
+        "EX75-56",
+        "EX75-57",
+        "EX75-58",
+        "EX75-59",
+        "EX77-59",
+        "EX77-65"
+      ],
+      "edit_units": [
+        {
+          "id": "HISTORY-01",
+          "current_anchor": "### 2026-09-12 — 2026-09-14: pre-Stage-4 hardening / bullet `PR #40 — stale-pack cleanup, позднее признанный regression`",
+          "replacement_semantics": "Narrow the summary so the confirmed regression is the zero-stale gate introduced in PR #40. Do not label all stale-pack cleanup or canary removal as one regression."
+        },
+        {
+          "id": "HISTORY-02",
+          "current_anchor": "### H-001 — stale local translation policy",
+          "current_text_to_change": [
+            "Это фактически ввело zero-stale repository gate ... и убрало runtime-owned intentional stale canary, который проходил реальный stale/fallback path.",
+            "Это исторически исказило provenance решения ..."
+          ],
+          "replacement_semantics": [
+            "Keep the historical fact that the stale fixture/canary was removed, but do not classify that removal itself as a proven defect; EX40-01 and EX40-03 remain acceptable alternatives.",
+            "Identify EX40-02 zero-stale real-pack assertion as the confirmed bad correction.",
+            "Describe PROJECT_STATE wording neutrally as having recorded the zero-stale state; do not assert strict documentation laundering/backdating."
+          ]
+        },
+        {
+          "id": "HISTORY-03",
+          "current_anchor": "### H-008 — ordering разных generation identities",
+          "replacement_semantics": "Retain PR #72 monotonic ordering/publication-fencing foundation, then disclose the accepted current residual A→B→A reactivation starvation. Update the status so ordering is implemented but the reactivation defect remains current."
+        },
+        {
+          "id": "HISTORY-04",
+          "current_anchor": "No history entry currently indexes the PR #75 review 4029815293 durable bundle refresh gap.",
+          "replacement_semantics": "Add a new stable history entry without renumbering existing H-001..H-010. Record that PR #75 added verified persisted-bundle reads/v2 identity and safe miss fallback, while the accepted current defect is absence of durable convergence for obsolete persisted bundle format. Do not choose refresh/backfill mechanics."
+        },
+        {
+          "id": "HISTORY-05",
+          "current_anchor": "### H-010 — PROJECT_STATE смешивал state, history и policy / `... было обнаружено пользовательским review до merge.`",
+          "replacement_semantics": "Remove the unsupported actor attribution. State only that the intermediate history loss became visible/detected before merge; available evidence does not prove that the user specifically detected it."
+        }
+      ],
+      "why_existing_wording_is_insufficient": "Accepted EX77-24/58/59 are current documentation defects and EX77-29/30/65 explicitly constrain provenance wording. Current history is therefore both incomplete and overbroad in specific places.",
+      "cross_document_sync": [
+        "PROJECT_STATE.md",
+        "docs/translation/PROVIDERS_AND_JOBS.md",
+        "docs/translation/STORAGE_AND_VERSIONING.md",
+        "docs/translation/UI_TRANSLATION.md (must remain unchanged)"
+      ],
+      "verification": [
+        "Future diff must be confined to the PR #40 summary/H-001, H-008, one newly appended history entry for PR #75, H-010 attribution, and mechanical last-updated metadata.",
+        "Do not renumber existing H-001..H-010; append a new stable ID for the PR #75 entry to avoid unrelated churn.",
+        "H-002..H-007 and H-009 content must remain byte/semantic-equivalent.",
+        "History must remain explicitly non-authoritative for current behavior.",
+        "No canary-removal-as-defect, strict documentation-laundering, or user-detected attribution may be introduced."
+      ],
+      "disconfirmation": "The edit preserves the mixed PR #40 verdict instead of collapsing it, records only already-accepted current PR #72/#75 findings, and removes an evidence-limited attribution rather than replacing it with another unsupported actor claim."
+    }
+  ],
+  "conditional_provenance": [
+    {
+      "path": "docs/database/HYPERDRIVE.md",
+      "category": "provenance-qualification-only-no-standalone-edit",
+      "target_contracts": [
+        "TC-04",
+        "TC-13"
+      ],
+      "atomic_ids": [
+        "EX45-15",
+        "EX45-16",
+        "EX45-17",
+        "EX45-18",
+        "EX45-19a",
+        "EX45-19b",
+        "EX45-21a",
+        "EX46-01",
+        "EX49-20"
+      ],
+      "exact_current_anchor": "## Real Hyperdrive deadline acceptance — 2026-09-13",
+      "result": "no-change-planned",
+      "reason": "The operational/development/external-rollout contract is aligned. The accepted evidence limit concerns preservation/provenance of historical external observations, not the behavior they are currently used to describe. TARGET_CONTRACTS explicitly makes qualification conditional if this historical prose is touched.",
+      "conditional_semantics": [
+        "If this section is edited for another justified reason, describe the listed acceptance results as repository-recorded historical observations/claims rather than newly independently proven facts by the audit.",
+        "Do not change the numeric observations, deadline policy, Stage-6 recalibration boundary, or development/rollout rules merely because raw external artifacts are not preserved in the audit evidence set."
+      ],
+      "verification": [
+        "Preferred restoration diff contains no HYPERDRIVE.md change.",
+        "If touched, diff is provenance-only under the historical acceptance section and does not alter operational contract."
+      ]
+    }
+  ],
+  "aligned_no_change": [
+    {
+      "path": "docs/translation/UI_TRANSLATION.md",
+      "status": "already-aligned-no-change",
+      "target_contracts": [
+        "TC-02",
+        "TC-03"
+      ],
+      "anchors": [
+        "## Resource priority (`UI-04` — `UI-08`)",
+        "### Validation local packs",
+        "Stage 5A runtime сначала читает проверенный persisted compiled bundle..."
+      ],
+      "reason": "Already states stale mismatch is exposed/excluded/fallbacked and strict stale-blocking CI requires a separate decision. It also correctly owns immediate safe bundle miss; durable convergence belongs to STO-05, so adding it here would duplicate ownership.",
+      "verification": "No diff."
+    },
+    {
+      "path": "docs/translation/LOCALES.md",
+      "status": "already-aligned-no-change",
+      "target_contracts": [
+        "TC-01"
+      ],
+      "anchors": [
+        "### Явный locale в URL",
+        "## Unknown locale и abuse (`SEC-01`)"
+      ],
+      "reason": "Already matches UD-001=A exactly: safe unavailable explicit locale → 307 equivalent /en/... with remainder/query; active alias/case/deprecated → 308; unsafe redirect-required methods → 404 before action.",
+      "verification": "No diff."
+    },
+    {
+      "path": "docs/database/MIGRATIONS.md",
+      "status": "already-aligned-contract-future-enforcement",
+      "target_contracts": [
+        "TC-04"
+      ],
+      "anchors": [
+        "## External schema-dependent rollout",
+        "## Migration → runtime evidence"
+      ],
+      "reason": "Already limits live evidence verification to actual external schema-dependent rollout and requires evidence update when external runtime depends on new migration. EX44-14 is a Stage-6 enforcement/implementation gap, not a documentation-contract mismatch.",
+      "verification": "No diff; do not reintroduce live GitHub verification into ordinary PR CI."
+    },
+    {
+      "path": "PROJECT.md",
+      "status": "already-aligned-no-change",
+      "target_contracts": [
+        "TC-01",
+        "TC-04",
+        "TC-08"
+      ],
+      "anchors": [
+        "## Авторизация и права доступа",
+        "## Мультиязычность и переводы",
+        "## Принцип разработки"
+      ],
+      "reason": "Generic locale, direct-user-approved dynamic authorization, product-first local/CI boundary, and future-proof-foundation rule all match accepted target.",
+      "verification": "No diff."
+    },
+    {
+      "path": "ROADMAP.md",
+      "status": "already-aligned-no-change",
+      "target_contracts": [
+        "TC-04",
+        "TC-05",
+        "TC-07",
+        "TC-09",
+        "TC-10"
+      ],
+      "anchors": [
+        "# Active product-first roadmap",
+        "## Stage 5 — завершить automatic translations и background jobs",
+        "## Stage 6 — pre-release external integration"
+      ],
+      "reason": "Correctly keeps remaining Stage 5A work local/CI, Stage 5B content translation separate, and real migrations/OAuth/Queue/provider/external acceptance in Stage 6. Current defects belong to state/contract restoration, not roadmap resequencing.",
+      "verification": "No diff."
+    },
+    {
+      "path": "TRANSLATION_ARCHITECTURE.md",
+      "status": "aligned-root-no-change",
+      "target_contracts": [
+        "TC-01",
+        "TC-02",
+        "TC-03",
+        "TC-05",
+        "TC-09",
+        "TC-10"
+      ],
+      "anchors": [
+        "## Глобальные инварианты",
+        "## Component Registry",
+        "## Traceability rule"
+      ],
+      "reason": "Root architecture states high-level invariants and correctly delegates JOB-03/STO-05 details to single-owner subsystem documents. It contains no current-only A→B→A restriction or obsolete-bundle no-repair claim.",
+      "verification": "No diff; do not duplicate detail fixes into the root contract."
+    },
+    {
+      "path": "README.md",
+      "status": "aligned-index-no-change",
+      "target_contracts": [
+        "TC-12"
+      ],
+      "anchors": [
+        "## Документация",
+        "## Разработка"
+      ],
+      "reason": "Documentation role/index and Stage-5/Stage-6 summary already match the accepted responsibility split and stage sequence.",
+      "verification": "No diff."
+    },
+    {
+      "path": "docs/translation/CONTENT_TRANSLATION.md",
+      "status": "intentionally-deferred-future-doc-no-change",
+      "target_contracts": [
+        "TC-05"
+      ],
+      "anchors": [
+        "## Revision-bound identity (`CNT-02`)",
+        "## Markdown и technical fragments (`CNT-04`)",
+        "## Revision-bound persistence (`CNT-06`)"
+      ],
+      "reason": "Already defines the accepted revision-bound future Stage-5B contract without forcing the evidence-limited superseded-revision retention policy. No restoration edit is authorized now.",
+      "verification": "No diff."
+    }
+  ],
+  "ordered_change_series": [
+    {
+      "order": 1,
+      "id": "DOCS-SERIES-01",
+      "name": "Stage 5A contract + current-state restoration",
+      "files": [
+        "docs/translation/PROVIDERS_AND_JOBS.md",
+        "docs/translation/STORAGE_AND_VERSIONING.md",
+        "PROJECT_STATE.md"
+      ],
+      "purpose": "Restore the two accepted Stage-5A target contracts and disclose the corresponding current implementation limitations in the same documentation-only change set.",
+      "must_not_include": [
+        "runtime code",
+        "tests",
+        "schema/migrations",
+        "workflow changes",
+        "mechanism selection",
+        "roadmap resequencing"
+      ]
+    },
+    {
+      "order": 2,
+      "id": "DOCS-SERIES-02",
+      "name": "Authorization snapshot contract restoration",
+      "files": [
+        "docs/auth/AUTHORIZATION.md"
+      ],
+      "purpose": "Add the accepted composite-snapshot consistency contract without changing the dynamic authorization product model or failure semantics.",
+      "must_not_include": [
+        "repository implementation",
+        "transaction/isolation mechanism",
+        "PROJECT_STATE expansion not accepted by target map"
+      ]
+    },
+    {
+      "order": 3,
+      "id": "DOCS-SERIES-03",
+      "name": "History/provenance restoration",
+      "files": [
+        "PROJECT_HISTORY.md"
+      ],
+      "purpose": "Narrow PR #40, index the PR #72/#75 current findings, and remove unsupported PR #77 actor attribution while preserving history as non-authoritative.",
+      "must_not_include": [
+        "new product contract",
+        "runtime remediation",
+        "rewriting unrelated H entries",
+        "HYPERDRIVE historical evidence re-litigation"
+      ]
+    }
+  ],
+  "cross_document_verification": [
+    "A→B→A target must be stable in PROVIDERS_AND_JOBS; PROJECT_STATE must disclose current non-compliance; PROJECT_HISTORY must index the finding. None may select remediation mechanics.",
+    "Obsolete-bundle durable convergence must be owned by STORAGE_AND_VERSIONING; PROJECT_STATE must disclose current gap; PROJECT_HISTORY must index it. UI_TRANSLATION keeps only immediate safe miss/fallback semantics.",
+    "Authorization snapshot consistency is owned by AUTHORIZATION. Do not broaden PROJECT_STATE/history beyond accepted documentation defects.",
+    "PR #40 history must identify zero-stale gate as the defect while UI_TRANSLATION remains unchanged and permissive.",
+    "MIGRATIONS/ROADMAP/PROJECT/LOCALES aligned contracts must remain unchanged.",
+    "A future documentation-restoration PR must contain documentation only and no runtime/schema/test/workflow/external changes."
+  ],
+  "required_edit_driving_atomic_ids": [
+    "EX40-01",
+    "EX40-02",
+    "EX40-03",
+    "EX60-27",
+    "EX61-42",
+    "EX72-20",
+    "EX72-45",
+    "EX72-46",
+    "EX72-47",
+    "EX72-48",
+    "EX72-49",
+    "EX72-50",
+    "EX75-56",
+    "EX75-57",
+    "EX75-58",
+    "EX75-59",
+    "EX77-24",
+    "EX77-29",
+    "EX77-30",
+    "EX77-58",
+    "EX77-59",
+    "EX77-65",
+    "EX77-75",
+    "EX77-76"
+  ],
+  "conditional_provenance_atomic_ids": [
+    "EX45-15",
+    "EX45-16",
+    "EX45-17",
+    "EX45-18",
+    "EX45-19a",
+    "EX45-19b",
+    "EX45-21a",
+    "EX46-01",
+    "EX49-20"
+  ],
+  "finite_conflicts": [
+    {
+      "id": "DOC-CF-01",
+      "status": "resolved",
+      "conflict": "PROVIDERS_AND_JOBS.md broad fresh-plan reactivation paragraph conflicts with its later current-only generation-order sentence.",
+      "resolution": "TC-10 + EX72-49/50 require broad fresh-plan A→B→A semantics while retaining stale-delivery/completed terminality and safety fencing; edit only the conflicting JOB-03 ordering wording."
+    },
+    {
+      "id": "DOC-CF-02",
+      "status": "resolved",
+      "conflict": "PROJECT_HISTORY.md treats PR #40 stale-pack cleanup as one regression even though EX40-01/03 are acceptable alternatives and only EX40-02 is the confirmed bad correction.",
+      "resolution": "TC-12/TC-02 require a narrow zero-stale-gate history label and evidence-limited provenance wording."
+    },
+    {
+      "id": "DOC-CF-03",
+      "status": "resolved",
+      "conflict": "PROJECT_STATE.md says it owns known current constraints but omits the accepted current PR #72/#75 limitations.",
+      "resolution": "EX77-75/76 require current-defect disclosure; keep historical detail in PROJECT_HISTORY and stable semantics in subsystem docs."
+    },
+    {
+      "id": "DOC-CF-04",
+      "status": "resolved-no-doc-edit",
+      "conflict": "EX44-14 is a current future-rollout enforcement gap while MIGRATIONS.md already states the correct rollout contract.",
+      "resolution": "Leave MIGRATIONS.md unchanged; enforcement is Phase-5/Stage-6 implementation work, not documentation restoration."
+    },
+    {
+      "id": "DOC-CF-05",
+      "status": "resolved-no-standalone-edit",
+      "conflict": "HYPERDRIVE historical acceptance prose is stronger than the audit's preserved raw external evidence for EX45/46/49 observations.",
+      "resolution": "TARGET_CONTRACTS makes provenance qualification conditional if prose is touched. Do not create a standalone behavioral edit; if touched, qualify provenance only."
+    }
+  ],
+  "unresolved_conflicts": [],
+  "exact_counts": {
+    "source_documents_fully_rechecked": 14,
+    "required_edit_files": 5,
+    "conditional_provenance_only_files": 1,
+    "aligned_or_intentionally_deferred_no_change_files": 8,
+    "semantic_edit_units": 11,
+    "ordered_change_series": 3,
+    "required_edit_driving_atomic_ids": 24,
+    "conditional_provenance_atomic_ids": 9,
+    "finite_conflicts": 5,
+    "unresolved_conflicts": 0,
+    "planned_runtime_schema_test_workflow_external_changes": 0
+  }
+}
