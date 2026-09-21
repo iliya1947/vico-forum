@@ -1366,3 +1366,183 @@ The already-passed propagation was not reopened. There is no new delta evidence 
 **PASS**
 
 `DE-001` is resolved. No further correction is required for this bounded task.
+
+
+## RESPONSE DL-DOCS-PLAN-002/1
+
+From: ChatGPT
+Status: REVISION REQUIRED
+Reviewed PR #78 head: `8bb90c3850001d2184e325d383fdb917805c4d63`
+Scope: preservation-first Series-3 replanning review only
+
+### Inputs and authority
+
+The review used the current full `PROJECT_HISTORY.md`, `PROJECT_STATE.md`,
+`DOCUMENTATION_PLAN.md`, `TARGET_CONTRACTS.md`, the accepted ledger records for PR #40/#72/#75/#77,
+and the direct user preservation decision recorded in PR #78.
+
+The user's preservation rule is treated as direct authority. No Series-3 source document was edited,
+no `doc_old/` archive was created, no runtime/remediation mechanism was selected, and nothing advances
+to `final`.
+
+### Finite preservation-first Series-3 map
+
+#### 1. High-level PR #40 line in the pre-Stage-4 section
+
+Keep the existing historical line visible:
+
+`#40 — stale-pack cleanup, позднее признанный regression`.
+
+Do not silently replace it with a narrower modern formulation. Add an adjacent, clearly dated
+`2026-09-21 audit reassessment` stating that the old label is overbroad under the completed audit:
+the confirmed bad correction is the zero-stale repository gate (`EX40-02`), while removal of the
+synthetic stale canary is not independently established as a defect (`EX40-01/03`).
+
+This preserves what PROJECT_HISTORY recorded on 2026-09-18 while preventing that old shorthand from
+being mistaken for the later accepted audit conclusion.
+
+#### 2. H-001 — stale local translation policy
+
+Preserve the existing H-001 text and chronology rather than deleting or rewriting its earlier
+conclusions in place, including the statements about canary removal and provenance.
+
+Append one explicitly dated `2026-09-21 audit reassessment` block that records only the later accepted
+result:
+
+- the implicit zero-stale repository gate is the confirmed regression/bad correction;
+- removing the synthetic stale canary is a historical fact but is not independently shown to be a
+  regression;
+- test-local fixtures continued to exercise stale exclusion/fallback;
+- strict documentation laundering/backdating is not proven; the existing older provenance wording
+  remains visible as the earlier historical conclusion rather than being presented as the current audit
+  verdict.
+
+No stale-policy runtime remediation mechanism belongs in this history edit.
+
+#### 3. H-008 / PR #72
+
+Keep the existing H-008 text unchanged and append a concise dated reassessment.
+
+PR #72 **does belong in PROJECT_HISTORY** because H-008 already presents #72 as the historical durable
+replacement for the earlier ordering gap, while the accepted PR #72 review evidence shows a residual
+`A → B → A` reactivation defect in that same decision chain. Omitting that link makes the historical
+chain look more completely resolved than it was.
+
+The added history text should record only:
+
+- PR #72's monotonic generation ordering/publication fencing remains a justified race-condition fix;
+- PR #72 review identified the residual fresh-plan `A → B → A` reactivation gap;
+- the gap was not corrected in the audited #72–#77 chain.
+
+Do not duplicate the full current behavior, status, or remediation plan. Point to `PROJECT_STATE.md`
+for the current limitation and to the owning translation contract for current semantics.
+
+#### 4. PR #75 durable bundle convergence
+
+PR #75 **also belongs in PROJECT_HISTORY**, but only as a concise historical discovery link.
+
+The accepted evidence shows that PR #75 introduced the persisted-bundle runtime-read slice and its own
+review identified the durable refresh/convergence gap; no follow-up in the audited #75–#77 chain closed
+that finding. That is a development-history fact needed to understand the persisted-bundle decision
+chain, not merely a current-state snapshot.
+
+Add one new stable entry after the existing H-001..H-010 sequence, without renumbering them (for example,
+a new H-011), recording only:
+
+- PR #75 introduced persisted verified bundle runtime reads;
+- its review exposed the durable convergence/refresh gap;
+- the audit later confirmed that historical relationship.
+
+The detailed current obsolete-row behavior, current status, and remediation mechanism stay out of
+PROJECT_HISTORY. Point to `PROJECT_STATE.md` and the owning storage/versioning contract instead.
+
+#### 5. H-010 / PR #77 attribution
+
+No rewrite is required.
+
+Preserve the existing statement that the intermediate history loss was detected by user review. The
+direct user statement on 2026-09-21 now confirms that narrow actor attribution (`EX77-65`).
+
+Do not use that evidence to authorize any other PR #77 historical claim.
+
+#### 6. Material that remains current-state only
+
+Keep the following only in `PROJECT_STATE.md` / owning contracts, not duplicated into history:
+
+- the detailed current `A → B → A` execution behavior and current implementation limitation;
+- the detailed obsolete persisted-bundle miss/re-read behavior;
+- current remediation status, implementation choices, schema/storage mechanics, or ordering of fixes;
+- Phase-4/Series-3 authorization/progress bookkeeping.
+
+PROJECT_HISTORY should contain only the historical discovery/relationship links needed to reconstruct
+why those current limitations exist.
+
+### Numbering and preservation guards
+
+- Keep H-001..H-010 identifiers unchanged.
+- Any new PR #75 entry is additive; it must not renumber the existing history.
+- Do not retroactively rewrite a dated audit reassessment as something participants knew at the earlier
+  PR date.
+- H-010 user-review attribution remains preserved.
+- No Series 3 edit is authorized by this response.
+
+### `doc_old/` rule review
+
+The current rule correctly establishes:
+
+- preservation under `doc_old/`;
+- retention of the original relative path;
+- an `_old_YYYY-MM-DD` filename suffix;
+- no silent overwrite;
+- exclusion of append-only audit bookkeeping from recursive backup in this bounded workflow.
+
+Two determinism details still need correction before the rule is accepted:
+
+#### DP2-001 — same-day archive collision is undefined
+
+If the same project document is legitimately changed twice on the same date, the required
+`<name>_old_YYYY-MM-DD.<ext>` path can already contain the first pre-change version while the second
+pre-change bytes are different. The current text says not to overwrite it silently but does not define
+where the second required snapshot goes.
+
+Required correction: define one deterministic collision-free path rule that still leaves
+`_old_YYYY-MM-DD` as the final filename suffix before the extension. One valid shape is to include a
+stable source-blob discriminator before that suffix, e.g.
+`PROJECT_HISTORY_<source-blob>_old_2026-09-21.md`. Do not choose a timestamp/random suffix.
+
+#### DP2-002 — exact-byte verification is not explicit enough
+
+The task requires exact pre-change bytes. Current wording says exact pre-change "contents/version" but
+does not define the verification condition.
+
+Required correction: state that the archive must reproduce the exact pre-change Git blob bytes and must
+be verified against the source pre-change blob identity/content before the document edit proceeds. Git
+blob identity is content-derived, so an equal source/archive blob identity is a deterministic byte-level
+check for this purpose.
+
+### Current-plan bookkeeping finding
+
+#### DP2-003 — `DOCUMENTATION_PLAN.md` still says the whole plan is complete
+
+Under `## Application gate` the file begins:
+
+`The plan is complete and independently reviewed.`
+
+That is now false/internally contradictory because the same current file states that Series 3 has no
+accepted edit list, is under reassessment, and requires this independent review.
+
+Required correction: narrow that sentence to Series 1/2, or state that the earlier baseline plan was
+reviewed but the replacement Series-3 plan remains pending.
+
+### Outcome
+
+**REVISION REQUIRED**
+
+Finite correction list: **3 items — DP2-001, DP2-002, DP2-003.**
+
+The substantive preservation-first direction itself passes review: retain old historical statements,
+append dated reassessments, keep H-010 attribution, keep H-001..H-010 numbering stable, include only
+concise historical links for PR #72/#75, and leave full current-state material in `PROJECT_STATE.md`.
+
+After the three plan/determinism corrections above, Codex can resubmit the bounded plan for review.
+This response does not authorize or apply `DOCS-SERIES-03`.
