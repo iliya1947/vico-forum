@@ -217,9 +217,6 @@ verdicts.
 - Translation future-proof foundations, immutable forum revisions, `sourceLocale | und`, separate
   translatable topic-title revisions, and genuine race-condition fixes are not errors merely because
   they are complex or prepared early.
-- For `UD-001`, the user selected option A: preserve the temporary `307` English fallback for safe
-  `GET`/`HEAD` requests with an explicitly unavailable locale.
-
 ## Fixed direct-user historical evidence
 
 - On 2026-09-21 the user confirmed that the user noticed the intermediate PR #77 history loss after the

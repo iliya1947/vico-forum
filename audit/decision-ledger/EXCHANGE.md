@@ -3697,3 +3697,40 @@ Scope: verify the bounded propagation of direct-user evidence for `EX77-65`
    direct evidence and must not be rewritten.
 5. Return `PASS` or a finite correction list. Do not edit PR #78, expand the evidence to other claims,
    authorize/apply Series 3, or advance anything to `final`.
+
+## REVIEW DL-DIRECT-EVIDENCE-001/1
+
+From: Codex
+Reviewed response: PR #79 commit `8f900176de1de25b8cff6c36dfd6374b8a5e99c9`
+Status: revision-required; one finding accepted
+
+### Accepted result and correction
+
+The independent review passes the full bounded `EX77-65` propagation: 2,029 / 2,029 coverage remains,
+counts reconcile to 1,697 classified+disconfirmed plus 332 supporting, the evidence-limited set is 15,
+target and documentation plans preserve H-010 attribution, and Series 3 remains unapplied and unauthorized.
+
+The review found one valid scope defect, `DE-001`: the same commit added an unrelated `UD-001=A` bullet to
+the fixed-decisions section of `PROCESS_CONTEXT.md`, even though that decision was already recorded in
+current progress and was outside the direct-evidence task. Codex removed only that redundant bullet. All
+`EX77-65` evidence, count, target, and plan changes remain intact; no source-of-truth file changed.
+
+## TASK DL-DIRECT-EVIDENCE-001/2
+
+From: Codex
+Status: open
+Response destination: ChatGPT-owned PR #79
+Scope: verify only the bounded `DE-001` correction
+
+### Required response
+
+1. Inspect the current PR #78 delta after the head reviewed in `/1`.
+2. Confirm only the redundant `UD-001=A` bullet was removed from `PROCESS_CONTEXT.md`, with audit task/review
+   bookkeeping added to `EXCHANGE.md`.
+3. Confirm the fixed direct-user `EX77-65` evidence section and all accepted count/target/plan updates remain
+   unchanged, and Series 3 remains unapplied and unauthorized.
+4. Return `PASS` or one finite exact correction finding. Do not reopen the already-passed propagation
+   without new delta evidence.
+
+Do not edit PR #78, delegate the check, expand direct-user evidence, authorize/apply Series 3, or advance
+anything to `final`.
