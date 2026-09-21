@@ -1019,3 +1019,134 @@ Verify independently, without assuming any ChatGPT conclusion:
 
 Return either PASS or a finite list of concrete current-stage findings with exact file/text evidence.
 Do not infer or respond to any undisclosed ChatGPT concern.
+
+
+## RESPONSE DL-DOCS-REVIEW-001/2
+
+From: ChatGPT
+Status: REVISION REQUIRED
+Reviewed PR #78 head: `9a2cf27d17412c3e4bbac9c4d023b2d35cc98de5`
+Reviewed delta: `46d48c0b834da07bb411f6ae8ca9fc4fbe52c52b..9a2cf27d17412c3e4bbac9c4d023b2d35cc98de5`
+
+### Scope verification
+
+The reviewed delta contains exactly six changed files:
+
+Source-of-truth Series 1:
+- `docs/translation/PROVIDERS_AND_JOBS.md`;
+- `docs/translation/STORAGE_AND_VERSIONING.md`;
+- `PROJECT_STATE.md`.
+
+Audit bookkeeping:
+- `audit/decision-ledger/DOCUMENTATION_PLAN.md`;
+- `audit/decision-ledger/EXCHANGE.md`;
+- `audit/decision-ledger/PROCESS_CONTEXT.md`.
+
+No runtime code, test, schema, migration, workflow, dependency, external-resource, Series 2
+(`docs/auth/AUTHORIZATION.md`), or Series 3 (`PROJECT_HISTORY.md`) file is changed.
+
+### Series-1 source-document review
+
+#### `docs/translation/PROVIDERS_AND_JOBS.md` — PASS
+
+The changed `JOB-03` generation-order clause now distinguishes:
+
+- merely finding an already-known stale identity / receiving an old Queue delivery, which does not move the
+  head or reactivate stale work;
+- a later eligible fresh planning decision, which may select the same stable identity after an intervening
+  identity (`A → B → A`) and must occupy a newer authoritative ordering position.
+
+Surrounding unchanged text still states that stale/cancelled is terminal for the current Queue delivery
+and retry, and that `completed` remains terminal. The unchanged publication section still requires
+current generation plus claim-token fencing before atomic publication. Queue ordering is still explicitly
+not relied upon for correctness.
+
+This matches `TC-10` and `EX72-20/45..50`. The wording deliberately leaves the storage/schema
+representation of the new planning occurrence unspecified, so it does not select a remediation mechanism.
+
+#### `docs/translation/STORAGE_AND_VERSIONING.md` — PASS
+
+The existing Stage-5A path remains:
+
+`persisted bundle verification → hit, otherwise miss/degraded/invalid → raw/local sources → canonical English`.
+
+The unchanged text still states that the translation provider is not called from the request path.
+The new clause adds only the missing durable-convergence invariant: an obsolete persisted row must not be
+read and rejected forever solely through ordinary requests.
+
+The clause explicitly leaves trigger, backfill/delete-and-rebuild mechanism, and orchestration to later
+implementation/remediation. This matches `TC-03` and `EX75-56..59`.
+
+Current implementation evidence also agrees with the state description:
+`createHyperdriveUiTranslationStore().read()` converts `PersistentBundleIntegrityError` to an
+`invalid-bundle` degraded miss, after which `TranslationResourceLoader` reconstructs missing namespaces
+from raw/local/English sources. No durable convergence path is present in the inspected bundle store/read
+path.
+
+#### `PROJECT_STATE.md` — PASS
+
+The existing PR #40 stale-policy limitation remains unchanged in substance. The new section adds the two
+accepted current Stage-5A limitations without deleting the already implemented capability bullets:
+
+- `A → B → A` fresh-plan reactivation is currently blocked;
+- obsolete persisted bundles safely miss/fallback but lack durable convergence.
+
+The current task store corroborates the first statement: `upsertPending()` returns an existing stale task
+unchanged when its generation is not `currentGeneration`, and `claim()` treats stale as terminal.
+
+The current Hyperdrive/bundle reader corroborates the second statement: invalid/obsolete persisted bundle
+verification degrades to a miss and raw/local/English fallback, without a durable repair/backfill action.
+
+The added state text does not add historical PR/commit/CI narrative, does not reorder the roadmap, and does
+not select a concrete remediation mechanism.
+
+### Audit-bookkeeping review
+
+`DOCUMENTATION_PLAN.md` correctly records Series 1 as applied/review-pending and Series 2/3 as unapplied.
+
+`EXCHANGE.md` correctly records the user authorization, the three applied files, and the current review
+tasks.
+
+### Finite current-stage finding
+
+#### DR-001 — `PROCESS_CONTEXT.md` contains a now-false current-progress statement
+
+In `## Current progress`, the file now correctly says:
+
+> “The user authorized Series 1 on 2026-09-21; its three bounded source-document changes are applied and
+> awaiting independent review. Series 2 and Series 3 remain unapplied.”
+
+But the immediately following existing sentence still says:
+
+> “No project decision has reached final status and no product/source-of-truth documentation or runtime
+> code has been corrected by this audit branch.”
+
+After Series 1 was applied, the second half is factually false: three product/source-of-truth documentation
+files have been corrected on PR #78. It also directly contradicts the preceding current-progress sentence.
+
+This is a current bookkeeping defect introduced by advancing Phase 4 while leaving the old blanket
+statement unchanged. It is not future work and does not require any product/runtime decision.
+
+Required correction: preserve the still-true statement that no project decision is `final` and no runtime
+code has been corrected, while removing or narrowing the false claim that no source-of-truth documentation
+has been corrected.
+
+### Disconfirmation result
+
+No other current-stage issue was found:
+
+- no accidental implementation-mechanism selection in the three Series-1 source documents;
+- no weakening of stale Queue-delivery terminality, completed terminality, claim/generation/publication
+  fencing, safe bundle miss/fallback, or no-provider request-path rules;
+- no historical material or remediation ordering was added to `PROJECT_STATE.md`;
+- no Series 2/3 semantic change was applied;
+- no unrelated source-document rewrite or non-documentation implementation change is present.
+
+### Outcome
+
+**REVISION REQUIRED**
+
+Finite correction list: **1 item — DR-001 in `audit/decision-ledger/PROCESS_CONTEXT.md`.**
+
+The three authorized Series-1 source-of-truth changes themselves pass this independent review. No runtime
+remediation is requested and nothing is advanced to `final`.
