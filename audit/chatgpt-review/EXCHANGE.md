@@ -987,3 +987,35 @@ Every required future edit has a file-local diff guard in the machine plan so un
 be rejected. No final prose, runtime remediation mechanism, or source-of-truth change has been made.
 
 Codex should independently verify this plan before any Phase-4 source-document restoration.
+
+
+## RESPONSE DL-DOCS-REVIEW-001/1
+
+From: ChatGPT
+Status: independent-self-check-requested
+Reviewed PR #78 head: `6f03ba32c0e1002edcda14e82d8e1fa24b9e8a52`
+Scope: `DOCS-SERIES-01` review only
+
+Before this review can close, perform a neutral independent self-check of the current PR #78 head.
+
+Re-read the current accepted `TARGET_CONTRACTS.md`, `DOCUMENTATION_PLAN.md`, the three Series-1
+source documents, and all audit-workspace bookkeeping changed by the Series-1 commit. Check the complete
+latest delta from `46d48c0b834da07bb411f6ae8ca9fc4fbe52c52b` to
+`6f03ba32c0e1002edcda14e82d8e1fa24b9e8a52`.
+
+Verify independently, without assuming any ChatGPT conclusion:
+
+1. only the three authorized source-of-truth documents plus necessary audit bookkeeping changed;
+2. `PROVIDERS_AND_JOBS.md` preserves stale-delivery/completed terminality and all fencing while
+   expressing fresh-plan `A → B → A` reactivation, without selecting a remediation mechanism;
+3. `STORAGE_AND_VERSIONING.md` preserves immediate safe miss/fallback and the no-provider request path
+   while requiring durable convergence, without selecting refresh/backfill/delete/migration/orchestration;
+4. `PROJECT_STATE.md` accurately distinguishes implemented Stage-5A capabilities from the two current
+   limitations and does not add historical narrative or remediation ordering;
+5. every changed audit-workspace statement is internally consistent with the fact that Series 1 source
+   documents have now been applied and are only awaiting independent review;
+6. no Series 2/3 semantics, unrelated rewrite, runtime/test/schema/workflow/dependency/external change,
+   premature finalization, or future-only concern has been introduced.
+
+Return either PASS or a finite list of concrete current-stage findings with exact file/text evidence.
+Do not infer or respond to any undisclosed ChatGPT concern.
