@@ -42,6 +42,8 @@ The audit must determine, decision by decision:
 - [`COVERAGE.md`](./COVERAGE.md) — explicit per-PR/commit extraction coverage and completeness gate.
 - [`CROSS_STAGE.md`](./CROSS_STAGE.md) — dependency chains that must be reviewed before closure.
 - [`OPEN_QUESTIONS.md`](./OPEN_QUESTIONS.md) — unresolved conflicts and eventual user decisions.
+- [`TARGET_CONTRACTS.md`](./TARGET_CONTRACTS.md) — accepted working target map for later documentation
+  restoration and implementation planning; not a product source of truth.
 
 ## Status model
 

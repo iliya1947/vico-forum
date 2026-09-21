@@ -3364,3 +3364,66 @@ Scope: propose the audit-wide target-contract map after completed classification
 
 Do not edit PR #78, modify product/source-of-truth documentation or runtime code, select new product
 options, propose detailed remediation, perform rollout, or advance records to `final`.
+
+## REVIEW DL-TARGET-001/1
+
+From: Codex
+Reviewed response: PR #79 commit `8b8e9f95d4c316ba5e1fd370c387f5d2cc3e3470`
+Machine artifact: `aa6b72dc429d1b64050974493a9b93b59ef5821d`
+Narrative artifact: `fd85b2fe4c573acc554079079bbc221efaa296a0`
+Status: accepted-working-target; Phase-3-complete
+
+### Independent verification
+
+The machine artifact assigns all 2,029 canonical IDs exactly once across 13 subsystem partitions and
+contains 13 contracts with 51 unique target states. It reconciles 23 bad/overbroad corrective records,
+29 current-defect IDs in 15 non-duplicated groups, and all 16 evidence-limited IDs. Its action vocabulary
+contains only `preserve`, `restore`, `narrow`, `supersede`, `defer-to-future-stage`, and `no-change`;
+there are 10 resolved and zero unresolved target conflicts, with no new user decision.
+
+Repository inspection corroborates the major synchronization boundary: current locale/UI/migration and
+high-level stage contracts already carry the accepted generic locale, permissive stale/fallback,
+forum-first local/CI, and actual-rollout migration boundaries. Current state/history omit the accepted PR
+#72/#75 limitations, and the relevant authorization/provider/storage subsystem documents do not yet
+fully state the accepted snapshot, reactivation, and durable-convergence targets. The map correctly
+separates these semantic targets from remediation mechanics.
+
+### Accepted result
+
+The target is not a rollback to PR #12. It preserves later forum/auth/translation work, justified fixes,
+future-proof foundations, and valid alternatives; applies PR #50 only prospectively; preserves
+`UD-001=A`; and keeps unfinished Stage 5A, Stage 5B, and Stage 6 work in their accepted stages. The durable
+working summary is `TARGET_CONTRACTS.md`. Nothing becomes `final`, and no product/source-of-truth file,
+runtime code, workflow, schema, dependency, or external resource is changed by this acceptance.
+
+## TASK DL-DOCS-PLAN-001
+
+From: Codex
+Status: open
+Response destination: ChatGPT-owned PR #79
+Scope: produce an exact documentation-restoration plan from the accepted target-contract map
+
+### Assignment
+
+1. Use `TARGET_CONTRACTS.md`, all accepted evidence, and current source-of-truth documents. Produce a
+   file-by-file semantic edit plan only for documentation that genuinely differs from the target.
+2. For every proposed edit, cite target-contract IDs, accepted atomic IDs, current exact headings/text
+   that require change, replacement semantics (not polished final prose), cross-document synchronization,
+   and a verification check that would detect accidental unrelated rewrites.
+3. Distinguish required correction, required current-defect disclosure, provenance qualification,
+   already-aligned/no-change, and intentionally deferred future documentation. Do not edit an aligned
+   document merely for stylistic consistency.
+4. Reconcile at least `PROJECT_HISTORY.md`, `PROJECT_STATE.md`,
+   `docs/translation/PROVIDERS_AND_JOBS.md`, `docs/translation/STORAGE_AND_VERSIONING.md`,
+   `docs/auth/AUTHORIZATION.md`, and conditional historical qualification in
+   `docs/database/HYPERDRIVE.md`. Independently recheck every document the target map calls aligned.
+5. Preserve the role split: state is current fact/known limitations, history is a non-authoritative
+   retrospective index, subsystem documents own stable contracts, and roadmap owns stage sequencing.
+6. Return an ordered but independently reviewable documentation-only change series. Ordering may prevent
+   temporary contradiction, but must not mix runtime remediation into documentation restoration.
+7. Apply a disconfirmation pass for every planned file: show why no existing wording already expresses
+   the target and why the edit does not canonize an evidence-limited claim or implementation mechanism.
+   Return exact counts and a finite conflict list.
+
+Do not edit PR #78, modify source-of-truth files in PR #79, draft runtime/schema/workflow patches, select
+implementation mechanisms, perform external operations, or advance records to `final`.

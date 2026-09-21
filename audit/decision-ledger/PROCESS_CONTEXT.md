@@ -161,24 +161,24 @@ It is not a correctness verdict. No block-local conclusion becomes final until:
 
 ## Five remediation phases
 
-### Phase 1 — Historical decision audit (current phase)
+### Phase 1 — Historical decision audit (complete)
 
 Extract PR #12–#77 in chronological merge order, plus only the pre-baseline ancestry needed to
 understand the PR #12 control point. Then inspect current consumers, corrective chains, and cross-stage
 dependencies. Classification is deferred until the evidence graph is sufficiently complete.
 
-### Phase 2 — User decisions
+### Phase 2 — User decisions (complete)
 
 Present only conflicts that Git history, historical contracts, current behavior, and external facts
 cannot resolve. The user chooses among valid alternatives.
 
-### Phase 3 — Target contracts
+### Phase 3 — Target contracts (complete)
 
 Using the completed audit and recorded user decisions, define what should remain, what was superseded,
 what must be restored, and which work belongs to future stages. A target hypothesis must not steer the
 evidence extraction that is supposed to test it.
 
-### Phase 4 — Documentation restoration
+### Phase 4 — Documentation restoration (next; planning only until reviewed)
 
 Repair product, architecture, roadmap, subsystem, history, and state documentation to reflect the
 approved target. Do not roll all documentation back mechanically to PR #12, and do not use current
@@ -274,6 +274,10 @@ required restoration remain open until full-history and cross-stage review.
   `UD-001`. On 2026-09-21 the user selected option A: preserve the current temporary `307` English
   fallback for safe `GET`/`HEAD` requests with an explicitly unavailable locale. No user decision remains
   open, so target-contract formation may begin.
+- Target-contract formation is complete: 13 subsystem contracts and 51 target states reconcile all
+  accepted bad corrections, current defects, evidence limits, stage boundaries, and user decisions with
+  no unresolved target conflict. The accepted working map is `TARGET_CONTRACTS.md`; exact documentation
+  restoration planning is next, but no source-of-truth document has been changed.
 - No project decision has reached final status and no product/source-of-truth documentation or runtime
   code has been corrected by this audit branch.
 

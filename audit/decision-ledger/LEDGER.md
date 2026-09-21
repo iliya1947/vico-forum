@@ -233,6 +233,17 @@ the equivalent English route for safe `GET`/`HEAD` requests. This is a `direct-u
 the last normative question without changing the already fixed canonicalization, unsafe-method,
 internal-target, or no-side-effect constraints. Target-contract work must preserve this behavior.
 
+### Target-contract closure (`DL-TARGET-001`)
+
+The independently reviewed target map contains 13 exhaustive subsystem contracts and 51 atomic target
+states. It reconciles all 23 accepted bad/overbroad corrective records, 29 current-defect IDs in 15
+groups, and all 16 evidence-limited IDs. Ten target conflicts are resolved by accepted evidence or direct
+user decisions; no target conflict or new user decision remains open.
+
+The accepted working map is maintained in `TARGET_CONTRACTS.md`. It is not a product source of truth and
+does not authorize documentation edits, implementation mechanics, external operations, or final ledger
+status. Its role is to constrain the next documentation-restoration plan against the completed audit.
+
 ## Record template
 
 ```text
