@@ -187,7 +187,7 @@ Using the completed audit and recorded user decisions, define what should remain
 what must be restored, and which work belongs to future stages. A target hypothesis must not steer the
 evidence extraction that is supposed to test it.
 
-### Phase 4 — Documentation restoration (complete)
+### Phase 4 — Documentation restoration (Series 1/2 complete; Series 3 pending)
 
 Repair product, architecture, roadmap, subsystem, history, and state documentation to reflect the
 approved target. Do not roll all documentation back mechanically to PR #12, and do not use current
@@ -311,12 +311,11 @@ required restoration remain open until full-history and cross-stage review.
   audit-only `DR-001` bookkeeping correction. The user authorized Series 2 on 2026-09-21; its bounded
   authorization-contract change is applied and independently accepted. The user declined Series 3 in its
   previous form; its preservation-first replacement plan and PR #72/#75 history placement passed
-  independent review. The user then authorized the replacement, which was applied with pre-change archives
-  and independently accepted after the narrow `D3R-001` bookkeeping correction.
+  independent review. The user then authorized the replacement, which is applied with pre-change archives
+  and awaits independent application review.
 - No project decision has reached final status and no runtime code has been corrected by this audit
-  branch. Source-of-truth documentation changes are limited to the authorized Series 1, Series 2, and
-  preservation-first Series 3 files recorded above; all three documentation series are applied and
-  independently accepted.
+  branch. Source-of-truth documentation changes are limited to the authorized Series 1 and Series 2 files
+  recorded above; Series 3 is applied but not yet independently accepted.
 
 The authoritative live checklist remains `COVERAGE.md`; accepted candidate IDs remain in `LEDGER.md`;
 Codex tasks/reviews remain in `EXCHANGE.md`; dependency chains remain in `CROSS_STAGE.md`; unresolved

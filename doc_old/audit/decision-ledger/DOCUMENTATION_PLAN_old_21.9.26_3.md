@@ -9,8 +9,9 @@
 ## Current plan status
 
 - source documents independently rechecked: **14**;
-- applied and independently accepted semantic edit files: **5** across Series 1/2/3;
-- Series 3 applied and independently accepted source files: **1**;
+- applied and independently accepted semantic edit files: **4** across Series 1/2;
+- Series 3 applied source files: **1**, with preservation-first content accepted and one bookkeeping
+  correction pending review;
 - conditional provenance-only files: **1**;
 - aligned or intentionally deferred no-change files: **8**;
 - applied semantic edit units: **10** across Series 1/2/3;
@@ -85,10 +86,10 @@ Targets/IDs: `TC-08`; `EX60-27`, `EX61-42`.
 
 ## Series 3 — History and provenance
 
-**Status: authorized, applied, and independently accepted.** On 2026-09-21 the user
+**Status: authorized and applied; independent application review pending.** On 2026-09-21 the user
 authorized the preservation-first Series 3 after the independent `/1` and `/2` plan reviews. The bounded
-`PROJECT_HISTORY.md` edit and required pre-change archives were applied in PR #78 and passed independent
-application review plus the narrow `D3R-001` correction review.
+`PROJECT_HISTORY.md` edit and required pre-change archives are now applied in PR #78; they are not final
+until the application review passes.
 
 ### `PROJECT_HISTORY.md`
 
@@ -153,14 +154,15 @@ restoration must not rewrite them for stylistic consistency.
 
 ## Application gate
 
-All three documentation series are complete and independently reviewed. The user authorized Series 1 on
+Series 1/2 are complete and independently reviewed; the preservation-first Series 3 plan is independently
+reviewed and its application now awaits independent review. The user authorized Series 1 on
 2026-09-21; its bounded documentation changes have been applied in PR #78 and independently accepted after correction of the
 audit-only `DR-001` progress statement. The user then authorized Series 2 on 2026-09-21; its bounded
 `docs/auth/AUTHORIZATION.md` change is applied in PR #78 and independently accepted. The user explicitly
 declined the original Series 3 on 2026-09-21, requested the preservation-first reassessment, and then
-explicitly authorized the independently reviewed replacement on the same date. The replacement was applied
-and independently accepted after the narrow `D3R-001` bookkeeping correction. Each series remained
-documentation-only and used full-file diff and pre-change archive guards against unrelated rewrites.
+explicitly authorized the independently reviewed replacement on the same date. The replacement is applied
+and awaits independent application review. Each series must remain documentation-only, use a full-file diff
+guard against unrelated rewrites, and be reviewed before the next series begins.
 
 ## Pre-change document archive rule
 
