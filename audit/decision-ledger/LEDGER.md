@@ -215,6 +215,19 @@ covered exactly once by an active preliminary classification or reviewed-support
 classification/disconfirmation coverage is complete, but no record is `final`, and no target contract or
 remediation has been selected.
 
+### User-decision candidate reconciliation (`DL-DECISIONS-001`)
+
+All 2,029 active assignments and all 16 `insufficient-evidence` records were screened after Phase 2.
+Exactly one unresolved normative choice remains: `UD-001`, the safe-read response for an explicitly
+malformed, unknown, inactive, or disabled locale. The repository supports both preserving the current
+temporary `307` redirect to the equivalent English route and returning `404`; it does not contain a
+direct-user decision selecting either option. The exact pending question is recorded in
+`OPEN_QUESTIONS.md`.
+
+Ten other candidate groups were rejected because they are already resolved user decisions/contracts,
+technical or implementation facts, deferred future policies not required by the current target, or
+historical provenance limitations. No demonstrated defect was converted into a user preference question.
+
 ## Record template
 
 ```text

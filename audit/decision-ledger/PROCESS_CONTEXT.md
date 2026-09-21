@@ -270,6 +270,9 @@ required restoration remain open until full-history and cross-stage review.
   classified+disconfirmed plus 331 reviewed-supporting records, with no unreviewed canonical ID and no
   active superseded classification. This closes preliminary classification coverage only; it must not be
   mistaken for final findings, approved target contracts, or remediation.
+- The post-classification decision sweep has reduced the finite unresolved normative set to one item,
+  `UD-001`: safe `GET`/`HEAD` handling for an explicitly unavailable locale. It is recorded in
+  `OPEN_QUESTIONS.md` and awaits the user's choice before target contracts are formed.
 - No project decision has reached final status and no product/source-of-truth documentation or runtime
   code has been corrected by this audit branch.
 

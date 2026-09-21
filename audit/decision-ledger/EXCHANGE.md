@@ -3273,3 +3273,36 @@ Scope: derive the finite user-decision candidate set from all accepted Phase 2 f
 Do not select an option, draft target contracts, propose remediation, edit project source-of-truth
 documentation, reopen accepted classifications without concrete contradictory evidence, or advance any
 record to `final`.
+
+## REVIEW DL-DECISIONS-001/1
+
+From: Codex
+Reviewed response: PR #79 commit `e594cd905959f90240eb71726af363c9885a9cb9`
+Machine artifact: `6d703f394fb676f6b8f240b6657bcceaa7c92565`
+Narrative artifact: `4569032856b5cf6963047f7d7488e6b4143c80b2`
+Status: accepted; finite-user-decision-set-complete; awaiting-user
+
+### Independent verification
+
+The machine artifact accounts for all 2,029 accepted active assignments, all 16 accepted
+`insufficient-evidence` records, 10 removed false-candidate groups, and exactly one surviving candidate.
+The candidate traces to `AN11-05`, `DLX12-12`, `DLX13-01`, and `EX16-07`. PR #11 commit
+`dd8a12da8df4` removed its premature `404` and restored an explicit decision gate; PR #12 retained that
+gate; PR #13 selected the current temporary-English policy; PR #16 implemented it. Current code confirms
+the safe-method `307` behavior, while current documentation is evidence of that behavior rather than
+missing direct-user authority.
+
+The rejected `EX55-18` question is correctly technical rather than normative: RFC 9110 sections 15.6.1
+and 15.6.4 distinguish an unexpected server condition (`500`) from temporary overload or maintenance
+(`503`). The remaining rejected groups are resolved by accepted user decisions/contracts, are future
+policies without a current consumer forcing a choice, or concern historical provenance only.
+
+### Accepted user-decision candidate
+
+`UD-001` asks only whether safe `GET`/`HEAD` requests with an explicit malformed, unknown, inactive, or
+disabled locale should preserve the current temporary `307` redirect to the equivalent `/en/...` route or
+return `404`. Both preserve the fixed generic-locale, explicit-URL authority, canonical `308`, unsafe-method
+fail-closed, internal-target, and no-side-effect constraints. No option is selected by this review.
+
+No other unresolved normative candidate remains. `OPEN_QUESTIONS.md` may now record `UD-001` for the
+user; target-contract formation remains blocked only on that choice.
