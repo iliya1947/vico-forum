@@ -7,12 +7,16 @@ decide implementation facts that Git, code, tests, or exact-version primary docu
 
 ## Pending user decisions
 
+None.
+
+## Resolved user decisions
+
 ### UD-001 — explicit unavailable-locale safe-read UX
 
 Scope: only `GET`/`HEAD` requests whose explicit `/:locale` segment is malformed, unknown,
 inactive, or disabled.
 
-Repository history leaves two valid choices:
+Repository history left two valid choices:
 
 1. **Preserve the current `307` English fallback.** Redirect temporarily to the same route and
    query under `/en/...`. This gives the visitor readable English content and keeps the current
@@ -30,4 +34,7 @@ gate; PR #12 required a choice but did not supply direct-user authority; PR #13/
 implemented the current `307` behavior as a technically valid alternative. Current documentation and
 code prove present behavior but cannot supply the missing user decision.
 
-Status: `awaiting-user`.
+Status: `resolved` by direct user decision on 2026-09-21.
+
+Selected option: **preserve the current temporary `307` English fallback** for safe `GET`/`HEAD`
+requests, retaining the same route remainder and query under `/en/...`.

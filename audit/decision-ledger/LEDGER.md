@@ -218,15 +218,20 @@ remediation has been selected.
 ### User-decision candidate reconciliation (`DL-DECISIONS-001`)
 
 All 2,029 active assignments and all 16 `insufficient-evidence` records were screened after Phase 2.
-Exactly one unresolved normative choice remains: `UD-001`, the safe-read response for an explicitly
-malformed, unknown, inactive, or disabled locale. The repository supports both preserving the current
-temporary `307` redirect to the equivalent English route and returning `404`; it does not contain a
-direct-user decision selecting either option. The exact pending question is recorded in
-`OPEN_QUESTIONS.md`.
+The screening found exactly one unresolved normative choice: `UD-001`, the safe-read response for an
+explicitly malformed, unknown, inactive, or disabled locale. The repository supports both preserving the
+current temporary `307` redirect to the equivalent English route and returning `404`; it does not contain
+a pre-existing direct-user decision selecting either option. The exact question and its later resolution
+are recorded in `OPEN_QUESTIONS.md`.
 
 Ten other candidate groups were rejected because they are already resolved user decisions/contracts,
 technical or implementation facts, deferred future policies not required by the current target, or
 historical provenance limitations. No demonstrated defect was converted into a user preference question.
+
+On 2026-09-21 the user selected option A for `UD-001`: preserve the current temporary `307` redirect to
+the equivalent English route for safe `GET`/`HEAD` requests. This is a `direct-user-decision`. It resolves
+the last normative question without changing the already fixed canonicalization, unsafe-method,
+internal-target, or no-side-effect constraints. Target-contract work must preserve this behavior.
 
 ## Record template
 

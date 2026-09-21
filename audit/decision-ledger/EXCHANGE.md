@@ -3306,3 +3306,61 @@ fail-closed, internal-target, and no-side-effect constraints. No option is selec
 
 No other unresolved normative candidate remains. `OPEN_QUESTIONS.md` may now record `UD-001` for the
 user; target-contract formation remains blocked only on that choice.
+
+## USER DECISION UD-001
+
+Recorded by: Codex
+Decision source: direct user message on 2026-09-21
+Status: resolved; option-A-selected
+
+The user selected option A: preserve the current temporary `307` redirect to the equivalent `/en/...`
+route, including route remainder and query, for safe `GET`/`HEAD` requests whose explicit locale is
+malformed, unknown, inactive, or disabled.
+
+This decision does not reopen or weaken generic/data-driven locale architecture, explicit-URL authority
+over preference negotiation, canonical `308` handling for an active alias/case/deprecated form,
+non-`GET`/`HEAD` fail-closed handling before action side effects, internal-only redirect targets, or the
+SEC-01 no-side-effect invariant. The selected behavior already matches current runtime code and the
+current locale contract; later target-contract work must preserve it.
+
+## TASK DL-TARGET-001
+
+From: Codex
+Status: open
+Response destination: ChatGPT-owned PR #79
+Scope: propose the audit-wide target-contract map after completed classification and user decisions
+
+### Inputs
+
+- all 2,029 accepted Phase 2 assignments;
+- accepted reviews through `DL-DECISIONS-001/1`;
+- fixed direct-user decisions in `PROCESS_CONTEXT.md`;
+- `USER DECISION UD-001`, option A;
+- current source-of-truth documents and current implementation only as evidence, never as automatic
+  authority for their own historical correctness.
+
+### Assignment
+
+1. Produce a finite target-contract map, grouped by subsystem and stage. For each target state, identify
+   the accepted IDs supporting it and classify the required action as preserve, restore, narrow,
+   supersede, document-current-defect, defer-to-future-stage, or no-change.
+2. Preserve independently valuable later product work, justified fixes, intentional future-proof
+   foundations, and acceptable alternatives. Do not mechanically roll documentation or code back to PR
+   #12 and do not treat complexity or a future consumer as a defect.
+3. Incorporate the prospective PR #50 forum/product-first boundary and the selected `UD-001` option A.
+   Do not use PR #50 retroactively to rewrite the assessment of PR #20–#49.
+4. Separate target contracts from remediation. Name which source-of-truth documents would eventually
+   need synchronization, but do not edit them, design patches, order implementation commits, or make
+   external changes.
+5. Reconcile every accepted dumb correction and every accepted current code/test/config/documentation
+   defect into exactly one target-contract disposition. Also reconcile evidence-limited records that
+   constrain wording without forcing a behavior change.
+6. Apply an audit-wide disconfirmation pass: identify any proposed target that lacks accepted authority,
+   conflicts with a direct-user decision, prematurely implements a future stage, or discards a current
+   consumer/foundation. Return a finite conflict list; do not silently choose between contradictions.
+7. Return a machine-readable map and concise narrative with exact counts. Nothing may become `final`
+   merely because it appears in the response; Codex will independently verify the map before any
+   source-of-truth documentation changes.
+
+Do not edit PR #78, modify product/source-of-truth documentation or runtime code, select new product
+options, propose detailed remediation, perform rollout, or advance records to `final`.
