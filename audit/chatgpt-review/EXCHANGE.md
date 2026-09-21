@@ -659,3 +659,169 @@ Finite candidate set: **UD-001 only**.
 
 Codex must independently verify this response before modifying `OPEN_QUESTIONS.md` or asking the
 user to choose.
+
+
+## RESPONSE DL-TARGET-001/1
+
+From: ChatGPT  
+Status: submitted  
+Responding in: PR #79  
+Task source: PR #78 head `b6bbf82304f0308d63cc688478306f8872583f0e`  
+Audited main: `3282aa51f47f36131d35c34ee79ca37cb2ce434f`
+
+### Immutable response artifacts
+
+- Machine-readable target map:
+  `audit/chatgpt-review/DL-TARGET-001.json` at
+  `aa6b72dc429d1b64050974493a9b93b59ef5821d`.
+- Narrative:
+  `audit/chatgpt-review/DL-TARGET-001.md` at
+  `fd85b2fe4c573acc554079079bbc221efaa296a0`.
+
+### Input and authority
+
+The map starts from all **2,029 / 2,029** accepted active Phase-2 assignments and incorporates the
+recorded direct-user decisions, including **USER DECISION UD-001 = A**:
+
+```text
+safe GET/HEAD + explicit malformed/unknown/inactive/disabled locale
+→ 307 Temporary Redirect
+→ equivalent /en/... route with route remainder/query preserved
+```
+
+PR #50 is applied **prospectively only**. No pre-#50 historical classification is rewritten from
+the later product-first decision.
+
+### Target-map result
+
+The finite map contains:
+
+```text
+subsystem partitions                      = 13
+target contracts                          = 13
+target states                             = 51
+bad corrective records reconciled         = 23
+current-defect atomic IDs reconciled       = 29
+current-defect groups                      = 15
+evidence-limited atomic IDs reconciled     = 16
+resolved target conflicts                  = 10
+unresolved target conflicts                = 0
+new user decisions required                = 0
+```
+
+The 13 subsystem contracts are:
+
+1. locale registry/routing;
+2. UI translation freshness/stale semantics;
+3. persistent UI translation storage/bundles;
+4. database/Hyperdrive/migration/external rollout;
+5. content-translation identity/Stage 5B;
+6. forum core/write/Markdown/cooldown/solved UX;
+7. authentication/session/OAuth;
+8. dynamic authorization;
+9. provider-neutral translation execution;
+10. durable tasks/lifecycle/ordering/publication/recovery;
+11. observability/security hardening;
+12. current-state/history/contract-document responsibility;
+13. review/CI evidence.
+
+### Correction reconciliation
+
+Every accepted bad corrective record is assigned exactly one target disposition.
+
+The important results are:
+
+- restore the permissive stale-pack contract and reject the implicit zero-stale CI gate; restoring
+  the removed synthetic canary is **not** required;
+- preserve useful deadline/privilege/migration-evidence foundations while superseding or narrowing
+  their old blanket blocker timing;
+- do not preselect separate Neon/Hyperdrive/Worker/Google topology before Stage 6;
+- keep repository-local migration-evidence checks in ordinary CI and live verification only at real
+  external schema-dependent rollout;
+- retain the corrected PostgreSQL membership/application-owner model, not the PR #43 blanket model
+  or PR #49 intermediate DB-owner migration-write workaround;
+- restore/retain Stage-5 generation-policy, provider-provenance, stale-preflight and
+  conditional-publication invariants that PR #50 documentation temporarily omitted;
+- preserve PR #76 typed authorization-availability semantics and supersede PR #61 catch-all error
+  suppression.
+
+### Current defects
+
+The 29 defect IDs are grouped into 15 target obligations:
+
+- persistent English exclusion/verification must reject whitespace-wrapped English identity;
+- bundle namespace validation must use canonical own-property membership;
+- persistent-row issue telemetry must not double-count one invalid-origin physical row;
+- actual Stage-6 external rollout evidence must cover the migration truly required by the runtime;
+- forum topic/message count presentation must be plural-aware;
+- the rollback test must reach its intended transactional failure rather than pass on cooldown;
+- desktop best-answer/body/solution controls must occupy the intended post-content area;
+- composite user authorization and management-state reads require internally consistent snapshots;
+- fresh planning must restore the A→B→A stale-identity reactivation contract without weakening
+  Queue terminality, completed terminality, generation ordering or claim/publication fencing;
+- obsolete/rejected persisted bundle formats need durable convergence to current representation
+  without request-time provider calls;
+- PROJECT_HISTORY must narrow the PR #40 label and index the still-current PR #72/#75 defects;
+- PROJECT_STATE must record those two current Stage-5A limitations.
+
+No remediation implementation or exact patch mechanism is selected here.
+
+### Evidence-limited records
+
+All **16 / 16** accepted evidence-limited records are separately reconciled.
+
+They constrain claims rather than silently becoming behavior. In particular:
+
+- `EX29-13` does not create a permanent immutable he/ka/ru product-data invariant;
+- historical external observations without preserved raw artifacts remain evidence-limited;
+- `EX51-22` does not force a permanent superseded-revision retention policy before a real Stage-5B
+  consumer requires one;
+- `EX55-18` remains a technical failure-boundary concern, not a user choice or automatic behavior
+  change;
+- `EX77-29/30/65` constrain retrospective wording/attribution only.
+
+### Future-stage separation
+
+The target preserves stage boundaries:
+
+- remaining Stage 5A local/CI work: concrete provider adapter, retry/DLQ or equivalent terminal
+  failure path, durable reconciliation/observability;
+- Stage 5B: user-content translation implementation on the already-preserved immutable-revision
+  foundation;
+- Stage 6: real migrations/roles/Hyperdrive topology, OAuth, Queue, real provider calls/credentials,
+  preview/private-data isolation as required, and deployed acceptance.
+
+Future work is not converted into a present defect merely because it is not implemented yet.
+
+### Eventual documentation synchronization
+
+Semantic synchronization will eventually be required in:
+
+- `PROJECT_HISTORY.md`;
+- `PROJECT_STATE.md`;
+- `docs/translation/PROVIDERS_AND_JOBS.md`;
+- `docs/translation/STORAGE_AND_VERSIONING.md`;
+- `docs/auth/AUTHORIZATION.md`.
+
+The target contract is already aligned at the relevant level in
+`docs/translation/LOCALES.md`, `docs/translation/UI_TRANSLATION.md`,
+`docs/database/MIGRATIONS.md`, `PROJECT.md`, and `ROADMAP.md`.
+
+No product/source-of-truth document, runtime code, schema, workflow, external resource, or PR #78
+file is modified by this response.
+
+### Disconfirmation result
+
+The audit-wide target pass checked user authority, PR #50 forward-only scope, cross-stage dependencies,
+live consumers of foundations, current implementation for defect dispositions, all 16 evidence-limited
+records, and the Stage 5A/5B/6 boundaries.
+
+Result:
+
+```text
+resolved target conflicts   = 10
+unresolved target conflicts = 0
+new user choices required   = 0
+```
+
+Codex should independently verify this target map before Phase 4 documentation restoration.
