@@ -1722,3 +1722,127 @@ Finite correction list: **1 item — D3R-001**.
 The applied `PROJECT_HISTORY.md` preservation-first content and all five required pre-change archives pass
 review. Series 3 must remain applied-review-pending, not final, until Codex reviews this response and the
 single bookkeeping inconsistency is resolved.
+
+
+## ADDENDUM RESPONSE DL-DOCS-REVIEW-003/1 — PRIOR CHAT
+
+From: ChatGPT
+Status: supplementary provenance appendix; original outcome remains REVISION REQUIRED
+Current PR #78 head checked: `05510a246044a6d2ef06b48eb69f25fa0ff55032`
+Scope: only the requested `PRIOR CHAT` addendum plus verification of the new audit/process delta
+Queued `DL-CHAT-PROVENANCE-001`: **not started**
+
+### Current-head delta and archive check
+
+Since the original `DL-DOCS-REVIEW-003/1` response, PR #78 advanced by one audit-only commit,
+`05510a246044a6d2ef06b48eb69f25fa0ff55032` (`audit: add prior-chat provenance evidence`).
+It changes only:
+
+- `audit/decision-ledger/EXCHANGE.md`;
+- `audit/decision-ledger/PROCESS_CONTEXT.md`;
+- `audit/decision-ledger/README.md`;
+
+and adds the corresponding `_old_21.9.26_2` archives.
+
+All three new archives are exact pre-change copies:
+
+| Changed document | Pre-change/archive blob SHA |
+| --- | --- |
+| `audit/decision-ledger/EXCHANGE.md` | `d23703816ea0335a3eb91d8b86c3978cb4c574bd` |
+| `audit/decision-ledger/PROCESS_CONTEXT.md` | `8a50754c931b9ea37a049d4eb863b2a0f09664bc` |
+| `audit/decision-ledger/README.md` | `16016a6d912337b0e406060f31afee95f29309a1` |
+
+The new delta does not modify `PROJECT_HISTORY.md`, runtime code, schema, workflows, dependencies, or
+remediation mechanics. It also does not resolve `D3R-001`: `DOCUMENTATION_PLAN.md` is unchanged, so the
+stale top-level Series-3 status identified in the original response remains the single open correction.
+
+### PRIOR CHAT provenance appendix
+
+The classifications below describe only what the accessible prior project-chat context itself supports.
+They supplement, and do not replace, the Git/PR/code/archive evidence already reviewed.
+
+#### PR #40 / H-001 — mixed direct/supporting chat evidence; earlier overbroad context preserved
+
+Accessible chat history contains a direct user-level statement on 2026-09-18 identifying the #40 error as
+the zero-stale gate. Earlier assistant-side discussion also records the underlying stale contract: stale local
+values remain permissible, are excluded from the current bundle on fingerprint mismatch, and continue
+through fallback.
+
+The chat trail also contains an important correction in its own provenance. Earlier assistant discussion
+described the stale-canary removal too broadly as part of the regression. Later audit discussion on
+2026-09-20 explicitly narrowed the supported defect to the zero-stale gate, treated canary removal as not
+independently proven defective, and treated strict documentation laundering/backdating as not proven.
+
+Therefore the current preservation-first H-001 treatment is chat-compatible: the earlier broader conclusion
+really existed, and the later narrowing should remain visibly subsequent rather than being retroactively
+presented as the original conclusion.
+
+No accessible direct user statement was found that independently establishes canary removal as a defect or
+strict laundering/backdating as fact.
+
+#### PR #72 — direct contemporaneous assistant evidence for the fix; no contemporaneous chat match for A→B→A
+
+A contemporaneous ChatGPT review message from 2026-09-16 records PR #72's durable generation-head /
+monotonic ordering and publication fencing as a correct solution and treated that PR as merge-ready.
+
+However, the accessible contemporaneous PR #72 chat does **not** contain the later residual fresh-plan
+`A → B → A` reactivation finding. That gap appears in later audit/reconstruction context rather than in the
+retrieved original review episode.
+
+So prior chat supports the historical distinction now recorded in H-008:
+
+- ordering/fencing was accepted as a justified correction at the time;
+- the `A → B → A` residual gap is a later finding and must not be rewritten as something already known in
+  the original PR #72 review.
+
+No contrary accessible chat evidence was found.
+
+#### PR #75 — supporting contemporaneous assistant evidence for runtime reads and convergence gap
+
+Accessible assistant-side chat from the 2026-09-16 PR #75 review records technical consensus around
+persisted-bundle runtime reads and also records the durable rebuild/refresh/convergence problem: safe
+fallback can handle a rejected obsolete bundle, but a durable path is still required to replace/refresh the
+persisted representation rather than repeatedly encounter the same stale form.
+
+This is contemporaneous assistant evidence, not a direct user decision. Later audit evidence independently
+corroborates the same historical relationship. No accessible contrary chat evidence was found.
+
+Accordingly H-011's concise historical link is supported; the chat evidence does not justify moving current
+technical details out of `PROJECT_STATE.md` or selecting a remediation mechanism.
+
+#### H-010 / PR #77 — direct user chat evidence
+
+This provenance is directly confirmed in accessible user messages.
+
+On 2026-09-18 the user objected to the loss of historical material from `PROJECT_STATE.md` and required a
+separate `PROJECT_HISTORY.md`. On 2026-09-21 the user explicitly reconfirmed the attribution in substance:
+the user had noticed the history loss and told ChatGPT to restore it in a new `PROJECT_HISTORY.md`.
+
+This is direct-user chat evidence for the actor attribution only. It does not independently validate every
+other historical statement in H-010.
+
+#### Preservation-first Series 3 — direct user chat evidence
+
+Accessible prior chat contains a direct user decision on 2026-09-21 rejecting an in-place rewrite/erasure of
+the old historical record and requiring preservation-first handling: retain the earlier wording and record a
+later reassessment separately rather than rewriting the old conclusion as if the later audit view had always
+been known.
+
+This directly supports the governing preservation principle used by the revised `DOCS-SERIES-03`.
+The later choice of exact H-011 placement and concise #72/#75 history links remains the independently reviewed
+technical documentation plan, not a retroactively invented user statement.
+
+### Addendum conclusion
+
+The prior-chat check adds useful provenance and does not overturn the original application review.
+
+- PR #40/H-001: supports the existence of an earlier broader view and its later narrowing.
+- PR #72: supports the original correctness assessment of ordering/fencing, while confirming that the
+  `A → B → A` finding is later, not contemporaneous in the accessible review chat.
+- PR #75: supplies contemporaneous assistant-side support for the convergence-gap relationship.
+- H-010: direct user provenance is confirmed.
+- preservation-first: direct user provenance is confirmed.
+
+The original `DL-DOCS-REVIEW-003/1` outcome therefore remains **REVISION REQUIRED** solely because of
+`D3R-001`. The applied `PROJECT_HISTORY.md` content and all reviewed `doc_old/` archives continue to
+pass. No part of queued `DL-CHAT-PROVENANCE-001` was performed.
