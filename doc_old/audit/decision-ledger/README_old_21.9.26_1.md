@@ -129,10 +129,10 @@ Every suspected future-proof decision must be tested for:
 4. Do not merge this workspace into `main` as product documentation.
 5. After the final ledger is approved, any real documentation or code correction must be prepared as
    separately scoped work derived from final decisions.
-6. Before changing any documentation file, copy its exact pre-change version under
+6. Before changing a project documentation/source-of-truth file, copy its exact pre-change version under
    `doc_old/`, preserve its relative directory, and append `_old_D.M.YY_N` before the extension. Number
-   same-document, same-day archives from `1` upward and never overwrite an existing archive. Audit/process
-   documents are included; the new archive outputs under `doc_old/` are not recursively archived.
+   same-document, same-day archives from `1` upward and never overwrite an existing archive. Append-only
+   audit bookkeeping under `audit/` is excluded from recursive archival copies.
 
 ## Two-PR communication boundary
 

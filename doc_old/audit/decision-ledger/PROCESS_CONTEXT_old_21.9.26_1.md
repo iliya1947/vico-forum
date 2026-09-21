@@ -230,10 +230,11 @@ verdicts.
 - Historical documents must preserve the chain of what was recorded at the time. Erroneous or unsupported
   conclusions must be retained as historical statements and followed by an explicit later audit
   reassessment, not silently deleted or rewritten as though the earlier conclusion never existed.
-- Before any future document edit, its exact pre-change version must be copied under `doc_old/`, with
+- Before a future project-document edit, its exact pre-change version must be copied under `doc_old/`, with
   its relative path retained and `_old_D.M.YY_N` appended to the filename. `N` starts at `1` and increments
   for each change to the same document on that date; existing archives are never overwritten. Audit
-  and process documents are included; newly created archive outputs are not recursively archived.
+  bookkeeping files are excluded from recursive backup because their accepted history is preserved by Git
+  and append-only logs.
 - PR #72 and PR #75 warrant only concise historical discovery/relationship links in
   `PROJECT_HISTORY.md`; full current limitation details remain in `PROJECT_STATE.md` and must not be
   duplicated.
@@ -301,12 +302,11 @@ required restoration remain open until full-history and cross-stage review.
   2026-09-21; its three bounded source-document changes are applied and independently accepted after the
   audit-only `DR-001` bookkeeping correction. The user authorized Series 2 on 2026-09-21; its bounded
   authorization-contract change is applied and independently accepted. The user declined Series 3 in its
-  previous form; its preservation-first replacement plan and PR #72/#75 history placement passed
-  independent review. The user then authorized the replacement, which is applied with pre-change archives
-  and awaits independent application review.
+  previous form; its preservation-first replacement plan and PR #72/#75 history placement have now passed
+  independent review, but Series 3 remains unapplied and unauthorized pending a new explicit user decision.
 - No project decision has reached final status and no runtime code has been corrected by this audit
   branch. Source-of-truth documentation changes are limited to the authorized Series 1 and Series 2 files
-  recorded above; Series 3 is applied but not yet independently accepted.
+  recorded above; Series 3 remains unapplied.
 
 The authoritative live checklist remains `COVERAGE.md`; accepted candidate IDs remain in `LEDGER.md`;
 Codex tasks/reviews remain in `EXCHANGE.md`; dependency chains remain in `CROSS_STAGE.md`; unresolved

@@ -85,10 +85,10 @@ Targets/IDs: `TC-08`; `EX60-27`, `EX61-42`.
 
 ## Series 3 — History and provenance
 
-**Status: authorized and applied; independent application review pending.** On 2026-09-21 the user
-authorized the preservation-first Series 3 after the independent `/1` and `/2` plan reviews. The bounded
-`PROJECT_HISTORY.md` edit and required pre-change archives are now applied in PR #78; they are not final
-until the application review passes.
+**Status: revised and independently reviewed, but not authorized.** On 2026-09-21 the user explicitly
+declined authorization for the previous Series 3 and required a preservation-first review. The independent
+`/1` and `/2` reviews accepted the finite map below. No Series 3 source-document edit may begin until the
+user gives a new, explicit authorization.
 
 ### `PROJECT_HISTORY.md`
 
@@ -99,7 +99,7 @@ must be presented as a clearly dated subsequent reassessment, with the original 
 visible. This also applies to the PR #40/H-001 findings that the earlier plan proposed narrowing or
 removing.
 
-Applied finite preservation-first map:
+Apply this finite preservation-first map only after new user authorization:
 
 1. keep the existing high-level PR #40 label visible and add an adjacent dated audit reassessment: the
    confirmed bad correction is the zero-stale repository gate, while canary removal is not independently
@@ -153,19 +153,19 @@ restoration must not rewrite them for stylistic consistency.
 
 ## Application gate
 
-Series 1/2 are complete and independently reviewed; the preservation-first Series 3 plan is independently
-reviewed and its application now awaits independent review. The user authorized Series 1 on
+Series 1/2 are complete and independently reviewed; the preservation-first Series 3 replacement is also
+independently reviewed and now awaits only new user authorization. The user authorized Series 1 on
 2026-09-21; its bounded documentation changes have been applied in PR #78 and independently accepted after correction of the
 audit-only `DR-001` progress statement. The user then authorized Series 2 on 2026-09-21; its bounded
 `docs/auth/AUTHORIZATION.md` change is applied in PR #78 and independently accepted. The user explicitly
-declined the original Series 3 on 2026-09-21, requested the preservation-first reassessment, and then
-explicitly authorized the independently reviewed replacement on the same date. The replacement is applied
-and awaits independent application review. Each series must remain documentation-only, use a full-file diff
-guard against unrelated rewrites, and be reviewed before the next series begins.
+declined Series 3 authorization on 2026-09-21 and requested the preservation-first reassessment above.
+Series 3 remains unapplied; its finite replacement map is accepted but still requires new explicit user
+authorization. Each series must remain documentation-only, use a full-file diff guard against unrelated
+rewrites, and be reviewed before the next series begins.
 
 ## Pre-change document archive rule
 
-Before any future edit to any documentation file, preserve its exact pre-change
+Before any future edit to a project source-of-truth/documentation file, preserve its exact pre-change
 contents under `doc_old/`. Retain the original relative directory structure to prevent basename collisions.
 Use `_old_D.M.YY_N` immediately before the extension, where `N` is a per-document, per-day sequence starting
 at `1` and increasing monotonically for every additional edit that day. For example, the first and second
@@ -176,5 +176,5 @@ pre-change copies of `PROJECT_HISTORY.md` on 2026-09-21 are
 The archive copy is evidence and must not be edited to match the new document. Choose the next unused
 sequence number before the document edit and never overwrite an existing archive. The requirement remains
 an exact copy of the pre-change file; no additional Git-blob procedure is required. This rule applies to
-**every documentation file that is changed**, including audit/process documentation. Files newly created
-inside `doc_old/` are the archive outputs and are not recursively archived themselves.
+source/project documentation changes; append-only audit bookkeeping and machine review artifacts under
+`audit/` remain governed by their own history and are not recursively copied into `doc_old/`.

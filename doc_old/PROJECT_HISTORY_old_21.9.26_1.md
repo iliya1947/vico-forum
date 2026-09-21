@@ -1,6 +1,6 @@
 # PROJECT_HISTORY.md
 
-Последнее обновление: 2026-09-21
+Последнее обновление: 2026-09-18
 
 ## Назначение
 
@@ -73,11 +73,6 @@ Stage 3C создавал compiler/persistence/cache primitives; active persiste
 Часть решений этого периода позже была сужена или исправлена. Подробности — в corrective
 ledger ниже.
 
-**Последующая переоценка аудита от 2026-09-21:** историческая краткая метка PR #40 выше
-оказалась шире подтверждённого вывода. Подтверждённой ошибочной коррекцией является введённый
-zero-stale repository gate. Само удаление synthetic stale canary отдельно не доказано как
-дефект; подробная граница сохранена в H-001.
-
 ### 2026-09-14 — 2026-09-15: Stage 4 forum core
 
 Forum core был реализован в local/CI path:
@@ -138,16 +133,6 @@ runtime-owned `manualTranslationPacks` и добавил test, требующи�
 
 Текущий source of truth:
 `docs/translation/UI_TRANSLATION.md` и `docs/translation/STORAGE_AND_VERSIONING.md`.
-
-**Последующая переоценка аудита от 2026-09-21**
-
-Приведённая выше запись сохраняет формулировки и выводы, зафиксированные при создании
-`PROJECT_HISTORY.md`. Последующий полный аудит сузил подтверждённый regression до zero-stale
-repository gate: отдельного решения о strict stale-CI найдено не было. Удаление synthetic stale
-canary остаётся историческим фактом, но отдельно не доказано как дефект; test-local fixtures
-продолжили проверять stale exclusion/fallback path. Строгое documentation laundering или
-backdating также не подтверждено. Эта переоценка не переписывает то, что было записано раньше,
-а явно отделяет более поздний вывод аудита.
 
 ---
 
@@ -322,12 +307,6 @@ fenced по current generation.
 Статус: unsafe supersession и missing-return regression не попали в `main`; durable
 replacement ordering реализован PR #72.
 
-**Последующая переоценка аудита от 2026-09-21:** ordering/fencing из PR #72 остаётся
-обоснованным исправлением race condition. Одновременно review PR #72 обнаружил остаточный
-fresh-plan gap: последовательность identities `A → B → A` не может снова сделать прежнюю stale A
-актуальной. В проверенной цепочке PR #72–#77 этот gap не был исправлен. Текущее состояние и
-целевой contract описаны в `PROJECT_STATE.md` и `docs/translation/PROVIDERS_AND_JOBS.md`.
-
 ---
 
 ### H-009 — accidental unrelated PROJECT_STATE rewrites during PR work
@@ -384,20 +363,6 @@ policy. Это особенно мешало анализу H-001, H-005 и H-00
 
 Статус: первоначальная потеря доступной history внутри PR исправлена до merge; сам PR ещё не
 является merged history на момент этой записи.
-
----
-
-### H-011 — persisted-bundle runtime reads и durable convergence
-
-PR [#75](https://github.com/iliya1947/vico-forum/pull/75) добавил runtime-чтение проверенных
-persisted UI bundles. Review того же PR выявил, что безопасный miss/fallback при obsolete
-format/deploy identity не сопровождается durable refresh/convergence path. Последующий аудит от
-2026-09-21 подтвердил эту историческую связь; в проверенной цепочке PR #75–#77 gap не был
-исправлен.
-
-Подробное текущее поведение и статус ограничения находятся в `PROJECT_STATE.md`, а действующий
-contract — в `docs/translation/STORAGE_AND_VERSIONING.md`. Эта запись не выбирает механизм
-исправления.
 
 ## Важное свойство исторических записей
 
