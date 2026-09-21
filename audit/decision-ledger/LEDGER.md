@@ -205,19 +205,21 @@ of the still-live `bundles.ts` path.
 | `EX77-75`, `EX77-76` | real current state omissions | `PROJECT_STATE.md` records the implemented mechanisms but omits those two accepted current limitations. |
 | `EX77-16`, `EX77-46` | historical documentation defects | PR #77 temporarily removed accessible history and initially misattributed PR #61's broad failure policy; both were corrected before merge. |
 | 8 R6 records | justified documentation fixes | `EX77-03/17/18/19/47/48/53/56` correct concrete CI, stage-boundary, history, provenance, or omitted-regression records. |
-| `EX77-65` | insufficient evidence | Git proves history loss and its correction, but available PR discussion does not prove that user review specifically detected it. |
-| 56 R6 records | reviewed supporting/provenance | These index chronology, scope, CI, current wording, or accepted chains without supplying independent normative authority. |
+| `EX77-65` | direct-user-confirmed historical provenance | Git alone did not identify the reviewer, but on 2026-09-21 the user directly confirmed noticing the history loss and requiring its restoration in `PROJECT_HISTORY.md`. |
+| 57 R6 records | reviewed supporting/provenance | These index chronology, scope, CI, current wording, accepted chains, or subsequently confirmed direct-user provenance without requiring another correctness verdict. |
 
 R6 contains no dumb correction, unresolved classification, new runtime defect, or newly confirmed strict
-documentation laundering. Its 25 substantive records have recorded deliberate-disconfirmation passes;
-the other 56 are explicitly supporting/provenance-only. With R6 accepted, all 2,029 canonical IDs are
-covered exactly once by an active preliminary classification or reviewed-supporting assignment. Phase 2
+documentation laundering. After the direct-user evidence superseding `EX77-65`, 24 substantive records
+retain deliberate-disconfirmation passes and 57 are supporting/provenance-only. With R6 accepted, all
+2,029 canonical IDs are covered exactly once by an active preliminary classification or reviewed-
+supporting assignment. Phase 2
 classification/disconfirmation coverage is complete, but no record is `final`, and no target contract or
 remediation has been selected.
 
 ### User-decision candidate reconciliation (`DL-DECISIONS-001`)
 
-All 2,029 active assignments and all 16 `insufficient-evidence` records were screened after Phase 2.
+All 2,029 active assignments and all 16 records that were then `insufficient-evidence` were screened after
+Phase 2; later direct-user evidence resolved `EX77-65`, leaving 15 evidence-limited records.
 The screening found exactly one unresolved normative choice: `UD-001`, the safe-read response for an
 explicitly malformed, unknown, inactive, or disabled locale. The repository supports both preserving the
 current temporary `307` redirect to the equivalent English route and returning `404`; it does not contain
@@ -237,8 +239,8 @@ internal-target, or no-side-effect constraints. Target-contract work must preser
 
 The independently reviewed target map contains 13 exhaustive subsystem contracts and 51 atomic target
 states. It reconciles all 23 accepted bad/overbroad corrective records, 29 current-defect IDs in 15
-groups, and all 16 evidence-limited IDs. Ten target conflicts are resolved by accepted evidence or direct
-user decisions; no target conflict or new user decision remains open.
+groups, and all 15 remaining evidence-limited IDs. Ten target conflicts are resolved by accepted evidence
+or direct user decisions; no target conflict or new user decision remains open.
 
 The accepted working map is maintained in `TARGET_CONTRACTS.md`. It is not a product source of truth and
 does not authorize documentation edits, implementation mechanics, external operations, or final ledger
@@ -247,7 +249,8 @@ status. Its role is to constrain the next documentation-restoration plan against
 ### Documentation-restoration planning (`DL-DOCS-PLAN-001`)
 
 The independently reviewed plan identifies five required semantic edit files, one conditional
-provenance-only file, and eight aligned/no-change documents. Its 11 edit units are divided into three
+provenance-only file, and eight aligned/no-change documents. After the direct-user provenance correction,
+its 10 edit units are divided into three
 documentation-only series with file-local diff guards. The durable working plan is
 `DOCUMENTATION_PLAN.md`.
 

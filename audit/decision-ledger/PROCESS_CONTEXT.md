@@ -217,6 +217,15 @@ verdicts.
 - Translation future-proof foundations, immutable forum revisions, `sourceLocale | und`, separate
   translatable topic-title revisions, and genuine race-condition fixes are not errors merely because
   they are complex or prepared early.
+- For `UD-001`, the user selected option A: preserve the temporary `307` English fallback for safe
+  `GET`/`HEAD` requests with an explicitly unavailable locale.
+
+## Fixed direct-user historical evidence
+
+- On 2026-09-21 the user confirmed that the user noticed the intermediate PR #77 history loss after the
+  historical portion was removed from `PROJECT_STATE.md` and required restoration in a separate
+  `PROJECT_HISTORY.md`. This resolves only the actor attribution in `EX77-65`; it does not authorize other
+  PR #77 historical claims.
 
 ## Strong preliminary leads that are not yet final verdicts
 
@@ -266,8 +275,8 @@ required restoration remain open until full-history and cross-stage review.
   future-proof revision model and identifying three concrete code/test/UI defects. The Stage 5A chain is
   also reviewed, preserving its durable future-proof foundations while identifying two current defect
   groups. R6 has now reconciled the retrospective/state records against R1–R5. **Phase 2
-  classification/disconfirmation coverage is complete at 2,029 / 2,029 = 100%**: 1,698
-  classified+disconfirmed plus 331 reviewed-supporting records, with no unreviewed canonical ID and no
+  classification/disconfirmation coverage is complete at 2,029 / 2,029 = 100%**: 1,697
+  classified+disconfirmed plus 332 reviewed-supporting records, with no unreviewed canonical ID and no
   active superseded classification. This closes preliminary classification coverage only; it must not be
   mistaken for final findings, approved target contracts, or remediation.
 - The post-classification decision sweep reduced the finite unresolved normative set to one item,

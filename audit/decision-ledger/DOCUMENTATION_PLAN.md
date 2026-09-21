@@ -12,9 +12,9 @@
 - required semantic edit files: **5**;
 - conditional provenance-only files: **1**;
 - aligned or intentionally deferred no-change files: **8**;
-- semantic edit units: **11**;
+- semantic edit units: **10** after direct-user evidence removed the planned H-010 attribution edit;
 - independently reviewable documentation-only series: **3**;
-- accepted IDs driving required edits: **24**;
+- accepted IDs driving required edits: **23**;
 - conditional provenance IDs: **9**;
 - documentation conflicts resolved/unresolved: **5 / 0**;
 - planned non-documentation changes: **0**.
@@ -85,20 +85,20 @@ Targets/IDs: `TC-08`; `EX60-27`, `EX61-42`.
 
 ### `PROJECT_HISTORY.md`
 
-Apply five bounded semantic edits:
+Apply four bounded semantic edits and one preservation guard:
 
 1. narrow the high-level PR #40 label to the confirmed zero-stale gate;
 2. in H-001, retain canary removal as history but do not call it independently defective, and remove the
    unsupported strict-laundering/backdating conclusion;
 3. in H-008, retain PR #72 ordering/fencing and add the still-current `A → B → A` residual defect;
 4. append a stable new entry for the PR #75 durable bundle-convergence gap without renumbering H-001..10;
-5. in H-010, remove the unsupported attribution that user review specifically detected the intermediate
-   history loss.
+5. preserve the H-010 attribution that user review detected the intermediate history loss: on 2026-09-21
+   the user directly confirmed noticing the loss and requiring restoration in separate `PROJECT_HISTORY.md`.
 
 Keep history explicitly non-authoritative. H-002..H-007 and H-009 remain semantically unchanged; no
 runtime mechanism is selected.
 
-Targets/IDs: `TC-12`, `TC-02`, `TC-10`, `TC-03`; `EX40-01/02/03`, `EX77-24/29/30/58/59/65`,
+Targets/IDs: `TC-12`, `TC-02`, `TC-10`, `TC-03`; `EX40-01/02/03`, `EX77-24/29/30/58/59`,
 `EX72-20/45..50`, `EX75-56..59`.
 
 ## Conditional provenance qualification

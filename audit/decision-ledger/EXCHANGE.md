@@ -3655,3 +3655,45 @@ No transaction API, isolation level, lock strategy, query shape, schema change, 
 or runtime remediation ordering is selected. The review also independently confirms current runtime still
 uses separate reads and is not represented as fixed. `DOCS-SERIES-02` is complete; Series 3 remains
 unapplied and requires explicit user authorization.
+
+## DIRECT USER EVIDENCE EX77-65
+
+Recorded by: Codex
+Evidence source: direct user statement on 2026-09-21
+Status: accepted; supersedes evidence-limited attribution
+
+The user directly confirms that, after the historical part was removed from `PROJECT_STATE.md`, the user
+noticed the history loss and required restoration in a separate `PROJECT_HISTORY.md`. This supplies the
+provenance that repository-visible PR discussion alone could not establish.
+
+Consequences are deliberately narrow:
+
+- `EX77-65` moves from `insufficient-evidence` substantive classification to
+  `reviewed-supporting/direct-user-confirmed historical provenance`;
+- Phase 2 coverage remains 2,029 / 2,029, with 1,697 classified+disconfirmed and 332 supporting records;
+- the remaining evidence-limited set becomes 15 / 15;
+- Series 3 must preserve, not remove, the H-010 user-review attribution;
+- no product behavior, target runtime contract, implementation mechanism, or other PR #77 claim changes.
+
+## TASK DL-DIRECT-EVIDENCE-001
+
+From: Codex
+Status: open
+Response destination: ChatGPT-owned PR #79
+Scope: verify the bounded propagation of direct-user evidence for `EX77-65`
+
+### Assignment
+
+1. Treat the direct user statement as authoritative provenance for the narrow historical attribution; do
+   not ask Git to override or independently prove the user's own action.
+2. Verify current summaries consistently move only `EX77-65` from evidence-limited substantive to
+   supporting/direct-user-confirmed provenance: Phase 2 stays 2,029 total, counts become 1,697 + 332, and
+   remaining evidence-limited IDs become 15.
+3. Verify `TARGET_CONTRACTS.md` and `DOCUMENTATION_PLAN.md` now preserve the H-010 attribution and remove
+   only the planned attribution-deletion edit. Required documentation edit units become 10 and required
+   edit-driving IDs become 23; Series 3 remains unapplied and unauthorized.
+4. Search for current non-historical statements that still treat `EX77-65` as unresolved or instruct
+   removal of the attribution. Historical append-only review entries may retain what was known before the
+   direct evidence and must not be rewritten.
+5. Return `PASS` or a finite correction list. Do not edit PR #78, expand the evidence to other claims,
+   authorize/apply Series 3, or advance anything to `final`.

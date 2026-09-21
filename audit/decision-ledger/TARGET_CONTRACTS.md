@@ -14,7 +14,7 @@
 - atomic target states: **51**;
 - bad/overbroad corrective records reconciled: **23**;
 - confirmed current-defect IDs: **29 across 15 groups**;
-- evidence-limited IDs reconciled: **16 / 16**;
+- evidence-limited IDs reconciled: **15 / 15** after direct-user evidence resolved `EX77-65`;
 - resolved target conflicts: **10**;
 - unresolved target conflicts: **0**;
 - new user decisions required: **0**.
@@ -114,7 +114,8 @@ Preserve `PROJECT_STATE.md` as current factual state, `PROJECT_HISTORY.md` as a 
 index, subsystem documents as contract owners, and Git/PR evidence as primary history. Narrow the PR #40
 history to the confirmed zero-stale gate; do not claim canary removal itself was a regression or that
 strict backdated laundering was proven. Add the current PR #72 reactivation and PR #75 bundle-convergence
-limitations to state/history. Make no unsupported user-review attribution.
+limitations to state/history. Preserve the now directly confirmed provenance that the user noticed the
+intermediate PR #77 history loss and required restoration in a separate history document.
 
 ### TC-13 — Review and CI evidence
 
