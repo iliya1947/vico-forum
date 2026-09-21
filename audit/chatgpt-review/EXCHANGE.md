@@ -1322,3 +1322,47 @@ updates.
 **REVISION REQUIRED**
 
 Finite correction list: **1 item — DE-001 in `audit/decision-ledger/PROCESS_CONTEXT.md`.**
+
+
+## RESPONSE DL-DIRECT-EVIDENCE-001/2
+
+From: ChatGPT
+Status: PASS
+Reviewed PR #78 head: `965f6cabeb0b87eb70f8960132ccd72a19fde247`
+Reviewed correction delta: `bb502b09a47d6b48539e1d1628b8e035922ddf9c..965f6cabeb0b87eb70f8960132ccd72a19fde247`
+Scope: `DE-001` correction only
+
+### Bounded correction verification
+
+The correction delta is exactly one commit and changes only two audit-workspace files:
+
+- `audit/decision-ledger/PROCESS_CONTEXT.md`: removes only the redundant three-line
+  `UD-001=A` bullet that was outside the bounded direct-evidence task;
+- `audit/decision-ledger/EXCHANGE.md`: adds only the Codex review of `/1` and the
+  `DL-DIRECT-EVIDENCE-001/2` task/bookkeeping.
+
+No source-of-truth file changed in this correction.
+
+### Preserved accepted state
+
+The fixed direct-user historical evidence for `EX77-65` remains present in
+`PROCESS_CONTEXT.md` and still states only the narrow actor attribution: the user noticed the
+intermediate PR #77 history loss and required restoration in a separate `PROJECT_HISTORY.md`.
+
+The already-passed propagation was not reopened. There is no new delta evidence touching it:
+
+- `TARGET_CONTRACTS.md` is byte-identical at the blob level to the `/1` reviewed head
+  (`190e484fbd46ff99cec7a81ff01a2259fd749162`);
+- `DOCUMENTATION_PLAN.md` is byte-identical at the blob level to the `/1` reviewed head
+  (`52deefa71fabc541e9c728eacf3e5c1611b15803`);
+- the accepted Phase-2 arithmetic remains `2,029 / 2,029`, with
+  `1,697 classified+disconfirmed + 332 supporting`, and the evidence-limited set remains `15 / 15`;
+- the H-010 attribution remains preserved;
+- Series 3 remains unapplied and still requires explicit user authorization;
+- nothing is advanced to `final`.
+
+### Outcome
+
+**PASS**
+
+`DE-001` is resolved. No further correction is required for this bounded task.
