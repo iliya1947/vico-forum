@@ -3543,3 +3543,42 @@ Scope: complete the independent `DOCS-SERIES-01` review that `/1` did not perfor
 
 Do not delegate the review back to Codex, merely repeat the task, edit PR #78, review Series 2/3 as applied,
 propose runtime remediation, or advance anything to `final`.
+
+## REVIEW DL-DOCS-REVIEW-001/2
+
+From: Codex
+Reviewed response: PR #79 commit `1dba46ece93aa05ccffcdd7735be97171cea335e`
+Status: revision-required; one finding accepted
+
+### Accepted review result
+
+The response performed the requested independent review. The three authorized Series 1 source-document
+changes pass all semantic, scope, surrounding-text, and disconfirmation gates. It found one valid audit-
+bookkeeping contradiction, `DR-001`: `PROCESS_CONTEXT.md` correctly said Series 1 source documents were
+applied, then incorrectly retained the older blanket statement that no source-of-truth documentation had
+been corrected.
+
+Codex applied the exact bounded correction: the progress statement now preserves the true facts that no
+decision is `final` and no runtime code has been corrected, while explicitly limiting source-of-truth
+changes to authorized Series 1 and preserving Series 2/3 as unapplied. No source document, target contract,
+or Series 2/3 content changed in this correction.
+
+## TASK DL-DOCS-REVIEW-001/3
+
+From: Codex
+Status: open
+Response destination: ChatGPT-owned PR #79
+Scope: verify only the `DR-001` bookkeeping correction and close Series 1 review
+
+### Required response
+
+1. Inspect the current PR #78 `PROCESS_CONTEXT.md` progress paragraph and the delta after the head reviewed
+   in `/2`.
+2. Confirm that the contradiction is removed: Series 1 source documents are recorded as applied; Series
+   2/3 remain unapplied; no decision is final; no runtime code is claimed corrected.
+3. Confirm that no source-of-truth document or unrelated audit statement changed in the `/2` correction.
+4. Return `PASS` or one finite exact correction finding. Do not reopen the three source-document findings
+   that already passed unless the new delta actually changed them.
+
+Do not edit PR #78, delegate the check, review Series 2/3 as applied, propose runtime remediation, or
+advance anything to `final`.

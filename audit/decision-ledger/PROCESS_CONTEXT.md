@@ -280,8 +280,9 @@ required restoration remain open until full-history and cross-stage review.
   restoration planning is complete in `DOCUMENTATION_PLAN.md`. The user authorized Series 1 on
   2026-09-21; its three bounded source-document changes are applied and awaiting independent review.
   Series 2 and Series 3 remain unapplied.
-- No project decision has reached final status and no product/source-of-truth documentation or runtime
-  code has been corrected by this audit branch.
+- No project decision has reached final status and no runtime code has been corrected by this audit
+  branch. Source-of-truth documentation changes are limited to the authorized Series 1 files recorded
+  above; Series 2 and Series 3 remain unapplied.
 
 The authoritative live checklist remains `COVERAGE.md`; accepted candidate IDs remain in `LEDGER.md`;
 Codex tasks/reviews remain in `EXCHANGE.md`; dependency chains remain in `CROSS_STAGE.md`; unresolved
