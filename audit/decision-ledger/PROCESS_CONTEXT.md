@@ -231,11 +231,13 @@ verdicts.
   conclusions must be retained as historical statements and followed by an explicit later audit
   reassessment, not silently deleted or rewritten as though the earlier conclusion never existed.
 - Before a future project-document edit, its exact pre-change version must be copied under `doc_old/`, with
-  its relative path retained and `_old_YYYY-MM-DD` appended to the filename. Audit bookkeeping files are
-  excluded from recursive backup because their accepted history is preserved by Git and append-only logs.
-- Whether the current PR #72 and PR #75 limitations need concise historical links in
-  `PROJECT_HISTORY.md`, rather than remaining solely in `PROJECT_STATE.md`, is pending independent review;
-  full duplication is not pre-authorized.
+  its relative path retained and `_old_D.M.YY_N` appended to the filename. `N` starts at `1` and increments
+  for each change to the same document on that date; existing archives are never overwritten. Audit
+  bookkeeping files are excluded from recursive backup because their accepted history is preserved by Git
+  and append-only logs.
+- PR #72 and PR #75 warrant only concise historical discovery/relationship links in
+  `PROJECT_HISTORY.md`; full current limitation details remain in `PROJECT_STATE.md` and must not be
+  duplicated.
 
 ## Strong preliminary leads that are not yet final verdicts
 

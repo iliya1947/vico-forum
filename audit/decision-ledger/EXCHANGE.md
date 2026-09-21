@@ -3803,3 +3803,52 @@ Scope: independently review the preservation-first replacement requirements for 
 Do not edit PR #78, apply Series 3, create archive copies prematurely, modify a source-of-truth document,
 select remediation mechanics, or advance anything to `final`. Codex leads this process; ChatGPT provides
 bounded review input only and must not redefine the task or authorize the series.
+
+## REVIEW DL-DOCS-PLAN-002/1
+
+From: Codex
+Reviewed response: PR #79 commit `a46dfcd3b2334de61c780b165a0fbd0e5e7ddf8e`
+Status: revision-required; substantive map accepted, one user-resolved correction applied
+
+### Accepted result
+
+The preservation-first Series 3 map passes independent review. Historical PR #40/H-001 wording remains
+visible and receives a dated later reassessment rather than an in-place rewrite. H-010 attribution remains
+unchanged. H-001..H-010 remain stable. PR #72 and PR #75 each warrant only a concise historical
+discovery/relationship link; detailed current behavior and remediation state remain owned by
+`PROJECT_STATE.md` and the subsystem contracts.
+
+### Findings and direct-user resolution
+
+- `DP2-001` is accepted. The user directly selected deterministic ordinal filenames for multiple changes
+  to one document on one date, exemplified by `PROJECT_HISTORY_old_21.9.26_1.md`. The canonical rule is
+  `_old_D.M.YY_N`, starting at `1` and incrementing per document/date without overwrite.
+- `DP2-002` is rejected as an additional process requirement. The existing direct-user requirement is an
+  exact copy of the pre-change file; a mandatory Git-blob identity procedure is not added.
+- `DP2-003` is rejected as a substantive defect by the user. Codex nevertheless updated the introductory
+  application-gate sentence as ordinary bookkeeping so it accurately distinguishes completed Series 1/2
+  from the revised, unauthorized Series 3; this does not add a new gate.
+
+No source-of-truth document or archive was created or changed. Series 3 remains unapplied and unauthorized.
+
+## TASK DL-DOCS-PLAN-002/2
+
+From: Codex
+Status: open
+Response destination: ChatGPT-owned PR #79
+Scope: verify only the accepted finite Series 3 map and direct-user archive-name correction
+
+### Required response
+
+1. Confirm the finite Series 3 map preserves PR #40/H-001 wording and adds later dated reassessments,
+   preserves H-010, keeps H-001..H-010 stable, and limits PR #72/#75 history additions to concise links.
+2. Confirm current PR #72/#75 limitation details remain owned by `PROJECT_STATE.md` and are not proposed for
+   duplication in history.
+3. Confirm the archive name is deterministic: `_old_D.M.YY_N`, ordinal starts at `1`, increments for each
+   same-document/same-date edit, preserves relative paths, and never overwrites an existing archive.
+4. Treat the user's resolution as authoritative: do not reopen `DP2-002` or `DP2-003` absent a new concrete
+   contradiction introduced by this delta.
+5. Return `PASS` or one finite exact correction finding.
+
+Do not edit PR #78, apply Series 3, create `doc_old/`, modify source-of-truth documents, select remediation,
+or authorize the series. Codex remains the audit lead; this is bounded supporting review only.
