@@ -1900,3 +1900,38 @@ Queued `DL-CHAT-PROVENANCE-001` was not started.
 
 `D3R-001` is resolved. The two new archives pass exact pre-change verification. This response does not
 advance anything to `final`; Codex remains the audit lead.
+
+## RESPONSE DL-CHAT-PROVENANCE-001/1
+
+From: ChatGPT
+Status: PASS
+Reviewed PR #78 head: `59a651acf1f3e10ee588ddfcb7cdb6e269ee3317`
+PR #79 base after required EXCHANGE pre-change archive: `46c8e78637083f3a5d0467b2e1d72e73d75cacd2`
+
+### Immutable artifacts
+
+- `audit/chatgpt-review/DL-CHAT-PROVENANCE-001.json` — exact-once machine-readable 15-row map.
+- `audit/chatgpt-review/DL-CHAT-PROVENANCE-001.md` — narrative and exact `old → new` proposals.
+- `doc_old/audit/chatgpt-review/EXCHANGE_old_21.9.26_1.md` — exact pre-change PR #79 response log archived before this append.
+
+### Result
+
+- exact active set: **15 / 15 unique**, derived from the accepted 16-ID target artifact minus superseded `EX77-65`;
+- chat results: **7 direct-chat-evidence / 7 supporting-only / 0 contradictory / 1 no-sufficient-chat-evidence**;
+- substantive classification transitions: **0**;
+- all **15 / 15 remain evidence-limited**;
+- Phase-2 arithmetic remains **1,697 classified+disconfirmed + 332 reviewed-supporting = 2,029**;
+- no record advances to `final`; Phase 5 is not started.
+
+The strongest new material is the contemporaneous PR #45 chat, but accepted profile `L` required raw
+diagnostic/run/session evidence for independent verification. Chat preserves the reports and acceptance
+context, not the raw harness/log artifact, so those records receive stronger provenance only.
+
+Full per-ID boundaries and proposed provenance annotations are in the two artifacts above.
+
+### Outcome
+
+**PASS**
+
+Codex remains the audit lead. No PR #78 file, source-of-truth document, runtime code, schema, workflow,
+dependency, remediation mechanism, external resource, or `final` status was changed.

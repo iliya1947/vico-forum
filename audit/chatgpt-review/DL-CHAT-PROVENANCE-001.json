@@ -1,0 +1,425 @@
+{
+  "type": "DL-CHAT-PROVENANCE-001-exact-once",
+  "task_id": "DL-CHAT-PROVENANCE-001/1",
+  "status": "PASS",
+  "task_source_pr78_head": "59a651acf1f3e10ee588ddfcb7cdb6e269ee3317",
+  "response_pr79_base": "46c8e78637083f3a5d0467b2e1d72e73d75cacd2",
+  "evidence_model": {
+    "prior_project_chat_is_supplemental": true,
+    "cannot_establish_current_repository_state": true,
+    "assistant_proposal_is_not_user_decision_without_acceptance": true,
+    "raw_external_artifact_requirements_are_not_satisfied_by_chat_summary_alone": true
+  },
+  "exact_set_derivation": {
+    "accepted_target_artifact": "audit/chatgpt-review/DL-TARGET-001.json",
+    "accepted_target_artifact_blob": "7952afb197c05d0d45d6ae417f753346bed18a9c",
+    "original_evidence_limited_atomic_ids": [
+      "EX29-13",
+      "EX37-02",
+      "EX45-15",
+      "EX45-16",
+      "EX45-17",
+      "EX45-18",
+      "EX45-19a",
+      "EX45-19b",
+      "EX45-21a",
+      "EX46-01",
+      "EX49-20",
+      "EX51-22",
+      "EX55-18",
+      "EX77-29",
+      "EX77-30",
+      "EX77-65"
+    ],
+    "superseded_id": {
+      "id": "EX77-65",
+      "reason": "direct user evidence accepted on 2026-09-21; already moved to reviewed-supporting/direct-user-confirmed historical provenance"
+    },
+    "expected_active_ids": [
+      "EX29-13",
+      "EX37-02",
+      "EX45-15",
+      "EX45-16",
+      "EX45-17",
+      "EX45-18",
+      "EX45-19a",
+      "EX45-19b",
+      "EX45-21a",
+      "EX46-01",
+      "EX49-20",
+      "EX51-22",
+      "EX55-18",
+      "EX77-29",
+      "EX77-30"
+    ]
+  },
+  "exact_once_proof": {
+    "expected_count": 15,
+    "row_count": 15,
+    "unique_count": 15,
+    "missing": [],
+    "extra": [],
+    "duplicates": [],
+    "superseded_present": false,
+    "pass": true
+  },
+  "primary_result_counts": {
+    "direct-chat-evidence": 7,
+    "supporting-only": 7,
+    "contradictory": 0,
+    "no-sufficient-chat-evidence": 1
+  },
+  "proposed_phase2_effect": {
+    "classification_changes": 0,
+    "evidence_limited_before": 15,
+    "evidence_limited_after": 15,
+    "classified_disconfirmed_unchanged": 1697,
+    "reviewed_supporting_unchanged": 332,
+    "total_unchanged": 2029,
+    "final_advancements": 0,
+    "phase5_started": false
+  },
+  "records": [
+    {
+      "id": "EX29-13",
+      "chat_result": "no-sufficient-chat-evidence",
+      "episode_refs": [
+        "No accessible prior-project-chat match for PR #29 exact he/ka/ru final-row test-policy intent."
+      ],
+      "participants": [],
+      "direct_statement_boundary": "No matching conversation was retrieved. Later audit/file material was excluded as a substitute for prior-chat evidence.",
+      "contrary_context": "None from accessible project chats.",
+      "confidence": "high",
+      "repository_evidence_reconciliation": "DL-CLASSIFY-010-2 leaves a finite unresolved choice between a permanent exact-state invariant and a current-final-state test that evolves with legitimate data migrations. Chat adds no authority resolving that choice.",
+      "transition": {
+        "classification_old": "insufficient-evidence",
+        "classification_new": "insufficient-evidence",
+        "classification_change": false,
+        "provenance_old": "no accepted prior-project-chat result",
+        "provenance_new": "explicit no-sufficient-chat-evidence miss",
+        "provenance_annotation_change": true
+      }
+    },
+    {
+      "id": "EX37-02",
+      "chat_result": "supporting-only",
+      "episode_refs": [
+        "2026-09-20: user identified EX37-02 as unresolved; ChatGPT classified it insufficient-evidence; user later accepted that evidence limit."
+      ],
+      "participants": [
+        "user",
+        "ChatGPT"
+      ],
+      "direct_statement_boundary": "The retrieved statements are later audit discussion. They directly confirm the later decision to keep EX37-02 evidence-limited, not the original PR #37 audit completion or blocker approval.",
+      "contrary_context": "Earlier retrospective assistant summaries describe #37 hardening, but no contemporaneous preserved audit artifact or direct approval was retrieved.",
+      "confidence": "high",
+      "repository_evidence_reconciliation": "The original falsifier remains unmet: no preserved independent audit artifact proves completeness or authorizes the resulting blockers.",
+      "transition": {
+        "classification_old": "insufficient-evidence",
+        "classification_new": "insufficient-evidence",
+        "classification_change": false,
+        "provenance_old": "repository-only evidence limit",
+        "provenance_new": "prior-project-chat/supporting-only later audit confirmation of the evidence limit",
+        "provenance_annotation_change": true
+      }
+    },
+    {
+      "id": "EX45-15",
+      "chat_result": "direct-chat-evidence",
+      "episode_refs": [
+        "2026-09-13 04:06:50Z user requested documentation of real Hyperdrive acceptance; 04:12:07Z ChatGPT recorded deployed-origin 500ms lock_timeout and 1500ms statement_timeout results; PR #45 followed at 05:15:41Z."
+      ],
+      "participants": [
+        "user",
+        "ChatGPT"
+      ],
+      "direct_statement_boundary": "The chat directly records the values and acceptance discussion, but the raw diagnostic/run/session artifact is not present in the accessible chat result.",
+      "contrary_context": "None.",
+      "confidence": "high",
+      "repository_evidence_reconciliation": "Profile L requires raw diagnostic/run/session evidence sufficient for independent verification. A contemporaneous assistant/user record strengthens provenance but does not satisfy that raw-artifact threshold.",
+      "transition": {
+        "classification_old": "insufficient-evidence",
+        "classification_new": "insufficient-evidence",
+        "classification_change": false,
+        "provenance_old": "repository-recorded unverified external observation",
+        "provenance_new": "same evidence limit + prior-project-chat/direct-chat-evidence that the values were contemporaneously recorded",
+        "provenance_annotation_change": true
+      }
+    },
+    {
+      "id": "EX45-16",
+      "chat_result": "direct-chat-evidence",
+      "episode_refs": [
+        "2026-09-13 04:06:50Z user requested docs record real Hyperdrive acceptance including pool reuse and COMMIT/ROLLBACK reset; 04:12:07Z ChatGPT recorded acceptance context."
+      ],
+      "participants": [
+        "user",
+        "ChatGPT"
+      ],
+      "direct_statement_boundary": "The chat directly records that pool reuse/reset was part of the acceptance discussion. It does not preserve the raw session/harness transcript independently verifying role-default restoration.",
+      "contrary_context": "None.",
+      "confidence": "high",
+      "repository_evidence_reconciliation": "Profile L's raw run/session evidence requirement remains unmet, so the classification stays evidence-limited.",
+      "transition": {
+        "classification_old": "insufficient-evidence",
+        "classification_new": "insufficient-evidence",
+        "classification_change": false,
+        "provenance_old": "repository-recorded unverified external observation",
+        "provenance_new": "same evidence limit + prior-project-chat/direct-chat-evidence for contemporaneous pool/reset acceptance discussion",
+        "provenance_annotation_change": true
+      }
+    },
+    {
+      "id": "EX45-17",
+      "chat_result": "direct-chat-evidence",
+      "episode_refs": [
+        "2026-09-13 04:12:07Z ChatGPT recorded PostgreSQL statement timeout 57014 at approximately 1571ms in the PR #45 acceptance episode."
+      ],
+      "participants": [
+        "ChatGPT",
+        "user context"
+      ],
+      "direct_statement_boundary": "Direct contemporaneous assistant statement; no raw diagnostic log retained in accessible chat.",
+      "contrary_context": "None.",
+      "confidence": "high",
+      "repository_evidence_reconciliation": "Exact chat corroboration does not replace profile L's missing raw diagnostic artifact.",
+      "transition": {
+        "classification_old": "insufficient-evidence",
+        "classification_new": "insufficient-evidence",
+        "classification_change": false,
+        "provenance_old": "repository-recorded unverified external observation",
+        "provenance_new": "same evidence limit + prior-project-chat/direct-chat-evidence for the contemporaneous 1571ms report",
+        "provenance_annotation_change": true
+      }
+    },
+    {
+      "id": "EX45-18",
+      "chat_result": "direct-chat-evidence",
+      "episode_refs": [
+        "2026-09-13 04:12:07Z ChatGPT recorded lock timeout 55P03 at approximately 569ms in the PR #45 acceptance episode."
+      ],
+      "participants": [
+        "ChatGPT",
+        "user context"
+      ],
+      "direct_statement_boundary": "Direct contemporaneous assistant statement; no raw diagnostic log retained in accessible chat.",
+      "contrary_context": "None.",
+      "confidence": "high",
+      "repository_evidence_reconciliation": "Profile L still requires independently verifiable raw run/session evidence.",
+      "transition": {
+        "classification_old": "insufficient-evidence",
+        "classification_new": "insufficient-evidence",
+        "classification_change": false,
+        "provenance_old": "repository-recorded unverified external observation",
+        "provenance_new": "same evidence limit + prior-project-chat/direct-chat-evidence for the contemporaneous 569ms report",
+        "provenance_annotation_change": true
+      }
+    },
+    {
+      "id": "EX45-19a",
+      "chat_result": "direct-chat-evidence",
+      "episode_refs": [
+        "2026-09-13 04:12:07Z ChatGPT recorded Query read timeout / 2000ms in the PR #45 acceptance episode."
+      ],
+      "participants": [
+        "ChatGPT",
+        "user context"
+      ],
+      "direct_statement_boundary": "Direct contemporaneous assistant statement; no raw caller/harness output retained in accessible chat.",
+      "contrary_context": "None.",
+      "confidence": "high",
+      "repository_evidence_reconciliation": "The raw diagnostic evidence demanded by profile L is still absent.",
+      "transition": {
+        "classification_old": "insufficient-evidence",
+        "classification_new": "insufficient-evidence",
+        "classification_change": false,
+        "provenance_old": "repository-recorded unverified external observation",
+        "provenance_new": "same evidence limit + prior-project-chat/direct-chat-evidence for the contemporaneous 2000ms report",
+        "provenance_annotation_change": true
+      }
+    },
+    {
+      "id": "EX45-19b",
+      "chat_result": "direct-chat-evidence",
+      "episode_refs": [
+        "2026-09-13 04:12:07Z ChatGPT recorded that the uniquely identifiable backend was not found after the client timeout."
+      ],
+      "participants": [
+        "ChatGPT",
+        "user context"
+      ],
+      "direct_statement_boundary": "Direct contemporaneous assistant statement. It does not prove the termination/cancellation mechanism and contains no raw backend/catalog trace.",
+      "contrary_context": "EX45-19c already preserves the separate limitation that backend absence does not identify which component terminated or cancelled the statement.",
+      "confidence": "high",
+      "repository_evidence_reconciliation": "Chat corroborates the reported observation but does not supply profile L's independent raw evidence; evidence-limited status remains.",
+      "transition": {
+        "classification_old": "insufficient-evidence",
+        "classification_new": "insufficient-evidence",
+        "classification_change": false,
+        "provenance_old": "repository-recorded unverified external observation",
+        "provenance_new": "same evidence limit + prior-project-chat/direct-chat-evidence for the contemporaneous backend-absence report",
+        "provenance_annotation_change": true
+      }
+    },
+    {
+      "id": "EX45-21a",
+      "chat_result": "direct-chat-evidence",
+      "episode_refs": [
+        "2026-09-13 04:06:50Z user requested removing the staging/deadline blocker and marking deadline acceptance complete in PROJECT_STATE; 04:12:07Z ChatGPT stated the deadline acceptance was closed."
+      ],
+      "participants": [
+        "user",
+        "ChatGPT"
+      ],
+      "direct_statement_boundary": "Direct user/assistant evidence establishes that closure was intentionally recorded at that time. It does not independently verify the external acceptance measurements underlying the closure.",
+      "contrary_context": "None.",
+      "confidence": "high",
+      "repository_evidence_reconciliation": "Profile L/M external evidence remains unverified at raw-artifact level; therefore the historical closure statement is better sourced but still not independently validated.",
+      "transition": {
+        "classification_old": "insufficient-evidence",
+        "classification_new": "insufficient-evidence",
+        "classification_change": false,
+        "provenance_old": "repository-recorded closure claim with unverified external basis",
+        "provenance_new": "same evidence limit + prior-project-chat/direct-chat-evidence for contemporaneous user-requested closure",
+        "provenance_annotation_change": true
+      }
+    },
+    {
+      "id": "EX46-01",
+      "chat_result": "supporting-only",
+      "episode_refs": [
+        "2026-09-13 05:51:26Z ChatGPT quoted README wording that pre-Stage-4 audit/hardening was completed and simultaneously identified it as stale against PROJECT_STATE/ROADMAP; 05:55:48Z ChatGPT reported correcting the stale docs."
+      ],
+      "participants": [
+        "ChatGPT"
+      ],
+      "direct_statement_boundary": "The chat directly supports that the README completion wording existed and was treated as stale documentation. It does not independently prove the underlying audit/hardening completion.",
+      "contrary_context": "The same contemporaneous chat says PROJECT_STATE/ROADMAP no longer supported the old staging-blocker wording.",
+      "confidence": "high",
+      "repository_evidence_reconciliation": "Profile M depends on independent evidence for the external deadline acceptance behind the completion statement. Because profile L remains unresolved, EX46-01 remains evidence-limited.",
+      "transition": {
+        "classification_old": "insufficient-evidence",
+        "classification_new": "insufficient-evidence",
+        "classification_change": false,
+        "provenance_old": "completion statement depends on unverified external evidence",
+        "provenance_new": "same evidence limit + prior-project-chat/supporting-only confirmation that the README wording was contemporaneously treated as stale",
+        "provenance_annotation_change": true
+      }
+    },
+    {
+      "id": "EX49-20",
+      "chat_result": "supporting-only",
+      "episode_refs": [
+        "2026-09-13 11:25:33Z user provided Neon tool access; 11:27:41Z/11:58:12Z ChatGPT described live production catalog checks and role/membership details; 20:16:08Z ChatGPT described migrator role attributes; 2026-09-14 13:38:42Z user said PR #49 was merged."
+      ],
+      "participants": [
+        "user",
+        "ChatGPT"
+      ],
+      "direct_statement_boundary": "The chat directly records that a live inspection was described and gives detailed assistant-reported results. It does not contain preserved raw pg_catalog/pg_roles output, and no direct user message confirms the result rows themselves.",
+      "contrary_context": "Later audit discussion retained the raw-artifact limitation.",
+      "confidence": "medium",
+      "repository_evidence_reconciliation": "Profile V explicitly requires raw catalog/run evidence. Detailed chat summaries are corroborating provenance, not the missing raw snapshot, so EX49-20 remains evidence-limited.",
+      "transition": {
+        "classification_old": "insufficient-evidence",
+        "classification_new": "insufficient-evidence",
+        "classification_change": false,
+        "provenance_old": "unverified production-catalog claim",
+        "provenance_new": "same evidence limit + prior-project-chat/supporting-only record of a contemporaneous live inspection and assistant-reported results",
+        "provenance_annotation_change": true
+      }
+    },
+    {
+      "id": "EX51-22",
+      "chat_result": "supporting-only",
+      "episode_refs": [
+        "2026-09-14 16:43:02Z ChatGPT fix prompt said not to change historical non-current revision deletion because Stage 4B did not define retention policy; 16:49:40Z and 16:54:37Z user authorized the broader final cleanup, but no explicit retention-policy acceptance was retrieved."
+      ],
+      "participants": [
+        "ChatGPT",
+        "user"
+      ],
+      "direct_statement_boundary": "The assistant proposal to defer retention/archive policy is direct. The user's later 'Ок, давай'/proceed approval applied to the broader cleanup and is not explicit acceptance of a retention/deletion policy.",
+      "contrary_context": "No direct user statement selecting retain-all, delete-allowed, or a permanent retention duration was found.",
+      "confidence": "high",
+      "repository_evidence_reconciliation": "The missing accepted retention/deletion policy remains missing. Chat supports intentional deferral at the assistant-scope level but does not establish user-authoritative permanent policy.",
+      "transition": {
+        "classification_old": "insufficient-evidence",
+        "classification_new": "insufficient-evidence",
+        "classification_change": false,
+        "provenance_old": "retention/deletion policy not established",
+        "provenance_new": "same evidence limit + prior-project-chat/supporting-only evidence that assistant scope intentionally deferred the policy without explicit user decision",
+        "provenance_annotation_change": true
+      }
+    },
+    {
+      "id": "EX55-18",
+      "chat_result": "supporting-only",
+      "episode_refs": [
+        "2026-09-14 20:22:43Z ChatGPT summarized controlled 400/404/503 writer outcomes; 20:26:13Z review discussion did not mention a generic unknown-writer catch-all policy; later 2026-09-18 chats explicitly left unrelated forum-writer semantics untouched while narrowing authorization failures."
+      ],
+      "participants": [
+        "ChatGPT",
+        "user context"
+      ],
+      "direct_statement_boundary": "No accessible contemporaneous statement says all unexpected writer/programming/schema/configuration failures were deliberately chosen to map to generic 503, and no explicit user acceptance of that policy was retrieved.",
+      "contrary_context": "Later audit found the broad forum-writer catch-all persisted; later authorization work deliberately distinguished typed availability from unexpected errors but did not change the forum writer path.",
+      "confidence": "high",
+      "repository_evidence_reconciliation": "The chat does not resolve whether EX55-18 was an accepted architecture rule or merely implementation behavior. The accepted evidence-limited classification therefore remains.",
+      "transition": {
+        "classification_old": "insufficient-evidence",
+        "classification_new": "insufficient-evidence",
+        "classification_change": false,
+        "provenance_old": "generic writer 503 policy not established",
+        "provenance_new": "same evidence limit + prior-project-chat/supporting-only absence/contrast evidence; no explicit policy acceptance",
+        "provenance_annotation_change": true
+      }
+    },
+    {
+      "id": "EX77-29",
+      "chat_result": "supporting-only",
+      "episode_refs": [
+        "2026-09-17 21:06:20Z/21:38:56Z ChatGPT distinguished the zero-stale gate from the architecturally allowed stale contract and noted strict stale-CI required a separate decision; 2026-09-20 audit chat explicitly classified the combined canary/test regression wording as insufficient and the user accepted the distinction."
+      ],
+      "participants": [
+        "ChatGPT",
+        "user"
+      ],
+      "direct_statement_boundary": "Chat directly supports the later narrowing. No direct contemporaneous user/Codex statement establishes canary removal itself as a defect.",
+      "contrary_context": "Earlier assistant summaries sometimes described canary removal too broadly as part of the regression; later audit explicitly corrected that overbreadth.",
+      "confidence": "high",
+      "repository_evidence_reconciliation": "This supports, rather than resolves away, the accepted insufficient-evidence classification for the combined wording.",
+      "transition": {
+        "classification_old": "insufficient-evidence",
+        "classification_new": "insufficient-evidence",
+        "classification_change": false,
+        "provenance_old": "combined canary-removal/zero-stale regression claim insufficiently evidenced",
+        "provenance_new": "same evidence limit + prior-project-chat/supporting-only evidence of later narrowing and earlier overbroad assistant wording",
+        "provenance_annotation_change": true
+      }
+    },
+    {
+      "id": "EX77-30",
+      "chat_result": "supporting-only",
+      "episode_refs": [
+        "2026-09-17 21:38:56Z ChatGPT found unauthorized zero-stale narrowing but no direct evidence of backdating; 2026-09-20 audit chat classified strict documentation laundering as insufficient and the user accepted the distinction."
+      ],
+      "participants": [
+        "ChatGPT",
+        "user"
+      ],
+      "direct_statement_boundary": "Chat supports normalization/legitimation of the then-current behavior and the later decision not to call it strict laundering. No direct statement of intentional backdating or presentation as older/original authority was retrieved.",
+      "contrary_context": "Some later retrospective summaries used stronger 'normalized as planned cleanup' language, but they do not prove strict laundering intent or backdating.",
+      "confidence": "high",
+      "repository_evidence_reconciliation": "The strict laundering falsifier remains unmet. EX77-30 remains evidence-limited.",
+      "transition": {
+        "classification_old": "insufficient-evidence",
+        "classification_new": "insufficient-evidence",
+        "classification_change": false,
+        "provenance_old": "strict laundering/backdating claim insufficiently evidenced",
+        "provenance_new": "same evidence limit + prior-project-chat/supporting-only evidence for normalization but not strict laundering",
+        "provenance_annotation_change": true
+      }
+    }
+  ]
+}
