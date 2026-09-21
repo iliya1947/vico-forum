@@ -252,10 +252,10 @@ documentation-only series with file-local diff guards. The durable working plan 
 `DOCUMENTATION_PLAN.md`.
 
 Series 1 has now been applied and independently accepted: the Stage 5A provider/jobs and storage contracts
-were restored and their current implementation limitations were added to `PROJECT_STATE.md`. The user
-authorized Series 2 on 2026-09-21; its authorization snapshot contract is applied and awaiting independent
-review. Series 3 remains unapplied and gated on explicit user authorization. No runtime remediation has
-begun.
+were restored and their current implementation limitations were added to `PROJECT_STATE.md`. Series 2 was
+authorized, applied, and independently accepted: `docs/auth/AUTHORIZATION.md` now owns the composite
+snapshot-consistency target while runtime noncompliance remains open. Series 3 remains unapplied and gated
+on explicit user authorization. No runtime remediation has begun.
 
 ## Record template
 
