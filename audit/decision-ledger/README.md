@@ -129,6 +129,10 @@ Every suspected future-proof decision must be tested for:
 4. Do not merge this workspace into `main` as product documentation.
 5. After the final ledger is approved, any real documentation or code correction must be prepared as
    separately scoped work derived from final decisions.
+6. Before changing a project documentation/source-of-truth file, copy its exact pre-change version under
+   `doc_old/`, preserve its relative directory, and append `_old_YYYY-MM-DD` before the extension. Never
+   silently overwrite an existing archive. Append-only audit bookkeeping under `audit/` is excluded from
+   recursive archival copies.
 
 ## Two-PR communication boundary
 

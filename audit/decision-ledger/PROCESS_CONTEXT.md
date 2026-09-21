@@ -224,6 +224,19 @@ verdicts.
   `PROJECT_HISTORY.md`. This resolves only the actor attribution in `EX77-65`; it does not authorize other
   PR #77 historical claims.
 
+## Fixed documentation-preservation decision
+
+- On 2026-09-21 the user explicitly declined authorization for `DOCS-SERIES-03` in its then-current form.
+- Historical documents must preserve the chain of what was recorded at the time. Erroneous or unsupported
+  conclusions must be retained as historical statements and followed by an explicit later audit
+  reassessment, not silently deleted or rewritten as though the earlier conclusion never existed.
+- Before a future project-document edit, its exact pre-change version must be copied under `doc_old/`, with
+  its relative path retained and `_old_YYYY-MM-DD` appended to the filename. Audit bookkeeping files are
+  excluded from recursive backup because their accepted history is preserved by Git and append-only logs.
+- Whether the current PR #72 and PR #75 limitations need concise historical links in
+  `PROJECT_HISTORY.md`, rather than remaining solely in `PROJECT_STATE.md`, is pending independent review;
+  full duplication is not pre-authorized.
+
 ## Strong preliminary leads that are not yet final verdicts
 
 These must stay visible while the complete history is audited:
@@ -282,11 +295,13 @@ required restoration remain open until full-history and cross-stage review.
   open, so target-contract formation may begin.
 - Target-contract formation is complete: 13 subsystem contracts and 51 target states reconcile all
   accepted bad corrections, current defects, evidence limits, stage boundaries, and user decisions with
-  no unresolved target conflict. The accepted working map is `TARGET_CONTRACTS.md`; exact documentation
-  restoration planning is complete in `DOCUMENTATION_PLAN.md`. The user authorized Series 1 on
+  no unresolved target conflict. The accepted working map is `TARGET_CONTRACTS.md`. Documentation
+  restoration planning for Series 1/2 is complete in `DOCUMENTATION_PLAN.md`. The user authorized Series 1 on
   2026-09-21; its three bounded source-document changes are applied and independently accepted after the
   audit-only `DR-001` bookkeeping correction. The user authorized Series 2 on 2026-09-21; its bounded
-  authorization-contract change is applied and independently accepted. Series 3 remains unapplied.
+  authorization-contract change is applied and independently accepted. The user declined Series 3 in its
+  previous form; its preservation-first replacement plan and PR #72/#75 history placement are under
+  independent review, and Series 3 remains unapplied and unauthorized.
 - No project decision has reached final status and no runtime code has been corrected by this audit
   branch. Source-of-truth documentation changes are limited to the authorized Series 1 and Series 2 files
   recorded above; Series 3 remains unapplied.

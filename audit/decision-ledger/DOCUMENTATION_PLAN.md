@@ -6,17 +6,19 @@
 > source-of-truth project document and does not authorize runtime, test, schema, workflow, dependency, or
 > external-resource changes.
 
-## Closure summary
+## Current plan status
 
 - source documents independently rechecked: **14**;
-- required semantic edit files: **5**;
+- applied and independently accepted semantic edit files: **4** across Series 1/2;
+- Series 3 candidate source files: **1**, pending preservation-first replanning;
 - conditional provenance-only files: **1**;
 - aligned or intentionally deferred no-change files: **8**;
-- semantic edit units: **10** after direct-user evidence removed the planned H-010 attribution edit;
+- applied semantic edit units: **6** across Series 1/2;
+- Series 3 semantic edit units: **not yet accepted or counted**;
 - independently reviewable documentation-only series: **3**;
-- accepted IDs driving required edits: **23**;
+- previously accepted baseline edit-driving IDs: **23**; the Series 3 subset is under reassessment;
 - conditional provenance IDs: **9**;
-- documentation conflicts resolved/unresolved: **5 / 0**;
+- preservation-plan questions pending: **2** (exact reassessment map; PR #72/#75 history placement);
 - planned non-documentation changes: **0**.
 
 ## Series 1 — Stage 5A contracts and current limitations
@@ -83,20 +85,39 @@ Targets/IDs: `TC-08`; `EX60-27`, `EX61-42`.
 
 ## Series 3 — History and provenance
 
+**Status: not authorized; previous edit prescription withdrawn for reassessment.** On 2026-09-21 the user
+explicitly declined authorization for Series 3 and required a preservation-first review. No Series 3
+source-document edit may begin until the revised plan is independently reviewed and the user gives a new,
+explicit authorization.
+
 ### `PROJECT_HISTORY.md`
 
-Apply four bounded semantic edits and one preservation guard:
+The revised governing principle is to preserve the historical chain. Text that records what was concluded
+or believed at the time must not be silently deleted or rewritten so that the reader can no longer recover
+that earlier state. A later audit finding that rejects, narrows, or cannot substantiate an earlier claim
+must be presented as a clearly dated subsequent reassessment, with the original claim and chronology left
+visible. This also applies to the PR #40/H-001 findings that the earlier plan proposed narrowing or
+removing.
 
-1. narrow the high-level PR #40 label to the confirmed zero-stale gate;
-2. in H-001, retain canary removal as history but do not call it independently defective, and remove the
-   unsupported strict-laundering/backdating conclusion;
-3. in H-008, retain PR #72 ordering/fencing and add the still-current `A → B → A` residual defect;
-4. append a stable new entry for the PR #75 durable bundle-convergence gap without renumbering H-001..10;
-5. preserve the H-010 attribution that user review detected the intermediate history loss: on 2026-09-21
-   the user directly confirmed noticing the loss and requiring restoration in separate `PROJECT_HISTORY.md`.
+The following questions must be resolved before a replacement edit list is accepted:
 
-Keep history explicitly non-authoritative. H-002..H-007 and H-009 remain semantically unchanged; no
-runtime mechanism is selected.
+1. identify every Series 3 sentence that describes a contemporaneous conclusion rather than a current
+   source-of-truth contract;
+2. for each erroneous or unsupported statement, preserve the original historical statement and attach a
+   clearly labelled later audit reassessment instead of rewriting history in place;
+3. preserve the H-010 attribution that user review detected the intermediate history loss: on 2026-09-21
+   the user directly confirmed noticing the loss and requiring restoration in separate
+   `PROJECT_HISTORY.md`;
+4. determine whether PR #72's `A → B → A` limitation and PR #75's bundle-convergence limitation are
+   historically significant chain facts that need a concise retrospective link in `PROJECT_HISTORY.md`,
+   or merely current limitations already owned by `PROJECT_STATE.md` whose duplication would create drift;
+5. if either limitation belongs in history, add only the historical discovery/relationship and a pointer
+   to the current source of truth; do not duplicate the full current limitation text or remediation state;
+6. do not renumber H-001..H-010, choose a runtime mechanism, or convert an audit reassessment into a claim
+   about what participants knew at the earlier date.
+
+The earlier four-edit prescription is therefore superseded as a plan, not erased as historical audit
+record. A replacement finite edit list will be written only after `DL-DOCS-PLAN-002` review.
 
 Targets/IDs: `TC-12`, `TC-02`, `TC-10`, `TC-03`; `EX40-01/02/03`, `EX77-24/29/30/58/59`,
 `EX72-20/45..50`, `EX75-56..59`.
@@ -131,6 +152,23 @@ restoration must not rewrite them for stylistic consistency.
 The plan is complete and independently reviewed. The user authorized Series 1 on 2026-09-21; its bounded
 documentation changes have been applied in PR #78 and independently accepted after correction of the
 audit-only `DR-001` progress statement. The user then authorized Series 2 on 2026-09-21; its bounded
-`docs/auth/AUTHORIZATION.md` change is applied in PR #78 and independently accepted. Series 3 remains
-unapplied and requires subsequent authorization/review. Each series must remain documentation-only, use a
-full-file diff guard against unrelated rewrites, and be reviewed before the next series begins.
+`docs/auth/AUTHORIZATION.md` change is applied in PR #78 and independently accepted. The user explicitly
+declined Series 3 authorization on 2026-09-21 and requested the preservation-first reassessment above.
+Series 3 remains unapplied, has no currently accepted edit list, and requires both independent review and
+new explicit user authorization. Each series must remain documentation-only, use a full-file diff guard
+against unrelated rewrites, and be reviewed before the next series begins.
+
+## Pre-change document archive rule
+
+Before any future edit to a project source-of-truth/documentation file, preserve its exact pre-change
+contents under `doc_old/`. Retain the original relative directory structure to prevent basename collisions
+and rename the copied file by appending `_old_YYYY-MM-DD` immediately before its extension. For example,
+before changing `PROJECT_HISTORY.md` on 2026-09-21, create
+`doc_old/PROJECT_HISTORY_old_2026-09-21.md`; before changing `docs/auth/AUTHORIZATION.md`, create
+`doc_old/docs/auth/AUTHORIZATION_old_2026-09-21.md`.
+
+The archive copy is evidence and must not be edited to match the new document. If the required same-date
+archive path already exists, verify it is the exact intended pre-change version and do not overwrite it
+silently. This rule applies to source/project documentation changes; append-only audit bookkeeping and
+machine review artifacts under `audit/` remain governed by their own history and are not recursively copied
+into `doc_old/`.

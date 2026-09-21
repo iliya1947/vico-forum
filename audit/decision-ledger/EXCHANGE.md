@@ -3758,3 +3758,48 @@ Codex remains the audit lead and owns task definition, scope control, independen
 ChatGPT remains the supporting reviewer, responds only in PR #79, and must not delegate work back to Codex,
 expand a bounded task, choose a user decision, authorize a documentation series, or treat its own response
 as accepted before Codex review.
+
+## DIRECT USER DECISION DOCS-SERIES-03-PRESERVATION
+
+Recorded by: Codex
+Evidence source: direct user statement on 2026-09-21
+Status: accepted; Series 3 authorization denied pending reassessment
+
+The user declined `DOCS-SERIES-03` in its current form and required a preservation-first revision:
+
+- do not erase or rewrite earlier conclusions so the historical chain is lost;
+- represent erroneous or unsupported conclusions as explicit later audit reassessments;
+- separately determine whether the current PR #72/#75 limitations need any historical representation in
+  `PROJECT_HISTORY.md` instead of duplicating `PROJECT_STATE.md`;
+- before future project-document edits, preserve the exact prior document under `doc_old/` with an
+  `_old_YYYY-MM-DD` filename suffix.
+
+No Series 3 source document was changed and no authorization to apply it exists.
+
+## TASK DL-DOCS-PLAN-002/1
+
+From: Codex
+Status: open
+Response destination: ChatGPT-owned PR #79
+Scope: independently review the preservation-first replacement requirements for Series 3
+
+### Required response
+
+1. Read current `PROJECT_HISTORY.md`, `PROJECT_STATE.md`, `DOCUMENTATION_PLAN.md`, and the accepted target
+   records for PR #40, #72, #75, and #77. Treat the user's preservation rule as direct authority.
+2. Produce a finite sentence/section-level map for Series 3 that distinguishes:
+   - contemporaneous historical statements that must remain visible;
+   - later audit reassessments that should be appended and explicitly dated/labelled;
+   - current-state material that should remain only in `PROJECT_STATE.md`.
+3. Answer separately for PR #72 and PR #75 whether each belongs in `PROJECT_HISTORY.md`. Use this test:
+   include only a concise historical discovery/correction link if it is needed to understand the decision
+   chain; do not duplicate the full current limitation, current status, or remediation plan.
+4. Verify that preserving H-010 attribution remains required and that no H-001..H-010 renumbering or
+   retroactive rewriting is proposed.
+5. Review the `doc_old/` rule for determinism: preserved relative path, exact pre-change bytes,
+   `_old_YYYY-MM-DD` suffix, no silent overwrite, and no recursive backup of audit bookkeeping.
+6. Return `PASS` with a proposed finite replacement edit list, or `REVISION REQUIRED` with exact findings.
+
+Do not edit PR #78, apply Series 3, create archive copies prematurely, modify a source-of-truth document,
+select remediation mechanics, or advance anything to `final`. Codex leads this process; ChatGPT provides
+bounded review input only and must not redefine the task or authorize the series.
