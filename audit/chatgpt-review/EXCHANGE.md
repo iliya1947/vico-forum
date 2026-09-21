@@ -825,3 +825,165 @@ new user choices required   = 0
 ```
 
 Codex should independently verify this target map before Phase 4 documentation restoration.
+
+
+## RESPONSE DL-DOCS-PLAN-001/1
+
+From: ChatGPT  
+Status: submitted  
+Responding in: PR #79  
+Task source: PR #78 head `c3fa8881edf7f93c3ff150c57ff6b610e84e5dda`  
+Audited main: `3282aa51f47f36131d35c34ee79ca37cb2ce434f`
+
+### Immutable response artifacts
+
+- Machine-readable plan:
+  `audit/chatgpt-review/DL-DOCS-PLAN-001.json` at
+  `f07e39b8c22d0c8d78174a6035da6d24db2359e6`.
+- Narrative:
+  `audit/chatgpt-review/DL-DOCS-PLAN-001.md` at
+  `e445011e76ac190a06faad9f565b0e5a0b9a2845`.
+
+### Scope and protocol
+
+The plan starts from accepted `TARGET_CONTRACTS.md`, the accepted atomic findings, and current
+source-of-truth documentation on main. Fourteen relevant source documents were fully re-read.
+
+This is a **documentation-restoration plan only**. It does not modify product/source-of-truth files,
+runtime code, tests, schema, workflows, external resources, or any ledger status.
+
+P4 is not activated: the user requested the bounded `DL-DOCS-PLAN-001` task, not a full documentation
+audit.
+
+### File result
+
+```text
+source documents fully rechecked                    = 14
+required semantic edit files                         = 5
+conditional provenance-only files                    = 1
+aligned/intentionally deferred no-change files       = 8
+semantic edit units                                  = 11
+ordered documentation-only change series             = 3
+required-edit driving accepted atomic IDs            = 24
+conditional provenance evidence-limited IDs          = 9
+finite documentation conflicts                       = 5
+unresolved documentation conflicts                   = 0
+planned runtime/schema/test/workflow/external changes = 0
+```
+
+### Required edit files
+
+1. `docs/translation/PROVIDERS_AND_JOBS.md`
+   - target: `TC-10`;
+   - accepted IDs: `EX72-20`, `EX72-45..50`;
+   - under `JOB-03`, remove the current-only narrowing that contradicts the earlier broad fresh-plan
+     rule;
+   - target semantics must allow fresh-plan `A→B→A` reactivation while preserving stale Queue-delivery
+     terminality, completed terminality, monotonic ordering/currentness and publication fencing;
+   - do not select a generation/head/schema implementation mechanism.
+
+2. `docs/translation/STORAGE_AND_VERSIONING.md`
+   - target: `TC-03`;
+   - accepted IDs: `EX75-56..59`;
+   - under `STO-05 / Stage 3C / Stage 5 implementation boundary`, keep immediate safe miss/fallback
+     but add the missing durable-convergence invariant for obsolete/rejected persisted bundle formats;
+   - repeated reads must not be the only path indefinitely encountering the same obsolete row;
+   - no request-time provider call and no refresh/backfill mechanism is selected here.
+
+3. `docs/auth/AUTHORIZATION.md`
+   - target: `TC-08`;
+   - accepted IDs: `EX60-27`, `EX61-42`;
+   - under `Runtime resolution`, require one internally consistent database snapshot for complete user
+     authorization resolution and for one management-state read;
+   - preserve next-request freshness and the ban on long-lived authoritative permission caches;
+   - do not prescribe transaction API/isolation/locking/query mechanics.
+
+4. `PROJECT_STATE.md`
+   - targets: `TC-12`, `TC-10`, `TC-03`;
+   - accepted documentation defects: `EX77-75/76`;
+   - convert the singular known-regression section into a plural known-current-limitations section,
+     retaining the existing PR #40 stale-policy disclosure;
+   - add the current PR #72 `A→B→A` reactivation limitation;
+   - add the current PR #75 obsolete-bundle durable-convergence limitation;
+   - keep the implemented Stage-5A foundation bullets; the correction is disclosure, not deletion of
+     valid capabilities;
+   - do not add historical PR/CI narrative or reorder remediation in `Ближайший маршрут`.
+
+5. `PROJECT_HISTORY.md`
+   - targets: `TC-12`, `TC-02`, `TC-10`, `TC-03`;
+   - narrow the high-level PR #40 label and `H-001` so the confirmed regression is the zero-stale gate
+     (`EX40-02`); canary removal itself remains only a historical fact because `EX40-01/03` are
+     acceptable alternatives;
+   - remove wording that turns the PR #40 documentation update into proven strict laundering/backdating
+     (`EX77-29/30`);
+   - extend `H-008` with the still-current PR #72 `A→B→A` residual defect (`EX77-58` plus
+     `EX72-20/45..50`);
+   - append a new stable history entry for the PR #75 durable bundle-convergence gap
+     (`EX77-59` plus `EX75-56..59`) without renumbering existing `H-001..H-010`;
+   - remove the unsupported `пользовательским review` actor attribution from `H-010`
+     (`EX77-65`).
+
+### Conditional provenance-only file
+
+`docs/database/HYPERDRIVE.md` receives **no standalone planned edit**.
+
+The current operational/development/Stage-6 contract is aligned. The accepted
+`EX45-15..19b/21a`, `EX46-01`, `EX49-20` evidence limit concerns provenance of historical
+external observations. If the `Real Hyperdrive deadline acceptance — 2026-09-13` section is touched
+for another justified reason, its observations must be presented as repository-recorded historical
+acceptance evidence rather than newly independently proved facts. Numeric observations and operational
+policy must not be changed merely because the audit lacks preserved raw external artifacts.
+
+### Independently rechecked no-change documents
+
+No semantic edit is planned for:
+
+- `docs/translation/UI_TRANSLATION.md` — already expresses permissive stale/fallback semantics; strict
+  stale CI remains a separate decision;
+- `docs/translation/LOCALES.md` — already matches `UD-001=A`;
+- `docs/database/MIGRATIONS.md` — already puts live evidence at actual external schema-dependent
+  rollout; `EX44-14` is future Stage-6 enforcement work, not a documentation mismatch;
+- `PROJECT.md` — generic locale, dynamic authorization, and product-first/local-CI principles align;
+- `ROADMAP.md` — Stage 5A/5B/6 sequencing aligns;
+- `TRANSLATION_ARCHITECTURE.md` — high-level invariants are aligned and detail ownership is correct;
+- `README.md` — documentation responsibility/index and stage summary align;
+- `docs/translation/CONTENT_TRANSLATION.md` — accepted Stage-5B revision-bound contract is already
+  correct and does not invent an `EX51-22` retention policy.
+
+### Ordered independently reviewable series
+
+1. **DOCS-SERIES-01 — Stage 5A contract + current-state restoration**
+   - `PROVIDERS_AND_JOBS.md`
+   - `STORAGE_AND_VERSIONING.md`
+   - `PROJECT_STATE.md`
+
+2. **DOCS-SERIES-02 — authorization snapshot contract restoration**
+   - `AUTHORIZATION.md`
+
+3. **DOCS-SERIES-03 — history/provenance restoration**
+   - `PROJECT_HISTORY.md`
+
+Each series is documentation-only. No series may contain runtime, test, schema, migration, workflow,
+external rollout, or implementation-mechanism changes.
+
+### Disconfirmation / conflict result
+
+Five finite documentation conflicts were checked:
+
+- JOB-03 broad fresh-plan rule vs later current-only wording → resolved by `TC-10`;
+- broad PR #40 history label vs mixed accepted PR #40 verdict → resolved by `TC-12/TC-02`;
+- PROJECT_STATE known-limitations responsibility vs missing PR #72/#75 limitations → resolved by
+  `EX77-75/76`;
+- `EX44-14` future enforcement gap vs already-correct `MIGRATIONS.md` contract → no documentation
+  edit;
+- HYPERDRIVE historical observation provenance limits vs aligned operational contract → no standalone
+  edit, conditional qualification only.
+
+```text
+unresolved documentation conflicts = 0
+```
+
+Every required future edit has a file-local diff guard in the machine plan so unrelated rewrites can
+be rejected. No final prose, runtime remediation mechanism, or source-of-truth change has been made.
+
+Codex should independently verify this plan before any Phase-4 source-document restoration.
