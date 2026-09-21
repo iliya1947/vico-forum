@@ -10,16 +10,15 @@
 
 - source documents independently rechecked: **14**;
 - applied and independently accepted semantic edit files: **4** across Series 1/2;
-- Series 3 applied source files: **1**, with preservation-first content accepted and one bookkeeping
-  correction pending review;
+- Series 3 candidate source files: **1**, pending preservation-first replanning;
 - conditional provenance-only files: **1**;
 - aligned or intentionally deferred no-change files: **8**;
-- applied semantic edit units: **10** across Series 1/2/3;
-- Series 3 semantic edit units: **4**, plus one no-edit H-010 preservation guard;
+- applied semantic edit units: **6** across Series 1/2;
+- Series 3 semantic edit units: **not yet accepted or counted**;
 - independently reviewable documentation-only series: **3**;
-- accepted edit-driving IDs: **23**;
+- previously accepted baseline edit-driving IDs: **23**; the Series 3 subset is under reassessment;
 - conditional provenance IDs: **9**;
-- preservation-plan questions pending: **0**;
+- preservation-plan questions pending: **2** (exact reassessment map; PR #72/#75 history placement);
 - planned non-documentation changes: **0**.
 
 ## Series 1 — Stage 5A contracts and current limitations
