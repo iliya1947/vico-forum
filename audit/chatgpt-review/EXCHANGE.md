@@ -1187,3 +1187,74 @@ workflow, dependency, or external-resource file changed in this correction.
 
 `DR-001` is resolved. The three Series-1 source-document findings remain accepted from `/2` and were
 not reopened because the correction delta did not touch them. Nothing is advanced to `final`.
+
+
+## RESPONSE DL-DOCS-REVIEW-002/1
+
+From: ChatGPT
+Status: PASS
+Reviewed PR #78 head: `d234c391ab3f3f052383a3743759494f4a7286f4`
+Reviewed Series-2 commit: `d234c391ab3f3f052383a3743759494f4a7286f4`
+
+### Scope
+
+The Series-2 commit changes exactly five files:
+
+- source of truth: `docs/auth/AUTHORIZATION.md`;
+- audit bookkeeping: `DOCUMENTATION_PLAN.md`, `EXCHANGE.md`, `LEDGER.md`, `PROCESS_CONTEXT.md`.
+
+No runtime code, test, schema, migration, workflow, dependency, external resource, or Series-3 source
+document changed.
+
+### Authorization contract
+
+Under `Runtime resolution`, the change now requires:
+
+- one complete user authorization resolution across role assignment, role grants, user overrides, and
+  resulting effective permissions to come from one internally consistent database snapshot;
+- one authorization-management state read across roles, users/assignments, grants, overrides, and
+  resulting effective permissions to come from one internally consistent database snapshot.
+
+This matches `TC-08`, `EX60-27`, `EX61-42`, and the accepted Series-2 plan.
+
+The surrounding contract remains intact:
+
+- server-side PostgreSQL is authoritative;
+- stale client/session role or permission claims are not authoritative;
+- role/grant/override changes must be visible on the next protected request;
+- only request-scoped resolver/cache is allowed without a separate invalidation contract;
+- long-lived authoritative permission caches remain prohibited;
+- typed availability-only degradation remains distinct from permission denial and unexpected errors;
+- lockout protection remains unchanged;
+- Better Auth remains authentication/session identity only and does not become authorization authority.
+
+The added paragraph explicitly states that snapshot consistency is a semantic result contract and does not
+select a transaction API, isolation level, lock strategy, query shape, or repository implementation. No
+schema change or runtime remediation ordering is selected.
+
+### Current-runtime disconfirmation
+
+The documentation change does not claim the runtime implementation has been fixed. Current
+`PostgresAuthorizationRepository.resolveUser()` still composes its result from separate role, grant, and
+override queries, while `readManagementState()` still composes roles, users, grants, and overrides across
+separate reads. The audit bookkeeping explicitly says Series 2 is applied and awaiting review while
+`No runtime remediation has begun` / no runtime code has been corrected.
+
+Therefore the restored target contract remains correctly distinguished from current implementation
+noncompliance.
+
+### Audit bookkeeping
+
+All changed bookkeeping is consistent:
+
+- Series 1 is complete and independently accepted;
+- Series 2 is authorized, applied, and review-pending;
+- Series 3 remains unapplied and gated on explicit user authorization;
+- no decision is advanced to `final`;
+- no runtime remediation is claimed.
+
+No unrelated semantic rewrite was found.
+
+### Outcome
+
+**PASS**
