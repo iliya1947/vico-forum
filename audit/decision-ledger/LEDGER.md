@@ -251,8 +251,9 @@ provenance-only file, and eight aligned/no-change documents. Its 11 edit units a
 documentation-only series with file-local diff guards. The durable working plan is
 `DOCUMENTATION_PLAN.md`.
 
-No source-of-truth documentation has been changed. Applying the plan is a separate Phase 4 action and
-remains gated on explicit user authorization.
+Series 1 has now been applied and independently accepted: the Stage 5A provider/jobs and storage contracts
+were restored and their current implementation limitations were added to `PROJECT_STATE.md`. Series 2 and
+Series 3 remain unapplied and gated on explicit user authorization. No runtime remediation has begun.
 
 ## Record template
 

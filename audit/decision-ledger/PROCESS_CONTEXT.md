@@ -178,7 +178,7 @@ Using the completed audit and recorded user decisions, define what should remain
 what must be restored, and which work belongs to future stages. A target hypothesis must not steer the
 evidence extraction that is supposed to test it.
 
-### Phase 4 — Documentation restoration (Series 1 applied; review pending)
+### Phase 4 — Documentation restoration (Series 1 complete; Series 2/3 pending)
 
 Repair product, architecture, roadmap, subsystem, history, and state documentation to reflect the
 approved target. Do not roll all documentation back mechanically to PR #12, and do not use current
@@ -278,8 +278,8 @@ required restoration remain open until full-history and cross-stage review.
   accepted bad corrections, current defects, evidence limits, stage boundaries, and user decisions with
   no unresolved target conflict. The accepted working map is `TARGET_CONTRACTS.md`; exact documentation
   restoration planning is complete in `DOCUMENTATION_PLAN.md`. The user authorized Series 1 on
-  2026-09-21; its three bounded source-document changes are applied and awaiting independent review.
-  Series 2 and Series 3 remain unapplied.
+  2026-09-21; its three bounded source-document changes are applied and independently accepted after the
+  audit-only `DR-001` bookkeeping correction. Series 2 and Series 3 remain unapplied.
 - No project decision has reached final status and no runtime code has been corrected by this audit
   branch. Source-of-truth documentation changes are limited to the authorized Series 1 files recorded
   above; Series 2 and Series 3 remain unapplied.
