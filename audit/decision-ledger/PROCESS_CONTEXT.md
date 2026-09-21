@@ -302,8 +302,8 @@ required restoration remain open until full-history and cross-stage review.
   2026-09-21; its three bounded source-document changes are applied and independently accepted after the
   audit-only `DR-001` bookkeeping correction. The user authorized Series 2 on 2026-09-21; its bounded
   authorization-contract change is applied and independently accepted. The user declined Series 3 in its
-  previous form; its preservation-first replacement plan and PR #72/#75 history placement are under
-  independent review, and Series 3 remains unapplied and unauthorized.
+  previous form; its preservation-first replacement plan and PR #72/#75 history placement have now passed
+  independent review, but Series 3 remains unapplied and unauthorized pending a new explicit user decision.
 - No project decision has reached final status and no runtime code has been corrected by this audit
   branch. Source-of-truth documentation changes are limited to the authorized Series 1 and Series 2 files
   recorded above; Series 3 remains unapplied.

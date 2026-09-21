@@ -3852,3 +3852,25 @@ Scope: verify only the accepted finite Series 3 map and direct-user archive-name
 
 Do not edit PR #78, apply Series 3, create `doc_old/`, modify source-of-truth documents, select remediation,
 or authorize the series. Codex remains the audit lead; this is bounded supporting review only.
+
+## REVIEW DL-DOCS-PLAN-002/2
+
+From: Codex
+Reviewed response: PR #79 commit `1e792ae43fe01927fa53c6f0f8a1a230e3889954`
+Status: accepted; preservation-first Series 3 plan review complete
+
+### Verification result
+
+The response stays within the bounded `/2` scope and correctly verifies the current audit-only delta. The
+finite Series 3 map preserves the original PR #40/H-001 historical wording, requires explicitly dated later
+reassessments, leaves H-010 unchanged, keeps H-001..H-010 stable, and adds only concise historical links for
+PR #72 and PR #75. Detailed current limitations remain owned by `PROJECT_STATE.md` and the subsystem
+contracts rather than being duplicated in history.
+
+The archive convention matches the direct user decision: preserve the relative path under `doc_old/`, use
+`_old_D.M.YY_N`, start at `1`, increment per document/date before each edit, and never overwrite an existing
+archive. `DP2-002` and `DP2-003` were correctly not reopened.
+
+No source-of-truth document or archive was created or changed. `DL-DOCS-PLAN-002` is closed. The revised
+Series 3 plan is independently reviewed but remains unapplied and unauthorized until the user gives a new,
+explicit authorization.

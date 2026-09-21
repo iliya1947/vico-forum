@@ -85,10 +85,10 @@ Targets/IDs: `TC-08`; `EX60-27`, `EX61-42`.
 
 ## Series 3 — History and provenance
 
-**Status: revised but not authorized.** On 2026-09-21 the user explicitly declined authorization for the
-previous Series 3 and required a preservation-first review. The independent `/1` review accepted that
-substantive direction and supplied the finite map below. No Series 3 source-document edit may begin until
-the correction review passes and the user gives a new, explicit authorization.
+**Status: revised and independently reviewed, but not authorized.** On 2026-09-21 the user explicitly
+declined authorization for the previous Series 3 and required a preservation-first review. The independent
+`/1` and `/2` reviews accepted the finite map below. No Series 3 source-document edit may begin until the
+user gives a new, explicit authorization.
 
 ### `PROJECT_HISTORY.md`
 
@@ -153,15 +153,15 @@ restoration must not rewrite them for stylistic consistency.
 
 ## Application gate
 
-Series 1/2 are complete and independently reviewed; the preservation-first Series 3 replacement has passed
-substantive review and awaits its narrow correction review plus new user authorization. The user authorized
-Series 1 on 2026-09-21; its bounded documentation changes have been applied in PR #78 and independently accepted after correction of the
+Series 1/2 are complete and independently reviewed; the preservation-first Series 3 replacement is also
+independently reviewed and now awaits only new user authorization. The user authorized Series 1 on
+2026-09-21; its bounded documentation changes have been applied in PR #78 and independently accepted after correction of the
 audit-only `DR-001` progress statement. The user then authorized Series 2 on 2026-09-21; its bounded
 `docs/auth/AUTHORIZATION.md` change is applied in PR #78 and independently accepted. The user explicitly
 declined Series 3 authorization on 2026-09-21 and requested the preservation-first reassessment above.
-Series 3 remains unapplied; its finite replacement map has substantive acceptance but still requires the
-narrow correction review and new explicit user authorization. Each series must remain documentation-only,
-use a full-file diff guard against unrelated rewrites, and be reviewed before the next series begins.
+Series 3 remains unapplied; its finite replacement map is accepted but still requires new explicit user
+authorization. Each series must remain documentation-only, use a full-file diff guard against unrelated
+rewrites, and be reviewed before the next series begins.
 
 ## Pre-change document archive rule
 
