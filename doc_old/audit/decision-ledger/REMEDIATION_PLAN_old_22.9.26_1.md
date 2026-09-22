@@ -120,9 +120,9 @@ OAuth/Hyperdrive/Neon/production rollout is excluded.
 
 ## Application gate
 
-The plan is accepted. On 2026-09-22 the user explicitly authorized implementation series R1 in one separate,
-stacked implementation PR. R2–R7 remain unauthorized. The R1 PR must update `PROJECT_STATE.md` when factual
-state changes, preserve its exact pre-change version under `doc_old/`, and remain limited to `REM-01/02/03`.
+The plan is accepted but implementation has not started. Each implementation unit/series requires explicit
+user authorization and a separate implementation PR; it must update `PROJECT_STATE.md` when factual state
+changes. Any changed documentation file must receive its exact pre-change `doc_old/` archive.
 
 Units touching PostgreSQL schema, migrations, SQL invariants, or DB integration behavior are not merge-ready
 without successful `pnpm db:test` and a green GitHub Actions `database` job on the actual PR head. Codex must

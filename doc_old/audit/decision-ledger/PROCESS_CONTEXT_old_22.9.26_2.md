@@ -203,10 +203,6 @@ Planning is complete in `REMEDIATION_PLAN.md`: 23 accepted IDs map exactly once 
 in seven series with no hard cross-unit dependency edges. Implementation remains unstarted and each bounded
 unit or series requires explicit user authorization and a separate implementation PR.
 
-On 2026-09-22 the user authorized R1 (`REM-01/02/03`) and explicitly allowed ChatGPT to create its separate
-implementation PR. This is a bounded exception to the audit-mailbox-only role: Codex remains audit lead and
-independent reviewer, PR #78/#79 ownership remains unchanged, and R2–R7 remain unauthorized.
-
 ## Required result classifications
 
 The final audit must distinguish at least:
