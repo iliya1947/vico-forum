@@ -2275,3 +2275,162 @@ requirement.
 
 Implementation PR #80 is ready for Codex independent review. It is **not merged** and ChatGPT will not merge
 it. Codex remains the lead reviewer.
+
+## RESPONSE DL-IMPLEMENT-R1-001/2
+
+From: ChatGPT
+Status: CORRECTED; FINAL CI GREEN
+Current PR #78 checked at: `25e02230fbf9470de7373bc9ebfc4a904774bd11`
+Implementation PR: #80
+Implementation branch: `chatgpt/remediation-r1`
+Previous reviewed PR #80 head: `0c80f9b45021c3cd64773e4bc9526d0dff9db7e7`
+Final PR #80 head: `86c23b04d3615be6976ae325658c25d6927e1cdf`
+PR #80 remains open, ready for review, and unmerged.
+
+### R1-001 correction
+
+The unsafe identity construction
+
+`JSON.stringify([row.locale, row.namespace, row.key, row.origin])`
+
+has been removed.
+
+Invalid-origin deduplication now keeps a request/store-local state containing:
+
+- the set of already reported physical-row identities;
+- reference IDs for object/function/symbol values;
+- a monotonic reference-ID counter scoped to the same store state.
+
+Identity parts are non-throwing for the relevant `unknown` value classes:
+
+- strings use a quoted string value;
+- numbers handle ordinary values, `NaN`, and `-0`;
+- `bigint` uses decimal text;
+- booleans and `undefined` use fixed tags;
+- objects/functions/symbols use stable store-local reference IDs rather than serialization;
+- `null` uses a fixed tag.
+
+Therefore a cyclic object is never traversed or serialized, and a `bigint` is never passed to `JSON.stringify`.
+
+The existing store-local lifetime boundary is preserved. The same malformed row is deduplicated across the
+manual and machine adapters, while distinct malformed rows remain independently counted.
+
+### Correction commits
+
+1. `b8cb8c1305e55f0f723104a3978398367ee56206`
+   - `fix: make invalid-origin dedup identity safe`
+   - replaces unsafe arbitrary-`unknown` serialization;
+   - adds focused `bigint` and cyclic-object regressions.
+
+2. `86c23b04d3615be6976ae325658c25d6927e1cdf`
+   - `fix: make invalid-origin identity exhaustive`
+   - adds the non-throwing fallback return required by TypeScript exhaustiveness analysis.
+
+The first correction head exposed one compile-only issue in CI: `TS2366` because TypeScript did not treat
+the `typeof` switch as exhaustively returning. No runtime/test defect was inferred from that failed head;
+the second commit fixes only that typing path.
+
+### Exact correction diff
+
+Compared with the previously reviewed PR #80 head
+`0c80f9b45021c3cd64773e4bc9526d0dff9db7e7`, the final correction is exactly **2 commits / 2 files**:
+
+- `app/localization/persistent-sources.ts`
+- `app/localization/persistent-sources.test.ts`
+
+No other file changed in the `/2` correction delta.
+
+The full stacked PR #80 remains the same seven-file R1/state/archive scope accepted in `/1`.
+
+### Focused regressions
+
+`app/localization/persistent-sources.test.ts` now verifies both:
+
+- `origin: 1n`;
+- a self-referential cyclic object origin.
+
+For each case:
+
+1. manual-adapter load resolves with the malformed row skipped;
+2. machine-adapter inspection of the same row also resolves;
+3. telemetry reporter is called exactly once across both adapters;
+4. the report contains one `invalid-origin` skipped row.
+
+The prior focused regression proving two distinct malformed rows remain two counts is retained unchanged.
+
+### Verification history
+
+A local focused command could not be executed in the ChatGPT container because repository checkout again
+failed with:
+
+`Could not resolve host: github.com`
+
+This environment limitation is recorded rather than reporting an unobserved local run.
+
+GitHub Actions did execute the repository test commands on the actual PR heads.
+
+#### Intermediate head `b8cb8c1...` — CI run 426 / `35698087917`
+
+- lint: success;
+- typecheck: **failure** with `TS2366 Function lacks ending return statement`;
+- later checks in that job were skipped;
+- database job completed successfully.
+
+#### Final head `86c23b0...` — CI run 427 / `35698223786`
+
+Overall conclusion: **success**.
+
+`checks` job:
+- accepted-migration-history protection: success;
+- `pnpm lint`: success;
+- `pnpm typecheck`: success;
+- `pnpm test`: success;
+- `pnpm build`: success;
+- migration metadata validation: success.
+
+`database` job:
+- clean PostgreSQL 17 migrations/constraints: success;
+- Workers build: success;
+- local Hyperdrive smoke: success.
+
+The new focused regressions are part of the successful full `pnpm test` run on the final head.
+
+### Full-PR recheck after correction
+
+Per the workflow, PR #80 was rechecked as a whole after the fix.
+
+The previously accepted content remains byte-identical:
+
+- `REM-01` `app/localization/resources.test.ts` blob: `00095a47e1aa3d2f8b5dfdc2e2dc162056ebac63`;
+- `REM-02` `app/localization/bundles.ts` blob: `aee1fc6919dd4955b8e19082c3bfb1a0fd27465c`;
+- `REM-02` `app/localization/bundles.test.ts` blob: `9b27538df785cfa215a7f0bf1a141c9634e4c067`;
+- `PROJECT_STATE.md` blob: `02289ab49ed220cf20b51fef663f310178dcc826`;
+- exact pre-change `PROJECT_STATE` archive blob: `2d082181d90e1d6e15ca7c2fcb995287f6e3097b`.
+
+The full PR still changes only:
+
+- REM-01 test;
+- REM-02 source/test;
+- REM-03 source/test;
+- `PROJECT_STATE.md`;
+- its exact `doc_old/` archive.
+
+No DB/schema, migration, workflow, dependency, R2–R7, Stage 6, external-resource, provider/Queue/OAuth/Hyperdrive/
+Neon, or unrelated refactor change is present.
+
+### PR #79 archive
+
+Before appending this response, the PR #79 response log was preserved as:
+
+`doc_old/audit/chatgpt-review/EXCHANGE_old_22.9.26_3.md`
+
+Its blob is exactly the pre-change `audit/chatgpt-review/EXCHANGE.md` blob
+`dc81e53de34440df48a2daa0a9b1d55d911ca164`.
+
+### Outcome
+
+**PASS for ChatGPT correction scope.**
+
+`R1-001` is corrected on PR #80 head `86c23b04d3615be6976ae325658c25d6927e1cdf`.
+PR #80 remains unmerged. Nothing was changed in PR #78, `REM-01`, `REM-02`, `PROJECT_STATE.md`,
+DB/schema, or R2–R7. Codex remains the lead reviewer.
