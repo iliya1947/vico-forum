@@ -1,0 +1,355 @@
+{
+  "type": "DL-IMPLEMENT-R4-PREFLIGHT-001",
+  "task_id": "DL-IMPLEMENT-R4-PREFLIGHT-001/1",
+  "status": "PASS",
+  "mode": "preflight-only",
+  "implementation_authorized": false,
+  "codex_role": "lead reviewer",
+  "observed_state": {
+    "main_sha": "c2ea076af1ca100de02f32c6e3aa06f840731e1d",
+    "main_is_pr87_merge": true,
+    "pr87_merge_commit": "c2ea076af1ca100de02f32c6e3aa06f840731e1d",
+    "pr87_merged_head": "f3a7679938d4c8396dad7f6ac149486adc6d39ef",
+    "r1_rem02_present": true,
+    "r1_merge_pr": 81,
+    "r2_rem04_present": true,
+    "r2_merge_pr": 86,
+    "r3_rem05_present": true,
+    "r3_merge_pr": 87,
+    "migration_tail": "0011_persistent_translation_locale_invariant",
+    "next_project_state_archive_if_implementation_starts_on_this_baseline": "doc_old/PROJECT_STATE_old_22.9.26_6.md",
+    "archive_6_currently_exists": false,
+    "pr79_head_before_artifacts": "8d3992a2f9026e0ea5ed3c05d50fd861b2958a59"
+  },
+  "accepted_scope": {
+    "series_id": "R4",
+    "series_name": "Persisted bundle durable convergence",
+    "remediation_unit": "REM-06",
+    "defect_group": "CD-12",
+    "target_contract": "TC-03-D",
+    "atomic_ids": [
+      "EX75-56",
+      "EX75-57",
+      "EX75-58",
+      "EX75-59"
+    ],
+    "accepted_plan": "DL-REMEDIATION-PLAN-001/2",
+    "accepted_plan_machine_blob": "739d326eb9e00a705003fff43ba4592c2f453e56",
+    "accepted_plan_narrative_blob": "d7766b1a857a8f70d279778fb82a478c74d3161c",
+    "hard_dependencies": [],
+    "recommended_order_after": [
+      "REM-02",
+      "REM-04"
+    ],
+    "recommended_predecessors_now_present": true
+  },
+  "current_paths": [
+    {
+      "path": "db/ui-translation-bundle-store.ts",
+      "blob": "824d6bc965a8f0c479e4f0cf5dd6a41b5de59ebd",
+      "same_as_pr75": true,
+      "role": "bundle read verifies and returns/throws; put upserts; no invalidation or reconciliation"
+    },
+    {
+      "path": "db/hyperdrive-ui-translations.ts",
+      "blob": "4daa28f2168b30273625d25880b05b32a402cc4d",
+      "same_as_pr75": true,
+      "role": "invalid-bundle is reported once per request and converted to miss; no durable repair"
+    },
+    {
+      "path": "app/localization/resource-loader.ts",
+      "blob": "0e84e076a877167394583708fd8aabb25998271c",
+      "same_as_pr75": true,
+      "role": "bundle miss falls through to raw/local sources and compiles only in memory"
+    },
+    {
+      "path": "app/localization/bundles.ts",
+      "blob": "aee1fc6919dd4955b8e19082c3bfb1a0fd27465c",
+      "same_as_pr75": false,
+      "role": "PR #81 hardened canonical namespace own-property verification; no convergence path"
+    },
+    {
+      "path": "db/ui-translation-bundle-store.test.ts",
+      "blob": "e1bd436439838c32f66e47c9a03823a823c161f8",
+      "same_as_pr75": true
+    },
+    {
+      "path": "db/hyperdrive-ui-translations.test.ts",
+      "blob": "89d7089a52fc6d11b893b8109afe321765bff92f",
+      "same_as_pr75": true
+    },
+    {
+      "path": "app/localization/resource-loader-bundles.test.ts",
+      "blob": "3c6b169bfa32dcfb905c5640a7b648b34c5336a9",
+      "same_as_pr75": true
+    },
+    {
+      "path": "tests/database/ui-translation-bundle-store.test.ts",
+      "blob": "c4f66a0f6a36e423f6279d1783278c744235f71e"
+    },
+    {
+      "path": "db/ui-translation-publication-store.ts",
+      "blob": "ff1534607a82c972abd89c1eb2e5c83f20f3eefc"
+    },
+    {
+      "path": "tests/database/ui-translation-publication-store.test.ts",
+      "blob": "449ea22c77a8835a4ddd8c253eb0b472cc980ac4"
+    },
+    {
+      "path": "db/schema.ts",
+      "blob": "02a1732995f25438b57f815e154869e3a6591338"
+    },
+    {
+      "path": "PROJECT_STATE.md",
+      "blob": "c14441eb0827cb684dcd2ae0b1b23ede009b2a59"
+    },
+    {
+      "path": "docs/translation/STORAGE_AND_VERSIONING.md",
+      "blob": "68606ec24ae213d15e1de4f8791acd805d42faab"
+    },
+    {
+      "path": "docs/translation/PROVIDERS_AND_JOBS.md",
+      "blob": "2cfb77d420d268c13fe43b616ad2e73b29bf0146"
+    },
+    {
+      "path": "TRANSLATION_ARCHITECTURE.md",
+      "blob": "0294c0245e846b5fdd5dab22bbc6afe79733cdcf"
+    }
+  ],
+  "post_pr75_change_analysis": {
+    "pr81": "Changed bundle compiler/verifier for REM-02 own-property namespace correctness. It did not add durable repair; only app/localization/bundles.ts among the direct PR75 convergence paths changed.",
+    "pr83": "Changed translation contracts/state only; it explicitly restored the durable-convergence requirement and did not change runtime/store code.",
+    "pr86": "Changed persistent English-exclusion schema/migration/verifier for REM-04; no bundle repair/backfill/reconciliation path was added.",
+    "pr87": "Changed translation-task stale reactivation for REM-05; no bundle read/store/loader/publication path changed and completed task identities remain terminal."
+  },
+  "defect_currentness": [
+    {
+      "id": "EX75-56",
+      "status": "current",
+      "proof": "The original durable refresh/backfill finding remains: current persisted-bundle read verifies and rejects obsolete rows but provides no durable rewrite/invalidation path; the direct bundle-store, Hyperdrive read and resource-loader blobs remain byte-identical to PR #75."
+    },
+    {
+      "id": "EX75-57",
+      "status": "current",
+      "proof": "On miss/invalid bundle the current TranslationResourceLoader reconstructs from available sources with compileNamespaceBundle only in memory. It never calls bundle put/delete/repair."
+    },
+    {
+      "id": "EX75-58",
+      "status": "current-supporting-mechanism",
+      "proof": "R3 intentionally preserves completed stable task terminality. Current task upsert returns any non-stale existing task, including completed, unchanged; completed tasks therefore are not a bundle-format refresh mechanism. This terminality is correct and must not be weakened by R4."
+    },
+    {
+      "id": "EX75-59",
+      "status": "current",
+      "proof": "Hyperdrive invalid-bundle memoization is request-local. A later request creates a new request store and can read/reject the unchanged durable row again because no cross-request durable invalidation exists."
+    }
+  ],
+  "deliberate_disconfirmation": {
+    "checks": [
+      "Compared direct PR #75 convergence-path blobs with post-R3 main: bundle store, Hyperdrive store, resource loader and their direct tests remain byte-identical to PR #75.",
+      "Checked PR #81: verifier ownership hardening changes what is rejected, not what happens durably after rejection.",
+      "Checked PR #83: contract synchronization explicitly records durable convergence as still required; no runtime fix.",
+      "Checked PR #86: 0011 and schema changes only canonical-English exclusion; no bundle repair state or mechanism.",
+      "Checked PR #87: task fresh-plan reactivation does not touch bundle paths; completed task terminality remains deliberately preserved.",
+      "Checked publication path: a later unrelated successful publication can overwrite the bundle with a valid current bundle, but no invariant guarantees such later publication will occur, so it does not establish convergence.",
+      "Checked request memoization: it prevents repeated reads only within one request, not across ordinary requests.",
+      "Checked external incidence: repository evidence does not prove obsolete bundles currently exist in any external environment."
+    ],
+    "result": "All four accepted R4 atomic IDs remain represented by the current repository behavior. External occurrence remains unproven and is not part of R4 execution."
+  },
+  "mechanism_families": [
+    {
+      "id": 1,
+      "name": "inline conditional invalidation/delete/quarantine at rejected request read",
+      "existing_schema_sufficient": "delete: yes; quarantine marker/table: no",
+      "race_boundary": "A delete would require re-read/row lock or exact CAS against the observed physical row. Unconditional PK delete is forbidden because it can erase a concurrently published valid row.",
+      "provider_or_new_orchestration": false,
+      "repeated_read_convergence": true,
+      "storage_degradation_preserved": "possible but requires new request-write failure classification so repair failure cannot break safe fallback",
+      "minimal_scope": "bundle store + Hyperdrive/request capability + request tests + DB concurrency tests; likely capability/docs impact",
+      "verdict": "reject",
+      "reason": "The current localization request capability is explicitly read-only and has no INSERT/UPDATE/DELETE. Moving repair writes into public request execution would broaden runtime privilege/design into the Stage 6 boundary and add write-failure semantics to an otherwise safe read miss."
+    },
+    {
+      "id": 2,
+      "name": "request-triggered durable rebuild/write from non-provider sources",
+      "existing_schema_sufficient": true,
+      "race_boundary": "Must lock or condition the write so a stale rebuild cannot overwrite a concurrent current publication.",
+      "provider_or_new_orchestration": false,
+      "repeated_read_convergence": true,
+      "storage_degradation_preserved": "requires request-write failure handling and must keep fallback independent of repair success",
+      "minimal_scope": "resource loader, request context/Hyperdrive capability, bundle writer, raw-source policy context, tests and likely runtime-capability docs",
+      "verdict": "reject",
+      "reason": "Broader than deletion and still requires request write privilege. More importantly, current request raw machine source has no required generationPolicyVersion while publication compilation does; rebuilding durably from the request path would need additional policy context to avoid persisting an obsolete-policy machine value."
+    },
+    {
+      "id": 3,
+      "name": "separate local/CI reconciliation command outside request execution",
+      "existing_schema_sufficient": true,
+      "selected_submechanism": "conditional locked delete-only reconciliation; do not rebuild",
+      "race_boundary": "Enumerate bundle identities, then for each identity open a short transaction, SELECT the current row FOR UPDATE, verify that locked/latest row with the existing verifyPersistedCompiledBundle, and DELETE only if that same locked row is still rejected. If publication wins first, FOR UPDATE returns the updated row and it is reverified/preserved. If reconciliation locks first, publication waits; deletion commits before publication upserts the new valid row.",
+      "provider_or_new_orchestration": false,
+      "repeated_read_convergence": true,
+      "storage_degradation_preserved": true,
+      "minimal_scope": "bundle-store reconciler + database/publication concurrency tests + one explicit TypeScript CLI/package script; request loader/Hyperdrive code remains unchanged",
+      "verdict": "accept",
+      "reason": "Smallest mechanism that closes repeated durable rejection without widening request privileges, without selecting machine generation policy for a rebuild, and without Queue/Workflow/provider infrastructure."
+    }
+  ],
+  "selected_mechanism": {
+    "family": 3,
+    "name": "local/CI locked invalid-bundle deletion reconciler",
+    "behavior": [
+      "Use the existing current bundle verifier; never weaken verification and never duplicate a looser verifier.",
+      "Reconciliation is explicitly invoked outside request execution using a write-capable development/admin DATABASE_URL; it is not wired into the request Hyperdrive store.",
+      "Scan persisted bundle identities; process each identity in a short transaction.",
+      "Re-read the exact locale/namespace row with SELECT FOR UPDATE before deciding.",
+      "If the locked/latest row verifies as current, leave it untouched.",
+      "If and only if the locked/latest row throws PersistentBundleIntegrityError, delete that row in the same transaction.",
+      "Do not rebuild from raw translations and do not call any translation provider.",
+      "After deletion, ordinary requests see a normal bundle miss instead of repeatedly rejecting the same obsolete row; existing raw/local/English fallback remains unchanged. A later normal valid publication may repopulate the bundle."
+    ],
+    "concurrency_proof_basis": {
+      "postgresql_17": "SELECT FOR UPDATE blocks concurrent UPDATE/DELETE and, under Read Committed, waits for an existing updater then locks/returns the updated row or no row. This allows verification of the latest locked row before deletion.",
+      "source_urls": [
+        "https://www.postgresql.org/docs/17/transaction-iso.html",
+        "https://www.postgresql.org/docs/17/explicit-locking.html"
+      ],
+      "deadlock_note": "The reconciler must lock only the bundle row and must not acquire translation generation-head locks or raw-translation locks. Publication may already hold generation-head locks and then wait for the bundle row, but the reconciler has no reverse dependency, avoiding a lock cycle."
+    },
+    "runner": {
+      "path": "scripts/reconcile-ui-translation-bundles.ts",
+      "package_script": "db:reconcile-ui-bundles",
+      "execution_boundary": "repository/local-CI command only for R4 acceptance; no external execution is performed or claimed by R4",
+      "ts_runner": "Promote already lock-resolved tsx 4.23.13 to an exact direct devDependency instead of relying on a transitive binary or duplicating TypeScript verifier logic.",
+      "repository_evidence": "pnpm-lock.yaml already contains tsx@4.23.13 transitively; package.json does not currently declare it directly.",
+      "external_reference": "https://tsx.is/getting-started"
+    }
+  },
+  "schema_and_migration": {
+    "schema_change_required": false,
+    "migration_required": false,
+    "migration_only_split_required": false,
+    "reason": [
+      "The existing bundle PK identifies the row to lock and delete.",
+      "Current bundle fields are sufficient for current verification; no quarantine state is selected.",
+      "Row locking provides the race boundary without a new revision/version column.",
+      "R4 does not need a data migration because the selected mechanism is executable reconciliation, not one-time schema/data conversion."
+    ],
+    "boundary": "If implementation cannot make lock/reverify/delete race-safe without a schema marker or migration, stop and revise this preflight; no 0012 is authorized by DL-IMPLEMENT-R4-PREFLIGHT-001/1."
+  },
+  "future_implementation_allowlist": [
+    "db/ui-translation-bundle-store.ts",
+    "tests/database/ui-translation-bundle-store.test.ts",
+    "tests/database/ui-translation-publication-store.test.ts",
+    "scripts/reconcile-ui-translation-bundles.ts",
+    "package.json",
+    "pnpm-lock.yaml",
+    "PROJECT_STATE.md",
+    "doc_old/PROJECT_STATE_old_22.9.26_6.md"
+  ],
+  "future_implementation_notes": {
+    "PROJECT_STATE.md": "Replace only the current persisted-bundle-convergence limitation with factual repository/local-CI reconciliation behavior. Do not claim external cleanup/acceptance.",
+    "doc_old/PROJECT_STATE_old_22.9.26_6.md": "Must be the exact pre-change PROJECT_STATE.md on the implementation baseline.",
+    "package.json/pnpm-lock.yaml": "Only promote exact tsx 4.23.13 already present transitively and add the reconciliation script. No unrelated dependency update."
+  },
+  "forbidden_files": {
+    "rule": "Every path outside the exact eight-file allowlist is forbidden for R4 implementation under main@c2ea076af1ca100de02f32c6e3aa06f840731e1d.",
+    "explicit": [
+      "db/schema.ts",
+      "drizzle/*.sql including any 0012",
+      "drizzle/meta/*",
+      "db/hyperdrive-ui-translations.ts",
+      "app/localization/resource-loader.ts",
+      "app/localization/request-context.ts",
+      "app/routes/locale-boundary.tsx",
+      "app/localization/persistent-sources.ts",
+      "db/ui-translation-publication-store.ts",
+      "docs/translation/STORAGE_AND_VERSIONING.md",
+      "docs/translation/PROVIDERS_AND_JOBS.md",
+      "docs/translation/UI_TRANSLATION.md",
+      "TRANSLATION_ARCHITECTURE.md",
+      "docs/database/HYPERDRIVE.md",
+      "docs/database/MIGRATIONS.md",
+      "ROADMAP.md",
+      ".github/workflows/*",
+      ".github/runtime-migration-evidence.json",
+      "all Queue/Workflow/provider/credential/external-resource paths",
+      "all R5-R7 implementation paths",
+      "PR #78 control artifacts"
+    ]
+  },
+  "required_tests_and_gates": {
+    "focused_unit": [
+      "pnpm exec vitest run db/ui-translation-bundle-store.test.ts db/hyperdrive-ui-translations.test.ts app/localization/resource-loader-bundles.test.ts"
+    ],
+    "focused_db": [
+      "pnpm exec vitest run --config vitest.database.config.ts tests/database/ui-translation-bundle-store.test.ts tests/database/ui-translation-publication-store.test.ts"
+    ],
+    "required_regressions": [
+      "Persist an obsolete/version-mismatched bundle; run reconciliation; assert the durable row is removed and a later normal read is a miss rather than another integrity rejection.",
+      "A current valid bundle is preserved by reconciliation.",
+      "Reconciliation is idempotent when the row is already absent.",
+      "Concurrent valid publication that commits before reconciler lock is re-read as current and is not deleted.",
+      "When reconciler locks an obsolete row first, concurrent publication waits; after deletion commit the publication succeeds and the final persisted row is the valid publication.",
+      "Reconciler surfaces unclassified database/programming errors; it does not convert them into silent deletion.",
+      "Existing invalid-bundle request degradation remains a safe miss and request fallback remains green.",
+      "No request-time provider call is introduced.",
+      "Existing same-namespace publication concurrency regression remains green."
+    ],
+    "repository": [
+      "pnpm lint",
+      "pnpm typecheck",
+      "pnpm test",
+      "pnpm build",
+      "pnpm db:test",
+      "git diff --check"
+    ],
+    "github_actions": [
+      "checks green on the actual future implementation PR head",
+      "database green on the actual future implementation PR head"
+    ],
+    "db_check_required_by_r4": false,
+    "note": "Current CI may still run pnpm db:check; R4 itself selects no schema/migration change."
+  },
+  "stage5_boundary": {
+    "compliant": true,
+    "proof": [
+      "R4 implements STO-05 persisted-bundle convergence in repository/local-CI without real Queue, Workflow, provider calls or credentials.",
+      "The public request localization capability remains read-only and unchanged.",
+      "No external DB cleanup, migration, Hyperdrive grant, deployment or Stage 6 acceptance is performed.",
+      "External obsolete-row incidence remains unproven; any later external execution of the reconciliation command requires a separate explicitly authorized Stage 6/external operation."
+    ]
+  },
+  "implementation_non_goals": [
+    "No request-time bundle DELETE/UPDATE/INSERT.",
+    "No request-triggered durable rebuild.",
+    "No reopening completed translation tasks.",
+    "No JOB-04/JOB-06 task reconciliation implementation.",
+    "No bundle-verification weakening.",
+    "No schema/migration/meta change.",
+    "No provider/Queue/Workflow integration or credentials.",
+    "No production/Neon/Hyperdrive cleanup or rollout.",
+    "No R5-R7 work.",
+    "No PR #78 mutation."
+  ],
+  "stop_conditions": [
+    "main differs from c2ea076af1ca100de02f32c6e3aa06f840731e1d or PROJECT_STATE archive _6 is no longer free before implementation: revalidate baseline and allowlist.",
+    "Race-safe lock/reverify/delete requires a schema field, migration, request writer, generation-head lock, or publication-store change: stop and revise preflight.",
+    "Concurrency regression can reproduce deletion/overwrite of a concurrently published valid bundle: stop; implementation is not acceptable.",
+    "The reconciler cannot reuse current verifyPersistedCompiledBundle semantics and would need duplicated/weaker verification: stop.",
+    "The TypeScript runner requires dependency graph changes beyond promoting already-resolved tsx 4.23.13 or otherwise broad package churn: revalidate the runner choice.",
+    "Any need arises to execute against Neon/production-like data or alter Hyperdrive/runtime grants: stop and obtain separate explicit external authorization."
+  ],
+  "conclusion": {
+    "status": "PASS",
+    "current_defect_group": "CD-12",
+    "remediation_unit": "REM-06",
+    "selected_mechanism": "separate local/CI locked conditional delete reconciler",
+    "schema_change_required": false,
+    "migration_required": false,
+    "migration_only_split_required": false,
+    "implementation_authorized": false,
+    "next_action_owner": "Codex lead reviewer"
+  }
+}
