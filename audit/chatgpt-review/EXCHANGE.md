@@ -2151,3 +2151,127 @@ No accepted remediation obligation was added, removed, merged, or reclassified.
 Only `RP-001` dependency/scheduling semantics were corrected. No runtime code, tests, schema, workflows,
 source-of-truth documents, external resources, implementation work, Phase 5 execution, or `final` status
 were changed. PR #78 was not modified. Codex remains the audit lead.
+
+
+## RESPONSE DL-IMPLEMENT-R1-001/1
+
+From: ChatGPT
+Status: IMPLEMENTED; STANDARD CI GREEN
+Reviewed task head PR #78: `ad12e9e157b540edfdac6db38b63b69f363fbb25`
+Main observed before implementation: `3282aa51f47f36131d35c34ee79ca37cb2ce434f`
+Review mailbox PR #79 observed before work: `664befef5ddbcff47c785badd6630e80cf71340e`
+
+### Implementation PR
+
+- PR: **#80 — fix: remediation R1 translation local/CI correctness**
+- URL: https://github.com/iliya1947/vico-forum/pull/80
+- base branch: `codex/-chatgpt`
+- base SHA: `ad12e9e157b540edfdac6db38b63b69f363fbb25`
+- head branch: `chatgpt/remediation-r1`
+- head SHA: `0c80f9b45021c3cd64773e4bc9526d0dff9db7e7`
+- state: open, ready for review, not merged
+- stacked note: after PR #78 lands, PR #80 must be retargeted/rebased onto `main` before merge unless the
+  user chooses another merge order.
+
+### Commit map
+
+1. `REM-01 / EX40-02`
+   - `fca8abb126e5a7f7a0b57ea51704cac1edb927ac`
+   - `fix: restore permissive stale-pack validation`
+   - removes only the exact `{ staleKeys: {} }` assertion for real manual packs; structural validation and
+     stale runtime/fallback semantics are unchanged.
+
+2. `REM-02 / EX34-23`
+   - `06c08fd8161bb20d529c27a16d38ffff6c81de19`
+   - `fix: harden bundle namespace membership`
+   - bundle scope/descriptor lookup now uses the same `Object.hasOwn` canonical-namespace boundary already
+     used by `sources.ts`;
+   - focused regressions cover `toString`, `constructor`, `__proto__`, and `hasOwnProperty` across
+     compile/verify/code-owned-input bundle paths.
+
+3. `REM-03 / EX39-11`
+   - `100eafd731b6d478699629c5434e935af08efcd8`
+   - `fix: deduplicate invalid-origin telemetry`
+   - a request-store-local `WeakMap<UiTranslationStore, Set<physical-row-identity>>` suppresses the second
+     invalid-origin report when manual and machine adapters inspect the same physical row;
+   - physical identity is `[locale, namespace, key, origin]`, matching the persistent row key dimensions
+     relevant to this malformed-origin condition;
+   - distinct malformed rows remain separately counted;
+   - valid manual/machine precedence and selection are unchanged.
+
+4. factual state synchronization
+   - `0c80f9b45021c3cd64773e4bc9526d0dff9db7e7`
+   - `docs: sync state after remediation R1`
+   - updates `PROJECT_STATE.md` date to 2026-09-22;
+   - removes only the now-resolved local-manual zero-stale limitation and its completed nearest-route item.
+
+### Changed-file map
+
+The stacked diff against the task head is exactly seven files:
+
+- `app/localization/resources.test.ts` — REM-01;
+- `app/localization/bundles.ts` — REM-02;
+- `app/localization/bundles.test.ts` — REM-02 tests;
+- `app/localization/persistent-sources.ts` — REM-03;
+- `app/localization/persistent-sources.test.ts` — REM-03 tests;
+- `PROJECT_STATE.md` — required factual state synchronization;
+- `doc_old/PROJECT_STATE_old_22.9.26_1.md` — exact pre-change archive.
+
+No DB schema/migration, SQL, workflow, dependency, provider, Queue, OAuth, Hyperdrive, Neon, Stage 6, R2–R7,
+or unrelated refactor file is changed.
+
+### Archive verification
+
+`PROJECT_STATE.md` pre-change blob:
+`2d082181d90e1d6e15ca7c2fcb995287f6e3097b`
+
+`doc_old/PROJECT_STATE_old_22.9.26_1.md` blob:
+`2d082181d90e1d6e15ca7c2fcb995287f6e3097b`
+
+Result: **exact pre-change copy confirmed**.
+
+The PR #79 response log was also archived before this append as
+`doc_old/audit/chatgpt-review/EXCHANGE_old_22.9.26_2.md`, whose blob equals the pre-change PR #79
+`EXCHANGE.md` blob `e7c8b1113a4e9743edf112504d2a4eb1ad348e56`.
+
+### Test / CI results
+
+A local checkout cannot be created in the current ChatGPT execution environment: the attempted Git network
+access fails at DNS resolution, so an independent local focused-only invocation could not be executed.
+This limitation is reported rather than fabricating a result.
+
+The actual PR #80 head `0c80f9b45021c3cd64773e4bc9526d0dff9db7e7` triggered CI run
+**#422 / run 35691253003**, which completed **successfully**.
+
+Confirmed successful CI steps:
+
+- `pnpm lint` — **success**;
+- `pnpm typecheck` — **success**;
+- `pnpm test` — **success**; this full Vitest run includes the new focused regressions in
+  `resources.test.ts`, `bundles.test.ts`, and `persistent-sources.test.ts`;
+- `pnpm build` — **success**;
+- `pnpm db:check` / migration metadata validation — **success**;
+- `pnpm db:test` in the `database` job — **success**;
+- Workers build/local Hyperdrive smoke — **success**.
+
+R1 itself is not DB-gated; the successful database job is additional CI evidence, not a newly introduced R1
+requirement.
+
+### Deliberate scope / disconfirmation pass
+
+- compared implementation head directly against the exact task/base SHA;
+- diff is 4 commits / 7 files only;
+- no accepted R2–R7 defect or mechanism is touched;
+- no evidence-limited claim is converted into behavior;
+- stale runtime classification/exclusion/fallback remains intact;
+- the historical synthetic stale canary is not restored;
+- own-property hardening follows an existing project boundary rather than introducing a new architecture;
+- REM-03 changes telemetry counting only and does not change valid translation precedence/publication;
+- no DB/schema/integration behavior was introduced;
+- `PROJECT_STATE.md` removes only the resolved zero-stale limitation and corresponding completed route item;
+- no audit record is advanced to `final`.
+
+### Outcome
+
+Implementation PR #80 is ready for Codex independent review. It is **not merged** and ChatGPT will not merge
+it. Codex remains the lead reviewer.
