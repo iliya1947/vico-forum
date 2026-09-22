@@ -1,13 +1,13 @@
 {
   "type": "DL-IMPLEMENT-R2-PREFLIGHT-001",
-  "task_id": "DL-IMPLEMENT-R2-PREFLIGHT-001/2",
+  "task_id": "DL-IMPLEMENT-R2-PREFLIGHT-001/1",
   "status": "PASS",
   "mode": "preflight-only",
   "implementation_authorized": false,
   "observed_state": {
     "main_sha": "da8d8cb1541b56463739e974a74cb29bc5f2527d",
     "pr78_head_sha": "3b1c2d0306e8e524371ee3389aa4fcaaa3bcb492",
-    "pr79_head_before_response": "f6a99ca34d6fd2a2d6a83184900a3721840a2d2e",
+    "pr79_head_before_response": "966297e4aba29239618468162fc4489257862352",
     "main_migration_tail": "0010_translation_task_generation_order",
     "main_migration_count": 11
   },
@@ -157,9 +157,7 @@
       "historical_storage_test_role": "Executes accepted 0002 in isolation and rejects exact en; it does not and should not retroactively assert the future 0011 invariant.",
       "full_history_test_path": "tests/database/migrations.test.ts",
       "full_history_current_migration_count_assertion": 11,
-      "full_history_has_ui_translation_or_bundle_constraint_regression": false,
-      "production_verifier_regression_on_main": false,
-      "production_verifier_regression_gap": "No focused automated test currently guards the production verifier's English-row predicate against regression from lower(btrim(locale)) back to lower(locale)."
+      "full_history_has_ui_translation_or_bundle_constraint_regression": false
     }
   },
   "deliberate_disconfirmation": {
@@ -227,18 +225,7 @@
       "required": true,
       "path": ".github/scripts/verify-production-migration.mjs",
       "change": "Use lower(btrim(locale)) = 'en' for both persistent-English verification branches.",
-      "external_execution_in_scope": false,
-      "focused_regression_test": {
-        "required": true,
-        "path": "tests/production-migration-verifier.test.ts",
-        "runner": "pnpm test (default Vitest config includes tests/*.test.ts and excludes .github/scripts/**)",
-        "requirements": [
-          "Read the actual .github/scripts/verify-production-migration.mjs source and isolate the persistentEnglishRows SQL block.",
-          "Normalize formatting only, then assert the correct predicate lower(btrim(locale)) = 'en' occurs exactly twice, once for ui_translations and once for ui_translation_bundles.",
-          "Assert the defective predicate lower(locale) = 'en' occurs zero times in that SQL block.",
-          "This is a focused source-semantic regression for EX31-16; do not duplicate external production execution or require Stage 6 credentials."
-        ]
-      }
+      "external_execution_in_scope": false
     },
     "focused_regression_tests": {
       "path": "tests/database/migrations.test.ts",
@@ -248,13 +235,7 @@
         "Add the equivalent regressions for ui_translation_bundles.",
         "Keep valid canonical non-English rows accepted."
       ],
-      "historical_0002_test_change_required": false,
-      "production_verifier_test_path": "tests/production-migration-verifier.test.ts",
-      "production_verifier_test_changes": [
-        "Guard the actual production-verifier SQL block rather than only the schema constraint.",
-        "Directly distinguish the defective lower(locale) = 'en' form from the required lower(btrim(locale)) = 'en' form.",
-        "Require two correct predicates and zero defective predicates."
-      ]
+      "historical_0002_test_change_required": false
     },
     "documentation_state_sync": {
       "required_on_implementation": true,
@@ -275,13 +256,12 @@
     "drizzle/meta/0011_snapshot.json",
     "drizzle/meta/_journal.json",
     ".github/scripts/verify-production-migration.mjs",
-    "tests/production-migration-verifier.test.ts",
     "tests/database/migrations.test.ts",
     "PROJECT_STATE.md",
     "doc_old/PROJECT_STATE_old_22.9.26_4.md"
   ],
   "forbidden_files": {
-    "exact_rule": "Every repository path other than the nine allowlisted paths is forbidden for R2 implementation against main@da8d8cb1541b56463739e974a74cb29bc5f2527d; no additional new path may be created.",
+    "exact_rule": "Every repository path other than the eight allowlisted paths is forbidden for R2 implementation against main@da8d8cb1541b56463739e974a74cb29bc5f2527d; no additional new path may be created.",
     "explicit_paths_and_sets": [
       "drizzle/0000_tan_johnny_storm.sql through drizzle/0010_translation_task_generation_order.sql",
       "drizzle/meta/0000_snapshot.json through drizzle/meta/0010_snapshot.json",
@@ -316,8 +296,7 @@
     "historical_stage3a_migration_only_sequence_is_not_current_r2_gate": true
   },
   "required_checks": [
-    "Focused verifier regression: pnpm exec vitest run tests/production-migration-verifier.test.ts",
-    "Focused DB regression: pnpm exec vitest run --config vitest.database.config.ts tests/database/migrations.test.ts",
+    "Focused: pnpm exec vitest run --config vitest.database.config.ts tests/database/migrations.test.ts",
     "Migration history guard: node --test .github/scripts/migration-history.test.mjs",
     "pnpm db:check",
     "pnpm lint",
@@ -345,19 +324,6 @@
     "migration_required": true,
     "migration_only_split_required": false,
     "bounded_to_unit": "REM-04",
-    "codex_role": "lead reviewer",
-    "production_verifier_regression_required": true,
-    "production_verifier_regression_path": "tests/production-migration-verifier.test.ts",
-    "implementation_allowlist_file_count": 9
-  },
-  "corrects": {
-    "prior_task_id": "DL-IMPLEMENT-R2-PREFLIGHT-001/1",
-    "prior_artifact_commit": "f6a99ca34d6fd2a2d6a83184900a3721840a2d2e",
-    "scope": "Add focused automated regression coverage for EX31-16 production-verifier semantics and update the exact implementation allowlist, forbidden boundary, and mandatory checks only.",
-    "accepted_ids_unchanged": true,
-    "migration_scope_unchanged": true,
-    "schema_invariant_unchanged": true,
-    "non_goals_unchanged": true,
-    "migration_only_split_decision_unchanged": true
+    "codex_role": "lead reviewer"
   }
 }

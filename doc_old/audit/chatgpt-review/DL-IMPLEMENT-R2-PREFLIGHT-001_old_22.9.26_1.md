@@ -1,8 +1,6 @@
-# DL-IMPLEMENT-R2-PREFLIGHT-001/2 — Phase 5 R2 preflight correction
+# DL-IMPLEMENT-R2-PREFLIGHT-001/1 — Phase 5 R2 preflight
 
 **Status: PASS**
-
-Correction scope: add focused automated regression coverage for `EX31-16` production-verifier semantics and update only the implementation allowlist, forbidden boundary, and mandatory checks. Accepted IDs, migration scope, schema invariant, non-goals, and the no-migration-only-split decision are unchanged from `/1`.
 
 > **PREFLIGHT ONLY — IMPLEMENTATION IS NOT AUTHORIZED BY THIS ARTIFACT**
 >
@@ -15,7 +13,7 @@ Correction scope: add focused automated regression coverage for `EX31-16` produc
 
 - Current `main`: `da8d8cb1541b56463739e974a74cb29bc5f2527d`.
 - Current PR #78 head: `3b1c2d0306e8e524371ee3389aa4fcaaa3bcb492`.
-- Current PR #79 head before this correction: `f6a99ca34d6fd2a2d6a83184900a3721840a2d2e`.
+- Current PR #79 head before this response: `966297e4aba29239618468162fc4489257862352`.
 - Current checked-in migration history ends at `0010_translation_task_generation_order`
   with 11 journal entries.
 
@@ -133,8 +131,6 @@ Those queries miss whitespace-wrapped English such as `" en "`.
 
 **Result: defect remains current.**
 
-`/1` correctly identified the defect but did not allocate a dedicated automated regression that guards the production verifier query itself. `/2` corrects that test-coverage gap without changing the defect classification or target invariant.
-
 ## 5. Check for partial supersession by PR #81/#83/#84/#85
 
 The merged PRs were checked by actual file set:
@@ -230,30 +226,7 @@ Bounded change:
 This is repository source correction only. Running that production verifier against an external target is
 not part of R2 local/CI acceptance.
 
-### D. Focused automated production-verifier regression
-
-Path:
-
-- `tests/production-migration-verifier.test.ts` — new.
-
-Required focused coverage for `EX31-16`:
-
-1. read the actual `.github/scripts/verify-production-migration.mjs` source and isolate the
-   `persistentEnglishRows` SQL block;
-2. normalize formatting only;
-3. assert the required predicate `lower(btrim(locale)) = 'en'` occurs exactly **twice** in that block,
-   once for `ui_translations` and once for `ui_translation_bundles`;
-4. assert the defective predicate `lower(locale) = 'en'` occurs **zero** times in that block.
-
-This directly distinguishes the historical defect from the corrected verifier semantics. The test belongs
-under `tests/`, not `.github/scripts/`, because the current default `vitest.config.ts` excludes
-`.github/scripts/**` while normal `tests/*.test.ts` files are part of `pnpm test` and therefore run
-in the existing `checks` CI job without changing `.github/workflows/ci.yml`.
-
-This is a focused source-semantic regression. It does not run the external production verifier against a
-real target and does not require Stage 6 credentials or topology.
-
-### E. Focused database regression tests
+### D. Focused regression tests
 
 Path:
 
@@ -271,7 +244,7 @@ Required focused coverage:
 isolation. It should remain unchanged rather than retroactively pretending `0002` contained the later
 forward correction.
 
-### F. Documentation/state sync
+### E. Documentation/state sync
 
 When implementation actually changes factual repository state:
 
@@ -294,17 +267,16 @@ For an R2 implementation based on
 3. `drizzle/meta/0011_snapshot.json` — new
 4. `drizzle/meta/_journal.json`
 5. `.github/scripts/verify-production-migration.mjs`
-6. `tests/production-migration-verifier.test.ts` — new focused `EX31-16` regression
-7. `tests/database/migrations.test.ts`
-8. `PROJECT_STATE.md`
-9. `doc_old/PROJECT_STATE_old_22.9.26_4.md` — new exact pre-change archive
+6. `tests/database/migrations.test.ts`
+7. `PROJECT_STATE.md`
+8. `doc_old/PROJECT_STATE_old_22.9.26_4.md` — new exact pre-change archive
 
 If `main` advances before implementation, this preflight must be revalidated rather than silently
 expanding or renumbering this allowlist.
 
 ## 9. Exact forbidden-file boundary
 
-**Every repository path not in the nine-file allowlist above is forbidden for R2 implementation on this
+**Every repository path not in the eight-file allowlist above is forbidden for R2 implementation on this
 baseline. No additional new file may be created.**
 
 Explicit high-risk forbidden paths/sets include:
@@ -345,19 +317,17 @@ The accepted R2 DB gates remain:
 
 The task additionally requires the complete implementation verification set:
 
-1. focused production-verifier regression:
-   `pnpm exec vitest run tests/production-migration-verifier.test.ts`;
-2. focused DB regression:
+1. focused DB regression:
    `pnpm exec vitest run --config vitest.database.config.ts tests/database/migrations.test.ts`;
-3. migration-history guard:
+2. migration-history guard:
    `node --test .github/scripts/migration-history.test.mjs`;
-4. `pnpm db:check`;
-5. `pnpm lint`;
-6. `pnpm typecheck`;
-7. `pnpm test`;
-8. `pnpm build`;
-9. `pnpm db:test`;
-10. green GitHub Actions **`database`** job on the actual implementation PR head.
+3. `pnpm db:check`;
+4. `pnpm lint`;
+5. `pnpm typecheck`;
+6. `pnpm test`;
+7. `pnpm build`;
+8. `pnpm db:test`;
+9. green GitHub Actions **`database`** job on the actual implementation PR head.
 
 No external migration workflow, live production-verifier execution, runtime-migration-evidence update,
 or Stage 6 smoke is required or authorized by R2 local/CI acceptance.
@@ -387,8 +357,7 @@ Reasons:
 2. R2 remains exactly `REM-04 / CD-02 / TC-03-B`; no new architectural decision was invented.
 3. A new forward migration after `0010` is necessary.
 4. A migration-only split is not necessary under the current repository contract.
-5. The future implementation is bounded to the exact nine-file allowlist above, including the dedicated `EX31-16` verifier regression.
+5. The future implementation is bounded to the exact eight-file allowlist above.
 6. No R2 implementation was performed, no implementation PR was created, no external operation was
    performed, and PR #78 was not changed.
-7. `/2` changes only verifier-regression coverage and the derived file/check boundaries; all accepted R2 semantics from `/1` remain unchanged.
-8. Codex remains the lead reviewer; this response is supporting-review evidence only.
+7. Codex remains the lead reviewer; this response is supporting-review evidence only.
