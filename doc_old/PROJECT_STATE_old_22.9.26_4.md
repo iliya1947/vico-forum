@@ -42,7 +42,7 @@ Vico Forum находится в ранней pre-release разработке.
 - generic `/:locale/*`, runtime `LocaleRegistry`, BCP-47 resolution, LTR/RTL и request-scoped
   `i18next`;
 - persistent locale registry, persistent UI translation storage и compiled bundle storage;
-- текущая migration history — `0000`–`0011`.
+- текущая migration history — `0000`–`0010`.
 
 ## Forum core — Stage 4
 
@@ -84,8 +84,6 @@ local/CI Stage 4 и остаются Stage 6.
 - conditional machine publication с provider/model provenance;
 - atomic `task completion + raw machine translation + whole namespace bundle` publication;
 - persisted exact-locale compiled bundles с deterministic current-deploy identity;
-- persistent `ui_translations` / `ui_translation_bundles` schema rejects canonical English
-  after trim + case-insensitive comparison; repository-owned production verifier uses the same boundary;
 - SSR/runtime чтение verified persisted bundles для canonical non-English locale с raw/local/
   English fallback при miss или классифицированной storage degradation.
 
