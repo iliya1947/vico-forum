@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 describe("production migration verifier persistent-English query", () => {
   it("uses trimmed canonical-English detection for both persistent UI tables", async () => {
     const source = await readFile(
-      new URL("../.github/scripts/verify-production-migration.mjs", import.meta.url),
+      ".github/scripts/verify-production-migration.mjs",
       "utf8",
     );
     const block = source.match(
