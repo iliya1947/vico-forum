@@ -124,17 +124,6 @@ Runtime безопасно отклоняет persisted UI bundle с obsolete fo
 Request path по-прежнему не должен вызывать translation provider. Конкретный durable repair
 mechanism ещё не выбран. Наличие таких obsolete rows во внешнем окружении не подтверждено.
 
-### Authorization snapshot consistency
-
-Восстановленный authorization contract требует одного internally consistent database snapshot
-для полного `resolveUser()` resolution и одного `readManagementState()` read.
-
-Текущая реализация пока выполняет независимые reads компонентов authorization state, поэтому
-этот contract ещё не реализован. Remediation R7 остаётся отдельной implementation-задачей.
-
-Конкретный transaction API, isolation level, lock strategy, query shape и schema changes здесь
-не выбираются.
-
 ## CI и migration state
 
 Обычный pull-request CI сейчас проверяет:
