@@ -1,0 +1,141 @@
+{
+  "type": "DL-IMPLEMENT-R4-PREFLIGHT-001/2",
+  "status": "PASS",
+  "mode": "preflight-correction-only",
+  "finding": "R4P-001",
+  "implementation_authorized": false,
+  "codex_role": "lead reviewer",
+  "observed_state": {
+    "pr79_head_before_correction": "3f97c9284bd24aea7d6552e38e0fdccd9ca611da",
+    "main_sha": "c2ea076af1ca100de02f32c6e3aa06f840731e1d",
+    "archive_6_currently_exists": false,
+    "parent_artifact_commit": "3f34dd42afd3321709d2a74dd66605a5abb50456",
+    "parent_response_commit": "3f97c9284bd24aea7d6552e38e0fdccd9ca611da",
+    "parent_json_blob": "bf3108e13b10f138e8eaa5c7acacbad3538287da",
+    "parent_markdown_blob": "52f6a0d2bf506b45d0989af22000c66608f22b6c"
+  },
+  "correction_scope": {
+    "preserve_without_reopening": [
+      "EX75-56..59 currentness",
+      "REM-06 / CD-12 / TC-03-D",
+      "separate local/CI locked conditional-delete reconciler",
+      "lock/reverify/delete race model",
+      "no schema change, migration, or migration-only split",
+      "no request-time writes or provider calls",
+      "existing eight-file future implementation allowlist",
+      "R5-R7, Stage 6, external operations forbidden"
+    ],
+    "changed_only": [
+      "future package-command end-to-end verification",
+      "destructive CLI fail-closed DATABASE_URL safety boundary",
+      "CLI-specific automated smoke in the existing allowed DB test file",
+      "CLI verification stop condition"
+    ]
+  },
+  "future_cli_contract": {
+    "package_script": "pnpm db:reconcile-ui-bundles",
+    "entry_point": "scripts/reconcile-ui-translation-bundles.ts",
+    "actual_package_entry_point_must_be_tested": true,
+    "store_level_tests_are_not_a_substitute": true,
+    "end_to_end_smoke": {
+      "location": "tests/database/ui-translation-bundle-store.test.ts",
+      "allowlist_change_required": false,
+      "invocation": "spawn the actual package script `pnpm db:reconcile-ui-bundles` as a child process from the repository root; do not substitute a direct reconciler/store-method call",
+      "database": "the existing disposable local PostgreSQL database used by the DB integration suite; the child process must be pointed at the test-owned disposable schema/database context without external access",
+      "assertions": [
+        "the invoked command is the package script `pnpm db:reconcile-ui-bundles`",
+        "the command successfully connects to the disposable local PostgreSQL test database",
+        "a seeded obsolete bundle row is durably removed",
+        "a seeded valid current bundle row is preserved",
+        "the process exits with code 0",
+        "a second invocation exits with code 0 and leaves the converged state unchanged"
+      ]
+    },
+    "fail_closed_database_url": {
+      "must_run_before": "construction/connection of the PostgreSQL client and before any reconciliation DELETE",
+      "accepted_hostnames": [
+        "127.0.0.1",
+        "localhost"
+      ],
+      "accepted_database_suffix": "_test",
+      "reject_with_nonzero_exit": [
+        "DATABASE_URL is missing",
+        "DATABASE_URL is not a valid absolute PostgreSQL URL",
+        "parsed hostname is not exactly one of the accepted loopback hostnames",
+        "parsed database path/name does not end with `_test`"
+      ],
+      "negative_package_command_regressions": [
+        "run the actual package script with DATABASE_URL absent",
+        "run the actual package script with a malformed DATABASE_URL",
+        "run the actual package script with a non-accepted hostname while retaining a `_test` database name",
+        "run the actual package script with an accepted loopback hostname but a database name that does not end in `_test`"
+      ],
+      "expected_negative_result": "nonzero exit with the safety guard rejecting the configuration before DB connection/reconciliation; no DELETE is attempted"
+    }
+  },
+  "allowlist_validation": {
+    "unchanged": true,
+    "smoke_fits_existing_allowed_test": true,
+    "proof": [
+      "`tests/database/ui-translation-bundle-store.test.ts` already runs in Node against a disposable loopback PostgreSQL database and already enforces the same loopback + `_test` safety convention",
+      "the test can seed bundle rows through its existing database client and invoke the package command as a child process, then query durable state after process exit",
+      "negative CLI-safety cases require no extra helper/test file because they can also spawn the package command from this same test file"
+    ],
+    "exact_future_implementation_allowlist": [
+      "db/ui-translation-bundle-store.ts",
+      "tests/database/ui-translation-bundle-store.test.ts",
+      "tests/database/ui-translation-publication-store.test.ts",
+      "scripts/reconcile-ui-translation-bundles.ts",
+      "package.json",
+      "pnpm-lock.yaml",
+      "PROJECT_STATE.md",
+      "doc_old/PROJECT_STATE_old_22.9.26_6.md"
+    ]
+  },
+  "required_tests_and_gates_amendment": {
+    "cli_smoke_mandatory": true,
+    "cli_smoke_is_in_addition_to_store_concurrency_tests": true,
+    "focused_db_command": "pnpm exec vitest run --config vitest.database.config.ts tests/database/ui-translation-bundle-store.test.ts tests/database/ui-translation-publication-store.test.ts",
+    "package_entry_point_requirements": [
+      "successful package-script smoke against disposable local PostgreSQL",
+      "obsolete row deletion",
+      "valid current row preservation",
+      "zero exit status",
+      "idempotent second package-script invocation",
+      "negative fail-closed package-script cases for missing/malformed/non-loopback/non-`*_test` DATABASE_URL"
+    ],
+    "unchanged_repository_gates": [
+      "pnpm lint",
+      "pnpm typecheck",
+      "pnpm test",
+      "pnpm build",
+      "pnpm db:test",
+      "git diff --check",
+      "GitHub Actions checks green on the actual implementation head",
+      "GitHub Actions database green on the actual implementation head"
+    ]
+  },
+  "stop_conditions_amendment": [
+    "If the actual package command cannot be exercised end-to-end against disposable local PostgreSQL from the current eight-file allowlist, do not start/continue R4 implementation; return the preflight to Codex.",
+    "If the CLI requires a connection policy that can accept a non-loopback or non-`*_test` DATABASE_URL for R4 acceptance, stop and return the preflight to Codex; do not make the command external-capable.",
+    "If proving CLI safety requires a ninth implementation file or any forbidden path, do not expand the allowlist automatically; return the exact required path/change to Codex for revalidation."
+  ],
+  "forbidden_boundaries_preserved": [
+    "no implementation PR",
+    "no runtime/schema/migration/project source-of-truth documentation change",
+    "no request-time write/provider call",
+    "no Stage 6/external reconciliation execution",
+    "no R5-R7",
+    "no PR #78 mutation"
+  ],
+  "conclusion": {
+    "status": "PASS",
+    "r4p001_resolved_by_preflight_contract": true,
+    "allowlist_change_required": false,
+    "schema_change_required": false,
+    "migration_required": false,
+    "migration_only_split_required": false,
+    "implementation_authorized": false,
+    "next_action_owner": "Codex lead reviewer"
+  }
+}
