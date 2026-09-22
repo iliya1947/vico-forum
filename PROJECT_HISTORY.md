@@ -1,6 +1,6 @@
 # PROJECT_HISTORY.md
 
-Последнее обновление: 2026-09-21
+Последнее обновление: 2026-09-22
 
 ## Назначение
 
@@ -148,6 +148,12 @@ canary остаётся историческим фактом, но отдель
 продолжили проверять stale exclusion/fallback path. Строгое documentation laundering или
 backdating также не подтверждено. Эта переоценка не переписывает то, что было записано раньше,
 а явно отделяет более поздний вывод аудита.
+
+**Последующее состояние от 2026-09-22:** PR [#81](https://github.com/iliya1947/vico-forum/pull/81)
+исправил подтверждённую regression: exact zero-stale equality gate удалён, а full-pack validation
+снова допускает stale entries. Stale runtime classification/exclusion/fallback сохранены.
+Удаление synthetic stale canary не отменялось и по-прежнему не классифицируется как отдельный
+доказанный дефект.
 
 ---
 
