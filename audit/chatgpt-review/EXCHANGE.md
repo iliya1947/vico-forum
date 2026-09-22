@@ -2956,3 +2956,92 @@ Pre-change/archive blob: `562d8667b4862d836dbbc550cc666747856d333f`.
 
 PR #83 is the standalone mergeable Stage 5A documentation-contract PR requested by the user.
 It remains unmerged for Codex independent review. PR #82 remains unchanged and unmerged.
+
+## RESPONSE DL-DOCS-SERIES2-DELIVERY-001/1
+
+From: ChatGPT
+Status: STANDALONE DOCUMENTATION SERIES 2 PR CREATED; CI GREEN
+
+### Baseline checks
+
+- current `main` after merged PR #83: `7f1b5df0040e8b2e72fcf10df6947ae9415a2fc2`;
+- PR #78 remains open/unmerged and is not a delivery dependency;
+- PR #82 remains open/unmerged on head `ecf46aa69eb21d8da33c87eeb98319671e1b2f47`;
+- Documentation Series 2 was not yet present in `main`: main `docs/auth/AUTHORIZATION.md` blob was `8d722e7289b10ae08983a2275fdd871a9f6dfabe`;
+- accepted Series 2 source blob from PR #82 is `efbcbe4c97d7e74fa850e1affbfa4631d07eedb9`.
+
+### New standalone PR
+
+- PR: **#84 — docs: deliver authorization snapshot contract**
+- URL: https://github.com/iliya1947/vico-forum/pull/84
+- base branch: `main`
+- base SHA: `7f1b5df0040e8b2e72fcf10df6947ae9415a2fc2`
+- head branch: `chatgpt/docs-series2-auth`
+- head SHA: `3e887aa56f2e857c9a9f4267c8b95c1042504427`
+- state: open, ready for review, unmerged
+- mergeable: true
+- commits: **1**
+- changed files: **2**
+
+### Exact changed-file list
+
+1. `docs/auth/AUTHORIZATION.md`
+2. `doc_old/docs/auth/AUTHORIZATION_old_22.9.26_1.md`
+
+No `PROJECT_HISTORY.md`, Stage 5A documentation, audit workspace, runtime code/tests, schema, migrations, workflows, dependencies, external changes, or other archives are present.
+
+### Source / archive verification
+
+- delivered `docs/auth/AUTHORIZATION.md` blob: `efbcbe4c97d7e74fa850e1affbfa4631d07eedb9`;
+- this is byte-identical to the already accepted Documentation Series 2 version from PR #82;
+- pre-change `main` authorization blob: `8d722e7289b10ae08983a2275fdd871a9f6dfabe`;
+- archive `doc_old/docs/auth/AUTHORIZATION_old_22.9.26_1.md` blob: `8d722e7289b10ae08983a2275fdd871a9f6dfabe`;
+- exact pre-change copy confirmed.
+
+### Contract content
+
+The delivered Series 2 contract adds only snapshot-consistency semantics to runtime authorization:
+
+- one complete user authorization resolution must come from one internally consistent database snapshot;
+- one authorization-management state read must also come from one internally consistent database snapshot;
+- the contract does not prescribe transaction API, isolation level, lock strategy, query shape, or repository implementation;
+- next-request freshness remains required and long-lived authoritative permission caches remain disallowed.
+
+Current runtime code still performs these reads separately. This PR does not claim that R7 implementation is complete and does not change runtime behavior.
+
+### CI status
+
+GitHub Actions run **#446 / `35725965706`** executed on actual PR #84 head `3e887aa56f2e857c9a9f4267c8b95c1042504427`.
+
+Final result: **SUCCESS**.
+
+`checks` job:
+- accepted migration-history protection: success;
+- lint: success;
+- typecheck: success;
+- full test suite: success;
+- production build: success;
+- migration metadata validation: success.
+
+`database` job:
+- clean PostgreSQL 17 migrations/constraints: success;
+- Workers build: success;
+- local Hyperdrive smoke: success.
+
+### Scope note
+
+Per the user's explicit split-delivery request, this PR contains only Series 2 `AUTHORIZATION.md` plus its exact archive. It does not include the separate `PROJECT_STATE.md` authorization-snapshot limitation that exists in the broader PR #82. No implementation-completion claim is made here.
+
+### PR #79 archive
+
+Before appending this response, `audit/chatgpt-review/EXCHANGE.md` was preserved exactly as:
+
+`doc_old/audit/chatgpt-review/EXCHANGE_old_22.9.26_8.md`
+
+Pre-change/archive blob: `6d376c86e0060d18193dc6328a30f76629d0a929`.
+
+### Outcome
+
+**PASS for the explicitly requested standalone Series 2 delivery scope.**
+
+PR #84 remains unmerged for Codex independent review. PR #82 remains unchanged and unmerged.
