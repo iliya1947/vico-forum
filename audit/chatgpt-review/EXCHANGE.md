@@ -4035,3 +4035,169 @@ disconfirm it.
 No R3 implementation, implementation PR, R4–R7 work, external operation, or PR #78 mutation
 was performed. Codex remains the lead reviewer.
 
+
+
+## RESPONSE DL-IMPLEMENT-R4-PREFLIGHT-001/1
+
+From: ChatGPT  
+Status: **PASS**  
+Mode: preflight only; R4 implementation is **not authorized**  
+Observed post-R3 main: `c2ea076af1ca100de02f32c6e3aa06f840731e1d`  
+PR #87 merge commit: `c2ea076af1ca100de02f32c6e3aa06f840731e1d`
+
+### Immutable artifact commit
+
+`3f34dd42afd3321709d2a74dd66605a5abb50456`
+
+Artifacts:
+
+- `audit/chatgpt-review/DL-IMPLEMENT-R4-PREFLIGHT-001.json`
+  - blob `bf3108e13b10f138e8eaa5c7acacbad3538287da`
+- `audit/chatgpt-review/DL-IMPLEMENT-R4-PREFLIGHT-001.md`
+  - blob `52f6a0d2bf506b45d0989af22000c66608f22b6c`
+
+### Exact accepted R4 scope
+
+- series: `R4` — Persisted bundle durable convergence;
+- remediation unit: `REM-06`;
+- defect group: `CD-12`;
+- target contract: `TC-03-D`;
+- atomic IDs: `EX75-56`, `EX75-57`, `EX75-58`, `EX75-59`.
+
+R1/`REM-02`, R2/`REM-04`, and R3/`REM-05` are present in current `main`.
+The next free future `PROJECT_STATE.md` archive on this baseline is
+`doc_old/PROJECT_STATE_old_22.9.26_6.md`.
+
+### Currentness result
+
+All four accepted R4 IDs remain represented by current repository behavior.
+
+- `EX75-56`: current bundle read rejects obsolete/invalid data but has no durable repair.
+- `EX75-57`: request fallback recompiles only in memory and never persists/deletes repair state.
+- `EX75-58`: completed tasks remain terminal by design after R3, so task reopening is not a
+  bundle-format refresh mechanism and must not be introduced by R4.
+- `EX75-59`: invalid-bundle memoization is request-local; later requests can reread the unchanged
+  durable obsolete row.
+
+Direct bundle-store, Hyperdrive-store, resource-loader, and their direct tests remain byte-identical
+to PR #75. PR #81 changed verifier ownership semantics only; PR #83 restored the convergence
+contract only; PR #86 changed the English-exclusion storage invariant; PR #87 changed task
+reactivation only. None added durable bundle convergence.
+
+No evidence was found that obsolete bundle rows currently exist in an external environment.
+
+### Selected smallest safe mechanism
+
+**Separate local/CI locked conditional-delete reconciler outside request execution.**
+
+For each persisted bundle identity, the reconciler will:
+
+1. open a short transaction;
+2. re-read the current row with `SELECT ... FOR UPDATE`;
+3. verify that locked/latest row using the existing `verifyPersistedCompiledBundle()`;
+4. preserve it if current;
+5. delete it in the same transaction only if that locked/latest row still throws
+   `PersistentBundleIntegrityError`.
+
+It does **not** rebuild from raw translations and does **not** call a translation provider.
+
+Race proof:
+
+- if valid publication wins first, `FOR UPDATE` returns the updated row and reconciliation
+  re-verifies/preserves it;
+- if reconciliation locks obsolete data first, publication waits, reconciliation deletes/commits,
+  and publication then upserts the valid row.
+
+PostgreSQL 17 primary references used for the row-lock/Read-Committed behavior:
+
+- https://www.postgresql.org/docs/17/transaction-iso.html
+- https://www.postgresql.org/docs/17/explicit-locking.html
+
+### Rejected alternatives
+
+1. **Request-time conditional delete/invalidation** — existing schema can express delete, but the
+   current request localization capability is explicitly read-only. Adding request DB writes would
+   broaden Stage-6 runtime privilege design and require write-failure semantics in the safe fallback
+   path.
+2. **Request-triggered durable rebuild** — broader still: besides request write capability and
+   publication races, the current request machine source has no required
+   `generationPolicyVersion`, while publication compilation does. Persisting a rebuild would
+   require additional policy context to avoid materializing obsolete-policy machine data.
+
+### Schema / migration decision
+
+- schema change: **NO**;
+- migration: **NO**;
+- migration-only split: **NO**;
+- no `0012` is authorized.
+
+If implementation proves row-lock reverify/delete insufficient, it must stop and return to
+preflight rather than add schema/migration or expand into request writes/publication-store changes.
+
+### Exact future implementation allowlist
+
+Valid only against
+`main@c2ea076af1ca100de02f32c6e3aa06f840731e1d`
+while archive `_6` remains free:
+
+1. `db/ui-translation-bundle-store.ts`
+2. `tests/database/ui-translation-bundle-store.test.ts`
+3. `tests/database/ui-translation-publication-store.test.ts`
+4. `scripts/reconcile-ui-translation-bundles.ts`
+5. `package.json`
+6. `pnpm-lock.yaml`
+7. `PROJECT_STATE.md`
+8. `doc_old/PROJECT_STATE_old_22.9.26_6.md`
+
+The proposed command is `pnpm db:reconcile-ui-bundles`. The repository already resolves
+`tsx@4.23.13` transitively; the bounded implementation may promote exactly that version to a
+direct devDependency solely to run the typed repository command. No unrelated dependency upgrade
+is authorized.
+
+Every other repository path is forbidden under this preflight. In particular: no schema/migration
+or meta files, request Hyperdrive/resource-loader/context/routes, publication-store implementation,
+translation/database source-of-truth documents, workflows, runtime evidence, Queue/provider
+resources, R5–R7, or PR #78 changes.
+
+### Mandatory later implementation gates
+
+Focused existing read-path regressions:
+
+`pnpm exec vitest run db/ui-translation-bundle-store.test.ts db/hyperdrive-ui-translations.test.ts app/localization/resource-loader-bundles.test.ts`
+
+Focused DB/concurrency regressions:
+
+`pnpm exec vitest run --config vitest.database.config.ts tests/database/ui-translation-bundle-store.test.ts tests/database/ui-translation-publication-store.test.ts`
+
+They must prove obsolete-row deletion, later ordinary miss, preservation of current valid rows,
+idempotent absent-row reconciliation, both publication/reconciler race orderings, visible
+unclassified DB/programming failures, unchanged request degradation/fallback, no request provider
+call, and existing publication concurrency.
+
+Repository gates:
+
+- `pnpm lint`;
+- `pnpm typecheck`;
+- `pnpm test`;
+- `pnpm build`;
+- `pnpm db:test`;
+- `git diff --check`;
+- GitHub Actions `checks` and `database` green on the actual future implementation head.
+
+### Stage 5 / external boundary
+
+The selected mechanism is repository/local-CI only. The public request localization capability
+remains read-only. No external DB cleanup, Neon migration, Hyperdrive grant, deployment,
+Queue/Workflow or provider operation is part of R4 preflight or future implementation acceptance.
+
+If external obsolete rows are later proven and reconciliation is to be executed against them, that
+requires a separate explicitly authorized external/Stage-6 operation.
+
+### Outcome
+
+**PASS**
+
+No R4 implementation branch or PR was created. No runtime, schema, migration, project
+source-of-truth documentation, external resource, or PR #78 change was made.
+
+Codex remains the lead reviewer.
