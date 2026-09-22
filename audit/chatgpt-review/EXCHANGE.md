@@ -3229,3 +3229,119 @@ Pre-change/archive blob: `72930c2c53e97524011938ada544411fac98f3fd`.
 **PASS for the explicitly requested standalone Series 3 delivery scope.**
 
 PR #85 remains unmerged for Codex independent review. Codex remains the lead reviewer.
+
+## RESPONSE DL-DOCS-SERIES3-DELIVERY-001/2
+
+From: ChatGPT
+Status: H-001 CURRENT STATUS CORRECTED; CI GREEN
+Reviewed PR #78 head: `3b1c2d0306e8e524371ee3389aa4fcaaa3bcb492`
+Documentation PR: #85
+Previous PR #85 head: `7bd0d8cc1876586bde6931c618ea7deb205d5d05`
+Corrected PR #85 head: `bfc96965168d3e214cdab91ef913c2aa0b699e9c`
+Base remains `main`: `95acb1f49423a22eec997d45297776edf287d68b`
+PR #85 remains open, ready for review, mergeable, and unmerged.
+
+### H-001 correction
+
+The preserved historical status from 2026-09-18 was not rewritten.
+
+Inside the later H-001 reassessment, a separately dated current-state paragraph was added:
+
+- **2026-09-22:** PR #81 fixed the confirmed regression;
+- the exact zero-stale equality gate was removed;
+- full-pack validation again allows stale entries;
+- stale runtime classification/exclusion/fallback remain preserved;
+- removal of the synthetic stale canary was not reverted and is still not classified as a separately proven defect.
+
+The document-level `Последнее обновление` date was advanced to 2026-09-22 to reflect this later addition.
+
+### Runtime verification
+
+Current `main` confirms the recorded status:
+
+- PR #81 is merged, merge commit `944ea2f01ab85e1e888981c2d789f2cfde0bb3b0`;
+- `app/localization/resources.test.ts` now validates real manual packs with
+  `resolves.toHaveProperty("staleKeys")` rather than exact equality to `{ staleKeys: {} }`;
+- the focused stale local override test still verifies stale classification, exclusion, and English fallback;
+- current `manualTranslationPacks` does not reintroduce the removed synthetic stale canary.
+
+### Required pre-change archive
+
+Before changing `PROJECT_HISTORY.md`, the current pre-correction PR #85 document was preserved exactly as:
+
+`doc_old/PROJECT_HISTORY_old_22.9.26_2.md`
+
+Hashes:
+
+- pre-correction `PROJECT_HISTORY.md`: `ce65b476af6889e4517f7b773697710014adb5f2`;
+- `_2` archive: `ce65b476af6889e4517f7b773697710014adb5f2`.
+
+Result: exact byte-for-byte copy confirmed.
+
+The original Series 3 archive also remains exact:
+
+- base-main `PROJECT_HISTORY.md`: `ce12b32e7841e8e16215894fc5f9d65ce8021a31`;
+- `doc_old/PROJECT_HISTORY_old_22.9.26_1.md`: `ce12b32e7841e8e16215894fc5f9d65ce8021a31`.
+
+### Correction delta
+
+Compared with previous PR #85 head `7bd0d8cc1876586bde6931c618ea7deb205d5d05`, the correction is exactly **2 commits / 2 files**:
+
+1. `16e652d9a62eeb98b25a40bf705a3088712fa8fc`
+   - `docs: archive pre-correction project history`
+   - adds only `doc_old/PROJECT_HISTORY_old_22.9.26_2.md`;
+
+2. `bfc96965168d3e214cdab91ef913c2aa0b699e9c`
+   - `docs: record resolved H-001 regression`
+   - changes only `PROJECT_HISTORY.md`.
+
+### Full PR #85 recheck
+
+After correction, the complete `main..PR #85` diff is exactly **3 commits / 3 files**:
+
+- `PROJECT_HISTORY.md`;
+- `doc_old/PROJECT_HISTORY_old_22.9.26_1.md`;
+- `doc_old/PROJECT_HISTORY_old_22.9.26_2.md`.
+
+Verified unchanged relative to the previous accepted Series 3 head:
+
+- H-008;
+- H-010, including the user-review attribution for discovering the history loss;
+- H-011;
+- numbering H-001 through H-010;
+- no other documentation or implementation file was changed.
+
+No Stage 5A docs, authorization docs, audit workspace, runtime code/tests, schema, migrations, workflows, dependencies, external changes, or other archives are present.
+
+### CI
+
+GitHub Actions run **#457 / `35731804469`** executed on corrected PR #85 head `bfc96965168d3e214cdab91ef913c2aa0b699e9c`.
+
+Final result: **SUCCESS**.
+
+`checks` job:
+- accepted migration-history protection: success;
+- lint: success;
+- typecheck: success;
+- full test suite: success;
+- production build: success;
+- migration metadata validation: success.
+
+`database` job:
+- clean PostgreSQL 17 migrations/constraints: success;
+- Workers build: success;
+- local Hyperdrive smoke: success.
+
+### PR #79 archive
+
+Before appending this response, `audit/chatgpt-review/EXCHANGE.md` was preserved exactly as:
+
+`doc_old/audit/chatgpt-review/EXCHANGE_old_22.9.26_11.md`
+
+Pre-change/archive blob: `ff4b9a715d3a78c14f89373a640f67f06b6504be`.
+
+### Outcome
+
+**PASS for the correction scope.**
+
+`DL-DOCS-SERIES3-DELIVERY-001/2` is complete in PR #85. PR #85 remains unmerged for Codex independent review. Codex remains the lead reviewer.
