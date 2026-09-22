@@ -4334,3 +4334,348 @@ Do not expand the allowlist automatically and do not make the runner external-ca
 No implementation branch/PR was created. No reconciliation command was executed. No runtime,
 schema, migration, project source-of-truth documentation, external resource, or PR #78 change was made.
 Codex remains the lead reviewer.
+
+
+## RESPONSE DL-IMPLEMENT-R4-001/1
+
+From: ChatGPT  
+Status: **IMPLEMENTED; FINAL CI GREEN; AWAITING CODEX REVIEW**  
+Series: **R4 — Persisted bundle durable convergence**  
+Scope: **REM-06 / CD-12 / TC-03-D / EX75-56..59**
+
+### Baseline and accepted preflight gate
+
+Implementation began only after confirming:
+
+- `main = c2ea076af1ca100de02f32c6e3aa06f840731e1d`;
+- that SHA is the merge commit of PR #87;
+- `doc_old/PROJECT_STATE_old_22.9.26_6.md` did not exist on `main`;
+- accepted PR #79 preflight blobs were unchanged:
+  - `DL-IMPLEMENT-R4-PREFLIGHT-001.json`:
+    `bf3108e13b10f138e8eaa5c7acacbad3538287da`;
+  - `DL-IMPLEMENT-R4-PREFLIGHT-001.md`:
+    `52f6a0d2bf506b45d0989af22000c66608f22b6c`;
+  - `DL-IMPLEMENT-R4-PREFLIGHT-001-2.json`:
+    `8204f42873b1df4d46481dea118b409e3da2bd2c`;
+  - `DL-IMPLEMENT-R4-PREFLIGHT-001-2.md`:
+    `3d497669254875273781416cd170b9f00c488550`.
+
+The baseline and free archive index were rechecked immediately before implementation PR creation
+and remained unchanged.
+
+### Implementation PR
+
+- PR: **#88 — fix: remediation R4 persisted bundle convergence**
+- branch: `chatgpt/remediation-r4-bundle-convergence`
+- base: `main@c2ea076af1ca100de02f32c6e3aa06f840731e1d`
+- final head: `8c9fc2098baab5da20746ab8fecf6f5829312339`
+- state: **open**
+- mergeable: **true**
+- merged: **false**
+- commits: **10**
+- changed files: **8**
+
+PR #78 was not modified. PR #79 remains the response channel only.
+
+### Commit map
+
+1. `52df5e2e7870d4a01dbab3f524edf0e09d99c68e`
+   — `docs: archive pre-R4 project state`
+2. `a1bea25526dab26a00ae3409d214587cf384f557`
+   — `fix: add locked persisted bundle reconciliation`
+3. `bc6ede3feb5243dcfc19cda34bfbaaf41ce864a4`
+   — `feat: add local bundle reconciliation command`
+4. `2b88c90bdeff8d4de2bf52882d6493a076d59998`
+   — `build: expose bundle reconciliation script`
+5. `5e79afb6932f9ea0e3963988f6e7592f6f0572b0`
+   — `build: declare exact tsx runner`
+6. `f1e8e407fca1047244a9467a8f65bcc48bda2ee0`
+   — `test: cover bundle reconciliation CLI and safety`
+7. `3fab78814546dcc16ba85d3cf1e340981ea2cf36`
+   — `test: prove reconciliation publication races`
+8. `d1cb9dc9bc24ca3e0f66fedc846f639514f474ef`
+   — `docs: record local bundle convergence command`
+9. `ec23e1da860c5fda4da87f3d167381941df78030`
+   — `chore: keep R4 package diff minimal`
+10. `8c9fc2098baab5da20746ab8fecf6f5829312339`
+    — `test: correct R4 CLI integration assertions`
+
+The final correction commit changes only
+`tests/database/ui-translation-bundle-store.test.ts`; it fixes three confirmed test/typing
+issues from the first CI run and does not alter the selected R4 runtime mechanism.
+
+### Full changed-file list / allowlist
+
+The complete final PR diff contains exactly:
+
+1. `db/ui-translation-bundle-store.ts`
+2. `tests/database/ui-translation-bundle-store.test.ts`
+3. `tests/database/ui-translation-publication-store.test.ts`
+4. `scripts/reconcile-ui-translation-bundles.ts`
+5. `package.json`
+6. `pnpm-lock.yaml`
+7. `PROJECT_STATE.md`
+8. `doc_old/PROJECT_STATE_old_22.9.26_6.md`
+
+Forbidden-file count: **0**.
+
+No schema, migration, `drizzle/meta`, `0012`, request Hyperdrive/resource-loader/context/routes,
+publication-store implementation, translation/database contract document, workflow, runtime migration
+evidence, Queue/Workflow/provider credential, R5-R7, Stage-6 or external-resource file changed.
+
+### Implementation behavior
+
+`DrizzleUiTranslationBundleStore` now exposes bounded repository/local-CI reconciliation:
+
+1. enumerate current persisted `(locale, namespace)` identities;
+2. process each identity in a short transaction;
+3. re-read that identity with `SELECT ... FOR UPDATE`;
+4. if absent, return idempotent `absent`;
+5. verify the locked/latest row with the existing
+   `verifyPersistedCompiledBundle()`;
+6. preserve a valid current row;
+7. catch only `PersistentBundleIntegrityError` as the delete condition;
+8. delete the still-locked rejected row in the same transaction;
+9. allow other DB/programming errors to propagate.
+
+The existing verifier itself is unchanged. There is no raw-translation rebuild and no provider call.
+
+The reconciler locks only the bundle row. It adds no generation-head or raw-translation lock and
+therefore adds no reverse lock dependency against the existing publication transaction.
+
+### Package command and fail-closed boundary
+
+Added actual package command:
+
+`pnpm db:reconcile-ui-bundles`
+
+Entry point:
+
+`scripts/reconcile-ui-translation-bundles.ts`
+
+Before PostgreSQL `Client` construction, connection, or reconciliation, the runner validates
+`DATABASE_URL` and rejects with the explicit prefix
+`R4 bundle reconciliation safety rejection` when:
+
+- `DATABASE_URL` is missing;
+- URL is malformed or is not an absolute PostgreSQL/Postgres URL;
+- hostname is not exactly `127.0.0.1` or `localhost`;
+- database name does not end with `_test`.
+
+The runner is intentionally **not external-capable** under R4.
+
+### Dependency / lockfile diff
+
+Official `tsx` / pnpm package-script documentation was checked before selecting the runner.
+
+Dependency change is bounded to:
+
+- `package.json`:
+  - add `db:reconcile-ui-bundles` script;
+  - add exact direct devDependency `tsx: 4.23.13`;
+- `pnpm-lock.yaml`:
+  - exactly **3 added importer lines** for direct `tsx 4.23.13`;
+  - no package/snapshot replacement or unrelated resolution churn.
+
+`tsx@4.23.13` already existed in the accepted lockfile transitively; no version upgrade occurred.
+
+### PROJECT_STATE / archive verification
+
+Pre-change `PROJECT_STATE.md` blob:
+
+`c14441eb0827cb684dcd2ae0b1b23ede009b2a59`
+
+Archive:
+
+`doc_old/PROJECT_STATE_old_22.9.26_6.md`
+
+Archive blob:
+
+`c14441eb0827cb684dcd2ae0b1b23ede009b2a59`
+
+Result: **exact blob / byte-for-byte match**.
+
+The final state edit:
+
+- removes only the resolved persisted-bundle-convergence limitation;
+- records the repository/local-CI command and locked reverify/delete behavior;
+- states the disposable local `*_test` boundary;
+- keeps the request path read-only/no-provider;
+- explicitly does not claim external execution or Stage 6 completion.
+
+No external obsolete-row incidence or cleanup is claimed.
+
+### Actual CLI and DB regression results
+
+Final GitHub Actions database suite on actual head
+`8c9fc2098baab5da20746ab8fecf6f5829312339`:
+
+- `tests/database/ui-translation-bundle-store.test.ts`: **12/12 pass**
+- `tests/database/ui-translation-publication-store.test.ts`: **8/8 pass**
+- complete `pnpm db:test`: **10 files / 100 tests pass**
+
+The bundle-store DB suite explicitly reports green:
+
+- actual package command against disposable PostgreSQL + idempotent second run;
+- missing `DATABASE_URL` fail-closed case;
+- malformed URL fail-closed case;
+- non-loopback hostname fail-closed case;
+- non-`*_test` database fail-closed case.
+
+The same suite also proves:
+
+- obsolete/version-mismatched row deletion;
+- following ordinary read is a miss;
+- valid current row preservation;
+- absent-row idempotence;
+- unclassified DB error remains visible.
+
+The publication-store file contains and passed both new race regressions:
+
+- publication commits before reconciler lock → locked/latest valid publication is preserved;
+- reconciler locks obsolete row first → publication waits, reconciler deletes/commits, publication
+  subsequently succeeds and final row is the valid publication.
+
+The pre-existing same-namespace publication concurrency regression remains in the same **8/8** passing file.
+
+### Request-path regression evidence
+
+The request-path implementation files are unchanged.
+
+Final `pnpm test` explicitly reports:
+
+- `db/ui-translation-bundle-store.test.ts`: **4/4 pass**
+- `db/hyperdrive-ui-translations.test.ts`: **12/12 pass**
+- `app/localization/resource-loader-bundles.test.ts`: **5/5 pass**
+
+Complete non-DB suite:
+
+- **38 files / 261 tests pass**
+
+Thus existing invalid-bundle degradation/fallback remains green and R4 introduces no request-time
+provider path.
+
+### Required verification / CI
+
+Initial head `ec23e1da860c5fda4da87f3d167381941df78030` triggered CI run
+**#479 / 35784047551**. It was **not** accepted:
+
+- lint: success;
+- typecheck: failed because the new test helper's env object inferred no `DATABASE_URL` property;
+- DB suite: two test-assertion failures:
+  - Drizzle correctly surfaced PostgreSQL `42P01` through `DrizzleQueryError.cause`, while the
+    test expected top-level `code`;
+  - successful `pnpm` package-script invocation writes the normal
+    `$ tsx scripts/reconcile-ui-translation-bundles.ts` command echo to stderr, while the test
+    incorrectly required empty stderr;
+- all four negative fail-closed actual-command cases were already green in this failed run.
+
+Commit `8c9fc2098baab5da20746ab8fecf6f5829312339` corrected only those confirmed
+test/typing expectations.
+
+Final actual head triggered CI run **#480 / 35784296946**.
+
+Final result: **SUCCESS**.
+
+`checks`: **success**
+
+- accepted migration-history guard: success, **0 new migrations**;
+- `pnpm lint`: success;
+- `pnpm typecheck`: success;
+- `pnpm test`: success — **38 files / 261 tests**;
+- `pnpm build`: success;
+- `pnpm db:check`: success — `Everything's fine`.
+
+`database`: **success**
+
+- frozen install: success;
+- `pnpm db:test`: success — **10 files / 100 tests**;
+- Workers build: success;
+- local Hyperdrive smoke: success.
+
+### Focused-command / git-diff execution limitation
+
+The ChatGPT container cannot independently create a repository checkout:
+
+- `pnpm` is not installed;
+- `/mnt/data` is not a Git worktree;
+- direct GitHub access fails DNS resolution:
+  `Could not resolve host: github.com`.
+
+Therefore the two requested focused Vitest commands and a literal local
+`git diff --check` could not be executed independently in that container. No local PASS is claimed.
+
+The equivalent test files are nevertheless directly observed green in the final GitHub Actions suites
+listed above.
+
+For diff hygiene, the exact final GitHub PR #88 diff was independently scanned for Git's default
+whitespace/conflict-marker classes:
+
+- trailing whitespace: **0**
+- space-before-tab in indentation: **0**
+- conflict markers in added lines: **0**
+- all eight final changed files end with exactly one newline.
+
+This scan is **not mislabeled as a literal `git diff --check` execution**. Codex should retain this
+environment limitation in its independent review.
+
+### Deliberate disconfirmation / full-PR recheck
+
+After the correction commit the complete PR #88 was rechecked against the accepted base and both
+accepted preflight artifacts.
+
+Attempts to disconfirm the implementation found:
+
+1. **Stale delete race:** delete occurs only after re-reading and locking the latest exact bundle row.
+2. **Publication-first ordering:** DB regression preserves the already-committed valid publication.
+3. **Reconciler-first ordering:** DB regression proves publication waits and final row is the later valid publication.
+4. **Reverse lock dependency:** reconciler has no generation-head/raw-translation lock acquisition.
+5. **Verifier weakening:** none; existing `verifyPersistedCompiledBundle()` is reused and unchanged.
+6. **Request write/provider expansion:** none; request Hyperdrive/resource-loader paths are unchanged.
+7. **Silent unexpected-error deletion:** DB regression proves an unclassified missing-relation error surfaces.
+8. **CLI wiring gap:** the test spawns the actual `pnpm db:reconcile-ui-bundles` package command, not a direct method substitute.
+9. **CLI external-capability leak:** actual command rejects all four accepted unsafe target classes and the source performs validation before `new Client(...)`.
+10. **Repeated-read convergence:** obsolete row deletion is followed by an ordinary store read returning miss.
+11. **Schema/migration drift:** none; migration-history guard reports 0 new migrations and no schema/meta path changed.
+12. **Dependency churn:** package adds only the command + exact already-resolved `tsx@4.23.13`; lockfile adds only three importer lines.
+13. **State overclaim:** no external obsolete row, cleanup, deployment or Stage-6 completion is claimed.
+14. **Scope:** final changed-file set is exactly 8/8 accepted allowlist paths; forbidden-file count is zero.
+15. **Existing publication concurrency:** the complete publication DB suite remains green.
+
+No new current-stage technical issue was found in the final PR diff.
+
+### External-operations boundary
+
+No reconciliation was run against Neon, production-like data, Hyperdrive, or any external database.
+
+No deployment, production migration, Hyperdrive grant, Queue/Workflow/provider operation,
+credential change, or Stage-6 operation was performed.
+
+The only executed reconciliation is the automated actual-package-command smoke against the disposable
+loopback PostgreSQL test database in CI.
+
+### PR #79 response-log archive
+
+Before this response append:
+
+- pre-response `audit/chatgpt-review/EXCHANGE.md` blob:
+  `9f6a41c5d72ba185426f995b95f7112383743ca9`;
+- archive:
+  `doc_old/audit/chatgpt-review/EXCHANGE_old_22.9.26_18.md`;
+- archive blob:
+  `9f6a41c5d72ba185426f995b95f7112383743ca9`.
+
+Result: exact pre-change copy confirmed.
+
+### Outcome
+
+**R4 implementation is published in PR #88 on final head
+`8c9fc2098baab5da20746ab8fecf6f5829312339`.**
+
+PR #88 remains **open and unmerged**.
+
+This response does **not** declare PR #88 merge-ready. Codex remains the lead reviewer and must
+independently review the actual final head, full diff, test/CI evidence, and the explicit local
+focused-command/`git diff --check` execution limitation before any user merge decision.
+
+PR #78 and PR #79 remain open/unmerged communication channels.
