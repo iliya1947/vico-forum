@@ -58,7 +58,51 @@ describe("PostgreSQL 17 locale migrations", () => {
     const applied = await client.query<{ count: string }>(
       'select count(*)::text as count from drizzle."__drizzle_migrations"',
     );
-    expect(applied.rows[0]?.count).toBe("11");
+    expect(applied.rows[0]?.count).toBe("12");
+  });
+
+  it("rejects trimmed canonical English in persistent UI translation storage", async () => {
+    const sourceFingerprint = "0".repeat(64);
+    const bundleVersion = "1".repeat(64);
+
+    for (const locale of [" en ", " EN ", "\ten\t", "\nEN\n"]) {
+      await expectDatabaseCode(
+        client.query(
+          `insert into ui_translations
+            (locale, namespace, key, origin, status, source_fingerprint, translated_payload)
+           values ($1, 'r2-persistent-locale', 'greeting', 'persistent_manual', 'approved', $2, $3::jsonb)`,
+          [locale, sourceFingerprint, JSON.stringify("Hallo")],
+        ),
+        "23514",
+      );
+      await expectDatabaseCode(
+        client.query(
+          `insert into ui_translation_bundles
+            (locale, namespace, bundle_version, resources)
+           values ($1, 'r2-persistent-locale', $2, '{}'::jsonb)`,
+          [locale, bundleVersion],
+        ),
+        "23514",
+      );
+    }
+
+    try {
+      await client.query(
+        `insert into ui_translations
+          (locale, namespace, key, origin, status, source_fingerprint, translated_payload)
+         values ('de', 'r2-persistent-locale', 'greeting', 'persistent_manual', 'approved', $1, $2::jsonb)`,
+        [sourceFingerprint, JSON.stringify("Hallo")],
+      );
+      await client.query(
+        `insert into ui_translation_bundles
+          (locale, namespace, bundle_version, resources)
+         values ('de', 'r2-persistent-locale', $1, '{}'::jsonb)`,
+        [bundleVersion],
+      );
+    } finally {
+      await client.query("delete from ui_translation_bundles where locale = 'de' and namespace = 'r2-persistent-locale'");
+      await client.query("delete from ui_translations where locale = 'de' and namespace = 'r2-persistent-locale'");
+    }
   });
 
   it("seeds the code catalog and independent built-in role grants exactly", async () => {

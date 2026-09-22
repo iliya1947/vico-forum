@@ -189,9 +189,9 @@ try {
   );
 
   const persistentEnglishRows = await client.query(`
-    SELECT 'translation' AS source, locale FROM public.ui_translations WHERE lower(locale) = 'en'
+    SELECT 'translation' AS source, locale FROM public.ui_translations WHERE lower(btrim(locale, chr(32) || chr(9) || chr(10) || chr(13) || chr(12) || chr(11))) = 'en'
     UNION ALL
-    SELECT 'bundle' AS source, locale FROM public.ui_translation_bundles WHERE lower(locale) = 'en'
+    SELECT 'bundle' AS source, locale FROM public.ui_translation_bundles WHERE lower(btrim(locale, chr(32) || chr(9) || chr(10) || chr(13) || chr(12) || chr(11))) = 'en'
   `);
   assert.deepEqual(
     persistentEnglishRows.rows,
