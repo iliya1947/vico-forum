@@ -78,6 +78,13 @@
       "when": 1789574281954,
       "tag": "0010_translation_task_generation_order",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1790093400000,
+      "tag": "0011_persistent_translation_locale_invariant",
+      "breakpoints": true
     }
   ]
 }

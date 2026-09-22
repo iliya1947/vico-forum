@@ -87,7 +87,7 @@ export const uiTranslations = pgTable(
       name: "ui_translations_pk",
       columns: [table.locale, table.namespace, table.key, table.origin],
     }),
-    check("ui_translations_locale_check", sql`btrim(${table.locale}) <> '' and lower(${table.locale}) <> 'en'`),
+    check("ui_translations_locale_check", sql`btrim(${table.locale}) <> '' and lower(btrim(${table.locale})) <> 'en'`),
     check("ui_translations_namespace_check", sql`btrim(${table.namespace}) <> ''`),
     check("ui_translations_key_check", sql`btrim(${table.key}) <> ''`),
     check(
@@ -144,7 +144,7 @@ export const uiTranslationBundles = pgTable(
     }),
     check(
       "ui_translation_bundles_locale_check",
-      sql`btrim(${table.locale}) <> '' and lower(${table.locale}) <> 'en'`,
+      sql`btrim(${table.locale}) <> '' and lower(btrim(${table.locale})) <> 'en'`,
     ),
     check("ui_translation_bundles_namespace_check", sql`btrim(${table.namespace}) <> ''`),
     check(
