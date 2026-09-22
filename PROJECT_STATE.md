@@ -80,6 +80,7 @@ local/CI Stage 4 и остаются Stage 6.
 - task lifecycle `pending → processing → stale/completed`, claim token и lease/reclaim;
 - stale/source/policy/locale/manual preflight перед provider call;
 - durable monotonic generation ordering и current-generation fencing;
+- fresh-plan A-B-A reactivation stale stable identity через новую monotonic generation под существующим generation-head lock; completed identity и старая Queue delivery остаются terminal;
 - provider-neutral task executor;
 - conditional machine publication с provider/model provenance;
 - atomic `task completion + raw machine translation + whole namespace bundle` publication;
