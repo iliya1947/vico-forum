@@ -1,0 +1,734 @@
+{
+  "type": "DL-REMEDIATION-PLAN-001-exact-once",
+  "task_id": "DL-REMEDIATION-PLAN-001/1",
+  "status": "PASS",
+  "task_source_pr78_head": "6ae147d34d6289c363d1646218fa9b3bdd666667",
+  "scope_definition": "Audit remediation implementation only: accepted still-live defects/bad corrections. Ordinary unfinished Stage 5 feature delivery remains preserved in the roadmap but is not counted as a remediation unit.",
+  "derivation": {
+    "accepted_current_defects": {
+      "group_count": 15,
+      "atomic_id_count": 29
+    },
+    "excluded_current_defect_groups": [
+      {
+        "group": "CD-05",
+        "ids": [
+          "EX44-14"
+        ],
+        "reason": "Stage 6/external rollout enforcement; explicitly deferred."
+      },
+      {
+        "group": "CD-13",
+        "ids": [
+          "EX77-24"
+        ],
+        "reason": "Documentation-only; completed in Phase 4 Series 3."
+      },
+      {
+        "group": "CD-14",
+        "ids": [
+          "EX77-58",
+          "EX77-59"
+        ],
+        "reason": "Documentation-only; completed in Phase 4 Series 3."
+      },
+      {
+        "group": "CD-15",
+        "ids": [
+          "EX77-75",
+          "EX77-76"
+        ],
+        "reason": "Documentation-only; completed in Phase 4 Series 1/3 synchronization."
+      }
+    ],
+    "included_current_defect_groups": [
+      "CD-01",
+      "CD-02",
+      "CD-03",
+      "CD-04",
+      "CD-06",
+      "CD-07",
+      "CD-08",
+      "CD-09",
+      "CD-10",
+      "CD-11",
+      "CD-12"
+    ],
+    "included_atomic_ids": [
+      "EX40-02",
+      "EX31-10",
+      "EX31-14",
+      "EX31-16",
+      "EX34-23",
+      "EX39-11",
+      "EX52-25",
+      "EX52-26",
+      "EX57-27",
+      "EX58-43",
+      "EX60-27",
+      "EX61-42",
+      "EX72-20",
+      "EX72-45",
+      "EX72-46",
+      "EX72-47",
+      "EX72-48",
+      "EX72-49",
+      "EX72-50",
+      "EX75-56",
+      "EX75-57",
+      "EX75-58",
+      "EX75-59"
+    ],
+    "accepted_bad_correction_records": {
+      "total": 23,
+      "still_live_and_consumed_by_units": [
+        "EX40-02"
+      ],
+      "not_rescheduled": [
+        "EX37-03",
+        "EX37-05",
+        "EX37-07",
+        "EX37-08a",
+        "EX37-08c1",
+        "EX37-08c2",
+        "EX37-09a",
+        "EX42-21b",
+        "EX43-05",
+        "EX43-21",
+        "EX44-13",
+        "EX44-15",
+        "EX49-14",
+        "EX50-36a",
+        "EX50-36b",
+        "EX50-37",
+        "EX50-38a",
+        "EX50-38b",
+        "EX61-60",
+        "EX61-67",
+        "EX61-69",
+        "EX61-70"
+      ],
+      "not_rescheduled_reason": "Later fixes/current contracts already supersede or restore these behaviors, or their remaining external boundary is Stage 6."
+    },
+    "evidence_limited_active_count": 15,
+    "evidence_limited_scheduled_count": 0,
+    "completed_documentation_scheduled_count": 0,
+    "stage6_external_scheduled_count": 0,
+    "preserved_non_remediation_stage5_work": [
+      {
+        "target": "TC-09-C",
+        "work": "Concrete machine-provider adapter exercisable locally/CI."
+      },
+      {
+        "target": "TC-10-D",
+        "work": "JOB-04 retry/terminal-failure and JOB-06 persistent reconciliation/observability."
+      },
+      {
+        "target": "TC-05-B",
+        "work": "Stage 5B content translation service/persistence/structured Markdown/presentation."
+      }
+    ],
+    "preserved_non_remediation_reason": "These are real roadmap obligations, but they are not accepted audit defects or still-live bad corrections. This bounded remediation plan must not turn unfinished planned functionality into audit defects."
+  },
+  "exact_once_proof": {
+    "obligation_unit_count": 11,
+    "expected_atomic_id_count": 23,
+    "mapped_atomic_id_count": 23,
+    "unique_atomic_id_count": 23,
+    "missing": [],
+    "extra": [],
+    "duplicates": [],
+    "pass": true
+  },
+  "series": [
+    {
+      "id": "R1",
+      "name": "Translation local/CI correctness without DB schema",
+      "units": [
+        "REM-01",
+        "REM-02",
+        "REM-03"
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "R2",
+      "name": "Persistent translation storage invariant",
+      "units": [
+        "REM-04"
+      ],
+      "depends_on": [
+        "R1"
+      ]
+    },
+    {
+      "id": "R3",
+      "name": "Durable task fresh-plan reactivation",
+      "units": [
+        "REM-05"
+      ],
+      "depends_on": [
+        "R1"
+      ]
+    },
+    {
+      "id": "R4",
+      "name": "Persisted bundle durable convergence",
+      "units": [
+        "REM-06"
+      ],
+      "depends_on": [
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "id": "R5",
+      "name": "Forum presentation corrections",
+      "units": [
+        "REM-07",
+        "REM-09"
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "R6",
+      "name": "Forum rollback evidence correction",
+      "units": [
+        "REM-08"
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "R7",
+      "name": "Authorization snapshot consistency",
+      "units": [
+        "REM-10",
+        "REM-11"
+      ],
+      "depends_on": []
+    }
+  ],
+  "database_gated_units": [
+    "REM-04",
+    "REM-05",
+    "REM-06",
+    "REM-08",
+    "REM-10",
+    "REM-11"
+  ],
+  "unresolved_mechanism_units": [
+    "REM-03",
+    "REM-05",
+    "REM-06",
+    "REM-10",
+    "REM-11"
+  ],
+  "units": [
+    {
+      "id": "REM-01",
+      "series": "R1",
+      "kind": "current-defect",
+      "defect_groups": [
+        "CD-01"
+      ],
+      "target_contracts": [
+        "TC-02-C"
+      ],
+      "atomic_ids": [
+        "EX40-02"
+      ],
+      "title": "Remove the implicit zero-stale real-pack gate",
+      "current_paths": [
+        "app/localization/resources.test.ts",
+        "app/localization/manual-packs.ts",
+        "docs/translation/UI_TRANSLATION.md"
+      ],
+      "observable_defect": "The test still requires validateTranslationPacks(manualTranslationPacks) to return exactly { staleKeys: {} }, turning an allowed stale condition into an implicit merge gate.",
+      "desired_invariant": "Real manual packs may contain stale entries; stale values are surfaced/excluded and fallback continues. No requirement to restore the removed synthetic canary.",
+      "dependencies": [],
+      "smallest_safe_change_boundary": "Test/policy assertion only. Remove or narrow the exact-empty staleKeys requirement without changing runtime stale classification/fallback semantics.",
+      "mandatory_tests": [
+        "Focused app/localization/resources.test.ts coverage for stale classification/fallback",
+        "pnpm test"
+      ],
+      "db_gate": false,
+      "non_goals": [
+        "Do not restore the historical synthetic stale canary solely for audit symmetry.",
+        "Do not introduce strict stale-blocking CI without a new explicit policy decision."
+      ]
+    },
+    {
+      "id": "REM-02",
+      "series": "R1",
+      "kind": "current-defect",
+      "defect_groups": [
+        "CD-03"
+      ],
+      "target_contracts": [
+        "TC-03-C"
+      ],
+      "atomic_ids": [
+        "EX34-23"
+      ],
+      "title": "Use own-property canonical namespace validation in bundle compilation",
+      "current_paths": [
+        "app/localization/bundles.ts",
+        "app/localization/bundles.test.ts",
+        "app/localization/sources.ts"
+      ],
+      "observable_defect": "bundles.ts uses property lookup on canonicalEnglishCatalog, so inherited Object.prototype names can be treated as namespaces even though sources.ts already uses Object.hasOwn.",
+      "desired_invariant": "Only own canonical catalog namespaces are accepted by bundle compile/verify paths.",
+      "dependencies": [],
+      "smallest_safe_change_boundary": "Align bundle scope/descriptor lookup with the existing own-property guard used by translation sources; add prototype-key regressions.",
+      "mandatory_tests": [
+        "app/localization/bundles.test.ts must reject inherited names such as constructor/toString",
+        "pnpm test"
+      ],
+      "db_gate": false,
+      "non_goals": [
+        "Do not redesign catalog shape or translation-source priority.",
+        "Do not add new namespaces."
+      ]
+    },
+    {
+      "id": "REM-03",
+      "series": "R1",
+      "kind": "current-defect",
+      "defect_groups": [
+        "CD-04"
+      ],
+      "target_contracts": [
+        "TC-11-B"
+      ],
+      "atomic_ids": [
+        "EX39-11"
+      ],
+      "title": "Stop double-counting one invalid-origin persistent row",
+      "current_paths": [
+        "app/localization/persistent-sources.ts",
+        "app/localization/persistent-sources.test.ts"
+      ],
+      "observable_defect": "An invalid-origin physical row can be inspected by both manual and machine adapters and each adapter can report the same invalid-origin issue.",
+      "desired_invariant": "One physical invalid-origin row contributes one telemetry issue while remaining unpublished; translation selection semantics stay unchanged.",
+      "dependencies": [],
+      "smallest_safe_change_boundary": "Confine the change to persistent-source row classification/reporting. Do not alter valid manual/machine precedence or store schema.",
+      "mandatory_tests": [
+        "A combined manual+machine source regression proving one malformed invalid-origin row is reported once and never published",
+        "Existing malformed-row aggregation tests",
+        "pnpm test"
+      ],
+      "db_gate": false,
+      "mechanism_choice": {
+        "unresolved": true,
+        "viable_options": [
+          "Validate/partition rows once before origin-specific adapters consume them.",
+          "Assign deterministic single reporting ownership for invalid-origin rows while both adapters skip them.",
+          "Deduplicate at a request-local issue aggregation boundary using stable physical-row identity."
+        ],
+        "decision_criteria": [
+          "One report per physical row",
+          "No cross-request/global dedupe state",
+          "No loss of malformed-row telemetry",
+          "No change to valid source precedence"
+        ]
+      },
+      "non_goals": [
+        "Do not suppress invalid-origin telemetry entirely.",
+        "Do not change persistent-row selection semantics."
+      ]
+    },
+    {
+      "id": "REM-04",
+      "series": "R2",
+      "kind": "current-defect",
+      "defect_groups": [
+        "CD-02"
+      ],
+      "target_contracts": [
+        "TC-03-B"
+      ],
+      "atomic_ids": [
+        "EX31-10",
+        "EX31-14",
+        "EX31-16"
+      ],
+      "title": "Enforce canonical-English exclusion including whitespace-wrapped identity",
+      "current_paths": [
+        "drizzle/0002_ui_translation_storage.sql",
+        "db/schema.ts",
+        ".github/scripts/verify-production-migration.mjs",
+        "tests/database"
+      ],
+      "observable_defect": "Accepted storage constraints and production verification use lower(locale) without trimming for English comparison, so whitespace-wrapped English identity can bypass the non-English storage invariant.",
+      "desired_invariant": "Persistent UI translation and bundle rows reject canonical English identity after trimming/canonical comparison; production verification detects the same invalid state.",
+      "dependencies": [
+        "Accepted migration history remains immutable; correction must be a new forward migration after 0010."
+      ],
+      "smallest_safe_change_boundary": "Add one forward migration that tightens the two storage constraints, mirror the invariant in db/schema.ts, and align repository-owned verification. Do not rewrite 0002.",
+      "mandatory_tests": [
+        "New PostgreSQL integration coverage that whitespace-wrapped English is rejected for both translation and bundle storage",
+        "Existing valid canonical non-English rows still migrate/read",
+        "pnpm db:check",
+        "pnpm db:test",
+        "Green GitHub Actions database job on the actual implementation PR head"
+      ],
+      "db_gate": true,
+      "db_gate_reason": "Touches PostgreSQL CHECK invariants, forward migration history, schema mirror, and DB integration behavior.",
+      "non_goals": [
+        "Do not edit accepted migration 0002.",
+        "Do not silently delete existing invalid data as part of the audit fix.",
+        "Do not perform external migration rollout or production verification."
+      ]
+    },
+    {
+      "id": "REM-05",
+      "series": "R3",
+      "kind": "current-defect",
+      "defect_groups": [
+        "CD-11"
+      ],
+      "target_contracts": [
+        "TC-10-C"
+      ],
+      "atomic_ids": [
+        "EX72-20",
+        "EX72-45",
+        "EX72-46",
+        "EX72-47",
+        "EX72-48",
+        "EX72-49",
+        "EX72-50"
+      ],
+      "title": "Restore fresh-plan A→B→A stale-identity reactivation",
+      "current_paths": [
+        "db/translation-task-store.ts",
+        "app/localization/translation-task-consumer.ts",
+        "app/localization/translation-task-consumer.test.ts",
+        "tests/database"
+      ],
+      "observable_defect": "upsertPending returns an existing stale task unchanged when its generation is no longer the current generation, so a later fresh A after A→B cannot become current again.",
+      "desired_invariant": "A fresh planner decision may reactivate eligible stale A after A→B while old Queue delivery cannot self-reactivate, completed identity remains terminal, and generation/claim/publication fencing remains monotonic and safe.",
+      "dependencies": [
+        "Preserve the existing generation-head serialization point and claim/publication fencing.",
+        "REM-02/REM-04 do not block this unit but should be completed before broad persisted-bundle remediation is considered complete."
+      ],
+      "smallest_safe_change_boundary": "Change only fresh-planning/store semantics and the minimum persistence representation needed to distinguish a new planning occurrence from stale delivery. Consumer delivery semantics remain terminal for stale/completed tasks.",
+      "mandatory_tests": [
+        "Database integration: A planned/current → B planned/current → old A becomes stale → fresh A plan becomes current/claimable",
+        "Old stale Queue delivery remains terminal without planner action",
+        "Completed A is not reopened",
+        "Generation head remains monotonic under concurrent planning",
+        "Claim/publication fencing regressions remain green",
+        "pnpm test",
+        "pnpm db:test",
+        "Green GitHub Actions database job on the actual implementation PR head"
+      ],
+      "db_gate": true,
+      "db_gate_reason": "Changes durable PostgreSQL task-planning/ordering behavior and may require persistence/schema changes depending on mechanism.",
+      "mechanism_choice": {
+        "unresolved": true,
+        "viable_options": [
+          "Reuse the existing stable task row but assign a new current generation during a fresh planner reactivation.",
+          "Represent a fresh planning occurrence separately from stable task identity while retaining the stable identity contract.",
+          "Introduce another minimal durable occurrence/version marker only if existing generation semantics cannot express the invariant safely."
+        ],
+        "decision_criteria": [
+          "Planner action, not Queue delivery, is the sole reactivation authority",
+          "Completed tasks stay terminal",
+          "Monotonic generation ordering stays authoritative",
+          "No weakening of claim/publication fencing",
+          "Prefer no schema expansion if existing durable fields can prove all invariants"
+        ]
+      },
+      "non_goals": [
+        "Do not introduce real Cloudflare Queue bindings.",
+        "Do not claim exactly-once provider calls.",
+        "Do not implement JOB-04/JOB-06 as part of this defect unless independently required by the chosen minimal mechanism."
+      ]
+    },
+    {
+      "id": "REM-06",
+      "series": "R4",
+      "kind": "current-defect",
+      "defect_groups": [
+        "CD-12"
+      ],
+      "target_contracts": [
+        "TC-03-D"
+      ],
+      "atomic_ids": [
+        "EX75-56",
+        "EX75-57",
+        "EX75-58",
+        "EX75-59"
+      ],
+      "title": "Add durable convergence for obsolete persisted UI bundles",
+      "current_paths": [
+        "db/ui-translation-bundle-store.ts",
+        "db/hyperdrive-ui-translations.ts",
+        "app/localization/resource-loader.ts",
+        "db/ui-translation-bundle-store.test.ts",
+        "app/localization/resource-loader-bundles.test.ts",
+        "tests/database"
+      ],
+      "observable_defect": "Invalid/obsolete persisted bundles are safely treated as a miss for the request, but the durable row is not repaired, invalidated, or replaced, so later requests can reread and reject the same row indefinitely.",
+      "desired_invariant": "A rejected obsolete bundle durably converges to the current representation; repeated ordinary requests do not indefinitely reread the same obsolete row; request-time loading still never calls a translation provider.",
+      "dependencies": [
+        "REM-02 should land first so bundle namespace verification is authoritative.",
+        "REM-04 should land first so storage identity invariants are canonical before convergence logic is finalized."
+      ],
+      "smallest_safe_change_boundary": "Add the smallest durable invalidation/repair path around persisted bundle verification and existing compile/store boundaries. Preserve safe fallback and classified storage degradation.",
+      "mandatory_tests": [
+        "Persist an obsolete/invalid bundle, perform ordinary load, and prove a later load no longer encounters the same obsolete row",
+        "No request-time provider call",
+        "Concurrent valid publication cannot be erased by stale repair",
+        "Existing storage degradation/fallback tests remain green",
+        "pnpm test",
+        "pnpm db:test",
+        "Green GitHub Actions database job on the actual implementation PR head"
+      ],
+      "db_gate": true,
+      "db_gate_reason": "Changes persistent bundle DB behavior and convergence semantics; may touch store writes or reconciliation.",
+      "mechanism_choice": {
+        "unresolved": true,
+        "viable_options": [
+          "Atomically invalidate/delete/quarantine the rejected row, then let existing current bundle production repopulate it.",
+          "Perform a safe request-triggered durable rebuild/write from existing non-provider sources.",
+          "Use a local/CI reconciliation path that rewrites/removes obsolete rows independently of the request path."
+        ],
+        "decision_criteria": [
+          "Repeated reads converge",
+          "No provider call on request path",
+          "Race-safe with concurrent valid publication",
+          "No silent acceptance of invalid bundle",
+          "Minimal new orchestration; no external Queue/Workflow dependency"
+        ]
+      },
+      "non_goals": [
+        "Do not add real provider calls or credentials.",
+        "Do not pull Cloudflare Queue/Workflow infrastructure into remediation.",
+        "Do not weaken bundle verification to make obsolete rows appear valid."
+      ]
+    },
+    {
+      "id": "REM-07",
+      "series": "R5",
+      "kind": "current-defect",
+      "defect_groups": [
+        "CD-06"
+      ],
+      "target_contracts": [
+        "TC-06-B"
+      ],
+      "atomic_ids": [
+        "EX52-25",
+        "EX52-26"
+      ],
+      "title": "Make section topic/message totals plural-aware",
+      "current_paths": [
+        "app/localization/catalog.ts",
+        "app/routes/category.tsx",
+        "app/localization"
+      ],
+      "observable_defect": "topicAndPostCount is plain interpolation with English '(s)' text, so count grammar is not locale-aware.",
+      "desired_invariant": "Topic and message totals are rendered through plural-capable canonical messages and normal localization fallback.",
+      "dependencies": [],
+      "smallest_safe_change_boundary": "Replace the combined English '(s)' interpolation with plural-capable count messages and compose the displayed totals in the category route; reuse the existing structured plural catalog/runtime.",
+      "mandatory_tests": [
+        "Focused localization test for singular/other count selection for both topic and message totals",
+        "Category rendering/composition regression",
+        "pnpm test"
+      ],
+      "db_gate": false,
+      "non_goals": [
+        "Do not redesign forum counting queries or pagination.",
+        "Do not hardcode locale-specific plural rules in route code."
+      ]
+    },
+    {
+      "id": "REM-08",
+      "series": "R6",
+      "kind": "current-defect",
+      "defect_groups": [
+        "CD-07"
+      ],
+      "target_contracts": [
+        "TC-06-C"
+      ],
+      "atomic_ids": [
+        "EX57-27"
+      ],
+      "title": "Make the incomplete-topic rollback test reach the intended transactional failure",
+      "current_paths": [
+        "tests/database/migrations.test.ts",
+        "db/forum-repository.ts",
+        "db/forum-write-policy.ts"
+      ],
+      "observable_defect": "The rollback test can reject at the cooldown guard before reaching the duplicate insert/transaction rollback path it claims to verify.",
+      "desired_invariant": "The test deterministically reaches the intended in-transaction failure and proves the partial topic graph is rolled back.",
+      "dependencies": [],
+      "smallest_safe_change_boundary": "Test-only correction: control write-policy time/cooldown so it cannot be the rejection source, assert the intended database failure category/constraint, then assert the topic was not persisted.",
+      "mandatory_tests": [
+        "Corrected rollback test must fail if cooldown is the rejection source",
+        "Assert intended duplicate/constraint failure and absence of rolled-back topic",
+        "pnpm db:test",
+        "Green GitHub Actions database job on the actual implementation PR head"
+      ],
+      "db_gate": true,
+      "db_gate_reason": "This unit exists specifically to prove PostgreSQL transaction/integration behavior in the database suite.",
+      "non_goals": [
+        "Do not change runtime cooldown semantics.",
+        "Do not change forum transaction implementation unless the corrected test reveals a separate real runtime defect."
+      ]
+    },
+    {
+      "id": "REM-09",
+      "series": "R5",
+      "kind": "current-defect",
+      "defect_groups": [
+        "CD-08"
+      ],
+      "target_contracts": [
+        "TC-06-D"
+      ],
+      "atomic_ids": [
+        "EX58-43"
+      ],
+      "title": "Place best-answer/body/solution controls in the desktop post content column",
+      "current_paths": [
+        "app/routes/topic.tsx",
+        "app/styles.css"
+      ],
+      "observable_defect": "forum-post is a two-column grid, but best-answer label, ForumMarkdown output, and solution form are sibling grid items without a content-column wrapper, so auto-placement can put them into unintended grid cells.",
+      "desired_invariant": "On desktop, post author metadata occupies the author column and best-answer label/body/solution controls occupy the content area; responsive single-column behavior remains valid.",
+      "dependencies": [],
+      "smallest_safe_change_boundary": "Add/restore one content wrapper or explicit grid placement for the affected post content elements and only the CSS necessary to preserve desktop/mobile layout.",
+      "mandatory_tests": [
+        "Focused render/structure regression showing label/body/solution controls share the content area",
+        "Responsive one-column behavior remains covered or structurally preserved",
+        "pnpm test",
+        "pnpm build"
+      ],
+      "db_gate": false,
+      "non_goals": [
+        "Do not change solved/best-answer authorization or domain semantics.",
+        "Do not redesign the forum visual system."
+      ]
+    },
+    {
+      "id": "REM-10",
+      "series": "R7",
+      "kind": "current-defect",
+      "defect_groups": [
+        "CD-09"
+      ],
+      "target_contracts": [
+        "TC-08-B"
+      ],
+      "atomic_ids": [
+        "EX60-27"
+      ],
+      "title": "Make one user authorization resolution internally snapshot-consistent",
+      "current_paths": [
+        "db/authorization-repository.ts",
+        "db/authorization-service.ts",
+        "db/authorization-repository.test.ts",
+        "tests/database"
+      ],
+      "observable_defect": "resolveUser reads role assignment, role grants, and user overrides in separate statements that can observe incompatible database states under concurrent authorization changes.",
+      "desired_invariant": "One resolved UserAuthorization is derived from one internally consistent database snapshot while next-request freshness and request-scoped caching remain intact.",
+      "dependencies": [
+        "Share a snapshot mechanism with REM-11 where practical, but keep the two observable contracts independently testable."
+      ],
+      "smallest_safe_change_boundary": "Confine consistency to one composite resolution call; preserve public service/capability semantics and next-request freshness.",
+      "mandatory_tests": [
+        "Two-connection database integration that interleaves role/grant/override mutation and proves the returned authorization is wholly before or wholly after, never mixed",
+        "Existing request-scoped cache/permission behavior remains green",
+        "pnpm test",
+        "pnpm db:test",
+        "Green GitHub Actions database job on the actual implementation PR head"
+      ],
+      "db_gate": true,
+      "db_gate_reason": "Changes multi-statement PostgreSQL read consistency and DB integration behavior.",
+      "mechanism_choice": {
+        "unresolved": true,
+        "viable_options": [
+          "Execute component reads in one read-only transaction with snapshot semantics sufficient for multi-statement consistency.",
+          "Replace the composite read with a single SQL statement/CTE that obtains one statement snapshot."
+        ],
+        "decision_criteria": [
+          "One coherent snapshot under concurrent writes",
+          "No long-lived authoritative cache",
+          "Next request sees committed changes",
+          "Minimal query/locking complexity",
+          "No change to typed availability/error semantics"
+        ]
+      },
+      "non_goals": [
+        "Do not add long-lived permission caching.",
+        "Do not alter role/override precedence or permission catalog.",
+        "Do not change PR #76 availability-only degradation semantics."
+      ]
+    },
+    {
+      "id": "REM-11",
+      "series": "R7",
+      "kind": "current-defect",
+      "defect_groups": [
+        "CD-10"
+      ],
+      "target_contracts": [
+        "TC-08-B"
+      ],
+      "atomic_ids": [
+        "EX61-42"
+      ],
+      "title": "Make authorization management-state reads internally snapshot-consistent",
+      "current_paths": [
+        "db/authorization-repository.ts",
+        "db/authorization-repository.test.ts",
+        "tests/database"
+      ],
+      "observable_defect": "readManagementState obtains roles, users, grants, and overrides through separate pool queries, so one management response can combine rows from incompatible concurrent states.",
+      "desired_invariant": "One management-state response presents roles, users/assignments, grants, overrides, and effective permissions from one internally consistent database snapshot.",
+      "dependencies": [
+        "Prefer the same proven snapshot primitive selected for REM-10, without forcing the two operations into one API."
+      ],
+      "smallest_safe_change_boundary": "Run only the component reads for one management-state call through one coherent snapshot boundary; preserve response shape and mutation semantics.",
+      "mandatory_tests": [
+        "Two-connection database integration that mutates assignments/grants/overrides between component reads and proves no mixed management state escapes",
+        "Existing fixed-query-count/unit behavior adapted without losing bulk-read efficiency",
+        "pnpm test",
+        "pnpm db:test",
+        "Green GitHub Actions database job on the actual implementation PR head"
+      ],
+      "db_gate": true,
+      "db_gate_reason": "Changes multi-statement PostgreSQL management-read consistency and DB integration behavior.",
+      "mechanism_choice": {
+        "unresolved": true,
+        "viable_options": [
+          "Use the same read-only snapshot transaction abstraction as REM-10.",
+          "Consolidate management state into one SQL statement/CTE if it remains maintainable and preserves bulk-read behavior."
+        ],
+        "decision_criteria": [
+          "One coherent snapshot",
+          "Bounded query count",
+          "No per-user N+1 regression",
+          "No long-lived cache",
+          "Reuse REM-10 mechanism when technically clean"
+        ]
+      },
+      "non_goals": [
+        "Do not redesign the authorization management UI or role model.",
+        "Do not change mutation/lockout semantics."
+      ]
+    }
+  ],
+  "cross_cutting_gates": {
+    "implementation_not_started": true,
+    "no_external_operations": true,
+    "no_final_advancement": true,
+    "state_sync_note": "When an implementation PR later changes factual project state, PROJECT_STATE.md must be synchronized in that same change per workflow. This is not a separate remediation unit."
+  }
+}
