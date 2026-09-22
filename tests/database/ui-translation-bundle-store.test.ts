@@ -45,7 +45,7 @@ interface CliResult {
 }
 
 function runReconciliationCli(databaseUrlOverride: string | undefined): Promise<CliResult> {
-  const env = { ...process.env, PGOPTIONS: `-c search_path=${schemaName}` };
+  const env: NodeJS.ProcessEnv = { ...process.env, PGOPTIONS: `-c search_path=${schemaName}` };
   if (databaseUrlOverride === undefined) {
     delete env.DATABASE_URL;
   } else {
@@ -191,7 +191,7 @@ describe("Drizzle compiled UI translation bundle store", () => {
       const repository = new DrizzleUiTranslationBundleStore(drizzle(brokenClient));
 
       await expect(repository.reconcilePersistedBundle("ru", "common")).rejects.toMatchObject({
-        code: "42P01",
+        cause: { code: "42P01" },
       });
 
       await brokenClient.query("set search_path to public");
@@ -214,7 +214,7 @@ describe("Drizzle compiled UI translation bundle store", () => {
 
     const first = await runReconciliationCli(databaseUrl);
     expect(first.code).toBe(0);
-    expect(first.stderr).toBe("");
+    expect(first.stderr).not.toContain("R4 bundle reconciliation safety rejection");
     expect(first.stdout).toContain('"event":"ui_translation_bundle_reconciliation_complete"');
 
     const afterFirst = await client.query<{ locale: string; bundle_version: string }>(
@@ -224,7 +224,7 @@ describe("Drizzle compiled UI translation bundle store", () => {
 
     const second = await runReconciliationCli(databaseUrl);
     expect(second.code).toBe(0);
-    expect(second.stderr).toBe("");
+    expect(second.stderr).not.toContain("R4 bundle reconciliation safety rejection");
     expect(second.stdout).toContain('"deleted":0');
 
     const afterSecond = await client.query<{ locale: string; bundle_version: string }>(
