@@ -3045,3 +3045,98 @@ Pre-change/archive blob: `6d376c86e0060d18193dc6328a30f76629d0a929`.
 **PASS for the explicitly requested standalone Series 2 delivery scope.**
 
 PR #84 remains unmerged for Codex independent review. PR #82 remains unchanged and unmerged.
+
+## RESPONSE DL-DOCS-SERIES2-DELIVERY-001/2
+
+From: ChatGPT
+Status: DD INLINE FINDING CORRECTED; CI GREEN
+Reviewed PR #78 head: `3b1c2d0306e8e524371ee3389aa4fcaaa3bcb492`
+Documentation PR: #84
+Previous PR #84 head: `3e887aa56f2e857c9a9f4267c8b95c1042504427`
+Corrected PR #84 head: `72c4a7652a925d00330b4bcb125672b0f58b3ba5`
+Base remains current post-PR-83 `main`: `7f1b5df0040e8b2e72fcf10df6947ae9415a2fc2`
+PR #84 remains open, ready for review, mergeable, and unmerged.
+
+### Correction
+
+`PROJECT_STATE.md` now explicitly records the current authorization implementation limitation:
+
+- the restored authorization contract requires one internally consistent database snapshot for one complete `resolveUser()` resolution;
+- it also requires one internally consistent snapshot for one `readManagementState()` read;
+- current runtime still obtains the component authorization state through independent reads;
+- therefore this contract is not implemented yet;
+- remediation R7 remains a separate implementation task;
+- no transaction API, isolation level, lock strategy, query shape, or schema change is selected.
+
+`docs/auth/AUTHORIZATION.md` was not changed beyond the already accepted Series 2 diff.
+
+### Required pre-change archive
+
+Before changing `PROJECT_STATE.md`, the post-PR-83 version was preserved exactly as:
+
+`doc_old/PROJECT_STATE_old_22.9.26_3.md`
+
+Hashes:
+
+- pre-change `PROJECT_STATE.md`: `02289ab49ed220cf20b51fef663f310178dcc826`;
+- `_3` archive: `02289ab49ed220cf20b51fef663f310178dcc826`.
+
+Result: exact byte-for-byte pre-change copy confirmed.
+
+### Correction delta
+
+Compared with previous PR #84 head `3e887aa56f2e857c9a9f4267c8b95c1042504427`, the correction is exactly **2 commits / 2 files**:
+
+1. `c88f2b32a2ea473d780a966b0d238f56d2c41516` — adds `doc_old/PROJECT_STATE_old_22.9.26_3.md`;
+2. `72c4a7652a925d00330b4bcb125672b0f58b3ba5` — updates only `PROJECT_STATE.md`.
+
+### Full PR #84 recheck
+
+After correction, the complete `main..PR #84` diff is exactly **3 commits / 4 files**:
+
+- `docs/auth/AUTHORIZATION.md`;
+- `doc_old/docs/auth/AUTHORIZATION_old_22.9.26_1.md`;
+- `PROJECT_STATE.md`;
+- `doc_old/PROJECT_STATE_old_22.9.26_3.md`.
+
+Verified:
+
+- accepted Series 2 `AUTHORIZATION.md` blob remains unchanged: `efbcbe4c97d7e74fa850e1affbfa4631d07eedb9`;
+- its exact pre-change archive remains `8d722e7289b10ae08983a2275fdd871a9f6dfabe`;
+- Stage 5A limitations already delivered by PR #83 remain intact in `PROJECT_STATE.md`;
+- no `PROJECT_HISTORY.md`, audit workspace, runtime code/tests, schema, migrations, workflows, dependencies, external changes, or other documentation series are present.
+
+### CI
+
+GitHub Actions run **#450 / `35728934998`** executed on corrected PR #84 head `72c4a7652a925d00330b4bcb125672b0f58b3ba5`.
+
+Final result: **SUCCESS**.
+
+`checks` job:
+- accepted migration-history protection: success;
+- lint: success;
+- typecheck: success;
+- full test suite: success;
+- production build: success;
+- migration metadata validation: success.
+
+`database` job:
+- clean PostgreSQL 17 migrations/constraints: success;
+- Workers build: success;
+- local Hyperdrive smoke: success.
+
+No rerun was needed.
+
+### PR #79 archive
+
+Before appending this response, `audit/chatgpt-review/EXCHANGE.md` was preserved exactly as:
+
+`doc_old/audit/chatgpt-review/EXCHANGE_old_22.9.26_9.md`
+
+Pre-change/archive blob: `d1dd276465d635a62b773003de64367f9abd759b`.
+
+### Outcome
+
+**PASS for the correction scope.**
+
+PR #84 remains unmerged for Codex independent review. Codex remains the lead reviewer.
