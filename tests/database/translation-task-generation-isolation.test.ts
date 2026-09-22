@@ -125,7 +125,52 @@ describe("translation task generation isolation", () => {
     expect(published.rows[0]?.count).toBe(0);
     await expect(bundles.read("fr", "common")).resolves.toEqual(existingBundle);
     await expect(tasks.markStale(older.id, oldClaim.task.claimToken)).resolves.toBe(true);
-    await expect(tasks.upsertPending(olderSpecification)).resolves.toMatchObject({ status: "stale" });
+    await expect(tasks.claim(older.id, 60_000)).resolves.toEqual({ outcome: "terminal" });
+  });
+
+  it("reactivates stale A with a newer generation after A -> B -> A fresh planning", async () => {
+    const tasks = new DrizzleTranslationTaskStore(drizzle(client));
+    const firstSpecification = await job("aba-policy-a", "generationReactivation");
+    const secondSpecification = await job("aba-policy-b", "generationReactivation");
+
+    const firstPending = await tasks.upsertPending(firstSpecification);
+    const firstClaim = await tasks.claim(firstPending.id, 60_000);
+    if (firstClaim.outcome !== "claimed") throw new Error("first A claim failed");
+
+    const secondPending = await tasks.upsertPending(secondSpecification);
+    expect(secondPending.generation).toBe(firstClaim.task.generation + 1);
+    await expect(tasks.isCurrentGeneration(firstClaim.task)).resolves.toBe(false);
+    await expect(tasks.isCurrentGeneration(secondPending)).resolves.toBe(true);
+
+    await expect(tasks.markStale(firstPending.id, firstClaim.task.claimToken)).resolves.toBe(true);
+    await expect(tasks.claim(firstPending.id, 60_000)).resolves.toEqual({ outcome: "terminal" });
+
+    const reactivated = await tasks.upsertPending(firstSpecification);
+
+    expect(reactivated).toMatchObject({
+      id: firstPending.id,
+      taskIdentity: firstSpecification.taskIdentity,
+      generation: secondPending.generation + 1,
+      status: "pending",
+      claimToken: null,
+      claimedAt: null,
+      leaseExpiresAt: null,
+      staleAt: null,
+      completedAt: null,
+    });
+    expect(reactivated.createdAt).toEqual(firstPending.createdAt);
+    await expect(tasks.isCurrentGeneration(secondPending)).resolves.toBe(false);
+    await expect(tasks.isCurrentGeneration(reactivated)).resolves.toBe(true);
+
+    const reactivatedClaim = await tasks.claim(reactivated.id, 60_000);
+    expect(reactivatedClaim).toMatchObject({
+      outcome: "claimed",
+      task: {
+        id: firstPending.id,
+        taskIdentity: firstSpecification.taskIdentity,
+        generation: reactivated.generation,
+      },
+    });
   });
 
   it("keeps a newer generation intact when an older completed identity is planned again", async () => {
