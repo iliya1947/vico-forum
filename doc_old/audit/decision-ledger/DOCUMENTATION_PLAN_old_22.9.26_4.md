@@ -162,12 +162,6 @@ explicitly authorized the independently reviewed replacement on the same date. T
 and independently accepted after the narrow `D3R-001` bookkeeping correction. Each series remained
 documentation-only and used full-file diff and pre-change archive guards against unrelated rewrites.
 
-PR #78 is a permanent unmerged audit/control channel. Therefore “applied in PR #78” does not mean that these
-source-document changes are present on `main`. After accepted R1 PR #81 is merged, ChatGPT must create a
-separate documentation-only PR from the resulting `main` to deliver the already authorized Series 1/2/3
-edits, reconcile `PROJECT_STATE.md` without restoring the R1-resolved stale limitation, archive every changed
-document, and return that unmerged PR for independent Codex review.
-
 ## Pre-change document archive rule
 
 Before any future edit to any documentation file, preserve its exact pre-change

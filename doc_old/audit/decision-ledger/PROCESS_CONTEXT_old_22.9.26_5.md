@@ -334,11 +334,6 @@ required restoration remain open until full-history and cross-stage review.
 - Permanent channel rule: PR #78 is the unmerged Codex audit/control channel and PR #79 is the ChatGPT
   response channel. Product/documentation delivery that must reach `main` uses a separate ChatGPT-created
   implementation PR from `main`; Codex reviews it independently, and only the user performs the merge.
-- R1 standalone delivery is independently accepted at PR #81 head
-  `d323332eeb9bdab607c530989219db3db82ba428`, based directly on `main`; PR #80 was closed unmerged.
-  The user may merge PR #81. The previously authorized documentation-series source edits still exist only
-  on permanent audit channel PR #78, so a separate post-R1 documentation delivery PR is queued rather than
-  pretending those edits are already in `main`.
 
 The authoritative live checklist remains `COVERAGE.md`; accepted candidate IDs remain in `LEDGER.md`;
 Codex tasks/reviews remain in `EXCHANGE.md`; dependency chains remain in `CROSS_STAGE.md`; unresolved

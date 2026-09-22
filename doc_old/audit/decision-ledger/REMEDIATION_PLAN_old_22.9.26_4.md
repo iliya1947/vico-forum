@@ -135,12 +135,6 @@ All future remediation delivery follows the same rule: a separate ChatGPT-create
 on `main`, independent Codex review, then an explicit merge recommendation to the user. Audit/control PR #78
 and response PR #79 are communication channels, not merge vehicles.
 
-The standalone delivery correction is complete: PR #80 was closed unmerged, and replacement PR #81 is based
-directly on `main` at `3282aa51f47f36131d35c34ee79ca37cb2ce434f`. Codex accepted PR #81 head
-`d323332eeb9bdab607c530989219db3db82ba428` after verifying its exact seven-file scope and successful
-GitHub Actions run `35701432889`. The user may merge PR #81; R1 is not recorded as present on `main` until
-that merge is observed.
-
 Units touching PostgreSQL schema, migrations, SQL invariants, or DB integration behavior are not merge-ready
 without successful `pnpm db:test` and a green GitHub Actions `database` job on the actual PR head. Codex must
 report environment or post-PR observation limits rather than claiming unobserved success.

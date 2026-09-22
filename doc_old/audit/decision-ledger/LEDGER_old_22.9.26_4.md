@@ -2559,7 +2559,3 @@ PR #78. PR #78 is a permanent unmerged audit/control channel, not a delivery dep
 the accepted R1 diff to an independently mergeable PR based on `main`; Codex must review that actual head
 before telling the user it may be merged. Until that CI/review/user-merge sequence completes, the findings
 remain non-final and must not be described as corrected on `main`. R2-R7 remain unauthorized.
-
-Standalone R1 delivery PR #81 at head `d323332eeb9bdab607c530989219db3db82ba428` has passed independent
-Codex review and CI and may be merged by the user. PR #80 was closed unmerged. This acceptance does not yet
-advance the related records to `final`; the merge must first be observed on `main`.
