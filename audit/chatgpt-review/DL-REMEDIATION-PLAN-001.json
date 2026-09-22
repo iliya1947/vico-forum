@@ -1,8 +1,8 @@
 {
   "type": "DL-REMEDIATION-PLAN-001-exact-once",
-  "task_id": "DL-REMEDIATION-PLAN-001/1",
+  "task_id": "DL-REMEDIATION-PLAN-001/2",
   "status": "PASS",
-  "task_source_pr78_head": "6ae147d34d6289c363d1646218fa9b3bdd666667",
+  "task_source_pr78_head": "6122ab34294cef8f50b5d1d6d4f48ed88805d66b",
   "scope_definition": "Audit remediation implementation only: accepted still-live defects/bad corrections. Ordinary unfinished Stage 5 feature delivery remains preserved in the roadmap but is not counted as a remediation unit.",
   "derivation": {
     "accepted_current_defects": {
@@ -149,7 +149,28 @@
         "REM-02",
         "REM-03"
       ],
-      "depends_on": []
+      "hard_dependencies": [],
+      "recommended_order_after": [],
+      "parallelizable_with": [
+        "R2",
+        "R3",
+        "R5",
+        "R6",
+        "R7"
+      ],
+      "partial_parallelism": [
+        {
+          "series": "R4",
+          "parallel_units": [
+            "REM-01",
+            "REM-03"
+          ],
+          "recommended_order_pair": [
+            "REM-02",
+            "REM-06"
+          ]
+        }
+      ]
     },
     {
       "id": "R2",
@@ -157,8 +178,23 @@
       "units": [
         "REM-04"
       ],
-      "depends_on": [
-        "R1"
+      "hard_dependencies": [],
+      "recommended_order_after": [],
+      "parallelizable_with": [
+        "R1",
+        "R3",
+        "R5",
+        "R6",
+        "R7"
+      ],
+      "partial_parallelism": [
+        {
+          "series": "R4",
+          "recommended_order_pair": [
+            "REM-04",
+            "REM-06"
+          ]
+        }
       ]
     },
     {
@@ -167,8 +203,15 @@
       "units": [
         "REM-05"
       ],
-      "depends_on": [
-        "R1"
+      "hard_dependencies": [],
+      "recommended_order_after": [],
+      "parallelizable_with": [
+        "R1",
+        "R2",
+        "R4",
+        "R5",
+        "R6",
+        "R7"
       ]
     },
     {
@@ -177,9 +220,33 @@
       "units": [
         "REM-06"
       ],
-      "depends_on": [
-        "R1",
-        "R2"
+      "hard_dependencies": [],
+      "recommended_order_after": [
+        {
+          "series": "R1",
+          "unit": "REM-02",
+          "applies_to": "REM-06"
+        },
+        {
+          "series": "R2",
+          "unit": "REM-04",
+          "applies_to": "REM-06"
+        }
+      ],
+      "parallelizable_with": [
+        "R3",
+        "R5",
+        "R6",
+        "R7"
+      ],
+      "partial_parallelism": [
+        {
+          "series": "R1",
+          "parallel_with_units": [
+            "REM-01",
+            "REM-03"
+          ]
+        }
       ]
     },
     {
@@ -189,7 +256,16 @@
         "REM-07",
         "REM-09"
       ],
-      "depends_on": []
+      "hard_dependencies": [],
+      "recommended_order_after": [],
+      "parallelizable_with": [
+        "R1",
+        "R2",
+        "R3",
+        "R4",
+        "R6",
+        "R7"
+      ]
     },
     {
       "id": "R6",
@@ -197,7 +273,16 @@
       "units": [
         "REM-08"
       ],
-      "depends_on": []
+      "hard_dependencies": [],
+      "recommended_order_after": [],
+      "parallelizable_with": [
+        "R1",
+        "R2",
+        "R3",
+        "R4",
+        "R5",
+        "R7"
+      ]
     },
     {
       "id": "R7",
@@ -206,7 +291,23 @@
         "REM-10",
         "REM-11"
       ],
-      "depends_on": []
+      "hard_dependencies": [],
+      "recommended_order_after": [
+        {
+          "within_series": {
+            "unit": "REM-11",
+            "after": "REM-10"
+          }
+        }
+      ],
+      "parallelizable_with": [
+        "R1",
+        "R2",
+        "R3",
+        "R4",
+        "R5",
+        "R6"
+      ]
     }
   ],
   "database_gated_units": [
@@ -246,7 +347,6 @@
       ],
       "observable_defect": "The test still requires validateTranslationPacks(manualTranslationPacks) to return exactly { staleKeys: {} }, turning an allowed stale condition into an implicit merge gate.",
       "desired_invariant": "Real manual packs may contain stale entries; stale values are surfaced/excluded and fallback continues. No requirement to restore the removed synthetic canary.",
-      "dependencies": [],
       "smallest_safe_change_boundary": "Test/policy assertion only. Remove or narrow the exact-empty staleKeys requirement without changing runtime stale classification/fallback semantics.",
       "mandatory_tests": [
         "Focused app/localization/resources.test.ts coverage for stale classification/fallback",
@@ -256,6 +356,23 @@
       "non_goals": [
         "Do not restore the historical synthetic stale canary solely for audit symmetry.",
         "Do not introduce strict stale-blocking CI without a new explicit policy decision."
+      ],
+      "hard_dependencies": {
+        "units": [],
+        "invariants": []
+      },
+      "recommended_order_after": [],
+      "parallelizable_with": [
+        "REM-02",
+        "REM-03",
+        "REM-04",
+        "REM-05",
+        "REM-06",
+        "REM-07",
+        "REM-08",
+        "REM-09",
+        "REM-10",
+        "REM-11"
       ]
     },
     {
@@ -279,7 +396,6 @@
       ],
       "observable_defect": "bundles.ts uses property lookup on canonicalEnglishCatalog, so inherited Object.prototype names can be treated as namespaces even though sources.ts already uses Object.hasOwn.",
       "desired_invariant": "Only own canonical catalog namespaces are accepted by bundle compile/verify paths.",
-      "dependencies": [],
       "smallest_safe_change_boundary": "Align bundle scope/descriptor lookup with the existing own-property guard used by translation sources; add prototype-key regressions.",
       "mandatory_tests": [
         "app/localization/bundles.test.ts must reject inherited names such as constructor/toString",
@@ -289,6 +405,22 @@
       "non_goals": [
         "Do not redesign catalog shape or translation-source priority.",
         "Do not add new namespaces."
+      ],
+      "hard_dependencies": {
+        "units": [],
+        "invariants": []
+      },
+      "recommended_order_after": [],
+      "parallelizable_with": [
+        "REM-01",
+        "REM-03",
+        "REM-04",
+        "REM-05",
+        "REM-07",
+        "REM-08",
+        "REM-09",
+        "REM-10",
+        "REM-11"
       ]
     },
     {
@@ -311,7 +443,6 @@
       ],
       "observable_defect": "An invalid-origin physical row can be inspected by both manual and machine adapters and each adapter can report the same invalid-origin issue.",
       "desired_invariant": "One physical invalid-origin row contributes one telemetry issue while remaining unpublished; translation selection semantics stay unchanged.",
-      "dependencies": [],
       "smallest_safe_change_boundary": "Confine the change to persistent-source row classification/reporting. Do not alter valid manual/machine precedence or store schema.",
       "mandatory_tests": [
         "A combined manual+machine source regression proving one malformed invalid-origin row is reported once and never published",
@@ -336,6 +467,23 @@
       "non_goals": [
         "Do not suppress invalid-origin telemetry entirely.",
         "Do not change persistent-row selection semantics."
+      ],
+      "hard_dependencies": {
+        "units": [],
+        "invariants": []
+      },
+      "recommended_order_after": [],
+      "parallelizable_with": [
+        "REM-01",
+        "REM-02",
+        "REM-04",
+        "REM-05",
+        "REM-06",
+        "REM-07",
+        "REM-08",
+        "REM-09",
+        "REM-10",
+        "REM-11"
       ]
     },
     {
@@ -362,9 +510,6 @@
       ],
       "observable_defect": "Accepted storage constraints and production verification use lower(locale) without trimming for English comparison, so whitespace-wrapped English identity can bypass the non-English storage invariant.",
       "desired_invariant": "Persistent UI translation and bundle rows reject canonical English identity after trimming/canonical comparison; production verification detects the same invalid state.",
-      "dependencies": [
-        "Accepted migration history remains immutable; correction must be a new forward migration after 0010."
-      ],
       "smallest_safe_change_boundary": "Add one forward migration that tightens the two storage constraints, mirror the invariant in db/schema.ts, and align repository-owned verification. Do not rewrite 0002.",
       "mandatory_tests": [
         "New PostgreSQL integration coverage that whitespace-wrapped English is rejected for both translation and bundle storage",
@@ -379,6 +524,24 @@
         "Do not edit accepted migration 0002.",
         "Do not silently delete existing invalid data as part of the audit fix.",
         "Do not perform external migration rollout or production verification."
+      ],
+      "hard_dependencies": {
+        "units": [],
+        "invariants": [
+          "Accepted migration history remains immutable; correction must be a new forward migration after 0010."
+        ]
+      },
+      "recommended_order_after": [],
+      "parallelizable_with": [
+        "REM-01",
+        "REM-02",
+        "REM-03",
+        "REM-05",
+        "REM-07",
+        "REM-08",
+        "REM-09",
+        "REM-10",
+        "REM-11"
       ]
     },
     {
@@ -409,10 +572,6 @@
       ],
       "observable_defect": "upsertPending returns an existing stale task unchanged when its generation is no longer the current generation, so a later fresh A after A→B cannot become current again.",
       "desired_invariant": "A fresh planner decision may reactivate eligible stale A after A→B while old Queue delivery cannot self-reactivate, completed identity remains terminal, and generation/claim/publication fencing remains monotonic and safe.",
-      "dependencies": [
-        "Preserve the existing generation-head serialization point and claim/publication fencing.",
-        "REM-02/REM-04 do not block this unit but should be completed before broad persisted-bundle remediation is considered complete."
-      ],
       "smallest_safe_change_boundary": "Change only fresh-planning/store semantics and the minimum persistence representation needed to distinguish a new planning occurrence from stale delivery. Consumer delivery semantics remain terminal for stale/completed tasks.",
       "mandatory_tests": [
         "Database integration: A planned/current → B planned/current → old A becomes stale → fresh A plan becomes current/claimable",
@@ -445,7 +604,27 @@
         "Do not introduce real Cloudflare Queue bindings.",
         "Do not claim exactly-once provider calls.",
         "Do not implement JOB-04/JOB-06 as part of this defect unless independently required by the chosen minimal mechanism."
-      ]
+      ],
+      "hard_dependencies": {
+        "units": [],
+        "invariants": [
+          "Preserve the existing generation-head serialization point and claim/publication fencing."
+        ]
+      },
+      "recommended_order_after": [],
+      "parallelizable_with": [
+        "REM-01",
+        "REM-02",
+        "REM-03",
+        "REM-04",
+        "REM-06",
+        "REM-07",
+        "REM-08",
+        "REM-09",
+        "REM-10",
+        "REM-11"
+      ],
+      "scheduling_note": "REM-02/REM-04 do not block REM-05. Their completion is relevant only before broad persisted-bundle remediation is considered complete."
     },
     {
       "id": "REM-06",
@@ -474,10 +653,6 @@
       ],
       "observable_defect": "Invalid/obsolete persisted bundles are safely treated as a miss for the request, but the durable row is not repaired, invalidated, or replaced, so later requests can reread and reject the same row indefinitely.",
       "desired_invariant": "A rejected obsolete bundle durably converges to the current representation; repeated ordinary requests do not indefinitely reread the same obsolete row; request-time loading still never calls a translation provider.",
-      "dependencies": [
-        "REM-02 should land first so bundle namespace verification is authoritative.",
-        "REM-04 should land first so storage identity invariants are canonical before convergence logic is finalized."
-      ],
       "smallest_safe_change_boundary": "Add the smallest durable invalidation/repair path around persisted bundle verification and existing compile/store boundaries. Preserve safe fallback and classified storage degradation.",
       "mandatory_tests": [
         "Persist an obsolete/invalid bundle, perform ordinary load, and prove a later load no longer encounters the same obsolete row",
@@ -509,6 +684,30 @@
         "Do not add real provider calls or credentials.",
         "Do not pull Cloudflare Queue/Workflow infrastructure into remediation.",
         "Do not weaken bundle verification to make obsolete rows appear valid."
+      ],
+      "hard_dependencies": {
+        "units": [],
+        "invariants": []
+      },
+      "recommended_order_after": [
+        {
+          "unit": "REM-02",
+          "reason": "Stabilize the canonical own-property bundle verifier before convergence work to reduce review/retest churn; current valid-namespace convergence can still be correct without it."
+        },
+        {
+          "unit": "REM-04",
+          "reason": "Stabilize the final persistent English-exclusion/storage invariant before convergence work to reduce migration/store retest churn; it is not required for obsolete-bundle convergence correctness."
+        }
+      ],
+      "parallelizable_with": [
+        "REM-01",
+        "REM-03",
+        "REM-05",
+        "REM-07",
+        "REM-08",
+        "REM-09",
+        "REM-10",
+        "REM-11"
       ]
     },
     {
@@ -533,7 +732,6 @@
       ],
       "observable_defect": "topicAndPostCount is plain interpolation with English '(s)' text, so count grammar is not locale-aware.",
       "desired_invariant": "Topic and message totals are rendered through plural-capable canonical messages and normal localization fallback.",
-      "dependencies": [],
       "smallest_safe_change_boundary": "Replace the combined English '(s)' interpolation with plural-capable count messages and compose the displayed totals in the category route; reuse the existing structured plural catalog/runtime.",
       "mandatory_tests": [
         "Focused localization test for singular/other count selection for both topic and message totals",
@@ -544,6 +742,23 @@
       "non_goals": [
         "Do not redesign forum counting queries or pagination.",
         "Do not hardcode locale-specific plural rules in route code."
+      ],
+      "hard_dependencies": {
+        "units": [],
+        "invariants": []
+      },
+      "recommended_order_after": [],
+      "parallelizable_with": [
+        "REM-01",
+        "REM-02",
+        "REM-03",
+        "REM-04",
+        "REM-05",
+        "REM-06",
+        "REM-08",
+        "REM-09",
+        "REM-10",
+        "REM-11"
       ]
     },
     {
@@ -567,7 +782,6 @@
       ],
       "observable_defect": "The rollback test can reject at the cooldown guard before reaching the duplicate insert/transaction rollback path it claims to verify.",
       "desired_invariant": "The test deterministically reaches the intended in-transaction failure and proves the partial topic graph is rolled back.",
-      "dependencies": [],
       "smallest_safe_change_boundary": "Test-only correction: control write-policy time/cooldown so it cannot be the rejection source, assert the intended database failure category/constraint, then assert the topic was not persisted.",
       "mandatory_tests": [
         "Corrected rollback test must fail if cooldown is the rejection source",
@@ -580,6 +794,23 @@
       "non_goals": [
         "Do not change runtime cooldown semantics.",
         "Do not change forum transaction implementation unless the corrected test reveals a separate real runtime defect."
+      ],
+      "hard_dependencies": {
+        "units": [],
+        "invariants": []
+      },
+      "recommended_order_after": [],
+      "parallelizable_with": [
+        "REM-01",
+        "REM-02",
+        "REM-03",
+        "REM-04",
+        "REM-05",
+        "REM-06",
+        "REM-07",
+        "REM-09",
+        "REM-10",
+        "REM-11"
       ]
     },
     {
@@ -602,7 +833,6 @@
       ],
       "observable_defect": "forum-post is a two-column grid, but best-answer label, ForumMarkdown output, and solution form are sibling grid items without a content-column wrapper, so auto-placement can put them into unintended grid cells.",
       "desired_invariant": "On desktop, post author metadata occupies the author column and best-answer label/body/solution controls occupy the content area; responsive single-column behavior remains valid.",
-      "dependencies": [],
       "smallest_safe_change_boundary": "Add/restore one content wrapper or explicit grid placement for the affected post content elements and only the CSS necessary to preserve desktop/mobile layout.",
       "mandatory_tests": [
         "Focused render/structure regression showing label/body/solution controls share the content area",
@@ -614,6 +844,23 @@
       "non_goals": [
         "Do not change solved/best-answer authorization or domain semantics.",
         "Do not redesign the forum visual system."
+      ],
+      "hard_dependencies": {
+        "units": [],
+        "invariants": []
+      },
+      "recommended_order_after": [],
+      "parallelizable_with": [
+        "REM-01",
+        "REM-02",
+        "REM-03",
+        "REM-04",
+        "REM-05",
+        "REM-06",
+        "REM-07",
+        "REM-08",
+        "REM-10",
+        "REM-11"
       ]
     },
     {
@@ -638,9 +885,6 @@
       ],
       "observable_defect": "resolveUser reads role assignment, role grants, and user overrides in separate statements that can observe incompatible database states under concurrent authorization changes.",
       "desired_invariant": "One resolved UserAuthorization is derived from one internally consistent database snapshot while next-request freshness and request-scoped caching remain intact.",
-      "dependencies": [
-        "Share a snapshot mechanism with REM-11 where practical, but keep the two observable contracts independently testable."
-      ],
       "smallest_safe_change_boundary": "Confine consistency to one composite resolution call; preserve public service/capability semantics and next-request freshness.",
       "mandatory_tests": [
         "Two-connection database integration that interleaves role/grant/override mutation and proves the returned authorization is wholly before or wholly after, never mixed",
@@ -669,7 +913,24 @@
         "Do not add long-lived permission caching.",
         "Do not alter role/override precedence or permission catalog.",
         "Do not change PR #76 availability-only degradation semantics."
-      ]
+      ],
+      "hard_dependencies": {
+        "units": [],
+        "invariants": []
+      },
+      "recommended_order_after": [],
+      "parallelizable_with": [
+        "REM-01",
+        "REM-02",
+        "REM-03",
+        "REM-04",
+        "REM-05",
+        "REM-06",
+        "REM-07",
+        "REM-08",
+        "REM-09"
+      ],
+      "scheduling_note": "Coordinate with REM-11 on a shared snapshot primitive where practical, but REM-11 is not a correctness prerequisite."
     },
     {
       "id": "REM-11",
@@ -692,9 +953,6 @@
       ],
       "observable_defect": "readManagementState obtains roles, users, grants, and overrides through separate pool queries, so one management response can combine rows from incompatible concurrent states.",
       "desired_invariant": "One management-state response presents roles, users/assignments, grants, overrides, and effective permissions from one internally consistent database snapshot.",
-      "dependencies": [
-        "Prefer the same proven snapshot primitive selected for REM-10, without forcing the two operations into one API."
-      ],
       "smallest_safe_change_boundary": "Run only the component reads for one management-state call through one coherent snapshot boundary; preserve response shape and mutation semantics.",
       "mandatory_tests": [
         "Two-connection database integration that mutates assignments/grants/overrides between component reads and proves no mixed management state escapes",
@@ -722,6 +980,27 @@
       "non_goals": [
         "Do not redesign the authorization management UI or role model.",
         "Do not change mutation/lockout semantics."
+      ],
+      "hard_dependencies": {
+        "units": [],
+        "invariants": []
+      },
+      "recommended_order_after": [
+        {
+          "unit": "REM-10",
+          "reason": "Prefer reusing the snapshot primitive proven by REM-10 because both units touch the same authorization repository; this is review/conflict reduction, not a correctness blocker."
+        }
+      ],
+      "parallelizable_with": [
+        "REM-01",
+        "REM-02",
+        "REM-03",
+        "REM-04",
+        "REM-05",
+        "REM-06",
+        "REM-07",
+        "REM-08",
+        "REM-09"
       ]
     }
   ],
@@ -730,5 +1009,469 @@
     "no_external_operations": true,
     "no_final_advancement": true,
     "state_sync_note": "When an implementation PR later changes factual project state, PROJECT_STATE.md must be synchronized in that same change per workflow. This is not a separate remediation unit."
+  },
+  "corrects": {
+    "finding": "RP-001",
+    "accepted_base_artifact_blob": "ca97f6ac159a081ef21973232df6c3b45573e3ed",
+    "scope": "dependency semantics only"
+  },
+  "dependency_semantics": {
+    "hard_dependencies_definition": "Required for correctness, schema compatibility, buildability, or preservation of a shared invariant. Only unit-to-unit hard dependencies create DAG edges.",
+    "recommended_order_after_definition": "Advisory sequencing for reuse, review clarity, or conflict/retest reduction; never a blocker.",
+    "parallelizable_with_definition": "Work with no hard or recommended sequencing relation in this plan. Recommended pairs are omitted from this list even though they are not correctness-blocked.",
+    "hard_dependency_unit_edges": [],
+    "hard_dependency_series_edges": []
+  },
+  "rp001_old_to_new": {
+    "series": [
+      {
+        "id": "R1",
+        "old": {
+          "depends_on": []
+        },
+        "new": {
+          "hard_dependencies": [],
+          "recommended_order_after": [],
+          "parallelizable_with": [
+            "R2",
+            "R3",
+            "R5",
+            "R6",
+            "R7"
+          ]
+        }
+      },
+      {
+        "id": "R2",
+        "old": {
+          "depends_on": [
+            "R1"
+          ]
+        },
+        "new": {
+          "hard_dependencies": [],
+          "recommended_order_after": [],
+          "parallelizable_with": [
+            "R1",
+            "R3",
+            "R5",
+            "R6",
+            "R7"
+          ]
+        }
+      },
+      {
+        "id": "R3",
+        "old": {
+          "depends_on": [
+            "R1"
+          ]
+        },
+        "new": {
+          "hard_dependencies": [],
+          "recommended_order_after": [],
+          "parallelizable_with": [
+            "R1",
+            "R2",
+            "R4",
+            "R5",
+            "R6",
+            "R7"
+          ]
+        }
+      },
+      {
+        "id": "R4",
+        "old": {
+          "depends_on": [
+            "R1",
+            "R2"
+          ]
+        },
+        "new": {
+          "hard_dependencies": [],
+          "recommended_order_after": [
+            {
+              "series": "R1",
+              "unit": "REM-02",
+              "applies_to": "REM-06"
+            },
+            {
+              "series": "R2",
+              "unit": "REM-04",
+              "applies_to": "REM-06"
+            }
+          ],
+          "parallelizable_with": [
+            "R3",
+            "R5",
+            "R6",
+            "R7"
+          ]
+        }
+      },
+      {
+        "id": "R5",
+        "old": {
+          "depends_on": []
+        },
+        "new": {
+          "hard_dependencies": [],
+          "recommended_order_after": [],
+          "parallelizable_with": [
+            "R1",
+            "R2",
+            "R3",
+            "R4",
+            "R6",
+            "R7"
+          ]
+        }
+      },
+      {
+        "id": "R6",
+        "old": {
+          "depends_on": []
+        },
+        "new": {
+          "hard_dependencies": [],
+          "recommended_order_after": [],
+          "parallelizable_with": [
+            "R1",
+            "R2",
+            "R3",
+            "R4",
+            "R5",
+            "R7"
+          ]
+        }
+      },
+      {
+        "id": "R7",
+        "old": {
+          "depends_on": []
+        },
+        "new": {
+          "hard_dependencies": [],
+          "recommended_order_after": [
+            {
+              "within_series": {
+                "unit": "REM-11",
+                "after": "REM-10"
+              }
+            }
+          ],
+          "parallelizable_with": [
+            "R1",
+            "R2",
+            "R3",
+            "R4",
+            "R5",
+            "R6"
+          ]
+        }
+      }
+    ],
+    "units": [
+      {
+        "id": "REM-01",
+        "old": {
+          "dependencies": []
+        },
+        "new": {
+          "hard_dependencies": {
+            "units": [],
+            "invariants": []
+          },
+          "recommended_order_after": [],
+          "parallelizable_with": [
+            "REM-02",
+            "REM-03",
+            "REM-04",
+            "REM-05",
+            "REM-06",
+            "REM-07",
+            "REM-08",
+            "REM-09",
+            "REM-10",
+            "REM-11"
+          ]
+        }
+      },
+      {
+        "id": "REM-02",
+        "old": {
+          "dependencies": []
+        },
+        "new": {
+          "hard_dependencies": {
+            "units": [],
+            "invariants": []
+          },
+          "recommended_order_after": [],
+          "parallelizable_with": [
+            "REM-01",
+            "REM-03",
+            "REM-04",
+            "REM-05",
+            "REM-07",
+            "REM-08",
+            "REM-09",
+            "REM-10",
+            "REM-11"
+          ]
+        }
+      },
+      {
+        "id": "REM-03",
+        "old": {
+          "dependencies": []
+        },
+        "new": {
+          "hard_dependencies": {
+            "units": [],
+            "invariants": []
+          },
+          "recommended_order_after": [],
+          "parallelizable_with": [
+            "REM-01",
+            "REM-02",
+            "REM-04",
+            "REM-05",
+            "REM-06",
+            "REM-07",
+            "REM-08",
+            "REM-09",
+            "REM-10",
+            "REM-11"
+          ]
+        }
+      },
+      {
+        "id": "REM-04",
+        "old": {
+          "dependencies": [
+            "Accepted migration history remains immutable; correction must be a new forward migration after 0010."
+          ]
+        },
+        "new": {
+          "hard_dependencies": {
+            "units": [],
+            "invariants": [
+              "Accepted migration history remains immutable; correction must be a new forward migration after 0010."
+            ]
+          },
+          "recommended_order_after": [],
+          "parallelizable_with": [
+            "REM-01",
+            "REM-02",
+            "REM-03",
+            "REM-05",
+            "REM-07",
+            "REM-08",
+            "REM-09",
+            "REM-10",
+            "REM-11"
+          ]
+        }
+      },
+      {
+        "id": "REM-05",
+        "old": {
+          "dependencies": [
+            "Preserve the existing generation-head serialization point and claim/publication fencing.",
+            "REM-02/REM-04 do not block this unit but should be completed before broad persisted-bundle remediation is considered complete."
+          ]
+        },
+        "new": {
+          "hard_dependencies": {
+            "units": [],
+            "invariants": [
+              "Preserve the existing generation-head serialization point and claim/publication fencing."
+            ]
+          },
+          "recommended_order_after": [],
+          "parallelizable_with": [
+            "REM-01",
+            "REM-02",
+            "REM-03",
+            "REM-04",
+            "REM-06",
+            "REM-07",
+            "REM-08",
+            "REM-09",
+            "REM-10",
+            "REM-11"
+          ]
+        }
+      },
+      {
+        "id": "REM-06",
+        "old": {
+          "dependencies": [
+            "REM-02 should land first so bundle namespace verification is authoritative.",
+            "REM-04 should land first so storage identity invariants are canonical before convergence logic is finalized."
+          ]
+        },
+        "new": {
+          "hard_dependencies": {
+            "units": [],
+            "invariants": []
+          },
+          "recommended_order_after": [
+            {
+              "unit": "REM-02",
+              "reason": "Stabilize the canonical own-property bundle verifier before convergence work to reduce review/retest churn; current valid-namespace convergence can still be correct without it."
+            },
+            {
+              "unit": "REM-04",
+              "reason": "Stabilize the final persistent English-exclusion/storage invariant before convergence work to reduce migration/store retest churn; it is not required for obsolete-bundle convergence correctness."
+            }
+          ],
+          "parallelizable_with": [
+            "REM-01",
+            "REM-03",
+            "REM-05",
+            "REM-07",
+            "REM-08",
+            "REM-09",
+            "REM-10",
+            "REM-11"
+          ]
+        }
+      },
+      {
+        "id": "REM-07",
+        "old": {
+          "dependencies": []
+        },
+        "new": {
+          "hard_dependencies": {
+            "units": [],
+            "invariants": []
+          },
+          "recommended_order_after": [],
+          "parallelizable_with": [
+            "REM-01",
+            "REM-02",
+            "REM-03",
+            "REM-04",
+            "REM-05",
+            "REM-06",
+            "REM-08",
+            "REM-09",
+            "REM-10",
+            "REM-11"
+          ]
+        }
+      },
+      {
+        "id": "REM-08",
+        "old": {
+          "dependencies": []
+        },
+        "new": {
+          "hard_dependencies": {
+            "units": [],
+            "invariants": []
+          },
+          "recommended_order_after": [],
+          "parallelizable_with": [
+            "REM-01",
+            "REM-02",
+            "REM-03",
+            "REM-04",
+            "REM-05",
+            "REM-06",
+            "REM-07",
+            "REM-09",
+            "REM-10",
+            "REM-11"
+          ]
+        }
+      },
+      {
+        "id": "REM-09",
+        "old": {
+          "dependencies": []
+        },
+        "new": {
+          "hard_dependencies": {
+            "units": [],
+            "invariants": []
+          },
+          "recommended_order_after": [],
+          "parallelizable_with": [
+            "REM-01",
+            "REM-02",
+            "REM-03",
+            "REM-04",
+            "REM-05",
+            "REM-06",
+            "REM-07",
+            "REM-08",
+            "REM-10",
+            "REM-11"
+          ]
+        }
+      },
+      {
+        "id": "REM-10",
+        "old": {
+          "dependencies": [
+            "Share a snapshot mechanism with REM-11 where practical, but keep the two observable contracts independently testable."
+          ]
+        },
+        "new": {
+          "hard_dependencies": {
+            "units": [],
+            "invariants": []
+          },
+          "recommended_order_after": [],
+          "parallelizable_with": [
+            "REM-01",
+            "REM-02",
+            "REM-03",
+            "REM-04",
+            "REM-05",
+            "REM-06",
+            "REM-07",
+            "REM-08",
+            "REM-09"
+          ]
+        }
+      },
+      {
+        "id": "REM-11",
+        "old": {
+          "dependencies": [
+            "Prefer the same proven snapshot primitive selected for REM-10, without forcing the two operations into one API."
+          ]
+        },
+        "new": {
+          "hard_dependencies": {
+            "units": [],
+            "invariants": []
+          },
+          "recommended_order_after": [
+            {
+              "unit": "REM-10",
+              "reason": "Prefer reusing the snapshot primitive proven by REM-10 because both units touch the same authorization repository; this is review/conflict reduction, not a correctness blocker."
+            }
+          ],
+          "parallelizable_with": [
+            "REM-01",
+            "REM-02",
+            "REM-03",
+            "REM-04",
+            "REM-05",
+            "REM-06",
+            "REM-07",
+            "REM-08",
+            "REM-09"
+          ]
+        }
+      }
+    ]
   }
 }
