@@ -80,7 +80,6 @@ local/CI Stage 4 и остаются Stage 6.
 - task lifecycle `pending → processing → stale/completed`, claim token и lease/reclaim;
 - stale/source/policy/locale/manual preflight перед provider call;
 - durable monotonic generation ordering и current-generation fencing;
-- fresh-plan A-B-A reactivation stale stable identity через новую monotonic generation под существующим generation-head lock; completed identity и старая Queue delivery остаются terminal;
 - provider-neutral task executor;
 - conditional machine publication с provider/model provenance;
 - atomic `task completion + raw machine translation + whole namespace bundle` publication;
@@ -106,6 +105,17 @@ Migration `0007`–`0010` содержит durable task lifecycle и generation-
 это отдельная Stage 6 external acceptance и не являются условием обычных Stage 5 feature PR.
 
 ## Известные текущие ограничения
+
+### Stage 5A generation reactivation
+
+Durable monotonic generation ordering, current-generation fencing и claim fencing реализованы.
+Но более поздний fresh plan с последовательностью identities `A → B → A` сейчас не может
+reactivate прежнюю stale identity A: существующая stale task возвращается без новой актуальной
+planning occurrence и остаётся terminal для claim path.
+
+Целевой contract сохраняет terminal semantics для старой Queue delivery и completed task,
+одновременно разрешая новой fresh planning decision снова сделать A current. Конкретный
+storage/schema mechanism ещё не выбран и относится к исправлению реализации.
 
 ### Persisted bundle convergence
 
