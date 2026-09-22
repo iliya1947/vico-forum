@@ -173,13 +173,6 @@ Runtime пересчитывает эту identity из текущего deploy 
 требует schema migration: existing `bundle_version` уже хранит semantic hash, а публикация и
 runtime используют один compiler/verifier.
 
-Безопасный runtime miss является availability fallback, но не заменяет durable convergence.
-Persisted bundle, отклонённый как obsolete относительно текущего format/deploy identity, обязан
-иметь durable path к актуальному representation: обычные повторные reads не должны бесконечно
-читать и отклонять одну и ту же obsolete row. Этот path не вызывает translation provider из
-request path. Конкретный trigger, backfill/delete-and-rebuild mechanism и orchestration относятся
-к implementation/remediation, а не к storage contract.
-
 ### Cache identity
 
 Individual locale/namespace bundle cache key/version обязаны учитывать как минимум:
