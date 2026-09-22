@@ -112,21 +112,13 @@ Role assignment и overrides ссылаются на существующий Be
 
 1. Better Auth session используется для получения authenticated `user.id`.
 2. Effective authorization state читается server-side из PostgreSQL.
-3. Один полный user authorization resolution — role assignment, role grants, user overrides и
-   resulting effective permissions — читается из одного internally consistent database snapshot.
-4. Один authorization-management state read — roles, users/assignments, grants, overrides и
-   resulting effective permissions — также читается из одного internally consistent database snapshot.
-5. Role/permissions из client input или stale session claims не используются как source of truth.
-6. Изменение role grant, user role или user override должно действовать на следующий защищённый
+3. Role/permissions из client input или stale session claims не используются как source of truth.
+4. Изменение role grant, user role или user override должно действовать на следующий защищённый
    request без logout/login.
-7. Допустим request-scoped resolver/cache только внутри одного request; long-lived permission
+5. Допустим request-scoped resolver/cache только внутри одного request; long-lived permission
    cache без отдельного invalidation contract не допускается.
-8. Routes/UI/domain code должны обращаться к единому PermissionResolver/authorization capability,
+6. Routes/UI/domain code должны обращаться к единому PermissionResolver/authorization capability,
    а не распределять проверки `role === ...` по приложению.
-
-Snapshot-consistency — semantic contract результата, а не предписание конкретного transaction API,
-isolation level, lock strategy, query shape или repository implementation. Она не ослабляет
-next-request freshness и не разрешает long-lived authoritative permission cache.
 
 ## Failure semantics
 
