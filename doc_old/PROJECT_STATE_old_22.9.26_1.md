@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-09-22
+Последнее обновление: 2026-09-18
 
 ## Назначение
 
@@ -102,6 +102,27 @@ Migration `0007`–`0010` содержит durable task lifecycle и generation-
 Реальные Cloudflare Queue bindings, provider credentials/calls и deployed provider/Queue smoke —
 это отдельная Stage 6 external acceptance и не являются условием обычных Stage 5 feature PR.
 
+## Известная текущая regression
+
+### Local manual translation stale policy
+
+Runtime/freshness contract корректно поддерживает stale local/manual translations:
+
+```text
+fingerprint mismatch
+→ stale
+→ исключить value из current bundle
+→ продолжить source/locale fallback
+```
+
+Но текущий `app/localization/resources.test.ts` ошибочно требует для реальных
+`manualTranslationPacks` результат `{ staleKeys: {} }`, а intentional stale runtime canary был
+удалён в PR #40.
+
+Это **не является принятой zero-stale repository policy**. Архитектурный contract допускает
+strict stale-blocking CI только после отдельного явного решения. Код/тестовая коррекция этой
+regression ещё не выполнена.
+
 ## CI и migration state
 
 Обычный pull-request CI сейчас проверяет:
@@ -150,10 +171,12 @@ no-op verification. Перед следующим настоящим external sc
 
 ## Ближайший маршрут
 
-1. Завершить оставшийся Stage 5A local/CI path: concrete machine-provider adapter,
+1. Исправить подтверждённую regression local manual stale coverage (#40), не вводя strict
+   zero-stale policy без отдельного решения.
+2. Завершить оставшийся Stage 5A local/CI path: concrete machine-provider adapter,
    retry/DLQ и reconciliation/observability, сохраняя provider/transport boundaries.
-2. Реализовать Stage 5B revision-bound user-content translation.
-3. После завершения Stage 5 перейти к Stage 6 external integration по `ROADMAP.md` и
+3. Реализовать Stage 5B revision-bound user-content translation.
+4. После завершения Stage 5 перейти к Stage 6 external integration по `ROADMAP.md` и
    `docs/database/*`.
 
 На текущем этапе external rollout не является блокером для продолжения Stage 5 local/CI работы.

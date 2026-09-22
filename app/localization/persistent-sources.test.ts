@@ -165,6 +165,57 @@ describe("persistent UI translation sources", () => {
     });
   });
 
+  it("reports invalid-origin rows once across manual and machine adapters without collapsing distinct rows", async () => {
+    const reportRowIssues = vi.fn<PersistentTranslationRowIssueReporter>();
+    const malformedHeading = { ...(await row("persistent_manual", "Значение")), origin: "unknown" };
+    const malformedSummary = {
+      ...(await row("persistent_manual", "Stage 1 описание", undefined, "stageSummary")),
+      origin: "unknown",
+    };
+    const persistentStore = store([malformedHeading, malformedSummary]);
+
+    await expect(
+      new DatabaseManualTranslationSource(persistentStore, reportRowIssues).load("ru", ["common"]),
+    ).resolves.toMatchObject({ resources: {} });
+    await expect(
+      new DatabaseMachineTranslationSource(persistentStore, reportRowIssues).load("ru", ["common"]),
+    ).resolves.toMatchObject({ resources: {} });
+
+    expect(reportRowIssues).toHaveBeenCalledOnce();
+    expect(reportRowIssues).toHaveBeenCalledWith({
+      origin: "persistent_manual",
+      skippedRows: 2,
+      reasons: { "invalid-origin": 2 },
+    });
+  });
+
+  it.each([
+    ["bigint", 1n],
+    ["cyclic object", (() => {
+      const origin: { self?: unknown } = {};
+      origin.self = origin;
+      return origin;
+    })()],
+  ])("skips and deduplicates a %s invalid origin without throwing", async (_label, invalidOrigin) => {
+    const reportRowIssues = vi.fn<PersistentTranslationRowIssueReporter>();
+    const malformed = { ...(await row("persistent_manual", "Значение")), origin: invalidOrigin };
+    const persistentStore = store([malformed]);
+
+    await expect(
+      new DatabaseManualTranslationSource(persistentStore, reportRowIssues).load("ru", ["common"]),
+    ).resolves.toMatchObject({ resources: {} });
+    await expect(
+      new DatabaseMachineTranslationSource(persistentStore, reportRowIssues).load("ru", ["common"]),
+    ).resolves.toMatchObject({ resources: {} });
+
+    expect(reportRowIssues).toHaveBeenCalledOnce();
+    expect(reportRowIssues).toHaveBeenCalledWith({
+      origin: "persistent_manual",
+      skippedRows: 1,
+      reasons: { "invalid-origin": 1 },
+    });
+  });
+
   it("rejects a store row outside the requested scope", async () => {
     const reportRowIssues = vi.fn<PersistentTranslationRowIssueReporter>();
     const persistentStore = store([{
