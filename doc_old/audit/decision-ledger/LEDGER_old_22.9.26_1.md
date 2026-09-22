@@ -278,20 +278,6 @@ snapshot-consistency target while runtime noncompliance remains open. The revise
 3 was also authorized, applied with pre-change archives, and independently accepted after its narrow
 bookkeeping correction. No runtime remediation has begun.
 
-### Implementation-remediation planning (`DL-REMEDIATION-PLAN-001`)
-
-The accepted exact-once remediation map reduces 29 current-defect IDs / 15 groups to 23 IDs / 11
-implementation groups after excluding Stage 6 `CD-05` and completed documentation groups `CD-13..15`.
-All 15 evidence-limited IDs schedule zero behavior; `EX40-02` is the only still-live accepted bad correction
-and is already owned by `REM-01`.
-
-Seven implementation series contain no hard unit-to-unit or series-to-series DAG edges. Recommended ordering
-is limited to `REM-02 → REM-06`, `REM-04 → REM-06`, and `REM-10 → REM-11`; these are review/retest/primitive-
-reuse recommendations rather than correctness blockers. Six units (`REM-04/05/06/08/10/11`) are DB-gated.
-
-The durable plan is `REMEDIATION_PLAN.md`. It does not authorize implementation: Phase 5 execution remains
-unstarted pending explicit user authorization for a bounded series or unit and a separate implementation PR.
-
 ## Record template
 
 ```text

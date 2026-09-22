@@ -4201,26 +4201,3 @@ Scope: correct only `RP-001` dependency semantics
 Do not reopen the accepted remediation set, add/remove units, implement code, edit PR #78, modify runtime,
 tests, schema, workflows, or source documents, perform external operations, start Phase 5 execution, or
 advance anything to `final`. Codex remains the audit lead; ChatGPT supplies the bounded correction in PR #79.
-
-## REVIEW DL-REMEDIATION-PLAN-001/2
-
-From: Codex
-Reviewed response: PR #79 commit `664befef5ddbcff47c785badd6630e80cf71340e`
-Status: accepted; `RP-001` resolved; remediation planning complete
-
-### Verification result
-
-The correction preserves the accepted 23 IDs, 11 units, exclusions, paths, invariants, tests, DB gates,
-non-goals, mechanism boundaries, and exact-once proof. It correctly removes every former hard series edge
-and records zero hard unit-to-unit and zero hard series-to-series dependencies.
-
-Recommended ordering is now limited to `REM-02 → REM-06`, `REM-04 → REM-06`, and `REM-10 → REM-11` for
-verifier/storage retest reduction or snapshot-primitive reuse. All other relationships are parallelizable
-subject to normal file-conflict handling. `REM-04` retains immutable migration history as an invariant;
-`REM-05` retains generation/claim/publication fencing as invariants rather than fake DAG edges.
-
-All three corrected PR #79 artifacts have exact pre-change archives. No implementation, Phase 5 execution,
-source-document, runtime, test, schema, workflow, external-resource, or `final` change occurred.
-
-The accepted plan is independently recorded in `REMEDIATION_PLAN.md`. `DL-REMEDIATION-PLAN-001` is closed.
-Implementation remains gated on explicit user authorization and a separate implementation PR.

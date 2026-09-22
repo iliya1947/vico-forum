@@ -199,10 +199,6 @@ Only after target contracts are approved, change code, tests, schema, configurat
 external rollout machinery. Preserve independently valuable later features and foundations. Avoid
 blanket rollback and unrelated refactoring.
 
-Planning is complete in `REMEDIATION_PLAN.md`: 23 accepted IDs map exactly once to 11 implementation units
-in seven series with no hard cross-unit dependency edges. Implementation remains unstarted and each bounded
-unit or series requires explicit user authorization and a separate implementation PR.
-
 ## Required result classifications
 
 The final audit must distinguish at least:

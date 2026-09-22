@@ -46,8 +46,6 @@ The audit must determine, decision by decision:
   restoration and implementation planning; not a product source of truth.
 - [`DOCUMENTATION_PLAN.md`](./DOCUMENTATION_PLAN.md) — accepted file-by-file restoration plan;
   source-of-truth changes remain gated on explicit user authorization.
-- [`REMEDIATION_PLAN.md`](./REMEDIATION_PLAN.md) — accepted exact-once implementation plan; every bounded
-  runtime/test/schema unit remains gated on explicit user authorization and a separate implementation PR.
 
 ## Status model
 
