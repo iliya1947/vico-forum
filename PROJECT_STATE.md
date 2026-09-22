@@ -124,6 +124,15 @@ Runtime безопасно отклоняет persisted UI bundle с obsolete fo
 Request path по-прежнему не должен вызывать translation provider. Конкретный durable repair
 mechanism ещё не выбран. Наличие таких obsolete rows во внешнем окружении не подтверждено.
 
+### Authorization snapshot consistency
+
+Полный user authorization resolution сейчас собирает role assignment, role grants и user overrides
+несколькими независимыми PostgreSQL reads. Authorization-management state аналогично собирается
+отдельными reads roles, users/assignments, grants и overrides. Поэтому эти пути пока не гарантируют
+единый internally consistent database snapshot, требуемый `docs/auth/AUTHORIZATION.md`.
+
+Конкретный механизм исправления ещё не выбран.
+
 ## CI и migration state
 
 Обычный pull-request CI сейчас проверяет:
