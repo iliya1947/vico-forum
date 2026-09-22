@@ -54,12 +54,23 @@ export class DrizzleTranslationTaskStore implements TranslationTaskStore {
       if (existingRows[0]) {
         const existing = await parseTaskRow(existingRows[0]);
         assertMatchesSpecification(existing, specification);
-        if (existing.status !== "stale" || existing.generation !== currentGeneration) return existing;
+        if (existing.status !== "stale") return existing;
+
         const databaseNow = sql`statement_timestamp()`;
+        const generation =
+          existing.generation === currentGeneration ? currentGeneration : currentGeneration + 1;
         const reactivated = await transaction.update(translationTasks).set({
+          generation,
           status: "pending", claimToken: null, claimedAt: null, leaseExpiresAt: null,
           staleAt: null, completedAt: null, updatedAt: databaseNow,
         }).where(and(eq(translationTasks.id, existing.id), eq(translationTasks.status, "stale"))).returning();
+
+        if (generation !== currentGeneration) {
+          await transaction.update(translationTaskGenerationHeads).set({
+            currentGeneration: generation,
+            updatedAt: databaseNow,
+          }).where(unitCondition(unit));
+        }
         return parseTaskRow(requiredRow(reactivated[0]));
       }
 
