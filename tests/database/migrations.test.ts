@@ -65,7 +65,7 @@ describe("PostgreSQL 17 locale migrations", () => {
     const sourceFingerprint = "0".repeat(64);
     const bundleVersion = "1".repeat(64);
 
-    for (const locale of [" en ", " EN "]) {
+    for (const locale of [" en ", " EN ", "\ten\t", "\nEN\n"]) {
       await expectDatabaseCode(
         client.query(
           `insert into ui_translations
