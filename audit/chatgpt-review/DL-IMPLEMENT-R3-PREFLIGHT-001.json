@@ -1,0 +1,329 @@
+{
+  "type": "DL-IMPLEMENT-R3-PREFLIGHT-001",
+  "task_id": "DL-IMPLEMENT-R3-PREFLIGHT-001/1",
+  "status": "PASS",
+  "mode": "preflight-only",
+  "implementation_authorized": false,
+  "codex_role": "lead reviewer",
+  "observed_state": {
+    "main_sha": "adb5eed73fccd7110c5f6f95dc933e217ea03c72",
+    "main_is_pr86_merge": true,
+    "pr86_merge_commit": "adb5eed73fccd7110c5f6f95dc933e217ea03c72",
+    "pr86_merged_head": "8f7cf1dac7f41e422b1592a80a1d23ba4c392a7f",
+    "pr79_head_before_response": "56cbc0eb58077982f4c6f856b48ab5af8e17c63b",
+    "migration_tail": "0011_persistent_translation_locale_invariant",
+    "migration_count": 12,
+    "next_project_state_archive_if_implementation_starts_on_this_baseline": "doc_old/PROJECT_STATE_old_22.9.26_5.md"
+  },
+  "accepted_planning_chain": {
+    "plan_1": {
+      "task_id": "DL-REMEDIATION-PLAN-001/1",
+      "narrative_path": "doc_old/audit/chatgpt-review/DL-REMEDIATION-PLAN-001_old_22.9.26_1.md",
+      "machine_path": "doc_old/audit/chatgpt-review/DL-REMEDIATION-PLAN-001_old_22.9.26_1.json",
+      "task_source_pr78_head": "6ae147d34d6289c363d1646218fa9b3bdd666667"
+    },
+    "plan_2": {
+      "task_id": "DL-REMEDIATION-PLAN-001/2",
+      "narrative_path": "audit/chatgpt-review/DL-REMEDIATION-PLAN-001.md",
+      "machine_path": "audit/chatgpt-review/DL-REMEDIATION-PLAN-001.json",
+      "task_source_pr78_head": "6122ab34294cef8f50b5d1d6d4f48ed88805d66b",
+      "correction_scope": "dependency/scheduling semantics",
+      "r3_hard_dependencies": [],
+      "r3_recommended_order_after": [],
+      "rem05_hard_dependency_invariants": [
+        "Preserve the existing generation-head serialization point and claim/publication fencing."
+      ]
+    },
+    "accepted_plan_commit": "367d7e4a5d9be34451bf3163031c6740f10d4e94",
+    "target_contract_path": "audit/chatgpt-review/DL-TARGET-001.json",
+    "classification_provenance_path": "audit/chatgpt-review/DL-CLASSIFY-007.md"
+  },
+  "exact_r3_scope": {
+    "series_id": "R3",
+    "series_name": "Durable task fresh-plan reactivation",
+    "remediation_unit_ids": [
+      "REM-05"
+    ],
+    "defect_group_ids": [
+      "CD-11"
+    ],
+    "target_contract_ids": [
+      "TC-10-C"
+    ],
+    "atomic_defect_ids": [
+      "EX72-20",
+      "EX72-45",
+      "EX72-46",
+      "EX72-47",
+      "EX72-48",
+      "EX72-49",
+      "EX72-50"
+    ],
+    "title": "Restore fresh-plan A→B→A stale-identity reactivation",
+    "accepted_invariant": {
+      "fresh_planning": "A later eligible fresh planner decision may choose stale stable identity A again after A→B, give that new planning occurrence a newer authoritative ordering position, and make A current/claimable again.",
+      "old_queue_delivery": "A stale/cancelled task remains terminal for old Queue delivery/retry; Queue delivery alone must not reactivate it.",
+      "completed_identity": "A completed stable identity remains terminal and must not be reopened by duplicate Queue delivery or duplicate/fresh planning of the same completed identity.",
+      "stable_identity": "Stable task identity/id semantics are preserved; sourceFingerprint/taskIdentity/generationPolicyVersion are semantic identity inputs, not chronological ordering values.",
+      "ordering": "Monotonic generation ordering and the generation-head serialization point remain authoritative.",
+      "fencing": "Claim-token and current-generation publication fencing remain authoritative; superseded work cannot publish current state."
+    },
+    "accepted_non_goals": [
+      "Do not introduce real Cloudflare Queue bindings.",
+      "Do not claim exactly-once provider calls.",
+      "Do not implement JOB-04 retry/DLQ as part of R3.",
+      "Do not implement JOB-06 reconciliation/observability as part of R3.",
+      "Do not start R4-R7.",
+      "Do not perform external migrations, provider calls, Queue operations, or Stage 6 work.",
+      "Do not modify PR #78."
+    ]
+  },
+  "post_r2_current_paths": {
+    "runtime_and_store": [
+      {
+        "path": "db/translation-task-store.ts",
+        "blob": "f39c062854cad57fe93081d5034e9ce6122b8197",
+        "role": "upsertPending, claim, markStale, isCurrentGeneration; direct defect mechanism"
+      },
+      {
+        "path": "app/localization/translation-tasks.ts",
+        "blob": "2d551dfa5c625d350941b36d6012b365bdfd94af",
+        "role": "dispatcher enqueues the task returned by upsertPending; Queue message carries task id only"
+      },
+      {
+        "path": "app/localization/ui-translation-service.ts",
+        "blob": "0902ad69712fb0d0429cda8c421744d305ce425f",
+        "role": "stable taskIdentity derives from source/policy semantics; a semantic revert A→B→A recreates identity A"
+      },
+      {
+        "path": "app/localization/translation-task-consumer.ts",
+        "blob": "28b1a882983dd4b1841013694a341ddfea7638c5",
+        "role": "consumer respects terminal claim outcome and generation-superseded preflight"
+      },
+      {
+        "path": "db/ui-translation-publication-store.ts",
+        "blob": "ff1534607a82c972abd89c1eb2e5c83f20f3eefc",
+        "role": "publication locks generation heads and requires task generation=current generation plus claim ownership"
+      }
+    ],
+    "schema": [
+      {
+        "path": "db/schema.ts",
+        "blob": "02a1732995f25438b57f815e154869e3a6591338",
+        "role": "translation_tasks has mutable generation and stable taskIdentity uniqueness; translation_task_generation_heads stores currentGeneration"
+      },
+      {
+        "path": "drizzle/0010_translation_task_generation_order.sql",
+        "role": "accepted generation/head schema foundation; immutable history"
+      },
+      {
+        "path": "drizzle/0011_persistent_translation_locale_invariant.sql",
+        "role": "post-R2 migration tail; unrelated to R3"
+      }
+    ],
+    "tests": [
+      {
+        "path": "tests/database/translation-task-generation-isolation.test.ts",
+        "blob": "d096889a0ecaec215ac2d5308aac0cd178812fa4",
+        "role": "contains direct A/B generation ordering, old publication fencing, completed terminality, and currently asserts old stale A remains stale after B"
+      },
+      {
+        "path": "tests/database/translation-task-store.test.ts",
+        "blob": "1c71ce8b3539aa4e297e287b4af9f69cb9583340",
+        "role": "same-current-generation stale reactivation, claim terminality, lease/claim semantics"
+      },
+      {
+        "path": "tests/database/ui-translation-publication-store.test.ts",
+        "blob": "449ea22c77a8835a4ddd8c253eb0b472cc980ac4",
+        "role": "claim/publication fencing and completed stable-identity terminality regression coverage"
+      },
+      {
+        "path": "app/localization/translation-task-consumer.test.ts",
+        "blob": "a04ea82e7f2f1da7f37d6acc1168a113152a6c57",
+        "role": "consumer does not run preflight for terminal delivery and covers generation-superseded stale preflight"
+      }
+    ],
+    "contracts_and_state": [
+      {
+        "path": "docs/translation/PROVIDERS_AND_JOBS.md",
+        "blob": "2cfb77d420d268c13fe43b616ad2e73b29bf0146",
+        "role": "current source-of-truth already states accepted A→B→A fresh-plan semantics after PR #83"
+      },
+      {
+        "path": "PROJECT_STATE.md",
+        "blob": "3865d7116f3c7f0d09c2a3064612e0f06108d36e",
+        "role": "post-R2 state explicitly records A→B→A reactivation as an unresolved current limitation"
+      }
+    ]
+  },
+  "post_r2_effect": {
+    "r2_touched_r3_runtime_store_tests": false,
+    "r2_changed_paths_relevant_only_as_shared_state_or_schema_files": [
+      "PROJECT_STATE.md",
+      "db/schema.ts",
+      "drizzle/meta/_journal.json"
+    ],
+    "r3_direct_runtime_blobs_unchanged_by_r2": true,
+    "translation_task_store_blob_equals_pr72_implementation_blob": true
+  },
+  "defect_currentness": [
+    {
+      "id": "EX72-20",
+      "status": "current",
+      "proof": "Current upsertPending returns an existing stale identity unchanged whenever existing.generation !== currentGeneration. After A(gen1)→B(gen2), stale A cannot become current on a later fresh A plan."
+    },
+    {
+      "id": "EX72-45",
+      "status": "current",
+      "proof": "The accepted PR #72 review finding (discussion_r4028280128) exactly matches the current store branch; post-R2 main retains the PR #72 task-store blob."
+    },
+    {
+      "id": "EX72-46",
+      "status": "current",
+      "proof": "The non-current stale early return is still present verbatim in current db/translation-task-store.ts."
+    },
+    {
+      "id": "EX72-47",
+      "status": "current",
+      "proof": "PersistentTranslationJobDispatcher still enqueues the task returned by upsertPending; therefore the unchanged stale A is enqueued when fresh planning returns it."
+    },
+    {
+      "id": "EX72-48",
+      "status": "current",
+      "proof": "claim() still only transitions pending or expired processing rows; on stale/completed it returns terminal, so the re-enqueued unchanged stale A cannot execute."
+    },
+    {
+      "id": "EX72-49",
+      "status": "current",
+      "proof": "PR #83 restored the broad fresh-plan A→B→A contract in PROVIDERS_AND_JOBS.md, while current store behavior remains current-only stale reactivation. The code/contract mismatch therefore still exists."
+    },
+    {
+      "id": "EX72-50",
+      "status": "current-runtime-obligation-with-doc-symptom-superseded",
+      "proof": "PR #83 corrected the historical current-only documentation wording, so R3 must not edit that document again. The atomic record remains part of the accepted CD-11/REM-05 accounting because the implementation still has the exact current-only behavior the documentation correction was meant to reject."
+    }
+  ],
+  "deliberate_disconfirmation": {
+    "checks": [
+      "Checked whether PR #86 modified the task store, dispatcher, consumer, task generation tests, or publication store: it did not.",
+      "Checked whether stable task identity changes on semantic revert A→B→A: it does not; uiTranslationJobIdentity is deterministic over semantic inputs, so A is recreated as the same stable identity.",
+      "Checked whether current upsertPending can reactivate stale A after B becomes current: it cannot because the stale reactivation branch requires existing.generation === currentGeneration.",
+      "Checked whether Queue delivery can independently revive stale A: it cannot; claim returns terminal for stale/completed, which is accepted and must be preserved.",
+      "Checked whether completed A can reopen: current store/publication tests keep completed identity terminal; R3 must preserve this.",
+      "Checked whether existing durable fields can express a fresh A occurrence safely: generation is not immutable in schema, generation-head row already serializes planning/publication, and the accepted plan explicitly lists reuse of the stale stable row with a new generation as viable.",
+      "Checked whether a new schema object is required to distinguish the fresh planning decision: not required by the accepted invariant if the existing stale row is atomically moved to a newer generation under the locked head.",
+      "Checked whether current docs still need the PR #72 current-only wording correction: no; PR #83 already restored the accepted broad A→B→A contract."
+    ],
+    "strongest_counterevidence": [
+      "Current single-identity stale reactivation already works when stale A is still current; this proves the defect is specifically cross-identity A→B→A rather than all stale reactivation.",
+      "Existing concurrent-planning tests prove head-row serialization and monotonic ordering work for different identities.",
+      "Existing publication tests prove generation/claim fencing and completed terminality are already working foundations and should not be redesigned."
+    ],
+    "result": "The defect remains current, but the existing schema/fencing foundation is sufficient for a bounded store-level correction."
+  },
+  "schema_and_migration": {
+    "schema_change_required": false,
+    "migration_required": false,
+    "reason": [
+      "The accepted plan prefers no schema expansion when existing durable fields can prove the invariant.",
+      "Current translation_tasks already stores stable identity, lifecycle state, and mutable generation; translation_task_generation_heads already provides the serialized monotonic current-generation authority.",
+      "A stale stable row can receive a newer generation/current position atomically under the existing head lock without changing task identity, claim/publication contracts, or schema.",
+      "No accepted invariant requires retaining a separate historical row for each planning occurrence."
+    ],
+    "boundary": "If implementation proves the existing schema cannot satisfy race-safety or terminality, do not add a migration under this preflight; stop and revise the preflight first."
+  },
+  "future_implementation_plan_boundary": {
+    "required_behavior": [
+      "Fresh A after A→B may reactivate only when A is stale and the action is a fresh planner/store upsert.",
+      "Reactivation must assign A a newer authoritative generation than B and atomically advance the generation head under the existing serialization lock.",
+      "Reactivation clears stale/old-claim lifecycle metadata consistently with pending state.",
+      "Duplicate planning of already pending/processing current A must not reset or extend a live claim.",
+      "Completed A remains unchanged and terminal.",
+      "Old stale Queue delivery before fresh planner action remains terminal.",
+      "Superseded generation and lost-claim publication fencing remains unchanged."
+    ],
+    "mechanism_not_selected_beyond_boundary": "Exact SQL/update shape remains implementation detail; no new occurrence table/version marker is authorized by this preflight."
+  },
+  "exact_changed_file_allowlist": [
+    "db/translation-task-store.ts",
+    "tests/database/translation-task-generation-isolation.test.ts",
+    "tests/database/translation-task-store.test.ts",
+    "PROJECT_STATE.md",
+    "doc_old/PROJECT_STATE_old_22.9.26_5.md"
+  ],
+  "changed_file_notes": {
+    "tests/database/translation-task-store.test.ts": "Allowed only for focused store/terminality regression if needed; no production interface change is expected.",
+    "PROJECT_STATE.md": "Implementation must remove/replace only the resolved A→B→A limitation and record the factual implemented behavior; do not alter unrelated R4/R7 limitations.",
+    "doc_old/PROJECT_STATE_old_22.9.26_5.md": "Expected exact pre-change archive on this baseline; if main/archive index changes before implementation, rerun preflight."
+  },
+  "forbidden_files": {
+    "rule": "Every repository path outside the five-file allowlist is forbidden for an R3 implementation based on main@adb5eed73fccd7110c5f6f95dc933e217ea03c72.",
+    "explicit": [
+      "db/schema.ts",
+      "drizzle/*.sql including any 0012 migration",
+      "drizzle/meta/*",
+      "app/localization/translation-tasks.ts",
+      "app/localization/ui-translation-service.ts",
+      "app/localization/translation-task-consumer.ts",
+      "app/localization/translation-task-consumer.test.ts",
+      "db/ui-translation-publication-store.ts",
+      "tests/database/ui-translation-publication-store.test.ts",
+      "docs/translation/PROVIDERS_AND_JOBS.md",
+      "docs/translation/STORAGE_AND_VERSIONING.md",
+      "TRANSLATION_ARCHITECTURE.md",
+      "ROADMAP.md",
+      ".github/workflows/*",
+      ".github/runtime-migration-evidence.json",
+      "audit/decision-ledger/*",
+      "PR #78 control artifacts",
+      "all R4-R7 implementation paths",
+      "all external infrastructure/resources"
+    ]
+  },
+  "required_tests_and_gates": {
+    "focused": [
+      "pnpm exec vitest run --config vitest.database.config.ts tests/database/translation-task-generation-isolation.test.ts tests/database/translation-task-store.test.ts tests/database/ui-translation-publication-store.test.ts",
+      "pnpm exec vitest run app/localization/translation-task-consumer.test.ts app/localization/translation-tasks.test.ts"
+    ],
+    "repository": [
+      "pnpm lint",
+      "pnpm typecheck",
+      "pnpm test",
+      "pnpm build",
+      "pnpm db:test",
+      "git diff --check"
+    ],
+    "db_gate": [
+      "A→B→A database integration proves fresh A becomes newer/current/claimable.",
+      "Old stale Queue delivery remains terminal before fresh planner action.",
+      "Completed A is not reopened.",
+      "Concurrent planning preserves one monotonic current head.",
+      "Existing claim/current-generation publication fencing regressions remain green.",
+      "GitHub Actions database job is green on the actual implementation PR head."
+    ],
+    "db_check_required": false,
+    "db_check_reason": "No schema/migration change is authorized by this preflight."
+  },
+  "migration_only_split": {
+    "required": false,
+    "reason": "No migration is required or authorized for the bounded R3 correction; therefore no migration-only split exists."
+  },
+  "implementation_non_goals": [
+    "No R4 persisted-bundle convergence.",
+    "No R5/R6/R7 remediation.",
+    "No JOB-04/JOB-06 implementation.",
+    "No new Queue binding or provider integration.",
+    "No external migration or Stage 6 operation.",
+    "No accepted migration/history rewrite.",
+    "No source-of-truth contract rewrite; current PROVIDERS_AND_JOBS.md already states the accepted R3 target."
+  ],
+  "conclusion": {
+    "status": "PASS",
+    "remediation_unit": "REM-05",
+    "current_defect_group": "CD-11",
+    "migration_required": false,
+    "migration_only_split_required": false,
+    "implementation_authorized": false,
+    "next_action_owner": "Codex lead reviewer"
+  }
+}
