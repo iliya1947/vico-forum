@@ -88,7 +88,10 @@ local/CI Stage 4 и остаются Stage 6.
 - persistent `ui_translations` / `ui_translation_bundles` schema rejects canonical English
   after trim + case-insensitive comparison; repository-owned production verifier uses the same boundary;
 - SSR/runtime чтение verified persisted bundles для canonical non-English locale с raw/local/
-  English fallback при miss или классифицированной storage degradation.
+  English fallback при miss или классифицированной storage degradation;
+- repository/local-CI команда `pnpm db:reconcile-ui-bundles` выполняет locked reverify/delete
+  convergence obsolete persisted bundles только для disposable local `*_test` PostgreSQL;
+  request path остаётся read-only и не вызывает translation provider, external execution не входит в Stage 5.
 
 Migration `0007`–`0010` содержит durable task lifecycle и generation-ordering foundation.
 
@@ -106,15 +109,6 @@ Migration `0007`–`0010` содержит durable task lifecycle и generation-
 это отдельная Stage 6 external acceptance и не являются условием обычных Stage 5 feature PR.
 
 ## Известные текущие ограничения
-
-### Persisted bundle convergence
-
-Runtime безопасно отклоняет persisted UI bundle с obsolete format/deploy identity и продолжает
-через raw/local/English fallback. Но durable refresh/backfill/convergence path пока отсутствует:
-одна и та же obsolete row может повторно читаться и отклоняться на следующих requests.
-
-Request path по-прежнему не должен вызывать translation provider. Конкретный durable repair
-mechanism ещё не выбран. Наличие таких obsolete rows во внешнем окружении не подтверждено.
 
 ### Authorization snapshot consistency
 
