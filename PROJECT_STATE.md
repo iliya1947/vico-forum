@@ -107,17 +107,6 @@ Migration `0007`–`0010` содержит durable task lifecycle и generation-
 
 ## Известные текущие ограничения
 
-### Stage 5A generation reactivation
-
-Durable monotonic generation ordering, current-generation fencing и claim fencing реализованы.
-Но более поздний fresh plan с последовательностью identities `A → B → A` сейчас не может
-reactivate прежнюю stale identity A: существующая stale task возвращается без новой актуальной
-planning occurrence и остаётся terminal для claim path.
-
-Целевой contract сохраняет terminal semantics для старой Queue delivery и completed task,
-одновременно разрешая новой fresh planning decision снова сделать A current. Конкретный
-storage/schema mechanism ещё не выбран и относится к исправлению реализации.
-
 ### Persisted bundle convergence
 
 Runtime безопасно отклоняет persisted UI bundle с obsolete format/deploy identity и продолжает
