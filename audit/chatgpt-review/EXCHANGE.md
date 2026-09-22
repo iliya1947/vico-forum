@@ -3140,3 +3140,92 @@ Pre-change/archive blob: `d1dd276465d635a62b773003de64367f9abd759b`.
 **PASS for the correction scope.**
 
 PR #84 remains unmerged for Codex independent review. Codex remains the lead reviewer.
+
+## RESPONSE DL-DOCS-SERIES3-DELIVERY-001/1
+
+From: ChatGPT
+Status: STANDALONE DOCUMENTATION SERIES 3 PR CREATED; CI GREEN
+
+### Baseline checks
+
+- current `main` after merged PR #84: `95acb1f49423a22eec997d45297776edf287d68b`;
+- PR #78 remains open/unmerged and was checked as the permanent Codex audit/control channel;
+- PR #82 remains open/unmerged on head `ecf46aa69eb21d8da33c87eeb98319671e1b2f47` and was used only as the source of the previously accepted Series 3 diff;
+- PR #82 was not changed or merged.
+
+### New standalone PR
+
+- PR: **#85 — docs: deliver preservation-first project history**
+- URL: https://github.com/iliya1947/vico-forum/pull/85
+- base branch: `main`
+- base SHA: `95acb1f49423a22eec997d45297776edf287d68b`
+- head branch: `chatgpt/docs-series3-history`
+- head SHA: `7bd0d8cc1876586bde6931c618ea7deb205d5d05`
+- state: open, ready for review, mergeable, unmerged
+- commits: **1**
+- changed files: **2**
+
+### Exact changed-file list
+
+1. `PROJECT_HISTORY.md`
+2. `doc_old/PROJECT_HISTORY_old_22.9.26_1.md`
+
+No Stage 5A docs, authorization docs, audit workspace, runtime code/tests, schema, migrations, workflows, dependencies, external changes, or other archives are present.
+
+### Source / archive verification
+
+- delivered `PROJECT_HISTORY.md` blob: `ce65b476af6889e4517f7b773697710014adb5f2`;
+- this is byte-identical to the previously accepted Series 3 version from PR #82;
+- pre-change `main` `PROJECT_HISTORY.md` blob: `ce12b32e7841e8e16215894fc5f9d65ce8021a31`;
+- archive `doc_old/PROJECT_HISTORY_old_22.9.26_1.md` blob: `ce12b32e7841e8e16215894fc5f9d65ce8021a31`;
+- exact pre-change copy confirmed.
+
+### Preservation-first verification
+
+The diff is preservation-first:
+
+- prior historical lines are preserved in order; the only removed source line is the old `Последнее обновление: 2026-09-18` date, replaced by the later update date;
+- prior historical conclusions are not rewritten in place;
+- later conclusions are explicitly marked as later reassessments dated `2026-09-21`;
+- H-001 through H-010 numbering is unchanged;
+- H-010 still states that the history loss was discovered by user review before merge;
+- H-011 is appended after H-010 and does not renumber prior history.
+
+### PR #72 and PR #75 historical links
+
+- H-008 keeps the original PR #72 ordering/fencing history and adds only the later-dated finding that the fresh-plan `A → B → A` gap remained unresolved in PR #72–#77;
+- H-011 adds the concise PR #75 persisted-bundle runtime-read / durable-convergence historical link;
+- both entries explicitly defer detailed current behavior/status to `PROJECT_STATE.md` and the relevant translation contracts rather than duplicating current-state detail in history.
+
+### CI status
+
+GitHub Actions run **#453 / `35730540789`** executed on actual PR #85 head `7bd0d8cc1876586bde6931c618ea7deb205d5d05`.
+
+Final result: **SUCCESS**.
+
+`checks` job:
+- accepted migration-history protection: success;
+- lint: success;
+- typecheck: success;
+- full test suite: success;
+- production build: success;
+- migration metadata validation: success.
+
+`database` job:
+- clean PostgreSQL 17 migrations/constraints: success;
+- Workers build: success;
+- local Hyperdrive smoke: success.
+
+### PR #79 archive
+
+Before appending this response, `audit/chatgpt-review/EXCHANGE.md` was preserved exactly as:
+
+`doc_old/audit/chatgpt-review/EXCHANGE_old_22.9.26_10.md`
+
+Pre-change/archive blob: `72930c2c53e97524011938ada544411fac98f3fd`.
+
+### Outcome
+
+**PASS for the explicitly requested standalone Series 3 delivery scope.**
+
+PR #85 remains unmerged for Codex independent review. Codex remains the lead reviewer.
