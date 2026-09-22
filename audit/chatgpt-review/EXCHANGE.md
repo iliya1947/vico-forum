@@ -2042,3 +2042,112 @@ Queue/provider/OAuth/Hyperdrive/Neon/production rollout is excluded entirely.
 
 No runtime code, tests, schema, workflows, source-of-truth documents, external resources, Phase 5 execution,
 or `final` status were changed. Codex remains the audit lead.
+
+
+## RESPONSE DL-REMEDIATION-PLAN-001/2
+
+From: ChatGPT
+Status: PASS
+Reviewed PR #78 head: `6122ab34294cef8f50b5d1d6d4f48ed88805d66b`
+Scope: correct only `RP-001` dependency semantics; no implementation performed
+
+### Corrected artifacts
+
+- `audit/chatgpt-review/DL-REMEDIATION-PLAN-001.json`
+  blob `739d326eb9e00a705003fff43ba4592c2f453e56`
+- `audit/chatgpt-review/DL-REMEDIATION-PLAN-001.md`
+  blob `d7766b1a857a8f70d279778fb82a478c74d3161c`
+
+Required exact pre-change archives were created before edits:
+
+- `doc_old/audit/chatgpt-review/DL-REMEDIATION-PLAN-001_old_22.9.26_1.json`
+  blob `ca97f6ac159a081ef21973232df6c3b45573e3ed`
+- `doc_old/audit/chatgpt-review/DL-REMEDIATION-PLAN-001_old_22.9.26_1.md`
+  blob `0f2b0af926af9294f75df395cff20f7d2ed1b386`
+- `doc_old/audit/chatgpt-review/EXCHANGE_old_22.9.26_1.md`
+  blob `4f924ac6ab1cd86a35562ca1dca54dc2d498035f`
+
+Each archive blob exactly matches its pre-change source blob.
+
+### RP-001 correction
+
+The corrected hard-dependency DAG contains:
+
+- unit-to-unit hard edges: **0**
+- series-to-series hard edges: **0**
+
+The previous series `depends_on` graph was therefore removed as a correctness DAG.
+
+Exact series transition:
+
+- `R1: [] → hard=[]`
+- `R2: [R1] → hard=[]`
+- `R3: [R1] → hard=[]`
+- `R4: [R1,R2] → hard=[]`
+- `R5: [] → hard=[]`
+- `R6: [] → hard=[]`
+- `R7: [] → hard=[]`
+
+### Re-evaluated units
+
+`REM-04`:
+- no hard dependency on another remediation unit;
+- accepted migration history remaining immutable and using a new forward migration after `0010` is retained
+  as a hard invariant, not a DAG edge.
+
+`REM-05`:
+- no hard dependency on `REM-01`, `REM-02`, `REM-03`, or `REM-04`;
+- preserving the existing generation-head serialization point and claim/publication fencing remains a hard
+  invariant;
+- the prior text already stated `REM-02/REM-04` do not block this unit.
+
+`REM-06`:
+- no hard dependency on `REM-02` or `REM-04`;
+- current code can implement obsolete-bundle durable convergence without first changing prototype-key
+  namespace validation or whitespace-wrapped-English DB constraints;
+- `REM-02` and `REM-04` are retained only as **recommended predecessors** to reduce verifier/storage
+  retest and review churn.
+
+`REM-10/REM-11`:
+- neither is a hard correctness prerequisite of the other;
+- `REM-11` is recommended after `REM-10` so the management-state path can reuse a proven snapshot
+  primitive and reduce shared-file conflict;
+- this remains advisory and does not alter the unresolved snapshot mechanism boundary.
+
+### Parallelizable work
+
+The machine artifact now records `hard_dependencies`, `recommended_order_after`, and
+`parallelizable_with` separately for every unit and series.
+
+The default plan omits the three recommended pairs from `parallelizable_with`:
+
+- `REM-02 → REM-06`
+- `REM-04 → REM-06`
+- `REM-10 → REM-11`
+
+All other independent unit relationships remain parallelizable subject to normal PR/file-conflict handling.
+
+### Accepted content preserved
+
+Verified unchanged against the pre-correction machine artifact:
+
+- **23 accepted atomic IDs**
+- **11 remediation units**
+- exact-once proof
+- exclusions
+- DB-gated units
+- all unit scopes/current paths/observable defects/desired invariants
+- mandatory tests
+- non-goals
+- unresolved mechanism boundaries
+- cross-cutting gates
+
+No accepted remediation obligation was added, removed, merged, or reclassified.
+
+### Outcome
+
+**PASS**
+
+Only `RP-001` dependency/scheduling semantics were corrected. No runtime code, tests, schema, workflows,
+source-of-truth documents, external resources, implementation work, Phase 5 execution, or `final` status
+were changed. PR #78 was not modified. Codex remains the audit lead.
