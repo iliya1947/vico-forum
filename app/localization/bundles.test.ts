@@ -72,6 +72,17 @@ describe("compiled translation bundles", () => {
     );
   });
 
+  it.each(["toString", "constructor", "__proto__", "hasOwnProperty"])(
+    "rejects inherited namespace name %s across compiled bundle paths",
+    async (namespace) => {
+      await expect(compileNamespaceBundle("ru", namespace, {})).rejects.toThrow("Unknown canonical namespace");
+      await expect(verifyCompiledNamespaceBundle("ru", namespace, {})).rejects.toThrow(
+        "Unknown canonical namespace",
+      );
+      await expect(codeOwnedBundleInputs("ru", namespace, {})).rejects.toThrow("Unknown canonical namespace");
+    },
+  );
+
   it("derives stable cache identity and weak ETag from semantic bundle identity", async () => {
     const bundle = await compileNamespaceBundle("ru", "common", { heading: "Основа переводов" });
     expect(bundleCacheIdentity("ru", "common", bundle.bundleVersion)).toBe(

@@ -75,6 +75,14 @@ const defaultRowIssueReporter: PersistentTranslationRowIssueReporter = (summary)
   console.warn(JSON.stringify({ event: "persistent_ui_translation_rows_skipped", ...summary }));
 };
 
+interface InvalidOriginIssueDedupState {
+  readonly reportedRows: Set<string>;
+  readonly referenceIds: Map<unknown, number>;
+  nextReferenceId: number;
+}
+
+const reportedInvalidOriginRowsByRequestStore = new WeakMap<UiTranslationStore, InvalidOriginIssueDedupState>();
+
 abstract class DatabaseTranslationSource implements TranslationSource {
   constructor(
     private readonly store: UiTranslationStore,
@@ -103,7 +111,7 @@ abstract class DatabaseTranslationSource implements TranslationSource {
       try {
         row = parseApprovedRow(rawRow);
       } catch (error) {
-        if (!recordRowIssue(rowIssues, error)) throw error;
+        if (!recordRowIssue(rowIssues, error, this.store, rawRow)) throw error;
         continue;
       }
 
@@ -276,10 +284,70 @@ function isStringRecord(value: unknown): value is Readonly<Record<string, string
 function recordRowIssue(
   issues: Map<PersistentTranslationRowIssueReason, number>,
   error: unknown,
+  store?: UiTranslationStore,
+  row?: PersistentUiTranslationRow,
 ): boolean {
   if (!(error instanceof PersistentTranslationRowError)) return false;
+  if (
+    error.reason === "invalid-origin" &&
+    store &&
+    row &&
+    !claimInvalidOriginIssue(store, row)
+  ) {
+    return true;
+  }
   incrementIssue(issues, error.reason);
   return true;
+}
+
+function claimInvalidOriginIssue(store: UiTranslationStore, row: PersistentUiTranslationRow): boolean {
+  let state = reportedInvalidOriginRowsByRequestStore.get(store);
+  if (!state) {
+    state = { reportedRows: new Set<string>(), referenceIds: new Map<unknown, number>(), nextReferenceId: 1 };
+    reportedInvalidOriginRowsByRequestStore.set(store, state);
+  }
+
+  const physicalIdentity = [
+    invalidOriginIdentityPart(state, row.locale),
+    invalidOriginIdentityPart(state, row.namespace),
+    invalidOriginIdentityPart(state, row.key),
+    invalidOriginIdentityPart(state, row.origin),
+  ].join("|");
+  if (state.reportedRows.has(physicalIdentity)) return false;
+  state.reportedRows.add(physicalIdentity);
+  return true;
+}
+
+function invalidOriginIdentityPart(state: InvalidOriginIssueDedupState, value: unknown): string {
+  if (value === null) return "null";
+  switch (typeof value) {
+    case "string":
+      return `string:${JSON.stringify(value)}`;
+    case "number":
+      if (Number.isNaN(value)) return "number:NaN";
+      if (Object.is(value, -0)) return "number:-0";
+      return `number:${String(value)}`;
+    case "bigint":
+      return `bigint:${value.toString()}`;
+    case "boolean":
+      return `boolean:${value ? "1" : "0"}`;
+    case "undefined":
+      return "undefined";
+    case "object":
+    case "function":
+    case "symbol":
+      return `${typeof value}:ref-${invalidOriginReferenceId(state, value)}`;
+  }
+
+  return "unknown";
+}
+
+function invalidOriginReferenceId(state: InvalidOriginIssueDedupState, value: unknown): number {
+  const existing = state.referenceIds.get(value);
+  if (existing !== undefined) return existing;
+  const next = state.nextReferenceId++;
+  state.referenceIds.set(value, next);
+  return next;
 }
 
 function incrementIssue(

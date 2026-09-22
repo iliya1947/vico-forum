@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-09-22
+Последнее обновление: 2026-09-18
 
 ## Назначение
 
@@ -102,27 +102,26 @@ Migration `0007`–`0010` содержит durable task lifecycle и generation-
 Реальные Cloudflare Queue bindings, provider credentials/calls и deployed provider/Queue smoke —
 это отдельная Stage 6 external acceptance и не являются условием обычных Stage 5 feature PR.
 
-## Известные текущие ограничения
+## Известная текущая regression
 
-### Stage 5A generation reactivation
+### Local manual translation stale policy
 
-Durable monotonic generation ordering, current-generation fencing и claim fencing реализованы.
-Но более поздний fresh plan с последовательностью identities `A → B → A` сейчас не может
-reactivate прежнюю stale identity A: существующая stale task возвращается без новой актуальной
-planning occurrence и остаётся terminal для claim path.
+Runtime/freshness contract корректно поддерживает stale local/manual translations:
 
-Целевой contract сохраняет terminal semantics для старой Queue delivery и completed task,
-одновременно разрешая новой fresh planning decision снова сделать A current. Конкретный
-storage/schema mechanism ещё не выбран и относится к исправлению реализации.
+```text
+fingerprint mismatch
+→ stale
+→ исключить value из current bundle
+→ продолжить source/locale fallback
+```
 
-### Persisted bundle convergence
+Но текущий `app/localization/resources.test.ts` ошибочно требует для реальных
+`manualTranslationPacks` результат `{ staleKeys: {} }`, а intentional stale runtime canary был
+удалён в PR #40.
 
-Runtime безопасно отклоняет persisted UI bundle с obsolete format/deploy identity и продолжает
-через raw/local/English fallback. Но durable refresh/backfill/convergence path пока отсутствует:
-одна и та же obsolete row может повторно читаться и отклоняться на следующих requests.
-
-Request path по-прежнему не должен вызывать translation provider. Конкретный durable repair
-mechanism ещё не выбран. Наличие таких obsolete rows во внешнем окружении не подтверждено.
+Это **не является принятой zero-stale repository policy**. Архитектурный contract допускает
+strict stale-blocking CI только после отдельного явного решения. Код/тестовая коррекция этой
+regression ещё не выполнена.
 
 ## CI и migration state
 
@@ -172,10 +171,12 @@ no-op verification. Перед следующим настоящим external sc
 
 ## Ближайший маршрут
 
-1. Завершить оставшийся Stage 5A local/CI path: concrete machine-provider adapter,
+1. Исправить подтверждённую regression local manual stale coverage (#40), не вводя strict
+   zero-stale policy без отдельного решения.
+2. Завершить оставшийся Stage 5A local/CI path: concrete machine-provider adapter,
    retry/DLQ и reconciliation/observability, сохраняя provider/transport boundaries.
-2. Реализовать Stage 5B revision-bound user-content translation.
-3. После завершения Stage 5 перейти к Stage 6 external integration по `ROADMAP.md` и
+3. Реализовать Stage 5B revision-bound user-content translation.
+4. После завершения Stage 5 перейти к Stage 6 external integration по `ROADMAP.md` и
    `docs/database/*`.
 
 На текущем этапе external rollout не является блокером для продолжения Stage 5 local/CI работы.

@@ -185,17 +185,21 @@ export function translationBundleEtag(bundleVersion: string): string {
   return `W/"vico-ui-${bundleVersion}"`;
 }
 
+function isCanonicalUiNamespace(namespace: string): namespace is keyof typeof canonicalEnglishCatalog {
+  return Object.hasOwn(canonicalEnglishCatalog, namespace);
+}
+
 function assertBundleScope(locale: string, namespace: string): void {
   if (!locale.trim()) throw new Error("bundle locale must not be blank");
   if (!namespace.trim()) throw new Error("bundle namespace must not be blank");
-  if (!canonicalEnglishCatalog[namespace as keyof typeof canonicalEnglishCatalog]) {
+  if (!isCanonicalUiNamespace(namespace)) {
     throw new Error(`Unknown canonical namespace: ${namespace}`);
   }
 }
 
 function descriptorMap(namespace: string): Map<string, UiMessageDescriptor> {
-  const canonicalNamespace = canonicalEnglishCatalog[namespace as keyof typeof canonicalEnglishCatalog];
-  if (!canonicalNamespace) throw new Error(`Unknown canonical namespace: ${namespace}`);
+  if (!isCanonicalUiNamespace(namespace)) throw new Error(`Unknown canonical namespace: ${namespace}`);
+  const canonicalNamespace = canonicalEnglishCatalog[namespace];
   return new Map(
     (Object.values(canonicalNamespace) as UiMessageDescriptor[]).map((descriptor) => [descriptor.key, descriptor]),
   );
