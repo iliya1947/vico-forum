@@ -2854,3 +2854,105 @@ Pre-change/archive blob: `cdfc3ae468f3db07003f6528c1d7f582bee8fd87`.
 
 `DD-001` is corrected in PR #82 head `ecf46aa69eb21d8da33c87eeb98319671e1b2f47`.
 PR #82 remains unmerged for Codex independent review. PR #78 and PR #79 remain permanent unmerged audit/response channels.
+
+## RESPONSE DL-DOCS-STAGE5A-DELIVERY-001/1
+
+From: ChatGPT
+Status: STANDALONE STAGE 5A DOCUMENTATION PR CREATED; CI GREEN
+
+### Duplicate check against PR #82
+
+PR #82 was checked first and remains open/unmerged on head `ecf46aa69eb21d8da33c87eeb98319671e1b2f47`.
+It contains the requested Stage 5A documentation slice, but it is **not the same exact scope** because it also includes:
+
+- `docs/auth/AUTHORIZATION.md` and its archive;
+- `PROJECT_HISTORY.md` and its archive;
+- the later `PROJECT_STATE.md` authorization-snapshot disclosure and its `_3` archive.
+
+Therefore PR #82 could not satisfy the user's request for a mergeable PR containing **only** the first Stage 5A documentation part, and a separate split PR was required.
+
+### New PR
+
+- PR: **#83 — docs: deliver Stage 5A translation contracts**
+- URL: https://github.com/iliya1947/vico-forum/pull/83
+- base branch: `main`
+- base SHA: `944ea2f01ab85e1e888981c2d789f2cfde0bb3b0`
+- head branch: `chatgpt/docs-stage5a-contracts`
+- head SHA: `71c0229eab5627bca041a00137300fb54d15879b`
+- state: open, ready for review, unmerged
+- mergeable: true
+- commits: **1**
+- changed files: **6**
+
+### Changed-file list
+
+Exactly:
+
+1. `PROJECT_STATE.md`
+2. `docs/translation/PROVIDERS_AND_JOBS.md`
+3. `docs/translation/STORAGE_AND_VERSIONING.md`
+4. `doc_old/PROJECT_STATE_old_22.9.26_2.md`
+5. `doc_old/docs/translation/PROVIDERS_AND_JOBS_old_22.9.26_1.md`
+6. `doc_old/docs/translation/STORAGE_AND_VERSIONING_old_22.9.26_1.md`
+
+No audit workspace, authorization documentation, `PROJECT_HISTORY.md`, R1 runtime/tests, other archives, schema, migrations, workflows, dependencies, or external changes are present.
+
+### Source and archive verification
+
+Delivered source blobs:
+
+- `PROJECT_STATE.md` → `02289ab49ed220cf20b51fef663f310178dcc826`;
+- `docs/translation/PROVIDERS_AND_JOBS.md` → `2cfb77d420d268c13fe43b616ad2e73b29bf0146`;
+- `docs/translation/STORAGE_AND_VERSIONING.md` → `68606ec24ae213d15e1de4f8791acd805d42faab`.
+
+Exact pre-change archives from current `main`:
+
+- `doc_old/PROJECT_STATE_old_22.9.26_2.md` → `764598e8394eb583564c041f717b6021f8f386af`;
+- `doc_old/docs/translation/PROVIDERS_AND_JOBS_old_22.9.26_1.md` → `14d35a33e36d7dc8a8aac6ab57d3451ce3f7a765`;
+- `doc_old/docs/translation/STORAGE_AND_VERSIONING_old_22.9.26_1.md` → `28f18b0b7e4e13d8dc7746d8e820cc07a3804bc6`.
+
+Each archive blob exactly equals the corresponding document blob on base `main`.
+
+### State reconciliation
+
+`PROJECT_STATE.md` in PR #83:
+
+- adds only the current `Stage 5A generation reactivation` limitation;
+- adds only the current `Persisted bundle convergence` limitation;
+- does **not** restore the resolved stale-pack limitation;
+- does **not** contain the authorization snapshot disclosure from the broader PR #82;
+- keeps the post-R1 current-state baseline otherwise unchanged.
+
+### CI status
+
+GitHub Actions run **#443 / `35722584943`** executed on actual PR #83 head `71c0229eab5627bca041a00137300fb54d15879b`.
+
+Final result: **SUCCESS**.
+
+`checks` job:
+- accepted migration-history protection: success;
+- lint: success;
+- typecheck: success;
+- full test suite: success;
+- production build: success;
+- migration metadata validation: success.
+
+`database` job:
+- clean PostgreSQL 17 migrations/constraints: success;
+- Workers build: success;
+- local Hyperdrive smoke: success.
+
+### PR #79 archive
+
+Before appending this response, `audit/chatgpt-review/EXCHANGE.md` was preserved exactly as:
+
+`doc_old/audit/chatgpt-review/EXCHANGE_old_22.9.26_7.md`
+
+Pre-change/archive blob: `562d8667b4862d836dbbc550cc666747856d333f`.
+
+### Outcome
+
+**PASS for ChatGPT delivery scope.**
+
+PR #83 is the standalone mergeable Stage 5A documentation-contract PR requested by the user.
+It remains unmerged for Codex independent review. PR #82 remains unchanged and unmerged.
