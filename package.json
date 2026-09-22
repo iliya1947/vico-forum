@@ -14,10 +14,10 @@
     "db:reconcile-ui-bundles": "tsx scripts/reconcile-ui-translation-bundles.ts",
     "db:test": "vitest run --config vitest.database.config.ts",
     "dev": "react-router dev",
-    "lint": "eslint .",
     "preview": "pnpm build && vite preview",
-    "test": "vitest run",
-    "typecheck": "wrangler types && react-router typegen && tsc -b"
+    "lint": "eslint .",
+    "typecheck": "wrangler types && react-router typegen && tsc -b",
+    "test": "vitest run"
   },
   "dependencies": {
     "@better-auth/drizzle-adapter": "1.7.4",
