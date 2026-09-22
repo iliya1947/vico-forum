@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import {
   verifyCompiledNamespaceBundle,
@@ -8,8 +8,18 @@ import {
 import { parseLocaleCandidate } from "../app/localization/locale";
 import { uiTranslationBundles } from "./schema";
 
+export interface PersistedBundleIdentity {
+  locale: string;
+  namespace: string;
+}
+
+export type PersistedBundleReconciliationOutcome = "absent" | "current" | "deleted";
+
 export class DrizzleUiTranslationBundleStore implements TranslationBundleStore {
-  constructor(private readonly database: NodePgDatabase) {}
+  constructor(
+    private readonly database: NodePgDatabase,
+    private readonly afterReconciliationLock?: (identity: PersistedBundleIdentity) => void | Promise<void>,
+  ) {}
 
   async read(locale: string, namespace: string): Promise<CompiledNamespaceBundle | undefined> {
     const persistentLocale = persistentBundleLocale(locale);
@@ -60,6 +70,71 @@ export class DrizzleUiTranslationBundleStore implements TranslationBundleStore {
           compiledAt: new Date(),
         },
       });
+  }
+
+  async listPersistedBundleIdentities(): Promise<PersistedBundleIdentity[]> {
+    return this.database
+      .select({
+        locale: uiTranslationBundles.locale,
+        namespace: uiTranslationBundles.namespace,
+      })
+      .from(uiTranslationBundles)
+      .orderBy(asc(uiTranslationBundles.locale), asc(uiTranslationBundles.namespace));
+  }
+
+  async reconcilePersistedBundle(
+    locale: string,
+    namespace: string,
+  ): Promise<PersistedBundleReconciliationOutcome> {
+    if (!locale.trim()) throw new Error("persisted bundle reconciliation locale must not be blank");
+    if (!namespace.trim()) throw new Error("persisted bundle reconciliation namespace must not be blank");
+
+    return this.database.transaction(async (transaction) => {
+      const locked = await transaction.execute<{
+        locale: string;
+        namespace: string;
+        bundle_version: string;
+        resources: unknown;
+      }>(sql`
+        select
+          ${uiTranslationBundles.locale} as locale,
+          ${uiTranslationBundles.namespace} as namespace,
+          ${uiTranslationBundles.bundleVersion} as bundle_version,
+          ${uiTranslationBundles.resources} as resources
+        from ${uiTranslationBundles}
+        where ${uiTranslationBundles.locale} = ${locale}
+          and ${uiTranslationBundles.namespace} = ${namespace}
+        for update
+      `);
+
+      const row = locked.rows[0];
+      if (!row) return "absent";
+
+      await this.afterReconciliationLock?.({ locale: row.locale, namespace: row.namespace });
+
+      try {
+        await verifyPersistedCompiledBundle({
+          locale: row.locale,
+          namespace: row.namespace,
+          bundleVersion: row.bundle_version,
+          resources: row.resources,
+        });
+        return "current";
+      } catch (error) {
+        if (!(error instanceof PersistentBundleIntegrityError)) throw error;
+      }
+
+      await transaction
+        .delete(uiTranslationBundles)
+        .where(
+          and(
+            eq(uiTranslationBundles.locale, row.locale),
+            eq(uiTranslationBundles.namespace, row.namespace),
+          ),
+        );
+
+      return "deleted";
+    });
   }
 }
 
