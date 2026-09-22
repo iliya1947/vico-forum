@@ -325,10 +325,6 @@ required restoration remain open until full-history and cross-stage review.
   branch. Source-of-truth documentation changes are limited to the authorized Series 1, Series 2, and
   preservation-first Series 3 files recorded above; all three documentation series are applied and
   independently accepted.
-- Phase 5 has begun. Authorized series R1 (`REM-01/02/03`) is implemented and independently accepted at
-  open PR #80 head `86c23b04d3615be6976ae325658c25d6927e1cdf`, with final CI green. It remains stacked
-  on PR #78 and unmerged; therefore `main` does not yet contain the runtime corrections. R2-R7 remain
-  unauthorized, and no record advances to `final` merely because the implementation PR passed review.
 
 The authoritative live checklist remains `COVERAGE.md`; accepted candidate IDs remain in `LEDGER.md`;
 Codex tasks/reviews remain in `EXCHANGE.md`; dependency chains remain in `CROSS_STAGE.md`; unresolved

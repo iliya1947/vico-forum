@@ -2550,10 +2550,3 @@ proves that extraction or dependency discovery is complete.
 Target hypotheses are deliberately absent from the ordinary record template. They may be added only
 after `cross-stage-reviewed`, or recorded as multiple competing possibilities when necessary to frame
 an unresolved question without selecting one.
-
-## Phase 5 implementation status
-
-Authorized remediation series R1 (`REM-01/02/03`) is implemented and independently accepted at open PR #80
-head `86c23b04d3615be6976ae325658c25d6927e1cdf`. The implementation is not merged and remains stacked on
-PR #78. Consequently these findings remain non-final and must not be described as corrected on `main` until
-the base/retarget sequence, CI, and user merge are complete. R2-R7 remain unauthorized.

@@ -124,11 +124,6 @@ The plan is accepted. On 2026-09-22 the user explicitly authorized implementatio
 stacked implementation PR. R2–R7 remain unauthorized. The R1 PR must update `PROJECT_STATE.md` when factual
 state changes, preserve its exact pre-change version under `doc_old/`, and remain limited to `REM-01/02/03`.
 
-R1 is implemented and independently accepted at PR #80 head
-`86c23b04d3615be6976ae325658c25d6927e1cdf`; final CI is green. PR #80 remains open, stacked on PR #78,
-and unmerged, so R1 is not yet part of `main`. After PR #78 lands, PR #80 must be retargeted/rebased, its
-seven-file bounded diff and CI reverified, and only then returned to the user for the merge decision.
-
 Units touching PostgreSQL schema, migrations, SQL invariants, or DB integration behavior are not merge-ready
 without successful `pnpm db:test` and a green GitHub Actions `database` job on the actual PR head. Codex must
 report environment or post-PR observation limits rather than claiming unobserved success.
