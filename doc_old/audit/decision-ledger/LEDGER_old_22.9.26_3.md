@@ -2555,7 +2555,5 @@ an unresolved question without selecting one.
 
 Authorized remediation series R1 (`REM-01/02/03`) is implemented and independently accepted at open PR #80
 head `86c23b04d3615be6976ae325658c25d6927e1cdf`. The implementation is not merged and remains stacked on
-PR #78. PR #78 is a permanent unmerged audit/control channel, not a delivery dependency. ChatGPT must move
-the accepted R1 diff to an independently mergeable PR based on `main`; Codex must review that actual head
-before telling the user it may be merged. Until that CI/review/user-merge sequence completes, the findings
-remain non-final and must not be described as corrected on `main`. R2-R7 remain unauthorized.
+PR #78. Consequently these findings remain non-final and must not be described as corrected on `main` until
+the base/retarget sequence, CI, and user merge are complete. R2-R7 remain unauthorized.

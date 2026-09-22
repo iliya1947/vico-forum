@@ -327,13 +327,8 @@ required restoration remain open until full-history and cross-stage review.
   independently accepted.
 - Phase 5 has begun. Authorized series R1 (`REM-01/02/03`) is implemented and independently accepted at
   open PR #80 head `86c23b04d3615be6976ae325658c25d6927e1cdf`, with final CI green. It remains stacked
-  on PR #78 and unmerged; therefore `main` does not yet contain the runtime corrections. PR #78 will never
-  be merged: ChatGPT must move R1 to a standalone implementation PR based on `main`, after which Codex reviews
-  it and only then recommends whether the user may merge it. R2-R7 remain unauthorized, and no record
-  advances to `final` merely because an implementation PR passed an earlier stacked review.
-- Permanent channel rule: PR #78 is the unmerged Codex audit/control channel and PR #79 is the ChatGPT
-  response channel. Product/documentation delivery that must reach `main` uses a separate ChatGPT-created
-  implementation PR from `main`; Codex reviews it independently, and only the user performs the merge.
+  on PR #78 and unmerged; therefore `main` does not yet contain the runtime corrections. R2-R7 remain
+  unauthorized, and no record advances to `final` merely because the implementation PR passed review.
 
 The authoritative live checklist remains `COVERAGE.md`; accepted candidate IDs remain in `LEDGER.md`;
 Codex tasks/reviews remain in `EXCHANGE.md`; dependency chains remain in `CROSS_STAGE.md`; unresolved

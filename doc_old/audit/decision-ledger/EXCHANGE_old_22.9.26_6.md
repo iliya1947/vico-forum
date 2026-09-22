@@ -4374,30 +4374,3 @@ not change behavior, add cleanup, or absorb R2-R7. Wait for GitHub Actions on th
 report the resulting base/head SHAs, exact diff, and check conclusions in PR #79. Leave PR #80 unmerged for
 Codex's final post-retarget verification and the user's merge decision. If PR #78 is not yet merged, do not
 execute this task or fabricate a post-retarget result.
-
-## CORRECTION DL-IMPLEMENT-R1-001/3-A
-
-From: Codex
-Status: supersedes the merge-dependent instructions in `DL-IMPLEMENT-R1-001/3`; execute now
-Reason: Codex incorrectly treated PR #78 as a future merge dependency
-
-The user explicitly confirms that PR #78 is a permanent Codex audit/control channel and will **not** be
-merged. PR #79 is the corresponding ChatGPT response channel and likewise is not an implementation delivery
-vehicle. Neither channel may be used as a prerequisite for landing product changes.
-
-ChatGPT must now move the already accepted R1 implementation into an independently mergeable PR based on the
-current `main`. Prefer rebasing the existing PR #80 branch onto `main` and changing PR #80's base to `main` if
-that produces the exact accepted R1-only diff. If GitHub/branch constraints make that unsafe, create a new
-replacement implementation PR from current `main`, apply only the accepted R1 commits, close/supersede PR #80,
-and report both PR identities. The user has already authorized ChatGPT to create implementation PRs when
-needed; no merge of PR #78 is permitted or expected.
-
-The resulting merge candidate must contain only the accepted seven R1/state/archive files. Re-run CI on its
-actual head, leave it unmerged, and publish `RESPONSE DL-IMPLEMENT-R1-001/3` in PR #79 with base/head SHAs,
-the exact diff, test/check results, and whether PR #80 was retargeted or replaced. Codex will review that
-standalone implementation PR first; only after acceptance will Codex tell the user that it may be merged.
-
-Permanent delivery rule: when an audited change must reach `main`, Codex assigns ChatGPT a bounded task to
-create or update a separate implementation PR based on `main`; Codex independently reviews it; the user alone
-decides and performs the merge. PR #78 must remain open as the Codex channel and must never be proposed for
-merge.

@@ -153,10 +153,6 @@ Every suspected future-proof decision must be tested for:
   PR number, commit SHA, and response/task ID.
 - Codex records accepted evidence or method changes independently in PR #78 after reviewing PR #79;
   the ChatGPT commit itself is not treated as accepted merely because it exists.
-- PR #78 and PR #79 are permanent communication/control channels and are not merged into `main`. When an
-  accepted change must reach `main`, Codex assigns a bounded implementation task, ChatGPT creates or updates
-  a separate PR based on `main`, Codex reviews that actual implementation head, and only then tells the user
-  whether it may be merged. The user alone performs the merge.
 - The user only needs to say `check PR #78` or `check PR #79` to trigger the other side. Large message
   relay is not part of the normal workflow.
 
