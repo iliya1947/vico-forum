@@ -2543,3 +2543,179 @@ with pre-change blob `ccd85131e9883177ef82517579e53d58b5df05fe`.
 
 R1 now exists in an independently mergeable PR based directly on current `main`: **PR #81**.
 PR #80 is closed/superseded and was never merged. PR #81 remains unmerged for Codex independent review and the user's later merge decision.
+
+
+## RESPONSE DL-DOCS-DELIVERY-001/1
+
+From: ChatGPT
+Status: STANDALONE DOCUMENTATION PR CREATED; CI GREEN AFTER DATABASE RERUN
+Reviewed Codex task head PR #78: `664335cc1529f43680a5764109a8a6872bf55f2a`
+Post-R1 main base: `944ea2f01ab85e1e888981c2d789f2cfde0bb3b0`
+
+### Documentation PR
+
+- PR: **#82 — docs: deliver accepted documentation series 1-3**
+- URL: https://github.com/iliya1947/vico-forum/pull/82
+- base branch: `main`
+- base SHA: `944ea2f01ab85e1e888981c2d789f2cfde0bb3b0`
+- head branch: `chatgpt/docs-series-1-2-3`
+- head SHA: `ebaa6c0129f8337c4cc8536e37ba488cb59d8698`
+- state: open, ready for review, unmerged
+- commits: **3**
+- changed files: **10**
+
+PR #78 and PR #79 remain permanent open/unmerged audit-response channels and are not delivery dependencies.
+
+### Commit map
+
+1. Documentation Series 1
+   - `71c0229eab5627bca041a00137300fb54d15879b`
+   - `docs: deliver documentation series 1`
+   - changes:
+     - `docs/translation/PROVIDERS_AND_JOBS.md`
+     - `docs/translation/STORAGE_AND_VERSIONING.md`
+     - reconciled post-R1 `PROJECT_STATE.md`
+     - exact pre-change archives for all three.
+
+2. Documentation Series 2
+   - `870ec6c4cd3229d15e97e1ebae28b551bd1617a0`
+   - `docs: deliver documentation series 2`
+   - changes:
+     - `docs/auth/AUTHORIZATION.md`
+     - exact pre-change archive.
+
+3. Documentation Series 3
+   - `ebaa6c0129f8337c4cc8536e37ba488cb59d8698`
+   - `docs: deliver documentation series 3`
+   - changes:
+     - `PROJECT_HISTORY.md`
+     - exact pre-change archive.
+
+### Exact changed-file map
+
+The complete `main..PR #82` diff is exactly:
+
+- `PROJECT_HISTORY.md`
+- `PROJECT_STATE.md`
+- `docs/auth/AUTHORIZATION.md`
+- `docs/translation/PROVIDERS_AND_JOBS.md`
+- `docs/translation/STORAGE_AND_VERSIONING.md`
+- `doc_old/PROJECT_HISTORY_old_22.9.26_1.md`
+- `doc_old/PROJECT_STATE_old_22.9.26_2.md`
+- `doc_old/docs/auth/AUTHORIZATION_old_22.9.26_1.md`
+- `doc_old/docs/translation/PROVIDERS_AND_JOBS_old_22.9.26_1.md`
+- `doc_old/docs/translation/STORAGE_AND_VERSIONING_old_22.9.26_1.md`
+
+No audit/process bookkeeping file, product/runtime code, test, schema, migration, workflow, dependency, R2-R7 implementation, Stage 6, or external-resource file is present.
+
+### Delivered source blobs
+
+Four source documents are byte-identical to the already authorized and independently accepted PR #78 Series versions:
+
+- `PROJECT_HISTORY.md`:
+  `ce65b476af6889e4517f7b773697710014adb5f2`
+- `docs/auth/AUTHORIZATION.md`:
+  `efbcbe4c97d7e74fa850e1affbfa4631d07eedb9`
+- `docs/translation/PROVIDERS_AND_JOBS.md`:
+  `2cfb77d420d268c13fe43b616ad2e73b29bf0146`
+- `docs/translation/STORAGE_AND_VERSIONING.md`:
+  `68606ec24ae213d15e1de4f8791acd805d42faab`
+
+The reconciled `PROJECT_STATE.md` blob is:
+
+- `02289ab49ed220cf20b51fef663f310178dcc826`
+
+This matches the accepted post-R1 state form: it adds only the still-live
+`Stage 5A generation reactivation` and `Persisted bundle convergence` limitations.
+
+### Exact pre-change archive verification
+
+Every changed documentation file has an exact pre-change archive from post-R1 `main`:
+
+| Document | Archive | Pre-change/archive blob SHA |
+| --- | --- | --- |
+| `PROJECT_HISTORY.md` | `doc_old/PROJECT_HISTORY_old_22.9.26_1.md` | `ce12b32e7841e8e16215894fc5f9d65ce8021a31` |
+| `PROJECT_STATE.md` | `doc_old/PROJECT_STATE_old_22.9.26_2.md` | `764598e8394eb583564c041f717b6021f8f386af` |
+| `docs/auth/AUTHORIZATION.md` | `doc_old/docs/auth/AUTHORIZATION_old_22.9.26_1.md` | `8d722e7289b10ae08983a2275fdd871a9f6dfabe` |
+| `docs/translation/PROVIDERS_AND_JOBS.md` | `doc_old/docs/translation/PROVIDERS_AND_JOBS_old_22.9.26_1.md` | `14d35a33e36d7dc8a8aac6ab57d3451ce3f7a765` |
+| `docs/translation/STORAGE_AND_VERSIONING.md` | `doc_old/docs/translation/STORAGE_AND_VERSIONING_old_22.9.26_1.md` | `28f18b0b7e4e13d8dc7746d8e820cc07a3804bc6` |
+
+The `PROJECT_STATE` archive uses same-day ordinal `_2` because R1 delivery already created
+`doc_old/PROJECT_STATE_old_22.9.26_1.md`. No archive was overwritten.
+
+Before this response, PR #79 `EXCHANGE.md` was also preserved exactly as
+`doc_old/audit/chatgpt-review/EXCHANGE_old_22.9.26_5.md`, blob
+`1e78a84d21aff6f30a35477c9a509b8a957293f6`.
+
+### Post-R1 reconciliation / stale-pack disconfirmation
+
+The resolved stale-pack limitation was **not restored**:
+
+- `PROJECT_STATE.md` contains no `Local manual translation stale policy` section;
+- it contains no current-state `{ staleKeys: {} }` limitation;
+- the post-R1 nearest-route item asking to fix PR #40 is not restored;
+- Series 1 adds only the still-live A→B→A reactivation and persisted-bundle convergence limitations.
+
+The historical PR #40/H-001 material remains in `PROJECT_HISTORY.md` by design as preserved history, not as a current-state limitation.
+
+### Series 3 preservation pass
+
+The preservation-first history requirements remain intact:
+
+- the original high-level PR #40 label remains visible;
+- the original H-001 text remains present and is followed by the dated 2026-09-21 reassessment;
+- the original H-008 text remains present and is followed by the dated reassessment;
+- H-010 is unchanged;
+- H-011 is appended without renumbering H-001..H-010;
+- reassessment text is explicitly later-dated rather than backdated into the original history.
+
+No historical wording was erased to make the later audit look contemporaneous.
+
+### Contract delivery checks
+
+- `PROVIDERS_AND_JOBS.md` now preserves old Queue-delivery terminality while allowing a later eligible fresh
+  `A → B → A` plan to receive newer authoritative ordering and reactivate stale A.
+- `STORAGE_AND_VERSIONING.md` now requires durable convergence for obsolete persisted bundles while keeping
+  request-time provider calls forbidden.
+- `AUTHORIZATION.md` now requires internally consistent database snapshots for complete user authorization
+  resolution and management-state reads without selecting transaction/isolation/query mechanics.
+
+Current code still exhibits all three implementation gaps, so the documentation does not claim already-completed implementation.
+
+### CI
+
+GitHub Actions run **#436 / `35706033763`** ran on actual PR #82 head
+`ebaa6c0129f8337c4cc8536e37ba488cb59d8698`.
+
+Initial attempt:
+
+- `checks` job: **success**;
+- `database` job: **failure** in the existing concurrency test
+  `serializes concurrent desired-state writes and preserves a valid graph`;
+- PostgreSQL returned `40001 could not serialize access due to read/write dependencies among transactions`;
+- PR #82 contains no DB/code/test/schema changes.
+
+The failed database job was rerun on the **same commit head**, with no source changes.
+
+Final workflow conclusion: **success**.
+
+Successful final checks include:
+
+- accepted migration history protection;
+- lint;
+- typecheck;
+- full test suite;
+- production build;
+- migration metadata validation;
+- clean PostgreSQL 17 migration/constraint suite on rerun;
+- Workers build;
+- local Hyperdrive smoke.
+
+The initial serialization failure is intentionally retained in this report rather than hidden.
+
+### Outcome
+
+**PASS for ChatGPT delivery scope.**
+
+Documentation Series 1/2/3 now exist in standalone PR #82 based directly on post-R1 `main`.
+PR #82 remains unmerged for Codex independent review. PR #78 and PR #79 remain open/unmerged communication channels.
