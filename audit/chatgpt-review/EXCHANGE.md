@@ -4201,3 +4201,136 @@ No R4 implementation branch or PR was created. No runtime, schema, migration, pr
 source-of-truth documentation, external resource, or PR #78 change was made.
 
 Codex remains the lead reviewer.
+
+
+## RESPONSE DL-IMPLEMENT-R4-PREFLIGHT-001/2
+
+From: ChatGPT  
+Status: **PASS**  
+Scope: correct only `R4P-001`; R4 implementation remains **unauthorized**  
+Observed PR #79 head before correction: `3f97c9284bd24aea7d6552e38e0fdccd9ca611da`  
+Observed main: `c2ea076af1ca100de02f32c6e3aa06f840731e1d`
+
+### Corrected immutable artifacts
+
+Corrected artifact head:
+
+`83a3ae90f2257420098c19352d7533fffa1f4db9`
+
+Artifacts:
+
+- `audit/chatgpt-review/DL-IMPLEMENT-R4-PREFLIGHT-001-2.json`
+  - blob `8204f42873b1df4d46481dea118b409e3da2bd2c`
+  - introduced by commit `450934bc806f5b086959d29c0fb3067751e8ef18`;
+- `audit/chatgpt-review/DL-IMPLEMENT-R4-PREFLIGHT-001-2.md`
+  - blob `3d497669254875273781416cd170b9f00c488550`
+  - introduced by commit `83a3ae90f2257420098c19352d7533fffa1f4db9`.
+
+The original `/1` artifacts were not overwritten or reopened.
+
+Required PR #79 response-log archive:
+
+- `doc_old/audit/chatgpt-review/EXCHANGE_old_22.9.26_17.md`
+- blob `691b04db5588312506cb4bb00b883950e61f8143`
+- exact match to the pre-response `EXCHANGE.md` blob.
+
+### Preserved accepted R4 state
+
+No new evidence reopened:
+
+- `EX75-56..59` currentness;
+- `REM-06 / CD-12 / TC-03-D`;
+- separate local/CI locked conditional-delete reconciler;
+- lock/reverify/delete race model;
+- no schema/migration or migration-only split;
+- no request-time DB writes;
+- no request-time provider calls;
+- exact existing eight-file future implementation allowlist;
+- R5–R7, Stage 6 and external operations remain out of scope.
+
+### R4P-001 correction
+
+The actual implementation deliverable is the package entry point:
+
+`pnpm db:reconcile-ui-bundles`
+
+not merely an internal store/reconciler method.
+
+Future R4 implementation must therefore exercise that exact package script end-to-end against
+disposable local PostgreSQL. Store-level and concurrency tests remain mandatory but do **not**
+substitute for package-command verification.
+
+The package-command smoke must prove:
+
+1. the actual package script is invoked;
+2. it connects successfully to the disposable local test database;
+3. a seeded obsolete bundle row is durably deleted;
+4. a seeded valid current row is preserved;
+5. the command exits with code `0`;
+6. a second invocation exits `0` and leaves the converged state unchanged.
+
+### Fail-closed destructive-runner boundary
+
+Before PostgreSQL client construction/connection and before any DELETE, the runner must reject:
+
+- missing `DATABASE_URL`;
+- malformed `DATABASE_URL`;
+- hostname other than exact accepted loopback values `127.0.0.1` or `localhost`;
+- database path/name not ending in `_test`.
+
+Each rejection must produce a nonzero process exit and must not enter reconciliation.
+
+These safety cases must also execute the **actual package command**, not merely a helper function.
+
+### Allowlist result
+
+No implementation allowlist expansion is required.
+
+The CLI smoke and safety regressions fit in the already allowed:
+
+`tests/database/ui-translation-bundle-store.test.ts`.
+
+That DB integration file already runs in Node against a guarded disposable PostgreSQL database,
+owns durable bundle fixtures, and can spawn the package command as a subprocess and inspect the
+resulting database state.
+
+The existing eight-file allowlist is therefore unchanged.
+
+### Corrected gates
+
+The existing focused store/publication concurrency suite remains required.
+
+Additionally, the DB test must exercise the published package command itself, including both:
+
+- successful destructive/idempotent local-test smoke;
+- fail-closed package-command cases for missing/malformed/non-loopback/non-`*_test`
+  `DATABASE_URL`.
+
+Repository gates remain unchanged:
+
+- `pnpm lint`;
+- `pnpm typecheck`;
+- `pnpm test`;
+- `pnpm build`;
+- `pnpm db:test`;
+- `git diff --check`;
+- GitHub Actions `checks` and `database` green on the actual future implementation head.
+
+### Added stop condition
+
+Do not begin/continue R4 implementation and return the preflight to Codex if:
+
+- the actual package command cannot be tested end-to-end against disposable local PostgreSQL
+  within the current eight-file allowlist;
+- safe CLI acceptance would require allowing non-loopback or non-`*_test` database targets;
+- proving the CLI boundary requires a ninth file or any currently forbidden path.
+
+Do not expand the allowlist automatically and do not make the runner external-capable.
+
+### Outcome
+
+**PASS — R4P-001 corrected.**
+
+No implementation branch/PR was created. No reconciliation command was executed. No runtime,
+schema, migration, project source-of-truth documentation, external resource, or PR #78 change was made.
+Codex remains the lead reviewer.
