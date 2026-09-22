@@ -1,0 +1,329 @@
+{
+  "type": "DL-IMPLEMENT-R2-PREFLIGHT-001",
+  "task_id": "DL-IMPLEMENT-R2-PREFLIGHT-001/1",
+  "status": "PASS",
+  "mode": "preflight-only",
+  "implementation_authorized": false,
+  "observed_state": {
+    "main_sha": "da8d8cb1541b56463739e974a74cb29bc5f2527d",
+    "pr78_head_sha": "3b1c2d0306e8e524371ee3389aa4fcaaa3bcb492",
+    "pr79_head_before_response": "966297e4aba29239618468162fc4489257862352",
+    "main_migration_tail": "0010_translation_task_generation_order",
+    "main_migration_count": 11
+  },
+  "planning_chain": {
+    "dl_remediation_plan_001_1": {
+      "task_id": "DL-REMEDIATION-PLAN-001/1",
+      "status": "PASS",
+      "source_pr78_head": "6ae147d34d6289c363d1646218fa9b3bdd666667",
+      "narrative_path": "doc_old/audit/chatgpt-review/DL-REMEDIATION-PLAN-001_old_22.9.26_1.md",
+      "narrative_blob": "0f2b0af926af9294f75df395cff20f7d2ed1b386",
+      "machine_path": "doc_old/audit/chatgpt-review/DL-REMEDIATION-PLAN-001_old_22.9.26_1.json",
+      "machine_blob": "ca97f6ac159a081ef21973232df6c3b45573e3ed",
+      "r2_old_series_dependency": [
+        "R1"
+      ]
+    },
+    "dl_remediation_plan_001_2": {
+      "task_id": "DL-REMEDIATION-PLAN-001/2",
+      "status": "PASS",
+      "source_pr78_head": "6122ab34294cef8f50b5d1d6d4f48ed88805d66b",
+      "narrative_path": "audit/chatgpt-review/DL-REMEDIATION-PLAN-001.md",
+      "narrative_blob": "d7766b1a857a8f70d279778fb82a478c74d3161c",
+      "machine_path": "audit/chatgpt-review/DL-REMEDIATION-PLAN-001.json",
+      "machine_blob": "739d326eb9e00a705003fff43ba4592c2f453e56",
+      "correction_scope": "dependency/scheduling semantics only",
+      "r2_hard_dependencies": [],
+      "r2_recommended_order_after": [],
+      "hard_dependency_invariants": [
+        "Accepted migration history remains immutable; correction must be a new forward migration after 0010."
+      ],
+      "scope_ids_gates_non_goals_unchanged_from_1": true
+    },
+    "accepted_pr78_plan_commit": "367d7e4a5d9be34451bf3163031c6740f10d4e94",
+    "accepted_pr78_plan_path": "audit/decision-ledger/REMEDIATION_PLAN.md",
+    "accepted_target_contract_path": "audit/decision-ledger/TARGET_CONTRACTS.md",
+    "supporting_pr79_target_machine_path": "audit/chatgpt-review/DL-TARGET-001.json",
+    "supporting_pr79_target_machine_blob": "7952afb197c05d0d45d6ae417f753346bed18a9c",
+    "supporting_pr79_classification_machine_path": "audit/chatgpt-review/DL-CLASSIFY-011.json",
+    "supporting_pr79_classification_machine_blob": "3e182c921ae42ed575be03def8abd159644ffb2f"
+  },
+  "r2_scope": {
+    "series_id": "R2",
+    "series_name": "Persistent translation storage invariant",
+    "remediation_unit_ids": [
+      "REM-04"
+    ],
+    "canonical_defect_group_ids": [
+      "CD-02"
+    ],
+    "target_contract_ids": [
+      "TC-03-B"
+    ],
+    "canonical_atomic_defect_ids": [
+      "EX31-10",
+      "EX31-14",
+      "EX31-16"
+    ],
+    "title": "Enforce canonical-English exclusion including whitespace-wrapped identity",
+    "accepted_current_paths": [
+      "drizzle/0002_ui_translation_storage.sql",
+      "db/schema.ts",
+      ".github/scripts/verify-production-migration.mjs",
+      "tests/database"
+    ],
+    "accepted_observable_defect": "Accepted storage constraints and production verification compare lower(locale) to 'en' without trimming for the English comparison, so whitespace-wrapped English identity can bypass the persistent non-English invariant.",
+    "required_invariant": "Persistent ui_translations and ui_translation_bundles rows must reject canonical English identity after trimming/case-insensitive comparison, and repository-owned production verification must detect the same invalid state.",
+    "smallest_safe_change_boundary": "Add one forward migration after 0010 that tightens only the two persistent storage locale constraints, mirror the same invariant in db/schema.ts, and align repository-owned production verification. Do not rewrite 0002.",
+    "accepted_non_goals": [
+      "Do not edit accepted migration 0002.",
+      "Do not silently delete existing invalid data as part of the audit fix.",
+      "Do not perform external migration rollout or production verification."
+    ],
+    "task_non_goals": [
+      "Do not implement R3-R7.",
+      "Do not change translation runtime/provider/Queue behavior.",
+      "Do not create an implementation PR during this preflight.",
+      "Do not modify PR #78."
+    ]
+  },
+  "current_main_verification": {
+    "merged_prs_checked": {
+      "81": {
+        "merge_commit": "944ea2f01ab85e1e888981c2d789f2cfde0bb3b0",
+        "touches_r2_schema_migration_verifier_tests": false
+      },
+      "83": {
+        "merge_commit": "7f1b5df0040e8b2e72fcf10df6947ae9415a2fc2",
+        "touches_r2_schema_migration_verifier_tests": false
+      },
+      "84": {
+        "merge_commit": "95acb1f49423a22eec997d45297776edf287d68b",
+        "touches_r2_schema_migration_verifier_tests": false
+      },
+      "85": {
+        "merge_commit": "da8d8cb1541b56463739e974a74cb29bc5f2527d",
+        "touches_r2_schema_migration_verifier_tests": false
+      }
+    },
+    "defects": [
+      {
+        "id": "EX31-10",
+        "status_on_main": "current",
+        "evidence": [
+          {
+            "path": "db/schema.ts",
+            "finding": "ui_translations_locale_check is btrim(locale) <> '' and lower(locale) <> 'en'; ' en ' passes."
+          },
+          {
+            "path": "drizzle/0002_ui_translation_storage.sql",
+            "finding": "Accepted SQL contains the same lower(locale) without trimming; no later migration corrects it."
+          }
+        ]
+      },
+      {
+        "id": "EX31-14",
+        "status_on_main": "current",
+        "evidence": [
+          {
+            "path": "db/schema.ts",
+            "finding": "ui_translation_bundles_locale_check is btrim(locale) <> '' and lower(locale) <> 'en'; ' en ' passes."
+          },
+          {
+            "path": "drizzle/0002_ui_translation_storage.sql",
+            "finding": "Accepted bundle CHECK contains the same lower(locale) without trimming; no later migration corrects it."
+          }
+        ]
+      },
+      {
+        "id": "EX31-16",
+        "status_on_main": "current",
+        "evidence": [
+          {
+            "path": ".github/scripts/verify-production-migration.mjs",
+            "finding": "Persistent-English verifier selects rows with lower(locale) = 'en' in both tables; whitespace-wrapped English is missed."
+          }
+        ]
+      }
+    ],
+    "migration_metadata": {
+      "journal_path": "drizzle/meta/_journal.json",
+      "final_entry_idx": 10,
+      "final_entry_tag": "0010_translation_task_generation_order",
+      "next_forward_index": 11
+    },
+    "test_state": {
+      "historical_storage_test_path": "tests/database/ui-translation-storage.test.ts",
+      "historical_storage_test_role": "Executes accepted 0002 in isolation and rejects exact en; it does not and should not retroactively assert the future 0011 invariant.",
+      "full_history_test_path": "tests/database/migrations.test.ts",
+      "full_history_current_migration_count_assertion": 11,
+      "full_history_has_ui_translation_or_bundle_constraint_regression": false
+    }
+  },
+  "deliberate_disconfirmation": {
+    "attempted_to_prove_defects_already_fixed": true,
+    "attempted_to_prove_schema_change_unnecessary": true,
+    "counter_evidence": [
+      {
+        "path": "db/schema.ts",
+        "fact": "translation_tasks_target_locale_check already requires targetLocale = btrim(targetLocale), nonblank, and lower(targetLocale) <> 'en'.",
+        "effect": "Normal machine task identities cannot use whitespace-wrapped English."
+      },
+      {
+        "path": "db/ui-translation-bundle-store.ts",
+        "fact": "persistentBundleLocale() rejects non-canonical or English bundle locales before normal store reads/writes.",
+        "effect": "Normal bundle-store API narrows reachability of the bad DB state."
+      },
+      {
+        "path": "db/ui-translation-publication-store.ts",
+        "fact": "Machine publication writes ui_translations/ui_translation_bundles using the validated task targetLocale.",
+        "effect": "Current machine publication is unlikely to create whitespace-wrapped English rows."
+      },
+      {
+        "path": "db/ui-translation-store.ts",
+        "fact": "The generic store shown on current main is read-only and short-circuits exact locale === 'en'.",
+        "effect": "No current generic write method disproves the schema defect."
+      }
+    ],
+    "why_counter_evidence_does_not_disconfirm_r2": [
+      "The accepted PostgreSQL CHECK constraints themselves still admit the invalid identity.",
+      "The repository schema mirror still encodes the wrong persistent invariant.",
+      "The production verifier independently misses the same invalid identity.",
+      "Runtime guards cannot repair an already-applied PostgreSQL constraint and do not cover direct/manual/future persistent writes."
+    ],
+    "schema_change_required": true,
+    "schema_change_reason": [
+      "Changing only TypeScript runtime guards cannot alter the database constraint.",
+      "Changing only the verifier detects but does not prevent invalid persistent rows.",
+      "Accepted migration 0002 is immutable, so the database correction must be a new forward migration."
+    ]
+  },
+  "implementation_plan": {
+    "schema_constraint_corrections": {
+      "paths": [
+        "db/schema.ts"
+      ],
+      "changes": [
+        "Tighten ui_translations_locale_check English comparison to lower(btrim(locale)) <> 'en' while preserving the existing nonblank condition.",
+        "Tighten ui_translation_bundles_locale_check English comparison to lower(btrim(locale)) <> 'en' while preserving the existing nonblank condition."
+      ],
+      "non_goal": "Do not broaden R2 into a new rule that every non-English persistent locale must equal btrim(locale)."
+    },
+    "migration_changes": {
+      "required": true,
+      "new_sql_path": "drizzle/0011_persistent_translation_locale_invariant.sql",
+      "new_snapshot_path": "drizzle/meta/0011_snapshot.json",
+      "journal_path": "drizzle/meta/_journal.json",
+      "requirements": [
+        "Append after accepted 0010.",
+        "Alter only the two affected CHECK constraints needed for the accepted final invariant.",
+        "Do not modify any accepted SQL migration or accepted snapshot.",
+        "Do not silently delete violating data."
+      ]
+    },
+    "db_verifier_changes": {
+      "required": true,
+      "path": ".github/scripts/verify-production-migration.mjs",
+      "change": "Use lower(btrim(locale)) = 'en' for both persistent-English verification branches.",
+      "external_execution_in_scope": false
+    },
+    "focused_regression_tests": {
+      "path": "tests/database/migrations.test.ts",
+      "changes": [
+        "Update full-history migration count from 11 to 12.",
+        "Add final-schema PostgreSQL regressions proving whitespace/case-wrapped English identities such as ' en ' and ' EN ' are rejected with SQLSTATE 23514 for ui_translations.",
+        "Add the equivalent regressions for ui_translation_bundles.",
+        "Keep valid canonical non-English rows accepted."
+      ],
+      "historical_0002_test_change_required": false
+    },
+    "documentation_state_sync": {
+      "required_on_implementation": true,
+      "path": "PROJECT_STATE.md",
+      "minimum_change": "Update current migration history from 0000-0010 to 0000-0011 and record only any additional factual R2 state that is actually true on the implementation branch.",
+      "broader_doc_rewrite_required": false
+    },
+    "archival_copy": {
+      "required_on_implementation": true,
+      "source": "PROJECT_STATE.md",
+      "path": "doc_old/PROJECT_STATE_old_22.9.26_4.md",
+      "requirement": "Exact pre-change copy before the implementation edit, assuming implementation is still based on this exact main SHA and no earlier same-day archive consumes _4."
+    }
+  },
+  "implementation_changed_file_allowlist": [
+    "db/schema.ts",
+    "drizzle/0011_persistent_translation_locale_invariant.sql",
+    "drizzle/meta/0011_snapshot.json",
+    "drizzle/meta/_journal.json",
+    ".github/scripts/verify-production-migration.mjs",
+    "tests/database/migrations.test.ts",
+    "PROJECT_STATE.md",
+    "doc_old/PROJECT_STATE_old_22.9.26_4.md"
+  ],
+  "forbidden_files": {
+    "exact_rule": "Every repository path other than the eight allowlisted paths is forbidden for R2 implementation against main@da8d8cb1541b56463739e974a74cb29bc5f2527d; no additional new path may be created.",
+    "explicit_paths_and_sets": [
+      "drizzle/0000_tan_johnny_storm.sql through drizzle/0010_translation_task_generation_order.sql",
+      "drizzle/meta/0000_snapshot.json through drizzle/meta/0010_snapshot.json",
+      "tests/database/ui-translation-storage.test.ts",
+      ".github/scripts/migration-history.mjs",
+      ".github/scripts/migration-history.test.mjs",
+      ".github/scripts/verify-migration-history.mjs",
+      ".github/runtime-migration-evidence.json",
+      ".github/workflows/ci.yml",
+      ".github/workflows/production-db-migrate.yml",
+      "docs/database/MIGRATIONS.md",
+      "docs/database/HYPERDRIVE.md",
+      "TRANSLATION_ARCHITECTURE.md",
+      "docs/translation/*",
+      "PROJECT_HISTORY.md",
+      "db/ui-translation-store.ts",
+      "db/ui-translation-bundle-store.ts",
+      "db/ui-translation-publication-store.ts",
+      "app/localization/*",
+      "audit/decision-ledger/*",
+      "audit/chatgpt-review/* other than this preflight publication itself",
+      "all R3-R7 implementation paths"
+    ]
+  },
+  "migration_only_split": {
+    "required": false,
+    "reason": [
+      "Accepted TC-04 keeps ordinary product/schema work local/CI and reserves live rollout gates for actual schema-dependent external rollout.",
+      "Current docs/database/MIGRATIONS.md explicitly allows a development migration to be merged with code/schema consistency changes when no external runtime rollout occurs.",
+      "R2 is a bounded repository/local-CI correction and authorizes no external rollout."
+    ],
+    "historical_stage3a_migration_only_sequence_is_not_current_r2_gate": true
+  },
+  "required_checks": [
+    "Focused: pnpm exec vitest run --config vitest.database.config.ts tests/database/migrations.test.ts",
+    "Migration history guard: node --test .github/scripts/migration-history.test.mjs",
+    "pnpm db:check",
+    "pnpm lint",
+    "pnpm typecheck",
+    "pnpm test",
+    "pnpm build",
+    "pnpm db:test",
+    "GitHub Actions database job green on the actual implementation PR head"
+  ],
+  "excluded_operations": [
+    "No external migrations.",
+    "No live production verification execution.",
+    "No Stage 6 operation.",
+    "No runtime/schema/test implementation during this preflight.",
+    "No implementation PR creation.",
+    "No PR #78 mutation."
+  ],
+  "conclusion": {
+    "status": "PASS",
+    "current_defects_remaining": [
+      "EX31-10",
+      "EX31-14",
+      "EX31-16"
+    ],
+    "migration_required": true,
+    "migration_only_split_required": false,
+    "bounded_to_unit": "REM-04",
+    "codex_role": "lead reviewer"
+  }
+}
