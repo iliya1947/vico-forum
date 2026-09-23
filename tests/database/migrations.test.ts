@@ -291,16 +291,58 @@ describe("PostgreSQL 17 locale migrations", () => {
         ],
       });
 
-      const repository = new DrizzleForumRepository(drizzle(client));
-      await expect(repository.createTopicWithInitialPost({
-        id: "atomic-rollback-topic", sectionId: "typescript", authorId: "forum-author",
-        titleRevision: { id: "atomic-duplicate", originalContent: "Must roll back", sourceLocale: "und" },
-        initialPost: {
-          id: "post-1", topicId: "atomic-rollback-topic", authorId: "forum-author",
-          bodyRevision: { id: "atomic-body", originalContent: "Duplicate post id", sourceLocale: "und" },
+      clock += FORUM_WRITE_COOLDOWN_MS;
+      const repository = new DrizzleForumRepository(drizzle(client), {
+        cooldownMs: FORUM_WRITE_COOLDOWN_MS,
+        now: () => new Date(clock),
+      });
+      const duplicateFixture = await client.query<{ id: string; topic_id: string }>(
+        "select id, topic_id from forum_posts where id = 'post-1'",
+      );
+      expect(duplicateFixture.rows).toEqual([{ id: "post-1", topic_id: "topic-1" }]);
+
+      let rollbackError: unknown;
+      try {
+        await repository.createTopicWithInitialPost({
+          id: "atomic-rollback-topic", sectionId: "typescript", authorId: "forum-author",
+          titleRevision: { id: "atomic-duplicate", originalContent: "Must roll back", sourceLocale: "und" },
+          initialPost: {
+            id: "post-1", topicId: "atomic-rollback-topic", authorId: "forum-author",
+            bodyRevision: { id: "atomic-body", originalContent: "Duplicate post id", sourceLocale: "und" },
+          },
+        });
+      } catch (error) {
+        rollbackError = error;
+      }
+
+      expect(rollbackError).toBeDefined();
+      expect(rollbackError).not.toBeInstanceOf(ForumWriteRateLimitError);
+      expect(rollbackError).toMatchObject({
+        cause: {
+          code: "23505",
+          constraint: "forum_posts_pkey",
         },
-      })).rejects.toBeDefined();
-      expect(await repository.readTopic("atomic-rollback-topic")).toBeUndefined();
+      });
+
+      const rolledBackGraph = await client.query<{
+        topics: number;
+        titles: number;
+        posts: number;
+        bodies: number;
+      }>(`
+        select
+          (select count(*)::int from forum_topics where id = 'atomic-rollback-topic') as topics,
+          (select count(*)::int from forum_topic_title_revisions
+            where id = 'atomic-duplicate' or topic_id = 'atomic-rollback-topic') as titles,
+          (select count(*)::int from forum_posts where topic_id = 'atomic-rollback-topic') as posts,
+          (select count(*)::int from forum_post_revisions where id = 'atomic-body') as bodies
+      `);
+      expect(rolledBackGraph.rows[0]).toEqual({ topics: 0, titles: 0, posts: 0, bodies: 0 });
+
+      const originalPost = await client.query<{ id: string; topic_id: string }>(
+        "select id, topic_id from forum_posts where id = 'post-1'",
+      );
+      expect(originalPost.rows).toEqual([{ id: "post-1", topic_id: "topic-1" }]);
     } finally {
       if (createdTopicId) {
         await client.query("delete from forum_topics where id = $1", [createdTopicId]);
