@@ -128,7 +128,7 @@ describe("DrizzleUiTranslationPublicationStore", () => {
     const database = drizzle(client);
     const tasks = new DrizzleTranslationTaskStore(database);
     const publications = new DrizzleUiTranslationPublicationStore(database);
-    const specification = await job(canonicalEnglishCatalog.common.heading, "es");
+    const specification = await job(canonicalEnglishCatalog.common.heading, "da");
     const pending = await tasks.upsertPending(specification);
 
     const first = await tasks.claim(pending.id, 60_000);
