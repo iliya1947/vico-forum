@@ -4679,3 +4679,341 @@ independently review the actual final head, full diff, test/CI evidence, and the
 focused-command/`git diff --check` execution limitation before any user merge decision.
 
 PR #78 and PR #79 remain open/unmerged communication channels.
+
+
+## RESPONSE DL-IMPLEMENT-R5-PREFLIGHT-001/1
+
+From: ChatGPT  
+Status: **PASS — PREFLIGHT ONLY; IMPLEMENTATION NOT AUTHORIZED**  
+Series: **R5 — Forum presentation corrections**  
+Codex role: **lead reviewer**
+
+### Baseline
+
+Verified before analysis:
+
+- main = \`73accda528c1a007cfe18117bb7dcc0bdf272cbb\`;
+- this is the merge commit of PR #88;
+- R1 merge \`944ea2f01ab85e1e888981c2d789f2cfde0bb3b0\` is in main;
+- R2 merge \`adb5eed73fccd7110c5f6f95dc933e217ea03c72\` is in main;
+- R3 merge \`c2ea076af1ca100de02f32c6e3aa06f840731e1d\` is in main;
+- R4 is current main;
+- PR #78 and PR #79 remain open/unmerged control/response channels.
+
+No narrow baseline revalidation was required because the requested post-R4 baseline matched exactly.
+
+### Immutable preflight artifacts
+
+Published in PR #79:
+
+- \`audit/chatgpt-review/DL-IMPLEMENT-R5-PREFLIGHT-001.json\`
+  - blob: \`0eb048153a363e0ef9b687a364190c9f2c1054a0\`
+- \`audit/chatgpt-review/DL-IMPLEMENT-R5-PREFLIGHT-001.md\`
+  - blob: \`8922995dfcee2b313b195b8995f0cc19ba367823\`
+
+Accepted remediation plan references:
+
+- machine blob: \`739d326eb9e00a705003fff43ba4592c2f453e56\`;
+- narrative blob: \`d7766b1a857a8f70d279778fb82a478c74d3161c\`.
+
+### Exact currentness
+
+#### EX52-25 — CURRENT
+
+Original PR #52 introduced English \`topic(s)\` / \`message(s)\` ordinary interpolation.
+PR #71 later corrected \`sectionCount\` to the structured plural runtime, so the older broad
+count-string concern became narrower, but the accepted R5 residual was not fixed.
+
+Current catalog still has ordinary interpolation:
+
+\`topicAndPostCount = "{{topics}} topic(s) · {{posts}} message(s)"\`
+
+Current CategoryRoute still performs one lookup with both counts. The route has not changed since
+PR #52.
+
+#### EX52-26 — CURRENT
+
+The accepted review finding is specifically the combined-count contract: two independent counts
+cannot independently choose the grammatical form of both nouns through one ordinary interpolation
+message.
+
+Current code and tests still lack independent topic/message plural resolution and mixed-pair
+coverage.
+
+#### EX58-43 — CURRENT
+
+Current \`.forum-post\` remains a two-column grid. Current TopicRoute still renders as direct grid
+children:
+
+1. header;
+2. conditional best-answer label;
+3. ForumMarkdown / \`.post-body\`;
+4. conditional solution form.
+
+There is no content wrapper or explicit placement. The current mobile media query only switches the
+grid to one column.
+
+PR #61/#76 altered authorization/failure handling, not this DOM/CSS boundary. No later PR through
+#88 fixes it.
+
+### Deliberate disconfirmation result
+
+Checked current post-R4 code, accepted historical artifacts, relevant file histories and existing
+tests rather than carrying prior verdicts forward.
+
+Findings:
+
+- CategoryRoute is unchanged after PR #52.
+- PR #71 added the exact plural mechanism needed by REM-07 but converted only \`sectionCount\`.
+- No later catalog/category change replaces \`topicAndPostCount\`.
+- PR #61 and #76 do not add a post content-column boundary.
+- Current CSS still has no placement/wrapper for the three content siblings.
+- Current tests do not already prove independent topic/message mixed pairs or one common post
+  content region.
+
+Result: **EX52-25, EX52-26 and EX58-43 are all current.**
+No accepted R5 atomic ID is already-fixed, superseded or insufficient-evidence.
+
+### Delivery decision
+
+Selected future delivery if R5 is later authorized:
+
+**one small standalone R5 implementation PR**, not two PRs.
+
+Reason:
+
+- both units are presentation-only;
+- neither requires DB/schema/dependency/domain changes;
+- both share \`app/forum/public-read.test.tsx\` as the smallest correct render-regression file;
+- separate REM-07/REM-09 commits inside one PR retain reviewability without duplicate CI/visual
+  evidence.
+
+### Exact future tracked allowlist
+
+1. \`app/localization/catalog.ts\`
+2. \`app/localization/resources.test.ts\`
+3. \`app/routes/category.tsx\`
+4. \`app/routes/topic.tsx\`
+5. \`app/forum/public-read.test.tsx\`
+6. \`app/styles.css\`
+
+REM-07 uses 1,2,3,5.
+
+REM-09 uses 4,5,6.
+
+Any required seventh tracked file is a stop/revalidation condition.
+
+### PROJECT_STATE / archive decision
+
+**No PROJECT_STATE update.**
+
+R5 changes presentation correctness only and does not alter the phase, architecture, DB/external
+state, authorization semantics, translation-job state or the currently documented R7 limitation.
+
+Therefore explicitly excluded from future R5 allowlist:
+
+- \`PROJECT_STATE.md\`;
+- all \`doc_old/PROJECT_STATE_*\` archives.
+
+### REM-07 mechanism
+
+Replace the combined canonical identity with two independent plural-capable messages:
+
+- \`topicCount\`: one/other with \`{{count}}\`;
+- \`messageCount\`: one/other with \`{{count}}\`.
+
+CategoryRoute independently calls each through normal \`t(..., { count })\` resolution and only
+composes the resulting localized fragments with the neutral separator.
+
+No locale-specific plural logic may appear in the route.
+
+Current i18next plural documentation was checked: \`count\` is the plural selector and JSON v4 uses
+suffixes such as \`_one\`, \`_other\`, with extra locale-specific categories where required.
+
+### Catalog / stale-translation impact
+
+\`topicAndPostCount\` should be intentionally removed from the canonical catalog.
+
+This does **not** require a manual-pack migration:
+
+- current checked-in ru/he manual packs contain only \`heading\`;
+- no \`topicAndPostCount\` manual override exists.
+
+No fingerprint file is edited:
+
+- fingerprints are computed per descriptor;
+- new keys naturally receive new source fingerprints;
+- unrelated descriptor fingerprints remain unchanged.
+
+Historical persistent raw rows for the removed key are supported:
+
+- current persistent source handling skips unknown canonical keys;
+- reports \`unknown-key\`;
+- existing regression already covers removed-key behavior.
+
+Historical persisted compiled bundles are also safe:
+
+- removed key / old semantic bundle identity fails current verification;
+- request path degrades to bundle miss and existing raw/local/English fallback;
+- R5 must not add request-time writes or perform external cleanup.
+
+No claim is made that such old rows/bundles exist externally.
+
+### REM-09 DOM/CSS decision
+
+Selected mechanism: **one content wrapper**, not repeated explicit grid placement.
+
+Future post structure:
+
+- direct child 1: existing \`header\` author region;
+- direct child 2: new \`.forum-post-content\` containing:
+  - best-answer label;
+  - ForumMarkdown body;
+  - solution form.
+
+This gives the two-column desktop grid exactly two semantic grid items.
+
+Only minimal CSS adjustment is allowed:
+
+- preserve current desktop column widths;
+- put shared content padding/min-width on the wrapper;
+- avoid double-padding nested \`.post-body\`;
+- preserve solution spacing;
+- blockify best-answer label only if needed for existing presentation;
+- keep the current <=38rem one-column breakpoint;
+- no visual redesign/new breakpoint/locale-specific layout branch.
+
+Authorization/domain semantics, hidden form fields, actions/mutations, stable anchors and
+ForumMarkdown remain unchanged.
+
+### Future tests
+
+REM-07 must prove:
+
+- topic 1 singular;
+- topic 2 plural/other;
+- message 1 singular;
+- message 2 plural/other;
+- \`1 topic · 2 messages\`;
+- \`2 topics · 1 message\`;
+- independent category composition;
+- plural descriptor/count-placeholder correctness;
+- valid computed fingerprints;
+- no locale-specific plural branch in CategoryRoute.
+
+REM-09 must prove:
+
+- best-answer label inside \`.forum-post-content\`;
+- ForumMarkdown \`.post-body\` inside the same region;
+- solution form inside the same region;
+- header remains a sibling author region;
+- existing authorization/domain conditional-render behavior remains unchanged.
+
+Exact focused commands selected:
+
+\`\`\`sh
+pnpm exec vitest run app/localization/resources.test.ts app/localization/bundles.test.ts app/localization/translation-validation.test.ts app/localization/persistent-sources.test.ts app/localization/resource-loader-bundles.test.ts app/forum/public-read.test.tsx
+pnpm exec vitest run app/forum/public-read.test.tsx app/forum/markdown.test.tsx
+\`\`\`
+
+Repository gates:
+
+\`\`\`sh
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm build
+git diff --check
+\`\`\`
+
+Actual implementation PR head must have GitHub Actions **checks** green.
+
+R5 does not alter DB behavior, therefore \`pnpm db:test\` and the Actions \`database\` job are not
+scope-derived R5 merge gates. The standard workflow currently runs \`database\` anyway; if it runs,
+its factual result must still be recorded.
+
+### Screenshot plan
+
+Future R5 implementation requires desktop and narrow screenshots.
+
+Current repo has no committed Playwright/browser screenshot dependency or dedicated visual fixture.
+Do not add one only for R5.
+
+Minimal safe path:
+
+1. use a local worktree of the actual implementation head;
+2. create an untracked temporary Vite/React harness;
+3. import the actual TopicRoute and actual \`app/styles.css\`;
+4. provide Router/i18next context with the same in-memory fixture pattern already used in
+   \`app/forum/public-read.test.tsx\`;
+5. use one solved topic with two posts and \`canManageSolution=true\`;
+6. capture desktop, recommended \`1280x900\`;
+7. capture narrow below 38rem, recommended \`375x812\`;
+8. prove the temporary harness is untracked and absent from the PR diff.
+
+If the executing environment cannot capture both states from the actual component/CSS without a new
+dependency or production demo route, **stop and return to Codex**. Do not manufacture visual
+evidence.
+
+### Explicit forbidden future scope
+
+Every tracked path outside the six-file allowlist is forbidden unless this preflight is revalidated.
+
+Explicitly forbidden include:
+
+- PROJECT_STATE and archives;
+- manual packs / fingerprint / translation source/runtime/compiler changes outside the catalog;
+- persistent source implementation;
+- resource loader implementation;
+- ForumMarkdown implementation;
+- forum queries/counting/pagination;
+- solution authorization/action/mutation/domain semantics;
+- DB schema/migrations/meta;
+- package/dependency files;
+- source-of-truth docs;
+- workflows;
+- Queue/Workflow/provider/jobs;
+- R6/R7;
+- Stage 6/external operations;
+- PR #78.
+
+### Stop conditions
+
+Stop and revalidate if:
+
+1. main moves from \`73accda528c1a007cfe18117bb7dcc0bdf272cbb\`;
+2. a finding becomes independently fixed/superseded;
+3. REM-07 needs locale-specific route rules, counting-query changes, manual-pack migration,
+   schema/DB/job changes;
+4. removed-key historical data cannot safely degrade through current contracts;
+5. REM-09 needs authorization/domain changes or visual redesign;
+6. ForumMarkdown/dependency/production demo route/tracked screenshot helper becomes necessary;
+7. a seventh tracked implementation file becomes necessary;
+8. honest desktop+narrow screenshots cannot be produced from actual implementation code;
+9. an external operation becomes necessary.
+
+### Response-log archive
+
+Before appending this response:
+
+- source \`audit/chatgpt-review/EXCHANGE.md\` blob:
+  \`c403781b372bf75de22db96ce30f3bf306c4ce5e\`;
+- archive:
+  \`doc_old/audit/chatgpt-review/EXCHANGE_old_23.9.26_1.md\`;
+- archive blob:
+  \`c403781b372bf75de22db96ce30f3bf306c4ce5e\`.
+
+Exact pre-response copy confirmed.
+
+### Outcome
+
+**PASS.**
+
+R5 remains a valid two-unit current remediation series.
+
+This task produced preflight artifacts and this response only.
+
+**Implementation was not performed, no implementation branch/PR was created, no project runtime,
+tests, styles, schema, migration, PROJECT_STATE/source-of-truth document or PR #78 was modified.**
+
+Codex remains the lead reviewer. PR #78 and PR #79 remain unmerged.
