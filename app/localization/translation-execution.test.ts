@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import { canonicalEnglishCatalog, type UiMessageDescriptor } from "./catalog";
+import {
+  TranslationExecutionFailure,
+  type TranslationFailureRecord,
+} from "./translation-failures";
 import { sourceFingerprint } from "./fingerprint";
 import { IntlLocaleRulesProvider } from "./locale-rules";
 import { InMemoryLocaleRegistry } from "./registry";
@@ -17,8 +21,11 @@ import {
   type UiTranslationPublicationStore,
 } from "./translation-publication";
 import { UiTranslationTaskConsumer } from "./translation-task-consumer";
-import type { TranslationTask, TranslationTaskStore } from "./translation-tasks";
-import { TranslationValidationError } from "./translation-validation";
+import type {
+  TranslationTask,
+  TranslationTaskFailureResult,
+  TranslationTaskStore,
+} from "./translation-tasks";
 
 const now = new Date("2026-09-16T18:00:00.000Z");
 const taskId = "10000000-0000-4000-8000-000000000001";
@@ -38,11 +45,16 @@ async function processingTask(
     generationPolicyVersion: "ui-policy-v1",
     generation: 1,
     status: "processing",
+    attemptCount: 1,
+    maxAttempts: 3,
+    lastFailureCode: null,
+    failureDisposition: null,
     claimToken,
     claimedAt: now,
     leaseExpiresAt: new Date(now.getTime() + 60_000),
     staleAt: null,
     completedAt: null,
+    failedAt: null,
     createdAt: now,
     updatedAt: now,
   };
@@ -52,16 +64,27 @@ async function harness(options: {
   readonly source?: UiMessageDescriptor;
   readonly targetLocale?: string;
   readonly providerValue?: unknown;
+  readonly providerFailure?: Error;
   readonly currentGeneration?: boolean;
+  readonly attemptStarted?: boolean;
+  readonly claimOutcome?: "claimed" | "already-claimed";
+  readonly failureResult?: TranslationTaskFailureResult;
 } = {}) {
   const source = options.source ?? canonicalEnglishCatalog.common.heading;
   const targetLocale = options.targetLocale ?? "fr";
   const task = await processingTask(source, targetLocale);
+  const claimOutcome = options.claimOutcome ?? "claimed";
   const tasks: TranslationTaskStore = {
     upsertPending: vi.fn(),
     findById: vi.fn(),
     findByIdentity: vi.fn(),
-    claim: vi.fn(async () => ({ outcome: "claimed" as const, task })),
+    claim: vi.fn(async () => claimOutcome === "claimed"
+      ? {
+          outcome: "claimed" as const,
+          task,
+          attemptStarted: options.attemptStarted ?? true,
+        }
+      : { outcome: "already-claimed" as const }),
     markStale: vi.fn(async () => true),
     isCurrentGeneration: vi.fn(async () => options.currentGeneration ?? true),
   };
@@ -87,6 +110,7 @@ async function harness(options: {
 
   const translate = vi.fn(async (request: MachineTranslationRequest) => {
     void request;
+    if (options.providerFailure) throw options.providerFailure;
     return {
       value: options.providerValue ?? "Fondation de traduction",
       provenance: { provider: "fake", model: "fake-v1", origin: "machine" as const },
@@ -108,21 +132,39 @@ async function harness(options: {
     localeRules,
     publications,
   });
+  const recordFailure = vi.fn(async (
+    _id: string,
+    _token: string,
+    failure: TranslationFailureRecord,
+  ): Promise<TranslationTaskFailureResult> => options.failureResult ?? (
+    failure.disposition === "retryable"
+      ? { outcome: "retry", attemptCount: 1, maxAttempts: 3 }
+      : {
+          outcome: "terminal",
+          attemptCount: 1,
+          maxAttempts: 3,
+          disposition: failure.code === "attempt-budget-exhausted" ? "retry-exhausted" : "terminal",
+        }
+  ));
   const executor = new UiTranslationTaskExecutor({
     consumer,
     providerRouter,
     publisher,
+    failures: { recordFailure },
     localeRules,
   });
 
-  return { executor, translate, publishClaimedMachineResult, tasks };
+  return { executor, translate, publishClaimedMachineResult, tasks, recordFailure };
 }
 
 describe("UiTranslationTaskExecutor", () => {
   it("runs an eligible plain task through provider routing, validation and conditional publication", async () => {
-    const { executor, translate, publishClaimedMachineResult } = await harness();
+    const { executor, translate, publishClaimedMachineResult, recordFailure } = await harness();
 
-    await expect(executor.execute({ translationTaskId: taskId })).resolves.toEqual({ outcome: "published" });
+    await expect(executor.execute({ translationTaskId: taskId })).resolves.toEqual({
+      outcome: "published",
+      delivery: "ack",
+    });
     expect(translate).toHaveBeenCalledWith({
       domain: "ui",
       sourceLocale: "en",
@@ -136,6 +178,7 @@ describe("UiTranslationTaskExecutor", () => {
       value: "Fondation de traduction",
       provenance: { provider: "fake", model: "fake-v1", origin: "machine" },
     }));
+    expect(recordFailure).not.toHaveBeenCalled();
   });
 
   it("passes the target plural branch contract to a structured-capable provider", async () => {
@@ -151,7 +194,10 @@ describe("UiTranslationTaskExecutor", () => {
       providerValue: value,
     });
 
-    await expect(executor.execute({ translationTaskId: taskId })).resolves.toEqual({ outcome: "published" });
+    await expect(executor.execute({ translationTaskId: taskId })).resolves.toEqual({
+      outcome: "published",
+      delivery: "ack",
+    });
     expect(translate).toHaveBeenCalledWith({
       domain: "ui",
       sourceLocale: "en",
@@ -169,16 +215,102 @@ describe("UiTranslationTaskExecutor", () => {
     await expect(executor.execute({ translationTaskId: taskId })).resolves.toEqual({
       outcome: "stale",
       reason: "generation-superseded",
+      delivery: "ack",
     });
     expect(translate).not.toHaveBeenCalled();
     expect(publishClaimedMachineResult).not.toHaveBeenCalled();
     expect(tasks.markStale).toHaveBeenCalledWith(taskId, claimToken);
   });
 
-  it("keeps provider output untrusted until the publisher validation boundary", async () => {
-    const { executor, publishClaimedMachineResult } = await harness({ providerValue: "   " });
+  it("acknowledges a live duplicate delivery without another provider call", async () => {
+    const { executor, translate } = await harness({ claimOutcome: "already-claimed" });
 
-    await expect(executor.execute({ translationTaskId: taskId })).rejects.toBeInstanceOf(TranslationValidationError);
+    await expect(executor.execute({ translationTaskId: taskId })).resolves.toEqual({
+      outcome: "already-claimed",
+      delivery: "ack",
+    });
+    expect(translate).not.toHaveBeenCalled();
+  });
+
+  it("returns retry only after a typed retryable failure is durably released", async () => {
+    const failure = new TranslationExecutionFailure(
+      "retryable",
+      "provider-temporary",
+      "temporary provider fixture",
+    );
+    const { executor, recordFailure } = await harness({ providerFailure: failure });
+
+    await expect(executor.execute({ translationTaskId: taskId })).resolves.toEqual({
+      outcome: "execution-failed",
+      delivery: "retry",
+      failureCode: "provider-temporary",
+      attemptCount: 1,
+      maxAttempts: 3,
+    });
+    expect(recordFailure).toHaveBeenCalledWith(taskId, claimToken, {
+      disposition: "retryable",
+      code: "provider-temporary",
+    });
+  });
+
+  it("persists invalid provider output as a terminal failure instead of retrying it", async () => {
+    const { executor, publishClaimedMachineResult, recordFailure } = await harness({ providerValue: "   " });
+
+    await expect(executor.execute({ translationTaskId: taskId })).resolves.toEqual({
+      outcome: "execution-failed",
+      delivery: "terminal",
+      failureCode: "provider-output-invalid",
+      terminalReason: "terminal",
+      attemptCount: 1,
+      maxAttempts: 3,
+    });
     expect(publishClaimedMachineResult).not.toHaveBeenCalled();
+    expect(recordFailure).toHaveBeenCalledWith(taskId, claimToken, {
+      disposition: "terminal",
+      code: "provider-output-invalid",
+    });
+  });
+
+  it("terminalizes an exhausted reclaimed lease without another provider call", async () => {
+    const { executor, translate, recordFailure } = await harness({
+      attemptStarted: false,
+      failureResult: {
+        outcome: "terminal",
+        attemptCount: 3,
+        maxAttempts: 3,
+        disposition: "retry-exhausted",
+      },
+    });
+
+    await expect(executor.execute({ translationTaskId: taskId })).resolves.toEqual({
+      outcome: "execution-failed",
+      delivery: "terminal",
+      failureCode: "attempt-budget-exhausted",
+      terminalReason: "retry-exhausted",
+      attemptCount: 3,
+      maxAttempts: 3,
+    });
+    expect(translate).not.toHaveBeenCalled();
+    expect(recordFailure).toHaveBeenCalledWith(taskId, claimToken, {
+      disposition: "terminal",
+      code: "attempt-budget-exhausted",
+    });
+  });
+
+  it("acknowledges a failure result when the execution claim was lost before persistence", async () => {
+    const failure = new TranslationExecutionFailure(
+      "retryable",
+      "provider-temporary",
+      "temporary provider fixture",
+    );
+    const { executor } = await harness({
+      providerFailure: failure,
+      failureResult: { outcome: "claim-lost" },
+    });
+
+    await expect(executor.execute({ translationTaskId: taskId })).resolves.toEqual({
+      outcome: "claim-lost",
+      delivery: "ack",
+    });
   });
 });
