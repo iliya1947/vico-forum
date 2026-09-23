@@ -21,27 +21,29 @@ function rejectingConnectPool(error: unknown): Pool {
   } as unknown as Pool;
 }
 
+function successfulResolutionRows(sql: string) {
+  if (sql === BEGIN_READ_SNAPSHOT || sql === "COMMIT" || sql === "ROLLBACK") return { rows: [] };
+  if (sql.includes('from "user" u') && sql.includes("where u.id = $1")) {
+    return { rows: [{
+      id: "builtin-user", slug: "user", display_name: "User", is_system: true,
+      explicit_assignment: false,
+    }] };
+  }
+  if (sql.startsWith("select permission_key from authz_role_permissions")) {
+    return { rows: [{ permission_key: "forum.topic.create" }] };
+  }
+  if (sql.startsWith("select permission_key, effect from authz_user_permission_overrides")) {
+    return { rows: [] };
+  }
+  throw new Error(`unexpected query: ${sql}`);
+}
+
 function successfulResolutionPool(): Pool {
-  return poolWithClient((sql) => {
-    if (sql === BEGIN_READ_SNAPSHOT || sql === "COMMIT" || sql === "ROLLBACK") return { rows: [] };
-    if (sql.includes('from "user" u') && sql.includes("where u.id = $1")) {
-      return { rows: [{
-        id: "builtin-user", slug: "user", display_name: "User", is_system: true,
-        explicit_assignment: false,
-      }] };
-    }
-    if (sql.startsWith("select permission_key from authz_role_permissions")) {
-      return { rows: [{ permission_key: "forum.topic.create" }] };
-    }
-    if (sql.startsWith("select permission_key, effect from authz_user_permission_overrides")) {
-      return { rows: [] };
-    }
-    throw new Error(`unexpected query: ${sql}`);
-  });
+  return poolWithClient(successfulResolutionRows);
 }
 
 describe("Hyperdrive authorization availability boundary", () => {
-  it("classifies known PostgreSQL availability failures from connect and snapshot queries", async () => {
+  it("classifies availability failures from connect, BEGIN, component queries, and COMMIT", async () => {
     const connectionFailure = Object.assign(new Error("connection refused"), { code: "ECONNREFUSED" });
     const connectionCapability = createHyperdriveAuthorization(
       "postgresql://example.invalid/db",
@@ -52,14 +54,36 @@ describe("Hyperdrive authorization availability boundary", () => {
     ).rejects.toBeInstanceOf(AuthorizationUnavailableError);
 
     const timeout = new Error("Query read timeout");
-    const timeoutCapability = createHyperdriveAuthorization(
+    const beginFailureCapability = createHyperdriveAuthorization(
+      "postgresql://example.invalid/db",
+      () => poolWithClient((sql) => {
+        if (sql === BEGIN_READ_SNAPSHOT) throw timeout;
+        throw new Error(`unexpected query: ${sql}`);
+      }),
+    );
+    await expect(
+      beginFailureCapability.forUser("user-1").resolve(),
+    ).rejects.toBeInstanceOf(AuthorizationUnavailableError);
+
+    const componentFailureCapability = createHyperdriveAuthorization(
       "postgresql://example.invalid/db",
       () => poolWithClient((sql) => {
         if (sql === BEGIN_READ_SNAPSHOT || sql === "ROLLBACK") return { rows: [] };
         throw timeout;
       }),
     );
-    await expect(timeoutCapability.readManagementState()).rejects.toBeInstanceOf(AuthorizationUnavailableError);
+    await expect(componentFailureCapability.readManagementState()).rejects.toBeInstanceOf(AuthorizationUnavailableError);
+
+    const commitFailureCapability = createHyperdriveAuthorization(
+      "postgresql://example.invalid/db",
+      () => poolWithClient((sql) => {
+        if (sql === "COMMIT") throw timeout;
+        return successfulResolutionRows(sql);
+      }),
+    );
+    await expect(
+      commitFailureCapability.forUser("user-1").resolve(),
+    ).rejects.toBeInstanceOf(AuthorizationUnavailableError);
   });
 
   it("does not classify schema or programming failures as availability", async () => {
