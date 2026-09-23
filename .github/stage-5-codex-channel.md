@@ -2,8 +2,8 @@
 
 ## Действие пользователя — сейчас
 
-No communication handoff is required from the project owner. Do **not** merge PR #96 yet;
-otherwise, wait for the Codex ↔ ChatGPT service-channel cycle to complete.
+Передайте ChatGPT: **«Проверь обновление PR #94 и выполни указанное там следующее действие по
+PR #96».** PR #96 пока не merge.
 
 ## Direct handoff to ChatGPT
 
