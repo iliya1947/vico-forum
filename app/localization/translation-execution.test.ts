@@ -6,6 +6,7 @@ import {
 } from "./translation-failures";
 import { sourceFingerprint } from "./fingerprint";
 import { IntlLocaleRulesProvider } from "./locale-rules";
+import { PersistentTranslationIntegrityError } from "./persistent-sources";
 import { InMemoryLocaleRegistry } from "./registry";
 import { LocalTranslationSource } from "./sources";
 import {
@@ -117,13 +118,16 @@ async function harness(options: {
   const translate = vi.fn(async (request: MachineTranslationRequest): Promise<MachineTranslationResult> => {
     void request;
     if (options.providerFailure) throw options.providerFailure;
+    const provenance = Object.hasOwn(options, "providerProvenance")
+      ? options.providerProvenance
+      : {
+          provider: "fake",
+          model: "fake-v1",
+          origin: "machine",
+        };
     return {
       value: options.providerValue ?? "Fondation de traduction",
-      provenance: (options.providerProvenance ?? {
-        provider: "fake",
-        model: "fake-v1",
-        origin: "machine",
-      }) as MachineTranslationResult["provenance"],
+      provenance: provenance as MachineTranslationResult["provenance"],
     };
   });
   const adapter: MachineTranslationProviderAdapter = {
@@ -263,9 +267,14 @@ describe("UiTranslationTaskExecutor", () => {
     });
   });
 
-  it("routes a claimed preflight dependency failure through the bounded retry lifecycle", async () => {
+  it("routes an explicitly classified temporary preflight dependency failure through bounded retry", async () => {
+    const failure = new TranslationExecutionFailure(
+      "retryable",
+      "dependency-temporary",
+      "temporary generation-head read failure",
+    );
     const { executor, translate, recordFailure } = await harness({
-      preflightFailure: new Error("temporary generation-head read failure"),
+      preflightFailure: failure,
     });
 
     await expect(executor.execute({ translationTaskId: taskId })).resolves.toEqual({
@@ -280,6 +289,17 @@ describe("UiTranslationTaskExecutor", () => {
       disposition: "retryable",
       code: "dependency-temporary",
     });
+  });
+
+  it("does not mask non-temporary preflight integrity failures as retryable dependency failures", async () => {
+    const failure = new PersistentTranslationIntegrityError("persistent translation fixture outside requested scope");
+    const { executor, translate, recordFailure } = await harness({
+      preflightFailure: failure,
+    });
+
+    await expect(executor.execute({ translationTaskId: taskId })).rejects.toBe(failure);
+    expect(translate).not.toHaveBeenCalled();
+    expect(recordFailure).not.toHaveBeenCalled();
   });
 
   it("persists invalid provider output as a terminal failure instead of retrying it", async () => {
@@ -300,11 +320,22 @@ describe("UiTranslationTaskExecutor", () => {
     });
   });
 
-  it("terminalizes invalid provider provenance as provider-output-invalid", async () => {
+  it("terminalizes malformed provider provenance as provider-output-invalid", async () => {
     for (const provenance of [
+      undefined,
+      null,
+      "invalid",
+      {},
       { provider: "   ", model: "fake-v1", origin: "machine" },
+      { provider: null, model: "fake-v1", origin: "machine" },
+      { provider: 42, model: "fake-v1", origin: "machine" },
       { provider: "fake", model: "   ", origin: "machine" },
+      { provider: "fake", model: null, origin: "machine" },
+      { provider: "fake", model: 42, origin: "machine" },
       { provider: "fake", model: "fake-v1", origin: "manual" },
+      { provider: "fake", model: "fake-v1", origin: 42 },
+      { provider: "fake", model: "fake-v1", origin: "machine", attribution: null },
+      { provider: "fake", model: "fake-v1", origin: "machine", attribution: 42 },
     ]) {
       const { executor, publishClaimedMachineResult, recordFailure } = await harness({
         providerProvenance: provenance,
