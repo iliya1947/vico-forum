@@ -1,0 +1,387 @@
+{
+  "type": "DL-IMPLEMENT-R7-PREFLIGHT-001",
+  "task_id": "DL-IMPLEMENT-R7-PREFLIGHT-001/1",
+  "status": "PASS",
+  "mode": "preflight-only",
+  "implementation_authorized": false,
+  "codex_role": "lead reviewer/coordinator",
+  "observed_state": {
+    "checked_at": "2026-09-23",
+    "post_r6_main_sha": "ad53f1db0a24bd98bc905f6280e6bc8e805d034a",
+    "main_is_pr90_merge": true,
+    "pr78": {
+      "state": "open",
+      "merged": false,
+      "head_sha": "93b2e33d15460f63f0ba55d02f7bb1549ea26d6f",
+      "role": "control channel; never merge"
+    },
+    "pr79": {
+      "state": "open",
+      "merged": false,
+      "head_before_r7_artifacts": "7e39c548511e0e2abd331b3a3d3d9f8482618ff1",
+      "role": "audit/response channel; never merge"
+    },
+    "accepted_remediation_plan": {
+      "json_blob": "739d326eb9e00a705003fff43ba4592c2f453e56",
+      "markdown_blob": "d7766b1a857a8f70d279778fb82a478c74d3161c"
+    }
+  },
+  "scope": {
+    "series": "R7",
+    "title": "Authorization snapshot consistency",
+    "units": [
+      {
+        "id": "REM-10",
+        "defect_group": "CD-09",
+        "target_contract": "TC-08-B",
+        "atomic_ids": [
+          "EX60-27"
+        ]
+      },
+      {
+        "id": "REM-11",
+        "defect_group": "CD-10",
+        "target_contract": "TC-08-B",
+        "atomic_ids": [
+          "EX61-42"
+        ]
+      }
+    ]
+  },
+  "currentness": [
+    {
+      "id": "EX60-27",
+      "verdict": "current",
+      "origin": {
+        "pr": 60,
+        "review_thread": "PRRT_kwDOUTDpW86iU98t",
+        "comment_database_id": 4010784447,
+        "finding": "resolveUser composes role assignment, role grants and user overrides from separate statements and can return a permission state that never existed."
+      },
+      "current_sequence": [
+        "role/assignment SELECT through database.query",
+        "if no selected role: separate user-existence SELECT",
+        "role-grants SELECT and user-overrides SELECT are launched as separate database.query calls",
+        "effective permissions are composed in application memory"
+      ],
+      "mixed_example": {
+        "permission": "forum.reply.create",
+        "before": "role R grants P; user override denies P => denied",
+        "concurrent_commits": [
+          "after the grants read, writer commit removes R→P grant; state remains denied because deny override still exists",
+          "writer then commits removal of the deny override; state remains denied because the role grant is already absent"
+        ],
+        "current_main_mixed": "reader can retain the old grant result and then read the new no-override result, composing effective allowed, although before/intermediate/after committed states are all denied",
+        "forbidden_result": "grants=[P], overrides={}, effectivePermissions includes P"
+      },
+      "later_pr_disconfirmation": [
+        "db/authorization-repository.ts has no commit after PR #61.",
+        "PR #76 changes authorization availability/error classification in service/Hyperdrive/routes, not resolveUser query consistency.",
+        "PR #81–#90 do not change authorization repository runtime; PR #84 restores the snapshot contract/state disclosure only.",
+        "Current repository blob remains a31ccd923174a00214048ccf17d84f0b935e2392 and still performs separate component reads."
+      ]
+    },
+    {
+      "id": "EX61-42",
+      "verdict": "current",
+      "origin": {
+        "pr": 61,
+        "context": "PR #61 replaced management N+1 fan-out with one bulk readManagementState operation, but that operation is still four independent pool queries.",
+        "finding": "roles, users/assignments, grants and overrides can come from incompatible committed database states."
+      },
+      "current_sequence": [
+        "listRoles(): roles SELECT",
+        "listUsers(): users + role-assignment SELECT",
+        "grants SELECT",
+        "overrides SELECT",
+        "role details and per-user effective permissions are composed in application memory"
+      ],
+      "mixed_example": {
+        "permission": "forum.reply.create",
+        "before": "user U assigned role A; A grants P; B does not grant P => U allowed as A",
+        "concurrent_commits": [
+          "after users/assignments were read, writer commits U assignment A→B; intermediate committed state is U=B and denied",
+          "writer then commits moving P from A to B; final committed state is U=B and allowed"
+        ],
+        "current_main_mixed": "reader can retain U=A from the old users read but consume final grants A=[], B=[P], returning U as role A with no grant/effective permission",
+        "forbidden_result": "user role A paired with final grant map where only B grants P; this is neither the before, intermediate, nor after management snapshot"
+      },
+      "later_pr_disconfirmation": [
+        "readManagementState was introduced/fixed for bounded bulk loading in PR #61 but no later repository commit adds snapshot isolation.",
+        "PR #76 preserves availability-only degradation and does not change repository query routing.",
+        "PR #81–#90 do not alter readManagementState runtime statements; PR #84 only documents the required semantic contract.",
+        "Existing unit test still proves four data queries, not one snapshot."
+      ]
+    }
+  ],
+  "preserved_contract": {
+    "source": "docs/auth/AUTHORIZATION.md",
+    "requirements": [
+      "one complete user authorization resolution comes from one internally consistent database snapshot",
+      "one management-state response comes from one internally consistent database snapshot",
+      "next protected request sees committed authorization changes without logout/login",
+      "cache may be request-scoped only; no long-lived authoritative authorization cache",
+      "deny > allow > role grant > deny-by-default precedence remains unchanged",
+      "permission catalog/response shapes/mutation and lockout semantics remain unchanged",
+      "PR #76 typed availability-only degradation remains unchanged; unexpected errors remain visible"
+    ]
+  },
+  "mechanism_comparison": {
+    "pinned_versions": {
+      "postgresql": "17",
+      "pg": "8.23.0",
+      "drizzle_orm": "0.45.2"
+    },
+    "selected": {
+      "family": "one read-only multi-statement transaction with stable snapshot semantics",
+      "implementation_form": "private raw node-postgres PoolClient helper inside PostgresAuthorizationRepository",
+      "transaction_start": "BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY",
+      "rationale": [
+        "PostgreSQL 17 Repeatable Read pins one snapshot at the first non-transaction-control statement and successive SELECTs see that same snapshot.",
+        "Read-only Repeatable Read transactions do not incur serialization conflicts from concurrent updates.",
+        "node-postgres requires every transaction statement to use the same checked-out client; the repository already owns a pg Pool and already uses explicit transactions for mutations.",
+        "This reuses existing SELECTs, mappers, precedence and management bulk-loading logic instead of replacing them with two complex aggregate SQL shapes."
+      ],
+      "primitive_boundary": {
+        "name": "private repository read-snapshot helper (exact identifier left to implementation)",
+        "behavior": [
+          "pool.connect() exactly once per composite read",
+          "BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY on that client",
+          "route every component query for the composite result through that same PoolClient",
+          "COMMIT only after result construction succeeds",
+          "on an operation or COMMIT failure, best-effort ROLLBACK when a transaction began, while preserving the original operation/commit error as primary",
+          "client.release() exactly once in finally",
+          "do not translate database errors inside the primitive; existing Hyperdrive availability classifier remains the only translation boundary"
+        ],
+        "public_api": "No public repository/service/capability signature or response shape change. Existing resolveUser optional Queryable path, if retained for compatibility, must be treated only as an already-bound internal database context; normal one-argument service/capability resolution enters the snapshot helper."
+      },
+      "query_routing": {
+        "resolveUser": "role/assignment, role-grant and override reads use the same snapshot client; missing-user discrimination must also remain on that same client if reached",
+        "management": "roles, users/assignments, grants and overrides use the same snapshot client; data-query count remains four",
+        "unaffected": "single-statement hasPermission, ordinary list/read helpers and all mutations remain outside this composite read helper unless a current R7 contract requires otherwise"
+      }
+    },
+    "rejected": [
+      {
+        "family": "plain READ COMMITTED multi-statement transaction",
+        "reason": "PostgreSQL gives each SELECT a fresh statement snapshot at READ COMMITTED, so it does not satisfy TC-08-B."
+      },
+      {
+        "family": "single SQL statement/CTE per composite operation",
+        "status": "semantically viable but not selected",
+        "reason": [
+          "One PostgreSQL statement would inherently use one statement snapshot.",
+          "resolveUser and management state would each require bespoke aggregation/JSON/query mapping, duplicating or relocating current precedence and response assembly.",
+          "The management query is materially more complex and raises larger review/regression risk than wrapping the existing four bounded reads.",
+          "It provides no shared primitive between REM-10 and REM-11 beyond a general design idea."
+        ]
+      },
+      {
+        "family": "Drizzle transaction wrapper",
+        "status": "viable implementation of the transaction family but not selected",
+        "reason": "Drizzle supports repeatable-read/read-only config, but this repository is currently raw pg; introducing a Drizzle database wrapper solely for R7 is broader than a private PoolClient helper."
+      },
+      {
+        "family": "SERIALIZABLE",
+        "status": "stronger than necessary",
+        "reason": "The contract requires one stable read snapshot, not serializable conflict detection; Repeatable Read read-only already provides the required stable view with less unnecessary machinery."
+      }
+    ],
+    "official_references": [
+      "https://www.postgresql.org/docs/17/transaction-iso.html",
+      "https://www.postgresql.org/docs/17/sql-begin.html",
+      "https://node-postgres.com/features/transactions",
+      "https://orm.drizzle.team/docs/transactions"
+    ]
+  },
+  "delivery_topology": {
+    "decision": "one standalone R7 implementation PR covering REM-10 and REM-11",
+    "rationale": [
+      "Both units modify the same authorization repository and are best served by one shared private snapshot primitive.",
+      "REM-11 is recommended after REM-10 for reuse/review clarity, and separate logical commits inside one PR preserve that sequencing without duplicate shared-file churn.",
+      "PROJECT_STATE currently records one limitation covering both contracts and must not declare R7 resolved after only one unit; one PR allows one final factual-state transition after both are implemented.",
+      "The units remain independently testable through separate deterministic database regressions."
+    ],
+    "suggested_logical_commits": [
+      "REM-10: shared snapshot primitive + resolveUser routing + REM-10 deterministic regression + transaction-helper unit coverage",
+      "REM-11: readManagementState routing + REM-11 deterministic regression + bounded-query/cache test adaptation + PROJECT_STATE/archive synchronization"
+    ]
+  },
+  "future_allowlist": [
+    "db/authorization-repository.ts",
+    "db/authorization-repository.test.ts",
+    "db/hyperdrive-authorization.test.ts",
+    "tests/database/authorization-snapshot.test.ts",
+    "PROJECT_STATE.md",
+    "doc_old/PROJECT_STATE_old_23.9.26_1.md"
+  ],
+  "allowlist_rationale": {
+    "db/authorization-repository.ts": "private snapshot primitive and routing of the two accepted composite reads only",
+    "db/authorization-repository.test.ts": "fixed/bounded data-query count plus begin/commit/rollback/release/error-precedence unit regressions",
+    "db/hyperdrive-authorization.test.ts": "existing fake Pool must become transaction-aware; preserve PR #76 availability classification and request-scoped cache behavior without runtime wrapper changes",
+    "tests/database/authorization-snapshot.test.ts": "new isolated two-connection PostgreSQL integration tests for EX60-27 and EX61-42",
+    "PROJECT_STATE.md": "remove/rewrite the currently explicit R7 snapshot-consistency limitation only after both units are implemented",
+    "doc_old/PROJECT_STATE_old_23.9.26_1.md": "exact byte-for-byte pre-change archive; path is currently free"
+  },
+  "project_state_plan": {
+    "required": true,
+    "archive": "doc_old/PROJECT_STATE_old_23.9.26_1.md",
+    "archive_rule": "must be byte-for-byte current PROJECT_STATE.md before the first state edit",
+    "final_changeset_only": true,
+    "update": [
+      "after both REM-10 and REM-11 are implemented, remove the current 'Authorization snapshot consistency' known-limitation section",
+      "minimally amend the Stage 4 authorization foundation bullet to state that the two composite authorization reads are snapshot-consistent if needed to keep the implemented high-level capability explicit",
+      "do not record CI success/history/external acceptance in PROJECT_STATE"
+    ],
+    "partial_completion_rule": "Do not remove/rewrite the limitation after REM-10 alone."
+  },
+  "deterministic_tests": {
+    "common_infrastructure": [
+      "new tests/database/authorization-snapshot.test.ts uses a dedicated disposable local PostgreSQL schema and current accepted auth migrations/fixtures",
+      "interleaving uses exactly one reader Pool with max=1 and one writer Client during the concurrency window",
+      "a test-owned Pool/PoolClient wrapper observes SQL boundaries for both current pool.query routing and future connect/client.query routing; no production test hook is added",
+      "coordination uses explicit Promise/deferred barriers triggered by observed query completion/start, never sleeps",
+      "statement/lock timeout plus a short Promise watchdog are failure safeguards only, not coordination mechanisms",
+      "all open writer transactions are rolled back in finally on failure; reader pool/writer client are closed and schema is cleaned up"
+    ],
+    "rem10": {
+      "before_state": {
+        "user": "snapshot-user",
+        "role": "snapshot-role-a",
+        "permission": "forum.reply.create",
+        "grants": [
+          "forum.reply.create"
+        ],
+        "override": "deny",
+        "effective": []
+      },
+      "interleaving": [
+        "start resolveUser(snapshot-user)",
+        "allow role/assignment read to complete",
+        "allow role-grant read to complete against before-state and signal grant-read barrier",
+        "hold the override SELECT before it is sent to PostgreSQL",
+        "writer commit #1 removes snapshot-role-a → forum.reply.create grant",
+        "writer commit #2 removes snapshot-user deny override",
+        "signal writer-committed barrier and release override SELECT"
+      ],
+      "committed_states": [
+        "before: grant + deny => denied",
+        "after grant-removal commit: no grant + deny => denied",
+        "after override-removal commit: no grant + no override => denied"
+      ],
+      "forbidden_current_main_result": "old grants=[forum.reply.create] + new overrides={} => effectivePermissions=[forum.reply.create], a state that never existed",
+      "selected_mechanism_expected_first_result": "wholly-before result: role A, old grant, deny override, effective denied",
+      "next_call": "after the first snapshot transaction ends, a new repository/capability call must see wholly-after: role A, no grant, no override, effective denied",
+      "failure_on_current_main": "The same barrier wrapper intercepts current pool.query calls, so current main deterministically releases the override query only after both commits and produces the forbidden allowed result."
+    },
+    "rem11": {
+      "before_state": {
+        "user": "snapshot-user",
+        "assignment": "snapshot-role-a",
+        "role_a_grants": [
+          "forum.reply.create"
+        ],
+        "role_b_grants": [],
+        "effective": [
+          "forum.reply.create"
+        ]
+      },
+      "interleaving": [
+        "start readManagementState()",
+        "allow roles SELECT and users/assignment SELECT to complete against before-state; signal users-read barrier",
+        "hold the grants SELECT before it is sent to PostgreSQL",
+        "writer commit #1 changes snapshot-user assignment A→B",
+        "writer commit #2 atomically moves forum.reply.create grant from A to B",
+        "signal writer-committed barrier and release grants SELECT; overrides then read normally"
+      ],
+      "committed_states": [
+        "before: U=A, A grants P => allowed",
+        "intermediate after assignment commit: U=B, B lacks P => denied",
+        "after grant-move commit: U=B, B grants P => allowed"
+      ],
+      "forbidden_current_main_result": "users/assignment from before says U=A while final grants say A=[], B=[P], so returned U has role A with no/effective permission; this full management result matches none of the committed states",
+      "selected_mechanism_expected_first_result": "wholly-before management result: U=A, A grants P, effective allowed",
+      "next_call": "after the snapshot transaction ends, a new readManagementState() must see wholly-after: U=B, B grants P, effective allowed",
+      "failure_on_current_main": "Current four independent autocommit reads on Pool(max=1) still acquire statement snapshots separately; the deterministic barrier therefore exposes the mixed result without relying on timing."
+    },
+    "preserved_regressions": [
+      "management data-query count remains exactly four; transaction control queries are counted separately and no per-user N+1 is introduced",
+      "existing Stage 4 next-request authorization freshness E2E remains green",
+      "request-scoped resolve cache remains request-local; same capability/user reuses one promise while a newly created capability performs a fresh snapshot read",
+      "PR #76 availability failures from connect/BEGIN/component query/COMMIT remain classified by existing Hyperdrive boundary; schema/programming failures remain unmasked",
+      "permission precedence, response objects, lockout and all mutation behavior remain unchanged"
+    ]
+  },
+  "future_verification": {
+    "focused": [
+      "pnpm exec vitest run db/authorization-repository.test.ts db/hyperdrive-authorization.test.ts",
+      "pnpm exec vitest run --config vitest.database.config.ts tests/database/authorization-snapshot.test.ts tests/database/stage4-core-e2e.test.ts"
+    ],
+    "full": [
+      "pnpm lint",
+      "pnpm typecheck",
+      "pnpm test",
+      "pnpm db:test",
+      "pnpm build",
+      "git diff --check"
+    ],
+    "github_actions": [
+      "checks success on the exact implementation head",
+      "database success on the exact implementation head"
+    ]
+  },
+  "forbidden_scope": [
+    "db/authorization-service.ts",
+    "db/hyperdrive-authorization.ts",
+    "app/authorization/*",
+    "app/routes/*",
+    "docs/auth/AUTHORIZATION.md",
+    "db/schema.ts",
+    "drizzle/*.sql",
+    "drizzle/meta/*",
+    "package.json",
+    "pnpm-lock.yaml",
+    ".github/workflows/*",
+    "UI redesign",
+    "public repository/service/capability contracts",
+    "permission catalog/precedence changes",
+    "mutation/lockout changes",
+    "long-lived authorization cache",
+    "external Hyperdrive/Neon/deployment/bootstrap operations",
+    "Stage 6 work",
+    "unrelated Stage 5 work",
+    "PR #78"
+  ],
+  "stop_conditions": [
+    "Either EX60-27 or EX61-42 cannot be reproduced/tested deterministically with explicit query barriers and two PostgreSQL connections.",
+    "The selected transaction/query mechanism cannot prove a single stable snapshot for all component reads.",
+    "Transaction cleanup can mask the original component/COMMIT error or can leak/reuse a client with an open transaction.",
+    "Implementation would alter permission precedence, response shape, mutation/lockout behavior, PR #76 availability-only degradation, next-request freshness, or introduce long-lived authority.",
+    "Schema/migration/dependency/workflow/external changes become necessary.",
+    "Any tracked path outside the six-file allowlist is required.",
+    "REM-10 and REM-11 cannot remain separately asserted/testable.",
+    "PROJECT_STATE cannot be synchronized truthfully only after both units are complete.",
+    "Focused/full local DB tests or final Actions database job fail."
+  ],
+  "implementation_non_goals": [
+    "No implementation in this task.",
+    "No implementation branch or implementation PR.",
+    "No schema/migration/dependency/workflow/source-contract change.",
+    "No external operation.",
+    "No PR #78 mutation.",
+    "No R7 authorization or merge-readiness decision."
+  ],
+  "conclusion": {
+    "status": "PASS",
+    "current_atomic_ids": {
+      "EX60-27": "current",
+      "EX61-42": "current"
+    },
+    "selected_mechanism": "shared private raw-pg REPEATABLE READ READ ONLY snapshot transaction",
+    "delivery": "one standalone R7 implementation PR if separately authorized",
+    "future_changed_file_count": 6,
+    "project_state_update_required": true,
+    "implementation_authorized": false,
+    "next_action_owner": "Codex lead reviewer/coordinator"
+  }
+}
