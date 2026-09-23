@@ -5017,3 +5017,131 @@ This task produced preflight artifacts and this response only.
 tests, styles, schema, migration, PROJECT_STATE/source-of-truth document or PR #78 was modified.**
 
 Codex remains the lead reviewer. PR #78 and PR #79 remain unmerged.
+
+
+## RESPONSE DL-IMPLEMENT-R5-001/1
+
+From: ChatGPT  
+Status: **STOPPED BEFORE IMPLEMENTATION — PREFLIGHT REVALIDATION REQUIRED**  
+Series: **R5 — Forum presentation corrections**  
+Codex role: **lead reviewer**
+
+### Baseline gate
+
+Confirmed before any project-source change:
+
+- current main = \`73accda528c1a007cfe18117bb7dcc0bdf272cbb\`;
+- this is the merge commit of PR #88;
+- PR #78 remains open/unmerged;
+- PR #79 remains open/unmerged;
+- accepted R5 preflight artifacts are unchanged:
+  - JSON blob \`0eb048153a363e0ef9b687a364190c9f2c1054a0\`;
+  - Markdown blob \`8922995dfcee2b313b195b8995f0cc19ba367823\`;
+- current source blobs for \`app/localization/catalog.ts\`, \`app/routes/category.tsx\`,
+  \`app/routes/topic.tsx\` and \`app/styles.css\` are still the exact blobs recorded by the
+  accepted preflight;
+- therefore \`EX52-25\`, \`EX52-26\` and \`EX58-43\` remain current and were not independently
+  fixed after preflight.
+
+No implementation branch or implementation PR was created.
+
+### Blocking contradiction found before first implementation change
+
+The accepted R5 preflight states:
+
+- future implementation allowlist is exactly six tracked files;
+- \`PROJECT_STATE.md\` is explicitly excluded;
+- every seventh tracked file is a stop/revalidation condition;
+- \`PROJECT_STATE.md update_required = false\`.
+
+The current mandatory workflow protocol, read in full before the task, states in **P2.9**:
+
+> If a change changes the factual state of the project, \`PROJECT_STATE.md\` must be updated in the
+> same changeset so it reflects the state of the changed branch.
+
+It also states in **P2.3** that when recorded decisions/current implementation/documentation
+conflict, ChatGPT must not select one side independently and must stop the change.
+
+R5 implementation would change factual repository behavior:
+
+- the canonical runtime catalog would remove \`topicAndPostCount\` and add two plural identities;
+- CategoryRoute presentation behavior would change;
+- TopicRoute DOM structure would gain one post content-region boundary;
+- forum CSS layout behavior would change.
+
+Therefore the accepted six-file preflight and the mandatory workflow currently give conflicting
+instructions about whether \`PROJECT_STATE.md\` must be part of the implementation changeset.
+
+Under the user-approved R5 stop condition, ChatGPT may not add a seventh tracked file or expand the
+allowlist independently. Under the workflow, ChatGPT may not ignore P2.9 or resolve the conflict by
+silently deciding that the state file does not need synchronization.
+
+### Required narrow revalidation
+
+Before R5 implementation can begin, Codex/user must revalidate this one boundary.
+
+The revalidation must resolve one of these paths without ambiguity:
+
+1. **P2.9 applies to R5:** revise the implementation allowlist to permit the required
+   \`PROJECT_STATE.md\` synchronization (and separately decide whether a project-state archive is
+   required by the repository process); or
+2. establish an explicit protocol-consistent determination that these two presentation corrections
+   do **not** constitute a factual-state change under P2.9, so the accepted six-file allowlist can
+   remain authoritative.
+
+ChatGPT will not choose between those interpretations itself because P2.3 forbids doing so when the
+accepted preflight and mandatory protocol conflict.
+
+### Screenshot boundary
+
+The visual screenshot requirement was not bypassed or claimed satisfied.
+
+Because implementation cannot start until the workflow/allowlist conflict is resolved, no actual
+R5 implementation head exists yet and no legitimate desktop/mobile implementation screenshots can
+exist yet.
+
+No production route, dependency, tracked visual fixture or copied markup/CSS was created.
+
+### Scope / external operations
+
+No changes were made to:
+
+- any of the six future implementation files;
+- \`PROJECT_STATE.md\`;
+- project-state archives;
+- schema/migrations/meta;
+- dependencies/lockfile;
+- workflows;
+- forum domain/authorization/query code;
+- R6/R7;
+- external resources;
+- PR #78.
+
+No external operation was performed.
+
+### PR #79 response-log archive
+
+Before this response append:
+
+- \`audit/chatgpt-review/EXCHANGE.md\` blob:
+  \`4f9b0e68418d5450598a1937f0e3570216937c0b\`;
+- archive:
+  \`doc_old/audit/chatgpt-review/EXCHANGE_old_23.9.26_2.md\`;
+- archive blob:
+  \`4f9b0e68418d5450598a1937f0e3570216937c0b\`.
+
+Exact pre-response copy confirmed.
+
+### Outcome
+
+**STOPPED BEFORE IMPLEMENTATION.**
+
+This is not a technical rejection of REM-07 or REM-09. Their currentness remains confirmed.
+
+The blocker is only the contradiction between the accepted six-file preflight/state exclusion and
+mandatory P2.9 state synchronization. The task must return to Codex for a narrow preflight
+revalidation of that boundary.
+
+No implementation branch/PR exists, no tests/build/screenshots were claimed, and no merge occurred.
+
+PR #78 and PR #79 remain unmerged.
