@@ -64,14 +64,24 @@ export class UiTranslationResultPublisher {
   }
 }
 
-function assertMachineProvenance(provenance: MachineTranslationProvenance): void {
-  if (provenance.origin !== "machine") {
+function assertMachineProvenance(
+  provenance: unknown,
+): asserts provenance is MachineTranslationProvenance {
+  if (typeof provenance !== "object" || provenance === null || Array.isArray(provenance)) {
+    throw new TranslationValidationError("translation provenance must be an object");
+  }
+
+  const candidate = provenance as Record<string, unknown>;
+  if (candidate.origin !== "machine") {
     throw new TranslationValidationError("translation publication origin must be machine");
   }
-  if (!provenance.provider.trim()) {
-    throw new TranslationValidationError("translation provider must not be blank");
+  if (typeof candidate.provider !== "string" || !candidate.provider.trim()) {
+    throw new TranslationValidationError("translation provider must be a non-blank string");
   }
-  if (!provenance.model.trim()) {
-    throw new TranslationValidationError("translation provider model must not be blank");
+  if (typeof candidate.model !== "string" || !candidate.model.trim()) {
+    throw new TranslationValidationError("translation provider model must be a non-blank string");
+  }
+  if (candidate.attribution !== undefined && typeof candidate.attribution !== "string") {
+    throw new TranslationValidationError("translation provider attribution must be a string");
   }
 }
