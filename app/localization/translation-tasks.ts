@@ -71,7 +71,12 @@ export type TranslationTaskFailureResult =
   | { readonly outcome: "claim-lost" };
 
 export type TranslationTaskClaimResult =
-  | { readonly outcome: "claimed"; readonly task: TranslationTask & { readonly status: "processing"; readonly claimToken: string } }
+  | {
+      readonly outcome: "claimed";
+      readonly task: TranslationTask & { readonly status: "processing"; readonly claimToken: string };
+      /** False only when an exhausted lease is reclaimed solely to persist terminal state. */
+      readonly attemptStarted: boolean;
+    }
   | { readonly outcome: "not-found" | "already-claimed" | "terminal" };
 
 export interface TranslationTaskMessage {
