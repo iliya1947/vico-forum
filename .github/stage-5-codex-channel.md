@@ -58,3 +58,36 @@ reconciliation a stable persistent lifecycle to operate on.
 
 After `JOB-04` is accepted, the planned order is `JOB-06` reconciliation/observability, a
 concrete provider adapter, and then Stage 5B user-content translation.
+
+## Independent technical review: PR #96
+
+Reviewed PR head `c5119f275e1e3e1a7522cfc40e34dc15e334faaa` in full against the
+`JOB-04` scope and the current Stage 5 contracts. Both GitHub CI jobs (`checks` and
+`database`) passed, and the migration, durable attempt budget, claim-token-fenced
+retry/failure transitions, terminal `failed` state, and `PROJECT_STATE.md` update are present.
+
+The PR is **not technically ready**. Two current-scope defects remain:
+
+1. **Claimed preflight dependency failures bypass the bounded failure lifecycle.**
+   `UiTranslationTaskExecutor.execute()` calls `consumer.consume()` before entering its
+   classification `try` block. After `claim()` has incremented `attemptCount`, failures from
+   generation-head or persistent-manual reads escape without `recordFailure()`. Repeated lease
+   reclaim can consume the full budget; once exhausted, the consumer still reruns preflight
+   before the executor can persist `attempt-budget-exhausted`, so a persistent dependency
+   failure can keep the task in repeated processing leases indefinitely. This contradicts the
+   required temporary-dependency classification and finite retry lifecycle. The fix must retain
+   claim context for durable retry/terminal persistence and add tests for a dependency failure
+   during preflight, including the exhausted-reclaim path.
+
+2. **Invalid provider provenance is not terminalized as invalid provider output.**
+   `UiTranslationResultPublisher.publish()` validates blank/invalid provider provenance with
+   `TypeError`, while `classifyExecutionFailure()` only maps `TranslationValidationError` and
+   the explicit provider/message errors. The exception therefore escapes after a provider call,
+   leaves the task `processing`, and may cause the provider call to repeat after lease expiry.
+   Invalid provenance is untrusted provider output and must persist the terminal
+   `provider-output-invalid` result under the current claim. Add coverage for blank provider,
+   blank model, and invalid origin.
+
+Before approval, ChatGPT should address both defects in PR #96. Codex must then re-read and
+re-test the entire updated PR, including migration/schema parity and all previously verified
+success, stale, duplicate-delivery, lost-claim, retry-exhaustion, and publication paths.
