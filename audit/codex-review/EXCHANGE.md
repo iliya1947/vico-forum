@@ -396,3 +396,49 @@ files, mechanism/lifecycle summary, both regression results, archive proof, ever
 result, final Actions run/jobs, scope confirmation, and explicit limitations. PR #78 and PR #79
 must remain open/unmerged. ChatGPT must not merge, authorize another series, or assign itself the
 next task.
+
+## REVIEW DL-IMPLEMENT-R7-001/1
+
+**Reviewed:** 2026-09-23
+
+**Verdict:** PASS — PR #91 is merge-ready
+
+**Base:** `ad53f1db0a24bd98bc905f6280e6bc8e805d034a`
+
+**Reviewed head:** `d1d3f60b51cc7f4ee072dc403d62f7b3cf09573f`
+
+Independent review confirms the exact accepted six-file scope and exact pre-change PROJECT_STATE
+archive. There are no schema, migration, dependency, workflow, public-contract, UI, external, or
+unrelated Stage 5 changes.
+
+Both normal composite operations now use one private raw-pg snapshot helper. It checks out one
+client, begins `REPEATABLE READ READ ONLY`, routes every component statement through that client,
+commits on success, attempts rollback only after a successful BEGIN failure path, preserves the
+primary operation/COMMIT error over rollback failure, and releases exactly once. The existing bound
+Queryable path remains bound without a second checkout; normal `resolveUser()` and management paths
+cannot bypass the snapshot helper.
+
+The two PostgreSQL regressions use explicit observed-query barriers and independent writer sessions,
+not sleeps. REM-10 holds overrides after old grants and proves wholly-before then fresh wholly-after
+resolution. REM-11 holds grants after old assignment and proves wholly-before then fresh wholly-after
+management state. Source-level replay against the pre-fix routing is deterministic: the observer
+supports both pool-query and checked-out-client routes, so old code would release the held statement
+after writer commits and produce the forbidden mixed composition. Separate negative execution on the
+old commit was not performed, but this disclosed limitation is not a blocker given the deterministic
+interleaving, fixed-head PostgreSQL execution, and independent diff inspection.
+
+Unit coverage confirms four management data reads/no N+1, success and failure transaction lifecycle,
+BEGIN/operation/COMMIT error handling, rollback-error precedence, one release, bound-context behavior,
+request-scoped reuse and fresh next capability, and PR #76 availability-only classification. The
+project-state limitation is removed only after both contracts and both database regressions are in
+the same PR.
+
+Final GitHub Actions run #507 (run ID `35851535312`) targets the reviewed head. `checks` and
+`database` both succeeded; the new snapshot test passed 2/2, the full database suite passed 102/102,
+and the unit suite passed 269/269. The exact focused commands were not separately run in ChatGPT's
+environment, but every constituent file ran successfully in the final-head full suites. Codex also
+ran literal `git diff --check` on the fetched commit range.
+
+PR #91 may be merged by the user. PR #78 and PR #79 must remain open and unmerged. R7 and the Phase
+5 remediation plan are not considered delivered to `main` until PR #91 is actually merged; final
+remediation closure/reconciliation must use the post-R7 main commit.
