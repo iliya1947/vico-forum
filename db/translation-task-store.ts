@@ -1,9 +1,13 @@
-import { and, eq, lte, or, sql } from "drizzle-orm";
+import { and, eq, gte, lt, lte, or, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import type { TranslationFailureRecord } from "../app/localization/translation-failures";
 import {
+  DEFAULT_TRANSLATION_TASK_MAX_ATTEMPTS,
   validateUiTranslationJobSpecification,
   type TranslationTask,
   type TranslationTaskClaimResult,
+  type TranslationTaskFailureResult,
+  type TranslationTaskFailureStore,
   type TranslationTaskStore,
 } from "../app/localization/translation-tasks";
 import {
@@ -21,7 +25,7 @@ export class TranslationTaskIntegrityError extends Error {
   }
 }
 
-export class DrizzleTranslationTaskStore implements TranslationTaskStore {
+export class DrizzleTranslationTaskStore implements TranslationTaskStore, TranslationTaskFailureStore {
   constructor(private readonly database: NodePgDatabase) {}
 
   async upsertPending(specification: UiTranslationJobSpecification): Promise<TranslationTask> {
@@ -61,8 +65,18 @@ export class DrizzleTranslationTaskStore implements TranslationTaskStore {
           existing.generation === currentGeneration ? currentGeneration : currentGeneration + 1;
         const reactivated = await transaction.update(translationTasks).set({
           generation,
-          status: "pending", claimToken: null, claimedAt: null, leaseExpiresAt: null,
-          staleAt: null, completedAt: null, updatedAt: databaseNow,
+          status: "pending",
+          attemptCount: 0,
+          maxAttempts: DEFAULT_TRANSLATION_TASK_MAX_ATTEMPTS,
+          lastFailureCode: null,
+          failureDisposition: null,
+          claimToken: null,
+          claimedAt: null,
+          leaseExpiresAt: null,
+          staleAt: null,
+          completedAt: null,
+          failedAt: null,
+          updatedAt: databaseNow,
         }).where(and(eq(translationTasks.id, existing.id), eq(translationTasks.status, "stale"))).returning();
 
         if (generation !== currentGeneration) {
@@ -85,6 +99,8 @@ export class DrizzleTranslationTaskStore implements TranslationTaskStore {
         generationPolicyVersion: specification.generationPolicyVersion,
         generation,
         status: "pending",
+        attemptCount: 0,
+        maxAttempts: DEFAULT_TRANSLATION_TASK_MAX_ATTEMPTS,
       }).returning();
       if (generation !== currentGeneration) {
         await transaction.update(translationTaskGenerationHeads).set({
@@ -126,32 +142,143 @@ export class DrizzleTranslationTaskStore implements TranslationTaskStore {
     if (!Number.isSafeInteger(leaseDurationMs) || leaseDurationMs <= 0) {
       throw new TypeError("translation task lease duration must be a positive integer");
     }
-    const claimToken = crypto.randomUUID();
     const databaseNow = sql`statement_timestamp()`;
     const leaseExpiresAt = sql`${databaseNow} + (${leaseDurationMs}::double precision * interval '1 millisecond')`;
+    const claimable = or(
+      eq(translationTasks.status, "pending"),
+      and(eq(translationTasks.status, "processing"), lte(translationTasks.leaseExpiresAt, databaseNow)),
+    );
+
+    const claimToken = crypto.randomUUID();
     const rows = await this.database
       .update(translationTasks)
-      .set({ status: "processing", claimToken, claimedAt: databaseNow, leaseExpiresAt, updatedAt: databaseNow })
+      .set({
+        status: "processing",
+        claimToken,
+        claimedAt: databaseNow,
+        leaseExpiresAt,
+        attemptCount: sql`${translationTasks.attemptCount} + 1`,
+        updatedAt: databaseNow,
+      })
       .where(and(
         eq(translationTasks.id, id),
-        or(
-          eq(translationTasks.status, "pending"),
-          and(eq(translationTasks.status, "processing"), lte(translationTasks.leaseExpiresAt, databaseNow)),
-        ),
+        claimable,
+        lt(translationTasks.attemptCount, translationTasks.maxAttempts),
       ))
       .returning();
-    if (rows[0]) {
-      const task = await parseTaskRow(rows[0]);
-      if (task.status !== "processing" || !task.claimToken) {
-        throw new TranslationTaskIntegrityError("claimed translation task has invalid processing state");
-      }
-      return { outcome: "claimed", task: { ...task, status: "processing", claimToken: task.claimToken } };
-    }
+    if (rows[0]) return claimedResult(rows[0], true);
+
+    // A crashed final attempt may leave an expired processing lease with its budget already
+    // consumed. Reclaim ownership without incrementing so the executor can persist terminal
+    // retry-exhaustion under a fresh claim token without another provider call.
+    const exhaustedClaimToken = crypto.randomUUID();
+    const exhausted = await this.database
+      .update(translationTasks)
+      .set({
+        status: "processing",
+        claimToken: exhaustedClaimToken,
+        claimedAt: databaseNow,
+        leaseExpiresAt,
+        updatedAt: databaseNow,
+      })
+      .where(and(
+        eq(translationTasks.id, id),
+        eq(translationTasks.status, "processing"),
+        lte(translationTasks.leaseExpiresAt, databaseNow),
+        gte(translationTasks.attemptCount, translationTasks.maxAttempts),
+      ))
+      .returning();
+    if (exhausted[0]) return claimedResult(exhausted[0], false);
+
     const existing = await this.findById(id);
     if (!existing) return { outcome: "not-found" };
     return {
-      outcome: existing.status === "stale" || existing.status === "completed" ? "terminal" : "already-claimed",
+      outcome: existing.status === "stale" || existing.status === "completed" || existing.status === "failed"
+        ? "terminal"
+        : "already-claimed",
     };
+  }
+
+  async recordFailure(
+    id: string,
+    claimToken: string,
+    failure: TranslationFailureRecord,
+  ): Promise<TranslationTaskFailureResult> {
+    if (!isUuid(id) || !isUuid(claimToken)) {
+      throw new TypeError("translation task failure transition requires valid identifiers");
+    }
+    assertFailureRecord(failure);
+    const databaseNow = sql`statement_timestamp()`;
+    const currentClaim = and(
+      eq(translationTasks.id, id),
+      eq(translationTasks.status, "processing"),
+      eq(translationTasks.claimToken, claimToken),
+    );
+
+    const terminalCondition = failure.disposition === "terminal"
+      ? currentClaim
+      : and(currentClaim, gte(translationTasks.attemptCount, translationTasks.maxAttempts));
+    const terminalDisposition = failure.code === "attempt-budget-exhausted" || failure.disposition === "retryable"
+      ? "retry-exhausted"
+      : "terminal";
+
+    const failed = await this.database
+      .update(translationTasks)
+      .set({
+        status: "failed",
+        claimToken: null,
+        leaseExpiresAt: null,
+        staleAt: null,
+        completedAt: null,
+        lastFailureCode: failure.code,
+        failureDisposition: terminalDisposition,
+        failedAt: databaseNow,
+        updatedAt: databaseNow,
+      })
+      .where(terminalCondition)
+      .returning({
+        attemptCount: translationTasks.attemptCount,
+        maxAttempts: translationTasks.maxAttempts,
+      });
+    if (failed[0]) {
+      return {
+        outcome: "terminal",
+        attemptCount: failed[0].attemptCount,
+        maxAttempts: failed[0].maxAttempts,
+        disposition: terminalDisposition,
+      };
+    }
+
+    if (failure.disposition === "retryable") {
+      const pending = await this.database
+        .update(translationTasks)
+        .set({
+          status: "pending",
+          claimToken: null,
+          claimedAt: null,
+          leaseExpiresAt: null,
+          staleAt: null,
+          completedAt: null,
+          failedAt: null,
+          lastFailureCode: failure.code,
+          failureDisposition: null,
+          updatedAt: databaseNow,
+        })
+        .where(and(currentClaim, lt(translationTasks.attemptCount, translationTasks.maxAttempts)))
+        .returning({
+          attemptCount: translationTasks.attemptCount,
+          maxAttempts: translationTasks.maxAttempts,
+        });
+      if (pending[0]) {
+        return {
+          outcome: "retry",
+          attemptCount: pending[0].attemptCount,
+          maxAttempts: pending[0].maxAttempts,
+        };
+      }
+    }
+
+    return { outcome: "claim-lost" };
   }
 
   async markStale(id: string, claimToken: string): Promise<boolean> {
@@ -167,6 +294,9 @@ export class DrizzleTranslationTaskStore implements TranslationTaskStore {
         leaseExpiresAt: null,
         staleAt: databaseNow,
         completedAt: null,
+        failedAt: null,
+        lastFailureCode: null,
+        failureDisposition: null,
         updatedAt: databaseNow,
       })
       .where(and(
@@ -190,6 +320,21 @@ export class DrizzleTranslationTaskStore implements TranslationTaskStore {
   }
 }
 
+async function claimedResult(
+  row: TranslationTaskRow,
+  attemptStarted: boolean,
+): Promise<TranslationTaskClaimResult> {
+  const task = await parseTaskRow(row);
+  if (task.status !== "processing" || !task.claimToken) {
+    throw new TranslationTaskIntegrityError("claimed translation task has invalid processing state");
+  }
+  return {
+    outcome: "claimed",
+    task: { ...task, status: "processing", claimToken: task.claimToken },
+    attemptStarted,
+  };
+}
+
 async function parseTaskRow(row: TranslationTaskRow): Promise<TranslationTask> {
   const task = {
     id: row.id,
@@ -201,11 +346,16 @@ async function parseTaskRow(row: TranslationTaskRow): Promise<TranslationTask> {
     generationPolicyVersion: row.generationPolicyVersion,
     generation: row.generation,
     status: row.status as TranslationTask["status"],
+    attemptCount: row.attemptCount,
+    maxAttempts: row.maxAttempts,
+    lastFailureCode: row.lastFailureCode,
+    failureDisposition: row.failureDisposition as TranslationTask["failureDisposition"],
     claimToken: row.claimToken,
     claimedAt: row.claimedAt,
     leaseExpiresAt: row.leaseExpiresAt,
     staleAt: row.staleAt,
     completedAt: row.completedAt,
+    failedAt: row.failedAt,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -228,6 +378,25 @@ async function parseTaskRow(row: TranslationTaskRow): Promise<TranslationTask> {
   if (!isTaskStatus(task.status)) throw new TranslationTaskIntegrityError("invalid translation task status");
   if (!Number.isSafeInteger(task.generation) || task.generation <= 0) {
     throw new TranslationTaskIntegrityError("invalid translation task generation");
+  }
+  if (
+    !Number.isSafeInteger(task.attemptCount) ||
+    !Number.isSafeInteger(task.maxAttempts) ||
+    task.attemptCount < 0 ||
+    task.maxAttempts <= 0 ||
+    task.attemptCount > task.maxAttempts
+  ) {
+    throw new TranslationTaskIntegrityError("invalid translation task attempt budget");
+  }
+  if (task.lastFailureCode !== null && !/^[a-z0-9][a-z0-9-]{0,63}$/.test(task.lastFailureCode)) {
+    throw new TranslationTaskIntegrityError("invalid translation task failure code");
+  }
+  if (
+    task.failureDisposition !== null &&
+    task.failureDisposition !== "terminal" &&
+    task.failureDisposition !== "retry-exhausted"
+  ) {
+    throw new TranslationTaskIntegrityError("invalid translation task failure disposition");
   }
   if (!isUuid(task.id) || !(task.createdAt instanceof Date) || !(task.updatedAt instanceof Date)) {
     throw new TranslationTaskIntegrityError("invalid translation task identity or timestamps");
@@ -265,19 +434,28 @@ function unitCondition(unit: TranslationUnit) {
 }
 
 function isTaskStatus(value: string): value is TranslationTask["status"] {
-  return value === "pending" || value === "processing" || value === "stale" || value === "completed";
+  return value === "pending" || value === "processing" || value === "stale" ||
+    value === "completed" || value === "failed";
 }
 
 function assertLifecycle(task: TranslationTask): void {
   const processing = task.status === "processing" && task.claimToken && task.claimedAt &&
-    task.leaseExpiresAt && !task.staleAt && !task.completedAt && task.leaseExpiresAt > task.claimedAt;
+    task.leaseExpiresAt && !task.staleAt && !task.completedAt && !task.failedAt &&
+    !task.failureDisposition && task.leaseExpiresAt > task.claimedAt;
   const pending = task.status === "pending" && !task.claimToken && !task.claimedAt &&
-    !task.leaseExpiresAt && !task.staleAt && !task.completedAt;
+    !task.leaseExpiresAt && !task.staleAt && !task.completedAt && !task.failedAt &&
+    !task.failureDisposition && task.attemptCount < task.maxAttempts;
   const stale = task.status === "stale" && !task.claimToken && task.claimedAt &&
-    !task.leaseExpiresAt && task.staleAt && !task.completedAt && task.staleAt >= task.claimedAt;
+    !task.leaseExpiresAt && task.staleAt && !task.completedAt && !task.failedAt &&
+    !task.failureDisposition && !task.lastFailureCode && task.staleAt >= task.claimedAt;
   const completed = task.status === "completed" && !task.claimToken && task.claimedAt &&
-    !task.leaseExpiresAt && !task.staleAt && task.completedAt && task.completedAt >= task.claimedAt;
-  if (!pending && !processing && !stale && !completed) {
+    !task.leaseExpiresAt && !task.staleAt && task.completedAt && !task.failedAt &&
+    !task.failureDisposition && !task.lastFailureCode && task.completedAt >= task.claimedAt;
+  const failed = task.status === "failed" && !task.claimToken && task.claimedAt &&
+    !task.leaseExpiresAt && !task.staleAt && !task.completedAt && task.failedAt &&
+    task.failureDisposition && task.lastFailureCode && task.attemptCount > 0 &&
+    task.failedAt >= task.claimedAt;
+  if (!pending && !processing && !stale && !completed && !failed) {
     throw new TranslationTaskIntegrityError("invalid translation task lifecycle");
   }
 }
@@ -306,6 +484,15 @@ function assertMatchesSpecification(
     task.generationPolicyVersion !== specification.generationPolicyVersion
   ) {
     throw new TranslationTaskIntegrityError("stable task identity conflicts with different task data");
+  }
+}
+
+function assertFailureRecord(failure: TranslationFailureRecord): void {
+  if (failure.disposition !== "retryable" && failure.disposition !== "terminal") {
+    throw new TypeError("translation failure disposition is invalid");
+  }
+  if (!/^[a-z0-9][a-z0-9-]{0,63}$/.test(failure.code)) {
+    throw new TypeError("translation failure code is invalid");
   }
 }
 
