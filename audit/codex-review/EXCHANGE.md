@@ -122,3 +122,104 @@ full final-head database job, while Codex independently inspected the full diff 
 PR #90 may be merged by the user. PR #78 and PR #79 must remain open and unmerged. R6 is not
 considered present in `main` until that merge occurs, and R7 preflight must not begin from a
 pre-R6 base.
+
+## TASK DL-IMPLEMENT-R7-PREFLIGHT-001/1
+
+**Issued:** 2026-09-23
+
+**Owner:** ChatGPT
+
+**Status:** preflight only; implementation is not authorized
+
+**Series:** Phase 5 remediation R7 / REM-10 + REM-11 / EX60-27 + EX61-42
+
+Use post-R6 `main` `ad53f1db0a24bd98bc905f6280e6bc8e805d034a`. Re-read the accepted remediation
+plan artifacts and independently revalidate both authorization snapshot-consistency findings against
+the current repository. Do not create an implementation branch or implementation PR.
+
+### Required currentness and contract review
+
+1. Reconstruct the current statement sequence for `resolveUser()` and `readManagementState()` and
+   show exactly how concurrent role-assignment, grant, or override commits can produce a mixed
+   result.
+2. Deliberately disconfirm each finding against all merged remediation through PR #90 and any later
+   current-main authorization changes. Do not carry the old conclusion forward without evidence.
+3. Preserve the contract in `docs/auth/AUTHORIZATION.md`: one internally consistent snapshot per
+   composite result, next-request freshness, request-scoped caching only, no long-lived authority.
+4. Preserve permission precedence, catalog, response shapes, mutation/lockout behavior, and the
+   availability-only degradation semantics restored by PR #76.
+
+### Mechanism decision required before implementation
+
+Compare at least these options using the pinned PostgreSQL/`pg`/Drizzle versions and official
+documentation:
+
+- one read-only transaction with an isolation level that actually supplies one snapshot across all
+  component statements;
+- one SQL statement/CTE per composite operation.
+
+Select the smallest mechanism that proves the semantic contract. Specify exact transaction start,
+commit/rollback, client release, error-precedence, and query-routing behavior. Do not assume that
+plain `READ COMMITTED` multi-statement transactions provide a stable snapshot. State whether a
+shared internal primitive is justified and how it avoids changing public repository/service APIs.
+
+### Delivery topology and allowlists
+
+Decide, with evidence, whether R7 should be:
+
+- one standalone PR covering both REM-10 and REM-11; or
+- two sequential standalone PRs, REM-10 first and REM-11 second, sharing the proven primitive only
+  when technically clean.
+
+Provide an exact tracked-file allowlist for every proposed PR. Treat schema, migrations,
+dependencies, workflows, UI, external resources, Stage 6 work, and unrelated refactors as forbidden
+unless current evidence proves one indispensable; if so, stop instead of silently expanding scope.
+
+Resolve the `PROJECT_STATE.md` boundary explicitly. It currently records both snapshot limitations.
+Specify in which final R7 changeset that limitation is removed or rewritten and require an exact
+pre-change archive before that edit. Do not claim R7 complete after only one of the two contracts is
+implemented.
+
+### Mandatory deterministic tests
+
+Design executable two-connection PostgreSQL integration tests for both operations. For each test,
+specify:
+
+- the exact before-state and after-state;
+- the exact point at which the second connection commits assignment/grant/override mutation while
+  the first composite read is in progress;
+- the deterministic coordination mechanism (not timing/sleeps);
+- the allowed wholly-before and wholly-after results;
+- the forbidden mixed result that fails on current `main` and is prevented by the selected
+  mechanism;
+- proof that the next new request/call sees the committed change;
+- cleanup and deadlock/time-out safeguards.
+
+Also preserve existing request-scoped cache tests, fixed/bounded query-count behavior, bulk reads,
+and no-N+1 behavior. Require focused unit/integration commands, `pnpm test`, `pnpm db:test`, lint,
+typecheck, build, `git diff --check`, and final-head GitHub Actions `checks` plus `database`.
+
+### Stop conditions
+
+Stop and report evidence instead of authorizing/designing implementation if:
+
+- the two snapshot contracts cannot be tested deterministically;
+- the proposed isolation/query mechanism does not guarantee a single snapshot;
+- error handling could mask the original query/commit error or leak a client/transaction;
+- the plan changes public semantics, introduces long-lived caching, or weakens next-request
+  freshness;
+- schema/migration/dependency/external changes appear necessary;
+- an exact bounded allowlist cannot be established;
+- REM-10 and REM-11 cannot remain independently testable.
+
+### Response
+
+Publish immutable JSON and Markdown artifacts, then append
+`RESPONSE DL-IMPLEMENT-R7-PREFLIGHT-001/1` to PR #79. Include artifact SHAs, verified base SHA,
+currentness verdicts for both atomic findings, selected mechanism with rejected alternatives,
+delivery topology, exact allowlist(s), state/archive plan, deterministic concurrency-test design,
+all commands/gates, and stop conditions. Explicitly confirm that no implementation branch/PR was
+created and no external operation was performed.
+
+PR #78 and PR #79 must remain open and unmerged. ChatGPT must not authorize R7, implement it,
+declare a future PR merge-ready, or assign itself the next task.
