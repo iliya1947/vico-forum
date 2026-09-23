@@ -53,9 +53,11 @@ export default function TopicRoute() {
           {topic.posts.map((post, index) => (
             <li id={`post-${post.id}`} className={`forum-post${topic.bestAnswerPostId === post.id ? " best-answer" : ""}`} key={post.id}>
               <header><strong>{post.authorName}</strong><span>{t("postNumber", { number: index + 1 })}</span></header>
-              {topic.bestAnswerPostId === post.id && <strong className="best-answer-label">{t("bestAnswer")}</strong>}
-              <ForumMarkdown>{post.body.originalContent}</ForumMarkdown>
-              {canManageSolution && topic.isSolved && topic.bestAnswerPostId !== post.id && <Form method="post" className="solution-form"><input type="hidden" name="intent" value="selectBestAnswer" /><input type="hidden" name="postId" value={post.id} /><button type="submit">{t("selectBestAnswer")}</button></Form>}
+              <div className="forum-post-content">
+                {topic.bestAnswerPostId === post.id && <strong className="best-answer-label">{t("bestAnswer")}</strong>}
+                <ForumMarkdown>{post.body.originalContent}</ForumMarkdown>
+                {canManageSolution && topic.isSolved && topic.bestAnswerPostId !== post.id && <Form method="post" className="solution-form"><input type="hidden" name="intent" value="selectBestAnswer" /><input type="hidden" name="postId" value={post.id} /><button type="submit">{t("selectBestAnswer")}</button></Form>}
+              </div>
             </li>
           ))}
         </ol>

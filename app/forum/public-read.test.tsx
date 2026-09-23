@@ -156,6 +156,55 @@ describe("forum read states", () => {
     expect(screen.queryByRole("button", { name: "Select as best answer" })).not.toBeInTheDocument();
   });
 
+  it("keeps best-answer, body, and solution controls inside one post content region", async () => {
+    const followup = {
+      ...topic.posts[0]!,
+      id: "followup",
+      authorId: "sam",
+      authorName: "Sam",
+      body: { id: "post-r2", originalContent: "Follow-up explanation.", sourceLocale: "en" },
+    };
+    const solvedTopic = {
+      ...topic,
+      isSolved: true,
+      bestAnswerPostId: "answer",
+      posts: [topic.posts[0]!, followup],
+    };
+
+    renderRoute(
+      TopicRoute,
+      { locale: "en", topic: solvedTopic, canReply: false, canManageSolution: true },
+      "/en/topics/typed-api",
+      "en",
+      "ltr",
+    );
+
+    expect(await screen.findByText("Best answer")).toBeInTheDocument();
+
+    const bestPost = document.querySelector("#post-answer");
+    const followupPost = document.querySelector("#post-followup");
+    expect(bestPost).not.toBeNull();
+    expect(followupPost).not.toBeNull();
+
+    const bestHeader = bestPost!.children.item(0);
+    const bestContent = bestPost!.children.item(1);
+    expect(bestPost!.children).toHaveLength(2);
+    expect(bestHeader?.tagName).toBe("HEADER");
+    expect(bestContent).toHaveClass("forum-post-content");
+    expect(bestContent).toContainElement(bestPost!.querySelector(".best-answer-label"));
+    expect(bestContent).toContainElement(bestPost!.querySelector(".post-body"));
+    expect(bestHeader).not.toContainElement(bestContent as HTMLElement);
+
+    const followupHeader = followupPost!.children.item(0);
+    const followupContent = followupPost!.children.item(1);
+    expect(followupPost!.children).toHaveLength(2);
+    expect(followupHeader?.tagName).toBe("HEADER");
+    expect(followupContent).toHaveClass("forum-post-content");
+    expect(followupContent).toContainElement(followupPost!.querySelector(".post-body"));
+    expect(followupContent).toContainElement(followupPost!.querySelector(".solution-form"));
+    expect(screen.getByRole("button", { name: "Select as best answer" })).toBeInTheDocument();
+  });
+
   it("shows solution controls only to the topic author", async () => {
     const unsolved = { locale: "en", topic, canReply: true, canManageSolution: true };
     const authorView = renderRoute(TopicRoute, unsolved, "/en/topics/typed-api", "en", "ltr");
