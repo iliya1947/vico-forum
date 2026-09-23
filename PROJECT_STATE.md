@@ -42,7 +42,7 @@ Vico Forum находится в ранней pre-release разработке.
 - generic `/:locale/*`, runtime `LocaleRegistry`, BCP-47 resolution, LTR/RTL и request-scoped
   `i18next`;
 - persistent locale registry, persistent UI translation storage и compiled bundle storage;
-- текущая migration history — `0000`–`0011`.
+- текущая migration history — `0000`–`0012`.
 
 ## Forum core — Stage 4
 
@@ -84,6 +84,8 @@ local/CI Stage 4 и остаются Stage 6.
 - durable monotonic generation ordering и current-generation fencing;
 - fresh-plan A-B-A reactivation stale stable identity через новую monotonic generation под существующим generation-head lock; completed identity и старая Queue delivery остаются terminal;
 - provider-neutral task executor;
+- typed retryable/terminal translation-execution failure taxonomy и transport-neutral `ack` / `retry` / terminal outcome boundary;
+- bounded durable attempt budget с PostgreSQL-owned lifecycle time, claim-token-fenced retry/failure transitions и persistent `failed` terminal path как local/CI DLQ equivalent;
 - conditional machine publication с provider/model provenance;
 - atomic `task completion + raw machine translation + whole namespace bundle` publication;
 - persisted exact-locale compiled bundles с deterministic current-deploy identity;
@@ -101,7 +103,6 @@ Migration `0007`–`0010` содержит durable task lifecycle и generation-
 
 Для завершения Stage 5 local/CI path ещё нужны:
 
-- `JOB-04` retry classification/DLQ semantics и соответствующий transport boundary;
 - `JOB-06` persistent task reconciliation/observability;
 - concrete machine-provider adapter implementation за существующим provider-neutral boundary;
 - Stage 5B `ContentTranslationService` и revision-bound перевод пользовательского контента;
@@ -158,8 +159,8 @@ no-op verification. Перед следующим настоящим external sc
 
 ## Ближайший маршрут
 
-1. Завершить оставшийся Stage 5A local/CI path: concrete machine-provider adapter,
-   retry/DLQ и reconciliation/observability, сохраняя provider/transport boundaries.
+1. Завершить оставшийся Stage 5A local/CI path: concrete machine-provider adapter и
+   reconciliation/observability, сохраняя provider/transport boundaries.
 2. Реализовать Stage 5B revision-bound user-content translation.
 3. После завершения Stage 5 перейти к Stage 6 external integration по `ROADMAP.md` и
    `docs/database/*`.
