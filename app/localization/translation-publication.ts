@@ -8,6 +8,7 @@ import {
 } from "./translation-task-consumer";
 import type { TranslationTaskStore } from "./translation-tasks";
 import {
+  TranslationValidationError,
   validateProviderOutput,
   type ProviderTranslationValue,
 } from "./translation-validation";
@@ -64,7 +65,13 @@ export class UiTranslationResultPublisher {
 }
 
 function assertMachineProvenance(provenance: MachineTranslationProvenance): void {
-  if (provenance.origin !== "machine") throw new TypeError("translation publication origin must be machine");
-  if (!provenance.provider.trim()) throw new TypeError("translation provider must not be blank");
-  if (!provenance.model.trim()) throw new TypeError("translation provider model must not be blank");
+  if (provenance.origin !== "machine") {
+    throw new TranslationValidationError("translation publication origin must be machine");
+  }
+  if (!provenance.provider.trim()) {
+    throw new TranslationValidationError("translation provider must not be blank");
+  }
+  if (!provenance.model.trim()) {
+    throw new TranslationValidationError("translation provider model must not be blank");
+  }
 }
