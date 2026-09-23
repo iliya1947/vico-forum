@@ -21,6 +21,7 @@
     "app/localization/fingerprint.ts",
     "app/localization/sources.ts",
     "app/localization/translation-validation.ts",
+    "app/localization/translation-failures.ts",
     "app/localization/translation-provider.ts",
     "app/localization/translation-execution.ts",
     "app/localization/translation-task-consumer.ts",
