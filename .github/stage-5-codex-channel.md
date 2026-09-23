@@ -2,21 +2,18 @@
 
 ## Действие пользователя — сейчас
 
-1. Send PR #94 to ChatGPT through the ChatGPT service channel, PR #95.
-2. Ask ChatGPT to independently verify the two Codex findings about PR #96 recorded below and
-   reply in PR #95. ChatGPT should check the current full PR #96 rather than accept the Codex
-   conclusions without verification.
-3. Do **not** merge PR #96 and do not ask for code changes until ChatGPT either confirms the
-   findings or provides its technical disagreement.
-4. Bring the ChatGPT response back to PR #94 so Codex can compare the arguments and complete
-   technical agreement. Only agreed defects should then be assigned for correction.
+1. Do **not** merge PR #96 yet.
+2. Ask ChatGPT in its service channel, PR #95, to correct both technically agreed defects in
+   PR #96 without expanding the `JOB-04` scope.
+3. After ChatGPT updates PR #96 and its `checks` and `database` jobs pass, send the new PR #96
+   head SHA to Codex for the mandatory full re-review.
 
 Suggested message for PR #95:
 
-> Проверь обновление Codex в PR #94 с результатом проверки PR #96. Независимо перепроверь весь
-> актуальный PR #96 и отдельно оцени два вывода Codex: обработку dependency failure во время
-> claimed preflight и invalid provider provenance. Ответь в PR #95, согласен ли ты с каждым
-> выводом и почему. Пока не исправляй код до технического согласования.
+> Технический консенсус по двум дефектам PR #96 достигнут. Исправь оба дефекта без расширения
+> scope JOB-04: включи claimed-preflight dependency failures в bounded durable failure lifecycle
+> и terminalize invalid provider provenance как provider-output-invalid. Добавь соответствующие
+> тесты. После обновления сообщи новый head SHA PR #96 и результаты checks/database. Не merge.
 
 This file initializes the non-merge Codex service PR for Stage 5. Codex uses this channel to
 record its technical plan, pass tasks and conclusions for dialogue with ChatGPT, and report
@@ -84,8 +81,7 @@ Reviewed PR head `c5119f275e1e3e1a7522cfc40e34dc15e334faaa` in full against the
 `database`) passed, and the migration, durable attempt budget, claim-token-fenced
 retry/failure transitions, terminal `failed` state, and `PROJECT_STATE.md` update are present.
 
-Codex does **not** recommend merging the PR yet. Two current-scope findings require independent
-ChatGPT verification and technical agreement:
+Codex does **not** recommend merging the PR yet. Two current-scope defects were identified:
 
 1. **Claimed preflight dependency failures bypass the bounded failure lifecycle.**
    `UiTranslationTaskExecutor.execute()` calls `consumer.consume()` before entering its
@@ -107,8 +103,14 @@ ChatGPT verification and technical agreement:
    `provider-output-invalid` result under the current claim. Add coverage for blank provider,
    blank model, and invalid origin.
 
-If ChatGPT confirms the findings, it should then correct both defects in PR #96 without
-expanding the `JOB-04` scope. If it disagrees, it should provide the technical reasoning for
-Codex to verify before any correction. After an agreed correction, Codex must re-read and
-re-test the entire updated PR, including migration/schema parity and all previously verified
-success, stale, duplicate-delivery, lost-claim, retry-exhaustion, and publication paths.
+### Technical agreement result
+
+ChatGPT independently reviewed the current full PR #96 at
+`c5119f275e1e3e1a7522cfc40e34dc15e334faaa` and confirmed both findings in PR #95. It also
+reported no additional current-Stage defects in the remaining diff. Codex rechecked that the
+PR #96 head is unchanged and agrees with ChatGPT's reasoning. Both defects are therefore
+technically confirmed and may now be corrected.
+
+After the corrections, Codex must re-read and re-test the entire updated PR, including
+migration/schema parity and all previously verified success, stale, duplicate-delivery,
+lost-claim, retry-exhaustion, preflight-failure, invalid-provenance, and publication paths.
