@@ -6204,3 +6204,454 @@ PR #78 and PR #79 remain open/unmerged control/response channels and were not me
 
 This response does not call PR #90 merge-ready and does not assign the next task. Codex remains the
 lead reviewer/coordinator and the user remains the merge authority.
+
+
+## RESPONSE DL-IMPLEMENT-R7-PREFLIGHT-001/1
+
+From: ChatGPT  
+Status: **PASS — PREFLIGHT ONLY; R7 IMPLEMENTATION NOT AUTHORIZED**  
+Series: **R7 / REM-10 + REM-11 / EX60-27 + EX61-42**  
+Post-R6 base: \`ad53f1db0a24bd98bc905f6280e6bc8e805d034a\`  
+Codex role: **lead reviewer/coordinator**
+
+### Baseline / control channels
+
+Verified before analysis:
+
+- \`main = ad53f1db0a24bd98bc905f6280e6bc8e805d034a\`;
+- this is the merge commit of PR #90;
+- PR #78 remains open/unmerged;
+- PR #79 remains open/unmerged.
+
+Accepted remediation plan:
+
+- JSON blob \`739d326eb9e00a705003fff43ba4592c2f453e56\`;
+- Markdown blob \`d7766b1a857a8f70d279778fb82a478c74d3161c\`.
+
+No implementation branch or implementation PR was created.
+
+### Immutable preflight artifacts
+
+Published in PR #79:
+
+- \`audit/chatgpt-review/DL-IMPLEMENT-R7-PREFLIGHT-001.json\`
+  - blob: \`686e1ba87401f8d403e11114219764ebf303dc56\`
+- \`audit/chatgpt-review/DL-IMPLEMENT-R7-PREFLIGHT-001.md\`
+  - blob: \`c7e28254526c09714151c41a38b1814418abc86d\`
+
+### Currentness
+
+#### EX60-27 — CURRENT
+
+Current \`resolveUser()\` still reads:
+
+1. role/assignment;
+2. optional missing-user discrimination;
+3. role grants;
+4. user overrides;
+
+as separate statements and composes effective permissions in application code.
+
+A deterministic mixed-state example remains possible:
+
+- before: role grants P + user deny override => denied;
+- writer removes grant and commits => still denied;
+- writer then removes deny and commits => still denied;
+- reader can retain old grants but read new no-override state => incorrectly allowed.
+
+The returned allowed state never existed in any committed database state.
+
+The original PR #60 review finding remains at thread
+\`PRRT_kwDOUTDpW86iU98t\`.
+
+\`db/authorization-repository.ts\` has not changed since PR #61. PR #76 changed
+availability/error semantics only. PR #81–#90 do not add repository snapshot isolation.
+
+**Verdict: current.**
+
+#### EX61-42 — CURRENT
+
+Current \`readManagementState()\` still performs four independent data reads:
+
+1. roles;
+2. users/assignments;
+3. grants;
+4. overrides.
+
+Concrete mixed example:
+
+- before: U=A and A grants P => allowed;
+- after the users read, writer commits U assignment A→B;
+- writer then commits moving P from A to B;
+- final state: U=B and B grants P => allowed;
+- current reader can combine old U=A with final grants A=[], B=[P] => U appears as A but denied.
+
+That composite management result is neither the before, intermediate, nor final committed state.
+
+PR #61 fixed N+1/fan-out but did not add one stable snapshot. No later repository commit through
+PR #90 fixes this.
+
+**Verdict: current.**
+
+### Preserved contract
+
+R7 must preserve \`docs/auth/AUTHORIZATION.md\`:
+
+- one internally consistent snapshot per complete \`resolveUser\`;
+- one internally consistent snapshot per complete \`readManagementState\`;
+- next protected request sees committed changes;
+- request-scoped cache only;
+- no long-lived authoritative authorization cache;
+- permission precedence remains deny → allow → role grant → deny by default;
+- permission catalog and response shapes remain unchanged;
+- mutation/lockout semantics remain unchanged;
+- PR #76 availability-only degradation remains unchanged;
+- unexpected schema/programming/configuration errors remain unmasked.
+
+### Mechanism decision
+
+Selected mechanism:
+
+**one private raw-node-postgres read snapshot primitive using
+\`REPEATABLE READ READ ONLY\`.**
+
+Exact transaction start:
+
+\`\`\`sql
+BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY
+\`\`\`
+
+All component reads for one composite result must use the same checked-out \`PoolClient\`.
+
+Official documentation checked:
+
+- PostgreSQL 17:
+  https://www.postgresql.org/docs/17/transaction-iso.html
+- PostgreSQL BEGIN:
+  https://www.postgresql.org/docs/17/sql-begin.html
+- node-postgres transactions:
+  https://node-postgres.com/features/transactions
+- Drizzle transactions:
+  https://orm.drizzle.team/docs/transactions
+
+PostgreSQL READ COMMITTED is explicitly rejected because successive SELECT statements may observe
+different concurrent commits.
+
+PostgreSQL Repeatable Read pins one snapshot at the first non-transaction-control statement and
+successive SELECTs in that transaction keep that view. PostgreSQL also documents that read-only
+Repeatable Read transactions do not suffer serialization conflicts from concurrent updates.
+
+node-postgres requires all transaction statements to use the same client.
+
+### Rejected alternatives
+
+#### Single SQL / CTE
+
+Semantically viable because one statement has one snapshot.
+
+Rejected as the default R7 mechanism because it would require two separate bespoke aggregate/query
+shapes, relocate or duplicate current permission/response assembly logic, and make the management
+query substantially more complex.
+
+#### Drizzle transaction wrapper
+
+Technically viable; Drizzle supports repeatable-read/read-only transaction config.
+
+Not selected because the authorization repository is already raw \`pg\` and introducing a Drizzle
+wrapper solely for these composite reads is broader than a private PoolClient helper.
+
+#### SERIALIZABLE
+
+Stronger than required. R7 needs a stable read snapshot, not serializable anomaly detection.
+
+### Transaction lifecycle / error precedence
+
+Selected internal helper must:
+
+1. \`pool.connect()\` once;
+2. BEGIN \`REPEATABLE READ READ ONLY\`;
+3. route all component statements through that client;
+4. build the normal result;
+5. COMMIT;
+6. release exactly once in \`finally\`.
+
+If a component query/result construction or COMMIT fails after BEGIN:
+
+- retain that original failure as primary;
+- best-effort ROLLBACK;
+- rollback cleanup failure must not mask the original;
+- release client;
+- do not translate error classes in the repository.
+
+BEGIN failure propagates and the client is released without pretending a transaction started.
+
+Existing Hyperdrive availability classification remains the only translation boundary.
+
+### Delivery topology
+
+Selected:
+
+**one standalone R7 implementation PR containing both REM-10 and REM-11.**
+
+Reasons:
+
+- same repository file;
+- same private snapshot primitive;
+- REM-11 is already recommended after REM-10 for primitive reuse;
+- separate logical commits inside one PR retain independent reviewability;
+- PROJECT_STATE currently records one limitation covering both contracts and cannot truthfully
+  declare R7 resolved after only REM-10.
+
+Both units remain independently testable.
+
+### Exact future allowlist
+
+Future R7 implementation, if separately authorized, is limited to:
+
+1. \`db/authorization-repository.ts\`
+2. \`db/authorization-repository.test.ts\`
+3. \`db/hyperdrive-authorization.test.ts\`
+4. \`tests/database/authorization-snapshot.test.ts\`
+5. \`PROJECT_STATE.md\`
+6. \`doc_old/PROJECT_STATE_old_23.9.26_1.md\`
+
+Any required seventh tracked path is a stop/revalidation condition.
+
+No change is planned for \`db/authorization-service.ts\` or
+\`db/hyperdrive-authorization.ts\`.
+
+### PROJECT_STATE / archive plan
+
+Unlike R5/R6, R7 **does** change factual state already tracked by PROJECT_STATE.
+
+Current PROJECT_STATE explicitly contains:
+
+\`Authorization snapshot consistency\`
+
+as a known current limitation.
+
+Future implementation must:
+
+1. before editing PROJECT_STATE, create
+   \`doc_old/PROJECT_STATE_old_23.9.26_1.md\` as exact byte-for-byte current state;
+2. implement and prove both REM-10 and REM-11;
+3. only then remove/rewrite the snapshot limitation;
+4. minimally reflect the implemented high-level snapshot-consistent authorization composite reads
+   in the Stage 4 state if needed;
+5. not record PR/CI history or external acceptance.
+
+After REM-10 alone the limitation must remain.
+
+The proposed archive path is currently free.
+
+### Deterministic two-connection test design
+
+Future test file:
+
+\`tests/database/authorization-snapshot.test.ts\`
+
+Common design:
+
+- dedicated disposable local PostgreSQL schema;
+- one reader \`Pool({ max: 1 })\`;
+- one separate writer \`Client\`;
+- test-owned wrapper intercepts relevant SQL for both current \`pool.query\` and future
+  \`connect()/client.query\` routing;
+- coordination uses explicit Promise/deferred barriers, not sleeps;
+- timeout/lock safeguards are failure watchdogs only;
+- cleanup rolls back any unfinished writer transaction, closes both sessions and removes schema.
+
+#### REM-10 choreography
+
+Before:
+
+- U role A;
+- A grants P;
+- U deny override P;
+- effective denied.
+
+Reader:
+
+1. starts \`resolveUser(U)\`;
+2. completes role read;
+3. completes grants read and signals barrier;
+4. override SELECT is held before PostgreSQL.
+
+Writer:
+
+1. commits removal of A→P grant;
+2. commits removal of U deny override;
+3. releases reader barrier.
+
+All real committed states are denied.
+
+Forbidden current-main result:
+
+- old grant + new no override => allowed.
+
+Fixed first result must be wholly-before:
+
+- grant + deny => denied.
+
+A new call after transaction completion must be wholly-after:
+
+- no grant + no override => denied.
+
+This proves both one-snapshot consistency and next-call freshness.
+
+#### REM-11 choreography
+
+Before:
+
+- U role A;
+- A grants P;
+- B lacks P;
+- U allowed.
+
+Reader:
+
+1. starts \`readManagementState()\`;
+2. completes roles read;
+3. completes users/assignment read and signals barrier;
+4. grants SELECT is held before PostgreSQL.
+
+Writer:
+
+1. commits U assignment A→B;
+2. commits a grant move A→B;
+3. releases reader barrier.
+
+Committed states:
+
+- before: U=A/A grants P => allowed;
+- intermediate: U=B/B lacks P => denied;
+- after: U=B/B grants P => allowed.
+
+Forbidden current-main result:
+
+- old U=A;
+- final grants A=[], B=[P];
+- U returned as A with no/effective permission.
+
+That full response is not any committed state.
+
+Fixed first result must be wholly-before.
+
+A new management call must be wholly-after.
+
+### Preserved query/cache/error evidence
+
+Future implementation must also prove:
+
+- management data-query count remains exactly four;
+- no per-user N+1 regression;
+- one checked-out client per composite transaction;
+- BEGIN/COMMIT on success;
+- ROLLBACK on failure;
+- rollback cleanup never masks original query/COMMIT failure;
+- client release exactly once;
+- same request/capability continues to reuse the request-scoped resolve promise;
+- a new capability/request does a fresh resolution;
+- existing Stage 4 next-request role/grant/override E2E remains green;
+- PR #76 classified availability errors remain typed unavailable;
+- schema/programming errors remain visible.
+
+### Required future commands
+
+Focused unit:
+
+\`\`\`sh
+pnpm exec vitest run db/authorization-repository.test.ts db/hyperdrive-authorization.test.ts
+\`\`\`
+
+Focused database:
+
+\`\`\`sh
+pnpm exec vitest run --config vitest.database.config.ts tests/database/authorization-snapshot.test.ts tests/database/stage4-core-e2e.test.ts
+\`\`\`
+
+Full gates:
+
+\`\`\`sh
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm db:test
+pnpm build
+git diff --check
+\`\`\`
+
+Final implementation head must have:
+
+- GitHub Actions \`checks\`: success;
+- GitHub Actions \`database\`: success.
+
+### Stop conditions
+
+Stop and return to Codex if:
+
+1. either contract cannot be reproduced/tested deterministically with explicit barriers and two
+   PostgreSQL sessions;
+2. selected mechanism does not guarantee one snapshot;
+3. transaction cleanup can mask the original query/COMMIT error or leak a client/transaction;
+4. public semantics, precedence, response shape, mutation/lockout or PR #76 semantics would change;
+5. next-request freshness weakens or long-lived authority is introduced;
+6. schema/migration/dependency/workflow/external change is required;
+7. any seventh tracked path is required;
+8. REM-10 and REM-11 cannot remain independently asserted;
+9. PROJECT_STATE cannot be synchronized truthfully only after both units complete;
+10. focused/full DB verification or final Actions database job fails.
+
+### Forbidden future scope
+
+Explicitly outside accepted R7 implementation:
+
+- \`db/authorization-service.ts\`;
+- \`db/hyperdrive-authorization.ts\`;
+- \`app/authorization/*\`;
+- \`app/routes/*\`;
+- \`docs/auth/AUTHORIZATION.md\`;
+- schema/migrations/meta;
+- dependencies/lockfile;
+- workflows;
+- UI redesign;
+- permission catalog/precedence;
+- mutation/lockout changes;
+- long-lived authorization cache;
+- external Hyperdrive/Neon/bootstrap/deployment actions;
+- Stage 6;
+- unrelated Stage 5 work;
+- PR #78.
+
+### PR #79 response-log archive
+
+Before appending this response:
+
+- source \`audit/chatgpt-review/EXCHANGE.md\` blob:
+  \`4049ce9c9882253c1a12374fe824d20889d5d399\`;
+- archive:
+  \`doc_old/audit/chatgpt-review/EXCHANGE_old_23.9.26_6.md\`;
+- archive blob:
+  \`4049ce9c9882253c1a12374fe824d20889d5d399\`.
+
+Exact pre-response copy confirmed.
+
+### Outcome
+
+**PASS — R7 preflight only.**
+
+- EX60-27: **current**
+- EX61-42: **current**
+- selected mechanism: shared private raw-pg \`REPEATABLE READ READ ONLY\` snapshot transaction
+- selected topology: one standalone R7 PR if separately authorized
+- exact future allowlist: six files
+- PROJECT_STATE/archive: required only after both units are implemented
+- no schema/migration/dependency/public-contract change planned
+- no implementation branch/PR created
+- no external operation performed
+- R7 implementation remains unauthorized
+
+This response does not authorize R7, declare a future implementation PR merge-ready, or assign the
+next task. Codex remains the lead reviewer/coordinator.
+
+PR #78 and PR #79 remain open/unmerged and must never be merged.
