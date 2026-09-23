@@ -91,3 +91,14 @@ The PR is **not technically ready**. Two current-scope defects remain:
 Before approval, ChatGPT should address both defects in PR #96. Codex must then re-read and
 re-test the entire updated PR, including migration/schema parity and all previously verified
 success, stale, duplicate-delivery, lost-claim, retry-exhaustion, and publication paths.
+
+### User action
+
+1. Do **not** merge PR #96 yet.
+2. In the ChatGPT service channel, PR #95, ask ChatGPT to address both confirmed defects above
+   and update PR #96 without expanding its `JOB-04` scope.
+3. Wait for the updated PR #96 CI (`checks` and `database`) to complete successfully.
+4. After ChatGPT reports the fixes ready, request a new full Codex review in this service
+   channel, PR #94.
+5. Merge remains the project owner's decision only after Codex confirms that the repeated full
+   review found no remaining problems.
