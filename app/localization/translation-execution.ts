@@ -68,14 +68,10 @@ export class UiTranslationTaskExecutor {
     if (consumed.outcome !== "eligible") return acknowledge(consumed);
 
     if (!consumed.context.attemptStarted) {
-      return this.persistFailure(
-        consumed.context,
-        new TranslationExecutionFailure(
-          "terminal",
-          "attempt-budget-exhausted",
-          "Translation execution attempt budget is exhausted",
-        ),
-      );
+      return this.persistFailure(consumed.context, {
+        disposition: "terminal",
+        code: "attempt-budget-exhausted",
+      });
     }
 
     try {
