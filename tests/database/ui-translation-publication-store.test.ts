@@ -58,6 +58,26 @@ async function job(
   return { ...specification, taskIdentity: await uiTranslationJobIdentity(specification) };
 }
 
+function deferred() {
+  let resolve!: () => void;
+  const promise = new Promise<void>((resolvePromise) => {
+    resolve = resolvePromise;
+  });
+  return { promise, resolve };
+}
+
+async function waitForBackendLock(observer: Client, pid: number): Promise<void> {
+  for (let attempt = 0; attempt < 200; attempt++) {
+    const activity = await observer.query<{ wait_event_type: string | null }>(
+      "select wait_event_type from pg_stat_activity where pid = $1",
+      [pid],
+    );
+    if (activity.rows[0]?.wait_event_type === "Lock") return;
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+  throw new Error("publication backend did not reach a lock wait");
+}
+
 describe("DrizzleUiTranslationPublicationStore", () => {
   it("atomically publishes a machine result and keeps the completed stable identity terminal", async () => {
     const database = drizzle(client);
@@ -221,6 +241,94 @@ describe("DrizzleUiTranslationPublicationStore", () => {
              (select count(*)::int from ui_translation_bundles where locale = 'pt') as bundles
     `);
     expect(durableRows.rows).toEqual([{ translations: 0, bundles: 0 }]);
+  });
+
+  it("preserves a valid publication that commits before the reconciler lock", async () => {
+    const database = drizzle(client);
+    const tasks = new DrizzleTranslationTaskStore(database);
+    const publications = new DrizzleUiTranslationPublicationStore(database);
+    const bundles = new DrizzleUiTranslationBundleStore(database);
+    const pending = await tasks.upsertPending(await job(canonicalEnglishCatalog.common.heading, "nl"));
+    const claim = await tasks.claim(pending.id, 60_000);
+    if (claim.outcome !== "claimed") throw new Error("claim failed");
+
+    await client.query(
+      `insert into ui_translation_bundles (locale, namespace, bundle_version, resources)
+       values ('nl', 'common', $1, $2::jsonb)
+       on conflict (locale, namespace) do update
+         set bundle_version = excluded.bundle_version, resources = excluded.resources`,
+      ["e".repeat(64), JSON.stringify({ heading: "Verouderd" })],
+    );
+
+    await expect(publications.publishClaimedMachineResult({
+      task: claim.task,
+      value: "Vertaalbasis",
+      provenance: { provider: "fake", model: "fake-v1", origin: "machine" },
+    })).resolves.toBe(true);
+
+    await expect(bundles.reconcilePersistedBundle("nl", "common")).resolves.toBe("current");
+    await expect(bundles.read("nl", "common")).resolves.toMatchObject({
+      resources: { heading: "Vertaalbasis" },
+    });
+  });
+
+  it("lets a waiting valid publication win after reconciler-first obsolete-row deletion", async () => {
+    const reconcilerClient = new Client({ connectionString: databaseUrl });
+    const publicationClient = new Client({
+      connectionString: databaseUrl,
+      application_name: "r4_reconciler_first_publication",
+    });
+    await Promise.all([reconcilerClient.connect(), publicationClient.connect()]);
+    try {
+      await Promise.all([
+        reconcilerClient.query(`set search_path to ${schemaName}`),
+        publicationClient.query(`set search_path to ${schemaName}`),
+      ]);
+      const publicationPid = await publicationClient.query<{ pid: number }>("select pg_backend_pid() as pid");
+      const publicationDatabase = drizzle(publicationClient);
+      const tasks = new DrizzleTranslationTaskStore(publicationDatabase);
+      const pending = await tasks.upsertPending(await job(canonicalEnglishCatalog.common.heading, "sv"));
+      const claim = await tasks.claim(pending.id, 60_000);
+      if (claim.outcome !== "claimed") throw new Error("claim failed");
+
+      await client.query(
+        `insert into ui_translation_bundles (locale, namespace, bundle_version, resources)
+         values ('sv', 'common', $1, $2::jsonb)
+         on conflict (locale, namespace) do update
+           set bundle_version = excluded.bundle_version, resources = excluded.resources`,
+        ["f".repeat(64), JSON.stringify({ heading: "Föråldrad" })],
+      );
+
+      const locked = deferred();
+      const release = deferred();
+      const reconciler = new DrizzleUiTranslationBundleStore(
+        drizzle(reconcilerClient),
+        async () => {
+          locked.resolve();
+          await release.promise;
+        },
+      );
+      const reconciliation = reconciler.reconcilePersistedBundle("sv", "common");
+      await locked.promise;
+
+      const publication = new DrizzleUiTranslationPublicationStore(publicationDatabase)
+        .publishClaimedMachineResult({
+          task: claim.task,
+          value: "Översättningsbas",
+          provenance: { provider: "fake", model: "fake-v1", origin: "machine" },
+        });
+
+      await waitForBackendLock(client, publicationPid.rows[0]!.pid);
+      release.resolve();
+
+      await expect(reconciliation).resolves.toBe("deleted");
+      await expect(publication).resolves.toBe(true);
+      await expect(new DrizzleUiTranslationBundleStore(drizzle(client)).read("sv", "common")).resolves.toMatchObject({
+        resources: { heading: "Översättningsbas" },
+      });
+    } finally {
+      await Promise.all([reconcilerClient.end(), publicationClient.end()]);
+    }
   });
 
   it("serializes concurrent publications of different keys into one non-regressing namespace bundle", async () => {
