@@ -15,10 +15,12 @@ import type {
   UiTranslationPublicationResult,
   UiTranslationResultPublisher,
 } from "./translation-publication";
-import type {
-  ClaimedUiTranslationExecutionContext,
-  TranslationTaskConsumerResult,
-  UiTranslationTaskConsumer,
+import {
+  ClaimedTranslationDependencyError,
+  type ClaimedTranslationTaskContext,
+  type ClaimedUiTranslationExecutionContext,
+  type TranslationTaskConsumerResult,
+  type UiTranslationTaskConsumer,
 } from "./translation-task-consumer";
 import type {
   TranslationTaskFailureStore,
@@ -64,7 +66,18 @@ export class UiTranslationTaskExecutor {
   constructor(private readonly dependencies: UiTranslationTaskExecutorDependencies) {}
 
   async execute(message: TranslationTaskMessage): Promise<UiTranslationTaskExecutionResult> {
-    const consumed = await this.dependencies.consumer.consume(message);
+    let consumed: TranslationTaskConsumerResult;
+    try {
+      consumed = await this.dependencies.consumer.consume(message);
+    } catch (error) {
+      if (error instanceof ClaimedTranslationDependencyError) {
+        return this.persistFailure(error.context, {
+          disposition: "retryable",
+          code: "dependency-temporary",
+        });
+      }
+      throw error;
+    }
     if (consumed.outcome !== "eligible") return acknowledge(consumed);
 
     if (!consumed.context.attemptStarted) {
@@ -86,7 +99,7 @@ export class UiTranslationTaskExecutor {
   }
 
   private async persistFailure(
-    context: ClaimedUiTranslationExecutionContext,
+    context: ClaimedTranslationTaskContext,
     failure: TranslationFailureRecord,
   ): Promise<UiTranslationTaskExecutionResult> {
     const persisted = await this.dependencies.failures.recordFailure(
