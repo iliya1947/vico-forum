@@ -26,7 +26,7 @@ export default function CategoryRoute() {
             <li key={section.id}>
               <Link className="forum-list-link" to={forumSectionPath(locale, section.id)}>
                 <strong>{section.name}</strong>
-                <span>{t("topicAndPostCount", { topics: section.topicCount, posts: section.postCount })}</span>
+                <span>{t("topicCount", { count: section.topicCount })} · {t("messageCount", { count: section.postCount })}</span>
               </Link>
             </li>
           ))}

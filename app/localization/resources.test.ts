@@ -69,6 +69,41 @@ describe("UI translation resources", () => {
     expect(runtime.t("sectionCount", { count: 2 })).toBe("2 sections");
   });
 
+  it("resolves topic and message totals through independent plural descriptors", async () => {
+    const englishLocale = {
+      ...locale,
+      translationLocale: "en",
+      fallbackLocales: [],
+      formatting: { locale: "en", timeZone: "UTC" },
+      nativeName: "English",
+    };
+    const snapshot = await new TranslationResourceLoader([new CanonicalEnglishSource()]).load(
+      englishLocale,
+      ["common"],
+    );
+    const runtime = createTranslationRuntime(snapshot);
+    const topicDescriptor = canonicalEnglishCatalog.common.topicCount;
+    const messageDescriptor = canonicalEnglishCatalog.common.messageCount;
+
+    expect(topicDescriptor).toMatchObject({
+      messageKind: "plural",
+      placeholders: ["count"],
+      source: { one: "{{count}} topic", other: "{{count}} topics" },
+    });
+    expect(messageDescriptor).toMatchObject({
+      messageKind: "plural",
+      placeholders: ["count"],
+      source: { one: "{{count}} message", other: "{{count}} messages" },
+    });
+    await expect(sourceFingerprint(topicDescriptor)).resolves.toMatch(/^[0-9a-f]{64}$/);
+    await expect(sourceFingerprint(messageDescriptor)).resolves.toMatch(/^[0-9a-f]{64}$/);
+
+    expect(runtime.t("topicCount", { count: 1 })).toBe("1 topic");
+    expect(runtime.t("topicCount", { count: 2 })).toBe("2 topics");
+    expect(runtime.t("messageCount", { count: 1 })).toBe("1 message");
+    expect(runtime.t("messageCount", { count: 2 })).toBe("2 messages");
+  });
+
   it("keeps canonical English authoritative over local pack data", async () => {
     const englishLocale = {
       ...locale,

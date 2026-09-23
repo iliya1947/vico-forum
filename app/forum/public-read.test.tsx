@@ -115,6 +115,26 @@ describe.each([
   });
 });
 
+describe("category count presentation", () => {
+  it("composes topic and message totals through independent plural lookups", async () => {
+    const data = {
+      locale: "en",
+      category: {
+        ...category,
+        sections: [
+          { id: "mixed-one", name: "Mixed one", topicCount: 1, postCount: 2 },
+          { id: "mixed-two", name: "Mixed two", topicCount: 2, postCount: 1 },
+        ],
+      },
+    };
+
+    renderRoute(CategoryRoute, data, "/en/categories/development", "en", "ltr");
+
+    expect(await screen.findByText("1 topic · 2 messages")).toBeInTheDocument();
+    expect(screen.getByText("2 topics · 1 message")).toBeInTheDocument();
+  });
+});
+
 describe("forum path encoding", () => {
   it("encodes an opaque forum id as one path segment and round-trips the route param", () => {
     const categoryId = "a/b?c#d%e тема";
