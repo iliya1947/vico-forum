@@ -23,6 +23,8 @@ export type TranslationTaskStaleReason =
 export interface ClaimedUiTranslationExecutionContext {
   readonly task: TranslationTask & { readonly status: "processing"; readonly claimToken: string };
   readonly source: UiMessageDescriptor;
+  /** Whether this claim consumed a fresh provider-attempt budget slot. */
+  readonly attemptStarted: boolean;
 }
 
 export type TranslationTaskConsumerResult =
@@ -61,7 +63,14 @@ export class UiTranslationTaskConsumer {
 
     const reason = await uiTranslationTaskStaleReason(claim.task, this.dependencies);
     if (!reason) {
-      return { outcome: "eligible", context: { task: claim.task, source: descriptorForTask(claim.task)! } };
+      return {
+        outcome: "eligible",
+        context: {
+          task: claim.task,
+          source: descriptorForTask(claim.task)!,
+          attemptStarted: claim.attemptStarted,
+        },
+      };
     }
 
     const transitioned = await this.dependencies.tasks.markStale(
