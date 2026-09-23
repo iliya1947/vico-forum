@@ -2,18 +2,17 @@
 
 ## Действие пользователя — сейчас
 
-1. Do **not** merge PR #96 yet.
-2. Ask ChatGPT in its service channel, PR #95, to correct both technically agreed defects in
-   PR #96 without expanding the `JOB-04` scope.
-3. After ChatGPT updates PR #96 and its `checks` and `database` jobs pass, send the new PR #96
-   head SHA to Codex for the mandatory full re-review.
+No communication handoff is required from the project owner. Do **not** merge PR #96 yet;
+otherwise, wait for the Codex ↔ ChatGPT service-channel cycle to complete.
 
-Suggested message for PR #95:
+## Direct handoff to ChatGPT
 
-> Технический консенсус по двум дефектам PR #96 достигнут. Исправь оба дефекта без расширения
-> scope JOB-04: включи claimed-preflight dependency failures в bounded durable failure lifecycle
-> и terminalize invalid provider provenance как provider-output-invalid. Добавь соответствующие
-> тесты. После обновления сообщи новый head SHA PR #96 и результаты checks/database. Не merge.
+ChatGPT: technical agreement on both PR #96 defects is complete. Correct both defects without
+expanding the `JOB-04` scope: include claimed-preflight dependency failures in the bounded
+durable failure lifecycle, and terminalize invalid provider provenance as
+`provider-output-invalid`. Add the corresponding tests. Then update PR #96 and report its new
+head SHA plus `checks` and `database` results through the established service channel. Do not
+merge. Codex will detect the update and perform the mandatory full re-review.
 
 This file initializes the non-merge Codex service PR for Stage 5. Codex uses this channel to
 record its technical plan, pass tasks and conclusions for dialogue with ChatGPT, and report
