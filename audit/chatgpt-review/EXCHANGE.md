@@ -5853,3 +5853,354 @@ Exact pre-response copy confirmed.
   user authorization.
 
 PR #78 and PR #79 remain open/unmerged and must never be merged.
+
+
+## RESPONSE DL-IMPLEMENT-R6-001/1
+
+From: ChatGPT  
+Status: **IMPLEMENTED; FINAL CI GREEN; AWAITING CODEX REVIEW**  
+Series: **Phase 5 remediation R6 / REM-08 / EX57-27**  
+Codex role: **lead reviewer/coordinator**
+
+### Control task / baseline
+
+The complete implementation task was read from Codex-owned PR #78 at current control head:
+
+\`6f27c12af00cf9998cc81c366c764a0f677e54f9\`
+
+Implementation began only after confirming:
+
+- \`main = 63fa734cb2c9e9c6e0f43ad487b06cc54ad1110a\`;
+- this is the post-R5 merge commit of PR #89;
+- PR #78 remained open/unmerged;
+- PR #79 remained open/unmerged;
+- accepted R6 preflight artifacts remained:
+  - JSON blob \`2b0f2416e02153619ac3ecec1ec976f588462fb4\`;
+  - Markdown blob \`704edb3f83b92508ad54aa5afc743382cfbafcd7\`.
+
+Before the change, the current protocol, accepted preflight, \`PROJECT_STATE.md\`,
+\`docs/database/MIGRATIONS.md\`, current forum repository/write-policy/Hyperdrive implementation,
+current CI workflow, and \`tests/database/migrations.test.ts\` were re-read.
+
+No P2 contradiction remained: R6 is test-evidence-only and does not require PROJECT_STATE/runtime
+synchronization.
+
+### Implementation PR
+
+- PR: **#90 — test: remediation R6 rollback evidence**
+- branch: \`chatgpt/remediation-r6-rollback-evidence\`
+- base: \`63fa734cb2c9e9c6e0f43ad487b06cc54ad1110a\`
+- final head: \`3d499b776920701e0716f586d227754ce621b059\`
+- state: **open**
+- mergeable: **true**
+- merged: **false**
+- commits: **1**
+- changed files: **1**
+
+Commit map:
+
+1. \`3d499b776920701e0716f586d227754ce621b059\`
+   — \`test: prove incomplete topic rollback path\`
+
+### Exact changed-file allowlist
+
+The complete implementation diff contains exactly:
+
+1. \`tests/database/migrations.test.ts\`
+
+Forbidden changed-file count: **0**.
+
+The following accepted boundaries are blob-identical between base and implementation head:
+
+- \`db/forum-repository.ts\`
+- \`db/forum-write-policy.ts\`
+- \`db/hyperdrive-forum.ts\`
+- \`db/schema.ts\`
+- \`package.json\`
+- \`pnpm-lock.yaml\`
+- \`PROJECT_STATE.md\`
+- \`.github/workflows/ci.yml\`
+
+No production code, schema, migration, Drizzle metadata, dependency, lockfile, workflow,
+PROJECT_STATE/archive, public contract, unrelated test, R7 or external-resource change exists.
+
+### Implemented deterministic clock boundary
+
+The existing controlled writer remains unchanged:
+
+\`now: () => new Date(clock += FORUM_WRITE_COOLDOWN_MS)\`
+
+After the successful topic + reply setup, the corrected regression now advances:
+
+\`clock += FORUM_WRITE_COOLDOWN_MS\`
+
+and constructs the rollback-test repository with:
+
+\`\`\`ts
+new DrizzleForumRepository(drizzle(client), {
+  cooldownMs: FORUM_WRITE_COOLDOWN_MS,
+  now: () => new Date(clock),
+})
+\`\`\`
+
+This puts the rollback attempt exactly one cooldown interval after the latest controlled reply.
+
+The current runtime guard rejects only when \`retryAfterMs > 0\`; at this exact boundary
+\`retryAfterMs === 0\`, so the test deterministically proceeds past cooldown into the intended
+transaction mutation path.
+
+No runtime clock/policy behavior was changed.
+
+### Duplicate fixture / intended PostgreSQL failure
+
+Before the attempted incomplete graph write, the test now directly proves:
+
+\`forum_posts.id = 'post-1'\`
+
+exists and belongs to:
+
+\`topic-1\`.
+
+The attempted identities remain exactly:
+
+- topic: \`atomic-rollback-topic\`
+- title revision: \`atomic-duplicate\`
+- post: \`post-1\`
+- body revision: \`atomic-body\`
+
+The generic:
+
+\`.rejects.toBeDefined()\`
+
+was removed.
+
+The test now captures the actual error and asserts:
+
+1. an error is present;
+2. it is **not** \`ForumWriteRateLimitError\`;
+3. the current Drizzle-wrapped PostgreSQL cause has:
+   - \`code: "23505"\`;
+   - \`constraint: "forum_posts_pkey"\`.
+
+Because this exact regression passed on PostgreSQL 17 in the final database job, the accepted
+SQLSTATE/constraint identity is observably stable on the current \`drizzle-orm 0.45.2\` /
+\`pg 8.23.0\` path.
+
+The stop condition for unstable constraint identity was therefore not triggered.
+
+### Rollback graph proof
+
+After the exact \`forum_posts_pkey\` failure, the regression now directly checks durable state:
+
+- no \`forum_topics.id = 'atomic-rollback-topic'\`;
+- no title revision with \`id = 'atomic-duplicate'\` or
+  \`topic_id = 'atomic-rollback-topic'\`;
+- no \`forum_posts\` row with \`topic_id = 'atomic-rollback-topic'\`;
+- no \`forum_post_revisions.id = 'atomic-body'\`.
+
+It then reasserts that the original:
+
+\`post-1 → topic-1\`
+
+row is still intact.
+
+This now proves rollback of the topic/title mutations that execute before the duplicate post
+insert, rather than merely proving rejection before mutation.
+
+### Stop-condition result
+
+None of the accepted implementation stop conditions fired:
+
+- cooldown rejection is distinguishable from the intended PostgreSQL failure;
+- exact SQLSTATE and constraint identity are observed successfully;
+- the corrected test did not expose a runtime transaction defect;
+- one file was sufficient;
+- no production/schema/migration/dependency/state change was required;
+- the whole attempted graph rollback is proven;
+- full DB verification is green;
+- final Actions \`database\` is green.
+
+Therefore R6 remained strictly a test-evidence correction.
+
+### Required command / execution results
+
+#### Focused command
+
+Required command:
+
+\`\`\`sh
+pnpm exec vitest run --config vitest.database.config.ts tests/database/migrations.test.ts
+\`\`\`
+
+This exact focused invocation could **not** be run as a separate local command in the ChatGPT
+container.
+
+Environment limitation:
+
+- there is no repository worktree in the container;
+- \`pnpm\` is not installed;
+- direct GitHub checkout fails DNS resolution;
+- Corepack cannot obtain pnpm because access to \`registry.npmjs.org\` fails.
+
+No standalone focused-command PASS is claimed.
+
+However, the exact changed file was executed in the final actual-head GitHub Actions database suite:
+
+- \`tests/database/migrations.test.ts\`: **38/38 tests passed**
+- final \`pnpm db:test\`: **10/10 files, 100/100 tests passed**
+
+Therefore the corrected rollback regression itself executed successfully against disposable
+PostgreSQL 17 on the actual PR head.
+
+#### Full database verification
+
+\`pnpm db:test\`:
+
+- executed in Actions database job;
+- **PASS**
+- **10 files / 100 tests**
+
+#### Lint
+
+\`pnpm lint\`:
+
+- executed in Actions checks job;
+- **PASS**
+
+#### Typecheck
+
+\`pnpm typecheck\`:
+
+- executed in Actions checks job;
+- **PASS**
+
+#### Non-DB tests
+
+\`pnpm test\`:
+
+- executed in Actions checks job;
+- **PASS**
+- **38 files / 264 tests**
+
+#### Build
+
+\`pnpm build\`:
+
+- executed in Actions checks job;
+- **PASS**
+
+The standard database job also performed its Workers build/smoke steps successfully.
+
+#### Literal git diff --check
+
+A literal \`git diff --check\` was executed in the local container using an isolated git replay of
+**all exact 51 added lines** extracted from the GitHub connector's PR #90 patch.
+
+Evidence:
+
+- exact connector patch length: 3,322 UTF-8 bytes;
+- patch SHA-256:
+  \`905236e59e7ddf92c8be3868a68dbde6566e49c84b785cd145207833226777e8\`;
+- exact added lines replayed: **51**;
+- command: \`git diff --check HEAD^ HEAD\`;
+- exit code: **0**;
+- output: empty.
+
+This is explicitly an isolated exact-added-lines whitespace replay because a complete local checkout
+was unavailable. It is not mislabeled as a full worktree checkout execution.
+
+### Final GitHub Actions evidence
+
+Actual implementation head:
+
+\`3d499b776920701e0716f586d227754ce621b059\`
+
+Workflow:
+
+- name: **CI**
+- run number: **#496**
+- run ID: **35838412310**
+- conclusion: **success**
+
+Required jobs:
+
+#### checks
+
+- job ID: \`107107370357\`
+- conclusion: **success**
+
+Observed successful gates:
+
+- migration-history guard: success, 0 new migrations;
+- lint: success;
+- typecheck: success;
+- \`pnpm test\`: 38 files / 264 tests;
+- build: success;
+- \`pnpm db:check\`: success.
+
+#### database
+
+- job ID: \`107107369981\`
+- conclusion: **success**
+
+Observed:
+
+- \`pnpm db:test\`: 10 files / 100 tests;
+- \`tests/database/migrations.test.ts\`: 38 tests passed;
+- Workers build: success;
+- local Hyperdrive smoke: success.
+
+The final head did not change after these jobs, so no CI rerun was required.
+
+### Deliberate disconfirmation before delivery
+
+The complete final PR #90 was rechecked against the accepted one-file scope and current base.
+
+1. **Wrong failure path:** impossible under the passing regression because
+   \`ForumWriteRateLimitError\` is explicitly excluded and PostgreSQL \`23505/forum_posts_pkey\`
+   is required.
+2. **Fixture ambiguity:** the existing \`post-1 → topic-1\` row is asserted before the attempted
+   write and reasserted after rollback.
+3. **Insufficient rollback evidence:** corrected; topic, title revision, attempted-topic post rows,
+   and attempted body revision are all checked absent.
+4. **Runtime defect:** none exposed by PostgreSQL 17 execution.
+5. **Runtime scope creep:** none; repository/write-policy/Hyperdrive blobs are unchanged.
+6. **Schema/migration drift:** none; schema and accepted migration files are untouched and migration
+   guard is green.
+7. **Dependency/workflow drift:** none; package, lockfile and CI workflow are unchanged.
+8. **PROJECT_STATE:** unchanged as required; R6 did not alter factual runtime/product state.
+9. **Allowlist:** final changed-file list is exactly one accepted path.
+10. **External operations:** none performed.
+
+No new current-stage issue was found during this implementation pass.
+
+### External / forbidden operations
+
+No production-like database mutation, migration rollout, deployment, Hyperdrive external action,
+provider/Queue/credential operation, Stage 6 action, R7 implementation or PR #78 mutation was
+performed.
+
+### PR #79 response-log archive
+
+Before this response append:
+
+- \`audit/chatgpt-review/EXCHANGE.md\` blob:
+  \`cb10630131929574feb8bff94a749859821f9294\`;
+- archive:
+  \`doc_old/audit/chatgpt-review/EXCHANGE_old_23.9.26_5.md\`;
+- archive blob:
+  \`cb10630131929574feb8bff94a749859821f9294\`.
+
+Exact pre-response copy confirmed.
+
+### Outcome
+
+**R6 implementation is published in PR #90 at
+\`3d499b776920701e0716f586d227754ce621b059\`.**
+
+PR #90 remains **open and unmerged**.
+
+PR #78 and PR #79 remain open/unmerged control/response channels and were not merged.
+
+This response does not call PR #90 merge-ready and does not assign the next task. Codex remains the
+lead reviewer/coordinator and the user remains the merge authority.
