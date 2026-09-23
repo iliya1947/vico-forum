@@ -162,7 +162,7 @@ describe("PostgresAuthorizationRepository snapshot reads", () => {
     });
     const repository = new PostgresAuthorizationRepository({ connect } as unknown as Pool);
 
-    await expect(repository.resolveUser("u1", { query: boundQuery } as Pick<PoolClient, "query">)).resolves.toMatchObject({
+    await expect(repository.resolveUser("u1", { query: boundQuery } as unknown as Pick<PoolClient, "query">)).resolves.toMatchObject({
       role: { slug: "user" },
       grants: ["forum.topic.create"],
       overrides: {},
