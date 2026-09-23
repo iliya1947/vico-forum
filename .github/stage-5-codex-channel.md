@@ -1,8 +1,12 @@
-# Stage 5 ChatGPT coordination channel
+# Stage 5 Codex coordination channel
 
-This file initializes the non-merge service PR used for Stage 5 technical dialogue with
-ChatGPT. It is a coordination record, not a source of truth for project state or architecture.
-The applicable contracts remain `AGENTS.md`, `PROJECT_STATE.md`, `ROADMAP.md`,
+This file initializes the non-merge Codex service PR for Stage 5. Codex uses this channel to
+record its technical plan, pass tasks and conclusions for dialogue with ChatGPT, and report
+Stage-level verification results. In accordance with `AGENTS.md`, the project owner updates
+this Codex PR; ChatGPT creates and updates its separate service PR.
+
+This is a coordination record, not a source of truth for project state or architecture. The
+applicable contracts remain `AGENTS.md`, `PROJECT_STATE.md`, `ROADMAP.md`,
 `TRANSLATION_ARCHITECTURE.md`, and the relevant documents under `docs/translation/`.
 
 ## Verified baseline
