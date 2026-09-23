@@ -275,3 +275,124 @@ transaction cleanup/error precedence, watchdog timeouts, and full resource clean
 R7 implementation is not yet authorized. PR #78 and PR #79 remain unmerged. After explicit user
 authorization, ChatGPT must receive a separate implementation task through this control channel and
 must create one standalone implementation PR from the verified post-R6 base.
+
+## TASK DL-IMPLEMENT-R7-001/1
+
+**Issued:** 2026-09-23
+
+**Owner:** ChatGPT
+
+**Status:** authorized for implementation by the user
+
+**Series:** Phase 5 remediation R7 / REM-10 + REM-11 / EX60-27 + EX61-42
+
+Create one standalone implementation PR from post-R6 `main`
+`ad53f1db0a24bd98bc905f6280e6bc8e805d034a`, strictly following accepted preflight
+`DL-IMPLEMENT-R7-PREFLIGHT-001/1`:
+
+- JSON artifact: `686e1ba87401f8d403e11114219764ebf303dc56`;
+- Markdown artifact: `c7e28254526c09714151c41a38b1814418abc86d`.
+
+### Exact six-file allowlist
+
+The implementation PR may track only:
+
+1. `db/authorization-repository.ts`
+2. `db/authorization-repository.test.ts`
+3. `db/hyperdrive-authorization.test.ts`
+4. `tests/database/authorization-snapshot.test.ts`
+5. `PROJECT_STATE.md`
+6. `doc_old/PROJECT_STATE_old_23.9.26_1.md`
+
+Any seventh path is a stop condition. Do not change schema, migrations, Drizzle metadata,
+dependencies, lockfiles, workflows, public APIs, permission catalog/precedence, mutation or lockout
+semantics, UI/routes, authorization source-of-truth docs, external resources, Stage 6, unrelated
+Stage 5 work, or PR #78.
+
+### Required implementation
+
+Add one private raw-node-postgres snapshot primitive in the authorization repository. It must:
+
+1. check out exactly one `PoolClient`;
+2. execute `BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY`;
+3. route every component query of one composite operation through that client;
+4. `COMMIT` on success;
+5. after a post-BEGIN operation or COMMIT failure, retain the primary error, attempt `ROLLBACK`
+   only as cleanup, and never let rollback failure replace the primary error;
+6. release the client exactly once in `finally`;
+7. propagate BEGIN failure directly without a fictional rollback;
+8. perform no availability/error translation inside the repository.
+
+Use the primitive for both normal composite paths:
+
+- `resolveUser()`: role/assignment, missing-user discrimination if reached, grants, overrides;
+- `readManagementState()`: roles, users/assignments, grants, overrides.
+
+Preserve current response shapes, application-side precedence/assembly, four management data
+queries, no N+1 behavior, request-scoped promise reuse, next-call freshness, and PR #76 classified-
+availability-only degradation. Do not introduce long-lived authorization caching. Keep the existing
+optional bound-query context internal behavior safe; do not add a public snapshot bypass.
+
+### Required tests
+
+Implement both independently asserted, deterministic two-session PostgreSQL regressions from the
+accepted preflight in `tests/database/authorization-snapshot.test.ts`:
+
+- REM-10: hold the override read after the old grants read, commit removal of the grant and deny
+  override, prove the first result is wholly-before and a fresh call is wholly-after, never the
+  impossible old-grant/new-no-override allow;
+- REM-11: hold the grants read after old users/assignment, commit A-to-B assignment and the grant
+  move, prove the first management response is wholly-before and a fresh read wholly-after, never a
+  mixed role/grant state.
+
+Use explicit deferred barriers triggered by observed SQL boundaries; no sleep/timing correctness.
+Use watchdog timeouts only for hang/deadlock failure, and guarantee writer rollback, reader/writer
+closure, schema cleanup, and barrier release in failure paths.
+
+Unit tests must prove success BEGIN/COMMIT/release, post-BEGIN failure rollback, COMMIT failure
+cleanup, primary-error precedence over rollback failure, BEGIN failure without rollback, exactly one
+release, four management data reads, no N+1, request-scoped reuse/fresh-call behavior, and unchanged
+PR #76 availability versus schema/programming-error behavior.
+
+### PROJECT_STATE boundary
+
+Before editing `PROJECT_STATE.md`, create
+`doc_old/PROJECT_STATE_old_23.9.26_1.md` as its exact byte-for-byte pre-change copy. Update current
+state only after both REM-10 and REM-11 and both regressions are implemented. Remove/rewrite only the
+now-resolved snapshot-consistency limitation and minimally synchronize the Stage 4 foundation; do
+not add PR/CI history, external acceptance, or Stage 6 claims. Verify archive equality against the
+base blob.
+
+### Stop conditions
+
+Stop and report evidence in PR #79 without expanding scope if the implementation cannot guarantee
+one stable snapshot, either regression cannot be deterministic, cleanup can mask/leak, public or
+permission semantics would change, next-request freshness weakens, a schema/migration/dependency/
+workflow/external change or seventh path is needed, REM-10/REM-11 cease to be independently
+asserted, archive equality fails, or focused/full database verification fails. Do not substitute
+plain `READ COMMITTED`, timing sleeps, generic rejection assertions, or weaker tests.
+
+### Verification and delivery
+
+Run on the final implementation head:
+
+```sh
+pnpm exec vitest run db/authorization-repository.test.ts db/hyperdrive-authorization.test.ts
+pnpm exec vitest run --config vitest.database.config.ts tests/database/authorization-snapshot.test.ts tests/database/stage4-core-e2e.test.ts
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm db:test
+pnpm build
+git diff --check
+```
+
+Also verify the exact changed-file allowlist and archive blob equality. Create the standalone PR,
+leave it unmerged, and wait for final-head GitHub Actions `checks` and `database` success. A head
+change invalidates earlier CI evidence. Do not call the PR merge-ready.
+
+Publish `RESPONSE DL-IMPLEMENT-R7-001/1` in PR #79 with PR number, base/final head, commits, exact
+files, mechanism/lifecycle summary, both regression results, archive proof, every actual command
+result, final Actions run/jobs, scope confirmation, and explicit limitations. PR #78 and PR #79
+must remain open/unmerged. ChatGPT must not merge, authorize another series, or assign itself the
+next task.
