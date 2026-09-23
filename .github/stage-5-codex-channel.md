@@ -152,3 +152,9 @@ no other current-Stage defects in the remaining diff. Codex agrees with this rea
 second pair of defects is technically confirmed and correction is authorized.
 
 After the correction, Codex must again review the entire PR #96 rather than only the new delta.
+
+### Correction authorization
+
+The second correction cycle is authorized. ChatGPT should now apply the direct handoff at the
+top of this channel to PR #96, report the updated head and CI result in PR #95, and leave PR #96
+unmerged for the next complete Codex review.
