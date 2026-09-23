@@ -1,5 +1,6 @@
 import { catalogDescriptors, type UiMessageDescriptor } from "./catalog";
 import { sourceFingerprint } from "./fingerprint";
+import { TranslationExecutionFailure } from "./translation-failures";
 import { DatabaseManualTranslationSource, type UiTranslationStore } from "./persistent-sources";
 import type { LocaleRegistry } from "./registry";
 import type { TranslationSource } from "./sources";
@@ -114,10 +115,17 @@ export class UiTranslationTaskConsumer {
       );
       return transitioned ? { outcome: "stale", reason } : { outcome: "claim-lost" };
     } catch (error) {
-      throw new ClaimedTranslationDependencyError(
-        { task: claim.task, attemptStarted: true },
-        { cause: error },
-      );
+      if (
+        error instanceof TranslationExecutionFailure &&
+        error.disposition === "retryable" &&
+        error.code === "dependency-temporary"
+      ) {
+        throw new ClaimedTranslationDependencyError(
+          { task: claim.task, attemptStarted: true },
+          { cause: error },
+        );
+      }
+      throw error;
     }
   }
 }
