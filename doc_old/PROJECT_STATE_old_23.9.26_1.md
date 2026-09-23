@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-09-23
+Последнее обновление: 2026-09-22
 
 ## Назначение
 
@@ -61,9 +61,7 @@ Stage 4 реализован и проверяется локально/в CI:
 - server-side `PermissionResolver`, server-derived solution scope и lockout protection;
 - authorization availability отделена от permission denial: только классифицированные
   dependency availability failures используют controlled degradation/`503`, unexpected
-  programming/schema/configuration errors не маскируются;
-- полные `resolveUser()` и `readManagementState()` собираются из одного стабильного
-  PostgreSQL snapshot на composite read, сохраняя next-request freshness и request-scoped cache.
+  programming/schema/configuration errors не маскируются.
 
 Real Google OAuth credentials/smoke и внешний authorization bootstrap не входят в завершённый
 local/CI Stage 4 и остаются Stage 6.
@@ -109,6 +107,19 @@ Migration `0007`–`0010` содержит durable task lifecycle и generation-
 
 Реальные Cloudflare Queue bindings, provider credentials/calls и deployed provider/Queue smoke —
 это отдельная Stage 6 external acceptance и не являются условием обычных Stage 5 feature PR.
+
+## Известные текущие ограничения
+
+### Authorization snapshot consistency
+
+Восстановленный authorization contract требует одного internally consistent database snapshot
+для полного `resolveUser()` resolution и одного `readManagementState()` read.
+
+Текущая реализация пока выполняет независимые reads компонентов authorization state, поэтому
+этот contract ещё не реализован. Remediation R7 остаётся отдельной implementation-задачей.
+
+Конкретный transaction API, isolation level, lock strategy, query shape и schema changes здесь
+не выбираются.
 
 ## CI и migration state
 

@@ -27,32 +27,23 @@ export class PostgresAuthorizationRepository {
   constructor(private readonly pool: Pool) {}
 
   async listRoles(): Promise<AuthorizationRole[]> {
-    const result = await this.pool.query<RoleRow>(
-      "select id, slug, display_name, is_system from authz_roles order by is_system desc, slug",
-    );
-    return result.rows.map(mapRole);
+    return this.readRoles(this.pool);
   }
 
   async listUsers(): Promise<AuthorizationUserSummary[]> {
-    const result = await this.pool.query<RoleRow & { user_id: string; user_name: string; email: string; explicit_assignment: boolean }>(`
-      select u.id user_id, u.name user_name, u.email, r.id, r.slug, r.display_name, r.is_system,
-        (ur.user_id is not null) explicit_assignment
-      from "user" u left join authz_user_roles ur on ur.user_id = u.id
-      join authz_roles r on r.id = coalesce(ur.role_id, (select id from authz_roles where slug = 'user'))
-      order by u.name, u.email, u.id`);
-    return result.rows.map((row) => ({ id: row.user_id, name: row.user_name, email: row.email,
-      role: mapRole(row), explicitAssignment: row.explicit_assignment }));
+    return this.readUsers(this.pool);
   }
 
   async readManagementState(): Promise<AuthorizationManagementState> {
-    const roles = await this.listRoles();
-    const users = await this.listUsers();
-    const grants = await this.pool.query<{ role_id: string; permission_key: PermissionKey }>(
-      "select role_id, permission_key from authz_role_permissions order by role_id, permission_key",
-    );
-    const overrides = await this.pool.query<{ user_id: string; permission_key: PermissionKey; effect: OverrideEffect }>(
-      "select user_id, permission_key, effect from authz_user_permission_overrides order by user_id, permission_key",
-    );
+    return this.withReadSnapshot(async (database) => {
+      const roles = await this.readRoles(database);
+      const users = await this.readUsers(database);
+      const grants = await database.query<{ role_id: string; permission_key: PermissionKey }>(
+        "select role_id, permission_key from authz_role_permissions order by role_id, permission_key",
+      );
+      const overrides = await database.query<{ user_id: string; permission_key: PermissionKey; effect: OverrideEffect }>(
+        "select user_id, permission_key, effect from authz_user_permission_overrides order by user_id, permission_key",
+      );
 
     const grantsByRole = new Map<string, PermissionKey[]>();
     for (const row of grants.rows) {
@@ -67,30 +58,31 @@ export class PostgresAuthorizationRepository {
       overridesByUser.set(row.user_id, userOverrides);
     }
 
-    return {
-      roles: roles.map((role) => ({ ...role, grants: [...(grantsByRole.get(role.id) ?? [])] })),
-      users: users.map((user) => {
-        const roleGrants = [...(grantsByRole.get(user.role.id) ?? [])];
-        const userOverrides = overridesByUser.get(user.id) ?? [];
-        const overrideMap: Partial<Record<PermissionKey, OverrideEffect>> = {};
-        const effectivePermissions = new Set<PermissionKey>(roleGrants);
-        for (const override of userOverrides) {
-          overrideMap[override.permission] = override.effect;
-          if (override.effect === "allow") effectivePermissions.add(override.permission);
-          else effectivePermissions.delete(override.permission);
-        }
-        return {
-          ...user,
-          authorization: {
-            role: user.role,
-            explicitAssignment: user.explicitAssignment,
-            grants: roleGrants,
-            overrides: overrideMap,
-            effectivePermissions: [...effectivePermissions].sort(),
-          },
-        };
-      }),
-    };
+      return {
+        roles: roles.map((role) => ({ ...role, grants: [...(grantsByRole.get(role.id) ?? [])] })),
+        users: users.map((user) => {
+          const roleGrants = [...(grantsByRole.get(user.role.id) ?? [])];
+          const userOverrides = overridesByUser.get(user.id) ?? [];
+          const overrideMap: Partial<Record<PermissionKey, OverrideEffect>> = {};
+          const effectivePermissions = new Set<PermissionKey>(roleGrants);
+          for (const override of userOverrides) {
+            overrideMap[override.permission] = override.effect;
+            if (override.effect === "allow") effectivePermissions.add(override.permission);
+            else effectivePermissions.delete(override.permission);
+          }
+          return {
+            ...user,
+            authorization: {
+              role: user.role,
+              explicitAssignment: user.explicitAssignment,
+              grants: roleGrants,
+              overrides: overrideMap,
+              effectivePermissions: [...effectivePermissions].sort(),
+            },
+          };
+        }),
+      };
+    });
   }
 
   async readRole(roleId: string): Promise<(AuthorizationRole & { grants: PermissionKey[] }) | undefined> {
@@ -108,7 +100,12 @@ export class PostgresAuthorizationRepository {
     return result.rows.map((row) => row.permission_key);
   }
 
-  async resolveUser(userId: string, database: Queryable = this.pool): Promise<UserAuthorization> {
+  async resolveUser(userId: string, database?: Queryable): Promise<UserAuthorization> {
+    if (database) return this.resolveUserFrom(userId, database);
+    return this.withReadSnapshot((snapshot) => this.resolveUserFrom(userId, snapshot));
+  }
+
+  private async resolveUserFrom(userId: string, database: Queryable): Promise<UserAuthorization> {
     const role = await database.query<RoleRow & { explicit_assignment: boolean }>(`
       select r.id, r.slug, r.display_name, r.is_system, (ur.user_id is not null) explicit_assignment
       from "user" u
@@ -211,6 +208,48 @@ export class PostgresAuthorizationRepository {
         [userId, permission, effect]);
       }
     });
+  }
+
+  private async readRoles(database: Queryable): Promise<AuthorizationRole[]> {
+    const result = await database.query<RoleRow>(
+      "select id, slug, display_name, is_system from authz_roles order by is_system desc, slug",
+    );
+    return result.rows.map(mapRole);
+  }
+
+  private async readUsers(database: Queryable): Promise<AuthorizationUserSummary[]> {
+    const result = await database.query<RoleRow & { user_id: string; user_name: string; email: string; explicit_assignment: boolean }>(`
+      select u.id user_id, u.name user_name, u.email, r.id, r.slug, r.display_name, r.is_system,
+        (ur.user_id is not null) explicit_assignment
+      from "user" u left join authz_user_roles ur on ur.user_id = u.id
+      join authz_roles r on r.id = coalesce(ur.role_id, (select id from authz_roles where slug = 'user'))
+      order by u.name, u.email, u.id`);
+    return result.rows.map((row) => ({ id: row.user_id, name: row.user_name, email: row.email,
+      role: mapRole(row), explicitAssignment: row.explicit_assignment }));
+  }
+
+  private async withReadSnapshot<T>(operation: (client: PoolClient) => Promise<T>): Promise<T> {
+    const client = await this.pool.connect();
+    let transactionStarted = false;
+    try {
+      await client.query("BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY");
+      transactionStarted = true;
+      const result = await operation(client);
+      await client.query("COMMIT");
+      transactionStarted = false;
+      return result;
+    } catch (error) {
+      if (transactionStarted) {
+        try {
+          await client.query("ROLLBACK");
+        } catch {
+          // Preserve the original operation/COMMIT error.
+        }
+      }
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 
   private async mutate(actorId: string, operation: (client: PoolClient) => Promise<void>): Promise<void> {
