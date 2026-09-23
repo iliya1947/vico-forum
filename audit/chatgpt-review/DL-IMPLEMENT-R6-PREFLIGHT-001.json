@@ -1,0 +1,190 @@
+{
+  "type": "DL-IMPLEMENT-R6-PREFLIGHT-001",
+  "task_id": "DL-IMPLEMENT-R6-PREFLIGHT-001/1",
+  "status": "PASS",
+  "mode": "preflight-only",
+  "implementation_authorized": false,
+  "codex_role": "lead reviewer",
+  "observed_state": {
+    "checked_at": "2026-09-23",
+    "post_r5_main_sha": "63fa734cb2c9e9c6e0f43ad487b06cc54ad1110a",
+    "main_is_pr89_merge": true,
+    "pr78": {
+      "state": "open",
+      "merged": false,
+      "head_sha": "3b1c2d0306e8e524371ee3389aa4fcaaa3bcb492",
+      "role": "control channel; never merge"
+    },
+    "pr79": {
+      "state": "open",
+      "merged": false,
+      "head_before_r6_artifacts": "d7718b09adc32e6ce554a56e9bb3eac0e3749b6d",
+      "role": "audit/response channel; never merge"
+    }
+  },
+  "scope": {
+    "series": "R6",
+    "remediation_unit": "REM-08",
+    "atomic_ids": [
+      "EX57-27"
+    ],
+    "title": "Forum rollback evidence correction"
+  },
+  "currentness": {
+    "EX57-27": {
+      "verdict": "current",
+      "classification": "current test defect only; no runtime defect established",
+      "original_finding": {
+        "pr": 57,
+        "review_thread_id": "PRRT_kwDOUTDpW86iTNsx",
+        "review_comment_database_id": 4010065534,
+        "path": "tests/database/migrations.test.ts",
+        "summary": "The incomplete-topic rollback test can reject on cooldown before reaching the intended duplicate post insert, while `.rejects.toBeDefined()` accepts either failure."
+      },
+      "post_r5_proof": [
+        "The current test still creates topic and reply through createHyperdriveForumWriter with a controllable clock that advances by FORUM_WRITE_COOLDOWN_MS on each write.",
+        "It then constructs a new DrizzleForumRepository with the default forumWritePolicy, whose now() uses the real current clock.",
+        "DrizzleForumRepository.createTopicWithInitialPost() calls enforceForumWriteCooldown() as the first operation inside its transaction, before section lookup and before topic/title/post/revision inserts.",
+        "The latest reply created by the controlled writer is timestamped ahead of the real clock during a fast run, so the default-clock repository can throw ForumWriteRateLimitError before the duplicate `post-1` insert.",
+        "The test still accepts any rejection with `.rejects.toBeDefined()` and then checks only that `atomic-rollback-topic` is absent."
+      ],
+      "later_pr_disconfirmation": [
+        "PR #81 does not touch forum repository/write policy/migrations.test rollback evidence.",
+        "PR #83–#85 are documentation/audit-state work and do not touch the rollback test or write path.",
+        "PR #86 touches tests/database/migrations.test.ts only for the R2 persistent-locale invariant and migration count; the EX57-27 rollback block is unchanged.",
+        "PR #87 and #88 affect translation task/bundle remediation only.",
+        "PR #89 changes forum presentation/catalog/render tests/styles only and does not touch database rollback evidence.",
+        "Current db/forum-repository.ts still runs cooldown before all createTopicWithInitialPost inserts."
+      ]
+    }
+  },
+  "defect_proof": {
+    "controlled_writer_timing": "With the current test closure `now: () => new Date(clock += FORUM_WRITE_COOLDOWN_MS)`, the topic initial post is created at approximately base+5s and the reply at base+10s.",
+    "default_repository_timing": "The later default DrizzleForumRepository uses `new Date()` and therefore can observe a latest post timestamp in the future relative to its own clock.",
+    "cooldown_formula": "retryAfterMs = cooldownMs - (now - latest.createdAt); if retryAfterMs > 0, ForumWriteRateLimitError is thrown.",
+    "mutation_order": [
+      "transaction begins",
+      "enforceForumWriteCooldown(tx, authorId, policy)",
+      "section existence read",
+      "insert forum_topics",
+      "insert forum_topic_title_revisions",
+      "insert forum_posts",
+      "insert forum_post_revisions"
+    ],
+    "current_assertion_problem": "`.rejects.toBeDefined()` cannot distinguish ForumWriteRateLimitError from the intended PostgreSQL duplicate-key failure. The following topic-absence assertion can therefore prove only that nothing was written before the intended mutation started, not that PostgreSQL rolled back a partially inserted topic graph."
+  },
+  "selected_future_correction": {
+    "changed_file_allowlist": [
+      "tests/database/migrations.test.ts"
+    ],
+    "allowlist_count": 1,
+    "production_changes_required": false,
+    "clock_boundary": [
+      "Keep the existing controlled `clock` shared with createHyperdriveForumWriter.",
+      "After the successful reply, advance `clock` by exactly FORUM_WRITE_COOLDOWN_MS once.",
+      "Construct the rollback-test DrizzleForumRepository with `{ cooldownMs: FORUM_WRITE_COOLDOWN_MS, now: () => new Date(clock) }`.",
+      "At the intended rollback attempt, `now - latest.createdAt == cooldownMs`, so current repository logic (`retryAfterMs > 0`) deterministically permits the write to proceed beyond the cooldown guard."
+    ],
+    "duplicate_precondition": "Before the rollback attempt, assert that `forum_posts.id = 'post-1'` exists and belongs to `topic-1`, making the duplicate primary-key failure an explicit fixture precondition.",
+    "failure_assertions": [
+      "Capture the thrown error rather than accepting an arbitrary rejection.",
+      "Explicitly assert that the error is not an instance of ForumWriteRateLimitError.",
+      "Under the current Drizzle/node-postgres stack, assert the wrapped PostgreSQL cause has SQLSTATE `23505` (unique_violation).",
+      "Assert PostgreSQL constraint identity `forum_posts_pkey`; node-postgres exposes the server constraint field as DatabaseError.constraint and current Drizzle error handling preserves database details in `.cause`.",
+      "If the current stack unexpectedly does not expose a stable constraint identity, stop and return to Codex rather than weakening the test to generic rejection."
+    ],
+    "rollback_graph_assertions": [
+      "After the intended failure, assert no row exists in forum_topics with id `atomic-rollback-topic`.",
+      "Assert no forum_topic_title_revisions row exists with id `atomic-duplicate` (and/or topic_id `atomic-rollback-topic`).",
+      "Assert no forum_posts row exists with topic_id `atomic-rollback-topic`.",
+      "Assert no forum_post_revisions row exists with id `atomic-body`.",
+      "Optionally reassert that the pre-existing duplicate `post-1` still belongs to `topic-1`; this may strengthen fixture clarity but is not required for rollback proof."
+    ],
+    "rationale": "This is the smallest correction because it changes only the evidence harness. It exercises the existing transaction unchanged and proves that topic + title rows inserted before the duplicate forum_posts primary-key failure are actually rolled back."
+  },
+  "postgres_error_contract": {
+    "postgres_version": "17",
+    "sqlstate": "23505",
+    "condition": "unique_violation",
+    "expected_constraint": "forum_posts_pkey",
+    "why_primary_key": "The intentional duplicate uses existing post id `post-1` with a different new topic id. The composite UNIQUE(topic_id,id) is therefore not duplicated; the duplicate is the forum_posts primary key on id.",
+    "driver": "pg 8.23.0",
+    "drizzle": "drizzle-orm 0.45.2",
+    "repository_evidence": "Current database tests already demonstrate that Drizzle query failures preserve PostgreSQL code in the error `.cause`; node-postgres parser maps PostgreSQL field `n` to DatabaseError.constraint.",
+    "external_references": [
+      "https://www.postgresql.org/docs/17/errcodes-appendix.html",
+      "https://www.postgresql.org/docs/17/mvcc-serialization-failure-handling.html",
+      "https://github.com/brianc/node-postgres/blob/master/packages/pg-protocol/src/parser.ts"
+    ]
+  },
+  "project_state_decision": {
+    "update_required": false,
+    "archive_required": false,
+    "reason": "R6 changes only the credibility/precision of one PostgreSQL regression test. It does not change runtime behavior, product capability, phase/stage completion, architecture/schema/dependencies/external state, known limitations tracked by PROJECT_STATE.md, or the nearest development route. Current PROJECT_STATE already truthfully states transactional per-author cooldown and local/CI Stage 4 completion.",
+    "stop_if_contrary_evidence": "If implementation exposes a distinct runtime transaction defect or otherwise makes a PROJECT_STATE assertion false/materially incomplete, stop and return to Codex; do not add PROJECT_STATE.md automatically."
+  },
+  "future_verification": {
+    "focused": "pnpm exec vitest run --config vitest.database.config.ts tests/database/migrations.test.ts",
+    "required": [
+      "pnpm db:test",
+      "pnpm lint",
+      "pnpm typecheck",
+      "pnpm test",
+      "pnpm build",
+      "git diff --check"
+    ],
+    "github_actions": [
+      "checks success on the actual implementation PR head",
+      "database success on the actual implementation PR head"
+    ]
+  },
+  "forbidden_future_scope": [
+    "db/forum-repository.ts",
+    "db/forum-write-policy.ts",
+    "db/hyperdrive-forum.ts",
+    "db/schema.ts",
+    "drizzle/*.sql",
+    "drizzle/meta/*",
+    "package.json",
+    "pnpm-lock.yaml",
+    "PROJECT_STATE.md",
+    "doc_old/PROJECT_STATE_*",
+    "runtime/public contracts",
+    "unrelated tests",
+    "workflows",
+    "external database/deployment operations",
+    "R7 or other remediation implementation",
+    "PR #78"
+  ],
+  "stop_conditions": [
+    "The intended PostgreSQL duplicate-key/constraint failure cannot be deterministically distinguished from ForumWriteRateLimitError.",
+    "The corrected test exposes a separate runtime transaction defect instead of only an evidence defect.",
+    "Implementation requires production code, schema, migration, dependency changes, or more than tests/database/migrations.test.ts.",
+    "Rollback of topic, title revision, posts for the attempted topic, and attempted body revision cannot all be proven.",
+    "The focused database test or full pnpm db:test fails after the correction.",
+    "Final GitHub Actions database job fails on the actual implementation head.",
+    "Constraint identity is not stably exposed by the current pg/Drizzle path and proving the intended failure would require weakening the accepted assertion boundary."
+  ],
+  "implementation_non_goals": [
+    "No implementation in this task.",
+    "No implementation branch or implementation PR.",
+    "No runtime/schema/migration/dependency/public-contract change.",
+    "No PROJECT_STATE/project-state archive change.",
+    "No external operations.",
+    "No PR #78 change.",
+    "No R7 implementation."
+  ],
+  "conclusion": {
+    "status": "PASS",
+    "atomic_currentness": {
+      "EX57-27": "current"
+    },
+    "runtime_defect_established": false,
+    "future_allowlist": [
+      "tests/database/migrations.test.ts"
+    ],
+    "project_state_update_required": false,
+    "implementation_authorized": false,
+    "next_review_owner": "Codex"
+  }
+}
