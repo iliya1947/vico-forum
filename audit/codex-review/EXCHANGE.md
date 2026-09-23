@@ -223,3 +223,55 @@ created and no external operation was performed.
 
 PR #78 and PR #79 must remain open and unmerged. ChatGPT must not authorize R7, implement it,
 declare a future PR merge-ready, or assign itself the next task.
+
+## REVIEW DL-IMPLEMENT-R7-PREFLIGHT-001/1
+
+**Reviewed:** 2026-09-23
+
+**Verdict:** PASS — R7 may proceed only after separate user authorization
+
+**Verified base:** `ad53f1db0a24bd98bc905f6280e6bc8e805d034a`
+
+**Verified artifacts:** JSON `686e1ba87401f8d403e11114219764ebf303dc56`; Markdown
+`c7e28254526c09714151c41a38b1814418abc86d`
+
+Independent review accepts both currentness findings. Current `resolveUser()` reads role/assignment,
+grants, and overrides in separate pool statements; current `readManagementState()` similarly reads
+roles, users/assignments, grants, and overrides through four independent statement snapshots. No
+merged change through PR #90 provides a composite snapshot boundary.
+
+The selected private raw-node-postgres primitive is accepted. One checked-out client running
+`BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY` gives all component statements one
+stable PostgreSQL snapshot, while a new transaction on the next call retains next-request freshness.
+Plain `READ COMMITTED` is correctly rejected because it provides a new snapshot per statement;
+single-statement/CTE designs are valid but unnecessarily duplicate complex result assembly; adding
+a Drizzle wrapper or using `SERIALIZABLE` is broader than required.
+
+The implementation must preserve the preflight's exact lifecycle: begin, all reads on one client,
+commit, rollback cleanup after post-BEGIN failure without masking the primary error, and exactly one
+release in `finally`. A BEGIN failure must propagate without a fictional rollback. Repository code
+must not translate failures or weaken the PR #76 availability boundary.
+
+The one-PR topology is accepted because REM-10 and REM-11 share one repository/private primitive,
+while their regressions remain independently asserted. The exact six-file allowlist is accepted:
+
+1. `db/authorization-repository.ts`
+2. `db/authorization-repository.test.ts`
+3. `db/hyperdrive-authorization.test.ts`
+4. `tests/database/authorization-snapshot.test.ts`
+5. `PROJECT_STATE.md`
+6. `doc_old/PROJECT_STATE_old_23.9.26_1.md`
+
+The archive path is unused on the verified base. It must be a byte-for-byte pre-change copy, and
+the state limitation may be removed only after both composite operations and both deterministic
+regressions pass in the same R7 PR.
+
+The two-connection regression designs are accepted: explicit deferred barriers intercept the exact
+query boundary, the writer commits while the next reader statement is held, no sleeps determine
+correctness, the first result must be wholly-before, and a fresh subsequent call must be wholly-after.
+Tests must retain four management data reads/no N+1, request-scoped caching, PR #76 error semantics,
+transaction cleanup/error precedence, watchdog timeouts, and full resource cleanup.
+
+R7 implementation is not yet authorized. PR #78 and PR #79 remain unmerged. After explicit user
+authorization, ChatGPT must receive a separate implementation task through this control channel and
+must create one standalone implementation PR from the verified post-R6 base.
