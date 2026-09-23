@@ -442,3 +442,42 @@ ran literal `git diff --check` on the fetched commit range.
 PR #91 may be merged by the user. PR #78 and PR #79 must remain open and unmerged. R7 and the Phase
 5 remediation plan are not considered delivered to `main` until PR #91 is actually merged; final
 remediation closure/reconciliation must use the post-R7 main commit.
+
+## FINAL POST-R7 RECONCILIATION
+
+**Reconciled:** 2026-09-23
+
+**Verdict:** PASS — accepted remediation plan R1–R7 is delivered to `main`
+
+**Post-R7 main:** `b85f24cbf4ee72f1cd242d22fb29f0e93687f185`
+
+The repository history and GitHub merge state independently confirm the complete accepted delivery
+chain:
+
+- PR #81 / R1: REM-01, REM-02, REM-03;
+- PR #86 / R2: REM-04;
+- PR #87 / R3: REM-05;
+- PR #88 / R4: REM-06;
+- PR #89 / R5: REM-07 and REM-09;
+- PR #90 / R6: REM-08;
+- PR #91 / R7: REM-10 and REM-11.
+
+All eleven accepted remediation units are ancestors of post-R7 `main`. The separately delivered
+documentation series PR #83, #84, and #85 are also ancestors of this main. Superseded PR #80 and
+#82 were closed without merge, as required.
+
+Current `PROJECT_STATE.md` is reconciled with the delivered repository state: it records R3 task
+reactivation, R2 persistent-locale rejection, R4 local/CI bundle convergence, and R7 stable-snapshot
+authorization reads. The former R3, R4, and R7 limitations are absent. R1/R5/R6 were corrections to
+runtime/test/presentation evidence that do not require separate remaining limitations.
+
+This closes only the accepted audit remediation plan. It does not claim that product Stage 5 is
+complete: `PROJECT_STATE.md` still lists JOB-04, JOB-06, the concrete machine-provider adapter,
+Stage 5B content translation, Markdown structured translation, and persistence work. It also does
+not claim any Stage 6 external rollout, provider/Queue deployment, OAuth acceptance, or production
+migration acceptance.
+
+No additional remediation implementation PR is authorized or required by the accepted R1–R7 plan.
+PR #78 and PR #79 must never be merged. With the two-channel remediation process complete, the user
+may close both control channels without merge. Any newly discovered defect must start a new scoped
+review task rather than silently reopening or extending the completed plan.
