@@ -124,6 +124,38 @@ describe("DrizzleUiTranslationPublicationStore", () => {
     });
   });
 
+  it("clears prior retry metadata when a later attempt publishes successfully", async () => {
+    const database = drizzle(client);
+    const tasks = new DrizzleTranslationTaskStore(database);
+    const publications = new DrizzleUiTranslationPublicationStore(database);
+    const specification = await job(canonicalEnglishCatalog.common.heading, "es");
+    const pending = await tasks.upsertPending(specification);
+
+    const first = await tasks.claim(pending.id, 60_000);
+    if (first.outcome !== "claimed") throw new Error("first claim failed");
+    await expect(tasks.recordFailure(first.task.id, first.task.claimToken, {
+      disposition: "retryable",
+      code: "provider-temporary",
+    })).resolves.toEqual({ outcome: "retry", attemptCount: 1, maxAttempts: 3 });
+
+    const second = await tasks.claim(pending.id, 60_000);
+    if (second.outcome !== "claimed") throw new Error("second claim failed");
+    await expect(publications.publishClaimedMachineResult({
+      task: second.task,
+      value: "Base de traducción",
+      provenance: { provider: "fake", model: "fake-v1", origin: "machine" },
+    })).resolves.toBe(true);
+
+    await expect(tasks.findById(pending.id)).resolves.toMatchObject({
+      status: "completed",
+      attemptCount: 2,
+      lastFailureCode: null,
+      failureDisposition: null,
+      failedAt: null,
+      completedAt: expect.any(Date),
+    });
+  });
+
   it("rejects a lost claim without publishing or completing the durable task", async () => {
     const database = drizzle(client);
     const tasks = new DrizzleTranslationTaskStore(database);
