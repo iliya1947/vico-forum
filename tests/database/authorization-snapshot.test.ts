@@ -93,7 +93,7 @@ async function createSchema(schemaName: string, seed: (client: Client) => Promis
     await setup.query(`drop schema if exists ${schemaName} cascade; create schema ${schemaName}`);
     await setup.query(`set search_path to ${schemaName}`);
     for (const file of migrationFiles) {
-      const sql = (await readFile(`drizzle/${file}`, "utf8").replaceAll('"public".', `"${schemaName}".`);
+      const sql = (await readFile(`drizzle/${file}`, "utf8")).replaceAll('"public".', `"${schemaName}".`);
       await setup.query(sql);
     }
     await seed(setup);
