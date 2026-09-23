@@ -56,14 +56,14 @@ type QueryPhase = "before" | "after";
 type QueryObserver = (phase: QueryPhase, sql: string) => void | Promise<void>;
 
 interface SimpleQueryTarget {
-  query(sql: string, values?: readonly unknown[]): Promise<unknown>;
+  query(sql: string, values?: unknown[]): Promise<unknown>;
 }
 
 async function observedQuery(
   target: SimpleQueryTarget,
   observe: QueryObserver,
   sql: string,
-  values?: readonly unknown[],
+  values?: unknown[],
 ): Promise<unknown> {
   await observe("before", sql);
   const result = await target.query(sql, values);
@@ -73,12 +73,12 @@ async function observedQuery(
 
 function observedPool(pool: Pool, observe: QueryObserver): Pool {
   return {
-    query: (sql: string, values?: readonly unknown[]) =>
+    query: (sql: string, values?: unknown[]) =>
       observedQuery(pool as unknown as SimpleQueryTarget, observe, sql, values),
     connect: async () => {
       const client = await pool.connect();
       return {
-        query: (sql: string, values?: readonly unknown[]) =>
+        query: (sql: string, values?: unknown[]) =>
           observedQuery(client as unknown as SimpleQueryTarget, observe, sql, values),
         release: () => client.release(),
       } as unknown as PoolClient;
@@ -127,7 +127,7 @@ async function insertSnapshotUser(client: Client): Promise<void> {
 
 async function commitSteps(
   writer: Client,
-  steps: ReadonlyArray<{ sql: string; values?: readonly unknown[] }>,
+  steps: ReadonlyArray<{ sql: string; values?: unknown[] }>,
 ): Promise<void> {
   await writer.query("BEGIN");
   try {
