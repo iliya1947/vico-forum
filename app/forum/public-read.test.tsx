@@ -115,6 +115,26 @@ describe.each([
   });
 });
 
+describe("category count presentation", () => {
+  it("composes topic and message totals through independent plural lookups", async () => {
+    const data = {
+      locale: "en",
+      category: {
+        ...category,
+        sections: [
+          { id: "mixed-one", name: "Mixed one", topicCount: 1, postCount: 2 },
+          { id: "mixed-two", name: "Mixed two", topicCount: 2, postCount: 1 },
+        ],
+      },
+    };
+
+    renderRoute(CategoryRoute, data, "/en/categories/development", "en", "ltr");
+
+    expect(await screen.findByText("1 topic · 2 messages")).toBeInTheDocument();
+    expect(screen.getByText("2 topics · 1 message")).toBeInTheDocument();
+  });
+});
+
 describe("forum path encoding", () => {
   it("encodes an opaque forum id as one path segment and round-trips the route param", () => {
     const categoryId = "a/b?c#d%e тема";
@@ -134,6 +154,55 @@ describe("forum read states", () => {
     expect(screen.getByText("Best answer").closest("li")).toHaveClass("best-answer");
     expect(screen.getByRole("link", { name: "Go to solution" })).toHaveAttribute("href", "#post-answer");
     expect(screen.queryByRole("button", { name: "Select as best answer" })).not.toBeInTheDocument();
+  });
+
+  it("keeps best-answer, body, and solution controls inside one post content region", async () => {
+    const followup = {
+      ...topic.posts[0]!,
+      id: "followup",
+      authorId: "sam",
+      authorName: "Sam",
+      body: { id: "post-r2", originalContent: "Follow-up explanation.", sourceLocale: "en" },
+    };
+    const solvedTopic = {
+      ...topic,
+      isSolved: true,
+      bestAnswerPostId: "answer",
+      posts: [topic.posts[0]!, followup],
+    };
+
+    renderRoute(
+      TopicRoute,
+      { locale: "en", topic: solvedTopic, canReply: false, canManageSolution: true },
+      "/en/topics/typed-api",
+      "en",
+      "ltr",
+    );
+
+    expect(await screen.findByText("Best answer")).toBeInTheDocument();
+
+    const bestPost = document.querySelector("#post-answer");
+    const followupPost = document.querySelector("#post-followup");
+    expect(bestPost).not.toBeNull();
+    expect(followupPost).not.toBeNull();
+
+    const bestHeader = bestPost!.children.item(0);
+    const bestContent = bestPost!.children.item(1);
+    expect(bestPost!.children).toHaveLength(2);
+    expect(bestHeader?.tagName).toBe("HEADER");
+    expect(bestContent).toHaveClass("forum-post-content");
+    expect(bestContent).toContainElement(bestPost!.querySelector(".best-answer-label"));
+    expect(bestContent).toContainElement(bestPost!.querySelector(".post-body"));
+    expect(bestHeader).not.toContainElement(bestContent as HTMLElement);
+
+    const followupHeader = followupPost!.children.item(0);
+    const followupContent = followupPost!.children.item(1);
+    expect(followupPost!.children).toHaveLength(2);
+    expect(followupHeader?.tagName).toBe("HEADER");
+    expect(followupContent).toHaveClass("forum-post-content");
+    expect(followupContent).toContainElement(followupPost!.querySelector(".post-body"));
+    expect(followupContent).toContainElement(followupPost!.querySelector(".solution-form"));
+    expect(screen.getByRole("button", { name: "Select as best answer" })).toBeInTheDocument();
   });
 
   it("shows solution controls only to the topic author", async () => {
