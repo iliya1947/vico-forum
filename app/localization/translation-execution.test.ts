@@ -12,6 +12,7 @@ import {
   TranslationProviderRouter,
   type MachineTranslationProviderAdapter,
   type MachineTranslationRequest,
+  type MachineTranslationResult,
 } from "./translation-provider";
 import {
   UiTranslationTaskExecutor,
@@ -65,6 +66,8 @@ async function harness(options: {
   readonly targetLocale?: string;
   readonly providerValue?: unknown;
   readonly providerFailure?: Error;
+  readonly providerProvenance?: unknown;
+  readonly preflightFailure?: Error;
   readonly currentGeneration?: boolean;
   readonly attemptStarted?: boolean;
   readonly claimOutcome?: "claimed" | "already-claimed";
@@ -86,7 +89,10 @@ async function harness(options: {
         }
       : { outcome: "already-claimed" as const }),
     markStale: vi.fn(async () => true),
-    isCurrentGeneration: vi.fn(async () => options.currentGeneration ?? true),
+    isCurrentGeneration: vi.fn(async () => {
+      if (options.preflightFailure) throw options.preflightFailure;
+      return options.currentGeneration ?? true;
+    }),
   };
   const localeRegistry = new InMemoryLocaleRegistry([{
     tag: targetLocale,
@@ -108,12 +114,16 @@ async function harness(options: {
     leaseDurationMs: 60_000,
   });
 
-  const translate = vi.fn(async (request: MachineTranslationRequest) => {
+  const translate = vi.fn(async (request: MachineTranslationRequest): Promise<MachineTranslationResult> => {
     void request;
     if (options.providerFailure) throw options.providerFailure;
     return {
       value: options.providerValue ?? "Fondation de traduction",
-      provenance: { provider: "fake", model: "fake-v1", origin: "machine" as const },
+      provenance: (options.providerProvenance ?? {
+        provider: "fake",
+        model: "fake-v1",
+        origin: "machine",
+      }) as MachineTranslationResult["provenance"],
     };
   });
   const adapter: MachineTranslationProviderAdapter = {
@@ -253,6 +263,25 @@ describe("UiTranslationTaskExecutor", () => {
     });
   });
 
+  it("routes a claimed preflight dependency failure through the bounded retry lifecycle", async () => {
+    const { executor, translate, recordFailure } = await harness({
+      preflightFailure: new Error("temporary generation-head read failure"),
+    });
+
+    await expect(executor.execute({ translationTaskId: taskId })).resolves.toEqual({
+      outcome: "execution-failed",
+      delivery: "retry",
+      failureCode: "dependency-temporary",
+      attemptCount: 1,
+      maxAttempts: 3,
+    });
+    expect(translate).not.toHaveBeenCalled();
+    expect(recordFailure).toHaveBeenCalledWith(taskId, claimToken, {
+      disposition: "retryable",
+      code: "dependency-temporary",
+    });
+  });
+
   it("persists invalid provider output as a terminal failure instead of retrying it", async () => {
     const { executor, publishClaimedMachineResult, recordFailure } = await harness({ providerValue: "   " });
 
@@ -271,9 +300,36 @@ describe("UiTranslationTaskExecutor", () => {
     });
   });
 
+  it("terminalizes invalid provider provenance as provider-output-invalid", async () => {
+    for (const provenance of [
+      { provider: "   ", model: "fake-v1", origin: "machine" },
+      { provider: "fake", model: "   ", origin: "machine" },
+      { provider: "fake", model: "fake-v1", origin: "manual" },
+    ]) {
+      const { executor, publishClaimedMachineResult, recordFailure } = await harness({
+        providerProvenance: provenance,
+      });
+
+      await expect(executor.execute({ translationTaskId: taskId })).resolves.toEqual({
+        outcome: "execution-failed",
+        delivery: "terminal",
+        failureCode: "provider-output-invalid",
+        terminalReason: "terminal",
+        attemptCount: 1,
+        maxAttempts: 3,
+      });
+      expect(publishClaimedMachineResult).not.toHaveBeenCalled();
+      expect(recordFailure).toHaveBeenCalledWith(taskId, claimToken, {
+        disposition: "terminal",
+        code: "provider-output-invalid",
+      });
+    }
+  });
+
   it("terminalizes an exhausted reclaimed lease without another provider call", async () => {
-    const { executor, translate, recordFailure } = await harness({
+    const { executor, translate, recordFailure, tasks } = await harness({
       attemptStarted: false,
+      preflightFailure: new Error("dependency must not be read for exhausted reclaim"),
       failureResult: {
         outcome: "terminal",
         attemptCount: 3,
@@ -291,6 +347,7 @@ describe("UiTranslationTaskExecutor", () => {
       maxAttempts: 3,
     });
     expect(translate).not.toHaveBeenCalled();
+    expect(tasks.isCurrentGeneration).not.toHaveBeenCalled();
     expect(recordFailure).toHaveBeenCalledWith(taskId, claimToken, {
       disposition: "terminal",
       code: "attempt-budget-exhausted",
