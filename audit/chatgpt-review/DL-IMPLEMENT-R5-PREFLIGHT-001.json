@@ -1,0 +1,426 @@
+{
+  "type": "DL-IMPLEMENT-R5-PREFLIGHT-001",
+  "task_id": "DL-IMPLEMENT-R5-PREFLIGHT-001/1",
+  "status": "PASS",
+  "mode": "preflight-only",
+  "implementation_authorized": false,
+  "codex_role": "lead reviewer",
+  "observed_state": {
+    "checked_at": "2026-09-23",
+    "main_sha": "73accda528c1a007cfe18117bb7dcc0bdf272cbb",
+    "main_is_pr88_merge": true,
+    "pr88_merge_commit": "73accda528c1a007cfe18117bb7dcc0bdf272cbb",
+    "r1_merge_commit": "944ea2f01ab85e1e888981c2d789f2cfde0bb3b0",
+    "r2_merge_commit": "adb5eed73fccd7110c5f6f95dc933e217ea03c72",
+    "r3_merge_commit": "c2ea076af1ca100de02f32c6e3aa06f840731e1d",
+    "r4_merge_commit": "73accda528c1a007cfe18117bb7dcc0bdf272cbb",
+    "r1_through_r4_are_ancestors_of_current_main": true,
+    "pr78": {
+      "state": "open",
+      "merged": false,
+      "head_sha": "3b1c2d0306e8e524371ee3389aa4fcaaa3bcb492",
+      "role": "control channel; do not modify or merge"
+    },
+    "pr79": {
+      "state": "open",
+      "merged": false,
+      "head_before_r5_artifacts": "f8daef5f909ce114a1450d89892f4a4abad69dd8",
+      "role": "audit/response channel; do not merge"
+    }
+  },
+  "accepted_scope": {
+    "series_id": "R5",
+    "series_name": "Forum presentation corrections",
+    "accepted_plan": "DL-REMEDIATION-PLAN-001/2",
+    "accepted_plan_machine_blob": "739d326eb9e00a705003fff43ba4592c2f453e56",
+    "accepted_plan_narrative_blob": "d7766b1a857a8f70d279778fb82a478c74d3161c",
+    "hard_dependencies": [],
+    "recommended_order_after": [],
+    "units": [
+      {
+        "id": "REM-07",
+        "defect_group": "CD-06",
+        "target_contract": "TC-06-B",
+        "atomic_ids": [
+          "EX52-25",
+          "EX52-26"
+        ],
+        "title": "Make section topic/message totals plural-aware"
+      },
+      {
+        "id": "REM-09",
+        "defect_group": "CD-08",
+        "target_contract": "TC-06-D",
+        "atomic_ids": [
+          "EX58-43"
+        ],
+        "title": "Place best-answer/body/solution controls in the desktop post content column"
+      }
+    ]
+  },
+  "current_paths": [
+    {
+      "path": "app/localization/catalog.ts",
+      "blob": "bb76f34c712c8d72ce7b3d98d109199241127927"
+    },
+    {
+      "path": "app/localization/resources.test.ts",
+      "blob": "00095a47e1aa3d2f8b5dfdc2e2dc162056ebac63"
+    },
+    {
+      "path": "app/localization/bundles.ts",
+      "blob": "aee1fc6919dd4955b8e19082c3bfb1a0fd27465c"
+    },
+    {
+      "path": "app/localization/bundles.test.ts",
+      "blob": "9b27538df785cfa215a7f0bf1a141c9634e4c067"
+    },
+    {
+      "path": "app/localization/translation-validation.test.ts",
+      "blob": "043575a21523bb3b5b50873509bf09f1d0fc06fc"
+    },
+    {
+      "path": "app/localization/manual-packs.ts",
+      "blob": "e4a369ecb6e7f8df0226b9ab4b2ce4ef7d7eca88"
+    },
+    {
+      "path": "app/localization/fingerprint.ts",
+      "blob": "79785ec9471a055e0d7800cb2c72b4d7d446a59e"
+    },
+    {
+      "path": "app/localization/persistent-sources.ts",
+      "blob": "8811c0d8499459d5d1657f0e6d6d8f525545d242"
+    },
+    {
+      "path": "app/localization/persistent-sources.test.ts",
+      "blob": "3b0b3e34ca0328169360fa5201bbc5dfd34b0888"
+    },
+    {
+      "path": "app/localization/resource-loader.ts",
+      "blob": "0e84e076a877167394583708fd8aabb25998271c"
+    },
+    {
+      "path": "app/localization/resource-loader-bundles.test.ts",
+      "blob": "3c6b169bfa32dcfb905c5640a7b648b34c5336a9"
+    },
+    {
+      "path": "app/routes/category.tsx",
+      "blob": "2500df92ab595cca229a3af727e1abc4f476db39"
+    },
+    {
+      "path": "app/routes/topic.tsx",
+      "blob": "a8b4c332042a4f1acaf14f9d962354ef8f90e686"
+    },
+    {
+      "path": "app/forum/public-read.test.tsx",
+      "blob": "219b6f1e29ce4ea307a19d33016e2322923989bf"
+    },
+    {
+      "path": "app/forum/markdown.tsx",
+      "blob": "d56cfd95fa3a1cd7fe7466394d9ae13384b48f08"
+    },
+    {
+      "path": "app/forum/markdown.test.tsx",
+      "blob": "4bba17abb6d4c3a996f82519456b8c7741a2cdf5"
+    },
+    {
+      "path": "app/styles.css",
+      "blob": "2e79d1c3dcc1373bea46521ffb02e214e9dc0b3a"
+    },
+    {
+      "path": "package.json",
+      "blob": "52e2cceaacb37b7012e7ed9d928a7881511f1e0a"
+    },
+    {
+      "path": "PROJECT_STATE.md",
+      "blob": "e1ed76e1f14d2ed9d5ab1d9579ff54292b031af5"
+    }
+  ],
+  "defect_currentness": [
+    {
+      "id": "EX52-25",
+      "verdict": "current",
+      "original_finding_reconstruction": "PR #52 introduced forum count strings using English '(s)' ordinary interpolation. Later PR #71 fixed sectionCount by moving it to the structured plural catalog/runtime, but deliberately left topicAndPostCount as '{{topics}} topic(s) · {{posts}} message(s)'. The accepted residual R5 defect is therefore narrower than the original broad count-string concern but remains present.",
+      "current_proof": [
+        "canonicalEnglishCatalog.common.topicAndPostCount is still messageKind interpolation with two placeholders and literal English '(s)' markers.",
+        "CategoryRoute still calls t('topicAndPostCount', { topics, posts }) once, so neither count is resolved independently through i18next plural selection.",
+        "app/routes/category.tsx has not changed since PR #52."
+      ],
+      "later_pr_disconfirmation": [
+        "PR #53–#61 did not change CategoryRoute count composition.",
+        "PR #71 added structured plural support and converted sectionCount only; topicAndPostCount remained unchanged.",
+        "PR #72–#88 did not change CategoryRoute and did not replace the combined key."
+      ]
+    },
+    {
+      "id": "EX52-26",
+      "verdict": "current",
+      "original_finding_reconstruction": "The PR #52/P2 review finding identified the combined topic/message count label as a presentation/i18n contract defect because independent grammatical number cannot be selected for two different counts inside one ordinary interpolation message.",
+      "current_proof": [
+        "The same combined key and route call remain on post-R4 main.",
+        "Existing tests prove plural runtime capability for sectionCount but contain no regression proving independent topic/message singular/plural selection or mixed pairs."
+      ],
+      "later_pr_disconfirmation": [
+        "PR #71 makes the intended fix mechanism available, but does not apply it to the combined topic/message label.",
+        "No later catalog/category test or route change closes this accepted finding."
+      ]
+    },
+    {
+      "id": "EX58-43",
+      "verdict": "current",
+      "original_finding_reconstruction": "PR #58 added best-answer label and solution form as direct siblings of header and ForumMarkdown inside .forum-post. The accepted P2 finding records that a two-column grid with no content-column wrapper/placement lets these direct grid items auto-place into successive cells/implicit rows instead of one stable desktop content region.",
+      "current_proof": [
+        "Current .forum-post remains display:grid with grid-template-columns: 12rem minmax(0, 1fr).",
+        "Current TopicRoute still renders header, conditional .best-answer-label, ForumMarkdown (.post-body), and conditional .solution-form as separate direct children.",
+        "No grid-column/grid-area placement exists for those content siblings.",
+        "The max-width:38rem rule only switches .forum-post to one column; it does not repair desktop auto-placement."
+      ],
+      "later_pr_disconfirmation": [
+        "PR #61 changed solution authorization/presentation availability and added unrelated auth/admin CSS; it did not add a content wrapper or placement.",
+        "PR #76 narrowed authorization failure masking; it did not change the post DOM structure or CSS.",
+        "PR #77–#88 did not change the relevant TopicRoute/CSS layout."
+      ]
+    }
+  ],
+  "deliberate_disconfirmation": {
+    "result": "All three accepted R5 atomic IDs remain current on post-R4 main. No already-fixed or superseded R5 item was found.",
+    "checks": [
+      "Compared the accepted classifications and remediation plan with current post-R4 source instead of copying the old verdict.",
+      "Inspected full current catalog/plural helpers/compiler/runtime tests, CategoryRoute, TopicRoute, ForumMarkdown, public render tests, responsive CSS, PROJECT_STATE and translation stale-row behavior.",
+      "Inspected the relevant PR #52 and #58 introduction diffs and later file histories through current main.",
+      "Verified CategoryRoute is byte-history unchanged after PR #52.",
+      "Verified PR #71 converted sectionCount to structured plural while leaving topicAndPostCount unchanged.",
+      "Verified post-PR58 TopicRoute changes (#61/#76) affect authorization/failure boundaries, not content-column placement.",
+      "Verified post-PR58 styles changes do not place/wrap best-answer/body/solution content.",
+      "Verified current tests do not already prove the missing independent plural pairs or common content-region structure."
+    ]
+  },
+  "external_reference_check": {
+    "i18next": {
+      "url": "https://www.i18next.com/translation-function/plurals",
+      "finding": "Current i18next documentation requires the option name 'count' for plural selection and uses JSON v4 suffixes such as _one/_other, with additional locale-specific branches. This matches the repository's existing structured plural compiler/runtime."
+    },
+    "css_grid": {
+      "url": "https://developer.mozilla.org/en-US/docs/Web/CSS/Guides/Grid_layout/Auto-placement",
+      "finding": "Unpositioned direct children of a grid container are auto-placed one item per cell in source order; additional implicit rows are created as needed. This directly supports the current EX58-43 defect analysis."
+    }
+  },
+  "delivery_decision": {
+    "decision": "one-small-standalone-R5-implementation-PR",
+    "split_required": false,
+    "rationale": [
+      "REM-07 and REM-09 are both bounded presentation corrections with no DB/schema/dependency/domain-semantics coupling.",
+      "They share app/forum/public-read.test.tsx as the minimal route/render regression location, so splitting would duplicate review/CI/visual evidence while creating no isolation benefit.",
+      "The implementation can remain reviewable with separate commits for REM-07 and REM-09 inside one PR."
+    ]
+  },
+  "rem07_decision": {
+    "selected_mechanism": "Replace topicAndPostCount with two independent canonical plural messages and compose their already-localized fragments in CategoryRoute.",
+    "proposed_catalog_identities": [
+      {
+        "key": "topicCount",
+        "source": {
+          "one": "{{count}} topic",
+          "other": "{{count}} topics"
+        },
+        "placeholders": [
+          "count"
+        ],
+        "messageKind": "plural"
+      },
+      {
+        "key": "messageCount",
+        "source": {
+          "one": "{{count}} message",
+          "other": "{{count}} messages"
+        },
+        "placeholders": [
+          "count"
+        ],
+        "messageKind": "plural"
+      }
+    ],
+    "route_boundary": "CategoryRoute calls t('topicCount', { count: section.topicCount }) and t('messageCount', { count: section.postCount }) independently, then joins the two localized fragments with the existing neutral separator. No locale-specific plural branch is permitted in route code.",
+    "old_key": {
+      "key": "topicAndPostCount",
+      "decision": "intentional-canonical-catalog-removal",
+      "reason": "One canonical message with two independent counts cannot use normal i18next count-driven plural resolution for both grammatical numbers. Keeping it as a supported canonical identity would preserve the defect.",
+      "local_manual_pack_impact": "No checked-in ru/he manual pack contains topicAndPostCount, so app/localization/manual-packs.ts requires no change.",
+      "fingerprint_impact": "No fingerprint registry/file requires manual editing. sourceFingerprint is computed per descriptor. New topicCount/messageCount descriptors naturally receive new fingerprints; unrelated manual-pack fingerprints such as heading remain unchanged.",
+      "persistent_raw_impact": "Existing persistent_manual or machine rows for topicAndPostCount become historical unknown-key rows. Current DatabaseTranslationSource already skips unknown canonical keys and reports reason 'unknown-key'; this behavior has an existing regression.",
+      "persisted_bundle_impact": "A persisted compiled bundle containing the removed key or an old bundleVersion is rejected by current bundle verification/deploy identity and request loading falls back safely. R5 must not add request writes or external cleanup.",
+      "external_data_boundary": "No claim is made that old topicAndPostCount rows/bundles exist externally. R5 performs no external reconciliation. Any future external cleanup remains a separately authorized external operation."
+    }
+  },
+  "rem09_decision": {
+    "selected_mechanism": "single-content-wrapper",
+    "rationale": "A wrapper makes .forum-post have exactly two direct grid items: author header and content region. That gives a structural content-column boundary without maintaining multiple conditional grid-column rules.",
+    "dom_boundary": {
+      "author_region": "Existing <header> remains a direct child of .forum-post.",
+      "content_region": "Add one .forum-post-content direct child containing the conditional best-answer label, ForumMarkdown output and conditional solution form.",
+      "unchanged": "Do not change loader/action/auth checks, solved/best-answer conditions, hidden inputs, post anchors, ForumMarkdown component or domain mutations."
+    },
+    "css_boundary": [
+      "Keep .forum-post desktop grid-template-columns: 12rem minmax(0, 1fr).",
+      "Move shared content padding/min-width responsibility to .forum-post-content.",
+      "Remove the duplicated outer padding from .post-body so nesting does not double-pad.",
+      "Keep .solution-form spacing semantics; make .best-answer-label block-level only if needed to preserve the current label presentation.",
+      "Do not add explicit locale/direction layout branches or redesign the forum visual system."
+    ],
+    "explicit_grid_placement_rejected_as_default": "Explicit grid-column placement on three conditional siblings can be made correct, but it leaves three independent grid items/rows and requires repeated placement rules. The single wrapper expresses the semantic content region directly and makes conditional rendering structurally stable.",
+    "mobile_proof_boundary": "At max-width 38rem the existing .forum-post rule becomes one column. With exactly header + content-wrapper as direct grid children, normal auto-placement stacks those two regions in source order. Existing mobile header border change remains valid; no extra breakpoint or redesign is required."
+  },
+  "future_implementation_allowlist": [
+    "app/localization/catalog.ts",
+    "app/localization/resources.test.ts",
+    "app/routes/category.tsx",
+    "app/routes/topic.tsx",
+    "app/forum/public-read.test.tsx",
+    "app/styles.css"
+  ],
+  "unit_file_mapping": {
+    "REM-07": [
+      "app/localization/catalog.ts",
+      "app/localization/resources.test.ts",
+      "app/routes/category.tsx",
+      "app/forum/public-read.test.tsx"
+    ],
+    "REM-09": [
+      "app/routes/topic.tsx",
+      "app/forum/public-read.test.tsx",
+      "app/styles.css"
+    ]
+  },
+  "project_state_decision": {
+    "update_required": false,
+    "reason": "PROJECT_STATE records stage/architecture/current operational limitations, not individual forum presentation defects. R5 does not change stage completion, architecture, DB/external state, authorization semantics, translation job state or the currently documented R7 limitation.",
+    "explicitly_excluded": [
+      "PROJECT_STATE.md",
+      "all doc_old/PROJECT_STATE_* archives"
+    ]
+  },
+  "future_tests_and_gates": {
+    "changed_test_files": [
+      "app/localization/resources.test.ts",
+      "app/forum/public-read.test.tsx"
+    ],
+    "rem07_regressions": [
+      "topic count 1 => singular canonical/runtime form",
+      "topic count 2 => other/plural canonical/runtime form",
+      "message count 1 => singular canonical/runtime form",
+      "message count 2 => other/plural canonical/runtime form",
+      "category render: 1 topic · 2 messages",
+      "category render: 2 topics · 1 message",
+      "CategoryRoute obtains each fragment from an independent t(...,{count}) lookup and contains no locale-specific plural branch",
+      "topicCount/messageCount descriptors remain messageKind plural with exactly ['count'] placeholder and valid computed SHA-256 source fingerprints"
+    ],
+    "rem09_regressions": [
+      "best-answer label is a descendant of .forum-post-content",
+      "ForumMarkdown .post-body is a descendant of the same .forum-post-content",
+      "solution form is a descendant of .forum-post-content on an eligible solved non-best post",
+      "header remains a direct sibling author region and is not inside .forum-post-content",
+      "existing canManageSolution false/true rendering assertions remain green, proving authorization/domain conditions are unchanged",
+      "mobile visual evidence confirms one-column header-then-content stacking"
+    ],
+    "focused_commands": [
+      "pnpm exec vitest run app/localization/resources.test.ts app/localization/bundles.test.ts app/localization/translation-validation.test.ts app/localization/persistent-sources.test.ts app/localization/resource-loader-bundles.test.ts app/forum/public-read.test.tsx",
+      "pnpm exec vitest run app/forum/public-read.test.tsx app/forum/markdown.test.tsx"
+    ],
+    "repository": [
+      "pnpm lint",
+      "pnpm typecheck",
+      "pnpm test",
+      "pnpm build",
+      "git diff --check"
+    ],
+    "github_actions": [
+      "checks green on the actual future implementation PR head"
+    ],
+    "db_test_required_by_r5": false,
+    "database_job_required_by_r5": false,
+    "database_ci_note": "The repository's standard workflow currently also runs the database job. If it runs for the future R5 PR, record its factual result in the implementation report, but R5 does not make pnpm db:test/database a scope-derived merge gate because no DB behavior is changed."
+  },
+  "screenshot_plan": {
+    "required": true,
+    "repository_dependency_change_allowed": false,
+    "current_fixture_state": "The repository has no committed Playwright/browser screenshot dependency or dedicated visual fixture. Adding one only for R5 evidence is unnecessary scope expansion.",
+    "minimal_safe_path": [
+      "Use a local worktree of the actual future implementation head and existing dependencies only.",
+      "Create a temporary untracked Vite/React visual harness (for example under an ignored/untracked .tmp-r5-visual directory) that imports the actual TopicRoute component and actual app/styles.css; do not copy/reimplement the post DOM or CSS.",
+      "Provide Router/I18next context with the same in-memory approach used by app/forum/public-read.test.tsx.",
+      "Fixture one solved topic with at least two posts and canManageSolution=true: one best-answer post exercises label+body; one non-best post exercises body+solution form.",
+      "Capture a desktop screenshot at a width comfortably above 38rem (recommended 1280x900) and a narrow/mobile screenshot below the existing breakpoint (recommended 375x812).",
+      "Before reporting, confirm the temporary harness is untracked and absent from the implementation PR diff."
+    ],
+    "acceptance_evidence": [
+      "Desktop: author metadata occupies the narrow author column; label/body/solution controls stay in the content column.",
+      "Mobile: author region stacks above one content region; no unintended extra grid cells/columns or horizontal layout regression."
+    ],
+    "stop_condition": "If the executing environment cannot render the unmodified actual TopicRoute + actual stylesheet in a local browser/harness, or cannot capture both viewports without adding a repository dependency/production demo route, stop and return to Codex. Do not claim screenshot acceptance and do not broaden production scope."
+  },
+  "forbidden_scope": {
+    "rule": "For the future R5 implementation, every tracked path outside the exact six-file allowlist is forbidden unless Codex first revalidates this preflight.",
+    "explicit": [
+      "PROJECT_STATE.md and all PROJECT_STATE archives",
+      "app/localization/manual-packs.ts",
+      "app/localization/fingerprint.ts",
+      "app/localization/sources.ts",
+      "app/localization/persistent-sources.ts",
+      "app/localization/bundles.ts",
+      "app/localization/resource-loader.ts",
+      "app/localization/translation-validation.ts",
+      "app/forum/markdown.tsx",
+      "all forum query/repository/counting/pagination code",
+      "all solved/best-answer authorization, action, mutation and domain-semantic code",
+      "db/schema.ts",
+      "drizzle/*.sql",
+      "drizzle/meta/*",
+      "package.json",
+      "pnpm-lock.yaml",
+      "all project/translation/auth/database source-of-truth docs",
+      ".github/workflows/*",
+      "all Queue/Workflow/provider/translation-job paths",
+      "all R6/R7 implementation paths",
+      "all Stage 6/external operations",
+      "PR #78"
+    ]
+  },
+  "stop_conditions": [
+    "Current main differs from 73accda528c1a007cfe18117bb7dcc0bdf272cbb before implementation: revalidate currentness and allowlist.",
+    "Either R5 atomic finding is independently fixed/superseded before implementation: remove that unit rather than recreating work.",
+    "REM-07 requires locale-specific plural logic in CategoryRoute, changes forum counting/query semantics, a manual-pack migration, DB/schema work or translation-job changes: stop and revalidate.",
+    "Removing topicAndPostCount exposes persistent data that current unknown-key/bundle-fallback semantics cannot safely degrade: stop; do not add a migration or external cleanup ad hoc.",
+    "REM-09 cannot keep solved/best-answer authorization/domain logic byte-equivalent in behavior or requires a visual redesign: stop and revalidate.",
+    "REM-09 requires modifying ForumMarkdown, adding a dependency, a production demo route, or a new tracked fixture/helper file to obtain screenshots: stop and return to Codex.",
+    "Any tracked file outside the six-file allowlist is required: stop and revalidate instead of expanding scope.",
+    "Screenshot evidence cannot be produced honestly from the actual implementation head using the existing dependencies and an untracked harness: stop; do not claim completion.",
+    "Any external deployment/database/provider/Queue/credential action becomes necessary: stop and obtain separate explicit authorization."
+  ],
+  "implementation_non_goals": [
+    "No implementation in this task.",
+    "No implementation branch or implementation PR.",
+    "No runtime/test/style/schema/migration/project-state/source-of-truth modification outside PR #79 audit artifacts.",
+    "No DB query/counting/pagination change.",
+    "No solved/best-answer authorization or domain change.",
+    "No locale-specific plural rules in route code.",
+    "No forum visual redesign.",
+    "No dependency change.",
+    "No Queue/provider/translation-job work.",
+    "No R6/R7.",
+    "No Stage 6/external operation.",
+    "No PR #78 mutation."
+  ],
+  "conclusion": {
+    "status": "PASS",
+    "current_atomic_ids": {
+      "EX52-25": "current",
+      "EX52-26": "current",
+      "EX58-43": "current"
+    },
+    "delivery": "one small standalone R5 implementation PR if later authorized",
+    "future_changed_file_count": 6,
+    "project_state_update_required": false,
+    "implementation_authorized": false,
+    "next_action_owner": "Codex lead reviewer"
+  }
+}
