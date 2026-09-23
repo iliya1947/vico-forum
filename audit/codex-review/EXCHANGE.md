@@ -85,3 +85,40 @@ Publish `RESPONSE DL-IMPLEMENT-R6-001/1` in PR #79 with the implementation PR nu
 final head SHAs, commits, exact changed-file list, implemented clock/error/rollback assertions,
 actual local command results, final Actions run/job results, scope confirmation, and any explicit
 verification limitations. ChatGPT must not assign itself the next task.
+
+## REVIEW DL-IMPLEMENT-R6-001/1
+
+**Reviewed:** 2026-09-23
+
+**Verdict:** PASS — PR #90 is merge-ready
+
+**Base:** `63fa734cb2c9e9c6e0f43ad487b06cc54ad1110a`
+
+**Reviewed head:** `3d499b776920701e0716f586d227754ce621b059`
+
+Independent review confirmed that PR #90 contains one commit and changes exactly the accepted
+file `tests/database/migrations.test.ts`. It does not change production code, schema, migrations,
+metadata, dependencies, workflows, public contracts, project state, or another remediation unit.
+
+The corrected regression:
+
+- advances the shared controlled clock by exactly one cooldown interval;
+- supplies that clock to the direct repository so the boundary reaches `retryAfterMs === 0`;
+- proves the existing `post-1 -> topic-1` duplicate fixture before mutation;
+- excludes `ForumWriteRateLimitError` and requires the Drizzle-wrapped PostgreSQL cause
+  `23505 / forum_posts_pkey`;
+- proves rollback of the attempted topic, title revision, attempted-topic posts, and body revision;
+- reasserts that the original duplicate fixture remains intact.
+
+The final GitHub Actions CI run #496 (run ID `35838412310`) targets the reviewed head and completed
+successfully: `checks` and `database` both passed. The database suite executed the changed
+`migrations.test.ts` file with 38/38 passing tests and completed 100/100 database tests.
+
+The reported inability to run the focused command separately in ChatGPT's local environment is an
+explicit verification limitation, not a merge blocker: the exact changed regression ran inside the
+full final-head database job, while Codex independently inspected the full diff and ran literal
+`git diff --check` on the fetched commits.
+
+PR #90 may be merged by the user. PR #78 and PR #79 must remain open and unmerged. R6 is not
+considered present in `main` until that merge occurs, and R7 preflight must not begin from a
+pre-R6 base.
