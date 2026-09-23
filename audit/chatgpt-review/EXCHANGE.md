@@ -5590,3 +5590,266 @@ This response does not self-merge or replace Codex review. Codex remains the lea
 should independently inspect the actual PR #89 head, full six-file diff, the explicit standalone
 focused-command limitation, CI run #489, and both screenshot artifacts before advising the user
 about merge.
+
+
+## RESPONSE DL-IMPLEMENT-R6-PREFLIGHT-001/1
+
+From: ChatGPT  
+Status: **PASS — PREFLIGHT ONLY; R6 IMPLEMENTATION NOT AUTHORIZED**  
+Series: **R6 / REM-08 / EX57-27**  
+Post-R5 base: \`63fa734cb2c9e9c6e0f43ad487b06cc54ad1110a\`  
+Codex role: **lead reviewer**
+
+### Baseline / control channels
+
+Verified before analysis:
+
+- \`main = 63fa734cb2c9e9c6e0f43ad487b06cc54ad1110a\`;
+- that SHA is the merge commit of PR #89;
+- PR #78 remains open/unmerged control channel;
+- PR #79 remains open/unmerged audit/response channel.
+
+No implementation branch or implementation PR was created.
+
+### Immutable preflight artifacts
+
+Published in PR #79:
+
+- \`audit/chatgpt-review/DL-IMPLEMENT-R6-PREFLIGHT-001.json\`
+  - blob: \`2b0f2416e02153619ac3ecec1ec976f588462fb4\`
+- \`audit/chatgpt-review/DL-IMPLEMENT-R6-PREFLIGHT-001.md\`
+  - blob: \`704edb3f83b92508ad54aa5afc743382cfbafcd7\`
+
+### Exact currentness verdict
+
+\`EX57-27\`: **CURRENT**
+
+Classification remains:
+
+**current test-evidence defect only; no runtime transaction defect is established.**
+
+The original PR #57 inline review thread remains available:
+
+- thread: \`PRRT_kwDOUTDpW86iTNsx\`;
+- path: \`tests/database/migrations.test.ts\`;
+- review comment database id: \`4010065534\`.
+
+The original finding says the rollback regression can reject on cooldown before reaching the
+intended duplicate insert.
+
+Current post-R5 source still has the same structure:
+
+1. the test creates a topic and reply through a writer with a controllable clock;
+2. that writer advances \`clock\` by \`FORUM_WRITE_COOLDOWN_MS\` on each write;
+3. after those writes the test creates a fresh \`DrizzleForumRepository\` with the default
+   real-clock write policy;
+4. \`createTopicWithInitialPost()\` enters its transaction and runs
+   \`enforceForumWriteCooldown()\` before section lookup and before all topic/title/post/body inserts;
+5. a fast run can therefore throw \`ForumWriteRateLimitError\` before the intended duplicate
+   \`post-1\` insert;
+6. the current \`.rejects.toBeDefined()\` accepts that wrong failure;
+7. checking only the absence of \`atomic-rollback-topic\` can then prove only that the intended
+   mutation did not start, not rollback of a partially inserted graph.
+
+### Later-PR disconfirmation
+
+Checked PR #81, #83, #84, #85, #86, #87, #88 and #89.
+
+- #81 does not touch this test/write path.
+- #83–#85 are contract/history work.
+- #86 touches \`tests/database/migrations.test.ts\`, but its diff only adds the R2
+  persistent-locale invariant and updates migration count. It does not change the EX57-27 block.
+- #87 is translation-task remediation.
+- #88 is persisted-bundle remediation.
+- #89 is forum presentation remediation.
+- Current \`db/forum-repository.ts\` still calls cooldown before every insert in
+  \`createTopicWithInitialPost()\`.
+- Current \`db/forum-write-policy.ts\` still uses \`new Date()\` for the default policy.
+
+No later PR fixed or superseded EX57-27.
+
+### Exact future allowlist
+
+Future R6 implementation is allowed to change exactly one tracked file:
+
+1. \`tests/database/migrations.test.ts\`
+
+Any second tracked file is a stop condition.
+
+Production/runtime files, schema, migrations, dependencies and public contracts are not part of R6.
+
+### Exact future correction
+
+Use the test's existing controlled \`clock\`.
+
+After the successful reply:
+
+1. advance \`clock\` exactly once by \`FORUM_WRITE_COOLDOWN_MS\`;
+2. create the rollback-test repository with the same deterministic policy:
+   - \`cooldownMs: FORUM_WRITE_COOLDOWN_MS\`;
+   - \`now: () => new Date(clock)\`.
+
+The latest successful post is then exactly one cooldown interval old.
+
+Current runtime rejects only when:
+
+\`retryAfterMs > 0\`
+
+so equality at the cooldown boundary deterministically permits execution past the cooldown guard.
+
+Before the rollback attempt, explicitly confirm fixture state:
+
+- \`forum_posts.id = 'post-1'\` exists;
+- it belongs to \`topic-1\`.
+
+Keep the intended incomplete graph identities:
+
+- topic: \`atomic-rollback-topic\`;
+- title revision: \`atomic-duplicate\`;
+- initial post: \`post-1\`;
+- body revision: \`atomic-body\`.
+
+### Exact failure assertion plan
+
+Do not use \`.rejects.toBeDefined()\`.
+
+Capture the thrown error and assert:
+
+1. it is **not** \`ForumWriteRateLimitError\`;
+2. current Drizzle-wrapped PostgreSQL cause has SQLSTATE **\`23505\`**;
+3. cause constraint is **\`forum_posts_pkey\`**.
+
+Why:
+
+- PostgreSQL 17 defines \`23505\` as \`unique_violation\`;
+- the attempted \`post-1\` duplicates the \`forum_posts.id\` primary key;
+- its new topic id is different, so \`UNIQUE(topic_id,id)\` is not the conflicting identity;
+- node-postgres exposes PostgreSQL's constraint field as \`DatabaseError.constraint\`;
+- current project DB tests already show Drizzle preserving PostgreSQL error metadata in
+  \`.cause\`.
+
+If the exact constraint identity is not stably available on the current pg/Drizzle path,
+implementation must stop and return to Codex instead of weakening the assertion.
+
+### Exact rollback graph proof
+
+After the intended \`forum_posts_pkey\` failure, verify all attempted new graph rows are absent:
+
+- no \`forum_topics.id = 'atomic-rollback-topic'\`;
+- no topic-title revision \`id = 'atomic-duplicate'\` and/or
+  \`topic_id = 'atomic-rollback-topic'\`;
+- no \`forum_posts\` row with \`topic_id = 'atomic-rollback-topic'\`;
+- no \`forum_post_revisions.id = 'atomic-body'\`.
+
+This proves rollback of topic/title writes that occur before the intended duplicate post insert,
+not merely absence caused by a pre-mutation cooldown rejection.
+
+Reasserting the pre-existing \`post-1 → topic-1\` row after failure is optional supporting fixture
+evidence.
+
+### PROJECT_STATE / archive decision
+
+\`PROJECT_STATE.md\`: **NO UPDATE**
+
+Project-state archive: **NO**
+
+Reason:
+
+R6 changes only the credibility and precision of one regression test. It does not change runtime
+behavior, product capability, stage completion, architecture/schema/dependencies/external state,
+known limitations recorded by PROJECT_STATE, or the nearest development route.
+
+Current PROJECT_STATE already truthfully records transactional per-author cooldown and completed
+local/CI Stage 4.
+
+If the corrected test exposes a separate runtime defect that changes factual project state,
+implementation must stop and return to Codex. Do not add PROJECT_STATE automatically.
+
+### Future verification commands
+
+Focused database regression:
+
+\`\`\`sh
+pnpm exec vitest run --config vitest.database.config.ts tests/database/migrations.test.ts
+\`\`\`
+
+Full required verification:
+
+\`\`\`sh
+pnpm db:test
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm build
+git diff --check
+\`\`\`
+
+On the actual future implementation PR head:
+
+- GitHub Actions \`checks\`: success;
+- GitHub Actions \`database\`: success.
+
+### Stop conditions
+
+Stop and return to Codex if:
+
+1. intended PostgreSQL duplicate-key failure cannot be deterministically distinguished from
+   \`ForumWriteRateLimitError\`;
+2. corrected test reveals a separate runtime transaction defect;
+3. production code/schema/migration/dependency change or a second tracked file is required;
+4. rollback of topic, title revision, attempted-topic post rows and attempted body revision cannot
+   all be proven;
+5. expected constraint identity cannot be stably asserted on current pg/Drizzle;
+6. focused migrations test fails;
+7. full \`pnpm db:test\` fails;
+8. final Actions \`database\` job fails.
+
+### Forbidden future scope
+
+Explicitly forbidden under this preflight:
+
+- \`db/forum-repository.ts\`;
+- \`db/forum-write-policy.ts\`;
+- \`db/hyperdrive-forum.ts\`;
+- \`db/schema.ts\`;
+- \`drizzle/*.sql\`;
+- \`drizzle/meta/*\`;
+- \`package.json\`;
+- \`pnpm-lock.yaml\`;
+- \`PROJECT_STATE.md\`;
+- project-state archives;
+- runtime/public contracts;
+- unrelated tests;
+- workflows;
+- external DB/deployment actions;
+- R7 or other remediation implementation;
+- PR #78.
+
+### PR #79 response-log archive
+
+Before this response append:
+
+- \`audit/chatgpt-review/EXCHANGE.md\` blob:
+  \`832332a61b0463719dd1b15350954fb70d95c7f1\`;
+- archive:
+  \`doc_old/audit/chatgpt-review/EXCHANGE_old_23.9.26_4.md\`;
+- archive blob:
+  \`832332a61b0463719dd1b15350954fb70d95c7f1\`.
+
+Exact pre-response copy confirmed.
+
+### Outcome
+
+**PASS — R6 preflight only.**
+
+- EX57-27 remains current.
+- It is still a test-evidence defect only.
+- Future implementation allowlist is exactly one file:
+  \`tests/database/migrations.test.ts\`.
+- PROJECT_STATE and its archive are excluded.
+- Runtime/schema/migration/dependency changes are not planned.
+- No implementation branch or PR exists.
+- R6 implementation remains **unauthorized** until independent Codex review and separate explicit
+  user authorization.
+
+PR #78 and PR #79 remain open/unmerged and must never be merged.
