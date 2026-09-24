@@ -244,7 +244,26 @@ export const translationTasks = pgTable(
         and ${table.contentRevisionId} is not null and btrim(${table.contentRevisionId}) <> ''
         and ${table.revisionSourceLocale} is not null
         and ${table.revisionSourceLocale} = btrim(${table.revisionSourceLocale})
-        and ${table.revisionSourceLocale} ~ '^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*
+        and ${table.revisionSourceLocale} ~ '^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*$'
+        and ${table.resolvedSourceLocale} is not null
+        and ${table.resolvedSourceLocale} = btrim(${table.resolvedSourceLocale})
+        and lower(${table.resolvedSourceLocale}) <> 'und'
+        and ${table.resolvedSourceLocale} ~ '^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*$'
+        and ${table.sourceResolutionOrigin} in ('revision-metadata', 'detector')
+        and ${table.sourceNamespace} = 'topic-title'
+        and ${table.sourceKey} = ${table.contentId}
+        and (
+          (
+            ${table.sourceResolutionOrigin} = 'revision-metadata'
+            and lower(${table.revisionSourceLocale}) <> 'und'
+            and ${table.revisionSourceLocale} = ${table.resolvedSourceLocale}
+          ) or (
+            ${table.sourceResolutionOrigin} = 'detector'
+            and lower(${table.revisionSourceLocale}) = 'und'
+          )
+        )
+      )`,
+    ),
     check(
       "translation_tasks_generation_policy_version_check",
       sql`btrim(${table.generationPolicyVersion}) <> ''`,
