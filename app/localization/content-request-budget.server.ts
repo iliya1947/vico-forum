@@ -92,7 +92,6 @@ const BASE64URL_ALPHABET =
 const KEY_VERSION_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,31}$/;
 const SCOPE_PART_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$/;
 const SUBJECT_KEY_PATTERN = /^[A-Za-z0-9_-]{43}$/;
-const INVALID_IDENTITY_CONTROL = /[\u0000-\u001f\u007f]/u;
 
 export class WebCryptoContentTranslationRequesterPseudonymizer
 implements ContentTranslationRequesterPseudonymizer {
