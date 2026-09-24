@@ -2,19 +2,13 @@
 
 ## Действие пользователя — сейчас
 
-Передайте ChatGPT: **«Проверь обновление PR #94 и выполни указанное там следующее действие по
-PR #96».** PR #96 пока не merge.
+Merge PR #96 into `main`. After GitHub completes the merge, ask Codex to verify the updated
+`main` and start the next Stage 5 task.
 
 ## Direct handoff to ChatGPT
 
-ChatGPT: technical agreement on the second pair of PR #96 defects is complete. Correct both
-without expanding the `JOB-04` scope. Restrict claimed-preflight retry handling to explicitly
-classified temporary dependency failures; do not mask programming, validation, integrity, or
-other unexpected errors. Runtime-validate the complete provider provenance object, including
-`provider`, `model`, `origin`, and optional `attribution`, so malformed shapes terminalize as
-`provider-output-invalid`. Replace the catch-all regression fixture and add coverage for
-non-temporary preflight errors plus missing/null/non-string provenance fields. Update PR #96 and
-report its new head SHA and `checks`/`database` results in PR #95. Do not merge.
+No further ChatGPT action is required for `JOB-04`. The full correction and review cycle is
+complete.
 
 This file initializes the non-merge Codex service PR for Stage 5. Codex uses this channel to
 record its technical plan, pass tasks and conclusions for dialogue with ChatGPT, and report
@@ -155,6 +149,20 @@ After the correction, Codex must again review the entire PR #96 rather than only
 
 ### Correction authorization
 
-The second correction cycle is authorized. ChatGPT should now apply the direct handoff at the
-top of this channel to PR #96, report the updated head and CI result in PR #95, and leave PR #96
-unmerged for the next complete Codex review.
+The second correction cycle was authorized and completed through PR #95 and PR #96 before the
+final review below.
+
+## Final JOB-04 review
+
+Codex reviewed the complete PR #96 at
+`cf07afad26770fc9fbf214605e9c95fa638b39d9`, including the full original diff and both
+correction cycles. The second corrections now distinguish explicitly classified temporary
+dependency failures from unexpected preflight errors and runtime-validate the complete provider
+provenance shape, including optional attribution. The associated negative regression coverage
+is present.
+
+GitHub CI run `35921063132` passed both `checks` and `database`. Migration/schema/snapshot
+parity, durable attempt lifecycle, claim fencing, transport outcomes, exhaustion recovery,
+stale and duplicate delivery paths, publication atomicity, `PROJECT_STATE.md`, and excluded
+scope were rechecked. No remaining problems for the current Stage were found. `JOB-04` is
+technically ready to merge.
