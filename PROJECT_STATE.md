@@ -120,7 +120,7 @@ Migration `0007`–`0010` содержит durable task lifecycle и generation-
 Для завершения Stage 5 local/CI path ещё нужны:
 
 - content-specific provider/job execution, dedup/rate-limit и conditional publication path;
-- source-locale detection/correction capability boundary для `und`;
+- concrete source-locale detector adapter/provider selection и user-facing manual correction flow;
 - Markdown AST/structured content translation, technical-fragment protection и translated Markdown validation/rendering;
 - route/UI integration и product UX для запроса/показа перевода пользовательского контента.
 
@@ -175,7 +175,7 @@ no-op verification. Перед следующим настоящим external sc
 
 ## Ближайший маршрут
 
-1. Продолжить Stage 5B: content provider/job execution и source-locale detection boundary.
+1. Продолжить Stage 5B: content provider/job execution и concrete source-locale detector adapter/provider selection.
 2. Реализовать Markdown/structured content translation и затем route/UI integration.
 3. После завершения Stage 5 перейти к Stage 6 external integration по `ROADMAP.md` и
    `docs/database/*`.
