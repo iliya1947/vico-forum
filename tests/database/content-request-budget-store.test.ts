@@ -7,6 +7,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import {
   CONTENT_TRANSLATION_REQUESTER_SUBJECT_KEY_LENGTH,
+  MAX_CONTENT_TRANSLATION_REQUEST_BUDGET_WINDOW_SECONDS,
   ContentTranslationRequestBudgetStorageUnavailableError,
   type ContentTranslationRequestBudgetAdmission,
 } from "../../app/localization/content-request-budget.server";
@@ -343,6 +344,54 @@ describe("DrizzleContentTranslationRequestBudgetStore", () => {
     expect(row.expires_at.getTime() - row.window_start.getTime()).toBe(60_000);
     expect(denied.retryAfterSeconds).toBeGreaterThanOrEqual(0);
     expect(denied.retryAfterSeconds).toBeLessThanOrEqual(60);
+  });
+
+  it("keeps the maximum accepted window finite and ordered in PostgreSQL", async () => {
+    const store = new DrizzleContentTranslationRequestBudgetStore(drizzle(client));
+    const request = admission(SUBJECT_A, {
+      windowSeconds: MAX_CONTENT_TRANSLATION_REQUEST_BUDGET_WINDOW_SECONDS,
+      global: {
+        name: "content-translation-global",
+        version: "max-window-v1",
+        limit: 1,
+      },
+      requester: {
+        name: "content-translation-requester",
+        version: "max-window-v1",
+        limit: 1,
+      },
+    });
+
+    const allowed = await store.consume(request);
+    expect(allowed.allowed).toBe(true);
+    expect(Number.isFinite(allowed.resetAt.getTime())).toBe(true);
+
+    const denied = await store.consume(request);
+    if (denied.allowed) throw new Error("maximum-window fixture unexpectedly allowed");
+
+    const stored = await client.query<{
+      expires_at: Date;
+      window_start: Date;
+    }>(
+      `select window_start, expires_at
+         from content_translation_request_budget_counters
+        where scope = 'content-translation-global@max-window-v1'
+          and subject_key = '_global'`,
+    );
+    const row = stored.rows[0];
+    if (!row) throw new Error("maximum-window fixture row missing");
+
+    expect(Number.isFinite(row.window_start.getTime())).toBe(true);
+    expect(Number.isFinite(row.expires_at.getTime())).toBe(true);
+    expect(row.expires_at.getTime()).toBeGreaterThan(row.window_start.getTime());
+    expect(row.expires_at.getTime() - row.window_start.getTime()).toBe(
+      MAX_CONTENT_TRANSLATION_REQUEST_BUDGET_WINDOW_SECONDS * 1_000,
+    );
+    expect(denied.resetAt.getTime()).toBe(row.expires_at.getTime());
+    expect(denied.retryAfterSeconds).toBeGreaterThanOrEqual(0);
+    expect(denied.retryAfterSeconds).toBeLessThanOrEqual(
+      MAX_CONTENT_TRANSLATION_REQUEST_BUDGET_WINDOW_SECONDS,
+    );
   });
 
   it("rolls back a successful global charge when an unexpected requester write fails", async () => {
