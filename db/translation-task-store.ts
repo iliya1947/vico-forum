@@ -1,6 +1,14 @@
 import { and, eq, gte, lt, lte, or, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import type { TranslationFailureRecord } from "../app/localization/translation-failures";
+import {
+  TranslationExecutionFailure,
+  type TranslationFailureRecord,
+} from "../app/localization/translation-failures";
+import { isPostgresAvailabilityFailure } from "../app/localization/persistent-registry";
+import {
+  contentTopicTitleSourceFingerprint,
+  contentTopicTitleTaskIdentity,
+} from "../app/localization/content-translation-planning";
 import {
   MAX_TRANSLATION_TASK_FAILURE_GROUPS,
   TRANSLATION_TASK_RECONCILIATION_RETRY_AFTER_MS,
@@ -13,8 +21,14 @@ import {
 } from "../app/localization/translation-task-reconciliation";
 import {
   DEFAULT_TRANSLATION_TASK_MAX_ATTEMPTS,
+  validateContentTopicTitleTranslationTaskSpecification,
   validateUiTranslationJobSpecification,
+  type ContentTopicTitleTranslationTask,
+  type ContentTopicTitleTranslationTaskClaimResult,
+  type ContentTopicTitleTranslationTaskStore,
   type TranslationTask,
+  type TranslationTaskKind,
+  type TranslationTaskKindReader,
   type TranslationTaskClaimResult,
   type TranslationTaskFailureResult,
   type TranslationTaskFailureStore,
@@ -24,9 +38,15 @@ import {
   uiTranslationJobIdentity,
   type UiTranslationJobSpecification,
 } from "../app/localization/ui-translation-service";
-import { translationTaskGenerationHeads, translationTasks } from "./schema";
+import { isPostgresQueryTimeout } from "./postgres-deadlines";
+import {
+  contentTopicTitleTranslationTasks,
+  translationTaskGenerationHeads,
+  translationTasks,
+} from "./schema";
 
 type TranslationTaskRow = typeof translationTasks.$inferSelect;
+type ContentTopicTitleTaskRow = typeof contentTopicTitleTranslationTasks.$inferSelect;
 
 export class TranslationTaskIntegrityError extends Error {
   constructor(message: string) {
@@ -35,8 +55,23 @@ export class TranslationTaskIntegrityError extends Error {
   }
 }
 
-export class DrizzleTranslationTaskStore implements TranslationTaskStore, TranslationTaskFailureStore, TranslationTaskReconciliationStore {
+export class DrizzleTranslationTaskStore implements
+  TranslationTaskStore,
+  ContentTopicTitleTranslationTaskStore,
+  TranslationTaskKindReader,
+  TranslationTaskFailureStore,
+  TranslationTaskReconciliationStore {
   constructor(private readonly database: NodePgDatabase) {}
+
+  async findKind(id: string): Promise<string | undefined> {
+    if (!isUuid(id)) throw new TypeError("translation task id must be a UUID");
+    const [row] = await this.database
+      .select({ translationKind: translationTasks.translationKind })
+      .from(translationTasks)
+      .where(eq(translationTasks.id, id))
+      .limit(1);
+    return row?.translationKind;
+  }
 
   async upsertPending(specification: UiTranslationJobSpecification): Promise<TranslationTask> {
     validateUiTranslationJobSpecification(specification);
@@ -377,6 +412,51 @@ export class DrizzleTranslationTaskStore implements TranslationTaskStore, Transl
   }
 
   async claim(id: string, leaseDurationMs: number): Promise<TranslationTaskClaimResult> {
+    return this.database.transaction(async (tx) => {
+      const claimed = await this.claimByKind(tx, id, leaseDurationMs, "ui");
+      if (claimed.outcome !== "claimed") return claimed;
+      return claimedUiResult(claimed.row, claimed.attemptStarted);
+    });
+  }
+
+  async claimContentTopicTitle(
+    id: string,
+    leaseDurationMs: number,
+  ): Promise<ContentTopicTitleTranslationTaskClaimResult> {
+    return this.database.transaction(async (tx) => {
+      const claimed = await this.claimByKind(tx, id, leaseDurationMs, "content-topic-title");
+      if (claimed.outcome !== "claimed") return claimed;
+
+      const [metadata] = await tx
+        .select()
+        .from(contentTopicTitleTranslationTasks)
+        .where(eq(contentTopicTitleTranslationTasks.taskId, id))
+        .limit(1);
+      if (!metadata) {
+        throw new TranslationTaskIntegrityError(
+          "claimed content topic-title task is missing revision metadata",
+        );
+      }
+      const task = await parseContentTopicTitleTaskRow(claimed.row, metadata);
+      if (task.status !== "processing" || !task.claimToken) {
+        throw new TranslationTaskIntegrityError(
+          "claimed content topic-title task has invalid processing state",
+        );
+      }
+      return {
+        outcome: "claimed",
+        task: { ...task, status: "processing", claimToken: task.claimToken },
+        attemptStarted: claimed.attemptStarted,
+      };
+    });
+  }
+
+  private async claimByKind(
+    database: TranslationTaskTransaction,
+    id: string,
+    leaseDurationMs: number,
+    expectedKind: TranslationTaskKind,
+  ): Promise<RawTranslationTaskClaimResult> {
     if (!isUuid(id)) throw new TypeError("translation task id must be a UUID");
     if (!Number.isSafeInteger(leaseDurationMs) || leaseDurationMs <= 0) {
       throw new TypeError("translation task lease duration must be a positive integer");
@@ -389,7 +469,7 @@ export class DrizzleTranslationTaskStore implements TranslationTaskStore, Transl
     );
 
     const claimToken = crypto.randomUUID();
-    const rows = await this.database
+    const rows = await database
       .update(translationTasks)
       .set({
         status: "processing",
@@ -401,17 +481,20 @@ export class DrizzleTranslationTaskStore implements TranslationTaskStore, Transl
       })
       .where(and(
         eq(translationTasks.id, id),
+        eq(translationTasks.translationKind, expectedKind),
         claimable,
         lt(translationTasks.attemptCount, translationTasks.maxAttempts),
       ))
       .returning();
-    if (rows[0]) return claimedResult(rows[0], true);
+    if (rows[0]) {
+      return { outcome: "claimed", row: rows[0], attemptStarted: true };
+    }
 
     // A crashed final attempt may leave an expired processing lease with its budget already
     // consumed. Reclaim ownership without incrementing so the executor can persist terminal
     // retry-exhaustion under a fresh claim token without another provider call.
     const exhaustedClaimToken = crypto.randomUUID();
-    const exhausted = await this.database
+    const exhausted = await database
       .update(translationTasks)
       .set({
         status: "processing",
@@ -422,15 +505,31 @@ export class DrizzleTranslationTaskStore implements TranslationTaskStore, Transl
       })
       .where(and(
         eq(translationTasks.id, id),
+        eq(translationTasks.translationKind, expectedKind),
         eq(translationTasks.status, "processing"),
         lte(translationTasks.leaseExpiresAt, databaseNow),
         gte(translationTasks.attemptCount, translationTasks.maxAttempts),
       ))
       .returning();
-    if (exhausted[0]) return claimedResult(exhausted[0], false);
+    if (exhausted[0]) {
+      return { outcome: "claimed", row: exhausted[0], attemptStarted: false };
+    }
 
-    const existing = await this.findById(id);
+    const [existing] = await database
+      .select({
+        translationKind: translationTasks.translationKind,
+        status: translationTasks.status,
+      })
+      .from(translationTasks)
+      .where(eq(translationTasks.id, id))
+      .limit(1);
     if (!existing) return { outcome: "not-found" };
+    if (!isTranslationTaskKind(existing.translationKind)) {
+      throw new TranslationTaskIntegrityError("stored translation task kind is invalid");
+    }
+    if (existing.translationKind !== expectedKind) {
+      throw new TranslationTaskKindMismatchError(expectedKind, existing.translationKind);
+    }
     return {
       outcome: existing.status === "stale" || existing.status === "completed" || existing.status === "failed"
         ? "terminal"
@@ -558,9 +657,57 @@ export class DrizzleTranslationTaskStore implements TranslationTaskStore, Transl
       })).limit(1);
     return rows[0]?.currentGeneration === task.generation;
   }
+
+  async isCurrentContentTopicTitleGeneration(
+    task: ContentTopicTitleTranslationTask,
+  ): Promise<boolean> {
+    try {
+      const rows = await this.database
+        .select({ currentGeneration: translationTaskGenerationHeads.currentGeneration })
+        .from(translationTaskGenerationHeads)
+        .where(unitCondition({
+          translationKind: task.translationKind,
+          sourceNamespace: "topic-title",
+          sourceKey: task.sourceIdentity.topicId,
+          targetLocale: task.targetLocale,
+        }))
+        .limit(1);
+      return rows[0]?.currentGeneration === task.generation;
+    } catch (error) {
+      if (isTaskStoreAvailabilityFailure(error)) {
+        throw new TranslationExecutionFailure(
+          "retryable",
+          "dependency-temporary",
+          "content translation generation state unavailable",
+        );
+      }
+      throw error;
+    }
+  }
 }
 
-async function claimedResult(
+type TranslationTaskTransaction =
+  Parameters<Parameters<NodePgDatabase["transaction"]>[0]>[0];
+
+type RawTranslationTaskClaimResult =
+  | {
+      readonly outcome: "claimed";
+      readonly row: TranslationTaskRow;
+      readonly attemptStarted: boolean;
+    }
+  | { readonly outcome: "not-found" | "already-claimed" | "terminal" };
+
+export class TranslationTaskKindMismatchError extends Error {
+  constructor(
+    readonly expectedKind: TranslationTaskKind,
+    readonly actualKind: TranslationTaskKind,
+  ) {
+    super(`translation task kind mismatch: expected ${expectedKind}, got ${actualKind}`);
+    this.name = "TranslationTaskKindMismatchError";
+  }
+}
+
+async function claimedUiResult(
   row: TranslationTaskRow,
   attemptStarted: boolean,
 ): Promise<TranslationTaskClaimResult> {
@@ -648,8 +795,105 @@ async function parseTaskRow(row: TranslationTaskRow): Promise<TranslationTask> {
   return { ...task, translationKind: "ui", status: task.status };
 }
 
+async function parseContentTopicTitleTaskRow(
+  row: TranslationTaskRow,
+  metadata: ContentTopicTitleTaskRow,
+): Promise<ContentTopicTitleTranslationTask> {
+  const task: ContentTopicTitleTranslationTask = {
+    id: row.id,
+    taskIdentity: row.taskIdentity,
+    translationKind: "content-topic-title",
+    sourceIdentity: {
+      topicId: metadata.topicId,
+      revisionId: metadata.revisionId,
+    },
+    revisionSourceLocale: metadata.revisionSourceLocale,
+    resolvedSourceLocale: metadata.resolvedSourceLocale,
+    sourceResolutionOrigin: metadata.sourceResolutionOrigin as
+      ContentTopicTitleTranslationTask["sourceResolutionOrigin"],
+    sourceFingerprint: row.sourceFingerprint,
+    targetLocale: row.targetLocale,
+    generationPolicyVersion: row.generationPolicyVersion,
+    generation: row.generation,
+    status: row.status as ContentTopicTitleTranslationTask["status"],
+    attemptCount: row.attemptCount,
+    maxAttempts: row.maxAttempts,
+    lastFailureCode: row.lastFailureCode,
+    failureDisposition: row.failureDisposition as ContentTopicTitleTranslationTask["failureDisposition"],
+    claimToken: row.claimToken,
+    claimedAt: row.claimedAt,
+    leaseExpiresAt: row.leaseExpiresAt,
+    staleAt: row.staleAt,
+    completedAt: row.completedAt,
+    failedAt: row.failedAt,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
+
+  if (
+    row.translationKind !== "content-topic-title"
+    || row.sourceNamespace !== "topic-title"
+    || row.sourceKey !== metadata.topicId
+    || metadata.taskId !== row.id
+    || metadata.translationKind !== "content-topic-title"
+    || metadata.sourceNamespace !== "topic-title"
+  ) {
+    throw new TranslationTaskIntegrityError("stored content topic-title task ownership is invalid");
+  }
+
+  validateContentTopicTitleTranslationTaskSpecification(task);
+  if (await contentTopicTitleTaskIdentity(task) !== task.taskIdentity) {
+    throw new TranslationTaskIntegrityError("content topic-title task identity is invalid");
+  }
+  if (await contentTopicTitleSourceFingerprint({
+    topicId: task.sourceIdentity.topicId,
+    revisionId: task.sourceIdentity.revisionId,
+    revisionSourceLocale: task.revisionSourceLocale,
+    resolvedSourceLocale: task.resolvedSourceLocale,
+    sourceResolutionOrigin: task.sourceResolutionOrigin,
+  }) !== task.sourceFingerprint) {
+    throw new TranslationTaskIntegrityError("content topic-title source fingerprint is invalid");
+  }
+  if (!isTaskStatus(task.status)) {
+    throw new TranslationTaskIntegrityError("invalid content topic-title task status");
+  }
+  if (!Number.isSafeInteger(task.generation) || task.generation <= 0) {
+    throw new TranslationTaskIntegrityError("invalid content topic-title task generation");
+  }
+  if (
+    !Number.isSafeInteger(task.attemptCount)
+    || !Number.isSafeInteger(task.maxAttempts)
+    || task.attemptCount < 0
+    || task.maxAttempts <= 0
+    || task.attemptCount > task.maxAttempts
+  ) {
+    throw new TranslationTaskIntegrityError("invalid content topic-title task attempt budget");
+  }
+  if (
+    task.lastFailureCode !== null
+    && !/^[a-z0-9][a-z0-9-]{0,63}$/.test(task.lastFailureCode)
+  ) {
+    throw new TranslationTaskIntegrityError("invalid content topic-title failure code");
+  }
+  if (
+    task.failureDisposition !== null
+    && task.failureDisposition !== "terminal"
+    && task.failureDisposition !== "retry-exhausted"
+  ) {
+    throw new TranslationTaskIntegrityError("invalid content topic-title failure disposition");
+  }
+  if (!isUuid(task.id) || !(task.createdAt instanceof Date) || !(task.updatedAt instanceof Date)) {
+    throw new TranslationTaskIntegrityError("invalid content topic-title task identity or timestamps");
+  }
+  if (task.updatedAt < task.createdAt) {
+    throw new TranslationTaskIntegrityError("content topic-title task updatedAt precedes createdAt");
+  }
+  assertLifecycle(task);
+  return task;
+}
+
 type TranslationUnit = {
-  translationKind: "ui";
+  translationKind: TranslationTaskKind;
   sourceNamespace: string;
   sourceKey: string;
   targetLocale: string;
@@ -673,12 +917,18 @@ function unitCondition(unit: TranslationUnit) {
   );
 }
 
-function isTaskStatus(value: string): value is TranslationTask["status"] {
+function isTranslationTaskKind(value: string): value is TranslationTaskKind {
+  return value === "ui" || value === "content-topic-title";
+}
+
+function isTaskStatus(
+  value: string,
+): value is TranslationTask["status"] | ContentTopicTitleTranslationTask["status"] {
   return value === "pending" || value === "processing" || value === "stale" ||
     value === "completed" || value === "failed";
 }
 
-function assertLifecycle(task: TranslationTask): void {
+function assertLifecycle(task: TranslationTask | ContentTopicTitleTranslationTask): void {
   const processing = task.status === "processing" && task.claimToken && task.claimedAt &&
     task.leaseExpiresAt && !task.staleAt && !task.completedAt && !task.failedAt &&
     !task.failureDisposition && task.leaseExpiresAt > task.claimedAt;
@@ -734,6 +984,23 @@ function assertFailureRecord(failure: TranslationFailureRecord): void {
   if (!/^[a-z0-9][a-z0-9-]{0,63}$/.test(failure.code)) {
     throw new TypeError("translation failure code is invalid");
   }
+}
+
+function isTaskStoreAvailabilityFailure(error: unknown): boolean {
+  const seen = new Set<unknown>();
+  let current = error;
+  while (
+    current
+    && (typeof current === "object" || typeof current === "function")
+    && !seen.has(current)
+  ) {
+    seen.add(current);
+    if (isPostgresAvailabilityFailure(current) || isPostgresQueryTimeout(current)) {
+      return true;
+    }
+    current = (current as { cause?: unknown }).cause;
+  }
+  return false;
 }
 
 function nonNegativeInteger(value: number): boolean {

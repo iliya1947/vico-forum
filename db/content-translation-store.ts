@@ -80,64 +80,9 @@ export class DrizzleContentTranslationStore implements ContentTranslationStore {
   }
 
   private writeTopicTitle(translation: StoredContentTranslation) {
-    return this.database.transaction(async (tx) => {
-      const [revision] = await tx
-        .select({ sourceLocale: forumTopicTitleRevisions.sourceLocale })
-        .from(forumTopicTitleRevisions)
-        .where(and(
-          eq(forumTopicTitleRevisions.topicId, translation.contentId),
-          eq(forumTopicTitleRevisions.id, translation.revisionId),
-        ));
-      assertRevisionOwnership(revision?.sourceLocale, translation.sourceLocale);
-
-      const values = topicValues(translation);
-      const [inserted] = await tx
-        .insert(forumTopicTitleTranslations)
-        .values(values)
-        .onConflictDoNothing()
-        .returning();
-      if (inserted) return topicRow(inserted);
-
-      const [existing] = await tx
-        .select()
-        .from(forumTopicTitleTranslations)
-        .where(and(
-          eq(forumTopicTitleTranslations.topicId, translation.contentId),
-          eq(forumTopicTitleTranslations.revisionId, translation.revisionId),
-          eq(forumTopicTitleTranslations.targetLocale, translation.targetLocale),
-        ))
-        .for("update");
-      if (!existing) throw new ContentTranslationConflictError("translation conflict row disappeared");
-
-      const current = topicRow(existing);
-      if (sameTranslation(current, translation)) return current;
-      if (current.provenance.origin === "persistent_manual" && translation.provenance.origin === "machine") {
-        return current;
-      }
-      if (current.provenance.origin === "machine" && translation.provenance.origin === "persistent_manual") {
-        const [updated] = await tx
-          .update(forumTopicTitleTranslations)
-          .set({
-            translatedContent: translation.translatedContent,
-            sourceLocale: translation.sourceLocale,
-            origin: "persistent_manual",
-            provider: null,
-            providerModel: null,
-            attribution: translation.provenance.attribution ?? null,
-            updatedAt: sql`statement_timestamp()`,
-          })
-          .where(and(
-            eq(forumTopicTitleTranslations.topicId, translation.contentId),
-            eq(forumTopicTitleTranslations.revisionId, translation.revisionId),
-            eq(forumTopicTitleTranslations.targetLocale, translation.targetLocale),
-            eq(forumTopicTitleTranslations.origin, "machine"),
-          ))
-          .returning();
-        if (!updated) throw new ContentTranslationConflictError("translation trust upgrade lost its row");
-        return topicRow(updated);
-      }
-      throw new ContentTranslationConflictError("conflicting translation already exists for this revision and target");
-    });
+    return this.database.transaction((tx) =>
+      writeTopicTitleTranslationWithTrust(tx, translation)
+    );
   }
 
   private writePostBody(translation: StoredContentTranslation) {
@@ -200,6 +145,83 @@ export class DrizzleContentTranslationStore implements ContentTranslationStore {
       throw new ContentTranslationConflictError("conflicting translation already exists for this revision and target");
     });
   }
+}
+
+type ContentTranslationTransaction =
+  Parameters<Parameters<NodePgDatabase["transaction"]>[0]>[0];
+
+export async function writeTopicTitleTranslationWithTrust(
+  tx: ContentTranslationTransaction,
+  translation: StoredContentTranslation,
+): Promise<StoredContentTranslation> {
+  const [revision] = await tx
+    .select({ sourceLocale: forumTopicTitleRevisions.sourceLocale })
+    .from(forumTopicTitleRevisions)
+    .where(and(
+      eq(forumTopicTitleRevisions.topicId, translation.contentId),
+      eq(forumTopicTitleRevisions.id, translation.revisionId),
+    ));
+  assertRevisionOwnership(revision?.sourceLocale, translation.sourceLocale);
+
+  const values = topicValues(translation);
+  const [inserted] = await tx
+    .insert(forumTopicTitleTranslations)
+    .values(values)
+    .onConflictDoNothing()
+    .returning();
+  if (inserted) return topicRow(inserted);
+
+  const [existing] = await tx
+    .select()
+    .from(forumTopicTitleTranslations)
+    .where(and(
+      eq(forumTopicTitleTranslations.topicId, translation.contentId),
+      eq(forumTopicTitleTranslations.revisionId, translation.revisionId),
+      eq(forumTopicTitleTranslations.targetLocale, translation.targetLocale),
+    ))
+    .for("update");
+  if (!existing) {
+    throw new ContentTranslationConflictError("translation conflict row disappeared");
+  }
+
+  const current = topicRow(existing);
+  if (sameTranslation(current, translation)) return current;
+  if (
+    current.provenance.origin === "persistent_manual"
+    && translation.provenance.origin === "machine"
+  ) {
+    return current;
+  }
+  if (
+    current.provenance.origin === "machine"
+    && translation.provenance.origin === "persistent_manual"
+  ) {
+    const [updated] = await tx
+      .update(forumTopicTitleTranslations)
+      .set({
+        translatedContent: translation.translatedContent,
+        sourceLocale: translation.sourceLocale,
+        origin: "persistent_manual",
+        provider: null,
+        providerModel: null,
+        attribution: translation.provenance.attribution ?? null,
+        updatedAt: sql`statement_timestamp()`,
+      })
+      .where(and(
+        eq(forumTopicTitleTranslations.topicId, translation.contentId),
+        eq(forumTopicTitleTranslations.revisionId, translation.revisionId),
+        eq(forumTopicTitleTranslations.targetLocale, translation.targetLocale),
+        eq(forumTopicTitleTranslations.origin, "machine"),
+      ))
+      .returning();
+    if (!updated) {
+      throw new ContentTranslationConflictError("translation trust upgrade lost its row");
+    }
+    return topicRow(updated);
+  }
+  throw new ContentTranslationConflictError(
+    "conflicting translation already exists for this revision and target",
+  );
 }
 
 function assertRevisionOwnership(actualSourceLocale: string | undefined, expectedSourceLocale: string): void {

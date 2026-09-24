@@ -75,6 +75,43 @@ export class DrizzleContentTopicTitlePlanningStore implements ContentTopicTitleP
     assertExpectedRevision(specification, expectedRevision);
 
     return this.database.transaction(async (transaction) => {
+      const unit = {
+        translationKind: specification.translationKind,
+        sourceNamespace: "topic-title",
+        sourceKey: specification.sourceIdentity.topicId,
+        targetLocale: specification.targetLocale,
+      };
+      const insertedHead = await transaction
+        .insert(translationTaskGenerationHeads)
+        .values({ ...unit, currentGeneration: 1 })
+        .onConflictDoNothing()
+        .returning({ currentGeneration: translationTaskGenerationHeads.currentGeneration });
+
+      // Keep the shared planning/publication lock order stable:
+      // generation head -> stable task row -> current topic revision.
+      const lockedHead = await transaction.execute<{ current_generation: number }>(sql`
+        select current_generation
+          from ${translationTaskGenerationHeads}
+         where ${translationTaskGenerationHeads.translationKind} = ${unit.translationKind}
+           and ${translationTaskGenerationHeads.sourceNamespace} = ${unit.sourceNamespace}
+           and ${translationTaskGenerationHeads.sourceKey} = ${unit.sourceKey}
+           and ${translationTaskGenerationHeads.targetLocale} = ${unit.targetLocale}
+         for update
+      `);
+      const currentGeneration = lockedHead.rows[0]?.current_generation;
+      if (!Number.isSafeInteger(currentGeneration) || currentGeneration! <= 0) {
+        throw new ContentTopicTitleTaskIntegrityError(
+          "content translation generation head is missing or invalid",
+        );
+      }
+
+      const existingRows = await transaction
+        .select()
+        .from(translationTasks)
+        .where(eq(translationTasks.taskIdentity, specification.taskIdentity))
+        .for("update")
+        .limit(1);
+
       const authoritative = await transaction
         .select({
           topicId: forumTopics.id,
@@ -104,56 +141,79 @@ export class DrizzleContentTopicTitlePlanningStore implements ContentTopicTitleP
         return { outcome: "revision-changed" as const };
       }
 
-      const unit = {
-        translationKind: specification.translationKind,
-        sourceNamespace: "topic-title",
-        sourceKey: specification.sourceIdentity.topicId,
-        targetLocale: specification.targetLocale,
-      };
-      const insertedHead = await transaction
-        .insert(translationTaskGenerationHeads)
-        .values({ ...unit, currentGeneration: 1 })
-        .onConflictDoNothing()
-        .returning({ currentGeneration: translationTaskGenerationHeads.currentGeneration });
-
-      const lockedHead = await transaction.execute<{ current_generation: number }>(sql`
-        select current_generation
-          from ${translationTaskGenerationHeads}
-         where ${translationTaskGenerationHeads.translationKind} = ${unit.translationKind}
-           and ${translationTaskGenerationHeads.sourceNamespace} = ${unit.sourceNamespace}
-           and ${translationTaskGenerationHeads.sourceKey} = ${unit.sourceKey}
-           and ${translationTaskGenerationHeads.targetLocale} = ${unit.targetLocale}
-         for update
-      `);
-      const currentGeneration = lockedHead.rows[0]?.current_generation;
-      if (!Number.isSafeInteger(currentGeneration) || currentGeneration! <= 0) {
-        throw new ContentTopicTitleTaskIntegrityError(
-          "content translation generation head is missing or invalid",
-        );
-      }
-
-      const existingRows = await transaction
-        .select()
-        .from(translationTasks)
-        .where(eq(translationTasks.taskIdentity, specification.taskIdentity))
-        .limit(1);
       if (existingRows[0]) {
         assertTaskMatchesSpecification(existingRows[0], specification);
-        if (existingRows[0].status !== "pending" && existingRows[0].status !== "processing") {
-          throw new ContentTopicTitleTaskIntegrityError(
-            "content topic-title task identity is already terminal",
-          );
-        }
         const metadataRows = await transaction
           .select()
           .from(contentTopicTitleTranslationTasks)
           .where(eq(contentTopicTitleTranslationTasks.taskId, existingRows[0].id))
           .limit(1);
         assertMetadataMatchesSpecification(metadataRows[0], specification);
+
+        if (
+          existingRows[0].status === "pending"
+          || existingRows[0].status === "processing"
+        ) {
+          return {
+            outcome: "task" as const,
+            created: false,
+            task: contentTask(existingRows[0], metadataRows[0]),
+          };
+        }
+        if (existingRows[0].status !== "stale") {
+          throw new ContentTopicTitleTaskIntegrityError(
+            "content topic-title task identity is already terminal",
+          );
+        }
+
+        const databaseNow = sql`statement_timestamp()`;
+        const generation = existingRows[0].generation === currentGeneration
+          ? currentGeneration
+          : currentGeneration + 1;
+        const reactivated = await transaction
+          .update(translationTasks)
+          .set({
+            generation,
+            status: "pending",
+            attemptCount: 0,
+            maxAttempts: DEFAULT_TRANSLATION_TASK_MAX_ATTEMPTS,
+            lastFailureCode: null,
+            failureDisposition: null,
+            reconciliationAttemptedAt: null,
+            claimToken: null,
+            claimedAt: null,
+            leaseExpiresAt: null,
+            staleAt: null,
+            completedAt: null,
+            failedAt: null,
+            updatedAt: databaseNow,
+          })
+          .where(and(
+            eq(translationTasks.id, existingRows[0].id),
+            eq(translationTasks.status, "stale"),
+          ))
+          .returning();
+        const reactivatedTask = requiredTaskRow(reactivated[0]);
+
+        if (generation !== currentGeneration) {
+          await transaction
+            .update(translationTaskGenerationHeads)
+            .set({
+              currentGeneration: generation,
+              updatedAt: databaseNow,
+            })
+            .where(and(
+              eq(translationTaskGenerationHeads.translationKind, unit.translationKind),
+              eq(translationTaskGenerationHeads.sourceNamespace, unit.sourceNamespace),
+              eq(translationTaskGenerationHeads.sourceKey, unit.sourceKey),
+              eq(translationTaskGenerationHeads.targetLocale, unit.targetLocale),
+            ));
+        }
+
         return {
           outcome: "task" as const,
           created: false,
-          task: contentTask(existingRows[0], metadataRows[0]),
+          task: contentTask(reactivatedTask, metadataRows[0]),
         };
       }
 
@@ -219,8 +279,7 @@ export class DrizzleContentTopicTitlePlanningStore implements ContentTopicTitleP
         task: contentTask(taskRow, metadata),
       };
     });
-  }
-}
+  }}
 
 async function assertStableIdentity(
   specification: ContentTopicTitleTranslationTaskSpecification,
@@ -328,6 +387,14 @@ function contentTask(
     status: row.status as ContentTopicTitleTranslationTask["status"],
     attemptCount: row.attemptCount,
     maxAttempts: row.maxAttempts,
+    lastFailureCode: row.lastFailureCode,
+    failureDisposition: row.failureDisposition as ContentTopicTitleTranslationTask["failureDisposition"],
+    claimToken: row.claimToken,
+    claimedAt: row.claimedAt,
+    leaseExpiresAt: row.leaseExpiresAt,
+    staleAt: row.staleAt,
+    completedAt: row.completedAt,
+    failedAt: row.failedAt,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };

@@ -8,7 +8,7 @@ import {
 } from "./translation-task-consumer";
 import type { TranslationTaskStore } from "./translation-tasks";
 import {
-  TranslationValidationError,
+  validateMachineTranslationProvenance,
   validateProviderOutput,
   type ProviderTranslationValue,
 } from "./translation-validation";
@@ -42,7 +42,7 @@ export class UiTranslationResultPublisher {
     context: ClaimedUiTranslationExecutionContext,
     result: MachineTranslationResult,
   ): Promise<UiTranslationPublicationResult> {
-    assertMachineProvenance(result.provenance);
+    validateMachineTranslationProvenance(result.provenance);
     const value = result.value;
     validateProviderOutput(context.source, context.task.targetLocale, value, this.dependencies.localeRules);
 
@@ -61,27 +61,5 @@ export class UiTranslationResultPublisher {
       provenance: result.provenance,
     });
     return published ? { outcome: "published" } : { outcome: "claim-lost" };
-  }
-}
-
-function assertMachineProvenance(
-  provenance: unknown,
-): asserts provenance is MachineTranslationProvenance {
-  if (typeof provenance !== "object" || provenance === null || Array.isArray(provenance)) {
-    throw new TranslationValidationError("translation provenance must be an object");
-  }
-
-  const candidate = provenance as Record<string, unknown>;
-  if (candidate.origin !== "machine") {
-    throw new TranslationValidationError("translation publication origin must be machine");
-  }
-  if (typeof candidate.provider !== "string" || !candidate.provider.trim()) {
-    throw new TranslationValidationError("translation provider must be a non-blank string");
-  }
-  if (typeof candidate.model !== "string" || !candidate.model.trim()) {
-    throw new TranslationValidationError("translation provider model must be a non-blank string");
-  }
-  if (candidate.attribution !== undefined && typeof candidate.attribution !== "string") {
-    throw new TranslationValidationError("translation provider attribution must be a string");
   }
 }

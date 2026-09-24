@@ -7,6 +7,7 @@ import type {
 
 export const DEFAULT_TRANSLATION_TASK_MAX_ATTEMPTS = 3;
 
+export type TranslationTaskKind = "ui" | "content-topic-title";
 export type TranslationTaskStatus = "pending" | "processing" | "stale" | "completed" | "failed";
 export type TranslationTaskFailureDisposition = "terminal" | "retry-exhausted";
 
@@ -63,8 +64,30 @@ export interface ContentTopicTitleTranslationTask extends ContentTopicTitleTrans
   readonly status: TranslationTaskStatus;
   readonly attemptCount: number;
   readonly maxAttempts: number;
+  readonly lastFailureCode: string | null;
+  readonly failureDisposition: TranslationTaskFailureDisposition | null;
+  readonly claimToken: string | null;
+  readonly claimedAt: Date | null;
+  readonly leaseExpiresAt: Date | null;
+  readonly staleAt: Date | null;
+  readonly completedAt: Date | null;
+  readonly failedAt: Date | null;
   readonly createdAt: Date;
   readonly updatedAt: Date;
+}
+
+export interface TranslationTaskKindReader {
+  /** Returns the persisted discriminator without interpreting kind-specific task payload. */
+  findKind(id: string): Promise<string | undefined>;
+}
+
+export interface ContentTopicTitleTranslationTaskStore {
+  claimContentTopicTitle(
+    id: string,
+    leaseDurationMs: number,
+  ): Promise<ContentTopicTitleTranslationTaskClaimResult>;
+  markStale(id: string, claimToken: string): Promise<boolean>;
+  isCurrentContentTopicTitleGeneration(task: ContentTopicTitleTranslationTask): Promise<boolean>;
 }
 
 export interface TranslationTaskStore {
@@ -102,6 +125,18 @@ export type TranslationTaskClaimResult =
   | {
       readonly outcome: "claimed";
       readonly task: TranslationTask & { readonly status: "processing"; readonly claimToken: string };
+      /** False only when an exhausted lease is reclaimed solely to persist terminal state. */
+      readonly attemptStarted: boolean;
+    }
+  | { readonly outcome: "not-found" | "already-claimed" | "terminal" };
+
+export type ContentTopicTitleTranslationTaskClaimResult =
+  | {
+      readonly outcome: "claimed";
+      readonly task: ContentTopicTitleTranslationTask & {
+        readonly status: "processing";
+        readonly claimToken: string;
+      };
       /** False only when an exhausted lease is reclaimed solely to persist terminal state. */
       readonly attemptStarted: boolean;
     }

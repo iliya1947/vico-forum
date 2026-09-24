@@ -105,7 +105,7 @@ export class ContentTopicTitleTranslationPlanner {
     const topicId = requireNonBlank(requestedRevision.contentId, "topic id");
     const revisionId = requireNonBlank(requestedRevision.revisionId, "revision id");
     const targetLocale = strictCanonicalTargetLocale(targetLocaleInput);
-    if (!targetLocale || !isActiveCanonicalTarget(this.dependencies.localeRegistry, targetLocale)) {
+    if (!targetLocale || !isActiveContentTranslationTarget(this.dependencies.localeRegistry, targetLocale)) {
       return original(targetLocale ?? targetLocaleInput, "target-ineligible");
     }
 
@@ -219,15 +219,13 @@ export async function contentTopicTitleTaskSpecification(
     throw new TypeError("content task source resolution does not match immutable revision metadata");
   }
 
-  const sourceFingerprint = await sha256Text(JSON.stringify([
-    CONTENT_TOPIC_TITLE_SOURCE_FINGERPRINT_FORMAT,
-    "topic-title",
+  const sourceFingerprint = await contentTopicTitleSourceFingerprint({
     topicId,
     revisionId,
     revisionSourceLocale,
-    canonicalResolvedSourceLocale,
+    resolvedSourceLocale: canonicalResolvedSourceLocale,
     sourceResolutionOrigin,
-  ]));
+  });
   const identityInput = {
     translationKind: "content-topic-title" as const,
     sourceIdentity: { topicId, revisionId },
@@ -243,6 +241,28 @@ export async function contentTopicTitleTaskSpecification(
     ...identityInput,
     taskIdentity: await contentTopicTitleTaskIdentity(identityInput),
   };
+}
+
+export interface ContentTopicTitleSourceFingerprintInput {
+  readonly topicId: string;
+  readonly revisionId: string;
+  readonly revisionSourceLocale: string;
+  readonly resolvedSourceLocale: string;
+  readonly sourceResolutionOrigin: "revision-metadata" | "detector";
+}
+
+export async function contentTopicTitleSourceFingerprint(
+  input: ContentTopicTitleSourceFingerprintInput,
+): Promise<string> {
+  return sha256Text(JSON.stringify([
+    CONTENT_TOPIC_TITLE_SOURCE_FINGERPRINT_FORMAT,
+    "topic-title",
+    input.topicId,
+    input.revisionId,
+    input.revisionSourceLocale,
+    input.resolvedSourceLocale,
+    input.sourceResolutionOrigin,
+  ]));
 }
 
 type ContentTopicTitleIdentityInput = Omit<
@@ -266,7 +286,10 @@ export async function contentTopicTitleTaskIdentity(
   ]));
 }
 
-function isActiveCanonicalTarget(registry: LocaleRegistry, targetLocale: string): boolean {
+export function isActiveContentTranslationTarget(
+  registry: LocaleRegistry,
+  targetLocale: string,
+): boolean {
   const match = registry.find(targetLocale);
   return Boolean(
     match
