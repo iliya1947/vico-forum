@@ -114,7 +114,7 @@ export class DrizzleContentPostBodyExecutionStore
 
         const [lease] = await tx
           .select({
-            active: sql<boolean>\`${translationTasks.leaseExpiresAt} > statement_timestamp()\`,
+            active: sql<boolean>`${translationTasks.leaseExpiresAt} > statement_timestamp()`,
           })
           .from(translationTasks)
           .where(eq(translationTasks.id, publication.task.id))
@@ -228,7 +228,7 @@ export class DrizzleContentPostBodyExecutionStore
           return markClaimStale(tx, publication, "translation-current");
         }
 
-        const databaseNow = sql\`statement_timestamp()\`;
+        const databaseNow = sql`statement_timestamp()`;
         const completed = await tx
           .update(translationTasks)
           .set({
@@ -277,7 +277,7 @@ async function markClaimStale(
   publication: MachineContentPostBodyPublication,
   reason: Extract<ContentPostBodyPublicationResult, { outcome: "stale" }>["reason"],
 ): Promise<ContentPostBodyPublicationResult> {
-  const databaseNow = sql\`statement_timestamp()\`;
+  const databaseNow = sql`statement_timestamp()`;
   const rows = await tx
     .update(translationTasks)
     .set({
