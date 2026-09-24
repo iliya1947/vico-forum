@@ -99,6 +99,22 @@ async function scopedStore(): Promise<{
 }
 
 describe("DrizzleContentTranslationRequestBudgetStore", () => {
+  it("rejects an oversized window before opening a database transaction", async () => {
+    let transactionCalls = 0;
+    const database = {
+      async transaction() {
+        transactionCalls += 1;
+        throw new Error("database transaction must not be reached");
+      },
+    } as unknown as NodePgDatabase;
+    const store = new DrizzleContentTranslationRequestBudgetStore(database);
+
+    await expect(store.consume(admission(SUBJECT_A, {
+      windowSeconds: MAX_CONTENT_TRANSLATION_REQUEST_BUDGET_WINDOW_SECONDS + 1,
+    }))).rejects.toBeInstanceOf(TypeError);
+    expect(transactionCalls).toBe(0);
+  });
+
   it("inserts counters, allows the exact limit, and rolls back a requester denial without a partial global charge", async () => {
     const store = new DrizzleContentTranslationRequestBudgetStore(drizzle(client));
     const policy = admission(SUBJECT_A, {
