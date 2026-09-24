@@ -353,6 +353,7 @@ export class DrizzleContentTopicTitlePlanningStore implements ContentTopicTitleP
       throw error;
     }
   }
+}
 
 async function assertStableIdentity(
   specification: ContentTopicTitleTranslationTaskSpecification,
