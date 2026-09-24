@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   CONTENT_TRANSLATION_REQUESTER_SUBJECT_KEY_LENGTH,
+  MAX_CONTENT_TRANSLATION_REQUEST_BUDGET_WINDOW_SECONDS,
   WebCryptoContentTranslationRequesterPseudonymizer,
   contentTranslationRequestBudgetScopeKey,
   validateContentTranslationRequestBudgetAdmission,
@@ -135,6 +136,18 @@ describe("content translation request-budget validation", () => {
       version: "policy-v3",
       limit: 91,
     })).toBe("content-translation-global@policy-v3");
+  });
+
+  it("accepts the exact request-budget window safety ceiling and rejects ceiling-plus-one", () => {
+    expect(() => validateContentTranslationRequestBudgetAdmission({
+      ...admission(),
+      windowSeconds: MAX_CONTENT_TRANSLATION_REQUEST_BUDGET_WINDOW_SECONDS,
+    })).not.toThrow();
+
+    expect(() => validateContentTranslationRequestBudgetAdmission({
+      ...admission(),
+      windowSeconds: MAX_CONTENT_TRANSLATION_REQUEST_BUDGET_WINDOW_SECONDS + 1,
+    })).toThrow(TypeError);
   });
 
   it("accepts validated policy inputs and rejects invalid cost, limits, windows, scopes, and subjects", () => {
