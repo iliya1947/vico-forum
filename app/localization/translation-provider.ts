@@ -8,6 +8,28 @@ export type ContentDataClassification =
   | "public-forum-post-body"
   | "non-public-content";
 
+interface TranslationCapabilityBase {
+  readonly sourceLocale: string;
+  readonly targetLocale: string;
+  readonly messageKind: MessageKind;
+  readonly operation: TranslationOperation;
+  readonly sourceCharacterCount: number | null;
+}
+
+export interface UiTranslationCapability extends TranslationCapabilityBase {
+  readonly domain: "ui";
+  readonly contentClassification?: never;
+}
+
+export interface ContentTranslationCapability extends TranslationCapabilityBase {
+  readonly domain: "content";
+  readonly contentClassification: ContentDataClassification;
+}
+
+export type MachineTranslationCapability =
+  | UiTranslationCapability
+  | ContentTranslationCapability;
+
 interface MachineTranslationRequestBase {
   readonly sourceLocale: string;
   readonly targetLocale: string;
@@ -44,11 +66,11 @@ export interface MachineTranslationResult {
 }
 
 /**
- * Provider locale codes, limits and mapping stay behind this interface. `supports` and
- * `translate` receive only Vico canonical locales and domain capabilities.
+ * Capability selection receives metadata only. Raw source content is passed only to the
+ * adapter selected by the router, after capability/data-policy approval.
  */
 export interface MachineTranslationProviderAdapter {
-  supports(request: MachineTranslationRequest): boolean;
+  supports(capability: MachineTranslationCapability): boolean;
   translate(request: MachineTranslationRequest): Promise<MachineTranslationResult>;
 }
 
@@ -69,17 +91,44 @@ export class UnsupportedTranslationMessageKindError extends Error {
 export class TranslationProviderRouter {
   constructor(private readonly adapters: readonly MachineTranslationProviderAdapter[]) {}
 
-  supports(request: MachineTranslationRequest): boolean {
-    assertOperationMatchesMessageKind(request);
-    return this.adapters.some((candidate) => candidate.supports(request));
+  supports(capability: MachineTranslationCapability): boolean {
+    assertOperationMatchesMessageKind(capability);
+    return this.adapters.some((candidate) => candidate.supports(capability));
   }
 
   async translate(request: MachineTranslationRequest): Promise<MachineTranslationResult> {
     assertOperationMatchesMessageKind(request);
-    const adapter = this.adapters.find((candidate) => candidate.supports(request));
+    const capability = machineTranslationCapability(request);
+    const adapter = this.adapters.find((candidate) => candidate.supports(capability));
     if (!adapter) throw new UnsupportedTranslationProviderError(request);
     return adapter.translate(request);
   }
+}
+
+export function machineTranslationCapability(
+  request: MachineTranslationRequest,
+): MachineTranslationCapability {
+  const sourceCharacterCount = typeof request.source === "string"
+    ? request.source.length
+    : null;
+  return request.domain === "content"
+    ? {
+        domain: "content",
+        contentClassification: request.contentClassification,
+        sourceLocale: request.sourceLocale,
+        targetLocale: request.targetLocale,
+        messageKind: request.messageKind,
+        operation: request.operation,
+        sourceCharacterCount,
+      }
+    : {
+        domain: "ui",
+        sourceLocale: request.sourceLocale,
+        targetLocale: request.targetLocale,
+        messageKind: request.messageKind,
+        operation: request.operation,
+        sourceCharacterCount,
+      };
 }
 
 export function translationOperation(messageKind: MessageKind): TranslationOperation {
@@ -95,7 +144,9 @@ export function translationOperation(messageKind: MessageKind): TranslationOpera
   }
 }
 
-function assertOperationMatchesMessageKind(request: MachineTranslationRequest): void {
+function assertOperationMatchesMessageKind(
+  request: Pick<MachineTranslationCapability, "messageKind" | "operation">,
+): void {
   if (request.operation !== translationOperation(request.messageKind)) {
     throw new TypeError(`Translation operation does not match message kind: ${request.messageKind}`);
   }
