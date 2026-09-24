@@ -248,6 +248,7 @@ describe("ContentTopicTitleTaskExecutor", () => {
     expect(translate).toHaveBeenCalledTimes(1);
     expect(translate).toHaveBeenCalledWith({
       domain: "content",
+      contentClassification: "public-forum-topic-title",
       sourceLocale: "ru",
       targetLocale: "he",
       messageKind: "plain",
@@ -376,7 +377,7 @@ describe("ContentTopicTitleTaskExecutor", () => {
     });
   });
 
-  it("does not expand the UI-only Cloudflare M2M100 adapter to content", async () => {
+  it("default-denies Cloudflare M2M100 content without explicit data policy", async () => {
     const run = vi.fn();
     const adapter = new CloudflareM2m100TranslationProvider({ run });
     const { executor, recordFailure } = await harness({ adapter });
