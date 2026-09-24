@@ -75,6 +75,43 @@ export class DrizzleContentTopicTitlePlanningStore implements ContentTopicTitleP
     assertExpectedRevision(specification, expectedRevision);
 
     return this.database.transaction(async (transaction) => {
+      const unit = {
+        translationKind: specification.translationKind,
+        sourceNamespace: "topic-title",
+        sourceKey: specification.sourceIdentity.topicId,
+        targetLocale: specification.targetLocale,
+      };
+      const insertedHead = await transaction
+        .insert(translationTaskGenerationHeads)
+        .values({ ...unit, currentGeneration: 1 })
+        .onConflictDoNothing()
+        .returning({ currentGeneration: translationTaskGenerationHeads.currentGeneration });
+
+      // Keep the shared planning/publication lock order stable:
+      // generation head -> stable task row -> current topic revision.
+      const lockedHead = await transaction.execute<{ current_generation: number }>(sql`
+        select current_generation
+          from ${translationTaskGenerationHeads}
+         where ${translationTaskGenerationHeads.translationKind} = ${unit.translationKind}
+           and ${translationTaskGenerationHeads.sourceNamespace} = ${unit.sourceNamespace}
+           and ${translationTaskGenerationHeads.sourceKey} = ${unit.sourceKey}
+           and ${translationTaskGenerationHeads.targetLocale} = ${unit.targetLocale}
+         for update
+      `);
+      const currentGeneration = lockedHead.rows[0]?.current_generation;
+      if (!Number.isSafeInteger(currentGeneration) || currentGeneration! <= 0) {
+        throw new ContentTopicTitleTaskIntegrityError(
+          "content translation generation head is missing or invalid",
+        );
+      }
+
+      const existingRows = await transaction
+        .select()
+        .from(translationTasks)
+        .where(eq(translationTasks.taskIdentity, specification.taskIdentity))
+        .for("update")
+        .limit(1);
+
       const authoritative = await transaction
         .select({
           topicId: forumTopics.id,
@@ -104,39 +141,6 @@ export class DrizzleContentTopicTitlePlanningStore implements ContentTopicTitleP
         return { outcome: "revision-changed" as const };
       }
 
-      const unit = {
-        translationKind: specification.translationKind,
-        sourceNamespace: "topic-title",
-        sourceKey: specification.sourceIdentity.topicId,
-        targetLocale: specification.targetLocale,
-      };
-      const insertedHead = await transaction
-        .insert(translationTaskGenerationHeads)
-        .values({ ...unit, currentGeneration: 1 })
-        .onConflictDoNothing()
-        .returning({ currentGeneration: translationTaskGenerationHeads.currentGeneration });
-
-      const lockedHead = await transaction.execute<{ current_generation: number }>(sql`
-        select current_generation
-          from ${translationTaskGenerationHeads}
-         where ${translationTaskGenerationHeads.translationKind} = ${unit.translationKind}
-           and ${translationTaskGenerationHeads.sourceNamespace} = ${unit.sourceNamespace}
-           and ${translationTaskGenerationHeads.sourceKey} = ${unit.sourceKey}
-           and ${translationTaskGenerationHeads.targetLocale} = ${unit.targetLocale}
-         for update
-      `);
-      const currentGeneration = lockedHead.rows[0]?.current_generation;
-      if (!Number.isSafeInteger(currentGeneration) || currentGeneration! <= 0) {
-        throw new ContentTopicTitleTaskIntegrityError(
-          "content translation generation head is missing or invalid",
-        );
-      }
-
-      const existingRows = await transaction
-        .select()
-        .from(translationTasks)
-        .where(eq(translationTasks.taskIdentity, specification.taskIdentity))
-        .limit(1);
       if (existingRows[0]) {
         assertTaskMatchesSpecification(existingRows[0], specification);
         const metadataRows = await transaction
@@ -275,8 +279,7 @@ export class DrizzleContentTopicTitlePlanningStore implements ContentTopicTitleP
         task: contentTask(taskRow, metadata),
       };
     });
-  }
-}
+  }}
 
 async function assertStableIdentity(
   specification: ContentTopicTitleTranslationTaskSpecification,
