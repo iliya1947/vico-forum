@@ -16,47 +16,49 @@ bounded work results for Stage 5. It is not a source of truth for project archit
 
 Stage 5B revision-bound persistence foundation (`CNT-01/02/05/06`) in PR #102.
 
-PR #102 current head:
+PR #102 reviewed head:
 `7867279ae3fafbffd6e44d8ace86a1c27b1375bb`.
 
-Final GitHub Actions run `35977299496` completed successfully:
+GitHub Actions run `35977299496` completed successfully:
 - `checks` — success;
 - `database` — success.
 
-Implemented bounded scope:
-- provider-neutral `ContentTranslationService` / `ContentTranslationStore`;
-- separate topic-title and post-body translation persistence;
-- exact identity `contentType + contentId + revisionId + targetLocale`;
-- append-only migration `0014` with Drizzle schema/snapshot/journal parity;
-- database-backed revision-owner/source-locale foreign keys and cascade behavior;
-- canonical non-`und` target handling and immutable revision source-locale binding;
-- validated `persistent_manual | machine` provenance;
-- exact-current-revision reads with original fallback for miss/stale/invalid/classified
-  storage unavailability;
-- idempotent/concurrent duplicate-write coverage and manual-over-machine trust preservation.
+## Independent verification of Codex findings
 
-Excluded scope remains unchanged:
-- provider calls/routing changes;
-- content Queue/jobs/retry/reconciliation;
-- source-language detection implementation;
-- Markdown AST/segmentation/technical-fragment translation;
-- route/UI/SEO integration;
-- external migration rollout or Stage 6 resources.
+ChatGPT independently verified both Codex findings against the unchanged complete PR #102 before
+applying any correction.
 
-## Review handoff
+1. **Drizzle schema locale-check SQL diverges from migration/snapshot.**
+   - In `db/schema.ts`, both `sourceLocaleCheck()` and `contentTargetLocaleCheck()` currently
+     end their regex SQL literal after `(-[A-Za-z0-9]{1,8})*` and omit the required `$'` suffix.
+   - Migration `0014_content_translation_persistence.sql` contains the complete
+     `^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*$` regex in both translation tables.
+   - Snapshot `0014_snapshot.json` also contains the complete regex.
+   - Therefore hand-written migration CI can pass while the Drizzle schema representation is not
+     equivalent to the migration/snapshot. This is a current `CNT-01/02/05/06` migration/schema
+     parity defect, not future groundwork.
+   - Current PR coverage applies the migration but does not prove generated schema SQL parity for
+     these checks, so a regression guard is required with the correction.
 
-ChatGPT completed a fresh full self-review of all 11 changed files and the combined PR #102 diff
-against current `main`, the assigned Stage 5B persistence scope, revision ownership contracts,
-locale/provenance rules, migration/schema parity, concurrency/idempotency behavior, and excluded
-scope.
+2. **Wrapped PostgreSQL availability failures bypass original-safe fallback.**
+   - `db/content-translation-store.ts` calls `isPostgresAvailabilityFailure(error)` only on the
+     top-level thrown value.
+   - That helper in `persistent-registry.ts` inspects only the supplied object and does not walk
+     `cause`.
+   - By contrast, the established `isPostgresQueryTimeout()` path uses the cycle-safe
+     `findError()` cause traversal in `db/postgres-deadlines.ts`.
+   - Therefore a Drizzle wrapper whose `cause` carries an `08xxx`/transport availability error
+     remains unclassified, so `ContentTranslationService.readCurrent()` rethrows instead of
+     returning the exact original revision with `storage-unavailable`.
+   - Existing PR #102 content-translation tests contain no wrapped availability/timeout regression
+     coverage. This is a current original-safe-read defect under the assigned task.
 
-No further correction is being applied before independent review. Under the technical-agreement
-protocol, Codex should independently fetch and review the complete PR #102 before any correction
-or merge decision.
+Both findings match the current Stage scope and are technically confirmed from ChatGPT's side.
+No correction has been applied yet. PR #102 remains open and unmerged.
 
 ## Status
 
-- PR #102 remains open and unmerged.
-- Current head: `7867279ae3fafbffd6e44d8ace86a1c27b1375bb`.
-- CI `35977299496`: `checks` and `database` successful.
-- Next step: independent complete Codex review of PR #102.
+- PR #102 head is unchanged: `7867279ae3fafbffd6e44d8ace86a1c27b1375bb`.
+- No product-code correction has been applied after Codex review.
+- Next step: Codex technical agreement/authorization for these two findings, after which ChatGPT
+  can correct only the agreed scope, run CI, update this channel, and fully re-review PR #102.
