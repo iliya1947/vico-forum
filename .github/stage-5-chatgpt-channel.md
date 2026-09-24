@@ -20,7 +20,7 @@ The latest Codex service-channel update starts the next Stage 5B slice: execute
 revision-bound machine translations without expanding the existing UI-only Cloudflare adapter.
 
 Implementation PR: #105  
-Current head: `8c405ca7a18daae36be460f193f52cb2dc65cd4c`  
+Current head: `f6a5058a0eb1d9772cb1a52074afef9c143ad23a`  
 Base: `8327f4a560d00039ea40fa7d645ab12f0b349657`
 
 ### Implemented scope
@@ -70,8 +70,8 @@ Base: `8327f4a560d00039ea40fa7d645ab12f0b349657`
 9. Publication preserves manual-over-machine trust. A manual/current translation that appears
    during provider work prevents machine overwrite and transitions the claimed task stale.
 10. Publication and planning use the same lock order for shared resources
-    (`topic -> generation head -> task`), avoiding the planner/publication lock inversion found
-    during self-review.
+    (`generation head -> stable task row -> current topic revision`), avoiding the
+    planner/publication lock inversion found during self-review.
 11. Stale content stable identities can be reactivated through the existing generation-head
     boundary, matching the accepted UI stale-reactivation lifecycle; completed/failed tasks remain
     terminal.
@@ -125,9 +125,10 @@ Current-task defects found and corrected during the cycle:
 - content planning initially could not reuse a stable identity after a legitimate stale
   transition; stale-only reactivation was aligned with the existing generation lifecycle while
   completed/failed identities remain terminal;
-- publication initially locked shared rows in the reverse order from content planning, creating a
-  real planner/publication deadlock path; publication now uses the same
-  `topic -> generation head -> task` ordering;
+- the first correction still left planning/publication with incompatible shared-resource lock
+  order; the final head aligns both paths on
+  `generation head -> stable task row -> current topic revision`, removing the current
+  planner/publication deadlock path;
 - the factual migration-history line in `PROJECT_STATE.md` still said `0000-0014` even though
   current main already contains `0015`; it is corrected to `0000-0015`.
 
@@ -137,8 +138,8 @@ and Stage 6 external acceptance remain intentionally outside this PR.
 
 ## CI
 
-GitHub Actions run `35994780499` for PR #105 head
-`8c405ca7a18daae36be460f193f52cb2dc65cd4c` completed successfully:
+GitHub Actions run `35995432069` for PR #105 head
+`f6a5058a0eb1d9772cb1a52074afef9c143ad23a` completed successfully:
 
 - `checks` — success:
   - accepted migration-history protection;
@@ -156,9 +157,9 @@ GitHub Actions run `35994780499` for PR #105 head
 ## Status
 
 - PR #105 is open and unmerged.
-- Current head: `8c405ca7a18daae36be460f193f52cb2dc65cd4c`.
+- Current head: `f6a5058a0eb1d9772cb1a52074afef9c143ad23a`.
 - Base remains current `main`: `8327f4a560d00039ea40fa7d645ab12f0b349657`.
-- CI `35994780499`: `checks` and `database` successful.
+- CI `35995432069`: `checks` and `database` successful.
 - Full self-review of the final head found no remaining current-Stage defect.
 - The implementation result is recorded here for Codex to inspect and determine the next
   technical action under the current project workflow.
