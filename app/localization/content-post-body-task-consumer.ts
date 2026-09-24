@@ -5,7 +5,6 @@ import {
 } from "./content-markdown-translation";
 import {
   contentPostBodySourceFingerprint,
-  type ContentPostBodyTranslationTask,
 } from "./content-post-body-planning";
 import type {
   ContentTranslationIdentity,
@@ -17,6 +16,7 @@ import { isActiveContentTranslationTarget } from "./content-translation-planning
 import { TranslationExecutionFailure } from "./translation-failures";
 import type { LocaleRegistry } from "./registry";
 import type {
+  ContentPostBodyTranslationTask,
   ContentPostBodyTranslationTaskStore,
   TranslationTaskMessage,
 } from "./translation-tasks";
