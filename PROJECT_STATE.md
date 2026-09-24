@@ -42,7 +42,7 @@ Vico Forum находится в ранней pre-release разработке.
 - generic `/:locale/*`, runtime `LocaleRegistry`, BCP-47 resolution, LTR/RTL и request-scoped
   `i18next`;
 - persistent locale registry, persistent UI translation storage и compiled bundle storage;
-- текущая migration history — `0000`–`0014`.
+- текущая migration history — `0000`–`0015`.
 
 ## Forum core — Stage 4
 
