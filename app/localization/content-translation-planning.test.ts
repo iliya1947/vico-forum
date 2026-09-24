@@ -118,15 +118,15 @@ describe("ContentTopicTitleTranslationPlanner", () => {
     expect(enqueuer.messages).toHaveLength(0);
   });
 
-  it("uses the authoritative public-topic-title capability request for planning", async () => {
+  it("uses authoritative public-topic-title metadata without exposing source text during planning", async () => {
     const adapter: MachineTranslationProviderAdapter = {
-      supports: vi.fn((request) =>
-        request.domain === "content"
-        && request.contentClassification === "public-forum-topic-title"
-        && request.source === "Исходный заголовок"
-        && request.sourceLocale === "ru"
-        && request.targetLocale === "he"
-        && request.operation === "plain"
+      supports: vi.fn((capability) =>
+        capability.domain === "content"
+        && capability.contentClassification === "public-forum-topic-title"
+        && capability.sourceCharacterCount === "Исходный заголовок".length
+        && capability.sourceLocale === "ru"
+        && capability.targetLocale === "he"
+        && capability.operation === "plain"
       ),
       translate: vi.fn(),
     };
@@ -146,8 +146,11 @@ describe("ContentTopicTitleTranslationPlanner", () => {
       targetLocale: "he",
       messageKind: "plain",
       operation: "plain",
-      source: "Исходный заголовок",
+      sourceCharacterCount: "Исходный заголовок".length,
     });
+    const capability = vi.mocked(adapter.supports).mock.calls[0]?.[0] as unknown as
+      Record<string, unknown>;
+    expect(capability).not.toHaveProperty("source");
   });
 
   it("does not create work when a current exact-revision translation already exists", async () => {
@@ -240,7 +243,7 @@ function plannerWith(overrides: {
   sourceLocaleResolver?: ContentSourceLocaleResolver;
   translations?: ContentTranslationStore;
   providerCapability?: {
-    supports(input: { sourceLocale: string; targetLocale: string; source: string }): boolean;
+    supports(input: { sourceLocale: string; targetLocale: string; sourceCharacterCount: number }): boolean;
   };
   requestBudgetPolicy?: { allows(input: unknown): boolean };
 } = {}) {
