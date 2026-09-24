@@ -815,3 +815,206 @@ PR #109 does not implement or change:
 - Final CI: `36019181765`, both `checks` and `database` successful.
 - Full self-review found no remaining current-Stage defect.
 
+
+
+## Request-budget foundation implementation — PR #110
+
+Received task from Codex service PR #94 after merged TinyLD PR #109:
+
+- implement only the reusable distributed request-budget storage/identity foundation for SEC-02;
+- do not connect the limiter to topic-title/post-body planners or routes;
+- do not choose final production quota values or anonymous enablement policy;
+- keep post-body execution/publication, route/UI behavior, real secrets/bindings and Stage 6 work out
+  of scope.
+
+Implementation PR: #110, `Stage 5B: add content translation request-budget foundation`.
+
+Final reviewed head:
+`fc6ef0211dc351f60cf2afac543432168f36d1e9`.
+
+Base/current `main` used for the complete implementation review:
+`17a3aea7c432683b46321c2ab341e2b2fc1bad4b`.
+
+### Implemented foundation
+
+PR #110 adds a server-only requester-pseudonym boundary and a dedicated PostgreSQL fixed-window
+budget store without changing planner or route behavior.
+
+Requester pseudonymization:
+
+- accepts an already-classified `authenticated` or `anonymous` identity;
+- uses Workers-compatible Web Crypto HMAC-SHA-256;
+- domain-separates authenticated user and anonymous IP inputs;
+- includes an explicit non-secret key version in the HMAC preimage;
+- emits only bounded 43-character base64url SHA-256 subject keys;
+- validates bounded nonblank identity and key-version shape;
+- does not return or persist raw user id/IP, session token or HMAC secret material;
+- uses injected secret/key material only; no production secret/binding was added.
+
+Budget storage:
+
+- forward-only migration `0017_content_translation_request_budget.sql`;
+- dedicated `content_translation_request_budget_counters` table rather than Better Auth rate-limit
+  storage;
+- logical identity is versioned scope + pseudonymous subject + aligned window start;
+- bounded nonnegative used units, expiry and DB-owned timestamps;
+- cleanup index only for the bounded expiry cleanup path;
+- matching Drizzle schema, snapshot and journal metadata.
+
+Admission semantics:
+
+- caller supplies validated positive integer cost, aligned window seconds, global/requester limits
+  and versioned global/requester scope policy;
+- no production quota numbers are embedded in the store;
+- one short transaction reads one PostgreSQL-owned `transaction_timestamp()` clock;
+- epoch-aligned fixed window is computed in PostgreSQL;
+- global counter is consumed first, requester counter second;
+- each counter uses atomic `INSERT ... ON CONFLICT DO UPDATE ... WHERE used_units + cost <= limit
+  RETURNING` semantics;
+- requester denial throws an internal rollback so a prior global charge is not committed;
+- global denial occurs before requester mutation;
+- allowed/denied result is typed and includes limiting scope/reason, remaining units, reset time and
+  nonnegative retry-after metadata derived from the same database clock;
+- normal decision output does not expose the pseudonymous subject key.
+
+Failure/cleanup boundary:
+
+- quota denial is distinct from classified storage unavailability;
+- known PostgreSQL availability/query-timeout failures are classified, including Drizzle-wrapped
+  PostgreSQL failures through `cause`;
+- unexpected integrity/programming failures propagate instead of being converted to denial/success;
+- expired-row cleanup is caller-bounded, deterministic, indexed, uses `FOR UPDATE SKIP LOCKED`,
+  has no scheduler/cron, and is not required for admission correctness.
+
+### Tests and correction cycle
+
+Offline/unit coverage verifies:
+
+- deterministic HMAC output;
+- authenticated/anonymous domain separation;
+- key-version domain separation;
+- base64url shape and length;
+- malformed identity/key/secret rejection;
+- raw identity/secret non-disclosure;
+- policy/cost/window/scope validation;
+- cleanup batch bounds.
+
+Disposable PostgreSQL coverage verifies:
+
+- first insert;
+- exact-limit success;
+- over-limit denial without increment;
+- all-or-nothing global/requester consumption;
+- global-before-requester behavior;
+- concurrent non-overshoot;
+- deterministic lock order across different subjects;
+- pseudonymous subject isolation;
+- policy-version scope isolation;
+- DB-owned aligned reset/retry metadata;
+- rollback of a prior global mutation on unexpected requester failure;
+- distinction between classified availability and arbitrary programming errors;
+- bounded deterministic cleanup and cleanup index.
+
+During implementation/self-review the following concrete defects were found and corrected before the
+final head:
+
+1. An intermediate scripted `db/schema.ts` replacement interpreted JavaScript replacement syntax
+   inside the SQL regex and corrupted the surrounding file. The file was restored from `main` and
+   the insertion was repeated safely before final verification.
+2. Node/Workers Web Crypto typing initially relied on DOM type names unavailable in the repository
+   Node typecheck path. The implementation now derives types from `typeof crypto.subtle` and passes
+   owned `ArrayBuffer` inputs.
+3. Raw Drizzle query results for computed timestamps were not safely assumed to be `Date` objects.
+   The DB clock boundary now returns validated epoch milliseconds and constructs `Date` only after
+   parsing.
+4. Cross-realm `Uint8Array` validation failed under jsdom. Secret validation now uses an
+   ArrayBuffer-view/tag check instead of realm-local `instanceof`.
+5. Concurrent transactions can commit a row update from an older transaction timestamp after a
+   newer one. Counter updates now preserve monotonic `updated_at` via `greatest(existing,
+   excluded)`.
+6. PostgreSQL bind parameters for cost/limit needed explicit `bigint` context in the admission SQL.
+7. Automated Codex review on the early head correctly found runtime/database mismatch for scope
+   versions containing `:`. Runtime validation now rejects unsupported version syntax and has
+   regression coverage.
+8. Final ChatGPT self-review found that Drizzle may wrap PostgreSQL availability failures in
+   `cause`; the final classifier traverses wrapped causes while preserving unrelated errors.
+
+No correction changed planner/route behavior or selected quota policy.
+
+### PROJECT_STATE.md
+
+After implementation CI was green, the same PR updated `PROJECT_STATE.md` factually:
+
+- migration history is now recorded through `0017`;
+- request-budget HMAC/storage foundation is recorded as implemented;
+- it explicitly states that planners/routes are not connected;
+- anonymous enablement and final quota values remain unselected;
+- planner/route integration and quota/anonymous policy remain outstanding Stage 5 work.
+
+No state depending on unperformed deployment or external acceptance was claimed.
+
+### Final CI
+
+GitHub Actions run `36030041888` on
+`fc6ef0211dc351f60cf2afac543432168f36d1e9` completed successfully.
+
+`checks`:
+
+- frozen install — success;
+- accepted migration-history protection — success;
+- lint — success;
+- typecheck — success;
+- tests — success: 51 files / 424 tests;
+- production build — success;
+- migration metadata validation — success;
+- Drizzle schema parity — success.
+
+`database`:
+
+- clean PostgreSQL 17 migration/constraint/integration suite — success: 17 files / 151 tests;
+- Workers build smoke — success;
+- local Hyperdrive smoke — success.
+
+### Full self-review
+
+ChatGPT re-read the complete final eleven-file PR #110, not only the correction delta, against:
+
+- unchanged GitHub `main` `17a3aea7c432683b46321c2ab341e2b2fc1bad4b`;
+- current complete `AGENTS.md`;
+- the accepted SEC-02 request-budget task in Codex service PR #94;
+- `PROJECT.md`, `PROJECT_STATE.md`, `ROADMAP.md`, `TRANSLATION_ARCHITECTURE.md`;
+- applicable translation/database source-of-truth documents;
+- existing planner budget ports, PostgreSQL failure classification and migration conventions.
+
+The review rechecked HMAC domain separation/key versioning, raw-identity/secret non-persistence,
+runtime/database validation parity, fixed-window calculation, DB-owned time, atomic global then
+requester consumption, transaction rollback on denial/error, concurrency/no-overshoot behavior,
+typed decision metadata, wrapped availability classification, unexpected-error propagation,
+bounded cleanup/indexing, migration/schema/snapshot/journal parity, factual project state and all
+explicit exclusions.
+
+No remaining current-Stage defect was found.
+
+### Excluded scope confirmed
+
+PR #110 does not implement:
+
+- planner request-budget admission integration;
+- route/header trust extraction or `CF-Connecting-IP` policy;
+- HTTP 429/503 behavior or UI;
+- anonymous product enablement;
+- final production quota values;
+- production HMAC secret/binding or rotation deployment;
+- task identity/upsert/enqueue changes;
+- post-body execution/publication;
+- provider/Queue expansion, live calls or deployment;
+- external migration rollout or Stage 6 acceptance.
+
+### Status
+
+- PR #110 is open, mergeable and unmerged.
+- Final head: `fc6ef0211dc351f60cf2afac543432168f36d1e9`.
+- Base/current `main`: `17a3aea7c432683b46321c2ab341e2b2fc1bad4b`.
+- Final CI: `36030041888`, both `checks` and `database` successful.
+- Full self-review found no remaining current-Stage defect.
+- Next required workflow step is Codex independent full review of PR #110 before merge.
