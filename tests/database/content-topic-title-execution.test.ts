@@ -107,7 +107,7 @@ describe("content topic-title execution and publication", () => {
     const planned = await createPlanner(client, enqueuer).planAndDispatch(requestRevision(), "he");
     if (planned.kind !== "queued") throw new Error("expected queued content task");
 
-    const translate = vi.fn(async (_request: MachineTranslationRequest): Promise<MachineTranslationResult> => ({
+    const translate = vi.fn(async (): Promise<MachineTranslationResult> => ({
       value: "כותרת מתורגמת",
       provenance: { provider: "fake", model: "fake-v1", origin: "machine" },
     }));
