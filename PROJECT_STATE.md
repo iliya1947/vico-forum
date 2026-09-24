@@ -140,16 +140,24 @@ Migration `0007`–`0010` содержит durable task lifecycle и generation-
   adapter сохраняет UI behavior и может локально/в CI принять только plain public topic title
   для явно allowlisted canonical locale pair при injected policy; policy не получает source text,
   повторно проверяется при execution, а denied/revoked content не достигает Workers AI runner.
+- provider-neutral CNT-04 protected CommonMark foundation для будущего post-body translation:
+  source Markdown разбирается в mdast, translatable text получает deterministic AST-position IDs,
+  а code, raw HTML, image/link destinations, autolink URLs и embedded technical identifiers
+  остаются защищённой структурой/immutable placeholders. Restore принимает только exact bounded
+  segment set, проверяет protected-token preservation, вставляет provider values как text nodes,
+  deterministic сериализует и повторно проверяет AST structure; нарушение возвращает typed
+  `original-fallback` validation error. Результат остаётся input существующего safe
+  `ForumMarkdown` renderer, а source revision не изменяется.
 
 ### Stage 5 ещё не завершён
 
 Для завершения Stage 5 local/CI path ещё нужны:
 
-- post-body durable planning/execution вместе с body/Markdown translation path;
+- post-body durable planning/execution/publication с подключением реализованного protected
+  CommonMark segment/restore boundary к shared provider/job lifecycle;
 - operational/distributed rate-limit enforcement, concrete source-locale detector adapter/provider
   selection и user-facing manual correction flow; production content-provider/data-policy approval,
   real binding/credentials/live calls остаются external Stage 6 concerns;
-- Markdown AST/structured content translation, technical-fragment protection и translated Markdown validation/rendering;
 - route/UI integration и product UX для запроса/показа перевода пользовательского контента.
 
 Реальные Cloudflare Queue bindings, provider credentials/calls и deployed provider/Queue smoke —
@@ -204,7 +212,8 @@ no-op verification. Перед следующим настоящим external sc
 ## Ближайший маршрут
 
 1. Продолжить Stage 5B: source-locale detector adapter/provider selection и operational rate-limit boundary.
-2. Реализовать post-body/Markdown translation path и затем route/UI integration.
+2. Реализовать post-body durable planning/execution/publication поверх protected CommonMark boundary,
+   затем route/UI integration.
 3. После завершения Stage 5 перейти к Stage 6 external integration по `ROADMAP.md` и
    `docs/database/*`.
 
