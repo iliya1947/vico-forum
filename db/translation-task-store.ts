@@ -1,6 +1,13 @@
-import { and, eq, gte, lt, lte, or, sql } from "drizzle-orm";
+import { and, asc, eq, gte, lt, lte, or, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { TranslationFailureRecord } from "../app/localization/translation-failures";
+import {
+  validateTranslationTaskReconciliationQuery,
+  type TranslationTaskObservabilitySnapshot,
+  type TranslationTaskReconciliationCandidate,
+  type TranslationTaskReconciliationQuery,
+  type TranslationTaskReconciliationStore,
+} from "../app/localization/translation-task-reconciliation";
 import {
   DEFAULT_TRANSLATION_TASK_MAX_ATTEMPTS,
   validateUiTranslationJobSpecification,
@@ -25,7 +32,7 @@ export class TranslationTaskIntegrityError extends Error {
   }
 }
 
-export class DrizzleTranslationTaskStore implements TranslationTaskStore, TranslationTaskFailureStore {
+export class DrizzleTranslationTaskStore implements TranslationTaskStore, TranslationTaskFailureStore, TranslationTaskReconciliationStore {
   constructor(private readonly database: NodePgDatabase) {}
 
   async upsertPending(specification: UiTranslationJobSpecification): Promise<TranslationTask> {
@@ -135,6 +142,86 @@ export class DrizzleTranslationTaskStore implements TranslationTaskStore, Transl
       .where(eq(translationTasks.taskIdentity, taskIdentity))
       .limit(1);
     return rows[0] ? await parseTaskRow(rows[0]) : undefined;
+  }
+
+  async listReconciliationCandidates(
+    query: TranslationTaskReconciliationQuery,
+  ): Promise<readonly TranslationTaskReconciliationCandidate[]> {
+    validateTranslationTaskReconciliationQuery(query);
+    const databaseNow = sql`statement_timestamp()`;
+    const pendingCutoff = sql`${databaseNow} - (${query.pendingOlderThanMs}::double precision * interval '1 millisecond')`;
+    const rows = await this.database
+      .select({
+        id: translationTasks.id,
+        status: translationTasks.status,
+      })
+      .from(translationTasks)
+      .where(or(
+        and(
+          eq(translationTasks.status, "pending"),
+          lte(translationTasks.updatedAt, pendingCutoff),
+        ),
+        and(
+          eq(translationTasks.status, "processing"),
+          lte(translationTasks.leaseExpiresAt, databaseNow),
+        ),
+      ))
+      .orderBy(asc(translationTasks.updatedAt), asc(translationTasks.id))
+      .limit(query.limit);
+
+    return rows.map((row) => {
+      if (row.status === "pending") return { id: row.id, reason: "pending" as const };
+      if (row.status === "processing") return { id: row.id, reason: "expired-processing" as const };
+      throw new TranslationTaskIntegrityError("reconciliation query returned a non-recoverable task");
+    });
+  }
+
+  async observeTranslationTasks(): Promise<TranslationTaskObservabilitySnapshot> {
+    const result = await this.database.execute<{
+      pending: number;
+      processing: number;
+      stale: number;
+      completed: number;
+      failed: number;
+      expired_processing: number;
+    }>(sql`
+      select
+        (count(*) filter (where ${translationTasks.status} = 'pending'))::integer as pending,
+        (count(*) filter (where ${translationTasks.status} = 'processing'))::integer as processing,
+        (count(*) filter (where ${translationTasks.status} = 'stale'))::integer as stale,
+        (count(*) filter (where ${translationTasks.status} = 'completed'))::integer as completed,
+        (count(*) filter (where ${translationTasks.status} = 'failed'))::integer as failed,
+        (
+          count(*) filter (
+            where ${translationTasks.status} = 'processing'
+              and ${translationTasks.leaseExpiresAt} <= statement_timestamp()
+          )
+        )::integer as expired_processing
+      from ${translationTasks}
+    `);
+    const row = result.rows[0];
+    if (
+      !row ||
+      !nonNegativeInteger(row.pending) ||
+      !nonNegativeInteger(row.processing) ||
+      !nonNegativeInteger(row.stale) ||
+      !nonNegativeInteger(row.completed) ||
+      !nonNegativeInteger(row.failed) ||
+      !nonNegativeInteger(row.expired_processing)
+    ) {
+      throw new TranslationTaskIntegrityError("translation task observability query returned invalid counts");
+    }
+
+    return {
+      counts: {
+        pending: row.pending,
+        processing: row.processing,
+        stale: row.stale,
+        completed: row.completed,
+        failed: row.failed,
+      },
+      expiredProcessing: row.expired_processing,
+    };
   }
 
   async claim(id: string, leaseDurationMs: number): Promise<TranslationTaskClaimResult> {
@@ -494,6 +581,10 @@ function assertFailureRecord(failure: TranslationFailureRecord): void {
   if (!/^[a-z0-9][a-z0-9-]{0,63}$/.test(failure.code)) {
     throw new TypeError("translation failure code is invalid");
   }
+}
+
+function nonNegativeInteger(value: number): boolean {
+  return Number.isSafeInteger(value) && value >= 0;
 }
 
 function requiredRow(row: TranslationTaskRow | undefined): TranslationTaskRow {
