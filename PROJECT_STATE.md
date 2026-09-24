@@ -123,16 +123,26 @@ Migration `0007`–`0010` содержит durable task lifecycle и generation-
   request-budget policy, не создаёт work для unresolved/same-locale/current translation, создаёт
   revision-bound stable task через shared durable lifecycle и только после commit отправляет
   transport message `{ translationTaskId }`; concurrent duplicate planning дедуплицируется
-  одной durable task identity.
+  одной durable task identity;
+- provider-neutral execution/publication foundation для `content-topic-title`: persisted task kind
+  определяется до kind-specific claim; content task использует общий PostgreSQL claim/lease,
+  attempt budget, retry/terminal state и reconciliation/observability lifecycle; после claim
+  повторно проверяются exact current revision/source semantics, generation policy/head, active
+  target и отсутствие current translation; provider получает ровно один `domain: content`,
+  `plain` request с authoritative original title и resolved source locale;
+- machine topic-title result runtime-валидируется и публикуется conditional transaction:
+  claim token, current revision, generation/policy и translation trust повторно проверяются;
+  existing/manual translation не перезаписывается, а успешная machine write и task completion
+  коммитятся атомарно. Существующий Cloudflare M2M100 adapter остаётся UI-only и content data
+  через него не отправляется.
 
 ### Stage 5 ещё не завершён
 
 Для завершения Stage 5 local/CI path ещё нужны:
 
-- content-specific task claim/provider execution и conditional publication path; post-body durable
-  planning остаётся отдельным шагом вместе с body/Markdown translation path;
-- concrete operational rate-limit enforcement, source-locale detector adapter/provider selection
-  и user-facing manual correction flow;
+- post-body durable planning/execution вместе с body/Markdown translation path;
+- concrete content-provider activation/data-policy decision, operational rate-limit enforcement,
+  source-locale detector adapter/provider selection и user-facing manual correction flow;
 - Markdown AST/structured content translation, technical-fragment protection и translated Markdown validation/rendering;
 - route/UI integration и product UX для запроса/показа перевода пользовательского контента.
 
@@ -187,8 +197,8 @@ no-op verification. Перед следующим настоящим external sc
 
 ## Ближайший маршрут
 
-1. Продолжить Stage 5B: content task execution/publication и concrete source-locale detector adapter/provider selection.
-2. Реализовать Markdown/structured post-body translation и затем route/UI integration.
+1. Продолжить Stage 5B: concrete content-provider/data-policy и source-locale detector adapter/provider selection.
+2. Реализовать post-body/Markdown translation path и затем route/UI integration.
 3. После завершения Stage 5 перейти к Stage 6 external integration по `ROADMAP.md` и
    `docs/database/*`.
 
