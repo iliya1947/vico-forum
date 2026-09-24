@@ -63,6 +63,7 @@ beforeAll(async () => {
 beforeEach(async () => {
   await client.query(`
     truncate
+      content_topic_title_translation_tasks,
       translation_tasks,
       translation_task_generation_heads,
       forum_topic_title_translations,
@@ -113,21 +114,19 @@ describe("content topic-title durable planning", () => {
 
     const row = await client.query<{
       id: string;
-      original_content: string | null;
-      content_id: string;
-      content_revision_id: string;
+      topic_id: string;
+      revision_id: string;
       revision_source_locale: string;
     }>(`
-      select task.id, null::text as original_content, task.content_id, task.content_revision_id,
-             task.revision_source_locale
+      select task.id, metadata.topic_id, metadata.revision_id, metadata.revision_source_locale
         from translation_tasks task
+        join content_topic_title_translation_tasks metadata on metadata.task_id = task.id
        where task.translation_kind = 'content-topic-title'
     `);
     expect(row.rows).toHaveLength(1);
     expect(row.rows[0]).toMatchObject({
-      original_content: null,
-      content_id: "topic-a",
-      content_revision_id: "title-a-r1",
+      topic_id: "topic-a",
+      revision_id: "title-a-r1",
       revision_source_locale: "ru",
     });
     expect(enqueuer.messages).toEqual([{ translationTaskId: row.rows[0]!.id }]);
@@ -205,10 +204,11 @@ describe("content topic-title durable planning", () => {
     expect(second.task.taskIdentity).not.toBe(first.task.taskIdentity);
 
     const generations = await client.query<{ revision: string; generation: number }>(`
-      select content_revision_id as revision, generation
-        from translation_tasks
-       where translation_kind = 'content-topic-title'
-       order by generation
+      select metadata.revision_id as revision, task.generation
+        from translation_tasks task
+        join content_topic_title_translation_tasks metadata on metadata.task_id = task.id
+       where task.translation_kind = 'content-topic-title'
+       order by task.generation
     `);
     expect(generations.rows).toEqual([
       { revision: "title-a-r1", generation: 1 },
@@ -258,39 +258,38 @@ describe("content topic-title durable planning", () => {
     expect(rows.rows).toEqual([{ status: "pending", count: 1 }]);
   });
 
-  it("database-enforces content revision ownership and keeps UI task invariants", async () => {
+  it("database-enforces required revision binding and keeps UI task invariants", async () => {
     await expectDatabaseCode(client.query(`
       insert into translation_tasks (
         task_identity, translation_kind, source_namespace, source_key, source_fingerprint,
-        target_locale, generation_policy_version, content_id, content_revision_id,
-        revision_source_locale, resolved_source_locale, source_resolution_origin, generation
+        target_locale, generation_policy_version, generation
       ) values (
-        repeat('1', 64), 'content-topic-title', 'topic-title', 'topic-b', repeat('2', 64),
-        'he', 'content-v1', 'topic-b', 'title-a-r1',
-        'ru', 'ru', 'revision-metadata', 1
+        repeat('1', 64), 'content-topic-title', 'topic-title', 'topic-a', repeat('2', 64),
+        'he', 'content-v1', 1
       )
+    `), "23514");
+
+    const created = await createPlanner(client).planAndDispatch(requestRevision(), "he");
+    if (created.kind !== "queued") throw new Error("expected queued fixture task");
+
+    await expectDatabaseCode(client.query(`
+      update content_topic_title_translation_tasks
+         set topic_id = 'topic-b'
+       where task_id = '${created.task.id}'
     `), "23503");
 
     await expectDatabaseCode(client.query(`
-      insert into translation_tasks (
-        task_identity, translation_kind, source_namespace, source_key, source_fingerprint,
-        target_locale, generation_policy_version, content_id, content_revision_id,
-        revision_source_locale, resolved_source_locale, source_resolution_origin, generation
-      ) values (
-        repeat('3', 64), 'content-topic-title', 'wrong', 'topic-a', repeat('4', 64),
-        'he', 'content-v1', 'topic-a', 'title-a-r1',
-        'ru', 'ru', 'revision-metadata', 2
-      )
+      delete from content_topic_title_translation_tasks
+       where task_id = '${created.task.id}'
     `), "23514");
 
     await expectDatabaseCode(client.query(`
       insert into translation_tasks (
         task_identity, translation_kind, source_namespace, source_key, source_fingerprint,
-        target_locale, generation_policy_version, content_id, content_revision_id,
-        revision_source_locale, resolved_source_locale, source_resolution_origin, generation
+        target_locale, generation_policy_version, generation
       ) values (
         repeat('5', 64), 'ui', 'common', 'example', repeat('6', 64),
-        'en', 'ui-v1', null, null, null, null, null, 1
+        'en', 'ui-v1', 1
       )
     `), "23514");
 
