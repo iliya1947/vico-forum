@@ -101,7 +101,7 @@ implements ContentTranslationRequesterPseudonymizer {
   constructor(
     secret: Uint8Array,
     private readonly keyVersion: string,
-    subtle: SubtleCrypto = crypto.subtle,
+    private readonly subtle: SubtleCrypto = crypto.subtle,
   ) {
     if (
       !(secret instanceof Uint8Array)
@@ -114,7 +114,7 @@ implements ContentTranslationRequesterPseudonymizer {
     }
     requireKeyVersion(keyVersion);
     const secretCopy = new Uint8Array(secret);
-    this.keyPromise = subtle
+    this.keyPromise = this.subtle
       .importKey(
         "raw",
         secretCopy,
@@ -148,7 +148,7 @@ implements ContentTranslationRequesterPseudonymizer {
     const preimage = new TextEncoder().encode(
       `${CONTENT_TRANSLATION_REQUESTER_PSEUDONYM_FORMAT}\0${this.keyVersion}\0${domain}\0${identity}`,
     );
-    const signature = await cryptoSign(this.keyPromise, preimage);
+    const signature = await cryptoSign(this.subtle, this.keyPromise, preimage);
     if (signature.byteLength !== HMAC_SHA_256_BYTES) {
       throw new ContentTranslationRequestBudgetIntegrityError(
         "HMAC-SHA-256 returned an unexpected digest length",
@@ -274,11 +274,12 @@ function requireKeyVersion(value: string): string {
 }
 
 async function cryptoSign(
+  subtle: SubtleCrypto,
   keyPromise: Promise<CryptoKey>,
   preimage: Uint8Array,
 ): Promise<Uint8Array> {
   const key = await keyPromise;
-  const signature = await crypto.subtle.sign("HMAC", key, preimage);
+  const signature = await subtle.sign("HMAC", key, preimage);
   return new Uint8Array(signature);
 }
 
