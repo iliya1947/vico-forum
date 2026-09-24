@@ -80,6 +80,11 @@ export const CONTENT_TRANSLATION_REQUESTER_PSEUDONYM_FORMAT =
   "vico-content-translation-requester-v1";
 export const CONTENT_TRANSLATION_REQUESTER_SUBJECT_KEY_LENGTH = 43;
 export const MAX_CONTENT_TRANSLATION_REQUEST_BUDGET_CLEANUP_BATCH_SIZE = 1_000;
+/**
+ * Safety ceiling for fixed-window arithmetic/timestamp representation.
+ * Callers still choose the actual product-policy window below this bound.
+ */
+export const MAX_CONTENT_TRANSLATION_REQUEST_BUDGET_WINDOW_SECONDS = 31_536_000;
 
 const MINIMUM_HMAC_SECRET_BYTES = 32;
 const MAXIMUM_HMAC_SECRET_BYTES = 4_096;
@@ -184,6 +189,14 @@ export function validateContentTranslationRequestBudgetAdmission(
   requireSubjectKey(admission.subjectKey);
   requirePositiveSafeInteger(admission.cost, "request budget cost");
   requirePositiveSafeInteger(admission.windowSeconds, "request budget windowSeconds");
+  if (
+    admission.windowSeconds
+    > MAX_CONTENT_TRANSLATION_REQUEST_BUDGET_WINDOW_SECONDS
+  ) {
+    throw new TypeError(
+      `request budget windowSeconds must not exceed ${MAX_CONTENT_TRANSLATION_REQUEST_BUDGET_WINDOW_SECONDS}`,
+    );
+  }
   requireScopePolicy(admission.global, "global");
   requireScopePolicy(admission.requester, "requester");
 }
