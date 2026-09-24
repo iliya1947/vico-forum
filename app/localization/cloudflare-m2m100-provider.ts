@@ -1,13 +1,21 @@
 import {
   TranslationExecutionFailure,
 } from "./translation-failures";
-import type {
-  MachineTranslationProviderAdapter,
-  MachineTranslationRequest,
-  MachineTranslationResult,
+import { PUBLIC_FORUM_TOPIC_TITLE_CLASSIFICATION } from "./content-translation-provider";
+import {
+  DENY_ALL_TRANSLATION_PROVIDER_DATA_POLICY,
+  type TranslationProviderDataPolicy,
+} from "./translation-provider-data-policy";
+import {
+  machineTranslationCapability,
+  type MachineTranslationCapability,
+  type MachineTranslationProviderAdapter,
+  type MachineTranslationRequest,
+  type MachineTranslationResult,
 } from "./translation-provider";
 import { TranslationValidationError } from "./translation-validation";
 
+export const CLOUDFLARE_WORKERS_AI_PROVIDER = "cloudflare-workers-ai";
 export const CLOUDFLARE_M2M100_MODEL = "@cf/meta/m2m100-1.2b";
 export const CLOUDFLARE_M2M100_MAX_SOURCE_CHARACTERS = 2_000;
 
@@ -43,22 +51,52 @@ export interface CloudflareWorkersAiRunner {
  * Binding provisioning and live Workers AI acceptance remain external Stage 6 concerns.
  */
 export class CloudflareM2m100TranslationProvider implements MachineTranslationProviderAdapter {
-  constructor(private readonly runner: CloudflareWorkersAiRunner) {}
+  constructor(
+    private readonly runner: CloudflareWorkersAiRunner,
+    private readonly dataPolicy: TranslationProviderDataPolicy =
+      DENY_ALL_TRANSLATION_PROVIDER_DATA_POLICY,
+  ) {}
 
-  supports(request: MachineTranslationRequest): boolean {
-    if (request.domain !== "ui" || request.operation !== "plain" || request.messageKind !== "plain") {
+  supports(capability: MachineTranslationCapability): boolean {
+    if (capability.domain === "content") {
+      const policyAllowed = this.dataPolicy.allows({
+        provider: CLOUDFLARE_WORKERS_AI_PROVIDER,
+        model: CLOUDFLARE_M2M100_MODEL,
+        contentClassification: capability.contentClassification,
+        sourceLocale: capability.sourceLocale,
+        targetLocale: capability.targetLocale,
+        operation: capability.operation,
+      });
+      if (
+        !policyAllowed
+        || capability.contentClassification !== PUBLIC_FORUM_TOPIC_TITLE_CLASSIFICATION
+      ) {
+        return false;
+      }
+    }
+
+    if (capability.operation !== "plain" || capability.messageKind !== "plain") {
       return false;
     }
-    if (typeof request.source !== "string" || !request.source.trim()) return false;
-    if (request.source.length > CLOUDFLARE_M2M100_MAX_SOURCE_CHARACTERS) return false;
-    if (request.sourceLocale === request.targetLocale) return false;
+    if (
+      capability.sourceCharacterCount === null
+      || capability.sourceCharacterCount <= 0
+      || capability.sourceCharacterCount > CLOUDFLARE_M2M100_MAX_SOURCE_CHARACTERS
+    ) {
+      return false;
+    }
+    if (capability.sourceLocale === capability.targetLocale) return false;
 
-    return providerLanguageCode(request.sourceLocale) !== undefined
-      && providerLanguageCode(request.targetLocale) !== undefined;
+    return providerLanguageCode(capability.sourceLocale) !== undefined
+      && providerLanguageCode(capability.targetLocale) !== undefined;
   }
 
   async translate(request: MachineTranslationRequest): Promise<MachineTranslationResult> {
-    if (!this.supports(request)) {
+    if (
+      typeof request.source !== "string"
+      || !request.source.trim()
+      || !this.supports(machineTranslationCapability(request))
+    ) {
       throw new TranslationExecutionFailure(
         "terminal",
         "provider-unsupported",
@@ -86,7 +124,7 @@ export class CloudflareM2m100TranslationProvider implements MachineTranslationPr
     return {
       value: translatedText,
       provenance: {
-        provider: "cloudflare-workers-ai",
+        provider: CLOUDFLARE_WORKERS_AI_PROVIDER,
         model: CLOUDFLARE_M2M100_MODEL,
         origin: "machine",
       },

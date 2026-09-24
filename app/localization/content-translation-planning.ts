@@ -10,6 +10,9 @@ import type {
   ContentSourceLocaleResolver,
 } from "./content-source-locale";
 import type {
+  ContentTopicTitleProviderCapability,
+} from "./content-translation-provider";
+import type {
   ContentTopicTitleTranslationTask,
   ContentTopicTitleTranslationTaskSpecification,
   TranslationTaskEnqueuer,
@@ -39,15 +42,6 @@ export type ContentTopicTitlePlanningResult =
       readonly taskCreated: boolean;
       readonly task: ContentTopicTitleTranslationTask;
     };
-
-export interface ContentTopicTitleTargetPolicyInput {
-  readonly sourceLocale: string;
-  readonly targetLocale: string;
-}
-
-export interface ContentTopicTitleTargetPolicy {
-  supports(input: ContentTopicTitleTargetPolicyInput): boolean;
-}
 
 export interface ContentTopicTitleRequestBudgetInput {
   readonly contentType: "topic-title";
@@ -82,7 +76,7 @@ export interface ContentTopicTitleTranslationPlannerDependencies {
   readonly localeRegistry: LocaleRegistry;
   readonly sourceLocaleResolver: ContentSourceLocaleResolver;
   readonly contentTranslations: ContentTranslationService;
-  readonly targetPolicy: ContentTopicTitleTargetPolicy;
+  readonly providerCapability: ContentTopicTitleProviderCapability;
   readonly requestBudgetPolicy: ContentTopicTitleRequestBudgetPolicy;
   readonly tasks: ContentTopicTitlePlanningStore;
   readonly enqueuer: TranslationTaskEnqueuer;
@@ -130,9 +124,10 @@ export class ContentTopicTitleTranslationPlanner {
       );
     }
 
-    if (!this.dependencies.targetPolicy.supports({
+    if (!this.dependencies.providerCapability.supports({
       sourceLocale: sourcePlan.sourceLocale,
       targetLocale,
+      sourceCharacterCount: authoritativeRevision.originalContent.length,
     })) {
       return original(targetLocale, "target-unsupported");
     }

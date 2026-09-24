@@ -15,6 +15,11 @@ import {
   type ContentTopicTitlePlanningStore,
   type ContentTopicTitleTaskUpsertResult,
 } from "./content-translation-planning";
+import { RoutedContentTopicTitleProviderCapability } from "./content-translation-provider";
+import {
+  TranslationProviderRouter,
+  type MachineTranslationProviderAdapter,
+} from "./translation-provider";
 import { localeRegistry } from "./registry";
 import {
   FakeTranslationTaskEnqueuer,
@@ -113,6 +118,41 @@ describe("ContentTopicTitleTranslationPlanner", () => {
     expect(enqueuer.messages).toHaveLength(0);
   });
 
+  it("uses authoritative public-topic-title metadata without exposing source text during planning", async () => {
+    const adapter: MachineTranslationProviderAdapter = {
+      supports: vi.fn((capability) =>
+        capability.domain === "content"
+        && capability.contentClassification === "public-forum-topic-title"
+        && capability.sourceCharacterCount === "Исходный заголовок".length
+        && capability.sourceLocale === "ru"
+        && capability.targetLocale === "he"
+        && capability.operation === "plain"
+      ),
+      translate: vi.fn(),
+    };
+    const providerCapability = new RoutedContentTopicTitleProviderCapability(
+      new TranslationProviderRouter([adapter]),
+    );
+    const result = await plannerWith({ providerCapability }).planAndDispatch(
+      titleRevision({ originalContent: "caller text must not drive provider capability" }),
+      "he",
+    );
+
+    expect(result.kind).toBe("queued");
+    expect(adapter.supports).toHaveBeenCalledWith({
+      domain: "content",
+      contentClassification: "public-forum-topic-title",
+      sourceLocale: "ru",
+      targetLocale: "he",
+      messageKind: "plain",
+      operation: "plain",
+      sourceCharacterCount: "Исходный заголовок".length,
+    });
+    const capability = vi.mocked(adapter.supports).mock.calls[0]?.[0] as unknown as
+      Record<string, unknown>;
+    expect(capability).not.toHaveProperty("source");
+  });
+
   it("does not create work when a current exact-revision translation already exists", async () => {
     const revision = titleRevision({ sourceLocale: "ru" });
     const translations = new MemoryContentTranslationStore([{
@@ -140,12 +180,12 @@ describe("ContentTopicTitleTranslationPlanner", () => {
 
     for (const configuration of [
       {
-        targetPolicy: { supports: () => false },
+        providerCapability: { supports: () => false },
         requestBudgetPolicy: { allows: () => true },
         reason: "target-unsupported",
       },
       {
-        targetPolicy: { supports: () => true },
+        providerCapability: { supports: () => true },
         requestBudgetPolicy: { allows: () => false },
         reason: "request-budget-denied",
       },
@@ -155,7 +195,7 @@ describe("ContentTopicTitleTranslationPlanner", () => {
       const result = await plannerWith({
         tasks,
         enqueuer,
-        targetPolicy: configuration.targetPolicy,
+        providerCapability: configuration.providerCapability,
         requestBudgetPolicy: configuration.requestBudgetPolicy,
       }).planAndDispatch(revision, "he");
 
@@ -202,7 +242,9 @@ function plannerWith(overrides: {
   enqueuer?: FakeTranslationTaskEnqueuer;
   sourceLocaleResolver?: ContentSourceLocaleResolver;
   translations?: ContentTranslationStore;
-  targetPolicy?: { supports(input: { sourceLocale: string; targetLocale: string }): boolean };
+  providerCapability?: {
+    supports(input: { sourceLocale: string; targetLocale: string; sourceCharacterCount: number }): boolean;
+  };
   requestBudgetPolicy?: { allows(input: unknown): boolean };
 } = {}) {
   return new ContentTopicTitleTranslationPlanner({
@@ -213,7 +255,7 @@ function plannerWith(overrides: {
     contentTranslations: new ContentTranslationService(
       overrides.translations ?? new MemoryContentTranslationStore(),
     ),
-    targetPolicy: overrides.targetPolicy ?? { supports: () => true },
+    providerCapability: overrides.providerCapability ?? { supports: () => true },
     requestBudgetPolicy: overrides.requestBudgetPolicy ?? { allows: () => true },
     tasks: overrides.tasks ?? new FakePlanningStore(titleRevision()),
     enqueuer: overrides.enqueuer ?? new FakeTranslationTaskEnqueuer(),

@@ -133,16 +133,22 @@ Migration `0007`–`0010` содержит durable task lifecycle и generation-
 - machine topic-title result runtime-валидируется и публикуется conditional transaction:
   claim token, current revision, generation/policy и translation trust повторно проверяются;
   existing/manual translation не перезаписывается, а успешная machine write и task completion
-  коммитятся атомарно. Существующий Cloudflare M2M100 adapter остаётся UI-only и content data
-  через него не отправляется.
+  коммитятся атомарно;
+- provider data-policy boundary для user content default-deny: machine request различает UI и
+  content classification, а topic-title planning и execution используют одну
+  `public-forum-topic-title` capability semantics. Существующий Cloudflare Workers AI M2M100
+  adapter сохраняет UI behavior и может локально/в CI принять только plain public topic title
+  для явно allowlisted canonical locale pair при injected policy; policy не получает source text,
+  повторно проверяется при execution, а denied/revoked content не достигает Workers AI runner.
 
 ### Stage 5 ещё не завершён
 
 Для завершения Stage 5 local/CI path ещё нужны:
 
 - post-body durable planning/execution вместе с body/Markdown translation path;
-- concrete content-provider activation/data-policy decision, operational rate-limit enforcement,
-  source-locale detector adapter/provider selection и user-facing manual correction flow;
+- operational/distributed rate-limit enforcement, concrete source-locale detector adapter/provider
+  selection и user-facing manual correction flow; production content-provider/data-policy approval,
+  real binding/credentials/live calls остаются external Stage 6 concerns;
 - Markdown AST/structured content translation, technical-fragment protection и translated Markdown validation/rendering;
 - route/UI integration и product UX для запроса/показа перевода пользовательского контента.
 
@@ -197,7 +203,7 @@ no-op verification. Перед следующим настоящим external sc
 
 ## Ближайший маршрут
 
-1. Продолжить Stage 5B: concrete content-provider/data-policy и source-locale detector adapter/provider selection.
+1. Продолжить Stage 5B: source-locale detector adapter/provider selection и operational rate-limit boundary.
 2. Реализовать post-body/Markdown translation path и затем route/UI integration.
 3. После завершения Stage 5 перейти к Stage 6 external integration по `ROADMAP.md` и
    `docs/database/*`.
