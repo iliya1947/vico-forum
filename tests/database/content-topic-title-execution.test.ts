@@ -23,7 +23,6 @@ import {
 } from "../../app/localization/translation-tasks";
 import {
   type MachineTranslationProviderAdapter,
-  type MachineTranslationRequest,
   type MachineTranslationResult,
   TranslationProviderRouter,
 } from "../../app/localization/translation-provider";
