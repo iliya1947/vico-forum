@@ -679,7 +679,14 @@ function arrayShapeCheck(column: AnyPgColumn) {
 }
 
 function sourceLocaleCheck(column: AnyPgColumn) {
-  return sql`${column} = btrim(${column}) and ${column} ~ '^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*
+  return sql`${column} = btrim(${column}) and ${column} ~ '^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*$'`;
+}
+
+function contentTargetLocaleCheck(column: AnyPgColumn) {
+  return sql`${column} = btrim(${column})
+    and lower(${column}) <> 'und'
+    and ${column} ~ '^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*$'`;
+}
 
 function contentTranslationMetadataCheck(
   origin: AnyPgColumn,
