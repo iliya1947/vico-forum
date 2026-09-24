@@ -5,6 +5,10 @@ import { Client, type DatabaseError } from "pg";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import {
+  CONTENT_TRANSLATION_REQUESTER_SUBJECT_KEY_LENGTH,
+  type ContentTranslationRequestBudgetAdmission,
+} from "../../app/localization/content-request-budget.server";
+import {
   ContentSourceLocaleResolver,
   ThresholdContentSourceLocalePolicy,
 } from "../../app/localization/content-source-locale";
@@ -53,6 +57,7 @@ beforeAll(async () => {
     "drizzle/0013_translation_task_reconciliation.sql",
     "drizzle/0014_content_translation_persistence.sql",
     "drizzle/0015_content_topic_title_tasks.sql",
+    "drizzle/0017_content_translation_request_budget.sql",
   ]) {
     const sql = (await readFile(migration, "utf8"))
       .replaceAll('"public".', `"${schemaName}".`);
@@ -63,6 +68,7 @@ beforeAll(async () => {
 beforeEach(async () => {
   await client.query(`
     truncate
+      content_translation_request_budget_counters,
       content_topic_title_translation_tasks,
       translation_tasks,
       translation_task_generation_heads,
@@ -97,7 +103,7 @@ describe("content topic-title durable planning", () => {
       revisionId: "title-a-r1",
       originalContent: "caller value is intentionally ignored",
       sourceLocale: "und",
-    }, "en");
+    }, "en", budgetAdmission());
 
     expect(result).toMatchObject({
       kind: "queued",
@@ -140,8 +146,8 @@ describe("content topic-title durable planning", () => {
       const firstEnqueuer = new FakeTranslationTaskEnqueuer();
       const secondEnqueuer = new FakeTranslationTaskEnqueuer();
       const [first, duplicate] = await Promise.all([
-        createPlanner(client, firstEnqueuer).planAndDispatch(requestRevision(), "he"),
-        createPlanner(second, secondEnqueuer).planAndDispatch(requestRevision(), "he"),
+        createPlanner(client, firstEnqueuer).planAndDispatch(requestRevision(), "he", budgetAdmission()),
+        createPlanner(second, secondEnqueuer).planAndDispatch(requestRevision(), "he", budgetAdmission()),
       ]);
 
       expect([first, duplicate]).toEqual(expect.arrayContaining([
@@ -166,7 +172,7 @@ describe("content topic-title durable planning", () => {
   });
 
   it("gives a new current title revision a distinct task identity and monotonic generation", async () => {
-    const first = await createPlanner(client).planAndDispatch(requestRevision(), "he");
+    const first = await createPlanner(client).planAndDispatch(requestRevision(), "he", budgetAdmission());
     expect(first).toMatchObject({ kind: "queued", task: { generation: 1 } });
 
     await client.query("begin");
@@ -189,7 +195,7 @@ describe("content topic-title durable planning", () => {
       ...requestRevision(),
       revisionId: "title-a-r2",
       originalContent: "caller value remains irrelevant",
-    }, "he");
+    }, "he", budgetAdmission());
 
     expect(second).toMatchObject({
       kind: "queued",
@@ -222,7 +228,7 @@ describe("content topic-title durable planning", () => {
     if (!authoritative) throw new Error("missing fixture revision");
 
     const planner = createPlanner(client);
-    const planned = await planner.planAndDispatch(requestRevision(), "he");
+    const planned = await planner.planAndDispatch(requestRevision(), "he", budgetAdmission());
     if (planned.kind !== "queued") throw new Error("expected queued fixture task");
 
     await client.query(`
@@ -235,7 +241,7 @@ describe("content topic-title durable planning", () => {
     `);
 
     await expect(
-      store.upsertPending(planned.task, authoritative),
+      store.upsertPending(planned.task, authoritative, budgetAdmission()),
     ).resolves.toEqual({ outcome: "revision-changed" });
   });
 
@@ -246,7 +252,7 @@ describe("content topic-title durable planning", () => {
     });
 
     await expect(
-      createPlanner(client, enqueuer).planAndDispatch(requestRevision(), "he"),
+      createPlanner(client, enqueuer).planAndDispatch(requestRevision(), "he", budgetAdmission()),
     ).rejects.toBe(failure);
 
     const rows = await client.query<{ status: string; count: number }>(`
@@ -269,7 +275,7 @@ describe("content topic-title durable planning", () => {
       )
     `), "23514");
 
-    const created = await createPlanner(client).planAndDispatch(requestRevision(), "he");
+    const created = await createPlanner(client).planAndDispatch(requestRevision(), "he", budgetAdmission());
     if (created.kind !== "queued") throw new Error("expected queued fixture task");
 
     await expectDatabaseCode(client.query(`
@@ -338,11 +344,23 @@ function createPlanner(
       new DrizzleContentTranslationStore(drizzle(connection)),
     ),
     providerCapability: { supports: () => true },
-    requestBudgetPolicy: { allows: () => true },
     tasks: new DrizzleContentTopicTitlePlanningStore(drizzle(connection)),
     enqueuer,
     generationPolicyVersion: "content-v1",
   });
+}
+
+function budgetAdmission(
+  overrides: Partial<ContentTranslationRequestBudgetAdmission> = {},
+): ContentTranslationRequestBudgetAdmission {
+  return {
+    subjectKey: "T".repeat(CONTENT_TRANSLATION_REQUESTER_SUBJECT_KEY_LENGTH),
+    cost: 1,
+    windowSeconds: 60,
+    global: { name: "title-global", version: "test-v1", limit: 100 },
+    requester: { name: "title-requester", version: "test-v1", limit: 100 },
+    ...overrides,
+  };
 }
 
 function requestRevision() {
