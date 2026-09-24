@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   CONTENT_TRANSLATION_REQUESTER_SUBJECT_KEY_LENGTH,
+  ContentTranslationRequestBudgetStorageUnavailableError,
   type ContentTranslationRequestBudgetAdmission,
 } from "./content-request-budget.server";
 
@@ -228,6 +229,23 @@ describe("ContentTopicTitleTranslationPlanner", () => {
     expect(enqueuer.messages).toHaveLength(0);
   });
 
+  it("preserves classified budget storage unavailability and unexpected planning errors", async () => {
+    const revision = titleRevision({ sourceLocale: "ru" });
+    const unavailable = new ContentTranslationRequestBudgetStorageUnavailableError();
+    await expect(
+      plannerWith({
+        tasks: new FakePlanningStore(revision, unavailable),
+      }).planAndDispatch(revision, "he", budgetAdmission()),
+    ).rejects.toBe(unavailable);
+
+    const unexpected = new Error("programming failure");
+    await expect(
+      plannerWith({
+        tasks: new FakePlanningStore(revision, unexpected),
+      }).planAndDispatch(revision, "he", budgetAdmission()),
+    ).rejects.toBe(unexpected);
+  });
+
   it("does not let a stale caller revision create work for the current title", async () => {
     const tasks = new FakePlanningStore(titleRevision({ revisionId: "title-r2" }));
     const enqueuer = new FakeTranslationTaskEnqueuer();
@@ -301,7 +319,7 @@ class FakePlanningStore implements ContentTopicTitlePlanningStore {
 
   constructor(
     private readonly current: ContentTranslationRevision | undefined,
-    private readonly forcedResult?: ContentTopicTitleTaskUpsertResult,
+    private readonly forcedResult?: ContentTopicTitleTaskUpsertResult | Error,
   ) {}
 
   async readCurrentRevision(): Promise<ContentTranslationRevision | undefined> {
@@ -318,6 +336,7 @@ class FakePlanningStore implements ContentTopicTitlePlanningStore {
     }
     this.specifications.push(specification);
     this.admissions.push(requestBudgetAdmission);
+    if (this.forcedResult instanceof Error) throw this.forcedResult;
     if (this.forcedResult) return this.forcedResult;
     const task: ContentTopicTitleTranslationTask = {
       ...specification,
