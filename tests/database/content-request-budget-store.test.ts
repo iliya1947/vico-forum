@@ -382,10 +382,11 @@ describe("DrizzleContentTranslationRequestBudgetStore", () => {
       } catch (error) {
         thrown = error;
       }
-      expect((thrown as DatabaseError).code).toBe("P0001");
+      expect(thrown).toBeInstanceOf(Error);
       expect(thrown).not.toBeInstanceOf(
         ContentTranslationRequestBudgetStorageUnavailableError,
       );
+      expect((thrown as Error & { cause?: DatabaseError }).cause?.code).toBe("P0001");
       expect(await counterRows()).toEqual([]);
     } finally {
       await client.query(
