@@ -1156,3 +1156,225 @@ No new current-Stage defect was found in the corrected full PR.
 - Full post-correction self-review found no remaining current-Stage defect.
 - PR #110 has not been merged.
 - Next workflow step is Codex independent full re-review of the complete corrected PR #110.
+
+
+## Atomic topic-title/post-body request-budget admission — PR #111
+
+Received task from Codex service PR #94 at
+`30a0780a79d57b10c6c546819d24b6f4605b79e7` after request-budget foundation PR #110 was merged
+to GitHub `main` as `94a11ad3b8d709a6c18913ffda8d0111b9171356`.
+
+Assigned scope:
+
+- replace planner-local boolean request-budget placeholders with the merged PostgreSQL budget
+  foundation;
+- perform correctness-critical budget admission atomically with final currentness/translation
+  recheck and durable task decision for both topic-title and post-body planning;
+- keep caller-supplied pseudonymous subject and versioned cost/window/limit/scope policy inputs;
+- keep routes/UI, header trust, anonymous enablement and production quota choices out of this PR.
+
+Implementation PR: #111, `Stage 5B: atomically admit content planner request budgets`.
+
+Final head:
+`80910544bbe32293b9aee8e4949bad22bc296a0e`.
+
+Base/current `main` throughout implementation and final review:
+`94a11ad3b8d709a6c18913ffda8d0111b9171356`.
+
+### Implemented contract
+
+Topic-title and post-body planners now require an explicit validated
+`ContentTranslationRequestBudgetAdmission` for an eligible generation request. The admission object
+contains only the already-pseudonymized `subjectKey`, positive bounded cost/window values and
+versioned global/requester scopes with limits. Planner code does not derive requester identity,
+inspect headers, enable anonymous access or contain production policy constants.
+
+Cheap/free checks remain before transactional admission:
+
+- canonical active target;
+- authoritative current revision;
+- source-locale resolution / same-locale outcome;
+- post-body semantic-content availability;
+- provider/data-policy capability;
+- initial exact-current translation lookup.
+
+The former `requestBudgetPolicy.allows()` placeholder was removed from both planner dependency
+contracts.
+
+### Atomic PostgreSQL admission
+
+The existing request-budget store now exposes a transaction-composable admission primitive while
+preserving the standalone `DrizzleContentTranslationRequestBudgetStore.consume()` API.
+
+Both durable planning stores execute the final decision under one PostgreSQL transaction with the
+documented order:
+
+`generation head → stable task → current entity/revision → current translation → global budget → requester budget → task mutation`.
+
+The final serialized boundary:
+
+1. locks/revalidates the current forum entity and exact immutable revision/source content;
+2. locks/rechecks the exact target translation;
+3. treats a current translation or completed stable identity as free no-work;
+4. consumes global then requester budget using the same merged request-budget SQL;
+5. only after successful admission creates/deduplicates/reactivates durable task state;
+6. commits before Queue enqueue.
+
+A request-budget denial uses an internal rollback control result carrying the typed denial metadata,
+so a requester denial rolls back the tentative global charge and no generation-head/task mutation
+survives. Unexpected task/integrity failures after budget consumption also roll back counters with
+the transaction.
+
+Eligible duplicate `pending` / `processing` requests intentionally consume budget again but
+return the same stable task without resetting generation, claim token or attempt count. A stale
+identity can be reactivated only after admission using the pre-existing reactivation semantics.
+Completed identity is not charged or re-enqueued.
+
+Enqueue remains outside the transaction. Therefore enqueue failure preserves both the committed
+pending task and its admitted budget charge for existing JOB-06 recovery.
+
+### Translation/currentness serialization
+
+A transaction-scoped exact-translation reader was added for both topic-title and post-body rows.
+Planning takes the current content revision row with a strong lock before the final translation
+check. This preserves the existing generation-head/task/entity lock direction used by topic-title
+publication and provides the serialization boundary needed for concurrent manual/current
+translation insertion before budget admission.
+
+No translation schema, request-budget schema or migration changed.
+
+### Focused coverage
+
+Unit coverage for both planners verifies:
+
+- cheap unsupported/ineligible paths do not reach durable admission;
+- typed `request-budget-denied` metadata is returned unchanged;
+- classified request-budget storage unavailability remains a failure, not a denial/success;
+- unrelated unexpected store/programming errors propagate.
+
+Disposable PostgreSQL coverage verifies:
+
+- existing exact-current title/body translations are free and create no task/counter work;
+- final serialized current-translation rechecks roll back transient generation-head state and remain
+  free;
+- revision-change recheck does not add another budget charge;
+- eligible concurrent duplicate requests converge on one task and each consume budget when allowed;
+- one-unit concurrent title and body budgets do not overshoot;
+- requester denial rolls back the tentative global increment;
+- title and body pending duplicate requests remain deduplicated while charged;
+- live processing claim token, attempt count and generation survive a charged duplicate unchanged;
+- completed stable identities are free and are not re-enqueued;
+- task-metadata insertion failure rolls back counters, task rows and transient head state;
+- enqueue failure retains admitted charge and a recoverable pending task;
+- title/body budget scopes and different injected costs remain isolated for the same pseudonymous
+  requester;
+- existing topic-title execution/publication flow remains green with the explicit planner admission
+  contract.
+
+### Correction cycle
+
+1. Initial CI after the planner API change found only stale two-argument call sites and the removed
+   placeholder dependency in the existing topic-title execution integration test. Those fixtures
+   were updated to pass explicit test-only admissions and include the already-accepted `0017`
+   schema in their disposable test setup.
+2. New rollback tests initially contained malformed PL/pgSQL dollar quoting in the test fixture;
+   this produced PostgreSQL syntax error `42601`. The fixture quoting was corrected without
+   product-code changes.
+3. Automated Codex review on early PR #111 head
+   `aed985995741acdad67e3972825b841cc848ce56` found that `PROJECT_STATE.md` still described
+   planner request-budget integration as pending. This was a valid current-Stage documentation
+   finding. After implementation checks passed, final commit
+   `80910544bbe32293b9aee8e4949bad22bc296a0e` updated state factually: title/body planners now
+   use atomic admission; routes, anonymous policy and final quota values remain outstanding.
+
+No correction added route/UI or production policy scope.
+
+### PROJECT_STATE.md
+
+The final PR state records that:
+
+- request-budget HMAC/storage foundation remains the existing `0017` foundation;
+- topic-title and post-body planners now perform correctness-critical admission in the same
+  PostgreSQL transaction as final revision/translation recheck and durable task decision;
+- ineligible/current/completed work is free;
+- eligible pending/processing duplicate requests are budgeted;
+- denial/error rolls counters back together with task mutation;
+- enqueue remains after commit;
+- routes are still not connected;
+- anonymous enablement and final quota values remain unselected.
+
+Migration history remains `0000`–`0017`; PR #111 adds no migration.
+
+### Final CI
+
+GitHub Actions run `36036793884` on
+`80910544bbe32293b9aee8e4949bad22bc296a0e` completed successfully.
+
+`checks`:
+
+- frozen install — success;
+- accepted migration-history protection — success: 0 new migrations, accepted history unchanged;
+- lint — success;
+- typecheck — success;
+- tests — success: 51 files / 429 tests;
+- production build — success;
+- migration metadata validation — success;
+- Drizzle schema parity — success.
+
+`database`:
+
+- clean PostgreSQL 17 migration/constraint/integration suite — success: 17 files / 166 tests;
+- topic-title durable/atomic planning suite — 13 tests passed;
+- post-body durable/atomic planning suite — 15 tests passed;
+- topic-title execution/publication suite — 10 tests passed;
+- Workers build smoke — success;
+- local Hyperdrive smoke — success.
+
+### Full self-review
+
+ChatGPT re-read the complete final 12-file PR #111, not only the correction delta, against:
+
+- unchanged GitHub `main` `94a11ad3b8d709a6c18913ffda8d0111b9171356`;
+- complete current `AGENTS.md`;
+- the complete atomic planner-admission task and constraints in Codex service PR #94;
+- complete `PROJECT.md`, `PROJECT_STATE.md`, `ROADMAP.md` and
+  `TRANSLATION_ARCHITECTURE.md`;
+- complete applicable `docs/translation/CONTENT_TRANSLATION.md`,
+  `PROVIDERS_AND_JOBS.md`, `STORAGE_AND_VERSIONING.md` and
+  `docs/database/MIGRATIONS.md`;
+- the merged request-budget foundation and existing planner/publication lock conventions.
+
+The review rechecked pseudonymous-only admission input, cheap/free prechecks, serialized
+revision/translation correctness, lock direction, transaction-composable budget SQL,
+global-before-requester order, duplicate charging, live-claim preservation, completed/current free
+outcomes, denial/error rollback, enqueue-after-commit recovery, availability/unexpected error
+propagation, title/body isolation, absence of schema/migration changes, factual project state and all
+explicit exclusions.
+
+The automated early-head project-state finding is resolved in the final head. No remaining
+current-Stage defect was found.
+
+### Excluded scope confirmed
+
+PR #111 does not add or choose:
+
+- routes/UI or product request UX;
+- requester/header trust extraction or `CF-Connecting-IP` handling;
+- anonymous product enablement;
+- production quota/window/cost values;
+- production HMAC secret/binding or rotation;
+- HTTP 429/503 mapping;
+- post-body execution/publication;
+- manual source-locale correction UI;
+- Queue binding, provider live calls or deployment;
+- external migration rollout or Stage 6 acceptance;
+- any new database migration.
+
+### Status
+
+- PR #111 is open, mergeable and unmerged.
+- Final head: `80910544bbe32293b9aee8e4949bad22bc296a0e`.
+- Base/current `main`: `94a11ad3b8d709a6c18913ffda8d0111b9171356`.
+- Final CI: `36036793884`, both `checks` and `database` successful.
+- Full final self-review found no remaining current-Stage defect.
+- Next workflow step is Codex independent full review of PR #111 before merge.
