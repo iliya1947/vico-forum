@@ -67,25 +67,18 @@ AFTER INSERT OR UPDATE ON "translation_tasks"
 DEFERRABLE INITIALLY DEFERRED
 FOR EACH ROW
 EXECUTE FUNCTION "require_content_topic_title_task_binding"();--> statement-breakpoint
-CREATE FUNCTION "preserve_content_topic_title_task_binding"()
+CREATE FUNCTION "delete_content_topic_title_task_with_metadata"()
 RETURNS trigger
 LANGUAGE plpgsql
 AS $$
 BEGIN
-  IF EXISTS (
-    SELECT 1
-      FROM translation_tasks task
-     WHERE task.id = OLD.task_id
-       AND task.translation_kind = 'content-topic-title'
-  ) THEN
-    RAISE EXCEPTION 'content topic-title task metadata cannot be removed while its task exists'
-      USING ERRCODE = '23514', CONSTRAINT = 'content_topic_title_translation_tasks_required';
-  END IF;
+  DELETE FROM translation_tasks
+   WHERE id = OLD.task_id
+     AND translation_kind = 'content-topic-title';
   RETURN OLD;
 END;
 $$;--> statement-breakpoint
-CREATE CONSTRAINT TRIGGER "content_topic_title_translation_tasks_required"
+CREATE TRIGGER "content_topic_title_translation_tasks_delete_task"
 AFTER DELETE ON "content_topic_title_translation_tasks"
-DEFERRABLE INITIALLY DEFERRED
 FOR EACH ROW
-EXECUTE FUNCTION "preserve_content_topic_title_task_binding"();
+EXECUTE FUNCTION "delete_content_topic_title_task_with_metadata"();
