@@ -12,6 +12,7 @@ import {
   type TranslationProviderDataPolicy,
 } from "./translation-provider-data-policy";
 import {
+  machineTranslationCapability,
   TranslationProviderRouter,
   type ContentMachineTranslationRequest,
   type UiMachineTranslationRequest,
@@ -82,35 +83,35 @@ describe("CloudflareM2m100TranslationProvider", () => {
     });
 
     expect(dataPolicy.allows).not.toHaveBeenCalled();
-    expect(adapter.supports(uiRequest({ targetLocale: "fil" }))).toBe(true);
-    expect(adapter.supports(uiRequest({ targetLocale: "fr-CA" }))).toBe(false);
-    expect(adapter.supports(uiRequest({ targetLocale: "xx" }))).toBe(false);
-    expect(adapter.supports(uiRequest({ sourceLocale: "en", targetLocale: "en" }))).toBe(false);
-    expect(adapter.supports(uiRequest({
+    expect(adapter.supports(machineTranslationCapability(uiRequest({ targetLocale: "fil" })))).toBe(true);
+    expect(adapter.supports(machineTranslationCapability(uiRequest({ targetLocale: "fr-CA" })))).toBe(false);
+    expect(adapter.supports(machineTranslationCapability(uiRequest({ targetLocale: "xx" })))).toBe(false);
+    expect(adapter.supports(machineTranslationCapability(uiRequest({ sourceLocale: "en", targetLocale: "en" })))).toBe(false);
+    expect(adapter.supports(machineTranslationCapability(uiRequest({
       messageKind: "interpolation",
       source: "Hello {{name}}",
-    }))).toBe(false);
-    expect(adapter.supports(uiRequest({
+    })))).toBe(false);
+    expect(adapter.supports(machineTranslationCapability(uiRequest({
       messageKind: "plural",
       operation: "structured",
       source: { one: "{{count}} item", other: "{{count}} items" },
       requiredBranches: ["one", "other"],
-    }))).toBe(false);
-    expect(adapter.supports(uiRequest({
+    })))).toBe(false);
+    expect(adapter.supports(machineTranslationCapability(uiRequest({
       messageKind: "rich",
       operation: "structured",
       source: "Rich input",
-    }))).toBe(false);
-    expect(adapter.supports(uiRequest({
+    })))).toBe(false);
+    expect(adapter.supports(machineTranslationCapability(uiRequest({
       source: "x".repeat(CLOUDFLARE_M2M100_MAX_SOURCE_CHARACTERS + 1),
-    }))).toBe(false);
+    })))).toBe(false);
   });
 
   it("denies content by default and never invokes Workers AI", async () => {
     const ai = runner();
     const adapter = new CloudflareM2m100TranslationProvider(ai);
 
-    expect(adapter.supports(contentRequest())).toBe(false);
+    expect(adapter.supports(machineTranslationCapability(contentRequest()))).toBe(false);
     await expect(adapter.translate(contentRequest())).rejects.toMatchObject({
       disposition: "terminal",
       code: "provider-unsupported",
@@ -122,7 +123,7 @@ describe("CloudflareM2m100TranslationProvider", () => {
     const dataPolicy: TranslationProviderDataPolicy = { allows: vi.fn(() => true) };
     const adapter = new CloudflareM2m100TranslationProvider(runner(), dataPolicy);
 
-    expect(adapter.supports(contentRequest())).toBe(true);
+    expect(adapter.supports(machineTranslationCapability(contentRequest()))).toBe(true);
     expect(dataPolicy.allows).toHaveBeenCalledWith({
       provider: CLOUDFLARE_WORKERS_AI_PROVIDER,
       model: CLOUDFLARE_M2M100_MODEL,
@@ -188,7 +189,7 @@ describe("CloudflareM2m100TranslationProvider", () => {
     const ai = runner(async () => ({ translated_text: "כותרת" }));
     const adapter = new CloudflareM2m100TranslationProvider(ai, dataPolicy);
 
-    expect(adapter.supports(contentRequest())).toBe(true);
+    expect(adapter.supports(machineTranslationCapability(contentRequest()))).toBe(true);
     allowed = false;
 
     await expect(adapter.translate(contentRequest())).rejects.toMatchObject({
