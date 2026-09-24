@@ -212,6 +212,37 @@ export function protectMarkdownForTranslation(
   return ProtectedMarkdownTranslationDocument.create(sourceMarkdown);
 }
 
+export function extractPlainSemanticTextForSourceLocaleDetection(value: string): string {
+  if (typeof value !== "string") {
+    throw new TypeError("Plain source-locale detection text must be a string");
+  }
+  return normalizeSourceLocaleDetectionText(humanTextOutsideTechnicalSpans(
+    value,
+    technicalSpans(value),
+  ));
+}
+
+export function extractMarkdownSemanticTextForSourceLocaleDetection(
+  sourceMarkdown: string,
+): string {
+  if (typeof sourceMarkdown !== "string") {
+    throw new TypeError("Markdown source-locale detection text must be a string");
+  }
+
+  const tree = parseMarkdown(sourceMarkdown);
+  const semanticParts: string[] = [];
+  walk(tree, "root", (node) => {
+    if (node.type !== "text" || typeof node.value !== "string") return;
+    const humanText = humanTextOutsideTechnicalSpans(
+      node.value,
+      technicalSpans(node.value),
+    );
+    if (HUMAN_LANGUAGE_LETTER.test(humanText)) semanticParts.push(humanText);
+  });
+
+  return normalizeSourceLocaleDetectionText(semanticParts.join(" "));
+}
+
 function validateTranslationSet(
   records: readonly SegmentRecord[],
   translations: readonly MarkdownSegmentTranslation[],
@@ -354,24 +385,41 @@ function protectTechnicalFragments(
 
   const tokens: ProtectedToken[] = [];
   const pieces: string[] = [];
-  const humanPieces: string[] = [];
   let cursor = 0;
 
   spans.forEach((span, tokenIndex) => {
     const marker = `${tokenMarkerNamespace}${segmentIndex}X${tokenIndex}⟧`;
     pieces.push(value.slice(cursor, span.start), marker);
-    humanPieces.push(value.slice(cursor, span.start), " ");
     tokens.push({ marker, value: value.slice(span.start, span.end) });
     cursor = span.end;
   });
   pieces.push(value.slice(cursor));
-  humanPieces.push(value.slice(cursor));
 
   return {
     text: pieces.join(""),
-    humanText: humanPieces.join(""),
+    humanText: humanTextOutsideTechnicalSpans(value, spans),
     tokens,
   };
+}
+
+function humanTextOutsideTechnicalSpans(
+  value: string,
+  spans: readonly TechnicalSpan[],
+): string {
+  if (spans.length === 0) return value;
+
+  const pieces: string[] = [];
+  let cursor = 0;
+  for (const span of spans) {
+    pieces.push(value.slice(cursor, span.start), " ");
+    cursor = span.end;
+  }
+  pieces.push(value.slice(cursor));
+  return pieces.join("");
+}
+
+function normalizeSourceLocaleDetectionText(value: string): string {
+  return value.replace(/\s+/gu, " ").trim();
 }
 
 function technicalSpans(value: string): readonly TechnicalSpan[] {
