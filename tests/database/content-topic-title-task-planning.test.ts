@@ -278,10 +278,16 @@ describe("content topic-title durable planning", () => {
        where task_id = '${created.task.id}'
     `), "23503");
 
-    await expectDatabaseCode(client.query(`
+    await client.query(`
       delete from content_topic_title_translation_tasks
        where task_id = '${created.task.id}'
-    `), "23514");
+    `);
+    const deletedTask = await client.query<{ count: number }>(`
+      select count(*)::int as count
+        from translation_tasks
+       where id = '${created.task.id}'
+    `);
+    expect(deletedTask.rows[0]?.count).toBe(0);
 
     await expectDatabaseCode(client.query(`
       insert into translation_tasks (
