@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { ForumMarkdown } from "../forum/markdown";
 import {
-  MAX_TRANSLATED_MARKDOWN_SEGMENT_CHARACTERS,
+  BASE_TRANSLATED_MARKDOWN_SEGMENT_CHARACTER_LIMIT,
   MarkdownTranslationValidationError,
   protectMarkdownForTranslation,
   type MarkdownSegmentTranslation,
@@ -181,7 +181,7 @@ const fenced = fooBar();
       ...valid.slice(1),
     ])).toThrow(expect.objectContaining({ code: "invalid-segment-value" }));
     expect(() => document.restore([
-      { ...valid[0]!, value: "x".repeat(MAX_TRANSLATED_MARKDOWN_SEGMENT_CHARACTERS + 1) },
+      { ...valid[0]!, value: "x".repeat(BASE_TRANSLATED_MARKDOWN_SEGMENT_CHARACTER_LIMIT + 1) },
       ...valid.slice(1),
     ])).toThrow(expect.objectContaining({ code: "invalid-segment-value" }));
     expect(() => document.restore([
@@ -191,11 +191,11 @@ const fenced = fooBar();
   });
 
   it("round-trips accepted source segments above the baseline translation limit", () => {
-    const source = "a".repeat(MAX_TRANSLATED_MARKDOWN_SEGMENT_CHARACTERS + 1);
+    const source = "a".repeat(BASE_TRANSLATED_MARKDOWN_SEGMENT_CHARACTER_LIMIT + 1);
     const document = protectMarkdownForTranslation(source);
     const segment = document.segments[0]!;
 
-    expect(segment.text).toHaveLength(MAX_TRANSLATED_MARKDOWN_SEGMENT_CHARACTERS + 1);
+    expect(segment.text).toHaveLength(BASE_TRANSLATED_MARKDOWN_SEGMENT_CHARACTER_LIMIT + 1);
     expect(() => document.restore([{ id: segment.id, value: segment.text }])).not.toThrow();
     expect(() => document.restore([{
       id: segment.id,
