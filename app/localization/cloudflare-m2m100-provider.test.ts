@@ -156,7 +156,7 @@ describe("CloudflareM2m100TranslationProvider", () => {
       target_lang: "he",
     });
 
-    for (const denied of [
+    const deniedRequests = [
       contentRequest({ targetLocale: "fr" }),
       contentRequest({ contentClassification: "public-forum-post-body" }),
       contentRequest({ contentClassification: "non-public-content" }),
@@ -168,9 +168,16 @@ describe("CloudflareM2m100TranslationProvider", () => {
         operation: "structured",
         source: "Rich title",
       }),
-    ]) {
+    ];
+    vi.mocked(ai.run).mockClear();
+    for (const denied of deniedRequests) {
       expect(adapter.supports(denied)).toBe(false);
+      await expect(adapter.translate(denied)).rejects.toMatchObject({
+        disposition: "terminal",
+        code: "provider-unsupported",
+      });
     }
+    expect(ai.run).not.toHaveBeenCalled();
   });
 
   it("re-evaluates content policy on every call and blocks a revoked capability", async () => {
