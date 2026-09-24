@@ -92,14 +92,17 @@ const KEY_VERSION_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,31}$/;
 const SCOPE_PART_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$/;
 const SUBJECT_KEY_PATTERN = /^[A-Za-z0-9_-]{43}$/;
 
+type WebCryptoSubtle = typeof crypto.subtle;
+type ImportedHmacKey = Awaited<ReturnType<WebCryptoSubtle["importKey"]>>;
+
 export class WebCryptoContentTranslationRequesterPseudonymizer
 implements ContentTranslationRequesterPseudonymizer {
-  private readonly keyPromise: Promise<CryptoKey>;
+  private readonly keyPromise: Promise<ImportedHmacKey>;
 
   constructor(
     secret: Uint8Array,
     private readonly keyVersion: string,
-    private readonly subtle: SubtleCrypto = crypto.subtle,
+    private readonly subtle: WebCryptoSubtle = crypto.subtle,
   ) {
     if (
       !(secret instanceof Uint8Array)
@@ -115,7 +118,7 @@ implements ContentTranslationRequesterPseudonymizer {
     this.keyPromise = this.subtle
       .importKey(
         "raw",
-        secretCopy,
+        secretCopy.buffer,
         { name: "HMAC", hash: "SHA-256" },
         false,
         ["sign"],
@@ -275,12 +278,14 @@ function requireKeyVersion(value: string): string {
 }
 
 async function cryptoSign(
-  subtle: SubtleCrypto,
-  keyPromise: Promise<CryptoKey>,
+  subtle: WebCryptoSubtle,
+  keyPromise: Promise<ImportedHmacKey>,
   preimage: Uint8Array,
 ): Promise<Uint8Array> {
   const key = await keyPromise;
-  const signature = await subtle.sign("HMAC", key, preimage);
+  const owned = new Uint8Array(preimage.byteLength);
+  owned.set(preimage);
+  const signature = await subtle.sign("HMAC", key, owned.buffer);
   return new Uint8Array(signature);
 }
 
