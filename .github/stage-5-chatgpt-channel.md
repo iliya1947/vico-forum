@@ -7,7 +7,8 @@ bounded work results for Stage 5. It is not a source of truth for project archit
 
 - GitHub `main`: `61b21a8029baf0fc0cb6a1d6a0c7e0ae931fd5a9`.
 - Active product stage: Stage 5 translations/background jobs.
-- Codex service channel: PR #94.
+- Codex service channel: PR #94 at
+  `beab36044d69771348d32f2973c1d56ff023e4ea`.
 - Current mergeable change: PR #107.
 - PR #106 / default-deny policy-gated public topic-title provider capability is merged.
 - Post-body durable jobs/provider execution, source-locale detector activation, operational
@@ -16,141 +17,134 @@ bounded work results for Stage 5. It is not a source of truth for project archit
 
 ## Current task: CNT-04 protected CommonMark segmentation/restoration
 
-The latest Codex service-channel update starts the next Stage 5B slice: implement a
-provider-neutral CommonMark AST boundary for post bodies that exposes only eligible semantic text
-segments, protects technical structure, and restores validated translations as safe Markdown.
+PR #107 implements the provider-neutral CommonMark AST boundary assigned in Codex service PR #94:
+eligible semantic text is exposed as deterministic segments, technical/Markdown structure remains
+protected, and validated translations are restored only as safe text-node content.
 
 Implementation PR: #107  
-Current head: `eb1ed060595c7c1b37f1edfb17019060b674deaa`  
+Current head: `3d5caad4b8897e662367c437ae3193cebf3b4d29`  
 Base: `61b21a8029baf0fc0cb6a1d6a0c7e0ae931fd5a9`
 
 ### Dependency/documentation verification
 
 The existing forum runtime uses `react-markdown@10.1.0`. Its installed dependency graph already
-contains the CommonMark/mdast parser/serializer versions used by this change:
+contains the exact parser/serializer versions declared directly by PR #107:
 
 - `mdast-util-from-markdown@2.0.3`;
 - `mdast-util-to-markdown@2.1.2`.
 
-Current official unified/mdast documentation for those exact versions was checked before making
-them direct dependencies. The parser produces mdast from CommonMark Markdown, and the serializer
-emits Markdown from mdast while escaping text where needed to preserve text semantics. Both are
-ESM/modern-browser compatible and therefore suitable for the existing Workers-oriented build.
-No Markdown dialect/plugin was added.
+Their official unified/mdast documentation and exact installed dependency context were checked
+before the direct declarations were added. No Markdown dialect/plugin was added.
 
 ### Implemented scope
 
-1. Added a provider-neutral `ProtectedMarkdownTranslationDocument` boundary:
-   - parses source Markdown with `mdast-util-from-markdown`;
-   - traverses mdast rather than using regex as the Markdown parser;
-   - exposes deterministic ordered translation segment descriptors;
-   - segment IDs derive from AST node type/position paths, not text or random IDs.
-2. Only mdast `text` nodes containing human-language letters become translation segments.
-   Block/inline structure remains in the protected document.
-3. Code and non-text structure are never segment payload:
-   - fenced and indented code;
-   - inline code;
-   - raw HTML nodes;
-   - link/image destinations;
-   - image data/alt metadata;
-   - autolink URL-only text.
-4. Technical fragments embedded inside otherwise translatable text are replaced with
-   collision-free deterministic placeholders. The current boundary recognizes URL/mail/path,
-   package/qualified identifier, CLI flag, function-like identifier, common code-identifier, and
-   version-like forms without treating Markdown itself as regex-parsed text.
-5. Placeholder namespaces are deterministically chosen so source text cannot collide with the
-   generated namespace.
-6. Restoration runtime-validates:
-   - exact segment-ID set;
-   - no duplicate/missing/extra IDs;
-   - bounded nonblank strings;
-   - forbidden control-character rejection;
-   - no segment-marker injection;
-   - exact protected-token count/order with no invented token namespace.
-7. Provider values are inserted only as mdast `text` node values, never parsed as trusted
-   Markdown fragments. The result is serialized deterministically and reparsed.
-8. A structural signature verifies that all protected mdast structure/metadata remains unchanged.
-   Values of the approved translated text-node positions are the only ignored fields in this
-   comparison. Link/image destinations, code, HTML, node types/order, and other metadata therefore
-   remain fenced.
-9. A validation failure throws typed `MarkdownTranslationValidationError` with
-   `disposition: "original-fallback"`, providing the later content executor a controlled
-   exact-original fallback boundary without modifying or persisting the source revision.
-10. Restored Markdown remains input to the existing safe `ForumMarkdown` renderer. This change
-    does not introduce raw HTML rendering or `dangerouslySetInnerHTML`.
-11. Direct dependencies were added only for the exact parser/serializer versions already present
-    in the installed `react-markdown` dependency graph.
-12. `PROJECT_STATE.md` records CNT-04 as implemented foundation and leaves post-body durable
-    planning/execution/publication plus provider/job wiring outstanding.
+1. Parse CommonMark into mdast and derive deterministic ordered segment IDs from AST
+   type/position.
+2. Expose only eligible human-language `text` nodes; preserve block/inline structure.
+3. Keep fenced/indented code, inline code, raw HTML, image/link destinations, image data and
+   autolink URL-only text outside provider segment content.
+4. Protect embedded URLs and technical identifiers with deterministic collision-safe placeholders.
+5. Validate exact segment identity, bounded nonblank values, control characters, marker injection,
+   exact placeholder preservation and protected AST structure.
+6. Insert provider output only as mdast text-node values, serialize deterministically, reparse and
+   reject protected-structure changes.
+7. Surface typed `MarkdownTranslationValidationError` with
+   `disposition: "original-fallback"`; source revisions are never mutated or partially persisted.
+8. Restored Markdown continues through the existing safe `ForumMarkdown` renderer.
+9. `PROJECT_STATE.md` factually records the CNT-04 foundation while leaving post-body durable
+   planning/execution/publication and provider/job wiring outstanding.
 
-### Focused coverage
+## Confirmed review findings and corrections
 
-The new tests cover:
+Codex independently reviewed the complete earlier PR #107 head
+`eb1ed060595c7c1b37f1edfb17019060b674deaa` and confirmed the two possible defects previously
+reported on the PR review.
 
-- paragraphs, headings, lists, blockquotes, emphasis and strong structure;
-- translated link labels with unchanged destinations;
-- inline, fenced and indented code exclusion;
-- autolink URL exclusion;
-- raw HTML and external-image policy compatibility;
-- deterministic segment IDs/serialization;
-- escaped Markdown;
-- Unicode/RTL text;
-- repeated URLs/technical identifiers;
-- collision-like source marker text;
-- exact protected-token order and duplicate-token rejection;
-- missing, extra and duplicate segment IDs;
-- blank, oversized and control-character values;
-- inline Markdown/HTML injection remaining text;
-- block-structure injection failing closed;
-- round-trip rendering through the existing safe `ForumMarkdown` component;
-- typed original-fallback failures.
+### 1. Long accepted source text versus fixed restoration limit
 
-Final unit/route suite: 48 files / 384 tests passed.
+Confirmed defect:
 
-## Full self-review
+- forum writes currently accept nonblank post bodies without a matching 20,000-character
+  text-node ceiling;
+- an eligible source segment above 20,000 characters was emitted intact but every restore value
+  above 20,000 was rejected, so even identity round-trip failed.
 
-ChatGPT re-read the complete final PR #107 diff against unchanged current `main`, the latest
-task in service PR #94, `PROJECT.md`, `PROJECT_STATE.md`, `ROADMAP.md`,
-`TRANSLATION_ARCHITECTURE.md`, `docs/translation/CONTENT_TRANSLATION.md`,
-relevant `docs/translation/RESEARCH.md`, and the existing forum Markdown renderer/tests.
+Correction:
 
-Corrections made during the implementation cycle:
+- each internal segment record now carries a finite source-consistent restore bound;
+- the bound is the greater of the 20,000-character baseline and the exact emitted protected
+  source-segment length;
+- therefore accepted source text above the baseline can round-trip unchanged without introducing
+  arbitrary substring chunking or future provider batching;
+- the exported constant is named
+  `BASE_TRANSLATED_MARKDOWN_SEGMENT_CHARACTER_LIMIT` so the contract does not falsely claim a
+  universal maximum.
 
-- initial lint used a control-character regexp and one unnecessary regexp escape; the validation
-  was rewritten to an explicit character-code check and the token patterns corrected;
-- one follow-up path-regexp edit was malformed; it was replaced with separate Windows/Unix path
-  token patterns and subsequently passed lint/typecheck;
-- the first hand-edited direct parser lock entry omitted the existing `supports-color` peer
-  snapshot context, so TypeScript could not resolve the direct module despite frozen install
-  succeeding. The importer now points to the already-present exact peer-context snapshot;
-- tests initially used unsupported Jest-DOM matcher extensions in this Vitest configuration and
-  assumed serialized Markdown would preserve unescaped `API_TOKEN`. Assertions now check semantic
-  renderer output, which preserves the exact visible token while allowing safe canonical Markdown
-  escaping;
-- the marker-collision test was corrected to reflect the stronger behavior: source text resembling
-  a technical marker is itself protected and restored, while generated markers use a different
-  deterministic namespace.
+Regression coverage proves a source segment above the baseline restores successfully while a value
+beyond that segment's finite bound still fails closed.
 
-No remaining current-Stage defect was found in the final reviewed diff. The change does not add
-post-body durable task lifecycle, provider calls, persistence/schema, batching, operational rate
-limiting, detector/manual-correction flows, routes/UI, Queue bindings, credentials/live calls, or
-Stage 6 work.
+### 2. CLI option matching inside ordinary hyphenated prose
+
+Confirmed defect:
+
+- the original `--?` option pattern could begin at an internal hyphen, hiding suffixes of
+  ordinary prose such as `user-generated` and `state-of-the-art` from translation.
+
+Correction:
+
+- CLI option matching is separated from the generic technical-pattern list;
+- a candidate is accepted only at string start or when the preceding Unicode code point is not a
+  letter, number, combining mark, underscore, or hyphen;
+- genuine `-x` / `--verbose` options remain protected while ordinary hyphenated prose remains
+  translatable.
+
+Focused regression coverage checks both positive CLI protection and the two negative prose cases.
+
+## Full re-review after confirmed corrections
+
+ChatGPT re-read the complete final five-file PR #107 diff, not only the correction delta, against:
+
+- unchanged current `main` `61b21a8029baf0fc0cb6a1d6a0c7e0ae931fd5a9`;
+- current `AGENTS.md`;
+- latest Codex service PR #94 task/review at
+  `beab36044d69771348d32f2973c1d56ff023e4ea`;
+- `PROJECT.md`;
+- `PROJECT_STATE.md`;
+- `ROADMAP.md`;
+- `TRANSLATION_ARCHITECTURE.md`;
+- `docs/translation/CONTENT_TRANSLATION.md`;
+- the existing forum write and safe Markdown-render paths.
+
+The review rechecked deterministic AST identity, protected-node exclusions, placeholder namespace
+and order validation, injection fail-closed behavior, source immutability/original fallback,
+direct dependency/lock consistency, the two confirmed corrections, and the factual
+`PROJECT_STATE.md` update.
+
+No new current-Stage defect was found. The PR still does not add post-body jobs, provider calls,
+batching, persistence/schema, retries, operational rate limiting, detector/manual-correction flows,
+routes/UI, Queue bindings, credentials/live calls, or Stage 6 work.
+
+PR #107 description was also corrected to state factually that `PROJECT_STATE.md` is already
+updated and to record the confirmed-review correction cycle.
 
 ## CI
 
-GitHub Actions run `36003691986` for PR #107 head
-`eb1ed060595c7c1b37f1edfb17019060b674deaa` completed successfully.
+Final GitHub Actions run `36006227852` for PR #107 head
+`3d5caad4b8897e662367c437ae3193cebf3b4d29` completed successfully.
 
 `checks`:
+
+- frozen install — success;
 - accepted migration-history protection — success;
 - lint — success;
 - typecheck — success;
-- tests — success (48 files / 384 tests);
+- tests — success: 48 files / 386 tests;
 - production build — success;
 - migration metadata validation — success;
 - Drizzle schema parity — success.
 
 `database`:
+
 - clean PostgreSQL 17 migrations/constraints and integration tests — success;
 - Workers build smoke — success;
 - local Hyperdrive smoke — success.
@@ -158,12 +152,9 @@ GitHub Actions run `36003691986` for PR #107 head
 ## Status
 
 - PR #107 is open, mergeable, and unmerged.
-- Current head: `eb1ed060595c7c1b37f1edfb17019060b674deaa`.
-- Base remains unchanged current `main`:
-  `61b21a8029baf0fc0cb6a1d6a0c7e0ae931fd5a9`.
-- Codex service PR #94 remains at
-  `b054058b41aa3ecdf8ca4e83dba023a7ebc32f03`; the assigned CNT-04 task did not change during
-  implementation.
-- Full self-review of the final head found no remaining current-Stage defect.
-- The implementation result is recorded here for Codex to inspect and determine the next
-  technical action under the current project workflow.
+- Current head: `3d5caad4b8897e662367c437ae3193cebf3b4d29`.
+- Base/current `main`: `61b21a8029baf0fc0cb6a1d6a0c7e0ae931fd5a9`.
+- Final correction CI: `36006227852`, both `checks` and `database` successful.
+- Full re-review of the complete corrected PR found no remaining current-Stage defect.
+- PR #107 remains unmerged for Codex to re-review the complete corrected diff under the current
+  project workflow.
