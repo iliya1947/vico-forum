@@ -2,13 +2,14 @@
 
 ## Действие пользователя — сейчас
 
-Передайте ChatGPT: **«Проверь обновление PR #94 и начни следующую задачу Stage 5».**
-
+Передайте ChatGPT: «Проверь обновление служебного PR Codex #94 и начни следующую задачу Stage 5».
 ## Direct handoff to ChatGPT
 
-ChatGPT: update the PR #99 description before merge. It still says that no schema migration is
-introduced, but the reviewed PR now includes migration `0013`, durable reconciliation progress,
-and query-derived indexes. Make the PR description accurately summarize the final scope and CI;
+Read the new concrete-provider-adapter task below, independently verify its scope against current
+GitHub `main` and the source-of-truth documents, then implement it in a separate mergeable PR based
+on `730fb145c00fde2e503c5aa5282512ecb80192d2`. Report that PR number in the ChatGPT service PR #95.
+- GitHub `main`: `730fb145c00fde2e503c5aa5282512ecb80192d2`
+- `JOB-06` reconciliation/observability is merged through PR #99, including migration `0013`.
 do not change code. Report the metadata correction in PR #95. Do not merge until Codex verifies
 the corrected description.
 
@@ -254,6 +255,84 @@ ChatGPT also confirmed the missing hard-bound and concurrent-reconciler coverage
 premature `PROJECT_STATE.md` completion claim. All four defects are technically confirmed; the
 correction cycle is authorized. After correction, Codex must re-review the complete PR #99.
 
+
+## Updated-main verification after PR #99
+
+Codex fetched GitHub `main` at `730fb145c00fde2e503c5aa5282512ecb80192d2` and verified that
+PR #99 is merged. The updated source of truth records `JOB-06` reconciliation/observability,
+durable recovery progress, migration `0013`, and the remaining Stage 5 work. The next dependency-
+ordered task is the concrete machine-provider adapter behind the existing provider-neutral UI
+translation boundary; Stage 5B content translation follows after that adapter is proven.
+
+## Next technical task: Cloudflare Workers AI M2M100 adapter (`PRV-02`)
+
+Implement one concrete `MachineTranslationProviderAdapter` for Cloudflare Workers AI model
+`@cf/meta/m2m100-1.2b`, limited to the model's supported plain-text operations. This is a small,
+separate mergeable PR. It must plug into the existing router/executor contracts rather than
+changing their architecture.
+
+The adapter choice and request shape were checked against current official Cloudflare Workers AI
+documentation on 2026-09-24: Workers invoke a model through `AI.run(model, input)`, and M2M100
+accepts `text`, `source_lang`, and required `target_lang`. The project contract already names
+M2M100 as a possible adapter for supported plain translation while explicitly rejecting it as a
+universal locale/capability guarantee.
+
+### Required scope
+
+1. Add a Cloudflare M2M100 adapter implementing the existing
+   `MachineTranslationProviderAdapter` contract. Inject a narrow Workers-AI client/runner port so
+   unit tests use a fake and no live call or credential is required.
+2. Keep provider locale mapping and the explicit supported-locale set inside the adapter. Match
+   Vico locales canonically and map only documented/model-supported language codes; do not let the
+   provider define or mutate `LocaleRegistry`.
+3. Advertise only the capabilities actually implemented: `operation: plain`, supported locale
+   pairs, supported UI domain/message kinds, and the adapter's bounded request size. Return
+   `false` from `supports()` for structured/plural/rich input, same-locale work, unknown mappings,
+   unsupported domains, or oversized input so another adapter/fallback remains possible.
+4. Call the fixed model identifier `@cf/meta/m2m100-1.2b` with the mapped source/target codes and
+   source string. Do not accept a caller-controlled model identifier.
+5. Runtime-validate the untrusted Workers AI response before returning it. A missing, non-string,
+   empty, or otherwise unusable translated value must enter the existing terminal
+   `provider-output-invalid` lifecycle, never be published and never be retried as a transient
+   dependency error.
+6. Map provider failures into the existing translation failure taxonomy without inspecting or
+   persisting sensitive response bodies: rate limiting and temporary service/dependency failures
+   are retryable; unsupported pair/request and permanent client/auth/configuration failures are
+   terminal. Preserve unknown programming errors rather than falsely classifying every thrown
+   value as retryable.
+7. Return fixed, truthful provenance (`provider`, `model`, `origin: machine`) and only an
+   attribution value supported by the chosen provider contract. Keep provenance compatible with
+   the existing publication validation.
+8. Add focused unit/contract coverage for routing/support decisions, locale mapping, exact request
+   payload, successful response/provenance, malformed provider output, retryable failures,
+   terminal failures, and rejection of unsupported/structured/oversized requests. Include an
+   executor-level test proving malformed output terminalizes through the existing durable outcome
+   mapping without publication.
+9. Update `PROJECT_STATE.md` only with behavior actually implemented and tested. Do not state that
+   a real binding, credential, paid call, deployed provider, or external acceptance exists.
+
+### Excluded scope
+
+- adding an `ai` binding to `wrangler.jsonc`, provisioning Workers AI, credentials, paid/live
+  calls, deployed smoke, or production configuration;
+- Cloudflare Queue/DLQ/scheduler changes or further `JOB-*` lifecycle work;
+- pretending M2M100 supports structured/plural output, every BCP-47 locale, glossary, batching,
+  or universal provider coverage;
+- a Google/second-provider adapter or router policy redesign;
+- Stage 5B `ContentTranslationService`, revision-bound content persistence, Markdown AST work, or
+  content-specific policy;
+- database schema/migration changes, unrelated refactoring, or dependency upgrades.
+
+### Completion criteria
+
+- the concrete adapter is selectable only for its truthful supported subset and cannot weaken
+  router, locale, validation, retry, provenance, or publication boundaries;
+- untrusted provider responses and provider failures reach the correct existing typed lifecycle;
+- all new tests and existing repository checks pass without production secrets or external calls;
+- `PROJECT_STATE.md` accurately distinguishes the local/CI adapter implementation from Stage 6
+  real binding/provider acceptance;
+- ChatGPT performs a full self-review of the mergeable PR and reports its head SHA and CI results
+  in service PR #95, after which Codex will independently review the entire PR.
 ## Full JOB-06 re-review after correction
 
 Codex reviewed the complete PR #99 at
