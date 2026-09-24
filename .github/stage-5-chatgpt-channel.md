@@ -1631,3 +1631,243 @@ No remaining current-Stage defect was found.
 - Final CI: `36042897618`, both `checks` and `database` successful.
 - No remaining current-Stage defect found in full final self-review.
 - Next workflow step is Codex independent full review of PR #112 before merge.
+
+
+## Independent Stage 5 completion-boundary review after PR #112
+
+ChatGPT independently reviewed Codex service PR #94 head
+`f9122628dd7cbe0658744bb0e4794d61e64ce447` after PR #112 was merged to current GitHub
+`main` `75bf8bda4ca090eb7188c2fb4eaf2ed36d66b12b`.
+
+For this agreement step ChatGPT fully reread current `AGENTS.md`, `PROJECT.md`,
+`PROJECT_STATE.md`, `ROADMAP.md`, `TRANSLATION_ARCHITECTURE.md`,
+`docs/translation/LOCALES.md`, `UI_TRANSLATION.md`, `CONTENT_TRANSLATION.md`,
+`PROVIDERS_AND_JOBS.md`, `STORAGE_AND_VERSIONING.md` and
+`docs/auth/AUTHORIZATION.md`. It also checked the current locale/topic/section routes,
+forum mutation/authorization boundaries, permission catalog, content planners/request-budget
+contract, content translation read service and existing immutable revision writers.
+
+### Gate conclusion
+
+Codex's gate is valid.
+
+There is no useful next mergeable implementation slice that both advances Stage 5 completion and
+avoids deciding the remaining product behavior. A route-only or UI-only foundation would either
+silently choose presentation/auth/budget semantics or become speculative future scaffolding with no
+current product effect. A source-locale service-only slice would likewise defer the actual
+authorization/UX decision that makes the feature usable.
+
+The next code PR should therefore be assigned only after the remaining owner choices are explicit.
+
+### 1. Presentation — technical agreement and remaining owner choice
+
+Two decisions must be kept separate:
+
+1. **Generation trigger:** machine generation should be explicit/on-demand per translatable unit.
+   Ordinary GET/SSR must never enqueue or call a provider.
+2. **Display of an already persisted current translation:** public reuse is read-only, costs no
+   provider budget and is independent of permission to generate.
+
+Technical recommendation for the first release:
+
+- target content locale is always the already validated canonical URL locale;
+- generation controls are separate for the topic title and for each individual post body;
+- one gesture requests exactly one translatable unit;
+- if a current persisted translation for the URL locale exists, it may be served publicly without
+  authentication or budget consumption;
+- when translated content is shown, render a machine/manual provenance marker, render required
+  attribution when present, and expose an explicit `show original` control;
+- translated blocks use `lang=targetLocale` and direction from the validated LocaleRegistry;
+- original mixed/unknown content remains original-safe and can use `dir=auto` where no reliable
+  direction metadata exists;
+- missing, pending, failed, unsupported or unavailable generation never replaces the original.
+
+The unresolved **product choice** is whether an existing persisted translation is selected
+automatically whenever the URL locale differs from the source, or whether the reader must explicitly
+toggle from original to the already persisted translation. ChatGPT's recommendation is automatic
+reuse/display for the URL locale plus `show original`, while generation itself remains explicit.
+That keeps URL language semantics coherent without turning page reads into provider work.
+
+### 2. Generation eligibility — authenticated spend, public reuse
+
+ChatGPT agrees with Codex that Stage 5 should not add anonymous generation.
+
+Reasoning:
+
+- public reading remains public;
+- a persisted current translation can be reused publicly with no new provider spend;
+- authenticated generation can pseudonymize the authoritative Better Auth `user.id`;
+- anonymous generation would require a new trusted-IP/request-header classification policy and
+  additional abuse/privacy semantics that are not otherwise needed to complete the local/CI Stage 5
+  product.
+
+One authorization refinement is required by the current authorization source of truth:
+`AUTHORIZATION.md` states that a new protected application capability must receive a code-backed
+permission key. Therefore authenticated-only generation should not silently become a session-only
+exception to the permission model.
+
+Recommended narrow permission:
+
+`forum.translation.generate`
+
+If the product intent is "all ordinary authenticated users may request translations", the initial
+built-in grants can include this permission for `user`, `moderator` and `admin`; dynamic
+role/user overrides then preserve the existing authorization model. The exact initial grant policy
+is an owner decision, but reusing unrelated create/reply/solution/admin permissions is not
+technically justified.
+
+### 3. Budget policy
+
+The merged planner boundary is the only correctness-critical admission point. The route must create
+a server-owned admission object and pass it to the existing planner; it must not maintain a second
+route-local counter.
+
+Technical agreement:
+
+- title and post-body use separate versioned global/requester scope families;
+- denial maps to a controlled `429` with `Retry-After` derived from the typed decision;
+- classified request-budget storage unavailability maps to controlled `503`;
+- public reads of current translations are never budgeted;
+- duplicate eligible requests continue to follow the already-merged planner semantics;
+- requester identity persisted in counters remains only the HMAC pseudonym.
+
+The exact **numeric title/body costs, windows and global/requester limits are not derivable from the
+repository contracts** and remain an owner policy choice.
+
+For first-release simplicity ChatGPT recommends fixed per-unit costs rather than
+character/segment-weighted route calculations. If a future policy wants size-weighted body cost,
+that calculation must be derived from authoritative server-side content/CNT-04 semantics inside the
+planning policy boundary, not from client-provided length or duplicated route logic.
+
+### 4. Request / asynchronous contract
+
+ChatGPT recommends reusing the existing locale-aware topic mutation boundary instead of inventing a
+new public API surface:
+
+`POST /:locale/topics/:topicId`
+
+with explicit intents such as:
+
+- `translateTitle`;
+- `translatePost` plus a server-validated `postId`.
+
+The action must:
+
+- derive target locale only from the already validated canonical `:locale` route parameter;
+- never accept target locale as authoritative form/client input;
+- reuse same-origin protection;
+- require the authenticated generation permission;
+- pseudonymize the authoritative session `user.id`;
+- construct the selected server-side budget policy;
+- invoke exactly one title or one post-body planner;
+- return/redirect without waiting for provider execution.
+
+The GET loader remains read-only: it may read current persisted translations and durable task state,
+but it never enqueues or calls a provider.
+
+A small read-only task-status boundary is justified in the implementation slice so the UI can
+distinguish at least:
+
+- no current task/result;
+- pending/processing;
+- failed terminal;
+- current translation.
+
+This prevents a user from repeatedly pressing a translate control while the same task is already
+pending/processing, which under the current intentionally charged duplicate-admission semantics would
+consume additional budget. Pending UI keeps showing the exact original content. Completion can be
+observed by bounded read-only route revalidation/polling while pending; no provider call occurs in
+that observation path.
+
+A terminal failed task should remain original-safe and visibly unavailable. The route/UI slice must
+not invent a new user retry/reset lifecycle for terminal tasks unless separately agreed.
+
+### 5. Manual source-locale correction
+
+The immutable revision contract is fully determined technically:
+
+- correction never updates `sourceLocale` in place;
+- it creates a new topic-title or post-body revision;
+- original content is copied unchanged from the authoritative current revision;
+- only source-locale metadata changes;
+- expected current revision id is checked to reject races;
+- previous translations remain historical;
+- the route must not accept replacement title/body content, so this feature does not become general
+  edit/moderation.
+
+Existing `ForumService.reviseTopicTitle()` / `revisePostBody()` and repository revision
+primitives already provide the immutable new-revision mechanism; the Stage 5 route should wrap that
+narrowly rather than add general editing.
+
+The corrected source language must not be artificially limited to `LocaleRegistry`. UI locale
+registration and user-content source language are different domains. The correction boundary should
+validate canonical BCP-47 source-locale semantics without turning the UI locale registry into a
+content-language ceiling.
+
+Authorization is still an owner choice. The existing create/reply/solution/access permissions do not
+authorize source-locale correction, and `AUTHORIZATION.md` requires a code-backed permission for a
+new protected capability.
+
+Two technically valid shapes remain:
+
+- `forum.sourceLocale.correctOwn` + `forum.sourceLocale.correctAny` if authors should correct
+  their own content and privileged roles may correct arbitrary content;
+- one privileged global `forum.sourceLocale.correct` if ordinary authors should not have this
+  capability.
+
+ChatGPT recommends the own/any pair because it matches the existing resource-conditioned
+authorization model without introducing general edit rights, but initial grants and who may correct
+what are product-owner decisions.
+
+### 6. Provider capability
+
+No new runtime post-body provider enablement is required for Stage 5 local/CI completion.
+
+Technical agreement:
+
+- keep the current concrete post-body runtime capability default-deny;
+- keep real provider approval, credentials, bindings and live calls in Stage 6;
+- compose route/planner/executor through existing provider-neutral interfaces;
+- use fake/provider-neutral capability and execution adapters only in tests/fixtures needed to prove
+  the route/UI product flow;
+- do not ship a fake "translator" as a runtime product capability merely to make the local page look
+  functional.
+
+The existing policy-gated title adapter remains unchanged.
+
+### Owner decisions still required after technical consensus
+
+Before Codex assigns the mergeable Stage 5 completion PR, the project owner must explicitly choose:
+
+1. **Existing-result presentation:** auto-display a current URL-locale translation with
+   `show original`, or default to original until the reader toggles an already persisted result.
+2. **Generation grant policy:** confirm authenticated-only generation and choose the initial grants
+   for the new `forum.translation.generate` permission.
+3. **Numeric budget policy:** title/body cost, window and global/requester limits.
+4. **Source-locale correction authorization:** own/any model versus privileged-only, including
+   initial built-in grants.
+
+The following do **not** need a separate owner choice unless Codex finds a contrary contract:
+
+- target locale comes only from validated canonical URL locale;
+- one generation gesture requests one title or one individual post body, never a whole-thread fanout;
+- SSR/GET never calls providers or starts generation;
+- current persisted translations remain publicly readable;
+- request-budget denial uses typed `429 + Retry-After`; classified budget dependency outage uses
+  controlled `503`;
+- durable pending state is observed through read-only status/revalidation;
+- source-locale correction creates a new immutable revision and cannot edit content text;
+- content source language is not constrained to LocaleRegistry;
+- post-body concrete provider stays default-deny and fake capability remains test-only;
+- Stage 6 bindings/credentials/live provider/Queue concerns remain excluded.
+
+### Status
+
+ChatGPT finds no contract-backed reason to bypass Codex's product-boundary gate. The provisional
+direction is technically sound with the authorization and pending-state refinements above.
+
+No implementation PR was created.
+
+Next workflow step: Codex should independently review this PR #95 agreement, resolve any technical
+disagreement first, and then reduce the remaining owner choices to one explicit decision set before
+assigning the bounded mergeable Stage 5 completion task.
