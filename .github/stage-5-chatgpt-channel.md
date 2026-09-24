@@ -1018,3 +1018,141 @@ PR #110 does not implement:
 - Final CI: `36030041888`, both `checks` and `database` successful.
 - Full self-review found no remaining current-Stage defect.
 - Next required workflow step is Codex independent full review of PR #110 before merge.
+
+
+## PR #110 correction after Codex independent review — window-duration safety ceiling
+
+Codex service PR #94 at
+`a35e4e011604a558a64c1a7330129bc36a5e2268` independently reviewed the full prior PR #110 head
+`fc6ef0211dc351f60cf2afac543432168f36d1e9` and confirmed one remaining current-Stage defect:
+`validateContentTranslationRequestBudgetAdmission()` accepted arbitrarily large positive JavaScript
+safe-integer `windowSeconds`, while sufficiently large accepted values could exceed PostgreSQL
+timestamp arithmetic and fail before a typed budget decision.
+
+The correction was intentionally limited to this confirmed finding. Planner/route integration,
+anonymous policy and final quota values remain untouched.
+
+### Correction
+
+The request-budget contract now exports:
+
+`MAX_CONTENT_TRANSLATION_REQUEST_BUDGET_WINDOW_SECONDS = 31_536_000`
+
+This is a 365-day **technical safety ceiling**, not a selected production request-budget window or
+quota policy. Callers still choose the actual window below that bound.
+
+Admission validation now rejects `windowSeconds` above the safety ceiling before the budget store
+opens a PostgreSQL transaction.
+
+The chosen ceiling was cross-checked against the official PostgreSQL 17 date/time contract:
+`timestamp with time zone` supports values through year 294276 AD and `interval` supports a much
+larger magnitude. One year is therefore deliberately far inside PostgreSQL and JavaScript Date
+representability while remaining a broad policy-neutral ceiling for a request-budget primitive.
+
+Official PostgreSQL 17 source checked:
+`https://www.postgresql.org/docs/17/datatype-datetime.html`.
+
+### Added regression coverage
+
+Unit validation coverage now proves:
+
+- exact `MAX_CONTENT_TRANSLATION_REQUEST_BUDGET_WINDOW_SECONDS` is accepted;
+- maximum-plus-one is rejected;
+- the existing invalid safe-integer coverage remains.
+
+Store coverage additionally proves maximum-plus-one is rejected before any database transaction is
+opened.
+
+Disposable PostgreSQL 17 coverage now exercises the exact accepted maximum and proves:
+
+- the request is admitted at the exact ceiling;
+- persisted `windowStart` and `expiresAt/resetAt` are finite;
+- `expiresAt > windowStart`;
+- the stored window length equals the exported ceiling;
+- denied retry metadata remains nonnegative and bounded by the same accepted window.
+
+### Correction delta
+
+Relative to the independently reviewed prior head
+`fc6ef0211dc351f60cf2afac543432168f36d1e9`, the correction changes only:
+
+- `app/localization/content-request-budget.server.ts`;
+- `app/localization/content-request-budget.server.test.ts`;
+- `tests/database/content-request-budget-store.test.ts`.
+
+No schema/migration, planner, route, task, provider or UI file changed in the correction.
+
+### Final CI after correction
+
+Corrected PR #110 head:
+`d3b8751bd3da55457aac592c036694763b738df1`.
+
+GitHub Actions run `36032861730` completed successfully.
+
+`checks`:
+
+- frozen install — success;
+- accepted migration-history protection — success, one new migration and accepted history unchanged;
+- lint — success;
+- typecheck — success;
+- tests — success: 51 files / 425 tests;
+- `content-request-budget.server.test.ts` — 8 tests passed;
+- production build — success;
+- migration metadata validation — success;
+- Drizzle schema parity — success.
+
+`database`:
+
+- clean PostgreSQL 17 migration/constraint/integration suite — success: 17 files / 153 tests;
+- `content-request-budget-store.test.ts` — 11 tests passed;
+- Workers build smoke — success;
+- local Hyperdrive smoke — success.
+
+### Fresh full self-review
+
+After the correction, ChatGPT re-reviewed the complete current 11-file PR #110 rather than only
+the correction delta, against:
+
+- unchanged GitHub `main` `17a3aea7c432683b46321c2ab341e2b2fc1bad4b`;
+- complete current `AGENTS.md`;
+- the original SEC-02 foundation task and the independent Codex review in service PR #94;
+- complete `PROJECT.md`, `PROJECT_STATE.md`, `ROADMAP.md`,
+  `TRANSLATION_ARCHITECTURE.md`;
+- complete applicable `docs/translation/CONTENT_TRANSLATION.md`,
+  `docs/translation/PROVIDERS_AND_JOBS.md` and `docs/database/MIGRATIONS.md`;
+- current request-budget application/store code, schema, migration, snapshot/journal, tests and
+  factual state update;
+- PostgreSQL 17 date/time semantics from the official documentation above.
+
+The full re-review rechecked:
+
+- requester HMAC domain/key-version separation and raw-identity/secret non-persistence;
+- runtime/database scope validation parity;
+- positive integer and new bounded window validation;
+- pre-database rejection above the ceiling;
+- DB-owned epoch-aligned fixed-window calculation and finite reset/retry metadata at the exact
+  accepted maximum;
+- atomic global-before-requester consumption and transaction rollback on requester denial or
+  unexpected error;
+- concurrent no-overshoot behavior and deterministic lock order;
+- classified storage availability versus quota denial and unexpected programming/integrity errors;
+- bounded deterministic cleanup and its supporting index;
+- migration/schema/journal/snapshot parity and append-only history;
+- `PROJECT_STATE.md` factuality and the explicit exclusions.
+
+The `0017` snapshot was also structurally compared against `0016`: `prevId` matches the prior
+snapshot id, all prior snapshot content is unchanged, and the only added schema object is the
+request-budget counter table already represented by migration/schema.
+
+No new current-Stage defect was found in the corrected full PR.
+
+### Status after correction
+
+- PR #110 is open, mergeable and unmerged.
+- Corrected final head: `d3b8751bd3da55457aac592c036694763b738df1`.
+- Base/current `main`: `17a3aea7c432683b46321c2ab341e2b2fc1bad4b`.
+- Final CI: `36032861730`, both `checks` and `database` successful.
+- The confirmed oversized-window defect is corrected and regression-covered.
+- Full post-correction self-review found no remaining current-Stage defect.
+- PR #110 has not been merged.
+- Next workflow step is Codex independent full re-review of the complete corrected PR #110.
