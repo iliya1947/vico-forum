@@ -140,6 +140,7 @@ describe("ContentPostBodyTranslationPlanner", () => {
       && capability.sourceLocale === "ru"
       && capability.targetLocale === "he"
       && capability.operation === "plain"
+      && capability.sourceCharacterCount !== null
       && capability.sourceCharacterCount > 0
     );
     const adapter: MachineTranslationProviderAdapter = {
