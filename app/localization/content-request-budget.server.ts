@@ -89,7 +89,8 @@ const HMAC_SHA_256_BYTES = 32;
 const BASE64URL_ALPHABET =
   "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
 const KEY_VERSION_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,31}$/;
-const SCOPE_PART_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$/;
+const SCOPE_NAME_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$/;
+const SCOPE_VERSION_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/;
 const SUBJECT_KEY_PATTERN = /^[A-Za-z0-9_-]{43}$/;
 
 type WebCryptoSubtle = typeof crypto.subtle;
@@ -213,17 +214,29 @@ function requireScopePolicy(
   if (!policy || typeof policy !== "object") {
     throw new TypeError(`${field} request budget scope must be an object`);
   }
-  requireScopePart(policy.name, `${field} request budget scope name`);
-  requireScopePart(policy.version, `${field} request budget scope version`);
+  requireScopeName(policy.name, `${field} request budget scope name`);
+  requireScopeVersion(policy.version, `${field} request budget scope version`);
   requirePositiveSafeInteger(policy.limit, `${field} request budget limit`);
 }
 
-function requireScopePart(value: string, field: string): void {
+function requireScopeName(value: string, field: string): void {
+  requireScopePart(value, field, SCOPE_NAME_PATTERN);
+}
+
+function requireScopeVersion(value: string, field: string): void {
+  requireScopePart(value, field, SCOPE_VERSION_PATTERN);
+}
+
+function requireScopePart(
+  value: string,
+  field: string,
+  pattern: RegExp,
+): void {
   if (
     typeof value !== "string"
     || value.length === 0
     || value.length > MAXIMUM_SCOPE_PART_CODE_UNITS
-    || !SCOPE_PART_PATTERN.test(value)
+    || !pattern.test(value)
   ) {
     throw new TypeError(
       `${field} must be a bounded portable non-blank identifier`,
