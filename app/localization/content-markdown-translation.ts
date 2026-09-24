@@ -52,7 +52,6 @@ interface TechnicalSpan {
   readonly end: number;
 }
 
-const CONTROL_CHARACTERS = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/u;
 const HUMAN_LANGUAGE_LETTER = /\p{L}/u;
 
 const TECHNICAL_PATTERNS = [
@@ -60,7 +59,7 @@ const TECHNICAL_PATTERNS = [
   /mailto:[^\s<>"'`]+/gu,
   /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/gu,
   /@[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+/gu,
-  /(?:[A-Za-z]:\\(?:[^\\\s]+\\)*[^\\\s]+|(?:\.{1,2}\/|\/)[A-Za-z0-9._~!$&'()*+,;=:@%\/-]+)/gu,
+  /(?:[A-Za-z]:\\(?:[^\\\s]+\\)*[^\\\s]+|(?:\.{1,2}\/|\/)[A-Za-z0-9._~!/(?:[A-Za-z]:\\(?:[^\\\s]+\\)*[^\\\s]+|(?:\.{1,2}\/|\/)[A-Za-z0-9._~!$&'()*+,;=:@%\/-]+)/gu,'()*+,;=:@%/-]+)/gu,
   /--?[A-Za-z][A-Za-z0-9-]*/gu,
   /\b[A-Za-z_$][A-Za-z0-9_$]*(?:[.:/\\][A-Za-z0-9_$@%+~#-]+)+\b/gu,
   /\b[A-Za-z_$][A-Za-z0-9_$]*\(\)/gu,
@@ -237,7 +236,7 @@ function validateTranslationSet(
     if (
       !translation.value.trim()
       || translation.value.length > MAX_TRANSLATED_MARKDOWN_SEGMENT_CHARACTERS
-      || CONTROL_CHARACTERS.test(translation.value)
+      || hasForbiddenControlCharacters(translation.value)
       || translation.value.includes(segmentMarkerNamespace)
     ) {
       throw new MarkdownTranslationValidationError(
@@ -309,6 +308,22 @@ function tokenSequenceMatches(
   let remainder = translated;
   for (const marker of observed) remainder = remainder.replace(marker, "");
   return !remainder.includes(tokenMarkerNamespace);
+}
+
+function hasForbiddenControlCharacters(value: string): boolean {
+  for (let index = 0; index < value.length; index++) {
+    const code = value.charCodeAt(index);
+    if (
+      code <= 0x08
+      || code === 0x0b
+      || code === 0x0c
+      || (code >= 0x0e && code <= 0x1f)
+      || code === 0x7f
+    ) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function protectTechnicalFragments(
