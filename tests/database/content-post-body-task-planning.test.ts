@@ -1080,7 +1080,7 @@ describe("content post-body durable planning", () => {
       const execution = executor.execute(enqueuer.messages[0]!);
       await started.promise;
       await second.query(
-        "update translation_tasks set lease_expires_at = statement_timestamp() - interval '1 second' where id = $1 and status = 'processing'",
+        "update translation_tasks set claimed_at = statement_timestamp() - interval '2 seconds', lease_expires_at = statement_timestamp() - interval '1 second' where id = $1 and status = 'processing'",
         [planned.task.id],
       );
 
