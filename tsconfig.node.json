@@ -24,6 +24,8 @@
     "app/localization/translation-failures.ts",
     "app/localization/cloudflare-m2m100-provider.ts",
     "app/localization/content-translation.ts",
+    "app/localization/content-markdown-translation.ts",
+    "app/localization/content-post-body-planning.ts",
     "app/localization/content-source-locale.ts",
     "app/localization/content-translation-planning.ts",
     "app/localization/content-translation-task-consumer.ts",

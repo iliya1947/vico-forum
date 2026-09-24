@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   TranslationTaskExecutorDispatcher,
+  TranslationTaskExecutorUnavailableError,
   UnknownTranslationTaskKindError,
 } from "./translation-task-dispatch";
 
@@ -40,6 +41,26 @@ describe("TranslationTaskExecutorDispatcher", () => {
     });
     expect(content).toHaveBeenCalledWith(message);
     expect(ui).not.toHaveBeenCalled();
+  });
+
+  it("rejects post-body delivery before any existing executor can claim it", async () => {
+    const ui = vi.fn();
+    const content = vi.fn();
+    const dispatcher = new TranslationTaskExecutorDispatcher({
+      kinds: { findKind: vi.fn(async () => "content-post-body") },
+      ui: { execute: ui },
+      contentTopicTitle: { execute: content },
+    });
+
+    await expect(dispatcher.execute(message)).rejects.toMatchObject({
+      name: "TranslationTaskExecutorUnavailableError",
+      translationKind: "content-post-body",
+    });
+    await expect(dispatcher.execute(message)).rejects.toBeInstanceOf(
+      TranslationTaskExecutorUnavailableError,
+    );
+    expect(ui).not.toHaveBeenCalled();
+    expect(content).not.toHaveBeenCalled();
   });
 
   it("acknowledges a missing task without invoking either executor", async () => {

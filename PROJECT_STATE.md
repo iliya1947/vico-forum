@@ -42,7 +42,7 @@ Vico Forum находится в ранней pre-release разработке.
 - generic `/:locale/*`, runtime `LocaleRegistry`, BCP-47 resolution, LTR/RTL и request-scoped
   `i18next`;
 - persistent locale registry, persistent UI translation storage и compiled bundle storage;
-- текущая migration history — `0000`–`0015`.
+- текущая migration history — `0000`–`0016`.
 
 ## Forum core — Stage 4
 
@@ -99,7 +99,7 @@ local/CI Stage 4 и остаются Stage 6.
   convergence obsolete persisted bundles только для disposable local `*_test` PostgreSQL;
   request path остаётся read-only и не вызывает translation provider, external execution не входит в Stage 5.
 
-Migration `0007`–`0010` содержит durable task lifecycle и generation-ordering foundation; `0012` добавляет bounded retry и persistent terminal-failure state; `0013` добавляет durable reconciliation progress и query-derived indexes. `0014` добавляет revision-bound persistence для topic-title/post-body translations с database-backed revision ownership; `0015` расширяет shared durable task storage отдельным `content-topic-title` kind с database-enforced title-revision ownership.
+Migration `0007`–`0010` содержит durable task lifecycle и generation-ordering foundation; `0012` добавляет bounded retry и persistent terminal-failure state; `0013` добавляет durable reconciliation progress и query-derived indexes. `0014` добавляет revision-bound persistence для topic-title/post-body translations с database-backed revision ownership; `0015` расширяет shared durable task storage отдельным `content-topic-title` kind с database-enforced title-revision ownership; `0016` добавляет отдельный `content-post-body` kind с exact post-body revision ownership и тем же shared generation/lifecycle foundation.
 
 ### Stage 5B — реализованный foundation
 
@@ -148,13 +148,24 @@ Migration `0007`–`0010` содержит durable task lifecycle и generation-
   deterministic сериализует и повторно проверяет AST structure; нарушение возвращает typed
   `original-fallback` validation error. Результат остаётся input существующего safe
   `ForumMarkdown` renderer, а source revision не изменяется.
+- on-demand durable planning для post-body translation: planner повторно читает exact current
+  immutable post revision, выполняет source-locale resolution и CNT-04 protection authoritative
+  Markdown, проверяет active canonical target, metadata-only provider/data-policy capability,
+  current exact-revision translation и injected request budget. Stable `content-post-body`
+  identity/fingerprint учитывает revision/source semantics, protected representation,
+  `protectedContentPolicyVersion`, target и generation policy; PostgreSQL сохраняет только
+  revision/source/policy metadata, а transport после commit получает только
+  `{ translationTaskId }`. Concurrent duplicate planning сходится к одной durable identity,
+  live claim не сбрасывается, completed identity не оживляется, enqueue failure остаётся
+  recoverable через JOB-06. Пока post-body executor не реализован, dispatcher распознаёт kind,
+  но явно отклоняет delivery до claim/provider call.
 
 ### Stage 5 ещё не завершён
 
 Для завершения Stage 5 local/CI path ещё нужны:
 
-- post-body durable planning/execution/publication с подключением реализованного protected
-  CommonMark segment/restore boundary к shared provider/job lifecycle;
+- post-body execution/publication с подключением durable planning и protected CommonMark
+  segment/restore boundary к shared provider/job lifecycle;
 - operational/distributed rate-limit enforcement, concrete source-locale detector adapter/provider
   selection и user-facing manual correction flow; production content-provider/data-policy approval,
   real binding/credentials/live calls остаются external Stage 6 concerns;
@@ -212,7 +223,7 @@ no-op verification. Перед следующим настоящим external sc
 ## Ближайший маршрут
 
 1. Продолжить Stage 5B: source-locale detector adapter/provider selection и operational rate-limit boundary.
-2. Реализовать post-body durable planning/execution/publication поверх protected CommonMark boundary,
+2. Реализовать post-body execution/publication поверх durable planning + protected CommonMark boundary,
    затем route/UI integration.
 3. После завершения Stage 5 перейти к Stage 6 external integration по `ROADMAP.md` и
    `docs/database/*`.

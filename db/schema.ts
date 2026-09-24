@@ -202,7 +202,7 @@ export const translationTasks = pgTable(
     check("translation_tasks_identity_check", sql`${table.taskIdentity} ~ '^[0-9a-f]{64}$'`),
     check(
       "translation_tasks_kind_check",
-      sql`${table.translationKind} in ('ui', 'content-topic-title')`,
+      sql`${table.translationKind} in ('ui', 'content-topic-title', 'content-post-body')`,
     ),
     check("translation_tasks_source_namespace_check", sql`btrim(${table.sourceNamespace}) <> ''`),
     check("translation_tasks_source_key_check", sql`btrim(${table.sourceKey}) <> ''`),
@@ -217,7 +217,8 @@ export const translationTasks = pgTable(
     ),
     check(
       "translation_tasks_content_shape_check",
-      sql`${table.translationKind} <> 'content-topic-title' or ${table.sourceNamespace} = 'topic-title'`,
+      sql`(${table.translationKind} <> 'content-topic-title' or ${table.sourceNamespace} = 'topic-title')
+        and (${table.translationKind} <> 'content-post-body' or ${table.sourceNamespace} = 'post-body')`,
     ),
     check(
       "translation_tasks_generation_policy_version_check",
@@ -310,7 +311,7 @@ export const translationTaskGenerationHeads = pgTable(
     }),
     check(
       "translation_task_generation_heads_kind_check",
-      sql`${table.translationKind} in ('ui', 'content-topic-title')`,
+      sql`${table.translationKind} in ('ui', 'content-topic-title', 'content-post-body')`,
     ),
     check("translation_task_generation_heads_namespace_check", sql`btrim(${table.sourceNamespace}) <> ''`),
     check("translation_task_generation_heads_key_check", sql`btrim(${table.sourceKey}) <> ''`),
@@ -324,7 +325,8 @@ export const translationTaskGenerationHeads = pgTable(
     ),
     check(
       "translation_task_generation_heads_content_shape_check",
-      sql`${table.translationKind} <> 'content-topic-title' or ${table.sourceNamespace} = 'topic-title'`,
+      sql`(${table.translationKind} <> 'content-topic-title' or ${table.sourceNamespace} = 'topic-title')
+        and (${table.translationKind} <> 'content-post-body' or ${table.sourceNamespace} = 'post-body')`,
     ),
     check("translation_task_generation_heads_generation_check", sql`${table.currentGeneration} > 0`),
   ],
@@ -697,6 +699,77 @@ export const contentTopicTitleTranslationTasks = pgTable(
         ${table.sourceResolutionOrigin} = 'detector'
         and lower(${table.revisionSourceLocale}) = 'und'
       )`,
+    ),
+  ],
+);
+
+export const contentPostBodyTranslationTasks = pgTable(
+  "content_post_body_translation_tasks",
+  {
+    taskId: uuid("task_id").primaryKey(),
+    translationKind: text("translation_kind").notNull(),
+    sourceNamespace: text("source_namespace").notNull(),
+    postId: text("post_id").notNull(),
+    revisionId: text("revision_id").notNull(),
+    revisionSourceLocale: text("revision_source_locale").notNull(),
+    resolvedSourceLocale: text("resolved_source_locale").notNull(),
+    sourceResolutionOrigin: text("source_resolution_origin").notNull(),
+    protectedContentPolicyVersion: text("protected_content_policy_version").notNull(),
+  },
+  (table) => [
+    foreignKey({
+      name: "content_post_body_translation_tasks_task_fk",
+      columns: [table.taskId, table.translationKind, table.sourceNamespace, table.postId],
+      foreignColumns: [
+        translationTasks.id,
+        translationTasks.translationKind,
+        translationTasks.sourceNamespace,
+        translationTasks.sourceKey,
+      ],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "content_post_body_translation_tasks_revision_fk",
+      columns: [table.postId, table.revisionId, table.revisionSourceLocale],
+      foreignColumns: [
+        forumPostRevisions.postId,
+        forumPostRevisions.id,
+        forumPostRevisions.sourceLocale,
+      ],
+    }).onDelete("cascade"),
+    check(
+      "content_post_body_translation_tasks_kind_check",
+      sql`${table.translationKind} = 'content-post-body'`,
+    ),
+    check(
+      "content_post_body_translation_tasks_namespace_check",
+      sql`${table.sourceNamespace} = 'post-body'`,
+    ),
+    check(
+      "content_post_body_translation_tasks_revision_source_locale_check",
+      sourceLocaleCheck(table.revisionSourceLocale),
+    ),
+    check(
+      "content_post_body_translation_tasks_resolved_source_locale_check",
+      contentTargetLocaleCheck(table.resolvedSourceLocale),
+    ),
+    check(
+      "content_post_body_translation_tasks_resolution_origin_check",
+      sql`${table.sourceResolutionOrigin} in ('revision-metadata', 'detector')`,
+    ),
+    check(
+      "content_post_body_translation_tasks_resolution_check",
+      sql`(
+        ${table.sourceResolutionOrigin} = 'revision-metadata'
+        and lower(${table.revisionSourceLocale}) <> 'und'
+        and ${table.revisionSourceLocale} = ${table.resolvedSourceLocale}
+      ) or (
+        ${table.sourceResolutionOrigin} = 'detector'
+        and lower(${table.revisionSourceLocale}) = 'und'
+      )`,
+    ),
+    check(
+      "content_post_body_translation_tasks_protection_policy_check",
+      sql`btrim(${table.protectedContentPolicyVersion}) <> ''`,
     ),
   ],
 );

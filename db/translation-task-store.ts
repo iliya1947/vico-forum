@@ -918,7 +918,7 @@ function unitCondition(unit: TranslationUnit) {
 }
 
 function isTranslationTaskKind(value: string): value is TranslationTaskKind {
-  return value === "ui" || value === "content-topic-title";
+  return value === "ui" || value === "content-topic-title" || value === "content-post-body";
 }
 
 function isTaskStatus(
