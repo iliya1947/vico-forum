@@ -14,7 +14,6 @@ import {
   type ContentTopicTitleTranslationTaskSpecification,
 } from "../app/localization/translation-tasks";
 import {
-  contentTopicTitleTranslationTasks,
   forumTopicTitleRevisions,
   forumTopics,
   translationTaskGenerationHeads,
@@ -22,7 +21,6 @@ import {
 } from "./schema";
 
 type TranslationTaskRow = typeof translationTasks.$inferSelect;
-type ContentTaskRow = typeof contentTopicTitleTranslationTasks.$inferSelect;
 
 export class ContentTopicTitleTaskIntegrityError extends Error {
   constructor(message: string) {
@@ -132,28 +130,22 @@ export class DrizzleContentTopicTitlePlanningStore implements ContentTopicTitleP
         );
       }
 
-      const existing = await transaction
+      const existingRows = await transaction
         .select()
         .from(translationTasks)
         .where(eq(translationTasks.taskIdentity, specification.taskIdentity))
         .limit(1);
-      if (existing[0]) {
-        assertTaskMatchesSpecification(existing[0], specification);
-        if (existing[0].status !== "pending" && existing[0].status !== "processing") {
+      if (existingRows[0]) {
+        assertTaskMatchesSpecification(existingRows[0], specification);
+        if (existingRows[0].status !== "pending" && existingRows[0].status !== "processing") {
           throw new ContentTopicTitleTaskIntegrityError(
             "content topic-title task identity is already terminal",
           );
         }
-        const metadata = await transaction
-          .select()
-          .from(contentTopicTitleTranslationTasks)
-          .where(eq(contentTopicTitleTranslationTasks.taskId, existing[0].id))
-          .limit(1);
-        assertMetadataMatchesSpecification(metadata[0], specification);
         return {
           outcome: "task" as const,
           created: false,
-          task: contentTask(existing[0], metadata[0]!),
+          task: contentTask(existingRows[0]),
         };
       }
 
@@ -170,6 +162,11 @@ export class DrizzleContentTopicTitlePlanningStore implements ContentTopicTitleP
           sourceFingerprint: specification.sourceFingerprint,
           targetLocale: specification.targetLocale,
           generationPolicyVersion: specification.generationPolicyVersion,
+          contentId: specification.sourceIdentity.topicId,
+          contentRevisionId: specification.sourceIdentity.revisionId,
+          revisionSourceLocale: specification.revisionSourceLocale,
+          resolvedSourceLocale: specification.resolvedSourceLocale,
+          sourceResolutionOrigin: specification.sourceResolutionOrigin,
           generation,
           status: "pending",
           attemptCount: 0,
@@ -177,26 +174,6 @@ export class DrizzleContentTopicTitlePlanningStore implements ContentTopicTitleP
         })
         .returning();
       const taskRow = requiredTaskRow(inserted[0]);
-
-      const metadataRows = await transaction
-        .insert(contentTopicTitleTranslationTasks)
-        .values({
-          taskId: taskRow.id,
-          translationKind: specification.translationKind,
-          sourceNamespace: "topic-title",
-          topicId: specification.sourceIdentity.topicId,
-          revisionId: specification.sourceIdentity.revisionId,
-          revisionSourceLocale: specification.revisionSourceLocale,
-          resolvedSourceLocale: specification.resolvedSourceLocale,
-          sourceResolutionOrigin: specification.sourceResolutionOrigin,
-        })
-        .returning();
-      const metadata = metadataRows[0];
-      if (!metadata) {
-        throw new ContentTopicTitleTaskIntegrityError(
-          "content topic-title task metadata insert returned no row",
-        );
-      }
 
       if (generation !== currentGeneration) {
         await transaction
@@ -216,7 +193,7 @@ export class DrizzleContentTopicTitlePlanningStore implements ContentTopicTitleP
       return {
         outcome: "task" as const,
         created: true,
-        task: contentTask(taskRow, metadata),
+        task: contentTask(taskRow),
       };
     });
   }
@@ -262,6 +239,11 @@ function assertTaskMatchesSpecification(
     || row.sourceFingerprint !== specification.sourceFingerprint
     || row.targetLocale !== specification.targetLocale
     || row.generationPolicyVersion !== specification.generationPolicyVersion
+    || row.contentId !== specification.sourceIdentity.topicId
+    || row.contentRevisionId !== specification.sourceIdentity.revisionId
+    || row.revisionSourceLocale !== specification.revisionSourceLocale
+    || row.resolvedSourceLocale !== specification.resolvedSourceLocale
+    || row.sourceResolutionOrigin !== specification.sourceResolutionOrigin
   ) {
     throw new ContentTopicTitleTaskIntegrityError(
       "stable content task identity conflicts with different task data",
@@ -269,33 +251,18 @@ function assertTaskMatchesSpecification(
   }
 }
 
-function assertMetadataMatchesSpecification(
-  row: ContentTaskRow | undefined,
-  specification: ContentTopicTitleTranslationTaskSpecification,
-): asserts row is ContentTaskRow {
-  if (
-    !row
-    || row.translationKind !== specification.translationKind
-    || row.sourceNamespace !== "topic-title"
-    || row.topicId !== specification.sourceIdentity.topicId
-    || row.revisionId !== specification.sourceIdentity.revisionId
-    || row.revisionSourceLocale !== specification.revisionSourceLocale
-    || row.resolvedSourceLocale !== specification.resolvedSourceLocale
-    || row.sourceResolutionOrigin !== specification.sourceResolutionOrigin
-  ) {
-    throw new ContentTopicTitleTaskIntegrityError(
-      "content topic-title task metadata conflicts with task identity",
-    );
-  }
-}
-
-function contentTask(
-  row: TranslationTaskRow,
-  metadata: ContentTaskRow,
-): ContentTopicTitleTranslationTask {
+function contentTask(row: TranslationTaskRow): ContentTopicTitleTranslationTask {
   if (
     row.translationKind !== "content-topic-title"
-    || metadata.translationKind !== "content-topic-title"
+    || row.sourceNamespace !== "topic-title"
+    || !row.contentId
+    || !row.contentRevisionId
+    || !row.revisionSourceLocale
+    || !row.resolvedSourceLocale
+    || (
+      row.sourceResolutionOrigin !== "revision-metadata"
+      && row.sourceResolutionOrigin !== "detector"
+    )
     || !Number.isSafeInteger(row.generation)
     || row.generation <= 0
     || !Number.isSafeInteger(row.attemptCount)
@@ -314,13 +281,12 @@ function contentTask(
     taskIdentity: row.taskIdentity,
     translationKind: "content-topic-title",
     sourceIdentity: {
-      topicId: metadata.topicId,
-      revisionId: metadata.revisionId,
+      topicId: row.contentId,
+      revisionId: row.contentRevisionId,
     },
-    revisionSourceLocale: metadata.revisionSourceLocale,
-    resolvedSourceLocale: metadata.resolvedSourceLocale,
-    sourceResolutionOrigin: metadata.sourceResolutionOrigin as
-      ContentTopicTitleTranslationTask["sourceResolutionOrigin"],
+    revisionSourceLocale: row.revisionSourceLocale,
+    resolvedSourceLocale: row.resolvedSourceLocale,
+    sourceResolutionOrigin: row.sourceResolutionOrigin,
     sourceFingerprint: row.sourceFingerprint,
     targetLocale: row.targetLocale,
     generationPolicyVersion: row.generationPolicyVersion,
