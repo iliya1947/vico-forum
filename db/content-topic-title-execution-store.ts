@@ -78,6 +78,37 @@ export class DrizzleContentTopicTitleExecutionStore
   ): Promise<ContentTopicTitlePublicationResult> {
     try {
       return await this.database.transaction(async (tx) => {
+        // Keep the shared planning/publication lock order stable:
+        // generation head -> stable task row -> current topic revision.
+        const [head] = await tx
+          .select({ currentGeneration: translationTaskGenerationHeads.currentGeneration })
+          .from(translationTaskGenerationHeads)
+          .where(and(
+            eq(translationTaskGenerationHeads.translationKind, "content-topic-title"),
+            eq(translationTaskGenerationHeads.sourceNamespace, "topic-title"),
+            eq(translationTaskGenerationHeads.sourceKey, publication.task.sourceIdentity.topicId),
+            eq(translationTaskGenerationHeads.targetLocale, publication.task.targetLocale),
+          ))
+          .for("update");
+
+        const [task] = await tx
+          .select()
+          .from(translationTasks)
+          .where(eq(translationTasks.id, publication.task.id))
+          .for("update");
+        if (
+          !task
+          || task.status !== "processing"
+          || task.claimToken !== publication.task.claimToken
+        ) {
+          return { outcome: "claim-lost" as const };
+        }
+        assertTaskMatchesPublication(task, publication);
+
+        if (!head || head.currentGeneration !== publication.task.generation) {
+          return markClaimStale(tx, publication, "generation-superseded");
+        }
+
         const [topic] = await tx
           .select({ currentTitleRevisionId: forumTopics.currentTitleRevisionId })
           .from(forumTopics)
@@ -89,35 +120,6 @@ export class DrizzleContentTopicTitleExecutionStore
         ) {
           return markClaimStale(tx, publication, "revision-not-current");
         }
-
-        const [head] = await tx
-          .select({ currentGeneration: translationTaskGenerationHeads.currentGeneration })
-          .from(translationTaskGenerationHeads)
-          .where(and(
-            eq(translationTaskGenerationHeads.translationKind, "content-topic-title"),
-            eq(translationTaskGenerationHeads.sourceNamespace, "topic-title"),
-            eq(translationTaskGenerationHeads.sourceKey, publication.task.sourceIdentity.topicId),
-            eq(translationTaskGenerationHeads.targetLocale, publication.task.targetLocale),
-          ))
-          .for("update");
-        if (!head || head.currentGeneration !== publication.task.generation) {
-          return markClaimStale(tx, publication, "generation-superseded");
-        }
-
-        const [task] = await tx
-          .select()
-          .from(translationTasks)
-          .where(eq(translationTasks.id, publication.task.id))
-          .for("update");
-
-        if (
-          !task
-          || task.status !== "processing"
-          || task.claimToken !== publication.task.claimToken
-        ) {
-          return { outcome: "claim-lost" as const };
-        }
-        assertTaskMatchesPublication(task, publication);
 
         const [metadata] = await tx
           .select()
