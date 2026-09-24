@@ -5,61 +5,58 @@ bounded work results for Stage 5. It is not a source of truth for project archit
 
 ## Current baseline
 
-- GitHub `main`: `730fb145c00fde2e503c5aa5282512ecb80192d2`.
+- GitHub `main`: `e0a13cec3cf731385d4f6311c7b14879971a9ee4`.
 - Active product stage: Stage 5 translations/background jobs.
 - Codex service channel: PR #94.
-- ChatGPT mergeable change under review: PR #101.
-- External Workers AI binding/credentials/live acceptance remain Stage 6 concerns.
+- ChatGPT mergeable change under review: PR #102.
+- PR #101 / PRV-02 is merged.
+- External provider bindings, credentials, live calls, Queue deployment, and Stage 6 rollout remain excluded.
 
 ## Current task
 
-PRV-02 concrete Cloudflare Workers AI M2M100 adapter in PR #101.
+Stage 5B revision-bound persistence foundation (`CNT-01/02/05/06`) in PR #102.
 
-Corrected PR #101 head:
-`4c89ed795e94daa7bab3ace4e8f5009ea9c491cf`.
+PR #102 current head:
+`7867279ae3fafbffd6e44d8ace86a1c27b1375bb`.
 
-Final GitHub CI run `35971389735` completed successfully:
+Final GitHub Actions run `35977299496` completed successfully:
 - `checks` — success;
 - `database` — success.
 
-## Technical agreement and correction result
+Implemented bounded scope:
+- provider-neutral `ContentTranslationService` / `ContentTranslationStore`;
+- separate topic-title and post-body translation persistence;
+- exact identity `contentType + contentId + revisionId + targetLocale`;
+- append-only migration `0014` with Drizzle schema/snapshot/journal parity;
+- database-backed revision-owner/source-locale foreign keys and cascade behavior;
+- canonical non-`und` target handling and immutable revision source-locale binding;
+- validated `persistent_manual | machine` provenance;
+- exact-current-revision reads with original fallback for miss/stale/invalid/classified
+  storage unavailability;
+- idempotent/concurrent duplicate-write coverage and manual-over-machine trust preservation.
 
-The two Codex findings were independently confirmed by ChatGPT before correction, then authorized
-for correction by Codex.
+Excluded scope remains unchanged:
+- provider calls/routing changes;
+- content Queue/jobs/retry/reconciliation;
+- source-language detection implementation;
+- Markdown AST/segmentation/technical-fragment translation;
+- route/UI/SEO integration;
+- external migration rollout or Stage 6 resources.
 
-1. **Canonical Filipino mapping**
-   - canonical Vico `fil` now maps provider-locally to M2M100 code `tl`;
-   - the adapter continues to keep provider codes behind its own boundary;
-   - regression coverage proves `fil` is supported and the outgoing payload uses `target_lang: "tl"`.
+## Review handoff
 
-2. **Workers AI error-code precedence**
-   - recognized Workers AI internal codes are classified before generic HTTP statuses;
-   - temporary capacity code `3040 / 429` remains retryable;
-   - timeout/aborted codes `3007/3008` remain retryable temporary failures;
-   - permanent account/configuration codes now include `3036` and `5019` and are terminal;
-   - realistic regression fixtures contain both `status` and `code`, proving `5019 / 405`
-     and `3036 / 429` cannot be hidden by generic status handling;
-   - unknown programming errors still pass through unclassified.
+ChatGPT completed a fresh full self-review of all 11 changed files and the combined PR #102 diff
+against current `main`, the assigned Stage 5B persistence scope, revision ownership contracts,
+locale/provenance rules, migration/schema parity, concurrency/idempotency behavior, and excluded
+scope.
 
-Current Cloudflare Workers AI documentation and the Meta M2M100 model card were rechecked during
-the correction cycle. No live provider call, binding, credential, schema, Queue, or Stage 5B scope
-was added.
-
-## Fresh full PR #101 review
-
-After the correction and successful CI, ChatGPT re-read the complete PR #101 against current
-`main`, the PRV-02 task, current translation source-of-truth documents, the existing
-router/executor/publication boundaries, and current external provider documentation.
-
-The review covered all five changed files, the full combined diff from base
-`730fb145...` to head `4c89ed7...`, support/routing decisions, provider-local locale mapping,
-request size/model/payload, untrusted response validation, failure taxonomy, provenance,
-executor terminalization, `PROJECT_STATE.md`, and Stage 6 exclusions.
-
-No remaining current-Stage defect was found.
+No further correction is being applied before independent review. Under the technical-agreement
+protocol, Codex should independently fetch and review the complete PR #102 before any correction
+or merge decision.
 
 ## Status
 
-- PR #101 remains open and unmerged.
-- Correction cycle is complete on head `4c89ed795e94daa7bab3ace4e8f5009ea9c491cf`.
-- Codex must independently re-review the complete corrected PR before any merge decision.
+- PR #102 remains open and unmerged.
+- Current head: `7867279ae3fafbffd6e44d8ace86a1c27b1375bb`.
+- CI `35977299496`: `checks` and `database` successful.
+- Next step: independent complete Codex review of PR #102.
