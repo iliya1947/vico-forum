@@ -105,11 +105,8 @@ export class ContentTopicTitleTranslationPlanner {
     const topicId = requireNonBlank(requestedRevision.contentId, "topic id");
     const revisionId = requireNonBlank(requestedRevision.revisionId, "revision id");
     const targetLocale = strictCanonicalTargetLocale(targetLocaleInput);
-    if (!targetLocale) {
-      throw new TypeError("topic-title translation target must be an already-canonical non-und locale");
-    }
-    if (!isActiveCanonicalTarget(this.dependencies.localeRegistry, targetLocale)) {
-      return original(targetLocale, "target-ineligible");
+    if (!targetLocale || !isActiveCanonicalTarget(this.dependencies.localeRegistry, targetLocale)) {
+      return original(targetLocale ?? targetLocaleInput, "target-ineligible");
     }
 
     const authoritativeRevision = await this.dependencies.tasks.readCurrentRevision(topicId);
