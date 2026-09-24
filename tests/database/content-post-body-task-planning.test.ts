@@ -2,16 +2,26 @@ import { readFile } from "node:fs/promises";
 
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Client, type DatabaseError } from "pg";
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   CONTENT_TRANSLATION_REQUESTER_SUBJECT_KEY_LENGTH,
   type ContentTranslationRequestBudgetAdmission,
 } from "../../app/localization/content-request-budget.server";
 import {
+  ContentPostBodyTaskExecutor,
+  type ContentPostBodyExecutionBounds,
+} from "../../app/localization/content-post-body-execution";
+import {
+  ContentPostBodyResultPublisher,
+} from "../../app/localization/content-post-body-publication";
+import {
   ContentPostBodyTranslationPlanner,
   contentPostBodyTaskSpecification,
 } from "../../app/localization/content-post-body-planning";
+import {
+  ContentPostBodyTaskConsumer,
+} from "../../app/localization/content-post-body-task-consumer";
 import {
   CONTENT_MARKDOWN_PROTECTION_POLICY_VERSION,
   protectMarkdownForTranslation,
@@ -21,10 +31,21 @@ import {
   ThresholdContentSourceLocalePolicy,
   type ContentSourceLocaleDetectionAdapter,
 } from "../../app/localization/content-source-locale";
-import { ContentTranslationService } from "../../app/localization/content-translation";
+import {
+  ContentTranslationService,
+  type StoredContentTranslation,
+} from "../../app/localization/content-translation";
+import { TranslationExecutionFailure } from "../../app/localization/translation-failures";
 import { ContentTopicTitleTranslationPlanner } from "../../app/localization/content-translation-planning";
 import { localeRegistry } from "../../app/localization/registry";
+import {
+  TranslationProviderRouter,
+  type MachineTranslationProviderAdapter,
+  type MachineTranslationRequest,
+  type MachineTranslationResult,
+} from "../../app/localization/translation-provider";
 import { FakeTranslationTaskEnqueuer } from "../../app/localization/translation-tasks";
+import { DrizzleContentPostBodyExecutionStore } from "../../db/content-post-body-execution-store";
 import { DrizzleContentPostBodyPlanningStore } from "../../db/content-post-body-task-store";
 import { DrizzleContentTopicTitlePlanningStore } from "../../db/content-topic-title-task-store";
 import { DrizzleContentTranslationStore } from "../../db/content-translation-store";
