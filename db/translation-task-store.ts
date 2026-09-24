@@ -1,4 +1,4 @@
-import { and, asc, eq, gte, lt, lte, or, sql } from "drizzle-orm";
+import { and, eq, gte, lt, lte, or, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { TranslationFailureRecord } from "../app/localization/translation-failures";
 import {
