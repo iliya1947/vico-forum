@@ -644,6 +644,12 @@ function createDispatcherWithRouter(
     kinds: tasks,
     ui: { execute: uiExecute },
     contentTopicTitle: contentExecutor,
+    contentPostBody: {
+      execute: vi.fn(async () => ({
+        outcome: "already-claimed" as const,
+        delivery: "ack" as const,
+      })),
+    },
   });
 }
 
