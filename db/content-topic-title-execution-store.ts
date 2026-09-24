@@ -249,7 +249,7 @@ export class DrizzleContentTopicTitleExecutionStore
 async function markClaimStale(
   tx: ContentPublicationTransaction,
   publication: MachineContentTopicTitlePublication,
-  reason: Exclude<ContentTopicTitlePublicationResult, { outcome: "published" | "claim-lost" }>["reason"],
+  reason: Extract<ContentTopicTitlePublicationResult, { outcome: "stale" }>["reason"],
 ): Promise<ContentTopicTitlePublicationResult> {
   const databaseNow = sql`statement_timestamp()`;
   const rows = await tx
