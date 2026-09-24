@@ -1,11 +1,11 @@
 # Stage 5 Codex coordination channel
 
 
-Codex independently reviewed the complete PR #110 at head
-`fc6ef0211dc351f60cf2afac543432168f36d1e9` after checking the latest ChatGPT service PR #95.
-One current-scope validation defect remains: runtime accepts window durations that PostgreSQL cannot
-represent. Correct it with a database-compatible explicit bound and focused tests, then re-review
-the entire PR and update PR #95 with the new head and CI. Do not merge PR #110 yet.
+Codex independently completed the full re-review of corrected PR #110 at head
+`d3b8751bd3da55457aac592c036694763b738df1` after checking the latest ChatGPT service PR #95.
+The window-duration defect is corrected, the complete request-budget foundation and migration
+`0017` satisfy the assigned scope, and final CI is green with no remaining current-Stage defect.
+PR #110 is technically ready to merge; verify updated GitHub `main` after owner merge.
 - GitHub `main`: `61b21a8029baf0fc0cb6a1d6a0c7e0ae931fd5a9`
 - `JOB-06` reconciliation/observability is merged through PR #99, including migration `0013`.
 - the concrete Cloudflare Workers AI M2M100 adapter is merged through PR #101.
@@ -1713,6 +1713,40 @@ GitHub Actions run `36030041888` is green for the reviewed head (`checks` and `d
 51 files / 424 unit tests and 17 files / 151 database tests), and npm/runtime changes are absent.
 Those checks validate the covered cases but do not exercise the accepted out-of-range duration, so
 they do not negate the finding.
+
+## Final independent re-review of corrected PR #110
+
+Codex fetched ChatGPT service PR #95 at
+`a5cc7dfa2f1e9633783d0aa990f996353ff59e20` and independently re-read the complete corrected 11-file
+PR #110 at `d3b8751bd3da55457aac592c036694763b738df1` against unchanged GitHub `main`
+`17a3aea7c432683b46321c2ab341e2b2fc1bad4b`, the original SEC-02 task, prior independent finding and
+all applicable contracts. The correction delta is limited to the application validation and its
+unit/PostgreSQL tests, but the review covered the full current PR again.
+
+The confirmed duration defect is correctly resolved. The exported 31,536,000-second (365-day)
+maximum is explicitly a representation/safety ceiling rather than selected production policy;
+validation rejects ceiling-plus-one before opening a database transaction. The exact ceiling remains
+well inside PostgreSQL 17 timestamp/interval and JavaScript Date ranges. Unit coverage checks the
+inclusive boundary, and disposable PostgreSQL coverage proves finite ordered window/reset metadata,
+exact window length and bounded nonnegative retry metadata at the accepted maximum.
+
+Codex rechecked the full HMAC pseudonym contract, raw identity/secret non-disclosure, runtime/schema
+scope parity, validated cost/limit/window inputs, versioned scope identity, dedicated migration
+`0017`, DB-owned epoch alignment, atomic global-before-requester consumption, rollback on denial or
+unexpected failure, concurrent non-overshoot, typed decisions, wrapped availability classification,
+unexpected-error propagation, bounded cleanup/indexing, migration/snapshot/journal parity, factual
+`PROJECT_STATE.md` update and every exclusion. No new current-Stage defect was found.
+
+The earlier GitHub scope-version finding remains resolved. Planner/route integration, requester
+header trust, anonymous enablement, final quota values, production secrets/bindings, post-body
+execution/publication and Stage 6 work remain explicitly outside this PR.
+
+GitHub Actions run `36032861730` is successful for both `checks` and `database` on the corrected
+head: frozen install, migration guard, lint, typecheck, 51 files / 425 tests, production build,
+migration metadata, Drizzle parity, 17 files / 153 PostgreSQL tests, Workers build and Hyperdrive
+smoke all passed. `git diff --check` also passes for the complete main-to-head diff. PR #110 is open,
+mergeable and technically ready for the project owner to merge. The next Stage 5 task must be chosen
+after fetching the resulting updated `main`.
 ## Full JOB-06 re-review after correction
 
 Codex reviewed the complete PR #99 at
