@@ -39,6 +39,34 @@ export interface TranslationTask {
   readonly updatedAt: Date;
 }
 
+export type ContentTopicTitleSourceResolutionOrigin = "revision-metadata" | "detector";
+
+export interface ContentTopicTitleTranslationTaskSpecification {
+  readonly taskIdentity: string;
+  readonly translationKind: "content-topic-title";
+  readonly sourceIdentity: {
+    readonly topicId: string;
+    readonly revisionId: string;
+  };
+  readonly revisionSourceLocale: string;
+  readonly resolvedSourceLocale: string;
+  readonly sourceResolutionOrigin: ContentTopicTitleSourceResolutionOrigin;
+  readonly sourceFingerprint: string;
+  readonly targetLocale: string;
+  readonly generationPolicyVersion: string;
+}
+
+export interface ContentTopicTitleTranslationTask extends ContentTopicTitleTranslationTaskSpecification {
+  readonly id: string;
+  /** PostgreSQL-assigned monotonic order within one topic-title/target unit. */
+  readonly generation: number;
+  readonly status: TranslationTaskStatus;
+  readonly attemptCount: number;
+  readonly maxAttempts: number;
+  readonly createdAt: Date;
+  readonly updatedAt: Date;
+}
+
 export interface TranslationTaskStore {
   upsertPending(specification: UiTranslationJobSpecification): Promise<TranslationTask>;
   findById(id: string): Promise<TranslationTask | undefined>;
@@ -114,6 +142,46 @@ export class FakeTranslationTaskEnqueuer implements TranslationTaskEnqueuer {
   }
 }
 
+export function validateContentTopicTitleTranslationTaskSpecification(
+  specification: ContentTopicTitleTranslationTaskSpecification,
+): void {
+  if (specification.translationKind !== "content-topic-title") {
+    throw new TypeError("content translation task kind must be content-topic-title");
+  }
+  requireSha256(specification.taskIdentity, "taskIdentity");
+  requireSha256(specification.sourceFingerprint, "sourceFingerprint");
+  requireNonBlank(specification.sourceIdentity.topicId, "topic id");
+  requireNonBlank(specification.sourceIdentity.revisionId, "revision id");
+  requireNonBlank(specification.generationPolicyVersion, "generationPolicyVersion");
+
+  const revisionSourceLocale = strictCanonicalTranslationLocale(
+    specification.revisionSourceLocale,
+    true,
+  );
+  const resolvedSourceLocale = strictCanonicalTranslationLocale(
+    specification.resolvedSourceLocale,
+    false,
+  );
+  const targetLocale = strictCanonicalTranslationLocale(specification.targetLocale, false);
+  if (!revisionSourceLocale || !resolvedSourceLocale || !targetLocale) {
+    throw new TypeError("content translation task locales must be canonical translation locales");
+  }
+  if (resolvedSourceLocale === targetLocale) {
+    throw new TypeError("content translation task target locale must differ from resolved source locale");
+  }
+  if (
+    (specification.sourceResolutionOrigin === "revision-metadata"
+      && (revisionSourceLocale === "und" || revisionSourceLocale !== resolvedSourceLocale))
+    || (specification.sourceResolutionOrigin === "detector" && revisionSourceLocale !== "und")
+    || (
+      specification.sourceResolutionOrigin !== "revision-metadata"
+      && specification.sourceResolutionOrigin !== "detector"
+    )
+  ) {
+    throw new TypeError("content translation task source resolution is invalid");
+  }
+}
+
 export function validateUiTranslationJobSpecification(
   specification: UiTranslationJobSpecification,
 ): void {
@@ -134,6 +202,23 @@ export function validateUiTranslationJobSpecification(
   ) {
     throw new TypeError("translation task targetLocale must be a canonical non-English translation locale");
   }
+}
+
+function strictCanonicalTranslationLocale(
+  value: string,
+  allowUnd: boolean,
+): string | undefined {
+  if (allowUnd && value === "und") return value;
+  const parsed = parseLocaleCandidate(value);
+  if (
+    !parsed
+    || parsed.canonicalInput !== value
+    || parsed.translationTag !== value
+    || (!allowUnd && parsed.translationTag === "und")
+  ) {
+    return undefined;
+  }
+  return parsed.translationTag;
 }
 
 function requireSha256(value: string, field: string): void {
