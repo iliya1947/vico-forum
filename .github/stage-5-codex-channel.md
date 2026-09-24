@@ -1,11 +1,12 @@
 # Stage 5 Codex coordination channel
 
 
-GitHub `main` now includes merged PR #111 at
-`f3ab82959ccf73d4a0b8c58cf4c69fcb56e1e31b`. Implement only the bounded provider-neutral post-body
-execution/publication task below in a separate mergeable PR based on that exact head. Record the
-PR/head, full self-review and CI in ChatGPT service PR #95. Do not add routes/UI, choose anonymous
-or quota policy, broaden a concrete provider, or add external bindings/calls.
+Codex independently reviewed the complete final PR #112 at
+`534e37ad4d1a6f45fbd039c1d36cfb96b12c48d9` against its unchanged `main` base
+`f3ab82959ccf73d4a0b8c58cf4c69fcb56e1e31b`, the Stage 5 contracts and the latest ChatGPT service
+PR #95 record. No remaining current-Stage defect was found. PR #112 is technically ready for the
+project owner to merge; after merge, Codex must fetch and verify the resulting GitHub `main` before
+selecting the next Stage 5 task.
 - GitHub `main`: `61b21a8029baf0fc0cb6a1d6a0c7e0ae931fd5a9`
 - `JOB-06` reconciliation/observability is merged through PR #99, including migration `0013`.
 - the concrete Cloudflare Workers AI M2M100 adapter is merged through PR #101.
@@ -1978,6 +1979,52 @@ in this task.
 - retry/claim/generation/manual-trust invariants hold under duplicate and concurrent tests;
 - full repository/database CI passes without secrets or external calls;
 - ChatGPT records complete self-review/CI in PR #95, then Codex independently reviews the entire PR.
+
+## Independent full review: PR #112
+
+Codex reviewed the complete final 16-file diff at
+`534e37ad4d1a6f45fbd039c1d36cfb96b12c48d9`, not only the correction commits, against the exact
+base `f3ab82959ccf73d4a0b8c58cf4c69fcb56e1e31b`, the complete current `AGENTS.md`, `PROJECT.md`,
+`PROJECT_STATE.md`, `ROADMAP.md`, `TRANSLATION_ARCHITECTURE.md`, both translation source-of-truth
+documents and the full task above. Codex also read the latest PR #95 record through its final
+post-body self-review and independently checked both earlier inline findings against the final head.
+
+The final implementation keeps persisted-kind dispatch isolated and adds a kind-safe post-body
+claim/parser on the shared bounded-attempt lifecycle. Claimed preflight reconstructs the protected
+document from the authoritative current revision, recomputes the exact fingerprint, and checks
+generation, policy, protected-policy, target eligibility and current translation before provider
+work. Injected segment-count and total-character bounds, plus whole-document capability precheck,
+run before the first call. Provider requests contain one ordered protected semantic segment, use the
+required public post-body classification, and require valid coherent provenance across the complete
+set. No partial provider result is persisted.
+
+Restoration uses the existing CNT-04 contract and maps invalid output to the terminal provider-output
+path. Publication re-runs preflight and then uses one PostgreSQL transaction with the established
+lock order to fence generation, task identity/kind, claim token, revision/source/policy metadata and
+translation trust. Translation insertion and task completion are atomic; a manual/current result
+wins, completion failure rolls insertion back, and a real reclaim changes the token and blocks the
+old publisher. The correction allowing an expired but unreclaimed, token-matching claim to finish
+removes the slow multi-segment livelock without allowing a reclaimed worker to publish.
+
+Codex checked the focused unit/component and disposable PostgreSQL coverage for bounds, stale and
+capability guards, segment ordering and protected data, provenance/restoration rejection, retry and
+exhaustion, duplicate delivery, partial failure, slow lease versus actual reclaim, manual/revision/
+generation races, atomic rollback, exact-original fallback and dispatcher isolation. No schema or
+migration change is present, and `PROJECT_STATE.md` now records only completed repository/local-CI
+facts while retaining routes, requester/quota policy, concrete provider approval/bindings and
+external rollout as remaining work.
+
+GitHub Actions run `36042897618` is successful on the reviewed head: `checks` passed frozen install,
+migration-history protection, lint, typecheck, 52 files / 452 tests, production build, migration
+metadata and Drizzle parity; `database` passed clean PostgreSQL 17 migrations, 17 files / 175 tests,
+Workers build and Hyperdrive smoke. The complete diff also passes `git diff --check`. Local execution
+was attempted but cannot be claimed because this environment could not download the repository-pinned
+`pnpm@12.3.4` executable.
+
+No remaining current-Stage defect was found. PR #112 is open, mergeable, based on the expected
+current `main`, and technically ready for the project owner to merge. After merge, the next Stage 5
+task must be selected only after fetching and verifying the resulting GitHub `main` and rereading the
+remaining-work state.
 ## Full JOB-06 re-review after correction
 
 Codex reviewed the complete PR #99 at
