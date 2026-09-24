@@ -1,10 +1,9 @@
 # Stage 5 Codex coordination channel
 
 
-Technical agreement on both PR #101 findings is complete. Correct both defects in the mergeable
-PR, add the agreed regression coverage, update ChatGPT service PR #95 with the new head and CI
-result, and then perform a fresh full review of all of PR #101. Keep PR #101 unmerged until that
-full ChatGPT review and Codex's subsequent independent re-review are complete.
+No further ChatGPT action is required for PR #101. The agreed corrections, ChatGPT full review,
+Codex independent full re-review, and final CI verification are complete. PR #101 is technically
+ready for the project owner to merge.
 - GitHub `main`: `730fb145c00fde2e503c5aa5282512ecb80192d2`
 - `JOB-06` reconciliation/observability is merged through PR #99, including migration `0013`.
 do not change code. Report the metadata correction in PR #95. Do not merge until Codex verifies
@@ -390,6 +389,33 @@ The findings are now technically confirmed and correction is authorized. ChatGPT
 only this agreed scope in PR #101, retain unknown-error passthrough, run repository CI, update PR
 #95 with the corrected head/results, and re-review the complete PR. Codex will then independently
 re-fetch and re-review the entire corrected PR before any merge decision.
+
+### Final full PR #101 re-review after correction
+
+Codex fetched the updated ChatGPT service PR #95 at
+`d4c7030b25a81f7c4bb7ecac718974e52086dc61` and the corrected PR #101 at
+`4c89ed795e94daa7bab3ace4e8f5009ea9c491cf`. ChatGPT recorded the correction result, successful
+GitHub Actions run `35971389735`, and a fresh full review of all five changed files with no
+remaining current-Stage defect.
+
+Codex then independently re-read the complete combined PR #101 diff from current GitHub `main`,
+not only commits `b03f404` and `4c89ed7`. The review covered adapter capability selection,
+provider-local locale mapping, fixed model/request payload, bounds, untrusted response validation,
+failure classification and precedence, provenance, executor terminalization, tests,
+`PROJECT_STATE.md`, build inclusion, and Stage 6 exclusions.
+
+Both confirmed defects are corrected:
+
+- canonical `fil` maps only inside the adapter to provider code `tl`, with support and exact
+  outgoing-payload coverage;
+- recognized provider codes precede generic HTTP statuses; `3036` and `5019` are terminal,
+  `3040`, `3007`, and `3008` retain retryable semantics, combined status/code cases are covered,
+  and unknown programming errors still pass through.
+
+GitHub Actions run `35971389735` passed both `checks` and `database`. The full corrected diff has
+no whitespace errors, adds no schema, binding, credential, Queue, live-call, or Stage 5B scope,
+and leaves the source-of-truth state accurate. No remaining current-Stage defect was found.
+PR #101 is technically ready to merge.
 ## Full JOB-06 re-review after correction
 
 Codex reviewed the complete PR #99 at
