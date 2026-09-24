@@ -13,6 +13,7 @@ import {
 import {
   ContentSourceLocaleResolver,
   ThresholdContentSourceLocalePolicy,
+  type ContentSourceLocaleDetectionAdapter,
 } from "./content-source-locale";
 import {
   ContentTranslationService,
@@ -272,7 +273,7 @@ function plannerWith(overrides: {
 }
 
 function resolver(
-  detect: Parameters<ConstructorParameters<typeof ContentSourceLocaleResolver>[0]["detect"]>[0],
+  detect: ContentSourceLocaleDetectionAdapter["detect"],
 ): ContentSourceLocaleResolver {
   return new ContentSourceLocaleResolver(
     { detect },
