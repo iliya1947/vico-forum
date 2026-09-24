@@ -1,6 +1,11 @@
 import {
   TranslationExecutionFailure,
 } from "./translation-failures";
+import { PUBLIC_FORUM_TOPIC_TITLE_CLASSIFICATION } from "./content-translation-provider";
+import {
+  DENY_ALL_TRANSLATION_PROVIDER_DATA_POLICY,
+  type TranslationProviderDataPolicy,
+} from "./translation-provider-data-policy";
 import type {
   MachineTranslationProviderAdapter,
   MachineTranslationRequest,
@@ -8,6 +13,7 @@ import type {
 } from "./translation-provider";
 import { TranslationValidationError } from "./translation-validation";
 
+export const CLOUDFLARE_WORKERS_AI_PROVIDER = "cloudflare-workers-ai";
 export const CLOUDFLARE_M2M100_MODEL = "@cf/meta/m2m100-1.2b";
 export const CLOUDFLARE_M2M100_MAX_SOURCE_CHARACTERS = 2_000;
 
@@ -43,15 +49,36 @@ export interface CloudflareWorkersAiRunner {
  * Binding provisioning and live Workers AI acceptance remain external Stage 6 concerns.
  */
 export class CloudflareM2m100TranslationProvider implements MachineTranslationProviderAdapter {
-  constructor(private readonly runner: CloudflareWorkersAiRunner) {}
+  constructor(
+    private readonly runner: CloudflareWorkersAiRunner,
+    private readonly dataPolicy: TranslationProviderDataPolicy =
+      DENY_ALL_TRANSLATION_PROVIDER_DATA_POLICY,
+  ) {}
 
   supports(request: MachineTranslationRequest): boolean {
-    if (request.domain !== "ui" || request.operation !== "plain" || request.messageKind !== "plain") {
+    if (request.operation !== "plain" || request.messageKind !== "plain") {
       return false;
     }
     if (typeof request.source !== "string" || !request.source.trim()) return false;
     if (request.source.length > CLOUDFLARE_M2M100_MAX_SOURCE_CHARACTERS) return false;
     if (request.sourceLocale === request.targetLocale) return false;
+
+    if (request.domain === "content") {
+      const policyAllowed = this.dataPolicy.allows({
+        provider: CLOUDFLARE_WORKERS_AI_PROVIDER,
+        model: CLOUDFLARE_M2M100_MODEL,
+        contentClassification: request.contentClassification,
+        sourceLocale: request.sourceLocale,
+        targetLocale: request.targetLocale,
+        operation: request.operation,
+      });
+      if (
+        !policyAllowed
+        || request.contentClassification !== PUBLIC_FORUM_TOPIC_TITLE_CLASSIFICATION
+      ) {
+        return false;
+      }
+    }
 
     return providerLanguageCode(request.sourceLocale) !== undefined
       && providerLanguageCode(request.targetLocale) !== undefined;
@@ -86,7 +113,7 @@ export class CloudflareM2m100TranslationProvider implements MachineTranslationPr
     return {
       value: translatedText,
       provenance: {
-        provider: "cloudflare-workers-ai",
+        provider: CLOUDFLARE_WORKERS_AI_PROVIDER,
         model: CLOUDFLARE_M2M100_MODEL,
         origin: "machine",
       },
