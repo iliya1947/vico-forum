@@ -56,13 +56,6 @@ export class CloudflareM2m100TranslationProvider implements MachineTranslationPr
   ) {}
 
   supports(request: MachineTranslationRequest): boolean {
-    if (request.operation !== "plain" || request.messageKind !== "plain") {
-      return false;
-    }
-    if (typeof request.source !== "string" || !request.source.trim()) return false;
-    if (request.source.length > CLOUDFLARE_M2M100_MAX_SOURCE_CHARACTERS) return false;
-    if (request.sourceLocale === request.targetLocale) return false;
-
     if (request.domain === "content") {
       const policyAllowed = this.dataPolicy.allows({
         provider: CLOUDFLARE_WORKERS_AI_PROVIDER,
@@ -79,6 +72,13 @@ export class CloudflareM2m100TranslationProvider implements MachineTranslationPr
         return false;
       }
     }
+
+    if (request.operation !== "plain" || request.messageKind !== "plain") {
+      return false;
+    }
+    if (typeof request.source !== "string" || !request.source.trim()) return false;
+    if (request.source.length > CLOUDFLARE_M2M100_MAX_SOURCE_CHARACTERS) return false;
+    if (request.sourceLocale === request.targetLocale) return false;
 
     return providerLanguageCode(request.sourceLocale) !== undefined
       && providerLanguageCode(request.targetLocale) !== undefined;
