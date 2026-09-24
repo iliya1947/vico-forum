@@ -337,7 +337,7 @@ function createPlanner(
     contentTranslations: new ContentTranslationService(
       new DrizzleContentTranslationStore(drizzle(connection)),
     ),
-    targetPolicy: { supports: () => true },
+    providerCapability: { supports: () => true },
     requestBudgetPolicy: { allows: () => true },
     tasks: new DrizzleContentTopicTitlePlanningStore(drizzle(connection)),
     enqueuer,
