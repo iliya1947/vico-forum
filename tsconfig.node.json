@@ -23,6 +23,7 @@
     "app/localization/translation-validation.ts",
     "app/localization/translation-failures.ts",
     "app/localization/cloudflare-m2m100-provider.ts",
+    "app/localization/content-translation.ts",
     "app/localization/translation-task-reconciliation.ts",
     "app/localization/translation-provider.ts",
     "app/localization/translation-execution.ts",

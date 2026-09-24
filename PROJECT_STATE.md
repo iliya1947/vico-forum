@@ -42,7 +42,7 @@ Vico Forum находится в ранней pre-release разработке.
 - generic `/:locale/*`, runtime `LocaleRegistry`, BCP-47 resolution, LTR/RTL и request-scoped
   `i18next`;
 - persistent locale registry, persistent UI translation storage и compiled bundle storage;
-- текущая migration history — `0000`–`0013`.
+- текущая migration history — `0000`–`0014`.
 
 ## Forum core — Stage 4
 
@@ -99,14 +99,30 @@ local/CI Stage 4 и остаются Stage 6.
   convergence obsolete persisted bundles только для disposable local `*_test` PostgreSQL;
   request path остаётся read-only и не вызывает translation provider, external execution не входит в Stage 5.
 
-Migration `0007`–`0010` содержит durable task lifecycle и generation-ordering foundation; `0012` добавляет bounded retry и persistent terminal-failure state; `0013` добавляет durable reconciliation progress и query-derived indexes.
+Migration `0007`–`0010` содержит durable task lifecycle и generation-ordering foundation; `0012` добавляет bounded retry и persistent terminal-failure state; `0013` добавляет durable reconciliation progress и query-derived indexes. `0014` добавляет revision-bound persistence для topic-title/post-body translations с database-backed revision ownership.
+
+### Stage 5B — реализованный persistence/read foundation
+
+В repository/local-CI path реализованы:
+
+- provider-neutral `ContentTranslationService` / `ContentTranslationStore` для topic title и post body;
+- отдельные PostgreSQL tables для topic-title и post-body translations с identity
+  `contentType + contentId + revisionId + targetLocale`;
+- database-backed revision-owner/source-locale foreign keys и cascade lifecycle без eligible orphan rows;
+- canonical non-`und` target locale, immutable revision source locale и validated
+  `persistent_manual | machine` provenance;
+- idempotent exact-identity writes с manual-over-machine trust preservation;
+- exact-current-revision reads: miss/stale/invalid/classified storage-unavailable result
+  возвращает original exact revision; unexpected storage/programming errors не маскируются.
 
 ### Stage 5 ещё не завершён
 
 Для завершения Stage 5 local/CI path ещё нужны:
 
-- Stage 5B `ContentTranslationService` и revision-bound перевод пользовательского контента;
-- Markdown AST/structured content translation path и content translation persistence.
+- content-specific provider/job execution, dedup/rate-limit и conditional publication path;
+- source-locale detection/correction capability boundary для `und`;
+- Markdown AST/structured content translation, technical-fragment protection и translated Markdown validation/rendering;
+- route/UI integration и product UX для запроса/показа перевода пользовательского контента.
 
 Реальные Cloudflare Queue bindings, provider credentials/calls и deployed provider/Queue smoke —
 это отдельная Stage 6 external acceptance и не являются условием обычных Stage 5 feature PR.
@@ -159,8 +175,9 @@ no-op verification. Перед следующим настоящим external sc
 
 ## Ближайший маршрут
 
-1. Реализовать Stage 5B revision-bound user-content translation и Markdown/structured content path.
-2. После завершения Stage 5 перейти к Stage 6 external integration по `ROADMAP.md` и
+1. Продолжить Stage 5B: content provider/job execution и source-locale detection boundary.
+2. Реализовать Markdown/structured content translation и затем route/UI integration.
+3. После завершения Stage 5 перейти к Stage 6 external integration по `ROADMAP.md` и
    `docs/database/*`.
 
 На текущем этапе external rollout не является блокером для продолжения Stage 5 local/CI работы.

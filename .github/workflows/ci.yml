@@ -38,6 +38,14 @@ jobs:
         run: pnpm build
       - name: Validate migration metadata
         run: pnpm db:check
+      - name: Verify Drizzle schema parity
+        run: |
+          pnpm exec drizzle-kit generate --name=ci-schema-parity
+          if [ -n "$(git status --porcelain -- drizzle)" ]; then
+            git status --short -- drizzle
+            git diff -- drizzle
+            exit 1
+          fi
   database:
     runs-on: ubuntu-latest
     services:
