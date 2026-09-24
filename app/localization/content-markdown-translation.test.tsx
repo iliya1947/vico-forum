@@ -56,7 +56,7 @@ describe("protected CommonMark translation", () => {
     expect(screen.getByText("human phrase").tagName).toBe("EM");
     expect(screen.getByRole("link", { name: "documentation" }).getAttribute("href"))
       .toBe("https://example.com/docs");
-    expect(container.querySelector("blockquote")).toHaveTextContent("שלום עולם");
+    expect(container.querySelector("blockquote")?.textContent).toContain("שלום עולם");
   });
 
   it("never exposes inline/fenced/indented code, autolink URLs, raw HTML, or image data as segments", () => {
