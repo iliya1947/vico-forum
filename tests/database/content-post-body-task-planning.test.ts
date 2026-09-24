@@ -5,6 +5,10 @@ import { Client, type DatabaseError } from "pg";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import {
+  CONTENT_TRANSLATION_REQUESTER_SUBJECT_KEY_LENGTH,
+  type ContentTranslationRequestBudgetAdmission,
+} from "../../app/localization/content-request-budget.server";
+import {
   ContentPostBodyTranslationPlanner,
 } from "../../app/localization/content-post-body-planning";
 import {
@@ -54,6 +58,7 @@ beforeAll(async () => {
     "drizzle/0014_content_translation_persistence.sql",
     "drizzle/0015_content_topic_title_tasks.sql",
     "drizzle/0016_content_post_body_tasks.sql",
+    "drizzle/0017_content_translation_request_budget.sql",
   ]) {
     const sql = (await readFile(migration, "utf8"))
       .replaceAll('"public".', `"${schemaName}".`);
@@ -64,6 +69,7 @@ beforeAll(async () => {
 beforeEach(async () => {
   await client.query(`
     truncate
+      content_translation_request_budget_counters,
       content_post_body_translation_tasks,
       content_topic_title_translation_tasks,
       translation_tasks,
@@ -120,6 +126,7 @@ describe("content post-body durable planning", () => {
     const result = await createPlanner(client, enqueuer).planAndDispatch(
       requestRevision(),
       "he",
+      budgetAdmission(),
     );
 
     expect(result).toMatchObject({
@@ -165,7 +172,7 @@ describe("content post-body durable planning", () => {
       revisionId: "post-b-r1",
       originalContent: "caller body is ignored",
       sourceLocale: "und",
-    }, "he");
+    }, "he", budgetAdmission());
 
     expect(result).toMatchObject({
       kind: "queued",
@@ -192,8 +199,8 @@ describe("content post-body durable planning", () => {
       const firstEnqueuer = new FakeTranslationTaskEnqueuer();
       const secondEnqueuer = new FakeTranslationTaskEnqueuer();
       const [first, duplicate] = await Promise.all([
-        createPlanner(client, firstEnqueuer).planAndDispatch(requestRevision(), "he"),
-        createPlanner(second, secondEnqueuer).planAndDispatch(requestRevision(), "he"),
+        createPlanner(client, firstEnqueuer).planAndDispatch(requestRevision(), "he", budgetAdmission()),
+        createPlanner(second, secondEnqueuer).planAndDispatch(requestRevision(), "he", budgetAdmission()),
       ]);
 
       expect([first, duplicate]).toEqual(expect.arrayContaining([
@@ -225,6 +232,7 @@ describe("content post-body durable planning", () => {
     const first = await createPlanner(client, firstEnqueuer).planAndDispatch(
       requestRevision(),
       "he",
+      budgetAdmission(),
     );
     if (first.kind !== "queued") throw new Error("expected queued fixture task");
 
@@ -240,7 +248,7 @@ describe("content post-body durable planning", () => {
        where id = '${first.task.id}'
     `);
 
-    const duplicate = await createPlanner(client).planAndDispatch(requestRevision(), "he");
+    const duplicate = await createPlanner(client).planAndDispatch(requestRevision(), "he", budgetAdmission());
     expect(duplicate).toMatchObject({
       kind: "queued",
       taskCreated: false,
@@ -272,7 +280,7 @@ describe("content post-body durable planning", () => {
   });
 
   it("does not reactivate a completed stable post-body identity", async () => {
-    const first = await createPlanner(client).planAndDispatch(requestRevision(), "he");
+    const first = await createPlanner(client).planAndDispatch(requestRevision(), "he", budgetAdmission());
     if (first.kind !== "queued") throw new Error("expected queued fixture task");
 
     await client.query(`
@@ -288,9 +296,10 @@ describe("content post-body durable planning", () => {
     `);
 
     await expect(
-      createPlanner(client).planAndDispatch(requestRevision(), "he"),
-    ).rejects.toMatchObject({
-      name: "ContentPostBodyTaskIntegrityError",
+      createPlanner(client).planAndDispatch(requestRevision(), "he", budgetAdmission()),
+    ).resolves.toMatchObject({
+      kind: "original",
+      reason: "task-completed",
     });
 
     const rows = await client.query<{ status: string; generation: number }>(`
@@ -305,7 +314,7 @@ describe("content post-body durable planning", () => {
   });
 
   it("gives a new current body revision a distinct task identity and monotonic generation", async () => {
-    const first = await createPlanner(client).planAndDispatch(requestRevision(), "he");
+    const first = await createPlanner(client).planAndDispatch(requestRevision(), "he", budgetAdmission());
     expect(first).toMatchObject({ kind: "queued", task: { generation: 1 } });
 
     await client.query("begin");
@@ -327,7 +336,7 @@ describe("content post-body durable planning", () => {
     const second = await createPlanner(client).planAndDispatch({
       ...requestRevision(),
       revisionId: "post-a-r2",
-    }, "he");
+    }, "he", budgetAdmission());
 
     expect(second).toMatchObject({
       kind: "queued",
@@ -348,7 +357,7 @@ describe("content post-body durable planning", () => {
     const authoritative = await store.readCurrentRevision("post-a");
     if (!authoritative) throw new Error("missing post fixture");
 
-    const planned = await createPlanner(client).planAndDispatch(requestRevision(), "he");
+    const planned = await createPlanner(client).planAndDispatch(requestRevision(), "he", budgetAdmission());
     if (planned.kind !== "queued") throw new Error("expected queued fixture task");
 
     await client.query(`
@@ -361,7 +370,7 @@ describe("content post-body durable planning", () => {
     `);
 
     await expect(
-      store.upsertPending(planned.task, authoritative),
+      store.upsertPending(planned.task, authoritative, budgetAdmission()),
     ).resolves.toEqual({ outcome: "revision-changed" });
   });
 
@@ -372,7 +381,7 @@ describe("content post-body durable planning", () => {
     });
 
     await expect(
-      createPlanner(client, enqueuer).planAndDispatch(requestRevision(), "he"),
+      createPlanner(client, enqueuer).planAndDispatch(requestRevision(), "he", budgetAdmission()),
     ).rejects.toBe(failure);
 
     const pending = await client.query<{ id: string; status: string }>(`
@@ -408,7 +417,7 @@ describe("content post-body durable planning", () => {
       ) values ('content-post-body', 'topic-title', 'post-a', 'he', 1)
     `), "23514");
 
-    const created = await createPlanner(client).planAndDispatch(requestRevision(), "he");
+    const created = await createPlanner(client).planAndDispatch(requestRevision(), "he", budgetAdmission());
     if (created.kind !== "queued") throw new Error("expected queued fixture task");
 
     await expectDatabaseCode(client.query(`
@@ -452,11 +461,23 @@ function createPlanner(
       new DrizzleContentTranslationStore(drizzle(connection)),
     ),
     providerCapability: { supports: () => true },
-    requestBudgetPolicy: { allows: () => true },
     tasks: new DrizzleContentPostBodyPlanningStore(drizzle(connection)),
     enqueuer,
     generationPolicyVersion: "content-v1",
   });
+}
+
+function budgetAdmission(
+  overrides: Partial<ContentTranslationRequestBudgetAdmission> = {},
+): ContentTranslationRequestBudgetAdmission {
+  return {
+    subjectKey: "P".repeat(CONTENT_TRANSLATION_REQUESTER_SUBJECT_KEY_LENGTH),
+    cost: 2,
+    windowSeconds: 60,
+    global: { name: "body-global", version: "test-v1", limit: 100 },
+    requester: { name: "body-requester", version: "test-v1", limit: 100 },
+    ...overrides,
+  };
 }
 
 function requestRevision() {
