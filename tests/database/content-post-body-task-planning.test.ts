@@ -1130,9 +1130,10 @@ describe("content post-body durable planning", () => {
         supports: () => true,
         translate: async (request) => machineResultForRequest(request),
       });
-      await expect(executor.execute(enqueuer.messages[0]!)).rejects.toMatchObject({
-        code: "P0001",
-      });
+      await expectWrappedDatabaseCode(
+        executor.execute(enqueuer.messages[0]!),
+        "P0001",
+      );
 
       const translation = await client.query<{ count: number }>(
         "select count(*)::int as count from forum_post_body_translations",
@@ -1425,6 +1426,29 @@ async function seedForumGraph(connection: Client): Promise<void> {
     await connection.query("commit");
   } catch (error) {
     await connection.query("rollback");
+    throw error;
+  }
+}
+
+async function expectWrappedDatabaseCode(
+  operation: Promise<unknown>,
+  code: string,
+): Promise<void> {
+  try {
+    await operation;
+    throw new Error(`Expected wrapped PostgreSQL error ${code}`);
+  } catch (error) {
+    const seen = new Set<unknown>();
+    let current: unknown = error;
+    while (
+      current
+      && (typeof current === "object" || typeof current === "function")
+      && !seen.has(current)
+    ) {
+      seen.add(current);
+      if ((current as DatabaseError).code === code) return;
+      current = (current as { cause?: unknown }).cause;
+    }
     throw error;
   }
 }
