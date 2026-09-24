@@ -275,5 +275,18 @@ function retryAfterSeconds(clock: DatabaseClock): number {
 }
 
 function isStorageUnavailable(error: unknown): boolean {
-  return isPostgresAvailabilityFailure(error) || isPostgresQueryTimeout(error);
+  if (isPostgresQueryTimeout(error)) return true;
+
+  const seen = new Set<unknown>();
+  let current = error;
+  while (
+    current
+    && (typeof current === "object" || typeof current === "function")
+    && !seen.has(current)
+  ) {
+    seen.add(current);
+    if (isPostgresAvailabilityFailure(current)) return true;
+    current = (current as { cause?: unknown }).cause;
+  }
+  return false;
 }
