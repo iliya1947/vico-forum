@@ -125,6 +125,15 @@ export interface ContentTopicTitleTranslationTaskStore {
   isCurrentContentTopicTitleGeneration(task: ContentTopicTitleTranslationTask): Promise<boolean>;
 }
 
+export interface ContentPostBodyTranslationTaskStore {
+  claimContentPostBody(
+    id: string,
+    leaseDurationMs: number,
+  ): Promise<ContentPostBodyTranslationTaskClaimResult>;
+  markStale(id: string, claimToken: string): Promise<boolean>;
+  isCurrentContentPostBodyGeneration(task: ContentPostBodyTranslationTask): Promise<boolean>;
+}
+
 export interface TranslationTaskStore {
   upsertPending(specification: UiTranslationJobSpecification): Promise<TranslationTask>;
   findById(id: string): Promise<TranslationTask | undefined>;
@@ -169,6 +178,18 @@ export type ContentTopicTitleTranslationTaskClaimResult =
   | {
       readonly outcome: "claimed";
       readonly task: ContentTopicTitleTranslationTask & {
+        readonly status: "processing";
+        readonly claimToken: string;
+      };
+      /** False only when an exhausted lease is reclaimed solely to persist terminal state. */
+      readonly attemptStarted: boolean;
+    }
+  | { readonly outcome: "not-found" | "already-claimed" | "terminal" };
+
+export type ContentPostBodyTranslationTaskClaimResult =
+  | {
+      readonly outcome: "claimed";
+      readonly task: ContentPostBodyTranslationTask & {
         readonly status: "processing";
         readonly claimToken: string;
       };

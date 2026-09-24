@@ -83,6 +83,26 @@ export function publicForumPostBodyProviderCapabilities(
   }));
 }
 
+export interface PublicForumPostBodyProviderRequestInput {
+  readonly sourceLocale: string;
+  readonly targetLocale: string;
+  readonly source: string;
+}
+
+export function publicForumPostBodyProviderRequest(
+  input: PublicForumPostBodyProviderRequestInput,
+): ContentMachineTranslationRequest {
+  return {
+    domain: "content",
+    contentClassification: PUBLIC_FORUM_POST_BODY_CLASSIFICATION,
+    sourceLocale: input.sourceLocale,
+    targetLocale: input.targetLocale,
+    messageKind: "plain",
+    operation: "plain",
+    source: input.source,
+  };
+}
+
 export interface ContentPostBodyProviderCapability {
   supports(input: PublicForumPostBodyProviderCapabilityInput): boolean;
 }

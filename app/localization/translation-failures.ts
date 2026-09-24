@@ -8,6 +8,7 @@ export type TranslationFailureCode =
   | "provider-output-invalid"
   | "message-kind-unsupported"
   | "dependency-temporary"
+  | "execution-bound-exceeded"
   | "attempt-budget-exhausted";
 
 export interface TranslationFailureRecord {

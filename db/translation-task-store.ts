@@ -6,6 +6,9 @@ import {
 } from "../app/localization/translation-failures";
 import { isPostgresAvailabilityFailure } from "../app/localization/persistent-registry";
 import {
+  contentPostBodyTaskIdentity,
+} from "../app/localization/content-post-body-planning";
+import {
   contentTopicTitleSourceFingerprint,
   contentTopicTitleTaskIdentity,
 } from "../app/localization/content-translation-planning";
@@ -21,8 +24,12 @@ import {
 } from "../app/localization/translation-task-reconciliation";
 import {
   DEFAULT_TRANSLATION_TASK_MAX_ATTEMPTS,
+  validateContentPostBodyTranslationTaskSpecification,
   validateContentTopicTitleTranslationTaskSpecification,
   validateUiTranslationJobSpecification,
+  type ContentPostBodyTranslationTask,
+  type ContentPostBodyTranslationTaskClaimResult,
+  type ContentPostBodyTranslationTaskStore,
   type ContentTopicTitleTranslationTask,
   type ContentTopicTitleTranslationTaskClaimResult,
   type ContentTopicTitleTranslationTaskStore,
@@ -40,6 +47,7 @@ import {
 } from "../app/localization/ui-translation-service";
 import { isPostgresQueryTimeout } from "./postgres-deadlines";
 import {
+  contentPostBodyTranslationTasks,
   contentTopicTitleTranslationTasks,
   translationTaskGenerationHeads,
   translationTasks,
@@ -47,6 +55,7 @@ import {
 
 type TranslationTaskRow = typeof translationTasks.$inferSelect;
 type ContentTopicTitleTaskRow = typeof contentTopicTitleTranslationTasks.$inferSelect;
+type ContentPostBodyTaskRow = typeof contentPostBodyTranslationTasks.$inferSelect;
 
 export class TranslationTaskIntegrityError extends Error {
   constructor(message: string) {
@@ -58,6 +67,7 @@ export class TranslationTaskIntegrityError extends Error {
 export class DrizzleTranslationTaskStore implements
   TranslationTaskStore,
   ContentTopicTitleTranslationTaskStore,
+  ContentPostBodyTranslationTaskStore,
   TranslationTaskKindReader,
   TranslationTaskFailureStore,
   TranslationTaskReconciliationStore {
@@ -451,6 +461,38 @@ export class DrizzleTranslationTaskStore implements
     });
   }
 
+  async claimContentPostBody(
+    id: string,
+    leaseDurationMs: number,
+  ): Promise<ContentPostBodyTranslationTaskClaimResult> {
+    return this.database.transaction(async (tx) => {
+      const claimed = await this.claimByKind(tx, id, leaseDurationMs, "content-post-body");
+      if (claimed.outcome !== "claimed") return claimed;
+
+      const [metadata] = await tx
+        .select()
+        .from(contentPostBodyTranslationTasks)
+        .where(eq(contentPostBodyTranslationTasks.taskId, id))
+        .limit(1);
+      if (!metadata) {
+        throw new TranslationTaskIntegrityError(
+          "claimed content post-body task is missing revision metadata",
+        );
+      }
+      const task = await parseContentPostBodyTaskRow(claimed.row, metadata);
+      if (task.status !== "processing" || !task.claimToken) {
+        throw new TranslationTaskIntegrityError(
+          "claimed content post-body task has invalid processing state",
+        );
+      }
+      return {
+        outcome: "claimed",
+        task: { ...task, status: "processing", claimToken: task.claimToken },
+        attemptStarted: claimed.attemptStarted,
+      };
+    });
+  }
+
   private async claimByKind(
     database: TranslationTaskTransaction,
     id: string,
@@ -684,6 +726,33 @@ export class DrizzleTranslationTaskStore implements
       throw error;
     }
   }
+
+  async isCurrentContentPostBodyGeneration(
+    task: ContentPostBodyTranslationTask,
+  ): Promise<boolean> {
+    try {
+      const rows = await this.database
+        .select({ currentGeneration: translationTaskGenerationHeads.currentGeneration })
+        .from(translationTaskGenerationHeads)
+        .where(unitCondition({
+          translationKind: task.translationKind,
+          sourceNamespace: "post-body",
+          sourceKey: task.sourceIdentity.postId,
+          targetLocale: task.targetLocale,
+        }))
+        .limit(1);
+      return rows[0]?.currentGeneration === task.generation;
+    } catch (error) {
+      if (isTaskStoreAvailabilityFailure(error)) {
+        throw new TranslationExecutionFailure(
+          "retryable",
+          "dependency-temporary",
+          "content translation generation state unavailable",
+        );
+      }
+      throw error;
+    }
+  }
 }
 
 type TranslationTaskTransaction =
@@ -892,6 +961,95 @@ async function parseContentTopicTitleTaskRow(
   return task;
 }
 
+async function parseContentPostBodyTaskRow(
+  row: TranslationTaskRow,
+  metadata: ContentPostBodyTaskRow,
+): Promise<ContentPostBodyTranslationTask> {
+  const task: ContentPostBodyTranslationTask = {
+    id: row.id,
+    taskIdentity: row.taskIdentity,
+    translationKind: "content-post-body",
+    sourceIdentity: {
+      postId: metadata.postId,
+      revisionId: metadata.revisionId,
+    },
+    revisionSourceLocale: metadata.revisionSourceLocale,
+    resolvedSourceLocale: metadata.resolvedSourceLocale,
+    sourceResolutionOrigin: metadata.sourceResolutionOrigin as
+      ContentPostBodyTranslationTask["sourceResolutionOrigin"],
+    sourceFingerprint: row.sourceFingerprint,
+    targetLocale: row.targetLocale,
+    protectedContentPolicyVersion: metadata.protectedContentPolicyVersion,
+    generationPolicyVersion: row.generationPolicyVersion,
+    generation: row.generation,
+    status: row.status as ContentPostBodyTranslationTask["status"],
+    attemptCount: row.attemptCount,
+    maxAttempts: row.maxAttempts,
+    lastFailureCode: row.lastFailureCode,
+    failureDisposition: row.failureDisposition as ContentPostBodyTranslationTask["failureDisposition"],
+    claimToken: row.claimToken,
+    claimedAt: row.claimedAt,
+    leaseExpiresAt: row.leaseExpiresAt,
+    staleAt: row.staleAt,
+    completedAt: row.completedAt,
+    failedAt: row.failedAt,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
+
+  if (
+    row.translationKind !== "content-post-body"
+    || row.sourceNamespace !== "post-body"
+    || row.sourceKey !== metadata.postId
+    || metadata.taskId !== row.id
+    || metadata.translationKind !== "content-post-body"
+    || metadata.sourceNamespace !== "post-body"
+  ) {
+    throw new TranslationTaskIntegrityError("stored content post-body task ownership is invalid");
+  }
+
+  validateContentPostBodyTranslationTaskSpecification(task);
+  if (await contentPostBodyTaskIdentity(task) !== task.taskIdentity) {
+    throw new TranslationTaskIntegrityError("content post-body task identity is invalid");
+  }
+  if (!isTaskStatus(task.status)) {
+    throw new TranslationTaskIntegrityError("invalid content post-body task status");
+  }
+  if (!Number.isSafeInteger(task.generation) || task.generation <= 0) {
+    throw new TranslationTaskIntegrityError("invalid content post-body task generation");
+  }
+  if (
+    !Number.isSafeInteger(task.attemptCount)
+    || !Number.isSafeInteger(task.maxAttempts)
+    || task.attemptCount < 0
+    || task.maxAttempts <= 0
+    || task.attemptCount > task.maxAttempts
+  ) {
+    throw new TranslationTaskIntegrityError("invalid content post-body task attempt budget");
+  }
+  if (
+    task.lastFailureCode !== null
+    && !/^[a-z0-9][a-z0-9-]{0,63}$/.test(task.lastFailureCode)
+  ) {
+    throw new TranslationTaskIntegrityError("invalid content post-body failure code");
+  }
+  if (
+    task.failureDisposition !== null
+    && task.failureDisposition !== "terminal"
+    && task.failureDisposition !== "retry-exhausted"
+  ) {
+    throw new TranslationTaskIntegrityError("invalid content post-body failure disposition");
+  }
+  if (!isUuid(task.id) || !(task.createdAt instanceof Date) || !(task.updatedAt instanceof Date)) {
+    throw new TranslationTaskIntegrityError("invalid content post-body task identity or timestamps");
+  }
+  if (task.updatedAt < task.createdAt) {
+    throw new TranslationTaskIntegrityError("content post-body task updatedAt precedes createdAt");
+  }
+  assertLifecycle(task);
+  return task;
+}
+
 type TranslationUnit = {
   translationKind: TranslationTaskKind;
   sourceNamespace: string;
@@ -923,12 +1081,17 @@ function isTranslationTaskKind(value: string): value is TranslationTaskKind {
 
 function isTaskStatus(
   value: string,
-): value is TranslationTask["status"] | ContentTopicTitleTranslationTask["status"] {
+): value is
+  | TranslationTask["status"]
+  | ContentTopicTitleTranslationTask["status"]
+  | ContentPostBodyTranslationTask["status"] {
   return value === "pending" || value === "processing" || value === "stale" ||
     value === "completed" || value === "failed";
 }
 
-function assertLifecycle(task: TranslationTask | ContentTopicTitleTranslationTask): void {
+function assertLifecycle(
+  task: TranslationTask | ContentTopicTitleTranslationTask | ContentPostBodyTranslationTask,
+): void {
   const processing = task.status === "processing" && task.claimToken && task.claimedAt &&
     task.leaseExpiresAt && !task.staleAt && !task.completedAt && !task.failedAt &&
     !task.failureDisposition && task.leaseExpiresAt > task.claimedAt;

@@ -1,4 +1,8 @@
 import type {
+  ContentPostBodyTaskExecutionResult,
+  ContentPostBodyTaskExecutor,
+} from "./content-post-body-execution";
+import type {
   ContentTopicTitleTaskExecutionResult,
   ContentTopicTitleTaskExecutor,
 } from "./content-translation-execution";
@@ -15,6 +19,7 @@ import type {
 export type TranslationTaskDispatchResult =
   | UiTranslationTaskExecutionResult
   | ContentTopicTitleTaskExecutionResult
+  | ContentPostBodyTaskExecutionResult
   | { readonly outcome: "not-found"; readonly delivery: "ack" };
 
 export class UnknownTranslationTaskKindError extends Error {
@@ -24,17 +29,11 @@ export class UnknownTranslationTaskKindError extends Error {
   }
 }
 
-export class TranslationTaskExecutorUnavailableError extends Error {
-  constructor(readonly translationKind: TranslationTaskKind) {
-    super(`translation task executor is not available yet: ${translationKind}`);
-    this.name = "TranslationTaskExecutorUnavailableError";
-  }
-}
-
 export interface TranslationTaskExecutorDispatcherDependencies {
   readonly kinds: TranslationTaskKindReader;
   readonly ui: Pick<UiTranslationTaskExecutor, "execute">;
   readonly contentTopicTitle: Pick<ContentTopicTitleTaskExecutor, "execute">;
+  readonly contentPostBody: Pick<ContentPostBodyTaskExecutor, "execute">;
 }
 
 /**
@@ -53,7 +52,7 @@ export class TranslationTaskExecutorDispatcher {
       case "content-topic-title":
         return this.dependencies.contentTopicTitle.execute(message);
       case "content-post-body":
-        throw new TranslationTaskExecutorUnavailableError(kind);
+        return this.dependencies.contentPostBody.execute(message);
       default:
         throw new UnknownTranslationTaskKindError(kind);
     }
