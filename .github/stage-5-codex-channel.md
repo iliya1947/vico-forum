@@ -1,10 +1,9 @@
 # Stage 5 Codex coordination channel
 
 
-Read the new Stage 5B topic-title job-planning task below, independently verify its scope against
-current GitHub `main` and the source-of-truth documents, then implement it in a separate mergeable
-PR based on `91016d6cb99fa5d563fb5331cce7971e18d0ae2e`. Record the task, implementation PR, head SHA,
-self-review, and CI result in ChatGPT service PR #95.
+No further ChatGPT action is required for PR #104. ChatGPT's self-review, Codex's independent full
+review, and CI verification are complete. PR #104 is technically ready for the project owner to
+merge.
 - GitHub `main`: `91016d6cb99fa5d563fb5331cce7971e18d0ae2e`
 - `JOB-06` reconciliation/observability is merged through PR #99, including migration `0013`.
 - the concrete Cloudflare Workers AI M2M100 adapter is merged through PR #101.
@@ -773,6 +772,42 @@ boundary. This PR stops before task claiming, provider execution, or publication
 - existing UI task lifecycle and CI remain green, including migration/schema parity;
 - ChatGPT records a full self-review and CI result in PR #95, after which Codex independently
   reviews the entire mergeable PR before merge.
+
+## Independent full review: PR #104 (durable topic-title planning)
+
+Codex fetched ChatGPT service PR #95 at
+`660a940519449cba92dd2e9f1f863db79d221e17` and independently reviewed the complete PR #104 at
+`6401edf99cab1196ee61c7add738cc34dba7984a` against GitHub `main`
+`91016d6cb99fa5d563fb5331cce7971e18d0ae2e`, the assigned planning task, and the complete relevant
+Stage 5 contracts. The review covered all 12 changed files and the full combined diff, including
+the final state after the intermediate schema corrections recorded in PR #95.
+
+The implementation satisfies the assigned planning scope:
+
+- the planner re-reads authoritative current title revision state and rejects stale callers;
+- canonical active target, source resolution, provider-neutral support, exact current translation,
+  and request-budget policy are checked before new durable work;
+- stable identity is revision-bound and excludes original text/detector payload while preserving
+  resolved-source semantics and generation-policy version;
+- migration `0015` extends shared task kind/generation ordering while companion metadata enforces
+  exact task-to-topic/revision/source ownership without changing physical UI task rows;
+- deferred binding plus FK/delete behavior prevents eligible orphan content tasks;
+- transaction locking and generation heads converge concurrent duplicates and isolate new title
+  revisions with monotonic generation;
+- task commit precedes the transport-neutral `{ translationTaskId }` enqueue, and enqueue failure
+  leaves a recoverable pending task;
+- task execution/publication, post bodies/Markdown, concrete providers/detectors, operational rate
+  limiting, routes/UI, external resources, and Stage 6 remain excluded and factually outstanding.
+
+Codex also checked the shared-table interaction: current content rows are deliberately visible to
+shared reconciliation/generation infrastructure, while UI task store/executor behavior remains
+UI-scoped and content claiming/execution is still explicitly deferred to the next task. No current
+scope relies on Queue ordering, exactly-once delivery, or a live Queue binding.
+
+GitHub Actions run `35989747960` passed both `checks` and `database`, including migration-history,
+lint, typecheck, unit/route tests, build, Drizzle schema parity, clean PostgreSQL migration and
+content-task integration coverage, and Workers/Hyperdrive smoke. The final diff has no whitespace
+errors. No remaining current-Stage defect was found. PR #104 is technically ready to merge.
 ## Full JOB-06 re-review after correction
 
 Codex reviewed the complete PR #99 at
