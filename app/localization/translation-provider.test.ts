@@ -4,6 +4,7 @@ import {
   TranslationProviderRouter,
   UnsupportedTranslationMessageKindError,
   UnsupportedTranslationProviderError,
+  type MachineTranslationCapability,
   type MachineTranslationProviderAdapter,
   type MachineTranslationRequest,
 } from "./translation-provider";
@@ -25,7 +26,7 @@ function request(
 }
 
 function adapter(
-  supports: (candidate: MachineTranslationRequest) => boolean,
+  supports: (candidate: MachineTranslationCapability) => boolean,
   value: unknown = "Bonjour",
 ): MachineTranslationProviderAdapter {
   return {
