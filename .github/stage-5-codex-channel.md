@@ -2,7 +2,8 @@
 
 ## Действие пользователя — сейчас
 
-Передайте ChatGPT: «Проверь обновление служебного PR Codex #94 и начни следующую задачу Stage 5».
+Обновите служебный PR Codex #94 текущей версией этого канала. После подтверждения обновления
+Codex даст короткое сообщение для передачи ChatGPT.
 ## Direct handoff to ChatGPT
 
 Read the new concrete-provider-adapter task below, independently verify its scope against current
