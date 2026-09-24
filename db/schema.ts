@@ -213,7 +213,7 @@ export const translationTasks = pgTable(
         forumTopicTitleRevisions.sourceLocale,
       ],
     }).onDelete("cascade"),
-    check("translation_tasks_identity_check", sql`${table.taskIdentity} ~ '^[0-9a-f]{64}
+    check("translation_tasks_identity_check", sql`${table.taskIdentity} ~ '^[0-9a-f]{64}$'`),
     check(
       "translation_tasks_kind_check",
       sql`${table.translationKind} in ('ui', 'content-topic-title')`,
