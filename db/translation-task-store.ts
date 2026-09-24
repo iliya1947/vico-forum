@@ -1,6 +1,10 @@
 import { and, eq, gte, lt, lte, or, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import type { TranslationFailureRecord } from "../app/localization/translation-failures";
+import {
+  TranslationExecutionFailure,
+  type TranslationFailureRecord,
+} from "../app/localization/translation-failures";
+import { isPostgresAvailabilityFailure } from "../app/localization/persistent-registry";
 import {
   contentTopicTitleSourceFingerprint,
   contentTopicTitleTaskIdentity,
@@ -34,6 +38,7 @@ import {
   uiTranslationJobIdentity,
   type UiTranslationJobSpecification,
 } from "../app/localization/ui-translation-service";
+import { isPostgresQueryTimeout } from "./postgres-deadlines";
 import {
   contentTopicTitleTranslationTasks,
   translationTaskGenerationHeads,
@@ -656,17 +661,28 @@ export class DrizzleTranslationTaskStore implements
   async isCurrentContentTopicTitleGeneration(
     task: ContentTopicTitleTranslationTask,
   ): Promise<boolean> {
-    const rows = await this.database
-      .select({ currentGeneration: translationTaskGenerationHeads.currentGeneration })
-      .from(translationTaskGenerationHeads)
-      .where(unitCondition({
-        translationKind: task.translationKind,
-        sourceNamespace: "topic-title",
-        sourceKey: task.sourceIdentity.topicId,
-        targetLocale: task.targetLocale,
-      }))
-      .limit(1);
-    return rows[0]?.currentGeneration === task.generation;
+    try {
+      const rows = await this.database
+        .select({ currentGeneration: translationTaskGenerationHeads.currentGeneration })
+        .from(translationTaskGenerationHeads)
+        .where(unitCondition({
+          translationKind: task.translationKind,
+          sourceNamespace: "topic-title",
+          sourceKey: task.sourceIdentity.topicId,
+          targetLocale: task.targetLocale,
+        }))
+        .limit(1);
+      return rows[0]?.currentGeneration === task.generation;
+    } catch (error) {
+      if (isTaskStoreAvailabilityFailure(error)) {
+        throw new TranslationExecutionFailure(
+          "retryable",
+          "dependency-temporary",
+          "content translation generation state unavailable",
+        );
+      }
+      throw error;
+    }
   }
 }
 
@@ -968,6 +984,23 @@ function assertFailureRecord(failure: TranslationFailureRecord): void {
   if (!/^[a-z0-9][a-z0-9-]{0,63}$/.test(failure.code)) {
     throw new TypeError("translation failure code is invalid");
   }
+}
+
+function isTaskStoreAvailabilityFailure(error: unknown): boolean {
+  const seen = new Set<unknown>();
+  let current = error;
+  while (
+    current
+    && (typeof current === "object" || typeof current === "function")
+    && !seen.has(current)
+  ) {
+    seen.add(current);
+    if (isPostgresAvailabilityFailure(current) || isPostgresQueryTimeout(current)) {
+      return true;
+    }
+    current = (current as { cause?: unknown }).cause;
+  }
+  return false;
 }
 
 function nonNegativeInteger(value: number): boolean {
