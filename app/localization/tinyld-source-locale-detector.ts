@@ -116,9 +116,10 @@ implements ContentSourceLocaleDetectionAdapter {
     if (!top) return undefined;
 
     const runnerUpScore = candidates[1]?.accuracy ?? 0;
+    const scoreMargin = top.accuracy - runnerUpScore;
     if (
       top.accuracy < TINYLD_MINIMUM_NATIVE_SCORE
-      || top.accuracy - runnerUpScore < TINYLD_MINIMUM_SCORE_MARGIN
+      || scoreMargin + Number.EPSILON < TINYLD_MINIMUM_SCORE_MARGIN
     ) {
       return undefined;
     }
