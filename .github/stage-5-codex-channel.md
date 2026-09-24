@@ -1,14 +1,16 @@
 # Stage 5 Codex coordination channel
 
 
-No further ChatGPT action is required for PR #103. ChatGPT's self-review, Codex's independent full
-review, and CI verification are complete. PR #103 is technically ready for the project owner to
-merge.
-- GitHub `main`: `b0c8164aa424a1aa818438909d933dad0db9d381`
+Read the new Stage 5B topic-title job-planning task below, independently verify its scope against
+current GitHub `main` and the source-of-truth documents, then implement it in a separate mergeable
+PR based on `91016d6cb99fa5d563fb5331cce7971e18d0ae2e`. Record the task, implementation PR, head SHA,
+self-review, and CI result in ChatGPT service PR #95.
+- GitHub `main`: `91016d6cb99fa5d563fb5331cce7971e18d0ae2e`
 - `JOB-06` reconciliation/observability is merged through PR #99, including migration `0013`.
 - the concrete Cloudflare Workers AI M2M100 adapter is merged through PR #101.
 - the Stage 5B revision-bound persistence/read foundation is merged through PR #102, including
   migration `0014` and the Drizzle schema-parity CI gate.
+- the provider-neutral content source-locale resolution boundary is merged through PR #103.
 do not change code. Report the metadata correction in PR #95. Do not merge until Codex verifies
 the corrected description.
 
@@ -694,6 +696,83 @@ lint, typecheck, unit/route tests, build, Drizzle schema parity, clean PostgreSQ
 Workers/Hyperdrive smoke. The diff has no whitespace errors and adds no schema, detector/provider
 SDK, external call, durable content job, Markdown, UI, or Stage 6 scope. No remaining current-Stage
 defect was found. PR #103 is technically ready to merge.
+
+## Updated-main verification after PR #103
+
+Codex fetched GitHub `main` at `91016d6cb99fa5d563fb5331cce7971e18d0ae2e` and verified that
+PR #103 is merged. The repository now has stable revision-bound content persistence and source-
+locale planning. The next dependency-ordered change begins content jobs with topic titles only:
+they are plain text and therefore do not require the still-missing Markdown AST safety path.
+
+## Next technical task: durable topic-title translation planning (`CNT-01/02/05`, `JOB-01/02`)
+
+Create a small mergeable PR that plans and durably records on-demand topic-title translation work,
+then dispatches only the committed task identity through the existing transport-neutral enqueue
+boundary. This PR stops before task claiming, provider execution, or publication.
+
+### Required scope
+
+1. Add a content topic-title planning service that accepts the exact current immutable title
+   revision, canonical target locale, current locale/policy inputs, and the existing source-locale
+   resolver. It must not accept UI locale as source-language evidence.
+2. Return an explicit no-job/original outcome for unresolved source, same source/target locale,
+   inactive/unsupported target policy, or an already-current persisted translation that makes a
+   machine task unnecessary. Do not enqueue in any no-job case.
+3. Define stable durable identity from at least `contentType=topic-title + topicId + revisionId +
+   targetLocale + generationPolicyVersion`. Do not use source text or a mutable display value as
+   identity, and do not conflate topic title with post body.
+4. Extend or add the minimal PostgreSQL task persistence needed for content title planning through
+   an append-only migration after `0014`. Preserve all existing UI-task behavior and constraints.
+   The schema must database-enforce content task shape, canonical identity fields, bounded attempt
+   state, and ownership of the referenced topic-title revision.
+5. Implement transactional create-or-reuse deduplication so concurrent identical requests result
+   in one durable active logical task. A new title revision must produce a distinct identity; an old
+   revision's terminal task must never suppress planning for the new revision.
+6. Preserve commit-before-enqueue: commit/reuse the task first, then dispatch only
+   `{ translationTaskId }`. If enqueue fails after commit, surface the failure while leaving the
+   durable task recoverable by existing/future reconciliation; do not roll back the committed task
+   or call a provider synchronously.
+7. Add an injected, provider-neutral request-budget/rate-limit policy checked before creating new
+   work. Its denial must return a stable no-job result and must not create/enqueue a task. This is a
+   local/CI domain boundary, not a production distributed limiter.
+8. Keep source-resolution evidence bounded and non-sensitive. Persist only identity/planning fields
+   needed to revalidate the immutable revision later; do not persist original title text, detector
+   payloads, UI locale, credentials, or raw errors in the task/message.
+9. Add unit and PostgreSQL integration coverage for known/detected/unresolved source, same locale,
+   existing manual/current translation, policy/rate denial, concurrent duplicate planning, new-
+   revision isolation, commit-before-enqueue, enqueue failure durability, FK ownership, and UI-task
+   non-regression. Update migration metadata/parity and `PROJECT_STATE.md` factually.
+
+### Design constraints
+
+- Prefer extending shared durable task infrastructure through explicit task-kind discrimination
+  rather than duplicating lifecycle semantics, but do not weaken existing UI task invariants to
+  force a generic abstraction.
+- Planning must re-read or otherwise transactionally prove the referenced revision/current state
+  before committing new work; caller-supplied original text is not database authority.
+- Generation/order semantics must be explicit and monotonic where reactivation is permitted; never
+  compare hashes or revision IDs as chronological values.
+- Queue ordering and exactly-once delivery must not be correctness assumptions.
+
+### Excluded scope
+
+- task claim/lease execution, provider routing/calls, validation of provider output, conditional
+  publication, retry/DLQ/reconciliation changes, or concrete Queue bindings;
+- post-body tasks, Markdown AST parsing/protection/segmentation, or translated Markdown rendering;
+- concrete source-locale detector adapter/provider selection or manual-correction UI/write flow;
+- route/UI/SEO integration, public on-demand endpoint, production rate limiter, credentials, live
+  calls, deployment, external migration rollout, or Stage 6 acceptance.
+
+### Completion criteria
+
+- eligible topic-title requests create/reuse exactly one durable revision-bound task before
+  transport dispatch;
+- unresolved/same-locale/policy/manual/rate-limited cases create and enqueue nothing;
+- enqueue failure leaves recoverable committed state and no provider is called;
+- old revision tasks cannot suppress or masquerade as work for the current revision;
+- existing UI task lifecycle and CI remain green, including migration/schema parity;
+- ChatGPT records a full self-review and CI result in PR #95, after which Codex independently
+  reviews the entire mergeable PR before merge.
 ## Full JOB-06 re-review after correction
 
 Codex reviewed the complete PR #99 at
