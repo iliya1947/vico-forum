@@ -3,8 +3,12 @@ import type { MessageKind } from "./catalog";
 export type TranslationDomain = "ui" | "content";
 export type TranslationOperation = "plain" | "structured";
 
-export interface MachineTranslationRequest {
-  readonly domain: TranslationDomain;
+export type ContentDataClassification =
+  | "public-forum-topic-title"
+  | "public-forum-post-body"
+  | "non-public-content";
+
+interface MachineTranslationRequestBase {
   readonly sourceLocale: string;
   readonly targetLocale: string;
   readonly messageKind: MessageKind;
@@ -12,6 +16,20 @@ export interface MachineTranslationRequest {
   readonly source: string | Readonly<Record<string, string>>;
   readonly requiredBranches?: readonly string[];
 }
+
+export interface UiMachineTranslationRequest extends MachineTranslationRequestBase {
+  readonly domain: "ui";
+  readonly contentClassification?: never;
+}
+
+export interface ContentMachineTranslationRequest extends MachineTranslationRequestBase {
+  readonly domain: "content";
+  readonly contentClassification: ContentDataClassification;
+}
+
+export type MachineTranslationRequest =
+  | UiMachineTranslationRequest
+  | ContentMachineTranslationRequest;
 
 export interface MachineTranslationProvenance {
   readonly provider: string;
@@ -51,10 +69,13 @@ export class UnsupportedTranslationMessageKindError extends Error {
 export class TranslationProviderRouter {
   constructor(private readonly adapters: readonly MachineTranslationProviderAdapter[]) {}
 
+  supports(request: MachineTranslationRequest): boolean {
+    assertOperationMatchesMessageKind(request);
+    return this.adapters.some((candidate) => candidate.supports(request));
+  }
+
   async translate(request: MachineTranslationRequest): Promise<MachineTranslationResult> {
-    if (request.operation !== translationOperation(request.messageKind)) {
-      throw new TypeError(`Translation operation does not match message kind: ${request.messageKind}`);
-    }
+    assertOperationMatchesMessageKind(request);
     const adapter = this.adapters.find((candidate) => candidate.supports(request));
     if (!adapter) throw new UnsupportedTranslationProviderError(request);
     return adapter.translate(request);
@@ -71,5 +92,11 @@ export function translationOperation(messageKind: MessageKind): TranslationOpera
       return "structured";
     case "contextual/select":
       throw new UnsupportedTranslationMessageKindError(messageKind);
+  }
+}
+
+function assertOperationMatchesMessageKind(request: MachineTranslationRequest): void {
+  if (request.operation !== translationOperation(request.messageKind)) {
+    throw new TypeError(`Translation operation does not match message kind: ${request.messageKind}`);
   }
 }
