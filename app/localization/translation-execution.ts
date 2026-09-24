@@ -92,7 +92,7 @@ export class UiTranslationTaskExecutor {
       const result = await this.dependencies.providerRouter.translate(request);
       return acknowledge(await this.dependencies.publisher.publish(consumed.context, result));
     } catch (error) {
-      const failure = classifyExecutionFailure(error);
+      const failure = classifyTranslationExecutionFailure(error);
       if (!failure) throw error;
       return this.persistFailure(consumed.context, failure);
     }
@@ -150,7 +150,9 @@ function providerRequest(
   };
 }
 
-function classifyExecutionFailure(error: unknown): TranslationFailureRecord | undefined {
+export function classifyTranslationExecutionFailure(
+  error: unknown,
+): TranslationFailureRecord | undefined {
   if (error instanceof TranslationExecutionFailure) {
     return { disposition: error.disposition, code: error.code };
   }
