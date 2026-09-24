@@ -21,9 +21,11 @@ import {
   type ContentSourceLocaleDetectionAdapter,
 } from "../../app/localization/content-source-locale";
 import { ContentTranslationService } from "../../app/localization/content-translation";
+import { ContentTopicTitleTranslationPlanner } from "../../app/localization/content-translation-planning";
 import { localeRegistry } from "../../app/localization/registry";
 import { FakeTranslationTaskEnqueuer } from "../../app/localization/translation-tasks";
 import { DrizzleContentPostBodyPlanningStore } from "../../db/content-post-body-task-store";
+import { DrizzleContentTopicTitlePlanningStore } from "../../db/content-topic-title-task-store";
 import { DrizzleContentTranslationStore } from "../../db/content-translation-store";
 import { DrizzleTranslationTaskStore } from "../../db/translation-task-store";
 
@@ -662,6 +664,52 @@ describe("content post-body durable planning", () => {
     }
   });
 
+  it("keeps title and body budget policies isolated even for the same requester", async () => {
+    const sharedSubject = "S".repeat(CONTENT_TRANSLATION_REQUESTER_SUBJECT_KEY_LENGTH);
+    const titleAdmission: ContentTranslationRequestBudgetAdmission = {
+      subjectKey: sharedSubject,
+      cost: 1,
+      windowSeconds: 60,
+      global: { name: "isolation-title-global", version: "v1", limit: 10 },
+      requester: { name: "isolation-title-requester", version: "v1", limit: 10 },
+    };
+    const bodyAdmission: ContentTranslationRequestBudgetAdmission = {
+      subjectKey: sharedSubject,
+      cost: 3,
+      windowSeconds: 60,
+      global: { name: "isolation-body-global", version: "v1", limit: 10 },
+      requester: { name: "isolation-body-requester", version: "v1", limit: 10 },
+    };
+
+    const title = await createTitlePlanner(client).planAndDispatch({
+      contentType: "topic-title",
+      contentId: "topic-a",
+      revisionId: "title-a-r1",
+      originalContent: "caller title",
+      sourceLocale: "und",
+    }, "he", titleAdmission);
+    const body = await createPlanner(client).planAndDispatch(
+      requestRevision(),
+      "he",
+      bodyAdmission,
+    );
+    expect(title.kind).toBe("queued");
+    expect(body.kind).toBe("queued");
+
+    const counters = await client.query<{ scope: string; used_units: number }>(`
+      select scope, used_units::int
+        from content_translation_request_budget_counters
+       where scope like 'isolation-%'
+       order by scope
+    `);
+    expect(counters.rows).toEqual([
+      { scope: "isolation-body-global@v1", used_units: 3 },
+      { scope: "isolation-body-requester@v1", used_units: 3 },
+      { scope: "isolation-title-global@v1", used_units: 1 },
+      { scope: "isolation-title-requester@v1", used_units: 1 },
+    ]);
+  });
+
   it("database-enforces post revision ownership and title/body namespace isolation", async () => {
     await expectDatabaseCode(client.query(`
       insert into translation_tasks (
@@ -725,6 +773,29 @@ function createPlanner(
     providerCapability: { supports: () => true },
     tasks: new DrizzleContentPostBodyPlanningStore(drizzle(connection)),
     enqueuer,
+    generationPolicyVersion: "content-v1",
+  });
+}
+
+function createTitlePlanner(
+  connection: Client,
+): ContentTopicTitleTranslationPlanner {
+  return new ContentTopicTitleTranslationPlanner({
+    localeRegistry,
+    sourceLocaleResolver: new ContentSourceLocaleResolver(
+      {
+        detect: async () => {
+          throw new Error("known title source locale must bypass detection");
+        },
+      },
+      new ThresholdContentSourceLocalePolicy(0.8, () => true),
+    ),
+    contentTranslations: new ContentTranslationService(
+      new DrizzleContentTranslationStore(drizzle(connection)),
+    ),
+    providerCapability: { supports: () => true },
+    tasks: new DrizzleContentTopicTitlePlanningStore(drizzle(connection)),
+    enqueuer: new FakeTranslationTaskEnqueuer(),
     generationPolicyVersion: "content-v1",
   });
 }
