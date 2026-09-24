@@ -499,6 +499,7 @@ export const forumTopicTitleRevisions = pgTable(
   },
   (table) => [
     unique("forum_topic_title_revisions_topic_id_id_unique").on(table.topicId, table.id),
+    unique("forum_topic_title_revisions_owner_source_unique").on(table.topicId, table.id, table.sourceLocale),
     foreignKey({
       name: "forum_topic_title_revisions_topic_id_fk",
       columns: [table.topicId],
@@ -544,6 +545,7 @@ export const forumPostRevisions = pgTable(
   },
   (table) => [
     unique("forum_post_revisions_post_id_id_unique").on(table.postId, table.id),
+    unique("forum_post_revisions_owner_source_unique").on(table.postId, table.id, table.sourceLocale),
     foreignKey({
       name: "forum_post_revisions_post_id_fk",
       columns: [table.postId],
@@ -551,6 +553,108 @@ export const forumPostRevisions = pgTable(
     }).onDelete("cascade"),
     check("forum_post_revisions_content_check", sql`btrim(${table.originalContent}) <> ''`),
     check("forum_post_revisions_source_locale_check", sourceLocaleCheck(table.sourceLocale)),
+  ],
+);
+
+export const forumTopicTitleTranslations = pgTable(
+  "forum_topic_title_translations",
+  {
+    topicId: text("topic_id").notNull(),
+    revisionId: text("revision_id").notNull(),
+    targetLocale: text("target_locale").notNull(),
+    sourceLocale: text("source_locale").notNull(),
+    translatedContent: text("translated_content").notNull(),
+    origin: text("origin").notNull(),
+    provider: text("provider"),
+    providerModel: text("provider_model"),
+    attribution: text("attribution"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({
+      name: "forum_topic_title_translations_pk",
+      columns: [table.topicId, table.revisionId, table.targetLocale],
+    }),
+    foreignKey({
+      name: "forum_topic_title_translations_revision_fk",
+      columns: [table.topicId, table.revisionId, table.sourceLocale],
+      foreignColumns: [
+        forumTopicTitleRevisions.topicId,
+        forumTopicTitleRevisions.id,
+        forumTopicTitleRevisions.sourceLocale,
+      ],
+    }).onDelete("cascade"),
+    check("forum_topic_title_translations_target_locale_check", contentTargetLocaleCheck(table.targetLocale)),
+    check("forum_topic_title_translations_source_locale_check", sourceLocaleCheck(table.sourceLocale)),
+    check(
+      "forum_topic_title_translations_distinct_locale_check",
+      sql`${table.sourceLocale} = 'und' or lower(${table.sourceLocale}) <> lower(${table.targetLocale})`,
+    ),
+    check("forum_topic_title_translations_content_check", sql`btrim(${table.translatedContent}) <> ''`),
+    check(
+      "forum_topic_title_translations_origin_check",
+      sql`${table.origin} in ('persistent_manual', 'machine')`,
+    ),
+    check(
+      "forum_topic_title_translations_metadata_check",
+      contentTranslationMetadataCheck(table.origin, table.provider, table.providerModel),
+    ),
+    check(
+      "forum_topic_title_translations_attribution_check",
+      sql`${table.attribution} is null or btrim(${table.attribution}) <> ''`,
+    ),
+  ],
+);
+
+export const forumPostBodyTranslations = pgTable(
+  "forum_post_body_translations",
+  {
+    postId: text("post_id").notNull(),
+    revisionId: text("revision_id").notNull(),
+    targetLocale: text("target_locale").notNull(),
+    sourceLocale: text("source_locale").notNull(),
+    translatedContent: text("translated_content").notNull(),
+    origin: text("origin").notNull(),
+    provider: text("provider"),
+    providerModel: text("provider_model"),
+    attribution: text("attribution"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({
+      name: "forum_post_body_translations_pk",
+      columns: [table.postId, table.revisionId, table.targetLocale],
+    }),
+    foreignKey({
+      name: "forum_post_body_translations_revision_fk",
+      columns: [table.postId, table.revisionId, table.sourceLocale],
+      foreignColumns: [
+        forumPostRevisions.postId,
+        forumPostRevisions.id,
+        forumPostRevisions.sourceLocale,
+      ],
+    }).onDelete("cascade"),
+    check("forum_post_body_translations_target_locale_check", contentTargetLocaleCheck(table.targetLocale)),
+    check("forum_post_body_translations_source_locale_check", sourceLocaleCheck(table.sourceLocale)),
+    check(
+      "forum_post_body_translations_distinct_locale_check",
+      sql`${table.sourceLocale} = 'und' or lower(${table.sourceLocale}) <> lower(${table.targetLocale})`,
+    ),
+    check("forum_post_body_translations_content_check", sql`btrim(${table.translatedContent}) <> ''`),
+    check(
+      "forum_post_body_translations_origin_check",
+      sql`${table.origin} in ('persistent_manual', 'machine')`,
+    ),
+    check(
+      "forum_post_body_translations_metadata_check",
+      contentTranslationMetadataCheck(table.origin, table.provider, table.providerModel),
+    ),
+    check(
+      "forum_post_body_translations_attribution_check",
+      sql`${table.attribution} is null or btrim(${table.attribution}) <> ''`,
+    ),
   ],
 );
 
@@ -575,5 +679,29 @@ function arrayShapeCheck(column: AnyPgColumn) {
 }
 
 function sourceLocaleCheck(column: AnyPgColumn) {
-  return sql`${column} = btrim(${column}) and ${column} ~ '^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*$'`;
+  return sql`${column} = btrim(${column}) and ${column} ~ '^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*`;
+}
+
+function contentTargetLocaleCheck(column: AnyPgColumn) {
+  return sql`${column} = btrim(${column})
+    and lower(${column}) <> 'und'
+    and ${column} ~ '^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*`;
+}
+
+function contentTranslationMetadataCheck(
+  origin: AnyPgColumn,
+  provider: AnyPgColumn,
+  providerModel: AnyPgColumn,
+) {
+  return sql`(
+    ${origin} = 'machine'
+    and ${provider} is not null
+    and btrim(${provider}) <> ''
+    and ${providerModel} is not null
+    and btrim(${providerModel}) <> ''
+  ) or (
+    ${origin} = 'persistent_manual'
+    and ${provider} is null
+    and ${providerModel} is null
+  )`;
 }
