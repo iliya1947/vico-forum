@@ -26,7 +26,56 @@ import {
 } from "../app/localization/ui-translation-service";
 import { translationTaskGenerationHeads, translationTasks } from "./schema";
 
-type TranslationTaskRow = typeof translationTasks.$inferSelect;
+const uiTranslationTaskColumns = {
+  id: translationTasks.id,
+  taskIdentity: translationTasks.taskIdentity,
+  translationKind: translationTasks.translationKind,
+  sourceNamespace: translationTasks.sourceNamespace,
+  sourceKey: translationTasks.sourceKey,
+  sourceFingerprint: translationTasks.sourceFingerprint,
+  targetLocale: translationTasks.targetLocale,
+  generationPolicyVersion: translationTasks.generationPolicyVersion,
+  generation: translationTasks.generation,
+  status: translationTasks.status,
+  attemptCount: translationTasks.attemptCount,
+  maxAttempts: translationTasks.maxAttempts,
+  lastFailureCode: translationTasks.lastFailureCode,
+  failureDisposition: translationTasks.failureDisposition,
+  claimToken: translationTasks.claimToken,
+  claimedAt: translationTasks.claimedAt,
+  leaseExpiresAt: translationTasks.leaseExpiresAt,
+  staleAt: translationTasks.staleAt,
+  completedAt: translationTasks.completedAt,
+  failedAt: translationTasks.failedAt,
+  createdAt: translationTasks.createdAt,
+  updatedAt: translationTasks.updatedAt,
+} as const;
+
+type TranslationTaskRow = Pick<
+  typeof translationTasks.$inferSelect,
+  | "id"
+  | "taskIdentity"
+  | "translationKind"
+  | "sourceNamespace"
+  | "sourceKey"
+  | "sourceFingerprint"
+  | "targetLocale"
+  | "generationPolicyVersion"
+  | "generation"
+  | "status"
+  | "attemptCount"
+  | "maxAttempts"
+  | "lastFailureCode"
+  | "failureDisposition"
+  | "claimToken"
+  | "claimedAt"
+  | "leaseExpiresAt"
+  | "staleAt"
+  | "completedAt"
+  | "failedAt"
+  | "createdAt"
+  | "updatedAt"
+>;
 
 export class TranslationTaskIntegrityError extends Error {
   constructor(message: string) {
@@ -63,7 +112,8 @@ export class DrizzleTranslationTaskStore implements TranslationTaskStore, Transl
       if (!Number.isSafeInteger(currentGeneration) || currentGeneration! <= 0) {
         throw new TranslationTaskIntegrityError("translation generation head is missing or invalid");
       }
-      const existingRows = await transaction.select().from(translationTasks)
+      const existingRows = await transaction.select(uiTranslationTaskColumns)
+      .from(translationTasks)
         .where(eq(translationTasks.taskIdentity, specification.taskIdentity)).limit(1);
       if (existingRows[0]) {
         const existing = await parseTaskRow(existingRows[0]);
@@ -88,7 +138,7 @@ export class DrizzleTranslationTaskStore implements TranslationTaskStore, Transl
           completedAt: null,
           failedAt: null,
           updatedAt: databaseNow,
-        }).where(and(eq(translationTasks.id, existing.id), eq(translationTasks.status, "stale"))).returning();
+        }).where(and(eq(translationTasks.id, existing.id), eq(translationTasks.status, "stale"))).returning(uiTranslationTaskColumns);
 
         if (generation !== currentGeneration) {
           await transaction.update(translationTaskGenerationHeads).set({
@@ -112,7 +162,7 @@ export class DrizzleTranslationTaskStore implements TranslationTaskStore, Transl
         status: "pending",
         attemptCount: 0,
         maxAttempts: DEFAULT_TRANSLATION_TASK_MAX_ATTEMPTS,
-      }).returning();
+      }).returning(uiTranslationTaskColumns);
       if (generation !== currentGeneration) {
         await transaction.update(translationTaskGenerationHeads).set({
           currentGeneration: generation,
@@ -129,7 +179,7 @@ export class DrizzleTranslationTaskStore implements TranslationTaskStore, Transl
   async findById(id: string): Promise<TranslationTask | undefined> {
     if (!isUuid(id)) throw new TypeError("translation task id must be a UUID");
     const rows = await this.database
-      .select()
+      .select(uiTranslationTaskColumns)
       .from(translationTasks)
       .where(eq(translationTasks.id, id))
       .limit(1);
@@ -141,7 +191,7 @@ export class DrizzleTranslationTaskStore implements TranslationTaskStore, Transl
       throw new TypeError("taskIdentity must be a lowercase SHA-256 digest");
     }
     const rows = await this.database
-      .select()
+      .select(uiTranslationTaskColumns)
       .from(translationTasks)
       .where(eq(translationTasks.taskIdentity, taskIdentity))
       .limit(1);
@@ -404,7 +454,7 @@ export class DrizzleTranslationTaskStore implements TranslationTaskStore, Transl
         claimable,
         lt(translationTasks.attemptCount, translationTasks.maxAttempts),
       ))
-      .returning();
+      .returning(uiTranslationTaskColumns);
     if (rows[0]) return claimedResult(rows[0], true);
 
     // A crashed final attempt may leave an expired processing lease with its budget already
@@ -426,7 +476,7 @@ export class DrizzleTranslationTaskStore implements TranslationTaskStore, Transl
         lte(translationTasks.leaseExpiresAt, databaseNow),
         gte(translationTasks.attemptCount, translationTasks.maxAttempts),
       ))
-      .returning();
+      .returning(uiTranslationTaskColumns);
     if (exhausted[0]) return claimedResult(exhausted[0], false);
 
     const existing = await this.findById(id);
