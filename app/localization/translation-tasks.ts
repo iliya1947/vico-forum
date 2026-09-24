@@ -7,7 +7,7 @@ import type {
 
 export const DEFAULT_TRANSLATION_TASK_MAX_ATTEMPTS = 3;
 
-export type TranslationTaskKind = "ui" | "content-topic-title";
+export type TranslationTaskKind = "ui" | "content-topic-title" | "content-post-body";
 export type TranslationTaskStatus = "pending" | "processing" | "stale" | "completed" | "failed";
 export type TranslationTaskFailureDisposition = "terminal" | "retry-exhausted";
 
@@ -60,6 +60,41 @@ export interface ContentTopicTitleTranslationTaskSpecification {
 export interface ContentTopicTitleTranslationTask extends ContentTopicTitleTranslationTaskSpecification {
   readonly id: string;
   /** PostgreSQL-assigned monotonic order within one topic-title/target unit. */
+  readonly generation: number;
+  readonly status: TranslationTaskStatus;
+  readonly attemptCount: number;
+  readonly maxAttempts: number;
+  readonly lastFailureCode: string | null;
+  readonly failureDisposition: TranslationTaskFailureDisposition | null;
+  readonly claimToken: string | null;
+  readonly claimedAt: Date | null;
+  readonly leaseExpiresAt: Date | null;
+  readonly staleAt: Date | null;
+  readonly completedAt: Date | null;
+  readonly failedAt: Date | null;
+  readonly createdAt: Date;
+  readonly updatedAt: Date;
+}
+
+export interface ContentPostBodyTranslationTaskSpecification {
+  readonly taskIdentity: string;
+  readonly translationKind: "content-post-body";
+  readonly sourceIdentity: {
+    readonly postId: string;
+    readonly revisionId: string;
+  };
+  readonly revisionSourceLocale: string;
+  readonly resolvedSourceLocale: string;
+  readonly sourceResolutionOrigin: ContentTopicTitleSourceResolutionOrigin;
+  readonly sourceFingerprint: string;
+  readonly targetLocale: string;
+  readonly protectedContentPolicyVersion: string;
+  readonly generationPolicyVersion: string;
+}
+
+export interface ContentPostBodyTranslationTask extends ContentPostBodyTranslationTaskSpecification {
+  readonly id: string;
+  /** PostgreSQL-assigned monotonic order within one post-body/target unit. */
   readonly generation: number;
   readonly status: TranslationTaskStatus;
   readonly attemptCount: number;
@@ -187,6 +222,48 @@ export function validateContentTopicTitleTranslationTaskSpecification(
   requireSha256(specification.sourceFingerprint, "sourceFingerprint");
   requireNonBlank(specification.sourceIdentity.topicId, "topic id");
   requireNonBlank(specification.sourceIdentity.revisionId, "revision id");
+  requireNonBlank(specification.generationPolicyVersion, "generationPolicyVersion");
+
+  const revisionSourceLocale = strictCanonicalTranslationLocale(
+    specification.revisionSourceLocale,
+    true,
+  );
+  const resolvedSourceLocale = strictCanonicalTranslationLocale(
+    specification.resolvedSourceLocale,
+    false,
+  );
+  const targetLocale = strictCanonicalTranslationLocale(specification.targetLocale, false);
+  if (!revisionSourceLocale || !resolvedSourceLocale || !targetLocale) {
+    throw new TypeError("content translation task locales must be canonical translation locales");
+  }
+  if (resolvedSourceLocale === targetLocale) {
+    throw new TypeError("content translation task target locale must differ from resolved source locale");
+  }
+  if (
+    (specification.sourceResolutionOrigin === "revision-metadata"
+      && (revisionSourceLocale === "und" || revisionSourceLocale !== resolvedSourceLocale))
+    || (specification.sourceResolutionOrigin === "detector" && revisionSourceLocale !== "und")
+    || (
+      specification.sourceResolutionOrigin !== "revision-metadata"
+      && specification.sourceResolutionOrigin !== "detector"
+    )
+  ) {
+    throw new TypeError("content translation task source resolution is invalid");
+  }
+}
+
+
+export function validateContentPostBodyTranslationTaskSpecification(
+  specification: ContentPostBodyTranslationTaskSpecification,
+): void {
+  if (specification.translationKind !== "content-post-body") {
+    throw new TypeError("content translation task kind must be content-post-body");
+  }
+  requireSha256(specification.taskIdentity, "taskIdentity");
+  requireSha256(specification.sourceFingerprint, "sourceFingerprint");
+  requireNonBlank(specification.sourceIdentity.postId, "post id");
+  requireNonBlank(specification.sourceIdentity.revisionId, "revision id");
+  requireNonBlank(specification.protectedContentPolicyVersion, "protectedContentPolicyVersion");
   requireNonBlank(specification.generationPolicyVersion, "generationPolicyVersion");
 
   const revisionSourceLocale = strictCanonicalTranslationLocale(
