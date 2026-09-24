@@ -1,15 +1,17 @@
 # Stage 5 Codex coordination channel
 
 
-No further ChatGPT action is required for PR #104. ChatGPT's self-review, Codex's independent full
-review, and CI verification are complete. PR #104 is technically ready for the project owner to
-merge.
-- GitHub `main`: `91016d6cb99fa5d563fb5331cce7971e18d0ae2e`
+Read the new Stage 5B topic-title execution/publication task below, independently verify its scope
+against current GitHub `main` and the source-of-truth documents, then implement it in a separate
+mergeable PR based on `8327f4a560d00039ea40fa7d645ab12f0b349657`. Record the task, implementation
+PR, head SHA, self-review, and CI result in ChatGPT service PR #95.
+- GitHub `main`: `8327f4a560d00039ea40fa7d645ab12f0b349657`
 - `JOB-06` reconciliation/observability is merged through PR #99, including migration `0013`.
 - the concrete Cloudflare Workers AI M2M100 adapter is merged through PR #101.
 - the Stage 5B revision-bound persistence/read foundation is merged through PR #102, including
   migration `0014` and the Drizzle schema-parity CI gate.
 - the provider-neutral content source-locale resolution boundary is merged through PR #103.
+- durable topic-title translation planning and migration `0015` are merged through PR #104.
 do not change code. Report the metadata correction in PR #95. Do not merge until Codex verifies
 the corrected description.
 
@@ -808,6 +810,85 @@ GitHub Actions run `35989747960` passed both `checks` and `database`, including 
 lint, typecheck, unit/route tests, build, Drizzle schema parity, clean PostgreSQL migration and
 content-task integration coverage, and Workers/Hyperdrive smoke. The final diff has no whitespace
 errors. No remaining current-Stage defect was found. PR #104 is technically ready to merge.
+
+## Updated-main verification after PR #104
+
+Codex fetched GitHub `main` at `8327f4a560d00039ea40fa7d645ab12f0b349657` and verified that
+PR #104 is merged. Durable topic-title tasks now share lifecycle/generation storage while retaining
+revision-owned companion metadata. The next dependency-ordered task is the matching claim,
+preflight, provider-neutral execution, and conditional publication path.
+
+## Next technical task: topic-title task execution and publication (`CNT-01/02/05`, `JOB-03/04/05`)
+
+Create a mergeable PR that consumes a durable `content-topic-title` task ID, safely claims and
+revalidates it, executes one plain content-translation request through the existing provider router,
+and atomically publishes the exact-revision translation while completing the claim. Reuse the
+shared retry/terminal lifecycle without allowing the UI executor to interpret content tasks.
+
+### Required scope
+
+1. Add explicit task-kind dispatch before kind-specific interpretation/claiming. A UI message must
+   continue to reach the UI executor unchanged; a `content-topic-title` message must reach only the
+   content executor. Unknown or malformed task kind must fail safely without being cast to UI.
+2. Implement claim/lease handling for content title tasks using the existing attempt budget,
+   claim-token fencing, retry/terminal outcomes, PostgreSQL-owned time, and shared task statuses.
+   Do not fork a second incompatible lifecycle.
+3. After claim and before provider call, atomically or consistently load the companion metadata and
+   authoritative title revision and revalidate: exact task/revision ownership, still-current title
+   revision, immutable source locale, resolved-source semantics, generation policy version, current
+   generation, active target, and absence of a higher-trust/current translation. Stale work must be
+   terminalized/marked stale without a provider call.
+4. Build exactly one `MachineTranslationRequest` with `domain: content`, `messageKind: plain`,
+   `operation: plain`, authoritative original title text, resolved source locale, and task target
+   locale. Do not send detector evidence, UI locale, credentials, or any post body.
+5. Runtime-validate provider result and machine provenance before persistence. The translated title
+   must be a nonblank plain string within the repository's explicit title policy; malformed output
+   is terminal `provider-output-invalid` and is never published.
+6. Publish conditionally in one PostgreSQL transaction: require the same processing claim token,
+   current revision, current generation/policy, and no higher-trust manual result; write/reuse the
+   revision-bound machine translation with provider/model/attribution provenance and mark the task
+   completed atomically. A lost claim or changed revision must not publish.
+7. Reuse the existing typed failure classification and bounded `ack` / `retry` / `terminal`
+   transport outcome semantics for provider-rate-limited, provider-temporary, unsupported,
+   invalid-output, dependency-temporary, terminal, and attempt-budget-exhausted cases.
+8. Ensure shared reconciliation/observability remains correct for content tasks and cannot route a
+   content task through UI descriptor lookup. Existing UI claim/execution/publication behavior must
+   remain unchanged.
+9. Add focused unit and PostgreSQL integration coverage for kind dispatch, duplicate delivery,
+   claim loss, attempt exhaustion, retry/terminal provider failures, every stale preflight guard,
+   exact provider request, invalid output/provenance, concurrent revision/manual changes during the
+   provider window, atomic publication/completion, and UI non-regression. Update schema/migration
+   only if a demonstrated invariant requires it, and update `PROJECT_STATE.md` factually.
+
+### Design constraints
+
+- External provider calls remain behind `TranslationProviderRouter`; CI uses fake/contract adapters.
+  Do not expand the Cloudflare adapter to user content without an explicit provider privacy/data-
+  handling decision.
+- A provider call cannot be universally exactly-once; preserve idempotent durable state and
+  best-effort duplicate-cost protection through claim/lease semantics.
+- The original immutable title remains the fallback and is never replaced by translated content.
+- Publication must use the existing content translation persistence/trust rules rather than a
+  parallel result table or an unchecked direct insert.
+
+### Excluded scope
+
+- post-body execution, Markdown AST parsing/protection/segmentation, or translated Markdown render;
+- concrete content provider/detector selection, Cloudflare content capability, credentials, live
+  calls, concrete Queue binding, production rate limiter, or deployed scheduling;
+- route/UI/SEO integration, public request endpoint, manual-correction UI/write flow;
+- unrelated retry/reconciliation redesign, external migration rollout, deployment, or Stage 6.
+
+### Completion criteria
+
+- a queued topic-title task is kind-routed, claimed, revalidated, executed, and conditionally
+  published without weakening UI task behavior;
+- stale/manual/superseded/lost-claim cases cannot call or publish incorrectly;
+- publication and task completion are atomic and duplicate delivery is idempotent;
+- bounded failure outcomes and reconciliation/observability remain correct for the shared task row;
+- full unit/PostgreSQL CI passes without secrets or external calls;
+- ChatGPT records a full self-review and CI result in PR #95, after which Codex independently
+  reviews the entire mergeable PR before merge.
 ## Full JOB-06 re-review after correction
 
 Codex reviewed the complete PR #99 at
