@@ -29,15 +29,20 @@ async function context(
     generationPolicyVersion: "ui-policy-v1",
     generation: 1,
     status: "processing",
+    attemptCount: 1,
+    maxAttempts: 3,
+    lastFailureCode: null,
+    failureDisposition: null,
     claimToken: "20000000-0000-4000-8000-000000000002",
     claimedAt: now,
     leaseExpiresAt: new Date(now.getTime() + 60_000),
     staleAt: null,
     completedAt: null,
+    failedAt: null,
     createdAt: now,
     updatedAt: now,
   };
-  return { task, source };
+  return { task, source, attemptStarted: true };
 }
 
 function publisherHarness(options: {

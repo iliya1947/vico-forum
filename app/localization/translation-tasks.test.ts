@@ -21,8 +21,10 @@ function job(taskIdentity = "a".repeat(64), key = "heading"): UiTranslationJobSp
 function task(specification: UiTranslationJobSpecification, id = "task-1"): TranslationTask {
   const createdAt = new Date("2026-09-15T00:00:00.000Z");
   return {
-    id, ...specification, generation: 1, status: "pending", claimToken: null, claimedAt: null,
-    leaseExpiresAt: null, staleAt: null, completedAt: null, createdAt, updatedAt: createdAt,
+    id, ...specification, generation: 1, status: "pending",
+    attemptCount: 0, maxAttempts: 3, lastFailureCode: null, failureDisposition: null,
+    claimToken: null, claimedAt: null, leaseExpiresAt: null, staleAt: null,
+    completedAt: null, failedAt: null, createdAt, updatedAt: createdAt,
   };
 }
 

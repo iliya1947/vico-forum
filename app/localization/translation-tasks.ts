@@ -1,10 +1,14 @@
 import { parseLocaleCandidate } from "./locale";
+import type { TranslationFailureRecord } from "./translation-failures";
 import type {
   TranslationJobDispatcher,
   UiTranslationJobSpecification,
 } from "./ui-translation-service";
 
-export type TranslationTaskStatus = "pending" | "processing" | "stale" | "completed";
+export const DEFAULT_TRANSLATION_TASK_MAX_ATTEMPTS = 3;
+
+export type TranslationTaskStatus = "pending" | "processing" | "stale" | "completed" | "failed";
+export type TranslationTaskFailureDisposition = "terminal" | "retry-exhausted";
 
 export interface TranslationTask {
   readonly id: string;
@@ -20,11 +24,17 @@ export interface TranslationTask {
   /** PostgreSQL-assigned monotonic order within the logical UI unit. */
   readonly generation: number;
   readonly status: TranslationTaskStatus;
+  /** Durable execution-attempt budget. Incremented only when a claim starts a new attempt. */
+  readonly attemptCount: number;
+  readonly maxAttempts: number;
+  readonly lastFailureCode: string | null;
+  readonly failureDisposition: TranslationTaskFailureDisposition | null;
   readonly claimToken: string | null;
   readonly claimedAt: Date | null;
   readonly leaseExpiresAt: Date | null;
   readonly staleAt: Date | null;
   readonly completedAt: Date | null;
+  readonly failedAt: Date | null;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 }
@@ -38,8 +48,35 @@ export interface TranslationTaskStore {
   isCurrentGeneration(task: TranslationTask): Promise<boolean>;
 }
 
+export interface TranslationTaskFailureStore {
+  recordFailure(
+    id: string,
+    claimToken: string,
+    failure: TranslationFailureRecord,
+  ): Promise<TranslationTaskFailureResult>;
+}
+
+export type TranslationTaskFailureResult =
+  | {
+      readonly outcome: "retry";
+      readonly attemptCount: number;
+      readonly maxAttempts: number;
+    }
+  | {
+      readonly outcome: "terminal";
+      readonly attemptCount: number;
+      readonly maxAttempts: number;
+      readonly disposition: TranslationTaskFailureDisposition;
+    }
+  | { readonly outcome: "claim-lost" };
+
 export type TranslationTaskClaimResult =
-  | { readonly outcome: "claimed"; readonly task: TranslationTask & { readonly status: "processing"; readonly claimToken: string } }
+  | {
+      readonly outcome: "claimed";
+      readonly task: TranslationTask & { readonly status: "processing"; readonly claimToken: string };
+      /** False only when an exhausted lease is reclaimed solely to persist terminal state. */
+      readonly attemptStarted: boolean;
+    }
   | { readonly outcome: "not-found" | "already-claimed" | "terminal" };
 
 export interface TranslationTaskMessage {

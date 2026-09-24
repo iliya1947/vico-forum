@@ -85,6 +85,13 @@
       "when": 1790093400000,
       "tag": "0011_persistent_translation_locale_invariant",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1790185800000,
+      "tag": "0012_translation_task_retry_dlq",
+      "breakpoints": true
     }
   ]
 }

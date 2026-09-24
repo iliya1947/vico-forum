@@ -29,11 +29,16 @@ async function claimedTask(overrides: Partial<TranslationTask> = {}): Promise<Tr
     generationPolicyVersion: "ui-policy-v1",
     generation: 1,
     status: "processing",
+    attemptCount: 1,
+    maxAttempts: 3,
+    lastFailureCode: null,
+    failureDisposition: null,
     claimToken,
     claimedAt: now,
     leaseExpiresAt: new Date(now.getTime() + 60_000),
     staleAt: null,
     completedAt: null,
+    failedAt: null,
     createdAt: now,
     updatedAt: now,
     ...overrides,
@@ -52,7 +57,7 @@ async function harness(options: {
   const markStale = vi.fn(async () => true);
   const tasks: TranslationTaskStore = {
     upsertPending: vi.fn(), findById: vi.fn(), findByIdentity: vi.fn(), markStale,
-    claim: vi.fn(async () => ({ outcome: "claimed" as const, task })),
+    claim: vi.fn(async () => ({ outcome: "claimed" as const, task, attemptStarted: true })),
     isCurrentGeneration: vi.fn(async () => options.currentGeneration ?? true),
   };
   const consumer = new UiTranslationTaskConsumer({

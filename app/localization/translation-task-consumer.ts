@@ -1,5 +1,6 @@
 import { catalogDescriptors, type UiMessageDescriptor } from "./catalog";
 import { sourceFingerprint } from "./fingerprint";
+import { TranslationExecutionFailure } from "./translation-failures";
 import { DatabaseManualTranslationSource, type UiTranslationStore } from "./persistent-sources";
 import type { LocaleRegistry } from "./registry";
 import type { TranslationSource } from "./sources";
@@ -20,13 +21,37 @@ export type TranslationTaskStaleReason =
   | "target-locale-ineligible"
   | "manual-translation-exists";
 
-export interface ClaimedUiTranslationExecutionContext {
+export interface ClaimedTranslationTaskContext {
   readonly task: TranslationTask & { readonly status: "processing"; readonly claimToken: string };
+  /** Whether this claim consumed a fresh provider-attempt budget slot. */
+  readonly attemptStarted: boolean;
+}
+
+export interface ClaimedUiTranslationExecutionContext extends ClaimedTranslationTaskContext {
   readonly source: UiMessageDescriptor;
+  readonly attemptStarted: true;
+}
+
+export interface ExhaustedTranslationTaskContext extends ClaimedTranslationTaskContext {
+  readonly attemptStarted: false;
+}
+
+export type ClaimedUiTranslationConsumerContext =
+  | ClaimedUiTranslationExecutionContext
+  | ExhaustedTranslationTaskContext;
+
+export class ClaimedTranslationDependencyError extends Error {
+  constructor(
+    readonly context: ClaimedTranslationTaskContext,
+    options?: ErrorOptions,
+  ) {
+    super("translation task preflight dependency failed", options);
+    this.name = "ClaimedTranslationDependencyError";
+  }
 }
 
 export type TranslationTaskConsumerResult =
-  | { readonly outcome: "eligible"; readonly context: ClaimedUiTranslationExecutionContext }
+  | { readonly outcome: "eligible"; readonly context: ClaimedUiTranslationConsumerContext }
   | { readonly outcome: "stale"; readonly reason: TranslationTaskStaleReason }
   | { readonly outcome: "not-found" | "already-claimed" | "terminal" | "claim-lost" };
 
@@ -59,16 +84,49 @@ export class UiTranslationTaskConsumer {
     );
     if (claim.outcome !== "claimed") return { outcome: claim.outcome };
 
-    const reason = await uiTranslationTaskStaleReason(claim.task, this.dependencies);
-    if (!reason) {
-      return { outcome: "eligible", context: { task: claim.task, source: descriptorForTask(claim.task)! } };
+    if (!claim.attemptStarted) {
+      return {
+        outcome: "eligible",
+        context: {
+          task: claim.task,
+          attemptStarted: false,
+        },
+      };
     }
 
-    const transitioned = await this.dependencies.tasks.markStale(
-      claim.task.id,
-      claim.task.claimToken,
-    );
-    return transitioned ? { outcome: "stale", reason } : { outcome: "claim-lost" };
+    try {
+      const reason = await uiTranslationTaskStaleReason(claim.task, this.dependencies);
+      if (!reason) {
+        const source = descriptorForTask(claim.task);
+        if (!source) throw new TypeError("claimed translation task source descriptor disappeared during preflight");
+        return {
+          outcome: "eligible",
+          context: {
+            task: claim.task,
+            source,
+            attemptStarted: true,
+          },
+        };
+      }
+
+      const transitioned = await this.dependencies.tasks.markStale(
+        claim.task.id,
+        claim.task.claimToken,
+      );
+      return transitioned ? { outcome: "stale", reason } : { outcome: "claim-lost" };
+    } catch (error) {
+      if (
+        error instanceof TranslationExecutionFailure &&
+        error.disposition === "retryable" &&
+        error.code === "dependency-temporary"
+      ) {
+        throw new ClaimedTranslationDependencyError(
+          { task: claim.task, attemptStarted: true },
+          { cause: error },
+        );
+      }
+      throw error;
+    }
   }
 }
 

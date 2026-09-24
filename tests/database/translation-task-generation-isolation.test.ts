@@ -33,6 +33,7 @@ beforeAll(async () => {
     "drizzle/0008_translation_task_claim_lease.sql",
     "drizzle/0009_translation_task_completion.sql",
     "drizzle/0010_translation_task_generation_order.sql",
+    "drizzle/0012_translation_task_retry_dlq.sql",
   ]) {
     await client.query(await readFile(migration, "utf8"));
   }

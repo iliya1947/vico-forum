@@ -171,11 +171,16 @@ export const translationTasks = pgTable(
     generationPolicyVersion: text("generation_policy_version").notNull(),
     generation: integer("generation").notNull(),
     status: text("status").notNull().default("pending"),
+    attemptCount: integer("attempt_count").notNull().default(0),
+    maxAttempts: integer("max_attempts").notNull().default(3),
+    lastFailureCode: text("last_failure_code"),
+    failureDisposition: text("failure_disposition"),
     claimToken: uuid("claim_token"),
     claimedAt: timestamp("claimed_at", { withTimezone: true }),
     leaseExpiresAt: timestamp("lease_expires_at", { withTimezone: true }),
     staleAt: timestamp("stale_at", { withTimezone: true }),
     completedAt: timestamp("completed_at", { withTimezone: true }),
+    failedAt: timestamp("failed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -201,28 +206,56 @@ export const translationTasks = pgTable(
       table.targetLocale,
       table.generation,
     ),
-    check("translation_tasks_status_check", sql`${table.status} in ('pending', 'processing', 'stale', 'completed')`),
+    check("translation_tasks_attempt_count_check", sql`${table.attemptCount} >= 0 and ${table.attemptCount} <= ${table.maxAttempts}`),
+    check("translation_tasks_max_attempts_check", sql`${table.maxAttempts} > 0`),
+    check(
+      "translation_tasks_failure_code_check",
+      sql`${table.lastFailureCode} is null or ${table.lastFailureCode} ~ '^[a-z0-9][a-z0-9-]{0,63}$'`,
+    ),
+    check(
+      "translation_tasks_failure_disposition_check",
+      sql`${table.failureDisposition} is null or ${table.failureDisposition} in ('terminal', 'retry-exhausted')`,
+    ),
+    check(
+      "translation_tasks_status_check",
+      sql`${table.status} in ('pending', 'processing', 'stale', 'completed', 'failed')`,
+    ),
     check(
       "translation_tasks_lifecycle_check",
       sql`(
         ${table.status} = 'pending'
         and ${table.claimToken} is null and ${table.claimedAt} is null
-        and ${table.leaseExpiresAt} is null and ${table.staleAt} is null and ${table.completedAt} is null
+        and ${table.leaseExpiresAt} is null and ${table.staleAt} is null
+        and ${table.completedAt} is null and ${table.failedAt} is null
+        and ${table.failureDisposition} is null and ${table.attemptCount} < ${table.maxAttempts}
       ) or (
         ${table.status} = 'processing'
         and ${table.claimToken} is not null and ${table.claimedAt} is not null
         and ${table.leaseExpiresAt} is not null and ${table.leaseExpiresAt} > ${table.claimedAt}
         and ${table.staleAt} is null and ${table.completedAt} is null
+        and ${table.failedAt} is null and ${table.failureDisposition} is null
       ) or (
         ${table.status} = 'stale'
         and ${table.claimToken} is null and ${table.claimedAt} is not null
         and ${table.leaseExpiresAt} is null and ${table.staleAt} is not null
         and ${table.staleAt} >= ${table.claimedAt} and ${table.completedAt} is null
+        and ${table.failedAt} is null and ${table.failureDisposition} is null
+        and ${table.lastFailureCode} is null
       ) or (
         ${table.status} = 'completed'
         and ${table.claimToken} is null and ${table.claimedAt} is not null
         and ${table.leaseExpiresAt} is null and ${table.staleAt} is null
         and ${table.completedAt} is not null and ${table.completedAt} >= ${table.claimedAt}
+        and ${table.failedAt} is null and ${table.failureDisposition} is null
+        and ${table.lastFailureCode} is null
+      ) or (
+        ${table.status} = 'failed'
+        and ${table.claimToken} is null and ${table.claimedAt} is not null
+        and ${table.leaseExpiresAt} is null and ${table.staleAt} is null
+        and ${table.completedAt} is null and ${table.failedAt} is not null
+        and ${table.failedAt} >= ${table.claimedAt}
+        and ${table.failureDisposition} is not null and ${table.lastFailureCode} is not null
+        and ${table.attemptCount} > 0
       )`,
     ),
     check("translation_tasks_timestamps_check", sql`${table.updatedAt} >= ${table.createdAt}`),

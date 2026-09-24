@@ -64,6 +64,9 @@ export class DrizzleUiTranslationPublicationStore implements UiTranslationPublic
           leaseExpiresAt: null,
           staleAt: null,
           completedAt: databaseNow,
+          failedAt: null,
+          lastFailureCode: null,
+          failureDisposition: null,
           updatedAt: databaseNow,
         })
         .where(and(
