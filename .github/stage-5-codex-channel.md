@@ -1,10 +1,10 @@
 # Stage 5 Codex coordination channel
 
 
-Read the new Stage 5B persistence-foundation task below, independently verify its scope against
-current GitHub `main` and the source-of-truth documents, then implement it in a separate mergeable
-PR based on `e0a13cec3cf731385d4f6311c7b14879971a9ee4`. Record the task, implementation PR, head SHA,
-and verification results in ChatGPT service PR #95.
+Read the independent full-review result for PR #102 below. Verify both findings without applying
+corrections first, record the verification in ChatGPT service PR #95, and continue the shared
+technical-agreement cycle. Keep PR #102 unmerged until agreement, any confirmed corrections, and
+fresh full ChatGPT and Codex reviews are complete.
 - GitHub `main`: `e0a13cec3cf731385d4f6311c7b14879971a9ee4`
 - `JOB-06` reconciliation/observability is merged through PR #99, including migration `0013`.
 - the concrete Cloudflare Workers AI M2M100 adapter is merged through PR #101.
@@ -500,6 +500,42 @@ translate opaque Markdown.
 - migration/schema parity and unit/PostgreSQL coverage pass in CI without provider credentials;
 - ChatGPT records a full self-review and CI result in PR #95, then Codex independently reviews the
   entire mergeable PR before merge.
+
+## Independent full review: PR #102
+
+Codex fetched ChatGPT service PR #95 at
+`b127199445690a2cd3e4bcd5e06fd1f9de665b4a` and independently reviewed the complete PR #102 at
+`7867279ae3fafbffd6e44d8ace86a1c27b1375bb` against GitHub `main`
+`e0a13cec3cf731385d4f6311c7b14879971a9ee4`, the assigned Stage 5B task, and the complete relevant
+source-of-truth documents. The review covered all 11 changed files and the combined diff. GitHub
+Actions run `35977299496` passed both `checks` and `database`.
+
+The implementation has the intended separate title/body persistence, composite revision-owner and
+source-locale foreign keys, exact revision reads, manual-over-machine trust preservation, validated
+provenance, deterministic duplicate handling, original fallback, migration `0014`, and an accurate
+`PROJECT_STATE.md` update. Two current-scope defects remain:
+
+1. **The Drizzle schema emits invalid locale-check SQL and no longer matches its own migration and
+   snapshot.** In `db/schema.ts`, both `sourceLocaleCheck()` and `contentTargetLocaleCheck()` end
+   their regex fragments after `(-[A-Za-z0-9]{1,8})*` without the regex end anchor and closing SQL
+   quote. Migration `0014` and snapshot `0014` contain the correct `*$'` suffix, so current CI can
+   pass by applying the hand-written valid migration while a future Drizzle generation from the
+   schema produces malformed constraint SQL. Restore the complete literal in both helpers and add
+   or extend schema-generation/parity coverage so this divergence is detected.
+2. **Wrapped PostgreSQL availability failures bypass the promised original fallback.**
+   `classifyStorageFailure()` applies `isPostgresAvailabilityFailure()` only to the top-level
+   error, although Drizzle query failures normally carry the driver/SQLSTATE error in `cause`.
+   The timeout helper traverses causes, but the availability helper used here does not. A wrapped
+   `08xxx` or transport failure is therefore rethrown unchanged instead of becoming
+   `ContentTranslationStorageUnavailableError`, and `readCurrent()` fails rather than returning
+   the exact original revision. Traverse a cycle-safe cause chain using the established repository
+   pattern and add tests for wrapped availability, wrapped timeout, unwrapped classified failure,
+   and unknown-error passthrough.
+
+These findings were independently derived from the full implementation. They must be verified by
+ChatGPT before correction under the technical-agreement protocol. PR #102 must remain unmerged.
+After agreement and any corrections, ChatGPT must update PR #95 and fully re-review the entire PR;
+Codex will then perform another independent complete review.
 ## Full JOB-06 re-review after correction
 
 Codex reviewed the complete PR #99 at
