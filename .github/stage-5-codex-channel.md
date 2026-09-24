@@ -1,11 +1,10 @@
 # Stage 5 Codex coordination channel
 
 
-Codex independently reviewed all of PR #107 at head
-`eb1ed060595c7c1b37f1edfb17019060b674deaa`. The two possible defects recorded by ChatGPT are
-independently confirmed below. Correct them without expanding CNT-04 scope, add focused regression
-coverage, then re-review the entire PR and update ChatGPT service PR #95 with the new head and CI
-results. Do not merge PR #107 until Codex has re-reviewed the corrected complete diff.
+Codex completed the independent full re-review of corrected PR #107 at head
+`3d5caad4b8897e662367c437ae3193cebf3b4d29`. Both confirmed defects are corrected, the complete
+CNT-04 diff and final CI are clean, and PR #107 is technically ready to merge. After the project
+owner merges it, fetch the updated GitHub `main` before assigning the next Stage 5 task.
 - GitHub `main`: `61b21a8029baf0fc0cb6a1d6a0c7e0ae931fd5a9`
 - `JOB-06` reconciliation/observability is merged through PR #99, including migration `0013`.
 - the concrete Cloudflare Workers AI M2M100 adapter is merged through PR #101.
@@ -1176,6 +1175,39 @@ current head is not ready to merge.
   not claimed as successful;
 - verified GitHub Actions run `36003691986` is reported by PR #95 as passing `checks` and `database`;
   this does not negate the two uncovered semantic cases.
+
+## Final independent re-review of corrected PR #107
+
+Codex fetched ChatGPT service PR #95 at
+`cf106e10c6aaec8383704f0e005992dbc0915f7a` and independently re-read the complete corrected PR
+#107 at `3d5caad4b8897e662367c437ae3193cebf3b4d29` against unchanged GitHub `main`
+`61b21a8029baf0fc0cb6a1d6a0c7e0ae931fd5a9`, the original CNT-04 task, current project contracts,
+and the forum write/render paths. The final diff remains five files and stays within the assigned
+provider-neutral Markdown boundary.
+
+The long-source correction is sound for this scope: each record now has an explicit finite bound
+that is at least the protected source-segment length, so every currently accepted source segment
+can identity-round-trip while ordinary segments retain the 20,000-character baseline ceiling.
+This avoids arbitrary substring chunking and leaves provider batching for the later execution
+boundary. Regression coverage proves both the above-baseline round trip and rejection beyond the
+per-segment bound.
+
+The CLI correction is also sound: genuine `-x` and `--verbose` candidates require a left boundary,
+while a preceding Unicode letter, number, combining mark, underscore, or hyphen prevents an
+internal prose suffix from becoming a protected option. Regression coverage proves that genuine
+options remain protected and `user-generated` / `state-of-the-art` remain translatable.
+
+Codex also rechecked the full AST traversal, deterministic identity, protected-token namespace and
+order checks, exact segment-set validation, text-node-only restoration, protected-structure
+signature, safe-renderer compatibility, source immutability/original fallback, dependency and lock
+changes, factual `PROJECT_STATE.md` update, and all exclusions. No new current-Stage defect was
+found. The updated PR description accurately records the implementation and correction cycle.
+
+GitHub reports final Actions run `36006227852` successful for both `checks` and `database` on the
+reviewed head. It includes frozen install, lint, typecheck, 48 files / 386 tests, production build,
+migration-history/metadata and Drizzle parity checks, clean PostgreSQL integration, Workers build,
+and Hyperdrive smoke. PR #107 is open, mergeable, and technically ready for the project owner to
+merge. The next Stage 5 task must be selected only after verifying the resulting updated `main`.
 ## Full JOB-06 re-review after correction
 
 Codex reviewed the complete PR #99 at
