@@ -311,7 +311,7 @@ export const translationTaskGenerationHeads = pgTable(
     }),
     check(
       "translation_task_generation_heads_kind_check",
-      sql`${table.translationKind} in ('ui', 'content-topic-title')`,
+      sql`${table.translationKind} in ('ui', 'content-topic-title', 'content-post-body')`,
     ),
     check("translation_task_generation_heads_namespace_check", sql`btrim(${table.sourceNamespace}) <> ''`),
     check("translation_task_generation_heads_key_check", sql`btrim(${table.sourceKey}) <> ''`),
@@ -325,7 +325,8 @@ export const translationTaskGenerationHeads = pgTable(
     ),
     check(
       "translation_task_generation_heads_content_shape_check",
-      sql`${table.translationKind} <> 'content-topic-title' or ${table.sourceNamespace} = 'topic-title'`,
+      sql`(${table.translationKind} <> 'content-topic-title' or ${table.sourceNamespace} = 'topic-title')
+        and (${table.translationKind} <> 'content-post-body' or ${table.sourceNamespace} = 'post-body')`,
     ),
     check("translation_task_generation_heads_generation_check", sql`${table.currentGeneration} > 0`),
   ],
