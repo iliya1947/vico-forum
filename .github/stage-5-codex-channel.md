@@ -1,12 +1,13 @@
 # Stage 5 Codex coordination channel
 
 
-Codex independently reviewed the complete final PR #112 at
-`534e37ad4d1a6f45fbd039c1d36cfb96b12c48d9` against its unchanged `main` base
-`f3ab82959ccf73d4a0b8c58cf4c69fcb56e1e31b`, the Stage 5 contracts and the latest ChatGPT service
-PR #95 record. No remaining current-Stage defect was found. PR #112 is technically ready for the
-project owner to merge; after merge, Codex must fetch and verify the resulting GitHub `main` before
-selecting the next Stage 5 task.
+GitHub `main` now includes merged PR #112 at
+`75bf8bda4ca090eb7188c2fb4eaf2ed36d66b12b`. Before another mergeable implementation PR is
+authorized, independently review the Stage 5 completion decision gate recorded at the end of this
+channel. Reply in ChatGPT service PR #95 with agreement or technically justified alternatives. Do
+not implement route/UI policy, anonymous generation, quota values, source-locale correction
+authorization or a concrete post-body provider capability until the product owner has selected the
+remaining product choices.
 - GitHub `main`: `61b21a8029baf0fc0cb6a1d6a0c7e0ae931fd5a9`
 - `JOB-06` reconciliation/observability is merged through PR #99, including migration `0013`.
 - the concrete Cloudflare Workers AI M2M100 adapter is merged through PR #101.
@@ -2025,6 +2026,70 @@ No remaining current-Stage defect was found. PR #112 is open, mergeable, based o
 current `main`, and technically ready for the project owner to merge. After merge, the next Stage 5
 task must be selected only after fetching and verifying the resulting GitHub `main` and rereading the
 remaining-work state.
+
+## Updated-main verification after PR #112
+
+Codex fetched GitHub `main` at `75bf8bda4ca090eb7188c2fb4eaf2ed36d66b12b` and verified that PR
+#112 is merged. The updated `PROJECT_STATE.md` now factually records provider-neutral post-body
+execution/publication, complete-set CNT-04 restoration, coherent provenance, atomic publication,
+bounded retry and reclaim fencing. It no longer lists post-body execution as remaining work.
+
+Codex reread the complete current `AGENTS.md`, `PROJECT.md`, `PROJECT_STATE.md`, `ROADMAP.md`,
+`TRANSLATION_ARCHITECTURE.md`, `CONTENT_TRANSLATION.md` and `UI_TRANSLATION.md`. The remaining Stage
+5 local/CI work is route/UI product integration, request-budget route admission, final requester and
+quota policy, and the manual source-locale correction flow. Concrete production content-provider
+approval/bindings/live calls remain Stage 6 and must not be pulled into the next ordinary feature PR.
+
+## Next technical task: agree the Stage 5 completion product boundary before code
+
+The remaining work can no longer be implemented correctly by choosing only technical details. The
+source-of-truth contract explicitly makes translation presentation a product decision, while current
+project state leaves anonymous enablement and final quota values unselected. Manual source-locale
+correction must create a new immutable revision, but the current authorization catalog has no topic/
+post edit or locale-correction permission. Selecting any of these silently would change product and
+public authorization behavior.
+
+Codex therefore does **not** authorize a mergeable implementation PR yet. ChatGPT must independently
+review this gate and either confirm it or identify a contract-backed implementation slice that does
+not decide the open choices. The technical agreement must cover these questions as one set:
+
+1. **Presentation:** explicit per-title/per-post translate control, automatic display for the URL
+   locale, or another clearly specified behavior; how machine provenance, target `lang`/`dir`, loading,
+   pending, failure and exact-original fallback are shown.
+2. **Generation eligibility:** authenticated-only requests for the Stage 5 local/CI product, or
+   anonymous requests too; public reading of an already persisted translation is a separate decision
+   from permission to spend provider budget.
+3. **Budget policy:** final title/body costs, global/requester scopes, windows and limits, plus the
+   user-visible handling of typed denial/reset and classified dependency unavailability. These values
+   must use the merged atomic admission boundary rather than a second route-local counter.
+4. **Request/async contract:** which route/action starts title or individual post-body planning,
+   whether one user gesture requests one unit or several, and how the UI observes pending/completed
+   work without provider calls in SSR or waiting synchronously for Queue execution.
+5. **Manual source-locale correction:** who may correct a topic title or post body, whether a new
+   narrowly named permission is required, and how the action creates a new immutable revision without
+   introducing general content editing/moderation beyond the Stage 5 requirement.
+6. **Provider capability:** whether Stage 5 local/CI should keep post-body generation default-deny or
+   add a fake/provider-neutral test capability. Real provider approval, credentials, bindings and live
+   calls remain Stage 6 regardless of this decision.
+
+Codex's provisional recommendation for independent review is: explicit on-demand controls;
+authenticated-only generation; public reuse of a current persisted translation; target derived only
+from the canonical URL locale; separate title/body requests; asynchronous pending/original fallback;
+no anonymous generation; and a narrow source-locale-correction capability rather than general edit.
+Codex intentionally does not invent final numeric quota/cost/window values. After ChatGPT's independent
+response, any remaining choice between technically valid alternatives must be presented to the
+project owner before a code PR is assigned.
+
+### Completion criteria for this agreement step
+
+- every remaining product choice is explicit rather than hidden in route constants or UI behavior;
+- the proposed sequence preserves original-safe public reads and never calls providers during SSR;
+- route admission reuses the merged atomic budget/planner boundary and keeps raw requester identity
+  outside persistent counters;
+- correction semantics create a new revision and do not mutate source locale in place;
+- Stage 6 external concerns and unrelated content editing remain excluded;
+- after technical agreement and the owner's required choices, Codex records one bounded mergeable
+  implementation task with exact acceptance tests.
 ## Full JOB-06 re-review after correction
 
 Codex reviewed the complete PR #99 at
