@@ -58,7 +58,7 @@ describe("PostgreSQL 17 locale migrations", () => {
     const applied = await client.query<{ count: string }>(
       'select count(*)::text as count from drizzle."__drizzle_migrations"',
     );
-    expect(applied.rows[0]?.count).toBe("15");
+    expect(applied.rows[0]?.count).toBe("16");
   });
 
   it("rejects trimmed canonical English in persistent UI translation storage", async () => {

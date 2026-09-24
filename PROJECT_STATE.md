@@ -99,7 +99,7 @@ local/CI Stage 4 и остаются Stage 6.
   convergence obsolete persisted bundles только для disposable local `*_test` PostgreSQL;
   request path остаётся read-only и не вызывает translation provider, external execution не входит в Stage 5.
 
-Migration `0007`–`0010` содержит durable task lifecycle и generation-ordering foundation; `0012` добавляет bounded retry и persistent terminal-failure state; `0013` добавляет durable reconciliation progress и query-derived indexes. `0014` добавляет revision-bound persistence для topic-title/post-body translations с database-backed revision ownership.
+Migration `0007`–`0010` содержит durable task lifecycle и generation-ordering foundation; `0012` добавляет bounded retry и persistent terminal-failure state; `0013` добавляет durable reconciliation progress и query-derived indexes. `0014` добавляет revision-bound persistence для topic-title/post-body translations с database-backed revision ownership; `0015` расширяет shared durable task storage отдельным `content-topic-title` kind с database-enforced title-revision ownership.
 
 ### Stage 5B — реализованный foundation
 
@@ -117,14 +117,22 @@ Migration `0007`–`0010` содержит durable task lifecycle и generation-
 - provider-neutral source-locale resolution/planning boundary для immutable content revisions:
   известный canonical source locale обходит detection, `und` использует только injected detector
   с runtime validation и отдельной acceptance policy; unresolved/classified unavailable source
-  блокирует будущий provider job, а manual correction требует нового revision identity.
+  блокирует будущий provider job, а manual correction требует нового revision identity;
+- on-demand durable planning для topic-title translation: planner повторно читает current immutable
+  title revision из PostgreSQL, проверяет active canonical target, provider-neutral support и
+  request-budget policy, не создаёт work для unresolved/same-locale/current translation, создаёт
+  revision-bound stable task через shared durable lifecycle и только после commit отправляет
+  transport message `{ translationTaskId }`; concurrent duplicate planning дедуплицируется
+  одной durable task identity.
 
 ### Stage 5 ещё не завершён
 
 Для завершения Stage 5 local/CI path ещё нужны:
 
-- content-specific provider/job execution, dedup/rate-limit и conditional publication path;
-- concrete source-locale detector adapter/provider selection и user-facing manual correction flow;
+- content-specific task claim/provider execution и conditional publication path; post-body durable
+  planning остаётся отдельным шагом вместе с body/Markdown translation path;
+- concrete operational rate-limit enforcement, source-locale detector adapter/provider selection
+  и user-facing manual correction flow;
 - Markdown AST/structured content translation, technical-fragment protection и translated Markdown validation/rendering;
 - route/UI integration и product UX для запроса/показа перевода пользовательского контента.
 
@@ -179,8 +187,8 @@ no-op verification. Перед следующим настоящим external sc
 
 ## Ближайший маршрут
 
-1. Продолжить Stage 5B: content provider/job execution и concrete source-locale detector adapter/provider selection.
-2. Реализовать Markdown/structured content translation и затем route/UI integration.
+1. Продолжить Stage 5B: content task execution/publication и concrete source-locale detector adapter/provider selection.
+2. Реализовать Markdown/structured post-body translation и затем route/UI integration.
 3. После завершения Stage 5 перейти к Stage 6 external integration по `ROADMAP.md` и
    `docs/database/*`.
 
