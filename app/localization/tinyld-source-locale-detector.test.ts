@@ -39,7 +39,7 @@ describe("TinyLdContentSourceLocaleDetector", () => {
     ],
     [
       "en",
-      "This is a sufficiently long English text about programming, application development, and translating forum messages.",
+      "All human beings are born free and equal in dignity and rights. They are endowed with reason and conscience and should act towards one another in a spirit of brotherhood. Everyone is entitled to all the rights and freedoms set forth in this declaration, without distinction of any kind. No one shall be held in slavery or servitude, and the slave trade shall be prohibited in all their forms.",
     ],
     [
       "ja",
