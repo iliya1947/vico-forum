@@ -407,42 +407,47 @@ export class DrizzleTranslationTaskStore implements
   }
 
   async claim(id: string, leaseDurationMs: number): Promise<TranslationTaskClaimResult> {
-    const claimed = await this.claimByKind(id, leaseDurationMs, "ui");
-    if (claimed.outcome !== "claimed") return claimed;
-    return claimedUiResult(claimed.row, claimed.attemptStarted);
+    return this.database.transaction(async (tx) => {
+      const claimed = await this.claimByKind(tx, id, leaseDurationMs, "ui");
+      if (claimed.outcome !== "claimed") return claimed;
+      return claimedUiResult(claimed.row, claimed.attemptStarted);
+    });
   }
 
   async claimContentTopicTitle(
     id: string,
     leaseDurationMs: number,
   ): Promise<ContentTopicTitleTranslationTaskClaimResult> {
-    const claimed = await this.claimByKind(id, leaseDurationMs, "content-topic-title");
-    if (claimed.outcome !== "claimed") return claimed;
+    return this.database.transaction(async (tx) => {
+      const claimed = await this.claimByKind(tx, id, leaseDurationMs, "content-topic-title");
+      if (claimed.outcome !== "claimed") return claimed;
 
-    const [metadata] = await this.database
-      .select()
-      .from(contentTopicTitleTranslationTasks)
-      .where(eq(contentTopicTitleTranslationTasks.taskId, id))
-      .limit(1);
-    if (!metadata) {
-      throw new TranslationTaskIntegrityError(
-        "claimed content topic-title task is missing revision metadata",
-      );
-    }
-    const task = await parseContentTopicTitleTaskRow(claimed.row, metadata);
-    if (task.status !== "processing" || !task.claimToken) {
-      throw new TranslationTaskIntegrityError(
-        "claimed content topic-title task has invalid processing state",
-      );
-    }
-    return {
-      outcome: "claimed",
-      task: { ...task, status: "processing", claimToken: task.claimToken },
-      attemptStarted: claimed.attemptStarted,
-    };
+      const [metadata] = await tx
+        .select()
+        .from(contentTopicTitleTranslationTasks)
+        .where(eq(contentTopicTitleTranslationTasks.taskId, id))
+        .limit(1);
+      if (!metadata) {
+        throw new TranslationTaskIntegrityError(
+          "claimed content topic-title task is missing revision metadata",
+        );
+      }
+      const task = await parseContentTopicTitleTaskRow(claimed.row, metadata);
+      if (task.status !== "processing" || !task.claimToken) {
+        throw new TranslationTaskIntegrityError(
+          "claimed content topic-title task has invalid processing state",
+        );
+      }
+      return {
+        outcome: "claimed",
+        task: { ...task, status: "processing", claimToken: task.claimToken },
+        attemptStarted: claimed.attemptStarted,
+      };
+    });
   }
 
   private async claimByKind(
+    database: TranslationTaskTransaction,
     id: string,
     leaseDurationMs: number,
     expectedKind: TranslationTaskKind,
@@ -459,7 +464,7 @@ export class DrizzleTranslationTaskStore implements
     );
 
     const claimToken = crypto.randomUUID();
-    const rows = await this.database
+    const rows = await database
       .update(translationTasks)
       .set({
         status: "processing",
@@ -484,7 +489,7 @@ export class DrizzleTranslationTaskStore implements
     // consumed. Reclaim ownership without incrementing so the executor can persist terminal
     // retry-exhaustion under a fresh claim token without another provider call.
     const exhaustedClaimToken = crypto.randomUUID();
-    const exhausted = await this.database
+    const exhausted = await database
       .update(translationTasks)
       .set({
         status: "processing",
@@ -505,7 +510,7 @@ export class DrizzleTranslationTaskStore implements
       return { outcome: "claimed", row: exhausted[0], attemptStarted: false };
     }
 
-    const [existing] = await this.database
+    const [existing] = await database
       .select({
         translationKind: translationTasks.translationKind,
         status: translationTasks.status,
@@ -664,6 +669,9 @@ export class DrizzleTranslationTaskStore implements
     return rows[0]?.currentGeneration === task.generation;
   }
 }
+
+type TranslationTaskTransaction =
+  Parameters<Parameters<NodePgDatabase["transaction"]>[0]>[0];
 
 type RawTranslationTaskClaimResult =
   | {
