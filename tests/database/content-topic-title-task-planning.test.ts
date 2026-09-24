@@ -358,6 +358,112 @@ describe("content topic-title durable planning", () => {
     }]);
   });
 
+  it("charges a live title duplicate without resetting its claim or attempt state", async () => {
+    const first = await createPlanner(client).planAndDispatch(
+      requestRevision(),
+      "he",
+      budgetAdmission(),
+    );
+    if (first.kind !== "queued") throw new Error("expected queued title fixture");
+
+    const claimToken = "11111111-1111-4111-8111-111111111111";
+    await client.query(`
+      update translation_tasks
+         set status = 'processing',
+             attempt_count = 1,
+             claim_token = $1,
+             claimed_at = statement_timestamp(),
+             lease_expires_at = statement_timestamp() + interval '1 minute',
+             updated_at = statement_timestamp()
+       where id = $2
+    `, [claimToken, first.task.id]);
+
+    const duplicate = await createPlanner(client).planAndDispatch(
+      requestRevision(),
+      "he",
+      budgetAdmission(),
+    );
+    expect(duplicate).toMatchObject({
+      kind: "queued",
+      taskCreated: false,
+      task: {
+        id: first.task.id,
+        status: "processing",
+        claimToken,
+        attemptCount: 1,
+        generation: first.task.generation,
+      },
+    });
+
+    const row = await client.query<{
+      status: string;
+      claim_token: string | null;
+      attempt_count: number;
+      generation: number;
+    }>(
+      "select status, claim_token, attempt_count, generation from translation_tasks where id = $1",
+      [first.task.id],
+    );
+    expect(row.rows[0]).toEqual({
+      status: "processing",
+      claim_token: claimToken,
+      attempt_count: 1,
+      generation: first.task.generation,
+    });
+
+    const budget = await client.query<{ used: number }>(`
+      select coalesce(sum(used_units), 0)::int as used
+        from content_translation_request_budget_counters
+       where scope in ('title-global@test-v1', 'title-requester@test-v1')
+    `);
+    expect(budget.rows[0]?.used).toBe(4);
+  });
+
+  it("does not charge or re-enqueue an already completed title identity", async () => {
+    const first = await createPlanner(client).planAndDispatch(
+      requestRevision(),
+      "he",
+      budgetAdmission(),
+    );
+    if (first.kind !== "queued") throw new Error("expected queued title fixture");
+
+    await client.query(`
+      update translation_tasks
+         set status = 'completed',
+             attempt_count = 1,
+             claim_token = null,
+             claimed_at = statement_timestamp() - interval '1 second',
+             lease_expires_at = null,
+             completed_at = statement_timestamp(),
+             updated_at = statement_timestamp()
+       where id = $1
+    `, [first.task.id]);
+
+    const before = await client.query<{ used: number }>(`
+      select coalesce(sum(used_units), 0)::int as used
+        from content_translation_request_budget_counters
+       where scope in ('title-global@test-v1', 'title-requester@test-v1')
+    `);
+    const enqueuer = new FakeTranslationTaskEnqueuer();
+    await expect(
+      createPlanner(client, enqueuer).planAndDispatch(
+        requestRevision(),
+        "he",
+        budgetAdmission(),
+      ),
+    ).resolves.toMatchObject({
+      kind: "original",
+      reason: "task-completed",
+    });
+    const after = await client.query<{ used: number }>(`
+      select coalesce(sum(used_units), 0)::int as used
+        from content_translation_request_budget_counters
+       where scope in ('title-global@test-v1', 'title-requester@test-v1')
+    `);
+    expect(after.rows[0]?.used).toBe(before.rows[0]?.used);
+    expect(enqueuer.messages).toHaveLength(0);
+  });
+
   it("gives a new current title revision a distinct task identity and monotonic generation", async () => {
     const first = await createPlanner(client).planAndDispatch(requestRevision(), "he", budgetAdmission());
     expect(first).toMatchObject({ kind: "queued", task: { generation: 1 } });
