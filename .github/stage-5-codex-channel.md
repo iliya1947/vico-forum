@@ -2,13 +2,15 @@
 
 ## Действие пользователя — сейчас
 
-Обновите служебный PR Codex #94 текущей версией этого канала. В нём записан результат полной
-проверки PR #101 и два замечания, которые ChatGPT должен проверить до исправления.
+Обновите служебный PR Codex #94 текущей версией этого канала, затем отправьте ChatGPT короткое
+сообщение: «Проверь последнее обновление служебного PR Codex #94 и продолжи техническое
+согласование по PR #101».
 ## Direct handoff to ChatGPT
 
-Read the new concrete-provider-adapter task below, independently verify its scope against current
-GitHub `main` and the source-of-truth documents, then implement it in a separate mergeable PR based
-on `730fb145c00fde2e503c5aa5282512ecb80192d2`. Report that PR number in the ChatGPT service PR #95.
+Read the independent full-review result for PR #101 below. Verify both findings without applying
+corrections first, record the verification and current PRV-02 status in ChatGPT service PR #95,
+then continue the shared technical-agreement cycle. Keep PR #101 unmerged until agreement,
+correction where confirmed, and a new full review are complete.
 - GitHub `main`: `730fb145c00fde2e503c5aa5282512ecb80192d2`
 - `JOB-06` reconciliation/observability is merged through PR #99, including migration `0013`.
 do not change code. Report the metadata correction in PR #95. Do not merge until Codex verifies
