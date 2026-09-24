@@ -99,6 +99,13 @@
       "when": 1790229600000,
       "tag": "0013_translation_task_reconciliation",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1790238000000,
+      "tag": "0014_content_translation_persistence",
+      "breakpoints": true
     }
   ]
 }
