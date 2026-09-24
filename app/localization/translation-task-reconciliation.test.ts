@@ -66,11 +66,11 @@ describe("TranslationTaskReconciler", () => {
   });
 
   it.each([
-    [{ limit: 0, pendingOlderThanMs: 0 }, "limit"],
-    [{ limit: 1.5, pendingOlderThanMs: 0 }, "limit"],
-    [{ limit: 1, pendingOlderThanMs: -1 }, "age"],
-    [{ limit: 1, pendingOlderThanMs: 1.5 }, "age"],
-  ])("rejects invalid reconciliation query %j", async (query, _label) => {
+    { limit: 0, pendingOlderThanMs: 0 },
+    { limit: 1.5, pendingOlderThanMs: 0 },
+    { limit: 1, pendingOlderThanMs: -1 },
+    { limit: 1, pendingOlderThanMs: 1.5 },
+  ])("rejects invalid reconciliation query %j", async (query) => {
     const reconciler = new TranslationTaskReconciler(store([]), new FakeTranslationTaskEnqueuer());
     await expect(reconciler.reconcile(query)).rejects.toBeInstanceOf(TypeError);
   });
