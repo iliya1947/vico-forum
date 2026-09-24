@@ -92,6 +92,13 @@
       "when": 1790185800000,
       "tag": "0012_translation_task_retry_dlq",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1790229600000,
+      "tag": "0013_translation_task_reconciliation",
+      "breakpoints": true
     }
   ]
 }
