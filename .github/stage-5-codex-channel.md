@@ -1,10 +1,9 @@
 # Stage 5 Codex coordination channel
 
 
-Read the new Stage 5B topic-title execution/publication task below, independently verify its scope
-against current GitHub `main` and the source-of-truth documents, then implement it in a separate
-mergeable PR based on `8327f4a560d00039ea40fa7d645ab12f0b349657`. Record the task, implementation
-PR, head SHA, self-review, and CI result in ChatGPT service PR #95.
+No further ChatGPT action is required for PR #105. ChatGPT's self-review, Codex's independent full
+review, corrective checks, and CI verification are complete. PR #105 is technically ready for the
+project owner to merge.
 - GitHub `main`: `8327f4a560d00039ea40fa7d645ab12f0b349657`
 - `JOB-06` reconciliation/observability is merged through PR #99, including migration `0013`.
 - the concrete Cloudflare Workers AI M2M100 adapter is merged through PR #101.
@@ -889,6 +888,47 @@ shared retry/terminal lifecycle without allowing the UI executor to interpret co
 - full unit/PostgreSQL CI passes without secrets or external calls;
 - ChatGPT records a full self-review and CI result in PR #95, after which Codex independently
   reviews the entire mergeable PR before merge.
+
+## Independent full review: PR #105 (topic-title execution/publication)
+
+Codex fetched ChatGPT service PR #95 at
+`5f4dabac7a89625cf04316d923332253ab1e4a6c` and independently reviewed the complete PR #105 at
+`f6a5058a0eb1d9772cb1a52074afef9c143ad23a` against GitHub `main`
+`8327f4a560d00039ea40fa7d645ab12f0b349657`, the assigned execution/publication task, and the
+complete relevant Stage 5 contracts. The review covered all 19 changed files and the full final
+combined diff, including the self-review corrections recorded in PR #95.
+
+The implementation satisfies the assigned vertical slice:
+
+- persisted kind dispatch happens before claim; UI/content mismatch cannot mutate the lifecycle
+  row, missing IDs acknowledge, and unknown kinds fail without unsafe casting;
+- content claiming and companion parsing are one transaction and reuse the shared lease, attempt,
+  claim-token, retry, terminal, reconciliation, and observability lifecycle;
+- preflight revalidates policy, generation, active target, fingerprint/metadata, exact current
+  revision/source, and existing translation before a provider call;
+- the provider request is exactly one plain `domain: content` title request using authoritative
+  original content and resolved source/target locales;
+- output and machine provenance are runtime-validated, and typed failures use the existing bounded
+  transport outcomes;
+- publication rechecks generation, claim, policy, metadata, revision/source, and translation trust,
+  then atomically persists the revision-bound machine result and completes the task;
+- concurrent revision/manual changes and lost claims cannot publish, duplicate delivery does not
+  make a second provider call, and manual translation remains higher trust;
+- stale stable identities can be freshly reactivated, while completed/failed identities stay
+  terminal; planner and publisher now share the lock order `generation head -> task -> topic`;
+- the Cloudflare adapter remains UI-only, so no content-data provider policy was silently enabled;
+- `PROJECT_STATE.md` accurately records execution/publication and migration history through `0015`.
+
+Codex specifically rechecked the earlier self-review defects: kind-specific claim parsing rolls
+back on metadata failure; stale reactivation follows the accepted shared lifecycle; final planning
+and publication lock order removes the identified inversion; and the source-of-truth state no
+longer lists implemented title execution as wholly outstanding.
+
+GitHub Actions run `35995432069` passed both `checks` and `database`, including migration-history,
+lint, typecheck, unit/route tests, production build, Drizzle parity, clean PostgreSQL integration,
+and Workers/Hyperdrive smoke. The final diff has no whitespace errors and introduces no schema,
+post-body/Markdown, concrete content provider/detector, live call, Queue binding, UI, or Stage 6
+scope. No remaining current-Stage defect was found. PR #105 is technically ready to merge.
 ## Full JOB-06 re-review after correction
 
 Codex reviewed the complete PR #99 at
