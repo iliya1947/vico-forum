@@ -47,6 +47,7 @@ describe("CloudflareM2m100TranslationProvider", () => {
       },
     });
 
+    expect(adapter.supports(plainRequest({ targetLocale: "fil" }))).toBe(true);
     expect(adapter.supports(plainRequest({ targetLocale: "fr-CA" }))).toBe(false);
     expect(adapter.supports(plainRequest({ targetLocale: "xx" }))).toBe(false);
     expect(adapter.supports(plainRequest({ sourceLocale: "en", targetLocale: "en" }))).toBe(false);
@@ -91,6 +92,21 @@ describe("CloudflareM2m100TranslationProvider", () => {
     });
   });
 
+  it("maps canonical Filipino to the M2M100 Tagalog provider code", async () => {
+    const ai = runner(async () => ({ translated_text: "Pundasyon ng pagsasalin" }));
+    const adapter = new CloudflareM2m100TranslationProvider(ai);
+
+    await expect(adapter.translate(plainRequest({ targetLocale: "fil" }))).resolves.toMatchObject({
+      value: "Pundasyon ng pagsasalin",
+    });
+    expect(ai.run).toHaveBeenCalledWith(CLOUDFLARE_M2M100_MODEL, {
+      text: "Translation foundation",
+      source_lang: "en",
+      target_lang: "tl",
+    });
+  });
+
+
   it.each([
     undefined,
     null,
@@ -107,16 +123,15 @@ describe("CloudflareM2m100TranslationProvider", () => {
 
   it.each([
     [{ status: 429 }, "retryable", "provider-rate-limited"],
-    [{ code: 3040 }, "retryable", "provider-rate-limited"],
-    [{ status: 408 }, "retryable", "provider-temporary"],
+    [{ status: 429, code: 3040 }, "retryable", "provider-rate-limited"],
+    [{ status: 408, code: 3007 }, "retryable", "provider-temporary"],
     [{ status: 503 }, "retryable", "provider-temporary"],
-    [{ code: 3007 }, "retryable", "provider-temporary"],
-    [{ status: 400 }, "terminal", "provider-unsupported"],
-    [{ status: 413 }, "terminal", "provider-unsupported"],
-    [{ code: 5004 }, "terminal", "provider-unsupported"],
-    [{ status: 403 }, "terminal", "provider-terminal"],
-    [{ status: 404 }, "terminal", "provider-terminal"],
-    [{ code: 5035 }, "terminal", "provider-terminal"],
+    [{ status: 400, code: 5004 }, "terminal", "provider-unsupported"],
+    [{ status: 413, code: 3006 }, "terminal", "provider-unsupported"],
+    [{ status: 405, code: 5019 }, "terminal", "provider-terminal"],
+    [{ status: 429, code: 3036 }, "terminal", "provider-terminal"],
+    [{ status: 403, code: 5035 }, "terminal", "provider-terminal"],
+    [{ status: 404, code: 3042 }, "terminal", "provider-terminal"],
   ] as const)(
     "maps known Workers AI failure metadata %j to %s/%s",
     async (failure, disposition, code) => {
