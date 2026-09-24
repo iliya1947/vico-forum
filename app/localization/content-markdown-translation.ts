@@ -44,6 +44,7 @@ interface SegmentRecord {
   readonly id: string;
   readonly marker: string;
   readonly protectedTokens: readonly ProtectedToken[];
+  readonly maxTranslatedCharacters: number;
   readonly canonicalPath: string;
 }
 
@@ -54,14 +55,17 @@ interface TechnicalSpan {
 
 const HUMAN_LANGUAGE_LETTER = /\p{L}/u;
 
+const CLI_OPTION_PATTERN = /--?[A-Za-z][A-Za-z0-9-]*/gu;
+
 const TECHNICAL_PATTERNS = [
   /https?:\/\/[^\s<>"'`]+/gu,
   /mailto:[^\s<>"'`]+/gu,
   /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/gu,
   /@[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+/gu,
   /\b[A-Za-z]:\\(?:[^\\\s]+\\)*[^\\\s]+/gu,
-  /(?:\.{1,2}\/|\/)[A-Za-z0-9._~!$&'()*+,;=:@%/-]+/gu,
+  /(?:\.{1,2}\/|\/)[A-Za-z0-9._~!  /(?:\.{1,2}\/|\/)[A-Za-z0-9._~!$&'()*+,;=:@%/-]+/gu,
   /--?[A-Za-z][A-Za-z0-9-]*/gu,
+  /\b[A-Za-z_$][A-Za-z0-9_$]*(?:[.:/\\][A-Za-z0-9_$@%+~#-]+)+\b/gu,'()*+,;=:@%/-]+/gu,
   /\b[A-Za-z_$][A-Za-z0-9_$]*(?:[.:/\\][A-Za-z0-9_$@%+~#-]+)+\b/gu,
   /\b[A-Za-z_$][A-Za-z0-9_$]*\(\)/gu,
   /\b[A-Za-z][A-Za-z0-9]*(?:\+\+|#)(?=\s|$|[.,;:!?])/gu,
@@ -113,6 +117,10 @@ export class ProtectedMarkdownTranslationDocument {
         id,
         marker,
         protectedTokens: protectedResult.tokens,
+        maxTranslatedCharacters: Math.max(
+          MAX_TRANSLATED_MARKDOWN_SEGMENT_CHARACTERS,
+          protectedResult.text.length,
+        ),
       });
       node.value = marker;
     });
@@ -218,7 +226,7 @@ function validateTranslationSet(
     );
   }
 
-  const expectedIds = new Set(records.map((record) => record.id));
+  const recordsById = new Map(records.map((record) => [record.id, record]));
   const values = new Map<string, string>();
 
   for (const translation of translations) {
@@ -227,8 +235,15 @@ function validateTranslationSet(
       || typeof translation.id !== "string"
       || typeof translation.value !== "string"
       || values.has(translation.id)
-      || !expectedIds.has(translation.id)
+      || !recordsById.has(translation.id)
     ) {
+      throw new MarkdownTranslationValidationError(
+        "invalid-segment-set",
+        "Markdown segment translation IDs must exactly match the protected document",
+      );
+    }
+    const record = recordsById.get(translation.id);
+    if (!record) {
       throw new MarkdownTranslationValidationError(
         "invalid-segment-set",
         "Markdown segment translation IDs must exactly match the protected document",
@@ -236,7 +251,7 @@ function validateTranslationSet(
     }
     if (
       !translation.value.trim()
-      || translation.value.length > MAX_TRANSLATED_MARKDOWN_SEGMENT_CHARACTERS
+      || translation.value.length > record.maxTranslatedCharacters
       || hasForbiddenControlCharacters(translation.value)
       || translation.value.includes(segmentMarkerNamespace)
     ) {
@@ -247,10 +262,7 @@ function validateTranslationSet(
     }
     if (
       translation.value.includes(tokenMarkerNamespace)
-      && !records.some((record) =>
-        record.id === translation.id
-        && tokenSequenceMatches(record, translation.value, tokenMarkerNamespace)
-      )
+      && !tokenSequenceMatches(record, translation.value, tokenMarkerNamespace)
     ) {
       throw new MarkdownTranslationValidationError(
         "protected-token-mismatch",
@@ -382,6 +394,21 @@ function technicalSpans(value: string): readonly TechnicalSpan[] {
     }
   }
 
+  CLI_OPTION_PATTERN.lastIndex = 0;
+  for (const match of value.matchAll(CLI_OPTION_PATTERN)) {
+    if (
+      match.index === undefined
+      || !match[0]
+      || !hasCliOptionBoundary(value, match.index)
+    ) {
+      continue;
+    }
+    candidates.push({
+      start: match.index,
+      end: match.index + match[0].length,
+    });
+  }
+
   candidates.sort((left, right) =>
     left.start - right.start
     || (right.end - right.start) - (left.end - left.start)
@@ -395,6 +422,12 @@ function technicalSpans(value: string): readonly TechnicalSpan[] {
     cursor = candidate.end;
   }
   return selected;
+}
+
+function hasCliOptionBoundary(value: string, optionStart: number): boolean {
+  if (optionStart === 0) return true;
+  const previous = value.slice(optionStart - 1, optionStart);
+  return !/[\p{L}\p{N}\p{M}_-]/u.test(previous);
 }
 
 function chooseNamespaceSalt(sourceMarkdown: string): number {
