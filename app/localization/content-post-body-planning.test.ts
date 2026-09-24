@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   CONTENT_TRANSLATION_REQUESTER_SUBJECT_KEY_LENGTH,
+  ContentTranslationRequestBudgetStorageUnavailableError,
   type ContentTranslationRequestBudgetAdmission,
 } from "./content-request-budget.server";
 
@@ -243,6 +244,23 @@ describe("ContentPostBodyTranslationPlanner", () => {
     expect(tasks.specifications).toHaveLength(0);
   });
 
+  it("preserves classified body budget storage unavailability and unexpected planning errors", async () => {
+    const revision = bodyRevision();
+    const unavailable = new ContentTranslationRequestBudgetStorageUnavailableError();
+    await expect(
+      plannerWith({
+        tasks: new FakePostBodyPlanningStore(revision, unavailable),
+      }).planAndDispatch(revision, "he", budgetAdmission()),
+    ).rejects.toBe(unavailable);
+
+    const unexpected = new Error("programming failure");
+    await expect(
+      plannerWith({
+        tasks: new FakePostBodyPlanningStore(revision, unexpected),
+      }).planAndDispatch(revision, "he", budgetAdmission()),
+    ).rejects.toBe(unexpected);
+  });
+
   it("rejects a stale caller revision before protection or durable creation", async () => {
     const tasks = new FakePostBodyPlanningStore(bodyRevision({ revisionId: "post-a-r2" }));
 
@@ -378,7 +396,7 @@ class FakePostBodyPlanningStore implements ContentPostBodyPlanningStore {
 
   constructor(
     private readonly current: ContentTranslationRevision,
-    private readonly forcedResult?: ContentPostBodyTaskUpsertResult,
+    private readonly forcedResult?: ContentPostBodyTaskUpsertResult | Error,
   ) {}
 
   async readCurrentRevision(): Promise<ContentTranslationRevision> {
@@ -392,6 +410,7 @@ class FakePostBodyPlanningStore implements ContentPostBodyPlanningStore {
   ): Promise<ContentPostBodyTaskUpsertResult> {
     this.specifications.push(specification);
     this.admissions.push(requestBudgetAdmission);
+    if (this.forcedResult instanceof Error) throw this.forcedResult;
     if (this.forcedResult) return this.forcedResult;
     if (!this.task) {
       const now = new Date("2026-09-24T00:00:00Z");
