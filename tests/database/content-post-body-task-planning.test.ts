@@ -10,6 +10,7 @@ import {
 } from "../../app/localization/content-request-budget.server";
 import {
   ContentPostBodyTranslationPlanner,
+  contentPostBodyTaskSpecification,
 } from "../../app/localization/content-post-body-planning";
 import {
   CONTENT_MARKDOWN_PROTECTION_POLICY_VERSION,
@@ -155,6 +156,84 @@ describe("content post-body durable planning", () => {
     expect(metadata.rows[0]).not.toHaveProperty("segments");
   });
 
+  it("keeps an existing exact-revision body translation free of budget and durable work", async () => {
+    await new DrizzleContentTranslationStore(drizzle(client)).write({
+      contentType: "post-body",
+      contentId: "post-a",
+      revisionId: "post-a-r1",
+      targetLocale: "he",
+      sourceLocale: "ru",
+      translatedContent: "ידני",
+      provenance: { origin: "persistent_manual" },
+    });
+
+    await expect(
+      createPlanner(client).planAndDispatch(requestRevision(), "he", budgetAdmission()),
+    ).resolves.toMatchObject({
+      kind: "original",
+      reason: "translation-current",
+    });
+
+    const counters = await client.query<{ count: number }>(
+      "select count(*)::int as count from content_translation_request_budget_counters",
+    );
+    const tasks = await client.query<{ count: number }>(
+      "select count(*)::int as count from translation_tasks where translation_kind = 'content-post-body'",
+    );
+    expect(counters.rows[0]?.count).toBe(0);
+    expect(tasks.rows[0]?.count).toBe(0);
+  });
+
+  it("rechecks a serialized body translation before admission and rolls back planning metadata", async () => {
+    const store = new DrizzleContentPostBodyPlanningStore(drizzle(client));
+    const revision = await store.readCurrentRevision("post-a");
+    if (!revision) throw new Error("missing post revision fixture");
+    const protectedDocument = protectMarkdownForTranslation(revision.originalContent);
+    const specification = await contentPostBodyTaskSpecification(
+      revision,
+      {
+        kind: "revision",
+        mayProceed: true,
+        sourceLocale: "ru",
+        resolutionOrigin: "revision-metadata",
+      },
+      "ru",
+      "he",
+      CONTENT_MARKDOWN_PROTECTION_POLICY_VERSION,
+      "content-v1",
+      protectedDocument,
+    );
+
+    await new DrizzleContentTranslationStore(drizzle(client)).write({
+      contentType: "post-body",
+      contentId: "post-a",
+      revisionId: "post-a-r1",
+      targetLocale: "he",
+      sourceLocale: "ru",
+      translatedContent: "ידני",
+      provenance: { origin: "persistent_manual" },
+    });
+
+    await expect(
+      store.upsertPending(specification, revision, budgetAdmission()),
+    ).resolves.toEqual({ outcome: "translation-current" });
+
+    const [counters, heads, tasks] = await Promise.all([
+      client.query<{ count: number }>(
+        "select count(*)::int as count from content_translation_request_budget_counters",
+      ),
+      client.query<{ count: number }>(
+        "select count(*)::int as count from translation_task_generation_heads where translation_kind = 'content-post-body'",
+      ),
+      client.query<{ count: number }>(
+        "select count(*)::int as count from translation_tasks where translation_kind = 'content-post-body'",
+      ),
+    ]);
+    expect(counters.rows[0]?.count).toBe(0);
+    expect(heads.rows[0]?.count).toBe(0);
+    expect(tasks.rows[0]?.count).toBe(0);
+  });
+
   it("persists detected source semantics for an und revision without detector evidence payload", async () => {
     const planner = createPlanner(
       client,
@@ -222,9 +301,62 @@ describe("content post-body durable planning", () => {
          where translation_kind = 'content-post-body'
       `);
       expect(count.rows[0]?.count).toBe(1);
+      const budget = await client.query<{ used: number }>(`
+        select coalesce(sum(used_units), 0)::int as used
+          from content_translation_request_budget_counters
+         where scope in ('body-global@test-v1', 'body-requester@test-v1')
+      `);
+      // Two eligible duplicates cost two units each in both scopes.
+      expect(budget.rows[0]?.used).toBe(8);
     } finally {
       await second.end();
     }
+  });
+
+  it("denies an eligible body duplicate without partial global charge or task mutation", async () => {
+    const constrained = budgetAdmission({
+      cost: 1,
+      global: { name: "body-global-deny", version: "test-v1", limit: 2 },
+      requester: { name: "body-requester-deny", version: "test-v1", limit: 1 },
+    });
+    const first = await createPlanner(client).planAndDispatch(
+      requestRevision(),
+      "he",
+      constrained,
+    );
+    if (first.kind !== "queued") throw new Error("expected first body request to queue");
+
+    const second = await createPlanner(client).planAndDispatch(
+      requestRevision(),
+      "he",
+      constrained,
+    );
+    expect(second).toMatchObject({
+      kind: "original",
+      reason: "request-budget-denied",
+      requestBudgetDecision: {
+        allowed: false,
+        limitingScope: "requester",
+        remainingUnits: 0,
+      },
+    });
+
+    const rows = await client.query<{ scope: string; used_units: number }>(`
+      select scope, used_units::int
+        from content_translation_request_budget_counters
+       where scope in ('body-global-deny@test-v1', 'body-requester-deny@test-v1')
+       order by scope
+    `);
+    expect(rows.rows).toEqual([
+      { scope: "body-global-deny@test-v1", used_units: 1 },
+      { scope: "body-requester-deny@test-v1", used_units: 1 },
+    ]);
+
+    const task = await client.query<{ status: string; attempt_count: number }>(
+      "select status, attempt_count from translation_tasks where id = $1",
+      [first.task.id],
+    );
+    expect(task.rows).toEqual([{ status: "pending", attempt_count: 0 }]);
   });
 
   it("does not reset a live processing claim during duplicate planning", async () => {
@@ -277,6 +409,13 @@ describe("content post-body durable planning", () => {
       attempt_count: 1,
       generation: first.task.generation,
     });
+    const budget = await client.query<{ used: number }>(`
+      select coalesce(sum(used_units), 0)::int as used
+        from content_translation_request_budget_counters
+       where scope in ('body-global@test-v1', 'body-requester@test-v1')
+    `);
+    // Initial + duplicate: cost 2 in each of two scopes.
+    expect(budget.rows[0]?.used).toBe(8);
   });
 
   it("does not reactivate a completed stable post-body identity", async () => {
@@ -295,12 +434,25 @@ describe("content post-body durable planning", () => {
        where id = '${first.task.id}'
     `);
 
+    const beforeBudget = await client.query<{ used: number }>(`
+      select coalesce(sum(used_units), 0)::int as used
+        from content_translation_request_budget_counters
+       where scope in ('body-global@test-v1', 'body-requester@test-v1')
+    `);
+
     await expect(
       createPlanner(client).planAndDispatch(requestRevision(), "he", budgetAdmission()),
     ).resolves.toMatchObject({
       kind: "original",
       reason: "task-completed",
     });
+
+    const afterBudget = await client.query<{ used: number }>(`
+      select coalesce(sum(used_units), 0)::int as used
+        from content_translation_request_budget_counters
+       where scope in ('body-global@test-v1', 'body-requester@test-v1')
+    `);
+    expect(afterBudget.rows[0]?.used).toBe(beforeBudget.rows[0]?.used);
 
     const rows = await client.query<{ status: string; generation: number }>(`
       select status, generation
@@ -372,6 +524,13 @@ describe("content post-body durable planning", () => {
     await expect(
       store.upsertPending(planned.task, authoritative, budgetAdmission()),
     ).resolves.toEqual({ outcome: "revision-changed" });
+
+    const budget = await client.query<{ used: number }>(`
+      select coalesce(sum(used_units), 0)::int as used
+        from content_translation_request_budget_counters
+       where scope in ('body-global@test-v1', 'body-requester@test-v1')
+    `);
+    expect(budget.rows[0]?.used).toBe(4);
   });
 
   it("leaves enqueue failure as a pending task recoverable by JOB-06", async () => {
@@ -392,12 +551,61 @@ describe("content post-body durable planning", () => {
     expect(pending.rows).toHaveLength(1);
     expect(pending.rows[0]?.status).toBe("pending");
 
+    const budget = await client.query<{ used: number }>(`
+      select coalesce(sum(used_units), 0)::int as used
+        from content_translation_request_budget_counters
+       where scope in ('body-global@test-v1', 'body-requester@test-v1')
+    `);
+    expect(budget.rows[0]?.used).toBe(4);
+
     const candidates = await new DrizzleTranslationTaskStore(drizzle(client))
       .reserveReconciliationCandidates({ limit: 10, pendingOlderThanMs: 0 });
     expect(candidates).toContainEqual({
       id: pending.rows[0]!.id,
       reason: "pending",
     });
+  });
+
+  it("rolls back body budget counters when task metadata insertion fails", async () => {
+    await client.query(`
+      create function reject_body_task_metadata_fixture()
+      returns trigger
+      language plpgsql
+      as $
+      begin
+        raise exception 'body metadata fixture failure' using errcode = 'P0001';
+      end;
+      $;
+      create trigger reject_body_task_metadata_fixture
+      before insert on content_post_body_translation_tasks
+      for each row execute function reject_body_task_metadata_fixture();
+    `);
+
+    try {
+      await expect(
+        createPlanner(client).planAndDispatch(requestRevision(), "he", budgetAdmission()),
+      ).rejects.toBeInstanceOf(Error);
+
+      const [counters, tasks, heads] = await Promise.all([
+        client.query<{ count: number }>(
+          "select count(*)::int as count from content_translation_request_budget_counters",
+        ),
+        client.query<{ count: number }>(
+          "select count(*)::int as count from translation_tasks where translation_kind = 'content-post-body'",
+        ),
+        client.query<{ count: number }>(
+          "select count(*)::int as count from translation_task_generation_heads where translation_kind = 'content-post-body'",
+        ),
+      ]);
+      expect(counters.rows[0]?.count).toBe(0);
+      expect(tasks.rows[0]?.count).toBe(0);
+      expect(heads.rows[0]?.count).toBe(0);
+    } finally {
+      await client.query(
+        "drop trigger if exists reject_body_task_metadata_fixture on content_post_body_translation_tasks",
+      );
+      await client.query("drop function if exists reject_body_task_metadata_fixture()");
+    }
   });
 
   it("database-enforces post revision ownership and title/body namespace isolation", async () => {
