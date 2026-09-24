@@ -174,6 +174,30 @@ describe("content topic-title execution and publication", () => {
     expect(translate).toHaveBeenCalledTimes(1);
   });
 
+  it("reactivates a stale stable identity when the same content work becomes eligible again", async () => {
+    const firstEnqueuer = new FakeTranslationTaskEnqueuer();
+    const first = await createPlanner(client, firstEnqueuer).planAndDispatch(requestRevision(), "he");
+    if (first.kind !== "queued") throw new Error("expected queued content task");
+
+    const tasks = new DrizzleTranslationTaskStore(drizzle(client));
+    const claim = await tasks.claimContentTopicTitle(first.task.id, 60_000);
+    if (claim.outcome !== "claimed") throw new Error("expected content task claim");
+    await expect(tasks.markStale(first.task.id, claim.task.claimToken)).resolves.toBe(true);
+
+    const secondEnqueuer = new FakeTranslationTaskEnqueuer();
+    const second = await createPlanner(client, secondEnqueuer).planAndDispatch(requestRevision(), "he");
+    expect(second).toMatchObject({
+      kind: "queued",
+      taskCreated: false,
+      task: {
+        id: first.task.id,
+        status: "pending",
+        attemptCount: 0,
+      },
+    });
+    expect(secondEnqueuer.messages).toEqual([{ translationTaskId: first.task.id }]);
+  });
+
   it("cannot claim a content task through the UI claim path", async () => {
     const planned = await createPlanner(client).planAndDispatch(requestRevision(), "he");
     if (planned.kind !== "queued") throw new Error("expected queued content task");
