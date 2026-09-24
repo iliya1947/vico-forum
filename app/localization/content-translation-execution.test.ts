@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
+import { CloudflareM2m100TranslationProvider } from "./cloudflare-m2m100-provider";
 import {
   ContentTranslationStorageUnavailableError,
   type ContentTranslationRevision,
@@ -328,6 +329,32 @@ describe("ContentTopicTitleTaskExecutor", () => {
     });
   });
 
+  it.each([
+    ["provider-rate-limited", "retryable", "retry"],
+    ["provider-terminal", "terminal", "terminal"],
+  ] as const)(
+    "preserves shared %s failure classification",
+    async (code, disposition, delivery) => {
+      const failure = new TranslationExecutionFailure(
+        disposition,
+        code,
+        "classified provider fixture",
+      );
+      const { executor, recordFailure } = await harness({ providerFailure: failure });
+
+      const result = await executor.execute({ translationTaskId: taskId });
+      expect(result).toMatchObject({
+        outcome: "execution-failed",
+        delivery,
+        failureCode: code,
+      });
+      expect(recordFailure).toHaveBeenCalledWith(taskId, claimToken, {
+        disposition,
+        code,
+      });
+    },
+  );
+
   it("persists a retryable provider failure through the shared bounded lifecycle", async () => {
     const failure = new TranslationExecutionFailure(
       "retryable",
@@ -346,6 +373,26 @@ describe("ContentTopicTitleTaskExecutor", () => {
     expect(recordFailure).toHaveBeenCalledWith(taskId, claimToken, {
       disposition: "retryable",
       code: "provider-temporary",
+    });
+  });
+
+  it("does not expand the UI-only Cloudflare M2M100 adapter to content", async () => {
+    const run = vi.fn();
+    const adapter = new CloudflareM2m100TranslationProvider({ run });
+    const { executor, recordFailure } = await harness({ adapter });
+
+    await expect(executor.execute({ translationTaskId: taskId })).resolves.toEqual({
+      outcome: "execution-failed",
+      delivery: "terminal",
+      failureCode: "provider-unsupported",
+      terminalReason: "terminal",
+      attemptCount: 1,
+      maxAttempts: 3,
+    });
+    expect(run).not.toHaveBeenCalled();
+    expect(recordFailure).toHaveBeenCalledWith(taskId, claimToken, {
+      disposition: "terminal",
+      code: "provider-unsupported",
     });
   });
 
