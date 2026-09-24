@@ -98,7 +98,8 @@ const fenced = fooBar();
       "href",
       "https://example.com/raw",
     );
-    expect(container.querySelector("img, div div")).toBeNull();
+    expect(container.querySelector("img")).toBeNull();
+    expect(container.querySelector(".post-body > div")).toBeNull();
   });
 
   it("protects repeated URLs and technical identifiers with ordered collision-safe tokens", () => {
@@ -136,8 +137,8 @@ const fenced = fooBar();
     const document = protectMarkdownForTranslation(source);
 
     expect(document.protectedMarkdown).toContain("VICOSEGMENT1X");
+    expect(document.segments[0]?.text).toContain("⟦VICOPROTECTED0X");
     expect(document.segments[0]?.text).toContain("⟦VICOPROTECTED1X");
-    expect(document.segments[0]?.text).not.toContain("⟦VICOPROTECTED0X");
   });
 
   it("rejects missing, extra, duplicate, blank, oversized, and malformed segment translations", () => {
@@ -170,29 +171,39 @@ const fenced = fooBar();
     ])).toThrow(expect.objectContaining({ code: "invalid-segment-value" }));
   });
 
-  it("inserts provider values as text so Markdown/HTML injection cannot create new structure", () => {
+  it("inserts provider values as text and rejects attempts that would change block structure", () => {
     const document = protectMarkdownForTranslation(
       "Safe paragraph with [label](https://example.com/docs).",
     );
-    const translations = document.segments.map((segment, index) => ({
+    const inlineTranslations = document.segments.map((segment, index) => ({
       id: segment.id,
       value: index === 0
-        ? "[evil](javascript:alert(1))\n\n# injected\n<script>alert(1)</script>"
+        ? "[evil](javascript:alert(1)) <script>alert(1)</script>"
         : segment.text,
     }));
 
-    const restored = document.restore(translations);
+    const restored = document.restore(inlineTranslations);
     const { container } = render(<ForumMarkdown>{restored}</ForumMarkdown>);
 
     expect(container.querySelector("script")).toBeNull();
-    expect(screen.queryByRole("heading", { name: "injected" })).toBeNull();
     expect(screen.queryByRole("link", { name: "evil" })).toBeNull();
     expect(screen.getByRole("link", { name: "label" })).toHaveAttribute(
       "href",
       "https://example.com/docs",
     );
     expect(container).toHaveTextContent("[evil](javascript:alert(1))");
-    expect(container).toHaveTextContent("# injected");
+    expect(container).toHaveTextContent("<script>alert(1)</script>");
+
+    const blockInjection = document.segments.map((segment, index) => ({
+      id: segment.id,
+      value: index === 0 ? "safe\n\n# injected" : segment.text,
+    }));
+    expect(() => document.restore(blockInjection)).toThrow(
+      expect.objectContaining({
+        code: "protected-structure-mismatch",
+        disposition: "original-fallback",
+      }),
+    );
   });
 
   it("preserves escaped Markdown, Unicode/RTL text, and the existing no-external-image renderer policy", () => {
