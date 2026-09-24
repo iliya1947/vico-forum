@@ -24,6 +24,13 @@ export class UnknownTranslationTaskKindError extends Error {
   }
 }
 
+export class TranslationTaskExecutorUnavailableError extends Error {
+  constructor(readonly translationKind: TranslationTaskKind) {
+    super(`translation task executor is not available yet: ${translationKind}`);
+    this.name = "TranslationTaskExecutorUnavailableError";
+  }
+}
+
 export interface TranslationTaskExecutorDispatcherDependencies {
   readonly kinds: TranslationTaskKindReader;
   readonly ui: Pick<UiTranslationTaskExecutor, "execute">;
@@ -45,6 +52,8 @@ export class TranslationTaskExecutorDispatcher {
         return this.dependencies.ui.execute(message);
       case "content-topic-title":
         return this.dependencies.contentTopicTitle.execute(message);
+      case "content-post-body":
+        throw new TranslationTaskExecutorUnavailableError(kind);
       default:
         throw new UnknownTranslationTaskKindError(kind);
     }
@@ -52,5 +61,5 @@ export class TranslationTaskExecutorDispatcher {
 }
 
 export function isTranslationTaskKind(value: string): value is TranslationTaskKind {
-  return value === "ui" || value === "content-topic-title";
+  return value === "ui" || value === "content-topic-title" || value === "content-post-body";
 }
