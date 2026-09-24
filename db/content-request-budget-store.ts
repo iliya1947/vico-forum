@@ -17,8 +17,17 @@ import { contentTranslationRequestBudgetCounters } from "./schema";
 
 const GLOBAL_SUBJECT_KEY = "_global";
 
-type BudgetTransaction =
+export type ContentTranslationRequestBudgetTransaction =
   Parameters<Parameters<NodePgDatabase["transaction"]>[0]>[0];
+
+type AllowedBudgetDecision = Extract<
+  ContentTranslationRequestBudgetDecision,
+  { readonly allowed: true }
+>;
+type DeniedBudgetDecision = Extract<
+  ContentTranslationRequestBudgetDecision,
+  { readonly allowed: false }
+>;
 
 interface DatabaseClock {
   readonly databaseNow: Date;
@@ -26,10 +35,10 @@ interface DatabaseClock {
   readonly resetAt: Date;
 }
 
-class RequestBudgetDeniedRollback extends Error {
-  constructor(readonly decision: ContentTranslationRequestBudgetDecision) {
-    super("request budget denied");
-    this.name = "RequestBudgetDeniedRollback";
+export class ContentTranslationRequestBudgetDeniedRollback extends Error {
+  constructor(readonly decision: DeniedBudgetDecision) {
+    super("content translation request budget denied");
+    this.name = "ContentTranslationRequestBudgetDeniedRollback";
   }
 }
 
@@ -41,46 +50,18 @@ implements ContentTranslationRequestBudgetStore {
     admission: ContentTranslationRequestBudgetAdmission,
   ): Promise<ContentTranslationRequestBudgetDecision> {
     validateContentTranslationRequestBudgetAdmission(admission);
-    const globalScope = contentTranslationRequestBudgetScopeKey(admission.global);
-    const requesterScope = contentTranslationRequestBudgetScopeKey(admission.requester);
 
     try {
-      return await this.database.transaction(async (transaction) => {
-        const clock = await readDatabaseClock(transaction, admission.windowSeconds);
-
-        const globalUsed = await consumeCounter(
-          transaction,
-          globalScope,
-          GLOBAL_SUBJECT_KEY,
-          admission.cost,
-          admission.global.limit,
-          clock,
-          "global",
-        );
-        const requesterUsed = await consumeCounter(
-          transaction,
-          requesterScope,
-          admission.subjectKey,
-          admission.cost,
-          admission.requester.limit,
-          clock,
-          "requester",
-        );
-
-        return {
-          allowed: true,
-          reason: "within-budget",
-          limitingScope: null,
-          remainingUnits: {
-            global: admission.global.limit - globalUsed,
-            requester: admission.requester.limit - requesterUsed,
-          },
-          resetAt: clock.resetAt,
-          retryAfterSeconds: 0,
-        };
-      });
+      return await this.database.transaction((transaction) =>
+        consumeContentTranslationRequestBudgetInTransaction(transaction, admission)
+      );
     } catch (error) {
-      if (error instanceof RequestBudgetDeniedRollback) return error.decision;
+      if (error instanceof ContentTranslationRequestBudgetDeniedRollback) {
+        return error.decision;
+      }
+      if (error instanceof ContentTranslationRequestBudgetStorageUnavailableError) {
+        throw error;
+      }
       if (isStorageUnavailable(error)) {
         throw new ContentTranslationRequestBudgetStorageUnavailableError({ cause: error });
       }
@@ -124,8 +105,63 @@ implements ContentTranslationRequestBudgetStore {
   }
 }
 
+export async function consumeContentTranslationRequestBudgetInTransaction(
+  transaction: ContentTranslationRequestBudgetTransaction,
+  admission: ContentTranslationRequestBudgetAdmission,
+): Promise<AllowedBudgetDecision> {
+  validateContentTranslationRequestBudgetAdmission(admission);
+  const globalScope = contentTranslationRequestBudgetScopeKey(admission.global);
+  const requesterScope = contentTranslationRequestBudgetScopeKey(admission.requester);
+
+  try {
+    const clock = await readDatabaseClock(transaction, admission.windowSeconds);
+
+    const globalUsed = await consumeCounter(
+      transaction,
+      globalScope,
+      GLOBAL_SUBJECT_KEY,
+      admission.cost,
+      admission.global.limit,
+      clock,
+      "global",
+    );
+    const requesterUsed = await consumeCounter(
+      transaction,
+      requesterScope,
+      admission.subjectKey,
+      admission.cost,
+      admission.requester.limit,
+      clock,
+      "requester",
+    );
+
+    return {
+      allowed: true,
+      reason: "within-budget",
+      limitingScope: null,
+      remainingUnits: {
+        global: admission.global.limit - globalUsed,
+        requester: admission.requester.limit - requesterUsed,
+      },
+      resetAt: clock.resetAt,
+      retryAfterSeconds: 0,
+    };
+  } catch (error) {
+    if (
+      error instanceof ContentTranslationRequestBudgetDeniedRollback
+      || error instanceof ContentTranslationRequestBudgetStorageUnavailableError
+    ) {
+      throw error;
+    }
+    if (isStorageUnavailable(error)) {
+      throw new ContentTranslationRequestBudgetStorageUnavailableError({ cause: error });
+    }
+    throw error;
+  }
+}
+
 async function readDatabaseClock(
-  transaction: BudgetTransaction,
+  transaction: ContentTranslationRequestBudgetTransaction,
   windowSeconds: number,
 ): Promise<DatabaseClock> {
   const result = await transaction.execute<{
@@ -184,7 +220,7 @@ async function readDatabaseClock(
 }
 
 async function consumeCounter(
-  transaction: BudgetTransaction,
+  transaction: ContentTranslationRequestBudgetTransaction,
   scope: string,
   subjectKey: string,
   cost: number,
@@ -229,7 +265,7 @@ async function consumeCounter(
   const usedUnits = current.rows[0]
     ? parseUsedUnits(current.rows[0].used_units, limit)
     : 0;
-  throw new RequestBudgetDeniedRollback({
+  throw new ContentTranslationRequestBudgetDeniedRollback({
     allowed: false,
     reason: "limit-exceeded",
     limitingScope,
