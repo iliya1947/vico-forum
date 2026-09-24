@@ -679,13 +679,51 @@ function arrayShapeCheck(column: AnyPgColumn) {
 }
 
 function sourceLocaleCheck(column: AnyPgColumn) {
-  return sql`${column} = btrim(${column}) and ${column} ~ '^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*`;
+  return sql`${column} = btrim(${column}) and ${column} ~ '^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*
+
+function contentTranslationMetadataCheck(
+  origin: AnyPgColumn,
+  provider: AnyPgColumn,
+  providerModel: AnyPgColumn,
+) {
+  return sql`(
+    ${origin} = 'machine'
+    and ${provider} is not null
+    and btrim(${provider}) <> ''
+    and ${providerModel} is not null
+    and btrim(${providerModel}) <> ''
+  ) or (
+    ${origin} = 'persistent_manual'
+    and ${provider} is null
+    and ${providerModel} is null
+  )`;
+}
+`;
 }
 
 function contentTargetLocaleCheck(column: AnyPgColumn) {
   return sql`${column} = btrim(${column})
     and lower(${column}) <> 'und'
-    and ${column} ~ '^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*`;
+    and ${column} ~ '^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*
+
+function contentTranslationMetadataCheck(
+  origin: AnyPgColumn,
+  provider: AnyPgColumn,
+  providerModel: AnyPgColumn,
+) {
+  return sql`(
+    ${origin} = 'machine'
+    and ${provider} is not null
+    and btrim(${provider}) <> ''
+    and ${providerModel} is not null
+    and btrim(${providerModel}) <> ''
+  ) or (
+    ${origin} = 'persistent_manual'
+    and ${provider} is null
+    and ${providerModel} is null
+  )`;
+}
+`;
 }
 
 function contentTranslationMetadataCheck(
