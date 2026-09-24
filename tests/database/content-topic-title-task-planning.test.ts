@@ -577,11 +577,11 @@ describe("content topic-title durable planning", () => {
       create function reject_title_task_metadata_fixture()
       returns trigger
       language plpgsql
-      as $
+      as $fixture$
       begin
         raise exception 'title metadata fixture failure' using errcode = 'P0001';
       end;
-      $;
+      $fixture$;
       create trigger reject_title_task_metadata_fixture
       before insert on content_topic_title_translation_tasks
       for each row execute function reject_title_task_metadata_fixture();
