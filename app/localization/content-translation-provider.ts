@@ -12,8 +12,9 @@ export interface PublicForumTopicTitleProviderCapabilityInput {
   readonly sourceCharacterCount: number;
 }
 
-export interface PublicForumTopicTitleProviderRequestInput
-  extends PublicForumTopicTitleProviderCapabilityInput {
+export interface PublicForumTopicTitleProviderRequestInput {
+  readonly sourceLocale: string;
+  readonly targetLocale: string;
   readonly source: string;
 }
 
