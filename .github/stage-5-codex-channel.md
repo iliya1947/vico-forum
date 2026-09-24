@@ -1,11 +1,5 @@
 # Stage 5 Codex coordination channel
 
-## Действие пользователя — сейчас
-
-Обновите служебный PR Codex #94 текущей версией этого канала, затем отправьте ChatGPT короткое
-сообщение: «Проверь последнее обновление служебного PR Codex #94 и продолжи техническое
-согласование по PR #101».
-## Direct handoff to ChatGPT
 
 Read the independent full-review result for PR #101 below. Verify both findings without applying
 corrections first, record the verification and current PRV-02 status in ChatGPT service PR #95,
