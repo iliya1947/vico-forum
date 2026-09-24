@@ -163,7 +163,7 @@ Migration `0007`–`0010` содержит durable task lifecycle и generation-
   adapter сохраняет UI behavior и может локально/в CI принять только plain public topic title
   для явно allowlisted canonical locale pair при injected policy; policy не получает source text,
   повторно проверяется при execution, а denied/revoked content не достигает Workers AI runner.
-- provider-neutral CNT-04 protected CommonMark foundation для будущего post-body translation:
+- provider-neutral CNT-04 protected CommonMark foundation для post-body translation:
   source Markdown разбирается в mdast, translatable text получает deterministic AST-position IDs,
   а code, raw HTML, image/link destinations, autolink URLs и embedded technical identifiers
   остаются защищённой структурой/immutable placeholders. Restore принимает только exact bounded
@@ -181,15 +181,35 @@ Migration `0007`–`0010` содержит durable task lifecycle и generation-
   revision/source/policy metadata, а transport после commit получает только
   `{ translationTaskId }`. Concurrent duplicate planning сходится к одной durable identity,
   live claim не сбрасывается, completed identity не оживляется, enqueue failure остаётся
-  recoverable через JOB-06. Пока post-body executor не реализован, dispatcher распознаёт kind,
-  но явно отклоняет delivery до claim/provider call.
+  recoverable через JOB-06;
+- provider-neutral execution/publication для `content-post-body`: dispatcher определяет persisted
+  kind до kind-specific claim, shared PostgreSQL lifecycle сохраняет claim/attempt/retry/terminal
+  semantics, а post-body preflight повторно проверяет current revision/source, generation/policies,
+  active target и отсутствие trusted current translation. CNT-04 заново строится только из
+  authoritative current Markdown и тем же versioned fingerprint связывает execution с durable
+  planning. Перед первым provider call применяются injected technical bounds по числу semantic
+  segments и их суммарной длине; затем каждый ordered segment отправляется отдельным
+  `domain: content`, `public-forum-post-body`, `plain` request с resolved source/target
+  locale, причём capability/data-policy boundary повторно проверяется для каждого вызова. Code,
+  URL destinations, raw HTML, Markdown structure и protected technical identifiers не передаются
+  как provider text;
+- post-body result публикуется только после полного успешного segment set: provider/model/
+  attribution provenance должен быть единообразным, CNT-04 restore повторно проверяет exact
+  segment IDs, protected tokens и Markdown structure, а invalid/unsafe output terminalizes без
+  partial translation. Publication transaction сохраняет lock order и повторно проверяет
+  generation head, processing task/claim token, current post/revision/source/policies и existing
+  translation trust; manual/current translation не перезаписывается, machine translation write и
+  task completion коммитятся атомарно. Истёкший, но не reclaimed claim с тем же token может
+  завершиться под row lock; реально reclaimed claim с новым token публиковать не может. Transient
+  provider/dependency failures используют общий bounded retry lifecycle, stale/current outcomes
+  ack-аются без публикации. Existing Cloudflare M2M100 path остаётся default-deny для post-body:
+  concrete provider allowlisting/data-policy approval, bindings и live calls не выбраны и не
+  входят в этот local/CI foundation.
 
 ### Stage 5 ещё не завершён
 
 Для завершения Stage 5 local/CI path ещё нужны:
 
-- post-body execution/publication с подключением durable planning и protected CommonMark
-  segment/restore boundary к shared provider/job lifecycle;
 - подключение реализованного request-budget admission к routes, выбор anonymous policy
   и финальных quota values, а также user-facing manual source-locale correction flow; production
   content-provider/data-policy approval, real binding/credentials/live calls остаются external
@@ -248,8 +268,8 @@ no-op verification. Перед следующим настоящим external sc
 ## Ближайший маршрут
 
 1. Определить anonymous/quota policy и подключить atomic request-budget admission к content routes.
-2. Реализовать post-body execution/publication поверх durable planning + protected CommonMark boundary,
-   затем завершить route/UI integration.
+2. Завершить route/UI integration и product UX для запроса/показа перевода, включая
+   user-facing manual source-locale correction flow.
 3. После завершения Stage 5 перейти к Stage 6 external integration по `ROADMAP.md` и
    `docs/database/*`.
 
