@@ -33,7 +33,6 @@ import {
 } from "../../app/localization/content-source-locale";
 import {
   ContentTranslationService,
-  type StoredContentTranslation,
 } from "../../app/localization/content-translation";
 import { TranslationExecutionFailure } from "../../app/localization/translation-failures";
 import { ContentTopicTitleTranslationPlanner } from "../../app/localization/content-translation-planning";
@@ -1297,6 +1296,58 @@ function createTitlePlanner(
   });
 }
 
+function createBodyExecutor(
+  connection: Client,
+  adapter: MachineTranslationProviderAdapter,
+  executionBounds: ContentPostBodyExecutionBounds = {
+    maxSegments: 32,
+    maxTotalSegmentCharacters: 100_000,
+  },
+): ContentPostBodyTaskExecutor {
+  const database = drizzle(connection);
+  const tasks = new DrizzleTranslationTaskStore(database);
+  const executionStore = new DrizzleContentPostBodyExecutionStore(database);
+  const translations = new DrizzleContentTranslationStore(database);
+  const consumer = new ContentPostBodyTaskConsumer({
+    tasks,
+    revisions: executionStore,
+    translations,
+    localeRegistry,
+    generationPolicyVersion: "content-v1",
+    protectedContentPolicyVersion: CONTENT_MARKDOWN_PROTECTION_POLICY_VERSION,
+    leaseDurationMs: 60_000,
+  });
+  const publisher = new ContentPostBodyResultPublisher({
+    tasks,
+    revisions: executionStore,
+    translations,
+    localeRegistry,
+    generationPolicyVersion: "content-v1",
+    protectedContentPolicyVersion: CONTENT_MARKDOWN_PROTECTION_POLICY_VERSION,
+    publications: executionStore,
+  });
+  return new ContentPostBodyTaskExecutor({
+    consumer,
+    providerRouter: new TranslationProviderRouter([adapter]),
+    publisher,
+    failures: tasks,
+    executionBounds,
+  });
+}
+
+function machineResultForRequest(
+  request: MachineTranslationRequest,
+): MachineTranslationResult {
+  if (typeof request.source !== "string") {
+    throw new Error("post-body execution fixture requires plain source");
+  }
+  const tokens = request.source.match(/⟦VICOPROTECTED\d+X\d+X\d+⟧/gu) ?? [];
+  return {
+    value: ["תרגום", ...tokens].join(" "),
+    provenance: { provider: "fake", model: "fake-v1", origin: "machine" },
+  };
+}
+
 function budgetAdmission(
   overrides: Partial<ContentTranslationRequestBudgetAdmission> = {},
 ): ContentTranslationRequestBudgetAdmission {
@@ -1318,6 +1369,21 @@ function requestRevision() {
     originalContent: "caller body",
     sourceLocale: "und",
   };
+}
+
+async function secondClient(): Promise<Client> {
+  const second = new Client({ connectionString: databaseUrl });
+  await second.connect();
+  await second.query(`set search_path to ${schemaName}`);
+  return second;
+}
+
+function deferred() {
+  let resolve!: () => void;
+  const promise = new Promise<void>((done) => {
+    resolve = done;
+  });
+  return { promise, resolve };
 }
 
 async function seedForumGraph(connection: Client): Promise<void> {
