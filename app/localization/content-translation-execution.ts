@@ -9,13 +9,13 @@ import type {
   ContentTopicTitlePublicationResult,
   ContentTopicTitleResultPublisher,
 } from "./content-translation-publication";
+import { publicForumTopicTitleProviderRequest } from "./content-translation-provider";
 import { classifyTranslationExecutionFailure } from "./translation-execution";
 import type {
   TranslationFailureCode,
   TranslationFailureRecord,
 } from "./translation-failures";
 import type {
-  MachineTranslationRequest,
   TranslationProviderRouter,
 } from "./translation-provider";
 import type {
@@ -126,15 +126,12 @@ export class ContentTopicTitleTaskExecutor {
 
 function providerRequest(
   context: ClaimedContentTopicTitleExecutionContext,
-): MachineTranslationRequest {
-  return {
-    domain: "content",
+) {
+  return publicForumTopicTitleProviderRequest({
     sourceLocale: context.task.resolvedSourceLocale,
     targetLocale: context.task.targetLocale,
-    messageKind: "plain",
-    operation: "plain",
     source: context.revision.originalContent,
-  };
+  });
 }
 
 function acknowledge<
