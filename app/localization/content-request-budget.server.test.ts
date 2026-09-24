@@ -145,7 +145,7 @@ describe("content translation request-budget validation", () => {
       { ...admission(), cost: 0 },
       { ...admission(), cost: 1.5 },
       { ...admission(), windowSeconds: 0 },
-      { ...admission(), windowSeconds: 31_536_001 },
+      { ...admission(), windowSeconds: Number.MAX_SAFE_INTEGER + 1 },
       { ...admission(), subjectKey: "raw-user-id" },
       { ...admission(), global: { ...admission().global, limit: 0 } },
       { ...admission(), requester: { ...admission().requester, version: "bad version" } },
