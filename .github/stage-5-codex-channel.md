@@ -2,13 +2,16 @@
 
 ## Действие пользователя — сейчас
 
-Merge PR #96 into `main`. After GitHub completes the merge, ask Codex to verify the updated
-`main` and start the next Stage 5 task.
+Передайте ChatGPT: **«Проверь обновление PR #94 и начни следующую задачу Stage 5».**
 
 ## Direct handoff to ChatGPT
 
-No further ChatGPT action is required for `JOB-04`. The full correction and review cycle is
-complete.
+ChatGPT: implement `JOB-06` persistent translation-task reconciliation and observability as a
+new compact change PR from current GitHub `main` at
+`5c127bbdb001d9d4d1ed4cf850d5f085c50e2ca4`. Keep reconciliation transport-neutral and use the
+existing durable task lifecycle. Do not add a concrete provider, Cloudflare Queue bindings,
+deployed scheduling, Stage 5B, or external rollout. When the change PR and CI are ready, record
+the head SHA and results in PR #95 and request an independent full Codex review through PR #94.
 
 This file initializes the non-merge Codex service PR for Stage 5. Codex uses this channel to
 record its technical plan, pass tasks and conclusions for dialogue with ChatGPT, and report
@@ -21,22 +24,21 @@ applicable contracts remain `AGENTS.md`, `PROJECT_STATE.md`, `ROADMAP.md`,
 
 ## Verified baseline
 
-- GitHub `main`: `a3155ddaed16a8a0f07ee81ad8ecb38851d4c35d`
+- GitHub `main`: `5c127bbdb001d9d4d1ed4cf850d5f085c50e2ca4`
 - Active product stage: Stage 5 translations/background jobs
 - Stage 5A already includes the provider-neutral UI translation execution and publication
   pipeline, durable task claiming and generation fencing, and persisted bundle runtime reads.
 - External provider credentials, real Cloudflare Queue bindings, and deployed smoke remain
   Stage 6 acceptance concerns.
 
-## Next technical task
+## Completed technical task
 
-Implement `JOB-04` retry classification and DLQ-equivalent terminal-failure semantics before
-adding a concrete provider adapter or `JOB-06` reconciliation.
+`JOB-04` retry classification and DLQ-equivalent terminal-failure semantics were merged through
+PR #96 after the complete technical agreement and review cycle recorded below.
 
-This order keeps provider-specific failures behind the existing adapter boundary and gives
-reconciliation a stable persistent lifecycle to operate on.
+The completed lifecycle provides the stable persistent state required by reconciliation.
 
-### Required scope
+### Implemented scope
 
 1. Define typed retryable and terminal translation-execution failures.
 2. Add a transport-neutral `ack` / `retry` / terminal outcome boundary.
@@ -166,3 +168,46 @@ parity, durable attempt lifecycle, claim fencing, transport outcomes, exhaustion
 stale and duplicate delivery paths, publication atomicity, `PROJECT_STATE.md`, and excluded
 scope were rechecked. No remaining problems for the current Stage were found. `JOB-04` is
 technically ready to merge.
+
+## Next technical task: JOB-06
+
+Implement persistent translation-task reconciliation and observability on top of the merged
+`JOB-04` lifecycle.
+
+### Required scope
+
+1. Add bounded, deterministic store queries for recoverable tasks:
+   - `pending` tasks old enough to cover commit-before-enqueue failure or unknown enqueue outcome;
+   - `processing` tasks whose PostgreSQL-owned lease has expired;
+   - retry-released `pending` tasks whose transport retry may have been lost.
+2. Add a transport-neutral reconciler that re-enqueues only the durable
+   `{ translationTaskId }` message and remains safe under duplicate or concurrent reconciliation.
+3. Do not reset a live claim, increment provider attempts, move generation heads, reactivate
+   `stale`, or re-enqueue `completed`/`failed` tasks.
+4. Use PostgreSQL-owned time, bounded batches, deterministic ordering, and a starvation-safe
+   pagination/concurrency strategy. Reconciliation must not assume Queue ordering or exactly-once
+   enqueue.
+5. Add safe observability for task status, age, attempt budget, lease state, and terminal failure
+   code/disposition without exposing source text, provider payloads, credentials, or raw errors.
+6. Provide a repository/local-CI invocation boundary and unit/PostgreSQL integration coverage for
+   commit-before-enqueue recovery, expired claims, retry-released pending work, duplicate runs,
+   concurrent reconcilers, batch limits, and terminal/live-task exclusion.
+7. Update `PROJECT_STATE.md` only with behavior actually implemented and tested.
+
+### Excluded scope
+
+- concrete Cloudflare or Google provider adapter;
+- real Cloudflare Queue/DLQ bindings, cron trigger, Workflow, or deployed scheduling;
+- provider credentials or live external calls;
+- Stage 5B content translation or task-identity generalization;
+- production deployment, external migrations, or external smoke. A local append-only schema
+  change is allowed only if a demonstrated reconciliation query requires it.
+
+### Completion criteria
+
+- a committed-but-not-delivered durable task is recoverable without a distributed transaction;
+- an expired processing claim is safely redelivered for existing claim/reclaim logic;
+- duplicate/concurrent reconciliation cannot corrupt lifecycle state or execute a provider;
+- live processing and all terminal tasks are excluded;
+- observability is bounded, useful, and does not leak sensitive or source data;
+- contract and PostgreSQL integration tests pass without production secrets or Queue bindings.
