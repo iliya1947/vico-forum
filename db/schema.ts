@@ -332,6 +332,52 @@ export const translationTaskGenerationHeads = pgTable(
   ],
 );
 
+export const contentTranslationRequestBudgetCounters = pgTable(
+  "content_translation_request_budget_counters",
+  {
+    scope: text("scope").notNull(),
+    subjectKey: text("subject_key").notNull(),
+    windowStart: timestamp("window_start", { withTimezone: true }).notNull(),
+    usedUnits: bigint("used_units", { mode: "number" }).notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({
+      name: "content_translation_request_budget_counters_pk",
+      columns: [table.scope, table.subjectKey, table.windowStart],
+    }),
+    index("content_translation_request_budget_counters_cleanup_idx").on(
+      table.expiresAt,
+      table.scope,
+      table.subjectKey,
+      table.windowStart,
+    ),
+    check(
+      "content_translation_request_budget_counters_scope_check",
+      sql`${table.scope} = btrim(${table.scope})
+        and ${table.scope} ~ '^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}@[A-Za-z0-9][A-Za-z0-9._-]{0,63}$'`,
+    ),
+    check(
+      "content_translation_request_budget_counters_subject_check",
+      sql`${table.subjectKey} = '_global' or ${table.subjectKey} ~ '^[A-Za-z0-9_-]{43}$'`,
+    ),
+    check(
+      "content_translation_request_budget_counters_used_units_check",
+      sql`${table.usedUnits} >= 0 and ${table.usedUnits} <= 9007199254740991`,
+    ),
+    check(
+      "content_translation_request_budget_counters_window_check",
+      sql`${table.expiresAt} > ${table.windowStart}`,
+    ),
+    check(
+      "content_translation_request_budget_counters_timestamps_check",
+      sql`${table.updatedAt} >= ${table.createdAt}`,
+    ),
+  ],
+);
+
 // Better Auth 1.7.4 core schema, generated for PostgreSQL/Drizzle with
 // database-backed rate limiting. `locale` is server-owned auth metadata and is
 // intentionally not constrained to the persistent locale registry.

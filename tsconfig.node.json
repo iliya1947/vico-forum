@@ -25,6 +25,7 @@
     "app/localization/cloudflare-m2m100-provider.ts",
     "app/localization/content-translation.ts",
     "app/localization/content-markdown-translation.ts",
+    "app/localization/content-request-budget.server.ts",
     "app/localization/content-post-body-planning.ts",
     "app/localization/content-source-locale.ts",
     "app/localization/tinyld-source-locale-detector.ts",

@@ -42,7 +42,7 @@ Vico Forum находится в ранней pre-release разработке.
 - generic `/:locale/*`, runtime `LocaleRegistry`, BCP-47 resolution, LTR/RTL и request-scoped
   `i18next`;
 - persistent locale registry, persistent UI translation storage и compiled bundle storage;
-- текущая migration history — `0000`–`0016`.
+- текущая migration history — `0000`–`0017`.
 
 ## Forum core — Stage 4
 
@@ -99,7 +99,7 @@ local/CI Stage 4 и остаются Stage 6.
   convergence obsolete persisted bundles только для disposable local `*_test` PostgreSQL;
   request path остаётся read-only и не вызывает translation provider, external execution не входит в Stage 5.
 
-Migration `0007`–`0010` содержит durable task lifecycle и generation-ordering foundation; `0012` добавляет bounded retry и persistent terminal-failure state; `0013` добавляет durable reconciliation progress и query-derived indexes. `0014` добавляет revision-bound persistence для topic-title/post-body translations с database-backed revision ownership; `0015` расширяет shared durable task storage отдельным `content-topic-title` kind с database-enforced title-revision ownership; `0016` добавляет отдельный `content-post-body` kind с exact post-body revision ownership и тем же shared generation/lifecycle foundation.
+Migration `0007`–`0010` содержит durable task lifecycle и generation-ordering foundation; `0012` добавляет bounded retry и persistent terminal-failure state; `0013` добавляет durable reconciliation progress и query-derived indexes. `0014` добавляет revision-bound persistence для topic-title/post-body translations с database-backed revision ownership; `0015` расширяет shared durable task storage отдельным `content-topic-title` kind с database-enforced title-revision ownership; `0016` добавляет отдельный `content-post-body` kind с exact post-body revision ownership и тем же shared generation/lifecycle foundation; `0017` добавляет отдельные PostgreSQL fixed-window request-budget counters для user-content translation.
 
 ### Stage 5B — реализованный foundation
 
@@ -126,6 +126,15 @@ Migration `0007`–`0010` содержит durable task lifecycle и generation-
   evidence и Georgian script (модели `ka` в TinyLD 1.3.4 нет) остаются unresolved/original-safe.
   Поле CNT-03 `confidence` переносит detector-native TinyLD score и не трактуется как
   калиброванная вероятность; known revision source locale по-прежнему обходит detector;
+- request-budget foundation для user-content translation: server-only Web Crypto HMAC-SHA-256
+  pseudonymizer принимает уже классифицированный authenticated/anonymous requester identity,
+  domain-separates actor kind и key version и выдаёт только bounded base64url subject key; raw
+  user id/IP, session token и HMAC secret не сохраняются. Dedicated PostgreSQL fixed-window store
+  использует versioned global/requester scopes, caller-supplied positive cost/window/limits,
+  один database-owned transaction timestamp, deterministic global-before-requester admission,
+  atomic all-or-nothing consumption, typed denial/reset/retry metadata и bounded indexed cleanup.
+  Foundation пока не подключён к planners/routes; anonymous enablement и финальные quota values
+  не выбраны;
 - on-demand durable planning для topic-title translation: planner повторно читает current immutable
   title revision из PostgreSQL, проверяет active canonical target, provider-neutral support и
   request-budget policy, не создаёт work для unresolved/same-locale/current translation, создаёт
@@ -174,9 +183,10 @@ Migration `0007`–`0010` содержит durable task lifecycle и generation-
 
 - post-body execution/publication с подключением durable planning и protected CommonMark
   segment/restore boundary к shared provider/job lifecycle;
-- operational/distributed rate-limit enforcement и user-facing manual source-locale correction
-  flow; production content-provider/data-policy approval,
-  real binding/credentials/live calls остаются external Stage 6 concerns;
+- подключение реализованного request-budget foundation к planners/routes, выбор anonymous policy
+  и финальных quota values, а также user-facing manual source-locale correction flow; production
+  content-provider/data-policy approval, real binding/credentials/live calls остаются external
+  Stage 6 concerns;
 - route/UI integration и product UX для запроса/показа перевода пользовательского контента.
 
 Реальные Cloudflare Queue bindings, provider credentials/calls и deployed provider/Queue smoke —
@@ -230,9 +240,9 @@ no-op verification. Перед следующим настоящим external sc
 
 ## Ближайший маршрут
 
-1. Продолжить Stage 5B: operational/distributed rate-limit boundary.
+1. Определить anonymous/quota policy и подключить request-budget foundation к content planners/routes.
 2. Реализовать post-body execution/publication поверх durable planning + protected CommonMark boundary,
-   затем route/UI integration.
+   затем завершить route/UI integration.
 3. После завершения Stage 5 перейти к Stage 6 external integration по `ROADMAP.md` и
    `docs/database/*`.
 
