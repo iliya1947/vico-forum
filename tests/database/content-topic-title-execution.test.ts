@@ -18,6 +18,7 @@ import { localeRegistry } from "../../app/localization/registry";
 import {
   TranslationTaskExecutorDispatcher,
 } from "../../app/localization/translation-task-dispatch";
+import { TranslationTaskReconciler } from "../../app/localization/translation-task-reconciliation";
 import {
   FakeTranslationTaskEnqueuer,
 } from "../../app/localization/translation-tasks";
@@ -391,6 +392,53 @@ describe("content topic-title execution and publication", () => {
     } finally {
       await second.end();
     }
+  });
+
+  it("keeps reconciliation and observability kind-neutral before dispatching content", async () => {
+    const plannedEnqueuer = new FakeTranslationTaskEnqueuer();
+    const planned = await createPlanner(client, plannedEnqueuer)
+      .planAndDispatch(requestRevision(), "he");
+    if (planned.kind !== "queued") throw new Error("expected queued content task");
+
+    const tasks = new DrizzleTranslationTaskStore(drizzle(client));
+    await expect(tasks.observeTranslationTasks()).resolves.toMatchObject({
+      counts: { pending: 1, processing: 0, stale: 0, completed: 0, failed: 0 },
+      pending: { unattempted: 1, retryReleased: 0 },
+    });
+
+    const reconciled = new FakeTranslationTaskEnqueuer();
+    await expect(new TranslationTaskReconciler(tasks, reconciled).reconcile({
+      limit: 10,
+      pendingOlderThanMs: 0,
+    })).resolves.toMatchObject({
+      outcome: "complete",
+      selected: 1,
+      enqueued: 1,
+      pending: 1,
+      expiredProcessing: 0,
+    });
+    expect(reconciled.messages).toEqual([{ translationTaskId: planned.task.id }]);
+
+    const uiExecute = vi.fn(async () => ({
+      outcome: "already-claimed" as const,
+      delivery: "ack" as const,
+    }));
+    const dispatcher = createDispatcher(client, {
+      supports: () => true,
+      translate: async () => ({
+        value: "כותרת מתורגמת",
+        provenance: { provider: "fake", model: "fake-v1", origin: "machine" },
+      }),
+    }, uiExecute);
+
+    await expect(dispatcher.execute(reconciled.messages[0]!)).resolves.toEqual({
+      outcome: "published",
+      delivery: "ack",
+    });
+    expect(uiExecute).not.toHaveBeenCalled();
+    await expect(tasks.observeTranslationTasks()).resolves.toMatchObject({
+      counts: { pending: 0, processing: 0, stale: 0, completed: 1, failed: 0 },
+    });
   });
 
   it("does not publish after claim ownership changes during the provider window", async () => {
