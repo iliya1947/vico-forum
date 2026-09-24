@@ -188,16 +188,16 @@ export const translationTasks = pgTable(
   (table) => [
     index("translation_tasks_reconcile_pending_idx").on(
       table.status,
-      table.reconciliationAttemptedAt,
+      table.reconciliationAttemptedAt.asc().nullsFirst(),
       table.updatedAt,
       table.id,
     ),
     index("translation_tasks_reconcile_processing_idx").on(
       table.status,
-      table.leaseExpiresAt,
-      table.reconciliationAttemptedAt,
+      table.reconciliationAttemptedAt.asc().nullsFirst(),
       table.updatedAt,
       table.id,
+      table.leaseExpiresAt,
     ),
     check("translation_tasks_identity_check", sql`${table.taskIdentity} ~ '^[0-9a-f]{64}
     check("translation_tasks_kind_check", sql`${table.translationKind} = 'ui'`),
