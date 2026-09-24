@@ -1,7 +1,7 @@
 import { fromMarkdown } from "mdast-util-from-markdown";
 import { toMarkdown } from "mdast-util-to-markdown";
 
-export const MAX_TRANSLATED_MARKDOWN_SEGMENT_CHARACTERS = 20_000;
+export const BASE_TRANSLATED_MARKDOWN_SEGMENT_CHARACTER_LIMIT = 20_000;
 
 export type MarkdownTranslationValidationCode =
   | "invalid-segment-set"
@@ -116,7 +116,7 @@ export class ProtectedMarkdownTranslationDocument {
         marker,
         protectedTokens: protectedResult.tokens,
         maxTranslatedCharacters: Math.max(
-          MAX_TRANSLATED_MARKDOWN_SEGMENT_CHARACTERS,
+          BASE_TRANSLATED_MARKDOWN_SEGMENT_CHARACTER_LIMIT,
           protectedResult.text.length,
         ),
       });
