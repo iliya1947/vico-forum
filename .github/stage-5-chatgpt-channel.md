@@ -643,3 +643,175 @@ created or changed by this selection task.
   budget with HMAC-pseudonymous requester identity**.
 - Concrete implementation is intentionally blocked pending Codex independent review/technical
   agreement in service PR #94/#95.
+
+# TinyLD detector implementation result
+
+Codex service PR #94 at `d8587b4507b9968eedecdfd537061197a9dcf56a` independently accepted the
+detector half of the previous technical selection and authorized one bounded implementation PR.
+The distributed limiter design remains deferred and was not implemented.
+
+Implementation PR: #109  
+Base/current main: `82b4aefd282ccd01c17225341eef0240fe232dc3`  
+Final head: `d3f62f6ea34c7f13ff176d8d2c7bd4a9b20d04a3`
+
+## Implemented detector scope
+
+1. Exact direct dependency `tinyld@1.3.4` is pinned in `package.json` and the frozen pnpm
+   lockfile. The normal profile is used through the package root export; no network/API detector,
+   credential or binding is involved.
+2. Added `TinyLdContentSourceLocaleDetector` implementing the existing
+   `ContentSourceLocaleDetectionAdapter`.
+3. Detector evidence is fixed and bounded:
+   - `origin: detector`;
+   - `detector: tinyld`;
+   - `model: normal@1.3.4`.
+4. The adapter applies the technically agreed acceptance gates before returning a candidate:
+   - at least 24 Unicode semantic letters;
+   - finite TinyLD native top score >= 0.80;
+   - top-minus-runner-up native score margin >= 0.20;
+   - explicit reviewed TinyLD-code -> canonical Vico language mapping.
+5. TinyLD's numeric `accuracy` remains detector-native normalized score evidence. The existing
+   CNT-03 `confidence` transport field carries that score for compatibility, but neither code nor
+   documentation interprets it as calibrated probability.
+6. Candidate selection uses TinyLD's real global ranking. An unmapped global top result returns no
+   detection even when a lower candidate has a reviewed mapping.
+7. Mapping remains adapter-local and cannot mutate or define `LocaleRegistry`. It maps only
+   reviewed language identities and never invents region/script subtags. Tests explicitly cover
+   generic `zh`, `pt` and `sr` without region/script inference.
+8. TinyLD 1.3.4 has no Georgian model. The adapter therefore fail-closes Georgian-script semantic
+   input before TinyLD can misclassify it as another mapped language; the result is unresolved and
+   existing original-content fallback remains authoritative.
+9. Added minimal CNT-04 semantic-text helpers rather than a second parser/filter implementation:
+   - post-body detection parses through the existing CommonMark/mdast boundary and reuses the same
+     technical-span rules;
+   - fenced/inline code, raw HTML nodes, URLs/autolinks and protected technical fragments are not
+     detector input;
+   - topic-title detection uses the same technical-fragment filtering rules on plain title text.
+10. Known canonical non-`und` revision source locale still bypasses the detector in the existing
+    `ContentSourceLocaleResolver`.
+11. Weak, short, mixed, unmapped and unsupported evidence returns absent detection. Expected
+    rejection is not classified as detector unavailability. Unexpected TinyLD/programming errors
+    propagate and are not broadly wrapped as `ContentSourceLocaleDetectorUnavailableError`.
+12. `PROJECT_STATE.md` was updated only after successful implementation CI. It now records the
+    local/CI TinyLD foundation and leaves operational/distributed rate limiting, manual
+    source-locale correction, post-body execution/publication and route/UI integration unfinished.
+
+## Exact-version verification
+
+Before implementation, the exact TinyLD `1.3.4` tag/package metadata and API were rechecked:
+
+- package/tag metadata and exports:
+  `https://github.com/komodojp/tinyld/blob/1.3.4/package.json`;
+- API / `detectAll` ranked output:
+  `https://github.com/komodojp/tinyld/blob/1.3.4/docs/api.md`;
+- supported-language table:
+  `https://github.com/komodojp/tinyld/blob/1.3.4/docs/langs.md`;
+- exact scoring/mapping implementation:
+  `https://github.com/komodojp/tinyld/blob/1.3.4/src/core.ts`;
+  `https://github.com/komodojp/tinyld/blob/1.3.4/src/tokenizer.ts`.
+
+The tagged package declares MIT, zero runtime dependencies, ESM/CommonJS/browser exports and a
+Node engine compatible with the repository Node 24 baseline. Frozen install and the repository
+Workers build smoke provide the actual project compatibility proof.
+
+## Focused coverage
+
+The new offline tests prove:
+
+- real pinned TinyLD detection for `ru`, `he`, `en`, `ja` and `ar`;
+- exact 0.80 top-score boundary and 0.20 margin boundary;
+- rejection below either gate;
+- unmapped global winner is not replaced by a lower mapped candidate;
+- generic `zh`, `pt`, `sr` mapping without region/script inference;
+- Georgian script remains unresolved before TinyLD invocation;
+- short text is rejected before TinyLD;
+- URL/code/identifier/CLI-only title content is rejected before TinyLD;
+- code/autolink/raw-HTML-only post body is rejected before TinyLD;
+- post-body prose is passed as semantic text while code, URLs and technical fragments are removed;
+- UI/request locale metadata cannot influence detector result;
+- known immutable revision source locale bypasses TinyLD;
+- unexpected runner error propagates;
+- malformed/non-finite TinyLD score shape is rejected rather than reinterpreted.
+
+Final unit/route suite: 50 files / 417 tests passed.
+
+## CI correction cycle
+
+Initial GitHub Actions run `36018683766` established that dependency installation, accepted
+migration history, lint, typecheck and the full database job were already sound. Two focused tests
+failed:
+
+1. an exact mathematical 0.20 score margin was represented slightly below 0.20 by binary floating
+   point; the comparison now adds `Number.EPSILON` only to preserve the agreed inclusive boundary;
+2. the first English real-model fixture was too short/technical for the agreed 0.80/0.20 policy.
+   It was replaced with a longer natural-English fixture.
+
+No acceptance threshold was weakened.
+
+After those corrections, implementation CI passed. `PROJECT_STATE.md` was then updated
+factually, and a final full CI run was executed on the documented final head.
+
+## Final CI
+
+GitHub Actions run `36019181765` on
+`d3f62f6ea34c7f13ff176d8d2c7bd4a9b20d04a3` completed successfully.
+
+`checks`:
+
+- frozen install — success;
+- accepted migration-history protection — success; 0 new migrations;
+- lint — success;
+- typecheck — success;
+- tests — success: 50 files / 417 tests;
+- production build — success;
+- migration metadata validation — success;
+- Drizzle schema parity — success.
+
+`database`:
+
+- clean PostgreSQL 17 migration/constraint/integration suite — success;
+- Workers build smoke — success;
+- local Hyperdrive smoke — success.
+
+## Full self-review
+
+ChatGPT re-read the complete final seven-file PR #109, not only the correction delta, against:
+
+- unchanged GitHub `main` `82b4aefd282ccd01c17225341eef0240fe232dc3`;
+- the complete current `AGENTS.md`;
+- the accepted TinyLD task in Codex service PR #94 at
+  `d8587b4507b9968eedecdfd537061197a9dcf56a`;
+- `PROJECT.md`, `PROJECT_STATE.md`, `ROADMAP.md`,
+  `TRANSLATION_ARCHITECTURE.md`;
+- `docs/translation/CONTENT_TRANSLATION.md`,
+  `PROVIDERS_AND_JOBS.md`, `LOCALES.md`;
+- current CNT-03 resolver and merged CNT-04 protection implementation.
+
+The review checked exact package/lock resolution, local privacy boundary, mapping isolation,
+global-top semantics, native-score semantics, score/length/margin gates, Georgian behavior,
+semantic filtering reuse, known-source bypass, unexpected-error behavior, Workers compatibility,
+factual project state and explicit exclusions.
+
+No remaining code/dependency/documentation defect for the assigned current Stage slice was found.
+
+## Excluded scope confirmed
+
+PR #109 does not implement or change:
+
+- distributed limiter/request identity/quota storage;
+- routes/UI/HTTP 429 or 503 behavior;
+- post-body task claim/execution/restoration/publication;
+- network detector/API/credentials/bindings;
+- persisted detection results or source revision mutation;
+- manual source-locale correction UI;
+- translation provider expansion;
+- Queue bindings/live calls/deployment/Stage 6 acceptance.
+
+## Status
+
+- PR #109 is open, mergeable and unmerged.
+- Final head: `d3f62f6ea34c7f13ff176d8d2c7bd4a9b20d04a3`.
+- Base/current main remains `82b4aefd282ccd01c17225341eef0240fe232dc3`.
+- Final CI: `36019181765`, both `checks` and `database` successful.
+- Full self-review found no remaining current-Stage defect.
+
