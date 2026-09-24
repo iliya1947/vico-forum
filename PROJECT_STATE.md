@@ -101,7 +101,7 @@ local/CI Stage 4 и остаются Stage 6.
 
 Migration `0007`–`0010` содержит durable task lifecycle и generation-ordering foundation; `0012` добавляет bounded retry и persistent terminal-failure state; `0013` добавляет durable reconciliation progress и query-derived indexes. `0014` добавляет revision-bound persistence для topic-title/post-body translations с database-backed revision ownership.
 
-### Stage 5B — реализованный persistence/read foundation
+### Stage 5B — реализованный foundation
 
 В repository/local-CI path реализованы:
 
@@ -113,14 +113,18 @@ Migration `0007`–`0010` содержит durable task lifecycle и generation-
   `persistent_manual | machine` provenance;
 - idempotent exact-identity writes с manual-over-machine trust preservation;
 - exact-current-revision reads: miss/stale/invalid/classified storage-unavailable result
-  возвращает original exact revision; unexpected storage/programming errors не маскируются.
+  возвращает original exact revision; unexpected storage/programming errors не маскируются;
+- provider-neutral source-locale resolution/planning boundary для immutable content revisions:
+  известный canonical source locale обходит detection, `und` использует только injected detector
+  с runtime validation и отдельной acceptance policy; unresolved/classified unavailable source
+  блокирует будущий provider job, а manual correction требует нового revision identity.
 
 ### Stage 5 ещё не завершён
 
 Для завершения Stage 5 local/CI path ещё нужны:
 
 - content-specific provider/job execution, dedup/rate-limit и conditional publication path;
-- source-locale detection/correction capability boundary для `und`;
+- concrete source-locale detector adapter/provider selection и user-facing manual correction flow;
 - Markdown AST/structured content translation, technical-fragment protection и translated Markdown validation/rendering;
 - route/UI integration и product UX для запроса/показа перевода пользовательского контента.
 
@@ -175,7 +179,7 @@ no-op verification. Перед следующим настоящим external sc
 
 ## Ближайший маршрут
 
-1. Продолжить Stage 5B: content provider/job execution и source-locale detection boundary.
+1. Продолжить Stage 5B: content provider/job execution и concrete source-locale detector adapter/provider selection.
 2. Реализовать Markdown/structured content translation и затем route/UI integration.
 3. После завершения Stage 5 перейти к Stage 6 external integration по `ROADMAP.md` и
    `docs/database/*`.
