@@ -169,11 +169,6 @@ export const translationTasks = pgTable(
     sourceFingerprint: text("source_fingerprint").notNull(),
     targetLocale: text("target_locale").notNull(),
     generationPolicyVersion: text("generation_policy_version").notNull(),
-    contentId: text("content_id"),
-    contentRevisionId: text("content_revision_id"),
-    revisionSourceLocale: text("revision_source_locale"),
-    resolvedSourceLocale: text("resolved_source_locale"),
-    sourceResolutionOrigin: text("source_resolution_origin"),
     generation: integer("generation").notNull(),
     status: text("status").notNull().default("pending"),
     attemptCount: integer("attempt_count").notNull().default(0),
@@ -204,15 +199,6 @@ export const translationTasks = pgTable(
       table.id,
       table.leaseExpiresAt,
     ),
-    foreignKey({
-      name: "translation_tasks_content_revision_fk",
-      columns: [table.contentId, table.contentRevisionId, table.revisionSourceLocale],
-      foreignColumns: [
-        forumTopicTitleRevisions.topicId,
-        forumTopicTitleRevisions.id,
-        forumTopicTitleRevisions.sourceLocale,
-      ],
-    }).onDelete("cascade"),
     check("translation_tasks_identity_check", sql`${table.taskIdentity} ~ '^[0-9a-f]{64}$'`),
     check(
       "translation_tasks_kind_check",
@@ -231,38 +217,7 @@ export const translationTasks = pgTable(
     ),
     check(
       "translation_tasks_content_shape_check",
-      sql`(
-        ${table.translationKind} = 'ui'
-        and ${table.contentId} is null
-        and ${table.contentRevisionId} is null
-        and ${table.revisionSourceLocale} is null
-        and ${table.resolvedSourceLocale} is null
-        and ${table.sourceResolutionOrigin} is null
-      ) or (
-        ${table.translationKind} = 'content-topic-title'
-        and ${table.contentId} is not null and btrim(${table.contentId}) <> ''
-        and ${table.contentRevisionId} is not null and btrim(${table.contentRevisionId}) <> ''
-        and ${table.revisionSourceLocale} is not null
-        and ${table.revisionSourceLocale} = btrim(${table.revisionSourceLocale})
-        and ${table.revisionSourceLocale} ~ '^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*$'
-        and ${table.resolvedSourceLocale} is not null
-        and ${table.resolvedSourceLocale} = btrim(${table.resolvedSourceLocale})
-        and lower(${table.resolvedSourceLocale}) <> 'und'
-        and ${table.resolvedSourceLocale} ~ '^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*$'
-        and ${table.sourceResolutionOrigin} in ('revision-metadata', 'detector')
-        and ${table.sourceNamespace} = 'topic-title'
-        and ${table.sourceKey} = ${table.contentId}
-        and (
-          (
-            ${table.sourceResolutionOrigin} = 'revision-metadata'
-            and lower(${table.revisionSourceLocale}) <> 'und'
-            and ${table.revisionSourceLocale} = ${table.resolvedSourceLocale}
-          ) or (
-            ${table.sourceResolutionOrigin} = 'detector'
-            and lower(${table.revisionSourceLocale}) = 'und'
-          )
-        )
-      )`,
+      sql`${table.translationKind} <> 'content-topic-title' or ${table.sourceNamespace} = 'topic-title'`,
     ),
     check(
       "translation_tasks_generation_policy_version_check",
@@ -275,6 +230,12 @@ export const translationTasks = pgTable(
       table.sourceKey,
       table.targetLocale,
       table.generation,
+    ),
+    unique("translation_tasks_content_owner_unique").on(
+      table.id,
+      table.translationKind,
+      table.sourceNamespace,
+      table.sourceKey,
     ),
     check("translation_tasks_attempt_count_check", sql`${table.attemptCount} >= 0 and ${table.attemptCount} <= ${table.maxAttempts}`),
     check("translation_tasks_max_attempts_check", sql`${table.maxAttempts} > 0`),
@@ -670,6 +631,72 @@ export const forumTopicTitleTranslations = pgTable(
     check(
       "forum_topic_title_translations_attribution_check",
       sql`${table.attribution} is null or btrim(${table.attribution}) <> ''`,
+    ),
+  ],
+);
+
+export const contentTopicTitleTranslationTasks = pgTable(
+  "content_topic_title_translation_tasks",
+  {
+    taskId: uuid("task_id").primaryKey(),
+    translationKind: text("translation_kind").notNull(),
+    sourceNamespace: text("source_namespace").notNull(),
+    topicId: text("topic_id").notNull(),
+    revisionId: text("revision_id").notNull(),
+    revisionSourceLocale: text("revision_source_locale").notNull(),
+    resolvedSourceLocale: text("resolved_source_locale").notNull(),
+    sourceResolutionOrigin: text("source_resolution_origin").notNull(),
+  },
+  (table) => [
+    foreignKey({
+      name: "content_topic_title_translation_tasks_task_fk",
+      columns: [table.taskId, table.translationKind, table.sourceNamespace, table.topicId],
+      foreignColumns: [
+        translationTasks.id,
+        translationTasks.translationKind,
+        translationTasks.sourceNamespace,
+        translationTasks.sourceKey,
+      ],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "content_topic_title_translation_tasks_revision_fk",
+      columns: [table.topicId, table.revisionId, table.revisionSourceLocale],
+      foreignColumns: [
+        forumTopicTitleRevisions.topicId,
+        forumTopicTitleRevisions.id,
+        forumTopicTitleRevisions.sourceLocale,
+      ],
+    }).onDelete("cascade"),
+    check(
+      "content_topic_title_translation_tasks_kind_check",
+      sql`${table.translationKind} = 'content-topic-title'`,
+    ),
+    check(
+      "content_topic_title_translation_tasks_namespace_check",
+      sql`${table.sourceNamespace} = 'topic-title'`,
+    ),
+    check(
+      "content_topic_title_translation_tasks_revision_source_locale_check",
+      sourceLocaleCheck(table.revisionSourceLocale),
+    ),
+    check(
+      "content_topic_title_translation_tasks_resolved_source_locale_check",
+      contentTargetLocaleCheck(table.resolvedSourceLocale),
+    ),
+    check(
+      "content_topic_title_translation_tasks_resolution_origin_check",
+      sql`${table.sourceResolutionOrigin} in ('revision-metadata', 'detector')`,
+    ),
+    check(
+      "content_topic_title_translation_tasks_resolution_check",
+      sql`(
+        ${table.sourceResolutionOrigin} = 'revision-metadata'
+        and lower(${table.revisionSourceLocale}) <> 'und'
+        and ${table.revisionSourceLocale} = ${table.resolvedSourceLocale}
+      ) or (
+        ${table.sourceResolutionOrigin} = 'detector'
+        and lower(${table.revisionSourceLocale}) = 'und'
+      )`,
     ),
   ],
 );
