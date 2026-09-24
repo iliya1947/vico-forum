@@ -90,6 +90,7 @@ describe("ContentTopicTitleTranslationPlanner", () => {
     ["unresolved source", titleRevision({ sourceLocale: "und" }), "he", "source-unresolved"],
     ["same locale", titleRevision({ sourceLocale: "ru" }), "ru", "same-locale"],
     ["inactive target", titleRevision({ sourceLocale: "ru" }), "ka", "target-ineligible"],
+    ["noncanonical target", titleRevision({ sourceLocale: "ru" }), "HE", "target-ineligible"],
   ])("creates and enqueues nothing for %s", async (_label, revision, target, reason) => {
     const tasks = new FakePlanningStore(revision);
     const enqueuer = new FakeTranslationTaskEnqueuer();
