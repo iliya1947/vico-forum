@@ -85,7 +85,6 @@ const MINIMUM_HMAC_SECRET_BYTES = 32;
 const MAXIMUM_HMAC_SECRET_BYTES = 4_096;
 const MAXIMUM_IDENTITY_CODE_UNITS = 512;
 const MAXIMUM_SCOPE_PART_CODE_UNITS = 64;
-const MAXIMUM_WINDOW_SECONDS = 31_536_000;
 const HMAC_SHA_256_BYTES = 32;
 const BASE64URL_ALPHABET =
   "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
@@ -181,11 +180,6 @@ export function validateContentTranslationRequestBudgetAdmission(
   requireSubjectKey(admission.subjectKey);
   requirePositiveSafeInteger(admission.cost, "request budget cost");
   requirePositiveSafeInteger(admission.windowSeconds, "request budget windowSeconds");
-  if (admission.windowSeconds > MAXIMUM_WINDOW_SECONDS) {
-    throw new TypeError(
-      `request budget windowSeconds must not exceed ${MAXIMUM_WINDOW_SECONDS}`,
-    );
-  }
   requireScopePolicy(admission.global, "global");
   requireScopePolicy(admission.requester, "requester");
 }
