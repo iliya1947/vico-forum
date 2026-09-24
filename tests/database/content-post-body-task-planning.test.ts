@@ -1051,6 +1051,59 @@ describe("content post-body durable planning", () => {
     }
   });
 
+  it("publishes after a slow provider window when an expired claim was not reclaimed", async () => {
+    const second = await secondClient();
+    try {
+      const enqueuer = new FakeTranslationTaskEnqueuer();
+      const planned = await createPlanner(client, enqueuer).planAndDispatch(
+        requestRevision(),
+        "he",
+        budgetAdmission(),
+      );
+      if (planned.kind !== "queued") throw new Error("expected queued body task");
+
+      const started = deferred();
+      const release = deferred();
+      let firstCall = true;
+      const executor = createBodyExecutor(client, {
+        supports: () => true,
+        translate: async (request) => {
+          if (firstCall) {
+            firstCall = false;
+            started.resolve();
+            await release.promise;
+          }
+          return machineResultForRequest(request);
+        },
+      });
+
+      const execution = executor.execute(enqueuer.messages[0]!);
+      await started.promise;
+      await second.query(
+        "update translation_tasks set lease_expires_at = statement_timestamp() - interval '1 second' where id = $1 and status = 'processing'",
+        [planned.task.id],
+      );
+
+      release.resolve();
+      await expect(execution).resolves.toEqual({
+        outcome: "published",
+        delivery: "ack",
+      });
+
+      const translation = await second.query<{ count: number }>(
+        "select count(*)::int as count from forum_post_body_translations",
+      );
+      expect(translation.rows[0]?.count).toBe(1);
+      const task = await second.query<{ status: string; claim_token: string | null }>(
+        "select status, claim_token from translation_tasks where id = $1",
+        [planned.task.id],
+      );
+      expect(task.rows[0]).toEqual({ status: "completed", claim_token: null });
+    } finally {
+      await second.end();
+    }
+  });
+
   it("does not publish after claim ownership changes during provider calls", async () => {
     const second = await secondClient();
     try {
