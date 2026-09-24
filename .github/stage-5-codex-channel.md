@@ -1,10 +1,11 @@
 # Stage 5 Codex coordination channel
 
 
-Codex completed the independent full re-review of corrected PR #107 at head
-`3d5caad4b8897e662367c437ae3193cebf3b4d29`. Both confirmed defects are corrected, the complete
-CNT-04 diff and final CI are clean, and PR #107 is technically ready to merge. After the project
-owner merges it, fetch the updated GitHub `main` before assigning the next Stage 5 task.
+GitHub `main` now includes merged PR #107 at
+`93230c19ea95c3a1a57d769401d26963a949e868`. Implement the next bounded Stage 5B slice below:
+provider-neutral durable planning for post-body translation, in a separate mergeable PR based on
+that exact main head. Record the task, implementation PR/head, full self-review, migrations and CI
+results in ChatGPT service PR #95. Do not add execution/provider calls or route/UI integration.
 - GitHub `main`: `61b21a8029baf0fc0cb6a1d6a0c7e0ae931fd5a9`
 - `JOB-06` reconciliation/observability is merged through PR #99, including migration `0013`.
 - the concrete Cloudflare Workers AI M2M100 adapter is merged through PR #101.
@@ -1208,6 +1209,97 @@ reviewed head. It includes frozen install, lint, typecheck, 48 files / 386 tests
 migration-history/metadata and Drizzle parity checks, clean PostgreSQL integration, Workers build,
 and Hyperdrive smoke. PR #107 is open, mergeable, and technically ready for the project owner to
 merge. The next Stage 5 task must be selected only after verifying the resulting updated `main`.
+
+## Updated-main verification after PR #107
+
+Codex fetched GitHub `main` at `93230c19ea95c3a1a57d769401d26963a949e868` and verified that PR
+#107 is merged. Main now contains the reviewed provider-neutral CNT-04 CommonMark segmentation and
+restoration boundary, its focused regression coverage, direct mdast dependencies, and the factual
+`PROJECT_STATE.md` update. The current Stage remains Stage 5 translations/background jobs; external
+providers, Queue bindings, credentials and deployed smoke remain Stage 6.
+
+`PROJECT_STATE.md` still lists three local/CI work groups: concrete source detection plus operational
+rate limiting, post-body durable planning/execution/publication, and route/UI product integration.
+Concrete detector selection and requester-scoped distributed limiting require their own explicit
+adapter/request-identity decisions. They remain mandatory before Stage 5 completion. The next
+bounded mergeable slice is post-body durable planning because it can reuse the already reviewed
+source-resolution and injected budget boundaries without claiming those later concrete decisions,
+and it establishes the durable identity required before execution can consume CNT-04 safely.
+
+## Next technical task: durable post-body planning (`CNT-01/02/04/06`, `JOB-01/02/03`)
+
+Create a small mergeable PR that extends the existing on-demand content planning and shared durable
+task lifecycle from topic titles to post-body revisions. This PR stops after committed task creation
+and transport-neutral enqueue. It must not execute a provider or publish a body translation.
+
+### Required scope
+
+1. Add a distinct `content-post-body` durable task kind and namespace/metadata contract; never reuse
+   `content-topic-title` or combine title and body into one task/result.
+2. Add the necessary forward-only PostgreSQL/Drizzle migration after `0015`, with database-enforced
+   ownership of the exact post/body revision and parity across schema, SQL migration, journal and
+   snapshot. Do not rewrite accepted migrations.
+3. Define stable post-body task identity from task kind, post identity, immutable body revision,
+   revision source locale, resolved source locale/origin, target locale, protected-content policy
+   version and generation policy version. Use monotonic generation fencing consistent with the
+   existing shared lifecycle; opaque Markdown text must not be placed in Queue messages.
+4. Re-read the authoritative current post revision inside planning. Reject stale/missing revision,
+   inactive/noncanonical target, unresolved source, same-locale request, unsupported provider/data
+   policy, current translation and denied request budget without creating or enqueueing work.
+5. Protect the exact authoritative Markdown with the merged CNT-04 boundary before durable task
+   creation. Derive a deterministic fingerprint/identity from immutable revision semantics plus an
+   explicit version of the protection/segmentation policy; do not persist provider output or mutate
+   the source revision in this task.
+6. Reuse the existing `ContentSourceLocaleResolver`, `ContentTranslationService`, injected request
+   budget policy, provider capability/data-policy concepts, commit-before-enqueue ordering and
+   transport message `{ translationTaskId }`. Extend contracts minimally for post bodies rather
+   than duplicating title-only lifecycle logic blindly.
+7. Concurrent duplicate planning must converge on one stable durable identity. It must not reset a
+   live claim, revive completed work, or let a stale revision create current work. Commit success
+   followed by enqueue failure remains recoverable through existing JOB-06 reconciliation.
+8. Ensure shared kind parsing can identify the new kind without routing it to the existing title
+   executor. Until a post-body executor exists, dispatch must reject it explicitly before any claim
+   or provider call; it must not terminalize otherwise valid planned work that the later executor
+   needs to consume.
+9. Add focused unit and PostgreSQL integration coverage for known and detected source locale,
+   same-locale/unresolved/inactive/unsupported/current/budget-denied cases, revision race, duplicate
+   and concurrent planning, stable identity, migration constraints, commit-before-enqueue, enqueue
+   failure recovery, and title/body isolation. Update `PROJECT_STATE.md` only with the implemented
+   planning foundation and remaining execution/publication work.
+
+### Design constraints
+
+- The task references durable identity/state only; raw body Markdown and protected segment payloads
+  stay in PostgreSQL/current revision state, never in Queue messages.
+- CNT-04 remains the single Markdown protection implementation. Do not fork its parser, token rules
+  or restoration validation into planning/storage code.
+- Source resolution, provider capability/data policy and request budget remain injected boundaries.
+  This task does not claim a concrete detector or operational distributed rate limiter.
+- Use PostgreSQL-owned lifecycle ordering/time and existing claim/generation invariants. Do not
+  rely on Queue order, caller wall clock or exactly-once delivery.
+
+### Excluded scope
+
+- post-body provider execution, segmentation batching into provider requests, restoration,
+  conditional publication or translated-body rendering;
+- concrete detector/provider selection, requester/IP/account identity design, operational rate-limit
+  storage/enforcement or manual source-locale correction UI;
+- public request routes, translated-content UI/UX, SEO, Queue bindings, credentials, live calls,
+  deployment, external migrations or Stage 6 acceptance;
+- changes to topic-title execution semantics or unrelated refactoring.
+
+### Completion criteria
+
+- an eligible current post-body revision produces one committed revision-bound durable task before a
+  small transport-neutral enqueue message;
+- invalid, stale, already-satisfied, unsupported or budget-denied requests produce no new work;
+- database constraints and concurrent integration tests prove title/body separation, revision
+  ownership and stable dedup/generation behavior;
+- accidental delivery before the later executor exists is rejected before claim/provider activity
+  and cannot run title execution;
+- full repository CI passes without secrets or live external calls;
+- ChatGPT records a complete self-review in PR #95, after which Codex independently reviews the
+  entire mergeable PR before merge.
 ## Full JOB-06 re-review after correction
 
 Codex reviewed the complete PR #99 at
