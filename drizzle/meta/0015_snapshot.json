@@ -1425,36 +1425,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
-        },
-        "content_id": {
-          "name": "content_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "content_revision_id": {
-          "name": "content_revision_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "revision_source_locale": {
-          "name": "revision_source_locale",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "resolved_source_locale": {
-          "name": "resolved_source_locale",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "source_resolution_origin": {
-          "name": "source_resolution_origin",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
         }
       },
       "indexes": {
@@ -1531,25 +1501,7 @@
           "with": {}
         }
       },
-      "foreignKeys": {
-        "translation_tasks_content_revision_fk": {
-          "name": "translation_tasks_content_revision_fk",
-          "tableFrom": "translation_tasks",
-          "tableTo": "forum_topic_title_revisions",
-          "columnsFrom": [
-            "content_id",
-            "content_revision_id",
-            "revision_source_locale"
-          ],
-          "columnsTo": [
-            "topic_id",
-            "id",
-            "source_locale"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
+      "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "translation_tasks_task_identity_unique": {
@@ -1568,6 +1520,16 @@
             "source_key",
             "target_locale",
             "generation"
+          ]
+        },
+        "translation_tasks_content_owner_unique": {
+          "name": "translation_tasks_content_owner_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "translation_kind",
+            "source_namespace",
+            "source_key"
           ]
         }
       },
@@ -1639,7 +1601,7 @@
         },
         "translation_tasks_content_shape_check": {
           "name": "translation_tasks_content_shape_check",
-          "value": "(\n        \"translation_tasks\".\"translation_kind\" = 'ui'\n        and \"translation_tasks\".\"content_id\" is null\n        and \"translation_tasks\".\"content_revision_id\" is null\n        and \"translation_tasks\".\"revision_source_locale\" is null\n        and \"translation_tasks\".\"resolved_source_locale\" is null\n        and \"translation_tasks\".\"source_resolution_origin\" is null\n      ) or (\n        \"translation_tasks\".\"translation_kind\" = 'content-topic-title'\n        and \"translation_tasks\".\"content_id\" is not null and btrim(\"translation_tasks\".\"content_id\") <> ''\n        and \"translation_tasks\".\"content_revision_id\" is not null and btrim(\"translation_tasks\".\"content_revision_id\") <> ''\n        and \"translation_tasks\".\"revision_source_locale\" is not null\n        and \"translation_tasks\".\"revision_source_locale\" = btrim(\"translation_tasks\".\"revision_source_locale\")\n        and \"translation_tasks\".\"revision_source_locale\" ~ '^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*$'\n        and \"translation_tasks\".\"resolved_source_locale\" is not null\n        and \"translation_tasks\".\"resolved_source_locale\" = btrim(\"translation_tasks\".\"resolved_source_locale\")\n        and lower(\"translation_tasks\".\"resolved_source_locale\") <> 'und'\n        and \"translation_tasks\".\"resolved_source_locale\" ~ '^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*$'\n        and \"translation_tasks\".\"source_resolution_origin\" in ('revision-metadata', 'detector')\n        and \"translation_tasks\".\"source_namespace\" = 'topic-title'\n        and \"translation_tasks\".\"source_key\" = \"translation_tasks\".\"content_id\"\n        and (\n          (\n            \"translation_tasks\".\"source_resolution_origin\" = 'revision-metadata'\n            and lower(\"translation_tasks\".\"revision_source_locale\") <> 'und'\n            and \"translation_tasks\".\"revision_source_locale\" = \"translation_tasks\".\"resolved_source_locale\"\n          ) or (\n            \"translation_tasks\".\"source_resolution_origin\" = 'detector'\n            and lower(\"translation_tasks\".\"revision_source_locale\") = 'und'\n          )\n        )\n      )"
+          "value": "\"translation_tasks\".\"translation_kind\" <> 'content-topic-title' or \"translation_tasks\".\"source_namespace\" = 'topic-title'"
         }
       },
       "isRLSEnabled": false
@@ -2352,6 +2314,129 @@
         "forum_post_body_translations_attribution_check": {
           "name": "forum_post_body_translations_attribution_check",
           "value": "\"forum_post_body_translations\".\"attribution\" is null or btrim(\"forum_post_body_translations\".\"attribution\") <> ''"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.content_topic_title_translation_tasks": {
+      "name": "content_topic_title_translation_tasks",
+      "schema": "",
+      "columns": {
+        "task_id": {
+          "name": "task_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "translation_kind": {
+          "name": "translation_kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_namespace": {
+          "name": "source_namespace",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "topic_id": {
+          "name": "topic_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "revision_id": {
+          "name": "revision_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "revision_source_locale": {
+          "name": "revision_source_locale",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "resolved_source_locale": {
+          "name": "resolved_source_locale",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_resolution_origin": {
+          "name": "source_resolution_origin",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "content_topic_title_translation_tasks_task_fk": {
+          "name": "content_topic_title_translation_tasks_task_fk",
+          "tableFrom": "content_topic_title_translation_tasks",
+          "tableTo": "translation_tasks",
+          "columnsFrom": [
+            "task_id",
+            "translation_kind",
+            "source_namespace",
+            "topic_id"
+          ],
+          "columnsTo": [
+            "id",
+            "translation_kind",
+            "source_namespace",
+            "source_key"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "content_topic_title_translation_tasks_revision_fk": {
+          "name": "content_topic_title_translation_tasks_revision_fk",
+          "tableFrom": "content_topic_title_translation_tasks",
+          "tableTo": "forum_topic_title_revisions",
+          "columnsFrom": [
+            "topic_id",
+            "revision_id",
+            "revision_source_locale"
+          ],
+          "columnsTo": [
+            "topic_id",
+            "id",
+            "source_locale"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "content_topic_title_translation_tasks_kind_check": {
+          "name": "content_topic_title_translation_tasks_kind_check",
+          "value": "\"content_topic_title_translation_tasks\".\"translation_kind\" = 'content-topic-title'"
+        },
+        "content_topic_title_translation_tasks_namespace_check": {
+          "name": "content_topic_title_translation_tasks_namespace_check",
+          "value": "\"content_topic_title_translation_tasks\".\"source_namespace\" = 'topic-title'"
+        },
+        "content_topic_title_translation_tasks_revision_source_locale_check": {
+          "name": "content_topic_title_translation_tasks_revision_source_locale_check",
+          "value": "\"content_topic_title_translation_tasks\".\"revision_source_locale\" = btrim(\"content_topic_title_translation_tasks\".\"revision_source_locale\") and \"content_topic_title_translation_tasks\".\"revision_source_locale\" ~ '^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*$'"
+        },
+        "content_topic_title_translation_tasks_resolved_source_locale_check": {
+          "name": "content_topic_title_translation_tasks_resolved_source_locale_check",
+          "value": "\"content_topic_title_translation_tasks\".\"resolved_source_locale\" = btrim(\"content_topic_title_translation_tasks\".\"resolved_source_locale\")\n    and lower(\"content_topic_title_translation_tasks\".\"resolved_source_locale\") <> 'und'\n    and \"content_topic_title_translation_tasks\".\"resolved_source_locale\" ~ '^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*$'"
+        },
+        "content_topic_title_translation_tasks_resolution_origin_check": {
+          "name": "content_topic_title_translation_tasks_resolution_origin_check",
+          "value": "\"content_topic_title_translation_tasks\".\"source_resolution_origin\" in ('revision-metadata', 'detector')"
+        },
+        "content_topic_title_translation_tasks_resolution_check": {
+          "name": "content_topic_title_translation_tasks_resolution_check",
+          "value": "(\n        \"content_topic_title_translation_tasks\".\"source_resolution_origin\" = 'revision-metadata'\n        and lower(\"content_topic_title_translation_tasks\".\"revision_source_locale\") <> 'und'\n        and \"content_topic_title_translation_tasks\".\"revision_source_locale\" = \"content_topic_title_translation_tasks\".\"resolved_source_locale\"\n      ) or (\n        \"content_topic_title_translation_tasks\".\"source_resolution_origin\" = 'detector'\n        and lower(\"content_topic_title_translation_tasks\".\"revision_source_locale\") = 'und'\n      )"
         }
       },
       "isRLSEnabled": false
