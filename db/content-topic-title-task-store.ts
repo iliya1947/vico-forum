@@ -139,21 +139,77 @@ export class DrizzleContentTopicTitlePlanningStore implements ContentTopicTitleP
         .limit(1);
       if (existingRows[0]) {
         assertTaskMatchesSpecification(existingRows[0], specification);
-        if (existingRows[0].status !== "pending" && existingRows[0].status !== "processing") {
-          throw new ContentTopicTitleTaskIntegrityError(
-            "content topic-title task identity is already terminal",
-          );
-        }
         const metadataRows = await transaction
           .select()
           .from(contentTopicTitleTranslationTasks)
           .where(eq(contentTopicTitleTranslationTasks.taskId, existingRows[0].id))
           .limit(1);
         assertMetadataMatchesSpecification(metadataRows[0], specification);
+
+        if (
+          existingRows[0].status === "pending"
+          || existingRows[0].status === "processing"
+        ) {
+          return {
+            outcome: "task" as const,
+            created: false,
+            task: contentTask(existingRows[0], metadataRows[0]),
+          };
+        }
+        if (existingRows[0].status !== "stale") {
+          throw new ContentTopicTitleTaskIntegrityError(
+            "content topic-title task identity is already terminal",
+          );
+        }
+
+        const databaseNow = sql`statement_timestamp()`;
+        const generation = existingRows[0].generation === currentGeneration
+          ? currentGeneration
+          : currentGeneration + 1;
+        const reactivated = await transaction
+          .update(translationTasks)
+          .set({
+            generation,
+            status: "pending",
+            attemptCount: 0,
+            maxAttempts: DEFAULT_TRANSLATION_TASK_MAX_ATTEMPTS,
+            lastFailureCode: null,
+            failureDisposition: null,
+            reconciliationAttemptedAt: null,
+            claimToken: null,
+            claimedAt: null,
+            leaseExpiresAt: null,
+            staleAt: null,
+            completedAt: null,
+            failedAt: null,
+            updatedAt: databaseNow,
+          })
+          .where(and(
+            eq(translationTasks.id, existingRows[0].id),
+            eq(translationTasks.status, "stale"),
+          ))
+          .returning();
+        const reactivatedTask = requiredTaskRow(reactivated[0]);
+
+        if (generation !== currentGeneration) {
+          await transaction
+            .update(translationTaskGenerationHeads)
+            .set({
+              currentGeneration: generation,
+              updatedAt: databaseNow,
+            })
+            .where(and(
+              eq(translationTaskGenerationHeads.translationKind, unit.translationKind),
+              eq(translationTaskGenerationHeads.sourceNamespace, unit.sourceNamespace),
+              eq(translationTaskGenerationHeads.sourceKey, unit.sourceKey),
+              eq(translationTaskGenerationHeads.targetLocale, unit.targetLocale),
+            ));
+        }
+
         return {
           outcome: "task" as const,
           created: false,
-          task: contentTask(existingRows[0], metadataRows[0]),
+          task: contentTask(reactivatedTask, metadataRows[0]),
         };
       }
 
