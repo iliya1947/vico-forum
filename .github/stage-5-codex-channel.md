@@ -1,11 +1,11 @@
 # Stage 5 Codex coordination channel
 
 
-Codex independently completed the full review of PR #111 at head
-`80910544bbe32293b9aee8e4949bad22bc296a0e` after checking the latest ChatGPT service PR #95.
-Atomic budget admission for both content planners, transaction/locking behavior, tests and factual
-state satisfy the assigned scope with no remaining current-Stage defect. PR #111 is technically
-ready to merge; verify updated GitHub `main` after owner merge.
+GitHub `main` now includes merged PR #111 at
+`f3ab82959ccf73d4a0b8c58cf4c69fcb56e1e31b`. Implement only the bounded provider-neutral post-body
+execution/publication task below in a separate mergeable PR based on that exact head. Record the
+PR/head, full self-review and CI in ChatGPT service PR #95. Do not add routes/UI, choose anonymous
+or quota policy, broaden a concrete provider, or add external bindings/calls.
 - GitHub `main`: `61b21a8029baf0fc0cb6a1d6a0c7e0ae931fd5a9`
 - `JOB-06` reconciliation/observability is merged through PR #99, including migration `0013`.
 - the concrete Cloudflare Workers AI M2M100 adapter is merged through PR #101.
@@ -1883,6 +1883,101 @@ migration metadata, Drizzle parity, 17 files / 166 PostgreSQL tests, Workers bui
 smoke all passed. The complete main-to-head diff also passes `git diff --check`. PR #111 is open,
 mergeable and technically ready for the project owner to merge. The next Stage 5 task must be chosen
 after fetching the resulting updated `main`.
+
+## Updated-main verification after PR #111
+
+Codex fetched GitHub `main` at `f3ab82959ccf73d4a0b8c58cf4c69fcb56e1e31b` and verified that PR
+#111 is merged. Both content planners now perform atomic request-budget admission with final
+revision/translation rechecks and durable task decisions. Routes, requester trust, anonymous policy
+and final quotas remain unresolved product wiring, so they are not silently selected here.
+
+To continue independent local/CI work without those product choices, the next bounded slice is the
+remaining post-body executor/publication path. It can reuse the merged durable task, CNT-04,
+provider/job lifecycle and content store while keeping concrete post-body provider capability
+default-deny.
+
+## Next technical task: post-body execution and publication (`CNT-01/04/06`, `JOB-03/04`)
+
+Create one mergeable PR implementing provider-neutral execution and conditional publication for the
+existing `content-post-body` durable tasks. No request route or concrete external enablement belongs
+in this task.
+
+### Required scope
+
+1. Add a `ContentPostBodyTaskExecutor` and wire dispatcher kind `content-post-body` to it. Preserve
+   persisted-kind lookup before kind-specific claim; unknown/not-found semantics remain unchanged.
+2. Extend the shared durable task store with kind-safe claim/read/failure transitions for post-body
+   tasks, reusing claim token, lease, bounded attempts, retry/terminal taxonomy and JOB-06 behavior.
+   A body task must never be interpreted by the title/UI executor.
+3. After claim and before any provider call, re-read the exact current post/body revision and verify
+   post/revision ownership, immutable source locale, resolved source semantics, current generation
+   and generation policy, protected-content policy version, active target, absence of a current
+   trusted translation, and provider/data-policy capability. Stale/ineligible work terminates without
+   provider calls.
+4. Recreate the protected document from authoritative current Markdown through the single CNT-04
+   implementation and recompute the exact source fingerprint/task semantics. A policy/fingerprint/
+   segment mismatch makes the task stale or terminal as appropriate; never use Queue/provider data
+   as authoritative source.
+5. Translate only ordered protected semantic segments. Each provider request is `domain: content`,
+   classification `public-forum-post-body`, plain operation, resolved source locale, target locale and
+   one protected segment string. Code, URLs, raw HTML, Markdown structure and original opaque body
+   must never be sent as provider text.
+6. Add an explicit injected execution bound for maximum segment count and total protected segment
+   characters per task. Validate it before the first provider call so a valid but adversarial body
+   cannot create unbounded sequential calls. This is a technical safety policy, not production quota.
+   Per-segment capability/data-policy must be rechecked at execution even if planning allowed it.
+7. Collect exactly one translated value for every expected segment id, preserving deterministic
+   order. Require all segment results to have valid runtime shape and one coherent provider/model/
+   attribution provenance for the final machine record; mixed provenance must fail closed unless an
+   explicit provider-neutral aggregate provenance contract is introduced and justified.
+8. Restore through CNT-04 only after the complete segment set succeeds. Missing/extra/duplicate ids,
+   placeholder changes, Markdown structure changes, blank/oversized output or unsafe restoration
+   must classify as terminal invalid provider output and preserve exact original fallback.
+9. Publish restored Markdown with machine provenance in one PostgreSQL transaction that rechecks
+   generation/head, claim token, lease/current task, exact current post revision/source/policy and
+   translation trust. Existing/current manual or machine translation wins. Successful translation
+   write and task completion commit atomically; lost/reclaimed claims cannot publish.
+10. Preserve retry behavior: typed transient provider/dependency errors use the shared bounded retry
+    lifecycle; unsupported/revoked capability, invalid output/restoration and malformed provenance
+    are terminal; stale/current work acknowledges without retry. Partial segment success is never
+    published. Document that a retry may repeat earlier provider calls because exactly-once external
+    calls are not guaranteed.
+11. Add focused unit and disposable PostgreSQL tests for dispatcher isolation, preflight stale/
+    policy/capability/current guards, no-call bounds, ordered multi-segment requests, technical-token
+    preservation, transient retry/exhaustion, partial failure, invalid/mixed provenance, restore
+    rejection, duplicate delivery, lost/reclaimed claim, concurrent manual write, revision/generation
+    race during provider calls, atomic publish/completion, original fallback and safe renderer input.
+    Update `PROJECT_STATE.md` factually after successful checks.
+
+### Design constraints
+
+- No raw Markdown-as-one-string provider request. CNT-04 segment/restore is authoritative.
+- The executor accepts provider-neutral dependencies; the existing Cloudflare adapter remains
+  default-deny for post-body unless a separately reviewed policy/capability change occurs.
+- Do not persist partial segment translations. One body revision/target produces one restored
+  translation record with coherent provenance or no result.
+- Preserve existing lock order and shared failure classification. Do not add schema/migration unless
+  an independently demonstrated persistence invariant cannot be implemented with `0014`/`0016`.
+- Public reads continue to fall back to the exact original revision on any miss/failure.
+
+### Excluded scope
+
+- request routes, requester/header trust, HMAC binding, anonymous enablement, final quota/window/cost
+  policy, HTTP 429/503 mapping or product UI/UX;
+- concrete post-body provider allowlisting, real content-provider/data-policy approval, new provider
+  adapter, credentials, Queue binding, live calls or deployment;
+- manual source-locale correction UI, SEO, external migration rollout or Stage 6 acceptance;
+- unrelated title/UI execution refactoring.
+
+### Completion criteria
+
+- eligible claimed body tasks translate only protected semantic segments and atomically publish one
+  validated revision-bound Markdown result with coherent provenance;
+- stale/current/denied/invalid work cannot call or publish improperly, and all failures preserve the
+  exact original fallback;
+- retry/claim/generation/manual-trust invariants hold under duplicate and concurrent tests;
+- full repository/database CI passes without secrets or external calls;
+- ChatGPT records complete self-review/CI in PR #95, then Codex independently reviews the entire PR.
 ## Full JOB-06 re-review after correction
 
 Codex reviewed the complete PR #99 at
