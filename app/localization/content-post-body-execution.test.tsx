@@ -236,9 +236,9 @@ async function harness(options: {
   };
   const providerRouter = new TranslationProviderRouter([adapter]);
 
-  const publishClaimedMachineResult = vi.fn(async () =>
-    options.publicationResult ?? { outcome: "published" as const }
-  );
+  const publishClaimedMachineResult = vi.fn(async (
+    _publication: Parameters<ContentPostBodyPublicationStore["publishClaimedMachineResult"]>[0],
+  ) => options.publicationResult ?? { outcome: "published" as const });
   const publisher = new ContentPostBodyResultPublisher({
     tasks,
     revisions,
