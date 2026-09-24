@@ -78,6 +78,32 @@ export class DrizzleContentTopicTitleExecutionStore
   ): Promise<ContentTopicTitlePublicationResult> {
     try {
       return await this.database.transaction(async (tx) => {
+        const [topic] = await tx
+          .select({ currentTitleRevisionId: forumTopics.currentTitleRevisionId })
+          .from(forumTopics)
+          .where(eq(forumTopics.id, publication.task.sourceIdentity.topicId))
+          .for("update");
+        if (
+          !topic
+          || topic.currentTitleRevisionId !== publication.task.sourceIdentity.revisionId
+        ) {
+          return markClaimStale(tx, publication, "revision-not-current");
+        }
+
+        const [head] = await tx
+          .select({ currentGeneration: translationTaskGenerationHeads.currentGeneration })
+          .from(translationTaskGenerationHeads)
+          .where(and(
+            eq(translationTaskGenerationHeads.translationKind, "content-topic-title"),
+            eq(translationTaskGenerationHeads.sourceNamespace, "topic-title"),
+            eq(translationTaskGenerationHeads.sourceKey, publication.task.sourceIdentity.topicId),
+            eq(translationTaskGenerationHeads.targetLocale, publication.task.targetLocale),
+          ))
+          .for("update");
+        if (!head || head.currentGeneration !== publication.task.generation) {
+          return markClaimStale(tx, publication, "generation-superseded");
+        }
+
         const [task] = await tx
           .select()
           .from(translationTasks)
@@ -110,32 +136,6 @@ export class DrizzleContentTopicTitleExecutionStore
           || publication.task.generationPolicyVersion !== publication.generationPolicyVersion
         ) {
           return markClaimStale(tx, publication, "policy-changed");
-        }
-
-        const [head] = await tx
-          .select({ currentGeneration: translationTaskGenerationHeads.currentGeneration })
-          .from(translationTaskGenerationHeads)
-          .where(and(
-            eq(translationTaskGenerationHeads.translationKind, "content-topic-title"),
-            eq(translationTaskGenerationHeads.sourceNamespace, "topic-title"),
-            eq(translationTaskGenerationHeads.sourceKey, publication.task.sourceIdentity.topicId),
-            eq(translationTaskGenerationHeads.targetLocale, publication.task.targetLocale),
-          ))
-          .for("update");
-        if (!head || head.currentGeneration !== publication.task.generation) {
-          return markClaimStale(tx, publication, "generation-superseded");
-        }
-
-        const [topic] = await tx
-          .select({ currentTitleRevisionId: forumTopics.currentTitleRevisionId })
-          .from(forumTopics)
-          .where(eq(forumTopics.id, publication.task.sourceIdentity.topicId))
-          .for("update");
-        if (
-          !topic
-          || topic.currentTitleRevisionId !== publication.task.sourceIdentity.revisionId
-        ) {
-          return markClaimStale(tx, publication, "revision-not-current");
         }
 
         const [revision] = await tx
