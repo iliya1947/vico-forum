@@ -100,8 +100,7 @@ describe("DrizzleTranslationTaskStore reconciliation", () => {
     await client.query(
       `update translation_tasks
           set claimed_at = statement_timestamp() - interval '2 seconds',
-              lease_expires_at = statement_timestamp() - interval '1 second',
-              updated_at = statement_timestamp() - interval '2 seconds'
+              lease_expires_at = statement_timestamp() - interval '1 second'
         where id = $1`,
       [expired.id],
     );
@@ -236,8 +235,7 @@ describe("DrizzleTranslationTaskStore reconciliation", () => {
       `update translation_tasks
           set attempt_count = max_attempts,
               claimed_at = statement_timestamp() - interval '3 seconds',
-              lease_expires_at = statement_timestamp() - interval '1 second',
-              updated_at = statement_timestamp() - interval '3 seconds'
+              lease_expires_at = statement_timestamp() - interval '1 second'
         where id = $1`,
       [expired.id],
     );
