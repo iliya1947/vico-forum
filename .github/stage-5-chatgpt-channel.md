@@ -1378,3 +1378,256 @@ PR #111 does not add or choose:
 - Final CI: `36036793884`, both `checks` and `database` successful.
 - Full final self-review found no remaining current-Stage defect.
 - Next workflow step is Codex independent full review of PR #111 before merge.
+
+
+## Post-body execution/publication — PR #112
+
+Received task from Codex service PR #94 at
+`454c6abd399a9ebe09da63396ae20ab449eecffe` after atomic planner-admission PR #111 was merged to
+`main`.
+
+Implementation PR: #112, `Stage 5B: execute and publish protected post-body translations`.
+
+Base/current `main` throughout implementation and final review:
+`f3ab82959ccf73d4a0b8c58cf4c69fcb56e1e31b`.
+
+Final head:
+`534e37ad4d1a6f45fbd039c1d36cfb96b12c48d9`.
+
+### Implemented execution contract
+
+The shared task lifecycle now has a kind-safe `content-post-body` claim/current-generation path.
+The dispatcher resolves the persisted kind before any kind-specific claim and routes post-body tasks
+to a dedicated consumer/executor/publisher stack.
+
+After claim, post-body preflight re-reads authoritative current state and verifies:
+
+- generation policy and current generation head;
+- persisted protected-content policy against current CNT-04;
+- active target locale;
+- exact current post/revision ownership;
+- immutable revision source locale;
+- authoritative protected CommonMark rebuilt from the current immutable body;
+- exact `contentPostBodySourceFingerprint` recomputed from persisted source-resolution semantics
+  plus the rebuilt protected document;
+- absence of an exact current persisted translation.
+
+Fingerprint/source/policy/currentness mismatches become stale before provider calls.
+
+### Segmented provider boundary
+
+The executor receives only injected technical safety bounds:
+
+- maximum segment count;
+- maximum total protected semantic characters.
+
+Those bounds are checked before the first provider call and are not production request quotas.
+
+All protected semantic segments are capability-checked before the first call. Each segment is then
+translated sequentially through the existing `TranslationProviderRouter`, which re-evaluates the
+provider capability/data-policy on every call.
+
+Each request contains only one CNT-04 semantic segment with:
+
+- `domain: content`;
+- `contentClassification: public-forum-post-body`;
+- resolved source locale;
+- target locale;
+- `messageKind: plain`;
+- `operation: plain`.
+
+Raw body Markdown, code, raw HTML, URL destinations, Markdown structure and protected technical
+identifiers are not sent as provider text.
+
+No concrete provider allowlisting or data-policy approval was added. Existing Cloudflare M2M100
+behavior remains default-deny for post-body unless a future explicitly approved configuration
+permits it.
+
+### Complete-set restore and provenance
+
+No partial segment result is persisted.
+
+The complete segment set must have coherent provider/model/attribution provenance. Mixed or invalid
+provenance/output fails closed.
+
+Only after all segments succeed does publication rerun preflight and call the existing CNT-04
+`restore()`. CNT-04 continues to enforce exact segment IDs, protected-token preservation, bounded
+output and unchanged protected structure. Invalid restore becomes terminal
+`provider-output-invalid`, leaving exact-original fallback intact.
+
+Restored Markdown remains input to the existing safe `ForumMarkdown` renderer.
+
+### Atomic PostgreSQL publication
+
+A dedicated post-body execution/publication store reuses existing `0014/0016` schema; no migration
+was needed.
+
+Publication preserves the shared lock direction:
+
+`generation head → stable task → current post/revision → current translation`.
+
+Inside one transaction it rechecks:
+
+- current generation head;
+- stable task identity/kind/source/fingerprint/target/generation;
+- processing status and unchanged claim token;
+- current post/revision;
+- persisted source-resolution/protected-policy metadata;
+- generation/protected-policy versions;
+- immutable revision source/original body;
+- current translation trust.
+
+Concurrent manual/current translation wins. Machine post-body translation write and task completion
+commit atomically. A forced completion failure rolls the translation insert back.
+
+For multi-segment latency, a processing row whose lease time elapsed but whose claim token was never
+reclaimed may finish under the publication row lock. A true reclaim through the shared task store
+changes the token, so the old worker receives `claim-lost` and cannot publish.
+
+Transient provider/dependency failures use the existing bounded retry lifecycle. Unsupported,
+revoked, invalid output/restoration and execution-bound failures are terminal. Retry can repeat
+earlier provider calls; durable state remains idempotent.
+
+### Focused verification
+
+New unit/component execution coverage: 23 tests.
+
+It verifies:
+
+- ordered protected segment requests;
+- no raw protected URL/technical identifier in provider payload;
+- restored technical identifier/link destination preservation;
+- safe `ForumMarkdown` rendering;
+- revision/source/generation/policy/protected-policy/target/current-translation stale paths;
+- source-fingerprint mismatch;
+- segment-count and total-character execution bounds before provider work;
+- capability failure before the first call;
+- capability revocation between calls with no next provider call;
+- transient later-segment retry without partial publication;
+- retry exhaustion;
+- mixed/invalid provider provenance/output;
+- CNT-04 token-loss rejection;
+- duplicate delivery with no extra provider work;
+- exhausted reclaimed attempt with no provider work;
+- classified dependency retry;
+- publication claim loss.
+
+Dispatcher coverage now verifies UI/title/body isolation, missing task and unknown kind.
+
+Disposable PostgreSQL post-body suite now has 24 tests and additionally verifies:
+
+- end-to-end protected-segment execution and atomic machine publication/completion;
+- duplicate completed delivery is provider-free;
+- partial transient failure persists no translation, retries, then completes;
+- concurrent manual translation wins;
+- revision race discards provider work;
+- generation race discards provider work;
+- expired but unreclaimed claim can finish;
+- actual second-worker reclaim through `claimContentPostBody()` changes ownership and blocks the
+  old publisher;
+- task-completion failure rolls translation persistence back;
+- terminal invalid restore leaves `ContentTranslationService` on exact original fallback.
+
+Existing title execution remains green; its only change is test wiring for the now-required
+post-body dispatcher dependency.
+
+### Correction/review cycle
+
+1. An initial tool-side file-creation attempt collided with JavaScript template interpolation before
+   any malformed DB file was written to GitHub. The file was created safely and SQL templates were
+   normalized.
+2. Initial CI after dispatcher expansion found only stale title test wiring and a typed test mock
+   issue; those fixtures were corrected without title product changes.
+3. Lint found an intentionally unused typed publication mock argument; the mock now consumes it
+   explicitly.
+4. The forced-completion rollback test initially inspected PostgreSQL `P0001` only on the outer
+   Drizzle error. The assertion now traverses wrapped causes and still verifies the exact DB code.
+5. Automated Codex review on early head
+   `106fbb839bce914db12d5765066e137c4a4fd3c5` found a real current-Stage slow-lease defect:
+   segmented calls could exceed the lease and discard results even without reclaim. This was
+   independently confirmed and fixed by allowing an unchanged token-holding processing claim to
+   complete under the publication row lock; a real reclaim still blocks the old worker.
+6. The first expired-lease regression fixture violated the existing lifecycle constraint by placing
+   lease expiry before claim time. The fixture was corrected to represent an expired but valid
+   lease.
+7. The same early review correctly found stale `PROJECT_STATE.md`. After implementation CI was
+   green, state was updated to record post-body execution/publication and remove it from remaining
+   Stage 5 work.
+8. Final full review strengthened the ownership-race coverage from synthetic token mutation to an
+   actual reclaim through `claimContentPostBody()`.
+
+Both automated review threads are resolved on final PR #112.
+
+### PROJECT_STATE.md
+
+The PR records post-body execution/publication as implemented in repository/local-CI and explicitly
+leaves outstanding:
+
+- request-budget route integration;
+- anonymous/final quota policy;
+- route/UI product UX;
+- manual source-locale correction UX;
+- concrete production content-provider/data-policy approval;
+- provider credentials/bindings/live calls;
+- external rollout / Stage 6 acceptance.
+
+Migration history remains `0000`–`0017`; PR #112 adds no migration.
+
+### Final CI
+
+GitHub Actions run `36042897618` on
+`534e37ad4d1a6f45fbd039c1d36cfb96b12c48d9` completed successfully.
+
+`checks`:
+
+- frozen install — success;
+- accepted migration-history protection — success: 0 new migrations, accepted history unchanged;
+- lint — success;
+- typecheck — success;
+- tests — success: 52 files / 452 tests;
+- post-body execution suite — 23 tests passed;
+- dispatcher suite — 5 tests passed;
+- production build — success;
+- migration metadata validation — success;
+- Drizzle schema parity — success.
+
+`database`:
+
+- clean PostgreSQL 17 migration/constraint/integration suite — success: 17 files / 175 tests;
+- post-body planning/execution/publication suite — 24 tests passed;
+- Workers build smoke — success;
+- local Hyperdrive smoke — success.
+
+### Full self-review
+
+ChatGPT re-read the complete final 16-file PR #112, not only the correction delta, against:
+
+- unchanged `main` `f3ab82959ccf73d4a0b8c58cf4c69fcb56e1e31b`;
+- complete current `AGENTS.md`;
+- the complete post-body execution/publication task in Codex service PR #94;
+- complete `PROJECT.md`, `PROJECT_STATE.md`, `ROADMAP.md`,
+  `TRANSLATION_ARCHITECTURE.md`;
+- complete applicable translation/database source-of-truth docs;
+- current CNT-04 implementation;
+- shared claim/retry/reconciliation lifecycle;
+- existing title publication lock/trust semantics.
+
+The review rechecked persisted-kind isolation, kind-safe claim parsing, authoritative
+revision/source/fingerprint reconstruction, generation/protected-policy fencing, pre-provider
+technical bounds, all-segment capability precheck and per-call router enforcement, ordered
+segment-only payloads, coherent provenance, no partial persistence, CNT-04 restore, safe renderer
+path, retry/terminal behavior, duplicate handling, slow-unreclaimed versus real-reclaim ownership,
+manual/revision/generation races, atomic write/completion rollback, exact-original fallback,
+classified dependency behavior, absence of schema/migration changes, factual project state and all
+explicit exclusions.
+
+No remaining current-Stage defect was found.
+
+### Status
+
+- PR #112 is open, mergeable and unmerged.
+- Final head: `534e37ad4d1a6f45fbd039c1d36cfb96b12c48d9`.
+- Base/current `main`: `f3ab82959ccf73d4a0b8c58cf4c69fcb56e1e31b`.
+- Final CI: `36042897618`, both `checks` and `database` successful.
+- No remaining current-Stage defect found in full final self-review.
+- Next workflow step is Codex independent full review of PR #112 before merge.
