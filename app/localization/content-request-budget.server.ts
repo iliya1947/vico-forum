@@ -105,7 +105,7 @@ implements ContentTranslationRequesterPseudonymizer {
     private readonly subtle: WebCryptoSubtle = crypto.subtle,
   ) {
     if (
-      !(secret instanceof Uint8Array)
+      !isUint8Array(secret)
       || secret.byteLength < MINIMUM_HMAC_SECRET_BYTES
       || secret.byteLength > MAXIMUM_HMAC_SECRET_BYTES
     ) {
@@ -260,6 +260,13 @@ function requireRequesterIdentity(value: string): string {
     );
   }
   return value;
+}
+
+function isUint8Array(value: unknown): value is Uint8Array {
+  return (
+    ArrayBuffer.isView(value)
+    && Object.prototype.toString.call(value) === "[object Uint8Array]"
+  );
 }
 
 function hasControlCharacter(value: string): boolean {
