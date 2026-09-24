@@ -129,6 +129,24 @@ const fenced = fooBar();
     }])).toThrow(expect.objectContaining({ code: "protected-token-mismatch" }));
   });
 
+  it("protects genuine CLI options without hiding ordinary hyphenated prose", () => {
+    const source = "Use --verbose and -x, but translate user-generated and state-of-the-art content.";
+    const document = protectMarkdownForTranslation(source);
+
+    expect(document.segments).toHaveLength(1);
+    const segment = document.segments[0]!;
+    const tokens = protectedMarkers(segment.text);
+    expect(tokens).toHaveLength(2);
+    expect(segment.text).not.toContain("--verbose");
+    expect(segment.text).not.toContain("-x");
+    expect(segment.text).toContain("user-generated");
+    expect(segment.text).toContain("state-of-the-art");
+
+    const restored = document.restore(translateIdentity(document.segments));
+    const { container } = render(<ForumMarkdown>{restored}</ForumMarkdown>);
+    expect(container.textContent).toContain(source);
+  });
+
   it("allocates deterministic marker namespaces that cannot collide with source text", () => {
     const source = "Human VICOSEGMENT0X text and ⟦VICOPROTECTED0X marker with fetchData().";
     const document = protectMarkdownForTranslation(source);
@@ -170,6 +188,22 @@ const fenced = fooBar();
       { ...valid[0]!, value: "bad\u0000value" },
       ...valid.slice(1),
     ])).toThrow(expect.objectContaining({ code: "invalid-segment-value" }));
+  });
+
+  it("round-trips accepted source segments above the baseline translation limit", () => {
+    const source = "a".repeat(MAX_TRANSLATED_MARKDOWN_SEGMENT_CHARACTERS + 1);
+    const document = protectMarkdownForTranslation(source);
+    const segment = document.segments[0]!;
+
+    expect(segment.text).toHaveLength(MAX_TRANSLATED_MARKDOWN_SEGMENT_CHARACTERS + 1);
+    expect(() => document.restore([{ id: segment.id, value: segment.text }])).not.toThrow();
+    expect(() => document.restore([{
+      id: segment.id,
+      value: `${segment.text}a`,
+    }])).toThrow(expect.objectContaining({
+      code: "invalid-segment-value",
+      disposition: "original-fallback",
+    }));
   });
 
   it("inserts provider values as text and rejects attempts that would change block structure", () => {
