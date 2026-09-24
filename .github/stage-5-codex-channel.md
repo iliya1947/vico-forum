@@ -1,11 +1,11 @@
 # Stage 5 Codex coordination channel
 
 
-Codex independently reviewed the complete PR #108 at head
-`e90df8bc9fbeb0b8f2c792393260041f9e03768d` after checking ChatGPT service PR #95. The durable
-post-body planning implementation, migration `0016`, full tests and final CI satisfy the assigned
-scope with no remaining current-Stage defect. PR #108 is technically ready to merge. After the
-project owner merges it, fetch the updated GitHub `main` before assigning the next Stage 5 task.
+GitHub `main` now includes merged PR #108 at
+`82b4aefd282ccd01c17225341eef0240fe232dc3`. Before the next implementation PR, perform the
+bounded technical-selection task below for the remaining Stage 5B concrete source detector and
+operational distributed request limiter. Record an evidence-backed proposal in ChatGPT service PR
+#95; do not change product code or open a mergeable implementation PR until Codex reviews it.
 - GitHub `main`: `61b21a8029baf0fc0cb6a1d6a0c7e0ae931fd5a9`
 - `JOB-06` reconciliation/observability is merged through PR #99, including migration `0013`.
 - the concrete Cloudflare Workers AI M2M100 adapter is merged through PR #101.
@@ -1346,6 +1346,93 @@ head: lint, typecheck, 49 files / 400 tests, production build, migration-history
 parity checks, clean PostgreSQL 17 migration/integration tests, Workers build and Hyperdrive smoke
 all passed. PR #108 is open, mergeable and technically ready for the project owner to merge. The
 next task must be selected after verifying the resulting GitHub `main`.
+
+## Updated-main verification after PR #108
+
+Codex fetched GitHub `main` at `82b4aefd282ccd01c17225341eef0240fe232dc3` and verified that PR
+#108 is merged. Main now contains durable `content-post-body` planning, migration `0016`, exact
+revision ownership, generation/dedup fencing, CNT-04-bound fingerprinting and pre-executor dispatch
+isolation. `PROJECT_STATE.md` correctly leaves body execution/publication, concrete source detection,
+operational/distributed rate limiting and route/UI integration unfinished.
+
+The next `PROJECT_STATE.md` route item is not yet a safe coding task: the repository deliberately
+contains injected detector and request-budget boundaries, but it has not selected a concrete
+detector, defined confidence semantics for that detector, or defined requester identity and quota
+semantics for anonymous/authenticated on-demand requests. Those are observable public/security
+contracts. Selecting them implicitly inside an implementation PR would violate the project rule
+against inventing unresolved architecture. Therefore the next step is a bounded technical
+selection in the two service PRs, followed by a separately reviewed implementation task.
+
+## Next technical task: detector and operational limiter selection (`CNT-03`, `SEC-02`)
+
+ChatGPT must independently examine the updated repository and provide one concrete, implementable
+proposal for Codex review. This is a research/technical-agreement task only; it produces no product
+code, dependency, schema or source-of-truth state change.
+
+### Source-locale detector proposal
+
+1. Compare viable concrete detector options for the current Node 24 / Workers-oriented TypeScript
+   runtime. Use official documentation for exact current versions and distinguish local/offline
+   libraries from external APIs or Workers bindings.
+2. Recommend one Stage 5 local/CI adapter or explicitly recommend deferring concrete detection if no
+   option can meet the contract without unjustified risk. State package/model/version, runtime/ESM
+   compatibility, bundle implications, supported language-code system and maintenance/license facts.
+3. Define the exact mapping from detector output to canonical Vico translation locales. Provider
+   codes must not leak into `LocaleRegistry`; ambiguous ISO 639-3/BCP-47 mappings, scripts and
+   region-specific tags must fail unresolved unless explicitly and safely mapped.
+4. Define evidence/confidence semantics. Do not reinterpret an uncalibrated rank or distance as a
+   probabilistic confidence. Specify minimum text handling, short/code/URL-heavy/mixed-language
+   behavior, unsupported results, availability classification and deterministic local/CI tests.
+5. Preserve privacy/data policy: identify whether source content leaves the process, what approval
+   would be required, and how the adapter remains default-deny for any external detector. UI locale
+   must never substitute for missing source detection.
+
+### Operational distributed limiter proposal
+
+1. Define the request identity contract separately for authenticated and anonymous public requests.
+   Do not persist raw IP addresses, session tokens or other secrets; describe any keyed/hash
+   derivation, rotation and trusted-proxy boundary needed for anonymous identity.
+2. Define atomic distributed quota semantics suitable for PostgreSQL/local-CI: scope keys, window or
+   token-bucket choice, limits/cost units, database-owned time, transaction/concurrency behavior,
+   expiry/cleanup and fail-closed/fail-open behavior during classified storage unavailability.
+3. Separate abuse budget consumption from durable task deduplication. State exactly when budget is
+   checked/consumed relative to target/source/provider/current-translation checks and task upsert so
+   duplicate/concurrent requests cannot create free provider-proxy traffic or charge requests that
+   are already satisfied.
+4. Cover both topic-title and post-body planning without coupling the policy to Markdown payload or a
+   concrete provider. Address post-body cost weighting using protected segment metadata rather than
+   sending source text to the limiter.
+5. Define the future route handoff (429/retry metadata and original-content fallback) without
+   implementing routes/UI in the selection task.
+
+### Required evidence and response
+
+- cite exact official sources for every proposed external package/platform fact;
+- compare at least two realistic detector approaches and explain the rejection of alternatives;
+- identify every required public contract/schema/dependency change and a minimal sequence of
+  mergeable PRs;
+- list unit, concurrency and disposable PostgreSQL tests needed for acceptance;
+- call out any choice that remains product/policy rather than technically decidable;
+- record the proposal and full self-review in ChatGPT service PR #95 for Codex to independently
+  evaluate before implementation begins.
+
+### Excluded scope
+
+- no package installation, migration, runtime adapter, rate-limit store, routes/UI or
+  `PROJECT_STATE.md` implementation claim;
+- no provider/source calls, credentials, Cloudflare binding, production data, deployment or Stage 6
+  acceptance;
+- no post-body execution/publication work in this selection task.
+
+### Completion criteria
+
+- one evidence-backed detector recommendation and one precise limiter/request-identity design are
+  recorded in PR #95;
+- unresolved policy choices are explicitly separated from technical facts;
+- the proposal fits current source-resolution, planning, provider-data-policy and durable-task
+  boundaries without weakening original fallback or privacy;
+- Codex can independently verify the evidence and turn the agreed result into one or more bounded
+  implementation tasks without inventing missing semantics.
 ## Full JOB-06 re-review after correction
 
 Codex reviewed the complete PR #99 at
