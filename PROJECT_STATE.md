@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-09-23
+Последнее обновление: 2026-09-24
 
 ## Назначение
 
@@ -86,6 +86,7 @@ local/CI Stage 4 и остаются Stage 6.
 - provider-neutral task executor;
 - typed retryable/terminal translation-execution failure taxonomy и transport-neutral `ack` / `retry` / `terminal` outcome boundary;
 - bounded durable attempt budget с PostgreSQL-owned lifecycle time, claim-token-fenced retry/failure transitions и persistent `failed` terminal path как local/CI DLQ equivalent;
+- transport-neutral `JOB-06` reconciliation/observability: aged `pending` и expired `processing` tasks выбираются по PostgreSQL-owned time для безопасного duplicate re-enqueue по task id; lifecycle snapshot отдельно показывает status counts и expired processing leases;
 - conditional machine publication с provider/model provenance;
 - atomic `task completion + raw machine translation + whole namespace bundle` publication;
 - persisted exact-locale compiled bundles с deterministic current-deploy identity;
@@ -103,7 +104,6 @@ Migration `0007`–`0010` содержит durable task lifecycle и generation-
 
 Для завершения Stage 5 local/CI path ещё нужны:
 
-- `JOB-06` persistent task reconciliation/observability;
 - concrete machine-provider adapter implementation за существующим provider-neutral boundary;
 - Stage 5B `ContentTranslationService` и revision-bound перевод пользовательского контента;
 - Markdown AST/structured content translation path и content translation persistence.
@@ -159,8 +159,8 @@ no-op verification. Перед следующим настоящим external sc
 
 ## Ближайший маршрут
 
-1. Завершить оставшийся Stage 5A local/CI path: concrete machine-provider adapter и
-   reconciliation/observability, сохраняя provider/transport boundaries.
+1. Завершить оставшийся Stage 5A local/CI path: concrete machine-provider adapter,
+   сохраняя provider/transport boundaries.
 2. Реализовать Stage 5B revision-bound user-content translation.
 3. После завершения Stage 5 перейти к Stage 6 external integration по `ROADMAP.md` и
    `docs/database/*`.
