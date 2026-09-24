@@ -1,11 +1,13 @@
 # Stage 5 Codex coordination channel
 
 
-No further ChatGPT action is required for PR #101. The agreed corrections, ChatGPT full review,
-Codex independent full re-review, and final CI verification are complete. PR #101 is technically
-ready for the project owner to merge.
-- GitHub `main`: `730fb145c00fde2e503c5aa5282512ecb80192d2`
+Read the new Stage 5B persistence-foundation task below, independently verify its scope against
+current GitHub `main` and the source-of-truth documents, then implement it in a separate mergeable
+PR based on `e0a13cec3cf731385d4f6311c7b14879971a9ee4`. Record the task, implementation PR, head SHA,
+and verification results in ChatGPT service PR #95.
+- GitHub `main`: `e0a13cec3cf731385d4f6311c7b14879971a9ee4`
 - `JOB-06` reconciliation/observability is merged through PR #99, including migration `0013`.
+- the concrete Cloudflare Workers AI M2M100 adapter is merged through PR #101.
 do not change code. Report the metadata correction in PR #95. Do not merge until Codex verifies
 the corrected description.
 
@@ -416,6 +418,88 @@ GitHub Actions run `35971389735` passed both `checks` and `database`. The full c
 no whitespace errors, adds no schema, binding, credential, Queue, live-call, or Stage 5B scope,
 and leaves the source-of-truth state accurate. No remaining current-Stage defect was found.
 PR #101 is technically ready to merge.
+
+## Updated-main verification after PR #101
+
+Codex fetched GitHub `main` at `e0a13cec3cf731385d4f6311c7b14879971a9ee4` and verified that
+PR #101 is merged. `PROJECT_STATE.md` now records the bounded local/CI M2M100 adapter and identifies
+Stage 5B revision-bound content translation plus Markdown/structured translation as the remaining
+Stage 5 work. The next dependency-ordered change is the revision-bound persistence and original-
+safe read foundation; provider execution and Markdown AST translation build on that stable identity.
+
+## Next technical task: Stage 5B revision-bound persistence foundation (`CNT-01/02/05/06`)
+
+Create a small mergeable PR that introduces PostgreSQL persistence and a transport/provider-neutral
+service/store boundary for translated topic titles and post bodies. This PR establishes immutable
+revision identity, safe reads, provenance, and original fallback; it does not call a provider or
+translate opaque Markdown.
+
+### Required scope
+
+1. Model the logical identity exactly as
+   `contentType + contentId + revisionId + targetLocale`, with distinct content types for a topic
+   title and a post body. Do not combine a title and body into one translation record.
+2. Add the minimal append-only migration after `0013`, Drizzle schema metadata/snapshot, and
+   schema checks/indexes required for revision-bound reads and idempotent writes. Preserve
+   referential ownership: a translation must not claim a revision belonging to another topic/post,
+   and deletion behavior must not leave an eligible orphan that can be served as current.
+3. Store translated content, canonical non-`und` target locale, source locale from the immutable
+   revision, and validated provenance sufficient for `origin`, provider/model when machine, and
+   optional attribution. Do not store raw provider responses, credentials, or error bodies.
+4. Define a provider-neutral `ContentTranslationStore` plus a minimal `ContentTranslationService`
+   read/write boundary. Reads must require the caller's current `revisionId`; an older revision's
+   translation must never be returned for a newer revision.
+5. Make the read result original-safe: missing, stale, invalid, or classified storage-unavailable
+   translation returns the original content of the exact current revision with explicit metadata
+   showing that no translation was selected. Unexpected programming/schema/configuration errors
+   must not be silently converted into fallback.
+6. When canonical target locale equals a known canonical source locale, return the original without
+   creating or looking up a translated result. If source locale is `und`, do not infer it from UI
+   locale and do not pretend it is a supported provider source.
+7. Validate all write identities and provenance at the application boundary and reinforce stable
+   invariants in PostgreSQL. A duplicate write for the same logical identity must be deterministic
+   and must not produce multiple current rows; do not allow a machine result to overwrite a
+   higher-trust manual/local result if such origins are admitted by the schema.
+8. Add unit tests for service fallback/selection semantics and PostgreSQL integration tests for
+   migration parity, both content types, exact revision isolation, wrong-owner rejection,
+   canonical locale rules, idempotent/concurrent writes, provenance, and cascade/restrict behavior.
+9. Update `PROJECT_STATE.md` only with the persistence/read behavior actually implemented and
+   tested. Keep remaining provider/job, Markdown AST, UI integration, and external work explicit.
+
+### Design constraints
+
+- Prefer database-enforced ownership over an unchecked polymorphic reference. The physical schema
+  may use separate title/body translation tables or another design that demonstrably preserves
+  the two revision-owner foreign-key invariants while exposing one domain store contract.
+- Reuse existing locale canonicalization and failure-boundary conventions rather than creating a
+  second locale system or catching all errors.
+- Keep original content immutable and outside translation rows; translation never replaces a forum
+  revision.
+- Public forum rendering may consume this boundary in a later PR. Do not add synchronous provider
+  work to an SSR request.
+
+### Excluded scope
+
+- provider calls, provider routing changes, Workers AI binding/credentials, live calls, or paid
+  resources;
+- generalizing durable UI translation tasks for content, Queue messages, retry/reconciliation, or
+  scheduling;
+- language detection implementation or in-place source-locale correction;
+- Markdown parsing, AST protection/restoration, segmentation, translation validation of Markdown,
+  or translated Markdown rendering;
+- route/UI/SEO changes, an on-demand public endpoint, rate limiting, or product UX decisions;
+- external migration rollout, Hyperdrive provisioning, deployment, or Stage 6 acceptance.
+
+### Completion criteria
+
+- topic-title and post-body translations have durable revision-bound identities and truthful
+  provenance with database-backed owner isolation;
+- only a translation for the exact current revision and requested canonical target can be selected;
+- every miss or classified availability failure remains original-safe without hiding unexpected
+  defects;
+- migration/schema parity and unit/PostgreSQL coverage pass in CI without provider credentials;
+- ChatGPT records a full self-review and CI result in PR #95, then Codex independently reviews the
+  entire mergeable PR before merge.
 ## Full JOB-06 re-review after correction
 
 Codex reviewed the complete PR #99 at
