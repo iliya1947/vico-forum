@@ -172,7 +172,7 @@ describe("CloudflareM2m100TranslationProvider", () => {
     ];
     vi.mocked(ai.run).mockClear();
     for (const denied of deniedRequests) {
-      expect(adapter.supports(denied)).toBe(false);
+      expect(adapter.supports(machineTranslationCapability(denied))).toBe(false);
       await expect(adapter.translate(denied)).rejects.toMatchObject({
         disposition: "terminal",
         code: "provider-unsupported",
