@@ -1,5 +1,6 @@
 import type { UiMessageDescriptor } from "./catalog";
 import type { LocaleRulesProvider } from "./locale-rules";
+import type { MachineTranslationProvenance } from "./translation-provider";
 
 export type StructuredTranslationValue = Readonly<Record<string, string>>;
 export type ProviderTranslationValue = string | StructuredTranslationValue;
@@ -8,6 +9,28 @@ export class TranslationValidationError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "TranslationValidationError";
+  }
+}
+
+export function validateMachineTranslationProvenance(
+  provenance: unknown,
+): asserts provenance is MachineTranslationProvenance {
+  if (typeof provenance !== "object" || provenance === null || Array.isArray(provenance)) {
+    throw new TranslationValidationError("translation provenance must be an object");
+  }
+
+  const candidate = provenance as Record<string, unknown>;
+  if (candidate.origin !== "machine") {
+    throw new TranslationValidationError("translation publication origin must be machine");
+  }
+  if (typeof candidate.provider !== "string" || !candidate.provider.trim()) {
+    throw new TranslationValidationError("translation provider must be a non-blank string");
+  }
+  if (typeof candidate.model !== "string" || !candidate.model.trim()) {
+    throw new TranslationValidationError("translation provider model must be a non-blank string");
+  }
+  if (candidate.attribution !== undefined && typeof candidate.attribution !== "string") {
+    throw new TranslationValidationError("translation provider attribution must be a string");
   }
 }
 
