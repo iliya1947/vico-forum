@@ -192,7 +192,7 @@ describe("ContentTopicTitleTranslationPlanner", () => {
       const result = await plannerWith({
         tasks,
         enqueuer,
-        providerCapability: configuration.targetPolicy,
+        providerCapability: configuration.providerCapability,
         requestBudgetPolicy: configuration.requestBudgetPolicy,
       }).planAndDispatch(revision, "he");
 
