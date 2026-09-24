@@ -424,8 +424,8 @@ function technicalSpans(value: string): readonly TechnicalSpan[] {
 
 function hasCliOptionBoundary(value: string, optionStart: number): boolean {
   if (optionStart === 0) return true;
-  const previous = value.slice(optionStart - 1, optionStart);
-  return !/[\p{L}\p{N}\p{M}_-]/u.test(previous);
+  const previous = Array.from(value.slice(0, optionStart)).at(-1);
+  return previous === undefined || !/[\p{L}\p{N}\p{M}_-]/u.test(previous);
 }
 
 function chooseNamespaceSalt(sourceMarkdown: string): number {
