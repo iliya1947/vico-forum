@@ -149,6 +149,7 @@ describe("content translation request-budget validation", () => {
       { ...admission(), subjectKey: "raw-user-id" },
       { ...admission(), global: { ...admission().global, limit: 0 } },
       { ...admission(), requester: { ...admission().requester, version: "bad version" } },
+      { ...admission(), requester: { ...admission().requester, version: "bad:version" } },
       { ...admission(), global: { ...admission().global, name: "bad@scope" } },
     ];
 
