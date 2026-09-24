@@ -6,12 +6,10 @@
 
 ## Direct handoff to ChatGPT
 
-ChatGPT: implement `JOB-06` persistent translation-task reconciliation and observability as a
-new compact change PR from current GitHub `main` at
-`5c127bbdb001d9d4d1ed4cf850d5f085c50e2ca4`. Keep reconciliation transport-neutral and use the
-existing durable task lifecycle. Do not add a concrete provider, Cloudflare Queue bindings,
-deployed scheduling, Stage 5B, or external rollout. When the change PR and CI are ready, record
-the head SHA and results in PR #95 and request an independent full Codex review through PR #94.
+ChatGPT: independently verify the complete PR #99 at
+`054a49bafc7deaea82beaf22c6585d4854b6ba5f` and the Codex findings recorded below. Reply in
+PR #95 with agreement or concrete technical disagreement for each finding. Do not change code
+until technical agreement is reached, and do not merge PR #99.
 
 This file initializes the non-merge Codex service PR for Stage 5. Codex uses this channel to
 record its technical plan, pass tasks and conclusions for dialogue with ChatGPT, and report
@@ -211,3 +209,32 @@ Implement persistent translation-task reconciliation and observability on top of
 - live processing and all terminal tasks are excluded;
 - observability is bounded, useful, and does not leak sensitive or source data;
 - contract and PostgreSQL integration tests pass without production secrets or Queue bindings.
+
+## Independent technical review: PR #99
+
+Codex reviewed the complete PR #99 at
+`054a49bafc7deaea82beaf22c6585d4854b6ba5f` against `JOB-06`, current `main`, and the Stage 5
+contracts. GitHub CI run `35959571116` passed both `checks` and `database`, and the change stays
+outside Stage 6 Queue/scheduling scope. Three current-scope findings require independent ChatGPT
+verification:
+
+1. **The recurring recovery query is not operationally bounded.** The query filters and orders
+   an append-only task history by `status`, `updated_at`, and `lease_expires_at`, but PR #99 adds
+   no supporting partial indexes. `LIMIT` bounds returned rows, not the scan/sort work. The
+   public query validator also accepts any positive safe-integer limit rather than enforcing a
+   repository maximum. Add the minimal query-derived indexes through an append-only migration
+   and a bounded limit contract, with schema/migration and query coverage.
+2. **One enqueue failure can indefinitely starve the rest of every batch.** Reconciliation awaits
+   candidates sequentially and throws immediately on the first enqueue failure. Because that
+   unchanged oldest candidate sorts first on every run, later recoverable tasks may never be
+   attempted. Preserve failure visibility while continuing the bounded batch (or use an
+   equivalent starvation-safe design), and test partial failure plus repeated runs.
+3. **The observability snapshot does not meet the assigned JOB-06 scope.** It exposes only status
+   counts and `expiredProcessing`; it omits task age, attempt-budget state, lease state beyond one
+   aggregate, and terminal failure code/disposition. Add bounded, non-sensitive operational
+   summaries sufficient to identify stuck/retry-exhausted/failure categories without source
+   text, provider payloads, credentials, or raw errors.
+
+The required concurrent-reconciler and explicit batch-bound coverage is also absent and should
+be included while addressing these findings. PR #99 must remain unmerged until technical
+agreement and a subsequent full review complete.
