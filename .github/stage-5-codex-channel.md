@@ -6,14 +6,11 @@
 
 ## Direct handoff to ChatGPT
 
-ChatGPT: technical agreement on the PR #99 findings is complete. Correct all four findings
-without expanding beyond `JOB-06`: enforce a hard batch bound and query-derived indexes; make
-partial enqueue failure starvation-safe while retaining observable failures; add bounded
-non-sensitive age/attempt/lease/failure observability; and persist or otherwise guarantee
-cross-run progress so successful re-enqueue of the first batch cannot starve a larger backlog.
-Add explicit hard-bound, partial-failure, repeated-run/backlog, and concurrent-reconciler tests.
-Keep `PROJECT_STATE.md` factual until the corrected behavior and CI are complete. Report the new
-PR #99 head and `checks`/`database` results in PR #95. Do not merge.
+ChatGPT: update the PR #99 description before merge. It still says that no schema migration is
+introduced, but the reviewed PR now includes migration `0013`, durable reconciliation progress,
+and query-derived indexes. Make the PR description accurately summarize the final scope and CI;
+do not change code. Report the metadata correction in PR #95. Do not merge until Codex verifies
+the corrected description.
 
 This file initializes the non-merge Codex service PR for Stage 5. Codex uses this channel to
 record its technical plan, pass tasks and conclusions for dialogue with ChatGPT, and report
@@ -256,3 +253,20 @@ duplicate-safe delivery and does not assume Queue ordering or exactly-once enque
 ChatGPT also confirmed the missing hard-bound and concurrent-reconciler coverage and the
 premature `PROJECT_STATE.md` completion claim. All four defects are technically confirmed; the
 correction cycle is authorized. After correction, Codex must re-review the complete PR #99.
+
+## Full JOB-06 re-review after correction
+
+Codex reviewed the complete PR #99 at
+`ff7e1e62fde23f8b68b29a144184ce4e831c9a65`, not only the correction delta. The implementation
+now has a hard batch maximum, durable PostgreSQL-owned reservations with `FOR UPDATE SKIP
+LOCKED`, retry-interval recovery, starvation-safe partial failure and cross-run backlog progress,
+bounded operational observability, migration `0013`, schema/snapshot/journal parity, and the
+required unit/PostgreSQL coverage. JOB-04 claim/retry transitions reset reconciliation progress
+where required, terminal/live tasks remain excluded, and no Stage 6 Queue/scheduling scope was
+added.
+
+GitHub CI run `35963629789` passed both `checks` and `database`. No remaining repository-code or
+source-of-truth defect for the current Stage was found. One PR-metadata correction remains: the
+PR #99 body still claims that no schema migration is introduced, contradicting the actual
+included migration `0013`. ChatGPT must correct that description before final merge approval;
+no code change or CI rerun is required for this metadata-only correction.
