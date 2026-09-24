@@ -1,4 +1,9 @@
 import { sha256Text } from "./fingerprint";
+import {
+  validateContentTranslationRequestBudgetAdmission,
+  type ContentTranslationRequestBudgetAdmission,
+  type ContentTranslationRequestBudgetDecision,
+} from "./content-request-budget.server";
 import { canonicalizeTranslationLocale, parseLocaleCandidate } from "./locale";
 import type { LocaleRegistry } from "./registry";
 import type {
@@ -28,14 +33,27 @@ export type ContentTopicTitleNoJobReason =
   | "same-locale"
   | "target-unsupported"
   | "translation-current"
+  | "task-completed"
   | "request-budget-denied";
+
+type DeniedRequestBudgetDecision = Extract<
+  ContentTranslationRequestBudgetDecision,
+  { readonly allowed: false }
+>;
 
 export type ContentTopicTitlePlanningResult =
   | {
       readonly kind: "original";
       readonly taskCreated: false;
       readonly targetLocale: string;
-      readonly reason: ContentTopicTitleNoJobReason;
+      readonly reason: Exclude<ContentTopicTitleNoJobReason, "request-budget-denied">;
+    }
+  | {
+      readonly kind: "original";
+      readonly taskCreated: false;
+      readonly targetLocale: string;
+      readonly reason: "request-budget-denied";
+      readonly requestBudgetDecision: DeniedRequestBudgetDecision;
     }
   | {
       readonly kind: "queued";
@@ -43,32 +61,26 @@ export type ContentTopicTitlePlanningResult =
       readonly task: ContentTopicTitleTranslationTask;
     };
 
-export interface ContentTopicTitleRequestBudgetInput {
-  readonly contentType: "topic-title";
-  readonly topicId: string;
-  readonly revisionId: string;
-  readonly sourceLocale: string;
-  readonly targetLocale: string;
-  readonly generationPolicyVersion: string;
-}
-
-export interface ContentTopicTitleRequestBudgetPolicy {
-  allows(input: ContentTopicTitleRequestBudgetInput): boolean | Promise<boolean>;
-}
-
 export type ContentTopicTitleTaskUpsertResult =
   | {
       readonly outcome: "task";
       readonly created: boolean;
       readonly task: ContentTopicTitleTranslationTask;
     }
-  | { readonly outcome: "revision-changed" };
+  | { readonly outcome: "revision-changed" }
+  | { readonly outcome: "translation-current" }
+  | { readonly outcome: "task-completed" }
+  | {
+      readonly outcome: "request-budget-denied";
+      readonly decision: DeniedRequestBudgetDecision;
+    };
 
 export interface ContentTopicTitlePlanningStore {
   readCurrentRevision(topicId: string): Promise<ContentTranslationRevision | undefined>;
   upsertPending(
     specification: ContentTopicTitleTranslationTaskSpecification,
     expectedRevision: ContentTranslationRevision,
+    requestBudgetAdmission: ContentTranslationRequestBudgetAdmission,
   ): Promise<ContentTopicTitleTaskUpsertResult>;
 }
 
@@ -77,7 +89,6 @@ export interface ContentTopicTitleTranslationPlannerDependencies {
   readonly sourceLocaleResolver: ContentSourceLocaleResolver;
   readonly contentTranslations: ContentTranslationService;
   readonly providerCapability: ContentTopicTitleProviderCapability;
-  readonly requestBudgetPolicy: ContentTopicTitleRequestBudgetPolicy;
   readonly tasks: ContentTopicTitlePlanningStore;
   readonly enqueuer: TranslationTaskEnqueuer;
   readonly generationPolicyVersion: string;
@@ -91,6 +102,7 @@ export class ContentTopicTitleTranslationPlanner {
   async planAndDispatch(
     requestedRevision: ContentTranslationRevision,
     targetLocaleInput: string,
+    requestBudgetAdmission: ContentTranslationRequestBudgetAdmission,
   ): Promise<ContentTopicTitlePlanningResult> {
     if (requestedRevision.contentType !== "topic-title") {
       throw new TypeError("topic-title translation planning requires a topic-title revision");
@@ -140,16 +152,7 @@ export class ContentTopicTitleTranslationPlanner {
       return original(targetLocale, "translation-current");
     }
 
-    if (!await this.dependencies.requestBudgetPolicy.allows({
-      contentType: "topic-title",
-      topicId,
-      revisionId,
-      sourceLocale: sourcePlan.sourceLocale,
-      targetLocale,
-      generationPolicyVersion: this.dependencies.generationPolicyVersion,
-    })) {
-      return original(targetLocale, "request-budget-denied");
-    }
+    validateContentTranslationRequestBudgetAdmission(requestBudgetAdmission);
 
     const specification = await contentTopicTitleTaskSpecification(
       authoritativeRevision,
@@ -161,9 +164,19 @@ export class ContentTopicTitleTranslationPlanner {
     const upserted = await this.dependencies.tasks.upsertPending(
       specification,
       authoritativeRevision,
+      requestBudgetAdmission,
     );
     if (upserted.outcome === "revision-changed") {
       return original(targetLocale, "revision-not-current");
+    }
+    if (upserted.outcome === "translation-current") {
+      return original(targetLocale, "translation-current");
+    }
+    if (upserted.outcome === "task-completed") {
+      return original(targetLocale, "task-completed");
+    }
+    if (upserted.outcome === "request-budget-denied") {
+      return budgetDenied(targetLocale, upserted.decision);
     }
 
     await this.dependencies.enqueuer.enqueue({ translationTaskId: upserted.task.id });
@@ -324,12 +337,25 @@ function requireNonBlank(value: string, field: string): string {
 
 function original(
   targetLocale: string,
-  reason: ContentTopicTitleNoJobReason,
+  reason: Exclude<ContentTopicTitleNoJobReason, "request-budget-denied">,
 ): ContentTopicTitlePlanningResult {
   return {
     kind: "original",
     taskCreated: false,
     targetLocale,
     reason,
+  };
+}
+
+function budgetDenied(
+  targetLocale: string,
+  requestBudgetDecision: DeniedRequestBudgetDecision,
+): ContentTopicTitlePlanningResult {
+  return {
+    kind: "original",
+    taskCreated: false,
+    targetLocale,
+    reason: "request-budget-denied",
+    requestBudgetDecision,
   };
 }
