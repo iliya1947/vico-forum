@@ -203,7 +203,7 @@ async function consumeCounter(
       ${clock.resetAt},
       ${clock.databaseNow},
       ${clock.databaseNow}
-    where ${cost} <= ${limit}
+    where ${cost}::bigint <= ${limit}::bigint
     on conflict (scope, subject_key, window_start) do update
       set used_units = ${contentTranslationRequestBudgetCounters.usedUnits}
             + excluded.used_units,
@@ -213,7 +213,7 @@ async function consumeCounter(
             excluded.updated_at
           )
       where ${contentTranslationRequestBudgetCounters.usedUnits}
-            + excluded.used_units <= ${limit}
+            + excluded.used_units <= ${limit}::bigint
     returning used_units
   `);
 
