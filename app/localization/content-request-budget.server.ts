@@ -257,13 +257,21 @@ function requireRequesterIdentity(value: string): string {
     || value.length === 0
     || value.length > MAXIMUM_IDENTITY_CODE_UNITS
     || value !== value.trim()
-    || INVALID_IDENTITY_CONTROL.test(value)
+    || hasControlCharacter(value)
   ) {
     throw new TypeError(
       "requester identity must be a bounded non-blank value without surrounding whitespace or control characters",
     );
   }
   return value;
+}
+
+function hasControlCharacter(value: string): boolean {
+  for (let index = 0; index < value.length; index += 1) {
+    const code = value.charCodeAt(index);
+    if (code <= 0x1f || code === 0x7f) return true;
+  }
+  return false;
 }
 
 function requireKeyVersion(value: string): string {
