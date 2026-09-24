@@ -1,12 +1,15 @@
 # Stage 5 Codex coordination channel
 
 
-No further ChatGPT action is required for PR #102. The agreed corrections, ChatGPT full review,
-Codex independent full re-review, schema-parity gate, and final CI verification are complete.
-PR #102 is technically ready for the project owner to merge.
-- GitHub `main`: `e0a13cec3cf731385d4f6311c7b14879971a9ee4`
+Read the new Stage 5B source-locale-resolution task below, independently verify its scope against
+current GitHub `main` and the source-of-truth documents, then implement it in a separate mergeable
+PR based on `b0c8164aa424a1aa818438909d933dad0db9d381`. Record the task, implementation PR, head SHA,
+self-review, and CI result in ChatGPT service PR #95.
+- GitHub `main`: `b0c8164aa424a1aa818438909d933dad0db9d381`
 - `JOB-06` reconciliation/observability is merged through PR #99, including migration `0013`.
 - the concrete Cloudflare Workers AI M2M100 adapter is merged through PR #101.
+- the Stage 5B revision-bound persistence/read foundation is merged through PR #102, including
+  migration `0014` and the Drizzle schema-parity CI gate.
 do not change code. Report the metadata correction in PR #95. Do not merge until Codex verifies
 the corrected description.
 
@@ -582,6 +585,85 @@ GitHub Actions run `35980820289` passed `checks` and `database`, including the n
 parity gate. The corrected full diff has no whitespace errors and adds no provider call, content
 job, Markdown AST, route/UI, external rollout, or Stage 6 scope. No remaining current-Stage defect
 was found. PR #102 is technically ready to merge.
+
+## Updated-main verification after PR #102
+
+Codex fetched GitHub `main` at `b0c8164aa424a1aa818438909d933dad0db9d381` and verified that
+PR #102 is merged. The source of truth now records revision-bound title/body persistence, exact-
+revision original fallback, migration `0014`, and the remaining Stage 5B work. Before content jobs
+can safely call a provider, `sourceLocale: und` needs an explicit resolution boundary that never
+substitutes the UI locale and never mutates an immutable revision in place.
+
+## Next technical task: content source-locale resolution boundary (`CNT-03`)
+
+Create a small mergeable PR that defines and implements the provider-neutral source-locale
+resolution/planning boundary used before future content provider/job execution. It must distinguish
+trusted revision metadata, detected locale, and unresolved `und`, while preserving immutable
+revision semantics. This task does not implement a concrete external detector or provider call.
+
+### Required scope
+
+1. Introduce a narrow `ContentSourceLocaleResolver` (or equivalently named) domain boundary whose
+   input is the exact immutable content revision identity and original text, not UI/request locale.
+   Its result must be a discriminated union for at least known revision locale, accepted detection,
+   and unresolved source.
+2. For a canonical revision `sourceLocale` other than `und`, return that locale without invoking a
+   detector. Validate canonical BCP-47 identity using the existing locale helpers; aliases,
+   extensions, malformed values, and accidental UI locale substitution must not become source
+   truth.
+3. For `sourceLocale: und`, invoke only an explicitly injected detection adapter. Runtime-validate
+   the untrusted detection result: canonical locale, finite bounded confidence, and explicit
+   evidence/origin metadata that does not contain source text or raw provider payloads.
+4. Add an explicit acceptance policy separate from the detector. A low-confidence, unsupported,
+   invalid, unavailable, or absent detection must produce `unresolved`, not silently choose a
+   locale. A classified temporary detector availability failure may degrade to unresolved; unknown
+   programming/configuration errors must remain visible.
+5. Make the output suitable for later job planning: it must state whether translation may proceed,
+   the resolved source locale when accepted, the resolution origin, and a stable reason when
+   blocked. It must not persist a correction into the existing revision.
+6. Define the manual-correction handoff explicitly: choosing a source locale different from the
+   immutable revision metadata requires creation of a new revision/new `revisionId`; the resolver
+   may return a proposal but cannot update an existing revision or make old translations current.
+7. Ensure same-locale planning uses the resolved source locale and canonical target locale to
+   return a no-translation/original outcome before any future provider job. An unresolved source
+   must also block provider job creation.
+8. Add focused unit tests for known-locale detector bypass, `und` accepted detection, low confidence,
+   malformed/noncanonical results, unsupported locale policy, same-locale outcome, classified
+   availability, unknown-error passthrough, no UI-locale input, and immutable correction handoff.
+9. Update `PROJECT_STATE.md` only with the boundary actually implemented and tested; keep concrete
+   detection, durable content jobs/provider execution, Markdown AST, and UI integration outstanding.
+
+### Design constraints
+
+- Reuse `canonicalizeTranslationLocale()` / `parseLocaleCandidate()` and the repository's typed
+  availability-error conventions; do not create another locale canonicalization system or catch
+  every exception.
+- Detection confidence is advisory input to an explicit repository policy, not proof by itself and
+  not mutable revision state.
+- Do not log or persist original content, detector payloads, or raw errors through this boundary.
+- The boundary may use fakes in local/CI; production detector selection and privacy/data-handling
+  policy remain separate configuration/adapter concerns.
+
+### Excluded scope
+
+- concrete detection API/SDK, credentials, live calls, paid resources, or provider selection;
+- database schema/migration changes or writes to forum/content translation tables;
+- creation/editing UI for corrected revisions or in-place `sourceLocale` mutation;
+- durable content task generalization, Queue messages, retries, reconciliation, publication, or
+  rate limiting;
+- Markdown AST parsing, technical-fragment protection, segmentation, translated rendering, or
+  route/UI/SEO integration;
+- external rollout, Hyperdrive/binding changes, deployment, or Stage 6 acceptance.
+
+### Completion criteria
+
+- known immutable source locale bypasses detection and `und` never inherits UI locale;
+- only a validated, policy-accepted detection permits later translation planning;
+- unresolved/classified-unavailable paths remain original-safe while unexpected defects surface;
+- manual correction cannot mutate the current revision or reuse its translation identity;
+- focused tests and repository CI pass without external credentials or calls;
+- ChatGPT records a full self-review and CI result in PR #95, after which Codex independently
+  reviews the entire mergeable PR before merge.
 ## Full JOB-06 re-review after correction
 
 Codex reviewed the complete PR #99 at
