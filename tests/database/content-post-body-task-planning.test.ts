@@ -313,6 +313,60 @@ describe("content post-body durable planning", () => {
     }
   });
 
+  it("serializes concurrent body admission without overshooting a one-unit budget", async () => {
+    const second = new Client({ connectionString: databaseUrl });
+    await second.connect();
+    await second.query(`set search_path to ${schemaName}`);
+    try {
+      const admission = budgetAdmission({
+        cost: 1,
+        global: { name: "body-global-concurrent", version: "test-v1", limit: 1 },
+        requester: { name: "body-requester-concurrent", version: "test-v1", limit: 1 },
+      });
+      const firstEnqueuer = new FakeTranslationTaskEnqueuer();
+      const secondEnqueuer = new FakeTranslationTaskEnqueuer();
+
+      const results = await Promise.all([
+        createPlanner(client, firstEnqueuer).planAndDispatch(
+          requestRevision(),
+          "he",
+          admission,
+        ),
+        createPlanner(second, secondEnqueuer).planAndDispatch(
+          requestRevision(),
+          "he",
+          admission,
+        ),
+      ]);
+
+      expect(results.filter((result) => result.kind === "queued")).toHaveLength(1);
+      expect(results.filter((result) =>
+        result.kind === "original" && result.reason === "request-budget-denied"
+      )).toHaveLength(1);
+
+      const counters = await client.query<{ scope: string; used_units: number }>(`
+        select scope, used_units::int
+          from content_translation_request_budget_counters
+         where scope in (
+           'body-global-concurrent@test-v1',
+           'body-requester-concurrent@test-v1'
+         )
+         order by scope
+      `);
+      expect(counters.rows).toEqual([
+        { scope: "body-global-concurrent@test-v1", used_units: 1 },
+        { scope: "body-requester-concurrent@test-v1", used_units: 1 },
+      ]);
+      const tasks = await client.query<{ count: number }>(
+        "select count(*)::int as count from translation_tasks where translation_kind = 'content-post-body'",
+      );
+      expect(tasks.rows[0]?.count).toBe(1);
+      expect(firstEnqueuer.messages.length + secondEnqueuer.messages.length).toBe(1);
+    } finally {
+      await second.end();
+    }
+  });
+
   it("denies an eligible body duplicate without partial global charge or task mutation", async () => {
     const constrained = budgetAdmission({
       cost: 1,
