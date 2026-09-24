@@ -326,8 +326,27 @@ function classifyStorageFailure(error: unknown): unknown {
   ) {
     return error;
   }
-  if (isPostgresAvailabilityFailure(error) || isPostgresQueryTimeout(error)) {
+  if (isContentTranslationStorageUnavailableFailure(error)) {
     return new ContentTranslationStorageUnavailableError("content translation storage is unavailable");
   }
   return error;
+}
+
+function isContentTranslationStorageUnavailableFailure(error: unknown): boolean {
+  const seen = new Set<unknown>();
+  let current = error;
+
+  while (
+    current
+    && (typeof current === "object" || typeof current === "function")
+    && !seen.has(current)
+  ) {
+    seen.add(current);
+    if (isPostgresAvailabilityFailure(current) || isPostgresQueryTimeout(current)) {
+      return true;
+    }
+    current = (current as { cause?: unknown }).cause;
+  }
+
+  return false;
 }
