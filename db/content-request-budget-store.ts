@@ -208,7 +208,10 @@ async function consumeCounter(
       set used_units = ${contentTranslationRequestBudgetCounters.usedUnits}
             + excluded.used_units,
           expires_at = excluded.expires_at,
-          updated_at = greatest(\n            ${contentTranslationRequestBudgetCounters.updatedAt},\n            excluded.updated_at\n          )
+          updated_at = greatest(
+            ${contentTranslationRequestBudgetCounters.updatedAt},
+            excluded.updated_at
+          )
       where ${contentTranslationRequestBudgetCounters.usedUnits}
             + excluded.used_units <= ${limit}
     returning used_units
