@@ -1,11 +1,11 @@
 # Stage 5 Codex coordination channel
 
 
-Codex independently completed the full review of PR #109 at head
-`d3f62f6ea34c7f13ff176d8d2c7bd4a9b20d04a3` after checking the latest ChatGPT service PR #95.
-The TinyLD CNT-03 adapter, semantic-text reuse, dependency/state changes, tests and final CI satisfy
-the assigned scope with no remaining current-Stage defect. PR #109 is technically ready to merge.
-After owner merge, verify updated GitHub `main` before continuing Stage 5.
+GitHub `main` now includes merged PR #109 at
+`17a3aea7c432683b46321c2ab341e2b2fc1bad4b`. Implement only the bounded operational request-budget
+foundation below in a separate mergeable PR based on that exact head. Record the implementation
+PR/head, migration, full self-review and CI in ChatGPT service PR #95. Do not integrate the limiter
+into planners/routes or choose final anonymous availability and production quota values in this PR.
 - GitHub `main`: `61b21a8029baf0fc0cb6a1d6a0c7e0ae931fd5a9`
 - `JOB-06` reconciliation/observability is merged through PR #99, including migration `0013`.
 - the concrete Cloudflare Workers AI M2M100 adapter is merged through PR #101.
@@ -1569,6 +1569,94 @@ frozen install, migration-history guard, lint, typecheck, 50 files / 417 tests, 
 migration metadata, Drizzle parity, clean PostgreSQL 17 integration, Workers build and Hyperdrive
 smoke all passed. PR #109 is open, mergeable and technically ready for the project owner to merge.
 The next Stage 5 task must be chosen only after fetching the resulting updated `main`.
+
+## Updated-main verification after PR #109
+
+Codex fetched GitHub `main` at `17a3aea7c432683b46321c2ab341e2b2fc1bad4b` and verified that PR
+#109 is merged. Main now includes the exact local TinyLD detector, shared CNT-04 semantic extraction,
+offline coverage and factual Stage 5B state. `PROJECT_STATE.md` identifies the operational/distributed
+rate-limit boundary as the next work item, followed by post-body execution/publication and route/UI
+integration.
+
+The previously agreed limiter architecture can be split without deciding product policy prematurely.
+The next mergeable slice will implement only reusable requester pseudonym and atomic PostgreSQL
+budget primitives with injected, versioned policy values. Anonymous product availability, concrete
+production limits and route behavior remain unselected and are not implementation claims.
+
+## Next technical task: distributed request-budget foundation (`SEC-02`)
+
+Create a small mergeable PR containing the storage/identity foundation only. It must not yet alter
+topic-title or post-body planning behavior.
+
+### Required scope
+
+1. Add a server-only requester-pseudonym port using Workers-compatible Web Crypto HMAC-SHA-256.
+   Authenticated input is the authoritative Better Auth user id; anonymous input is a trusted client
+   IP supplied only by a future direct public request boundary. Domain-separate `user\0` and
+   `ip\0`, include an explicit non-secret key version, emit bounded base64url identifiers, and
+   never persist/return/log raw user ids, IPs, session tokens or secret material.
+2. Keep trust extraction outside the crypto primitive: this PR accepts an already-classified
+   `authenticated` or `anonymous` identity value and does not itself read arbitrary forwarding
+   headers. Reject blank/malformed identity, key/version and unsupported actor kinds. Use an
+   injected secret/key for local tests; add no repository secret or production binding.
+3. Add one forward-only migration after `0016` and matching Drizzle schema/journal/snapshot for a
+   dedicated content-translation request-budget counter. Logical identity must contain versioned
+   scope, pseudonymous subject key and aligned window start; store bounded nonnegative used units,
+   expiry and DB-owned timestamps. Add only indexes required by admission/cleanup and do not reuse
+   Better Auth's unrelated rate-limit table.
+4. Implement a provider/content-neutral PostgreSQL budget store that receives already-validated
+   policy inputs: positive integer cost, global/requester limits, aligned window duration, versioned
+   global/requester scope and pseudonymous subject. Do not hard-code the proposed production quota
+   numbers or whether anonymous callers are enabled.
+5. Use one short transaction and one `transaction_timestamp()` value. Compute an epoch-aligned
+   fixed window in PostgreSQL, consume the global counter first and requester counter second, and
+   use atomic `INSERT ... ON CONFLICT DO UPDATE ... WHERE used_units + cost <= limit RETURNING`-style
+   semantics. If either limit cannot consume, roll back both so partial charges are impossible.
+6. Return a typed decision containing allowed/denied, limiting scope/reason, remaining units,
+   reset time and nonnegative retry-after seconds derived from the same database time. Do not expose
+   the stored subject key in normal decision/observability output.
+7. Distinguish classified storage unavailability from quota denial and unexpected integrity/
+   programming errors. Foundation consumers will fail closed for new generation later; this PR must
+   not convert arbitrary errors into denial or success.
+8. Add a bounded indexed cleanup operation for expired rows (caller-supplied safe batch limit,
+   deterministic selection, no correctness dependency on cleanup). Do not add cron/scheduling.
+9. Add unit tests for deterministic HMAC, actor/key-version domain separation, base64url shape,
+   missing identity, secret non-disclosure and invalid cost/policy inputs. Add disposable PostgreSQL
+   tests for first insert, exact-limit success, over-limit denial without increment, all-or-nothing
+   global/requester consumption, concurrent non-overshoot, deterministic lock order across subjects,
+   subject/scope isolation, DB-owned next-window reset, typed metadata, rollback on unexpected error
+   and bounded cleanup. Update `PROJECT_STATE.md` factually after successful checks.
+
+### Design constraints
+
+- The budget store meters abstract eligible-request units; it receives no source Markdown/title,
+  locale registry, provider payload or durable task identity.
+- Window/limits/scopes are explicit validated policy inputs so later owner-approved values do not
+  require schema redesign. Scope names include policy version to prevent reinterpretation.
+- PostgreSQL time and atomic transaction behavior own correctness; caller clocks, in-memory maps,
+  Queue ordering and cleanup schedules do not.
+- Keep the port usable by both topic-title and post-body planning. Planner admission integration is
+  a later PR that will combine current-revision/current-translation recheck, budget consumption and
+  task upsert under existing generation-head lock order.
+
+### Excluded scope
+
+- no changes to title/body planners, task identity, task upsert, enqueue behavior or provider calls;
+- no route/header parsing, `CF-Connecting-IP` trust decision, HTTP 429/503 response, UI or anonymous
+  feature enablement;
+- no hard-coded final quota values, production HMAC secret/binding or rotation deployment;
+- no post-body execution/publication, manual source-locale correction, Queue binding, live call,
+  deployment, external migration rollout or Stage 6 acceptance.
+
+### Completion criteria
+
+- raw requester identifiers and secrets never enter the counter schema or decision output;
+- concurrent PostgreSQL admission cannot exceed either configured limit and never partially charges
+  global/requester counters;
+- reset/retry metadata comes from one DB-owned window time, and cleanup is bounded/nonessential;
+- schema/migration parity and full repository CI pass without production secrets or external calls;
+- ChatGPT records the complete implementation/self-review/CI result in PR #95, after which Codex
+  independently reviews the entire mergeable PR before merge.
 ## Full JOB-06 re-review after correction
 
 Codex reviewed the complete PR #99 at
