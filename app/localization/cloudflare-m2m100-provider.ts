@@ -23,10 +23,10 @@ const M2M100_LANGUAGE_CODES = new Set([
   "tr", "uk", "ur", "uz", "vi", "wo", "xh", "yi", "yo", "zh", "zu",
 ]);
 
-const RATE_LIMIT_CODES = new Set([3036, 3040]);
+const RATE_LIMIT_CODES = new Set([3040]);
 const TEMPORARY_CODES = new Set([3007, 3008]);
 const UNSUPPORTED_CODES = new Set([3003, 3006, 5004, 5005, 5007]);
-const TERMINAL_CODES = new Set([3023, 3041, 3042, 5016, 5018, 5019, 5035]);
+const TERMINAL_CODES = new Set([3023, 3036, 3041, 3042, 5016, 5018, 5019, 5035]);
 
 export interface CloudflareM2m100Input {
   readonly text: string;
@@ -95,7 +95,8 @@ export class CloudflareM2m100TranslationProvider implements MachineTranslationPr
 }
 
 function providerLanguageCode(locale: string): string | undefined {
-  return M2M100_LANGUAGE_CODES.has(locale) ? locale : undefined;
+  const providerCode = locale === "fil" ? "tl" : locale;
+  return M2M100_LANGUAGE_CODES.has(providerCode) ? providerCode : undefined;
 }
 
 function translatedTextFromResponse(response: unknown): string {
@@ -118,40 +119,57 @@ function classifyWorkersAiFailure(error: unknown): TranslationExecutionFailure |
   const status = numericMetadata(error, "status");
   const code = numericMetadata(error, "code");
 
-  if (status === 429 || (code !== undefined && RATE_LIMIT_CODES.has(code))) {
+  if (code !== undefined && RATE_LIMIT_CODES.has(code)) {
     return new TranslationExecutionFailure(
       "retryable",
       "provider-rate-limited",
       "Cloudflare Workers AI rate limit or capacity is temporarily unavailable",
     );
   }
-  if (
-    status === 408
-    || (status !== undefined && status >= 500 && status <= 599)
-    || (code !== undefined && TEMPORARY_CODES.has(code))
-  ) {
+  if (code !== undefined && TEMPORARY_CODES.has(code)) {
     return new TranslationExecutionFailure(
       "retryable",
       "provider-temporary",
       "Cloudflare Workers AI is temporarily unavailable",
     );
   }
-  if (
-    status === 400
-    || status === 405
-    || status === 413
-    || (code !== undefined && UNSUPPORTED_CODES.has(code))
-  ) {
+  if (code !== undefined && UNSUPPORTED_CODES.has(code)) {
     return new TranslationExecutionFailure(
       "terminal",
       "provider-unsupported",
       "Cloudflare Workers AI rejected the translation request",
     );
   }
-  if (
-    (status !== undefined && status >= 401 && status <= 499)
-    || (code !== undefined && TERMINAL_CODES.has(code))
-  ) {
+  if (code !== undefined && TERMINAL_CODES.has(code)) {
+    return new TranslationExecutionFailure(
+      "terminal",
+      "provider-terminal",
+      "Cloudflare Workers AI rejected the provider configuration or request permanently",
+    );
+  }
+
+  if (status === 429) {
+    return new TranslationExecutionFailure(
+      "retryable",
+      "provider-rate-limited",
+      "Cloudflare Workers AI rate limit or capacity is temporarily unavailable",
+    );
+  }
+  if (status === 408 || (status !== undefined && status >= 500 && status <= 599)) {
+    return new TranslationExecutionFailure(
+      "retryable",
+      "provider-temporary",
+      "Cloudflare Workers AI is temporarily unavailable",
+    );
+  }
+  if (status === 400 || status === 405 || status === 413) {
+    return new TranslationExecutionFailure(
+      "terminal",
+      "provider-unsupported",
+      "Cloudflare Workers AI rejected the translation request",
+    );
+  }
+  if (status !== undefined && status >= 401 && status <= 499) {
     return new TranslationExecutionFailure(
       "terminal",
       "provider-terminal",
