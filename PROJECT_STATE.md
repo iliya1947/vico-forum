@@ -118,6 +118,14 @@ Migration `0007`–`0010` содержит durable task lifecycle и generation-
   известный canonical source locale обходит detection, `und` использует только injected detector
   с runtime validation и отдельной acceptance policy; unresolved/classified unavailable source
   блокирует будущий provider job, а manual correction требует нового revision identity;
+- concrete local/CI TinyLD `1.3.4` adapter за CNT-03 boundary для revisions с `sourceLocale=und`:
+  detector работает process-local без API/credentials, использует explicit reviewed TinyLD-code →
+  canonical Vico language mapping, не выводит region/script, требует минимум 24 Unicode semantic
+  letters, native score ≥ 0.80 и top-vs-runner-up margin ≥ 0.20. Для post-body semantic text
+  извлекается через единый CNT-04 Markdown/technical-fragment boundary; weak/short/mixed/unmapped
+  evidence и Georgian script (модели `ka` в TinyLD 1.3.4 нет) остаются unresolved/original-safe.
+  Поле CNT-03 `confidence` переносит detector-native TinyLD score и не трактуется как
+  калиброванная вероятность; known revision source locale по-прежнему обходит detector;
 - on-demand durable planning для topic-title translation: planner повторно читает current immutable
   title revision из PostgreSQL, проверяет active canonical target, provider-neutral support и
   request-budget policy, не создаёт work для unresolved/same-locale/current translation, создаёт
@@ -166,8 +174,8 @@ Migration `0007`–`0010` содержит durable task lifecycle и generation-
 
 - post-body execution/publication с подключением durable planning и protected CommonMark
   segment/restore boundary к shared provider/job lifecycle;
-- operational/distributed rate-limit enforcement, concrete source-locale detector adapter/provider
-  selection и user-facing manual correction flow; production content-provider/data-policy approval,
+- operational/distributed rate-limit enforcement и user-facing manual source-locale correction
+  flow; production content-provider/data-policy approval,
   real binding/credentials/live calls остаются external Stage 6 concerns;
 - route/UI integration и product UX для запроса/показа перевода пользовательского контента.
 
@@ -222,7 +230,7 @@ no-op verification. Перед следующим настоящим external sc
 
 ## Ближайший маршрут
 
-1. Продолжить Stage 5B: source-locale detector adapter/provider selection и operational rate-limit boundary.
+1. Продолжить Stage 5B: operational/distributed rate-limit boundary.
 2. Реализовать post-body execution/publication поверх durable planning + protected CommonMark boundary,
    затем route/UI integration.
 3. После завершения Stage 5 перейти к Stage 6 external integration по `ROADMAP.md` и
