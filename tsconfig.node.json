@@ -32,6 +32,8 @@
     "app/localization/translation-task-dispatch.ts",
     "app/localization/translation-task-reconciliation.ts",
     "app/localization/translation-provider.ts",
+    "app/localization/translation-provider-data-policy.ts",
+    "app/localization/content-translation-provider.ts",
     "app/localization/translation-execution.ts",
     "app/localization/translation-task-consumer.ts",
     "app/localization/translation-publication.ts",
