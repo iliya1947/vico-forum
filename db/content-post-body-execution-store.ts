@@ -1,4 +1,4 @@
-import { and, eq, gt, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 
 import type { ContentPostBodyRevisionReader } from "../app/localization/content-post-body-task-consumer";
@@ -111,15 +111,6 @@ export class DrizzleContentPostBodyExecutionStore
           return { outcome: "claim-lost" as const };
         }
         assertTaskMatchesPublication(task, publication);
-
-        const [lease] = await tx
-          .select({
-            active: sql<boolean>`${translationTasks.leaseExpiresAt} > statement_timestamp()`,
-          })
-          .from(translationTasks)
-          .where(eq(translationTasks.id, publication.task.id))
-          .limit(1);
-        if (!lease?.active) return { outcome: "claim-lost" as const };
 
         if (!head || head.currentGeneration !== publication.task.generation) {
           return markClaimStale(tx, publication, "generation-superseded");
@@ -248,7 +239,6 @@ export class DrizzleContentPostBodyExecutionStore
             eq(translationTasks.translationKind, "content-post-body"),
             eq(translationTasks.status, "processing"),
             eq(translationTasks.claimToken, publication.task.claimToken),
-            gt(translationTasks.leaseExpiresAt, databaseNow),
             eq(translationTasks.sourceNamespace, "post-body"),
             eq(translationTasks.sourceKey, publication.task.sourceIdentity.postId),
             eq(translationTasks.sourceFingerprint, publication.task.sourceFingerprint),
@@ -295,7 +285,6 @@ async function markClaimStale(
       eq(translationTasks.id, publication.task.id),
       eq(translationTasks.status, "processing"),
       eq(translationTasks.claimToken, publication.task.claimToken),
-      gt(translationTasks.leaseExpiresAt, databaseNow),
     ))
     .returning({ id: translationTasks.id });
   return rows[0]
