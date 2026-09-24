@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { canonicalEnglishCatalog, type UiMessageDescriptor } from "./catalog";
+import { CloudflareM2m100TranslationProvider } from "./cloudflare-m2m100-provider";
 import {
   TranslationExecutionFailure,
   type TranslationFailureRecord,
@@ -68,6 +69,7 @@ async function harness(options: {
   readonly providerValue?: unknown;
   readonly providerFailure?: Error;
   readonly providerProvenance?: unknown;
+  readonly providerAdapter?: MachineTranslationProviderAdapter;
   readonly preflightFailure?: Error;
   readonly currentGeneration?: boolean;
   readonly attemptStarted?: boolean;
@@ -130,11 +132,11 @@ async function harness(options: {
       provenance: provenance as MachineTranslationResult["provenance"],
     };
   });
-  const adapter: MachineTranslationProviderAdapter = {
+  const fakeAdapter: MachineTranslationProviderAdapter = {
     supports: vi.fn(() => true),
     translate,
   };
-  const providerRouter = new TranslationProviderRouter([adapter]);
+  const providerRouter = new TranslationProviderRouter([options.providerAdapter ?? fakeAdapter]);
   const publishClaimedMachineResult = vi.fn(async () => true);
   const publications: UiTranslationPublicationStore = { publishClaimedMachineResult };
   const publisher = new UiTranslationResultPublisher({
@@ -304,6 +306,29 @@ describe("UiTranslationTaskExecutor", () => {
 
   it("persists invalid provider output as a terminal failure instead of retrying it", async () => {
     const { executor, publishClaimedMachineResult, recordFailure } = await harness({ providerValue: "   " });
+
+    await expect(executor.execute({ translationTaskId: taskId })).resolves.toEqual({
+      outcome: "execution-failed",
+      delivery: "terminal",
+      failureCode: "provider-output-invalid",
+      terminalReason: "terminal",
+      attemptCount: 1,
+      maxAttempts: 3,
+    });
+    expect(publishClaimedMachineResult).not.toHaveBeenCalled();
+    expect(recordFailure).toHaveBeenCalledWith(taskId, claimToken, {
+      disposition: "terminal",
+      code: "provider-output-invalid",
+    });
+  });
+
+  it("terminalizes malformed Cloudflare M2M100 output without publication", async () => {
+    const adapter = new CloudflareM2m100TranslationProvider({
+      run: vi.fn(async () => ({ translated_text: "   " })),
+    });
+    const { executor, publishClaimedMachineResult, recordFailure } = await harness({
+      providerAdapter: adapter,
+    });
 
     await expect(executor.execute({ translationTaskId: taskId })).resolves.toEqual({
       outcome: "execution-failed",
