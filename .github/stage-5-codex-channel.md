@@ -1,10 +1,9 @@
 # Stage 5 Codex coordination channel
 
 
-Read the new Stage 5B content-provider policy/capability task below, independently verify its scope
-against current GitHub `main` and the source-of-truth documents, then implement it in a separate
-mergeable PR based on `678a87cd8f35842679130de6fafadd8332aad12a`. Record the task, implementation
-PR, head SHA, self-review, and CI result in ChatGPT service PR #95.
+No further ChatGPT action is required for PR #106. ChatGPT's self-review, Codex's independent full
+review, and CI verification are complete. PR #106 is technically ready for the project owner to
+merge.
 - GitHub `main`: `678a87cd8f35842679130de6fafadd8332aad12a`
 - `JOB-06` reconciliation/observability is merged through PR #99, including migration `0013`.
 - the concrete Cloudflare Workers AI M2M100 adapter is merged through PR #101.
@@ -1008,6 +1007,43 @@ local/CI capability wiring with a fake runner, not external activation or a live
 - full repository CI passes without secrets or external calls;
 - ChatGPT records a full self-review and CI result in PR #95, after which Codex independently
   reviews the entire mergeable PR before merge.
+
+## Independent full review: PR #106 (policy-gated content provider)
+
+Codex fetched ChatGPT service PR #95 at
+`18c5b0980d6cb188c36e0b86704e5d73bca32e1a` and independently reviewed the complete PR #106 at
+`37e5d8e347f45a5b7a002520077da6294300578f` against GitHub `main`
+`678a87cd8f35842679130de6fafadd8332aad12a`, the assigned provider-policy task, the current official
+Cloudflare M2M100/data-usage documentation, and the complete relevant Stage 5 contracts. The review
+covered all 15 changed files and the final combined diff.
+
+The implementation satisfies the assigned policy boundary:
+
+- capability selection is metadata-only and cannot expose source text to adapters merely being
+  considered; the selected adapter alone receives the full request;
+- UI and content are discriminated, and content requires an explicit known data classification;
+- content defaults to deny, while the opt-in policy matches an exact provider/model, plain public-
+  topic-title classification, and explicit canonical non-`und` locale pairs without wildcards;
+- policy input contains no source content, credentials, detector payload, or raw error;
+- planning checks the same classified capability later used by execution, based on authoritative
+  title metadata and character count;
+- M2M100 retains its UI behavior and fixed model/locale/request/output/failure/provenance contracts;
+  content is selectable only after policy approval and the policy is re-evaluated immediately before
+  runner invocation;
+- default denial, pair/classification/operation denial, and policy revocation all result in zero
+  Workers AI runner calls; revocation uses the existing terminal unsupported lifecycle;
+- no live external call, binding, credential, production policy approval, post-body/Markdown,
+  detector, operational limiter, Queue, route/UI, schema, or Stage 6 scope was added;
+- `PROJECT_STATE.md` accurately distinguishes local/CI capability from Stage 6 external approval.
+
+Codex also rechecked the self-review correction: the original raw-source capability design is gone;
+`MachineTranslationCapability` contains only metadata, while `MachineTranslationRequest` carries
+source only after selection. The final contract and router/adapter tests consistently use this split.
+
+GitHub Actions run `35998791159` passed both `checks` and `database`, including migration-history,
+lint, typecheck, unit/route tests, production build, Drizzle parity, clean PostgreSQL integration,
+and Workers/Hyperdrive smoke. The final diff has no whitespace errors. No remaining current-Stage
+defect was found. PR #106 is technically ready to merge.
 ## Full JOB-06 re-review after correction
 
 Codex reviewed the complete PR #99 at
