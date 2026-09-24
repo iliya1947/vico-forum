@@ -133,11 +133,17 @@ Migration `0007`–`0010` содержит durable task lifecycle и generation-
   использует versioned global/requester scopes, caller-supplied positive cost/window/limits,
   один database-owned transaction timestamp, deterministic global-before-requester admission,
   atomic all-or-nothing consumption, typed denial/reset/retry metadata и bounded indexed cleanup.
-  Foundation пока не подключён к planners/routes; anonymous enablement и финальные quota values
-  не выбраны;
+  Topic-title и post-body planners принимают уже pseudonymized subject + injected versioned
+  cost/window/limits/scopes и выполняют correctness-critical admission в той же PostgreSQL
+  transaction, что final current-revision/current-translation recheck и durable task
+  upsert/dedup/reactivation. Ineligible/current/completed work остаётся free, eligible
+  pending/processing duplicate request повторно учитывается budget, denial/error откатывает
+  counters вместе с task mutation, а enqueue остаётся after-commit. Routes пока не подключены;
+  anonymous enablement и финальные quota values не выбраны;
 - on-demand durable planning для topic-title translation: planner повторно читает current immutable
-  title revision из PostgreSQL, проверяет active canonical target, provider-neutral support и
-  request-budget policy, не создаёт work для unresolved/same-locale/current translation, создаёт
+  title revision из PostgreSQL, проверяет active canonical target и provider-neutral support,
+  выполняет atomic request-budget admission вместе с final serialized revision/translation recheck
+  и durable task decision, не создаёт work для unresolved/same-locale/current/completed work, создаёт
   revision-bound stable task через shared durable lifecycle и только после commit отправляет
   transport message `{ translationTaskId }`; concurrent duplicate planning дедуплицируется
   одной durable task identity;
@@ -168,7 +174,8 @@ Migration `0007`–`0010` содержит durable task lifecycle и generation-
 - on-demand durable planning для post-body translation: planner повторно читает exact current
   immutable post revision, выполняет source-locale resolution и CNT-04 protection authoritative
   Markdown, проверяет active canonical target, metadata-only provider/data-policy capability,
-  current exact-revision translation и injected request budget. Stable `content-post-body`
+  current exact-revision translation и выполняет injected request-budget admission атомарно с
+  final serialized revision/translation recheck и durable task decision. Stable `content-post-body`
   identity/fingerprint учитывает revision/source semantics, protected representation,
   `protectedContentPolicyVersion`, target и generation policy; PostgreSQL сохраняет только
   revision/source/policy metadata, а transport после commit получает только
@@ -183,7 +190,7 @@ Migration `0007`–`0010` содержит durable task lifecycle и generation-
 
 - post-body execution/publication с подключением durable planning и protected CommonMark
   segment/restore boundary к shared provider/job lifecycle;
-- подключение реализованного request-budget foundation к planners/routes, выбор anonymous policy
+- подключение реализованного request-budget admission к routes, выбор anonymous policy
   и финальных quota values, а также user-facing manual source-locale correction flow; production
   content-provider/data-policy approval, real binding/credentials/live calls остаются external
   Stage 6 concerns;
@@ -240,7 +247,7 @@ no-op verification. Перед следующим настоящим external sc
 
 ## Ближайший маршрут
 
-1. Определить anonymous/quota policy и подключить request-budget foundation к content planners/routes.
+1. Определить anonymous/quota policy и подключить atomic request-budget admission к content routes.
 2. Реализовать post-body execution/publication поверх durable planning + protected CommonMark boundary,
    затем завершить route/UI integration.
 3. После завершения Stage 5 перейти к Stage 6 external integration по `ROADMAP.md` и
