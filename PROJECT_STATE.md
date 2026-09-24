@@ -42,7 +42,7 @@ Vico Forum находится в ранней pre-release разработке.
 - generic `/:locale/*`, runtime `LocaleRegistry`, BCP-47 resolution, LTR/RTL и request-scoped
   `i18next`;
 - persistent locale registry, persistent UI translation storage и compiled bundle storage;
-- текущая migration history — `0000`–`0012`.
+- текущая migration history — `0000`–`0013`.
 
 ## Forum core — Stage 4
 
@@ -86,7 +86,7 @@ local/CI Stage 4 и остаются Stage 6.
 - provider-neutral task executor;
 - typed retryable/terminal translation-execution failure taxonomy и transport-neutral `ack` / `retry` / `terminal` outcome boundary;
 - bounded durable attempt budget с PostgreSQL-owned lifecycle time, claim-token-fenced retry/failure transitions и persistent `failed` terminal path как local/CI DLQ equivalent;
-- transport-neutral `JOB-06` reconciliation/observability: aged `pending` и expired `processing` tasks выбираются по PostgreSQL-owned time для безопасного duplicate re-enqueue по task id; lifecycle snapshot отдельно показывает status counts и expired processing leases;
+- transport-neutral `JOB-06` reconciliation/observability: bounded PostgreSQL recovery batches резервируют aged `pending` и expired `processing` tasks через durable reconciliation progress и `SKIP LOCKED`, безопасно переживают duplicate/concurrent runs и partial enqueue failures; observability показывает status, age, attempt-budget, lease и bounded terminal-failure summaries без source/provider payloads;
 - conditional machine publication с provider/model provenance;
 - atomic `task completion + raw machine translation + whole namespace bundle` publication;
 - persisted exact-locale compiled bundles с deterministic current-deploy identity;
@@ -98,7 +98,7 @@ local/CI Stage 4 и остаются Stage 6.
   convergence obsolete persisted bundles только для disposable local `*_test` PostgreSQL;
   request path остаётся read-only и не вызывает translation provider, external execution не входит в Stage 5.
 
-Migration `0007`–`0010` содержит durable task lifecycle и generation-ordering foundation; `0012` добавляет bounded retry и persistent terminal-failure state.
+Migration `0007`–`0010` содержит durable task lifecycle и generation-ordering foundation; `0012` добавляет bounded retry и persistent terminal-failure state; `0013` добавляет durable reconciliation progress и query-derived indexes.
 
 ### Stage 5 ещё не завершён
 
