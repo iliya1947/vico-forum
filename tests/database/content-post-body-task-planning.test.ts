@@ -1104,7 +1104,7 @@ describe("content post-body durable planning", () => {
     }
   });
 
-  it("does not publish after claim ownership changes during provider calls", async () => {
+  it("does not publish after another worker actually reclaims the expired claim", async () => {
     const second = await secondClient();
     try {
       const enqueuer = new FakeTranslationTaskEnqueuer();
@@ -1133,9 +1133,24 @@ describe("content post-body durable planning", () => {
       const execution = executor.execute(enqueuer.messages[0]!);
       await started.promise;
       await second.query(
-        "update translation_tasks set claim_token = $1 where id = $2 and status = 'processing'",
-        ["30000000-0000-4000-8000-000000000003", planned.task.id],
+        "update translation_tasks set claimed_at = statement_timestamp() - interval '2 seconds', lease_expires_at = statement_timestamp() - interval '1 second' where id = $1 and status = 'processing'",
+        [planned.task.id],
       );
+      const reclaimed = await new DrizzleTranslationTaskStore(
+        drizzle(second),
+      ).claimContentPostBody(planned.task.id, 60_000);
+      expect(reclaimed).toMatchObject({
+        outcome: "claimed",
+        attemptStarted: true,
+        task: {
+          id: planned.task.id,
+          status: "processing",
+          attemptCount: 2,
+        },
+      });
+      if (reclaimed.outcome !== "claimed") {
+        throw new Error("expected body task reclaim");
+      }
 
       release.resolve();
       await expect(execution).resolves.toEqual({
