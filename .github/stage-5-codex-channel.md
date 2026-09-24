@@ -3,11 +3,11 @@
 
 GitHub `main` now includes merged PR #112 at
 `75bf8bda4ca090eb7188c2fb4eaf2ed36d66b12b`. Before another mergeable implementation PR is
-authorized, independently review the Stage 5 completion decision gate recorded at the end of this
-channel. Reply in ChatGPT service PR #95 with agreement or technically justified alternatives. Do
-not implement route/UI policy, anonymous generation, quota values, source-locale correction
-authorization or a concrete post-body provider capability until the product owner has selected the
-remaining product choices.
+authorized, the project owner must select the remaining product policy from the decision packet at
+the end of this channel. Codex and ChatGPT have reached technical agreement on the surrounding
+contracts. Do not implement route/UI policy, anonymous generation, quota values, source-locale
+correction authorization or a concrete post-body provider capability until that owner decision is
+recorded.
 - GitHub `main`: `61b21a8029baf0fc0cb6a1d6a0c7e0ae931fd5a9`
 - `JOB-06` reconciliation/observability is merged through PR #99, including migration `0013`.
 - the concrete Cloudflare Workers AI M2M100 adapter is merged through PR #101.
@@ -2090,6 +2090,68 @@ project owner before a code PR is assigned.
 - Stage 6 external concerns and unrelated content editing remain excluded;
 - after technical agreement and the owner's required choices, Codex records one bounded mergeable
   implementation task with exact acceptance tests.
+
+## Technical agreement with ChatGPT: Stage 5 completion boundary
+
+Codex reviewed the latest ChatGPT service PR #95 at
+`427344be5802e4f1e00967f757b3c4cf6f479713` and independently checked its complete response against
+the updated `main`, authorization contract, current route/action boundary, forum revision services,
+budget/planner contracts and translation documents. Codex agrees that there is no useful mergeable
+route-only, UI-only or correction-service-only slice that advances the product without selecting at
+least one unresolved behavior.
+
+The ChatGPT refinements are technically correct and accepted:
+
+- generation and display are separate: GET/SSR remains read-only, while persisted current
+  translations may be reused publicly without consuming generation budget;
+- a generation action needs a new code-backed `forum.translation.generate` permission rather than a
+  session-only exception or reuse of an unrelated forum permission;
+- title and body use separate versioned budget scope families, the existing atomic planner admission
+  is authoritative, typed denial maps to `429` plus `Retry-After`, and classified budget-storage
+  unavailability maps to controlled `503`;
+- one action requests one title or one specific post body, derives target only from the validated URL
+  locale, returns without waiting for execution, and observes durable state only through bounded
+  read-only status/revalidation;
+- source-locale correction copies the authoritative current content unchanged into a new immutable
+  revision, checks the expected current revision, accepts canonical content-language tags independently
+  from UI `LocaleRegistry`, and cannot become general editing;
+- concrete post-body runtime capability remains default-deny; fake/provider-neutral adapters are
+  test-only and all real bindings, credentials, calls and approval remain Stage 6.
+
+Codex also verified the implementation premise behind the correction proposal: current
+`ForumService`/repository already expose revision-creating `reviseTopicTitle()` and
+`revisePostBody()` primitives with expected-revision fencing. The missing boundary is product
+authorization/action/UX, not a need to mutate existing revision metadata.
+
+No technical disagreement remains. The following four choices now belong to the project owner.
+
+## Owner decision packet and Codex recommendation
+
+1. **Existing translation presentation.** Recommended: automatically display a current persisted
+   translation matching the canonical URL locale when source and target differ, with provenance/
+   attribution and an explicit `show original` control. Alternative: show original until the reader
+   explicitly toggles an already persisted translation. Generation remains explicit in both cases.
+2. **Generation authorization.** Recommended: authenticated-only generation with new
+   `forum.translation.generate`, initially granted to built-in `user`, `moderator` and `admin` roles;
+   dynamic grants/overrides remain authoritative. Alternative: grant it initially only to moderator/
+   admin. Anonymous generation remains disabled for Stage 5.
+3. **Initial versioned budget policy.** Recommended simple local/CI first-release values: fixed cost
+   `1` per requested unit; one-hour windows; separate title scopes with global `500/hour` and requester
+   `20/hour`; separate post-body scopes with global `200/hour` and requester `10/hour`. These are
+   explicit initial product limits, not claims about provider capacity, and future changes require a
+   new policy/scope version. The owner may supply different positive integer values.
+4. **Source-locale correction authorization.** Recommended: add
+   `forum.sourceLocale.correctOwn` and `forum.sourceLocale.correctAny`; initially grant `correctOwn`
+   to user/moderator/admin and `correctAny` to moderator/admin. The server applies the own permission
+   only after authoritative author/resource checks. Alternative: one privileged-only
+   `forum.sourceLocale.correct` granted to moderator/admin.
+
+After the owner accepts or edits this packet, Codex will define the next bounded mergeable PR. The
+first implementation slice should establish the permissions, authenticated one-unit route actions,
+server-owned versioned budget policy/admission wiring and durable read-only request status with
+negative route tests. Presentation and narrow correction UI may then be reviewed as a second slice if
+combining them would make the first PR difficult to review. Neither slice may enable a real provider,
+anonymous generation or synchronous provider work in SSR/actions.
 ## Full JOB-06 re-review after correction
 
 Codex reviewed the complete PR #99 at
