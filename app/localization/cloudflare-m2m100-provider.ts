@@ -6,10 +6,12 @@ import {
   DENY_ALL_TRANSLATION_PROVIDER_DATA_POLICY,
   type TranslationProviderDataPolicy,
 } from "./translation-provider-data-policy";
-import type {
-  MachineTranslationProviderAdapter,
-  MachineTranslationRequest,
-  MachineTranslationResult,
+import {
+  machineTranslationCapability,
+  type MachineTranslationCapability,
+  type MachineTranslationProviderAdapter,
+  type MachineTranslationRequest,
+  type MachineTranslationResult,
 } from "./translation-provider";
 import { TranslationValidationError } from "./translation-validation";
 
@@ -55,37 +57,46 @@ export class CloudflareM2m100TranslationProvider implements MachineTranslationPr
       DENY_ALL_TRANSLATION_PROVIDER_DATA_POLICY,
   ) {}
 
-  supports(request: MachineTranslationRequest): boolean {
-    if (request.domain === "content") {
+  supports(capability: MachineTranslationCapability): boolean {
+    if (capability.domain === "content") {
       const policyAllowed = this.dataPolicy.allows({
         provider: CLOUDFLARE_WORKERS_AI_PROVIDER,
         model: CLOUDFLARE_M2M100_MODEL,
-        contentClassification: request.contentClassification,
-        sourceLocale: request.sourceLocale,
-        targetLocale: request.targetLocale,
-        operation: request.operation,
+        contentClassification: capability.contentClassification,
+        sourceLocale: capability.sourceLocale,
+        targetLocale: capability.targetLocale,
+        operation: capability.operation,
       });
       if (
         !policyAllowed
-        || request.contentClassification !== PUBLIC_FORUM_TOPIC_TITLE_CLASSIFICATION
+        || capability.contentClassification !== PUBLIC_FORUM_TOPIC_TITLE_CLASSIFICATION
       ) {
         return false;
       }
     }
 
-    if (request.operation !== "plain" || request.messageKind !== "plain") {
+    if (capability.operation !== "plain" || capability.messageKind !== "plain") {
       return false;
     }
-    if (typeof request.source !== "string" || !request.source.trim()) return false;
-    if (request.source.length > CLOUDFLARE_M2M100_MAX_SOURCE_CHARACTERS) return false;
-    if (request.sourceLocale === request.targetLocale) return false;
+    if (
+      capability.sourceCharacterCount === null
+      || capability.sourceCharacterCount <= 0
+      || capability.sourceCharacterCount > CLOUDFLARE_M2M100_MAX_SOURCE_CHARACTERS
+    ) {
+      return false;
+    }
+    if (capability.sourceLocale === capability.targetLocale) return false;
 
-    return providerLanguageCode(request.sourceLocale) !== undefined
-      && providerLanguageCode(request.targetLocale) !== undefined;
+    return providerLanguageCode(capability.sourceLocale) !== undefined
+      && providerLanguageCode(capability.targetLocale) !== undefined;
   }
 
   async translate(request: MachineTranslationRequest): Promise<MachineTranslationResult> {
-    if (!this.supports(request)) {
+    if (
+      typeof request.source !== "string"
+      || !request.source.trim()
+      || !this.supports(machineTranslationCapability(request))
+    ) {
       throw new TranslationExecutionFailure(
         "terminal",
         "provider-unsupported",
