@@ -3,6 +3,10 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 
 import type { ContentTranslationRevision } from "../app/localization/content-translation";
 import {
+  validateContentTranslationRequestBudgetAdmission,
+  type ContentTranslationRequestBudgetAdmission,
+} from "../app/localization/content-request-budget.server";
+import {
   contentPostBodyTaskIdentity,
   type ContentPostBodyPlanningStore,
   type ContentPostBodyTaskUpsertResult,
@@ -13,6 +17,11 @@ import {
   type ContentPostBodyTranslationTask,
   type ContentPostBodyTranslationTaskSpecification,
 } from "../app/localization/translation-tasks";
+import {
+  ContentTranslationRequestBudgetDeniedRollback,
+  consumeContentTranslationRequestBudgetInTransaction,
+} from "./content-request-budget-store";
+import { readContentTranslationForUpdate } from "./content-translation-store";
 import {
   contentPostBodyTranslationTasks,
   forumPostRevisions,
@@ -28,6 +37,15 @@ export class ContentPostBodyTaskIntegrityError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "ContentPostBodyTaskIntegrityError";
+  }
+}
+
+class ContentPostBodyPlanningNoWorkRollback extends Error {
+  constructor(
+    readonly outcome: "revision-changed" | "translation-current" | "task-completed",
+  ) {
+    super(`content post-body planning stopped: ${outcome}`);
+    this.name = "ContentPostBodyPlanningNoWorkRollback";
   }
 }
 
@@ -69,138 +87,245 @@ export class DrizzleContentPostBodyPlanningStore implements ContentPostBodyPlann
   async upsertPending(
     specification: ContentPostBodyTranslationTaskSpecification,
     expectedRevision: ContentTranslationRevision,
+    requestBudgetAdmission: ContentTranslationRequestBudgetAdmission,
   ): Promise<ContentPostBodyTaskUpsertResult> {
     validateContentPostBodyTranslationTaskSpecification(specification);
     await assertStableIdentity(specification);
     assertExpectedRevision(specification, expectedRevision);
+    validateContentTranslationRequestBudgetAdmission(requestBudgetAdmission);
 
-    return this.database.transaction(async (transaction) => {
-      const unit = {
-        translationKind: specification.translationKind,
-        sourceNamespace: "post-body",
-        sourceKey: specification.sourceIdentity.postId,
-        targetLocale: specification.targetLocale,
-      };
-      const insertedHead = await transaction
-        .insert(translationTaskGenerationHeads)
-        .values({ ...unit, currentGeneration: 1 })
-        .onConflictDoNothing()
-        .returning({ currentGeneration: translationTaskGenerationHeads.currentGeneration });
+    try {
+      return await this.database.transaction(async (transaction) => {
+        const unit = {
+          translationKind: specification.translationKind,
+          sourceNamespace: "post-body",
+          sourceKey: specification.sourceIdentity.postId,
+          targetLocale: specification.targetLocale,
+        };
+        const insertedHead = await transaction
+          .insert(translationTaskGenerationHeads)
+          .values({ ...unit, currentGeneration: 1 })
+          .onConflictDoNothing()
+          .returning({ currentGeneration: translationTaskGenerationHeads.currentGeneration });
 
-      // Preserve the shared planning lock order:
-      // generation head -> stable task row -> current content revision.
-      const lockedHead = await transaction.execute<{ current_generation: number }>(sql`
-        select current_generation
-          from ${translationTaskGenerationHeads}
-         where ${translationTaskGenerationHeads.translationKind} = ${unit.translationKind}
-           and ${translationTaskGenerationHeads.sourceNamespace} = ${unit.sourceNamespace}
-           and ${translationTaskGenerationHeads.sourceKey} = ${unit.sourceKey}
-           and ${translationTaskGenerationHeads.targetLocale} = ${unit.targetLocale}
-         for update
-      `);
-      const currentGeneration = lockedHead.rows[0]?.current_generation;
-      if (!Number.isSafeInteger(currentGeneration) || currentGeneration! <= 0) {
-        throw new ContentPostBodyTaskIntegrityError(
-          "content post-body generation head is missing or invalid",
-        );
-      }
-
-      const existingRows = await transaction
-        .select()
-        .from(translationTasks)
-        .where(eq(translationTasks.taskIdentity, specification.taskIdentity))
-        .for("update")
-        .limit(1);
-
-      const authoritative = await transaction
-        .select({
-          postId: forumPosts.id,
-          revisionId: forumPostRevisions.id,
-          originalContent: forumPostRevisions.originalContent,
-          sourceLocale: forumPostRevisions.sourceLocale,
-        })
-        .from(forumPosts)
-        .innerJoin(
-          forumPostRevisions,
-          and(
-            eq(forumPostRevisions.postId, forumPosts.id),
-            eq(forumPostRevisions.id, forumPosts.currentRevisionId),
-          ),
-        )
-        .where(eq(forumPosts.id, specification.sourceIdentity.postId))
-        .for("share");
-
-      const current = authoritative[0];
-      if (
-        !current
-        || current.postId !== expectedRevision.contentId
-        || current.revisionId !== expectedRevision.revisionId
-        || current.originalContent !== expectedRevision.originalContent
-        || current.sourceLocale !== expectedRevision.sourceLocale
-      ) {
-        return { outcome: "revision-changed" as const };
-      }
-
-      if (existingRows[0]) {
-        assertTaskMatchesSpecification(existingRows[0], specification);
-        const metadataRows = await transaction
-          .select()
-          .from(contentPostBodyTranslationTasks)
-          .where(eq(contentPostBodyTranslationTasks.taskId, existingRows[0].id))
-          .limit(1);
-        assertMetadataMatchesSpecification(metadataRows[0], specification);
-
-        if (
-          existingRows[0].status === "pending"
-          || existingRows[0].status === "processing"
-        ) {
-          return {
-            outcome: "task" as const,
-            created: false,
-            task: contentTask(existingRows[0], metadataRows[0]),
-          };
-        }
-        if (existingRows[0].status !== "stale") {
+        // Shared planning/publication order:
+        // generation head -> stable task -> current entity/revision -> current translation
+        // -> global budget -> requester budget -> task mutation.
+        const lockedHead = await transaction.execute<{ current_generation: number }>(sql`
+          select current_generation
+            from ${translationTaskGenerationHeads}
+           where ${translationTaskGenerationHeads.translationKind} = ${unit.translationKind}
+             and ${translationTaskGenerationHeads.sourceNamespace} = ${unit.sourceNamespace}
+             and ${translationTaskGenerationHeads.sourceKey} = ${unit.sourceKey}
+             and ${translationTaskGenerationHeads.targetLocale} = ${unit.targetLocale}
+           for update
+        `);
+        const currentGeneration = lockedHead.rows[0]?.current_generation;
+        if (!Number.isSafeInteger(currentGeneration) || currentGeneration! <= 0) {
           throw new ContentPostBodyTaskIntegrityError(
-            "content post-body task identity is already terminal",
+            "content post-body generation head is missing or invalid",
           );
         }
 
-        const databaseNow = sql`statement_timestamp()`;
-        const generation = existingRows[0].generation === currentGeneration
-          ? currentGeneration
-          : currentGeneration + 1;
-        const reactivated = await transaction
-          .update(translationTasks)
-          .set({
+        const existingRows = await transaction
+          .select()
+          .from(translationTasks)
+          .where(eq(translationTasks.taskIdentity, specification.taskIdentity))
+          .for("update")
+          .limit(1);
+
+        const [post] = await transaction
+          .select({ currentRevisionId: forumPosts.currentRevisionId })
+          .from(forumPosts)
+          .where(eq(forumPosts.id, specification.sourceIdentity.postId))
+          .for("update");
+        if (
+          !post
+          || post.currentRevisionId !== expectedRevision.revisionId
+        ) {
+          throw new ContentPostBodyPlanningNoWorkRollback("revision-changed");
+        }
+
+        const [current] = await transaction
+          .select({
+            postId: forumPostRevisions.postId,
+            revisionId: forumPostRevisions.id,
+            originalContent: forumPostRevisions.originalContent,
+            sourceLocale: forumPostRevisions.sourceLocale,
+          })
+          .from(forumPostRevisions)
+          .where(and(
+            eq(forumPostRevisions.postId, specification.sourceIdentity.postId),
+            eq(forumPostRevisions.id, post.currentRevisionId),
+          ))
+          .for("update");
+        if (
+          !current
+          || current.postId !== expectedRevision.contentId
+          || current.revisionId !== expectedRevision.revisionId
+          || current.originalContent !== expectedRevision.originalContent
+          || current.sourceLocale !== expectedRevision.sourceLocale
+        ) {
+          throw new ContentPostBodyPlanningNoWorkRollback("revision-changed");
+        }
+
+        const currentTranslation = await readContentTranslationForUpdate(transaction, {
+          contentType: "post-body",
+          contentId: current.postId,
+          revisionId: current.revisionId,
+          targetLocale: specification.targetLocale,
+        });
+        if (currentTranslation) {
+          if (currentTranslation.sourceLocale !== current.sourceLocale) {
+            throw new ContentPostBodyTaskIntegrityError(
+              "current post-body translation source locale conflicts with immutable revision",
+            );
+          }
+          throw new ContentPostBodyPlanningNoWorkRollback("translation-current");
+        }
+
+        if (existingRows[0]) {
+          assertTaskMatchesSpecification(existingRows[0], specification);
+          const metadataRows = await transaction
+            .select()
+            .from(contentPostBodyTranslationTasks)
+            .where(eq(contentPostBodyTranslationTasks.taskId, existingRows[0].id))
+            .limit(1);
+          assertMetadataMatchesSpecification(metadataRows[0], specification);
+
+          if (existingRows[0].status === "completed") {
+            throw new ContentPostBodyPlanningNoWorkRollback("task-completed");
+          }
+          if (
+            existingRows[0].status !== "pending"
+            && existingRows[0].status !== "processing"
+            && existingRows[0].status !== "stale"
+          ) {
+            throw new ContentPostBodyTaskIntegrityError(
+              "content post-body task identity is already terminal",
+            );
+          }
+
+          await consumeContentTranslationRequestBudgetInTransaction(
+            transaction,
+            requestBudgetAdmission,
+          );
+
+          if (
+            existingRows[0].status === "pending"
+            || existingRows[0].status === "processing"
+          ) {
+            return {
+              outcome: "task" as const,
+              created: false,
+              task: contentTask(existingRows[0], metadataRows[0]),
+            };
+          }
+
+          const databaseNow = sql`statement_timestamp()`;
+          const generation = existingRows[0].generation === currentGeneration
+            ? currentGeneration
+            : currentGeneration + 1;
+          const reactivated = await transaction
+            .update(translationTasks)
+            .set({
+              generation,
+              status: "pending",
+              attemptCount: 0,
+              maxAttempts: DEFAULT_TRANSLATION_TASK_MAX_ATTEMPTS,
+              lastFailureCode: null,
+              failureDisposition: null,
+              reconciliationAttemptedAt: null,
+              claimToken: null,
+              claimedAt: null,
+              leaseExpiresAt: null,
+              staleAt: null,
+              completedAt: null,
+              failedAt: null,
+              updatedAt: databaseNow,
+            })
+            .where(and(
+              eq(translationTasks.id, existingRows[0].id),
+              eq(translationTasks.status, "stale"),
+            ))
+            .returning();
+          const reactivatedTask = requiredTaskRow(reactivated[0]);
+
+          if (generation !== currentGeneration) {
+            await transaction
+              .update(translationTaskGenerationHeads)
+              .set({
+                currentGeneration: generation,
+                updatedAt: databaseNow,
+              })
+              .where(and(
+                eq(translationTaskGenerationHeads.translationKind, unit.translationKind),
+                eq(translationTaskGenerationHeads.sourceNamespace, unit.sourceNamespace),
+                eq(translationTaskGenerationHeads.sourceKey, unit.sourceKey),
+                eq(translationTaskGenerationHeads.targetLocale, unit.targetLocale),
+              ));
+          }
+
+          return {
+            outcome: "task" as const,
+            created: false,
+            task: contentTask(reactivatedTask, metadataRows[0]),
+          };
+        }
+
+        await consumeContentTranslationRequestBudgetInTransaction(
+          transaction,
+          requestBudgetAdmission,
+        );
+
+        const generation = insertedHead.length === 1
+          ? currentGeneration!
+          : currentGeneration! + 1;
+        const inserted = await transaction
+          .insert(translationTasks)
+          .values({
+            taskIdentity: specification.taskIdentity,
+            translationKind: specification.translationKind,
+            sourceNamespace: "post-body",
+            sourceKey: specification.sourceIdentity.postId,
+            sourceFingerprint: specification.sourceFingerprint,
+            targetLocale: specification.targetLocale,
+            generationPolicyVersion: specification.generationPolicyVersion,
             generation,
             status: "pending",
             attemptCount: 0,
             maxAttempts: DEFAULT_TRANSLATION_TASK_MAX_ATTEMPTS,
-            lastFailureCode: null,
-            failureDisposition: null,
-            reconciliationAttemptedAt: null,
-            claimToken: null,
-            claimedAt: null,
-            leaseExpiresAt: null,
-            staleAt: null,
-            completedAt: null,
-            failedAt: null,
-            updatedAt: databaseNow,
           })
-          .where(and(
-            eq(translationTasks.id, existingRows[0].id),
-            eq(translationTasks.status, "stale"),
-          ))
           .returning();
-        const reactivatedTask = requiredTaskRow(reactivated[0]);
+        const taskRow = requiredTaskRow(inserted[0]);
+
+        const metadataRows = await transaction
+          .insert(contentPostBodyTranslationTasks)
+          .values({
+            taskId: taskRow.id,
+            translationKind: specification.translationKind,
+            sourceNamespace: "post-body",
+            postId: specification.sourceIdentity.postId,
+            revisionId: specification.sourceIdentity.revisionId,
+            revisionSourceLocale: specification.revisionSourceLocale,
+            resolvedSourceLocale: specification.resolvedSourceLocale,
+            sourceResolutionOrigin: specification.sourceResolutionOrigin,
+            protectedContentPolicyVersion: specification.protectedContentPolicyVersion,
+          })
+          .returning();
+        const metadata = metadataRows[0];
+        if (!metadata) {
+          throw new ContentPostBodyTaskIntegrityError(
+            "content post-body task metadata insert returned no row",
+          );
+        }
 
         if (generation !== currentGeneration) {
           await transaction
             .update(translationTaskGenerationHeads)
             .set({
               currentGeneration: generation,
-              updatedAt: databaseNow,
+              updatedAt: sql`statement_timestamp()`,
             })
             .where(and(
               eq(translationTaskGenerationHeads.translationKind, unit.translationKind),
@@ -212,74 +337,22 @@ export class DrizzleContentPostBodyPlanningStore implements ContentPostBodyPlann
 
         return {
           outcome: "task" as const,
-          created: false,
-          task: contentTask(reactivatedTask, metadataRows[0]),
+          created: true,
+          task: contentTask(taskRow, metadata),
+        };
+      });
+    } catch (error) {
+      if (error instanceof ContentPostBodyPlanningNoWorkRollback) {
+        return { outcome: error.outcome };
+      }
+      if (error instanceof ContentTranslationRequestBudgetDeniedRollback) {
+        return {
+          outcome: "request-budget-denied",
+          decision: error.decision,
         };
       }
-
-      const generation = insertedHead.length === 1
-        ? currentGeneration!
-        : currentGeneration! + 1;
-      const inserted = await transaction
-        .insert(translationTasks)
-        .values({
-          taskIdentity: specification.taskIdentity,
-          translationKind: specification.translationKind,
-          sourceNamespace: "post-body",
-          sourceKey: specification.sourceIdentity.postId,
-          sourceFingerprint: specification.sourceFingerprint,
-          targetLocale: specification.targetLocale,
-          generationPolicyVersion: specification.generationPolicyVersion,
-          generation,
-          status: "pending",
-          attemptCount: 0,
-          maxAttempts: DEFAULT_TRANSLATION_TASK_MAX_ATTEMPTS,
-        })
-        .returning();
-      const taskRow = requiredTaskRow(inserted[0]);
-
-      const metadataRows = await transaction
-        .insert(contentPostBodyTranslationTasks)
-        .values({
-          taskId: taskRow.id,
-          translationKind: specification.translationKind,
-          sourceNamespace: "post-body",
-          postId: specification.sourceIdentity.postId,
-          revisionId: specification.sourceIdentity.revisionId,
-          revisionSourceLocale: specification.revisionSourceLocale,
-          resolvedSourceLocale: specification.resolvedSourceLocale,
-          sourceResolutionOrigin: specification.sourceResolutionOrigin,
-          protectedContentPolicyVersion: specification.protectedContentPolicyVersion,
-        })
-        .returning();
-      const metadata = metadataRows[0];
-      if (!metadata) {
-        throw new ContentPostBodyTaskIntegrityError(
-          "content post-body task metadata insert returned no row",
-        );
-      }
-
-      if (generation !== currentGeneration) {
-        await transaction
-          .update(translationTaskGenerationHeads)
-          .set({
-            currentGeneration: generation,
-            updatedAt: sql`statement_timestamp()`,
-          })
-          .where(and(
-            eq(translationTaskGenerationHeads.translationKind, unit.translationKind),
-            eq(translationTaskGenerationHeads.sourceNamespace, unit.sourceNamespace),
-            eq(translationTaskGenerationHeads.sourceKey, unit.sourceKey),
-            eq(translationTaskGenerationHeads.targetLocale, unit.targetLocale),
-          ));
-      }
-
-      return {
-        outcome: "task" as const,
-        created: true,
-        task: contentTask(taskRow, metadata),
-      };
-    });
+      throw error;
+    }
   }
 }
 
