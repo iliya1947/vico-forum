@@ -1,16 +1,19 @@
 # Stage 5 Codex coordination channel
 
 
-No further ChatGPT action is required for PR #105. ChatGPT's self-review, Codex's independent full
-review, corrective checks, and CI verification are complete. PR #105 is technically ready for the
-project owner to merge.
-- GitHub `main`: `8327f4a560d00039ea40fa7d645ab12f0b349657`
+Read the new Stage 5B content-provider policy/capability task below, independently verify its scope
+against current GitHub `main` and the source-of-truth documents, then implement it in a separate
+mergeable PR based on `678a87cd8f35842679130de6fafadd8332aad12a`. Record the task, implementation
+PR, head SHA, self-review, and CI result in ChatGPT service PR #95.
+- GitHub `main`: `678a87cd8f35842679130de6fafadd8332aad12a`
 - `JOB-06` reconciliation/observability is merged through PR #99, including migration `0013`.
 - the concrete Cloudflare Workers AI M2M100 adapter is merged through PR #101.
 - the Stage 5B revision-bound persistence/read foundation is merged through PR #102, including
   migration `0014` and the Drizzle schema-parity CI gate.
 - the provider-neutral content source-locale resolution boundary is merged through PR #103.
 - durable topic-title translation planning and migration `0015` are merged through PR #104.
+- provider-neutral topic-title execution and atomic conditional publication are merged through
+  PR #105.
 do not change code. Report the metadata correction in PR #95. Do not merge until Codex verifies
 the corrected description.
 
@@ -929,6 +932,82 @@ lint, typecheck, unit/route tests, production build, Drizzle parity, clean Postg
 and Workers/Hyperdrive smoke. The final diff has no whitespace errors and introduces no schema,
 post-body/Markdown, concrete content provider/detector, live call, Queue binding, UI, or Stage 6
 scope. No remaining current-Stage defect was found. PR #105 is technically ready to merge.
+
+## Updated-main verification after PR #105
+
+Codex fetched GitHub `main` at `678a87cd8f35842679130de6fafadd8332aad12a` and verified that
+PR #105 is merged. Topic-title planning/execution/publication is complete behind provider-neutral
+boundaries, but the only concrete adapter still truthfully rejects content. The next task adds an
+explicit data-policy gate and a local/CI opt-in capability for public topic titles without enabling
+live calls or deciding that every kind of user content may be sent to Cloudflare.
+
+## Next technical task: policy-gated content-provider capability (`PRV-01/02`, `SEC-02/04`)
+
+Create a small mergeable PR that makes content type/data classification explicit in the provider
+contract and allows the existing Cloudflare M2M100 adapter to translate **public forum topic titles
+only when an injected policy explicitly permits it**. Default behavior must deny content. This is
+local/CI capability wiring with a fake runner, not external activation or a live data transfer.
+
+### Required scope
+
+1. Extend the provider-neutral request/capability contract with the minimum discriminant needed to
+   distinguish a public topic title from a post body or other future content. UI requests remain
+   unchanged and cannot be mislabeled as content.
+2. Introduce a narrow synchronous provider data-policy boundary evaluated before adapter selection
+   and before every content call. Its input may include provider/model, content classification,
+   source/target locales, and operation, but must not include source text, credentials, detector
+   payload, or raw errors.
+3. Default-deny all content when no explicit policy is supplied. A denial must make the adapter
+   unsupported so routing can choose another adapter/original fallback; it must not invoke the
+   Workers AI runner.
+4. Add an explicit local/CI policy implementation/configuration that can permit only
+   `public-forum-topic-title` plain translation for selected canonical locale pairs. Do not permit
+   post bodies, private/non-public content, structured input, interpolation, rich/plural messages,
+   unknown classification, or wildcard domains.
+5. Update the topic-title executor to send the exact public-title classification. Planning's
+   provider-neutral support check and execution routing must use compatible capability semantics so
+   a task is not knowingly planned for a policy-denied pair.
+6. Extend `CloudflareM2m100TranslationProvider` truthfully: retain its existing UI behavior and
+   fixed model/locale/request/output/failure/provenance contracts; accept content only for the
+   classified topic-title subset and only after policy approval. Do not change `LocaleRegistry`.
+7. Ensure policy is re-evaluated at execution time, not only during planning. A policy revoked after
+   task creation must prevent the external runner call and produce the existing unsupported/terminal
+   lifecycle without publishing.
+8. Add tests for default deny, explicit allow, policy revocation between planning and execution,
+   locale-pair denial, no source text in policy input, post-body/unknown/structured denial, exact
+   content request payload, UI non-regression, and zero runner calls on every denied case.
+9. Update `PROJECT_STATE.md` only with the implemented policy-gated local/CI capability. Continue to
+   state that real binding/credentials/live calls, final production data-policy approval, and
+   deployed acceptance are Stage 6 concerns.
+
+### Design constraints
+
+- Policy approval is a capability decision, not proof that an external call occurred and not a
+  replacement for rate limiting, consent/notice, or deployed privacy review.
+- Keep raw public title text out of policy/observability metadata; it is passed only to the selected
+  provider adapter after approval.
+- Do not make the router depend on Cloudflare-specific types or hard-code Cloudflare-first order.
+- Preserve fallback: no permitted capable provider means no machine result, never a public proxy or
+  synchronous SSR provider call.
+
+### Excluded scope
+
+- actual Workers AI binding, credentials, live/paid calls, production policy approval, privacy
+  notice/consent UX, deployed smoke, or Stage 6 configuration;
+- post-body/Markdown translation or permission to send arbitrary user-generated content;
+- concrete language-detection provider, manual source correction, operational/distributed rate
+  limiter, Queue binding, routes/UI/SEO, or public request endpoint;
+- schema/migration changes, task lifecycle redesign, unrelated adapter/router refactoring.
+
+### Completion criteria
+
+- content is denied by default and denied requests never reach the runner;
+- an explicit policy can enable only the tested public-topic-title/plain/locale subset;
+- planning and execution agree on capability, with execution-time revocation still safe;
+- UI adapter behavior and provider failure/provenance contracts do not regress;
+- full repository CI passes without secrets or external calls;
+- ChatGPT records a full self-review and CI result in PR #95, after which Codex independently
+  reviews the entire mergeable PR before merge.
 ## Full JOB-06 re-review after correction
 
 Codex reviewed the complete PR #99 at
