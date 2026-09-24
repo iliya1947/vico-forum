@@ -129,9 +129,9 @@ async function readDatabaseClock(
   windowSeconds: number,
 ): Promise<DatabaseClock> {
   const result = await transaction.execute<{
-    database_now: Date;
-    reset_at: Date;
-    window_start: Date;
+    database_now_ms: number | string;
+    reset_at_ms: number | string;
+    window_start_ms: number | string;
   }>(sql`
     with clock as (
       select transaction_timestamp() as database_now
@@ -146,31 +146,40 @@ async function readDatabaseClock(
       from clock
     )
     select
-      database_now,
-      window_start,
-      window_start + (${windowSeconds}::double precision * interval '1 second') as reset_at
+      floor(extract(epoch from database_now) * 1000)::bigint as database_now_ms,
+      floor(extract(epoch from window_start) * 1000)::bigint as window_start_ms,
+      floor(
+        extract(
+          epoch from (
+            window_start
+            + (${windowSeconds}::double precision * interval '1 second')
+          )
+        ) * 1000
+      )::bigint as reset_at_ms
     from aligned
   `);
   const row = result.rows[0];
+  if (!row) {
+    throw new ContentTranslationRequestBudgetIntegrityError(
+      "request budget database clock returned no window metadata",
+    );
+  }
+  const databaseNowMs = parseEpochMilliseconds(row.database_now_ms);
+  const windowStartMs = parseEpochMilliseconds(row.window_start_ms);
+  const resetAtMs = parseEpochMilliseconds(row.reset_at_ms);
   if (
-    !row
-    || !(row.database_now instanceof Date)
-    || Number.isNaN(row.database_now.getTime())
-    || !(row.window_start instanceof Date)
-    || Number.isNaN(row.window_start.getTime())
-    || !(row.reset_at instanceof Date)
-    || Number.isNaN(row.reset_at.getTime())
-    || row.window_start.getTime() > row.database_now.getTime()
-    || row.reset_at.getTime() <= row.database_now.getTime()
+    windowStartMs > databaseNowMs
+    || resetAtMs <= databaseNowMs
+    || resetAtMs <= windowStartMs
   ) {
     throw new ContentTranslationRequestBudgetIntegrityError(
       "request budget database clock returned invalid window metadata",
     );
   }
   return {
-    databaseNow: row.database_now,
-    windowStart: row.window_start,
-    resetAt: row.reset_at,
+    databaseNow: new Date(databaseNowMs),
+    windowStart: new Date(windowStartMs),
+    resetAt: new Date(resetAtMs),
   };
 }
 
@@ -225,6 +234,20 @@ async function consumeCounter(
     resetAt: clock.resetAt,
     retryAfterSeconds: retryAfterSeconds(clock),
   });
+}
+
+function parseEpochMilliseconds(value: number | string): number {
+  const parsed = typeof value === "number" ? value : Number(value);
+  if (
+    !Number.isSafeInteger(parsed)
+    || parsed < 0
+    || !Number.isFinite(new Date(parsed).getTime())
+  ) {
+    throw new ContentTranslationRequestBudgetIntegrityError(
+      "request budget database clock returned invalid epoch milliseconds",
+    );
+  }
+  return parsed;
 }
 
 function parseUsedUnits(value: number | string, limit: number): number {
