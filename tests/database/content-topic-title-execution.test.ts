@@ -1,0 +1,559 @@
+import { readFile } from "node:fs/promises";
+
+import { drizzle } from "drizzle-orm/node-postgres";
+import { Client } from "pg";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+
+import {
+  ContentSourceLocaleResolver,
+  ThresholdContentSourceLocalePolicy,
+} from "../../app/localization/content-source-locale";
+import { ContentTranslationService } from "../../app/localization/content-translation";
+import { ContentTopicTitleTranslationPlanner } from "../../app/localization/content-translation-planning";
+import { ContentTopicTitleTaskConsumer } from "../../app/localization/content-translation-task-consumer";
+import { ContentTopicTitleTaskExecutor } from "../../app/localization/content-translation-execution";
+import { ContentTopicTitleResultPublisher } from "../../app/localization/content-translation-publication";
+import { TranslationExecutionFailure } from "../../app/localization/translation-failures";
+import { localeRegistry } from "../../app/localization/registry";
+import {
+  TranslationTaskExecutorDispatcher,
+} from "../../app/localization/translation-task-dispatch";
+import {
+  FakeTranslationTaskEnqueuer,
+} from "../../app/localization/translation-tasks";
+import {
+  type MachineTranslationProviderAdapter,
+  type MachineTranslationRequest,
+  type MachineTranslationResult,
+  TranslationProviderRouter,
+} from "../../app/localization/translation-provider";
+import { DrizzleContentTopicTitleExecutionStore } from "../../db/content-topic-title-execution-store";
+import { DrizzleContentTopicTitlePlanningStore } from "../../db/content-topic-title-task-store";
+import { DrizzleContentTranslationStore } from "../../db/content-translation-store";
+import {
+  DrizzleTranslationTaskStore,
+  TranslationTaskKindMismatchError,
+} from "../../db/translation-task-store";
+
+const databaseUrl = process.env.DATABASE_URL;
+if (!databaseUrl) {
+  throw new Error("DATABASE_URL is required for the disposable database integration test");
+}
+
+const parsedDatabaseUrl = new URL(databaseUrl);
+if (
+  !["127.0.0.1", "localhost"].includes(parsedDatabaseUrl.hostname)
+  || !parsedDatabaseUrl.pathname.endsWith("_test")
+) {
+  throw new Error("Database integration tests only run against a local database ending in _test");
+}
+
+const schemaName = "content_topic_title_execution_test";
+const client = new Client({ connectionString: databaseUrl });
+
+beforeAll(async () => {
+  await client.connect();
+  await client.query(`drop schema if exists ${schemaName} cascade; create schema ${schemaName}`);
+  await client.query(`set search_path to ${schemaName}`);
+
+  for (const migration of [
+    "drizzle/0003_gorgeous_donald_blake.sql",
+    "drizzle/0004_forum_domain_foundation.sql",
+    "drizzle/0005_calm_proemial_gods.sql",
+    "drizzle/0007_durable_translation_tasks.sql",
+    "drizzle/0008_translation_task_claim_lease.sql",
+    "drizzle/0009_translation_task_completion.sql",
+    "drizzle/0010_translation_task_generation_order.sql",
+    "drizzle/0012_translation_task_retry_dlq.sql",
+    "drizzle/0013_translation_task_reconciliation.sql",
+    "drizzle/0014_content_translation_persistence.sql",
+    "drizzle/0015_content_topic_title_tasks.sql",
+  ]) {
+    const sql = (await readFile(migration, "utf8"))
+      .replaceAll('"public".', `"${schemaName}".`);
+    await client.query(sql);
+  }
+});
+
+beforeEach(async () => {
+  await client.query(`
+    truncate
+      content_topic_title_translation_tasks,
+      translation_tasks,
+      translation_task_generation_heads,
+      forum_topic_title_translations,
+      forum_post_body_translations,
+      forum_post_revisions,
+      forum_posts,
+      forum_topic_title_revisions,
+      forum_topics,
+      forum_sections,
+      forum_categories,
+      "user"
+    cascade
+  `);
+  await seedForumGraph(client);
+});
+
+afterAll(async () => {
+  await client.query("set search_path to public");
+  await client.query(`drop schema if exists ${schemaName} cascade`);
+  await client.end();
+});
+
+describe("content topic-title execution and publication", () => {
+  it("dispatches by persisted kind, publishes atomically, and makes duplicate delivery provider-free", async () => {
+    const enqueuer = new FakeTranslationTaskEnqueuer();
+    const planned = await createPlanner(client, enqueuer).planAndDispatch(requestRevision(), "he");
+    if (planned.kind !== "queued") throw new Error("expected queued content task");
+
+    const translate = vi.fn(async (request: MachineTranslationRequest): Promise<MachineTranslationResult> => ({
+      value: "כותרת מתורגמת",
+      provenance: { provider: "fake", model: "fake-v1", origin: "machine" },
+    }));
+    const uiExecute = vi.fn(async () => ({
+      outcome: "already-claimed" as const,
+      delivery: "ack" as const,
+    }));
+    const dispatcher = createDispatcher(client, { supports: () => true, translate }, uiExecute);
+
+    await expect(dispatcher.execute(enqueuer.messages[0]!)).resolves.toEqual({
+      outcome: "published",
+      delivery: "ack",
+    });
+    expect(uiExecute).not.toHaveBeenCalled();
+    expect(translate).toHaveBeenCalledTimes(1);
+    expect(translate).toHaveBeenCalledWith({
+      domain: "content",
+      sourceLocale: "ru",
+      targetLocale: "he",
+      messageKind: "plain",
+      operation: "plain",
+      source: "Исходный заголовок",
+    });
+
+    const taskRow = await client.query<{
+      status: string;
+      claim_token: string | null;
+      completed_at: Date | null;
+    }>(`
+      select status, claim_token, completed_at
+        from translation_tasks
+       where id = '${planned.task.id}'
+    `);
+    expect(taskRow.rows[0]).toMatchObject({
+      status: "completed",
+      claim_token: null,
+    });
+    expect(taskRow.rows[0]?.completed_at).toBeInstanceOf(Date);
+
+    const translation = await new DrizzleContentTranslationStore(drizzle(client)).read({
+      contentType: "topic-title",
+      contentId: "topic-a",
+      revisionId: "title-a-r1",
+      targetLocale: "he",
+    });
+    expect(translation).toEqual({
+      contentType: "topic-title",
+      contentId: "topic-a",
+      revisionId: "title-a-r1",
+      targetLocale: "he",
+      sourceLocale: "ru",
+      translatedContent: "כותרת מתורגמת",
+      provenance: {
+        origin: "machine",
+        provider: "fake",
+        model: "fake-v1",
+      },
+    });
+
+    await expect(dispatcher.execute(enqueuer.messages[0]!)).resolves.toEqual({
+      outcome: "terminal",
+      delivery: "ack",
+    });
+    expect(translate).toHaveBeenCalledTimes(1);
+  });
+
+  it("cannot claim a content task through the UI claim path", async () => {
+    const planned = await createPlanner(client).planAndDispatch(requestRevision(), "he");
+    if (planned.kind !== "queued") throw new Error("expected queued content task");
+
+    const tasks = new DrizzleTranslationTaskStore(drizzle(client));
+    await expect(tasks.claim(planned.task.id, 60_000)).rejects.toBeInstanceOf(
+      TranslationTaskKindMismatchError,
+    );
+
+    const row = await client.query<{ status: string; attempt_count: number }>(`
+      select status, attempt_count
+        from translation_tasks
+       where id = '${planned.task.id}'
+    `);
+    expect(row.rows[0]).toEqual({ status: "pending", attempt_count: 0 });
+  });
+
+  it("releases retryable provider failure through the shared attempt budget and later completes", async () => {
+    const enqueuer = new FakeTranslationTaskEnqueuer();
+    const planned = await createPlanner(client, enqueuer).planAndDispatch(requestRevision(), "he");
+    if (planned.kind !== "queued") throw new Error("expected queued content task");
+
+    let calls = 0;
+    const adapter: MachineTranslationProviderAdapter = {
+      supports: () => true,
+      translate: async () => {
+        calls++;
+        if (calls === 1) {
+          throw new TranslationExecutionFailure(
+            "retryable",
+            "provider-temporary",
+            "temporary provider fixture",
+          );
+        }
+        return {
+          value: "כותרת מתורגמת",
+          provenance: { provider: "fake", model: "fake-v1", origin: "machine" },
+        };
+      },
+    };
+    const dispatcher = createDispatcher(client, adapter);
+
+    await expect(dispatcher.execute(enqueuer.messages[0]!)).resolves.toEqual({
+      outcome: "execution-failed",
+      delivery: "retry",
+      failureCode: "provider-temporary",
+      attemptCount: 1,
+      maxAttempts: 3,
+    });
+    await expect(dispatcher.execute(enqueuer.messages[0]!)).resolves.toEqual({
+      outcome: "published",
+      delivery: "ack",
+    });
+
+    const row = await client.query<{
+      status: string;
+      attempt_count: number;
+      last_failure_code: string | null;
+    }>(`
+      select status, attempt_count, last_failure_code
+        from translation_tasks
+       where id = '${planned.task.id}'
+    `);
+    expect(row.rows[0]).toEqual({
+      status: "completed",
+      attempt_count: 2,
+      last_failure_code: null,
+    });
+    expect(calls).toBe(2);
+  });
+
+  it("terminalizes retry exhaustion without an extra provider call", async () => {
+    const enqueuer = new FakeTranslationTaskEnqueuer();
+    const planned = await createPlanner(client, enqueuer).planAndDispatch(requestRevision(), "he");
+    if (planned.kind !== "queued") throw new Error("expected queued content task");
+    await client.query(
+      "update translation_tasks set max_attempts = 1 where id = $1",
+      [planned.task.id],
+    );
+
+    const translate = vi.fn(async () => {
+      throw new TranslationExecutionFailure(
+        "retryable",
+        "provider-temporary",
+        "temporary provider fixture",
+      );
+    });
+    const dispatcher = createDispatcher(client, { supports: () => true, translate });
+
+    await expect(dispatcher.execute(enqueuer.messages[0]!)).resolves.toEqual({
+      outcome: "execution-failed",
+      delivery: "terminal",
+      failureCode: "provider-temporary",
+      terminalReason: "retry-exhausted",
+      attemptCount: 1,
+      maxAttempts: 1,
+    });
+    await expect(dispatcher.execute(enqueuer.messages[0]!)).resolves.toEqual({
+      outcome: "terminal",
+      delivery: "ack",
+    });
+    expect(translate).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not publish a provider result after the title revision changes during the provider window", async () => {
+    const second = await secondClient();
+    try {
+      const enqueuer = new FakeTranslationTaskEnqueuer();
+      const planned = await createPlanner(client, enqueuer).planAndDispatch(requestRevision(), "he");
+      if (planned.kind !== "queued") throw new Error("expected queued content task");
+
+      const started = deferred();
+      const release = deferred();
+      const dispatcher = createDispatcher(client, {
+        supports: () => true,
+        translate: async () => {
+          started.resolve();
+          await release.promise;
+          return {
+            value: "תוצאה ישנה",
+            provenance: { provider: "fake", model: "fake-v1", origin: "machine" },
+          };
+        },
+      });
+
+      const execution = dispatcher.execute(enqueuer.messages[0]!);
+      await started.promise;
+
+      await second.query("begin");
+      try {
+        await second.query(`
+          insert into forum_topic_title_revisions
+            (id, topic_id, author_id, original_content, source_locale)
+          values ('title-a-r2', 'topic-a', 'author-a', 'Новый заголовок', 'ru')
+        `);
+        await second.query(`
+          update forum_topics set current_title_revision_id = 'title-a-r2'
+           where id = 'topic-a'
+        `);
+        await second.query("commit");
+      } catch (error) {
+        await second.query("rollback");
+        throw error;
+      }
+
+      release.resolve();
+      await expect(execution).resolves.toEqual({
+        outcome: "stale",
+        reason: "revision-not-current",
+        delivery: "ack",
+      });
+
+      const translations = await second.query<{ count: number }>(`
+        select count(*)::int as count from forum_topic_title_translations
+      `);
+      expect(translations.rows[0]?.count).toBe(0);
+      const task = await second.query<{ status: string }>(
+        "select status from translation_tasks where id = $1",
+        [planned.task.id],
+      );
+      expect(task.rows[0]?.status).toBe("stale");
+    } finally {
+      await second.end();
+    }
+  });
+
+  it("preserves a manual translation created during the provider window", async () => {
+    const second = await secondClient();
+    try {
+      const enqueuer = new FakeTranslationTaskEnqueuer();
+      const planned = await createPlanner(client, enqueuer).planAndDispatch(requestRevision(), "he");
+      if (planned.kind !== "queued") throw new Error("expected queued content task");
+
+      const started = deferred();
+      const release = deferred();
+      const dispatcher = createDispatcher(client, {
+        supports: () => true,
+        translate: async () => {
+          started.resolve();
+          await release.promise;
+          return {
+            value: "מכונה",
+            provenance: { provider: "fake", model: "fake-v1", origin: "machine" },
+          };
+        },
+      });
+      const execution = dispatcher.execute(enqueuer.messages[0]!);
+      await started.promise;
+
+      await new DrizzleContentTranslationStore(drizzle(second)).write({
+        contentType: "topic-title",
+        contentId: "topic-a",
+        revisionId: "title-a-r1",
+        targetLocale: "he",
+        sourceLocale: "ru",
+        translatedContent: "ידני",
+        provenance: { origin: "persistent_manual" },
+      });
+
+      release.resolve();
+      await expect(execution).resolves.toEqual({
+        outcome: "stale",
+        reason: "translation-current",
+        delivery: "ack",
+      });
+
+      await expect(new DrizzleContentTranslationStore(drizzle(second)).read({
+        contentType: "topic-title",
+        contentId: "topic-a",
+        revisionId: "title-a-r1",
+        targetLocale: "he",
+      })).resolves.toMatchObject({
+        translatedContent: "ידני",
+        provenance: { origin: "persistent_manual" },
+      });
+    } finally {
+      await second.end();
+    }
+  });
+
+  it("does not publish after claim ownership changes during the provider window", async () => {
+    const second = await secondClient();
+    try {
+      const enqueuer = new FakeTranslationTaskEnqueuer();
+      const planned = await createPlanner(client, enqueuer).planAndDispatch(requestRevision(), "he");
+      if (planned.kind !== "queued") throw new Error("expected queued content task");
+
+      const started = deferred();
+      const release = deferred();
+      const dispatcher = createDispatcher(client, {
+        supports: () => true,
+        translate: async () => {
+          started.resolve();
+          await release.promise;
+          return {
+            value: "מכונה",
+            provenance: { provider: "fake", model: "fake-v1", origin: "machine" },
+          };
+        },
+      });
+      const execution = dispatcher.execute(enqueuer.messages[0]!);
+      await started.promise;
+
+      await second.query(`
+        update translation_tasks
+           set claim_token = '30000000-0000-4000-8000-000000000003'
+         where id = $1 and status = 'processing'
+      `, [planned.task.id]);
+
+      release.resolve();
+      await expect(execution).resolves.toEqual({
+        outcome: "claim-lost",
+        delivery: "ack",
+      });
+
+      const translations = await second.query<{ count: number }>(`
+        select count(*)::int as count from forum_topic_title_translations
+      `);
+      expect(translations.rows[0]?.count).toBe(0);
+    } finally {
+      await second.end();
+    }
+  });
+});
+
+function createPlanner(
+  connection: Client,
+  enqueuer = new FakeTranslationTaskEnqueuer(),
+): ContentTopicTitleTranslationPlanner {
+  return new ContentTopicTitleTranslationPlanner({
+    localeRegistry,
+    sourceLocaleResolver: new ContentSourceLocaleResolver(
+      {
+        detect: async () => {
+          throw new Error("known source locale must bypass detection");
+        },
+      },
+      new ThresholdContentSourceLocalePolicy(0.8, () => true),
+    ),
+    contentTranslations: new ContentTranslationService(
+      new DrizzleContentTranslationStore(drizzle(connection)),
+    ),
+    targetPolicy: { supports: () => true },
+    requestBudgetPolicy: { allows: () => true },
+    tasks: new DrizzleContentTopicTitlePlanningStore(drizzle(connection)),
+    enqueuer,
+    generationPolicyVersion: "content-v1",
+  });
+}
+
+function createDispatcher(
+  connection: Client,
+  adapter: MachineTranslationProviderAdapter,
+  uiExecute = vi.fn(async () => ({
+    outcome: "already-claimed" as const,
+    delivery: "ack" as const,
+  })),
+): TranslationTaskExecutorDispatcher {
+  const database = drizzle(connection);
+  const tasks = new DrizzleTranslationTaskStore(database);
+  const executionStore = new DrizzleContentTopicTitleExecutionStore(database);
+  const translations = new DrizzleContentTranslationStore(database);
+  const consumer = new ContentTopicTitleTaskConsumer({
+    tasks,
+    revisions: executionStore,
+    translations,
+    localeRegistry,
+    generationPolicyVersion: "content-v1",
+    leaseDurationMs: 60_000,
+  });
+  const publisher = new ContentTopicTitleResultPublisher({
+    tasks,
+    revisions: executionStore,
+    translations,
+    localeRegistry,
+    generationPolicyVersion: "content-v1",
+    publications: executionStore,
+  });
+  const contentExecutor = new ContentTopicTitleTaskExecutor({
+    consumer,
+    providerRouter: new TranslationProviderRouter([adapter]),
+    publisher,
+    failures: tasks,
+  });
+
+  return new TranslationTaskExecutorDispatcher({
+    kinds: tasks,
+    ui: { execute: uiExecute },
+    contentTopicTitle: contentExecutor,
+  });
+}
+
+function requestRevision() {
+  return {
+    contentType: "topic-title" as const,
+    contentId: "topic-a",
+    revisionId: "title-a-r1",
+    originalContent: "caller text is not authoritative",
+    sourceLocale: "und",
+  };
+}
+
+async function secondClient(): Promise<Client> {
+  const second = new Client({ connectionString: databaseUrl });
+  await second.connect();
+  await second.query(`set search_path to ${schemaName}`);
+  return second;
+}
+
+async function seedForumGraph(connection: Client): Promise<void> {
+  await connection.query(`
+    insert into "user" (id, name, email, email_verified, created_at, updated_at)
+    values ('author-a', 'Author A', 'author-a@example.test', true, now(), now())
+  `);
+  await connection.query(`
+    insert into forum_categories (id, name) values ('category', 'Category');
+    insert into forum_sections (id, category_id, name) values ('section', 'category', 'Section');
+  `);
+  await connection.query("begin");
+  try {
+    await connection.query(`
+      insert into forum_topics (id, section_id, author_id, current_title_revision_id)
+      values ('topic-a', 'section', 'author-a', 'title-a-r1')
+    `);
+    await connection.query(`
+      insert into forum_topic_title_revisions
+        (id, topic_id, author_id, original_content, source_locale)
+      values ('title-a-r1', 'topic-a', 'author-a', 'Исходный заголовок', 'ru')
+    `);
+    await connection.query("commit");
+  } catch (error) {
+    await connection.query("rollback");
+    throw error;
+  }
+}
+
+function deferred() {
+  let resolve!: () => void;
+  const promise = new Promise<void>((done) => {
+    resolve = done;
+  });
+  return { promise, resolve };
+}
