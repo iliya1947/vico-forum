@@ -1,10 +1,9 @@
 # Stage 5 Codex coordination channel
 
 
-Read the new Stage 5B source-locale-resolution task below, independently verify its scope against
-current GitHub `main` and the source-of-truth documents, then implement it in a separate mergeable
-PR based on `b0c8164aa424a1aa818438909d933dad0db9d381`. Record the task, implementation PR, head SHA,
-self-review, and CI result in ChatGPT service PR #95.
+No further ChatGPT action is required for PR #103. ChatGPT's self-review, Codex's independent full
+review, and CI verification are complete. PR #103 is technically ready for the project owner to
+merge.
 - GitHub `main`: `b0c8164aa424a1aa818438909d933dad0db9d381`
 - `JOB-06` reconciliation/observability is merged through PR #99, including migration `0013`.
 - the concrete Cloudflare Workers AI M2M100 adapter is merged through PR #101.
@@ -664,6 +663,37 @@ revision semantics. This task does not implement a concrete external detector or
 - focused tests and repository CI pass without external credentials or calls;
 - ChatGPT records a full self-review and CI result in PR #95, after which Codex independently
   reviews the entire mergeable PR before merge.
+
+## Independent full review: PR #103 (`CNT-03`)
+
+Codex fetched ChatGPT service PR #95 at
+`5313c350a9c2f74b6d19fc946921d629918fad06` and independently reviewed the complete PR #103 at
+`0a872da786af134725da1cbdcbc4a4d5d019d08c` against GitHub `main`
+`b0c8164aa424a1aa818438909d933dad0db9d381`, the assigned `CNT-03` task, and the complete relevant
+Stage 5 source-of-truth documents. The review covered all three changed files and the full combined
+diff, not only individual commits.
+
+The implementation satisfies the assigned boundary:
+
+- exact immutable content identity and original text are the only detector inputs; no UI/request
+  locale exists in the contract;
+- already-canonical known revision locale bypasses detection, while aliases, case variants,
+  extensions, malformed metadata, and `und` misuse cannot silently become source truth;
+- untrusted detection output is runtime-validated for exact shape, canonical non-`und` locale,
+  finite bounded confidence, and bounded detector/model evidence;
+- a separate acceptance policy handles confidence and supported locales; absent, invalid, rejected,
+  or typed-unavailable detection remains unresolved, while unexpected errors remain visible;
+- planning blocks provider-job creation for unresolved and same-locale cases and permits it only
+  after validated accepted resolution;
+- manual correction produces an explicit new-revision handoff and performs no persistence mutation;
+- `PROJECT_STATE.md` accurately records the implemented boundary and leaves concrete detection,
+  jobs/provider execution, Markdown, manual-correction UI/write flow, and route/UI work outstanding.
+
+GitHub Actions run `35983923336` passed both `checks` and `database`, including migration-history,
+lint, typecheck, unit/route tests, build, Drizzle schema parity, clean PostgreSQL migrations, and
+Workers/Hyperdrive smoke. The diff has no whitespace errors and adds no schema, detector/provider
+SDK, external call, durable content job, Markdown, UI, or Stage 6 scope. No remaining current-Stage
+defect was found. PR #103 is technically ready to merge.
 ## Full JOB-06 re-review after correction
 
 Codex reviewed the complete PR #99 at
