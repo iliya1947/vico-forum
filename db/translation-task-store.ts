@@ -2,6 +2,16 @@ import { and, eq, gte, lt, lte, or, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { TranslationFailureRecord } from "../app/localization/translation-failures";
 import {
+  MAX_TRANSLATION_TASK_FAILURE_GROUPS,
+  TRANSLATION_TASK_RECONCILIATION_RETRY_AFTER_MS,
+  validateTranslationTaskReconciliationQuery,
+  type TranslationTaskFailureSummary,
+  type TranslationTaskObservabilitySnapshot,
+  type TranslationTaskReconciliationCandidate,
+  type TranslationTaskReconciliationQuery,
+  type TranslationTaskReconciliationStore,
+} from "../app/localization/translation-task-reconciliation";
+import {
   DEFAULT_TRANSLATION_TASK_MAX_ATTEMPTS,
   validateUiTranslationJobSpecification,
   type TranslationTask,
@@ -25,7 +35,7 @@ export class TranslationTaskIntegrityError extends Error {
   }
 }
 
-export class DrizzleTranslationTaskStore implements TranslationTaskStore, TranslationTaskFailureStore {
+export class DrizzleTranslationTaskStore implements TranslationTaskStore, TranslationTaskFailureStore, TranslationTaskReconciliationStore {
   constructor(private readonly database: NodePgDatabase) {}
 
   async upsertPending(specification: UiTranslationJobSpecification): Promise<TranslationTask> {
@@ -70,6 +80,7 @@ export class DrizzleTranslationTaskStore implements TranslationTaskStore, Transl
           maxAttempts: DEFAULT_TRANSLATION_TASK_MAX_ATTEMPTS,
           lastFailureCode: null,
           failureDisposition: null,
+          reconciliationAttemptedAt: null,
           claimToken: null,
           claimedAt: null,
           leaseExpiresAt: null,
@@ -135,6 +146,234 @@ export class DrizzleTranslationTaskStore implements TranslationTaskStore, Transl
       .where(eq(translationTasks.taskIdentity, taskIdentity))
       .limit(1);
     return rows[0] ? await parseTaskRow(rows[0]) : undefined;
+  }
+
+  async reserveReconciliationCandidates(
+    query: TranslationTaskReconciliationQuery,
+  ): Promise<readonly TranslationTaskReconciliationCandidate[]> {
+    validateTranslationTaskReconciliationQuery(query);
+    const rows = await this.database.transaction(async (transaction) => {
+      const result = await transaction.execute<{ id: string; status: string }>(sql`
+        with candidates as (
+          select ${translationTasks.id} as id, ${translationTasks.status} as status
+            from ${translationTasks}
+           where (
+             (
+               ${translationTasks.status} = 'pending'
+               and ${translationTasks.updatedAt} <= statement_timestamp()
+                 - (${query.pendingOlderThanMs}::double precision * interval '1 millisecond')
+             )
+             or (
+               ${translationTasks.status} = 'processing'
+               and ${translationTasks.leaseExpiresAt} <= statement_timestamp()
+             )
+           )
+             and (
+               ${translationTasks.reconciliationAttemptedAt} is null
+               or ${translationTasks.reconciliationAttemptedAt} <= statement_timestamp()
+                 - (${TRANSLATION_TASK_RECONCILIATION_RETRY_AFTER_MS}::double precision * interval '1 millisecond')
+             )
+           order by ${translationTasks.reconciliationAttemptedAt} asc nulls first,
+                    ${translationTasks.updatedAt} asc,
+                    ${translationTasks.id} asc
+           for update skip locked
+           limit ${query.limit}
+        )
+        update ${translationTasks} as task
+           set reconciliation_attempted_at = statement_timestamp()
+          from candidates
+         where task.id = candidates.id
+        returning task.id, candidates.status
+      `);
+      return result.rows;
+    });
+
+    return rows.map((row) => {
+      if (row.status === "pending") return { id: row.id, reason: "pending" as const };
+      if (row.status === "processing") return { id: row.id, reason: "expired-processing" as const };
+      throw new TranslationTaskIntegrityError("reconciliation reservation returned a non-recoverable task");
+    });
+  }
+
+  async observeTranslationTasks(): Promise<TranslationTaskObservabilitySnapshot> {
+    const aggregate = await this.database.execute<{
+      pending: number;
+      processing: number;
+      stale: number;
+      completed: number;
+      failed: number;
+      oldest_pending_age_ms: number | null;
+      pending_unattempted: number;
+      pending_retry_released: number;
+      processing_live: number;
+      processing_expired: number;
+      oldest_processing_claim_age_ms: number | null;
+      oldest_expired_lease_age_ms: number | null;
+      processing_with_attempts_remaining: number;
+      processing_at_attempt_budget: number;
+      failed_terminal: number;
+      failed_retry_exhausted: number;
+      failure_group_count: number;
+    }>(sql`
+      select
+        (count(*) filter (where ${translationTasks.status} = 'pending'))::integer as pending,
+        (count(*) filter (where ${translationTasks.status} = 'processing'))::integer as processing,
+        (count(*) filter (where ${translationTasks.status} = 'stale'))::integer as stale,
+        (count(*) filter (where ${translationTasks.status} = 'completed'))::integer as completed,
+        (count(*) filter (where ${translationTasks.status} = 'failed'))::integer as failed,
+        (
+          max(greatest(0, extract(epoch from (statement_timestamp() - ${translationTasks.updatedAt})) * 1000))
+          filter (where ${translationTasks.status} = 'pending')
+        )::double precision as oldest_pending_age_ms,
+        (
+          count(*) filter (
+            where ${translationTasks.status} = 'pending' and ${translationTasks.attemptCount} = 0
+          )
+        )::integer as pending_unattempted,
+        (
+          count(*) filter (
+            where ${translationTasks.status} = 'pending' and ${translationTasks.attemptCount} > 0
+          )
+        )::integer as pending_retry_released,
+        (
+          count(*) filter (
+            where ${translationTasks.status} = 'processing'
+              and ${translationTasks.leaseExpiresAt} > statement_timestamp()
+          )
+        )::integer as processing_live,
+        (
+          count(*) filter (
+            where ${translationTasks.status} = 'processing'
+              and ${translationTasks.leaseExpiresAt} <= statement_timestamp()
+          )
+        )::integer as processing_expired,
+        (
+          max(greatest(0, extract(epoch from (statement_timestamp() - ${translationTasks.claimedAt})) * 1000))
+          filter (where ${translationTasks.status} = 'processing')
+        )::double precision as oldest_processing_claim_age_ms,
+        (
+          max(greatest(0, extract(epoch from (statement_timestamp() - ${translationTasks.leaseExpiresAt})) * 1000))
+          filter (
+            where ${translationTasks.status} = 'processing'
+              and ${translationTasks.leaseExpiresAt} <= statement_timestamp()
+          )
+        )::double precision as oldest_expired_lease_age_ms,
+        (
+          count(*) filter (
+            where ${translationTasks.status} = 'processing'
+              and ${translationTasks.attemptCount} < ${translationTasks.maxAttempts}
+          )
+        )::integer as processing_with_attempts_remaining,
+        (
+          count(*) filter (
+            where ${translationTasks.status} = 'processing'
+              and ${translationTasks.attemptCount} >= ${translationTasks.maxAttempts}
+          )
+        )::integer as processing_at_attempt_budget,
+        (
+          count(*) filter (
+            where ${translationTasks.status} = 'failed'
+              and ${translationTasks.failureDisposition} = 'terminal'
+          )
+        )::integer as failed_terminal,
+        (
+          count(*) filter (
+            where ${translationTasks.status} = 'failed'
+              and ${translationTasks.failureDisposition} = 'retry-exhausted'
+          )
+        )::integer as failed_retry_exhausted,
+        (
+          count(distinct (${translationTasks.failureDisposition}, ${translationTasks.lastFailureCode}))
+          filter (where ${translationTasks.status} = 'failed')
+        )::integer as failure_group_count
+      from ${translationTasks}
+    `);
+    const row = aggregate.rows[0];
+    if (
+      !row ||
+      !nonNegativeInteger(row.pending) ||
+      !nonNegativeInteger(row.processing) ||
+      !nonNegativeInteger(row.stale) ||
+      !nonNegativeInteger(row.completed) ||
+      !nonNegativeInteger(row.failed) ||
+      !nullableNonNegativeNumber(row.oldest_pending_age_ms) ||
+      !nonNegativeInteger(row.pending_unattempted) ||
+      !nonNegativeInteger(row.pending_retry_released) ||
+      !nonNegativeInteger(row.processing_live) ||
+      !nonNegativeInteger(row.processing_expired) ||
+      !nullableNonNegativeNumber(row.oldest_processing_claim_age_ms) ||
+      !nullableNonNegativeNumber(row.oldest_expired_lease_age_ms) ||
+      !nonNegativeInteger(row.processing_with_attempts_remaining) ||
+      !nonNegativeInteger(row.processing_at_attempt_budget) ||
+      !nonNegativeInteger(row.failed_terminal) ||
+      !nonNegativeInteger(row.failed_retry_exhausted) ||
+      !nonNegativeInteger(row.failure_group_count)
+    ) {
+      throw new TranslationTaskIntegrityError("translation task observability query returned invalid aggregates");
+    }
+
+    const grouped = await this.database.execute<{
+      failure_disposition: string;
+      last_failure_code: string;
+      count: number;
+    }>(sql`
+      select
+        ${translationTasks.failureDisposition} as failure_disposition,
+        ${translationTasks.lastFailureCode} as last_failure_code,
+        count(*)::integer as count
+      from ${translationTasks}
+      where ${translationTasks.status} = 'failed'
+      group by ${translationTasks.failureDisposition}, ${translationTasks.lastFailureCode}
+      order by count(*) desc,
+               ${translationTasks.failureDisposition} asc,
+               ${translationTasks.lastFailureCode} asc
+      limit ${MAX_TRANSLATION_TASK_FAILURE_GROUPS}
+    `);
+    const groups: TranslationTaskFailureSummary[] = grouped.rows.map((failure) => {
+      if (
+        (failure.failure_disposition !== "terminal" &&
+          failure.failure_disposition !== "retry-exhausted") ||
+        !/^[a-z0-9][a-z0-9-]{0,63}$/.test(failure.last_failure_code) ||
+        !nonNegativeInteger(failure.count) ||
+        failure.count === 0
+      ) {
+        throw new TranslationTaskIntegrityError("translation task observability query returned invalid failure group");
+      }
+      return {
+        disposition: failure.failure_disposition,
+        code: failure.last_failure_code,
+        count: failure.count,
+      };
+    });
+
+    return {
+      counts: {
+        pending: row.pending,
+        processing: row.processing,
+        stale: row.stale,
+        completed: row.completed,
+        failed: row.failed,
+      },
+      pending: {
+        oldestAgeMs: row.oldest_pending_age_ms,
+        unattempted: row.pending_unattempted,
+        retryReleased: row.pending_retry_released,
+      },
+      processing: {
+        live: row.processing_live,
+        expired: row.processing_expired,
+        oldestClaimAgeMs: row.oldest_processing_claim_age_ms,
+        oldestExpiredLeaseAgeMs: row.oldest_expired_lease_age_ms,
+        withAttemptsRemaining: row.processing_with_attempts_remaining,
+        atAttemptBudget: row.processing_at_attempt_budget,
+      },
+      failed: {
+        terminal: row.failed_terminal,
+        retryExhausted: row.failed_retry_exhausted,
+        failureGroupCount: row.failure_group_count,
+        groups,
+      },
+    };
   }
 
   async claim(id: string, leaseDurationMs: number): Promise<TranslationTaskClaimResult> {
@@ -262,6 +501,7 @@ export class DrizzleTranslationTaskStore implements TranslationTaskStore, Transl
           failedAt: null,
           lastFailureCode: failure.code,
           failureDisposition: null,
+          reconciliationAttemptedAt: null,
           updatedAt: databaseNow,
         })
         .where(and(currentClaim, lt(translationTasks.attemptCount, translationTasks.maxAttempts)))
@@ -494,6 +734,14 @@ function assertFailureRecord(failure: TranslationFailureRecord): void {
   if (!/^[a-z0-9][a-z0-9-]{0,63}$/.test(failure.code)) {
     throw new TypeError("translation failure code is invalid");
   }
+}
+
+function nonNegativeInteger(value: number): boolean {
+  return Number.isSafeInteger(value) && value >= 0;
+}
+
+function nullableNonNegativeNumber(value: number | null): boolean {
+  return value === null || (Number.isFinite(value) && value >= 0);
 }
 
 function requiredRow(row: TranslationTaskRow | undefined): TranslationTaskRow {

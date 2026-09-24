@@ -175,6 +175,7 @@ export const translationTasks = pgTable(
     maxAttempts: integer("max_attempts").notNull().default(3),
     lastFailureCode: text("last_failure_code"),
     failureDisposition: text("failure_disposition"),
+    reconciliationAttemptedAt: timestamp("reconciliation_attempted_at", { withTimezone: true }),
     claimToken: uuid("claim_token"),
     claimedAt: timestamp("claimed_at", { withTimezone: true }),
     leaseExpiresAt: timestamp("lease_expires_at", { withTimezone: true }),
@@ -185,6 +186,19 @@ export const translationTasks = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
+    index("translation_tasks_reconcile_pending_idx").on(
+      table.status,
+      table.reconciliationAttemptedAt.asc().nullsFirst(),
+      table.updatedAt,
+      table.id,
+    ),
+    index("translation_tasks_reconcile_processing_idx").on(
+      table.status,
+      table.reconciliationAttemptedAt.asc().nullsFirst(),
+      table.updatedAt,
+      table.id,
+      table.leaseExpiresAt,
+    ),
     check("translation_tasks_identity_check", sql`${table.taskIdentity} ~ '^[0-9a-f]{64}$'`),
     check("translation_tasks_kind_check", sql`${table.translationKind} = 'ui'`),
     check("translation_tasks_source_namespace_check", sql`btrim(${table.sourceNamespace}) <> ''`),
