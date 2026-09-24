@@ -127,7 +127,7 @@ export class ContentTopicTitleTranslationPlanner {
     if (!this.dependencies.providerCapability.supports({
       sourceLocale: sourcePlan.sourceLocale,
       targetLocale,
-      source: authoritativeRevision.originalContent,
+      sourceCharacterCount: authoritativeRevision.originalContent.length,
     })) {
       return original(targetLocale, "target-unsupported");
     }
