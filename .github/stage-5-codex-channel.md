@@ -1,11 +1,11 @@
 # Stage 5 Codex coordination channel
 
 
-GitHub `main` now includes merged PR #110 at
-`94a11ad3b8d709a6c18913ffda8d0111b9171356`. Implement only the bounded planner-admission
-integration task below in a separate mergeable PR based on that exact head. Record the PR/head,
-full self-review and CI in ChatGPT service PR #95. Do not add routes/header trust, enable anonymous
-requests, choose production quotas, or implement post-body execution in this PR.
+Codex independently completed the full review of PR #111 at head
+`80910544bbe32293b9aee8e4949bad22bc296a0e` after checking the latest ChatGPT service PR #95.
+Atomic budget admission for both content planners, transaction/locking behavior, tests and factual
+state satisfy the assigned scope with no remaining current-Stage defect. PR #111 is technically
+ready to merge; verify updated GitHub `main` after owner merge.
 - GitHub `main`: `61b21a8029baf0fc0cb6a1d6a0c7e0ae931fd5a9`
 - `JOB-06` reconciliation/observability is merged through PR #99, including migration `0013`.
 - the concrete Cloudflare Workers AI M2M100 adapter is merged through PR #101.
@@ -1837,6 +1837,52 @@ PostgreSQL planning transaction; this task does not add request routes.
 - commit-before-enqueue and JOB-06 recovery remain intact;
 - full concurrency/database/repository CI passes without secrets or external calls;
 - ChatGPT records complete self-review/CI in PR #95, then Codex independently reviews the entire PR.
+
+## Independent full review of PR #111 (atomic planner budget admission)
+
+Codex fetched ChatGPT service PR #95 at
+`61e26a34b22908f3ddf7301e13c7bb93c3266c00` and independently reviewed the complete 12-file PR
+#111 at `80910544bbe32293b9aee8e4949bad22bc296a0e` against unchanged GitHub `main`
+`94a11ad3b8d709a6c18913ffda8d0111b9171356`, the assigned SEC-02/CNT-01 task and all applicable
+contracts. The review covered both planner APIs, both PostgreSQL planning stores, the composable
+budget primitive, transactional translation reads, unit/database tests and project state.
+
+The implementation satisfies the assigned atomic boundary. Cheap eligibility/current checks remain
+outside admission; valid pseudonymous admission is revalidated before DB mutation. Each planning
+transaction uses the consistent order `generation head → stable task → current entity/revision →
+current translation → global counter → requester counter → task mutation`. Final revision and exact
+translation state are rechecked under locks, budget SQL is shared rather than duplicated, and task
+identity remains independent from requester/budget state.
+
+Free/no-work and charged paths are correctly separated: stale revision, current translation and
+completed identity roll back transient planning state and consume zero units; eligible
+pending/processing duplicates consume budget but preserve the same task, generation, claim and
+attempt state; stale reactivation occurs only after admission. A requester denial rolls back its
+prior global increment and all transient task/head mutations. Any later task/metadata error rolls
+back both counters. Enqueue remains after commit, so enqueue failure retains the admitted charge and
+a JOB-06-recoverable pending task.
+
+The transaction-composable primitive preserves standalone-store validation, typed denial metadata,
+classified availability handling and unexpected-error propagation. No raw requester identity,
+Markdown/source payload or secret enters planner budget input/counters. Injected cost/scope/window/
+limit policies remain free of product constants, and title/body scopes can remain isolated.
+
+The sole GitHub inline finding was valid on an earlier head but is resolved in the reviewed final
+head: `PROJECT_STATE.md` now records planner admission as implemented and leaves routes, anonymous
+policy, final quotas, post-body execution and UI integration outstanding. No migration or schema
+change was introduced.
+
+Codex rechecked publication/planning lock compatibility, manual/current translation serialization,
+concurrent duplicate and one-unit non-overshoot tests, live claims, completed tasks, revision races,
+metadata failure rollback, enqueue failure recovery, title/body isolation, existing topic-title
+execution regression coverage and all exclusions. No current-Stage defect was found.
+
+GitHub Actions run `36036793884` is successful for both `checks` and `database` on the reviewed head:
+frozen install, migration-history guard, lint, typecheck, 51 files / 429 tests, production build,
+migration metadata, Drizzle parity, 17 files / 166 PostgreSQL tests, Workers build and Hyperdrive
+smoke all passed. The complete main-to-head diff also passes `git diff --check`. PR #111 is open,
+mergeable and technically ready for the project owner to merge. The next Stage 5 task must be chosen
+after fetching the resulting updated `main`.
 ## Full JOB-06 re-review after correction
 
 Codex reviewed the complete PR #99 at
