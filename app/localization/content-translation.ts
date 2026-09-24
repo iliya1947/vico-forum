@@ -72,6 +72,7 @@ export type ContentTranslationReadResult =
 
 export class InvalidContentTranslationInputError extends Error {}
 export class ContentTranslationStorageUnavailableError extends Error {}
+export class ContentTranslationInvalidRecordError extends Error {}
 export class ContentTranslationOwnershipError extends Error {}
 export class ContentTranslationConflictError extends Error {}
 
@@ -100,6 +101,9 @@ export class ContentTranslationService {
     } catch (error) {
       if (error instanceof ContentTranslationStorageUnavailableError) {
         return originalResult(revision, "storage-unavailable");
+      }
+      if (error instanceof ContentTranslationInvalidRecordError) {
+        return originalResult(revision, "invalid");
       }
       throw error;
     }
