@@ -220,6 +220,90 @@ describe("content post-body durable planning", () => {
     }
   });
 
+  it("does not reset a live processing claim during duplicate planning", async () => {
+    const firstEnqueuer = new FakeTranslationTaskEnqueuer();
+    const first = await createPlanner(client, firstEnqueuer).planAndDispatch(
+      requestRevision(),
+      "he",
+    );
+    if (first.kind !== "queued") throw new Error("expected queued fixture task");
+
+    const claimToken = "22222222-2222-4222-8222-222222222222";
+    await client.query(`
+      update translation_tasks
+         set status = 'processing',
+             attempt_count = 1,
+             claim_token = '${claimToken}',
+             claimed_at = statement_timestamp(),
+             lease_expires_at = statement_timestamp() + interval '1 minute',
+             updated_at = statement_timestamp()
+       where id = '${first.task.id}'
+    `);
+
+    const duplicate = await createPlanner(client).planAndDispatch(requestRevision(), "he");
+    expect(duplicate).toMatchObject({
+      kind: "queued",
+      taskCreated: false,
+      task: {
+        id: first.task.id,
+        generation: first.task.generation,
+        status: "processing",
+        claimToken,
+        attemptCount: 1,
+      },
+    });
+
+    const rows = await client.query<{
+      status: string;
+      claim_token: string | null;
+      attempt_count: number;
+      generation: number;
+    }>(`
+      select status, claim_token, attempt_count, generation
+        from translation_tasks
+       where id = '${first.task.id}'
+    `);
+    expect(rows.rows[0]).toEqual({
+      status: "processing",
+      claim_token: claimToken,
+      attempt_count: 1,
+      generation: first.task.generation,
+    });
+  });
+
+  it("does not reactivate a completed stable post-body identity", async () => {
+    const first = await createPlanner(client).planAndDispatch(requestRevision(), "he");
+    if (first.kind !== "queued") throw new Error("expected queued fixture task");
+
+    await client.query(`
+      update translation_tasks
+         set status = 'completed',
+             attempt_count = 1,
+             claim_token = null,
+             claimed_at = statement_timestamp() - interval '1 second',
+             lease_expires_at = null,
+             completed_at = statement_timestamp(),
+             updated_at = statement_timestamp()
+       where id = '${first.task.id}'
+    `);
+
+    await expect(
+      createPlanner(client).planAndDispatch(requestRevision(), "he"),
+    ).rejects.toMatchObject({
+      name: "ContentPostBodyTaskIntegrityError",
+    });
+
+    const rows = await client.query<{ status: string; generation: number }>(`
+      select status, generation
+        from translation_tasks
+       where id = '${first.task.id}'
+    `);
+    expect(rows.rows[0]).toEqual({
+      status: "completed",
+      generation: first.task.generation,
+    });
+  });
+
   it("gives a new current body revision a distinct task identity and monotonic generation", async () => {
     const first = await createPlanner(client).planAndDispatch(requestRevision(), "he");
     expect(first).toMatchObject({ kind: "queued", task: { generation: 1 } });
