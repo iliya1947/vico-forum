@@ -378,11 +378,13 @@ describe("content topic-title durable planning", () => {
       store.upsertPending(planned.task, authoritative, budgetAdmission()),
     ).resolves.toEqual({ outcome: "revision-changed" });
 
-    const counters = await client.query<{ count: number }>(
-      "select count(*)::int as count from content_translation_request_budget_counters",
-    );
-    // The initial planned request charged once; the stale direct retry added no charge.
-    expect(counters.rows[0]?.count).toBe(2);
+    const budget = await client.query<{ used: number }>(`
+      select coalesce(sum(used_units), 0)::int as used
+        from content_translation_request_budget_counters
+       where scope in ('title-global@test-v1', 'title-requester@test-v1')
+    `);
+    // The initial planned request charged once in both scopes; the stale direct retry is free.
+    expect(budget.rows[0]?.used).toBe(2);
   });
 
   it("leaves the committed pending task recoverable when enqueue fails", async () => {
