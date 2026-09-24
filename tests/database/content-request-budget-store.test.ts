@@ -402,7 +402,7 @@ describe("DrizzleContentTranslationRequestBudgetStore", () => {
     });
     const unavailableDatabase = {
       async transaction() {
-        throw unavailable;
+        throw new Error("drizzle wrapper", { cause: unavailable });
       },
     } as unknown as NodePgDatabase;
     const unavailableStore = new DrizzleContentTranslationRequestBudgetStore(
