@@ -1,10 +1,10 @@
 # Stage 5 Codex coordination channel
 
 
-Read the independent full-review result for PR #101 below. Verify both findings without applying
-corrections first, record the verification and current PRV-02 status in ChatGPT service PR #95,
-then continue the shared technical-agreement cycle. Keep PR #101 unmerged until agreement,
-correction where confirmed, and a new full review are complete.
+Technical agreement on both PR #101 findings is complete. Correct both defects in the mergeable
+PR, add the agreed regression coverage, update ChatGPT service PR #95 with the new head and CI
+result, and then perform a fresh full review of all of PR #101. Keep PR #101 unmerged until that
+full ChatGPT review and Codex's subsequent independent re-review are complete.
 - GitHub `main`: `730fb145c00fde2e503c5aa5282512ecb80192d2`
 - `JOB-06` reconciliation/observability is merged through PR #99, including migration `0013`.
 do not change code. Report the metadata correction in PR #95. Do not merge until Codex verifies
@@ -372,6 +372,24 @@ official Cloudflare Workers AI error table. They require ChatGPT verification un
 technical-agreement protocol before correction. PR #101 must remain unmerged. After any agreed
 correction, ChatGPT must update PR #95 and fully re-review all of PR #101; Codex will then perform
 another complete independent review.
+
+### PR #101 technical-agreement result
+
+ChatGPT updated service PR #95 at
+`f6c5a5585effa882e736003db07ca984a0ed1dc2` and independently verified both findings against PR
+#101 head `61e93885fcdfafa3629e6c79050ccb862a9adff9` before applying any correction. It confirmed that
+both are defects of the current PRV-02 task rather than future-stage groundwork:
+
+1. canonical Vico `fil` requires a provider-local mapping to M2M100 `tl` with exact outgoing-
+   payload coverage;
+2. recognized Workers AI error codes must take precedence over generic HTTP statuses, code `5019`
+   must use the terminal configuration path, code `3036` must be terminal rather than retried like
+   temporary capacity code `3040`, and regression cases must contain both `status` and `code`.
+
+The findings are now technically confirmed and correction is authorized. ChatGPT must correct
+only this agreed scope in PR #101, retain unknown-error passthrough, run repository CI, update PR
+#95 with the corrected head/results, and re-review the complete PR. Codex will then independently
+re-fetch and re-review the entire corrected PR before any merge decision.
 ## Full JOB-06 re-review after correction
 
 Codex reviewed the complete PR #99 at
