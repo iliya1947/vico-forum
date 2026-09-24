@@ -54,10 +54,8 @@ describe("protected CommonMark translation", () => {
     expect(screen.getByRole("heading", { name: "Translate this carefully" })).not.toBeNull();
     expect(screen.getByText("carefully").tagName).toBe("STRONG");
     expect(screen.getByText("human phrase").tagName).toBe("EM");
-    expect(screen.getByRole("link", { name: "documentation" })).toHaveAttribute(
-      "href",
-      "https://example.com/docs",
-    );
+    expect(screen.getByRole("link", { name: "documentation" }).getAttribute("href"))
+      .toBe("https://example.com/docs");
     expect(container.querySelector("blockquote")).toHaveTextContent("שלום עולם");
   });
 
@@ -94,10 +92,8 @@ const fenced = fooBar();
     expect(screen.getByText("inlineCode()").tagName).toBe("CODE");
     expect(screen.getByText(/const indented/).closest("pre")).not.toBeNull();
     expect(screen.getByText(/const fenced/).closest("pre")).not.toBeNull();
-    expect(screen.getByRole("link", { name: "https://example.com/raw" })).toHaveAttribute(
-      "href",
-      "https://example.com/raw",
-    );
+    expect(screen.getByRole("link", { name: "https://example.com/raw" }).getAttribute("href"))
+      .toBe("https://example.com/raw");
     expect(container.querySelector("img")).toBeNull();
     expect(container.querySelector(".post-body > div")).toBeNull();
   });
@@ -116,8 +112,9 @@ const fenced = fooBar();
     const restored = document.restore([{ id: segment.id, value: translated }]);
     expect(restored).toContain("fetchData()");
     expect(restored).toContain("https://api.example/v1");
-    expect(restored).toContain("API_TOKEN");
     expect(restored.match(/fetchData\(\)/gu)).toHaveLength(2);
+    const { container } = render(<ForumMarkdown>{restored}</ForumMarkdown>);
+    expect(container.textContent).toContain("API_TOKEN");
 
     expect(() => document.restore([{
       id: segment.id,
@@ -137,8 +134,12 @@ const fenced = fooBar();
     const document = protectMarkdownForTranslation(source);
 
     expect(document.protectedMarkdown).toContain("VICOSEGMENT1X");
-    expect(document.segments[0]?.text).toContain("⟦VICOPROTECTED0X");
+    expect(document.segments[0]?.text).not.toContain("⟦VICOPROTECTED0X");
     expect(document.segments[0]?.text).toContain("⟦VICOPROTECTED1X");
+    const restored = document.restore(translateIdentity(document.segments));
+    const { container } = render(<ForumMarkdown>{restored}</ForumMarkdown>);
+    expect(container.textContent).toContain("VICOSEGMENT0X");
+    expect(container.textContent).toContain("⟦VICOPROTECTED0X");
   });
 
   it("rejects missing, extra, duplicate, blank, oversized, and malformed segment translations", () => {
@@ -187,12 +188,10 @@ const fenced = fooBar();
 
     expect(container.querySelector("script")).toBeNull();
     expect(screen.queryByRole("link", { name: "evil" })).toBeNull();
-    expect(screen.getByRole("link", { name: "label" })).toHaveAttribute(
-      "href",
-      "https://example.com/docs",
-    );
-    expect(container).toHaveTextContent("[evil](javascript:alert(1))");
-    expect(container).toHaveTextContent("<script>alert(1)</script>");
+    expect(screen.getByRole("link", { name: "label" }).getAttribute("href"))
+      .toBe("https://example.com/docs");
+    expect(container.textContent).toContain("[evil](javascript:alert(1))");
+    expect(container.textContent).toContain("<script>alert(1)</script>");
 
     const blockInjection = document.segments.map((segment, index) => ({
       id: segment.id,
@@ -219,9 +218,9 @@ const fenced = fooBar();
 
     expect(container.querySelector("em")).toBeNull();
     expect(screen.queryByRole("link", { name: "brackets" })).toBeNull();
-    expect(container).toHaveTextContent("*literal*");
-    expect(container).toHaveTextContent("[brackets]");
-    expect(container).toHaveTextContent("فقرة عربية مع fooBar.");
+    expect(container.textContent).toContain("*literal*");
+    expect(container.textContent).toContain("[brackets]");
+    expect(container.textContent).toContain("فقرة عربية مع fooBar.");
     expect(container.querySelector("img")).toBeNull();
   });
 
