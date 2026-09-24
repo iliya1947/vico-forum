@@ -21,6 +21,13 @@ import {
   type ContentTranslationStore,
   type StoredContentTranslation,
 } from "./content-translation";
+import {
+  RoutedContentPostBodyProviderCapability,
+} from "./content-translation-provider";
+import {
+  TranslationProviderRouter,
+  type MachineTranslationProviderAdapter,
+} from "./translation-provider";
 import { localeRegistry } from "./registry";
 import {
   FakeTranslationTaskEnqueuer,
@@ -124,6 +131,45 @@ describe("ContentPostBodyTranslationPlanner", () => {
     });
     expect(tasks.specifications).toHaveLength(0);
     expect(enqueuer.messages).toHaveLength(0);
+  });
+
+  it("checks post-body provider/data-policy capability with protected segment metadata only", async () => {
+    const supports = vi.fn((capability: Parameters<MachineTranslationProviderAdapter["supports"]>[0]) =>
+      capability.domain === "content"
+      && capability.contentClassification === "public-forum-post-body"
+      && capability.sourceLocale === "ru"
+      && capability.targetLocale === "he"
+      && capability.operation === "plain"
+      && capability.sourceCharacterCount > 0
+    );
+    const adapter: MachineTranslationProviderAdapter = {
+      supports,
+      translate: vi.fn(),
+    };
+    const tasks = new FakePostBodyPlanningStore(bodyRevision({
+      originalContent: "First paragraph.\n\nSecond **paragraph**.",
+    }));
+
+    const result = await plannerWith({
+      tasks,
+      providerCapability: new RoutedContentPostBodyProviderCapability(
+        new TranslationProviderRouter([adapter]),
+      ),
+    }).planAndDispatch(bodyRevision(), "he");
+
+    expect(result.kind).toBe("queued");
+    expect(supports).toHaveBeenCalled();
+    for (const [capability] of supports.mock.calls) {
+      expect(capability).toMatchObject({
+        domain: "content",
+        contentClassification: "public-forum-post-body",
+        sourceLocale: "ru",
+        targetLocale: "he",
+        messageKind: "plain",
+        operation: "plain",
+      });
+      expect(capability).not.toHaveProperty("source");
+    }
   });
 
   it("blocks unsupported provider capability and denied request budget before durable creation", async () => {
