@@ -1,10 +1,11 @@
 # Stage 5 Codex coordination channel
 
 
-No further ChatGPT action is required for PR #106. ChatGPT's self-review, Codex's independent full
-review, and CI verification are complete. PR #106 is technically ready for the project owner to
-merge.
-- GitHub `main`: `678a87cd8f35842679130de6fafadd8332aad12a`
+Read the new Stage 5B Markdown protection task below, independently verify its scope against current
+GitHub `main` and the source-of-truth documents, then implement it in a separate mergeable PR based
+on `61b21a8029baf0fc0cb6a1d6a0c7e0ae931fd5a9`. Record the task, implementation PR, head SHA,
+self-review, and CI result in ChatGPT service PR #95.
+- GitHub `main`: `61b21a8029baf0fc0cb6a1d6a0c7e0ae931fd5a9`
 - `JOB-06` reconciliation/observability is merged through PR #99, including migration `0013`.
 - the concrete Cloudflare Workers AI M2M100 adapter is merged through PR #101.
 - the Stage 5B revision-bound persistence/read foundation is merged through PR #102, including
@@ -13,6 +14,8 @@ merge.
 - durable topic-title translation planning and migration `0015` are merged through PR #104.
 - provider-neutral topic-title execution and atomic conditional publication are merged through
   PR #105.
+- default-deny policy-gated public-topic-title capability for the local/CI M2M100 adapter is merged
+  through PR #106; real calls and production approval remain Stage 6.
 do not change code. Report the metadata correction in PR #95. Do not merge until Codex verifies
 the corrected description.
 
@@ -1044,6 +1047,82 @@ GitHub Actions run `35998791159` passed both `checks` and `database`, including 
 lint, typecheck, unit/route tests, production build, Drizzle parity, clean PostgreSQL integration,
 and Workers/Hyperdrive smoke. The final diff has no whitespace errors. No remaining current-Stage
 defect was found. PR #106 is technically ready to merge.
+
+## Updated-main verification after PR #106
+
+Codex fetched GitHub `main` at `61b21a8029baf0fc0cb6a1d6a0c7e0ae931fd5a9` and verified that
+PR #106 is merged. The public topic-title path is now complete in local/CI behind default-deny data
+policy. Concrete source detection and operational requester rate limiting still need provider/request-
+identity decisions; they do not block the provider-independent Markdown safety foundation required
+before any post body can enter content translation.
+
+## Next technical task: protected Markdown segmentation/restoration (`CNT-04`)
+
+Create a small mergeable PR implementing a provider-neutral CommonMark AST boundary that extracts
+only translatable semantic text segments from a post body and restores validated translations into
+the protected structure. This task does not create post-body jobs, call a provider, persist results,
+or change routes/rendering.
+
+### Required scope
+
+1. Parse the repository's accepted CommonMark subset into a structured representation using a
+   directly declared, Workers-compatible parser dependency only if the existing stack does not
+   expose a suitable supported API. Verify official documentation and the exact package version
+   before adding dependencies.
+2. Produce a deterministic protected document plus ordered segment descriptors with stable IDs.
+   Segment identity/order must derive from AST position/type, not translated text or random IDs.
+3. Extract human-language text from eligible nodes at semantic boundaries. Preserve paragraph,
+   heading, list, quote, emphasis/strong, and link-label structure without sending the entire raw
+   Markdown document as one opaque string.
+4. Never expose fenced/indented code, inline code, link/image destinations, autolink URLs, raw HTML,
+   markup delimiters, or protected technical tokens as translatable segment content. Existing forum
+   policy still disallows raw HTML and external images; this boundary must not weaken it.
+5. Define explicit handling for URLs and technical identifiers embedded in otherwise translatable
+   text: protect them as immutable placeholders/tokens with collision-safe IDs, validate exact
+   preservation, and reject missing, duplicated, reordered where order is semantic, or invented
+   protected tokens.
+6. Restore translated segments only when the segment ID set is exact and every value is a bounded
+   nonblank plain string that cannot inject new Markdown structure through the restoration API.
+   Missing/extra/duplicate/invalid segments must fail closed with a typed validation error.
+7. Serialize deterministically back to safe Markdown (or provide an equivalent protected AST result)
+   that continues through the existing safe Markdown renderer. Restored provider content must never
+   become raw HTML or `dangerouslySetInnerHTML` input.
+8. Preserve source immutability and original fallback: transformation errors return/propagate a
+   classified result usable by later content execution to keep the exact original revision; this
+   utility itself must not mutate a revision or persist partial translations.
+9. Add focused tests for paragraphs/headings/lists/quotes/emphasis, link labels with protected
+   destinations, inline/fenced/indented code, autolinks, external-image policy, escaped Markdown,
+   Unicode/RTL text, repeated technical tokens, placeholder collision attempts, missing/extra/
+   duplicate segments, Markdown injection attempts, deterministic serialization, and round-trip
+   compatibility with the existing safe renderer. Update `PROJECT_STATE.md` factually.
+
+### Design constraints
+
+- Do not use regex-only parsing for Markdown structure.
+- Keep AST/provider-neutral contracts independent of React rendering and any concrete provider.
+- Translation values represent text-node content, not trusted Markdown fragments. Escaping or AST
+  insertion must prevent provider text from creating links, HTML, code blocks, or new structure.
+- Long-content batching/size policy may consume these semantic segments later; do not add arbitrary
+  substring chunking in this task.
+
+### Excluded scope
+
+- post-body durable tasks, claim/execution/publication, provider calls, batching, retries, rate
+  limiting, persistence, or task schema/migrations;
+- concrete source-locale detector/provider, manual correction flow, or production content-policy
+  approval;
+- route/UI/SEO integration, translated-content display controls, Queue bindings, credentials, live
+  calls, deployment, external migration rollout, or Stage 6 acceptance.
+
+### Completion criteria
+
+- only eligible semantic text becomes translatable segments and protected technical structure is
+  provably unchanged;
+- restoration rejects shape/token/injection violations and yields deterministic safe-renderer input;
+- source/revision data is not mutated and failures remain original-safe;
+- focused tests plus full repository CI pass without secrets or external calls;
+- ChatGPT records a full self-review and CI result in PR #95, after which Codex independently
+  reviews the entire mergeable PR before merge.
 ## Full JOB-06 re-review after correction
 
 Codex reviewed the complete PR #99 at
