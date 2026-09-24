@@ -138,6 +138,16 @@ function translatedValue(source: string): string {
   return ["תרגום", ...tokens].join(" ");
 }
 
+function machineResultForUnitRequest(
+  request: MachineTranslationRequest,
+): MachineTranslationResult {
+  if (typeof request.source !== "string") throw new Error("post-body request must be plain");
+  return {
+    value: translatedValue(request.source),
+    provenance: { provider: "fake", model: "fake-v1", origin: "machine" },
+  };
+}
+
 async function harness(options: {
   readonly task?: ContentPostBodyTranslationTask & {
     readonly status: "processing";
@@ -154,6 +164,7 @@ async function harness(options: {
   readonly generationPolicyVersion?: string;
   readonly protectedContentPolicyVersion?: string;
   readonly providerSupported?: boolean;
+  readonly adapter?: MachineTranslationProviderAdapter;
   readonly translateEffect?: (
     request: MachineTranslationRequest,
     call: number,
@@ -230,7 +241,7 @@ async function harness(options: {
       provenance: { provider: "fake", model: "fake-v1", origin: "machine" },
     };
   });
-  const adapter: MachineTranslationProviderAdapter = {
+  const adapter: MachineTranslationProviderAdapter = options.adapter ?? {
     supports: vi.fn(() => options.providerSupported ?? true),
     translate,
   };
@@ -408,6 +419,40 @@ describe("ContentPostBodyTaskExecutor", () => {
       failureCode: "provider-unsupported",
     });
     expect(translate).not.toHaveBeenCalled();
+    expect(recordFailure).toHaveBeenCalledWith(taskId, claimToken, {
+      disposition: "terminal",
+      code: "provider-unsupported",
+    });
+  });
+
+  it("fails closed when segment capability is revoked between provider calls", async () => {
+    const task = await contentTask();
+    const document = protectMarkdownForTranslation(revision().originalContent);
+    let supportsCalls = 0;
+    const translate = vi.fn(async (request: MachineTranslationRequest) =>
+      machineResultForUnitRequest(request)
+    );
+    const adapter: MachineTranslationProviderAdapter = {
+      supports: vi.fn(() => {
+        supportsCalls++;
+        // Initial executor precheck consumes one supports call per segment.
+        // The first routed translate is still permitted; the second is revoked.
+        return supportsCalls <= document.segments.length + 1;
+      }),
+      translate,
+    };
+    const { executor, publishClaimedMachineResult, recordFailure } = await harness({
+      task,
+      adapter,
+    });
+
+    await expect(executor.execute({ translationTaskId: taskId })).resolves.toMatchObject({
+      outcome: "execution-failed",
+      delivery: "terminal",
+      failureCode: "provider-unsupported",
+    });
+    expect(translate).toHaveBeenCalledTimes(1);
+    expect(publishClaimedMachineResult).not.toHaveBeenCalled();
     expect(recordFailure).toHaveBeenCalledWith(taskId, claimToken, {
       disposition: "terminal",
       code: "provider-unsupported",
