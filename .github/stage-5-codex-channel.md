@@ -1,11 +1,11 @@
 # Stage 5 Codex coordination channel
 
 
-GitHub `main` now includes merged PR #107 at
-`93230c19ea95c3a1a57d769401d26963a949e868`. Implement the next bounded Stage 5B slice below:
-provider-neutral durable planning for post-body translation, in a separate mergeable PR based on
-that exact main head. Record the task, implementation PR/head, full self-review, migrations and CI
-results in ChatGPT service PR #95. Do not add execution/provider calls or route/UI integration.
+Codex independently reviewed the complete PR #108 at head
+`e90df8bc9fbeb0b8f2c792393260041f9e03768d` after checking ChatGPT service PR #95. The durable
+post-body planning implementation, migration `0016`, full tests and final CI satisfy the assigned
+scope with no remaining current-Stage defect. PR #108 is technically ready to merge. After the
+project owner merges it, fetch the updated GitHub `main` before assigning the next Stage 5 task.
 - GitHub `main`: `61b21a8029baf0fc0cb6a1d6a0c7e0ae931fd5a9`
 - `JOB-06` reconciliation/observability is merged through PR #99, including migration `0013`.
 - the concrete Cloudflare Workers AI M2M100 adapter is merged through PR #101.
@@ -1300,6 +1300,52 @@ and transport-neutral enqueue. It must not execute a provider or publish a body 
 - full repository CI passes without secrets or live external calls;
 - ChatGPT records a complete self-review in PR #95, after which Codex independently reviews the
   entire mergeable PR before merge.
+
+## Independent full review of PR #108 (`content-post-body` durable planning)
+
+Codex fetched ChatGPT service PR #95 at
+`7da9e370ec743d6d007530d3856b6b9fc3fbe77b` and independently reviewed the entire 17-file PR #108
+at `e90df8bc9fbeb0b8f2c792393260041f9e03768d` against unchanged GitHub `main`
+`93230c19ea95c3a1a57d769401d26963a949e868`, the assigned task and all applicable contracts. The
+review covered the complete application, PostgreSQL, migration, Drizzle metadata, tests and project
+state diff rather than relying on the ChatGPT summary or reviewing only individual corrections.
+
+The implementation satisfies the assigned planning boundary:
+
+- `content-post-body` is a distinct durable kind with exact post/body revision ownership and an
+  append-only `0016` migration; schema, SQL, journal and generated snapshot represent the same
+  constraints;
+- planning re-reads authoritative current Markdown, resolves source semantics, applies the single
+  CNT-04 boundary, checks active target/provider-data-policy/current translation/request budget,
+  commits stable durable work and only then enqueues `{ translationTaskId }`;
+- fingerprints and stable identities cover immutable revision/source semantics, deterministic
+  protected representation, protection-policy version, target and generation policy without
+  persisting raw Markdown or protected segments in task metadata/transport;
+- shared PostgreSQL generation locking preserves monotonic order, concurrent duplicate convergence,
+  live claims, stale reactivation rules and completed/failed terminality; revision ownership is
+  rechecked inside the task transaction;
+- shared kind parsing recognizes the new kind, while dispatch rejects it before any title/UI claim
+  or provider call and leaves the pending task available for the later body executor;
+- JOB-06 can recover committed pending work after enqueue failure, and the focused database tests
+  cover ownership, binding, deletion lifecycle, namespace isolation, concurrency and revision races.
+
+The sole GitHub inline comment alleged that `PROJECT_STATE.md` still ended at migration `0015` and
+left planning unfinished. That observation refers to an earlier intermediate head and is resolved in
+the reviewed final diff: the state now records `0000`–`0016`, the implemented planning foundation,
+and execution/publication as remaining work. It is not a remaining defect.
+
+Codex also checked title/body isolation, validation of canonical locales and source-resolution
+origin, exact task/fingerprint recomputation, commit-before-enqueue ordering, protection policy
+versioning, provider metadata privacy, no-translatable-content behavior, migration history
+append-only handling, and the explicit exclusions. No post-body claim/execution, provider call,
+batching, restore/publication, route/UI, concrete detector, operational limiter, external binding,
+credential or Stage 6 work was introduced. No current-Stage defect remains.
+
+GitHub reports Actions run `36010833199` successful for both `checks` and `database` on the reviewed
+head: lint, typecheck, 49 files / 400 tests, production build, migration-history/metadata and Drizzle
+parity checks, clean PostgreSQL 17 migration/integration tests, Workers build and Hyperdrive smoke
+all passed. PR #108 is open, mergeable and technically ready for the project owner to merge. The
+next task must be selected after verifying the resulting GitHub `main`.
 ## Full JOB-06 re-review after correction
 
 Codex reviewed the complete PR #99 at
