@@ -114,7 +114,10 @@ export class DrizzleTranslationTaskStore implements TranslationTaskStore, Transl
       }
       const existingRows = await transaction.select(uiTranslationTaskColumns)
       .from(translationTasks)
-        .where(eq(translationTasks.taskIdentity, specification.taskIdentity)).limit(1);
+        .where(and(
+          eq(translationTasks.translationKind, "ui"),
+          eq(translationTasks.taskIdentity, specification.taskIdentity),
+        )).limit(1);
       if (existingRows[0]) {
         const existing = await parseTaskRow(existingRows[0]);
         assertMatchesSpecification(existing, specification);
@@ -181,7 +184,10 @@ export class DrizzleTranslationTaskStore implements TranslationTaskStore, Transl
     const rows = await this.database
       .select(uiTranslationTaskColumns)
       .from(translationTasks)
-      .where(eq(translationTasks.id, id))
+      .where(and(
+        eq(translationTasks.translationKind, "ui"),
+        eq(translationTasks.id, id),
+      ))
       .limit(1);
     return rows[0] ? await parseTaskRow(rows[0]) : undefined;
   }
@@ -193,7 +199,10 @@ export class DrizzleTranslationTaskStore implements TranslationTaskStore, Transl
     const rows = await this.database
       .select(uiTranslationTaskColumns)
       .from(translationTasks)
-      .where(eq(translationTasks.taskIdentity, taskIdentity))
+      .where(and(
+        eq(translationTasks.translationKind, "ui"),
+        eq(translationTasks.taskIdentity, taskIdentity),
+      ))
       .limit(1);
     return rows[0] ? await parseTaskRow(rows[0]) : undefined;
   }
@@ -207,7 +216,8 @@ export class DrizzleTranslationTaskStore implements TranslationTaskStore, Transl
         with candidates as (
           select ${translationTasks.id} as id, ${translationTasks.status} as status
             from ${translationTasks}
-           where (
+           where ${translationTasks.translationKind} = 'ui'
+             and (
              (
                ${translationTasks.status} = 'pending'
                and ${translationTasks.updatedAt} <= statement_timestamp()
@@ -233,6 +243,7 @@ export class DrizzleTranslationTaskStore implements TranslationTaskStore, Transl
            set reconciliation_attempted_at = statement_timestamp()
           from candidates
          where task.id = candidates.id
+           and task.translation_kind = 'ui'
         returning task.id, candidates.status
       `);
       return result.rows;
@@ -337,6 +348,7 @@ export class DrizzleTranslationTaskStore implements TranslationTaskStore, Transl
           filter (where ${translationTasks.status} = 'failed')
         )::integer as failure_group_count
       from ${translationTasks}
+      where ${translationTasks.translationKind} = 'ui'
     `);
     const row = aggregate.rows[0];
     if (
@@ -372,7 +384,8 @@ export class DrizzleTranslationTaskStore implements TranslationTaskStore, Transl
         ${translationTasks.lastFailureCode} as last_failure_code,
         count(*)::integer as count
       from ${translationTasks}
-      where ${translationTasks.status} = 'failed'
+      where ${translationTasks.translationKind} = 'ui'
+        and ${translationTasks.status} = 'failed'
       group by ${translationTasks.failureDisposition}, ${translationTasks.lastFailureCode}
       order by count(*) desc,
                ${translationTasks.failureDisposition} asc,
@@ -450,6 +463,7 @@ export class DrizzleTranslationTaskStore implements TranslationTaskStore, Transl
         updatedAt: databaseNow,
       })
       .where(and(
+        eq(translationTasks.translationKind, "ui"),
         eq(translationTasks.id, id),
         claimable,
         lt(translationTasks.attemptCount, translationTasks.maxAttempts),
@@ -471,6 +485,7 @@ export class DrizzleTranslationTaskStore implements TranslationTaskStore, Transl
         updatedAt: databaseNow,
       })
       .where(and(
+        eq(translationTasks.translationKind, "ui"),
         eq(translationTasks.id, id),
         eq(translationTasks.status, "processing"),
         lte(translationTasks.leaseExpiresAt, databaseNow),
@@ -499,6 +514,7 @@ export class DrizzleTranslationTaskStore implements TranslationTaskStore, Transl
     assertFailureRecord(failure);
     const databaseNow = sql`statement_timestamp()`;
     const currentClaim = and(
+      eq(translationTasks.translationKind, "ui"),
       eq(translationTasks.id, id),
       eq(translationTasks.status, "processing"),
       eq(translationTasks.claimToken, claimToken),
@@ -590,6 +606,7 @@ export class DrizzleTranslationTaskStore implements TranslationTaskStore, Transl
         updatedAt: databaseNow,
       })
       .where(and(
+        eq(translationTasks.translationKind, "ui"),
         eq(translationTasks.id, id),
         eq(translationTasks.status, "processing"),
         eq(translationTasks.claimToken, claimToken),
