@@ -14,6 +14,7 @@ import {
 } from "../../app/localization/content-post-body-planning";
 import {
   CONTENT_MARKDOWN_PROTECTION_POLICY_VERSION,
+  protectMarkdownForTranslation,
 } from "../../app/localization/content-markdown-translation";
 import {
   ContentSourceLocaleResolver,
