@@ -1,6 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 
 import {
+  CONTENT_TRANSLATION_REQUESTER_SUBJECT_KEY_LENGTH,
+  ContentTranslationRequestBudgetStorageUnavailableError,
+  type ContentTranslationRequestBudgetAdmission,
+} from "./content-request-budget.server";
+
+import {
   ContentPostBodyTranslationPlanner,
   contentPostBodyTaskSpecification,
   type ContentPostBodyPlanningStore,
@@ -54,6 +60,7 @@ describe("ContentPostBodyTranslationPlanner", () => {
         sourceLocale: "en",
       }),
       "he",
+      budgetAdmission(),
     );
 
     expect(result).toMatchObject({
@@ -92,7 +99,7 @@ describe("ContentPostBodyTranslationPlanner", () => {
       })),
     });
 
-    const result = await planner.planAndDispatch(bodyRevision({ sourceLocale: "und" }), "he");
+    const result = await planner.planAndDispatch(bodyRevision({ sourceLocale: "und" }), "he", budgetAdmission());
 
     expect(result).toMatchObject({
       kind: "queued",
@@ -124,7 +131,7 @@ describe("ContentPostBodyTranslationPlanner", () => {
         }),
     });
 
-    await expect(planner.planAndDispatch(revision, target)).resolves.toMatchObject({
+    await expect(planner.planAndDispatch(revision, target, budgetAdmission())).resolves.toMatchObject({
       kind: "original",
       taskCreated: false,
       reason,
@@ -156,7 +163,7 @@ describe("ContentPostBodyTranslationPlanner", () => {
       providerCapability: new RoutedContentPostBodyProviderCapability(
         new TranslationProviderRouter([adapter]),
       ),
-    }).planAndDispatch(bodyRevision(), "he");
+    }).planAndDispatch(bodyRevision(), "he", budgetAdmission());
 
     expect(result.kind).toBe("queued");
     expect(supports).toHaveBeenCalled();
@@ -173,32 +180,48 @@ describe("ContentPostBodyTranslationPlanner", () => {
     }
   });
 
-  it("blocks unsupported provider capability and denied request budget before durable creation", async () => {
-    for (const configuration of [
-      {
-        providerCapability: { supports: () => false },
-        requestBudgetPolicy: { allows: () => true },
-        reason: "target-unsupported",
-      },
-      {
-        providerCapability: { supports: () => true },
-        requestBudgetPolicy: { allows: () => false },
-        reason: "request-budget-denied",
-      },
-    ] as const) {
-      const tasks = new FakePostBodyPlanningStore(bodyRevision());
-      const enqueuer = new FakeTranslationTaskEnqueuer();
-      const result = await plannerWith({
-        tasks,
-        enqueuer,
-        providerCapability: configuration.providerCapability,
-        requestBudgetPolicy: configuration.requestBudgetPolicy,
-      }).planAndDispatch(bodyRevision(), "he");
+  it("applies provider capability before atomic budget admission", async () => {
+    const tasks = new FakePostBodyPlanningStore(bodyRevision());
+    const enqueuer = new FakeTranslationTaskEnqueuer();
+    const result = await plannerWith({
+      tasks,
+      enqueuer,
+      providerCapability: { supports: () => false },
+    }).planAndDispatch(bodyRevision(), "he", budgetAdmission());
 
-      expect(result).toMatchObject({ kind: "original", reason: configuration.reason });
-      expect(tasks.specifications).toHaveLength(0);
-      expect(enqueuer.messages).toHaveLength(0);
-    }
+    expect(result).toMatchObject({ kind: "original", reason: "target-unsupported" });
+    expect(tasks.specifications).toHaveLength(0);
+    expect(tasks.admissions).toHaveLength(0);
+    expect(enqueuer.messages).toHaveLength(0);
+  });
+
+  it("returns typed request-budget denial metadata from atomic planning", async () => {
+    const denied = {
+      allowed: false as const,
+      reason: "limit-exceeded" as const,
+      limitingScope: "global" as const,
+      remainingUnits: 0,
+      resetAt: new Date("2026-09-24T00:01:00Z"),
+      retryAfterSeconds: 45,
+    };
+    const tasks = new FakePostBodyPlanningStore(bodyRevision(), {
+      outcome: "request-budget-denied",
+      decision: denied,
+    });
+    const enqueuer = new FakeTranslationTaskEnqueuer();
+
+    const result = await plannerWith({ tasks, enqueuer })
+      .planAndDispatch(bodyRevision(), "he", budgetAdmission());
+
+    expect(result).toEqual({
+      kind: "original",
+      taskCreated: false,
+      targetLocale: "he",
+      reason: "request-budget-denied",
+      requestBudgetDecision: denied,
+    });
+    expect(tasks.admissions).toEqual([budgetAdmission()]);
+    expect(enqueuer.messages).toHaveLength(0);
   });
 
   it("does not create work for an existing exact-revision translation", async () => {
@@ -215,17 +238,34 @@ describe("ContentPostBodyTranslationPlanner", () => {
     }]);
 
     const result = await plannerWith({ tasks, translations })
-      .planAndDispatch(revision, "he");
+      .planAndDispatch(revision, "he", budgetAdmission());
 
     expect(result).toMatchObject({ kind: "original", reason: "translation-current" });
     expect(tasks.specifications).toHaveLength(0);
+  });
+
+  it("preserves classified body budget storage unavailability and unexpected planning errors", async () => {
+    const revision = bodyRevision();
+    const unavailable = new ContentTranslationRequestBudgetStorageUnavailableError();
+    await expect(
+      plannerWith({
+        tasks: new FakePostBodyPlanningStore(revision, unavailable),
+      }).planAndDispatch(revision, "he", budgetAdmission()),
+    ).rejects.toBe(unavailable);
+
+    const unexpected = new Error("programming failure");
+    await expect(
+      plannerWith({
+        tasks: new FakePostBodyPlanningStore(revision, unexpected),
+      }).planAndDispatch(revision, "he", budgetAdmission()),
+    ).rejects.toBe(unexpected);
   });
 
   it("rejects a stale caller revision before protection or durable creation", async () => {
     const tasks = new FakePostBodyPlanningStore(bodyRevision({ revisionId: "post-a-r2" }));
 
     await expect(
-      plannerWith({ tasks }).planAndDispatch(bodyRevision(), "he"),
+      plannerWith({ tasks }).planAndDispatch(bodyRevision(), "he", budgetAdmission()),
     ).resolves.toMatchObject({
       kind: "original",
       reason: "revision-not-current",
@@ -241,7 +281,7 @@ describe("ContentPostBodyTranslationPlanner", () => {
     });
 
     await expect(
-      plannerWith({ tasks, enqueuer }).planAndDispatch(bodyRevision(), "he"),
+      plannerWith({ tasks, enqueuer }).planAndDispatch(bodyRevision(), "he", budgetAdmission()),
     ).rejects.toBe(failure);
     expect(tasks.specifications).toHaveLength(1);
   });
@@ -300,7 +340,6 @@ function plannerWith(overrides: {
     targetLocale: string;
     segmentCharacterCounts: readonly number[];
   }): boolean };
-  requestBudgetPolicy?: { allows(): boolean | Promise<boolean> };
 } = {}) {
   const revision = bodyRevision();
   return new ContentPostBodyTranslationPlanner({
@@ -312,7 +351,6 @@ function plannerWith(overrides: {
       overrides.translations ?? new MemoryContentTranslationStore(),
     ),
     providerCapability: overrides.providerCapability ?? { supports: () => true },
-    requestBudgetPolicy: overrides.requestBudgetPolicy ?? { allows: () => true },
     tasks: overrides.tasks ?? new FakePostBodyPlanningStore(revision),
     enqueuer: overrides.enqueuer ?? new FakeTranslationTaskEnqueuer(),
     generationPolicyVersion: "content-v1",
@@ -326,6 +364,16 @@ function resolver(
     { detect },
     new ThresholdContentSourceLocalePolicy(0.8, () => true),
   );
+}
+
+function budgetAdmission(): ContentTranslationRequestBudgetAdmission {
+  return {
+    subjectKey: "B".repeat(CONTENT_TRANSLATION_REQUESTER_SUBJECT_KEY_LENGTH),
+    cost: 2,
+    windowSeconds: 60,
+    global: { name: "test-body-global", version: "v1", limit: 100 },
+    requester: { name: "test-body-requester", version: "v1", limit: 20 },
+  };
 }
 
 function bodyRevision(
@@ -343,9 +391,13 @@ function bodyRevision(
 
 class FakePostBodyPlanningStore implements ContentPostBodyPlanningStore {
   readonly specifications: ContentPostBodyTranslationTaskSpecification[] = [];
+  readonly admissions: ContentTranslationRequestBudgetAdmission[] = [];
   private task?: ContentPostBodyTranslationTask;
 
-  constructor(private readonly current: ContentTranslationRevision) {}
+  constructor(
+    private readonly current: ContentTranslationRevision,
+    private readonly forcedResult?: ContentPostBodyTaskUpsertResult | Error,
+  ) {}
 
   async readCurrentRevision(): Promise<ContentTranslationRevision> {
     return this.current;
@@ -353,8 +405,13 @@ class FakePostBodyPlanningStore implements ContentPostBodyPlanningStore {
 
   async upsertPending(
     specification: ContentPostBodyTranslationTaskSpecification,
+    _expectedRevision: ContentTranslationRevision,
+    requestBudgetAdmission: ContentTranslationRequestBudgetAdmission,
   ): Promise<ContentPostBodyTaskUpsertResult> {
     this.specifications.push(specification);
+    this.admissions.push(requestBudgetAdmission);
+    if (this.forcedResult instanceof Error) throw this.forcedResult;
+    if (this.forcedResult) return this.forcedResult;
     if (!this.task) {
       const now = new Date("2026-09-24T00:00:00Z");
       this.task = {

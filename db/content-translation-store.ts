@@ -147,8 +147,57 @@ export class DrizzleContentTranslationStore implements ContentTranslationStore {
   }
 }
 
-type ContentTranslationTransaction =
+export type ContentTranslationTransaction =
   Parameters<Parameters<NodePgDatabase["transaction"]>[0]>[0];
+
+export async function readContentTranslationForUpdate(
+  tx: ContentTranslationTransaction,
+  identity: ContentTranslationIdentity,
+): Promise<StoredContentTranslation | undefined> {
+  if (identity.contentType === "topic-title") {
+    const [row] = await tx
+      .select({
+        topicId: forumTopicTitleTranslations.topicId,
+        revisionId: forumTopicTitleTranslations.revisionId,
+        targetLocale: forumTopicTitleTranslations.targetLocale,
+        sourceLocale: forumTopicTitleTranslations.sourceLocale,
+        translatedContent: forumTopicTitleTranslations.translatedContent,
+        origin: forumTopicTitleTranslations.origin,
+        provider: forumTopicTitleTranslations.provider,
+        providerModel: forumTopicTitleTranslations.providerModel,
+        attribution: forumTopicTitleTranslations.attribution,
+      })
+      .from(forumTopicTitleTranslations)
+      .where(and(
+        eq(forumTopicTitleTranslations.topicId, identity.contentId),
+        eq(forumTopicTitleTranslations.revisionId, identity.revisionId),
+        eq(forumTopicTitleTranslations.targetLocale, identity.targetLocale),
+      ))
+      .for("update");
+    return row ? topicRow(row) : undefined;
+  }
+
+  const [row] = await tx
+    .select({
+      postId: forumPostBodyTranslations.postId,
+      revisionId: forumPostBodyTranslations.revisionId,
+      targetLocale: forumPostBodyTranslations.targetLocale,
+      sourceLocale: forumPostBodyTranslations.sourceLocale,
+      translatedContent: forumPostBodyTranslations.translatedContent,
+      origin: forumPostBodyTranslations.origin,
+      provider: forumPostBodyTranslations.provider,
+      providerModel: forumPostBodyTranslations.providerModel,
+      attribution: forumPostBodyTranslations.attribution,
+    })
+    .from(forumPostBodyTranslations)
+    .where(and(
+      eq(forumPostBodyTranslations.postId, identity.contentId),
+      eq(forumPostBodyTranslations.revisionId, identity.revisionId),
+      eq(forumPostBodyTranslations.targetLocale, identity.targetLocale),
+    ))
+    .for("update");
+  return row ? postRow(row) : undefined;
+}
 
 export async function writeTopicTitleTranslationWithTrust(
   tx: ContentTranslationTransaction,

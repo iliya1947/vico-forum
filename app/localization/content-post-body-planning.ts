@@ -1,5 +1,10 @@
 import { sha256Text } from "./fingerprint";
 import {
+  validateContentTranslationRequestBudgetAdmission,
+  type ContentTranslationRequestBudgetAdmission,
+  type ContentTranslationRequestBudgetDecision,
+} from "./content-request-budget.server";
+import {
   CONTENT_MARKDOWN_PROTECTION_POLICY_VERSION,
   protectMarkdownForTranslation,
   type ProtectedMarkdownTranslationDocument,
@@ -37,14 +42,27 @@ export type ContentPostBodyNoJobReason =
   | "no-translatable-content"
   | "target-unsupported"
   | "translation-current"
+  | "task-completed"
   | "request-budget-denied";
+
+type DeniedRequestBudgetDecision = Extract<
+  ContentTranslationRequestBudgetDecision,
+  { readonly allowed: false }
+>;
 
 export type ContentPostBodyPlanningResult =
   | {
       readonly kind: "original";
       readonly taskCreated: false;
       readonly targetLocale: string;
-      readonly reason: ContentPostBodyNoJobReason;
+      readonly reason: Exclude<ContentPostBodyNoJobReason, "request-budget-denied">;
+    }
+  | {
+      readonly kind: "original";
+      readonly taskCreated: false;
+      readonly targetLocale: string;
+      readonly reason: "request-budget-denied";
+      readonly requestBudgetDecision: DeniedRequestBudgetDecision;
     }
   | {
       readonly kind: "queued";
@@ -52,33 +70,26 @@ export type ContentPostBodyPlanningResult =
       readonly task: ContentPostBodyTranslationTask;
     };
 
-export interface ContentPostBodyRequestBudgetInput {
-  readonly contentType: "post-body";
-  readonly postId: string;
-  readonly revisionId: string;
-  readonly sourceLocale: string;
-  readonly targetLocale: string;
-  readonly protectedContentPolicyVersion: string;
-  readonly generationPolicyVersion: string;
-}
-
-export interface ContentPostBodyRequestBudgetPolicy {
-  allows(input: ContentPostBodyRequestBudgetInput): boolean | Promise<boolean>;
-}
-
 export type ContentPostBodyTaskUpsertResult =
   | {
       readonly outcome: "task";
       readonly created: boolean;
       readonly task: ContentPostBodyTranslationTask;
     }
-  | { readonly outcome: "revision-changed" };
+  | { readonly outcome: "revision-changed" }
+  | { readonly outcome: "translation-current" }
+  | { readonly outcome: "task-completed" }
+  | {
+      readonly outcome: "request-budget-denied";
+      readonly decision: DeniedRequestBudgetDecision;
+    };
 
 export interface ContentPostBodyPlanningStore {
   readCurrentRevision(postId: string): Promise<ContentTranslationRevision | undefined>;
   upsertPending(
     specification: ContentPostBodyTranslationTaskSpecification,
     expectedRevision: ContentTranslationRevision,
+    requestBudgetAdmission: ContentTranslationRequestBudgetAdmission,
   ): Promise<ContentPostBodyTaskUpsertResult>;
 }
 
@@ -87,7 +98,6 @@ export interface ContentPostBodyTranslationPlannerDependencies {
   readonly sourceLocaleResolver: ContentSourceLocaleResolver;
   readonly contentTranslations: ContentTranslationService;
   readonly providerCapability: ContentPostBodyProviderCapability;
-  readonly requestBudgetPolicy: ContentPostBodyRequestBudgetPolicy;
   readonly tasks: ContentPostBodyPlanningStore;
   readonly enqueuer: TranslationTaskEnqueuer;
   readonly generationPolicyVersion: string;
@@ -101,6 +111,7 @@ export class ContentPostBodyTranslationPlanner {
   async planAndDispatch(
     requestedRevision: ContentTranslationRevision,
     targetLocaleInput: string,
+    requestBudgetAdmission: ContentTranslationRequestBudgetAdmission,
   ): Promise<ContentPostBodyPlanningResult> {
     if (requestedRevision.contentType !== "post-body") {
       throw new TypeError("post-body translation planning requires a post-body revision");
@@ -155,17 +166,7 @@ export class ContentPostBodyTranslationPlanner {
       return original(targetLocale, "translation-current");
     }
 
-    if (!await this.dependencies.requestBudgetPolicy.allows({
-      contentType: "post-body",
-      postId,
-      revisionId,
-      sourceLocale: sourcePlan.sourceLocale,
-      targetLocale,
-      protectedContentPolicyVersion: CONTENT_MARKDOWN_PROTECTION_POLICY_VERSION,
-      generationPolicyVersion: this.dependencies.generationPolicyVersion,
-    })) {
-      return original(targetLocale, "request-budget-denied");
-    }
+    validateContentTranslationRequestBudgetAdmission(requestBudgetAdmission);
 
     const specification = await contentPostBodyTaskSpecification(
       authoritativeRevision,
@@ -179,9 +180,19 @@ export class ContentPostBodyTranslationPlanner {
     const upserted = await this.dependencies.tasks.upsertPending(
       specification,
       authoritativeRevision,
+      requestBudgetAdmission,
     );
     if (upserted.outcome === "revision-changed") {
       return original(targetLocale, "revision-not-current");
+    }
+    if (upserted.outcome === "translation-current") {
+      return original(targetLocale, "translation-current");
+    }
+    if (upserted.outcome === "task-completed") {
+      return original(targetLocale, "task-completed");
+    }
+    if (upserted.outcome === "request-budget-denied") {
+      return budgetDenied(targetLocale, upserted.decision);
     }
 
     await this.dependencies.enqueuer.enqueue({ translationTaskId: upserted.task.id });
@@ -356,12 +367,25 @@ function requireNonBlank(value: string, field: string): string {
 
 function original(
   targetLocale: string,
-  reason: ContentPostBodyNoJobReason,
+  reason: Exclude<ContentPostBodyNoJobReason, "request-budget-denied">,
 ): ContentPostBodyPlanningResult {
   return {
     kind: "original",
     taskCreated: false,
     targetLocale,
     reason,
+  };
+}
+
+function budgetDenied(
+  targetLocale: string,
+  requestBudgetDecision: DeniedRequestBudgetDecision,
+): ContentPostBodyPlanningResult {
+  return {
+    kind: "original",
+    taskCreated: false,
+    targetLocale,
+    reason: "request-budget-denied",
+    requestBudgetDecision,
   };
 }

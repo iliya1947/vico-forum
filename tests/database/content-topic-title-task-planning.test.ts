@@ -5,11 +5,18 @@ import { Client, type DatabaseError } from "pg";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import {
+  CONTENT_TRANSLATION_REQUESTER_SUBJECT_KEY_LENGTH,
+  type ContentTranslationRequestBudgetAdmission,
+} from "../../app/localization/content-request-budget.server";
+import {
   ContentSourceLocaleResolver,
   ThresholdContentSourceLocalePolicy,
 } from "../../app/localization/content-source-locale";
 import { ContentTranslationService } from "../../app/localization/content-translation";
-import { ContentTopicTitleTranslationPlanner } from "../../app/localization/content-translation-planning";
+import {
+  ContentTopicTitleTranslationPlanner,
+  contentTopicTitleTaskSpecification,
+} from "../../app/localization/content-translation-planning";
 import { localeRegistry } from "../../app/localization/registry";
 import {
   FakeTranslationTaskEnqueuer,
@@ -53,6 +60,7 @@ beforeAll(async () => {
     "drizzle/0013_translation_task_reconciliation.sql",
     "drizzle/0014_content_translation_persistence.sql",
     "drizzle/0015_content_topic_title_tasks.sql",
+    "drizzle/0017_content_translation_request_budget.sql",
   ]) {
     const sql = (await readFile(migration, "utf8"))
       .replaceAll('"public".', `"${schemaName}".`);
@@ -63,6 +71,7 @@ beforeAll(async () => {
 beforeEach(async () => {
   await client.query(`
     truncate
+      content_translation_request_budget_counters,
       content_topic_title_translation_tasks,
       translation_tasks,
       translation_task_generation_heads,
@@ -97,7 +106,7 @@ describe("content topic-title durable planning", () => {
       revisionId: "title-a-r1",
       originalContent: "caller value is intentionally ignored",
       sourceLocale: "und",
-    }, "en");
+    }, "en", budgetAdmission());
 
     expect(result).toMatchObject({
       kind: "queued",
@@ -132,6 +141,81 @@ describe("content topic-title durable planning", () => {
     expect(enqueuer.messages).toEqual([{ translationTaskId: row.rows[0]!.id }]);
   });
 
+  it("keeps an existing exact-revision translation free of budget and durable work", async () => {
+    await new DrizzleContentTranslationStore(drizzle(client)).write({
+      contentType: "topic-title",
+      contentId: "topic-a",
+      revisionId: "title-a-r1",
+      targetLocale: "he",
+      sourceLocale: "ru",
+      translatedContent: "ידני",
+      provenance: { origin: "persistent_manual" },
+    });
+
+    await expect(
+      createPlanner(client).planAndDispatch(requestRevision(), "he", budgetAdmission()),
+    ).resolves.toMatchObject({
+      kind: "original",
+      reason: "translation-current",
+    });
+
+    const counters = await client.query<{ count: number }>(
+      "select count(*)::int as count from content_translation_request_budget_counters",
+    );
+    const tasks = await client.query<{ count: number }>(
+      "select count(*)::int as count from translation_tasks where translation_kind = 'content-topic-title'",
+    );
+    expect(counters.rows[0]?.count).toBe(0);
+    expect(tasks.rows[0]?.count).toBe(0);
+  });
+
+  it("rechecks a serialized translation before admission and rolls back planning metadata", async () => {
+    const store = new DrizzleContentTopicTitlePlanningStore(drizzle(client));
+    const revision = await store.readCurrentRevision("topic-a");
+    if (!revision) throw new Error("missing title revision fixture");
+    const specification = await contentTopicTitleTaskSpecification(
+      revision,
+      {
+        kind: "revision",
+        mayProceed: true,
+        sourceLocale: "ru",
+        resolutionOrigin: "revision-metadata",
+      },
+      "ru",
+      "he",
+      "content-v1",
+    );
+
+    await new DrizzleContentTranslationStore(drizzle(client)).write({
+      contentType: "topic-title",
+      contentId: "topic-a",
+      revisionId: "title-a-r1",
+      targetLocale: "he",
+      sourceLocale: "ru",
+      translatedContent: "ידני",
+      provenance: { origin: "persistent_manual" },
+    });
+
+    await expect(
+      store.upsertPending(specification, revision, budgetAdmission()),
+    ).resolves.toEqual({ outcome: "translation-current" });
+
+    const [counters, heads, tasks] = await Promise.all([
+      client.query<{ count: number }>(
+        "select count(*)::int as count from content_translation_request_budget_counters",
+      ),
+      client.query<{ count: number }>(
+        "select count(*)::int as count from translation_task_generation_heads where translation_kind = 'content-topic-title'",
+      ),
+      client.query<{ count: number }>(
+        "select count(*)::int as count from translation_tasks where translation_kind = 'content-topic-title'",
+      ),
+    ]);
+    expect(counters.rows[0]?.count).toBe(0);
+    expect(heads.rows[0]?.count).toBe(0);
+    expect(tasks.rows[0]?.count).toBe(0);
+  });
+
   it("serializes concurrent duplicate planning into one durable logical task", async () => {
     const second = new Client({ connectionString: databaseUrl });
     await second.connect();
@@ -140,8 +224,8 @@ describe("content topic-title durable planning", () => {
       const firstEnqueuer = new FakeTranslationTaskEnqueuer();
       const secondEnqueuer = new FakeTranslationTaskEnqueuer();
       const [first, duplicate] = await Promise.all([
-        createPlanner(client, firstEnqueuer).planAndDispatch(requestRevision(), "he"),
-        createPlanner(second, secondEnqueuer).planAndDispatch(requestRevision(), "he"),
+        createPlanner(client, firstEnqueuer).planAndDispatch(requestRevision(), "he", budgetAdmission()),
+        createPlanner(second, secondEnqueuer).planAndDispatch(requestRevision(), "he", budgetAdmission()),
       ]);
 
       expect([first, duplicate]).toEqual(expect.arrayContaining([
@@ -160,13 +244,228 @@ describe("content topic-title durable planning", () => {
          where translation_kind = 'content-topic-title'
       `);
       expect(count.rows[0]?.count).toBe(1);
+      const budget = await client.query<{ used: number }>(`
+        select coalesce(sum(used_units), 0)::int as used
+          from content_translation_request_budget_counters
+         where scope in ('title-global@test-v1', 'title-requester@test-v1')
+      `);
+      // Two eligible duplicate requests each consume one unit in both scopes.
+      expect(budget.rows[0]?.used).toBe(4);
     } finally {
       await second.end();
     }
   });
 
+  it("serializes concurrent title admission without overshooting a one-unit budget", async () => {
+    const second = new Client({ connectionString: databaseUrl });
+    await second.connect();
+    await second.query(`set search_path to ${schemaName}`);
+    try {
+      const admission = budgetAdmission({
+        global: { name: "title-global-concurrent", version: "test-v1", limit: 1 },
+        requester: { name: "title-requester-concurrent", version: "test-v1", limit: 1 },
+      });
+      const firstEnqueuer = new FakeTranslationTaskEnqueuer();
+      const secondEnqueuer = new FakeTranslationTaskEnqueuer();
+
+      const results = await Promise.all([
+        createPlanner(client, firstEnqueuer).planAndDispatch(
+          requestRevision(),
+          "he",
+          admission,
+        ),
+        createPlanner(second, secondEnqueuer).planAndDispatch(
+          requestRevision(),
+          "he",
+          admission,
+        ),
+      ]);
+
+      expect(results.filter((result) => result.kind === "queued")).toHaveLength(1);
+      expect(results.filter((result) =>
+        result.kind === "original" && result.reason === "request-budget-denied"
+      )).toHaveLength(1);
+
+      const counters = await client.query<{ scope: string; used_units: number }>(`
+        select scope, used_units::int
+          from content_translation_request_budget_counters
+         where scope in (
+           'title-global-concurrent@test-v1',
+           'title-requester-concurrent@test-v1'
+         )
+         order by scope
+      `);
+      expect(counters.rows).toEqual([
+        { scope: "title-global-concurrent@test-v1", used_units: 1 },
+        { scope: "title-requester-concurrent@test-v1", used_units: 1 },
+      ]);
+      const tasks = await client.query<{ count: number }>(
+        "select count(*)::int as count from translation_tasks where translation_kind = 'content-topic-title'",
+      );
+      expect(tasks.rows[0]?.count).toBe(1);
+      expect(firstEnqueuer.messages.length + secondEnqueuer.messages.length).toBe(1);
+    } finally {
+      await second.end();
+    }
+  });
+
+  it("denies an eligible duplicate without partial global charge or task mutation", async () => {
+    const constrained = budgetAdmission({
+      global: { name: "title-global-deny", version: "test-v1", limit: 2 },
+      requester: { name: "title-requester-deny", version: "test-v1", limit: 1 },
+    });
+    const first = await createPlanner(client).planAndDispatch(
+      requestRevision(),
+      "he",
+      constrained,
+    );
+    if (first.kind !== "queued") throw new Error("expected first title request to queue");
+
+    const denied = await createPlanner(client).planAndDispatch(
+      requestRevision(),
+      "he",
+      constrained,
+    );
+    expect(denied).toMatchObject({
+      kind: "original",
+      reason: "request-budget-denied",
+      requestBudgetDecision: {
+        allowed: false,
+        limitingScope: "requester",
+        remainingUnits: 0,
+      },
+    });
+
+    const rows = await client.query<{ scope: string; used_units: number }>(`
+      select scope, used_units::int
+        from content_translation_request_budget_counters
+       where scope in ('title-global-deny@test-v1', 'title-requester-deny@test-v1')
+       order by scope
+    `);
+    expect(rows.rows).toEqual([
+      { scope: "title-global-deny@test-v1", used_units: 1 },
+      { scope: "title-requester-deny@test-v1", used_units: 1 },
+    ]);
+
+    const task = await client.query<{ id: string; status: string; attempt_count: number }>(
+      "select id, status, attempt_count from translation_tasks where task_identity = $1",
+      [first.task.taskIdentity],
+    );
+    expect(task.rows).toEqual([{
+      id: first.task.id,
+      status: "pending",
+      attempt_count: 0,
+    }]);
+  });
+
+  it("charges a live title duplicate without resetting its claim or attempt state", async () => {
+    const first = await createPlanner(client).planAndDispatch(
+      requestRevision(),
+      "he",
+      budgetAdmission(),
+    );
+    if (first.kind !== "queued") throw new Error("expected queued title fixture");
+
+    const claimToken = "11111111-1111-4111-8111-111111111111";
+    await client.query(`
+      update translation_tasks
+         set status = 'processing',
+             attempt_count = 1,
+             claim_token = $1,
+             claimed_at = statement_timestamp(),
+             lease_expires_at = statement_timestamp() + interval '1 minute',
+             updated_at = statement_timestamp()
+       where id = $2
+    `, [claimToken, first.task.id]);
+
+    const duplicate = await createPlanner(client).planAndDispatch(
+      requestRevision(),
+      "he",
+      budgetAdmission(),
+    );
+    expect(duplicate).toMatchObject({
+      kind: "queued",
+      taskCreated: false,
+      task: {
+        id: first.task.id,
+        status: "processing",
+        claimToken,
+        attemptCount: 1,
+        generation: first.task.generation,
+      },
+    });
+
+    const row = await client.query<{
+      status: string;
+      claim_token: string | null;
+      attempt_count: number;
+      generation: number;
+    }>(
+      "select status, claim_token, attempt_count, generation from translation_tasks where id = $1",
+      [first.task.id],
+    );
+    expect(row.rows[0]).toEqual({
+      status: "processing",
+      claim_token: claimToken,
+      attempt_count: 1,
+      generation: first.task.generation,
+    });
+
+    const budget = await client.query<{ used: number }>(`
+      select coalesce(sum(used_units), 0)::int as used
+        from content_translation_request_budget_counters
+       where scope in ('title-global@test-v1', 'title-requester@test-v1')
+    `);
+    expect(budget.rows[0]?.used).toBe(4);
+  });
+
+  it("does not charge or re-enqueue an already completed title identity", async () => {
+    const first = await createPlanner(client).planAndDispatch(
+      requestRevision(),
+      "he",
+      budgetAdmission(),
+    );
+    if (first.kind !== "queued") throw new Error("expected queued title fixture");
+
+    await client.query(`
+      update translation_tasks
+         set status = 'completed',
+             attempt_count = 1,
+             claim_token = null,
+             claimed_at = statement_timestamp() - interval '1 second',
+             lease_expires_at = null,
+             completed_at = statement_timestamp(),
+             updated_at = statement_timestamp()
+       where id = $1
+    `, [first.task.id]);
+
+    const before = await client.query<{ used: number }>(`
+      select coalesce(sum(used_units), 0)::int as used
+        from content_translation_request_budget_counters
+       where scope in ('title-global@test-v1', 'title-requester@test-v1')
+    `);
+    const enqueuer = new FakeTranslationTaskEnqueuer();
+    await expect(
+      createPlanner(client, enqueuer).planAndDispatch(
+        requestRevision(),
+        "he",
+        budgetAdmission(),
+      ),
+    ).resolves.toMatchObject({
+      kind: "original",
+      reason: "task-completed",
+    });
+    const after = await client.query<{ used: number }>(`
+      select coalesce(sum(used_units), 0)::int as used
+        from content_translation_request_budget_counters
+       where scope in ('title-global@test-v1', 'title-requester@test-v1')
+    `);
+    expect(after.rows[0]?.used).toBe(before.rows[0]?.used);
+    expect(enqueuer.messages).toHaveLength(0);
+  });
+
   it("gives a new current title revision a distinct task identity and monotonic generation", async () => {
-    const first = await createPlanner(client).planAndDispatch(requestRevision(), "he");
+    const first = await createPlanner(client).planAndDispatch(requestRevision(), "he", budgetAdmission());
     expect(first).toMatchObject({ kind: "queued", task: { generation: 1 } });
 
     await client.query("begin");
@@ -189,7 +488,7 @@ describe("content topic-title durable planning", () => {
       ...requestRevision(),
       revisionId: "title-a-r2",
       originalContent: "caller value remains irrelevant",
-    }, "he");
+    }, "he", budgetAdmission());
 
     expect(second).toMatchObject({
       kind: "queued",
@@ -222,7 +521,7 @@ describe("content topic-title durable planning", () => {
     if (!authoritative) throw new Error("missing fixture revision");
 
     const planner = createPlanner(client);
-    const planned = await planner.planAndDispatch(requestRevision(), "he");
+    const planned = await planner.planAndDispatch(requestRevision(), "he", budgetAdmission());
     if (planned.kind !== "queued") throw new Error("expected queued fixture task");
 
     await client.query(`
@@ -235,8 +534,16 @@ describe("content topic-title durable planning", () => {
     `);
 
     await expect(
-      store.upsertPending(planned.task, authoritative),
+      store.upsertPending(planned.task, authoritative, budgetAdmission()),
     ).resolves.toEqual({ outcome: "revision-changed" });
+
+    const budget = await client.query<{ used: number }>(`
+      select coalesce(sum(used_units), 0)::int as used
+        from content_translation_request_budget_counters
+       where scope in ('title-global@test-v1', 'title-requester@test-v1')
+    `);
+    // The initial planned request charged once in both scopes; the stale direct retry is free.
+    expect(budget.rows[0]?.used).toBe(2);
   });
 
   it("leaves the committed pending task recoverable when enqueue fails", async () => {
@@ -246,7 +553,7 @@ describe("content topic-title durable planning", () => {
     });
 
     await expect(
-      createPlanner(client, enqueuer).planAndDispatch(requestRevision(), "he"),
+      createPlanner(client, enqueuer).planAndDispatch(requestRevision(), "he", budgetAdmission()),
     ).rejects.toBe(failure);
 
     const rows = await client.query<{ status: string; count: number }>(`
@@ -256,6 +563,55 @@ describe("content topic-title durable planning", () => {
        group by status
     `);
     expect(rows.rows).toEqual([{ status: "pending", count: 1 }]);
+
+    const budget = await client.query<{ used: number }>(`
+      select coalesce(sum(used_units), 0)::int as used
+        from content_translation_request_budget_counters
+       where scope in ('title-global@test-v1', 'title-requester@test-v1')
+    `);
+    expect(budget.rows[0]?.used).toBe(2);
+  });
+
+  it("rolls back both budget counters when task metadata insertion fails", async () => {
+    await client.query(`
+      create function reject_title_task_metadata_fixture()
+      returns trigger
+      language plpgsql
+      as $fixture$
+      begin
+        raise exception 'title metadata fixture failure' using errcode = 'P0001';
+      end;
+      $fixture$;
+      create trigger reject_title_task_metadata_fixture
+      before insert on content_topic_title_translation_tasks
+      for each row execute function reject_title_task_metadata_fixture();
+    `);
+
+    try {
+      await expect(
+        createPlanner(client).planAndDispatch(requestRevision(), "he", budgetAdmission()),
+      ).rejects.toBeInstanceOf(Error);
+
+      const [counters, tasks, heads] = await Promise.all([
+        client.query<{ count: number }>(
+          "select count(*)::int as count from content_translation_request_budget_counters",
+        ),
+        client.query<{ count: number }>(
+          "select count(*)::int as count from translation_tasks where translation_kind = 'content-topic-title'",
+        ),
+        client.query<{ count: number }>(
+          "select count(*)::int as count from translation_task_generation_heads where translation_kind = 'content-topic-title'",
+        ),
+      ]);
+      expect(counters.rows[0]?.count).toBe(0);
+      expect(tasks.rows[0]?.count).toBe(0);
+      expect(heads.rows[0]?.count).toBe(0);
+    } finally {
+      await client.query(
+        "drop trigger if exists reject_title_task_metadata_fixture on content_topic_title_translation_tasks",
+      );
+      await client.query("drop function if exists reject_title_task_metadata_fixture()");
+    }
   });
 
   it("database-enforces required revision binding and keeps UI task invariants", async () => {
@@ -269,7 +625,7 @@ describe("content topic-title durable planning", () => {
       )
     `), "23514");
 
-    const created = await createPlanner(client).planAndDispatch(requestRevision(), "he");
+    const created = await createPlanner(client).planAndDispatch(requestRevision(), "he", budgetAdmission());
     if (created.kind !== "queued") throw new Error("expected queued fixture task");
 
     await expectDatabaseCode(client.query(`
@@ -338,11 +694,23 @@ function createPlanner(
       new DrizzleContentTranslationStore(drizzle(connection)),
     ),
     providerCapability: { supports: () => true },
-    requestBudgetPolicy: { allows: () => true },
     tasks: new DrizzleContentTopicTitlePlanningStore(drizzle(connection)),
     enqueuer,
     generationPolicyVersion: "content-v1",
   });
+}
+
+function budgetAdmission(
+  overrides: Partial<ContentTranslationRequestBudgetAdmission> = {},
+): ContentTranslationRequestBudgetAdmission {
+  return {
+    subjectKey: "T".repeat(CONTENT_TRANSLATION_REQUESTER_SUBJECT_KEY_LENGTH),
+    cost: 1,
+    windowSeconds: 60,
+    global: { name: "title-global", version: "test-v1", limit: 100 },
+    requester: { name: "title-requester", version: "test-v1", limit: 100 },
+    ...overrides,
+  };
 }
 
 function requestRevision() {

@@ -1,6 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 
 import {
+  CONTENT_TRANSLATION_REQUESTER_SUBJECT_KEY_LENGTH,
+  ContentTranslationRequestBudgetStorageUnavailableError,
+  type ContentTranslationRequestBudgetAdmission,
+} from "./content-request-budget.server";
+
+import {
   ContentSourceLocaleResolver,
   ThresholdContentSourceLocalePolicy,
 } from "./content-source-locale";
@@ -46,6 +52,7 @@ describe("ContentTopicTitleTranslationPlanner", () => {
         originalContent: "caller text is not authoritative",
       }),
       "en",
+      budgetAdmission(),
     );
 
     expect(result).toMatchObject({
@@ -77,7 +84,7 @@ describe("ContentTopicTitleTranslationPlanner", () => {
       })),
     });
 
-    const result = await planner.planAndDispatch(titleRevision({ sourceLocale: "und" }), "he");
+    const result = await planner.planAndDispatch(titleRevision({ sourceLocale: "und" }), "he", budgetAdmission());
 
     expect(result).toMatchObject({
       kind: "queued",
@@ -109,7 +116,7 @@ describe("ContentTopicTitleTranslationPlanner", () => {
         }),
     });
 
-    await expect(planner.planAndDispatch(revision, target)).resolves.toMatchObject({
+    await expect(planner.planAndDispatch(revision, target, budgetAdmission())).resolves.toMatchObject({
       kind: "original",
       taskCreated: false,
       reason,
@@ -136,6 +143,7 @@ describe("ContentTopicTitleTranslationPlanner", () => {
     const result = await plannerWith({ providerCapability }).planAndDispatch(
       titleRevision({ originalContent: "caller text must not drive provider capability" }),
       "he",
+      budgetAdmission(),
     );
 
     expect(result.kind).toBe("queued");
@@ -168,41 +176,74 @@ describe("ContentTopicTitleTranslationPlanner", () => {
     const enqueuer = new FakeTranslationTaskEnqueuer();
 
     const result = await plannerWith({ tasks, enqueuer, translations })
-      .planAndDispatch(revision, "he");
+      .planAndDispatch(revision, "he", budgetAdmission());
 
     expect(result).toMatchObject({ kind: "original", reason: "translation-current" });
     expect(tasks.specifications).toHaveLength(0);
     expect(enqueuer.messages).toHaveLength(0);
   });
 
-  it("applies provider-neutral target and request-budget policies before durable creation", async () => {
+  it("applies provider capability before atomic budget admission", async () => {
     const revision = titleRevision({ sourceLocale: "ru" });
+    const tasks = new FakePlanningStore(revision);
+    const enqueuer = new FakeTranslationTaskEnqueuer();
+    const result = await plannerWith({
+      tasks,
+      enqueuer,
+      providerCapability: { supports: () => false },
+    }).planAndDispatch(revision, "he", budgetAdmission());
 
-    for (const configuration of [
-      {
-        providerCapability: { supports: () => false },
-        requestBudgetPolicy: { allows: () => true },
-        reason: "target-unsupported",
-      },
-      {
-        providerCapability: { supports: () => true },
-        requestBudgetPolicy: { allows: () => false },
-        reason: "request-budget-denied",
-      },
-    ] as const) {
-      const tasks = new FakePlanningStore(revision);
-      const enqueuer = new FakeTranslationTaskEnqueuer();
-      const result = await plannerWith({
-        tasks,
-        enqueuer,
-        providerCapability: configuration.providerCapability,
-        requestBudgetPolicy: configuration.requestBudgetPolicy,
-      }).planAndDispatch(revision, "he");
+    expect(result).toMatchObject({ kind: "original", reason: "target-unsupported" });
+    expect(tasks.specifications).toHaveLength(0);
+    expect(tasks.admissions).toHaveLength(0);
+    expect(enqueuer.messages).toHaveLength(0);
+  });
 
-      expect(result).toMatchObject({ kind: "original", reason: configuration.reason });
-      expect(tasks.specifications).toHaveLength(0);
-      expect(enqueuer.messages).toHaveLength(0);
-    }
+  it("returns typed request-budget denial metadata from atomic planning", async () => {
+    const revision = titleRevision({ sourceLocale: "ru" });
+    const denied = {
+      allowed: false as const,
+      reason: "limit-exceeded" as const,
+      limitingScope: "requester" as const,
+      remainingUnits: 0,
+      resetAt: new Date("2026-09-24T00:01:00Z"),
+      retryAfterSeconds: 60,
+    };
+    const tasks = new FakePlanningStore(revision, {
+      outcome: "request-budget-denied",
+      decision: denied,
+    });
+    const enqueuer = new FakeTranslationTaskEnqueuer();
+
+    const result = await plannerWith({ tasks, enqueuer })
+      .planAndDispatch(revision, "he", budgetAdmission());
+
+    expect(result).toEqual({
+      kind: "original",
+      taskCreated: false,
+      targetLocale: "he",
+      reason: "request-budget-denied",
+      requestBudgetDecision: denied,
+    });
+    expect(tasks.admissions).toEqual([budgetAdmission()]);
+    expect(enqueuer.messages).toHaveLength(0);
+  });
+
+  it("preserves classified budget storage unavailability and unexpected planning errors", async () => {
+    const revision = titleRevision({ sourceLocale: "ru" });
+    const unavailable = new ContentTranslationRequestBudgetStorageUnavailableError();
+    await expect(
+      plannerWith({
+        tasks: new FakePlanningStore(revision, unavailable),
+      }).planAndDispatch(revision, "he", budgetAdmission()),
+    ).rejects.toBe(unavailable);
+
+    const unexpected = new Error("programming failure");
+    await expect(
+      plannerWith({
+        tasks: new FakePlanningStore(revision, unexpected),
+      }).planAndDispatch(revision, "he", budgetAdmission()),
+    ).rejects.toBe(unexpected);
   });
 
   it("does not let a stale caller revision create work for the current title", async () => {
@@ -210,7 +251,7 @@ describe("ContentTopicTitleTranslationPlanner", () => {
     const enqueuer = new FakeTranslationTaskEnqueuer();
 
     await expect(
-      plannerWith({ tasks, enqueuer }).planAndDispatch(titleRevision(), "he"),
+      plannerWith({ tasks, enqueuer }).planAndDispatch(titleRevision(), "he", budgetAdmission()),
     ).resolves.toMatchObject({
       kind: "original",
       reason: "revision-not-current",
@@ -230,6 +271,7 @@ describe("ContentTopicTitleTranslationPlanner", () => {
       plannerWith({ tasks, enqueuer }).planAndDispatch(
         titleRevision({ sourceLocale: "ru" }),
         "he",
+        budgetAdmission(),
       ),
     ).rejects.toBe(failure);
     expect(tasks.specifications).toHaveLength(1);
@@ -245,7 +287,6 @@ function plannerWith(overrides: {
   providerCapability?: {
     supports(input: { sourceLocale: string; targetLocale: string; sourceCharacterCount: number }): boolean;
   };
-  requestBudgetPolicy?: { allows(input: unknown): boolean };
 } = {}) {
   return new ContentTopicTitleTranslationPlanner({
     localeRegistry,
@@ -256,7 +297,6 @@ function plannerWith(overrides: {
       overrides.translations ?? new MemoryContentTranslationStore(),
     ),
     providerCapability: overrides.providerCapability ?? { supports: () => true },
-    requestBudgetPolicy: overrides.requestBudgetPolicy ?? { allows: () => true },
     tasks: overrides.tasks ?? new FakePlanningStore(titleRevision()),
     enqueuer: overrides.enqueuer ?? new FakeTranslationTaskEnqueuer(),
     generationPolicyVersion: "content-v1",
@@ -274,9 +314,13 @@ function resolver(
 
 class FakePlanningStore implements ContentTopicTitlePlanningStore {
   readonly specifications: ContentTopicTitleTranslationTaskSpecification[] = [];
+  readonly admissions: ContentTranslationRequestBudgetAdmission[] = [];
   lastTask: ContentTopicTitleTranslationTask | undefined;
 
-  constructor(private readonly current: ContentTranslationRevision | undefined) {}
+  constructor(
+    private readonly current: ContentTranslationRevision | undefined,
+    private readonly forcedResult?: ContentTopicTitleTaskUpsertResult | Error,
+  ) {}
 
   async readCurrentRevision(): Promise<ContentTranslationRevision | undefined> {
     return this.current;
@@ -285,11 +329,15 @@ class FakePlanningStore implements ContentTopicTitlePlanningStore {
   async upsertPending(
     specification: ContentTopicTitleTranslationTaskSpecification,
     expectedRevision: ContentTranslationRevision,
+    requestBudgetAdmission: ContentTranslationRequestBudgetAdmission,
   ): Promise<ContentTopicTitleTaskUpsertResult> {
     if (this.current?.revisionId !== expectedRevision.revisionId) {
       return { outcome: "revision-changed" };
     }
     this.specifications.push(specification);
+    this.admissions.push(requestBudgetAdmission);
+    if (this.forcedResult instanceof Error) throw this.forcedResult;
+    if (this.forcedResult) return this.forcedResult;
     const task: ContentTopicTitleTranslationTask = {
       ...specification,
       id: "5c86685e-8369-4ccc-8a39-0fb85a0a2a6f",
@@ -334,6 +382,16 @@ class MemoryContentTranslationStore implements ContentTranslationStore {
     this.values.push(translation);
     return translation;
   }
+}
+
+function budgetAdmission(): ContentTranslationRequestBudgetAdmission {
+  return {
+    subjectKey: "A".repeat(CONTENT_TRANSLATION_REQUESTER_SUBJECT_KEY_LENGTH),
+    cost: 1,
+    windowSeconds: 60,
+    global: { name: "test-title-global", version: "v1", limit: 100 },
+    requester: { name: "test-title-requester", version: "v1", limit: 10 },
+  };
 }
 
 function titleRevision(
