@@ -86,64 +86,9 @@ export class DrizzleContentTranslationStore implements ContentTranslationStore {
   }
 
   private writePostBody(translation: StoredContentTranslation) {
-    return this.database.transaction(async (tx) => {
-      const [revision] = await tx
-        .select({ sourceLocale: forumPostRevisions.sourceLocale })
-        .from(forumPostRevisions)
-        .where(and(
-          eq(forumPostRevisions.postId, translation.contentId),
-          eq(forumPostRevisions.id, translation.revisionId),
-        ));
-      assertRevisionOwnership(revision?.sourceLocale, translation.sourceLocale);
-
-      const values = postValues(translation);
-      const [inserted] = await tx
-        .insert(forumPostBodyTranslations)
-        .values(values)
-        .onConflictDoNothing()
-        .returning();
-      if (inserted) return postRow(inserted);
-
-      const [existing] = await tx
-        .select()
-        .from(forumPostBodyTranslations)
-        .where(and(
-          eq(forumPostBodyTranslations.postId, translation.contentId),
-          eq(forumPostBodyTranslations.revisionId, translation.revisionId),
-          eq(forumPostBodyTranslations.targetLocale, translation.targetLocale),
-        ))
-        .for("update");
-      if (!existing) throw new ContentTranslationConflictError("translation conflict row disappeared");
-
-      const current = postRow(existing);
-      if (sameTranslation(current, translation)) return current;
-      if (current.provenance.origin === "persistent_manual" && translation.provenance.origin === "machine") {
-        return current;
-      }
-      if (current.provenance.origin === "machine" && translation.provenance.origin === "persistent_manual") {
-        const [updated] = await tx
-          .update(forumPostBodyTranslations)
-          .set({
-            translatedContent: translation.translatedContent,
-            sourceLocale: translation.sourceLocale,
-            origin: "persistent_manual",
-            provider: null,
-            providerModel: null,
-            attribution: translation.provenance.attribution ?? null,
-            updatedAt: sql`statement_timestamp()`,
-          })
-          .where(and(
-            eq(forumPostBodyTranslations.postId, translation.contentId),
-            eq(forumPostBodyTranslations.revisionId, translation.revisionId),
-            eq(forumPostBodyTranslations.targetLocale, translation.targetLocale),
-            eq(forumPostBodyTranslations.origin, "machine"),
-          ))
-          .returning();
-        if (!updated) throw new ContentTranslationConflictError("translation trust upgrade lost its row");
-        return postRow(updated);
-      }
-      throw new ContentTranslationConflictError("conflicting translation already exists for this revision and target");
-    });
+    return this.database.transaction((tx) =>
+      writePostBodyTranslationWithTrust(tx, translation)
+    );
   }
 }
 
@@ -197,6 +142,80 @@ export async function readContentTranslationForUpdate(
     ))
     .for("update");
   return row ? postRow(row) : undefined;
+}
+
+export async function writePostBodyTranslationWithTrust(
+  tx: ContentTranslationTransaction,
+  translation: StoredContentTranslation,
+): Promise<StoredContentTranslation> {
+  const [revision] = await tx
+    .select({ sourceLocale: forumPostRevisions.sourceLocale })
+    .from(forumPostRevisions)
+    .where(and(
+      eq(forumPostRevisions.postId, translation.contentId),
+      eq(forumPostRevisions.id, translation.revisionId),
+    ));
+  assertRevisionOwnership(revision?.sourceLocale, translation.sourceLocale);
+
+  const values = postValues(translation);
+  const [inserted] = await tx
+    .insert(forumPostBodyTranslations)
+    .values(values)
+    .onConflictDoNothing()
+    .returning();
+  if (inserted) return postRow(inserted);
+
+  const [existing] = await tx
+    .select()
+    .from(forumPostBodyTranslations)
+    .where(and(
+      eq(forumPostBodyTranslations.postId, translation.contentId),
+      eq(forumPostBodyTranslations.revisionId, translation.revisionId),
+      eq(forumPostBodyTranslations.targetLocale, translation.targetLocale),
+    ))
+    .for("update");
+  if (!existing) {
+    throw new ContentTranslationConflictError("translation conflict row disappeared");
+  }
+
+  const current = postRow(existing);
+  if (sameTranslation(current, translation)) return current;
+  if (
+    current.provenance.origin === "persistent_manual"
+    && translation.provenance.origin === "machine"
+  ) {
+    return current;
+  }
+  if (
+    current.provenance.origin === "machine"
+    && translation.provenance.origin === "persistent_manual"
+  ) {
+    const [updated] = await tx
+      .update(forumPostBodyTranslations)
+      .set({
+        translatedContent: translation.translatedContent,
+        sourceLocale: translation.sourceLocale,
+        origin: "persistent_manual",
+        provider: null,
+        providerModel: null,
+        attribution: translation.provenance.attribution ?? null,
+        updatedAt: sql`statement_timestamp()`,
+      })
+      .where(and(
+        eq(forumPostBodyTranslations.postId, translation.contentId),
+        eq(forumPostBodyTranslations.revisionId, translation.revisionId),
+        eq(forumPostBodyTranslations.targetLocale, translation.targetLocale),
+        eq(forumPostBodyTranslations.origin, "machine"),
+      ))
+      .returning();
+    if (!updated) {
+      throw new ContentTranslationConflictError("translation trust upgrade lost its row");
+    }
+    return postRow(updated);
+  }
+  throw new ContentTranslationConflictError(
+    "conflicting translation already exists for this revision and target",
+  );
 }
 
 export async function writeTopicTitleTranslationWithTrust(
