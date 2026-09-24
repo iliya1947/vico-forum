@@ -1,11 +1,11 @@
 # Stage 5 Codex coordination channel
 
 
-Codex independently completed the full re-review of corrected PR #110 at head
-`d3b8751bd3da55457aac592c036694763b738df1` after checking the latest ChatGPT service PR #95.
-The window-duration defect is corrected, the complete request-budget foundation and migration
-`0017` satisfy the assigned scope, and final CI is green with no remaining current-Stage defect.
-PR #110 is technically ready to merge; verify updated GitHub `main` after owner merge.
+GitHub `main` now includes merged PR #110 at
+`94a11ad3b8d709a6c18913ffda8d0111b9171356`. Implement only the bounded planner-admission
+integration task below in a separate mergeable PR based on that exact head. Record the PR/head,
+full self-review and CI in ChatGPT service PR #95. Do not add routes/header trust, enable anonymous
+requests, choose production quotas, or implement post-body execution in this PR.
 - GitHub `main`: `61b21a8029baf0fc0cb6a1d6a0c7e0ae931fd5a9`
 - `JOB-06` reconciliation/observability is merged through PR #99, including migration `0013`.
 - the concrete Cloudflare Workers AI M2M100 adapter is merged through PR #101.
@@ -1747,6 +1747,96 @@ migration metadata, Drizzle parity, 17 files / 153 PostgreSQL tests, Workers bui
 smoke all passed. `git diff --check` also passes for the complete main-to-head diff. PR #110 is open,
 mergeable and technically ready for the project owner to merge. The next Stage 5 task must be chosen
 after fetching the resulting updated `main`.
+
+## Updated-main verification after PR #110
+
+Codex fetched GitHub `main` at `94a11ad3b8d709a6c18913ffda8d0111b9171356` and verified that PR
+#110 is merged. Main now includes migration `0017`, the HMAC requester-pseudonym port and the atomic
+PostgreSQL request-budget foundation with bounded cleanup and safety-validated windows.
+`PROJECT_STATE.md` correctly says the foundation is not yet connected to planners/routes and that
+anonymous enablement/final quotas remain unselected.
+
+The next bounded slice can integrate admission into both durable planners without making those
+product decisions. Callers/tests will supply an already pseudonymized subject and explicit versioned
+policy values. Route identity/header trust, actual quota configuration and anonymous availability
+remain later owner-approved wiring.
+
+## Next technical task: atomic planner budget admission (`SEC-02`, `CNT-01`)
+
+Create a mergeable PR connecting the existing request-budget foundation to topic-title and post-body
+durable planning. Admission, final currentness recheck and task upsert must share the existing
+PostgreSQL planning transaction; this task does not add request routes.
+
+### Required scope
+
+1. Replace the placeholder boolean `requestBudgetPolicy.allows()` path in both planners with an
+   explicit provider-neutral admission input/port using the existing validated
+   `ContentTranslationRequestBudgetAdmission` semantics. The planner caller supplies only an already
+   pseudonymized subject plus injected versioned window/limits/cost policy; planners must never see
+   raw user id, IP, session token or HMAC secret.
+2. Keep initial cheap eligibility checks before admission: canonical active target, authoritative
+   current revision, source resolution, same-locale/no-semantic-content, provider/data-policy
+   capability and initial exact-current translation. Invalid/unresolved/unsupported/already-current
+   requests consume no budget and create no task.
+3. Move the correctness-critical final admission into each planning store transaction under the
+   existing generation-head lock order. Recheck exact current revision/source content and exact
+   current translation/manual priority in that transaction, then consume global followed by
+   requester budget and upsert/deduplicate/reactivate the durable task before one commit.
+4. Reuse/refactor the request-budget SQL as a transaction-composable primitive rather than opening a
+   nested independent transaction. Preserve the standalone store API and all foundation invariants;
+   do not duplicate counter SQL across title/body stores.
+5. If a current valid translation wins before serialized admission, return a distinct no-job/current
+   outcome with zero budget consumption and no task mutation/enqueue. If the revision changes, return
+   revision-changed with zero charge. Re-evaluate trust so existing/current manual translation is
+   never displaced by machine planning.
+6. An eligible duplicate request whose stable task is already pending/processing is intentionally
+   charged but reuses the same task identity without resetting claim/attempt/generation state. An
+   already completed identity/current translation is not charged or re-enqueued. Budget denial
+   creates/mutates/enqueues no task and returns typed retry/reset metadata usable by a future route.
+7. Atomicity requirements: requester denial rolls back the global increment; any task/metadata
+   integrity error rolls back both counters; enqueue still occurs only after commit, and enqueue
+   failure retains both admitted budget charge and JOB-06-recoverable pending task.
+8. Classified request-budget storage unavailability must remain distinguishable for future `503`
+   handling and fail closed for new work. Unexpected DB/programming/integrity errors propagate; do
+   not turn them into quota denial, original success or provider calls.
+9. Topic-title cost and post-body cost must be injected/test policy, not hard-coded production
+   quotas. Post-body cost may be derived from CNT-04 protected segment character counts before the
+   transaction, but no Markdown/source payload enters budget counters. Validate admission policy
+   before DB mutation.
+10. Add focused unit and disposable PostgreSQL tests for both title and body: invalid/current zero
+    charge, revision/publication race zero charge, budget allow/deny metadata, requester-denial
+    rollback, eligible pending duplicate charged but deduped, live-claim preservation, completed
+    identity no charge, task failure rollback, concurrent admission/non-overshoot, enqueue failure
+    retaining charge and recoverable task, classified unavailable versus unexpected error, and
+    title/body isolation. Update `PROJECT_STATE.md` factually after successful checks.
+
+### Design constraints
+
+- Preserve lock ordering used by existing generation/task/revision/publication paths and document the
+  added global/requester counter position. Verify concurrency tests do not introduce a lock cycle.
+- One planning transaction owns currentness, budget consumption and durable task mutation. No
+  best-effort refund or cross-transaction compensation is acceptable.
+- Durable task identity remains based on source/target/policy semantics, not requester or budget
+  counters. Request budget and task dedup remain separate domains.
+- Keep application contracts provider-neutral and reusable by later authenticated/anonymous route
+  wiring; no Cloudflare header parsing belongs in planner/store code.
+
+### Excluded scope
+
+- no route/UI, requester trust extraction, `CF-Connecting-IP`, HTTP 429/503 mapping or HMAC binding;
+- no decision enabling anonymous requests and no hard-coded final production window/quota values;
+- no post-body provider execution/restoration/publication, manual source-locale correction UI,
+  Queue/provider binding, live external call, deployment, external migration rollout or Stage 6;
+- no new migration unless an independently demonstrated schema defect makes it unavoidable.
+
+### Completion criteria
+
+- both content planners enforce one shared atomic distributed admission boundary before durable work;
+- already-satisfied/stale/ineligible requests are free, eligible duplicates are charged yet deduped,
+  and denied/failed transactions leave neither partial counters nor task mutations;
+- commit-before-enqueue and JOB-06 recovery remain intact;
+- full concurrency/database/repository CI passes without secrets or external calls;
+- ChatGPT records complete self-review/CI in PR #95, then Codex independently reviews the entire PR.
 ## Full JOB-06 re-review after correction
 
 Codex reviewed the complete PR #99 at
