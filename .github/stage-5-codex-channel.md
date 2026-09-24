@@ -1,11 +1,11 @@
 # Stage 5 Codex coordination channel
 
 
-GitHub `main` now includes merged PR #108 at
-`82b4aefd282ccd01c17225341eef0240fe232dc3`. Before the next implementation PR, perform the
-bounded technical-selection task below for the remaining Stage 5B concrete source detector and
-operational distributed request limiter. Record an evidence-backed proposal in ChatGPT service PR
-#95; do not change product code or open a mergeable implementation PR until Codex reviews it.
+Codex independently reviewed the detector/limiter selection recorded in ChatGPT service PR #95.
+The local detector recommendation is technically accepted. Implement only the bounded TinyLD
+source-locale adapter task below in a separate mergeable PR based on GitHub `main`
+`82b4aefd282ccd01c17225341eef0240fe232dc3`; record its head, full self-review and CI in PR #95.
+Do not implement the distributed limiter, routes/UI or post-body execution in this PR.
 - GitHub `main`: `61b21a8029baf0fc0cb6a1d6a0c7e0ae931fd5a9`
 - `JOB-06` reconciliation/observability is merged through PR #99, including migration `0013`.
 - the concrete Cloudflare Workers AI M2M100 adapter is merged through PR #101.
@@ -1433,6 +1433,99 @@ code, dependency, schema or source-of-truth state change.
   boundaries without weakening original fallback or privacy;
 - Codex can independently verify the evidence and turn the agreed result into one or more bounded
   implementation tasks without inventing missing semantics.
+
+## Independent review of detector/limiter technical selection
+
+Codex fetched ChatGPT service PR #95 at
+`62761a0e4c0612ca4e26701bb8e5e6e1a724c75a` and independently checked the complete proposal against
+current main `82b4aefd282ccd01c17225341eef0240fe232dc3`, existing CNT-03/CNT-04/planning contracts and the
+cited official exact-version sources. The selection produced no product-code or source-of-truth
+change, as required.
+
+### Detector agreement
+
+The recommendation to use exact `tinyld@1.3.4` normal profile for the local/CI adapter is accepted:
+its tagged package metadata declares MIT, zero runtime dependencies, CommonJS/ESM/browser exports
+and a compatible Node engine; the tagged API exposes ranked native scores, and its language/model
+list is explicit. Source content remains process-local. The comparison correctly rejects
+`franc@6.2.0` as the baseline for short forum content because its own documentation warns about
+small-sample confusion and its ISO 639-3 surface increases mapping ambiguity. Google detection
+remains a possible separately approved external adapter, not a Stage 5 local default.
+
+TinyLD's `accuracy` must remain detector-native score evidence, never be documented as calibrated
+probability. The accepted gate is at least 24 Unicode semantic letters, top native score at least
+0.80, top-minus-runner-up margin at least 0.20, and an explicit reviewed detector-code mapping.
+Detection must evaluate the real global top candidates: an unmapped top result fails unresolved;
+it must not be silently discarded so a lower mapped candidate can win. Region/script inference is
+forbidden. Known revision metadata still bypasses detection, and `und` remains unresolved on weak,
+ambiguous, unsupported or unmapped evidence.
+
+### Limiter agreement status
+
+The proposed PostgreSQL fixed-window design is technically coherent with current local/CI
+infrastructure: HMAC-pseudonymous authenticated/anonymous subjects, global-before-subject atomic
+counters, transaction-owned window time, all-or-nothing consumption, serialized revision/current-
+translation recheck, chargeable eligible pending duplicates, no refunds after committed admission,
+and fail-closed new generation on classified storage unavailability. It is accepted as the design
+basis for a later implementation task.
+
+The proposal correctly labels final quota numbers and whether anonymous translation requests are
+enabled as product/policy decisions. They do not block the detector adapter, so Codex does not
+silently decide them here. Before the limiter integration/route task, the project owner must confirm
+anonymous availability and initial quota policy (the proposed 100 authenticated / 20 anonymous /
+1000 global weighted units per 10 minutes may be used only after that confirmation). No limiter
+code is authorized in the next PR.
+
+## Next technical task: concrete local TinyLD detector (`CNT-03`)
+
+Create a small mergeable PR implementing the accepted detector adapter only.
+
+### Required scope
+
+1. Add exact direct dependency `tinyld@1.3.4` after verifying its tagged official package/API and
+   lockfile resolution. Preserve frozen-install and Workers build compatibility.
+2. Implement a provider-local `ContentSourceLocaleDetectionAdapter` using the normal profile and
+   evidence `{ origin: "detector", detector: "tinyld", model: "normal@1.3.4" }`.
+3. Add an explicit reviewed TinyLD-code-to-canonical-Vico-language mapping. Do not dynamically
+   register locales, infer region/script, accept aliases mechanically, or pass provider codes into
+   the domain. An unmapped global top candidate returns no detection even if a lower candidate is
+   mapped.
+4. Apply the agreed deterministic acceptance gates before returning a candidate: at least 24
+   Unicode semantic letters, finite native scores, top score >= 0.80, top-minus-runner-up >= 0.20,
+   and valid canonical mapped locale. Treat the score as detector-native evidence, not probability.
+5. For `post-body`, expose/reuse a minimal helper from CNT-04 that returns eligible semantic human
+   text while excluding Markdown structure, code, raw HTML, URLs and protected technical fragments.
+   Do not fork Markdown parsing/token patterns. For `topic-title`, inspect the plain title through an
+   equivalent technical-fragment filtering boundary so code/URL-only titles remain unresolved.
+6. Known non-`und` revision source locale must continue bypassing the adapter through the existing
+   resolver. Weak/short/mixed/unsupported/unmapped inputs return absent detection and preserve exact
+   original fallback. UI/request locale must not influence detection.
+7. Expected no-result/rejected evidence is not an availability error. Unexpected package/programming
+   errors propagate; do not broadly catch them as `ContentSourceLocaleDetectorUnavailableError`.
+8. Add focused deterministic tests for accepted `ru`, `he`, `en` and additional scripts supported by
+   the reviewed mapping; short text; code/URL/technical-only input; prose plus technical fragments;
+   mixed low-margin input; unmapped global winner; unsupported Georgian; generic `zh`/`pt`/`sr`
+   without region/script invention; known-source bypass; UI-locale independence and unexpected
+   error propagation. Keep all tests offline and update `PROJECT_STATE.md` factually after checks.
+
+### Excluded scope
+
+- no detector network/API call, credentials, binding, persisted detection result, automatic revision
+  mutation or manual-correction UI;
+- no distributed limiter schema/store/integration, requester identity, quotas or route HTTP changes;
+- no post-body execution/publication, translation provider expansion, Queue binding, live call,
+  deployment or Stage 6 acceptance;
+- no unrelated refactoring or locale-registry expansion.
+
+### Completion criteria
+
+- exact-version local detection works behind the existing CNT-03 adapter and fails original-safe on
+  insufficient or unsafe evidence;
+- provider codes and native scores do not leak as Vico locale/probability semantics;
+- CNT-04 remains the single post-body semantic/protection implementation;
+- dependency, unit/type/lint/build checks and full repository CI pass without external calls;
+- ChatGPT records the complete PR/self-review/CI result in PR #95, after which Codex independently
+  reviews the entire mergeable PR before merge.
 ## Full JOB-06 re-review after correction
 
 Codex reviewed the complete PR #99 at
