@@ -5,15 +5,25 @@ import { Client } from "pg";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  CLOUDFLARE_M2M100_MODEL,
+  CLOUDFLARE_WORKERS_AI_PROVIDER,
+  CloudflareM2m100TranslationProvider,
+} from "../../app/localization/cloudflare-m2m100-provider";
+import {
   ContentSourceLocaleResolver,
   ThresholdContentSourceLocalePolicy,
 } from "../../app/localization/content-source-locale";
 import { ContentTranslationService } from "../../app/localization/content-translation";
 import { ContentTopicTitleTranslationPlanner } from "../../app/localization/content-translation-planning";
+import {
+  RoutedContentTopicTitleProviderCapability,
+  type ContentTopicTitleProviderCapability,
+} from "../../app/localization/content-translation-provider";
 import { ContentTopicTitleTaskConsumer } from "../../app/localization/content-translation-task-consumer";
 import { ContentTopicTitleTaskExecutor } from "../../app/localization/content-translation-execution";
 import { ContentTopicTitleResultPublisher } from "../../app/localization/content-translation-publication";
 import { TranslationExecutionFailure } from "../../app/localization/translation-failures";
+import type { TranslationProviderDataPolicy } from "../../app/localization/translation-provider-data-policy";
 import { localeRegistry } from "../../app/localization/registry";
 import {
   TranslationTaskExecutorDispatcher,
@@ -125,6 +135,7 @@ describe("content topic-title execution and publication", () => {
     expect(translate).toHaveBeenCalledTimes(1);
     expect(translate).toHaveBeenCalledWith({
       domain: "content",
+      contentClassification: "public-forum-topic-title",
       sourceLocale: "ru",
       targetLocale: "he",
       messageKind: "plain",
@@ -172,6 +183,44 @@ describe("content topic-title execution and publication", () => {
       delivery: "ack",
     });
     expect(translate).toHaveBeenCalledTimes(1);
+  });
+
+  it("re-evaluates revoked content data policy before the external runner call", async () => {
+    let allowed = true;
+    const dataPolicy: TranslationProviderDataPolicy = {
+      allows: vi.fn(() => allowed),
+    };
+    const run = vi.fn(async () => ({ translated_text: "כותרת מתורגמת" }));
+    const adapter = new CloudflareM2m100TranslationProvider({ run }, dataPolicy);
+    const providerRouter = new TranslationProviderRouter([adapter]);
+    const providerCapability = new RoutedContentTopicTitleProviderCapability(providerRouter);
+    const enqueuer = new FakeTranslationTaskEnqueuer();
+
+    const planned = await createPlanner(client, enqueuer, providerCapability)
+      .planAndDispatch(requestRevision(), "he");
+    expect(planned.kind).toBe("queued");
+    expect(dataPolicy.allows).toHaveBeenCalledWith({
+      provider: CLOUDFLARE_WORKERS_AI_PROVIDER,
+      model: CLOUDFLARE_M2M100_MODEL,
+      contentClassification: "public-forum-topic-title",
+      sourceLocale: "ru",
+      targetLocale: "he",
+      operation: "plain",
+    });
+
+    allowed = false;
+    const dispatcher = createDispatcherWithRouter(client, providerRouter);
+
+    await expect(dispatcher.execute(enqueuer.messages[0]!)).resolves.toEqual({
+      outcome: "execution-failed",
+      delivery: "terminal",
+      failureCode: "provider-unsupported",
+      terminalReason: "terminal",
+      attemptCount: 1,
+      maxAttempts: 3,
+    });
+    expect(run).not.toHaveBeenCalled();
+    expect(dataPolicy.allows).toHaveBeenCalledTimes(2);
   });
 
   it("reactivates a stale stable identity when the same content work becomes eligible again", async () => {
@@ -513,6 +562,7 @@ describe("content topic-title execution and publication", () => {
 function createPlanner(
   connection: Client,
   enqueuer = new FakeTranslationTaskEnqueuer(),
+  providerCapability: ContentTopicTitleProviderCapability = { supports: () => true },
 ): ContentTopicTitleTranslationPlanner {
   return new ContentTopicTitleTranslationPlanner({
     localeRegistry,
@@ -527,7 +577,7 @@ function createPlanner(
     contentTranslations: new ContentTranslationService(
       new DrizzleContentTranslationStore(drizzle(connection)),
     ),
-    targetPolicy: { supports: () => true },
+    providerCapability,
     requestBudgetPolicy: { allows: () => true },
     tasks: new DrizzleContentTopicTitlePlanningStore(drizzle(connection)),
     enqueuer,
@@ -538,6 +588,21 @@ function createPlanner(
 function createDispatcher(
   connection: Client,
   adapter: MachineTranslationProviderAdapter,
+  uiExecute = vi.fn(async () => ({
+    outcome: "already-claimed" as const,
+    delivery: "ack" as const,
+  })),
+): TranslationTaskExecutorDispatcher {
+  return createDispatcherWithRouter(
+    connection,
+    new TranslationProviderRouter([adapter]),
+    uiExecute,
+  );
+}
+
+function createDispatcherWithRouter(
+  connection: Client,
+  providerRouter: TranslationProviderRouter,
   uiExecute = vi.fn(async () => ({
     outcome: "already-claimed" as const,
     delivery: "ack" as const,
@@ -565,7 +630,7 @@ function createDispatcher(
   });
   const contentExecutor = new ContentTopicTitleTaskExecutor({
     consumer,
-    providerRouter: new TranslationProviderRouter([adapter]),
+    providerRouter,
     publisher,
     failures: tasks,
   });
