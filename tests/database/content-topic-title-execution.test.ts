@@ -247,6 +247,7 @@ describe("content topic-title execution and publication", () => {
       first.task.id,
       allowance.admissionToken,
       allowance.occurrence,
+      "fake-provider",
       "fixture-reservation",
     )).resolves.toBe(true);
     const claim = await tasks.claimContentTopicTitle(first.task.id, 60_000);
@@ -702,6 +703,7 @@ describe("content topic-title execution and publication", () => {
       planned.task.id,
       acquired.admissionToken,
       acquired.occurrence,
+      "fake-provider",
       "superseded-reservation",
     )).resolves.toBe(false);
 
@@ -748,6 +750,7 @@ describe("content topic-title execution and publication", () => {
         planned.task.id,
         acquired.admissionToken,
         acquired.occurrence,
+        "fake-provider",
         "provider-reservation-1",
       )).resolves.toBe(true);
 
