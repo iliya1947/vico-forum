@@ -20,14 +20,14 @@ export function ForumShell({ locale, children }: { locale: string; children: Rea
 
 export function Breadcrumbs({ locale, items }: {
   locale: string;
-  items: Array<{ label: string; to?: string }>;
+  items: Array<{ label: ReactNode; to?: string }>;
 }) {
   const { t } = useTranslation("common");
   return (
     <nav className="breadcrumbs" aria-label={t("breadcrumbsLabel")}>
       <Link to={forumIndexPath(locale)}>{t("forumIndex")}</Link>
       {items.map((item, index) => (
-        <span key={`${item.label}-${index}`}>
+        <span key={item.to ?? `breadcrumb-${index}`}>
           <span aria-hidden="true"> / </span>
           {item.to ? <Link to={item.to}>{item.label}</Link> : <span aria-current="page">{item.label}</span>}
         </span>
