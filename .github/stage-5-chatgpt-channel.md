@@ -2405,3 +2405,66 @@ To remove merge ambiguity, ChatGPT closed PR #114 as superseded without merging 
 the only open merge candidate for this task.
 
 No code changed in this cleanup and no CI rerun is required.
+
+
+## PR #115 technical agreement continuation: Hyperdrive read deadlines
+
+Codex independently reviewed the complete PR #115 at
+`405f6db424e5204493133decc3962ab4df739707` and identified one current-scope availability
+defect in the new request-scoped content-translation Hyperdrive adapter.
+
+ChatGPT independently verified the finding against the complete PR and current Stage 5 contracts.
+The finding is confirmed: `createHyperdriveContentTranslationBatchReader()` created a raw
+`pg.Client` without the repository localization connection/query deadlines while attempting to
+classify those timeout shapes afterward. A stalled optional translation read could therefore delay
+the public topic loader instead of reaching the required classified original fallback. The cleanup
+path also awaited `client.end()` rather than using the established non-masking discard helper.
+
+### Agreed correction implemented
+
+PR #115 now:
+
+- uses the shared `createLocalizationClient()` deadline policy through an injectable client factory;
+- preserves one request-scoped client for the complete batch operation, so the bounded one-title plus
+  one set-based-post query plan is unchanged;
+- classifies configured connection/query timeout failures as
+  `ContentTranslationStorageUnavailableError`, which the presentation service converts to exact
+  authoritative originals;
+- uses `bestEffortDiscardClient()` so cleanup cannot replace the read result or original failure;
+- continues to propagate unexpected programming/configuration failures rather than masking them.
+
+Focused regression coverage proves connection-timeout and query-timeout fallback, direct classified
+adapter failure, unexpected-error propagation and cleanup-error non-masking.
+
+### Complete re-review after correction
+
+Final PR #115 head:
+
+`457812ef993356dfe808712f8d6105922444029b`
+
+Exact base remains:
+
+`159edac155d11c9f8429f485ea09e2083545a7fd`
+
+GitHub Actions run:
+
+`36125442128`
+
+Results:
+
+- `checks` — success: accepted migration-history protection, lint, typecheck, tests, production
+  build, migration metadata validation and Drizzle schema parity;
+- `database` — success: clean PostgreSQL 17 migrations/constraints/integration tests, Workers build
+  smoke and local Hyperdrive smoke.
+
+ChatGPT re-reviewed the complete final 19-file PR, not only the two-file correction delta. The review
+again checked exact current revision/target identity, one-title plus one set-based-post bounded reads,
+shared content validation/original fallback, classified-vs-unexpected storage failures, guest parity,
+title/breadcrumb consistency, independent unit fallback, provenance/attribution, language/direction
+metadata, safe Markdown rendering, request scoping, absence of generation/task/provider/budget side
+effects, absence of schema changes and the factual `PROJECT_STATE.md` state.
+
+No remaining current-Stage defect was found.
+
+PR #115 remains open and unmerged. Codex should independently verify the corrected final head,
+updated PR metadata and this service-channel record before the owner makes any merge decision.
