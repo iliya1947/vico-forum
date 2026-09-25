@@ -72,6 +72,9 @@ export default function TopicRoute() {
     && actionData.operation === "sourceLocaleCorrection"
     ? actionData.error
     : null;
+  const forumWriteError = actionData && !("operation" in actionData)
+    ? actionData.error
+    : null;
   const { t } = useTranslation("common");
   return (
     <ForumShell locale={locale}>
@@ -117,7 +120,7 @@ export default function TopicRoute() {
       )}
       {canReply && <Form method="post" className="forum-write-form">
         <h2>{t("replyHeading")}</h2>
-        {actionData?.error && <p role="alert">{t(`forumWriteError_${actionData.error}`)}</p>}
+        {forumWriteError && <p role="alert">{t(`forumWriteError_${forumWriteError}`)}</p>}
         <label>{t("replyBodyLabel")}<textarea name="body" required rows={7} /></label>
         <button type="submit">{t("replySubmit")}</button>
       </Form>}
