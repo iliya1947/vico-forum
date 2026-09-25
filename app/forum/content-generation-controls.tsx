@@ -68,8 +68,9 @@ export function useContentGenerationOrchestrator(
                 : "failed";
       setFeedback((current) => {
         if (nextFeedback) return { ...current, [key]: nextFeedback };
-        const { [key]: _removed, ...rest } = current;
-        return rest;
+        const next = { ...current };
+        delete next[key];
+        return next;
       });
     }
 
