@@ -236,6 +236,49 @@ describe("content provider allowance boundary", () => {
     );
   });
 
+  it("revalidates after the allowance call and never persists a superseded occurrence", async () => {
+    const task = await titleTask({ attemptCount: 0 });
+    const { store, persistAdmission, markStale } = allowanceStore({
+      outcome: "acquired",
+      task,
+      occurrence: { generation: task.generation, attempt: 1 },
+      admissionToken,
+    });
+    let generationChecks = 0;
+    const gate = new ContentTopicTitleAllowanceGate({
+      store,
+      adapter: {
+        admit: vi.fn(async () => ({ outcome: "admitted" as const, reservationReference: "reserve" })),
+      },
+      provider: "fake-provider",
+      admissionLeaseDurationMs: 60_000,
+      localeRegistry: registry,
+      generationPolicyVersion: "content-v1",
+      revisions: {
+        readCurrentRevision: async () => ({
+          contentType: "topic-title",
+          contentId: "topic-a",
+          revisionId: "title-r1",
+          originalContent: "Исходный заголовок",
+          sourceLocale: "ru",
+        }),
+      },
+      translations: { read: async () => undefined, write: vi.fn() },
+      tasks: {
+        claimContentTopicTitle: vi.fn(),
+        markStale: vi.fn(),
+        isCurrentContentTopicTitleGeneration: async () => ++generationChecks === 1,
+      },
+    });
+
+    await expect(gate.admit({ translationTaskId: taskId })).resolves.toEqual({
+      outcome: "stale",
+      reason: "generation-superseded",
+    });
+    expect(persistAdmission).not.toHaveBeenCalled();
+    expect(markStale).toHaveBeenCalledWith(taskId, admissionToken);
+  });
+
   it("fails closed without a configured allowance adapter and does not consume an attempt", async () => {
     const task = await titleTask({ attemptCount: 0 });
     const { store, persistDeferral } = allowanceStore({
