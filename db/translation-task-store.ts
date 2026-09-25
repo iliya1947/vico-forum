@@ -157,13 +157,16 @@ export class DrizzleTranslationTaskStore implements
         return { outcome: "terminal" as const };
       }
 
-      const clock = await transaction.execute<{ now: Date }>(sql`
-        select statement_timestamp() as now
+      const clock = await transaction.execute<{ now_ms: number | string }>(sql`
+        select floor(extract(epoch from statement_timestamp()) * 1000)::bigint as now_ms
       `);
-      const now = clock.rows[0]?.now;
-      if (!(now instanceof Date)) {
+      const nowMs = typeof clock.rows[0]?.now_ms === "number"
+        ? clock.rows[0].now_ms
+        : Number(clock.rows[0]?.now_ms);
+      if (!Number.isSafeInteger(nowMs) || nowMs < 0) {
         throw new TranslationTaskIntegrityError("provider allowance database clock is invalid");
       }
+      const now = new Date(nowMs);
       if (
         row.status === "processing"
         && row.leaseExpiresAt
