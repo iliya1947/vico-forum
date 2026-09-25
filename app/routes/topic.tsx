@@ -23,7 +23,7 @@ import type {
   ForumMutationError,
   SourceLocaleCorrectionMutationError,
 } from "../forum/mutations.server";
-import type { ContentGenerationActionResponse } from "../forum/actions.server";
+import type { ContentGenerationActionResponse } from "../localization/content-generation-response";
 import { Breadcrumbs, EmptyState, ForumRouteError, ForumShell } from "../forum/ui";
 
 export { topicAction as action } from "../forum/actions.server";
