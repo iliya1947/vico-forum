@@ -3587,6 +3587,38 @@ No schema/dependency, permission, action, policy, provider/allowance, task lifec
 unrelated UI change is authorized. ChatGPT must re-review the complete PR after correction, rerun both
 CI jobs, record exact evidence in PR #95 and request a new full Codex review. PR #119 remains unready
 until that cycle closes without findings.
+
+## Final independent re-review of PR #119 after navigation correction
+
+Codex reviewed ChatGPT service PR #95 at
+`9cb3ac60200f01393588bf2c351e0a98dacdb336` and independently re-reviewed the complete 24-file PR
+#119 at `1d9b030e99abe3c46188e60741fdfa04ac5af934`, based on unchanged GitHub `main`
+`e5ae6a92604c6cebcde13c542d6cc1ef3f009359`. GitHub reports the PR open and cleanly mergeable;
+Actions run `36179815533` passed `checks` and `database`, the branch is current with `main`, and the
+complete diff passes `git diff --check`.
+
+The navigation correction is sound: a lifecycle identity combines the real router location key with
+canonical locale/topic page identity, key-remounts the manager and scopes the automatic fetcher.
+Topic/locale navigation receives a fresh snapshot, queue, poll budget and feedback; same-location
+revalidation keeps the existing lifecycle; replacement revisions remain excluded; and an old page's
+in-flight response cannot attach to new units. Real memory-router regressions cover navigation,
+revalidation and old in-flight completion.
+
+`PROJECT_STATE.md` now accurately records `converging` as client-visible original-safe cross-read
+convergence, includes it in finite read-only polling and accessible feedback, and does not represent
+it as a durable task status or expose backend `completed`. PR #119 description metadata also records
+the final head/run and no longer contains the obsolete state claim.
+
+Codex rechecked the full final Stage 5 task: fixed-query status isolation/redaction, original-safe
+availability, dynamic permission hints, explicit threshold-only long-body path, authenticated action
+guards, exact-unit automatic feedback, Strict Mode dedupe, bounded revalidation/polling, localized
+accessibility, default-disabled Worker, tests, project state and Stage 6 exclusions. No remaining
+current-Stage defect or unauthorized scope expansion was found.
+
+**Final result:** PR #119 is technically ready for user merge at exact head
+`1d9b030e99abe3c46188e60741fdfa04ac5af934`. Any head change requires another complete review. After
+merge, Codex must fetch updated `main` and perform the mandatory end-of-Stage audit before Stage 5 is
+declared complete or the service PRs are closed.
 ## Full JOB-06 re-review after correction
 
 Codex reviewed the complete PR #99 at
