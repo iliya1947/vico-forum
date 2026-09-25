@@ -14,7 +14,7 @@ import {
 } from "../localization/request-context";
 import { assemblePersistentRegistry } from "../localization/persistent-registry";
 import type { PermissionKey } from "../authorization/catalog";
-import { loader } from "./topic";
+import { loader, shouldRevalidate } from "./topic";
 
 const session = {
   user: {
@@ -141,6 +141,32 @@ async function context(options: {
 }
 
 describe("topic loader generation presentation", () => {
+  it("suppresses only automatic generation revalidation and preserves normal mutation defaults", () => {
+    const automatic = new FormData();
+    automatic.set("intent", "generatePostBodyTranslation");
+    expect(shouldRevalidate({
+      formData: automatic,
+      actionResult: { operation: "contentGeneration", outcome: "queued" },
+      defaultShouldRevalidate: true,
+    } as never)).toBe(false);
+
+    const explicit = new FormData();
+    explicit.set("intent", "generatePostBodyTranslationExplicit");
+    expect(shouldRevalidate({
+      formData: explicit,
+      actionResult: { operation: "contentGeneration", outcome: "queued" },
+      defaultShouldRevalidate: true,
+    } as never)).toBe(true);
+
+    const reply = new FormData();
+    reply.set("intent", "reply");
+    expect(shouldRevalidate({
+      formData: reply,
+      actionResult: { ok: true },
+      defaultShouldRevalidate: true,
+    } as never)).toBe(true);
+  });
+
   it("keeps guests on the public read path without generation status or side effects", async () => {
     const harness = await context({ authenticated: false });
     const result = await loader({
