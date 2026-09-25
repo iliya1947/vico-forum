@@ -89,9 +89,7 @@ export class ForumService {
       throw new ForumStateConflictError("topic title current revision changed");
     }
     assertSourceLocaleCorrectionAuthorized(topic.authorId, input.actorId, input.scope);
-    if (topic.title.sourceLocale === sourceLocale) {
-      throw new ForumStateConflictError("topic title source locale is already current");
-    }
+    if (topic.title.sourceLocale === sourceLocale) return;
     try {
       return await this.repository.reviseTopicTitle(
         input.topicId,
@@ -128,9 +126,7 @@ export class ForumService {
       throw new ForumStateConflictError("post body current revision changed");
     }
     assertSourceLocaleCorrectionAuthorized(post.authorId, input.actorId, input.scope);
-    if (post.body.sourceLocale === sourceLocale) {
-      throw new ForumStateConflictError("post body source locale is already current");
-    }
+    if (post.body.sourceLocale === sourceLocale) return;
     try {
       return await this.repository.revisePostBody(
         input.postId,
