@@ -2,12 +2,11 @@
 
 
 GitHub `main` now includes merged PR #112 at
-`75bf8bda4ca090eb7188c2fb4eaf2ed36d66b12b`, and the project owner has now selected the remaining
-presentation, authorization, spending and correction policies in ChatGPT service PR #95. Before a
-mergeable implementation PR is authorized, independently review the two feasibility questions in
-the final reconciliation section of this channel against the current code and official Cloudflare
-contracts. Reply in PR #95 with the supported mechanism or confirm the limitation; do not implement
-an approximate spending meter or a duplicate-charging automatic trigger.
+`75bf8bda4ca090eb7188c2fb4eaf2ed36d66b12b`. Codex and ChatGPT have completed the allowance and
+automatic-trigger feasibility cycle. Implement only the bounded manual source-locale correction task
+at the end of this channel in a separate mergeable PR based on that exact `main`. Record the PR/head,
+complete self-review and CI in ChatGPT service PR #95. Do not add generation routes/UI, allowance or
+anti-spam policy, provider enablement, general content editing or Stage 6 work.
 - GitHub `main`: `61b21a8029baf0fc0cb6a1d6a0c7e0ae931fd5a9`
 - `JOB-06` reconciliation/observability is merged through PR #99, including migration `0013`.
 - the concrete Cloudflare Workers AI M2M100 adapter is merged through PR #101.
@@ -2240,6 +2239,100 @@ the concurrency/accounting behavior. Otherwise it should confirm the limitations
 proposed Stage 5/Stage 6 split plus stable-identity automatic admission. No implementation PR is
 authorized until this cycle reaches agreement; the already accepted presentation, permissions and
 correction decisions do not need to be reopened.
+
+## Feasibility agreement result after owner decisions
+
+Codex independently reviewed ChatGPT service PR #95 at
+`232f52b7d982d08ae1c491fc2160eac05f3487b6`. ChatGPT confirmed both feasibility findings against the
+current planners and current official Workers AI, M2M100, error and AI Gateway contracts. No
+technical disagreement remains.
+
+The agreed boundary is:
+
+- Stage 5 may define and test a provider-neutral, fail-closed free-allowance admission capability,
+  but a real path that cannot authoritatively prove pre-call allowance availability stays unavailable;
+- strict zero-paid-spend is externally enforceable through a verified Workers Free hard stop, while
+  the additional strict 5% reserve remains a Stage 6 provider/account acceptance requirement unless
+  an authoritative pre-call reservation mechanism becomes available;
+- AI Gateway spend limits may be defense in depth but cannot be the correctness boundary because
+  their accounting is eventual/best-effort and concurrent requests can exceed the configured limit;
+- automatic generation remains a same-origin authenticated state-changing boundary after hydration;
+  GET/SSR is read-only;
+- provider-capacity admission meters actual new provider work and must be idempotent with the stable
+  task/generation transition; request anti-abuse is a distinct concern and may count repeated traffic;
+- the existing generation-head and stable-task locks must be evaluated first as the serialization
+  point before adding any new token/table;
+- the authoritative `<= 3000` automatic-body threshold is computed server-side from CNT-04 segments.
+
+The allowance/automatic-trigger implementation remains non-trivial and still depends on a precise
+admission contract. It does not block progress on the already decided, independent manual
+source-locale correction flow. Codex therefore selects correction as the next bounded mergeable task,
+rather than mixing it with unresolved generation spending mechanics.
+
+## Next mergeable task: manual source-locale correction
+
+Implement the owner-approved own/any source-locale correction flow for current topic-title and
+post-body revisions. This PR changes source-locale metadata only by creating a new immutable revision;
+it must not implement general title/body editing.
+
+### Required scope
+
+1. Add code-backed permissions `forum.sourceLocale.correctOwn` and
+   `forum.sourceLocale.correctAny` to the centralized authorization catalog and management UI data.
+   Initial grants: `user` gets `correctOwn`; `moderator` and `admin` get both. Preserve dynamic role
+   grants and per-user allow/deny overrides; do not hard-code role checks.
+2. Extend the request-scoped forum writer with narrow correction operations for a topic title and a
+   post body. Inputs identify the resource, expected current revision and requested source locale;
+   replacement content must not be accepted.
+3. Re-read the authoritative current topic/post and enforce resource ownership server-side. Permit
+   any-resource correction when `correctAny` is effective; otherwise require effective `correctOwn`
+   and exact authoritative author equality. Client author/role/permission fields are never evidence.
+4. Require authenticated same-origin mutation and independently re-resolve authorization on every
+   action. Permission denial is `403`, missing resource `404`, stale expected revision `409`, invalid
+   locale/input `400`, classified authorization/storage availability failure controlled `503`, and
+   unexpected errors remain visible to normal error handling rather than being masked.
+5. Accept only a canonicalizable BCP-47 translation locale without formatting extensions and require
+   a known non-`und` source language for manual correction. Do not restrict content source language to
+   active UI `LocaleRegistry` membership. Canonicalize once server-side.
+6. Copy `originalContent` only from the authoritative current revision, generate the new revision id
+   server-side, change only `sourceLocale`, and use the expected-current-revision compare-and-swap.
+   A race must not create an eligible orphan revision or replace a newer current revision. Record the
+   authenticated correcting actor as the new revision author/audit identity.
+7. Add locale-aware correction controls for the topic title and each post body only when optional
+   presentation authorization says own/any correction may apply. UI hiding is not the security
+   boundary. Show the current source locale, require explicit submission, preserve canonical locale
+   navigation and provide translated validation/conflict/error feedback through the existing UI
+   catalog path.
+8. After success redirect to the same canonical topic URL (and post anchor for a body correction).
+   Existing translations/tasks remain historically revision-bound; the new revision has original-safe
+   fallback and no old revision translation may be served as current.
+9. Add focused unit/route and disposable PostgreSQL integration coverage for permission catalog/
+   initial grants, own title/post success, own denial on another author, any success, dynamic deny,
+   unauthenticated/origin failures, invalid/`und`/noncanonical locale, UI-locale-independent language,
+   missing/stale revision, concurrent correction fencing, unchanged copied content, new revision
+   identity, historical translation isolation and optional-authorization degradation.
+10. Update `PROJECT_STATE.md` factually after successful checks. If a migration is proposed, first
+    demonstrate why the existing revision and authorization synchronization schema cannot satisfy the
+    invariant; no migration is expected from the current design.
+
+### Excluded scope
+
+- general topic-title/post-body editing, delete/moderation, history UI or revision rollback;
+- translation generation actions, automatic trigger, task-status UI, allowance admission,
+  anti-spam values, anonymous generation or request-budget redesign;
+- provider policy/capability changes, credentials, bindings, live calls or deployment;
+- changing old revision metadata or reassigning historical translations/tasks;
+- Stage 6 external account, migration or provider acceptance.
+
+### Completion criteria
+
+- correction is permission-based and resource-conditioned, never role- or client-author-trusted;
+- successful correction creates exactly one new current revision with byte-identical original content
+  and a canonical non-`und` source locale, while the old revision remains immutable/history-safe;
+- stale/concurrent/unauthorized/invalid requests cannot change the current revision;
+- current translation reads after correction cannot reuse translations from the previous revision;
+- complete repository/database CI passes without secrets, external calls or deployment;
+- ChatGPT records a complete self-review in PR #95, then Codex independently reviews the entire PR.
 ## Full JOB-06 re-review after correction
 
 Codex reviewed the complete PR #99 at
