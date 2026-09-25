@@ -270,7 +270,58 @@ export const translationTasks = pgTable(
     ),
     check(
       "translation_tasks_allowance_reason_check",
-      sql`${table.allowanceReason} is null or ${table.allowanceReason} ~ '^[a-z0-9][a-z0-9-]{0,63}
+      sql`${table.allowanceReason} is null or ${table.allowanceReason} ~ '^[a-z0-9][a-z0-9-]{0,63}$'`,
+    ),
+    check(
+      "translation_tasks_allowance_reservation_check",
+      sql`${table.allowanceReservationReference} is null
+        or ${table.allowanceReservationReference} ~ '^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$'`,
+    ),
+    check(
+      "translation_tasks_allowance_shape_check",
+      sql`(
+        ${table.allowanceState} is null
+        and ${table.allowanceGeneration} is null
+        and ${table.allowanceAttempt} is null
+        and ${table.allowanceClaimToken} is null
+        and ${table.allowanceLeaseExpiresAt} is null
+        and ${table.allowanceRetryNotBefore} is null
+        and ${table.allowanceReason} is null
+        and ${table.allowanceReservationReference} is null
+        and ${table.allowanceUpdatedAt} is null
+      ) or (
+        ${table.translationKind} in ('content-topic-title', 'content-post-body')
+        and ${table.allowanceGeneration} = ${table.generation}
+        and ${table.allowanceAttempt} = ${table.attemptCount} + 1
+        and ${table.allowanceAttempt} <= ${table.maxAttempts}
+        and ${table.allowanceUpdatedAt} is not null
+        and (
+          (
+            ${table.allowanceState} = 'leasing'
+            and ${table.allowanceClaimToken} is not null
+            and ${table.allowanceLeaseExpiresAt} is not null
+            and ${table.allowanceLeaseExpiresAt} > ${table.allowanceUpdatedAt}
+            and ${table.allowanceRetryNotBefore} is null
+            and ${table.allowanceReason} is null
+            and ${table.allowanceReservationReference} is null
+          ) or (
+            ${table.allowanceState} = 'admitted'
+            and ${table.allowanceClaimToken} is null
+            and ${table.allowanceLeaseExpiresAt} is null
+            and ${table.allowanceRetryNotBefore} is null
+            and ${table.allowanceReason} is null
+          ) or (
+            ${table.allowanceState} = 'deferred'
+            and ${table.allowanceClaimToken} is null
+            and ${table.allowanceLeaseExpiresAt} is null
+            and ${table.allowanceRetryNotBefore} is not null
+            and ${table.allowanceRetryNotBefore} > ${table.allowanceUpdatedAt}
+            and ${table.allowanceReason} is not null
+            and ${table.allowanceReservationReference} is null
+          )
+        )
+      )`,
+    ),
     check(
       "translation_tasks_lifecycle_check",
       sql`(
