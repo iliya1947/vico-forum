@@ -9,6 +9,7 @@ import type {
 } from "../app/localization/content-translation-allowance";
 import {
   contentTranslationAllowanceAdmissions,
+  translationTaskGenerationHeads,
   translationTasks,
 } from "./schema";
 
@@ -46,6 +47,13 @@ implements ContentTranslationAllowanceStore {
         .limit(1);
       if (!task) return { outcome: "not-found" as const };
       assertTaskKind(task, translationKind);
+
+      if (!await isCurrentContentGeneration(transaction, task)) {
+        await transaction
+          .delete(contentTranslationAllowanceAdmissions)
+          .where(eq(contentTranslationAllowanceAdmissions.taskId, task.id));
+        return { outcome: "terminal" as const };
+      }
 
       if (
         task.status === "stale"
@@ -188,7 +196,28 @@ implements ContentTranslationAllowanceStore {
     validateLease(lease);
     validateReservationReference(reservationReference);
 
-    const rows = await this.database
+    return this.database.transaction(async (transaction) => {
+      const [task] = await transaction
+        .select()
+        .from(translationTasks)
+        .where(eq(translationTasks.id, lease.taskId))
+        .for("update")
+        .limit(1);
+      if (
+        !task
+        || task.translationKind !== lease.translationKind
+        || task.generation !== lease.generation
+        || task.attemptCount + 1 !== lease.attemptNumber
+        || task.status !== "pending"
+        || !await isCurrentContentGeneration(transaction, task)
+      ) {
+        await transaction
+          .delete(contentTranslationAllowanceAdmissions)
+          .where(eq(contentTranslationAllowanceAdmissions.taskId, lease.taskId));
+        return false;
+      }
+
+      const rows = await transaction
       .update(contentTranslationAllowanceAdmissions)
       .set({
         state: "admitted",
@@ -209,7 +238,8 @@ implements ContentTranslationAllowanceStore {
         eq(contentTranslationAllowanceAdmissions.claimToken, lease.claimToken),
       ))
       .returning({ taskId: contentTranslationAllowanceAdmissions.taskId });
-    return rows.length === 1;
+      return rows.length === 1;
+    });
   }
 
   async defer(
@@ -224,6 +254,26 @@ implements ContentTranslationAllowanceStore {
     requireReason(reason);
 
     return this.database.transaction(async (transaction) => {
+      const [task] = await transaction
+        .select()
+        .from(translationTasks)
+        .where(eq(translationTasks.id, lease.taskId))
+        .for("update")
+        .limit(1);
+      if (
+        !task
+        || task.translationKind !== lease.translationKind
+        || task.generation !== lease.generation
+        || task.attemptCount + 1 !== lease.attemptNumber
+        || task.status !== "pending"
+        || !await isCurrentContentGeneration(transaction, task)
+      ) {
+        await transaction
+          .delete(contentTranslationAllowanceAdmissions)
+          .where(eq(contentTranslationAllowanceAdmissions.taskId, lease.taskId));
+        return undefined;
+      }
+
       const clockResult = await transaction.execute<{ database_now: Date }>(sql`
         select statement_timestamp() as database_now
       `);
@@ -289,6 +339,29 @@ export async function consumeAdmittedContentAllowance(
     ))
     .returning({ taskId: contentTranslationAllowanceAdmissions.taskId });
   return rows.length === 1;
+}
+
+async function isCurrentContentGeneration(
+  transaction: TranslationTaskTransaction,
+  task: TranslationTaskRow,
+): Promise<boolean> {
+  if (
+    task.translationKind !== "content-topic-title"
+    && task.translationKind !== "content-post-body"
+  ) {
+    return false;
+  }
+  const [head] = await transaction
+    .select({ currentGeneration: translationTaskGenerationHeads.currentGeneration })
+    .from(translationTaskGenerationHeads)
+    .where(and(
+      eq(translationTaskGenerationHeads.translationKind, task.translationKind),
+      eq(translationTaskGenerationHeads.sourceNamespace, task.sourceNamespace),
+      eq(translationTaskGenerationHeads.sourceKey, task.sourceKey),
+      eq(translationTaskGenerationHeads.targetLocale, task.targetLocale),
+    ))
+    .limit(1);
+  return head?.currentGeneration === task.generation;
 }
 
 function leaseFromRow(row: AdmissionRow): ContentTranslationAllowanceLease {
