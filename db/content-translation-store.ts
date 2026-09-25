@@ -1,4 +1,4 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, or, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import {
   ContentTranslationConflictError,
@@ -9,6 +9,7 @@ import {
   type ContentTranslationStore,
   type StoredContentTranslation,
 } from "../app/localization/content-translation";
+import type { ContentTranslationBatchReader, ContentTranslationBatchReadResult } from "../app/localization/content-translation-presentation";
 import { isPostgresAvailabilityFailure } from "../app/localization/persistent-registry";
 import { isPostgresQueryTimeout } from "./postgres-deadlines";
 import {
@@ -89,6 +90,95 @@ export class DrizzleContentTranslationStore implements ContentTranslationStore {
     return this.database.transaction((tx) =>
       writePostBodyTranslationWithTrust(tx, translation)
     );
+  }
+}
+
+export class DrizzleContentTranslationBatchReader implements ContentTranslationBatchReader {
+  constructor(private readonly database: NodePgDatabase) {}
+
+  async readBatch(
+    identities: readonly ContentTranslationIdentity[],
+  ): Promise<ContentTranslationBatchReadResult> {
+    const titleIdentities = identities.filter((identity) => identity.contentType === "topic-title");
+    const postIdentities = identities.filter((identity) => identity.contentType === "post-body");
+    const translations: StoredContentTranslation[] = [];
+    const invalidIdentities: ContentTranslationIdentity[] = [];
+
+    try {
+      if (titleIdentities.length > 0) {
+        const rows = await this.database
+          .select({
+            topicId: forumTopicTitleTranslations.topicId,
+            revisionId: forumTopicTitleTranslations.revisionId,
+            targetLocale: forumTopicTitleTranslations.targetLocale,
+            sourceLocale: forumTopicTitleTranslations.sourceLocale,
+            translatedContent: forumTopicTitleTranslations.translatedContent,
+            origin: forumTopicTitleTranslations.origin,
+            provider: forumTopicTitleTranslations.provider,
+            providerModel: forumTopicTitleTranslations.providerModel,
+            attribution: forumTopicTitleTranslations.attribution,
+          })
+          .from(forumTopicTitleTranslations)
+          .where(or(...titleIdentities.map((identity) => and(
+            eq(forumTopicTitleTranslations.topicId, identity.contentId),
+            eq(forumTopicTitleTranslations.revisionId, identity.revisionId),
+            eq(forumTopicTitleTranslations.targetLocale, identity.targetLocale),
+          ))));
+
+        for (const row of rows) {
+          try {
+            translations.push(topicRow(row));
+          } catch (error) {
+            if (!(error instanceof ContentTranslationInvalidRecordError)) throw error;
+            invalidIdentities.push({
+              contentType: "topic-title",
+              contentId: row.topicId,
+              revisionId: row.revisionId,
+              targetLocale: row.targetLocale,
+            });
+          }
+        }
+      }
+
+      if (postIdentities.length > 0) {
+        const rows = await this.database
+          .select({
+            postId: forumPostBodyTranslations.postId,
+            revisionId: forumPostBodyTranslations.revisionId,
+            targetLocale: forumPostBodyTranslations.targetLocale,
+            sourceLocale: forumPostBodyTranslations.sourceLocale,
+            translatedContent: forumPostBodyTranslations.translatedContent,
+            origin: forumPostBodyTranslations.origin,
+            provider: forumPostBodyTranslations.provider,
+            providerModel: forumPostBodyTranslations.providerModel,
+            attribution: forumPostBodyTranslations.attribution,
+          })
+          .from(forumPostBodyTranslations)
+          .where(or(...postIdentities.map((identity) => and(
+            eq(forumPostBodyTranslations.postId, identity.contentId),
+            eq(forumPostBodyTranslations.revisionId, identity.revisionId),
+            eq(forumPostBodyTranslations.targetLocale, identity.targetLocale),
+          ))));
+
+        for (const row of rows) {
+          try {
+            translations.push(postRow(row));
+          } catch (error) {
+            if (!(error instanceof ContentTranslationInvalidRecordError)) throw error;
+            invalidIdentities.push({
+              contentType: "post-body",
+              contentId: row.postId,
+              revisionId: row.revisionId,
+              targetLocale: row.targetLocale,
+            });
+          }
+        }
+      }
+
+      return { translations, invalidIdentities };
+    } catch (error) {
+      throw classifyStorageFailure(error);
+    }
   }
 }
 
