@@ -9,13 +9,17 @@ import {
 } from "../app/localization/content-translation-presentation";
 import { isPostgresAvailabilityFailure } from "../app/localization/persistent-registry";
 import { DrizzleContentTranslationBatchReader } from "./content-translation-presentation-store";
-import { isPostgresConnectionTimeout, isPostgresQueryTimeout } from "./postgres-deadlines";
+import {
+  createLocalizationClient,
+  isPostgresConnectionTimeout,
+  isPostgresQueryTimeout,
+} from "./postgres-deadlines";
 
 type ClientFactory = () => Client;
 
 export function createHyperdriveContentTranslationPresentation(
   connectionString: string,
-  clientFactory: ClientFactory = () => new Client({ connectionString }),
+  clientFactory: ClientFactory = () => createLocalizationClient(connectionString),
 ): ContentTranslationPresentationCapability {
   return new ContentTranslationPresentationService({
     async readTopic(input) {
