@@ -96,6 +96,7 @@ export default function TopicRoute() {
         </Form>}
       </section>
       {correctionError && <p role="alert">{t(`sourceLocaleCorrectionError_${correctionError}`)}</p>}
+      {forumWriteError && <p role="alert">{t(`forumWriteError_${forumWriteError}`)}</p>}
       {topic.posts.length === 0 ? <EmptyState>{t("postsEmpty")}</EmptyState> : (
         <ol className="post-list">
           {topic.posts.map((post, index) => (
@@ -120,7 +121,6 @@ export default function TopicRoute() {
       )}
       {canReply && <Form method="post" className="forum-write-form">
         <h2>{t("replyHeading")}</h2>
-        {forumWriteError && <p role="alert">{t(`forumWriteError_${forumWriteError}`)}</p>}
         <label>{t("replyBodyLabel")}<textarea name="body" required rows={7} /></label>
         <button type="submit">{t("replySubmit")}</button>
       </Form>}
