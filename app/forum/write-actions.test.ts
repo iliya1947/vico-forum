@@ -260,35 +260,37 @@ describe("forum write route actions", () => {
     expect(denied.correctTopicTitleSourceLocale).not.toHaveBeenCalled();
 
     const guest = writer();
+    const guestRequest = request("/en/topics/topic-1", {
+      intent: "correctTitleSourceLocale",
+      expectedRevisionId: "title-r1",
+      sourceLocale: "ru",
+    });
+    const guestFormData = vi.spyOn(guestRequest, "formData");
     const guestResponse = await topicAction({
-      request: request("/en/topics/topic-1", {
-        intent: "correctTitleSourceLocale",
-        expectedRevisionId: "title-r1",
-        sourceLocale: "ru",
-      }),
+      request: guestRequest,
       params: { locale: "en", topicId: "topic-1" },
       context: context(guest, false),
     });
-    expect(guestResponse).toMatchObject({
-      data: { error: "unauthenticated", operation: "sourceLocaleCorrection" },
-      init: { status: 401 },
-    });
+    expect(guestResponse).toMatchObject({ data: { error: "unauthenticated" }, init: { status: 401 } });
+    expect(guestFormData).not.toHaveBeenCalled();
+    expect((guestResponse as { data: object }).data).not.toHaveProperty("operation");
     expect(guest.correctTopicTitleSourceLocale).not.toHaveBeenCalled();
 
     const crossOrigin = writer();
+    const crossOriginRequest = request("/en/topics/topic-1", {
+      intent: "correctTitleSourceLocale",
+      expectedRevisionId: "title-r1",
+      sourceLocale: "ru",
+    }, "https://evil.example");
+    const crossOriginFormData = vi.spyOn(crossOriginRequest, "formData");
     const crossOriginResponse = await topicAction({
-      request: request("/en/topics/topic-1", {
-        intent: "correctTitleSourceLocale",
-        expectedRevisionId: "title-r1",
-        sourceLocale: "ru",
-      }, "https://evil.example"),
+      request: crossOriginRequest,
       params: { locale: "en", topicId: "topic-1" },
       context: context(crossOrigin),
     });
-    expect(crossOriginResponse).toMatchObject({
-      data: { error: "origin", operation: "sourceLocaleCorrection" },
-      init: { status: 403 },
-    });
+    expect(crossOriginResponse).toMatchObject({ data: { error: "origin" }, init: { status: 403 } });
+    expect(crossOriginFormData).not.toHaveBeenCalled();
+    expect((crossOriginResponse as { data: object }).data).not.toHaveProperty("operation");
     expect(crossOrigin.correctTopicTitleSourceLocale).not.toHaveBeenCalled();
   });
 
