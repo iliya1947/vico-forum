@@ -2,20 +2,22 @@ import { StrictMode, type ReactNode } from "react";
 import { act, render, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const submit = vi.fn(async () => undefined);
-const revalidate = vi.fn();
-let revalidatorState: "idle" | "loading" = "idle";
+const mocks = vi.hoisted(() => ({
+  submit: vi.fn(async () => undefined),
+  revalidate: vi.fn(),
+  revalidator: { state: "idle" as "idle" | "loading" },
+}));
 
 vi.mock("react-router", () => ({
   useFetcher: () => ({
-    submit,
+    submit: mocks.submit,
     state: "idle",
     data: undefined,
     Form: ({ children }: { children: ReactNode }) => <form>{children}</form>,
   }),
   useRevalidator: () => ({
-    state: revalidatorState,
-    revalidate,
+    state: mocks.revalidator.state,
+    revalidate: mocks.revalidate,
   }),
 }));
 
@@ -50,9 +52,9 @@ function unit(
 
 describe("content generation client orchestration", () => {
   beforeEach(() => {
-    submit.mockClear();
-    revalidate.mockClear();
-    revalidatorState = "idle";
+    mocks.submit.mockClear();
+    mocks.revalidate.mockClear();
+    mocks.revalidator.state = "idle";
     vi.useRealTimers();
   });
 
@@ -76,16 +78,16 @@ describe("content generation client orchestration", () => {
       </StrictMode>,
     );
 
-    await waitFor(() => expect(submit).toHaveBeenCalledTimes(2));
-    expect(submit.mock.calls.map((call) => {
+    await waitFor(() => expect(mocks.submit).toHaveBeenCalledTimes(2));
+    expect(mocks.submit.mock.calls.map((call) => {
       const data = call[0] as FormData;
       return [data.get("intent"), data.get("postId")];
     })).toEqual([
       ["generatePostBodyTranslation", "post-1"],
       ["generatePostBodyTranslation", "post-2"],
     ]);
-    expect(submit.mock.calls.every((call) => call[1]?.defaultShouldRevalidate === false)).toBe(true);
-    await waitFor(() => expect(revalidate).toHaveBeenCalledTimes(1));
+    expect(mocks.submit.mock.calls.every((call) => call[1]?.defaultShouldRevalidate === false)).toBe(true);
+    await waitFor(() => expect(mocks.revalidate).toHaveBeenCalledTimes(1));
   });
 
   it("polls active states only through read-only revalidation and stops at the finite cap", async () => {
@@ -97,9 +99,9 @@ describe("content generation client orchestration", () => {
       await act(async () => {
         await vi.advanceTimersByTimeAsync(2_000);
       });
-      revalidatorState = "loading";
+      mocks.revalidator.state = "loading";
       rendered.rerender(<ContentGenerationManager units={units} />);
-      revalidatorState = "idle";
+      mocks.revalidator.state = "idle";
       rendered.rerender(<ContentGenerationManager units={units} />);
     }
 
@@ -107,8 +109,8 @@ describe("content generation client orchestration", () => {
       await vi.advanceTimersByTimeAsync(10_000);
     });
 
-    expect(revalidate).toHaveBeenCalledTimes(15);
-    expect(submit).not.toHaveBeenCalled();
+    expect(mocks.revalidate).toHaveBeenCalledTimes(15);
+    expect(mocks.submit).not.toHaveBeenCalled();
   });
 
   it("does not poll replacement revisions introduced after hydration", async () => {
@@ -126,7 +128,7 @@ describe("content generation client orchestration", () => {
       await vi.advanceTimersByTimeAsync(10_000);
     });
 
-    expect(revalidate).not.toHaveBeenCalled();
-    expect(submit).not.toHaveBeenCalled();
+    expect(mocks.revalidate).not.toHaveBeenCalled();
+    expect(mocks.submit).not.toHaveBeenCalled();
   });
 });
