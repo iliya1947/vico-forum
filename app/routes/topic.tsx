@@ -119,6 +119,7 @@ export async function loader({ params, context }: {
       if (!(error instanceof ContentGenerationStatusStorageUnavailableError)) throw error;
       generationUnits = unavailableContentGenerationView(
         revisions,
+        presentations,
         resolvedLocale.translationLocale,
       );
     }
