@@ -18,6 +18,7 @@ import {
   ThresholdContentSourceLocalePolicy,
 } from "../../app/localization/content-source-locale";
 import { ContentTranslationService } from "../../app/localization/content-translation";
+import { ContentTranslationAllowanceAdmissionService } from "../../app/localization/content-translation-allowance";
 import { ContentTopicTitleTranslationPlanner } from "../../app/localization/content-translation-planning";
 import {
   RoutedContentTopicTitleProviderCapability,
@@ -43,6 +44,7 @@ import {
 } from "../../app/localization/translation-provider";
 import { DrizzleContentTopicTitleExecutionStore } from "../../db/content-topic-title-execution-store";
 import { DrizzleContentTopicTitlePlanningStore } from "../../db/content-topic-title-task-store";
+import { DrizzleContentTranslationAllowanceStore } from "../../db/content-translation-allowance-store";
 import { DrizzleContentTranslationStore } from "../../db/content-translation-store";
 import {
   DrizzleTranslationTaskStore,
@@ -83,6 +85,7 @@ beforeAll(async () => {
     "drizzle/0014_content_translation_persistence.sql",
     "drizzle/0015_content_topic_title_tasks.sql",
     "drizzle/0017_content_translation_request_budget.sql",
+    "drizzle/0019_content_translation_allowance_admission.sql",
   ]) {
     const sql = (await readFile(migration, "utf8"))
       .replaceAll('"public".', `"${schemaName}".`);
@@ -93,6 +96,7 @@ beforeAll(async () => {
 beforeEach(async () => {
   await client.query(`
     truncate
+      content_translation_allowance_admissions,
       content_translation_request_budget_counters,
       content_topic_title_translation_tasks,
       translation_tasks,
@@ -633,7 +637,26 @@ function createDispatcherWithRouter(
     generationPolicyVersion: "content-v1",
     publications: executionStore,
   });
+  const allowance = new ContentTranslationAllowanceAdmissionService({
+    tasks,
+    store: new DrizzleContentTranslationAllowanceStore(database),
+    adapter: { admit: async () => ({ outcome: "admitted" }) },
+    titlePreflight: {
+      tasks,
+      revisions: executionStore,
+      translations,
+      localeRegistry,
+      generationPolicyVersion: "content-v1",
+    },
+    admissionLeaseDurationMs: 30_000,
+    postBodyExecutionBounds: {
+      maxSegments: 32,
+      maxTotalSegmentCharacters: 100_000,
+    },
+    unconfiguredRetryNotBefore: () => new Date(Date.now() + 60_000),
+  });
   const contentExecutor = new ContentTopicTitleTaskExecutor({
+    allowance,
     consumer,
     providerRouter,
     publisher,
