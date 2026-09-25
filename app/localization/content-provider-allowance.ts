@@ -252,18 +252,6 @@ export class ContentPostBodyAllowanceGate {
       (segment) => segment.text.length,
     );
     const totalCharacters = segmentCharacterCounts.reduce((total, count) => total + count, 0);
-    if (
-      segmentCharacterCounts.length > this.dependencies.executionBounds.maxSegments
-      || totalCharacters > this.dependencies.executionBounds.maxTotalSegmentCharacters
-    ) {
-      const persisted = await this.dependencies.store.persistContentProviderAllowanceAdmission(
-        acquired.task.id,
-        acquired.admissionToken,
-        acquired.occurrence,
-      );
-      return persisted ? { outcome: "admitted" } : { outcome: "claim-lost" };
-    }
-
     const provider = this.dependencies.providerRouter.selectProvider(
       publicForumPostBodyProviderCapabilities({
         sourceLocale: task.resolvedSourceLocale,
@@ -273,6 +261,24 @@ export class ContentPostBodyAllowanceGate {
     );
     if (!provider) {
       return persistUnconfiguredProvider(this.dependencies, acquired);
+    }
+
+    if (
+      segmentCharacterCounts.length > this.dependencies.executionBounds.maxSegments
+      || totalCharacters > this.dependencies.executionBounds.maxTotalSegmentCharacters
+    ) {
+      // Existing JOB-04 semantics terminalize execution-bound violations after claim.
+      // No provider work can occur, so bypass external allowance while still binding the claim
+      // to the exact provider selection that would have executed this attempt.
+      const persisted = await this.dependencies.store.persistContentProviderAllowanceAdmission(
+        acquired.task.id,
+        acquired.admissionToken,
+        acquired.occurrence,
+        provider,
+      );
+      return persisted
+        ? { outcome: "admitted", provider }
+        : { outcome: "claim-lost" };
     }
 
     const request = await allowanceRequest(
