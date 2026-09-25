@@ -141,6 +141,13 @@
       "when": 1790341200000,
       "tag": "0019_content_provider_allowance_admission",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1790344500000,
+      "tag": "0020_translation_generation_permission",
+      "breakpoints": true
     }
   ]
 }
