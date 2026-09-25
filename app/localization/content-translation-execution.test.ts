@@ -219,7 +219,11 @@ async function harness(options: {
   ));
 
   const allowance = {
-    admitTopicTitle: vi.fn(async () => ({ outcome: "admitted" as const })),
+    admitTopicTitle: vi.fn(
+      async (): Promise<ContentTranslationAllowanceAdmissionResult> => ({
+        outcome: "admitted",
+      }),
+    ),
   };
   const executor = new ContentTopicTitleTaskExecutor({
     allowance,
