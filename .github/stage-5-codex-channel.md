@@ -1,12 +1,12 @@
 # Stage 5 Codex coordination channel
 
 
-Codex independently re-reviewed the complete corrected PR #113 at
-`2dd32136011832e54f08c10717c5f0d569e58a74` against unchanged GitHub `main`
-`75bf8bda4ca090eb7188c2fb4eaf2ed36d66b12b`, the latest ChatGPT service PR #95 record and the
-corrected PR metadata. The agreed pre-parse guard defect is resolved, full CI is green and no
-remaining current-Stage defect was found. PR #113 is technically ready for the project owner to
-merge; after merge, Codex must verify the resulting GitHub `main` before selecting the next task.
+GitHub `main` now includes merged PR #113 at
+`159edac155d11c9f8429f485ea09e2083545a7fd`. Implement only the bounded read-only content-
+translation presentation task at the end of this channel in a separate mergeable PR based on that
+exact head. Record the PR/head, complete self-review and CI in ChatGPT service PR #95. Do not add
+translation-generation mutations, automatic triggers, allowance/anti-spam policy, provider changes,
+new external bindings or Stage 6 work.
 - GitHub `main`: `61b21a8029baf0fc0cb6a1d6a0c7e0ae931fd5a9`
 - `JOB-06` reconciliation/observability is merged through PR #99, including migration `0013`.
 - the concrete Cloudflare Workers AI M2M100 adapter is merged through PR #101.
@@ -2407,6 +2407,100 @@ as run because this environment could not download the pinned `pnpm@12.3.4` exec
 No remaining current-Stage defect was found. PR #113 is technically ready for the project owner to
 merge. The next Stage 5 task must be chosen only after fetching and verifying the resulting updated
 GitHub `main`.
+
+## Updated-main verification after PR #113
+
+Codex fetched GitHub `main` at `159edac155d11c9f8429f485ea09e2083545a7fd` and verified that PR
+#113 is merged. The current `PROJECT_STATE.md` records manual topic-title/post-body source-locale
+correction, migration history through `0018`, dynamic own/any authorization, immutable revision
+creation and historical translation isolation. The remaining Stage 5 work is content translation
+route/UI presentation plus generation admission/trigger integration; external provider/account work
+remains Stage 6.
+
+Codex reread the complete current Stage, translation, provider/job, storage and authorization
+contracts. Provider allowance and automatic generation still require their separately agreed
+fail-closed/idempotent design. They do not block the owner-approved public reuse and automatic display
+of an already persisted current translation, which performs no provider work and consumes no budget.
+That read-only presentation path is therefore the next bounded task.
+
+## Next mergeable task: read-only current content-translation presentation
+
+Implement public read-only presentation of already persisted current topic-title and post-body
+translations for the canonical URL locale. Missing, invalid or classified-unavailable translations
+must render the exact current original. This task must not request, enqueue or execute translation.
+
+### Required scope
+
+1. Add a request-scoped read-only content-translation presentation capability used by the topic
+   loader. It accepts the authoritative current title/post revisions already returned by the forum
+   reader and the canonical validated URL target locale; it never accepts client-supplied revision,
+   source or target data as authority.
+2. Preserve revision-bound identity. Read only translations matching exact
+   `contentType + contentId + current revisionId + targetLocale`; never serve a previous revision,
+   same-source target or a translation for another post/title/locale.
+3. Avoid an N-query-per-post route. Add a bounded batch read appropriate to one topic page: at most
+   one title-translation query and one set-based post-body translation query (or an equally bounded
+   query plan), with strict result ownership/identity validation before use. Do not issue one database
+   query per post.
+4. Reuse `ContentTranslationService` validation/original-fallback semantics rather than creating a
+   weaker route-only interpretation. Classified storage availability failures degrade the complete
+   presentation safely to originals; unexpected schema/programming/integrity errors remain visible
+   to normal error handling and are not silently converted to misses.
+5. Apply the accepted product behavior: when a current persisted translation exists for the URL
+   locale and differs from the known source locale, display it automatically. Provide an explicit
+   per-unit `show original` / `show translation` control without any mutation/provider side effect.
+   A no-JavaScript/SSR rendering must remain content-complete and original-safe.
+6. Render topic title and each post independently. Never combine title/body records or let a missing
+   unit suppress valid translations for other units. Breadcrumb/title consistency must be deliberate:
+   all visible uses of the current topic title on the topic page use the same selected presentation.
+7. Mark translated content as translated/machine or manual according to stored provenance. Render
+   stored attribution only when present. Translation text remains plain title text or input to the
+   existing safe `ForumMarkdown` renderer; never render provider HTML or bypass Markdown safety.
+8. Add `lang` and direction metadata for translated and original blocks using validated locale/source
+   semantics. Target direction comes from current `LocaleRegistry`; unknown original source may use
+   controlled `dir="auto"`. Do not infer content source from UI locale.
+9. Keep the loader/GET path strictly read-only: no task creation, enqueue, budget consumption,
+   provider capability check or provider call. Guests and authenticated users see the same persisted
+   public translation result; generation permission is irrelevant to this read path.
+10. Add focused unit/route and disposable PostgreSQL coverage for current title/body selection,
+    mixed translated/missing units, old-revision isolation, wrong target/identity rejection,
+    same-source original, manual/machine provenance and attribution, show-original behavior,
+    Markdown safety, LTR/RTL/unknown direction, classified storage degradation, unexpected-error
+    propagation, guest parity, and a query-count/set-based guard proving no per-post N+1.
+11. Update `PROJECT_STATE.md` factually after checks. No migration is expected; if one is proposed,
+    first demonstrate why the current `0014` persistence schema cannot implement the bounded read.
+
+### Design constraints
+
+- Public display of a persisted translation costs no provider allowance and is independent from the
+  permission to generate new work.
+- The current immutable forum revision remains authoritative. Translation presentation cannot change
+  revision identity, source metadata, solution state or forum authorization.
+- Prefer a reusable presentation result per unit containing selected/original content, provenance,
+  target/source language metadata and attribution rather than leaking raw DB rows into React routes.
+- Keep caching/request scoping consistent with the existing locale and forum loader boundaries; do
+  not introduce a long-lived cross-request authoritative cache.
+
+### Excluded scope
+
+- `forum.translation.generate`, generation buttons/actions, automatic POST after hydration, polling or
+  durable task-status UI;
+- free-allowance admission, the 5% reserve, request anti-abuse limits, pseudonymization changes or
+  planner/task lifecycle changes;
+- provider capability/allowlisting, credentials, Queues, live calls, deployment or Stage 6 acceptance;
+- source-locale correction changes, general content editing, SEO/meta translation or list-page title
+  translation outside the topic page.
+
+### Completion criteria
+
+- a topic page automatically and safely presents every available exact-current URL-locale translation
+  while each unavailable unit independently falls back to its exact original;
+- users can inspect the original without causing writes or generation work;
+- provenance/attribution and language/direction metadata are accurate, and translated Markdown stays
+  inside the existing safe renderer;
+- the topic loader performs a bounded translation read independent of post count;
+- complete repository/database CI passes without secrets, external calls or deployment;
+- ChatGPT records a complete self-review in PR #95, then Codex independently reviews the entire PR.
 ## Full JOB-06 re-review after correction
 
 Codex reviewed the complete PR #99 at
