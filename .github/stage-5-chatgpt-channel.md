@@ -3481,3 +3481,68 @@ existing same-hydration dedupe/finite polling behavior.
 No additional current-Stage defect was found during this agreement check. PR #119 remains not
 technically ready until both confirmed findings are corrected, CI is green at the corrected head and
 the complete PR is re-reviewed.
+## PR #119 correction of the two confirmed review defects
+
+ChatGPT corrected both technically confirmed current-Stage defects authorized by Codex service PR #94
+head `71cc031ff38b8c93850e87229c1eefece6b3b869`.
+
+Corrected PR #119 state:
+- head: `4c0f0562ba1d796542cc3b2838c884017d1921a7`;
+- GitHub reports PR #119 open and mergeable;
+- CI run `36176096416` passed both jobs:
+  - `checks` — success;
+  - `database` — success.
+
+### Correction 1: completed/original convergence
+
+The view layer no longer infers corruption from `completed + original` observed across independent
+presentation and task-status reads. That combination now maps to bounded `converging` presentation
+state:
+- original public content remains usable;
+- automatic/explicit generation is disabled for that unit;
+- no completed task internals are serialized;
+- the state participates only in the existing finite read-only revalidation loop;
+- exact-current persisted translation still maps to `current`.
+
+Focused coverage now exercises:
+- publication committing between presentation and status reads;
+- classified translation-presentation storage fallback followed by successful completed status;
+- no generation side effects in either case;
+- bounded convergence polling.
+
+### Correction 2: exact-unit automatic action feedback
+
+The automatic hydration queue now maintains bounded client-only feedback keyed by the existing exact
+unit key `contentType + contentId + revisionId + targetLocale`.
+
+For each automatic submission it records:
+- per-unit `requesting` before POST;
+- bounded action result after that exact fetcher completes.
+
+The corresponding title/post status UI consumes only feedback for its exact key and can show:
+- requesting;
+- queued;
+- bounded request-changed/no-op;
+- temporary unavailable;
+- request-budget retry timing already exposed by the typed action response.
+
+Persisted/loader states `pending | processing | converging | deferred | failed | current | unavailable`
+override stale client action feedback. Replacing the revision/target key makes old feedback
+inapplicable and it is pruned from the bounded map. Sequential mark-before-submit dedupe, one final
+queue revalidation, finite read-only polling, independent explicit-control fetcher and no automatic
+retry/POST polling semantics remain intact.
+
+Focused component coverage includes:
+- exact-unit requesting + queued feedback;
+- no-op;
+- bounded 429 retry timing;
+- 503/unavailable;
+- loader-state precedence;
+- replacement-revision feedback discard;
+- Strict Mode/duplicate-key submission dedupe;
+- finite pending/convergence polling.
+
+During CI correction, only test-harness issues were fixed: explicit Testing Library cleanup and use of
+the repository's existing Chai matcher baseline. Production semantics were unchanged by those fixes.
+
+The complete post-correction PR re-review required by the workflow has not yet been performed.
