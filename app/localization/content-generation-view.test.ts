@@ -5,10 +5,7 @@ import {
   contentGenerationUnitKey,
   unavailableContentGenerationView,
 } from "./content-generation-view";
-import {
-  ContentGenerationStatusIntegrityError,
-  type ContentGenerationTaskStatus,
-} from "./content-generation-status";
+import type { ContentGenerationTaskStatus } from "./content-generation-status";
 import type { ContentTranslationPresentation } from "./content-translation-presentation";
 import type { ContentTranslationRevision } from "./content-translation";
 
@@ -128,13 +125,19 @@ describe("content generation loader view", () => {
     expect(view[0]).toMatchObject({ state: "current", automatic: false });
   });
 
-  it("rejects completed current-generation work without its required exact-current translation", () => {
-    expect(() => buildContentGenerationView(
+  it("treats completed plus independently read original presentation as bounded convergence", () => {
+    const view = buildContentGenerationView(
       [title],
       [original(title)],
       [status(title, "completed")],
       "he",
-    )).toThrow(ContentGenerationStatusIntegrityError);
+    );
+
+    expect(view[0]).toMatchObject({
+      state: "converging",
+      automatic: false,
+      explicitRequired: false,
+    });
   });
 
   it("preserves bounded deferred timing and terminal status", () => {
