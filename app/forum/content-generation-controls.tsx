@@ -10,7 +10,7 @@ import {
 import { useFetcher, useRevalidator } from "react-router";
 import { useTranslation } from "react-i18next";
 
-import type { ContentGenerationActionResponse } from "./actions.server";
+import type { ContentGenerationActionResponse } from "../localization/content-generation-contract";
 import type { ContentGenerationViewModel } from "../localization/content-generation-status";
 
 export const CONTENT_GENERATION_POLL_DELAY_MS = 2_000;
