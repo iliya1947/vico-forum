@@ -165,6 +165,109 @@ describe("public forum authorization degradation", () => {
     expect(any.correctablePostIds).toEqual(["post-1"]);
   });
 
+  it("presents the same persisted public translation to guests and authenticated users", async () => {
+    const makeContext = (authenticated: boolean) => {
+      const value = new RouterContextProvider();
+      value.set(forumReaderContext, reader);
+      value.set(localeContext, {
+        translationLocale: "he",
+        fallbackLocales: ["en"],
+        direction: "rtl",
+        formatting: { locale: "he", timeZone: "UTC" },
+        nativeName: "עברית",
+        presentationMetadata: {},
+      });
+      value.set(registryLoaderContext, async () => ({
+        registry: localeRegistry,
+        semanticIdentity: "test-registry",
+        health: { status: "healthy" as const },
+      }));
+      value.set(
+        contentTranslationPresentationContext,
+        new ContentTranslationPresentationService({
+          readTopic: async () => ({
+            title: {
+              identity: {
+                contentType: "topic-title",
+                contentId: "topic-1",
+                revisionId: "title-r1",
+                targetLocale: "he",
+              },
+              status: "translation",
+              translation: {
+                contentType: "topic-title",
+                contentId: "topic-1",
+                revisionId: "title-r1",
+                targetLocale: "he",
+                sourceLocale: "en",
+                translatedContent: "נושא ציבורי",
+                provenance: {
+                  origin: "machine",
+                  provider: "provider-a",
+                  model: "model-a",
+                },
+              },
+            },
+            posts: [],
+          }),
+        }),
+      );
+      value.set(authSessionContext, authenticated ? session : null);
+      if (authenticated) {
+        value.set(authorizationContext, {
+          forUser: () => ({
+            resolve: vi.fn(),
+            has: vi.fn(async () => false),
+          }),
+        } as never);
+      }
+      return value;
+    };
+
+    const guest = await topicLoader({
+      params: { locale: "he", topicId: topic.id },
+      context: makeContext(false),
+    });
+    const authenticated = await topicLoader({
+      params: { locale: "he", topicId: topic.id },
+      context: makeContext(true),
+    });
+
+    expect(guest.translationPresentation).toEqual(authenticated.translationPresentation);
+    expect(guest.translationPresentation.title).toMatchObject({
+      selected: "translation",
+      displayed: { content: "נושא ציבורי", locale: "he", direction: "rtl" },
+    });
+  });
+
+  it("propagates unexpected content-presentation failures from the public topic loader", async () => {
+    const failure = new Error("unexpected content translation read bug");
+    const value = new RouterContextProvider();
+    value.set(forumReaderContext, reader);
+    value.set(authSessionContext, null);
+    value.set(localeContext, {
+      translationLocale: "he",
+      fallbackLocales: ["en"],
+      direction: "rtl",
+      formatting: { locale: "he", timeZone: "UTC" },
+      nativeName: "עברית",
+      presentationMetadata: {},
+    });
+    value.set(registryLoaderContext, async () => ({
+      registry: localeRegistry,
+      semanticIdentity: "test-registry",
+      health: { status: "healthy" as const },
+    }));
+    value.set(contentTranslationPresentationContext, {
+      presentTopic: async () => { throw failure; },
+    });
+
+    await expect(topicLoader({
+      params: { locale: "he", topicId: topic.id },
+      context: value,
+    })).rejects.toBe(failure);
+  });
+
   it("does not hide unexpected authorization errors in public loaders", async () => {
     const failure = new Error("unexpected authorization bug");
 
