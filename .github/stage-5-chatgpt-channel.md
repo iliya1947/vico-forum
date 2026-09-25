@@ -1871,3 +1871,91 @@ No implementation PR was created.
 Next workflow step: Codex should independently review this PR #95 agreement, resolve any technical
 disagreement first, and then reduce the remaining owner choices to one explicit decision set before
 assigning the bounded mergeable Stage 5 completion task.
+
+
+## Owner decisions after Stage 5 completion-boundary agreement
+
+The project owner resolved the four product choices that were still open after the
+ChatGPT/Codex technical agreement. These are product decisions for the next technical
+reconciliation/implementation task; this service-channel update does not itself change
+runtime code or source-of-truth documentation.
+
+### 1. Existing-result presentation
+
+- If a current persisted translation exists for the validated URL locale, display it
+  automatically.
+- Keep an explicit `show original` control.
+- Mark translated content as an automatic/machine translation when applicable.
+- Render provider attribution only when the selected provider's presentation policy requires it.
+- A missing/failed/unavailable translation remains original-safe.
+
+### 2. Generation eligibility and initial grants
+
+- New machine translation generation is available only to authenticated users.
+- Guests may still read already persisted public translations.
+- Add the code-backed permission `forum.translation.generate`.
+- Initial built-in grants: `user`, `moderator`, and `admin`.
+
+### 3. Spend/budget and automatic long-body policy
+
+Owner policy is **zero paid translation spend**.
+
+- Use only provider capacity that remains inside the provider's free allowance.
+- Keep a **5% technical reserve** inside the applicable free allowance; new generation must stop
+  before entering paid usage.
+- Do **not** impose a normal per-user translation quota as a product allowance.
+- A separate pre-release anti-spam/abuse protection is still mandatory. It may use
+  requester-scoped technical throttling if needed, but it must not be presented or designed as
+  the previously proposed small user translation allowance.
+- Do not hard-code a "top N languages" list. Generation eligibility follows active Vico target
+  locale plus actual provider capability/policy for the source-target pair.
+- For post-body automatic generation, use the authoritative CNT-04 translatable semantic
+  character count:
+  - **<= 3000 translatable characters**: eligible for automatic generation;
+  - **> 3000 translatable characters**: do not automatically spend translation capacity;
+    show the original and an explicit user control equivalent to
+    "Text is too long for automatic translation. Translate?" / "Translate".
+- The 3000-character threshold is an automatic-generation policy only, not a maximum forum-post
+  length.
+
+This owner decision intentionally changes the earlier provisional direction that all generation
+would be explicit/on-demand. The technical contract that ordinary GET/SSR remains read-only and
+never directly calls/enqueues a provider still stands. Codex should therefore reconcile the
+automatic-generation trigger for eligible authenticated content with the existing asynchronous
+route/task architecture, without silently turning SSR/GET into a provider side-effect.
+
+The exact mechanism for enforcing the 95%-of-free-allowance ceiling must be based on reliable
+provider/accounting data available to the selected adapter. Do not hard-code an approximate
+token/character conversion as if it were authoritative provider consumption.
+
+### 4. Manual source-locale correction authorization
+
+Use the own/any permission model:
+
+- `forum.sourceLocale.correctOwn`: an author may correct the source locale of their own
+  topic title/post body.
+- `forum.sourceLocale.correctAny`: moderator/admin may correct source locale for arbitrary
+  forum content.
+- Initial built-in grants:
+  - `user`: `correctOwn`;
+  - `moderator`: `correctOwn` + `correctAny`;
+  - `admin`: `correctOwn` + `correctAny`.
+
+The existing immutable correction semantics remain unchanged: correction creates a new revision,
+copies authoritative original content unchanged, changes only source-locale metadata, uses expected
+revision fencing, and does not become general edit/moderation.
+
+### Remaining technical reconciliation before implementation
+
+The owner-choice gate is now closed. Codex should independently reconcile the selected policy with
+the existing Stage 5 contracts, especially:
+
+1. automatic generation for eligible <=3000-character post bodies versus the existing read-only
+   GET/SSR and one-unit asynchronous planning boundaries;
+2. zero-paid-spend enforcement with a 5% free-quota reserve using provider-authoritative accounting
+   rather than guessed token/character conversion;
+3. no normal per-user quota while still satisfying the required pre-release anti-spam boundary and
+   the already-merged atomic request-budget planner contract;
+4. the bounded next mergeable PR scope after those contracts are reconciled.
+
+No implementation PR is created by this service-channel update.
