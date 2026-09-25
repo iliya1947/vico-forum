@@ -1,3 +1,4 @@
+import type { ContentTopicTitleAllowanceGate } from "./content-provider-allowance";
 import {
   ClaimedContentTopicTitleDependencyError,
   type ClaimedContentTopicTitleExecutionContext,
@@ -31,6 +32,13 @@ type AckExecutionResult =
 
 export type ContentTopicTitleTaskExecutionResult =
   | AckExecutionResult
+  | { readonly outcome: "admission-in-progress" | "execution-in-progress"; readonly delivery: "ack" }
+  | {
+      readonly outcome: "allowance-deferred";
+      readonly delivery: "ack";
+      readonly retryNotBefore: Date;
+      readonly reason: string;
+    }
   | {
       readonly delivery: "retry";
       readonly outcome: "execution-failed";
@@ -48,6 +56,7 @@ export type ContentTopicTitleTaskExecutionResult =
     };
 
 export interface ContentTopicTitleTaskExecutorDependencies {
+  readonly allowance: Pick<ContentTopicTitleAllowanceGate, "admit">;
   readonly consumer: Pick<ContentTopicTitleTaskConsumer, "consume">;
   readonly providerRouter: Pick<TranslationProviderRouter, "translate">;
   readonly publisher: Pick<ContentTopicTitleResultPublisher, "publish">;
@@ -58,6 +67,24 @@ export class ContentTopicTitleTaskExecutor {
   constructor(private readonly dependencies: ContentTopicTitleTaskExecutorDependencies) {}
 
   async execute(message: TranslationTaskMessage): Promise<ContentTopicTitleTaskExecutionResult> {
+    const admission = await this.dependencies.allowance.admit(message);
+    if (admission.outcome === "admission-in-progress" || admission.outcome === "execution-in-progress") {
+      return { outcome: admission.outcome, delivery: "ack" };
+    }
+    if (admission.outcome === "deferred") {
+      return {
+        outcome: "allowance-deferred",
+        delivery: "ack",
+        retryNotBefore: admission.retryNotBefore,
+        reason: admission.reason,
+      };
+    }
+    if (admission.outcome === "stale") return acknowledge(admission);
+    if (admission.outcome === "claim-lost") return acknowledge({ outcome: "claim-lost" });
+    if (admission.outcome === "terminal") return acknowledge({ outcome: "terminal" });
+    if (admission.outcome === "not-found") return acknowledge({ outcome: "not-found" });
+    // Exhausted work reclaims only to persist JOB-04 terminal exhaustion and performs no provider call.
+
     let consumed: ContentTopicTitleTaskConsumerResult;
     try {
       consumed = await this.dependencies.consumer.consume(message);
