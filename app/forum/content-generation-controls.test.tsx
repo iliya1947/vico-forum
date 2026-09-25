@@ -2,8 +2,13 @@ import { StrictMode, type ReactNode } from "react";
 import { act, render, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+type SubmitMock = (
+  data: FormData,
+  options: { method: string; defaultShouldRevalidate?: boolean },
+) => Promise<void>;
+
 const mocks = vi.hoisted(() => ({
-  submit: vi.fn(async (_data: FormData, _options: { method: string; defaultShouldRevalidate?: boolean }) => undefined),
+  submit: vi.fn<SubmitMock>(() => Promise.resolve()),
   revalidate: vi.fn(),
   revalidator: { state: "idle" as "idle" | "loading" },
 }));
