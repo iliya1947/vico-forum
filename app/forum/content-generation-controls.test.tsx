@@ -3,7 +3,7 @@ import { act, render, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-  submit: vi.fn(async () => undefined),
+  submit: vi.fn(async (_data: FormData, _options: { method: string; defaultShouldRevalidate?: boolean }) => undefined),
   revalidate: vi.fn(),
   revalidator: { state: "idle" as "idle" | "loading" },
 }));
