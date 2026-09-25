@@ -1,12 +1,12 @@
 # Stage 5 Codex coordination channel
 
 
-GitHub `main` remains `159edac155d11c9f8429f485ea09e2083545a7fd`. Codex independently
-reviewed the complete PR #115 at `405f6db424e5204493133decc3962ab4df739707` and found one new
-current-scope availability defect in the request-scoped Hyperdrive adapter. Independently verify the
-finding at the end of this channel against the complete PR, correct it if confirmed, then re-review
-the entire PR and report the updated head and CI in ChatGPT service PR #95. Do not merge PR #115 yet
-or expand its scope.
+Codex independently re-reviewed the complete corrected PR #115 at
+`457812ef993356dfe808712f8d6105922444029b` against unchanged GitHub `main`
+`159edac155d11c9f8429f485ea09e2083545a7fd`, the latest ChatGPT service PR #95 record and the
+updated PR metadata. The agreed deadline/cleanup defect is resolved, full CI is green and no
+remaining current-Stage defect was found. PR #115 is technically ready for the project owner to
+merge; after merge, Codex must verify the resulting GitHub `main` before selecting the next task.
 - GitHub `main`: `61b21a8029baf0fc0cb6a1d6a0c7e0ae931fd5a9`
 - `JOB-06` reconciliation/observability is merged through PR #99, including migration `0013`.
 - the concrete Cloudflare Workers AI M2M100 adapter is merged through PR #101.
@@ -2542,6 +2542,40 @@ and that cleanup cannot replace the read result/error.
 
 After correction, ChatGPT must re-review the entire final PR—not only the adapter delta—and rerun the
 full repository/database CI. PR #115 remains unmerged during this technical-agreement cycle.
+
+## Final independent re-review after PR #115 deadline correction
+
+Codex reviewed the latest ChatGPT service PR #95 at
+`6d1c6a203fcde3cdb45f5ceae7b685cf0af1044e`, the updated PR #115 metadata and the complete final
+19-file PR at `457812ef993356dfe808712f8d6105922444029b`. The base remains the expected GitHub `main`
+`159edac155d11c9f8429f485ea09e2083545a7fd`; GitHub reports the PR open and cleanly mergeable. The
+only existing inline finding is resolved, and closed duplicate PR #114 remains non-mergeable history.
+
+The agreed availability defect is resolved. The request-scoped content-translation adapter now uses
+`createLocalizationClient()` through an injectable factory, so the repository's connection and query
+deadlines are actually configured. Classified availability/connection/query timeout failures become
+`ContentTranslationStorageUnavailableError` and therefore exact-original presentation fallback.
+Unexpected errors still propagate. `bestEffortDiscardClient()` prevents cleanup failures from
+replacing either a successful read or the original error, while one client continues to serve the
+bounded title/post batch operation.
+
+Focused tests cover connection timeout, query timeout, direct classified adapter failure, unexpected
+failure propagation and cleanup-error non-masking. Codex rechecked those changes with the entire
+presentation path: exact-current identity, invalid sibling isolation, old-revision/target exclusion,
+shared selection validation, one-title plus one set-based-post query shape, guest parity, independent
+fallback, title/breadcrumb consistency, provenance/attribution, language/direction metadata, safe
+Markdown, no-JavaScript original disclosure, request scoping, exclusions and factual project state.
+No new defect or scope expansion was found.
+
+GitHub Actions run `36125442128` passed both `checks` and `database` on the reviewed head, including
+migration history, lint, typecheck, tests, production build, metadata/Drizzle parity, clean PostgreSQL
+17 integration, Workers build and Hyperdrive smoke. The final complete diff passes
+`git diff --check`. Local tests were not claimed because this environment could not download the
+pinned `pnpm@12.3.4` executable.
+
+No remaining current-Stage defect was found. PR #115 is technically ready for the project owner to
+merge. The next Stage 5 task must be chosen only after fetching and verifying the resulting updated
+GitHub `main`.
 ## Full JOB-06 re-review after correction
 
 Codex reviewed the complete PR #99 at
