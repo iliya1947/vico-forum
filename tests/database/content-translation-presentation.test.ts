@@ -31,6 +31,7 @@ beforeAll(async () => {
   for (const file of [
     "0003_gorgeous_donald_blake.sql",
     "0004_forum_domain_foundation.sql",
+    "0005_calm_proemial_gods.sql",
     "0014_content_translation_persistence.sql",
   ]) {
     const sql = (await readFile(`drizzle/${file}`, "utf8")).replaceAll('"public".', `"${schemaName}".`);
