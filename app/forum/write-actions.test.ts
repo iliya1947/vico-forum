@@ -1,10 +1,15 @@
 import { RouterContextProvider } from "react-router";
+import type { Client } from "pg";
 import { describe, expect, it, vi } from "vitest";
 import type { AuthSession } from "../auth/request-context";
 import { authSessionContext } from "../auth/request-context";
 import type { PermissionKey } from "../authorization/catalog";
 import { authorizationContext } from "../authorization/request-context";
-import { ForumStorageUnavailableError, type ForumWriter } from "../../db/hyperdrive-forum";
+import {
+  createHyperdriveForumReader,
+  ForumStorageUnavailableError,
+  type ForumWriter,
+} from "../../db/hyperdrive-forum";
 import { forumReaderContext, forumWriterContext } from "./request-context";
 import { action as sectionAction } from "../routes/section";
 import { action as topicAction } from "../routes/topic";
@@ -639,6 +644,60 @@ describe("forum write route actions", () => {
       data: { operation: "contentGeneration", outcome: "explicit-required" },
       init: { status: 200 },
     });
+  });
+
+  it("maps classified failures from the real Hyperdrive forum reader to generation 503", async () => {
+    const readerClient = {
+      connect: vi.fn(async () => undefined),
+      query: vi.fn(async () => { throw new Error("Query read timeout"); }),
+      end: vi.fn(async () => undefined),
+    } as unknown as Client;
+    const contextValue = generationContext({ topic: generationTopic });
+    contextValue.set(
+      forumReaderContext,
+      createHyperdriveForumReader(
+        "postgresql://example.invalid/db",
+        () => readerClient,
+      ),
+    );
+
+    const response = await topicAction({
+      request: request("/he/topics/topic-1", {
+        intent: "generateTopicTitleTranslation",
+      }),
+      params: { locale: "he", topicId: "topic-1" },
+      context: contextValue,
+    });
+
+    expect(response).toMatchObject({
+      data: { operation: "contentGeneration", outcome: "unavailable" },
+      init: { status: 503 },
+    });
+  });
+
+  it("propagates unexpected failures from the real Hyperdrive forum reader", async () => {
+    const failure = Object.assign(new Error("relation does not exist"), { code: "42P01" });
+    const readerClient = {
+      connect: vi.fn(async () => undefined),
+      query: vi.fn(async () => { throw failure; }),
+      end: vi.fn(async () => undefined),
+    } as unknown as Client;
+    const contextValue = generationContext({ topic: generationTopic });
+    contextValue.set(
+      forumReaderContext,
+      createHyperdriveForumReader(
+        "postgresql://example.invalid/db",
+        () => readerClient,
+      ),
+    );
+
+    await expect(topicAction({
+      request: request("/he/topics/topic-1", {
+        intent: "generateTopicTitleTranslation",
+      }),
+      params: { locale: "he", topicId: "topic-1" },
+      context: contextValue,
+    })).rejects.toBe(failure);
   });
 
   it("maps classified generation availability to 503 and propagates unexpected errors", async () => {
