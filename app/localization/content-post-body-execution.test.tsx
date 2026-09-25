@@ -280,7 +280,11 @@ async function harness(options: {
         }
   ));
 
+  const allowance = {
+    admitPostBody: vi.fn(async () => ({ outcome: "admitted" as const })),
+  };
   const executor = new ContentPostBodyTaskExecutor({
+    allowance,
     consumer,
     providerRouter,
     publisher,
@@ -293,6 +297,7 @@ async function harness(options: {
 
   return {
     executor,
+    allowance,
     translate,
     adapter,
     markStale,
@@ -305,6 +310,20 @@ async function harness(options: {
 }
 
 describe("ContentPostBodyTaskExecutor", () => {
+  it("acknowledges allowance admission in progress before claim or provider work", async () => {
+    const { executor, allowance, translate, revisions } = await harness();
+    allowance.admitPostBody.mockResolvedValueOnce({
+      outcome: "admission-in-progress",
+    });
+
+    await expect(executor.execute({ translationTaskId: taskId })).resolves.toEqual({
+      outcome: "admission-in-progress",
+      delivery: "ack",
+    });
+    expect(revisions.readCurrentRevision).not.toHaveBeenCalled();
+    expect(translate).not.toHaveBeenCalled();
+  });
+
   it("translates protected segments in order and publishes safe restored Markdown", async () => {
     const { executor, translate, publishClaimedMachineResult, recordFailure } = await harness();
 
