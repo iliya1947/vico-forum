@@ -63,15 +63,10 @@ implements ContentTranslationAllowanceStore {
         return { outcome: "terminal" as const };
       }
 
-      const clockResult = await transaction.execute<{ database_now: Date }>(sql`
+      const clockResult = await transaction.execute<{ database_now: Date | string }>(sql`
         select statement_timestamp() as database_now
       `);
-      const databaseNow = clockResult.rows[0]?.database_now;
-      if (!databaseNow) {
-        throw new ContentTranslationAllowanceIntegrityError(
-          "allowance admission database clock returned no value",
-        );
-      }
+      const databaseNow = parseDatabaseTimestamp(clockResult.rows[0]?.database_now);
 
       if (
         task.status === "processing"
@@ -274,15 +269,10 @@ implements ContentTranslationAllowanceStore {
         return undefined;
       }
 
-      const clockResult = await transaction.execute<{ database_now: Date }>(sql`
+      const clockResult = await transaction.execute<{ database_now: Date | string }>(sql`
         select statement_timestamp() as database_now
       `);
-      const databaseNow = clockResult.rows[0]?.database_now;
-      if (!databaseNow) {
-        throw new ContentTranslationAllowanceIntegrityError(
-          "allowance defer database clock returned no value",
-        );
-      }
+      const databaseNow = parseDatabaseTimestamp(clockResult.rows[0]?.database_now);
       if (retryNotBefore <= databaseNow) {
         throw new TypeError("allowance retryNotBefore must be in the future");
       }
@@ -362,6 +352,16 @@ async function isCurrentContentGeneration(
     ))
     .limit(1);
   return head?.currentGeneration === task.generation;
+}
+
+function parseDatabaseTimestamp(value: Date | string | undefined): Date {
+  const parsed = value instanceof Date ? value : typeof value === "string" ? new Date(value) : undefined;
+  if (!parsed || !Number.isFinite(parsed.getTime())) {
+    throw new ContentTranslationAllowanceIntegrityError(
+      "allowance admission database clock returned an invalid value",
+    );
+  }
+  return parsed;
 }
 
 function leaseFromRow(row: AdmissionRow): ContentTranslationAllowanceLease {
