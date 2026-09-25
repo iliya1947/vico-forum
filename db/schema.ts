@@ -277,8 +277,2883 @@ export const translationTasks = pgTable(
       "translation_tasks_allowance_provider_check",
       sql`${table.allowanceProvider} is null
         or ${table.allowanceProvider} ~ '^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}
+    check(
+      "translation_tasks_allowance_shape_check",
+      sql`(
+        ${table.allowanceState} is null
+        and ${table.allowanceGeneration} is null
+        and ${table.allowanceAttempt} is null
+        and ${table.allowanceClaimToken} is null
+        and ${table.allowanceLeaseExpiresAt} is null
+        and ${table.allowanceRetryNotBefore} is null
+        and ${table.allowanceReason} is null
+        and ${table.allowanceProvider} is null
+        and ${table.allowanceReservationReference} is null
+        and ${table.allowanceUpdatedAt} is null
+      ) or (
+        ${table.translationKind} in ('content-topic-title', 'content-post-body')
+        and ${table.allowanceGeneration} = ${table.generation}
+        and ${table.allowanceAttempt} = ${table.attemptCount} + 1
+        and ${table.allowanceAttempt} <= ${table.maxAttempts}
+        and ${table.allowanceUpdatedAt} is not null
+        and (
+          (
+            ${table.allowanceState} = 'leasing'
+            and ${table.allowanceClaimToken} is not null
+            and ${table.allowanceLeaseExpiresAt} is not null
+            and ${table.allowanceLeaseExpiresAt} > ${table.allowanceUpdatedAt}
+            and ${table.allowanceRetryNotBefore} is null
+            and ${table.allowanceReason} is null
+            and ${table.allowanceProvider} is null
+            and ${table.allowanceReservationReference} is null
+          ) or (
+            ${table.allowanceState} = 'admitted'
+            and ${table.allowanceClaimToken} is null
+            and ${table.allowanceLeaseExpiresAt} is null
+            and ${table.allowanceRetryNotBefore} is null
+            and ${table.allowanceReason} is null
+            and ${table.allowanceProvider} is not null
+          ) or (
+            ${table.allowanceState} = 'deferred'
+            and ${table.allowanceClaimToken} is null
+            and ${table.allowanceLeaseExpiresAt} is null
+            and ${table.allowanceRetryNotBefore} is not null
+            and ${table.allowanceRetryNotBefore} > ${table.allowanceUpdatedAt}
+            and ${table.allowanceReason} is not null
+            and ${table.allowanceProvider} is null
+            and ${table.allowanceReservationReference} is null
+          )
+        )
+      )`,
+    ),
+    check(
+      "translation_tasks_lifecycle_check",
+      sql`(
+        ${table.status} = 'pending'
+        and ${table.claimToken} is null and ${table.claimedAt} is null
+        and ${table.leaseExpiresAt} is null and ${table.staleAt} is null
+        and ${table.completedAt} is null and ${table.failedAt} is null
+        and ${table.failureDisposition} is null and ${table.attemptCount} < ${table.maxAttempts}
+      ) or (
+        ${table.status} = 'processing'
+        and ${table.claimToken} is not null and ${table.claimedAt} is not null
+        and ${table.leaseExpiresAt} is not null and ${table.leaseExpiresAt} > ${table.claimedAt}
+        and ${table.staleAt} is null and ${table.completedAt} is null
+        and ${table.failedAt} is null and ${table.failureDisposition} is null
+      ) or (
+        ${table.status} = 'stale'
+        and ${table.claimToken} is null and ${table.claimedAt} is not null
+        and ${table.leaseExpiresAt} is null and ${table.staleAt} is not null
+        and ${table.staleAt} >= ${table.claimedAt} and ${table.completedAt} is null
+        and ${table.failedAt} is null and ${table.failureDisposition} is null
+        and ${table.lastFailureCode} is null
+      ) or (
+        ${table.status} = 'completed'
+        and ${table.claimToken} is null and ${table.claimedAt} is not null
+        and ${table.leaseExpiresAt} is null and ${table.staleAt} is null
+        and ${table.completedAt} is not null and ${table.completedAt} >= ${table.claimedAt}
+        and ${table.failedAt} is null and ${table.failureDisposition} is null
+        and ${table.lastFailureCode} is null
+      ) or (
+        ${table.status} = 'failed'
+        and ${table.claimToken} is null and ${table.claimedAt} is not null
+        and ${table.leaseExpiresAt} is null and ${table.staleAt} is null
+        and ${table.completedAt} is null and ${table.failedAt} is not null
+        and ${table.failedAt} >= ${table.claimedAt}
+        and ${table.failureDisposition} is not null and ${table.lastFailureCode} is not null
+        and ${table.attemptCount} > 0
+      )`,
+    ),
+    check("translation_tasks_timestamps_check", sql`${table.updatedAt} >= ${table.createdAt}`),
+  ],
+);
+
+export const translationTaskGenerationHeads = pgTable(
+  "translation_task_generation_heads",
+  {
+    translationKind: text("translation_kind").notNull(),
+    sourceNamespace: text("source_namespace").notNull(),
+    sourceKey: text("source_key").notNull(),
+    targetLocale: text("target_locale").notNull(),
+    currentGeneration: integer("current_generation").notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({
+      name: "translation_task_generation_heads_pk",
+      columns: [table.translationKind, table.sourceNamespace, table.sourceKey, table.targetLocale],
+    }),
+    check(
+      "translation_task_generation_heads_kind_check",
+      sql`${table.translationKind} in ('ui', 'content-topic-title', 'content-post-body')`,
+    ),
+    check("translation_task_generation_heads_namespace_check", sql`btrim(${table.sourceNamespace}) <> ''`),
+    check("translation_task_generation_heads_key_check", sql`btrim(${table.sourceKey}) <> ''`),
+    check(
+      "translation_task_generation_heads_locale_check",
+      contentTargetLocaleCheck(table.targetLocale),
+    ),
+    check(
+      "translation_task_generation_heads_ui_locale_check",
+      sql`${table.translationKind} <> 'ui' or lower(${table.targetLocale}) <> 'en'`,
+    ),
+    check(
+      "translation_task_generation_heads_content_shape_check",
+      sql`(${table.translationKind} <> 'content-topic-title' or ${table.sourceNamespace} = 'topic-title')
+        and (${table.translationKind} <> 'content-post-body' or ${table.sourceNamespace} = 'post-body')`,
+    ),
+    check("translation_task_generation_heads_generation_check", sql`${table.currentGeneration} > 0`),
+  ],
+);
+
+export const contentTranslationRequestBudgetCounters = pgTable(
+  "content_translation_request_budget_counters",
+  {
+    scope: text("scope").notNull(),
+    subjectKey: text("subject_key").notNull(),
+    windowStart: timestamp("window_start", { withTimezone: true }).notNull(),
+    usedUnits: bigint("used_units", { mode: "number" }).notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({
+      name: "content_translation_request_budget_counters_pk",
+      columns: [table.scope, table.subjectKey, table.windowStart],
+    }),
+    index("content_translation_request_budget_counters_cleanup_idx").on(
+      table.expiresAt,
+      table.scope,
+      table.subjectKey,
+      table.windowStart,
+    ),
+    check(
+      "content_translation_request_budget_counters_scope_check",
+      sql`${table.scope} = btrim(${table.scope})
+        and ${table.scope} ~ '^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}@[A-Za-z0-9][A-Za-z0-9._-]{0,63}$'`,
+    ),
+    check(
+      "content_translation_request_budget_counters_subject_check",
+      sql`${table.subjectKey} = '_global' or ${table.subjectKey} ~ '^[A-Za-z0-9_-]{43}$'`,
+    ),
+    check(
+      "content_translation_request_budget_counters_used_units_check",
+      sql`${table.usedUnits} >= 0 and ${table.usedUnits} <= 9007199254740991`,
+    ),
+    check(
+      "content_translation_request_budget_counters_window_check",
+      sql`${table.expiresAt} > ${table.windowStart}`,
+    ),
+    check(
+      "content_translation_request_budget_counters_timestamps_check",
+      sql`${table.updatedAt} >= ${table.createdAt}`,
+    ),
+  ],
+);
+
+// Better Auth 1.7.4 core schema, generated for PostgreSQL/Drizzle with
+// database-backed rate limiting. `locale` is server-owned auth metadata and is
+// intentionally not constrained to the persistent locale registry.
+export const betterAuthUserAdditionalFields = {
+  locale: { type: "string", required: false, input: false },
+} satisfies NonNullable<NonNullable<BetterAuthOptions["user"]>["additionalFields"]>;
+
+export const user = pgTable("user", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  email: text("email").notNull().unique(),
+  emailVerified: boolean("email_verified").default(false).notNull(),
+  image: text("image"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+  locale: text("locale"),
+});
+
+export const session = pgTable(
+  "session",
+  {
+    id: text("id").primaryKey(),
+    expiresAt: timestamp("expires_at").notNull(),
+    token: text("token").notNull().unique(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .$onUpdate(() => new Date())
+      .notNull(),
+    ipAddress: text("ip_address"),
+    userAgent: text("user_agent"),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+  },
+  (table) => [index("session_userId_idx").on(table.userId)],
+);
+
+export const account = pgTable(
+  "account",
+  {
+    id: text("id").primaryKey(),
+    accountId: text("account_id").notNull(),
+    providerId: text("provider_id").notNull(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    accessToken: text("access_token"),
+    refreshToken: text("refresh_token"),
+    idToken: text("id_token"),
+    accessTokenExpiresAt: timestamp("access_token_expires_at"),
+    refreshTokenExpiresAt: timestamp("refresh_token_expires_at"),
+    scope: text("scope"),
+    password: text("password"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [index("account_userId_idx").on(table.userId)],
+);
+
+export const verification = pgTable(
+  "verification",
+  {
+    id: text("id").primaryKey(),
+    identifier: text("identifier").notNull(),
+    value: text("value").notNull(),
+    expiresAt: timestamp("expires_at").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [index("verification_identifier_idx").on(table.identifier)],
+);
+
+export const rateLimit = pgTable("rate_limit", {
+  id: text("id").primaryKey(),
+  key: text("key").notNull().unique(),
+  count: integer("count").notNull(),
+  lastRequest: bigint("last_request", { mode: "number" }).notNull(),
+});
+
+export const authzRoles = pgTable("authz_roles", {
+  id: text("id").primaryKey(),
+  slug: text("slug").notNull().unique(),
+  displayName: text("display_name").notNull(),
+  isSystem: boolean("is_system").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  check("authz_roles_slug_check", sql`${table.slug} = btrim(${table.slug}) and ${table.slug} ~ '^[a-z][a-z0-9-]{0,62}$'`),
+  check("authz_roles_display_name_check", sql`btrim(${table.displayName}) <> ''`),
+]);
+
+export const authzPermissions = pgTable("authz_permissions", {
+  key: text("key").primaryKey(),
+}, (table) => [check("authz_permissions_catalog_check", sql`${table.key} in (
+  'forum.topic.create', 'forum.reply.create', 'forum.solution.manageOwn',
+  'forum.solution.manageAny', 'forum.sourceLocale.correctOwn',
+  'forum.sourceLocale.correctAny', 'access.authorization.manage'
+)`)]);
+
+export const authzRolePermissions = pgTable("authz_role_permissions", {
+  roleId: text("role_id").notNull().references(() => authzRoles.id, { onDelete: "cascade" }),
+  permissionKey: text("permission_key").notNull().references(() => authzPermissions.key, { onDelete: "restrict" }),
+}, (table) => [primaryKey({ name: "authz_role_permissions_pk", columns: [table.roleId, table.permissionKey] })]);
+
+export const authzUserRoles = pgTable("authz_user_roles", {
+  userId: text("user_id").primaryKey().references(() => user.id, { onDelete: "cascade" }),
+  roleId: text("role_id").notNull().references(() => authzRoles.id, { onDelete: "restrict" }),
+  assignedAt: timestamp("assigned_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [index("authz_user_roles_role_id_idx").on(table.roleId)]);
+
+export const authzUserPermissionOverrides = pgTable("authz_user_permission_overrides", {
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  permissionKey: text("permission_key").notNull().references(() => authzPermissions.key, { onDelete: "restrict" }),
+  effect: text("effect").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  primaryKey({ name: "authz_user_permission_overrides_pk", columns: [table.userId, table.permissionKey] }),
+  check("authz_user_permission_overrides_effect_check", sql`${table.effect} in ('allow', 'deny')`),
+]);
+
+// The singleton row is the serialization boundary for every authorization mutation.
+export const authzMutationLock = pgTable("authz_mutation_lock", {
+  id: integer("id").primaryKey(),
+  managersEverExisted: boolean("managers_ever_existed").notNull().default(false),
+}, (table) => [check("authz_mutation_lock_singleton_check", sql`${table.id} = 1`)]);
+
+export const forumCategories = pgTable(
+  "forum_categories",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [check("forum_categories_name_check", sql`btrim(${table.name}) <> ''`)],
+);
+
+export const forumSections = pgTable(
+  "forum_sections",
+  {
+    id: text("id").primaryKey(),
+    categoryId: text("category_id")
+      .notNull()
+      .references(() => forumCategories.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("forum_sections_category_id_idx").on(table.categoryId),
+    check("forum_sections_name_check", sql`btrim(${table.name}) <> ''`),
+  ],
+);
+
+export const forumTopics = pgTable(
+  "forum_topics",
+  {
+    id: text("id").primaryKey(),
+    sectionId: text("section_id")
+      .notNull()
+      .references(() => forumSections.id, { onDelete: "cascade" }),
+    authorId: text("author_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "restrict" }),
+    // The migration adds a deferred owner-matching FK to (topic_id, revision_id).
+    // Drizzle 0.45.2's PostgreSQL foreign-key builder has no deferrability API.
+    currentTitleRevisionId: text("current_title_revision_id").notNull(),
+    isSolved: boolean("is_solved").notNull().default(false),
+    bestAnswerPostId: text("best_answer_post_id"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("forum_topics_section_id_idx").on(table.sectionId),
+    index("forum_topics_author_id_idx").on(table.authorId),
+    check("forum_topics_best_answer_requires_solved_check", sql`${table.bestAnswerPostId} is null or ${table.isSolved}`),
+  ],
+);
+
+export const forumTopicTitleRevisions = pgTable(
+  "forum_topic_title_revisions",
+  {
+    id: text("id").primaryKey(),
+    topicId: text("topic_id").notNull(),
+    authorId: text("author_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "restrict" }),
+    originalContent: text("original_content").notNull(),
+    sourceLocale: text("source_locale").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    unique("forum_topic_title_revisions_topic_id_id_unique").on(table.topicId, table.id),
+    unique("forum_topic_title_revisions_owner_source_unique").on(table.topicId, table.id, table.sourceLocale),
+    foreignKey({
+      name: "forum_topic_title_revisions_topic_id_fk",
+      columns: [table.topicId],
+      foreignColumns: [forumTopics.id],
+    }).onDelete("cascade"),
+    check("forum_topic_title_revisions_content_check", sql`btrim(${table.originalContent}) <> ''`),
+    check("forum_topic_title_revisions_source_locale_check", sourceLocaleCheck(table.sourceLocale)),
+  ],
+);
+
+export const forumPosts = pgTable(
+  "forum_posts",
+  {
+    id: text("id").primaryKey(),
+    topicId: text("topic_id")
+      .notNull()
+      .references(() => forumTopics.id, { onDelete: "cascade" }),
+    authorId: text("author_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "restrict" }),
+    // The migration adds a deferred owner-matching FK to (post_id, revision_id).
+    currentRevisionId: text("current_revision_id").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("forum_posts_topic_id_idx").on(table.topicId),
+    index("forum_posts_author_id_idx").on(table.authorId),
+    unique("forum_posts_topic_id_id_unique").on(table.topicId, table.id),
+  ],
+);
+
+export const forumPostRevisions = pgTable(
+  "forum_post_revisions",
+  {
+    id: text("id").primaryKey(),
+    postId: text("post_id").notNull(),
+    authorId: text("author_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "restrict" }),
+    originalContent: text("original_content").notNull(),
+    sourceLocale: text("source_locale").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    unique("forum_post_revisions_post_id_id_unique").on(table.postId, table.id),
+    unique("forum_post_revisions_owner_source_unique").on(table.postId, table.id, table.sourceLocale),
+    foreignKey({
+      name: "forum_post_revisions_post_id_fk",
+      columns: [table.postId],
+      foreignColumns: [forumPosts.id],
+    }).onDelete("cascade"),
+    check("forum_post_revisions_content_check", sql`btrim(${table.originalContent}) <> ''`),
+    check("forum_post_revisions_source_locale_check", sourceLocaleCheck(table.sourceLocale)),
+  ],
+);
+
+export const forumTopicTitleTranslations = pgTable(
+  "forum_topic_title_translations",
+  {
+    topicId: text("topic_id").notNull(),
+    revisionId: text("revision_id").notNull(),
+    targetLocale: text("target_locale").notNull(),
+    sourceLocale: text("source_locale").notNull(),
+    translatedContent: text("translated_content").notNull(),
+    origin: text("origin").notNull(),
+    provider: text("provider"),
+    providerModel: text("provider_model"),
+    attribution: text("attribution"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({
+      name: "forum_topic_title_translations_pk",
+      columns: [table.topicId, table.revisionId, table.targetLocale],
+    }),
+    foreignKey({
+      name: "forum_topic_title_translations_revision_fk",
+      columns: [table.topicId, table.revisionId, table.sourceLocale],
+      foreignColumns: [
+        forumTopicTitleRevisions.topicId,
+        forumTopicTitleRevisions.id,
+        forumTopicTitleRevisions.sourceLocale,
+      ],
+    }).onDelete("cascade"),
+    check("forum_topic_title_translations_target_locale_check", contentTargetLocaleCheck(table.targetLocale)),
+    check("forum_topic_title_translations_source_locale_check", sourceLocaleCheck(table.sourceLocale)),
+    check(
+      "forum_topic_title_translations_distinct_locale_check",
+      sql`${table.sourceLocale} = 'und' or lower(${table.sourceLocale}) <> lower(${table.targetLocale})`,
+    ),
+    check("forum_topic_title_translations_content_check", sql`btrim(${table.translatedContent}) <> ''`),
+    check(
+      "forum_topic_title_translations_origin_check",
+      sql`${table.origin} in ('persistent_manual', 'machine')`,
+    ),
+    check(
+      "forum_topic_title_translations_metadata_check",
+      contentTranslationMetadataCheck(table.origin, table.provider, table.providerModel),
+    ),
+    check(
+      "forum_topic_title_translations_attribution_check",
+      sql`${table.attribution} is null or btrim(${table.attribution}) <> ''`,
+    ),
+  ],
+);
+
+export const contentTopicTitleTranslationTasks = pgTable(
+  "content_topic_title_translation_tasks",
+  {
+    taskId: uuid("task_id").primaryKey(),
+    translationKind: text("translation_kind").notNull(),
+    sourceNamespace: text("source_namespace").notNull(),
+    topicId: text("topic_id").notNull(),
+    revisionId: text("revision_id").notNull(),
+    revisionSourceLocale: text("revision_source_locale").notNull(),
+    resolvedSourceLocale: text("resolved_source_locale").notNull(),
+    sourceResolutionOrigin: text("source_resolution_origin").notNull(),
+  },
+  (table) => [
+    foreignKey({
+      name: "content_topic_title_translation_tasks_task_fk",
+      columns: [table.taskId, table.translationKind, table.sourceNamespace, table.topicId],
+      foreignColumns: [
+        translationTasks.id,
+        translationTasks.translationKind,
+        translationTasks.sourceNamespace,
+        translationTasks.sourceKey,
+      ],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "content_topic_title_translation_tasks_revision_fk",
+      columns: [table.topicId, table.revisionId, table.revisionSourceLocale],
+      foreignColumns: [
+        forumTopicTitleRevisions.topicId,
+        forumTopicTitleRevisions.id,
+        forumTopicTitleRevisions.sourceLocale,
+      ],
+    }).onDelete("cascade"),
+    check(
+      "content_topic_title_translation_tasks_kind_check",
+      sql`${table.translationKind} = 'content-topic-title'`,
+    ),
+    check(
+      "content_topic_title_translation_tasks_namespace_check",
+      sql`${table.sourceNamespace} = 'topic-title'`,
+    ),
+    check(
+      "content_topic_title_translation_tasks_revision_source_locale_check",
+      sourceLocaleCheck(table.revisionSourceLocale),
+    ),
+    check(
+      "content_topic_title_translation_tasks_resolved_source_locale_check",
+      contentTargetLocaleCheck(table.resolvedSourceLocale),
+    ),
+    check(
+      "content_topic_title_translation_tasks_resolution_origin_check",
+      sql`${table.sourceResolutionOrigin} in ('revision-metadata', 'detector')`,
+    ),
+    check(
+      "content_topic_title_translation_tasks_resolution_check",
+      sql`(
+        ${table.sourceResolutionOrigin} = 'revision-metadata'
+        and lower(${table.revisionSourceLocale}) <> 'und'
+        and ${table.revisionSourceLocale} = ${table.resolvedSourceLocale}
+      ) or (
+        ${table.sourceResolutionOrigin} = 'detector'
+        and lower(${table.revisionSourceLocale}) = 'und'
+      )`,
+    ),
+  ],
+);
+
+export const contentPostBodyTranslationTasks = pgTable(
+  "content_post_body_translation_tasks",
+  {
+    taskId: uuid("task_id").primaryKey(),
+    translationKind: text("translation_kind").notNull(),
+    sourceNamespace: text("source_namespace").notNull(),
+    postId: text("post_id").notNull(),
+    revisionId: text("revision_id").notNull(),
+    revisionSourceLocale: text("revision_source_locale").notNull(),
+    resolvedSourceLocale: text("resolved_source_locale").notNull(),
+    sourceResolutionOrigin: text("source_resolution_origin").notNull(),
+    protectedContentPolicyVersion: text("protected_content_policy_version").notNull(),
+  },
+  (table) => [
+    foreignKey({
+      name: "content_post_body_translation_tasks_task_fk",
+      columns: [table.taskId, table.translationKind, table.sourceNamespace, table.postId],
+      foreignColumns: [
+        translationTasks.id,
+        translationTasks.translationKind,
+        translationTasks.sourceNamespace,
+        translationTasks.sourceKey,
+      ],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "content_post_body_translation_tasks_revision_fk",
+      columns: [table.postId, table.revisionId, table.revisionSourceLocale],
+      foreignColumns: [
+        forumPostRevisions.postId,
+        forumPostRevisions.id,
+        forumPostRevisions.sourceLocale,
+      ],
+    }).onDelete("cascade"),
+    check(
+      "content_post_body_translation_tasks_kind_check",
+      sql`${table.translationKind} = 'content-post-body'`,
+    ),
+    check(
+      "content_post_body_translation_tasks_namespace_check",
+      sql`${table.sourceNamespace} = 'post-body'`,
+    ),
+    check(
+      "content_post_body_translation_tasks_revision_source_locale_check",
+      sourceLocaleCheck(table.revisionSourceLocale),
+    ),
+    check(
+      "content_post_body_translation_tasks_resolved_source_locale_check",
+      contentTargetLocaleCheck(table.resolvedSourceLocale),
+    ),
+    check(
+      "content_post_body_translation_tasks_resolution_origin_check",
+      sql`${table.sourceResolutionOrigin} in ('revision-metadata', 'detector')`,
+    ),
+    check(
+      "content_post_body_translation_tasks_resolution_check",
+      sql`(
+        ${table.sourceResolutionOrigin} = 'revision-metadata'
+        and lower(${table.revisionSourceLocale}) <> 'und'
+        and ${table.revisionSourceLocale} = ${table.resolvedSourceLocale}
+      ) or (
+        ${table.sourceResolutionOrigin} = 'detector'
+        and lower(${table.revisionSourceLocale}) = 'und'
+      )`,
+    ),
+    check(
+      "content_post_body_translation_tasks_protection_policy_check",
+      sql`btrim(${table.protectedContentPolicyVersion}) <> ''`,
+    ),
+  ],
+);
+
+export const forumPostBodyTranslations = pgTable(
+  "forum_post_body_translations",
+  {
+    postId: text("post_id").notNull(),
+    revisionId: text("revision_id").notNull(),
+    targetLocale: text("target_locale").notNull(),
+    sourceLocale: text("source_locale").notNull(),
+    translatedContent: text("translated_content").notNull(),
+    origin: text("origin").notNull(),
+    provider: text("provider"),
+    providerModel: text("provider_model"),
+    attribution: text("attribution"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({
+      name: "forum_post_body_translations_pk",
+      columns: [table.postId, table.revisionId, table.targetLocale],
+    }),
+    foreignKey({
+      name: "forum_post_body_translations_revision_fk",
+      columns: [table.postId, table.revisionId, table.sourceLocale],
+      foreignColumns: [
+        forumPostRevisions.postId,
+        forumPostRevisions.id,
+        forumPostRevisions.sourceLocale,
+      ],
+    }).onDelete("cascade"),
+    check("forum_post_body_translations_target_locale_check", contentTargetLocaleCheck(table.targetLocale)),
+    check("forum_post_body_translations_source_locale_check", sourceLocaleCheck(table.sourceLocale)),
+    check(
+      "forum_post_body_translations_distinct_locale_check",
+      sql`${table.sourceLocale} = 'und' or lower(${table.sourceLocale}) <> lower(${table.targetLocale})`,
+    ),
+    check("forum_post_body_translations_content_check", sql`btrim(${table.translatedContent}) <> ''`),
+    check(
+      "forum_post_body_translations_origin_check",
+      sql`${table.origin} in ('persistent_manual', 'machine')`,
+    ),
+    check(
+      "forum_post_body_translations_metadata_check",
+      contentTranslationMetadataCheck(table.origin, table.provider, table.providerModel),
+    ),
+    check(
+      "forum_post_body_translations_attribution_check",
+      sql`${table.attribution} is null or btrim(${table.attribution}) <> ''`,
+    ),
+  ],
+);
+
+export const userRelations = relations(user, ({ many }) => ({
+  sessions: many(session),
+  accounts: many(account),
+}));
+
+export const sessionRelations = relations(session, ({ one }) => ({
+  user: one(user, { fields: [session.userId], references: [user.id] }),
+}));
+
+export const accountRelations = relations(account, ({ one }) => ({
+  user: one(user, { fields: [account.userId], references: [user.id] }),
+}));
+
+function arrayShapeCheck(column: AnyPgColumn) {
+  return sql`(
+    cardinality(${column}) = 0
+    or (array_ndims(${column}) = 1 and array_lower(${column}, 1) = 1)
+  ) and array_position(${column}, null) is null`;
+}
+
+function sourceLocaleCheck(column: AnyPgColumn) {
+  return sql`${column} = btrim(${column}) and ${column} ~ '^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*$'`;
+}
+
+function contentTargetLocaleCheck(column: AnyPgColumn) {
+  return sql`${column} = btrim(${column})
+    and lower(${column}) <> 'und'
+    and ${column} ~ '^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*$'`;
+}
+
+function contentTranslationMetadataCheck(
+  origin: AnyPgColumn,
+  provider: AnyPgColumn,
+  providerModel: AnyPgColumn,
+) {
+  return sql`(
+    ${origin} = 'machine'
+    and ${provider} is not null
+    and btrim(${provider}) <> ''
+    and ${providerModel} is not null
+    and btrim(${providerModel}) <> ''
+  ) or (
+    ${origin} = 'persistent_manual'
+    and ${provider} is null
+    and ${providerModel} is null
+  )`;
+}
+`,
+    ),
+    check(
+      "translation_tasks_allowance_reservation_check",
       sql`${table.allowanceReservationReference} is null
         or ${table.allowanceReservationReference} ~ '^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$'`,
+    ),
+    check(
+      "translation_tasks_allowance_shape_check",
+      sql`(
+        ${table.allowanceState} is null
+        and ${table.allowanceGeneration} is null
+        and ${table.allowanceAttempt} is null
+        and ${table.allowanceClaimToken} is null
+        and ${table.allowanceLeaseExpiresAt} is null
+        and ${table.allowanceRetryNotBefore} is null
+        and ${table.allowanceReason} is null
+        and ${table.allowanceReservationReference} is null
+        and ${table.allowanceUpdatedAt} is null
+      ) or (
+        ${table.translationKind} in ('content-topic-title', 'content-post-body')
+        and ${table.allowanceGeneration} = ${table.generation}
+        and ${table.allowanceAttempt} = ${table.attemptCount} + 1
+        and ${table.allowanceAttempt} <= ${table.maxAttempts}
+        and ${table.allowanceUpdatedAt} is not null
+        and (
+          (
+            ${table.allowanceState} = 'leasing'
+            and ${table.allowanceClaimToken} is not null
+            and ${table.allowanceLeaseExpiresAt} is not null
+            and ${table.allowanceLeaseExpiresAt} > ${table.allowanceUpdatedAt}
+            and ${table.allowanceRetryNotBefore} is null
+            and ${table.allowanceReason} is null
+            and ${table.allowanceReservationReference} is null
+          ) or (
+            ${table.allowanceState} = 'admitted'
+            and ${table.allowanceClaimToken} is null
+            and ${table.allowanceLeaseExpiresAt} is null
+            and ${table.allowanceRetryNotBefore} is null
+            and ${table.allowanceReason} is null
+          ) or (
+            ${table.allowanceState} = 'deferred'
+            and ${table.allowanceClaimToken} is null
+            and ${table.allowanceLeaseExpiresAt} is null
+            and ${table.allowanceRetryNotBefore} is not null
+            and ${table.allowanceRetryNotBefore} > ${table.allowanceUpdatedAt}
+            and ${table.allowanceReason} is not null
+            and ${table.allowanceReservationReference} is null
+          )
+        )
+      )`,
+    ),
+    check(
+      "translation_tasks_lifecycle_check",
+      sql`(
+        ${table.status} = 'pending'
+        and ${table.claimToken} is null and ${table.claimedAt} is null
+        and ${table.leaseExpiresAt} is null and ${table.staleAt} is null
+        and ${table.completedAt} is null and ${table.failedAt} is null
+        and ${table.failureDisposition} is null and ${table.attemptCount} < ${table.maxAttempts}
+      ) or (
+        ${table.status} = 'processing'
+        and ${table.claimToken} is not null and ${table.claimedAt} is not null
+        and ${table.leaseExpiresAt} is not null and ${table.leaseExpiresAt} > ${table.claimedAt}
+        and ${table.staleAt} is null and ${table.completedAt} is null
+        and ${table.failedAt} is null and ${table.failureDisposition} is null
+      ) or (
+        ${table.status} = 'stale'
+        and ${table.claimToken} is null and ${table.claimedAt} is not null
+        and ${table.leaseExpiresAt} is null and ${table.staleAt} is not null
+        and ${table.staleAt} >= ${table.claimedAt} and ${table.completedAt} is null
+        and ${table.failedAt} is null and ${table.failureDisposition} is null
+        and ${table.lastFailureCode} is null
+      ) or (
+        ${table.status} = 'completed'
+        and ${table.claimToken} is null and ${table.claimedAt} is not null
+        and ${table.leaseExpiresAt} is null and ${table.staleAt} is null
+        and ${table.completedAt} is not null and ${table.completedAt} >= ${table.claimedAt}
+        and ${table.failedAt} is null and ${table.failureDisposition} is null
+        and ${table.lastFailureCode} is null
+      ) or (
+        ${table.status} = 'failed'
+        and ${table.claimToken} is null and ${table.claimedAt} is not null
+        and ${table.leaseExpiresAt} is null and ${table.staleAt} is null
+        and ${table.completedAt} is null and ${table.failedAt} is not null
+        and ${table.failedAt} >= ${table.claimedAt}
+        and ${table.failureDisposition} is not null and ${table.lastFailureCode} is not null
+        and ${table.attemptCount} > 0
+      )`,
+    ),
+    check("translation_tasks_timestamps_check", sql`${table.updatedAt} >= ${table.createdAt}`),
+  ],
+);
+
+export const translationTaskGenerationHeads = pgTable(
+  "translation_task_generation_heads",
+  {
+    translationKind: text("translation_kind").notNull(),
+    sourceNamespace: text("source_namespace").notNull(),
+    sourceKey: text("source_key").notNull(),
+    targetLocale: text("target_locale").notNull(),
+    currentGeneration: integer("current_generation").notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({
+      name: "translation_task_generation_heads_pk",
+      columns: [table.translationKind, table.sourceNamespace, table.sourceKey, table.targetLocale],
+    }),
+    check(
+      "translation_task_generation_heads_kind_check",
+      sql`${table.translationKind} in ('ui', 'content-topic-title', 'content-post-body')`,
+    ),
+    check("translation_task_generation_heads_namespace_check", sql`btrim(${table.sourceNamespace}) <> ''`),
+    check("translation_task_generation_heads_key_check", sql`btrim(${table.sourceKey}) <> ''`),
+    check(
+      "translation_task_generation_heads_locale_check",
+      contentTargetLocaleCheck(table.targetLocale),
+    ),
+    check(
+      "translation_task_generation_heads_ui_locale_check",
+      sql`${table.translationKind} <> 'ui' or lower(${table.targetLocale}) <> 'en'`,
+    ),
+    check(
+      "translation_task_generation_heads_content_shape_check",
+      sql`(${table.translationKind} <> 'content-topic-title' or ${table.sourceNamespace} = 'topic-title')
+        and (${table.translationKind} <> 'content-post-body' or ${table.sourceNamespace} = 'post-body')`,
+    ),
+    check("translation_task_generation_heads_generation_check", sql`${table.currentGeneration} > 0`),
+  ],
+);
+
+export const contentTranslationRequestBudgetCounters = pgTable(
+  "content_translation_request_budget_counters",
+  {
+    scope: text("scope").notNull(),
+    subjectKey: text("subject_key").notNull(),
+    windowStart: timestamp("window_start", { withTimezone: true }).notNull(),
+    usedUnits: bigint("used_units", { mode: "number" }).notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({
+      name: "content_translation_request_budget_counters_pk",
+      columns: [table.scope, table.subjectKey, table.windowStart],
+    }),
+    index("content_translation_request_budget_counters_cleanup_idx").on(
+      table.expiresAt,
+      table.scope,
+      table.subjectKey,
+      table.windowStart,
+    ),
+    check(
+      "content_translation_request_budget_counters_scope_check",
+      sql`${table.scope} = btrim(${table.scope})
+        and ${table.scope} ~ '^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}@[A-Za-z0-9][A-Za-z0-9._-]{0,63}$'`,
+    ),
+    check(
+      "content_translation_request_budget_counters_subject_check",
+      sql`${table.subjectKey} = '_global' or ${table.subjectKey} ~ '^[A-Za-z0-9_-]{43}$'`,
+    ),
+    check(
+      "content_translation_request_budget_counters_used_units_check",
+      sql`${table.usedUnits} >= 0 and ${table.usedUnits} <= 9007199254740991`,
+    ),
+    check(
+      "content_translation_request_budget_counters_window_check",
+      sql`${table.expiresAt} > ${table.windowStart}`,
+    ),
+    check(
+      "content_translation_request_budget_counters_timestamps_check",
+      sql`${table.updatedAt} >= ${table.createdAt}`,
+    ),
+  ],
+);
+
+// Better Auth 1.7.4 core schema, generated for PostgreSQL/Drizzle with
+// database-backed rate limiting. `locale` is server-owned auth metadata and is
+// intentionally not constrained to the persistent locale registry.
+export const betterAuthUserAdditionalFields = {
+  locale: { type: "string", required: false, input: false },
+} satisfies NonNullable<NonNullable<BetterAuthOptions["user"]>["additionalFields"]>;
+
+export const user = pgTable("user", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  email: text("email").notNull().unique(),
+  emailVerified: boolean("email_verified").default(false).notNull(),
+  image: text("image"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+  locale: text("locale"),
+});
+
+export const session = pgTable(
+  "session",
+  {
+    id: text("id").primaryKey(),
+    expiresAt: timestamp("expires_at").notNull(),
+    token: text("token").notNull().unique(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .$onUpdate(() => new Date())
+      .notNull(),
+    ipAddress: text("ip_address"),
+    userAgent: text("user_agent"),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+  },
+  (table) => [index("session_userId_idx").on(table.userId)],
+);
+
+export const account = pgTable(
+  "account",
+  {
+    id: text("id").primaryKey(),
+    accountId: text("account_id").notNull(),
+    providerId: text("provider_id").notNull(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    accessToken: text("access_token"),
+    refreshToken: text("refresh_token"),
+    idToken: text("id_token"),
+    accessTokenExpiresAt: timestamp("access_token_expires_at"),
+    refreshTokenExpiresAt: timestamp("refresh_token_expires_at"),
+    scope: text("scope"),
+    password: text("password"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [index("account_userId_idx").on(table.userId)],
+);
+
+export const verification = pgTable(
+  "verification",
+  {
+    id: text("id").primaryKey(),
+    identifier: text("identifier").notNull(),
+    value: text("value").notNull(),
+    expiresAt: timestamp("expires_at").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [index("verification_identifier_idx").on(table.identifier)],
+);
+
+export const rateLimit = pgTable("rate_limit", {
+  id: text("id").primaryKey(),
+  key: text("key").notNull().unique(),
+  count: integer("count").notNull(),
+  lastRequest: bigint("last_request", { mode: "number" }).notNull(),
+});
+
+export const authzRoles = pgTable("authz_roles", {
+  id: text("id").primaryKey(),
+  slug: text("slug").notNull().unique(),
+  displayName: text("display_name").notNull(),
+  isSystem: boolean("is_system").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  check("authz_roles_slug_check", sql`${table.slug} = btrim(${table.slug}) and ${table.slug} ~ '^[a-z][a-z0-9-]{0,62}$'`),
+  check("authz_roles_display_name_check", sql`btrim(${table.displayName}) <> ''`),
+]);
+
+export const authzPermissions = pgTable("authz_permissions", {
+  key: text("key").primaryKey(),
+}, (table) => [check("authz_permissions_catalog_check", sql`${table.key} in (
+  'forum.topic.create', 'forum.reply.create', 'forum.solution.manageOwn',
+  'forum.solution.manageAny', 'forum.sourceLocale.correctOwn',
+  'forum.sourceLocale.correctAny', 'access.authorization.manage'
+)`)]);
+
+export const authzRolePermissions = pgTable("authz_role_permissions", {
+  roleId: text("role_id").notNull().references(() => authzRoles.id, { onDelete: "cascade" }),
+  permissionKey: text("permission_key").notNull().references(() => authzPermissions.key, { onDelete: "restrict" }),
+}, (table) => [primaryKey({ name: "authz_role_permissions_pk", columns: [table.roleId, table.permissionKey] })]);
+
+export const authzUserRoles = pgTable("authz_user_roles", {
+  userId: text("user_id").primaryKey().references(() => user.id, { onDelete: "cascade" }),
+  roleId: text("role_id").notNull().references(() => authzRoles.id, { onDelete: "restrict" }),
+  assignedAt: timestamp("assigned_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [index("authz_user_roles_role_id_idx").on(table.roleId)]);
+
+export const authzUserPermissionOverrides = pgTable("authz_user_permission_overrides", {
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  permissionKey: text("permission_key").notNull().references(() => authzPermissions.key, { onDelete: "restrict" }),
+  effect: text("effect").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  primaryKey({ name: "authz_user_permission_overrides_pk", columns: [table.userId, table.permissionKey] }),
+  check("authz_user_permission_overrides_effect_check", sql`${table.effect} in ('allow', 'deny')`),
+]);
+
+// The singleton row is the serialization boundary for every authorization mutation.
+export const authzMutationLock = pgTable("authz_mutation_lock", {
+  id: integer("id").primaryKey(),
+  managersEverExisted: boolean("managers_ever_existed").notNull().default(false),
+}, (table) => [check("authz_mutation_lock_singleton_check", sql`${table.id} = 1`)]);
+
+export const forumCategories = pgTable(
+  "forum_categories",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [check("forum_categories_name_check", sql`btrim(${table.name}) <> ''`)],
+);
+
+export const forumSections = pgTable(
+  "forum_sections",
+  {
+    id: text("id").primaryKey(),
+    categoryId: text("category_id")
+      .notNull()
+      .references(() => forumCategories.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("forum_sections_category_id_idx").on(table.categoryId),
+    check("forum_sections_name_check", sql`btrim(${table.name}) <> ''`),
+  ],
+);
+
+export const forumTopics = pgTable(
+  "forum_topics",
+  {
+    id: text("id").primaryKey(),
+    sectionId: text("section_id")
+      .notNull()
+      .references(() => forumSections.id, { onDelete: "cascade" }),
+    authorId: text("author_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "restrict" }),
+    // The migration adds a deferred owner-matching FK to (topic_id, revision_id).
+    // Drizzle 0.45.2's PostgreSQL foreign-key builder has no deferrability API.
+    currentTitleRevisionId: text("current_title_revision_id").notNull(),
+    isSolved: boolean("is_solved").notNull().default(false),
+    bestAnswerPostId: text("best_answer_post_id"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("forum_topics_section_id_idx").on(table.sectionId),
+    index("forum_topics_author_id_idx").on(table.authorId),
+    check("forum_topics_best_answer_requires_solved_check", sql`${table.bestAnswerPostId} is null or ${table.isSolved}`),
+  ],
+);
+
+export const forumTopicTitleRevisions = pgTable(
+  "forum_topic_title_revisions",
+  {
+    id: text("id").primaryKey(),
+    topicId: text("topic_id").notNull(),
+    authorId: text("author_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "restrict" }),
+    originalContent: text("original_content").notNull(),
+    sourceLocale: text("source_locale").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    unique("forum_topic_title_revisions_topic_id_id_unique").on(table.topicId, table.id),
+    unique("forum_topic_title_revisions_owner_source_unique").on(table.topicId, table.id, table.sourceLocale),
+    foreignKey({
+      name: "forum_topic_title_revisions_topic_id_fk",
+      columns: [table.topicId],
+      foreignColumns: [forumTopics.id],
+    }).onDelete("cascade"),
+    check("forum_topic_title_revisions_content_check", sql`btrim(${table.originalContent}) <> ''`),
+    check("forum_topic_title_revisions_source_locale_check", sourceLocaleCheck(table.sourceLocale)),
+  ],
+);
+
+export const forumPosts = pgTable(
+  "forum_posts",
+  {
+    id: text("id").primaryKey(),
+    topicId: text("topic_id")
+      .notNull()
+      .references(() => forumTopics.id, { onDelete: "cascade" }),
+    authorId: text("author_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "restrict" }),
+    // The migration adds a deferred owner-matching FK to (post_id, revision_id).
+    currentRevisionId: text("current_revision_id").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("forum_posts_topic_id_idx").on(table.topicId),
+    index("forum_posts_author_id_idx").on(table.authorId),
+    unique("forum_posts_topic_id_id_unique").on(table.topicId, table.id),
+  ],
+);
+
+export const forumPostRevisions = pgTable(
+  "forum_post_revisions",
+  {
+    id: text("id").primaryKey(),
+    postId: text("post_id").notNull(),
+    authorId: text("author_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "restrict" }),
+    originalContent: text("original_content").notNull(),
+    sourceLocale: text("source_locale").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    unique("forum_post_revisions_post_id_id_unique").on(table.postId, table.id),
+    unique("forum_post_revisions_owner_source_unique").on(table.postId, table.id, table.sourceLocale),
+    foreignKey({
+      name: "forum_post_revisions_post_id_fk",
+      columns: [table.postId],
+      foreignColumns: [forumPosts.id],
+    }).onDelete("cascade"),
+    check("forum_post_revisions_content_check", sql`btrim(${table.originalContent}) <> ''`),
+    check("forum_post_revisions_source_locale_check", sourceLocaleCheck(table.sourceLocale)),
+  ],
+);
+
+export const forumTopicTitleTranslations = pgTable(
+  "forum_topic_title_translations",
+  {
+    topicId: text("topic_id").notNull(),
+    revisionId: text("revision_id").notNull(),
+    targetLocale: text("target_locale").notNull(),
+    sourceLocale: text("source_locale").notNull(),
+    translatedContent: text("translated_content").notNull(),
+    origin: text("origin").notNull(),
+    provider: text("provider"),
+    providerModel: text("provider_model"),
+    attribution: text("attribution"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({
+      name: "forum_topic_title_translations_pk",
+      columns: [table.topicId, table.revisionId, table.targetLocale],
+    }),
+    foreignKey({
+      name: "forum_topic_title_translations_revision_fk",
+      columns: [table.topicId, table.revisionId, table.sourceLocale],
+      foreignColumns: [
+        forumTopicTitleRevisions.topicId,
+        forumTopicTitleRevisions.id,
+        forumTopicTitleRevisions.sourceLocale,
+      ],
+    }).onDelete("cascade"),
+    check("forum_topic_title_translations_target_locale_check", contentTargetLocaleCheck(table.targetLocale)),
+    check("forum_topic_title_translations_source_locale_check", sourceLocaleCheck(table.sourceLocale)),
+    check(
+      "forum_topic_title_translations_distinct_locale_check",
+      sql`${table.sourceLocale} = 'und' or lower(${table.sourceLocale}) <> lower(${table.targetLocale})`,
+    ),
+    check("forum_topic_title_translations_content_check", sql`btrim(${table.translatedContent}) <> ''`),
+    check(
+      "forum_topic_title_translations_origin_check",
+      sql`${table.origin} in ('persistent_manual', 'machine')`,
+    ),
+    check(
+      "forum_topic_title_translations_metadata_check",
+      contentTranslationMetadataCheck(table.origin, table.provider, table.providerModel),
+    ),
+    check(
+      "forum_topic_title_translations_attribution_check",
+      sql`${table.attribution} is null or btrim(${table.attribution}) <> ''`,
+    ),
+  ],
+);
+
+export const contentTopicTitleTranslationTasks = pgTable(
+  "content_topic_title_translation_tasks",
+  {
+    taskId: uuid("task_id").primaryKey(),
+    translationKind: text("translation_kind").notNull(),
+    sourceNamespace: text("source_namespace").notNull(),
+    topicId: text("topic_id").notNull(),
+    revisionId: text("revision_id").notNull(),
+    revisionSourceLocale: text("revision_source_locale").notNull(),
+    resolvedSourceLocale: text("resolved_source_locale").notNull(),
+    sourceResolutionOrigin: text("source_resolution_origin").notNull(),
+  },
+  (table) => [
+    foreignKey({
+      name: "content_topic_title_translation_tasks_task_fk",
+      columns: [table.taskId, table.translationKind, table.sourceNamespace, table.topicId],
+      foreignColumns: [
+        translationTasks.id,
+        translationTasks.translationKind,
+        translationTasks.sourceNamespace,
+        translationTasks.sourceKey,
+      ],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "content_topic_title_translation_tasks_revision_fk",
+      columns: [table.topicId, table.revisionId, table.revisionSourceLocale],
+      foreignColumns: [
+        forumTopicTitleRevisions.topicId,
+        forumTopicTitleRevisions.id,
+        forumTopicTitleRevisions.sourceLocale,
+      ],
+    }).onDelete("cascade"),
+    check(
+      "content_topic_title_translation_tasks_kind_check",
+      sql`${table.translationKind} = 'content-topic-title'`,
+    ),
+    check(
+      "content_topic_title_translation_tasks_namespace_check",
+      sql`${table.sourceNamespace} = 'topic-title'`,
+    ),
+    check(
+      "content_topic_title_translation_tasks_revision_source_locale_check",
+      sourceLocaleCheck(table.revisionSourceLocale),
+    ),
+    check(
+      "content_topic_title_translation_tasks_resolved_source_locale_check",
+      contentTargetLocaleCheck(table.resolvedSourceLocale),
+    ),
+    check(
+      "content_topic_title_translation_tasks_resolution_origin_check",
+      sql`${table.sourceResolutionOrigin} in ('revision-metadata', 'detector')`,
+    ),
+    check(
+      "content_topic_title_translation_tasks_resolution_check",
+      sql`(
+        ${table.sourceResolutionOrigin} = 'revision-metadata'
+        and lower(${table.revisionSourceLocale}) <> 'und'
+        and ${table.revisionSourceLocale} = ${table.resolvedSourceLocale}
+      ) or (
+        ${table.sourceResolutionOrigin} = 'detector'
+        and lower(${table.revisionSourceLocale}) = 'und'
+      )`,
+    ),
+  ],
+);
+
+export const contentPostBodyTranslationTasks = pgTable(
+  "content_post_body_translation_tasks",
+  {
+    taskId: uuid("task_id").primaryKey(),
+    translationKind: text("translation_kind").notNull(),
+    sourceNamespace: text("source_namespace").notNull(),
+    postId: text("post_id").notNull(),
+    revisionId: text("revision_id").notNull(),
+    revisionSourceLocale: text("revision_source_locale").notNull(),
+    resolvedSourceLocale: text("resolved_source_locale").notNull(),
+    sourceResolutionOrigin: text("source_resolution_origin").notNull(),
+    protectedContentPolicyVersion: text("protected_content_policy_version").notNull(),
+  },
+  (table) => [
+    foreignKey({
+      name: "content_post_body_translation_tasks_task_fk",
+      columns: [table.taskId, table.translationKind, table.sourceNamespace, table.postId],
+      foreignColumns: [
+        translationTasks.id,
+        translationTasks.translationKind,
+        translationTasks.sourceNamespace,
+        translationTasks.sourceKey,
+      ],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "content_post_body_translation_tasks_revision_fk",
+      columns: [table.postId, table.revisionId, table.revisionSourceLocale],
+      foreignColumns: [
+        forumPostRevisions.postId,
+        forumPostRevisions.id,
+        forumPostRevisions.sourceLocale,
+      ],
+    }).onDelete("cascade"),
+    check(
+      "content_post_body_translation_tasks_kind_check",
+      sql`${table.translationKind} = 'content-post-body'`,
+    ),
+    check(
+      "content_post_body_translation_tasks_namespace_check",
+      sql`${table.sourceNamespace} = 'post-body'`,
+    ),
+    check(
+      "content_post_body_translation_tasks_revision_source_locale_check",
+      sourceLocaleCheck(table.revisionSourceLocale),
+    ),
+    check(
+      "content_post_body_translation_tasks_resolved_source_locale_check",
+      contentTargetLocaleCheck(table.resolvedSourceLocale),
+    ),
+    check(
+      "content_post_body_translation_tasks_resolution_origin_check",
+      sql`${table.sourceResolutionOrigin} in ('revision-metadata', 'detector')`,
+    ),
+    check(
+      "content_post_body_translation_tasks_resolution_check",
+      sql`(
+        ${table.sourceResolutionOrigin} = 'revision-metadata'
+        and lower(${table.revisionSourceLocale}) <> 'und'
+        and ${table.revisionSourceLocale} = ${table.resolvedSourceLocale}
+      ) or (
+        ${table.sourceResolutionOrigin} = 'detector'
+        and lower(${table.revisionSourceLocale}) = 'und'
+      )`,
+    ),
+    check(
+      "content_post_body_translation_tasks_protection_policy_check",
+      sql`btrim(${table.protectedContentPolicyVersion}) <> ''`,
+    ),
+  ],
+);
+
+export const forumPostBodyTranslations = pgTable(
+  "forum_post_body_translations",
+  {
+    postId: text("post_id").notNull(),
+    revisionId: text("revision_id").notNull(),
+    targetLocale: text("target_locale").notNull(),
+    sourceLocale: text("source_locale").notNull(),
+    translatedContent: text("translated_content").notNull(),
+    origin: text("origin").notNull(),
+    provider: text("provider"),
+    providerModel: text("provider_model"),
+    attribution: text("attribution"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({
+      name: "forum_post_body_translations_pk",
+      columns: [table.postId, table.revisionId, table.targetLocale],
+    }),
+    foreignKey({
+      name: "forum_post_body_translations_revision_fk",
+      columns: [table.postId, table.revisionId, table.sourceLocale],
+      foreignColumns: [
+        forumPostRevisions.postId,
+        forumPostRevisions.id,
+        forumPostRevisions.sourceLocale,
+      ],
+    }).onDelete("cascade"),
+    check("forum_post_body_translations_target_locale_check", contentTargetLocaleCheck(table.targetLocale)),
+    check("forum_post_body_translations_source_locale_check", sourceLocaleCheck(table.sourceLocale)),
+    check(
+      "forum_post_body_translations_distinct_locale_check",
+      sql`${table.sourceLocale} = 'und' or lower(${table.sourceLocale}) <> lower(${table.targetLocale})`,
+    ),
+    check("forum_post_body_translations_content_check", sql`btrim(${table.translatedContent}) <> ''`),
+    check(
+      "forum_post_body_translations_origin_check",
+      sql`${table.origin} in ('persistent_manual', 'machine')`,
+    ),
+    check(
+      "forum_post_body_translations_metadata_check",
+      contentTranslationMetadataCheck(table.origin, table.provider, table.providerModel),
+    ),
+    check(
+      "forum_post_body_translations_attribution_check",
+      sql`${table.attribution} is null or btrim(${table.attribution}) <> ''`,
+    ),
+  ],
+);
+
+export const userRelations = relations(user, ({ many }) => ({
+  sessions: many(session),
+  accounts: many(account),
+}));
+
+export const sessionRelations = relations(session, ({ one }) => ({
+  user: one(user, { fields: [session.userId], references: [user.id] }),
+}));
+
+export const accountRelations = relations(account, ({ one }) => ({
+  user: one(user, { fields: [account.userId], references: [user.id] }),
+}));
+
+function arrayShapeCheck(column: AnyPgColumn) {
+  return sql`(
+    cardinality(${column}) = 0
+    or (array_ndims(${column}) = 1 and array_lower(${column}, 1) = 1)
+  ) and array_position(${column}, null) is null`;
+}
+
+function sourceLocaleCheck(column: AnyPgColumn) {
+  return sql`${column} = btrim(${column}) and ${column} ~ '^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*$'`;
+}
+
+function contentTargetLocaleCheck(column: AnyPgColumn) {
+  return sql`${column} = btrim(${column})
+    and lower(${column}) <> 'und'
+    and ${column} ~ '^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*$'`;
+}
+
+function contentTranslationMetadataCheck(
+  origin: AnyPgColumn,
+  provider: AnyPgColumn,
+  providerModel: AnyPgColumn,
+) {
+  return sql`(
+    ${origin} = 'machine'
+    and ${provider} is not null
+    and btrim(${provider}) <> ''
+    and ${providerModel} is not null
+    and btrim(${providerModel}) <> ''
+  ) or (
+    ${origin} = 'persistent_manual'
+    and ${provider} is null
+    and ${providerModel} is null
+  )`;
+}
+`,
+    ),
+    check(
+      "translation_tasks_allowance_reservation_check",
+      sql`${table.allowanceReservationReference} is null
+        or ${table.allowanceReservationReference} ~ '^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}
+    check(
+      "translation_tasks_allowance_shape_check",
+      sql`(
+        ${table.allowanceState} is null
+        and ${table.allowanceGeneration} is null
+        and ${table.allowanceAttempt} is null
+        and ${table.allowanceClaimToken} is null
+        and ${table.allowanceLeaseExpiresAt} is null
+        and ${table.allowanceRetryNotBefore} is null
+        and ${table.allowanceReason} is null
+        and ${table.allowanceProvider} is null
+        and ${table.allowanceReservationReference} is null
+        and ${table.allowanceUpdatedAt} is null
+      ) or (
+        ${table.translationKind} in ('content-topic-title', 'content-post-body')
+        and ${table.allowanceGeneration} = ${table.generation}
+        and ${table.allowanceAttempt} = ${table.attemptCount} + 1
+        and ${table.allowanceAttempt} <= ${table.maxAttempts}
+        and ${table.allowanceUpdatedAt} is not null
+        and (
+          (
+            ${table.allowanceState} = 'leasing'
+            and ${table.allowanceClaimToken} is not null
+            and ${table.allowanceLeaseExpiresAt} is not null
+            and ${table.allowanceLeaseExpiresAt} > ${table.allowanceUpdatedAt}
+            and ${table.allowanceRetryNotBefore} is null
+            and ${table.allowanceReason} is null
+            and ${table.allowanceProvider} is null
+            and ${table.allowanceReservationReference} is null
+          ) or (
+            ${table.allowanceState} = 'admitted'
+            and ${table.allowanceClaimToken} is null
+            and ${table.allowanceLeaseExpiresAt} is null
+            and ${table.allowanceRetryNotBefore} is null
+            and ${table.allowanceReason} is null
+            and ${table.allowanceProvider} is not null
+          ) or (
+            ${table.allowanceState} = 'deferred'
+            and ${table.allowanceClaimToken} is null
+            and ${table.allowanceLeaseExpiresAt} is null
+            and ${table.allowanceRetryNotBefore} is not null
+            and ${table.allowanceRetryNotBefore} > ${table.allowanceUpdatedAt}
+            and ${table.allowanceReason} is not null
+            and ${table.allowanceProvider} is null
+            and ${table.allowanceReservationReference} is null
+          )
+        )
+      )`,
+    ),
+    check(
+      "translation_tasks_lifecycle_check",
+      sql`(
+        ${table.status} = 'pending'
+        and ${table.claimToken} is null and ${table.claimedAt} is null
+        and ${table.leaseExpiresAt} is null and ${table.staleAt} is null
+        and ${table.completedAt} is null and ${table.failedAt} is null
+        and ${table.failureDisposition} is null and ${table.attemptCount} < ${table.maxAttempts}
+      ) or (
+        ${table.status} = 'processing'
+        and ${table.claimToken} is not null and ${table.claimedAt} is not null
+        and ${table.leaseExpiresAt} is not null and ${table.leaseExpiresAt} > ${table.claimedAt}
+        and ${table.staleAt} is null and ${table.completedAt} is null
+        and ${table.failedAt} is null and ${table.failureDisposition} is null
+      ) or (
+        ${table.status} = 'stale'
+        and ${table.claimToken} is null and ${table.claimedAt} is not null
+        and ${table.leaseExpiresAt} is null and ${table.staleAt} is not null
+        and ${table.staleAt} >= ${table.claimedAt} and ${table.completedAt} is null
+        and ${table.failedAt} is null and ${table.failureDisposition} is null
+        and ${table.lastFailureCode} is null
+      ) or (
+        ${table.status} = 'completed'
+        and ${table.claimToken} is null and ${table.claimedAt} is not null
+        and ${table.leaseExpiresAt} is null and ${table.staleAt} is null
+        and ${table.completedAt} is not null and ${table.completedAt} >= ${table.claimedAt}
+        and ${table.failedAt} is null and ${table.failureDisposition} is null
+        and ${table.lastFailureCode} is null
+      ) or (
+        ${table.status} = 'failed'
+        and ${table.claimToken} is null and ${table.claimedAt} is not null
+        and ${table.leaseExpiresAt} is null and ${table.staleAt} is null
+        and ${table.completedAt} is null and ${table.failedAt} is not null
+        and ${table.failedAt} >= ${table.claimedAt}
+        and ${table.failureDisposition} is not null and ${table.lastFailureCode} is not null
+        and ${table.attemptCount} > 0
+      )`,
+    ),
+    check("translation_tasks_timestamps_check", sql`${table.updatedAt} >= ${table.createdAt}`),
+  ],
+);
+
+export const translationTaskGenerationHeads = pgTable(
+  "translation_task_generation_heads",
+  {
+    translationKind: text("translation_kind").notNull(),
+    sourceNamespace: text("source_namespace").notNull(),
+    sourceKey: text("source_key").notNull(),
+    targetLocale: text("target_locale").notNull(),
+    currentGeneration: integer("current_generation").notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({
+      name: "translation_task_generation_heads_pk",
+      columns: [table.translationKind, table.sourceNamespace, table.sourceKey, table.targetLocale],
+    }),
+    check(
+      "translation_task_generation_heads_kind_check",
+      sql`${table.translationKind} in ('ui', 'content-topic-title', 'content-post-body')`,
+    ),
+    check("translation_task_generation_heads_namespace_check", sql`btrim(${table.sourceNamespace}) <> ''`),
+    check("translation_task_generation_heads_key_check", sql`btrim(${table.sourceKey}) <> ''`),
+    check(
+      "translation_task_generation_heads_locale_check",
+      contentTargetLocaleCheck(table.targetLocale),
+    ),
+    check(
+      "translation_task_generation_heads_ui_locale_check",
+      sql`${table.translationKind} <> 'ui' or lower(${table.targetLocale}) <> 'en'`,
+    ),
+    check(
+      "translation_task_generation_heads_content_shape_check",
+      sql`(${table.translationKind} <> 'content-topic-title' or ${table.sourceNamespace} = 'topic-title')
+        and (${table.translationKind} <> 'content-post-body' or ${table.sourceNamespace} = 'post-body')`,
+    ),
+    check("translation_task_generation_heads_generation_check", sql`${table.currentGeneration} > 0`),
+  ],
+);
+
+export const contentTranslationRequestBudgetCounters = pgTable(
+  "content_translation_request_budget_counters",
+  {
+    scope: text("scope").notNull(),
+    subjectKey: text("subject_key").notNull(),
+    windowStart: timestamp("window_start", { withTimezone: true }).notNull(),
+    usedUnits: bigint("used_units", { mode: "number" }).notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({
+      name: "content_translation_request_budget_counters_pk",
+      columns: [table.scope, table.subjectKey, table.windowStart],
+    }),
+    index("content_translation_request_budget_counters_cleanup_idx").on(
+      table.expiresAt,
+      table.scope,
+      table.subjectKey,
+      table.windowStart,
+    ),
+    check(
+      "content_translation_request_budget_counters_scope_check",
+      sql`${table.scope} = btrim(${table.scope})
+        and ${table.scope} ~ '^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}@[A-Za-z0-9][A-Za-z0-9._-]{0,63}$'`,
+    ),
+    check(
+      "content_translation_request_budget_counters_subject_check",
+      sql`${table.subjectKey} = '_global' or ${table.subjectKey} ~ '^[A-Za-z0-9_-]{43}$'`,
+    ),
+    check(
+      "content_translation_request_budget_counters_used_units_check",
+      sql`${table.usedUnits} >= 0 and ${table.usedUnits} <= 9007199254740991`,
+    ),
+    check(
+      "content_translation_request_budget_counters_window_check",
+      sql`${table.expiresAt} > ${table.windowStart}`,
+    ),
+    check(
+      "content_translation_request_budget_counters_timestamps_check",
+      sql`${table.updatedAt} >= ${table.createdAt}`,
+    ),
+  ],
+);
+
+// Better Auth 1.7.4 core schema, generated for PostgreSQL/Drizzle with
+// database-backed rate limiting. `locale` is server-owned auth metadata and is
+// intentionally not constrained to the persistent locale registry.
+export const betterAuthUserAdditionalFields = {
+  locale: { type: "string", required: false, input: false },
+} satisfies NonNullable<NonNullable<BetterAuthOptions["user"]>["additionalFields"]>;
+
+export const user = pgTable("user", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  email: text("email").notNull().unique(),
+  emailVerified: boolean("email_verified").default(false).notNull(),
+  image: text("image"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+  locale: text("locale"),
+});
+
+export const session = pgTable(
+  "session",
+  {
+    id: text("id").primaryKey(),
+    expiresAt: timestamp("expires_at").notNull(),
+    token: text("token").notNull().unique(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .$onUpdate(() => new Date())
+      .notNull(),
+    ipAddress: text("ip_address"),
+    userAgent: text("user_agent"),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+  },
+  (table) => [index("session_userId_idx").on(table.userId)],
+);
+
+export const account = pgTable(
+  "account",
+  {
+    id: text("id").primaryKey(),
+    accountId: text("account_id").notNull(),
+    providerId: text("provider_id").notNull(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    accessToken: text("access_token"),
+    refreshToken: text("refresh_token"),
+    idToken: text("id_token"),
+    accessTokenExpiresAt: timestamp("access_token_expires_at"),
+    refreshTokenExpiresAt: timestamp("refresh_token_expires_at"),
+    scope: text("scope"),
+    password: text("password"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [index("account_userId_idx").on(table.userId)],
+);
+
+export const verification = pgTable(
+  "verification",
+  {
+    id: text("id").primaryKey(),
+    identifier: text("identifier").notNull(),
+    value: text("value").notNull(),
+    expiresAt: timestamp("expires_at").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [index("verification_identifier_idx").on(table.identifier)],
+);
+
+export const rateLimit = pgTable("rate_limit", {
+  id: text("id").primaryKey(),
+  key: text("key").notNull().unique(),
+  count: integer("count").notNull(),
+  lastRequest: bigint("last_request", { mode: "number" }).notNull(),
+});
+
+export const authzRoles = pgTable("authz_roles", {
+  id: text("id").primaryKey(),
+  slug: text("slug").notNull().unique(),
+  displayName: text("display_name").notNull(),
+  isSystem: boolean("is_system").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  check("authz_roles_slug_check", sql`${table.slug} = btrim(${table.slug}) and ${table.slug} ~ '^[a-z][a-z0-9-]{0,62}$'`),
+  check("authz_roles_display_name_check", sql`btrim(${table.displayName}) <> ''`),
+]);
+
+export const authzPermissions = pgTable("authz_permissions", {
+  key: text("key").primaryKey(),
+}, (table) => [check("authz_permissions_catalog_check", sql`${table.key} in (
+  'forum.topic.create', 'forum.reply.create', 'forum.solution.manageOwn',
+  'forum.solution.manageAny', 'forum.sourceLocale.correctOwn',
+  'forum.sourceLocale.correctAny', 'access.authorization.manage'
+)`)]);
+
+export const authzRolePermissions = pgTable("authz_role_permissions", {
+  roleId: text("role_id").notNull().references(() => authzRoles.id, { onDelete: "cascade" }),
+  permissionKey: text("permission_key").notNull().references(() => authzPermissions.key, { onDelete: "restrict" }),
+}, (table) => [primaryKey({ name: "authz_role_permissions_pk", columns: [table.roleId, table.permissionKey] })]);
+
+export const authzUserRoles = pgTable("authz_user_roles", {
+  userId: text("user_id").primaryKey().references(() => user.id, { onDelete: "cascade" }),
+  roleId: text("role_id").notNull().references(() => authzRoles.id, { onDelete: "restrict" }),
+  assignedAt: timestamp("assigned_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [index("authz_user_roles_role_id_idx").on(table.roleId)]);
+
+export const authzUserPermissionOverrides = pgTable("authz_user_permission_overrides", {
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  permissionKey: text("permission_key").notNull().references(() => authzPermissions.key, { onDelete: "restrict" }),
+  effect: text("effect").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  primaryKey({ name: "authz_user_permission_overrides_pk", columns: [table.userId, table.permissionKey] }),
+  check("authz_user_permission_overrides_effect_check", sql`${table.effect} in ('allow', 'deny')`),
+]);
+
+// The singleton row is the serialization boundary for every authorization mutation.
+export const authzMutationLock = pgTable("authz_mutation_lock", {
+  id: integer("id").primaryKey(),
+  managersEverExisted: boolean("managers_ever_existed").notNull().default(false),
+}, (table) => [check("authz_mutation_lock_singleton_check", sql`${table.id} = 1`)]);
+
+export const forumCategories = pgTable(
+  "forum_categories",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [check("forum_categories_name_check", sql`btrim(${table.name}) <> ''`)],
+);
+
+export const forumSections = pgTable(
+  "forum_sections",
+  {
+    id: text("id").primaryKey(),
+    categoryId: text("category_id")
+      .notNull()
+      .references(() => forumCategories.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("forum_sections_category_id_idx").on(table.categoryId),
+    check("forum_sections_name_check", sql`btrim(${table.name}) <> ''`),
+  ],
+);
+
+export const forumTopics = pgTable(
+  "forum_topics",
+  {
+    id: text("id").primaryKey(),
+    sectionId: text("section_id")
+      .notNull()
+      .references(() => forumSections.id, { onDelete: "cascade" }),
+    authorId: text("author_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "restrict" }),
+    // The migration adds a deferred owner-matching FK to (topic_id, revision_id).
+    // Drizzle 0.45.2's PostgreSQL foreign-key builder has no deferrability API.
+    currentTitleRevisionId: text("current_title_revision_id").notNull(),
+    isSolved: boolean("is_solved").notNull().default(false),
+    bestAnswerPostId: text("best_answer_post_id"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("forum_topics_section_id_idx").on(table.sectionId),
+    index("forum_topics_author_id_idx").on(table.authorId),
+    check("forum_topics_best_answer_requires_solved_check", sql`${table.bestAnswerPostId} is null or ${table.isSolved}`),
+  ],
+);
+
+export const forumTopicTitleRevisions = pgTable(
+  "forum_topic_title_revisions",
+  {
+    id: text("id").primaryKey(),
+    topicId: text("topic_id").notNull(),
+    authorId: text("author_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "restrict" }),
+    originalContent: text("original_content").notNull(),
+    sourceLocale: text("source_locale").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    unique("forum_topic_title_revisions_topic_id_id_unique").on(table.topicId, table.id),
+    unique("forum_topic_title_revisions_owner_source_unique").on(table.topicId, table.id, table.sourceLocale),
+    foreignKey({
+      name: "forum_topic_title_revisions_topic_id_fk",
+      columns: [table.topicId],
+      foreignColumns: [forumTopics.id],
+    }).onDelete("cascade"),
+    check("forum_topic_title_revisions_content_check", sql`btrim(${table.originalContent}) <> ''`),
+    check("forum_topic_title_revisions_source_locale_check", sourceLocaleCheck(table.sourceLocale)),
+  ],
+);
+
+export const forumPosts = pgTable(
+  "forum_posts",
+  {
+    id: text("id").primaryKey(),
+    topicId: text("topic_id")
+      .notNull()
+      .references(() => forumTopics.id, { onDelete: "cascade" }),
+    authorId: text("author_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "restrict" }),
+    // The migration adds a deferred owner-matching FK to (post_id, revision_id).
+    currentRevisionId: text("current_revision_id").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("forum_posts_topic_id_idx").on(table.topicId),
+    index("forum_posts_author_id_idx").on(table.authorId),
+    unique("forum_posts_topic_id_id_unique").on(table.topicId, table.id),
+  ],
+);
+
+export const forumPostRevisions = pgTable(
+  "forum_post_revisions",
+  {
+    id: text("id").primaryKey(),
+    postId: text("post_id").notNull(),
+    authorId: text("author_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "restrict" }),
+    originalContent: text("original_content").notNull(),
+    sourceLocale: text("source_locale").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    unique("forum_post_revisions_post_id_id_unique").on(table.postId, table.id),
+    unique("forum_post_revisions_owner_source_unique").on(table.postId, table.id, table.sourceLocale),
+    foreignKey({
+      name: "forum_post_revisions_post_id_fk",
+      columns: [table.postId],
+      foreignColumns: [forumPosts.id],
+    }).onDelete("cascade"),
+    check("forum_post_revisions_content_check", sql`btrim(${table.originalContent}) <> ''`),
+    check("forum_post_revisions_source_locale_check", sourceLocaleCheck(table.sourceLocale)),
+  ],
+);
+
+export const forumTopicTitleTranslations = pgTable(
+  "forum_topic_title_translations",
+  {
+    topicId: text("topic_id").notNull(),
+    revisionId: text("revision_id").notNull(),
+    targetLocale: text("target_locale").notNull(),
+    sourceLocale: text("source_locale").notNull(),
+    translatedContent: text("translated_content").notNull(),
+    origin: text("origin").notNull(),
+    provider: text("provider"),
+    providerModel: text("provider_model"),
+    attribution: text("attribution"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({
+      name: "forum_topic_title_translations_pk",
+      columns: [table.topicId, table.revisionId, table.targetLocale],
+    }),
+    foreignKey({
+      name: "forum_topic_title_translations_revision_fk",
+      columns: [table.topicId, table.revisionId, table.sourceLocale],
+      foreignColumns: [
+        forumTopicTitleRevisions.topicId,
+        forumTopicTitleRevisions.id,
+        forumTopicTitleRevisions.sourceLocale,
+      ],
+    }).onDelete("cascade"),
+    check("forum_topic_title_translations_target_locale_check", contentTargetLocaleCheck(table.targetLocale)),
+    check("forum_topic_title_translations_source_locale_check", sourceLocaleCheck(table.sourceLocale)),
+    check(
+      "forum_topic_title_translations_distinct_locale_check",
+      sql`${table.sourceLocale} = 'und' or lower(${table.sourceLocale}) <> lower(${table.targetLocale})`,
+    ),
+    check("forum_topic_title_translations_content_check", sql`btrim(${table.translatedContent}) <> ''`),
+    check(
+      "forum_topic_title_translations_origin_check",
+      sql`${table.origin} in ('persistent_manual', 'machine')`,
+    ),
+    check(
+      "forum_topic_title_translations_metadata_check",
+      contentTranslationMetadataCheck(table.origin, table.provider, table.providerModel),
+    ),
+    check(
+      "forum_topic_title_translations_attribution_check",
+      sql`${table.attribution} is null or btrim(${table.attribution}) <> ''`,
+    ),
+  ],
+);
+
+export const contentTopicTitleTranslationTasks = pgTable(
+  "content_topic_title_translation_tasks",
+  {
+    taskId: uuid("task_id").primaryKey(),
+    translationKind: text("translation_kind").notNull(),
+    sourceNamespace: text("source_namespace").notNull(),
+    topicId: text("topic_id").notNull(),
+    revisionId: text("revision_id").notNull(),
+    revisionSourceLocale: text("revision_source_locale").notNull(),
+    resolvedSourceLocale: text("resolved_source_locale").notNull(),
+    sourceResolutionOrigin: text("source_resolution_origin").notNull(),
+  },
+  (table) => [
+    foreignKey({
+      name: "content_topic_title_translation_tasks_task_fk",
+      columns: [table.taskId, table.translationKind, table.sourceNamespace, table.topicId],
+      foreignColumns: [
+        translationTasks.id,
+        translationTasks.translationKind,
+        translationTasks.sourceNamespace,
+        translationTasks.sourceKey,
+      ],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "content_topic_title_translation_tasks_revision_fk",
+      columns: [table.topicId, table.revisionId, table.revisionSourceLocale],
+      foreignColumns: [
+        forumTopicTitleRevisions.topicId,
+        forumTopicTitleRevisions.id,
+        forumTopicTitleRevisions.sourceLocale,
+      ],
+    }).onDelete("cascade"),
+    check(
+      "content_topic_title_translation_tasks_kind_check",
+      sql`${table.translationKind} = 'content-topic-title'`,
+    ),
+    check(
+      "content_topic_title_translation_tasks_namespace_check",
+      sql`${table.sourceNamespace} = 'topic-title'`,
+    ),
+    check(
+      "content_topic_title_translation_tasks_revision_source_locale_check",
+      sourceLocaleCheck(table.revisionSourceLocale),
+    ),
+    check(
+      "content_topic_title_translation_tasks_resolved_source_locale_check",
+      contentTargetLocaleCheck(table.resolvedSourceLocale),
+    ),
+    check(
+      "content_topic_title_translation_tasks_resolution_origin_check",
+      sql`${table.sourceResolutionOrigin} in ('revision-metadata', 'detector')`,
+    ),
+    check(
+      "content_topic_title_translation_tasks_resolution_check",
+      sql`(
+        ${table.sourceResolutionOrigin} = 'revision-metadata'
+        and lower(${table.revisionSourceLocale}) <> 'und'
+        and ${table.revisionSourceLocale} = ${table.resolvedSourceLocale}
+      ) or (
+        ${table.sourceResolutionOrigin} = 'detector'
+        and lower(${table.revisionSourceLocale}) = 'und'
+      )`,
+    ),
+  ],
+);
+
+export const contentPostBodyTranslationTasks = pgTable(
+  "content_post_body_translation_tasks",
+  {
+    taskId: uuid("task_id").primaryKey(),
+    translationKind: text("translation_kind").notNull(),
+    sourceNamespace: text("source_namespace").notNull(),
+    postId: text("post_id").notNull(),
+    revisionId: text("revision_id").notNull(),
+    revisionSourceLocale: text("revision_source_locale").notNull(),
+    resolvedSourceLocale: text("resolved_source_locale").notNull(),
+    sourceResolutionOrigin: text("source_resolution_origin").notNull(),
+    protectedContentPolicyVersion: text("protected_content_policy_version").notNull(),
+  },
+  (table) => [
+    foreignKey({
+      name: "content_post_body_translation_tasks_task_fk",
+      columns: [table.taskId, table.translationKind, table.sourceNamespace, table.postId],
+      foreignColumns: [
+        translationTasks.id,
+        translationTasks.translationKind,
+        translationTasks.sourceNamespace,
+        translationTasks.sourceKey,
+      ],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "content_post_body_translation_tasks_revision_fk",
+      columns: [table.postId, table.revisionId, table.revisionSourceLocale],
+      foreignColumns: [
+        forumPostRevisions.postId,
+        forumPostRevisions.id,
+        forumPostRevisions.sourceLocale,
+      ],
+    }).onDelete("cascade"),
+    check(
+      "content_post_body_translation_tasks_kind_check",
+      sql`${table.translationKind} = 'content-post-body'`,
+    ),
+    check(
+      "content_post_body_translation_tasks_namespace_check",
+      sql`${table.sourceNamespace} = 'post-body'`,
+    ),
+    check(
+      "content_post_body_translation_tasks_revision_source_locale_check",
+      sourceLocaleCheck(table.revisionSourceLocale),
+    ),
+    check(
+      "content_post_body_translation_tasks_resolved_source_locale_check",
+      contentTargetLocaleCheck(table.resolvedSourceLocale),
+    ),
+    check(
+      "content_post_body_translation_tasks_resolution_origin_check",
+      sql`${table.sourceResolutionOrigin} in ('revision-metadata', 'detector')`,
+    ),
+    check(
+      "content_post_body_translation_tasks_resolution_check",
+      sql`(
+        ${table.sourceResolutionOrigin} = 'revision-metadata'
+        and lower(${table.revisionSourceLocale}) <> 'und'
+        and ${table.revisionSourceLocale} = ${table.resolvedSourceLocale}
+      ) or (
+        ${table.sourceResolutionOrigin} = 'detector'
+        and lower(${table.revisionSourceLocale}) = 'und'
+      )`,
+    ),
+    check(
+      "content_post_body_translation_tasks_protection_policy_check",
+      sql`btrim(${table.protectedContentPolicyVersion}) <> ''`,
+    ),
+  ],
+);
+
+export const forumPostBodyTranslations = pgTable(
+  "forum_post_body_translations",
+  {
+    postId: text("post_id").notNull(),
+    revisionId: text("revision_id").notNull(),
+    targetLocale: text("target_locale").notNull(),
+    sourceLocale: text("source_locale").notNull(),
+    translatedContent: text("translated_content").notNull(),
+    origin: text("origin").notNull(),
+    provider: text("provider"),
+    providerModel: text("provider_model"),
+    attribution: text("attribution"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({
+      name: "forum_post_body_translations_pk",
+      columns: [table.postId, table.revisionId, table.targetLocale],
+    }),
+    foreignKey({
+      name: "forum_post_body_translations_revision_fk",
+      columns: [table.postId, table.revisionId, table.sourceLocale],
+      foreignColumns: [
+        forumPostRevisions.postId,
+        forumPostRevisions.id,
+        forumPostRevisions.sourceLocale,
+      ],
+    }).onDelete("cascade"),
+    check("forum_post_body_translations_target_locale_check", contentTargetLocaleCheck(table.targetLocale)),
+    check("forum_post_body_translations_source_locale_check", sourceLocaleCheck(table.sourceLocale)),
+    check(
+      "forum_post_body_translations_distinct_locale_check",
+      sql`${table.sourceLocale} = 'und' or lower(${table.sourceLocale}) <> lower(${table.targetLocale})`,
+    ),
+    check("forum_post_body_translations_content_check", sql`btrim(${table.translatedContent}) <> ''`),
+    check(
+      "forum_post_body_translations_origin_check",
+      sql`${table.origin} in ('persistent_manual', 'machine')`,
+    ),
+    check(
+      "forum_post_body_translations_metadata_check",
+      contentTranslationMetadataCheck(table.origin, table.provider, table.providerModel),
+    ),
+    check(
+      "forum_post_body_translations_attribution_check",
+      sql`${table.attribution} is null or btrim(${table.attribution}) <> ''`,
+    ),
+  ],
+);
+
+export const userRelations = relations(user, ({ many }) => ({
+  sessions: many(session),
+  accounts: many(account),
+}));
+
+export const sessionRelations = relations(session, ({ one }) => ({
+  user: one(user, { fields: [session.userId], references: [user.id] }),
+}));
+
+export const accountRelations = relations(account, ({ one }) => ({
+  user: one(user, { fields: [account.userId], references: [user.id] }),
+}));
+
+function arrayShapeCheck(column: AnyPgColumn) {
+  return sql`(
+    cardinality(${column}) = 0
+    or (array_ndims(${column}) = 1 and array_lower(${column}, 1) = 1)
+  ) and array_position(${column}, null) is null`;
+}
+
+function sourceLocaleCheck(column: AnyPgColumn) {
+  return sql`${column} = btrim(${column}) and ${column} ~ '^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*$'`;
+}
+
+function contentTargetLocaleCheck(column: AnyPgColumn) {
+  return sql`${column} = btrim(${column})
+    and lower(${column}) <> 'und'
+    and ${column} ~ '^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*$'`;
+}
+
+function contentTranslationMetadataCheck(
+  origin: AnyPgColumn,
+  provider: AnyPgColumn,
+  providerModel: AnyPgColumn,
+) {
+  return sql`(
+    ${origin} = 'machine'
+    and ${provider} is not null
+    and btrim(${provider}) <> ''
+    and ${providerModel} is not null
+    and btrim(${providerModel}) <> ''
+  ) or (
+    ${origin} = 'persistent_manual'
+    and ${provider} is null
+    and ${providerModel} is null
+  )`;
+}
+`,
+    ),
+    check(
+      "translation_tasks_allowance_reservation_check",
+      sql`${table.allowanceReservationReference} is null
+        or ${table.allowanceReservationReference} ~ '^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$'`,
+    ),
+    check(
+      "translation_tasks_allowance_shape_check",
+      sql`(
+        ${table.allowanceState} is null
+        and ${table.allowanceGeneration} is null
+        and ${table.allowanceAttempt} is null
+        and ${table.allowanceClaimToken} is null
+        and ${table.allowanceLeaseExpiresAt} is null
+        and ${table.allowanceRetryNotBefore} is null
+        and ${table.allowanceReason} is null
+        and ${table.allowanceReservationReference} is null
+        and ${table.allowanceUpdatedAt} is null
+      ) or (
+        ${table.translationKind} in ('content-topic-title', 'content-post-body')
+        and ${table.allowanceGeneration} = ${table.generation}
+        and ${table.allowanceAttempt} = ${table.attemptCount} + 1
+        and ${table.allowanceAttempt} <= ${table.maxAttempts}
+        and ${table.allowanceUpdatedAt} is not null
+        and (
+          (
+            ${table.allowanceState} = 'leasing'
+            and ${table.allowanceClaimToken} is not null
+            and ${table.allowanceLeaseExpiresAt} is not null
+            and ${table.allowanceLeaseExpiresAt} > ${table.allowanceUpdatedAt}
+            and ${table.allowanceRetryNotBefore} is null
+            and ${table.allowanceReason} is null
+            and ${table.allowanceReservationReference} is null
+          ) or (
+            ${table.allowanceState} = 'admitted'
+            and ${table.allowanceClaimToken} is null
+            and ${table.allowanceLeaseExpiresAt} is null
+            and ${table.allowanceRetryNotBefore} is null
+            and ${table.allowanceReason} is null
+          ) or (
+            ${table.allowanceState} = 'deferred'
+            and ${table.allowanceClaimToken} is null
+            and ${table.allowanceLeaseExpiresAt} is null
+            and ${table.allowanceRetryNotBefore} is not null
+            and ${table.allowanceRetryNotBefore} > ${table.allowanceUpdatedAt}
+            and ${table.allowanceReason} is not null
+            and ${table.allowanceReservationReference} is null
+          )
+        )
+      )`,
+    ),
+    check(
+      "translation_tasks_lifecycle_check",
+      sql`(
+        ${table.status} = 'pending'
+        and ${table.claimToken} is null and ${table.claimedAt} is null
+        and ${table.leaseExpiresAt} is null and ${table.staleAt} is null
+        and ${table.completedAt} is null and ${table.failedAt} is null
+        and ${table.failureDisposition} is null and ${table.attemptCount} < ${table.maxAttempts}
+      ) or (
+        ${table.status} = 'processing'
+        and ${table.claimToken} is not null and ${table.claimedAt} is not null
+        and ${table.leaseExpiresAt} is not null and ${table.leaseExpiresAt} > ${table.claimedAt}
+        and ${table.staleAt} is null and ${table.completedAt} is null
+        and ${table.failedAt} is null and ${table.failureDisposition} is null
+      ) or (
+        ${table.status} = 'stale'
+        and ${table.claimToken} is null and ${table.claimedAt} is not null
+        and ${table.leaseExpiresAt} is null and ${table.staleAt} is not null
+        and ${table.staleAt} >= ${table.claimedAt} and ${table.completedAt} is null
+        and ${table.failedAt} is null and ${table.failureDisposition} is null
+        and ${table.lastFailureCode} is null
+      ) or (
+        ${table.status} = 'completed'
+        and ${table.claimToken} is null and ${table.claimedAt} is not null
+        and ${table.leaseExpiresAt} is null and ${table.staleAt} is null
+        and ${table.completedAt} is not null and ${table.completedAt} >= ${table.claimedAt}
+        and ${table.failedAt} is null and ${table.failureDisposition} is null
+        and ${table.lastFailureCode} is null
+      ) or (
+        ${table.status} = 'failed'
+        and ${table.claimToken} is null and ${table.claimedAt} is not null
+        and ${table.leaseExpiresAt} is null and ${table.staleAt} is null
+        and ${table.completedAt} is null and ${table.failedAt} is not null
+        and ${table.failedAt} >= ${table.claimedAt}
+        and ${table.failureDisposition} is not null and ${table.lastFailureCode} is not null
+        and ${table.attemptCount} > 0
+      )`,
+    ),
+    check("translation_tasks_timestamps_check", sql`${table.updatedAt} >= ${table.createdAt}`),
+  ],
+);
+
+export const translationTaskGenerationHeads = pgTable(
+  "translation_task_generation_heads",
+  {
+    translationKind: text("translation_kind").notNull(),
+    sourceNamespace: text("source_namespace").notNull(),
+    sourceKey: text("source_key").notNull(),
+    targetLocale: text("target_locale").notNull(),
+    currentGeneration: integer("current_generation").notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({
+      name: "translation_task_generation_heads_pk",
+      columns: [table.translationKind, table.sourceNamespace, table.sourceKey, table.targetLocale],
+    }),
+    check(
+      "translation_task_generation_heads_kind_check",
+      sql`${table.translationKind} in ('ui', 'content-topic-title', 'content-post-body')`,
+    ),
+    check("translation_task_generation_heads_namespace_check", sql`btrim(${table.sourceNamespace}) <> ''`),
+    check("translation_task_generation_heads_key_check", sql`btrim(${table.sourceKey}) <> ''`),
+    check(
+      "translation_task_generation_heads_locale_check",
+      contentTargetLocaleCheck(table.targetLocale),
+    ),
+    check(
+      "translation_task_generation_heads_ui_locale_check",
+      sql`${table.translationKind} <> 'ui' or lower(${table.targetLocale}) <> 'en'`,
+    ),
+    check(
+      "translation_task_generation_heads_content_shape_check",
+      sql`(${table.translationKind} <> 'content-topic-title' or ${table.sourceNamespace} = 'topic-title')
+        and (${table.translationKind} <> 'content-post-body' or ${table.sourceNamespace} = 'post-body')`,
+    ),
+    check("translation_task_generation_heads_generation_check", sql`${table.currentGeneration} > 0`),
+  ],
+);
+
+export const contentTranslationRequestBudgetCounters = pgTable(
+  "content_translation_request_budget_counters",
+  {
+    scope: text("scope").notNull(),
+    subjectKey: text("subject_key").notNull(),
+    windowStart: timestamp("window_start", { withTimezone: true }).notNull(),
+    usedUnits: bigint("used_units", { mode: "number" }).notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({
+      name: "content_translation_request_budget_counters_pk",
+      columns: [table.scope, table.subjectKey, table.windowStart],
+    }),
+    index("content_translation_request_budget_counters_cleanup_idx").on(
+      table.expiresAt,
+      table.scope,
+      table.subjectKey,
+      table.windowStart,
+    ),
+    check(
+      "content_translation_request_budget_counters_scope_check",
+      sql`${table.scope} = btrim(${table.scope})
+        and ${table.scope} ~ '^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}@[A-Za-z0-9][A-Za-z0-9._-]{0,63}$'`,
+    ),
+    check(
+      "content_translation_request_budget_counters_subject_check",
+      sql`${table.subjectKey} = '_global' or ${table.subjectKey} ~ '^[A-Za-z0-9_-]{43}$'`,
+    ),
+    check(
+      "content_translation_request_budget_counters_used_units_check",
+      sql`${table.usedUnits} >= 0 and ${table.usedUnits} <= 9007199254740991`,
+    ),
+    check(
+      "content_translation_request_budget_counters_window_check",
+      sql`${table.expiresAt} > ${table.windowStart}`,
+    ),
+    check(
+      "content_translation_request_budget_counters_timestamps_check",
+      sql`${table.updatedAt} >= ${table.createdAt}`,
+    ),
+  ],
+);
+
+// Better Auth 1.7.4 core schema, generated for PostgreSQL/Drizzle with
+// database-backed rate limiting. `locale` is server-owned auth metadata and is
+// intentionally not constrained to the persistent locale registry.
+export const betterAuthUserAdditionalFields = {
+  locale: { type: "string", required: false, input: false },
+} satisfies NonNullable<NonNullable<BetterAuthOptions["user"]>["additionalFields"]>;
+
+export const user = pgTable("user", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  email: text("email").notNull().unique(),
+  emailVerified: boolean("email_verified").default(false).notNull(),
+  image: text("image"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+  locale: text("locale"),
+});
+
+export const session = pgTable(
+  "session",
+  {
+    id: text("id").primaryKey(),
+    expiresAt: timestamp("expires_at").notNull(),
+    token: text("token").notNull().unique(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .$onUpdate(() => new Date())
+      .notNull(),
+    ipAddress: text("ip_address"),
+    userAgent: text("user_agent"),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+  },
+  (table) => [index("session_userId_idx").on(table.userId)],
+);
+
+export const account = pgTable(
+  "account",
+  {
+    id: text("id").primaryKey(),
+    accountId: text("account_id").notNull(),
+    providerId: text("provider_id").notNull(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    accessToken: text("access_token"),
+    refreshToken: text("refresh_token"),
+    idToken: text("id_token"),
+    accessTokenExpiresAt: timestamp("access_token_expires_at"),
+    refreshTokenExpiresAt: timestamp("refresh_token_expires_at"),
+    scope: text("scope"),
+    password: text("password"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [index("account_userId_idx").on(table.userId)],
+);
+
+export const verification = pgTable(
+  "verification",
+  {
+    id: text("id").primaryKey(),
+    identifier: text("identifier").notNull(),
+    value: text("value").notNull(),
+    expiresAt: timestamp("expires_at").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [index("verification_identifier_idx").on(table.identifier)],
+);
+
+export const rateLimit = pgTable("rate_limit", {
+  id: text("id").primaryKey(),
+  key: text("key").notNull().unique(),
+  count: integer("count").notNull(),
+  lastRequest: bigint("last_request", { mode: "number" }).notNull(),
+});
+
+export const authzRoles = pgTable("authz_roles", {
+  id: text("id").primaryKey(),
+  slug: text("slug").notNull().unique(),
+  displayName: text("display_name").notNull(),
+  isSystem: boolean("is_system").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  check("authz_roles_slug_check", sql`${table.slug} = btrim(${table.slug}) and ${table.slug} ~ '^[a-z][a-z0-9-]{0,62}$'`),
+  check("authz_roles_display_name_check", sql`btrim(${table.displayName}) <> ''`),
+]);
+
+export const authzPermissions = pgTable("authz_permissions", {
+  key: text("key").primaryKey(),
+}, (table) => [check("authz_permissions_catalog_check", sql`${table.key} in (
+  'forum.topic.create', 'forum.reply.create', 'forum.solution.manageOwn',
+  'forum.solution.manageAny', 'forum.sourceLocale.correctOwn',
+  'forum.sourceLocale.correctAny', 'access.authorization.manage'
+)`)]);
+
+export const authzRolePermissions = pgTable("authz_role_permissions", {
+  roleId: text("role_id").notNull().references(() => authzRoles.id, { onDelete: "cascade" }),
+  permissionKey: text("permission_key").notNull().references(() => authzPermissions.key, { onDelete: "restrict" }),
+}, (table) => [primaryKey({ name: "authz_role_permissions_pk", columns: [table.roleId, table.permissionKey] })]);
+
+export const authzUserRoles = pgTable("authz_user_roles", {
+  userId: text("user_id").primaryKey().references(() => user.id, { onDelete: "cascade" }),
+  roleId: text("role_id").notNull().references(() => authzRoles.id, { onDelete: "restrict" }),
+  assignedAt: timestamp("assigned_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [index("authz_user_roles_role_id_idx").on(table.roleId)]);
+
+export const authzUserPermissionOverrides = pgTable("authz_user_permission_overrides", {
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  permissionKey: text("permission_key").notNull().references(() => authzPermissions.key, { onDelete: "restrict" }),
+  effect: text("effect").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  primaryKey({ name: "authz_user_permission_overrides_pk", columns: [table.userId, table.permissionKey] }),
+  check("authz_user_permission_overrides_effect_check", sql`${table.effect} in ('allow', 'deny')`),
+]);
+
+// The singleton row is the serialization boundary for every authorization mutation.
+export const authzMutationLock = pgTable("authz_mutation_lock", {
+  id: integer("id").primaryKey(),
+  managersEverExisted: boolean("managers_ever_existed").notNull().default(false),
+}, (table) => [check("authz_mutation_lock_singleton_check", sql`${table.id} = 1`)]);
+
+export const forumCategories = pgTable(
+  "forum_categories",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [check("forum_categories_name_check", sql`btrim(${table.name}) <> ''`)],
+);
+
+export const forumSections = pgTable(
+  "forum_sections",
+  {
+    id: text("id").primaryKey(),
+    categoryId: text("category_id")
+      .notNull()
+      .references(() => forumCategories.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("forum_sections_category_id_idx").on(table.categoryId),
+    check("forum_sections_name_check", sql`btrim(${table.name}) <> ''`),
+  ],
+);
+
+export const forumTopics = pgTable(
+  "forum_topics",
+  {
+    id: text("id").primaryKey(),
+    sectionId: text("section_id")
+      .notNull()
+      .references(() => forumSections.id, { onDelete: "cascade" }),
+    authorId: text("author_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "restrict" }),
+    // The migration adds a deferred owner-matching FK to (topic_id, revision_id).
+    // Drizzle 0.45.2's PostgreSQL foreign-key builder has no deferrability API.
+    currentTitleRevisionId: text("current_title_revision_id").notNull(),
+    isSolved: boolean("is_solved").notNull().default(false),
+    bestAnswerPostId: text("best_answer_post_id"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("forum_topics_section_id_idx").on(table.sectionId),
+    index("forum_topics_author_id_idx").on(table.authorId),
+    check("forum_topics_best_answer_requires_solved_check", sql`${table.bestAnswerPostId} is null or ${table.isSolved}`),
+  ],
+);
+
+export const forumTopicTitleRevisions = pgTable(
+  "forum_topic_title_revisions",
+  {
+    id: text("id").primaryKey(),
+    topicId: text("topic_id").notNull(),
+    authorId: text("author_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "restrict" }),
+    originalContent: text("original_content").notNull(),
+    sourceLocale: text("source_locale").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    unique("forum_topic_title_revisions_topic_id_id_unique").on(table.topicId, table.id),
+    unique("forum_topic_title_revisions_owner_source_unique").on(table.topicId, table.id, table.sourceLocale),
+    foreignKey({
+      name: "forum_topic_title_revisions_topic_id_fk",
+      columns: [table.topicId],
+      foreignColumns: [forumTopics.id],
+    }).onDelete("cascade"),
+    check("forum_topic_title_revisions_content_check", sql`btrim(${table.originalContent}) <> ''`),
+    check("forum_topic_title_revisions_source_locale_check", sourceLocaleCheck(table.sourceLocale)),
+  ],
+);
+
+export const forumPosts = pgTable(
+  "forum_posts",
+  {
+    id: text("id").primaryKey(),
+    topicId: text("topic_id")
+      .notNull()
+      .references(() => forumTopics.id, { onDelete: "cascade" }),
+    authorId: text("author_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "restrict" }),
+    // The migration adds a deferred owner-matching FK to (post_id, revision_id).
+    currentRevisionId: text("current_revision_id").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("forum_posts_topic_id_idx").on(table.topicId),
+    index("forum_posts_author_id_idx").on(table.authorId),
+    unique("forum_posts_topic_id_id_unique").on(table.topicId, table.id),
+  ],
+);
+
+export const forumPostRevisions = pgTable(
+  "forum_post_revisions",
+  {
+    id: text("id").primaryKey(),
+    postId: text("post_id").notNull(),
+    authorId: text("author_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "restrict" }),
+    originalContent: text("original_content").notNull(),
+    sourceLocale: text("source_locale").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    unique("forum_post_revisions_post_id_id_unique").on(table.postId, table.id),
+    unique("forum_post_revisions_owner_source_unique").on(table.postId, table.id, table.sourceLocale),
+    foreignKey({
+      name: "forum_post_revisions_post_id_fk",
+      columns: [table.postId],
+      foreignColumns: [forumPosts.id],
+    }).onDelete("cascade"),
+    check("forum_post_revisions_content_check", sql`btrim(${table.originalContent}) <> ''`),
+    check("forum_post_revisions_source_locale_check", sourceLocaleCheck(table.sourceLocale)),
+  ],
+);
+
+export const forumTopicTitleTranslations = pgTable(
+  "forum_topic_title_translations",
+  {
+    topicId: text("topic_id").notNull(),
+    revisionId: text("revision_id").notNull(),
+    targetLocale: text("target_locale").notNull(),
+    sourceLocale: text("source_locale").notNull(),
+    translatedContent: text("translated_content").notNull(),
+    origin: text("origin").notNull(),
+    provider: text("provider"),
+    providerModel: text("provider_model"),
+    attribution: text("attribution"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({
+      name: "forum_topic_title_translations_pk",
+      columns: [table.topicId, table.revisionId, table.targetLocale],
+    }),
+    foreignKey({
+      name: "forum_topic_title_translations_revision_fk",
+      columns: [table.topicId, table.revisionId, table.sourceLocale],
+      foreignColumns: [
+        forumTopicTitleRevisions.topicId,
+        forumTopicTitleRevisions.id,
+        forumTopicTitleRevisions.sourceLocale,
+      ],
+    }).onDelete("cascade"),
+    check("forum_topic_title_translations_target_locale_check", contentTargetLocaleCheck(table.targetLocale)),
+    check("forum_topic_title_translations_source_locale_check", sourceLocaleCheck(table.sourceLocale)),
+    check(
+      "forum_topic_title_translations_distinct_locale_check",
+      sql`${table.sourceLocale} = 'und' or lower(${table.sourceLocale}) <> lower(${table.targetLocale})`,
+    ),
+    check("forum_topic_title_translations_content_check", sql`btrim(${table.translatedContent}) <> ''`),
+    check(
+      "forum_topic_title_translations_origin_check",
+      sql`${table.origin} in ('persistent_manual', 'machine')`,
+    ),
+    check(
+      "forum_topic_title_translations_metadata_check",
+      contentTranslationMetadataCheck(table.origin, table.provider, table.providerModel),
+    ),
+    check(
+      "forum_topic_title_translations_attribution_check",
+      sql`${table.attribution} is null or btrim(${table.attribution}) <> ''`,
+    ),
+  ],
+);
+
+export const contentTopicTitleTranslationTasks = pgTable(
+  "content_topic_title_translation_tasks",
+  {
+    taskId: uuid("task_id").primaryKey(),
+    translationKind: text("translation_kind").notNull(),
+    sourceNamespace: text("source_namespace").notNull(),
+    topicId: text("topic_id").notNull(),
+    revisionId: text("revision_id").notNull(),
+    revisionSourceLocale: text("revision_source_locale").notNull(),
+    resolvedSourceLocale: text("resolved_source_locale").notNull(),
+    sourceResolutionOrigin: text("source_resolution_origin").notNull(),
+  },
+  (table) => [
+    foreignKey({
+      name: "content_topic_title_translation_tasks_task_fk",
+      columns: [table.taskId, table.translationKind, table.sourceNamespace, table.topicId],
+      foreignColumns: [
+        translationTasks.id,
+        translationTasks.translationKind,
+        translationTasks.sourceNamespace,
+        translationTasks.sourceKey,
+      ],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "content_topic_title_translation_tasks_revision_fk",
+      columns: [table.topicId, table.revisionId, table.revisionSourceLocale],
+      foreignColumns: [
+        forumTopicTitleRevisions.topicId,
+        forumTopicTitleRevisions.id,
+        forumTopicTitleRevisions.sourceLocale,
+      ],
+    }).onDelete("cascade"),
+    check(
+      "content_topic_title_translation_tasks_kind_check",
+      sql`${table.translationKind} = 'content-topic-title'`,
+    ),
+    check(
+      "content_topic_title_translation_tasks_namespace_check",
+      sql`${table.sourceNamespace} = 'topic-title'`,
+    ),
+    check(
+      "content_topic_title_translation_tasks_revision_source_locale_check",
+      sourceLocaleCheck(table.revisionSourceLocale),
+    ),
+    check(
+      "content_topic_title_translation_tasks_resolved_source_locale_check",
+      contentTargetLocaleCheck(table.resolvedSourceLocale),
+    ),
+    check(
+      "content_topic_title_translation_tasks_resolution_origin_check",
+      sql`${table.sourceResolutionOrigin} in ('revision-metadata', 'detector')`,
+    ),
+    check(
+      "content_topic_title_translation_tasks_resolution_check",
+      sql`(
+        ${table.sourceResolutionOrigin} = 'revision-metadata'
+        and lower(${table.revisionSourceLocale}) <> 'und'
+        and ${table.revisionSourceLocale} = ${table.resolvedSourceLocale}
+      ) or (
+        ${table.sourceResolutionOrigin} = 'detector'
+        and lower(${table.revisionSourceLocale}) = 'und'
+      )`,
+    ),
+  ],
+);
+
+export const contentPostBodyTranslationTasks = pgTable(
+  "content_post_body_translation_tasks",
+  {
+    taskId: uuid("task_id").primaryKey(),
+    translationKind: text("translation_kind").notNull(),
+    sourceNamespace: text("source_namespace").notNull(),
+    postId: text("post_id").notNull(),
+    revisionId: text("revision_id").notNull(),
+    revisionSourceLocale: text("revision_source_locale").notNull(),
+    resolvedSourceLocale: text("resolved_source_locale").notNull(),
+    sourceResolutionOrigin: text("source_resolution_origin").notNull(),
+    protectedContentPolicyVersion: text("protected_content_policy_version").notNull(),
+  },
+  (table) => [
+    foreignKey({
+      name: "content_post_body_translation_tasks_task_fk",
+      columns: [table.taskId, table.translationKind, table.sourceNamespace, table.postId],
+      foreignColumns: [
+        translationTasks.id,
+        translationTasks.translationKind,
+        translationTasks.sourceNamespace,
+        translationTasks.sourceKey,
+      ],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "content_post_body_translation_tasks_revision_fk",
+      columns: [table.postId, table.revisionId, table.revisionSourceLocale],
+      foreignColumns: [
+        forumPostRevisions.postId,
+        forumPostRevisions.id,
+        forumPostRevisions.sourceLocale,
+      ],
+    }).onDelete("cascade"),
+    check(
+      "content_post_body_translation_tasks_kind_check",
+      sql`${table.translationKind} = 'content-post-body'`,
+    ),
+    check(
+      "content_post_body_translation_tasks_namespace_check",
+      sql`${table.sourceNamespace} = 'post-body'`,
+    ),
+    check(
+      "content_post_body_translation_tasks_revision_source_locale_check",
+      sourceLocaleCheck(table.revisionSourceLocale),
+    ),
+    check(
+      "content_post_body_translation_tasks_resolved_source_locale_check",
+      contentTargetLocaleCheck(table.resolvedSourceLocale),
+    ),
+    check(
+      "content_post_body_translation_tasks_resolution_origin_check",
+      sql`${table.sourceResolutionOrigin} in ('revision-metadata', 'detector')`,
+    ),
+    check(
+      "content_post_body_translation_tasks_resolution_check",
+      sql`(
+        ${table.sourceResolutionOrigin} = 'revision-metadata'
+        and lower(${table.revisionSourceLocale}) <> 'und'
+        and ${table.revisionSourceLocale} = ${table.resolvedSourceLocale}
+      ) or (
+        ${table.sourceResolutionOrigin} = 'detector'
+        and lower(${table.revisionSourceLocale}) = 'und'
+      )`,
+    ),
+    check(
+      "content_post_body_translation_tasks_protection_policy_check",
+      sql`btrim(${table.protectedContentPolicyVersion}) <> ''`,
+    ),
+  ],
+);
+
+export const forumPostBodyTranslations = pgTable(
+  "forum_post_body_translations",
+  {
+    postId: text("post_id").notNull(),
+    revisionId: text("revision_id").notNull(),
+    targetLocale: text("target_locale").notNull(),
+    sourceLocale: text("source_locale").notNull(),
+    translatedContent: text("translated_content").notNull(),
+    origin: text("origin").notNull(),
+    provider: text("provider"),
+    providerModel: text("provider_model"),
+    attribution: text("attribution"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({
+      name: "forum_post_body_translations_pk",
+      columns: [table.postId, table.revisionId, table.targetLocale],
+    }),
+    foreignKey({
+      name: "forum_post_body_translations_revision_fk",
+      columns: [table.postId, table.revisionId, table.sourceLocale],
+      foreignColumns: [
+        forumPostRevisions.postId,
+        forumPostRevisions.id,
+        forumPostRevisions.sourceLocale,
+      ],
+    }).onDelete("cascade"),
+    check("forum_post_body_translations_target_locale_check", contentTargetLocaleCheck(table.targetLocale)),
+    check("forum_post_body_translations_source_locale_check", sourceLocaleCheck(table.sourceLocale)),
+    check(
+      "forum_post_body_translations_distinct_locale_check",
+      sql`${table.sourceLocale} = 'und' or lower(${table.sourceLocale}) <> lower(${table.targetLocale})`,
+    ),
+    check("forum_post_body_translations_content_check", sql`btrim(${table.translatedContent}) <> ''`),
+    check(
+      "forum_post_body_translations_origin_check",
+      sql`${table.origin} in ('persistent_manual', 'machine')`,
+    ),
+    check(
+      "forum_post_body_translations_metadata_check",
+      contentTranslationMetadataCheck(table.origin, table.provider, table.providerModel),
+    ),
+    check(
+      "forum_post_body_translations_attribution_check",
+      sql`${table.attribution} is null or btrim(${table.attribution}) <> ''`,
+    ),
+  ],
+);
+
+export const userRelations = relations(user, ({ many }) => ({
+  sessions: many(session),
+  accounts: many(account),
+}));
+
+export const sessionRelations = relations(session, ({ one }) => ({
+  user: one(user, { fields: [session.userId], references: [user.id] }),
+}));
+
+export const accountRelations = relations(account, ({ one }) => ({
+  user: one(user, { fields: [account.userId], references: [user.id] }),
+}));
+
+function arrayShapeCheck(column: AnyPgColumn) {
+  return sql`(
+    cardinality(${column}) = 0
+    or (array_ndims(${column}) = 1 and array_lower(${column}, 1) = 1)
+  ) and array_position(${column}, null) is null`;
+}
+
+function sourceLocaleCheck(column: AnyPgColumn) {
+  return sql`${column} = btrim(${column}) and ${column} ~ '^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*$'`;
+}
+
+function contentTargetLocaleCheck(column: AnyPgColumn) {
+  return sql`${column} = btrim(${column})
+    and lower(${column}) <> 'und'
+    and ${column} ~ '^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*$'`;
+}
+
+function contentTranslationMetadataCheck(
+  origin: AnyPgColumn,
+  provider: AnyPgColumn,
+  providerModel: AnyPgColumn,
+) {
+  return sql`(
+    ${origin} = 'machine'
+    and ${provider} is not null
+    and btrim(${provider}) <> ''
+    and ${providerModel} is not null
+    and btrim(${providerModel}) <> ''
+  ) or (
+    ${origin} = 'persistent_manual'
+    and ${provider} is null
+    and ${providerModel} is null
+  )`;
+}
+`,
     ),
     check(
       "translation_tasks_allowance_shape_check",
