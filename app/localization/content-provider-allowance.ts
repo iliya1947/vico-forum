@@ -138,7 +138,10 @@ export type ContentProviderAllowanceGateResult<StaleReason extends string> =
 interface CommonGateDependencies {
   readonly store: ContentProviderAllowanceStore;
   readonly adapter?: ContentProviderAllowanceAdapter;
-  readonly providerRouter: Pick<TranslationProviderRouter, "selectProvider">;
+  readonly providerRouter: Pick<
+    TranslationProviderRouter,
+    "selectProvider" | "configuredProvider"
+  >;
   readonly admissionLeaseDurationMs: number;
   readonly unconfiguredRetryMs?: number;
 }
@@ -183,7 +186,10 @@ export class ContentTopicTitleAllowanceGate {
       }),
     ]);
     if (!provider) {
-      return persistUnconfiguredProvider(this.dependencies, acquired);
+      const configuredProvider = this.dependencies.providerRouter.configuredProvider();
+      return configuredProvider
+        ? persistTerminalUnsupportedAdmission(this.dependencies, acquired, configuredProvider)
+        : persistUnconfiguredProvider(this.dependencies, acquired);
     }
 
     const request = await allowanceRequest(
@@ -259,7 +265,10 @@ export class ContentPostBodyAllowanceGate {
       }),
     );
     if (!provider) {
-      return persistUnconfiguredProvider(this.dependencies, acquired);
+      const configuredProvider = this.dependencies.providerRouter.configuredProvider();
+      return configuredProvider
+        ? persistTerminalUnsupportedAdmission(this.dependencies, acquired, configuredProvider)
+        : persistUnconfiguredProvider(this.dependencies, acquired);
     }
 
     if (
@@ -392,6 +401,25 @@ async function resolveAdapterDecision<StaleReason extends string>(
   );
   return retryNotBefore
     ? { outcome: "deferred", retryNotBefore, reason: decision.reason }
+    : { outcome: "claim-lost" };
+}
+
+async function persistTerminalUnsupportedAdmission<StaleReason extends string>(
+  dependencies: CommonGateDependencies,
+  acquired: Extract<ContentProviderAllowanceAcquireResult, { outcome: "acquired" }>,
+  provider: string,
+): Promise<ContentProviderAllowanceGateResult<StaleReason>> {
+  // No translation-provider call can occur because the authoritative capability/data-policy
+  // check already rejected this provider. Admit only so the existing claim/failure lifecycle
+  // can preserve its finite terminal provider-unsupported semantics.
+  const persisted = await dependencies.store.persistContentProviderAllowanceAdmission(
+    acquired.task.id,
+    acquired.admissionToken,
+    acquired.occurrence,
+    provider,
+  );
+  return persisted
+    ? { outcome: "admitted", provider }
     : { outcome: "claim-lost" };
 }
 
