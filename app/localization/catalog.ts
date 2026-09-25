@@ -105,7 +105,7 @@ export const canonicalEnglishCatalog = {
     translationGenerationRequesting: message("translationGenerationRequesting", "Requesting translation…", "Accessible status while a content translation request is being submitted."),
     translationGenerationPending: message("translationGenerationPending", "Translation is queued.", "Accessible status for queued content translation."),
     translationGenerationProcessing: message("translationGenerationProcessing", "Translation is in progress.", "Accessible status for processing content translation."),
-    translationGenerationDeferred: message("translationGenerationDeferred", "Translation will retry later.", "Accessible status for deferred or rate-limited content translation."),
+    translationGenerationDeferred: message("translationGenerationDeferred", "Translation can retry in {{seconds}} seconds.", "Accessible status for deferred or rate-limited content translation.", ["seconds"]),
     translationGenerationFailed: message("translationGenerationFailed", "Translation could not be completed.", "Accessible status for terminal content translation failure."),
     translationGenerationUnavailable: message("translationGenerationUnavailable", "Translation is temporarily unavailable.", "Accessible status for classified generation/status dependency unavailability."),
     translationGenerationExplicitRequired: message("translationGenerationExplicitRequired", "This longer message requires an explicit translation request.", "Status explaining why a long post is not generated automatically."),
