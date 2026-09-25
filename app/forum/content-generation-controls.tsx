@@ -1,4 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { useFetcher, useRevalidator } from "react-router";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
@@ -9,18 +17,33 @@ import type { ContentGenerationUnitView } from "../localization/content-generati
 const POLL_DELAY_MS = 2_000;
 const MAX_POLLS_PER_HYDRATION = 15;
 
+export type ContentGenerationAutomaticFeedback =
+  | { readonly state: "requesting" }
+  | {
+      readonly state: "result";
+      readonly response: ContentGenerationActionResponse;
+    };
+
+const EMPTY_AUTOMATIC_FEEDBACK = new Map<string, ContentGenerationAutomaticFeedback>();
+const automaticFeedbackContext = createContext<
+  ReadonlyMap<string, ContentGenerationAutomaticFeedback>
+>(EMPTY_AUTOMATIC_FEEDBACK);
+
 export function ContentGenerationManager({
   units,
+  children,
 }: {
   units: readonly ContentGenerationUnitView[];
+  children: ReactNode;
 }) {
-  const { t } = useTranslation("common");
   const fetcher = useFetcher<ContentGenerationActionResponse>({ key: "content-generation-auto" });
   const revalidator = useRevalidator();
   const submitRef = useRef(fetcher.submit);
   const revalidateRef = useRef(revalidator.revalidate);
+  const fetcherDataRef = useRef(fetcher.data);
   submitRef.current = fetcher.submit;
   revalidateRef.current = revalidator.revalidate;
+  fetcherDataRef.current = fetcher.data;
 
   const automaticSnapshot = useRef<readonly ContentGenerationUnitView[] | null>(null);
   const initialUnitKeys = useRef<ReadonlySet<string> | null>(null);
@@ -32,39 +55,102 @@ export function ContentGenerationManager({
   const started = useRef(false);
   const active = useRef(false);
   const pollCount = useRef(0);
-  const [requestingKey, setRequestingKey] = useState<string | null>(null);
+  const queueIndex = useRef(0);
+  const attemptedKeys = useRef(new Set<string>());
+  const inFlightKey = useRef<string | null>(null);
+  const inFlightSawBusyState = useRef(false);
+  const queueFinished = useRef(false);
+  const submitNextRef = useRef<() => void>(() => undefined);
+  const [automaticFeedback, setAutomaticFeedback] = useState(
+    () => new Map<string, ContentGenerationAutomaticFeedback>(),
+  );
+
+  submitNextRef.current = () => {
+    if (!active.current || inFlightKey.current !== null) return;
+
+    const queue = automaticSnapshot.current ?? [];
+    while (queueIndex.current < queue.length) {
+      const unit = queue[queueIndex.current++]!;
+      if (attemptedKeys.current.has(unit.key)) continue;
+
+      attemptedKeys.current.add(unit.key);
+      inFlightKey.current = unit.key;
+      inFlightSawBusyState.current = false;
+      setAutomaticFeedback((current) => withAutomaticFeedback(
+        current,
+        unit.key,
+        { state: "requesting" },
+      ));
+      void submitRef.current(
+        automaticSubmission(unit),
+        { method: "post", defaultShouldRevalidate: false },
+      );
+      return;
+    }
+
+    if (!queueFinished.current) {
+      queueFinished.current = true;
+      if (queue.length > 0) revalidateRef.current();
+    }
+  };
 
   useEffect(() => {
     active.current = true;
     if (!started.current) {
       started.current = true;
-      void runAutomaticQueue(
-        automaticSnapshot.current ?? [],
-        () => active.current,
-        async (unit) => {
-          setRequestingKey(unit.key);
-          await submitRef.current(
-            automaticSubmission(unit),
-            { method: "post", defaultShouldRevalidate: false },
-          );
-        },
-      ).finally(() => {
-        if (!active.current) return;
-        setRequestingKey(null);
-        if ((automaticSnapshot.current?.length ?? 0) > 0) {
-          revalidateRef.current();
-        }
-      });
+      submitNextRef.current();
     }
     return () => {
       active.current = false;
     };
   }, []);
 
+  useEffect(() => {
+    const key = inFlightKey.current;
+    if (!key) return;
+
+    if (fetcher.state !== "idle") {
+      inFlightSawBusyState.current = true;
+      return;
+    }
+    if (!inFlightSawBusyState.current || !fetcher.data) return;
+
+    setAutomaticFeedback((current) => withAutomaticFeedback(
+      current,
+      key,
+      { state: "result", response: fetcher.data! },
+    ));
+    inFlightKey.current = null;
+    inFlightSawBusyState.current = false;
+    submitNextRef.current();
+  }, [fetcher.state, fetcher.data]);
+
+  const currentUnitKeySignature = useMemo(
+    () => units.map((unit) => unit.key).join("\u0000"),
+    [units],
+  );
+  useEffect(() => {
+    const currentKeys = new Set(units.map((unit) => unit.key));
+    setAutomaticFeedback((current) => {
+      let changed = false;
+      const next = new Map<string, ContentGenerationAutomaticFeedback>();
+      for (const [key, feedback] of current) {
+        if (currentKeys.has(key)) next.set(key, feedback);
+        else changed = true;
+      }
+      return changed ? next : current;
+    });
+  }, [currentUnitKeySignature, units]);
+
   const activePollingKey = useMemo(() => units
     .filter((unit) =>
       initialUnitKeys.current?.has(unit.key)
-      && (unit.state === "pending" || unit.state === "processing" || unit.state === "deferred")
+      && (
+        unit.state === "pending"
+        || unit.state === "processing"
+        || unit.state === "deferred"
+        || unit.state === "converging"
+      )
     )
     .map((unit) => unit.key)
     .join("|"), [units]);
@@ -83,60 +169,63 @@ export function ContentGenerationManager({
     return () => window.clearTimeout(timer);
   }, [activePollingKey, revalidator.state]);
 
-  if (!requestingKey) return null;
   return (
-    <p className="content-generation-live" aria-live="polite">
-      {t("translationRequesting")}
-    </p>
+    <automaticFeedbackContext.Provider value={automaticFeedback}>
+      {children}
+    </automaticFeedbackContext.Provider>
   );
 }
 
 export function ContentGenerationUnitStatus({
   unit,
+  automaticFeedback: automaticFeedbackOverride,
 }: {
   unit: ContentGenerationUnitView | undefined;
+  automaticFeedback?: ContentGenerationAutomaticFeedback;
 }) {
   const { t } = useTranslation("common");
-  const fetcher = useFetcher<ContentGenerationActionResponse>();
+  const explicitFetcher = useFetcher<ContentGenerationActionResponse>();
+  const automaticFeedbackByKey = useContext(automaticFeedbackContext);
   if (!unit) return null;
 
-  const busy = fetcher.state !== "idle";
-  const actionFeedback = generationActionFeedback(fetcher.data, t);
+  const automaticFeedback = automaticFeedbackOverride ?? automaticFeedbackByKey.get(unit.key);
+  const busy = explicitFetcher.state !== "idle";
+  const explicitActionFeedback = generationActionFeedback(explicitFetcher.data, t);
+  const automaticActionFeedback = automaticFeedbackText(automaticFeedback, t);
   const stateFeedback = generationStateFeedback(unit, t);
-  const feedback = busy
-    ? t("translationRequesting")
-    : unit.state === "idle"
-      ? actionFeedback ?? stateFeedback
-      : stateFeedback;
+  const feedback = unit.state !== "idle"
+    ? stateFeedback
+    : busy
+      ? t("translationRequesting")
+      : explicitActionFeedback ?? automaticActionFeedback ?? stateFeedback;
 
   return (
     <div className="content-generation-status">
       {feedback && <p aria-live="polite">{feedback}</p>}
       {unit.explicitRequired && unit.contentType === "post-body" && (
-        <fetcher.Form method="post">
+        <explicitFetcher.Form method="post">
           <input type="hidden" name="intent" value="generateExplicitPostBodyTranslation" />
           <input type="hidden" name="postId" value={unit.contentId} />
-          <button type="submit" disabled={busy || fetcher.data?.outcome === "queued"}>
+          <button
+            type="submit"
+            disabled={busy || explicitFetcher.data?.outcome === "queued"}
+          >
             {t("translationExplicitAction")}
           </button>
-        </fetcher.Form>
+        </explicitFetcher.Form>
       )}
     </div>
   );
 }
 
-export async function runAutomaticQueue(
-  units: readonly ContentGenerationUnitView[],
-  isActive: () => boolean,
-  submit: (unit: ContentGenerationUnitView) => Promise<void>,
-): Promise<void> {
-  const attempted = new Set<string>();
-  for (const unit of units) {
-    if (!isActive()) return;
-    if (attempted.has(unit.key)) continue;
-    attempted.add(unit.key);
-    await submit(unit);
-  }
+function withAutomaticFeedback(
+  current: ReadonlyMap<string, ContentGenerationAutomaticFeedback>,
+  key: string,
+  feedback: ContentGenerationAutomaticFeedback,
+): Map<string, ContentGenerationAutomaticFeedback> {
+  const next = new Map(current);
+  next.set(key, feedback);
+  return next;
 }
 
 function automaticSubmission(unit: ContentGenerationUnitView): FormData {
@@ -150,6 +239,15 @@ function automaticSubmission(unit: ContentGenerationUnitView): FormData {
   return formData;
 }
 
+function automaticFeedbackText(
+  feedback: ContentGenerationAutomaticFeedback | undefined,
+  t: TFunction,
+): string | null {
+  if (!feedback) return null;
+  if (feedback.state === "requesting") return t("translationRequesting");
+  return generationActionFeedback(feedback.response, t);
+}
+
 function generationStateFeedback(
   unit: ContentGenerationUnitView,
   t: TFunction,
@@ -161,6 +259,8 @@ function generationStateFeedback(
       return t("translationPending");
     case "processing":
       return t("translationProcessing");
+    case "converging":
+      return t("translationConverging");
     case "deferred":
       return unit.retryAfterSeconds === undefined
         ? t("translationDeferred")
