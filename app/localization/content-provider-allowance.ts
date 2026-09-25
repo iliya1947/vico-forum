@@ -160,7 +160,8 @@ export class ContentTopicTitleAllowanceGate {
       throw new TypeError("topic-title allowance gate received a non-title task");
     }
 
-    const preflight = await contentTopicTitleTaskPreflight(acquired.task, this.dependencies);
+    const task = acquired.task;
+    const preflight = await contentTopicTitleTaskPreflight(task, this.dependencies);
     if (preflight.outcome === "stale") {
       return await staleResult(
         this.dependencies.store,
@@ -173,22 +174,15 @@ export class ContentTopicTitleAllowanceGate {
     const request = await allowanceRequest(
       this.dependencies.provider,
       PUBLIC_FORUM_TOPIC_TITLE_CLASSIFICATION,
-      acquired.task,
+      task,
       acquired.occurrence,
       [preflight.revision.originalContent.length],
     );
-    return this.resolveAdapter(acquired, request);
-  }
-
-  private resolveAdapter(
-    acquired: Extract<ContentProviderAllowanceAcquireResult, { outcome: "acquired" }>,
-    request: ContentProviderAllowanceRequest,
-  ): Promise<ContentProviderAllowanceGateResult<ContentTopicTitleTaskStaleReason>> {
     return resolveAdapterDecision<ContentTopicTitleTaskStaleReason>(
       this.dependencies,
       acquired,
       request,
-      async () => contentTopicTitleTaskPreflight(acquired.task, this.dependencies),
+      async () => contentTopicTitleTaskPreflight(task, this.dependencies),
     );
   }
 }
@@ -227,7 +221,8 @@ export class ContentPostBodyAllowanceGate {
       throw new TypeError("post-body allowance gate received a non-post task");
     }
 
-    const preflight = await contentPostBodyTaskPreflight(acquired.task, this.dependencies);
+    const task = acquired.task;
+    const preflight = await contentPostBodyTaskPreflight(task, this.dependencies);
     if (preflight.outcome === "stale") {
       return await staleResult(
         this.dependencies.store,
@@ -256,7 +251,7 @@ export class ContentPostBodyAllowanceGate {
     const request = await allowanceRequest(
       this.dependencies.provider,
       PUBLIC_FORUM_POST_BODY_CLASSIFICATION,
-      acquired.task,
+      task,
       acquired.occurrence,
       segmentCharacterCounts,
     );
@@ -264,7 +259,7 @@ export class ContentPostBodyAllowanceGate {
       this.dependencies,
       acquired,
       request,
-      async () => contentPostBodyTaskPreflight(acquired.task, this.dependencies),
+      async () => contentPostBodyTaskPreflight(task, this.dependencies),
     );
   }
 }
