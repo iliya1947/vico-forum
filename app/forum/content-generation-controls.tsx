@@ -3,7 +3,7 @@ import { useFetcher, useRevalidator } from "react-router";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 
-import type { ContentGenerationActionResponse } from "./actions.server";
+import type { ContentGenerationActionResponse } from "../localization/content-generation-response";
 import type { ContentGenerationUnitView } from "../localization/content-generation-view";
 
 const POLL_DELAY_MS = 2_000;
