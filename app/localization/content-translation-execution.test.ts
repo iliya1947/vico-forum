@@ -218,7 +218,11 @@ async function harness(options: {
         }
   ));
 
+  const allowance = {
+    admitTopicTitle: vi.fn(async () => ({ outcome: "admitted" as const })),
+  };
   const executor = new ContentTopicTitleTaskExecutor({
+    allowance,
     consumer,
     providerRouter,
     publisher,
@@ -227,6 +231,7 @@ async function harness(options: {
 
   return {
     executor,
+    allowance,
     translate,
     markStale,
     currentGeneration,
@@ -238,6 +243,24 @@ async function harness(options: {
 }
 
 describe("ContentTopicTitleTaskExecutor", () => {
+  it("acknowledges durable allowance deferral before claim or provider work", async () => {
+    const { executor, allowance, translate, revisions } = await harness();
+    allowance.admitTopicTitle.mockResolvedValueOnce({
+      outcome: "deferred",
+      retryNotBefore: new Date("2026-09-25T13:00:00.000Z"),
+      reason: "free-allowance-reset",
+    });
+
+    await expect(executor.execute({ translationTaskId: taskId })).resolves.toEqual({
+      outcome: "deferred",
+      retryNotBefore: new Date("2026-09-25T13:00:00.000Z"),
+      reason: "free-allowance-reset",
+      delivery: "ack",
+    });
+    expect(revisions.readCurrentRevision).not.toHaveBeenCalled();
+    expect(translate).not.toHaveBeenCalled();
+  });
+
   it("sends exactly one authoritative plain content request and conditionally publishes it", async () => {
     const { executor, translate, publishClaimedMachineResult, recordFailure } = await harness();
 
