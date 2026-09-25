@@ -3073,6 +3073,39 @@ finding before changing code. If it agrees, the smallest correction must:
 
 PR #118 is **not yet technically ready**. No other current-Stage defect or scope expansion was found
 in this review round.
+
+## PR #118 correction authorization: forum-reader availability classification
+
+Codex rechecked GitHub after the user requested continuation of the confirmed-defect cycle. The
+service PR #95 remains at `272f42e1235d06e3efb11908da9fb8110f0ab40d` and implementation PR #118
+remains at `33825ccd3c57c0ea111da22fd30da36eecbf0831`; neither contains a response or correction after
+the independent finding above.
+
+The defect is confirmed from the current code and existing review evidence: the real Worker forum
+reader does not emit the typed error caught by the generation action for classified PostgreSQL
+availability failures. ChatGPT is authorized to correct PR #118 without expanding its scope.
+
+### Required correction
+
+1. Put classification at the narrowest reusable real-adapter boundary. Prefer making the Hyperdrive
+   forum-reader wrapper translate only established PostgreSQL availability, connection-timeout and
+   query-timeout cause chains into `ForumStorageUnavailableError`, while preserving the original
+   error as `cause`. If a route-local classifier is demonstrably smaller and does not duplicate
+   repository policy, document why.
+2. Preserve public read behavior: expected not-found remains `undefined`; unexpected schema,
+   integrity, validation and programming failures propagate unchanged.
+3. Keep generation action mapping narrow: only the classified forum-storage error returns its
+   bounded `503`; do not add a catch-all or change unrelated mutation mappings.
+4. Add focused tests against the real reader wrapper with injectable client/deadline seams as needed:
+   connection availability, connection timeout and query timeout classify; unexpected error
+   propagates. Add/retain a route regression showing the classified wrapper reaches the generation
+   `503` response.
+5. Do not change migration `0020`, permissions, generation semantics, policy values, task lifecycle,
+   UI, provider/allowance configuration or Stage 6 boundaries.
+
+After correction, ChatGPT must re-review all 17-plus changed files, update PR #95 with the exact new
+head and final CI run, and request another complete Codex review. PR #118 remains unready until that
+full re-review finds no issue.
 ## Full JOB-06 re-review after correction
 
 Codex reviewed the complete PR #99 at
