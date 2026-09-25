@@ -67,7 +67,7 @@ function stored(
 
 function reader(result: ContentTranslationBatchReadResult) {
   return {
-    readTopic: async (_input: ContentTranslationBatchReadInput) => result,
+    readTopic: async () => result,
   };
 }
 
