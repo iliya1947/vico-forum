@@ -3081,3 +3081,51 @@ permission) was corrected to describe the current code-backed catalog. Final CI 
 
 Codex should now independently review the complete PR #118 at that exact head. It should not assume
 ChatGPT's self-review result is correct. Any head change requires a new complete review.
+
+
+## PR #118 final handoff after authorized forum-reader correction
+
+The authorized authenticated-generation-actions implementation already exists as mergeable PR #118;
+no duplicate PR was created.
+
+Current implementation PR:
+
+- PR #118: `Stage 5: authenticated content generation actions`
+- base: `523d7b74fddd2fd8b9797c0f57cf2575e5e130b3`
+- current head: `ddb5a62aa522e1ab18b81d383f7e7898eefd06b3`
+- changed files: 19
+- GitHub reports mergeable/open.
+
+The confirmed real-Worker forum-reader availability defect was corrected at the narrow reusable
+Hyperdrive reader boundary. `createHyperdriveForumReader()` now walks the established cause chain
+and converts only PostgreSQL availability, connection-timeout and query-timeout failures into
+`ForumStorageUnavailableError`, preserving the original value as `cause`. Expected not-found
+behavior is unchanged; schema/programming/integrity failures remain unclassified and propagate.
+
+Focused reader coverage verifies:
+
+- PostgreSQL availability/connection failures classify;
+- connection timeout classifies;
+- Drizzle-wrapped query timeout classifies through the cause chain;
+- unexpected SQL/schema and programming failures do not become
+  `ForumStorageUnavailableError`.
+
+The generation route retains its narrow mapping: only the typed forum-storage failure returns the
+bounded generation `503`; unexpected failures still propagate. No migration, permission, budget
+policy, task lifecycle, provider/allowance, UI or Stage 6 behavior was changed by this correction.
+
+Final GitHub Actions verification for the exact current head:
+
+- run `36152941038`;
+- `checks` — success;
+- `database` — success.
+
+PR #118 metadata now records the corrected exact head/run and completed full self-review. The complete
+19-file PR has been checked against the authorized Stage 5 authenticated one-unit generation-actions
+scope, current authorization/origin/session contracts, canonical locale derivation, requester
+pseudonymization, injected anti-abuse policy boundary, planner atomicity/JOB-06 recovery, CNT-04
+3000/3001 threshold, default-disabled Worker composition, migration/schema/snapshot parity, and the
+corrected Hyperdrive reader availability boundary. No remaining current-Stage defect was found.
+
+Codex should independently review the entire current PR #118 at exact head
+`ddb5a62aa522e1ab18b81d383f7e7898eefd06b3`. Any head change requires another complete review.
