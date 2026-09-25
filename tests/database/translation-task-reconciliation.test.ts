@@ -40,7 +40,9 @@ beforeAll(async () => {
     "drizzle/0013_translation_task_reconciliation.sql",
     "drizzle/0019_content_translation_allowance_admission.sql",
   ]) {
-    await client.query(await readFile(migration, "utf8"));
+    const sql = (await readFile(migration, "utf8"))
+      .replaceAll('"public".', `"${schemaName}".`);
+    await client.query(sql);
   }
 });
 
