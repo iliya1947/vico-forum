@@ -1,4 +1,4 @@
-import { Form, useActionData, useLoaderData, type RouterContextProvider } from "react-router";
+import { Form, useActionData, useLoaderData, type RouterContextProvider, type ShouldRevalidateFunctionArgs } from "react-router";
 import { useTranslation } from "react-i18next";
 import { authSessionForRequest } from "../auth/request-context";
 import { authorizationForRequest } from "../authorization/request-context";
@@ -25,6 +25,24 @@ import type {
 import { Breadcrumbs, EmptyState, ForumRouteError, ForumShell } from "../forum/ui";
 
 export { topicAction as action } from "../forum/actions.server";
+
+export function shouldRevalidate({
+  formData,
+  actionResult,
+  defaultShouldRevalidate,
+}: ShouldRevalidateFunctionArgs) {
+  const intent = formData?.get("intent");
+  const automaticGeneration =
+    intent === "generateTopicTitleTranslation"
+    || intent === "generatePostBodyTranslation";
+  const generationResult = actionResult
+    && typeof actionResult === "object"
+    && "operation" in actionResult
+    && actionResult.operation === "contentGeneration";
+
+  if (automaticGeneration && generationResult) return false;
+  return defaultShouldRevalidate;
+}
 
 export async function loader({ params, context }: {
   params: { locale?: string; topicId?: string };
