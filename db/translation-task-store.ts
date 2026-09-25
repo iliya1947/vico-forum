@@ -273,6 +273,9 @@ export class DrizzleTranslationTaskStore implements
                select 1
                  from ${contentTranslationAllowanceAdmissions}
                 where ${contentTranslationAllowanceAdmissions.taskId} = ${translationTasks.id}
+                  and ${contentTranslationAllowanceAdmissions.generation} = ${translationTasks.generation}
+                  and ${contentTranslationAllowanceAdmissions.attemptNumber}
+                    = ${translationTasks.attemptCount} + 1
                   and (
                     (
                       ${contentTranslationAllowanceAdmissions.state} = 'leased'
