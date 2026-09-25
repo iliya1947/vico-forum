@@ -158,7 +158,11 @@ describe("content generation status presentation", () => {
       revision("topic-title", "topic-1", "r1"),
       revision("post-body", "post-1", "r2"),
     ];
-    expect(unavailableContentGenerationView(values, "he")).toEqual([
+    expect(unavailableContentGenerationView(
+      values,
+      values.map((value) => original(value)),
+      "he",
+    )).toEqual([
       {
         contentType: "topic-title",
         contentId: "topic-1",
