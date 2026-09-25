@@ -114,7 +114,7 @@ async function context(options: {
     nativeName: "עברית",
     presentationMetadata: {},
   });
-  value.set(registryLoaderContext, async () => registry);
+  value.set(registryLoaderContext, async () => ({ ...registry, health: { status: "healthy" as const } }));
   value.set(contentTranslationPresentationContext, {
     readCurrent: vi.fn(async () => [
       presentation("topic-title", "topic-1", "title-r1", topic.title.originalContent),
@@ -212,6 +212,26 @@ describe("topic loader generation presentation", () => {
     });
     expect(unavailableResult.generationUnits).toBeNull();
     expect(unavailable.statusRead).not.toHaveBeenCalled();
+  });
+
+  it("degrades classified status storage failure to unavailable without failing the topic read", async () => {
+    const { ContentGenerationStatusStorageUnavailableError } = await import(
+      "../localization/content-generation-status.server"
+    );
+    const harness = await context({
+      generationPermission: true,
+      statusError: new ContentGenerationStatusStorageUnavailableError(),
+    });
+    const result = await loader({
+      params: { locale: "he", topicId: "topic-1" },
+      context: harness.value,
+    });
+
+    expect(result.generationUnits?.map((unit) => unit.state)).toEqual([
+      "unavailable",
+      "unavailable",
+    ]);
+    expect(result.generationUnits?.every((unit) => !unit.autoEligible)).toBe(true);
   });
 
   it("suppresses controls when the Worker generation runtime is disabled", async () => {
