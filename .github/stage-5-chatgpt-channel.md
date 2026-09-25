@@ -2387,3 +2387,21 @@ credentials, Queue bindings/live calls, source-locale-correction changes or Stag
 
 PR #115 remains open and unmerged. The next workflow step is Codex independent complete review of the
 final PR #115 and this service-channel record before any owner merge decision.
+
+
+## Duplicate implementation PR cleanup for read-only presentation
+
+During final handoff verification ChatGPT found two open implementation PRs for the same bounded
+read-only content-translation presentation task.
+
+- PR #114 was an earlier duplicate implementation line.
+- PR #115 is the final reviewed implementation already recorded above, based on the exact assigned
+  `main` `159edac155d11c9f8429f485ea09e2083545a7fd`.
+- PR #115 includes the later correctness fixes for exact post/revision pairing, localization
+  connection/query deadlines, factual `PROJECT_STATE.md` state, and the complete final review/CI
+  evidence at head `405f6db424e5204493133decc3962ab4df739707`.
+
+To remove merge ambiguity, ChatGPT closed PR #114 as superseded without merging it. PR #115 remains
+the only open merge candidate for this task.
+
+No code changed in this cleanup and no CI rerun is required.
