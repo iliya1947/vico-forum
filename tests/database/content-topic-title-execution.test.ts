@@ -240,6 +240,14 @@ describe("content topic-title execution and publication", () => {
     if (first.kind !== "queued") throw new Error("expected queued content task");
 
     const tasks = new DrizzleTranslationTaskStore(drizzle(client));
+    const allowance = await tasks.acquireContentProviderAllowance(first.task.id, 60_000);
+    if (allowance.outcome !== "acquired") throw new Error("expected allowance admission lease");
+    await expect(tasks.persistContentProviderAllowanceAdmission(
+      first.task.id,
+      allowance.admissionToken,
+      allowance.occurrence,
+      "fixture-reservation",
+    )).resolves.toBe(true);
     const claim = await tasks.claimContentTopicTitle(first.task.id, 60_000);
     if (claim.outcome !== "claimed") throw new Error("expected content task claim");
     await expect(tasks.markStale(first.task.id, claim.task.claimToken)).resolves.toBe(true);
