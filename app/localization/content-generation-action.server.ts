@@ -58,6 +58,12 @@ export interface ContentGenerationActionCapability {
     readonly revision: ContentTranslationRevision;
     readonly targetLocale: string;
   }): Promise<ContentGenerationActionResult>;
+
+  generateExplicitPostBody(input: {
+    readonly actorId: string;
+    readonly revision: ContentTranslationRevision;
+    readonly targetLocale: string;
+  }): Promise<ContentGenerationActionResult>;
 }
 
 interface ContentGenerationActionDependencies {
@@ -97,23 +103,34 @@ export class DefaultContentGenerationActionCapability implements ContentGenerati
     readonly revision: ContentTranslationRevision;
     readonly targetLocale: string;
   }): Promise<ContentGenerationActionResult> {
-    if (input.revision.contentType !== "post-body") {
-      throw new TypeError("post-body generation requires a post-body revision");
-    }
-
-    const protectedDocument = protectMarkdownForTranslation(input.revision.originalContent);
-    let semanticCharacters = 0;
-    for (const segment of protectedDocument.segments) {
-      semanticCharacters += segment.text.length;
-      if (!Number.isSafeInteger(semanticCharacters)) {
-        throw new TypeError("post-body semantic character count is invalid");
-      }
-    }
+    this.assertPostBodyRevision(input.revision);
+    const semanticCharacters = contentPostBodySemanticCharacterCount(
+      input.revision.originalContent,
+    );
     if (semanticCharacters > MAX_AUTOMATIC_POST_TRANSLATION_SEMANTIC_CHARACTERS) {
       return { outcome: "explicit-required" };
     }
+    return this.generatePostBody(input);
+  }
 
-    const admission = await this.requestBudgetAdmission(input.actorId, this.dependencies.postBodyPolicy);
+  async generateExplicitPostBody(input: {
+    readonly actorId: string;
+    readonly revision: ContentTranslationRevision;
+    readonly targetLocale: string;
+  }): Promise<ContentGenerationActionResult> {
+    this.assertPostBodyRevision(input.revision);
+    return this.generatePostBody(input);
+  }
+
+  private async generatePostBody(input: {
+    readonly actorId: string;
+    readonly revision: ContentTranslationRevision;
+    readonly targetLocale: string;
+  }): Promise<ContentGenerationActionResult> {
+    const admission = await this.requestBudgetAdmission(
+      input.actorId,
+      this.dependencies.postBodyPolicy,
+    );
     return this.runPlanner(() =>
       this.dependencies.postBodyPlanner.planAndDispatch(
         input.revision,
@@ -121,6 +138,12 @@ export class DefaultContentGenerationActionCapability implements ContentGenerati
         admission,
       )
     );
+  }
+
+  private assertPostBodyRevision(revision: ContentTranslationRevision): void {
+    if (revision.contentType !== "post-body") {
+      throw new TypeError("post-body generation requires a post-body revision");
+    }
   }
 
   private async requestBudgetAdmission(
@@ -166,6 +189,18 @@ export class DefaultContentGenerationActionCapability implements ContentGenerati
       throw error;
     }
   }
+}
+
+export function contentPostBodySemanticCharacterCount(sourceMarkdown: string): number {
+  const protectedDocument = protectMarkdownForTranslation(sourceMarkdown);
+  let semanticCharacters = 0;
+  for (const segment of protectedDocument.segments) {
+    semanticCharacters += segment.text.length;
+    if (!Number.isSafeInteger(semanticCharacters)) {
+      throw new TypeError("post-body semantic character count is invalid");
+    }
+  }
+  return semanticCharacters;
 }
 
 function validatePolicy(policy: ContentGenerationRequestBudgetPolicy): void {
