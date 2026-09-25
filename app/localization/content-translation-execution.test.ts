@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { CloudflareM2m100TranslationProvider } from "./cloudflare-m2m100-provider";
+import type { ContentTranslationAllowanceAdmissionResult } from "./content-translation-allowance";
 import {
   ContentTranslationStorageUnavailableError,
   type ContentTranslationRevision,
