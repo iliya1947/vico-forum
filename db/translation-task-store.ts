@@ -45,6 +45,7 @@ import {
   uiTranslationJobIdentity,
   type UiTranslationJobSpecification,
 } from "../app/localization/ui-translation-service";
+import { consumeAdmittedContentAllowance } from "./content-translation-allowance-store";
 import { isPostgresQueryTimeout } from "./postgres-deadlines";
 import {
   contentPostBodyTranslationTasks,
@@ -81,6 +82,58 @@ export class DrizzleTranslationTaskStore implements
       .where(eq(translationTasks.id, id))
       .limit(1);
     return row?.translationKind;
+  }
+
+  async findContentTopicTitleById(
+    id: string,
+  ): Promise<ContentTopicTitleTranslationTask | undefined> {
+    if (!isUuid(id)) throw new TypeError("translation task id must be a UUID");
+    const [row] = await this.database
+      .select()
+      .from(translationTasks)
+      .where(eq(translationTasks.id, id))
+      .limit(1);
+    if (!row) return undefined;
+    if (row.translationKind !== "content-topic-title") {
+      throw new TranslationTaskKindMismatchError("content-topic-title", row.translationKind as TranslationTaskKind);
+    }
+    const [metadata] = await this.database
+      .select()
+      .from(contentTopicTitleTranslationTasks)
+      .where(eq(contentTopicTitleTranslationTasks.taskId, id))
+      .limit(1);
+    if (!metadata) {
+      throw new TranslationTaskIntegrityError(
+        "content topic-title task is missing revision metadata",
+      );
+    }
+    return parseContentTopicTitleTaskRow(row, metadata);
+  }
+
+  async findContentPostBodyById(
+    id: string,
+  ): Promise<ContentPostBodyTranslationTask | undefined> {
+    if (!isUuid(id)) throw new TypeError("translation task id must be a UUID");
+    const [row] = await this.database
+      .select()
+      .from(translationTasks)
+      .where(eq(translationTasks.id, id))
+      .limit(1);
+    if (!row) return undefined;
+    if (row.translationKind !== "content-post-body") {
+      throw new TranslationTaskKindMismatchError("content-post-body", row.translationKind as TranslationTaskKind);
+    }
+    const [metadata] = await this.database
+      .select()
+      .from(contentPostBodyTranslationTasks)
+      .where(eq(contentPostBodyTranslationTasks.taskId, id))
+      .limit(1);
+    if (!metadata) {
+      throw new TranslationTaskIntegrityError(
+        "content post-body task is missing revision metadata",
+      );
+    }
+    return parseContentPostBodyTaskRow(row, metadata);
   }
 
   async upsertPending(specification: UiTranslationJobSpecification): Promise<TranslationTask> {
@@ -434,7 +487,7 @@ export class DrizzleTranslationTaskStore implements
     leaseDurationMs: number,
   ): Promise<ContentTopicTitleTranslationTaskClaimResult> {
     return this.database.transaction(async (tx) => {
-      const claimed = await this.claimByKind(tx, id, leaseDurationMs, "content-topic-title");
+      const claimed = await this.claimAdmittedContentByKind(tx, id, leaseDurationMs, "content-topic-title");
       if (claimed.outcome !== "claimed") return claimed;
 
       const [metadata] = await tx
@@ -466,7 +519,7 @@ export class DrizzleTranslationTaskStore implements
     leaseDurationMs: number,
   ): Promise<ContentPostBodyTranslationTaskClaimResult> {
     return this.database.transaction(async (tx) => {
-      const claimed = await this.claimByKind(tx, id, leaseDurationMs, "content-post-body");
+      const claimed = await this.claimAdmittedContentByKind(tx, id, leaseDurationMs, "content-post-body");
       if (claimed.outcome !== "claimed") return claimed;
 
       const [metadata] = await tx
@@ -491,6 +544,119 @@ export class DrizzleTranslationTaskStore implements
         attemptStarted: claimed.attemptStarted,
       };
     });
+  }
+
+  private async claimAdmittedContentByKind(
+    database: TranslationTaskTransaction,
+    id: string,
+    leaseDurationMs: number,
+    expectedKind: "content-topic-title" | "content-post-body",
+  ): Promise<RawTranslationTaskClaimResult> {
+    if (!isUuid(id)) throw new TypeError("translation task id must be a UUID");
+    if (!Number.isSafeInteger(leaseDurationMs) || leaseDurationMs <= 0) {
+      throw new TypeError("translation task lease duration must be a positive integer");
+    }
+
+    const [existing] = await database
+      .select()
+      .from(translationTasks)
+      .where(eq(translationTasks.id, id))
+      .for("update")
+      .limit(1);
+    if (!existing) return { outcome: "not-found" };
+    if (!isTranslationTaskKind(existing.translationKind)) {
+      throw new TranslationTaskIntegrityError("stored translation task kind is invalid");
+    }
+    if (existing.translationKind !== expectedKind) {
+      throw new TranslationTaskKindMismatchError(expectedKind, existing.translationKind);
+    }
+    if (
+      existing.status === "stale"
+      || existing.status === "completed"
+      || existing.status === "failed"
+    ) {
+      return { outcome: "terminal" };
+    }
+
+    const clockResult = await database.execute<{ database_now: Date }>(sql`
+      select statement_timestamp() as database_now
+    `);
+    const databaseNowValue = clockResult.rows[0]?.database_now;
+    if (!databaseNowValue) {
+      throw new TranslationTaskIntegrityError("translation task claim database clock returned no value");
+    }
+    const liveProcessing = existing.status === "processing"
+      && existing.leaseExpiresAt
+      && existing.leaseExpiresAt > databaseNowValue;
+    if (liveProcessing) return { outcome: "already-claimed" };
+
+    const databaseNow = sql`statement_timestamp()`;
+    const leaseExpiresAt = sql`${databaseNow} + (${leaseDurationMs}::double precision * interval '1 millisecond')`;
+
+    if (existing.attemptCount < existing.maxAttempts) {
+      const admitted = await consumeAdmittedContentAllowance(database, existing);
+      if (!admitted) {
+        // Fail closed. The admission orchestrator is the only path allowed to start a
+        // provider-capable content attempt.
+        return { outcome: "already-claimed" };
+      }
+
+      const claimToken = crypto.randomUUID();
+      const rows = await database
+        .update(translationTasks)
+        .set({
+          status: "processing",
+          claimToken,
+          claimedAt: databaseNow,
+          leaseExpiresAt,
+          attemptCount: existing.attemptCount + 1,
+          updatedAt: databaseNow,
+        })
+        .where(and(
+          eq(translationTasks.id, id),
+          eq(translationTasks.translationKind, expectedKind),
+          eq(translationTasks.generation, existing.generation),
+          eq(translationTasks.attemptCount, existing.attemptCount),
+        ))
+        .returning();
+      if (!rows[0]) {
+        throw new TranslationTaskIntegrityError(
+          "admitted content translation claim lost its locked task",
+        );
+      }
+      return { outcome: "claimed", row: rows[0], attemptStarted: true };
+    }
+
+    if (
+      existing.status !== "processing"
+      || !existing.leaseExpiresAt
+      || existing.leaseExpiresAt > databaseNowValue
+    ) {
+      return { outcome: "already-claimed" };
+    }
+
+    const exhaustedClaimToken = crypto.randomUUID();
+    const exhausted = await database
+      .update(translationTasks)
+      .set({
+        status: "processing",
+        claimToken: exhaustedClaimToken,
+        claimedAt: databaseNow,
+        leaseExpiresAt,
+        updatedAt: databaseNow,
+      })
+      .where(and(
+        eq(translationTasks.id, id),
+        eq(translationTasks.translationKind, expectedKind),
+        eq(translationTasks.status, "processing"),
+        eq(translationTasks.generation, existing.generation),
+        eq(translationTasks.attemptCount, existing.attemptCount),
+      ))
+      .returning();
+    if (exhausted[0]) {
+      return { outcome: "claimed", row: exhausted[0], attemptStarted: false };
+    }
+    return { outcome: "already-claimed" };
   }
 
   private async claimByKind(
