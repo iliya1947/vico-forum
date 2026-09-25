@@ -36,13 +36,18 @@ Permission key означает существующую capability прилож
 - `forum.reply.create`;
 - `forum.solution.manageOwn`;
 - `forum.solution.manageAny`;
+- `forum.sourceLocale.correctOwn`;
+- `forum.sourceLocale.correctAny`;
 - `access.authorization.manage`.
 
 При появлении новой защищённой функции код добавляет новый permission key в централизованный
 catalog, после чего он становится доступен role/user configuration UI.
 
 `forum.solution.manageOwn` всегда применяется вместе с server-side resource condition:
-actor должен быть author target topic. Client-provided `authorId`, role или permission не
+actor должен быть author target topic. `forum.sourceLocale.correctOwn` аналогично разрешает
+исправление source-locale metadata только для topic title/post body, чей authoritative author
+совпадает с actor; `forum.sourceLocale.correctAny` снимает только это resource ownership
+ограничение и не даёт general edit rights. Client-provided `authorId`, role или permission не
 являются authorization evidence.
 
 ## Initial role defaults
@@ -54,14 +59,17 @@ actor должен быть author target topic. Client-provided `authorId`, rol
 
 - `forum.topic.create`;
 - `forum.reply.create`;
-- `forum.solution.manageOwn`.
+- `forum.solution.manageOwn`;
+- `forum.sourceLocale.correctOwn`.
 
 ### `moderator`
 
 - `forum.topic.create`;
 - `forum.reply.create`;
 - `forum.solution.manageOwn`;
-- `forum.solution.manageAny`.
+- `forum.solution.manageAny`;
+- `forum.sourceLocale.correctOwn`;
+- `forum.sourceLocale.correctAny`.
 
 ### `admin`
 
@@ -69,6 +77,8 @@ actor должен быть author target topic. Client-provided `authorId`, rol
 - `forum.reply.create`;
 - `forum.solution.manageOwn`;
 - `forum.solution.manageAny`;
+- `forum.sourceLocale.correctOwn`;
+- `forum.sourceLocale.correctAny`;
 - `access.authorization.manage`.
 
 После bootstrap пользователь с `access.authorization.manage` может через сайт менять grants
