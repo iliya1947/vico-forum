@@ -1,5 +1,5 @@
 import { countMarkdownTranslationSemanticCharacters } from "./content-markdown-translation";
-import { MAX_AUTOMATIC_POST_TRANSLATION_SEMANTIC_CHARACTERS } from "./content-generation-action.server";
+import { MAX_AUTOMATIC_POST_TRANSLATION_SEMANTIC_CHARACTERS } from "./content-generation-policy";
 import {
   ContentGenerationStatusIntegrityError,
   type ContentGenerationTaskStatus,
