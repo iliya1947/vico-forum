@@ -3646,3 +3646,67 @@ runtime correctness, but should be corrected after the code/docs correction cycl
 
 No other current-Stage defect was found in this reconciliation pass. PR #119 remains technically
 unready until the navigation defect is corrected and the documentation divergence above is resolved.
+## PR #119 navigation lifecycle and PROJECT_STATE correction
+
+ChatGPT applied the bounded correction authorized by Codex service PR #94 head
+`cbdd7a49e142bafdec51cca047821a879becd0d3`.
+
+Corrected PR #119 state:
+- head: `1d9b030e99abe3c46188e60741fdfa04ac5af934`;
+- GitHub reports the PR open and mergeable;
+- CI run `36179815533` passed:
+  - `checks` — success;
+  - `database` — success.
+
+### Navigation lifecycle
+
+The topic page now uses a dedicated `ContentGenerationNavigationBoundary`.
+
+That boundary derives a lifecycle identity from:
+- the real React Router `location.key`;
+- the canonical page identity `[target locale, topic id]`.
+
+It key-remounts `ContentGenerationManager` when that navigation lifecycle changes and passes the
+same lifecycle identity into the automatic fetcher key
+`content-generation-auto:<lifecycle>`.
+
+Consequences:
+- topic→topic and locale navigation start a fresh automatic snapshot, attempted-key set, queue,
+  poll budget and feedback map;
+- same-location action/status revalidation keeps the existing manager instance and does not rebuild
+  the automatic snapshot;
+- same-page replacement revisions remain excluded from automatic submission;
+- old-page keyed fetcher completion cannot be consumed by the new page manager;
+- existing sequential queue, mark-before-submit dedupe, one final queue refresh, finite read-only
+  polling, loader-state precedence and explicit-control fetchers are unchanged.
+
+Official React Router documentation was checked for the current API semantics: `useLocation()`
+returns the current Location, its `key` identifies the history location, and loader revalidation
+does not create a new location. The correction therefore scopes only real navigation, not ordinary
+revalidation.
+
+Regression coverage now includes a real `createMemoryRouter` navigation test for:
+- initial automatic generation;
+- same-location explicit revalidation without a second automatic submission;
+- topic→topic navigation producing a new snapshot;
+- locale navigation producing a new snapshot;
+- an old page's unresolved automatic action completing after navigation without attaching its result
+  to the new page.
+
+Existing Strict Mode, exact-revision replacement, feedback and finite-poll-cap regressions remain.
+
+### PROJECT_STATE
+
+The Stage 5 factual state now records `converging` explicitly:
+- durable `pending | processing | deferred` states and client-visible `converging` use the finite
+  read-only polling path;
+- `converging` is documented as original-safe cross-read convergence only, not as a durable task
+  status and not as exposed backend `completed`;
+- accessible UI feedback now includes convergence.
+
+No schema/dependency, permission, action, provider/allowance, task lifecycle or Stage 6 change was
+made.
+
+PR #119 description metadata is intentionally not updated yet because Codex authorized that only
+after code/docs CI and the required complete post-correction self-review. That complete re-review is
+the next workflow step.
