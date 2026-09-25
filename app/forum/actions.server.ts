@@ -8,7 +8,6 @@ import {
   runSourceLocaleCorrection,
   solutionScope,
   sourceLocaleCorrectionFailure,
-  sourceLocaleCorrectionMutationGuard,
   sourceLocaleCorrectionScope,
 } from "./mutations.server";
 import { forumTopicPath } from "./paths";
@@ -44,15 +43,11 @@ export async function topicAction({ request, params, context }: {
   const topicId = typeof params.topicId === "string" && params.topicId.trim() ? params.topicId : undefined;
   const locale = typeof params.locale === "string" && params.locale.trim() ? params.locale : undefined;
   if (!topicId || !locale) return mutationFailure("invalid", 400);
+  const denied = forumMutationGuard(request, context);
+  if (denied) return denied;
   let formData: FormData;
   try { formData = await request.formData(); } catch { return mutationFailure("invalid", 400); }
   const intent = requiredFormText(formData, "intent") ?? "reply";
-  const correctionIntent =
-    intent === "correctTitleSourceLocale" || intent === "correctPostSourceLocale";
-  const denied = correctionIntent
-    ? sourceLocaleCorrectionMutationGuard(request, context)
-    : forumMutationGuard(request, context);
-  if (denied) return denied;
   if (intent === "markSolved") {
     const authorization = await solutionScope(context);
     if ("error" in authorization) return authorization.error;
