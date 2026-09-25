@@ -41,6 +41,13 @@ vi.mock("react-router", () => ({
     state: mocks.revalidator.state,
     revalidate: mocks.revalidate,
   }),
+  useLocation: () => ({
+    key: "location-1",
+    pathname: "/he/topics/topic-1",
+    search: "",
+    hash: "",
+    state: null,
+  }),
 }));
 
 vi.mock("react-i18next", () => ({
