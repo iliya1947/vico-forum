@@ -121,8 +121,8 @@ export interface ContentTranslationAllowanceAdmissionDependencies {
   readonly tasks: ContentTranslationAllowanceTaskReader;
   readonly store: ContentTranslationAllowanceStore;
   readonly adapter?: ContentTranslationAllowanceAdapter;
-  readonly titlePreflight: ContentTopicTitleTaskPreflightDependencies;
-  readonly postBodyPreflight: ContentPostBodyTaskPreflightDependencies;
+  readonly titlePreflight?: ContentTopicTitleTaskPreflightDependencies;
+  readonly postBodyPreflight?: ContentPostBodyTaskPreflightDependencies;
   readonly admissionLeaseDurationMs: number;
   readonly postBodyExecutionBounds: {
     readonly maxSegments: number;
@@ -173,11 +173,16 @@ export class ContentTranslationAllowanceAdmissionService {
     if (acquired.outcome !== "leased") return normalizeAcquire(acquired);
     const occurrenceKey = await contentTranslationAllowanceOccurrenceKey(acquired.lease);
 
+    const preflightDependencies = this.dependencies.titlePreflight;
+    if (!preflightDependencies) {
+      throw new TypeError("topic-title allowance preflight is not configured");
+    }
+
     let preflight;
     try {
       preflight = await contentTopicTitleTaskPreflight(
         task,
-        this.dependencies.titlePreflight,
+        preflightDependencies,
       );
     } catch (error) {
       if (isTemporaryDependencyFailure(error)) {
@@ -235,11 +240,16 @@ export class ContentTranslationAllowanceAdmissionService {
     if (acquired.outcome !== "leased") return normalizeAcquire(acquired);
     const occurrenceKey = await contentTranslationAllowanceOccurrenceKey(acquired.lease);
 
+    const preflightDependencies = this.dependencies.postBodyPreflight;
+    if (!preflightDependencies) {
+      throw new TypeError("post-body allowance preflight is not configured");
+    }
+
     let preflight;
     try {
       preflight = await contentPostBodyTaskPreflight(
         task,
-        this.dependencies.postBodyPreflight,
+        preflightDependencies,
       );
     } catch (error) {
       if (isTemporaryDependencyFailure(error)) {
