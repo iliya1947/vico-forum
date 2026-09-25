@@ -2249,3 +2249,141 @@ No remaining current-Stage defect was found.
 
 PR #113 remains open and unmerged. Codex should now independently verify the corrected final head and
 the corrected PR metadata before any owner merge decision.
+
+
+## Read-only current content-translation presentation: PR #115
+
+Codex selected the bounded read-only presentation task after verifying merged PR #113 and GitHub
+`main` at `159edac155d11c9f8429f485ea09e2083545a7fd`. ChatGPT implemented the task in separate
+mergeable PR #115 based on that exact head.
+
+### Scope implemented
+
+The topic-page GET/SSR path now presents already persisted exact-current user-content translations
+without creating or requesting any translation work.
+
+- The topic loader starts from the authoritative current topic-title/post-body revisions returned by
+  the forum reader and the canonical validated URL locale already resolved in request context.
+- A request-scoped `ContentTranslationPresentationService` builds reusable per-unit presentation
+  results. Route code does not accept client-supplied revision/source/target fields as translation
+  authority.
+- The existing content-read semantics were factored into
+  `selectCurrentContentTranslation()` and are reused by both `ContentTranslationService.readCurrent()`
+  and the batch presentation service. Exact identity, source-locale validation, provenance validation,
+  same-source behavior and original fallback therefore remain one domain interpretation.
+- The PostgreSQL batch reader executes at most one title query plus one set-based post-body query,
+  independent of topic post count. It only requests exact
+  `contentType + contentId + revisionId + targetLocale` identities and validates parsed records
+  before returning them.
+- Old-revision, wrong-target/unrequested or invalid/duplicate data cannot become selected current
+  presentation. A missing/invalid unit falls back independently to its exact current original.
+- Classified translation-storage availability failure degrades the complete content-translation
+  presentation to authoritative originals. Unexpected schema/programming/configuration errors are
+  propagated rather than silently treated as misses.
+- Known source == URL target does not query translation storage and presents the original.
+- Guest and authenticated topic reads use the same public persisted-translation path; generation
+  permission is not consulted.
+
+### UI/presentation
+
+- An available exact-current translation is displayed automatically, matching the owner's accepted
+  product behavior.
+- Topic heading and its breadcrumb use the same selected title presentation.
+- Each post body is selected independently from the title and other posts.
+- Stored machine/manual provenance is exposed as an automatic/manual translation marker.
+- Stored attribution is rendered only when the persisted record contains it.
+- Selected translated content gets the validated target `lang` and URL-locale direction.
+- Original content gets revision source `lang` when known and registry-derived direction when the
+  source locale is registered; unknown/unregistered source direction uses controlled `dir="auto"`.
+- Translated and original post Markdown both remain inside the existing safe `ForumMarkdown`
+  renderer; raw provider HTML is not introduced.
+- A native `<details>` disclosure supplies the per-unit “Show original” / “Show translation”
+  control with no mutation, client generation trigger or provider side effect. The original remains
+  present in SSR HTML even without JavaScript.
+
+### Runtime boundary
+
+A read-only Hyperdrive content-translation batch capability is injected request-scoped in the Worker.
+It opens one connection for the batch operation, preserves the existing classified PostgreSQL
+availability semantics and does not expose any write/provider/task API to the topic loader.
+
+There is no new long-lived cache and no cross-request authoritative state.
+
+### Schema/migration
+
+No migration is required or added. Existing revision-bound persistence from migration `0014`
+already provides the exact title/body identity required by the bounded read path.
+
+### Verification coverage
+
+Focused tests cover:
+
+1. exact-current translated title/body selection;
+2. mixed translated/missing independent unit fallback;
+3. known same-source original behavior without a storage read;
+4. wrong/unrequested identity and invalid-record rejection while preserving valid sibling units;
+5. manual/machine provenance and optional stored attribution;
+6. RTL target, LTR original and unknown-source `dir="auto"`;
+7. classified storage degradation and propagation of unexpected failures;
+8. guest/authenticated persisted-public-translation parity;
+9. no-JavaScript original disclosure presence and translated Markdown safety through
+   `ForumMarkdown`;
+10. a query-count guard proving one title query plus one set-based post-body query for multiple posts;
+11. disposable PostgreSQL proof that historical revision and wrong-target records do not leak into
+    the requested batch;
+12. request-context configuration/failure behavior.
+
+The first CI cycle exposed only implementation-test/type-project issues: the new shared presentation
+module needed inclusion in `tsconfig.node.json`, and an existing test helper inferred
+`bestAnswerPostId` too narrowly as `null`. Both were corrected without changing the product
+contract.
+
+Automated Codex review on an early PR head found one current-scope documentation issue:
+`PROJECT_STATE.md` had not yet recorded the new read-only presentation state. ChatGPT confirmed
+the finding, updated `PROJECT_STATE.md` after successful checks, narrowed the remaining Stage 5
+route/UI work to generation-side integration, and resolved that review thread after final CI.
+
+### Final self-review
+
+Final PR #115 head:
+
+`405f6db424e5204493133decc3962ab4df739707`
+
+Exact base:
+
+`159edac155d11c9f8429f485ea09e2083545a7fd`
+
+GitHub Actions run:
+
+`36120378229`
+
+Results:
+
+- `checks` — success: accepted migration-history protection, lint, typecheck, unit/route tests,
+  production build, migration metadata validation and Drizzle schema parity;
+- `database` — success: clean PostgreSQL 17 migrations/integration suite, Workers build smoke and
+  local Hyperdrive smoke.
+
+ChatGPT re-reviewed the complete final 18-file diff against the assigned Codex task, current
+`AGENTS.md`, `PROJECT.md`, `PROJECT_STATE.md`, `ROADMAP.md`,
+`TRANSLATION_ARCHITECTURE.md`, `CONTENT_TRANSLATION.md`, `LOCALES.md`,
+`STORAGE_AND_VERSIONING.md`, `PROVIDERS_AND_JOBS.md` and the applicable authorization
+boundary.
+
+The review rechecked exact revision/target isolation, query shape, shared validation semantics,
+classified-vs-unexpected failures, guest parity, title/breadcrumb consistency, independent body
+fallback, provenance/attribution, `lang`/`dir`, safe Markdown rendering, Worker request scoping,
+absence of generation/task/provider/budget side effects, absence of schema changes and the factual
+project-state update.
+
+No remaining current-Stage defect was found.
+
+### Excluded scope verified
+
+PR #115 does not add `forum.translation.generate`, generation buttons/actions, automatic
+post-hydration generation, polling/status UX, provider allowance/reserve or anti-spam policy,
+request-budget/pseudonymization/planner changes, provider capability/allowlisting changes,
+credentials, Queue bindings/live calls, source-locale-correction changes or Stage 6 work.
+
+PR #115 remains open and unmerged. The next workflow step is Codex independent complete review of the
+final PR #115 and this service-channel record before any owner merge decision.
