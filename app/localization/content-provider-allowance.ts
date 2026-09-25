@@ -12,7 +12,10 @@ import {
 import {
   PUBLIC_FORUM_POST_BODY_CLASSIFICATION,
   PUBLIC_FORUM_TOPIC_TITLE_CLASSIFICATION,
+  publicForumPostBodyProviderCapabilities,
+  publicForumTopicTitleProviderCapability,
 } from "./content-translation-provider";
+import type { TranslationProviderRouter } from "./translation-provider";
 import type {
   ContentPostBodyTranslationTask,
   ContentTopicTitleTranslationTask,
@@ -77,6 +80,7 @@ export type ContentProviderAllowanceAcquireResult =
       readonly outcome: "admitted";
       readonly task: ContentProviderAllowanceTask;
       readonly occurrence: ContentProviderAllowanceOccurrence;
+      readonly provider: string;
     }
   | {
       readonly outcome: "deferred";
@@ -102,6 +106,7 @@ export interface ContentProviderAllowanceStore {
     id: string,
     admissionToken: string,
     occurrence: ContentProviderAllowanceOccurrence,
+    provider: string,
     reservationReference?: string,
   ): Promise<boolean>;
 
@@ -120,7 +125,7 @@ export interface ContentProviderAllowanceStore {
 }
 
 export type ContentProviderAllowanceGateResult<StaleReason extends string> =
-  | { readonly outcome: "admitted" }
+  | { readonly outcome: "admitted"; readonly provider: string }
   | { readonly outcome: "exhausted" }
   | { readonly outcome: "terminal" | "not-found" | "execution-in-progress" | "admission-in-progress" }
   | {
@@ -134,7 +139,7 @@ export type ContentProviderAllowanceGateResult<StaleReason extends string> =
 interface CommonGateDependencies {
   readonly store: ContentProviderAllowanceStore;
   readonly adapter?: ContentProviderAllowanceAdapter;
-  readonly provider: string;
+  readonly providerRouter: Pick<TranslationProviderRouter, "selectProvider">;
   readonly admissionLeaseDurationMs: number;
   readonly unconfiguredRetryMs?: number;
 }
@@ -171,8 +176,19 @@ export class ContentTopicTitleAllowanceGate {
       );
     }
 
+    const provider = this.dependencies.providerRouter.selectProvider([
+      publicForumTopicTitleProviderCapability({
+        sourceLocale: task.resolvedSourceLocale,
+        targetLocale: task.targetLocale,
+        sourceCharacterCount: preflight.revision.originalContent.length,
+      }),
+    ]);
+    if (!provider) {
+      return persistUnconfiguredProvider(this.dependencies, acquired);
+    }
+
     const request = await allowanceRequest(
-      this.dependencies.provider,
+      provider,
       PUBLIC_FORUM_TOPIC_TITLE_CLASSIFICATION,
       task,
       acquired.occurrence,
@@ -248,8 +264,19 @@ export class ContentPostBodyAllowanceGate {
       return persisted ? { outcome: "admitted" } : { outcome: "claim-lost" };
     }
 
+    const provider = this.dependencies.providerRouter.selectProvider(
+      publicForumPostBodyProviderCapabilities({
+        sourceLocale: task.resolvedSourceLocale,
+        targetLocale: task.targetLocale,
+        segmentCharacterCounts,
+      }),
+    );
+    if (!provider) {
+      return persistUnconfiguredProvider(this.dependencies, acquired);
+    }
+
     const request = await allowanceRequest(
-      this.dependencies.provider,
+      provider,
       PUBLIC_FORUM_POST_BODY_CLASSIFICATION,
       task,
       acquired.occurrence,
@@ -343,9 +370,12 @@ async function resolveAdapterDecision<StaleReason extends string>(
       acquired.task.id,
       acquired.admissionToken,
       acquired.occurrence,
+      request.provider,
       decision.reservationReference,
     );
-    return persisted ? { outcome: "admitted" } : { outcome: "claim-lost" };
+    return persisted
+      ? { outcome: "admitted", provider: request.provider }
+      : { outcome: "claim-lost" };
   }
 
   const retryNotBefore = await dependencies.store.persistContentProviderAllowanceDeferral(
@@ -357,6 +387,25 @@ async function resolveAdapterDecision<StaleReason extends string>(
   );
   return retryNotBefore
     ? { outcome: "deferred", retryNotBefore, reason: decision.reason }
+    : { outcome: "claim-lost" };
+}
+
+async function persistUnconfiguredProvider<StaleReason extends string>(
+  dependencies: CommonGateDependencies,
+  acquired: Extract<ContentProviderAllowanceAcquireResult, { outcome: "acquired" }>,
+): Promise<ContentProviderAllowanceGateResult<StaleReason>> {
+  const retryNotBefore = new Date(
+    Date.now() + (dependencies.unconfiguredRetryMs ?? DEFAULT_UNCONFIGURED_RETRY_MS),
+  );
+  const persisted = await dependencies.store.persistContentProviderAllowanceDeferral(
+    acquired.task.id,
+    acquired.admissionToken,
+    acquired.occurrence,
+    retryNotBefore,
+    "provider-unconfigured",
+  );
+  return persisted
+    ? { outcome: "deferred", retryNotBefore: persisted, reason: "provider-unconfigured" }
     : { outcome: "claim-lost" };
 }
 
@@ -402,7 +451,7 @@ function passAcquireResult<StaleReason extends string>(
 ): ContentProviderAllowanceGateResult<StaleReason> {
   switch (result.outcome) {
     case "admitted":
-      return { outcome: "admitted" };
+      return { outcome: "admitted", provider: result.provider };
     case "deferred":
       return {
         outcome: "deferred",
@@ -430,9 +479,6 @@ async function staleResult<StaleReason extends string>(
 }
 
 function validateGateDependencies(dependencies: CommonGateDependencies): void {
-  if (!SAFE_PROVIDER_PATTERN.test(dependencies.provider)) {
-    throw new TypeError("provider allowance provider identity is invalid");
-  }
   if (
     !Number.isSafeInteger(dependencies.admissionLeaseDurationMs)
     || dependencies.admissionLeaseDurationMs <= 0
