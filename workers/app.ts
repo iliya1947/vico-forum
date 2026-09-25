@@ -2,6 +2,8 @@ import { RouterContextProvider, createRequestHandler } from "react-router";
 import { forumReaderContext, forumWriterContext } from "../app/forum/request-context";
 import {
   contentTranslationPresentationContext,
+  contentGenerationActionContext,
+  DISABLED_CONTENT_GENERATION_ACTION_RUNTIME,
   registryLoaderContext,
   uiTranslationStoreContext,
 } from "../app/localization/request-context";
@@ -37,6 +39,7 @@ export default {
       ),
     );
     context.set(authorizationContext, createHyperdriveAuthorization(connectionString));
+    context.set(contentGenerationActionContext, DISABLED_CONTENT_GENERATION_ACTION_RUNTIME);
     const response = await requestHandler(request, context);
     return withAuthSessionCookies(response, authHeaders);
   },
