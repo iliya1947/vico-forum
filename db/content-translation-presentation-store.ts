@@ -1,4 +1,4 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, or } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import {
   ContentTranslationInvalidRecordError,
@@ -52,8 +52,6 @@ export class DrizzleContentTranslationBatchReader implements ContentTranslationB
 
       let postRows: PostTranslationRow[] = [];
       if (input.posts.length > 0) {
-        const postIds = [...new Set(input.posts.map((identity) => identity.contentId))];
-        const revisionIds = [...new Set(input.posts.map((identity) => identity.revisionId))];
         const targetLocales = [...new Set(input.posts.map((identity) => identity.targetLocale))];
         if (targetLocales.length !== 1 || targetLocales[0] !== input.title.targetLocale) {
           throw new Error("topic presentation batch must use one target locale");
@@ -73,9 +71,11 @@ export class DrizzleContentTranslationBatchReader implements ContentTranslationB
           })
           .from(forumPostBodyTranslations)
           .where(and(
-            inArray(forumPostBodyTranslations.postId, postIds),
-            inArray(forumPostBodyTranslations.revisionId, revisionIds),
             eq(forumPostBodyTranslations.targetLocale, input.title.targetLocale),
+            or(...input.posts.map((identity) => and(
+              eq(forumPostBodyTranslations.postId, identity.contentId),
+              eq(forumPostBodyTranslations.revisionId, identity.revisionId),
+            ))),
           ));
       }
 
