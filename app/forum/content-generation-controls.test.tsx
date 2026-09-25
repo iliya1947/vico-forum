@@ -1,6 +1,6 @@
 import { StrictMode, type ReactNode } from "react";
-import { act, render, screen, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { ContentGenerationActionResponse } from "../localization/content-generation-response";
 
@@ -98,6 +98,10 @@ async function completeAutomaticSubmission(
 }
 
 describe("content generation client orchestration", () => {
+  afterEach(() => {
+    cleanup();
+  });
+
   beforeEach(() => {
     mocks.autoSubmit.mockClear();
     mocks.explicitSubmit.mockClear();
