@@ -1,9 +1,15 @@
 import { RouterContextProvider, createRequestHandler } from "react-router";
 import { forumReaderContext, forumWriterContext } from "../app/forum/request-context";
-import { registryLoaderContext, uiTranslationStoreContext } from "../app/localization/request-context";
+import {
+  contentTranslationPresentationContext,
+  registryLoaderContext,
+  uiTranslationStoreContext,
+} from "../app/localization/request-context";
 import { createHyperdriveRegistryLoader } from "../db/hyperdrive-registry";
 import { createHyperdriveForumReader, createHyperdriveForumWriter } from "../db/hyperdrive-forum";
 import { createHyperdriveUiTranslationStore } from "../db/hyperdrive-ui-translations";
+import { ContentTranslationPresentationService } from "../app/localization/content-translation-presentation";
+import { createHyperdriveContentTranslationBatchReader } from "../db/hyperdrive-content-translations";
 import { createHyperdriveAuthRuntime, type BetterAuthEnvironment } from "../app/auth/auth.server";
 import { initializeAuthContext, withAuthSessionCookies } from "../app/auth/session-context";
 import { authorizationContext } from "../app/authorization/request-context";
@@ -24,6 +30,12 @@ export default {
     context.set(forumWriterContext, createHyperdriveForumWriter(connectionString));
     context.set(registryLoaderContext, createHyperdriveRegistryLoader(connectionString));
     context.set(uiTranslationStoreContext, createHyperdriveUiTranslationStore(connectionString));
+    context.set(
+      contentTranslationPresentationContext,
+      new ContentTranslationPresentationService(
+        createHyperdriveContentTranslationBatchReader(connectionString),
+      ),
+    );
     context.set(authorizationContext, createHyperdriveAuthorization(connectionString));
     const response = await requestHandler(request, context);
     return withAuthSessionCookies(response, authHeaders);
