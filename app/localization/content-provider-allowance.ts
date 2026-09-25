@@ -88,6 +88,7 @@ export type ContentProviderAllowanceAcquireResult =
         | "admission-in-progress"
         | "execution-in-progress"
         | "terminal"
+        | "not-found"
         | "exhausted";
     };
 
@@ -121,7 +122,7 @@ export interface ContentProviderAllowanceStore {
 export type ContentProviderAllowanceGateResult<StaleReason extends string> =
   | { readonly outcome: "admitted" }
   | { readonly outcome: "exhausted" }
-  | { readonly outcome: "terminal" | "execution-in-progress" | "admission-in-progress" }
+  | { readonly outcome: "terminal" | "not-found" | "execution-in-progress" | "admission-in-progress" }
   | {
       readonly outcome: "deferred";
       readonly retryNotBefore: Date;
@@ -389,6 +390,7 @@ function passAcquireResult<StaleReason extends string>(
     case "admission-in-progress":
     case "execution-in-progress":
     case "terminal":
+    case "not-found":
     case "exhausted":
       return { outcome: result.outcome };
   }
