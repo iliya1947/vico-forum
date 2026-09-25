@@ -278,11 +278,14 @@ Migration `0007`–`0010` содержит durable task lifecycle и generation-
   проходит те же authenticated permission, authoritative resource/revision/target, pseudonymization,
   request-budget, planner и dispatch boundaries;
 - automatic queue подавляет per-item loader revalidation и после завершения выполняет один read-only
-  refresh; active `pending | processing | deferred` status использует bounded finite polling через
-  loader revalidation, а не повторные generation POST;
-- UI локализованно и accessibility-visible показывает requesting/pending/processing/deferred/failed/
-  unavailable/current/explicit-required feedback. Request-budget `429` может показывать только
-  bounded retry timing без раскрытия quota internals;
+  refresh; active `pending | processing | deferred` durable status и client-visible `converging`
+  state используют bounded finite polling через loader revalidation, а не повторные generation POST.
+  `converging` означает только original-safe cross-read convergence, когда independently read
+  presentation ещё original, а durable task уже completed; это не durable task status и backend
+  `completed` клиенту не раскрывается;
+- UI локализованно и accessibility-visible показывает requesting/pending/processing/converging/
+  deferred/failed/unavailable/current/explicit-required feedback. Request-budget `429` может
+  показывать только bounded retry timing без раскрытия quota internals;
 - regression coverage проверяет batch status semantics, revision/target isolation, original-safe
   degradation, dynamic permission hints без GET side effects, explicit threshold bypass, same-hydration
   dedupe, finite read-only polling и disposable PostgreSQL integration.
