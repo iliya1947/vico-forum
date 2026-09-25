@@ -3207,3 +3207,168 @@ No remaining current-Stage defect or unauthorized scope expansion was found.
 
 Codex should now independently re-review the complete PR #118 at exact head
 `4f7fd854d979663e16c6dc82d2d40f0290efdfd5`. Any head change requires another complete review.
+## Final Stage 5 UX/status technical agreement
+
+ChatGPT independently inspected updated GitHub `main`
+`e5ae6a92604c6cebcde13c542d6cc1ef3f009359`, the merged topic loader/presentation path, current
+authenticated generation action contract, dynamic authorization resolver, content task identity and
+generation-head storage, translation batch presentation reader, and current React Router Framework
+Mode revalidation/fetcher semantics.
+
+The bounded final Stage 5 slice can be implemented without a schema migration and remains suitable
+for one final mergeable PR. The following contract is technically supported by the current repository.
+
+### 1. Loader/public payload
+
+Keep the existing public translation presentation unchanged for guests. For an authenticated session,
+the topic loader may resolve one additional dynamic permission,
+`forum.translation.generate`, through the existing request-scoped authorization resolver.
+Authorization unavailability degrades this optional hint to false; the action continues to re-check
+permission authoritatively on every POST.
+
+Only when the authenticated reader currently has that permission should the loader read generation
+status. The client-facing generation model should contain only the public unit identity already
+represented by the page (`contentType + contentId + revisionId + canonical targetLocale`), a bounded
+presentation state, whether the current post requires the explicit path, and (where useful) a bounded
+retry delay. It must not expose actor/user identity, translation task id/identity, claim token,
+attempt counters, provider/allowance identifiers or reasons, reservation references, failure codes,
+source fingerprints, policy versions, or any payload beyond content already rendered publicly.
+
+The existing `ContentTranslationPresentation` remains the authority for whether an exact-current
+translation is already displayable. Generation/status data should be a separate loader model rather
+than expanding the translation-storage domain object with task internals.
+
+### 2. Bounded current-unit status read
+
+No new status table or index is required.
+
+The current schema already supplies:
+- `translation_task_generation_heads` primary key on
+  `translationKind + sourceNamespace + sourceKey + targetLocale`;
+- `translation_tasks_unit_generation_unique` on the same logical unit plus `generation`;
+- content task metadata keyed by `taskId` and carrying the immutable revision id.
+
+A dedicated read-only batch status adapter can therefore take the title plus all current post
+revision identities for one topic and resolve current-generation task state with one bounded set
+query (or a fixed number of kind-partitioned batch queries), joining generation head -> task at
+`currentGeneration` -> kind-specific metadata and requiring metadata revision id to equal the
+loader's current revision. This is O(1) queries per topic page, not one query per post, and existing
+keys/indexes support the lookup.
+
+The server should collapse durable internals into only:
+- `idle`: no applicable current-generation work (including stale/superseded work);
+- `pending`;
+- `processing`;
+- `deferred`: current generation has durable provider-allowance deferral;
+- `failed`: current generation is terminal failed;
+- `current`: exact-current persisted translation is already selected by presentation;
+- `unavailable`: classified status-storage availability failure.
+
+`completed` must converge through the persisted translation presentation and be exposed as
+`current`; a completed task without its required published current translation is an integrity
+failure, not a normal public state. Raw allowance reason/failure code is never exposed. A future
+retry time may be reduced to a bounded non-negative `retryAfterSeconds` presentation value.
+
+Classified status-store availability must not fail the public topic page: preserve the original/current
+translation presentation, expose/synthesize `unavailable`, suppress automatic triggering/polling for
+that response, and avoid indefinite loading. Unexpected schema/programming/integrity errors still
+propagate.
+
+### 3. Automatic eligibility and hydration guard
+
+Automatic generation is only a client-side post-hydration enhancement. SSR/GET remains read-only.
+
+For exact-current units that are still original, not same-locale, have no active/failed/deferred
+current-generation state, and belong to an authenticated reader with the current generation
+permission:
+- title may use the existing automatic title intent;
+- post body uses the automatic intent only when the authoritative shared CNT-04 semantic-length
+  calculation is `<= 3000`;
+- a longer post is marked explicit-only and is never auto-submitted.
+
+The server remains authoritative for every condition; loader fields are only UI/trigger hints.
+
+The automatic client queue should snapshot the eligible exact unit keys on the first hydrated render.
+Each key is `contentType + contentId + revisionId + canonical targetLocale` and is marked attempted
+before submission. React rerenders and Strict Mode effect replay therefore cannot repeat it within the
+same hydration. Newly observed revision identities after action/revalidation are not added to that
+initial automatic snapshot; the page converges to the new revision but does not automatically retry
+the replacement revision in the same hydration cycle. Reload/navigation starts a new hydration and
+may legitimately request again; durable planning, allowance and request budget remain the server
+correctness/abuse boundaries.
+
+To avoid one full route revalidation per automatic unit, the simplest bounded orchestration is a
+single sequential automatic queue using router submission with
+`defaultShouldRevalidate: false`, followed by one explicit read-only revalidation after the queue
+settles. This is supported by current React Router Framework Mode. Normal successful submissions
+otherwise revalidate loaders by default; failed 4xx/5xx submissions do not by default.
+
+### 4. Explicit long-body path
+
+Add one distinct explicit post-body intent/capability method. It bypasses only
+`MAX_AUTOMATIC_POST_TRANSLATION_SEMANTIC_CHARACTERS`.
+
+It must reuse the same authoritative route membership/current-revision lookup, canonical URL target,
+dynamic permission, authenticated actor pseudonymization, request-budget policy/admission,
+provider-support/source-resolution logic, planner and dispatch boundary. It must not accept client
+revision/source/target/actor/budget/provider/allowance data as authority.
+
+The implementation can share a common post-body planning helper so the automatic method performs the
+CNT-04 threshold gate before entering that helper while the explicit method enters it directly.
+
+### 5. Revalidation and polling
+
+After an explicit successful generation submission, normal React Router revalidation is sufficient.
+For the automatic queue, suppress per-item revalidation and perform one revalidation after the queue.
+
+If the refreshed loader reports `pending`, `processing` or `deferred`, client polling should use
+`useRevalidator()`, not repeated POSTs. React Router documents `useRevalidator` for external changes
+such as polling, while action-driven mutations already have normal revalidation semantics.
+
+Polling must have a positive delay and finite per-hydration maximum, stop immediately when no unit is
+active, and stop on `current`, `failed`, `idle` or `unavailable`. The exact timer constants are
+implementation constants rather than a persistence/product contract; tests must prove the loop is
+finite and never submits generation POSTs. A revision change replaces the unit key/status and drops
+the superseded status without auto-requesting the new revision in the same hydration.
+
+### 6. Action feedback
+
+Use per-unit localized/accessibility-visible UI states without exposing backend internals:
+- requesting;
+- queued/pending;
+- processing;
+- deferred/retry later;
+- failed;
+- temporarily unavailable/retry;
+- explicit translation required;
+- current translated presentation.
+
+The existing exact-current translation remains automatically displayed with provenance and original
+disclosure. For request-budget `429`, the action may include the already-computed bounded
+`retryAfterSeconds` in its typed response body in addition to the HTTP `Retry-After` header so the
+UI can present retry timing without exposing budget scopes/limits. `503` remains generic retryable
+feedback.
+
+### 7. Scope / PR shape
+
+This is feasible as one final Stage 5 mergeable PR because the status model is a read-only adapter over
+existing schema and the UI is the direct consumer of that bounded model. No schema/dependency change
+is currently justified.
+
+The PR should include:
+1. bounded batch current-unit status reader + Hyperdrive/request context and classified availability;
+2. loader generation permission/status/explicit-mode hints;
+3. explicit long-body intent sharing the existing generation boundary;
+4. post-hydration automatic queue with exact-unit guard;
+5. bounded status polling/revalidation;
+6. localized accessible per-unit feedback;
+7. focused DB/unit/route/UI tests proving no N-query-per-post behavior, no SSR POST/provider work,
+   no duplicate same-hydration automatic POST, threshold bypass only on explicit path, permission
+   re-check, revision convergence, finite polling, original-safe availability behavior and no
+   sensitive task internals in serialized loader/action data.
+
+Real provider/allowance adapter, Queue bindings, credentials, production anti-abuse values and
+deployed smoke remain Stage 6 and are not part of this PR.
+
+No conflicting current-Stage requirement was found. Codex can now issue the exact final Stage 5
+implementation task against this agreed boundary.
