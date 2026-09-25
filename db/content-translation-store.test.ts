@@ -6,7 +6,7 @@ import {
   type ContentTranslationIdentity,
   type ContentTranslationRevision,
 } from "../app/localization/content-translation";
-import { DrizzleContentTranslationStore } from "./content-translation-store";
+import { DrizzleContentTranslationBatchReader, DrizzleContentTranslationStore } from "./content-translation-store";
 
 const identity: ContentTranslationIdentity = {
   contentType: "topic-title",
@@ -22,6 +22,86 @@ const revision: ContentTranslationRevision = {
   originalContent: "Original title",
   sourceLocale: "en",
 };
+
+describe("DrizzleContentTranslationBatchReader", () => {
+  it("uses at most one title query and one set-based post query regardless of post count", async () => {
+    const responses = [
+      [{
+        topicId: "topic-1",
+        revisionId: "title-r1",
+        targetLocale: "fr",
+        sourceLocale: "en",
+        translatedContent: "Titre",
+        origin: "persistent_manual",
+        provider: null,
+        providerModel: null,
+        attribution: null,
+      }],
+      [
+        {
+          postId: "post-1",
+          revisionId: "post-r1",
+          targetLocale: "fr",
+          sourceLocale: "en",
+          translatedContent: "Un",
+          origin: "machine",
+          provider: "provider",
+          providerModel: "model",
+          attribution: null,
+        },
+        {
+          postId: "post-3",
+          revisionId: "post-r3",
+          targetLocale: "fr",
+          sourceLocale: "en",
+          translatedContent: "Trois",
+          origin: "machine",
+          provider: "provider",
+          providerModel: "model",
+          attribution: null,
+        },
+      ],
+    ] as const;
+    let queryCount = 0;
+    const database = {
+      select: () => ({
+        from: () => ({
+          where: async () => responses[queryCount++] ?? [],
+        }),
+      }),
+    } as unknown as NodePgDatabase;
+    const reader = new DrizzleContentTranslationBatchReader(database);
+
+    const result = await reader.readBatch([
+      identity,
+      {
+        contentType: "post-body",
+        contentId: "post-1",
+        revisionId: "post-r1",
+        targetLocale: "fr",
+      },
+      {
+        contentType: "post-body",
+        contentId: "post-2",
+        revisionId: "post-r2",
+        targetLocale: "fr",
+      },
+      {
+        contentType: "post-body",
+        contentId: "post-3",
+        revisionId: "post-r3",
+        targetLocale: "fr",
+      },
+    ]);
+
+    expect(queryCount).toBe(2);
+    expect(result.translations.map((translation) => translation.contentId)).toEqual([
+      "topic-1",
+      "post-1",
+      "post-3",
+    ]);
+  });
+});
 
 describe("DrizzleContentTranslationStore failure classification", () => {
   it("classifies an unwrapped PostgreSQL availability failure", async () => {
