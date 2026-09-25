@@ -186,6 +186,12 @@ describe("manual source-locale correction", () => {
       source_locale: "en-US",
     });
 
+    const noOp = await correctTitle("author-a", topic!.title.id, "en-us");
+    expect(status(noOp)).toBe(302);
+    expect((await client.query(
+      "select count(*)::int count from forum_topic_title_revisions where topic_id = 'topic-1'",
+    )).rows[0]?.count).toBe(2);
+
     const translations = new ContentTranslationService(new DrizzleContentTranslationStore(drizzle(client)));
     await expect(translations.readCurrent({
       contentType: "topic-title",
