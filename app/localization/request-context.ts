@@ -5,12 +5,14 @@ import type { UiTranslationStore } from "./persistent-sources";
 import type { TranslationBundleReader } from "./bundles";
 import type { ContentTranslationPresentationService } from "./content-translation-presentation";
 import type { ContentGenerationActionCapability } from "./content-generation-action.server";
+import type { ContentGenerationStatusReader } from "./content-generation-status";
 
 export const localeContext = createContext<ResolvedLocaleContext>();
 export const registryLoaderContext = createContext<() => Promise<LoadedLocaleRegistry>>();
 export type RuntimeUiTranslationStore = UiTranslationStore & TranslationBundleReader;
 export const uiTranslationStoreContext = createContext<RuntimeUiTranslationStore>();
 export const contentTranslationPresentationContext = createContext<ContentTranslationPresentationService>();
+export const contentGenerationStatusContext = createContext<ContentGenerationStatusReader>();
 
 export type ContentGenerationActionRuntime =
   | { readonly enabled: false }
@@ -35,6 +37,13 @@ export class ContentTranslationPresentationConfigurationError extends Error {
   constructor(options?: ErrorOptions) {
     super("content translation presentation is not configured", options);
     this.name = "ContentTranslationPresentationConfigurationError";
+  }
+}
+
+export class ContentGenerationStatusConfigurationError extends Error {
+  constructor(options?: ErrorOptions) {
+    super("content generation status reader is not configured", options);
+    this.name = "ContentGenerationStatusConfigurationError";
   }
 }
 
@@ -73,6 +82,16 @@ export function contentTranslationPresentationForRequest(
   }
 }
 
+
+export function contentGenerationStatusForRequest(
+  context: RouterContextProvider,
+): ContentGenerationStatusReader {
+  try {
+    return context.get(contentGenerationStatusContext);
+  } catch (error) {
+    throw new ContentGenerationStatusConfigurationError({ cause: error });
+  }
+}
 
 export function contentGenerationActionForRequest(
   context: RouterContextProvider,
