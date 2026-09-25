@@ -822,6 +822,50 @@ describe("content post-body durable planning", () => {
     expect(translate).toHaveBeenCalledTimes(document.segments.length);
   });
 
+  it("terminalizes configured unsupported post work without allowance or provider calls", async () => {
+    const enqueuer = new FakeTranslationTaskEnqueuer();
+    const planned = await createPlanner(client, enqueuer).planAndDispatch(
+      requestRevision(),
+      "he",
+      budgetAdmission(),
+    );
+    if (planned.kind !== "queued") throw new Error("expected queued body task");
+
+    const translate = vi.fn(async (request: MachineTranslationRequest) =>
+      machineResultForRequest(request)
+    );
+    const executor = createBodyExecutor(client, {
+      supports: () => false,
+      translate,
+    });
+
+    await expect(executor.execute(enqueuer.messages[0]!)).resolves.toEqual({
+      outcome: "execution-failed",
+      delivery: "terminal",
+      failureCode: "provider-unsupported",
+      terminalReason: "terminal",
+      attemptCount: 1,
+      maxAttempts: 3,
+    });
+    expect(translate).not.toHaveBeenCalled();
+
+    const task = await client.query<{
+      status: string;
+      attempt_count: number;
+      last_failure_code: string | null;
+      allowance_state: string | null;
+    }>(
+      "select status, attempt_count, last_failure_code, allowance_state from translation_tasks where id = $1",
+      [planned.task.id],
+    );
+    expect(task.rows[0]).toEqual({
+      status: "failed",
+      attempt_count: 1,
+      last_failure_code: "provider-unsupported",
+      allowance_state: null,
+    });
+  });
+
   it("retries a partial transient segment failure without publishing partial state", async () => {
     const enqueuer = new FakeTranslationTaskEnqueuer();
     const planned = await createPlanner(client, enqueuer).planAndDispatch(
