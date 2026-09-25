@@ -1531,6 +1531,14 @@
             "source_namespace",
             "source_key"
           ]
+        },
+        "translation_tasks_kind_owner_unique": {
+          "name": "translation_tasks_kind_owner_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "translation_kind"
+          ]
         }
       },
       "policies": {},
@@ -2711,18 +2719,6 @@
           "primaryKey": false,
           "notNull": true
         },
-        "source_namespace": {
-          "name": "source_namespace",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "source_key": {
-          "name": "source_key",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
         "generation": {
           "name": "generation",
           "type": "integer",
@@ -2840,15 +2836,11 @@
           "tableTo": "translation_tasks",
           "columnsFrom": [
             "task_id",
-            "translation_kind",
-            "source_namespace",
-            "source_key"
+            "translation_kind"
           ],
           "columnsTo": [
             "id",
-            "translation_kind",
-            "source_namespace",
-            "source_key"
+            "translation_kind"
           ],
           "onDelete": "cascade",
           "onUpdate": "no action"
@@ -2861,10 +2853,6 @@
         "content_translation_allowance_admissions_kind_check": {
           "name": "content_translation_allowance_admissions_kind_check",
           "value": "\"content_translation_allowance_admissions\".\"translation_kind\" in ('content-topic-title', 'content-post-body')"
-        },
-        "content_translation_allowance_admissions_shape_check": {
-          "name": "content_translation_allowance_admissions_shape_check",
-          "value": "(\"content_translation_allowance_admissions\".\"translation_kind\" = 'content-topic-title' and \"content_translation_allowance_admissions\".\"source_namespace\" = 'topic-title')\n        or (\"content_translation_allowance_admissions\".\"translation_kind\" = 'content-post-body' and \"content_translation_allowance_admissions\".\"source_namespace\" = 'post-body')"
         },
         "content_translation_allowance_admissions_generation_check": {
           "name": "content_translation_allowance_admissions_generation_check",
