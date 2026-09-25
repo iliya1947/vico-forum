@@ -13,6 +13,7 @@ export type ContentGenerationViewState =
   | "idle"
   | "pending"
   | "processing"
+  | "converging"
   | "deferred"
   | "failed"
   | "current"
@@ -74,9 +75,16 @@ export function buildContentGenerationView(
     }
 
     if (status.state === "completed") {
-      throw new ContentGenerationStatusIntegrityError(
-        "completed content generation task is missing its exact-current translation",
-      );
+      return {
+        key,
+        contentType: revision.contentType,
+        contentId: revision.contentId,
+        revisionId: revision.revisionId,
+        targetLocale,
+        state: "converging",
+        automatic: false,
+        explicitRequired: false,
+      };
     }
 
     const sameLocale = revision.sourceLocale !== "und" && revision.sourceLocale === targetLocale;
