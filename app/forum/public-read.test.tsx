@@ -4,7 +4,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { I18nextProvider } from "react-i18next";
 import { RouterContextProvider, RouterProvider, createMemoryRouter, matchRoutes } from "react-router";
 import { afterEach, describe, expect, it } from "vitest";
-import type { ForumReader } from "../../db/forum-repository";
+import type { ForumReader, ForumTopicPage } from "../../db/forum-repository";
 import { canonicalEnglishCatalog } from "../localization/catalog";
 import { createTranslationRuntime } from "../localization/runtime";
 import { ContentTranslationPresentationService, type ContentTranslationPresentation } from "../localization/content-translation-presentation";
@@ -102,7 +102,7 @@ function originalPresentation(
 }
 
 function topicRenderData(
-  value = topic,
+  value: ForumTopicPage = topic,
   overrides: Record<string, unknown> = {},
 ) {
   return {
