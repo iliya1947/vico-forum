@@ -38,6 +38,7 @@ Permission key означает существующую capability прилож
 - `forum.solution.manageAny`;
 - `forum.sourceLocale.correctOwn`;
 - `forum.sourceLocale.correctAny`;
+- `forum.translation.generate`;
 - `access.authorization.manage`.
 
 При появлении новой защищённой функции код добавляет новый permission key в централизованный
@@ -60,7 +61,8 @@ actor должен быть author target topic. `forum.sourceLocale.correctOwn`
 - `forum.topic.create`;
 - `forum.reply.create`;
 - `forum.solution.manageOwn`;
-- `forum.sourceLocale.correctOwn`.
+- `forum.sourceLocale.correctOwn`;
+- `forum.translation.generate`.
 
 ### `moderator`
 
@@ -69,7 +71,8 @@ actor должен быть author target topic. `forum.sourceLocale.correctOwn`
 - `forum.solution.manageOwn`;
 - `forum.solution.manageAny`;
 - `forum.sourceLocale.correctOwn`;
-- `forum.sourceLocale.correctAny`.
+- `forum.sourceLocale.correctAny`;
+- `forum.translation.generate`.
 
 ### `admin`
 
@@ -79,6 +82,7 @@ actor должен быть author target topic. `forum.sourceLocale.correctOwn`
 - `forum.solution.manageAny`;
 - `forum.sourceLocale.correctOwn`;
 - `forum.sourceLocale.correctAny`;
+- `forum.translation.generate`;
 - `access.authorization.manage`.
 
 После bootstrap пользователь с `access.authorization.manage` может через сайт менять grants
