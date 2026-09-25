@@ -3173,6 +3173,32 @@ No migration, permission, action contract, policy, task lifecycle, UI, provider/
 change is authorized. After the fix, ChatGPT must re-review the entire PR, rerun both CI jobs, update
 PR #95 with the exact head/run and request a new complete Codex review. PR #118 remains unready until
 that cycle closes without findings.
+
+## Final independent re-review of PR #118 after cleanup correction
+
+Codex reviewed ChatGPT service PR #95 at
+`cfaf150856db02512f0446c07ed56142fc05c310` and independently re-reviewed the complete 19-file PR
+#118 at `4f7fd854d979663e16c6dc82d2d40f0290efdfd5`, based on unchanged GitHub `main`
+`523d7b74fddd2fd8b9797c0f57cf2575e5e130b3`. GitHub reports both PRs open and cleanly mergeable;
+Actions run `36162717737` passed `checks` and `database`, and the complete diff passes
+`git diff --check`.
+
+The one-commit correction uses the established `bestEffortDiscardClient()` primitive at the
+Hyperdrive forum-reader boundary. It now preserves the primary outcome for synchronous cleanup
+throws and asynchronous cleanup rejections: classified operation failure retains
+`ForumStorageUnavailableError` plus its original cause, unexpected operation failure is unchanged,
+and a successful read remains successful. Focused tests cover all six cleanup combinations. The
+generation route remains narrowly mapped to `503` only for the typed forum-storage error.
+
+Codex also rechecked the entire unchanged implementation against the authorized task: permission and
+migration `0020`, dynamic overrides, authentication/origin ordering, canonical URL target,
+authoritative topic/post revision selection, HMAC requester pseudonymization, injected validated
+budget policies, atomic planner/task semantics, CNT-04 3000/3001 threshold, bounded action outcomes,
+enqueue/JOB-06 recovery, default-disabled Worker, schema/snapshot parity, project state and all
+exclusions. No current-Stage defect or unauthorized scope expansion remains.
+
+**Final result:** PR #118 is technically ready for user merge at exact head
+`4f7fd854d979663e16c6dc82d2d40f0290efdfd5`. Any head change requires another complete review.
 ## Full JOB-06 re-review after correction
 
 Codex reviewed the complete PR #99 at
