@@ -164,6 +164,8 @@ export const translationTasks = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     taskIdentity: text("task_identity").notNull().unique(),
     translationKind: text("translation_kind").notNull(),
+    sourceNamespace: text("source_namespace").notNull(),
+    sourceKey: text("source_key").notNull(),
     sourceFingerprint: text("source_fingerprint").notNull(),
     targetLocale: text("target_locale").notNull(),
     generationPolicyVersion: text("generation_policy_version").notNull(),
