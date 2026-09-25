@@ -181,10 +181,7 @@ describe("forum write route actions", () => {
   it("denies guest, cross-origin, and repository authorization/state failures with controlled semantics", async () => {
     const guest = writer();
     const guestResponse = await topicAction({ request: request("/en/topics/t", { intent: "markSolved" }), params: { locale: "en", topicId: "t" }, context: context(guest, false) });
-    expect(guestResponse).toMatchObject({
-      data: { error: "unauthenticated", operation: "sourceLocaleCorrection" },
-      init: { status: 401 },
-    });
+    expect(guestResponse).toMatchObject({ init: { status: 401 } });
     expect(guest.markTopicSolved).not.toHaveBeenCalled();
 
     const crossOrigin = writer();
@@ -272,7 +269,10 @@ describe("forum write route actions", () => {
       params: { locale: "en", topicId: "topic-1" },
       context: context(guest, false),
     });
-    expect(guestResponse).toMatchObject({ init: { status: 401 } });
+    expect(guestResponse).toMatchObject({
+      data: { error: "unauthenticated", operation: "sourceLocaleCorrection" },
+      init: { status: 401 },
+    });
     expect(guest.correctTopicTitleSourceLocale).not.toHaveBeenCalled();
 
     const crossOrigin = writer();
