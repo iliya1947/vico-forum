@@ -1,3 +1,7 @@
+import type {
+  ContentTranslationAllowanceAdmissionResult,
+  ContentTranslationAllowanceAdmissionService,
+} from "./content-translation-allowance";
 import {
   MarkdownTranslationValidationError,
   type MarkdownSegmentTranslation,
@@ -45,6 +49,7 @@ type AckExecutionResult =
   (
     | ContentPostBodyPublicationResult
     | Exclude<ContentPostBodyTaskConsumerResult, { readonly outcome: "eligible" }>
+    | Exclude<ContentTranslationAllowanceAdmissionResult, { readonly outcome: "admitted" }>
   ) & { readonly delivery: "ack" };
 
 export type ContentPostBodyTaskExecutionResult =
@@ -66,6 +71,7 @@ export type ContentPostBodyTaskExecutionResult =
     };
 
 export interface ContentPostBodyTaskExecutorDependencies {
+  readonly allowance: Pick<ContentTranslationAllowanceAdmissionService, "admitPostBody">;
   readonly consumer: Pick<ContentPostBodyTaskConsumer, "consume">;
   readonly providerRouter: Pick<TranslationProviderRouter, "supports" | "translate">;
   readonly publisher: Pick<ContentPostBodyResultPublisher, "publish">;
@@ -79,6 +85,11 @@ export class ContentPostBodyTaskExecutor {
   }
 
   async execute(message: TranslationTaskMessage): Promise<ContentPostBodyTaskExecutionResult> {
+    const admission = await this.dependencies.allowance.admitPostBody(
+      message.translationTaskId,
+    );
+    if (admission.outcome !== "admitted") return acknowledge(admission);
+
     let consumed: ContentPostBodyTaskConsumerResult;
     try {
       consumed = await this.dependencies.consumer.consume(message);
@@ -267,7 +278,8 @@ function sameProvenance(
 function acknowledge<
   T extends
     | ContentPostBodyPublicationResult
-    | Exclude<ContentPostBodyTaskConsumerResult, { readonly outcome: "eligible" }>,
+    | Exclude<ContentPostBodyTaskConsumerResult, { readonly outcome: "eligible" }>
+    | Exclude<ContentTranslationAllowanceAdmissionResult, { readonly outcome: "admitted" }>,
 >(result: T): T & { readonly delivery: "ack" } {
   return { ...result, delivery: "ack" };
 }
