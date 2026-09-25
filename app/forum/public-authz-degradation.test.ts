@@ -11,6 +11,8 @@ import { ContentTranslationPresentationService } from "../localization/content-t
 import type { StoredContentTranslation } from "../localization/content-translation";
 import { localeRegistry } from "../localization/registry";
 import {
+  contentGenerationActionContext,
+  contentGenerationStatusReaderContext,
   contentTranslationPresentationContext,
   localeContext,
   registryLoaderContext,
@@ -164,6 +166,7 @@ describe("public forum authorization degradation", () => {
     expect(topicResult.canManageSolution).toBe(false);
     expect(topicResult.canCorrectTitleSourceLocale).toBe(false);
     expect(topicResult.correctablePostIds).toEqual([]);
+    expect(topicResult.generationUnits).toEqual([]);
   });
 
   it("shows the same persisted public translation to guests and authenticated users", async () => {
@@ -203,6 +206,39 @@ describe("public forum authorization degradation", () => {
       content: "Public translated topic",
     });
     expect(authenticatedResult.titlePresentation).toEqual(guestResult.titlePresentation);
+  });
+
+  it("uses dynamic generation permission for read-only loader hints without generation side effects", async () => {
+    const context = contextWithPermissions("viewer-1", ["forum.translation.generate"]);
+    const generateTopicTitle = vi.fn();
+    const generateAutomaticPostBody = vi.fn();
+    const generateExplicitPostBody = vi.fn();
+    const readCurrent = vi.fn(async (identities: readonly {
+      contentType: "topic-title" | "post-body";
+      contentId: string;
+      revisionId: string;
+    }[]) => identities.map((identity) => ({ ...identity, state: "idle" as const })));
+    context.set(contentGenerationActionContext, {
+      enabled: true,
+      capability: {
+        generateTopicTitle,
+        generateAutomaticPostBody,
+        generateExplicitPostBody,
+      },
+    });
+    context.set(contentGenerationStatusReaderContext, { readCurrent });
+
+    const result = await topicLoader({
+      params: { locale: "en", topicId: topic.id },
+      context,
+    });
+
+    expect(readCurrent).toHaveBeenCalledTimes(1);
+    expect(result.generationUnits).toHaveLength(2);
+    expect(result.generationUnits.every((unit) => unit.automatic === false)).toBe(true);
+    expect(generateTopicTitle).not.toHaveBeenCalled();
+    expect(generateAutomaticPostBody).not.toHaveBeenCalled();
+    expect(generateExplicitPostBody).not.toHaveBeenCalled();
   });
 
   it("derives source-locale correction presentation from effective own/any permissions", async () => {
