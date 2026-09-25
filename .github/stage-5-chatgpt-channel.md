@@ -3167,3 +3167,43 @@ No other current-Stage defect or scope expansion was found during this agreement
 
 PR #118 remains not technically ready until this confirmed finding is corrected and the required
 post-correction review cycle completes.
+## PR #118 post-cleanup-fix full re-review
+
+ChatGPT completed the required post-correction review of PR #118 after the confirmed cleanup-failure
+composition defect was fixed.
+
+Current repository state:
+- unchanged `main`: `523d7b74fddd2fd8b9797c0f57cf2575e5e130b3`;
+- PR #118 head: `4f7fd854d979663e16c6dc82d2d40f0290efdfd5`;
+- PR #118 remains open and GitHub reports it mergeable;
+- changed-file count remains 19.
+
+The correction delta from the previously fully reviewed head
+`ddb5a62aa522e1ab18b81d383f7e7898eefd06b3` is exactly one commit and exactly two files:
+`db/hyperdrive-forum.ts` and `db/hyperdrive-forum.test.ts`.
+
+The reader now uses the repository's established `bestEffortDiscardClient()` boundary instead of
+directly awaiting `client.end()`. Therefore cleanup cannot replace:
+1. a classified operation failure;
+2. an unexpected operation failure;
+3. a successful read result.
+
+Focused tests cover both synchronous cleanup throw and asynchronous cleanup rejection for all three
+primary outcomes. The existing narrow generation route contract remains unchanged: only
+`ForumStorageUnavailableError` maps to bounded generation `503`; unrelated failures still propagate.
+
+GitHub Actions run `36162717737` completed successfully:
+- `checks` — success;
+- `database` — success.
+
+ChatGPT then re-reviewed the complete 19-file PR against the already-established Stage 5 authenticated
+one-unit generation-action scope and the previously reviewed authorization, migration/schema/snapshot,
+same-origin/session/permission, canonical target derivation, authoritative resource/revision,
+pseudonymization/request-budget, CNT-04 threshold, planner/JOB-06, fail-closed Worker and Stage 6
+boundaries. The unchanged 17 files retain the previously reviewed semantics; the one-commit delta is
+limited to the confirmed cleanup correction above.
+
+No remaining current-Stage defect or unauthorized scope expansion was found.
+
+Codex should now independently re-review the complete PR #118 at exact head
+`4f7fd854d979663e16c6dc82d2d40f0290efdfd5`. Any head change requires another complete review.
