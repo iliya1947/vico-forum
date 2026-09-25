@@ -17,9 +17,13 @@ import { DrizzleForumRepository } from "../../db/forum-repository";
 import { ForumService } from "../../db/forum-service";
 import { createHyperdriveForumWriter } from "../../db/hyperdrive-forum";
 
-const databaseUrl = process.env.DATABASE_URL;
-if (!databaseUrl) throw new Error("DATABASE_URL is required for the disposable database integration test");
+function requiredDatabaseUrl(): string {
+  const value = process.env.DATABASE_URL;
+  if (!value) throw new Error("DATABASE_URL is required for the disposable database integration test");
+  return value;
+}
 
+const databaseUrl = requiredDatabaseUrl();
 const parsed = new URL(databaseUrl);
 if (!["127.0.0.1", "localhost"].includes(parsed.hostname) || !parsed.pathname.endsWith("_test")) {
   throw new Error("Database integration tests only run against a local database ending in _test");
@@ -129,15 +133,23 @@ beforeEach(async () => {
 
   const forum = new ForumService(new DrizzleForumRepository(drizzle(client)));
   await forum.createTopicWithInitialPost({
-    topic: { id: "topic-1", sectionId: "section-1", authorId: "author-a" },
-    title: { id: "title-r1", originalContent: "Original title", sourceLocale: "und" },
-    post: { id: "post-a", topicId: "topic-1", authorId: "author-a" },
-    body: { id: "post-a-r1", originalContent: "Original body", sourceLocale: "und" },
+    id: "topic-1",
+    sectionId: "section-1",
+    authorId: "author-a",
+    titleRevision: { id: "title-r1", originalContent: "Original title", sourceLocale: "und" },
+    initialPost: {
+      id: "post-a",
+      topicId: "topic-1",
+      authorId: "author-a",
+      bodyRevision: { id: "post-a-r1", originalContent: "Original body", sourceLocale: "und" },
+    },
   });
-  await forum.createPost(
-    { id: "post-b", topicId: "topic-1", authorId: "author-b" },
-    { id: "post-b-r1", originalContent: "Other body", sourceLocale: "und" },
-  );
+  await forum.createPost({
+    id: "post-b",
+    topicId: "topic-1",
+    authorId: "author-b",
+    bodyRevision: { id: "post-b-r1", originalContent: "Other body", sourceLocale: "und" },
+  });
 });
 
 afterAll(async () => {
