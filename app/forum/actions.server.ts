@@ -22,6 +22,7 @@ import {
   contentGenerationActionForRequest,
   localeContext,
 } from "../localization/request-context";
+import type { ContentGenerationActionResponse } from "../localization/content-generation-response";
 
 export async function sectionAction({ request, params, context }: {
   request: Request;
@@ -192,12 +193,6 @@ export async function topicAction({ request, params, context }: {
   });
 }
 
-
-export type ContentGenerationActionResponse =
-  | { readonly operation: "contentGeneration"; readonly outcome: "queued" }
-  | { readonly operation: "contentGeneration"; readonly outcome: "no-op"; readonly reason: string; readonly retryAfterSeconds?: number }
-  | { readonly operation: "contentGeneration"; readonly outcome: "explicit-required" }
-  | { readonly operation: "contentGeneration"; readonly outcome: "invalid" | "not-found" | "unavailable" };
 
 function generationResult(result: ContentGenerationActionResult) {
   switch (result.outcome) {
