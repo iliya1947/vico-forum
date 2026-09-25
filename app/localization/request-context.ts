@@ -4,12 +4,24 @@ import type { LoadedLocaleRegistry } from "./persistent-registry";
 import type { UiTranslationStore } from "./persistent-sources";
 import type { TranslationBundleReader } from "./bundles";
 import type { ContentTranslationPresentationService } from "./content-translation-presentation";
+import type { ContentGenerationActionCapability } from "./content-generation-action.server";
 
 export const localeContext = createContext<ResolvedLocaleContext>();
 export const registryLoaderContext = createContext<() => Promise<LoadedLocaleRegistry>>();
 export type RuntimeUiTranslationStore = UiTranslationStore & TranslationBundleReader;
 export const uiTranslationStoreContext = createContext<RuntimeUiTranslationStore>();
 export const contentTranslationPresentationContext = createContext<ContentTranslationPresentationService>();
+
+export type ContentGenerationActionRuntime =
+  | { readonly enabled: false }
+  | { readonly enabled: true; readonly capability: ContentGenerationActionCapability };
+
+export const DISABLED_CONTENT_GENERATION_ACTION_RUNTIME: ContentGenerationActionRuntime = Object.freeze({
+  enabled: false,
+});
+export const contentGenerationActionContext = createContext<ContentGenerationActionRuntime>(
+  DISABLED_CONTENT_GENERATION_ACTION_RUNTIME,
+);
 
 export class RegistryLoaderConfigurationError extends Error {
   constructor(options?: ErrorOptions) {
@@ -59,4 +71,11 @@ export function contentTranslationPresentationForRequest(
   } catch (error) {
     throw new ContentTranslationPresentationConfigurationError({ cause: error });
   }
+}
+
+
+export function contentGenerationActionForRequest(
+  context: RouterContextProvider,
+): ContentGenerationActionRuntime {
+  return context.get(contentGenerationActionContext);
 }

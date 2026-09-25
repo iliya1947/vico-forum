@@ -1,15 +1,30 @@
 import { RouterContextProvider } from "react-router";
+import type { Client } from "pg";
 import { describe, expect, it, vi } from "vitest";
 import type { AuthSession } from "../auth/request-context";
 import { authSessionContext } from "../auth/request-context";
 import type { PermissionKey } from "../authorization/catalog";
 import { authorizationContext } from "../authorization/request-context";
-import { ForumStorageUnavailableError, type ForumWriter } from "../../db/hyperdrive-forum";
-import { forumWriterContext } from "./request-context";
+import {
+  createHyperdriveForumReader,
+  ForumStorageUnavailableError,
+  type ForumWriter,
+} from "../../db/hyperdrive-forum";
+import { forumReaderContext, forumWriterContext } from "./request-context";
 import { action as sectionAction } from "../routes/section";
 import { action as topicAction } from "../routes/topic";
 import { ForumWriteRateLimitError } from "../../db/forum-write-policy";
 import { ForumAuthorizationError, ForumEntityNotFoundError, ForumStateConflictError } from "../../db/forum-repository";
+import {
+  contentGenerationActionContext,
+  localeContext,
+  type ContentGenerationActionRuntime,
+} from "../localization/request-context";
+import {
+  ContentGenerationPlanningUnavailableError,
+  type ContentGenerationActionCapability,
+  type ContentGenerationActionResult,
+} from "../localization/content-generation-action.server";
 import { AuthorizationUnavailableError } from "../../db/authorization-service";
 
 const session = {
@@ -24,6 +39,7 @@ const allForumPermissions = [
   "forum.solution.manageAny",
   "forum.sourceLocale.correctOwn",
   "forum.sourceLocale.correctAny",
+  "forum.translation.generate",
 ] as const satisfies readonly PermissionKey[];
 
 function request(path: string, fields: Record<string, string>, origin = "https://forum.example") {
@@ -51,6 +67,86 @@ function context(
       }),
     }),
   } as never);
+  return value;
+}
+
+const generationTopic = {
+  id: "topic-1",
+  sectionId: "section-1",
+  authorId: "author-1",
+  authorName: "Author",
+  createdAt: new Date("2026-01-01"),
+  isSolved: false,
+  bestAnswerPostId: null,
+  title: {
+    id: "title-r1",
+    originalContent: "Authoritative title",
+    sourceLocale: "en",
+  },
+  section: {
+    id: "section-1",
+    name: "Section",
+    category: { id: "category-1", name: "Category" },
+  },
+  posts: [{
+    id: "post-1",
+    topicId: "topic-1",
+    authorId: "author-2",
+    authorName: "Post Author",
+    createdAt: new Date("2026-01-02"),
+    body: {
+      id: "post-r1",
+      originalContent: "Authoritative post body",
+      sourceLocale: "en",
+    },
+  }],
+};
+
+function generationCapability(
+  result: ContentGenerationActionResult = { outcome: "queued" },
+): ContentGenerationActionCapability & {
+  generateTopicTitle: ReturnType<typeof vi.fn>;
+  generateAutomaticPostBody: ReturnType<typeof vi.fn>;
+} {
+  return {
+    generateTopicTitle: vi.fn(async () => result),
+    generateAutomaticPostBody: vi.fn(async () => result),
+  };
+}
+
+function generationContext(options: {
+  capability?: ContentGenerationActionCapability;
+  runtime?: ContentGenerationActionRuntime;
+  authenticated?: boolean;
+  permissions?: readonly PermissionKey[];
+  locale?: string;
+  topic?: typeof generationTopic | undefined;
+}) {
+  const value = context(
+    writer(),
+    options.authenticated ?? true,
+    options.permissions ?? allForumPermissions,
+  );
+  value.set(localeContext, {
+    translationLocale: options.locale ?? "he",
+    fallbackLocales: ["en"],
+    direction: "rtl",
+    formatting: { locale: options.locale ?? "he", timeZone: "UTC" },
+    nativeName: options.locale ?? "he",
+    presentationMetadata: {},
+  });
+  value.set(forumReaderContext, {
+    readTopicPage: vi.fn(async (topicId: string) =>
+      topicId === options.topic?.id ? options.topic : undefined
+    ),
+  } as never);
+  value.set(
+    contentGenerationActionContext,
+    options.runtime ?? {
+      enabled: true,
+      capability: options.capability ?? generationCapability(),
+    },
+  );
   return value;
 }
 
@@ -361,6 +457,279 @@ describe("forum write route actions", () => {
       context: context(unexpectedSolution, true, allForumPermissions, solutionBug),
     })).rejects.toBe(solutionBug);
     expect(unexpectedSolution.markTopicSolved).not.toHaveBeenCalled();
+  });
+
+
+  it("guards generation requests before form parsing for guests and cross-origin callers", async () => {
+    const guestRequest = request("/he/topics/topic-1", {
+      intent: "generateTopicTitleTranslation",
+    });
+    const guestForm = vi.spyOn(guestRequest, "formData");
+    const guestResponse = await topicAction({
+      request: guestRequest,
+      params: { locale: "he", topicId: "topic-1" },
+      context: generationContext({
+        authenticated: false,
+        topic: generationTopic,
+      }),
+    });
+    expect(guestResponse).toMatchObject({ init: { status: 401 } });
+    expect(guestForm).not.toHaveBeenCalled();
+
+    const crossOriginRequest = request(
+      "/he/topics/topic-1",
+      { intent: "generateTopicTitleTranslation" },
+      "https://evil.example",
+    );
+    const crossOriginForm = vi.spyOn(crossOriginRequest, "formData");
+    const crossOriginResponse = await topicAction({
+      request: crossOriginRequest,
+      params: { locale: "he", topicId: "topic-1" },
+      context: generationContext({ topic: generationTopic }),
+    });
+    expect(crossOriginResponse).toMatchObject({ init: { status: 403 } });
+    expect(crossOriginForm).not.toHaveBeenCalled();
+  });
+
+  it("requires translation permission before generation capability work", async () => {
+    const capability = generationCapability();
+    const response = await topicAction({
+      request: request("/he/topics/topic-1", {
+        intent: "generateTopicTitleTranslation",
+      }),
+      params: { locale: "he", topicId: "topic-1" },
+      context: generationContext({
+        capability,
+        permissions: ["forum.reply.create"],
+        topic: generationTopic,
+      }),
+    });
+    expect(response).toMatchObject({ init: { status: 403 } });
+    expect(capability.generateTopicTitle).not.toHaveBeenCalled();
+  });
+
+  it("derives title actor, revision and target from server state and ignores forged generation fields", async () => {
+    const capability = generationCapability();
+    const response = await topicAction({
+      request: request("/he/topics/topic-1", {
+        intent: "generateTopicTitleTranslation",
+        locale: "fr",
+        targetLocale: "fr",
+        sourceLocale: "fr",
+        actorId: "attacker",
+        revisionId: "forged-revision",
+        originalContent: "forged content",
+        cost: "999",
+        provider: "forged-provider",
+        allowance: "admitted",
+      }),
+      params: { locale: "he", topicId: "topic-1" },
+      context: generationContext({
+        capability,
+        locale: "he",
+        topic: generationTopic,
+      }),
+    });
+    expect(response).toMatchObject({
+      data: { operation: "contentGeneration", outcome: "queued" },
+      init: { status: 202 },
+    });
+    expect(capability.generateTopicTitle).toHaveBeenCalledWith({
+      actorId: "session-user",
+      revision: {
+        contentType: "topic-title",
+        contentId: "topic-1",
+        revisionId: "title-r1",
+        originalContent: "Authoritative title",
+        sourceLocale: "en",
+      },
+      targetLocale: "he",
+    });
+  });
+
+  it("generates only a post belonging to the current route topic", async () => {
+    const capability = generationCapability();
+    const contextValue = generationContext({ capability, topic: generationTopic });
+
+    const missing = await topicAction({
+      request: request("/he/topics/topic-1", {
+        intent: "generatePostBodyTranslation",
+        postId: "other-topic-post",
+      }),
+      params: { locale: "he", topicId: "topic-1" },
+      context: contextValue,
+    });
+    expect(missing).toMatchObject({
+      data: { operation: "contentGeneration", outcome: "not-found" },
+      init: { status: 404 },
+    });
+    expect(capability.generateAutomaticPostBody).not.toHaveBeenCalled();
+
+    const accepted = await topicAction({
+      request: request("/he/topics/topic-1", {
+        intent: "generatePostBodyTranslation",
+        postId: "post-1",
+        revisionId: "forged",
+        sourceLocale: "fr",
+      }),
+      params: { locale: "he", topicId: "topic-1" },
+      context: generationContext({ capability, topic: generationTopic }),
+    });
+    expect(accepted).toMatchObject({ init: { status: 202 } });
+    expect(capability.generateAutomaticPostBody).toHaveBeenCalledWith({
+      actorId: "session-user",
+      revision: {
+        contentType: "post-body",
+        contentId: "post-1",
+        revisionId: "post-r1",
+        originalContent: "Authoritative post body",
+        sourceLocale: "en",
+      },
+      targetLocale: "he",
+    });
+  });
+
+  it("fails closed when generation is disabled and maps bounded planner outcomes", async () => {
+    const disabled = await topicAction({
+      request: request("/he/topics/topic-1", {
+        intent: "generateTopicTitleTranslation",
+      }),
+      params: { locale: "he", topicId: "topic-1" },
+      context: generationContext({
+        runtime: { enabled: false },
+        topic: generationTopic,
+      }),
+    });
+    expect(disabled).toMatchObject({
+      data: { operation: "contentGeneration", outcome: "unavailable" },
+      init: { status: 503 },
+    });
+
+    const budget = await topicAction({
+      request: request("/he/topics/topic-1", {
+        intent: "generateTopicTitleTranslation",
+      }),
+      params: { locale: "he", topicId: "topic-1" },
+      context: generationContext({
+        capability: generationCapability({
+          outcome: "budget-denied",
+          retryAfterSeconds: 11,
+        }),
+        topic: generationTopic,
+      }),
+    });
+    expect(budget).toMatchObject({
+      data: {
+        operation: "contentGeneration",
+        outcome: "no-op",
+        reason: "request-budget-denied",
+      },
+      init: { status: 429 },
+    });
+    if (!budget || budget instanceof Response) throw new Error("expected generation action data");
+    expect(new Headers(budget.init?.headers).get("Retry-After")).toBe("11");
+
+    const explicit = await topicAction({
+      request: request("/he/topics/topic-1", {
+        intent: "generatePostBodyTranslation",
+        postId: "post-1",
+      }),
+      params: { locale: "he", topicId: "topic-1" },
+      context: generationContext({
+        capability: generationCapability({ outcome: "explicit-required" }),
+        topic: generationTopic,
+      }),
+    });
+    expect(explicit).toMatchObject({
+      data: { operation: "contentGeneration", outcome: "explicit-required" },
+      init: { status: 200 },
+    });
+  });
+
+  it("maps classified failures from the real Hyperdrive forum reader to generation 503", async () => {
+    const readerClient = {
+      connect: vi.fn(async () => undefined),
+      query: vi.fn(async () => { throw new Error("Query read timeout"); }),
+      end: vi.fn(async () => undefined),
+    } as unknown as Client;
+    const contextValue = generationContext({ topic: generationTopic });
+    contextValue.set(
+      forumReaderContext,
+      createHyperdriveForumReader(
+        "postgresql://example.invalid/db",
+        () => readerClient,
+      ),
+    );
+
+    const response = await topicAction({
+      request: request("/he/topics/topic-1", {
+        intent: "generateTopicTitleTranslation",
+      }),
+      params: { locale: "he", topicId: "topic-1" },
+      context: contextValue,
+    });
+
+    expect(response).toMatchObject({
+      data: { operation: "contentGeneration", outcome: "unavailable" },
+      init: { status: 503 },
+    });
+  });
+
+  it("propagates unexpected failures from the real Hyperdrive forum reader", async () => {
+    const failure = new TypeError("unexpected reader configuration bug");
+    const readerClient = {
+      connect: vi.fn(async () => { throw failure; }),
+      query: vi.fn(),
+      end: vi.fn(async () => undefined),
+    } as unknown as Client;
+    const contextValue = generationContext({ topic: generationTopic });
+    contextValue.set(
+      forumReaderContext,
+      createHyperdriveForumReader(
+        "postgresql://example.invalid/db",
+        () => readerClient,
+      ),
+    );
+
+    await expect(topicAction({
+      request: request("/he/topics/topic-1", {
+        intent: "generateTopicTitleTranslation",
+      }),
+      params: { locale: "he", topicId: "topic-1" },
+      context: contextValue,
+    })).rejects.toBe(failure);
+  });
+
+  it("maps classified generation availability to 503 and propagates unexpected errors", async () => {
+    const unavailableCapability = generationCapability();
+    unavailableCapability.generateTopicTitle.mockRejectedValueOnce(
+      new ContentGenerationPlanningUnavailableError(),
+    );
+    const unavailable = await topicAction({
+      request: request("/he/topics/topic-1", {
+        intent: "generateTopicTitleTranslation",
+      }),
+      params: { locale: "he", topicId: "topic-1" },
+      context: generationContext({
+        capability: unavailableCapability,
+        topic: generationTopic,
+      }),
+    });
+    expect(unavailable).toMatchObject({ init: { status: 503 } });
+
+    const failure = new Error("unexpected generation failure");
+    const brokenCapability = generationCapability();
+    brokenCapability.generateTopicTitle.mockRejectedValueOnce(failure);
+    await expect(topicAction({
+      request: request("/he/topics/topic-1", {
+        intent: "generateTopicTitleTranslation",
+      }),
+      params: { locale: "he", topicId: "topic-1" },
+      context: generationContext({
+        capability: brokenCapability,
+        topic: generationTopic,
+      }),
+    })).rejects.toBe(failure);
   });
 
 });
