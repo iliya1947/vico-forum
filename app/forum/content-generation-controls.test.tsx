@@ -89,10 +89,15 @@ function renderControl(
 describe("content generation controls", () => {
   it("submits the hydration snapshot sequentially once under Strict Mode and revalidates once at the end", async () => {
     const loader = vi.fn(async () => null);
-    const action = vi.fn(async () => ({
-      operation: "contentGeneration" as const,
-      outcome: "queued" as const,
-    }));
+    const submissions: Array<Record<string, FormDataEntryValue>> = [];
+    const action = vi.fn(async ({ request }: { request: Request }) => {
+      const form = await request.formData();
+      submissions.push(Object.fromEntries(form.entries()));
+      return {
+        operation: "contentGeneration" as const,
+        outcome: "queued" as const,
+      };
+    });
     const units = [
       unit({
         key: '["topic-title","topic-1","title-r1","he"]',
@@ -133,11 +138,10 @@ describe("content generation controls", () => {
     await new Promise((resolve) => window.setTimeout(resolve, 0));
     expect(action).toHaveBeenCalledTimes(2);
 
-    const first = await action.mock.calls[0]![0].request.formData();
-    const second = await action.mock.calls[1]![0].request.formData();
-    expect(first.get("intent")).toBe("generateTopicTitleTranslation");
-    expect(second.get("intent")).toBe("generatePostBodyTranslation");
-    expect(second.get("postId")).toBe("post-1");
+    expect(submissions).toEqual([
+      { intent: "generateTopicTitleTranslation" },
+      { intent: "generatePostBodyTranslation", postId: "post-1" },
+    ]);
   });
 
   it("submits only the explicit long-body intent and post id", async () => {
