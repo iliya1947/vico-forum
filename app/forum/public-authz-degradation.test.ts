@@ -9,6 +9,7 @@ import { loader as sectionLoader } from "../routes/section";
 import { loader as topicLoader } from "../routes/topic";
 import { ContentTranslationPresentationService } from "../localization/content-translation-presentation";
 import type { StoredContentTranslation } from "../localization/content-translation";
+import { ContentGenerationStatusStorageUnavailableError } from "../localization/content-generation-status";
 import { localeRegistry } from "../localization/registry";
 import {
   contentGenerationActionContext,
@@ -239,6 +240,61 @@ describe("public forum authorization degradation", () => {
     expect(generateTopicTitle).not.toHaveBeenCalled();
     expect(generateAutomaticPostBody).not.toHaveBeenCalled();
     expect(generateExplicitPostBody).not.toHaveBeenCalled();
+  });
+
+  it("keeps topic presentation original-safe when generation status storage is unavailable", async () => {
+    const context = contextWithPermissions("viewer-1", ["forum.translation.generate"]);
+    const generateTopicTitle = vi.fn();
+    const generateAutomaticPostBody = vi.fn();
+    const generateExplicitPostBody = vi.fn();
+    context.set(contentGenerationActionContext, {
+      enabled: true,
+      capability: {
+        generateTopicTitle,
+        generateAutomaticPostBody,
+        generateExplicitPostBody,
+      },
+    });
+    context.set(contentGenerationStatusReaderContext, {
+      readCurrent: vi.fn(async () => {
+        throw new ContentGenerationStatusStorageUnavailableError();
+      }),
+    });
+
+    const result = await topicLoader({
+      params: { locale: "en", topicId: topic.id },
+      context,
+    });
+
+    expect(result.titlePresentation.selected).toBe("original");
+    expect(result.generationUnits).toHaveLength(2);
+    expect(result.generationUnits.every((unit) =>
+      unit.state === "unavailable" && !unit.automatic && !unit.explicitRequired
+    )).toBe(true);
+    expect(generateTopicTitle).not.toHaveBeenCalled();
+    expect(generateAutomaticPostBody).not.toHaveBeenCalled();
+    expect(generateExplicitPostBody).not.toHaveBeenCalled();
+  });
+
+  it("does not mask unexpected generation status reader failures", async () => {
+    const context = contextWithPermissions("viewer-1", ["forum.translation.generate"]);
+    context.set(contentGenerationActionContext, {
+      enabled: true,
+      capability: {
+        generateTopicTitle: vi.fn(),
+        generateAutomaticPostBody: vi.fn(),
+        generateExplicitPostBody: vi.fn(),
+      },
+    });
+    const failure = new TypeError("unexpected status reader bug");
+    context.set(contentGenerationStatusReaderContext, {
+      readCurrent: vi.fn(async () => { throw failure; }),
+    });
+
+    await expect(topicLoader({
+      params: { locale: "en", topicId: topic.id },
+      context,
+    })).rejects.toBe(failure);
   });
 
   it("derives source-locale correction presentation from effective own/any permissions", async () => {
