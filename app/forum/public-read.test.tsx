@@ -327,8 +327,11 @@ describe("forum read states", () => {
       "rtl",
     );
 
-    expect(await screen.findByRole("heading", { name: "כותרת מתורגמת" })).toHaveAttribute("lang", "he");
-    expect(screen.getByRole("heading", { name: "כותרת מתורגמת" })).toHaveAttribute("dir", "rtl");
+    const translatedHeading = await screen.findByRole("heading", { level: 1 });
+    const translatedTitle = translatedHeading.querySelector(".translation-current-inline");
+    expect(translatedTitle).toHaveTextContent("כותרת מתורגמת");
+    expect(translatedTitle).toHaveAttribute("lang", "he");
+    expect(translatedTitle).toHaveAttribute("dir", "rtl");
     expect(screen.getByText("Provider attribution")).toBeInTheDocument();
     expect(screen.getByText("Automatic translation")).toBeInTheDocument();
     expect(screen.getByText("Manual translation")).toBeInTheDocument();
