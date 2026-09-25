@@ -5,6 +5,9 @@ import { Client } from "pg";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  ContentTopicTitleAllowanceGate,
+} from "../../app/localization/content-provider-allowance";
+import {
   CONTENT_TRANSLATION_REQUESTER_SUBJECT_KEY_LENGTH,
   type ContentTranslationRequestBudgetAdmission,
 } from "../../app/localization/content-request-budget.server";
@@ -635,7 +638,24 @@ function createDispatcherWithRouter(
     generationPolicyVersion: "content-v1",
     publications: executionStore,
   });
+  const allowance = new ContentTopicTitleAllowanceGate({
+    store: tasks,
+    tasks,
+    adapter: {
+      admit: async () => ({
+        outcome: "admitted" as const,
+        reservationReference: "fake-reservation",
+      }),
+    },
+    provider: "fake-provider",
+    admissionLeaseDurationMs: 60_000,
+    revisions: executionStore,
+    translations,
+    localeRegistry,
+    generationPolicyVersion: "content-v1",
+  });
   const contentExecutor = new ContentTopicTitleTaskExecutor({
+    allowance,
     consumer,
     providerRouter,
     publisher,
