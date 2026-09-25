@@ -37,29 +37,40 @@ describe("Hyperdrive forum reader availability boundary", () => {
     });
   });
 
-  it("classifies established query timeout failures", async () => {
+  it("classifies established query timeout failures through the Drizzle cause chain", async () => {
     const failure = new Error("Query read timeout");
     const reader = createHyperdriveForumReader(
       "postgresql://example.invalid/db",
       () => client({ queryError: failure }),
     );
 
-    await expect(reader.readTopicPage("topic-1")).rejects.toMatchObject({
-      name: "ForumStorageUnavailableError",
-      cause: failure,
-    });
+    try {
+      await reader.readTopicPage("topic-1");
+      throw new Error("expected reader failure");
+    } catch (error) {
+      expect(error).toBeInstanceOf(ForumStorageUnavailableError);
+      const drizzleError = (error as Error & { cause?: unknown }).cause as Error & { cause?: unknown };
+      expect(drizzleError).toBeInstanceOf(Error);
+      expect(drizzleError.cause).toBe(failure);
+    }
   });
 
   it.each([
     Object.assign(new Error("relation does not exist"), { code: "42P01" }),
     new TypeError("unexpected repository bug"),
-  ])("preserves unexpected reader failures", async (failure) => {
+  ])("does not reclassify unexpected query failures", async (failure) => {
     const reader = createHyperdriveForumReader(
       "postgresql://example.invalid/db",
       () => client({ queryError: failure }),
     );
 
-    await expect(reader.readTopicPage("topic-1")).rejects.toBe(failure);
+    try {
+      await reader.readTopicPage("topic-1");
+      throw new Error("expected reader failure");
+    } catch (error) {
+      expect(error).not.toBeInstanceOf(ForumStorageUnavailableError);
+      expect((error as Error & { cause?: unknown }).cause).toBe(failure);
+    }
   });
 
   it("uses the typed forum storage error for classified failures", async () => {
