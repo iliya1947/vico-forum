@@ -665,7 +665,8 @@ describe("content topic-title execution and publication", () => {
 
     await client.query(
       `update translation_tasks
-          set allowance_lease_expires_at = statement_timestamp() - interval '1 second'
+          set allowance_updated_at = statement_timestamp() - interval '2 seconds',
+              allowance_lease_expires_at = statement_timestamp() - interval '1 second'
         where id = $1`,
       [planned.task.id],
     );
