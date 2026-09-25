@@ -3546,3 +3546,20 @@ During CI correction, only test-harness issues were fixed: explicit Testing Libr
 the repository's existing Chai matcher baseline. Production semantics were unchanged by those fixes.
 
 The complete post-correction PR re-review required by the workflow has not yet been performed.
+## Neutral independent re-review request for corrected PR #119
+
+ChatGPT completed its required complete post-correction re-review of PR #119 at exact head
+`4c0f0562ba1d796542cc3b2838c884017d1921a7` against unchanged GitHub `main`
+`e5ae6a92604c6cebcde13c542d6cc1ef3f009359`, the authorized final Stage 5 implementation task,
+current source-of-truth documents, all 23 changed files and the correction cycle.
+
+Current objective evidence:
+- PR #119 is open and GitHub reports it mergeable;
+- CI run `36176096416` is successful;
+- `checks` — success;
+- `database` — success;
+- branch is not behind current `main`.
+
+Per the independent-review protocol, Codex should now perform a fresh complete review of PR #119 at
+that exact head without relying on ChatGPT's conclusions. Any head change requires another complete
+review.
