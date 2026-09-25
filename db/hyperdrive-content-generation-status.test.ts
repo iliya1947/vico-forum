@@ -156,6 +156,43 @@ describe("Hyperdrive content generation status reader", () => {
   it.each([
     ["synchronous cleanup throw", true],
     ["asynchronous cleanup rejection", false],
+  ])("cleanup cannot replace a classified failure across %s", async (_label, cleanupThrows) => {
+    const operationFailure = Object.assign(new Error("connection unavailable"), { code: "08006" });
+    const reader = createHyperdriveContentGenerationStatusReader(
+      "postgresql://example.invalid/db",
+      () => client({
+        connectError: operationFailure,
+        cleanupError: new Error("cleanup failed"),
+        cleanupThrows,
+      }),
+    );
+
+    await expect(reader.readCurrent(revisions, "he")).rejects.toMatchObject({
+      name: "ContentGenerationStatusStorageUnavailableError",
+      cause: operationFailure,
+    });
+  });
+
+  it.each([
+    ["synchronous cleanup throw", true],
+    ["asynchronous cleanup rejection", false],
+  ])("cleanup cannot replace an unexpected failure across %s", async (_label, cleanupThrows) => {
+    const operationFailure = new TypeError("unexpected status bug");
+    const reader = createHyperdriveContentGenerationStatusReader(
+      "postgresql://example.invalid/db",
+      () => client({
+        connectError: operationFailure,
+        cleanupError: new Error("cleanup failed"),
+        cleanupThrows,
+      }),
+    );
+
+    await expect(reader.readCurrent(revisions, "he")).rejects.toBe(operationFailure);
+  });
+
+  it.each([
+    ["synchronous cleanup throw", true],
+    ["asynchronous cleanup rejection", false],
   ])("cleanup cannot replace a successful status read across %s", async (_label, cleanupThrows) => {
     const fake = client({
       rows: [],
