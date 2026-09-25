@@ -28,6 +28,8 @@
     "app/localization/content-markdown-translation.ts",
     "app/localization/content-request-budget.server.ts",
     "app/localization/content-generation-action.server.ts",
+    "app/localization/content-generation-contract.ts",
+    "app/localization/content-generation-status.ts",
     "app/localization/content-provider-allowance.ts",
     "app/localization/content-post-body-planning.ts",
     "app/localization/content-post-body-task-consumer.ts",
