@@ -21,7 +21,7 @@ CREATE TABLE "content_translation_allowance_admissions" (
   CONSTRAINT "content_translation_allowance_admissions_state_check"
     CHECK ("state" in ('leased', 'admitted', 'deferred')),
   CONSTRAINT "content_translation_allowance_admissions_reason_check"
-    CHECK ("reason" is null or "reason" ~ '^[a-z0-9][a-z0-9-]{0,63}$'),
+    CHECK ("reason" is null or "reason" similar to '[a-z0-9][a-z0-9-]{0,63}'),
   CONSTRAINT "content_translation_allowance_admissions_reservation_check"
     CHECK ("reservation_reference" is null
       or (char_length("reservation_reference") between 1 and 256
