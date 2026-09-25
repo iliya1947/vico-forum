@@ -13,9 +13,11 @@ import {
   contentTopicTitleTaskIdentity,
 } from "../app/localization/content-translation-planning";
 import {
+  MAX_TRANSLATION_TASK_ALLOWANCE_REASON_GROUPS,
   MAX_TRANSLATION_TASK_FAILURE_GROUPS,
   TRANSLATION_TASK_RECONCILIATION_RETRY_AFTER_MS,
   validateTranslationTaskReconciliationQuery,
+  type TranslationTaskAllowanceReasonSummary,
   type TranslationTaskFailureSummary,
   type TranslationTaskObservabilitySnapshot,
   type TranslationTaskReconciliationCandidate,
@@ -50,6 +52,7 @@ import { isPostgresQueryTimeout } from "./postgres-deadlines";
 import {
   contentPostBodyTranslationTasks,
   contentTopicTitleTranslationTasks,
+  contentTranslationAllowanceAdmissions,
   translationTaskGenerationHeads,
   translationTasks,
 } from "./schema";
@@ -266,6 +269,23 @@ export class DrizzleTranslationTaskStore implements
                and ${translationTasks.leaseExpiresAt} <= statement_timestamp()
              )
            )
+             and not exists (
+               select 1
+                 from ${contentTranslationAllowanceAdmissions}
+                where ${contentTranslationAllowanceAdmissions.taskId} = ${translationTasks.id}
+                  and (
+                    (
+                      ${contentTranslationAllowanceAdmissions.state} = 'leased'
+                      and ${contentTranslationAllowanceAdmissions.leaseExpiresAt}
+                        > statement_timestamp()
+                    )
+                    or (
+                      ${contentTranslationAllowanceAdmissions.state} = 'deferred'
+                      and ${contentTranslationAllowanceAdmissions.retryNotBefore}
+                        > statement_timestamp()
+                    )
+                  )
+             )
              and (
                ${translationTasks.reconciliationAttemptedAt} is null
                or ${translationTasks.reconciliationAttemptedAt} <= statement_timestamp()
@@ -444,6 +464,105 @@ export class DrizzleTranslationTaskStore implements
       };
     });
 
+    const allowanceAggregate = await this.database.execute<{
+      leased: number;
+      admitted: number;
+      deferred: number;
+      expired_leases: number;
+      ready_deferred: number;
+      oldest_deferred_age_ms: number | null;
+      next_retry_in_ms: number | null;
+      reason_group_count: number;
+    }>(sql`
+      select
+        (count(*) filter (where ${contentTranslationAllowanceAdmissions.state} = 'leased'))::integer as leased,
+        (count(*) filter (where ${contentTranslationAllowanceAdmissions.state} = 'admitted'))::integer as admitted,
+        (count(*) filter (where ${contentTranslationAllowanceAdmissions.state} = 'deferred'))::integer as deferred,
+        (
+          count(*) filter (
+            where ${contentTranslationAllowanceAdmissions.state} = 'leased'
+              and ${contentTranslationAllowanceAdmissions.leaseExpiresAt} <= statement_timestamp()
+          )
+        )::integer as expired_leases,
+        (
+          count(*) filter (
+            where ${contentTranslationAllowanceAdmissions.state} = 'deferred'
+              and ${contentTranslationAllowanceAdmissions.retryNotBefore} <= statement_timestamp()
+          )
+        )::integer as ready_deferred,
+        (
+          max(greatest(
+            0,
+            extract(epoch from (
+              statement_timestamp() - ${contentTranslationAllowanceAdmissions.updatedAt}
+            )) * 1000
+          )) filter (
+            where ${contentTranslationAllowanceAdmissions.state} = 'deferred'
+          )
+        )::double precision as oldest_deferred_age_ms,
+        (
+          min(greatest(
+            0,
+            extract(epoch from (
+              ${contentTranslationAllowanceAdmissions.retryNotBefore} - statement_timestamp()
+            )) * 1000
+          )) filter (
+            where ${contentTranslationAllowanceAdmissions.state} = 'deferred'
+              and ${contentTranslationAllowanceAdmissions.retryNotBefore} > statement_timestamp()
+          )
+        )::double precision as next_retry_in_ms,
+        (
+          count(distinct ${contentTranslationAllowanceAdmissions.reason})
+          filter (
+            where ${contentTranslationAllowanceAdmissions.state} = 'deferred'
+          )
+        )::integer as reason_group_count
+      from ${contentTranslationAllowanceAdmissions}
+    `);
+    const allowance = allowanceAggregate.rows[0];
+    if (
+      !allowance
+      || !nonNegativeInteger(allowance.leased)
+      || !nonNegativeInteger(allowance.admitted)
+      || !nonNegativeInteger(allowance.deferred)
+      || !nonNegativeInteger(allowance.expired_leases)
+      || !nonNegativeInteger(allowance.ready_deferred)
+      || !nullableNonNegativeNumber(allowance.oldest_deferred_age_ms)
+      || !nullableNonNegativeNumber(allowance.next_retry_in_ms)
+      || !nonNegativeInteger(allowance.reason_group_count)
+    ) {
+      throw new TranslationTaskIntegrityError(
+        "translation allowance observability query returned invalid aggregates",
+      );
+    }
+
+    const allowanceGrouped = await this.database.execute<{
+      reason: string;
+      count: number;
+    }>(sql`
+      select
+        ${contentTranslationAllowanceAdmissions.reason} as reason,
+        count(*)::integer as count
+      from ${contentTranslationAllowanceAdmissions}
+      where ${contentTranslationAllowanceAdmissions.state} = 'deferred'
+      group by ${contentTranslationAllowanceAdmissions.reason}
+      order by count(*) desc, ${contentTranslationAllowanceAdmissions.reason} asc
+      limit ${MAX_TRANSLATION_TASK_ALLOWANCE_REASON_GROUPS}
+    `);
+    const allowanceReasons: TranslationTaskAllowanceReasonSummary[] =
+      allowanceGrouped.rows.map((entry) => {
+        if (
+          !/^[a-z0-9][a-z0-9-]{0,63}$/.test(entry.reason)
+          || !nonNegativeInteger(entry.count)
+          || entry.count === 0
+        ) {
+          throw new TranslationTaskIntegrityError(
+            "translation allowance observability returned an invalid reason group",
+          );
+        }
+        return { reason: entry.reason, count: entry.count };
+      });
+
     return {
       counts: {
         pending: row.pending,
@@ -470,6 +589,17 @@ export class DrizzleTranslationTaskStore implements
         retryExhausted: row.failed_retry_exhausted,
         failureGroupCount: row.failure_group_count,
         groups,
+      },
+      allowance: {
+        leased: allowance.leased,
+        admitted: allowance.admitted,
+        deferred: allowance.deferred,
+        expiredLeases: allowance.expired_leases,
+        readyDeferred: allowance.ready_deferred,
+        oldestDeferredAgeMs: allowance.oldest_deferred_age_ms,
+        nextRetryInMs: allowance.next_retry_in_ms,
+        reasonGroupCount: allowance.reason_group_count,
+        reasons: allowanceReasons,
       },
     };
   }
