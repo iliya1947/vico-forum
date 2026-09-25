@@ -112,6 +112,7 @@ function topicRenderData(
     postPresentations: value.posts.map((post) =>
       originalPresentation("post-body", post.id, post.body)
     ),
+    generationUnits: [],
     canReply: false,
     canManageSolution: false,
     canCorrectTitleSourceLocale: false,
@@ -164,6 +165,7 @@ describe.each([
     expect(categoryData.category.sections).toHaveLength(1);
     expect(sectionData.section.topics).toHaveLength(1);
     expect(topicData.topic.posts[0]?.body.originalContent).toBe("Start with an explicit response type.");
+    expect(topicData.generationUnits).toEqual([]);
 
     const homeView = renderRoute(Home, home, `/${locale}`, locale, direction);
     expect(await screen.findByRole("link", { name: /Development/ })).toHaveAttribute("href", `/${locale}/categories/development%2Fcore`);

@@ -8,9 +8,12 @@ import { forumReaderContext } from "./request-context";
 import { loader as sectionLoader } from "../routes/section";
 import { loader as topicLoader } from "../routes/topic";
 import { ContentTranslationPresentationService } from "../localization/content-translation-presentation";
-import type { StoredContentTranslation } from "../localization/content-translation";
+import { ContentTranslationStorageUnavailableError, type StoredContentTranslation } from "../localization/content-translation";
+import { ContentGenerationStatusStorageUnavailableError } from "../localization/content-generation-status";
 import { localeRegistry } from "../localization/registry";
 import {
+  contentGenerationActionContext,
+  contentGenerationStatusReaderContext,
   contentTranslationPresentationContext,
   localeContext,
   registryLoaderContext,
@@ -164,6 +167,7 @@ describe("public forum authorization degradation", () => {
     expect(topicResult.canManageSolution).toBe(false);
     expect(topicResult.canCorrectTitleSourceLocale).toBe(false);
     expect(topicResult.correctablePostIds).toEqual([]);
+    expect(topicResult.generationUnits).toEqual([]);
   });
 
   it("shows the same persisted public translation to guests and authenticated users", async () => {
@@ -203,6 +207,191 @@ describe("public forum authorization degradation", () => {
       content: "Public translated topic",
     });
     expect(authenticatedResult.titlePresentation).toEqual(guestResult.titlePresentation);
+  });
+
+  it("uses dynamic generation permission for read-only loader hints without generation side effects", async () => {
+    const context = contextWithPermissions("viewer-1", ["forum.translation.generate"]);
+    const generateTopicTitle = vi.fn();
+    const generateAutomaticPostBody = vi.fn();
+    const generateExplicitPostBody = vi.fn();
+    const readCurrent = vi.fn(async (identities: readonly {
+      contentType: "topic-title" | "post-body";
+      contentId: string;
+      revisionId: string;
+    }[]) => identities.map((identity) => ({ ...identity, state: "idle" as const })));
+    context.set(contentGenerationActionContext, {
+      enabled: true,
+      capability: {
+        generateTopicTitle,
+        generateAutomaticPostBody,
+        generateExplicitPostBody,
+      },
+    });
+    context.set(contentGenerationStatusReaderContext, { readCurrent });
+
+    const result = await topicLoader({
+      params: { locale: "en", topicId: topic.id },
+      context,
+    });
+
+    expect(readCurrent).toHaveBeenCalledTimes(1);
+    expect(result.generationUnits).toHaveLength(2);
+    expect(result.generationUnits.every((unit) => unit.automatic === false)).toBe(true);
+    expect(generateTopicTitle).not.toHaveBeenCalled();
+    expect(generateAutomaticPostBody).not.toHaveBeenCalled();
+    expect(generateExplicitPostBody).not.toHaveBeenCalled();
+  });
+
+  it("tolerates publication committing between presentation and status reads", async () => {
+    const context = contextWithPermissions("viewer-1", ["forum.translation.generate"]);
+    context.set(localeContext, {
+      translationLocale: "he",
+      fallbackLocales: ["en"],
+      direction: "rtl",
+      formatting: { locale: "he", timeZone: "UTC" },
+      nativeName: "עברית",
+      presentationMetadata: {},
+    });
+    const readCurrent = vi.fn(async (identities: readonly {
+      contentType: "topic-title" | "post-body";
+      contentId: string;
+      revisionId: string;
+    }[]) => identities.map((identity) => ({ ...identity, state: "completed" as const })));
+    const generateTopicTitle = vi.fn();
+    const generateAutomaticPostBody = vi.fn();
+    const generateExplicitPostBody = vi.fn();
+    context.set(contentGenerationActionContext, {
+      enabled: true,
+      capability: {
+        generateTopicTitle,
+        generateAutomaticPostBody,
+        generateExplicitPostBody,
+      },
+    });
+    context.set(contentGenerationStatusReaderContext, { readCurrent });
+
+    const result = await topicLoader({
+      params: { locale: "en", topicId: topic.id },
+      context,
+    });
+
+    expect(result.titlePresentation).toMatchObject({
+      selected: "original",
+      fallbackReason: "missing",
+    });
+    expect(readCurrent).toHaveBeenCalledTimes(1);
+    expect(result.generationUnits).toHaveLength(2);
+    expect(result.generationUnits.every((unit) =>
+      unit.state === "converging" && !unit.automatic && !unit.explicitRequired
+    )).toBe(true);
+    expect(generateTopicTitle).not.toHaveBeenCalled();
+    expect(generateAutomaticPostBody).not.toHaveBeenCalled();
+    expect(generateExplicitPostBody).not.toHaveBeenCalled();
+  });
+
+  it("keeps classified presentation fallback usable when status already reports completed", async () => {
+    const context = contextWithPermissions("viewer-1", ["forum.translation.generate"]);
+    context.set(localeContext, {
+      translationLocale: "he",
+      fallbackLocales: ["en"],
+      direction: "rtl",
+      formatting: { locale: "he", timeZone: "UTC" },
+      nativeName: "עברית",
+      presentationMetadata: {},
+    });
+    context.set(
+      contentTranslationPresentationContext,
+      new ContentTranslationPresentationService({
+        readBatch: vi.fn(async () => {
+          throw new ContentTranslationStorageUnavailableError(
+            "content translation storage is unavailable",
+          );
+        }),
+      }),
+    );
+    const readCurrent = vi.fn(async (identities: readonly {
+      contentType: "topic-title" | "post-body";
+      contentId: string;
+      revisionId: string;
+    }[]) => identities.map((identity) => ({ ...identity, state: "completed" as const })));
+    context.set(contentGenerationActionContext, {
+      enabled: true,
+      capability: {
+        generateTopicTitle: vi.fn(),
+        generateAutomaticPostBody: vi.fn(),
+        generateExplicitPostBody: vi.fn(),
+      },
+    });
+    context.set(contentGenerationStatusReaderContext, { readCurrent });
+
+    const result = await topicLoader({
+      params: { locale: "en", topicId: topic.id },
+      context,
+    });
+
+    expect(result.titlePresentation).toMatchObject({
+      selected: "original",
+      fallbackReason: "storage-unavailable",
+    });
+    expect(readCurrent).toHaveBeenCalledTimes(1);
+    expect(result.generationUnits.every((unit) =>
+      unit.state === "converging" && !unit.automatic && !unit.explicitRequired
+    )).toBe(true);
+  });
+
+  it("keeps topic presentation original-safe when generation status storage is unavailable", async () => {
+    const context = contextWithPermissions("viewer-1", ["forum.translation.generate"]);
+    const generateTopicTitle = vi.fn();
+    const generateAutomaticPostBody = vi.fn();
+    const generateExplicitPostBody = vi.fn();
+    context.set(contentGenerationActionContext, {
+      enabled: true,
+      capability: {
+        generateTopicTitle,
+        generateAutomaticPostBody,
+        generateExplicitPostBody,
+      },
+    });
+    context.set(contentGenerationStatusReaderContext, {
+      readCurrent: vi.fn(async () => {
+        throw new ContentGenerationStatusStorageUnavailableError();
+      }),
+    });
+
+    const result = await topicLoader({
+      params: { locale: "en", topicId: topic.id },
+      context,
+    });
+
+    expect(result.titlePresentation.selected).toBe("original");
+    expect(result.generationUnits).toHaveLength(2);
+    expect(result.generationUnits.every((unit) =>
+      unit.state === "unavailable" && !unit.automatic && !unit.explicitRequired
+    )).toBe(true);
+    expect(generateTopicTitle).not.toHaveBeenCalled();
+    expect(generateAutomaticPostBody).not.toHaveBeenCalled();
+    expect(generateExplicitPostBody).not.toHaveBeenCalled();
+  });
+
+  it("does not mask unexpected generation status reader failures", async () => {
+    const context = contextWithPermissions("viewer-1", ["forum.translation.generate"]);
+    context.set(contentGenerationActionContext, {
+      enabled: true,
+      capability: {
+        generateTopicTitle: vi.fn(),
+        generateAutomaticPostBody: vi.fn(),
+        generateExplicitPostBody: vi.fn(),
+      },
+    });
+    const failure = new TypeError("unexpected status reader bug");
+    context.set(contentGenerationStatusReaderContext, {
+      readCurrent: vi.fn(async () => { throw failure; }),
+    });
+
+    await expect(topicLoader({
+      params: { locale: "en", topicId: topic.id },
+      context,
+    })).rejects.toBe(failure);
   });
 
   it("derives source-locale correction presentation from effective own/any permissions", async () => {

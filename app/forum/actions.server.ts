@@ -22,6 +22,7 @@ import {
   contentGenerationActionForRequest,
   localeContext,
 } from "../localization/request-context";
+import type { ContentGenerationActionResponse } from "../localization/content-generation-response";
 
 export async function sectionAction({ request, params, context }: {
   request: Request;
@@ -59,7 +60,11 @@ export async function topicAction({ request, params, context }: {
   let formData: FormData;
   try { formData = await request.formData(); } catch { return mutationFailure("invalid", 400); }
   const intent = requiredFormText(formData, "intent") ?? "reply";
-  if (intent === "generateTopicTitleTranslation" || intent === "generatePostBodyTranslation") {
+  if (
+    intent === "generateTopicTitleTranslation"
+    || intent === "generatePostBodyTranslation"
+    || intent === "generateExplicitPostBodyTranslation"
+  ) {
     const forbidden = await requireForumPermission(context, "forum.translation.generate");
     if (forbidden) return forbidden;
 
@@ -100,17 +105,22 @@ export async function topicAction({ request, params, context }: {
       if (!postId) return generationFailure("invalid", 400);
       const post = topic.posts.find((candidate) => candidate.id === postId);
       if (!post) return generationFailure("not-found", 404);
-      return generationResult(await runtime.capability.generateAutomaticPostBody({
+      const input = {
         actorId: session.user.id,
         revision: {
-          contentType: "post-body",
+          contentType: "post-body" as const,
           contentId: post.id,
           revisionId: post.body.id,
           originalContent: post.body.originalContent,
           sourceLocale: post.body.sourceLocale,
         },
         targetLocale,
-      }));
+      };
+      return generationResult(
+        intent === "generateExplicitPostBodyTranslation"
+          ? await runtime.capability.generateExplicitPostBody(input)
+          : await runtime.capability.generateAutomaticPostBody(input),
+      );
     } catch (error) {
       if (error instanceof ContentGenerationPlanningUnavailableError) {
         return generationFailure("unavailable", 503);
@@ -184,12 +194,6 @@ export async function topicAction({ request, params, context }: {
 }
 
 
-type ContentGenerationActionResponse =
-  | { readonly operation: "contentGeneration"; readonly outcome: "queued" }
-  | { readonly operation: "contentGeneration"; readonly outcome: "no-op"; readonly reason: string }
-  | { readonly operation: "contentGeneration"; readonly outcome: "explicit-required" }
-  | { readonly operation: "contentGeneration"; readonly outcome: "invalid" | "not-found" | "unavailable" };
-
 function generationResult(result: ContentGenerationActionResult) {
   switch (result.outcome) {
     case "queued":
@@ -209,7 +213,7 @@ function generationResult(result: ContentGenerationActionResult) {
       );
     case "budget-denied":
       return data<ContentGenerationActionResponse>(
-        { operation: "contentGeneration", outcome: "no-op", reason: "request-budget-denied" },
+        { operation: "contentGeneration", outcome: "no-op", reason: "request-budget-denied", retryAfterSeconds: result.retryAfterSeconds },
         {
           status: 429,
           headers: { "Retry-After": String(result.retryAfterSeconds) },

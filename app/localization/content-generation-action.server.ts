@@ -6,7 +6,7 @@ import {
   type ContentTranslationRequestBudgetScopePolicy,
   type ContentTranslationRequesterPseudonymizer,
 } from "./content-request-budget.server";
-import { protectMarkdownForTranslation } from "./content-markdown-translation";
+import { countMarkdownTranslationSemanticCharacters } from "./content-markdown-translation";
 import type {
   ContentPostBodyNoJobReason,
   ContentPostBodyPlanningResult,
@@ -19,8 +19,9 @@ import type {
 } from "./content-translation-planning";
 import type { ContentTranslationRevision } from "./content-translation";
 import { isPostgresAvailabilityFailure } from "./persistent-registry";
+import { MAX_AUTOMATIC_POST_TRANSLATION_SEMANTIC_CHARACTERS } from "./content-generation-policy";
 
-export const MAX_AUTOMATIC_POST_TRANSLATION_SEMANTIC_CHARACTERS = 3_000;
+export { MAX_AUTOMATIC_POST_TRANSLATION_SEMANTIC_CHARACTERS } from "./content-generation-policy";
 
 export interface ContentGenerationRequestBudgetPolicy {
   readonly cost: number;
@@ -54,6 +55,12 @@ export interface ContentGenerationActionCapability {
   }): Promise<ContentGenerationActionResult>;
 
   generateAutomaticPostBody(input: {
+    readonly actorId: string;
+    readonly revision: ContentTranslationRevision;
+    readonly targetLocale: string;
+  }): Promise<ContentGenerationActionResult>;
+
+  generateExplicitPostBody(input: {
     readonly actorId: string;
     readonly revision: ContentTranslationRevision;
     readonly targetLocale: string;
@@ -97,22 +104,30 @@ export class DefaultContentGenerationActionCapability implements ContentGenerati
     readonly revision: ContentTranslationRevision;
     readonly targetLocale: string;
   }): Promise<ContentGenerationActionResult> {
-    if (input.revision.contentType !== "post-body") {
-      throw new TypeError("post-body generation requires a post-body revision");
-    }
-
-    const protectedDocument = protectMarkdownForTranslation(input.revision.originalContent);
-    let semanticCharacters = 0;
-    for (const segment of protectedDocument.segments) {
-      semanticCharacters += segment.text.length;
-      if (!Number.isSafeInteger(semanticCharacters)) {
-        throw new TypeError("post-body semantic character count is invalid");
-      }
-    }
-    if (semanticCharacters > MAX_AUTOMATIC_POST_TRANSLATION_SEMANTIC_CHARACTERS) {
+    this.assertPostBody(input.revision);
+    if (
+      countMarkdownTranslationSemanticCharacters(input.revision.originalContent)
+      > MAX_AUTOMATIC_POST_TRANSLATION_SEMANTIC_CHARACTERS
+    ) {
       return { outcome: "explicit-required" };
     }
+    return this.generatePostBody(input);
+  }
 
+  async generateExplicitPostBody(input: {
+    readonly actorId: string;
+    readonly revision: ContentTranslationRevision;
+    readonly targetLocale: string;
+  }): Promise<ContentGenerationActionResult> {
+    this.assertPostBody(input.revision);
+    return this.generatePostBody(input);
+  }
+
+  private async generatePostBody(input: {
+    readonly actorId: string;
+    readonly revision: ContentTranslationRevision;
+    readonly targetLocale: string;
+  }): Promise<ContentGenerationActionResult> {
     const admission = await this.requestBudgetAdmission(input.actorId, this.dependencies.postBodyPolicy);
     return this.runPlanner(() =>
       this.dependencies.postBodyPlanner.planAndDispatch(
@@ -121,6 +136,12 @@ export class DefaultContentGenerationActionCapability implements ContentGenerati
         admission,
       )
     );
+  }
+
+  private assertPostBody(revision: ContentTranslationRevision): void {
+    if (revision.contentType !== "post-body") {
+      throw new TypeError("post-body generation requires a post-body revision");
+    }
   }
 
   private async requestBudgetAdmission(

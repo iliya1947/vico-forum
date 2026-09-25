@@ -212,6 +212,18 @@ export function protectMarkdownForTranslation(
   return ProtectedMarkdownTranslationDocument.create(sourceMarkdown);
 }
 
+export function countMarkdownTranslationSemanticCharacters(sourceMarkdown: string): number {
+  const protectedDocument = protectMarkdownForTranslation(sourceMarkdown);
+  let semanticCharacters = 0;
+  for (const segment of protectedDocument.segments) {
+    semanticCharacters += segment.text.length;
+    if (!Number.isSafeInteger(semanticCharacters)) {
+      throw new TypeError("post-body semantic character count is invalid");
+    }
+  }
+  return semanticCharacters;
+}
+
 export function extractPlainSemanticTextForSourceLocaleDetection(value: string): string {
   if (typeof value !== "string") {
     throw new TypeError("Plain source-locale detection text must be a string");

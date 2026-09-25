@@ -132,6 +132,32 @@ describe("content generation action capability", () => {
     expect(overLimit.postBodyPlanner.planAndDispatch).not.toHaveBeenCalled();
   });
 
+  it("lets the explicit post-body path bypass only the automatic length threshold", async () => {
+    const explicit = harness();
+    const tooLong = "а".repeat(MAX_AUTOMATIC_POST_TRANSLATION_SEMANTIC_CHARACTERS + 1);
+
+    await expect(explicit.capability.generateExplicitPostBody({
+      actorId: "user-123",
+      revision: postRevision(tooLong),
+      targetLocale: "he",
+    })).resolves.toEqual({ outcome: "queued" });
+
+    expect(explicit.pseudonymize).toHaveBeenCalledWith({
+      kind: "authenticated",
+      identity: "user-123",
+    });
+    expect(explicit.postBodyPlanner.planAndDispatch).toHaveBeenCalledTimes(1);
+    expect(explicit.postBodyPlanner.planAndDispatch).toHaveBeenCalledWith(
+      postRevision(tooLong),
+      "he",
+      expect.objectContaining({
+        subjectKey,
+        cost: policy.cost,
+        windowSeconds: policy.windowSeconds,
+      }),
+    );
+  });
+
   it("maps planner budget denial without exposing counter metadata", async () => {
     const { capability } = harness({
       titleResult: {
