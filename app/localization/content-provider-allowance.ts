@@ -24,7 +24,6 @@ import type {
 
 const OCCURRENCE_KEY_FORMAT = "vico-content-provider-attempt-v1";
 const SAFE_CODE_PATTERN = /^[a-z0-9][a-z0-9-]{0,63}$/;
-const SAFE_PROVIDER_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
 const SAFE_RESERVATION_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
 const DEFAULT_UNCONFIGURED_RETRY_MS = 60_000;
 
