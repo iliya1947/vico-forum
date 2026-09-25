@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useFetcher, useRevalidator } from "react-router";
 import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 
 import type { ContentGenerationActionResponse } from "./actions.server";
 import type { ContentGenerationUnitView } from "../localization/content-generation-view";
@@ -151,7 +152,7 @@ function automaticSubmission(unit: ContentGenerationUnitView): FormData {
 
 function generationStateFeedback(
   unit: ContentGenerationUnitView,
-  t: ReturnType<typeof useTranslation>["t"],
+  t: TFunction,
 ): string | null {
   switch (unit.state) {
     case "idle":
@@ -175,7 +176,7 @@ function generationStateFeedback(
 
 function generationActionFeedback(
   data: ContentGenerationActionResponse | undefined,
-  t: ReturnType<typeof useTranslation>["t"],
+  t: TFunction,
 ): string | null {
   if (!data || data.operation !== "contentGeneration") return null;
   if (data.outcome === "queued") return t("translationPending");
