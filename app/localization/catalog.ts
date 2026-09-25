@@ -109,7 +109,7 @@ export const canonicalEnglishCatalog = {
     sourceLocaleCorrectionError_conflict: message("sourceLocaleCorrectionError_conflict", "The content changed before the source language could be corrected. Reload and try again.", "Stale source-language correction."),
     sourceLocaleCorrectionError_unavailable: message("sourceLocaleCorrectionError_unavailable", "The source language could not be corrected. Please try again later.", "Temporary source-language correction storage failure."),
     forumWriteError_invalid: message("forumWriteError_invalid", "Enter all required fields.", "Forum mutation validation error."),
-    forumWriteError_unauthenticated: message("forumWriteError_unauthenticated", "Sign in to post.", "Forum mutation authentication error."),
+    forumWriteError_unauthenticated: message("forumWriteError_unauthenticated", "Sign in to continue.", "Forum mutation authentication error."),
     forumWriteError_origin: message("forumWriteError_origin", "This request could not be verified.", "Forum mutation origin error."),
     forumWriteError_forbidden: message("forumWriteError_forbidden", "Only the topic author can change its solution.", "Forum solution authorization error."),
     forumWriteError_conflict: message("forumWriteError_conflict", "That solution cannot be selected for this topic.", "Forum solution state conflict."),
