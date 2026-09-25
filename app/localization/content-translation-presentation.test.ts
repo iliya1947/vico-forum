@@ -6,7 +6,6 @@ import {
 import {
   ContentTranslationPresentationIntegrityError,
   ContentTranslationPresentationService,
-  type ContentTranslationBatchReadInput,
   type ContentTranslationBatchReadResult,
 } from "./content-translation-presentation";
 
