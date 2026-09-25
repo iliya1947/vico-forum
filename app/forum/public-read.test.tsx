@@ -8,6 +8,7 @@ import type { ForumReader } from "../../db/forum-repository";
 import { canonicalEnglishCatalog } from "../localization/catalog";
 import { createTranslationRuntime } from "../localization/runtime";
 import { ContentTranslationPresentationService, type ContentTranslationPresentation } from "../localization/content-translation-presentation";
+import type { StoredContentTranslation } from "../localization/content-translation";
 import { localeRegistry } from "../localization/registry";
 import {
   contentTranslationPresentationContext,
@@ -50,7 +51,11 @@ const reader: ForumReader = {
 
 afterEach(cleanup);
 
-function context(locale = "en", direction: "ltr" | "rtl" = locale === "he" ? "rtl" : "ltr") {
+function context(
+  locale = "en",
+  direction: "ltr" | "rtl" = locale === "he" ? "rtl" : "ltr",
+  translations: readonly StoredContentTranslation[] = [],
+) {
   const value = new RouterContextProvider();
   value.set(forumReaderContext, reader);
   value.set(localeContext, {
@@ -69,7 +74,7 @@ function context(locale = "en", direction: "ltr" | "rtl" = locale === "he" ? "rt
   value.set(
     contentTranslationPresentationContext,
     new ContentTranslationPresentationService({
-      readBatch: async () => ({ translations: [] }),
+      readBatch: async () => ({ translations }),
     }),
   );
   return value;
@@ -178,6 +183,72 @@ describe.each([
     expect(await screen.findByRole("link", { name: "Development" })).toHaveAttribute("href", `/${locale}/categories/development%2Fcore`);
     expect(await screen.findByRole("link", { name: "TypeScript" })).toHaveAttribute("href", `/${locale}/sections/typescript%2Fbasics`);
     expect(await screen.findByText("Start with an explicit response type.")).toBeInTheDocument();
+  });
+});
+
+describe("content translation presentation", () => {
+  it("shows persisted current translations to a guest with provenance, original toggle, metadata and safe Markdown", async () => {
+    const translations: StoredContentTranslation[] = [
+      {
+        contentType: "topic-title",
+        contentId: topic.id,
+        revisionId: topic.title.id,
+        targetLocale: "he",
+        sourceLocale: "en",
+        translatedContent: "כותרת מתורגמת",
+        provenance: {
+          origin: "machine",
+          provider: "provider",
+          model: "model",
+          attribution: "Provider attribution",
+        },
+      },
+      {
+        contentType: "post-body",
+        contentId: topic.posts[0]!.id,
+        revisionId: topic.posts[0]!.body.id,
+        targetLocale: "he",
+        sourceLocale: "en",
+        translatedContent: "**טקסט מתורגם** <script>alert('x')</script> [Example](https://example.com)",
+        provenance: {
+          origin: "machine",
+          provider: "provider",
+          model: "model",
+        },
+      },
+    ];
+
+    const data = await topicLoader({
+      params: { locale: "he", topicId: topic.id },
+      context: context("he", "rtl", translations),
+    });
+
+    expect(data.titlePresentation).toMatchObject({
+      selected: "translation",
+      content: "כותרת מתורגמת",
+      contentLocale: "he",
+      contentDirection: "rtl",
+    });
+    expect(data.postPresentations[0]).toMatchObject({
+      selected: "translation",
+      contentLocale: "he",
+      contentDirection: "rtl",
+    });
+
+    renderRoute(TopicRoute, data, "/he/topics/typed-api", "he", "rtl");
+
+    const heading = await screen.findByRole("heading", { level: 1, name: "כותרת מתורגמת" });
+    expect(heading).toHaveAttribute("lang", "he");
+    expect(heading).toHaveAttribute("dir", "rtl");
+    expect(screen.getAllByText("Automatic translation")).toHaveLength(2);
+    expect(screen.getByText("Provider attribution")).toBeInTheDocument();
+    expect(screen.getAllByText("Show original")).toHaveLength(2);
+    expect(screen.getAllByText("Show translation")).toHaveLength(2);
+    expect(screen.getByText("How do I type an API?").closest("[lang]")).toHaveAttribute("lang", "en");
+    expect(screen.getByText("How do I type an API?").closest("[dir]")).toHaveAttribute("dir", "ltr");
+    expect(document.querySelector("script")).toBeNull();
+    expect(screen.getByRole("link", { name: "Example" })).toHaveAttribute("rel", "nofollow noopener noreferrer ugc");
+    expect(screen.getByRole("link", { name: "Example" })).toHaveAttribute("target", "_blank");
   });
 });
 
