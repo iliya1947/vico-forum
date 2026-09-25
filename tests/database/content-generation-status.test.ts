@@ -72,7 +72,7 @@ afterAll(async () => {
 
 function reader() {
   return createHyperdriveContentGenerationStatusReader(
-    databaseUrl,
+    databaseUrl!,
     () => new Client({
       connectionString: databaseUrl,
       options: `-c search_path=${schemaName}`,
