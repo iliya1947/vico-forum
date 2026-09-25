@@ -2080,3 +2080,107 @@ slice that:
 - proves automatic-trigger idempotency under reload/tab/concurrency cases;
 - keeps the real 5% reserve/account-provider acceptance in Stage 6 unless an authoritative current
   pre-call mechanism is demonstrated.
+
+
+## Manual source-locale correction implementation: PR #113
+
+After Codex assigned the bounded manual source-locale correction slice, ChatGPT implemented and
+fully re-reviewed mergeable PR #113 against current `main`
+`75bf8bda4ca090eb7188c2fb4eaf2ed36d66b12b`, the complete current `AGENTS.md`, and the
+applicable project/translation/authorization source-of-truth documents.
+
+### Scope implemented
+
+- adds code-backed permissions `forum.sourceLocale.correctOwn` and
+  `forum.sourceLocale.correctAny`;
+- initial grants are exactly the owner-approved policy: `user` gets `correctOwn`;
+  `moderator` and `admin` get `correctOwn + correctAny`;
+- adds authenticated same-origin topic actions for title/body source-locale correction;
+- effective permission is re-resolved server-side and `own` remains resource-conditioned from the
+  authoritative topic/post author, while `any` removes only that ownership condition;
+- client-forged actor/author/role/scope values are ignored as authorization evidence;
+- corrected source language is canonicalized as a non-`und` BCP-47 translation-language tag
+  independently of UI `LocaleRegistry`; formatting/Unicode extensions are rejected by the
+  existing translation-locale canonicalization boundary;
+- correction copies authoritative current original content unchanged into a new immutable revision,
+  changes source-locale metadata, and uses expected-current-revision CAS fencing;
+- same canonical source locale is an idempotent no-op and does not create another revision;
+- old revision translations remain historical and are not selected for the new current revision;
+- locale-aware correction controls are shown only for resources authorized by optional presentation
+  auth; classified authz unavailability hides controls without breaking the public topic read;
+- controlled correction failures cover invalid/unauthenticated/origin/forbidden/not-found/conflict/
+  classified-storage-unavailable semantics without masking unexpected failures.
+
+No generation route, automatic trigger, request-budget/free-allowance policy, provider enablement,
+Queue binding, live call, or general content editing/moderation is included.
+
+### Why migration 0018 is required
+
+The task allowed a migration only if the existing schema could not preserve the permission invariant.
+That condition is met.
+
+Existing migration `0006` / current Drizzle schema constrains `authz_permissions.key` with
+`authz_permissions_catalog_check` to the previous five code-backed keys, and role/user permission
+rows reference `authz_permissions` by foreign key. There is no runtime permission-catalog
+synchronization.
+
+Therefore new permissions cannot be persisted or granted without changing that DB constraint and
+seeding the catalog rows. PR #113 adds only the minimal append-only
+`0018_source_locale_correction_permissions.sql`: extend the CHECK, insert the two permission rows,
+and add the approved built-in role grants. No forum/content-translation schema is changed. Drizzle
+schema, snapshot and journal are updated consistently.
+
+### Review/correction cycle
+
+Automated Codex review on the early PR head reported three current-scope findings:
+
+1. stale `PROJECT_STATE.md`;
+2. generic mutation-guard responses could lose the correction operation tag after session expiry or
+   origin rejection;
+3. correction errors could also render through the unrelated reply-error alert.
+
+ChatGPT independently verified the findings against the updated PR. Findings 1 and 3 were already
+corrected on the later head. Finding 2 remained real and was corrected by using a
+correction-specific guard for correction intents, preserving tagged controlled
+`unauthenticated/origin` responses. Focused route tests now verify those response shapes.
+
+The first CI after that final guard test change failed only because a test-edit replacement
+accidentally changed the expectation in an unrelated existing `markSolved` guest case. Production
+code was not implicated. The expectation was corrected specifically; the subsequent complete CI is
+green.
+
+All three automated review threads are resolved on the final head.
+
+### Final verification
+
+Final PR #113 head:
+
+`6ab1793d7fa2b94513e44d6088384016c2aeb0a1`
+
+GitHub Actions run:
+
+`36110380179`
+
+Results:
+
+- `checks` — success: accepted migration-history protection, lint, typecheck, tests, production
+  build, migration metadata validation and Drizzle schema parity;
+- `database` — success: clean PostgreSQL 17 migrations/constraints/integration tests, Workers
+  build smoke and local Hyperdrive smoke.
+
+ChatGPT then re-reviewed the complete final 19-file diff, not only the guard correction, including
+permission catalog/default grants, DB migration/snapshot parity, route authorization and CSRF/origin
+boundary, authoritative ownership, locale validation, immutable revision copying, same-locale
+idempotence, revision-race rollback/fencing, historical translation isolation, optional public-read
+authz degradation, UI error isolation and `PROJECT_STATE.md`.
+
+No remaining current-Stage defect was found.
+
+### Status
+
+- PR #113 is open and unmerged.
+- Final head: `6ab1793d7fa2b94513e44d6088384016c2aeb0a1`.
+- Base: current task baseline `main` `75bf8bda4ca090eb7188c2fb4eaf2ed36d66b12b`.
+- Full CI is green.
+- Next workflow step: Codex independently reviews the entire final PR #113 before the owner makes
+  any merge decision.
