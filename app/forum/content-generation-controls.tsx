@@ -258,6 +258,25 @@ function generationStatusText(
 ): string | null {
   if (requesting) return t("translationRequesting");
 
+  if (unit.status !== "idle") {
+    switch (unit.status) {
+      case "pending":
+        return t("translationQueued");
+      case "processing":
+        return t("translationProcessing");
+      case "deferred":
+        return unit.retryAfterSeconds !== undefined
+          ? t("translationDeferredWithRetry", { seconds: unit.retryAfterSeconds })
+          : t("translationDeferred");
+      case "failed":
+        return t("translationFailed");
+      case "unavailable":
+        return t("translationUnavailable");
+      case "current":
+        return t("translationCurrent");
+    }
+  }
+
   if (actionResult?.outcome === "queued") return t("translationQueued");
   if (actionResult?.outcome === "unavailable") return t("translationUnavailable");
   if (actionResult?.outcome === "explicit-required") {
@@ -274,24 +293,5 @@ function generationStatusText(
       : t("translationDeferred");
   }
 
-  switch (unit.status) {
-    case "pending":
-      return t("translationQueued");
-    case "processing":
-      return t("translationProcessing");
-    case "deferred":
-      return unit.retryAfterSeconds !== undefined
-        ? t("translationDeferredWithRetry", {
-            seconds: unit.retryAfterSeconds,
-          })
-        : t("translationDeferred");
-    case "failed":
-      return t("translationFailed");
-    case "unavailable":
-      return t("translationUnavailable");
-    case "current":
-      return t("translationCurrent");
-    case "idle":
-      return unit.explicitRequired ? t("translationExplicitRequired") : null;
-  }
+  return unit.explicitRequired ? t("translationExplicitRequired") : null;
 }
