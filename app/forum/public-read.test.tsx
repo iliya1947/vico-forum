@@ -7,6 +7,13 @@ import { afterEach, describe, expect, it } from "vitest";
 import type { ForumReader } from "../../db/forum-repository";
 import { canonicalEnglishCatalog } from "../localization/catalog";
 import { createTranslationRuntime } from "../localization/runtime";
+import { localeRegistry } from "../localization/registry";
+import { ContentTranslationPresentationService } from "../localization/content-translation-presentation";
+import {
+  contentTranslationPresentationContext,
+  localeContext,
+  registryLoaderContext,
+} from "../localization/request-context";
 import CategoryRoute, { loader as categoryLoader } from "../routes/category";
 import Home, { loader as homeLoader } from "../routes/home";
 import { ErrorBoundary as NotFoundErrorBoundary, loader as notFoundLoader } from "../routes/not-found";
@@ -43,9 +50,28 @@ const reader: ForumReader = {
 
 afterEach(cleanup);
 
-function context() {
+function context(locale = "en", direction: "ltr" | "rtl" = "ltr") {
   const value = new RouterContextProvider();
   value.set(forumReaderContext, reader);
+  value.set(localeContext, {
+    translationLocale: locale,
+    fallbackLocales: locale === "en" ? [] : ["en"],
+    direction,
+    formatting: { locale, timeZone: "UTC" },
+    nativeName: locale,
+    presentationMetadata: {},
+  });
+  value.set(registryLoaderContext, async () => ({
+    registry: localeRegistry,
+    semanticIdentity: "test-registry",
+    health: { status: "healthy" as const },
+  }));
+  value.set(
+    contentTranslationPresentationContext,
+    new ContentTranslationPresentationService({
+      readTopic: async () => ({ posts: [] }),
+    }),
+  );
   return value;
 }
 
@@ -83,7 +109,7 @@ describe.each([
   { locale: "he", direction: "rtl" as const },
 ])("public forum read flow ($locale)", ({ locale, direction }) => {
   it("loads and links category → section → topic → posts with the canonical locale", async () => {
-    const requestContext = context();
+    const requestContext = context(locale, direction);
     const home = await homeLoader({ params: { locale }, context: requestContext });
     const categoryData = await categoryLoader({ params: { locale, categoryId: category.id }, context: requestContext });
     const sectionData = await sectionLoader({ params: { locale, sectionId: section.id }, context: requestContext });
