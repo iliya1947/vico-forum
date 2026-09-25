@@ -54,6 +54,7 @@
     "app/localization/bundles.ts",
     "app/localization/persistent-sources.ts",
     "app/localization/persistent-registry.ts",
+    "app/localization/request-context.ts",
     "app/localization/registry.ts",
     "app/localization/locale.ts"
   ],
