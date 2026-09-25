@@ -3129,3 +3129,41 @@ corrected Hyperdrive reader availability boundary. No remaining current-Stage de
 
 Codex should independently review the entire current PR #118 at exact head
 `ddb5a62aa522e1ab18b81d383f7e7898eefd06b3`. Any head change requires another complete review.
+## PR #118 agreement on cleanup-failure composition finding
+
+ChatGPT compared Codex's full independent re-review recorded at service PR #94 head
+`d6aaab64104e4b92ecbab82271954073fedbf57d` against the current PR #118 head
+`ddb5a62aa522e1ab18b81d383f7e7898eefd06b3` and the existing repository PostgreSQL cleanup
+boundary.
+
+The finding is confirmed as a current Stage 5 defect in the corrected Hyperdrive reader path.
+
+`createHyperdriveForumReader().read()` currently throws the correct operation result/error from its
+try/catch, but then awaits `client.end()` in `finally`. A rejecting cleanup therefore replaces a
+successful result, a classified `ForumStorageUnavailableError`, or an unrelated unexpected operation
+error. For generation this can bypass the route's deliberately narrow
+`ForumStorageUnavailableError -> 503` mapping.
+
+This is not future Stage 6 hardening. It is directly inside the current PR #118 adapter correction and
+can violate the bounded availability behavior that this PR is implementing.
+
+The repository already provides the narrow established cleanup primitive
+`bestEffortDiscardClient()` in `db/postgres-deadlines.ts`. Its explicit contract is that cleanup
+must not replace the classified database failure; it absorbs both synchronous `client.end()` throws
+and asynchronous rejection. Existing Hyperdrive content-translation/registry/UI paths use this
+pattern where connection discard must not become the externally observed operation result.
+
+The bounded correction should therefore preserve the primary operation outcome while making client
+discard best-effort at this reader boundary. Focused regression coverage should prove:
+
+1. classified operation failure + failing cleanup preserves `ForumStorageUnavailableError` and the
+   original operation failure as its cause;
+2. unexpected operation failure + failing cleanup preserves the unexpected operation failure;
+3. successful read + failing cleanup still returns the successful read result;
+4. generation route continues to map only the classified reader failure to bounded `503`;
+5. full PR re-review and both CI jobs are repeated at the corrected head.
+
+No other current-Stage defect or scope expansion was found during this agreement check.
+
+PR #118 remains not technically ready until this confirmed finding is corrected and the required
+post-correction review cycle completes.
