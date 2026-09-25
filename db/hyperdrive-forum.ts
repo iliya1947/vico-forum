@@ -1,7 +1,7 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Client } from "pg";
 import { isPostgresAvailabilityFailure } from "../app/localization/persistent-registry";
-import { isPostgresConnectionTimeout, isPostgresQueryTimeout } from "./postgres-deadlines";
+import { bestEffortDiscardClient, isPostgresConnectionTimeout, isPostgresQueryTimeout } from "./postgres-deadlines";
 import type { ForumReader } from "./forum-repository";
 import type { SolutionManagementScope } from "./forum-repository";
 import { DrizzleForumRepository } from "./forum-repository";
@@ -42,7 +42,7 @@ export function createHyperdriveForumReader(
       }
       throw error;
     } finally {
-      await client.end();
+      bestEffortDiscardClient(client);
     }
   }
 

@@ -8,6 +8,8 @@ import {
 function client(options: {
   connectError?: unknown;
   queryError?: unknown;
+  cleanupError?: unknown;
+  cleanupThrows?: boolean;
 }) {
   return {
     connect: vi.fn(async () => {
@@ -17,11 +19,71 @@ function client(options: {
       if (options.queryError) throw options.queryError;
       return { rows: [], rowCount: 0 };
     }),
-    end: vi.fn(async () => undefined),
+    end: vi.fn(() => {
+      if (options.cleanupThrows) throw options.cleanupError;
+      if (options.cleanupError) return Promise.reject(options.cleanupError);
+      return Promise.resolve();
+    }),
   } as unknown as Client;
 }
 
 describe("Hyperdrive forum reader availability boundary", () => {
+
+  it.each([
+    ["synchronous cleanup throw", true],
+    ["asynchronous cleanup rejection", false],
+  ])("preserves classified operation failure across %s", async (_label, cleanupThrows) => {
+    const operationFailure = Object.assign(new Error("connection unavailable"), { code: "08006" });
+    const cleanupFailure = new Error("cleanup failed");
+    const reader = createHyperdriveForumReader(
+      "postgresql://example.invalid/db",
+      () => client({
+        connectError: operationFailure,
+        cleanupError: cleanupFailure,
+        cleanupThrows,
+      }),
+    );
+
+    await expect(reader.readTopicPage("topic-1")).rejects.toMatchObject({
+      name: "ForumStorageUnavailableError",
+      cause: operationFailure,
+    });
+  });
+
+  it.each([
+    ["synchronous cleanup throw", true],
+    ["asynchronous cleanup rejection", false],
+  ])("preserves unexpected operation failure across %s", async (_label, cleanupThrows) => {
+    const operationFailure = new TypeError("unexpected reader bug");
+    const cleanupFailure = new Error("cleanup failed");
+    const reader = createHyperdriveForumReader(
+      "postgresql://example.invalid/db",
+      () => client({
+        connectError: operationFailure,
+        cleanupError: cleanupFailure,
+        cleanupThrows,
+      }),
+    );
+
+    await expect(reader.readTopicPage("topic-1")).rejects.toBe(operationFailure);
+  });
+
+  it.each([
+    ["synchronous cleanup throw", true],
+    ["asynchronous cleanup rejection", false],
+  ])("preserves successful read across %s", async (_label, cleanupThrows) => {
+    const cleanupFailure = new Error("cleanup failed");
+    const reader = createHyperdriveForumReader(
+      "postgresql://example.invalid/db",
+      () => client({
+        cleanupError: cleanupFailure,
+        cleanupThrows,
+      }),
+    );
+
+    await expect(reader.listCategories()).resolves.toEqual([]);
+  });
+
   it.each([
     Object.assign(new Error("connection unavailable"), { code: "08006" }),
     new Error("timeout expired"),
