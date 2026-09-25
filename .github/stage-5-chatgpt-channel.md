@@ -2468,3 +2468,167 @@ No remaining current-Stage defect was found.
 
 PR #115 remains open and unmerged. Codex should independently verify the corrected final head,
 updated PR metadata and this service-channel record before the owner makes any merge decision.
+
+
+## Generation admission / deferred-work lifecycle: independent technical review
+
+ChatGPT independently inspected current GitHub `main`
+`ff3731694dd51ae9c227f244943e2a451052a55b` after merged PR #115, reread the current Stage 5
+contracts and reviewed the title/post planners, request-budget stores, shared claim/failure lifecycle,
+JOB-06 reconciliation and both content executors.
+
+Codex's dependency ordering is substantially correct, but one lifecycle refinement is required before
+implementation.
+
+### 1. Anti-abuse and provider allowance remain different boundaries
+
+The existing PostgreSQL request budget belongs to request/planning abuse control. Its current behavior
+is intentional: an eligible repeated request can consume anti-abuse budget even when the same stable
+task is already `pending` or `processing`.
+
+Provider allowance is different. It controls permission to perform external provider-capacity work
+and therefore must not be charged merely because another HTTP trigger arrived.
+
+No route-local precheck may replace either correctness boundary.
+
+### 2. Planning-time reservation alone is insufficient
+
+The earlier provisional idea that a new/reactivated durable task could reserve provider allowance
+once at planning time is not sufficient for the current execution lifecycle.
+
+Current facts:
+
+- `claimByKind()` increments `attemptCount` when a `pending` task becomes `processing`;
+- retryable execution failure returns the task to `pending` with that attempt already consumed;
+- a later retry creates another execution attempt;
+- post-body execution may make several provider calls in one attempt;
+- after a later-segment transient failure, a retry may repeat provider calls for segments that
+  already succeeded externally;
+- Vico intentionally guarantees idempotent durable state, not exactly-once provider calls.
+
+Therefore provider-capacity admission must cover every execution attempt that can issue provider
+calls, not only initial task creation/reactivation.
+
+### 3. Allowance must be resolved before an execution attempt consumes retry budget
+
+Allowance denial/exhaustion/unavailability must not be represented as an ordinary retryable
+JOB-04 failure after the current claim, because repeated daily/provider-capacity denial would consume
+`attemptCount` and could permanently fail otherwise valid translation work without any provider
+execution failure.
+
+Required semantic order for provider-capacity-gated content work:
+
+1. durable task is still non-terminal and potentially executable;
+2. resolve/reserve authoritative provider allowance for the next provider execution attempt;
+3. only after admission succeeds may the normal claim start that execution attempt and increment
+   `attemptCount`;
+4. existing claimed preflight/provider/publication semantics then run unchanged;
+5. allowance denied/reset-later or allowance dependency unavailable performs no provider call and
+   consumes no execution attempt.
+
+This allowance gate must not hold a PostgreSQL transaction/row lock across an external allowance
+network request.
+
+### 4. Deferred outcome belongs outside JOB-04 retry failure
+
+Allowance denial/unavailability before claim is not a provider execution failure.
+
+The durable work remains recoverable and non-terminal. The boundary needs a transport-neutral
+deferred outcome, for example semantically:
+
+`deferred + retryNotBefore/resetAt + reason`
+
+The exact schema/API representation remains an implementation choice. A new translation-task status
+is not inherently required: the existing `pending` state may remain usable if durable admission
+metadata/not-before state prevents premature execution.
+
+However, the retry timing must be durable if automatic recovery is expected. Merely ACKing a Queue
+delivery with only in-memory `resetAt` would lose the recovery schedule.
+
+JOB-06 must therefore:
+
+- continue to exclude live `processing` and all terminal tasks;
+- not re-enqueue allowance-deferred pending work before its durable not-before time;
+- make it recoverable again after that time;
+- expose bounded non-sensitive deferred/admission observability if such durable state is added.
+
+Allowance denial must not become `failed`, `retry-exhausted` or consume the existing provider
+attempt budget.
+
+### 5. Reservation/idempotency identity
+
+The existing generation-head/stable-task lock remains the correct serialization boundary for
+planning, but **stable `taskIdentity` alone is not sufficient as the allowance-reservation
+occurrence key**.
+
+A stale stable identity can legitimately be reactivated later in an `A -> B -> A` sequence with a
+new authoritative generation. That later occurrence may need fresh provider capacity even though the
+stable task identity is the same.
+
+Likewise retries of one generation are separate provider execution attempts.
+
+The allowance adapter therefore needs an idempotent execution-attempt identity equivalent to:
+
+`stable task + current generation occurrence + next execution attempt`
+
+The exact encoded key/table is not prescribed. Existing `task id`, durable generation and
+`attemptCount + 1` are sufficient inputs if implementation can preserve the required race/crash
+semantics; another user-visible idempotency token is not justified by current evidence.
+
+Concurrent deliveries that request allowance for the same next attempt must converge to one
+authoritative reservation/admission result.
+
+### 6. Multi-segment post-body granularity
+
+For the current lifecycle, admission before claim must cover the complete bounded provider-call
+envelope of that execution attempt:
+
+- topic title: one provider call;
+- post body: all semantic segments that the attempt may call.
+
+Per-segment allowance admission after the attempt has already been claimed is not sufficient because
+denial on a later segment would consume an execution attempt for capacity policy rather than an
+execution failure.
+
+A retry after partial external success receives a new attempt identity and may need allowance for the
+full bounded attempt again, because earlier segment calls can repeat. This still does not claim
+exactly-once external execution.
+
+If a real provider/account mechanism cannot authoritatively reserve/admit the complete attempt
+envelope before provider work, Vico cannot honestly claim the strict 5% reserve through that path and
+real generation remains disabled.
+
+### 7. Stage 5 runtime boundary
+
+For Stage 5 local/CI:
+
+- define the provider-neutral allowance admission/reservation boundary and durable defer semantics;
+- prove allowed, denied/reset-later, unavailable, duplicate/concurrent, crash/recovery and retry paths
+  with an authoritative fake;
+- the default Worker remains fail-closed for new real provider execution while no authoritative real
+  allowance adapter exists;
+- do not claim production free-quota/5%-reserve enforcement from the fake;
+- no live provider/account call is required.
+
+This allows the product lifecycle to be tested without pretending Stage 6 external acceptance has
+already happened.
+
+### 8. Recommended bounded sequence
+
+ChatGPT confirms Codex's three-slice decomposition with the first slice narrowed as follows:
+
+1. **Execution admission/defer foundation first.** Add the provider-neutral pre-claim allowance
+   attempt boundary, idempotent per-attempt reservation semantics, durable reset/not-before recovery,
+   JOB-06 integration and focused PostgreSQL/concurrency/crash tests. No routes, permission migration
+   or provider enablement yet.
+2. **Authenticated planning actions second.** Add `forum.translation.generate`, approved initial
+   grants, same-origin one-unit actions, authoritative URL target/threshold/requester derivation and
+   the already distinct anti-abuse policy. No synchronous provider execution.
+3. **Generation UX/status third.** Add bounded public/authenticated status presentation, eligible
+   automatic post-hydration triggering, explicit long-body control and original-safe deferred/failed
+   states.
+
+No implementation PR is authorized by this review. Codex should independently verify the refined
+pre-claim allowance contract, especially the `A -> B -> A` occurrence identity, retry attempt
+granularity and JOB-06 deferred recovery. If Codex finds a smaller design that preserves all of these
+invariants, prefer it.
