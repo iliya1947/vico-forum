@@ -3404,3 +3404,80 @@ Stage 6 provider/Queue/binding/credential/production-policy work remains exclude
 Codex should now perform the required independent full review of PR #119 against the final Stage 5
 task, current project source of truth and Stage completion criteria. PR #119 must not be merged by
 ChatGPT; merge remains a user action after technical coordination.
+## PR #119 agreement on Codex review findings
+
+ChatGPT independently compared Codex service PR #94 head
+`94cb7bdc59055550dba1f6057bb2be563ba132c0` against PR #119 head
+`65f96ce2cbc4e8f764a1ef333f7c2718cdcbbfa8`, current Stage 5 source-of-truth contracts and the
+actual loader/presentation/client orchestration code.
+
+Both Codex findings are confirmed as current Stage 5 defects. Neither is future Stage 6 work.
+
+### Finding 1 confirmed: `completed + original` is not sufficient proof of integrity failure
+
+The topic loader performs these authoritative reads independently:
+1. current persisted translation presentation;
+2. current durable generation task status.
+
+They do not share one PostgreSQL snapshot. Therefore the current implementation can observe:
+- presentation read before atomic publication: original/missing;
+- publication transaction commits translation + completed task;
+- status read after commit: `completed`.
+
+That state is a valid cross-read race, not corruption.
+
+There is a second valid path: `ContentTranslationPresentationService.readCurrent()` intentionally
+converts classified translation-storage unavailability into original-safe presentation. The separate
+status read may still succeed and report `completed`. Throwing
+`ContentGenerationStatusIntegrityError` in either case violates the Stage 5 public original-safe
+read contract.
+
+Technical correction boundary:
+- `completed + exact-current translated presentation` remains `current`;
+- `completed + original presentation` must be treated as a bounded convergence/degradation state,
+  not an integrity exception;
+- the public topic read must remain usable;
+- no extra per-post query, provider work or POST retry may be introduced;
+- read-only revalidation may converge the presentation on a later loader pass;
+- genuine corruption may still fail only when proven inside one authoritative boundary rather than
+  inferred from two independent reads.
+
+Focused coverage must include both publication-race ordering and classified presentation-storage
+fallback combined with successful `completed` status.
+
+### Finding 2 confirmed: automatic submissions lose per-unit action feedback
+
+`ContentGenerationManager` owns the keyed automatic fetcher and currently consumes only its
+submission state. `ContentGenerationUnitStatus` creates independent fetchers, so those unit
+components cannot observe the automatic fetcher's response.
+
+Consequences are current-scope defects:
+- automatic `429` can leave the refreshed loader `idle` with no visible bounded retry timing;
+- automatic `503` can leave `idle` with no temporary-unavailable feedback;
+- bounded no-op/request-changed result is lost;
+- queued/requesting feedback is not associated with the exact unit that generated it.
+
+Because the automatic hydration snapshot is deliberately one-shot, the missing result is not repaired
+by another automatic submission in the same hydration.
+
+Technical correction boundary:
+- automatic orchestration must maintain bounded client-only feedback keyed by the exact unit key
+  `contentType + contentId + revisionId + targetLocale`;
+- each automatic unit must expose requesting and its bounded action result to the same per-unit
+  accessible presentation used by the topic/post UI;
+- safe `retryAfterSeconds` from `429` may be shown, but budget/provider/task internals remain hidden;
+- loader state/persisted translation remains authoritative once it advances to pending/processing/
+  deferred/failed/current, so stale client action feedback must not override newer loader state;
+- feedback for an old revision key must disappear when the loader replaces that unit with a new exact
+  revision key;
+- queued work continues to converge via one post-queue revalidation plus finite read-only polling;
+- no automatic retry loop, POST polling, N-query pattern or change to explicit-control fetcher
+  semantics is allowed.
+
+Required regression coverage should include automatic queued, bounded no-op, `429` with retry timing,
+`503`, per-unit requesting accessibility, replacement-revision feedback discard, and preservation of
+existing same-hydration dedupe/finite polling behavior.
+
+No additional current-Stage defect was found during this agreement check. PR #119 remains not
+technically ready until both confirmed findings are corrected, CI is green at the corrected head and
+the complete PR is re-reviewed.
