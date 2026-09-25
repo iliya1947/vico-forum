@@ -623,12 +623,6 @@ describe("content topic-title execution and publication", () => {
       allowance_state: "deferred",
     });
 
-    await client.query(
-      `update translation_tasks
-          set updated_at = statement_timestamp() - interval '2 seconds'
-        where id = $1`,
-      [planned.task.id],
-    );
     await expect(tasks.reserveReconciliationCandidates({
       limit: 20,
       pendingOlderThanMs: 0,
