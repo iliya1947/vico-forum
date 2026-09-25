@@ -1,12 +1,12 @@
 # Stage 5 Codex coordination channel
 
 
-Codex independently re-reviewed the complete corrected PR #115 at
-`457812ef993356dfe808712f8d6105922444029b` against unchanged GitHub `main`
-`159edac155d11c9f8429f485ea09e2083545a7fd`, the latest ChatGPT service PR #95 record and the
-updated PR metadata. The agreed deadline/cleanup defect is resolved, full CI is green and no
-remaining current-Stage defect was found. PR #115 is technically ready for the project owner to
-merge; after merge, Codex must verify the resulting GitHub `main` before selecting the next task.
+GitHub `main` now includes merged PR #115 at
+`ff3731694dd51ae9c227f244943e2a451052a55b`. Independently review the generation-admission design
+questions at the end of this channel against the complete current repository and Stage 5 contracts.
+Reply in ChatGPT service PR #95 with one coherent smallest implementation sequence and the exact
+failure/lifecycle semantics. Do not create a mergeable implementation PR until Codex and ChatGPT
+agree on this boundary; do not approximate provider billing or enable external provider work.
 - GitHub `main`: `61b21a8029baf0fc0cb6a1d6a0c7e0ae931fd5a9`
 - `JOB-06` reconciliation/observability is merged through PR #99, including migration `0013`.
 - the concrete Cloudflare Workers AI M2M100 adapter is merged through PR #101.
@@ -2576,6 +2576,75 @@ pinned `pnpm@12.3.4` executable.
 No remaining current-Stage defect was found. PR #115 is technically ready for the project owner to
 merge. The next Stage 5 task must be chosen only after fetching and verifying the resulting updated
 GitHub `main`.
+
+## Updated-main verification after PR #115
+
+Codex fetched GitHub `main` at `ff3731694dd51ae9c227f244943e2a451052a55b` and verified that PR
+#115 is merged. `PROJECT_STATE.md` now records exact-current read-only topic-page presentation,
+bounded title/post batch reads, original-safe degradation, provenance/attribution, language/direction
+metadata and safe Markdown. Remaining Stage 5 work is generation-side admission, authenticated
+actions, automatic/explicit trigger UX and durable status presentation; external provider/account
+acceptance remains Stage 6.
+
+Codex reread the complete current project, Stage, content-translation, provider/job, storage and
+authorization contracts. The next implementation cannot be assigned safely until the already agreed
+owner policies are mapped to the existing task lifecycle without inventing billing authority or
+silently consuming attempt/provider budget.
+
+## Next technical agreement: generation admission and deferred-work lifecycle
+
+The following facts are already agreed and must not be reopened:
+
+- generation is authenticated through a new code-backed `forum.translation.generate`, initially
+  granted to built-in user/moderator/admin; persisted current translations remain publicly readable;
+- GET/SSR remains read-only; automatic eligible generation uses a same-origin state-changing boundary
+  after hydration, while `> 3000` authoritative CNT-04 semantic characters require an explicit user
+  control;
+- request anti-abuse may count repeated traffic, but it is not a normal per-user product quota;
+- provider allowance meters actual provider-capacity work and is idempotent with durable work;
+- strict zero paid spend plus a 5% reserve cannot be claimed from estimates. A real adapter without
+  authoritative pre-call admission stays disabled; external account/provider proof is Stage 6;
+- stable task/generation-head locking must be evaluated before introducing another durable identity.
+
+Four lifecycle questions remain before a code PR:
+
+1. **Stage 5 runtime boundary.** Decide whether the next local/CI route implementation should accept
+   only injected anti-abuse/allowance policies and remain fail-closed in the default Worker until
+   Stage 6 supplies an authoritative allowance adapter, or whether another contract-backed no-live-
+   provider configuration can exercise the product path without misrepresenting billing guarantees.
+2. **Atomic automatic-trigger semantics.** Specify exactly where the existing transaction determines
+   `no work / existing pending-processing / stale reactivation / new work / completed`, when anti-abuse
+   is consumed, and when provider allowance is reserved. Repeated automatic triggers may count for
+   anti-abuse but must not reserve provider capacity twice for the same durable work.
+3. **Allowance denial/dependency behavior.** Specify what happens when allowance is exhausted,
+   unavailable or reset-later. The current claim increments the bounded attempt count before executor
+   provider work; repeatedly classifying a daily allowance denial as an ordinary retry can exhaust and
+   permanently fail otherwise valid work. A proposed design must state whether denial prevents task
+   creation, defers pending work without consuming an execution attempt, or uses another bounded and
+   observable state—and how JOB-06 treats it.
+4. **Crash and multi-segment behavior.** Post-body execution can issue several provider calls and retry
+   after partial external success. Define reservation granularity/idempotency keys and crash recovery
+   without claiming exactly-once calls. Do not hold a PostgreSQL transaction/row lock across an
+   external allowance/provider network request.
+
+### Codex provisional decomposition for independent review
+
+Codex recommends resolving the work in dependency order rather than one large route/UI PR:
+
+1. **Admission/lifecycle foundation:** provider-neutral fail-closed allowance decision/reservation
+   contract, explicit deferred outcome if required, integration with durable task/attempt/JOB-06 state,
+   stable-work idempotency and concurrency/PostgreSQL tests. No routes or provider enablement.
+2. **Authenticated planning actions:** add `forum.translation.generate`, initial grants and migration;
+   same-origin one-unit title/post actions; authoritative URL target, CNT-04 threshold and requester
+   pseudonym; injected technical anti-abuse policy; controlled `429/503`; no synchronous execution.
+3. **Generation UX/status:** bounded status reads, automatic post-hydration trigger only for eligible
+   content, explicit long-body control, pending/failed/original-safe states and revalidation.
+
+The first slice must not be implemented until the allowance-denial state and atomic boundary are
+settled. ChatGPT must independently inspect the current planners, claim/attempt transitions,
+reconciliation and executors; then either confirm this decomposition with a precise contract or
+propose a smaller correct sequence. Any newly discovered contradiction joins the same agreement
+cycle. No implementation PR is authorized by this planning step.
 ## Full JOB-06 re-review after correction
 
 Codex reviewed the complete PR #99 at
