@@ -131,7 +131,7 @@ export function composeContentGenerationView(
       && !longPost;
     const explicitRequired = !sameLocale
       && longPost
-      && (status === "idle" || status === "failed");
+      && status === "idle";
 
     return {
       contentType: revision.contentType,
