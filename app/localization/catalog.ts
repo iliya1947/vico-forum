@@ -105,6 +105,7 @@ export const canonicalEnglishCatalog = {
     translationRequesting: message("translationRequesting", "Requesting translation…", "Accessible pending feedback while a content translation request is being submitted."),
     translationPending: message("translationPending", "Translation queued.", "Content translation task is queued and waiting to run."),
     translationProcessing: message("translationProcessing", "Translation is being prepared.", "Content translation task is currently processing."),
+    translationConverging: message("translationConverging", "Translation is becoming available.", "Read-only convergence feedback when task completion is newer than the independently read presentation."),
     translationDeferred: message("translationDeferred", "Translation is temporarily deferred.", "Content translation task is durably deferred."),
     translationDeferredFor: message("translationDeferredFor", "Translation is deferred. Try again in about {{seconds}} seconds.", "Deferred content translation feedback with bounded retry timing.", ["seconds"]),
     translationFailed: message("translationFailed", "Translation could not be completed.", "Terminal content translation failure feedback."),
