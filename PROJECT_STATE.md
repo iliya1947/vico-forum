@@ -42,7 +42,7 @@ Vico Forum находится в ранней pre-release разработке.
 - generic `/:locale/*`, runtime `LocaleRegistry`, BCP-47 resolution, LTR/RTL и request-scoped
   `i18next`;
 - persistent locale registry, persistent UI translation storage и compiled bundle storage;
-- текущая migration history — `0000`–`0019`.
+- текущая migration history — `0000`–`0020`.
 
 ## Forum core — Stage 4
 
@@ -230,6 +230,24 @@ Migration `0007`–`0010` содержит durable task lifecycle и generation-
   correction controls по optional presentation auth, а action повторно проверяет authentication,
   same-origin, current permission и resource ownership server-side. Migration `0018` расширяет
   code-backed permission catalog/check constraint и approved initial built-in grants;
+- authenticated one-unit generation planning actions для user-content translation: code-backed permission
+  `forum.translation.generate` добавлен в dynamic authorization catalog с initial grants built-in
+  `user`, `moderator` и `admin`; role grants и per-user overrides остаются authoritative.
+  Existing topic POST boundary поддерживает ровно один current topic title либо один current post body
+  текущей темы, требует authenticated session + same-origin + effective permission и выводит target
+  только из canonical validated URL locale. Actor pseudonymized server-side через существующий HMAC
+  boundary, а planner получает только subject key и injected versioned server-owned request-budget
+  policy; production cost/window/limits по-прежнему не выбраны. Route selection использует
+  authoritative current topic/page state, а planner сохраняет финальный revision/translation recheck
+  и atomic request-budget/task mutation. Automatic-eligible post action заново строит CNT-04 и
+  пропускает только semantic body `<= 3000` characters; более длинный body возвращает bounded
+  explicit-required no-op до pseudonymization/budget/task mutation. Budget denial возвращает bounded
+  `429 Retry-After`, classified authorization/forum/planning availability — controlled `503`,
+  normal no-job outcomes original-safe, unexpected errors не маскируются. Action не вызывает
+  provider allowance или translation provider synchronously. Migration `0020` добавляет permission
+  и initial grants. Default Worker generation capability явно disabled, поэтому local/CI foundation
+  не содержит production anti-spam values, HMAC secret, Queue/provider/allowance bindings или live
+  calls;
 - read-only presentation уже сохранённых current user-content translations на странице темы:
   loader использует authoritative current title/post revisions и canonical validated URL locale,
   выбирает только exact `contentType + contentId + revisionId + targetLocale` records через общую
@@ -246,13 +264,12 @@ Migration `0007`–`0010` содержит durable task lifecycle и generation-
 
 Для завершения Stage 5 local/CI path ещё нужны:
 
-- подключение реализованного request-budget admission и provider-allowance foundation к
-  authenticated generation routes; concrete anti-spam policy values ещё не выбраны. Production
-  content-provider/data-policy approval, authoritative real allowance adapter, binding/credentials
-  и live calls остаются external Stage 6 concerns;
-- generation-side route/UI integration: authenticated generation permission/action, automatic
-  post-hydration trigger for eligible content, explicit long-body translation control and task/status
-  UX under the agreed provider-allowance/anti-spam boundary.
+- generation-side UX/status integration: automatic post-hydration trigger for eligible content,
+  explicit long-body translation control and task/status/revalidation presentation under the
+  implemented authenticated action/provider-allowance/request-budget boundaries. Concrete production
+  anti-spam policy values remain intentionally unselected;
+- production content-provider/data-policy approval, authoritative real allowance adapter,
+  binding/credentials and live calls remain external Stage 6 concerns.
 
 Реальные Cloudflare Queue bindings, provider credentials/calls и deployed provider/Queue smoke —
 это отдельная Stage 6 external acceptance и не являются условием обычных Stage 5 feature PR.
@@ -305,10 +322,9 @@ no-op verification. Перед следующим настоящим external sc
 
 ## Ближайший маршрут
 
-1. Завершить согласование provider-allowance/anti-spam admission и подключить atomic admission к content routes.
-2. Завершить generation-side route/UI integration: authenticated generation action, automatic
-   eligible-content trigger, explicit long-body control and task/status UX.
-3. После завершения Stage 5 перейти к Stage 6 external integration по `ROADMAP.md` и
+1. Завершить generation-side UX/status slice: automatic post-hydration trigger для eligible content,
+   explicit long-body control и bounded task/status/revalidation presentation.
+2. После завершения Stage 5 перейти к Stage 6 external integration по `ROADMAP.md` и
    `docs/database/*`.
 
 На текущем этапе external rollout не является блокером для продолжения Stage 5 local/CI работы.
