@@ -183,8 +183,12 @@ export class ContentTopicTitleAllowanceGate {
   private resolveAdapter(
     acquired: Extract<ContentProviderAllowanceAcquireResult, { outcome: "acquired" }>,
     request: ContentProviderAllowanceRequest,
-  ) {
-    return resolveAdapterDecision(this.dependencies, acquired, request);
+  ): Promise<ContentProviderAllowanceGateResult<ContentTopicTitleTaskStaleReason>> {
+    return resolveAdapterDecision<ContentTopicTitleTaskStaleReason>(
+      this.dependencies,
+      acquired,
+      request,
+    );
   }
 }
 
@@ -255,7 +259,11 @@ export class ContentPostBodyAllowanceGate {
       acquired.occurrence,
       segmentCharacterCounts,
     );
-    return resolveAdapterDecision(this.dependencies, acquired, request);
+    return resolveAdapterDecision<ContentPostBodyTaskStaleReason>(
+      this.dependencies,
+      acquired,
+      request,
+    );
   }
 }
 
