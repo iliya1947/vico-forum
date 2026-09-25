@@ -193,7 +193,10 @@ describe("content provider allowance boundary", () => {
     const gate = new ContentTopicTitleAllowanceGate({
       store,
       adapter,
-      providerRouter: { selectProvider: vi.fn(() => "fake-provider") },
+      providerRouter: {
+        selectProvider: vi.fn(() => "fake-provider"),
+        configuredProvider: vi.fn(() => "fake-provider"),
+      },
       admissionLeaseDurationMs: 60_000,
       localeRegistry: registry,
       generationPolicyVersion: "content-v1",
@@ -252,7 +255,10 @@ describe("content provider allowance boundary", () => {
       adapter: {
         admit: vi.fn(async () => ({ outcome: "admitted" as const, reservationReference: "reserve" })),
       },
-      providerRouter: { selectProvider: vi.fn(() => "fake-provider") },
+      providerRouter: {
+        selectProvider: vi.fn(() => "fake-provider"),
+        configuredProvider: vi.fn(() => "fake-provider"),
+      },
       admissionLeaseDurationMs: 60_000,
       localeRegistry: registry,
       generationPolicyVersion: "content-v1",
@@ -291,7 +297,10 @@ describe("content provider allowance boundary", () => {
     });
     const gate = new ContentTopicTitleAllowanceGate({
       store,
-      providerRouter: { selectProvider: vi.fn(() => "unconfigured-provider") },
+      providerRouter: {
+        selectProvider: vi.fn(() => "unconfigured-provider"),
+        configuredProvider: vi.fn(() => "unconfigured-provider"),
+      },
       admissionLeaseDurationMs: 60_000,
       unconfiguredRetryMs: 1_000,
       localeRegistry: registry,
@@ -322,6 +331,102 @@ describe("content provider allowance boundary", () => {
     expect(task.attemptCount).toBe(0);
   });
 
+  it("bypasses allowance but admits a configured unsupported title provider for terminal execution", async () => {
+    const task = await titleTask({ attemptCount: 0 });
+    const { store, persistAdmission, persistDeferral } = allowanceStore({
+      outcome: "acquired",
+      task,
+      occurrence: { generation: task.generation, attempt: 1 },
+      admissionToken,
+    });
+    const adapter = { admit: vi.fn() };
+    const gate = new ContentTopicTitleAllowanceGate({
+      store,
+      adapter,
+      providerRouter: {
+        selectProvider: vi.fn(() => undefined),
+        configuredProvider: vi.fn(() => "fake-provider"),
+      },
+      admissionLeaseDurationMs: 60_000,
+      localeRegistry: registry,
+      generationPolicyVersion: "content-v1",
+      revisions: {
+        readCurrentRevision: async () => ({
+          contentType: "topic-title",
+          contentId: "topic-a",
+          revisionId: "title-r1",
+          originalContent: "Исходный заголовок",
+          sourceLocale: "ru",
+        }),
+      },
+      translations: { read: async () => undefined, write: vi.fn() },
+      tasks: {
+        claimContentTopicTitle: vi.fn(),
+        markStale: vi.fn(),
+        isCurrentContentTopicTitleGeneration: async () => true,
+      },
+    });
+
+    await expect(gate.admit({ translationTaskId: taskId })).resolves.toEqual({
+      outcome: "admitted",
+      provider: "fake-provider",
+    });
+    expect(adapter.admit).not.toHaveBeenCalled();
+    expect(persistDeferral).not.toHaveBeenCalled();
+    expect(persistAdmission).toHaveBeenCalledWith(
+      taskId,
+      admissionToken,
+      { generation: 3, attempt: 1 },
+      "fake-provider",
+    );
+  });
+
+  it("defers when no translation provider is configured at all", async () => {
+    const task = await titleTask({ attemptCount: 0 });
+    const { store, persistAdmission, persistDeferral } = allowanceStore({
+      outcome: "acquired",
+      task,
+      occurrence: { generation: task.generation, attempt: 1 },
+      admissionToken,
+    });
+    const adapter = { admit: vi.fn() };
+    const gate = new ContentTopicTitleAllowanceGate({
+      store,
+      adapter,
+      providerRouter: {
+        selectProvider: vi.fn(() => undefined),
+        configuredProvider: vi.fn(() => undefined),
+      },
+      admissionLeaseDurationMs: 60_000,
+      unconfiguredRetryMs: 1_000,
+      localeRegistry: registry,
+      generationPolicyVersion: "content-v1",
+      revisions: {
+        readCurrentRevision: async () => ({
+          contentType: "topic-title",
+          contentId: "topic-a",
+          revisionId: "title-r1",
+          originalContent: "Исходный заголовок",
+          sourceLocale: "ru",
+        }),
+      },
+      translations: { read: async () => undefined, write: vi.fn() },
+      tasks: {
+        claimContentTopicTitle: vi.fn(),
+        markStale: vi.fn(),
+        isCurrentContentTopicTitleGeneration: async () => true,
+      },
+    });
+
+    await expect(gate.admit({ translationTaskId: taskId })).resolves.toMatchObject({
+      outcome: "deferred",
+      reason: "provider-unconfigured",
+    });
+    expect(adapter.admit).not.toHaveBeenCalled();
+    expect(persistAdmission).not.toHaveBeenCalled();
+    expect(persistDeferral).toHaveBeenCalledTimes(1);
+  });
+
   it("does not call the adapter while an occurrence is already deferred", async () => {
     const adapter = { admit: vi.fn() };
     const retryNotBefore = new Date("2026-09-25T13:00:00.000Z");
@@ -333,7 +438,10 @@ describe("content provider allowance boundary", () => {
     const gate = new ContentTopicTitleAllowanceGate({
       store,
       adapter,
-      providerRouter: { selectProvider: vi.fn(() => "fake-provider") },
+      providerRouter: {
+        selectProvider: vi.fn(() => "fake-provider"),
+        configuredProvider: vi.fn(() => "fake-provider"),
+      },
       admissionLeaseDurationMs: 60_000,
       localeRegistry: registry,
       generationPolicyVersion: "content-v1",
@@ -352,6 +460,59 @@ describe("content provider allowance boundary", () => {
       reason: "allowance-exhausted",
     });
     expect(adapter.admit).not.toHaveBeenCalled();
+  });
+
+  it("bypasses allowance but admits a configured unsupported post provider for terminal execution", async () => {
+    const task = await postTask();
+    const { store, persistAdmission, persistDeferral } = allowanceStore({
+      outcome: "acquired",
+      task,
+      occurrence: { generation: task.generation, attempt: 1 },
+      admissionToken,
+    });
+    const adapter = { admit: vi.fn() };
+    const source = "Привет **мир** и `const value = 1`.";
+    const gate = new ContentPostBodyAllowanceGate({
+      store,
+      adapter,
+      providerRouter: {
+        selectProvider: vi.fn(() => undefined),
+        configuredProvider: vi.fn(() => "fake-provider"),
+      },
+      admissionLeaseDurationMs: 60_000,
+      localeRegistry: registry,
+      generationPolicyVersion: "content-v1",
+      protectedContentPolicyVersion: CONTENT_MARKDOWN_PROTECTION_POLICY_VERSION,
+      executionBounds: { maxSegments: 20, maxTotalSegmentCharacters: 10_000 },
+      revisions: {
+        readCurrentRevision: async () => ({
+          contentType: "post-body",
+          contentId: "post-a",
+          revisionId: "post-r1",
+          originalContent: source,
+          sourceLocale: "ru",
+        }),
+      },
+      translations: { read: async () => undefined, write: vi.fn() },
+      tasks: {
+        claimContentPostBody: vi.fn(),
+        markStale: vi.fn(),
+        isCurrentContentPostBodyGeneration: async () => true,
+      },
+    });
+
+    await expect(gate.admit({ translationTaskId: taskId })).resolves.toEqual({
+      outcome: "admitted",
+      provider: "fake-provider",
+    });
+    expect(adapter.admit).not.toHaveBeenCalled();
+    expect(persistDeferral).not.toHaveBeenCalled();
+    expect(persistAdmission).toHaveBeenCalledWith(
+      taskId,
+      admissionToken,
+      { generation: 4, attempt: 1 },
+      "fake-provider",
+    );
   });
 
   it("uses protected post segments to bound the complete provider attempt", async () => {
@@ -373,7 +534,10 @@ describe("content provider allowance boundary", () => {
     const gate = new ContentPostBodyAllowanceGate({
       store,
       adapter,
-      providerRouter: { selectProvider: vi.fn(() => "fake-provider") },
+      providerRouter: {
+        selectProvider: vi.fn(() => "fake-provider"),
+        configuredProvider: vi.fn(() => "fake-provider"),
+      },
       admissionLeaseDurationMs: 60_000,
       localeRegistry: registry,
       generationPolicyVersion: "content-v1",
