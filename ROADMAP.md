@@ -110,8 +110,8 @@ Stage 4A был выполнен до reprioritization roadmap и сохраня
 - без Better Auth runtime, routes, Google OAuth, auth Hyperdrive/role/grants или Worker
   auth write-capability.
 
-Stage 4A **не задаёт следующий infrastructure шаг**. Forum-core работа 4B–4E впоследствии
-завершена в local/CI path; текущий продуктовый приоритет — Stage 5.
+Stage 4A **не задаёт следующий infrastructure шаг**. Forum-core работа 4B–4E и Stage 5 translation
+implementation впоследствии завершены в local/CI path; следующий продуктовый этап — Stage 6.
 
 ---
 
@@ -235,10 +235,11 @@ production rollout не является критерием завершения
 
 ---
 
-## Stage 5 — завершить automatic translations и background jobs
+## Stage 5 — завершить automatic translations и background jobs — завершён в local/CI path
 
-Stage 5 — **текущий продуктовый приоритет** после завершённого Stage 4 forum core.
-Архитектура уже зафиксирована; здесь добавляется недостающая реализация в local/CI path.
+Stage 5 завершён в repository/local-CI path после Stage 4 forum core. Ниже сохраняется completion
+record реализованного translation/background-job scope; real provider/Queue/OAuth/runtime
+infrastructure acceptance остаётся Stage 6 и не является частью завершения Stage 5.
 
 **Translation components:** `UI-11`, `UI-12` provider validation, `UI-13`, `UI-14`
 publish/runtime consumption, `CNT-01`–`CNT-06`, `PRV-01`, `PRV-02`, `JOB-01`–`JOB-06`,
