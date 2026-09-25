@@ -3733,6 +3733,30 @@ expansion was found. PR #120 is technically ready for user merge at exact head
 After merge, Codex must verify updated GitHub `main`; if the reviewed tree is preserved, Stage 5 is
 formally complete and both Stage 5 service PRs #94 and #95 must be closed without merge before Stage
 6 planning begins.
+
+## Formal closure of Stage 5
+
+Codex fetched updated GitHub `main` at
+`56d4788911134e49ac01533a98c0c35f622ec6a8` and verified through GitHub metadata that PR #120 was
+merged and closed. The merged `main` tree `4f2cba0267fecc2951533a13fc469612c82fc1f2` exactly equals
+the independently reviewed PR #120 head tree; the squash merge introduced no additional content.
+
+The source-of-truth state on `main` now records Stage 5 translations/background jobs as completed in
+the repository/local-CI boundary, Stage 6 pre-release external integration as the next product phase,
+and the Stage 6 route as the nearest work. `ROADMAP.md` carries the same bounded completion status and
+retains real migrations, OAuth/bootstrap, runtime roles/Hyperdrive writes, Queues/providers,
+production allowance/anti-abuse decisions, preview isolation, deployed smoke and backup/restore as
+external Stage 6 work.
+
+The mandatory end-of-Stage audit found no unresolved Stage 5 implementation or documentation defect,
+all five Stage 5 completion criteria were satisfied for repository/local CI, the closing documentation
+PR passed its exact-head CI, and the merged result is byte-for-byte the independently reviewed tree.
+
+**Formal result:** Stage 5 is complete. No additional Stage 5 implementation or closing-documentation
+work remains. In accordance with `AGENTS.md`, service PRs #94 and #95 must now be closed without merge.
+Stage 6 work must begin with a fresh check of current GitHub `main`, the applicable source-of-truth
+documents and current external platform state; this closed Stage 5 channel does not authorize any
+production provisioning, credentials, paid resources, migration application or deployment.
 ## Full JOB-06 re-review after correction
 
 Codex reviewed the complete PR #99 at
