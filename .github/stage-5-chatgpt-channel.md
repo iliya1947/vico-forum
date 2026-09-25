@@ -2717,3 +2717,229 @@ records the final reviewed head/run. PR #117 remains open and unmerged.
 
 Codex should now independently review the entire corrected PR #117 at the exact head above. If no
 current-Stage defect remains, it can mark the implementation technically ready for user merge.
+
+
+## Next Stage 5 technical agreement: authenticated one-unit generation actions
+
+ChatGPT independently inspected current GitHub `main`
+`523d7b74fddd2fd8b9797c0f57cf2575e5e130b3`, reread the applicable source-of-truth documents,
+and reviewed the current topic route/action, auth/session and authorization boundaries, same-origin
+guard ordering, locale middleware/context, requester pseudonymizer, request-budget store, title/body
+planners, planner outcomes, Worker composition and JOB-06 enqueue/recovery contract.
+
+The Codex decomposition is correct. No new product-policy choice is required before implementing this
+slice: the unresolved request anti-abuse values can remain behind an explicit injected server-side
+policy, while the default Worker remains intentionally fail-closed for generation.
+
+### 1. Permission and authorization
+
+Add one code-backed permission:
+
+`forum.translation.generate`
+
+It belongs in the central permission catalog and the next append-only authorization migration, with
+schema/snapshot parity. Its initial DB grants are added explicitly to built-in `user`, `moderator`
+and `admin`; this is seed/default state only. Dynamic role grants and per-user
+`allow | deny | inherit` remain authoritative on every request.
+
+Update `docs/auth/AUTHORIZATION.md` to add the permission to the catalog and all three initial role
+defaults. Do not add role-name checks or session permission claims.
+
+No generation presentation control is required in the topic loader in this slice because generation
+UX is excluded; the action remains independently protected server-side.
+
+### 2. Route ordering and accepted client input
+
+The existing topic action is the correct resource boundary. Preserve its established ordering:
+
+1. validate required route identity;
+2. require authenticated session;
+3. require same-origin `Origin`;
+4. only then parse form data;
+5. identify the generation intent;
+6. require effective `forum.translation.generate`;
+7. only then resolve the target resource and invoke generation planning.
+
+For translation intents, client input may select only the operation/unit:
+
+- title generation: no resource revision/body/source input;
+- post generation: one `postId` identifying one post inside the current topic.
+
+Client-supplied locale/target, source locale, author, revision id/content, requester identity,
+permission/role, budget cost/window/scopes/limits, provider or allowance fields are ignored and must
+never influence planning.
+
+The target locale is `localeContext.translationLocale`, already established by the locale-boundary
+middleware after canonical active URL resolution. Do not derive target from arbitrary form data.
+
+The server reads the current topic/page resource and obtains the current title revision or the
+identified post's current body revision. A post id not belonging to that topic is not an eligible
+unit. The existing planner then performs its own final authoritative current-revision re-read and
+serialized DB checks, so the route read is selection/threshold context rather than the final
+correctness boundary.
+
+### 3. Injected generation capability and default Worker behavior
+
+Introduce one request-scoped server capability for content generation planning rather than exposing
+pseudonymizer/policy/planners separately to route code. Semantically it owns:
+
+- authenticated requester pseudonymization;
+- server-owned title/body request-budget policy;
+- title/body planners;
+- dependency-availability classification needed by the action result.
+
+The route supplies only authenticated `user.id`, the selected authoritative revision, the
+canonical target locale and the one-unit operation.
+
+The context should have an explicit disabled/unconfigured state rather than treating an accidental
+context lookup/configuration exception as availability. Current default `workers/app.ts` must leave
+generation disabled; a generation action in that composition returns controlled `503` and performs
+no planner, Queue, allowance or provider work.
+
+Local/CI route/integration tests inject the capability with disposable PostgreSQL, deterministic
+HMAC configuration, explicit fake/test budget policy and fake enqueuer. This exercises the product
+boundary without claiming a production anti-abuse policy, real Queue or provider allowance.
+
+No real HMAC secret, Queue binding, provider/account allowance adapter or provider execution is added
+to the default Worker in this slice.
+
+### 4. Requester pseudonym and anti-abuse policy
+
+Only authenticated generation is allowed. The capability pseudonymizes:
+
+`{ kind: "authenticated", identity: session.user.id }`
+
+through the existing Web Crypto HMAC boundary. Only the returned `subjectKey` enters planner
+admission. Raw user/session identifiers, session token and HMAC secret do not enter request-budget
+rows or response payloads.
+
+The route must not invent budget values. Define/inject a validated server-owned policy for title and
+body that supplies the existing planner admission fields:
+
+- `cost`;
+- `windowSeconds`;
+- versioned global scope + limit;
+- versioned requester scope + limit.
+
+The policy may use one shared configuration or distinct title/body configurations, but this is an
+implementation detail as long as each value is explicit, validated and server-owned.
+
+Important: **one-unit action means exactly one content resource per request; it does not imply
+`cost = 1`.** Concrete costs/windows/limits remain unresolved product settings and must not be
+silently chosen by this PR.
+
+This satisfies the agreement gate without returning a product decision to the user: production/default
+runtime remains disabled until a real server-owned policy is intentionally configured later.
+
+### 5. Body automatic-trigger threshold
+
+The current product decision is enforced server-side even though hydration UI is not part of this PR.
+
+For the post-body generation action, reconstruct CNT-04 from the authoritative current body and sum
+the semantic segment text lengths using safe-integer arithmetic.
+
+- total semantic characters `<= 3000`: the one-unit automatic-eligible body action may proceed;
+- total `> 3000`: return a bounded original-safe `explicit-required`/equivalent no-op outcome,
+  consuming no request budget and creating no task.
+
+The later explicit long-body control must use a distinct explicit path/intent. Do not add that UI or
+automatic hydration effect now.
+
+Title generation has no analogous 3000-character product threshold; existing provider/planner
+capability checks remain authoritative for whether title work can be queued.
+
+### 6. Planner and HTTP/action outcomes
+
+Keep route results bounded and do not expose internal task/provider/budget details.
+
+Recommended semantic mapping:
+
+- planner `queued` (new or existing durable pending/processing task): accepted generation planning;
+  duplicate requests preserve the planner's existing budget semantics and may re-enqueue the same
+  durable task;
+- planner original/no-job results such as same-locale, source-unresolved, target-ineligible,
+  target-unsupported, translation-current, task-completed, no-translatable-content or
+  revision-not-current: bounded original-safe/no-op action result;
+- body `> 3000`: bounded explicit-required no-op result;
+- request-budget denial: controlled `429` with `Retry-After` derived from the existing typed
+  decision; do not expose remaining counters, scope identity or raw reset metadata;
+- authorization denial: existing `401/403` semantics;
+- classified authorization/forum/planning/request-budget storage availability failure: controlled
+  `503`;
+- intentionally disabled generation capability in the default Worker: controlled `503`;
+- unexpected programming/schema/integrity/configuration errors propagate to the established error
+  boundary.
+
+A small typed generation-planning availability wrapper may classify only the repository's existing
+PostgreSQL availability/connection/query-timeout classes around planner/store work. It must not
+convert all planner errors to `503`.
+
+The existing `TranslationTaskEnqueuer` has no typed availability error. Therefore an arbitrary
+enqueue exception must **not** be caught as a controlled `503` by default. The durable task may
+already be committed and JOB-06 is the recovery path. If this PR introduces an explicit typed
+transport-unavailable error, only that classified error may map to `503`; unexpected enqueue errors
+still propagate.
+
+No route path may perform provider-allowance admission or a translation-provider call synchronously.
+
+### 7. Atomicity and duplicate semantics
+
+Do not add route-local prechecks that replace planner correctness.
+
+The existing title/body planner store remains authoritative for:
+
+- final current revision and translation recheck;
+- generation-head/stable-task serialization;
+- request-budget consumption in the same PostgreSQL transaction as task mutation;
+- duplicate pending/processing accounting;
+- stale reactivation and completed-task behavior;
+- after-commit enqueue.
+
+A route can read the resource for selection/threshold purposes, but planner outcomes decide whether
+durable work is created/reused.
+
+If enqueue fails after commit, tests must prove the task remains recoverable by JOB-06. The request
+must never roll back or fabricate removal of already committed durable work.
+
+### 8. Minimal implementation surface
+
+The next mergeable PR can be bounded to:
+
+1. permission catalog + append-only authorization migration/schema/snapshot + authorization docs;
+2. request-scoped generation action capability and bounded action result/error contract;
+3. topic action intents for one title and one automatic-eligible post body;
+4. server-owned requester pseudonymization and injected budget-policy composition;
+5. route/planner availability classification needed for `429/503`;
+6. focused action/unit/disposable-PostgreSQL tests;
+7. factual `PROJECT_STATE.md` update only after successful checks.
+
+No new translation-task/allowance schema is needed.
+
+### 9. Required focused tests
+
+In addition to Codex's proposed matrix, verify explicitly:
+
+- guest and cross-origin rejection occurs before `request.formData()`;
+- permission `deny` override wins even when the built-in role grant exists; explicit user `allow`
+  works when role grant is absent;
+- forged locale/source/revision/budget/provider/actor fields cannot alter the server-derived request;
+- URL locale comes from the canonical resolved locale context;
+- post id must belong to the current route topic and the server uses its current body revision;
+- semantic CNT-04 total at exactly 3000 proceeds, 3001 returns explicit-required without
+  pseudonymization/budget/task mutation;
+- only the HMAC subject key reaches budget storage;
+- duplicate pending/processing requests keep existing atomic budget accounting and one stable durable
+  task identity;
+- budget denial rolls back task mutation and returns bounded `429 Retry-After`;
+- classified availability returns `503`, while an unexpected planner/store error propagates;
+- enqueue failure after commit leaves recoverable durable pending work for JOB-06;
+- generation action performs zero provider-allowance and translation-provider calls;
+- default Worker/unconfigured generation capability is fail-closed and performs no work.
+
+### Agreement result
+
+ChatGPT confirms the next dependency slice with the refinements above. The unresolved anti-abuse
+values are technically isolated behind an injected fail-closed boundary, so no owner product decision
+is required before implementation. No mergeable implementation PR is authorized by this ChatGPT
+message alone; Codex should independently verify this contract and, if it agrees, issue the exact
+mergeable task and acceptance criteria. Generation UX/status remains the following Stage 5 slice.
