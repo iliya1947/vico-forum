@@ -5,12 +5,14 @@ import type { UiTranslationStore } from "./persistent-sources";
 import type { TranslationBundleReader } from "./bundles";
 import type { ContentTranslationPresentationService } from "./content-translation-presentation";
 import type { ContentGenerationActionCapability } from "./content-generation-action.server";
+import type { ContentGenerationStatusReader } from "./content-generation-status.server";
 
 export const localeContext = createContext<ResolvedLocaleContext>();
 export const registryLoaderContext = createContext<() => Promise<LoadedLocaleRegistry>>();
 export type RuntimeUiTranslationStore = UiTranslationStore & TranslationBundleReader;
 export const uiTranslationStoreContext = createContext<RuntimeUiTranslationStore>();
 export const contentTranslationPresentationContext = createContext<ContentTranslationPresentationService>();
+export const contentGenerationStatusContext = createContext<ContentGenerationStatusReader>();
 
 export type ContentGenerationActionRuntime =
   | { readonly enabled: false }
@@ -78,4 +80,10 @@ export function contentGenerationActionForRequest(
   context: RouterContextProvider,
 ): ContentGenerationActionRuntime {
   return context.get(contentGenerationActionContext);
+}
+
+export function contentGenerationStatusForRequest(
+  context: RouterContextProvider,
+): ContentGenerationStatusReader {
+  return context.get(contentGenerationStatusContext);
 }
