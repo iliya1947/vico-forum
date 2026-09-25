@@ -260,19 +260,36 @@ Migration `0007`–`0010` содержит durable task lifecycle и generation-
   metadata, а native `details` control позволяет открыть original без writes/provider calls. Guest
   и authenticated user получают один и тот же persisted public read result.
 
-### Stage 5 ещё не завершён
+### Stage 5 — завершённый local/CI path
 
-Для завершения Stage 5 local/CI path ещё нужны:
+В repository/local-CI path дополнительно реализована generation-side UX/status integration:
 
-- generation-side UX/status integration: automatic post-hydration trigger for eligible content,
-  explicit long-body translation control and task/status/revalidation presentation under the
-  implemented authenticated action/provider-allowance/request-budget boundaries. Concrete production
-  anti-spam policy values remain intentionally unselected;
-- production content-provider/data-policy approval, authoritative real allowance adapter,
-  binding/credentials and live calls remain external Stage 6 concerns.
+- topic loader для authenticated reader с current effective `forum.translation.generate` читает
+  bounded current-generation status одним set-based batch query поверх существующих generation heads,
+  task rows и revision metadata; task/provider/claim/budget internals клиенту не сериализуются;
+- exact-current persisted translation остаётся authoritative presentation state; classified
+  generation-status storage unavailable сохраняет public/original-safe topic read и отключает
+  automatic generation hints для этого response, unexpected failures не маскируются;
+- eligible original content после hydration автоматически ставится в sequential one-unit generation
+  queue с exact `contentType + contentId + revisionId + targetLocale` guard и без повторной отправки
+  той же единицы в одном hydration cycle; SSR/GET не выполняет generation POST/provider work;
+- post body с CNT-04 semantic length `<= 3000` использует automatic action, более длинный body
+  получает отдельный explicit control. Explicit path обходит только automatic length gate и повторно
+  проходит те же authenticated permission, authoritative resource/revision/target, pseudonymization,
+  request-budget, planner и dispatch boundaries;
+- automatic queue подавляет per-item loader revalidation и после завершения выполняет один read-only
+  refresh; active `pending | processing | deferred` status использует bounded finite polling через
+  loader revalidation, а не повторные generation POST;
+- UI локализованно и accessibility-visible показывает requesting/pending/processing/deferred/failed/
+  unavailable/current/explicit-required feedback. Request-budget `429` может показывать только
+  bounded retry timing без раскрытия quota internals;
+- regression coverage проверяет batch status semantics, revision/target isolation, original-safe
+  degradation, dynamic permission hints без GET side effects, explicit threshold bypass, same-hydration
+  dedupe, finite read-only polling и disposable PostgreSQL integration.
 
-Реальные Cloudflare Queue bindings, provider credentials/calls и deployed provider/Queue smoke —
-это отдельная Stage 6 external acceptance и не являются условием обычных Stage 5 feature PR.
+Реальные Cloudflare Queue bindings, provider credentials/calls, authoritative production allowance
+adapter, production anti-abuse values, provider/data-policy approval и deployed provider/Queue smoke
+остаются отдельной Stage 6 external acceptance.
 
 ## CI и migration state
 
@@ -322,9 +339,9 @@ no-op verification. Перед следующим настоящим external sc
 
 ## Ближайший маршрут
 
-1. Завершить generation-side UX/status slice: automatic post-hydration trigger для eligible content,
-   explicit long-body control и bounded task/status/revalidation presentation.
-2. После завершения Stage 5 перейти к Stage 6 external integration по `ROADMAP.md` и
-   `docs/database/*`.
+1. Провести финальную техническую проверку Stage 5 против актуального `main`, целей Stage и
+   обязательных local/CI checks.
+2. После подтверждения технической готовности Stage 5 перейти к Stage 6 external integration по
+   `ROADMAP.md` и `docs/database/*`.
 
-На текущем этапе external rollout не является блокером для продолжения Stage 5 local/CI работы.
+External rollout не входит в завершённый Stage 5 local/CI implementation path.
