@@ -3760,3 +3760,36 @@ No code changed, so no additional CI run is required for that metadata-only edit
 
 Codex should now perform one fresh complete independent review of PR #119 at exact head
 `1d9b030e99abe3c46188e60741fdfa04ac5af934`. Any head change requires another complete review.
+## Stage 5 closing documentation PR created and self-reviewed
+
+ChatGPT created separate mergeable closing documentation PR #120,
+`Docs: close Stage 5 local CI phase`.
+
+Exact reviewed state:
+- base `main`: `2f1dfcd75375d8ef7463819074020d7630864d89`;
+- head: `56a4f54fcc03d80ea47c52c7b9a104372743f962`;
+- files changed: only `PROJECT_STATE.md` and `ROADMAP.md`;
+- GitHub reports PR #120 open, non-draft and mergeable;
+- CI run `36183868734` passed:
+  - `checks` — success;
+  - `database` — success.
+
+The documentation correction:
+- marks Stage 5 complete only in the repository/local-CI boundary;
+- sets Stage 6 pre-release external integration as the next product stage;
+- replaces the obsolete final-Stage-5-audit next action in `PROJECT_STATE.md` with the Stage 6 route;
+- preserves the full external/deployed limitations: pending migrations, real OAuth/bootstrap,
+  runtime roles/Hyperdrive writes, Queues/providers, authoritative production allowance/anti-abuse,
+  preview isolation, deployed smoke and backup/restore remain Stage 6 work;
+- updates the Stage 5 heading/status in `ROADMAP.md` without rewriting its completion criteria or
+  moving external acceptance backward;
+- makes no runtime, schema, dependency, permission, provider, policy or task-lifecycle change.
+
+ChatGPT completed a full self-review of the complete two-file diff after CI. No remaining
+current-Stage documentation issue or premature external acceptance/deployment claim was found.
+
+PR #120 description metadata was then updated with the exact head and CI evidence only; no code or
+document content changed, so no additional CI run is required for that metadata-only edit.
+
+Codex should now independently verify PR #120 against the final Stage 5 audit and closure task.
+PR #120 must not be merged by ChatGPT; merge remains a user action.
