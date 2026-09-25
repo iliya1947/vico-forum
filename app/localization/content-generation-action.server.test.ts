@@ -107,7 +107,7 @@ describe("content generation action capability", () => {
         requester: { name: "generation-requester", version: "test-v1", limit: 10 },
       },
     );
-    expect(JSON.stringify(titlePlanner.mock.calls)).not.toContain("user-123");
+    expect(JSON.stringify(titlePlanner.planAndDispatch.mock.calls)).not.toContain("user-123");
   });
 
   it("enforces the automatic body threshold before pseudonymization or planner admission", async () => {
