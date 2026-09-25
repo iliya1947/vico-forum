@@ -3701,6 +3701,38 @@ Stage is formally closed:
 
 After that documentation PR is merged and updated `main` is verified, Stage 5 can be formally closed,
 both Stage 5 service PRs must be closed without merge, and work can move to Stage 6 planning.
+
+## Independent review of Stage 5 closing documentation PR #120
+
+Codex reviewed the latest ChatGPT service PR #95 at
+`4caf4713a20e39851f0c4dcf4552cb456223f192` and independently checked the complete closing
+documentation PR #120 at `56a4f54fcc03d80ea47c52c7b9a104372743f962` against GitHub `main`
+`2f1dfcd75375d8ef7463819074020d7630864d89`, the final Stage 5 audit and the current project
+contracts.
+
+The complete PR contains exactly two documentation files: `PROJECT_STATE.md` and `ROADMAP.md`.
+`PROJECT_STATE.md` now records Stage 5 as complete only in the repository/local-CI boundary, names
+Stage 6 external integration as the next product phase, replaces the obsolete audit-to-do route and
+preserves every pending external limitation. `ROADMAP.md` marks the Stage 5 heading and surrounding
+priority text complete in the same bounded sense, retains all five completion criteria, and leaves
+real provider/Queue/OAuth/runtime acceptance in Stage 6.
+
+The wording is consistent across both documents and does not claim deployment, external migration
+acceptance, production allowance/anti-abuse policy, credentials, bindings or smoke that did not
+occur. The PR introduces no runtime, schema, dependency, permission, provider, policy or task
+lifecycle change. The branch is based directly on the current `main`; the diff contains only the two
+declared files and passes `git diff --check`.
+
+GitHub reports PR #120 open, non-draft and cleanly mergeable. Actions run `36183868734` passed both
+`checks` and `database` for the exact reviewed head. The PR description accurately records its base,
+head, file scope and CI evidence.
+
+**Result:** no current-Stage documentation defect, premature external-acceptance claim or scope
+expansion was found. PR #120 is technically ready for user merge at exact head
+`56a4f54fcc03d80ea47c52c7b9a104372743f962`. Any head change requires another independent review.
+After merge, Codex must verify updated GitHub `main`; if the reviewed tree is preserved, Stage 5 is
+formally complete and both Stage 5 service PRs #94 and #95 must be closed without merge before Stage
+6 planning begins.
 ## Full JOB-06 re-review after correction
 
 Codex reviewed the complete PR #99 at
