@@ -1141,9 +1141,21 @@ describe("content post-body durable planning", () => {
         "update translation_tasks set claimed_at = statement_timestamp() - interval '2 seconds', lease_expires_at = statement_timestamp() - interval '1 second' where id = $1 and status = 'processing'",
         [planned.task.id],
       );
-      const reclaimed = await new DrizzleTranslationTaskStore(
-        drizzle(second),
-      ).claimContentPostBody(planned.task.id, 60_000);
+      const secondStore = new DrizzleTranslationTaskStore(drizzle(second));
+      const allowance = await secondStore.acquireContentProviderAllowance(
+        planned.task.id,
+        60_000,
+      );
+      if (allowance.outcome !== "acquired") {
+        throw new Error("expected body reclaim allowance");
+      }
+      await expect(secondStore.persistContentProviderAllowanceAdmission(
+        planned.task.id,
+        allowance.admissionToken,
+        allowance.occurrence,
+        "body-reclaim-reservation",
+      )).resolves.toBe(true);
+      const reclaimed = await secondStore.claimContentPostBody(planned.task.id, 60_000);
       expect(reclaimed).toMatchObject({
         outcome: "claimed",
         attemptStarted: true,
