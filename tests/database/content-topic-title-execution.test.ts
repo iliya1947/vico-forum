@@ -622,6 +622,32 @@ describe("content topic-title execution and publication", () => {
       status: "pending",
       allowance_state: "deferred",
     });
+
+    await client.query(
+      `update translation_tasks
+          set updated_at = statement_timestamp() - interval '2 seconds'
+        where id = $1`,
+      [planned.task.id],
+    );
+    await expect(tasks.reserveReconciliationCandidates({
+      limit: 20,
+      pendingOlderThanMs: 0,
+    })).resolves.not.toContainEqual(expect.objectContaining({ id: planned.task.id }));
+
+    await client.query(
+      `update translation_tasks
+          set allowance_retry_not_before = statement_timestamp() - interval '1 second',
+              allowance_updated_at = statement_timestamp() - interval '2 seconds'
+        where id = $1`,
+      [planned.task.id],
+    );
+    await expect(tasks.reserveReconciliationCandidates({
+      limit: 20,
+      pendingOlderThanMs: 0,
+    })).resolves.toContainEqual({
+      id: planned.task.id,
+      reason: "pending",
+    });
   });
 
   it("recovers an expired admission lease with the same occurrence key", async () => {
