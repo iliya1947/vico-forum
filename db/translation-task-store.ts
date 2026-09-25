@@ -265,28 +265,38 @@ export class DrizzleTranslationTaskStore implements
     ) {
       throw new TypeError("provider allowance reservation reference is invalid");
     }
-    const databaseNow = sql`statement_timestamp()`;
-    const rows = await this.database
-      .update(translationTasks)
-      .set({
-        allowanceState: "admitted",
-        allowanceClaimToken: null,
-        allowanceLeaseExpiresAt: null,
-        allowanceRetryNotBefore: null,
-        allowanceReason: null,
-        allowanceReservationReference: reservationReference ?? null,
-        allowanceUpdatedAt: databaseNow,
-        updatedAt: databaseNow,
-      })
-      .where(and(
-        eq(translationTasks.id, id),
-        eq(translationTasks.allowanceState, "leasing"),
-        eq(translationTasks.allowanceGeneration, occurrence.generation),
-        eq(translationTasks.allowanceAttempt, occurrence.attempt),
-        eq(translationTasks.allowanceClaimToken, admissionToken),
-      ))
-      .returning({ id: translationTasks.id });
-    return rows.length === 1;
+
+    const unit = await this.readContentAllowanceUnit(id);
+    if (!unit) return false;
+    return this.database.transaction(async (transaction) => {
+      if (!await lockCurrentAllowanceGeneration(transaction, unit, occurrence.generation)) {
+        return false;
+      }
+      const databaseNow = sql`statement_timestamp()`;
+      const rows = await transaction
+        .update(translationTasks)
+        .set({
+          allowanceState: "admitted",
+          allowanceClaimToken: null,
+          allowanceLeaseExpiresAt: null,
+          allowanceRetryNotBefore: null,
+          allowanceReason: null,
+          allowanceReservationReference: reservationReference ?? null,
+          allowanceUpdatedAt: databaseNow,
+          updatedAt: databaseNow,
+        })
+        .where(and(
+          eq(translationTasks.id, id),
+          eq(translationTasks.generation, occurrence.generation),
+          eq(translationTasks.attemptCount, occurrence.attempt - 1),
+          eq(translationTasks.allowanceState, "leasing"),
+          eq(translationTasks.allowanceGeneration, occurrence.generation),
+          eq(translationTasks.allowanceAttempt, occurrence.attempt),
+          eq(translationTasks.allowanceClaimToken, admissionToken),
+        ))
+        .returning({ id: translationTasks.id });
+      return rows.length === 1;
+    });
   }
 
   async persistContentProviderAllowanceDeferral(
@@ -306,33 +316,72 @@ export class DrizzleTranslationTaskStore implements
     if (!/^[a-z0-9][a-z0-9-]{0,63}$/.test(reason)) {
       throw new TypeError("provider allowance reason is invalid");
     }
-    const databaseNow = sql`statement_timestamp()`;
-    const persistedRetry = sql`greatest(
-      ${retryNotBefore},
-      ${databaseNow} + interval '1 millisecond'
-    )`;
+
+    const unit = await this.readContentAllowanceUnit(id);
+    if (!unit) return undefined;
+    return this.database.transaction(async (transaction) => {
+      if (!await lockCurrentAllowanceGeneration(transaction, unit, occurrence.generation)) {
+        return undefined;
+      }
+      const databaseNow = sql`statement_timestamp()`;
+      const persistedRetry = sql`greatest(
+        ${retryNotBefore},
+        ${databaseNow} + interval '1 millisecond'
+      )`;
+      const rows = await transaction
+        .update(translationTasks)
+        .set({
+          allowanceState: "deferred",
+          allowanceClaimToken: null,
+          allowanceLeaseExpiresAt: null,
+          allowanceRetryNotBefore: persistedRetry,
+          allowanceReason: reason,
+          allowanceReservationReference: null,
+          allowanceUpdatedAt: databaseNow,
+          reconciliationAttemptedAt: null,
+          updatedAt: databaseNow,
+        })
+        .where(and(
+          eq(translationTasks.id, id),
+          eq(translationTasks.generation, occurrence.generation),
+          eq(translationTasks.attemptCount, occurrence.attempt - 1),
+          eq(translationTasks.allowanceState, "leasing"),
+          eq(translationTasks.allowanceGeneration, occurrence.generation),
+          eq(translationTasks.allowanceAttempt, occurrence.attempt),
+          eq(translationTasks.allowanceClaimToken, admissionToken),
+        ))
+        .returning({ retryNotBefore: translationTasks.allowanceRetryNotBefore });
+      return rows[0]?.retryNotBefore ?? undefined;
+    });
+  }
+
+  private async readContentAllowanceUnit(id: string): Promise<TranslationUnit | undefined> {
     const rows = await this.database
-      .update(translationTasks)
-      .set({
-        allowanceState: "deferred",
-        allowanceClaimToken: null,
-        allowanceLeaseExpiresAt: null,
-        allowanceRetryNotBefore: persistedRetry,
-        allowanceReason: reason,
-        allowanceReservationReference: null,
-        allowanceUpdatedAt: databaseNow,
-        reconciliationAttemptedAt: null,
-        updatedAt: databaseNow,
+      .select({
+        translationKind: translationTasks.translationKind,
+        sourceNamespace: translationTasks.sourceNamespace,
+        sourceKey: translationTasks.sourceKey,
+        targetLocale: translationTasks.targetLocale,
       })
-      .where(and(
-        eq(translationTasks.id, id),
-        eq(translationTasks.allowanceState, "leasing"),
-        eq(translationTasks.allowanceGeneration, occurrence.generation),
-        eq(translationTasks.allowanceAttempt, occurrence.attempt),
-        eq(translationTasks.allowanceClaimToken, admissionToken),
-      ))
-      .returning({ retryNotBefore: translationTasks.allowanceRetryNotBefore });
-    return rows[0]?.retryNotBefore ?? undefined;
+      .from(translationTasks)
+      .where(eq(translationTasks.id, id))
+      .limit(1);
+    const row = rows[0];
+    if (!row) return undefined;
+    if (
+      row.translationKind !== "content-topic-title"
+      && row.translationKind !== "content-post-body"
+    ) {
+      throw new TranslationTaskIntegrityError(
+        "provider allowance persistence requires a content translation task",
+      );
+    }
+    return {
+      translationKind: row.translationKind,
+      sourceNamespace: row.sourceNamespace,
+      sourceKey: row.sourceKey,
+      targetLocale: row.targetLocale,
+    };
   }
 
   async markContentTaskStaleFromAllowance(
@@ -1552,6 +1601,29 @@ function unitValues(specification: UiTranslationJobSpecification): TranslationUn
     sourceKey: specification.sourceIdentity.key,
     targetLocale: specification.targetLocale,
   };
+}
+
+async function lockCurrentAllowanceGeneration(
+  transaction: TranslationTaskTransaction,
+  unit: TranslationUnit,
+  expectedGeneration: number,
+): Promise<boolean> {
+  const locked = await transaction.execute<{ current_generation: number }>(sql`
+    select current_generation
+      from ${translationTaskGenerationHeads}
+     where ${translationTaskGenerationHeads.translationKind} = ${unit.translationKind}
+       and ${translationTaskGenerationHeads.sourceNamespace} = ${unit.sourceNamespace}
+       and ${translationTaskGenerationHeads.sourceKey} = ${unit.sourceKey}
+       and ${translationTaskGenerationHeads.targetLocale} = ${unit.targetLocale}
+     for update
+  `);
+  const currentGeneration = locked.rows[0]?.current_generation;
+  if (!Number.isSafeInteger(currentGeneration) || currentGeneration! <= 0) {
+    throw new TranslationTaskIntegrityError(
+      "provider allowance generation head is missing or invalid",
+    );
+  }
+  return currentGeneration === expectedGeneration;
 }
 
 function unitCondition(unit: TranslationUnit) {
