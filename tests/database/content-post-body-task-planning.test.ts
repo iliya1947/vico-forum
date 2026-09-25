@@ -34,6 +34,7 @@ import {
 import {
   ContentTranslationService,
 } from "../../app/localization/content-translation";
+import { ContentTranslationAllowanceAdmissionService } from "../../app/localization/content-translation-allowance";
 import { TranslationExecutionFailure } from "../../app/localization/translation-failures";
 import { ContentTopicTitleTranslationPlanner } from "../../app/localization/content-translation-planning";
 import { localeRegistry } from "../../app/localization/registry";
@@ -47,6 +48,7 @@ import { FakeTranslationTaskEnqueuer } from "../../app/localization/translation-
 import { DrizzleContentPostBodyExecutionStore } from "../../db/content-post-body-execution-store";
 import { DrizzleContentPostBodyPlanningStore } from "../../db/content-post-body-task-store";
 import { DrizzleContentTopicTitlePlanningStore } from "../../db/content-topic-title-task-store";
+import { DrizzleContentTranslationAllowanceStore } from "../../db/content-translation-allowance-store";
 import { DrizzleContentTranslationStore } from "../../db/content-translation-store";
 import { DrizzleTranslationTaskStore } from "../../db/translation-task-store";
 
@@ -83,6 +85,7 @@ beforeAll(async () => {
     "drizzle/0015_content_topic_title_tasks.sql",
     "drizzle/0016_content_post_body_tasks.sql",
     "drizzle/0017_content_translation_request_budget.sql",
+    "drizzle/0019_content_translation_allowance_admission.sql",
   ]) {
     const sql = (await readFile(migration, "utf8"))
       .replaceAll('"public".', `"${schemaName}".`);
@@ -93,6 +96,7 @@ beforeAll(async () => {
 beforeEach(async () => {
   await client.query(`
     truncate
+      content_translation_allowance_admissions,
       content_translation_request_budget_counters,
       content_post_body_translation_tasks,
       content_topic_title_translation_tasks,
@@ -1395,7 +1399,24 @@ function createBodyExecutor(
     protectedContentPolicyVersion: CONTENT_MARKDOWN_PROTECTION_POLICY_VERSION,
     publications: executionStore,
   });
+  const allowance = new ContentTranslationAllowanceAdmissionService({
+    tasks,
+    store: new DrizzleContentTranslationAllowanceStore(database),
+    adapter: { admit: async () => ({ outcome: "admitted" }) },
+    postBodyPreflight: {
+      tasks,
+      revisions: executionStore,
+      translations,
+      localeRegistry,
+      generationPolicyVersion: "content-v1",
+      protectedContentPolicyVersion: CONTENT_MARKDOWN_PROTECTION_POLICY_VERSION,
+    },
+    admissionLeaseDurationMs: 30_000,
+    postBodyExecutionBounds: executionBounds,
+    unconfiguredRetryNotBefore: () => new Date(Date.now() + 60_000),
+  });
   return new ContentPostBodyTaskExecutor({
+    allowance,
     consumer,
     providerRouter: new TranslationProviderRouter([adapter]),
     publisher,
