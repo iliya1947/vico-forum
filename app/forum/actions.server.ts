@@ -5,7 +5,10 @@ import {
   requireForumPermission,
   requiredFormText,
   runForumMutation,
+  runSourceLocaleCorrection,
   solutionScope,
+  sourceLocaleCorrectionFailure,
+  sourceLocaleCorrectionScope,
 } from "./mutations.server";
 import { forumTopicPath } from "./paths";
 
@@ -61,6 +64,42 @@ export async function topicAction({ request, params, context }: {
     return runForumMutation(request, context, async (writer, actorId) => {
       await writer.selectBestAnswer({ topicId, postId, actorId, scope: authorization.scope });
       return redirect(`${forumTopicPath(locale, topicId)}#post-${encodeURIComponent(postId)}`);
+    });
+  }
+  if (intent === "correctTitleSourceLocale") {
+    const expectedRevisionId = requiredFormText(formData, "expectedRevisionId");
+    const sourceLocale = requiredFormText(formData, "sourceLocale");
+    if (!expectedRevisionId || !sourceLocale) return sourceLocaleCorrectionFailure("invalid", 400);
+    const authorization = await sourceLocaleCorrectionScope(context);
+    if ("error" in authorization) return authorization.error;
+    return runSourceLocaleCorrection(request, context, async (writer, actorId) => {
+      await writer.correctTopicTitleSourceLocale({
+        topicId,
+        expectedRevisionId,
+        sourceLocale,
+        actorId,
+        scope: authorization.scope,
+      });
+      return redirect(forumTopicPath(locale, topicId));
+    });
+  }
+  if (intent === "correctPostSourceLocale") {
+    const postId = requiredFormText(formData, "postId");
+    const expectedRevisionId = requiredFormText(formData, "expectedRevisionId");
+    const sourceLocale = requiredFormText(formData, "sourceLocale");
+    if (!postId || !expectedRevisionId || !sourceLocale) return sourceLocaleCorrectionFailure("invalid", 400);
+    const authorization = await sourceLocaleCorrectionScope(context);
+    if ("error" in authorization) return authorization.error;
+    return runSourceLocaleCorrection(request, context, async (writer, actorId) => {
+      await writer.correctPostBodySourceLocale({
+        topicId,
+        postId,
+        expectedRevisionId,
+        sourceLocale,
+        actorId,
+        scope: authorization.scope,
+      });
+      return redirect(forumTopicPath(locale, topicId) + "#post-" + encodeURIComponent(postId));
     });
   }
   if (intent !== "reply") return mutationFailure("invalid", 400);
