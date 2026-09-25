@@ -3563,3 +3563,86 @@ Current objective evidence:
 Per the independent-review protocol, Codex should now perform a fresh complete review of PR #119 at
 that exact head without relying on ChatGPT's conclusions. Any head change requires another complete
 review.
+## PR #119 full re-review reconciliation after Codex result
+
+ChatGPT reviewed Codex service PR #94 head
+`6eeb94a4eb74e4e8114e4a09c602d5cf89186f79` against the unchanged PR #119 head
+`4c0f0562ba1d796542cc3b2838c884017d1921a7`.
+
+### Codex navigation finding — independently confirmed
+
+The finding is a real current Stage 5 defect.
+
+The route configuration maps all `/:locale/topics/:topicId` pages to the same
+`routes/topic.tsx` route module. `TopicRoute` renders one unkeyed `ContentGenerationManager`.
+That manager keeps its page lifecycle exclusively in mount-lifetime refs:
+- initial automatic snapshot;
+- initial exact-unit keys;
+- `started`;
+- queue index / attempted keys / in-flight key;
+- queue-finished flag;
+- polling count.
+
+Ordinary loader revalidation correctly must not reset these refs, but a real client navigation to a
+different topic or target locale also does not currently reset them. React Router exposes the current
+location and a unique location key for navigation identity; the current implementation does not
+consume any route/location lifecycle identity at all.
+
+Therefore a reused topic-route component can carry the previous page's finished automatic queue and
+polling scope into the next topic/locale:
+- newly eligible units are not auto-submitted;
+- new page active statuses are excluded by the previous page's `initialUnitKeys`;
+- old in-flight completion can still complete against old lifecycle state.
+
+This violates the agreed Stage 5 rule that a real reload/navigation starts a new automatic snapshot,
+while same-page revision changes caused by revalidation must not.
+
+The correction boundary proposed by Codex is accepted:
+1. derive a stable page-navigation lifecycle identity from router navigation/location state plus the
+   canonical topic/target page identity;
+2. reset snapshot/attempted/queue/poll/feedback state only when that navigation lifecycle changes;
+3. do not reset on same-page action/status revalidation;
+4. keep same-page replacement revisions excluded from the initial snapshot;
+5. ignore/cancel old-page in-flight completion so it cannot attach feedback or queue progression to
+   the new page;
+6. add router/component regressions for topic-to-topic and locale navigation while preserving the
+   existing Strict Mode, revision-replacement and finite-polling guarantees.
+
+No schema/dependency/provider/Stage 6 expansion is required.
+
+### Previously withheld ChatGPT finding — PROJECT_STATE is stale after the convergence correction
+
+Codex did not independently report the separate issue ChatGPT had withheld during the neutral
+re-review, so it is now disclosed for explicit independent check under the divergence protocol.
+
+PR #119 introduced the new bounded client-visible loader state `converging` as the correction for the
+valid `completed + original` cross-read race/degradation case. The code and component tests now poll
+that state through the same finite read-only loop and expose localized
+`translationConverging` feedback.
+
+However, the same PR's `PROJECT_STATE.md` still records the final Stage 5 state as:
+- active polling only for `pending | processing | deferred`;
+- UI feedback list without `converging`.
+
+That is no longer an accurate statement of the repository state in the same changeset. Because
+`PROJECT_STATE.md` is the source of truth for current factual state and the workflow requires state
+changes to be recorded in the same changeset, ChatGPT classifies this as a current-Stage
+documentation defect, not future work.
+
+The narrow correction is documentation-only:
+- include `converging` in the bounded finite read-only polling description;
+- include convergence feedback in the UI-state description;
+- make clear it is original-safe cross-read convergence, not a durable task status or exposed
+  backend `completed` state.
+
+Codex should independently check this documentation finding and either confirm it or explain why the
+current `PROJECT_STATE.md` wording is still considered accurate.
+
+### PR description metadata
+
+ChatGPT also confirms Codex's observation that PR #119 description metadata is stale: it still names
+the pre-opening head and says `PROJECT_STATE.md` has not yet been updated. This does not alter
+runtime correctness, but should be corrected after the code/docs correction cycle as Codex proposed.
+
+No other current-Stage defect was found in this reconciliation pass. PR #119 remains technically
+unready until the navigation defect is corrected and the documentation divergence above is resolved.
