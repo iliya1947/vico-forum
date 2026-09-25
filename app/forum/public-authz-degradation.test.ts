@@ -7,6 +7,13 @@ import type { ForumReader } from "../../db/forum-repository";
 import { forumReaderContext } from "./request-context";
 import { loader as sectionLoader } from "../routes/section";
 import { loader as topicLoader } from "../routes/topic";
+import { ContentTranslationPresentationService } from "../localization/content-translation-presentation";
+import { localeRegistry } from "../localization/registry";
+import {
+  contentTranslationPresentationContext,
+  localeContext,
+  registryLoaderContext,
+} from "../localization/request-context";
 
 const section = {
   id: "section-1",
@@ -67,9 +74,32 @@ const session = {
   },
 } satisfies AuthSession;
 
+function configureTranslationPresentation(context: RouterContextProvider) {
+  context.set(localeContext, {
+    translationLocale: "en",
+    fallbackLocales: [],
+    direction: "ltr",
+    formatting: { locale: "en", timeZone: "UTC" },
+    nativeName: "English",
+    presentationMetadata: {},
+  });
+  context.set(registryLoaderContext, async () => ({
+    registry: localeRegistry,
+    semanticIdentity: "test",
+    health: { status: "healthy" as const },
+  }));
+  context.set(
+    contentTranslationPresentationContext,
+    new ContentTranslationPresentationService({
+      readBatch: async () => ({ translations: [] }),
+    }),
+  );
+}
+
 function contextWithAuthorizationFailure(error: Error) {
   const context = new RouterContextProvider();
   context.set(forumReaderContext, reader);
+  configureTranslationPresentation(context);
   context.set(authSessionContext, session);
   context.set(authorizationContext, {
     forUser: () => ({
@@ -83,6 +113,7 @@ function contextWithAuthorizationFailure(error: Error) {
 function contextWithPermissions(userId: string, permissions: readonly string[]) {
   const context = new RouterContextProvider();
   context.set(forumReaderContext, reader);
+  configureTranslationPresentation(context);
   context.set(authSessionContext, {
     ...session,
     user: { ...session.user, id: userId },
