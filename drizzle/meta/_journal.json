@@ -134,6 +134,13 @@
       "when": 1790319600000,
       "tag": "0018_source_locale_correction_permissions",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1790348400000,
+      "tag": "0019_content_translation_allowance_admission",
+      "breakpoints": true
     }
   ]
 }
