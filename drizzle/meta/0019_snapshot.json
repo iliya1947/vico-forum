@@ -2868,7 +2868,7 @@
         },
         "content_translation_allowance_admissions_reason_check": {
           "name": "content_translation_allowance_admissions_reason_check",
-          "value": "\"content_translation_allowance_admissions\".\"reason\" is null or \"content_translation_allowance_admissions\".\"reason\" ~ '^[a-z0-9][a-z0-9-]{0,63}$'"
+          "value": "\"content_translation_allowance_admissions\".\"reason\" is null or \"content_translation_allowance_admissions\".\"reason\" similar to '[a-z0-9][a-z0-9-]{0,63}'"
         },
         "content_translation_allowance_admissions_reservation_check": {
           "name": "content_translation_allowance_admissions_reservation_check",
