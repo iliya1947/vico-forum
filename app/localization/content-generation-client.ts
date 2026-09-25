@@ -12,8 +12,10 @@ export interface AutomaticGenerationRequest {
 export function initialAutomaticGenerationQueue(
   units: readonly ContentGenerationViewUnit[],
 ): readonly AutomaticGenerationRequest[] {
+  const seen = new Set<string>();
   return units.flatMap((unit) => {
-    if (!unit.autoEligible) return [];
+    if (!unit.autoEligible || seen.has(unit.key)) return [];
+    seen.add(unit.key);
     if (unit.contentType === "topic-title") {
       return [{ key: unit.key, intent: "generateTopicTitleTranslation" as const }];
     }
