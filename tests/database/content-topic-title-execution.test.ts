@@ -223,16 +223,30 @@ describe("content topic-title execution and publication", () => {
     allowed = false;
     const dispatcher = createDispatcherWithRouter(client, providerRouter);
 
-    await expect(dispatcher.execute(enqueuer.messages[0]!)).resolves.toEqual({
-      outcome: "execution-failed",
-      delivery: "terminal",
-      failureCode: "provider-unsupported",
-      terminalReason: "terminal",
-      attemptCount: 1,
-      maxAttempts: 3,
+    await expect(dispatcher.execute(enqueuer.messages[0]!)).resolves.toMatchObject({
+      outcome: "allowance-deferred",
+      delivery: "ack",
+      reason: "provider-unconfigured",
+      retryNotBefore: expect.any(Date),
     });
     expect(run).not.toHaveBeenCalled();
     expect(dataPolicy.allows).toHaveBeenCalledTimes(2);
+
+    const taskRow = await client.query<{
+      status: string;
+      attempt_count: number;
+      allowance_state: string | null;
+      allowance_reason: string | null;
+    }>(
+      "select status, attempt_count, allowance_state, allowance_reason from translation_tasks where id = $1",
+      [planned.task.id],
+    );
+    expect(taskRow.rows[0]).toEqual({
+      status: "pending",
+      attempt_count: 0,
+      allowance_state: "deferred",
+      allowance_reason: "provider-unconfigured",
+    });
   });
 
   it("reactivates a stale stable identity when the same content work becomes eligible again", async () => {
