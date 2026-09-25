@@ -8,7 +8,7 @@ import { forumReaderContext } from "./request-context";
 import { loader as sectionLoader } from "../routes/section";
 import { loader as topicLoader } from "../routes/topic";
 import { ContentTranslationPresentationService } from "../localization/content-translation-presentation";
-import type { StoredContentTranslation } from "../localization/content-translation";
+import { ContentTranslationStorageUnavailableError, type StoredContentTranslation } from "../localization/content-translation";
 import { ContentGenerationStatusStorageUnavailableError } from "../localization/content-generation-status";
 import { localeRegistry } from "../localization/registry";
 import {
@@ -240,6 +240,87 @@ describe("public forum authorization degradation", () => {
     expect(generateTopicTitle).not.toHaveBeenCalled();
     expect(generateAutomaticPostBody).not.toHaveBeenCalled();
     expect(generateExplicitPostBody).not.toHaveBeenCalled();
+  });
+
+  it("tolerates publication committing between presentation and status reads", async () => {
+    const context = contextWithPermissions("viewer-1", ["forum.translation.generate"]);
+    const readCurrent = vi.fn(async (identities: readonly {
+      contentType: "topic-title" | "post-body";
+      contentId: string;
+      revisionId: string;
+    }[]) => identities.map((identity) => ({ ...identity, state: "completed" as const })));
+    const generateTopicTitle = vi.fn();
+    const generateAutomaticPostBody = vi.fn();
+    const generateExplicitPostBody = vi.fn();
+    context.set(contentGenerationActionContext, {
+      enabled: true,
+      capability: {
+        generateTopicTitle,
+        generateAutomaticPostBody,
+        generateExplicitPostBody,
+      },
+    });
+    context.set(contentGenerationStatusReaderContext, { readCurrent });
+
+    const result = await topicLoader({
+      params: { locale: "en", topicId: topic.id },
+      context,
+    });
+
+    expect(result.titlePresentation).toMatchObject({
+      selected: "original",
+      fallbackReason: "same-locale",
+    });
+    expect(readCurrent).toHaveBeenCalledTimes(1);
+    expect(result.generationUnits).toHaveLength(2);
+    expect(result.generationUnits.every((unit) =>
+      unit.state === "converging" && !unit.automatic && !unit.explicitRequired
+    )).toBe(true);
+    expect(generateTopicTitle).not.toHaveBeenCalled();
+    expect(generateAutomaticPostBody).not.toHaveBeenCalled();
+    expect(generateExplicitPostBody).not.toHaveBeenCalled();
+  });
+
+  it("keeps classified presentation fallback usable when status already reports completed", async () => {
+    const context = contextWithPermissions("viewer-1", ["forum.translation.generate"]);
+    context.set(
+      contentTranslationPresentationContext,
+      new ContentTranslationPresentationService({
+        readBatch: vi.fn(async () => {
+          throw new ContentTranslationStorageUnavailableError(
+            "content translation storage is unavailable",
+          );
+        }),
+      }),
+    );
+    const readCurrent = vi.fn(async (identities: readonly {
+      contentType: "topic-title" | "post-body";
+      contentId: string;
+      revisionId: string;
+    }[]) => identities.map((identity) => ({ ...identity, state: "completed" as const })));
+    context.set(contentGenerationActionContext, {
+      enabled: true,
+      capability: {
+        generateTopicTitle: vi.fn(),
+        generateAutomaticPostBody: vi.fn(),
+        generateExplicitPostBody: vi.fn(),
+      },
+    });
+    context.set(contentGenerationStatusReaderContext, { readCurrent });
+
+    const result = await topicLoader({
+      params: { locale: "en", topicId: topic.id },
+      context,
+    });
+
+    expect(result.titlePresentation).toMatchObject({
+      selected: "original",
+      fallbackReason: "storage-unavailable",
+    });
+    expect(readCurrent).toHaveBeenCalledTimes(1);
+    expect(result.generationUnits.every((unit) =>
+      unit.state === "converging" && !unit.automatic && !unit.explicitRequired
+    )).toBe(true);
   });
 
   it("keeps topic presentation original-safe when generation status storage is unavailable", async () => {
