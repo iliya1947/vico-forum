@@ -116,7 +116,7 @@ export class DrizzleTranslationTaskStore implements
       unit.translationKind !== "content-topic-title"
       && unit.translationKind !== "content-post-body"
     ) {
-      throw new TranslationTaskKindMismatchError("content-topic-title", unit.translationKind as TranslationTaskKind);
+      throw new TranslationTaskIntegrityError("provider allowance requires a content translation task");
     }
 
     return this.database.transaction(async (transaction) => {
