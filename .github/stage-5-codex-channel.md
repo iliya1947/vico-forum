@@ -3619,6 +3619,88 @@ current-Stage defect or unauthorized scope expansion was found.
 `1d9b030e99abe3c46188e60741fdfa04ac5af934`. Any head change requires another complete review. After
 merge, Codex must fetch updated `main` and perform the mandatory end-of-Stage audit before Stage 5 is
 declared complete or the service PRs are closed.
+
+## Final Stage 5 audit against merged GitHub main
+
+### Audited baseline and declared document scope
+
+Codex fetched GitHub `main` at `2f1dfcd75375d8ef7463819074020d7630864d89` and verified that PR
+#119 is merged. The `main` tree `5bb05bae2157dafb38bb802cac3d703c03241391` exactly equals the fully
+reviewed PR #119 head tree, so the audited code is the reviewed artifact rather than a materially
+different squash result.
+
+Under the explicit full-audit protocol, Codex read every document in the declared Stage 5 scope from
+start to actual end: `AGENTS.md`, `PROJECT.md`, `PROJECT_HISTORY.md`, `PROJECT_STATE.md`,
+`ROADMAP.md`, `TRANSLATION_ARCHITECTURE.md`, `docs/auth/AUTHORIZATION.md`, both current
+`docs/database/*.md` documents and all six current `docs/translation/*.md` documents (4,588 lines in
+total). Archived `doc_old/` copies were not part of the current source-of-truth scope.
+
+### Stage 5 completion-criteria verification
+
+1. **Machine UI translation can publish a current validated bundle.** The merged path contains the
+   provider-neutral planner/router, locale-rules and output validation, durable claim/generation
+   fencing, conditional publication and atomic task + raw translation + compiled-bundle commit.
+   Unit and PostgreSQL publication/bundle suites are present and passed the reviewed CI.
+2. **Persisted compiled bundles are consumed without N-query-per-key.** SSR/runtime loads verified
+   exact-locale persisted bundles through the bounded resource/bundle path rather than per-message
+   database queries; miss, obsolete identity and classified degradation retain deterministic fallback.
+3. **User-content translation is revision-bound and original-safe.** Topic title and post body use
+   immutable exact revision identities, source-locale resolution/correction, CNT-04 protected
+   Markdown, manual-over-machine trust, atomic conditional publication, exact-current batch reads,
+   provenance/original disclosure and bounded generation status. Stale/sibling revision work cannot
+   replace current content.
+4. **Queue/provider failures do not break public forum reads.** JOB-04 bounded retry/terminal state,
+   JOB-06 reconciliation, claim/generation fencing, pre-claim allowance defer/recovery, classified
+   storage degradation, completed/presentation convergence and finite read-only polling preserve
+   public current-original fallback without synchronous provider work in SSR/GET.
+5. **Tests require no production secrets.** CI uses fake/contract provider and allowance boundaries,
+   disposable PostgreSQL 17 and local Hyperdrive override. The default Worker keeps generation
+   disabled without an authoritative real allowance/policy/provider composition. Real Queue/provider
+   credentials, bindings and live calls are neither required nor claimed.
+
+### Repository and CI verification
+
+- append-only migrations `0000`–`0020` and journal entries are present; migration-history,
+  production-privilege/evidence guards and Drizzle schema parity are mandatory PR checks;
+- the repository contains 55 translation/localization/content-generation focused unit/component/
+  adapter/PostgreSQL test files, in addition to forum/auth and migration coverage;
+- final PR #119 run `36179815533` passed frozen install, migration-history guards, lint, typecheck,
+  unit/route/component tests, production build, migration metadata, Drizzle parity, clean PostgreSQL
+  17 migrations/integration, Workers build and local Hyperdrive smoke;
+- merged `main` has the identical reviewed tree. CI is intentionally `pull_request`-only, so no
+  separate post-merge run exists and none is falsely claimed.
+
+### Audit findings and boundary
+
+No unresolved current-Stage implementation defect, documentation contradiction inside the
+implemented Stage 5 behavior, missing required local/CI check or unauthorized Stage 6 expansion was
+found. All five `ROADMAP.md` completion criteria are satisfied for the repository/local-CI boundary.
+
+The following are explicitly **not Stage 5 gaps**: applying pending migrations externally, real
+Google OAuth/bootstrap, production runtime roles/Hyperdrive writes, Cloudflare Queues, real provider
+credentials/calls and authoritative allowance acceptance, production anti-abuse values, preview
+isolation, deployed smoke and backup/restore. These remain Stage 6 external integration work exactly
+as documented.
+
+### Stage closure documentation task
+
+The implementation is technically ready for Stage 5 closure, but the current source-of-truth still
+describes Stage 5 as the active product phase and lists this audit as the next action. That wording was
+correct before this audit and must now be advanced in one small mergeable documentation PR before the
+Stage is formally closed:
+
+1. update `PROJECT_STATE.md` current phase to state Stage 5 is completed in repository/local-CI and
+   Stage 6 external integration is next; replace the audit-to-do route with the Stage 6 route while
+   preserving every external limitation and avoiding claims of deployment/acceptance;
+2. mark the `ROADMAP.md` Stage 5 heading/status completed in local/CI path without rewriting its
+   completion record or moving Stage 6 work backward;
+3. make no runtime, schema, dependency or policy changes and do not claim external CI/deployment
+   evidence;
+4. run documentation/diff checks and normal PR CI, self-review the complete small diff, then request
+   Codex verification.
+
+After that documentation PR is merged and updated `main` is verified, Stage 5 can be formally closed,
+both Stage 5 service PRs must be closed without merge, and work can move to Stage 6 planning.
 ## Full JOB-06 re-review after correction
 
 Codex reviewed the complete PR #99 at
