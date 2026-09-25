@@ -153,7 +153,8 @@ export default function TopicRoute() {
     : null;
   const { t } = useTranslation("common");
   return (
-    <ForumShell locale={locale}>
+    <ContentGenerationManager units={generationUnits}>
+      <ForumShell locale={locale}>
       <Breadcrumbs locale={locale} items={[
         { label: topic.section.category.name, to: forumCategoryPath(locale, topic.section.category.id) },
         { label: topic.section.name, to: forumSectionPath(locale, topic.section.id) },
@@ -196,13 +197,13 @@ export default function TopicRoute() {
           ))}
         </ol>
       )}
-      <ContentGenerationManager units={generationUnits} />
       {canReply && <Form method="post" className="forum-write-form">
         <h2>{t("replyHeading")}</h2>
         <label>{t("replyBodyLabel")}<textarea name="body" required rows={7} /></label>
         <button type="submit">{t("replySubmit")}</button>
       </Form>}
-    </ForumShell>
+      </ForumShell>
+    </ContentGenerationManager>
   );
 }
 
