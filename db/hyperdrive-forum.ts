@@ -57,13 +57,21 @@ export function createHyperdriveForumWriter(
     try {
       await client.connect();
       return await operation(new ForumService(new DrizzleForumRepository(drizzle(client), writePolicy)));
+    } finally {
+      await client.end();
+    }
+  }
+
+  async function writeCorrection<T>(
+    operation: (service: ForumService) => Promise<T>,
+  ): Promise<T> {
+    try {
+      return await write(operation);
     } catch (error) {
       if (isForumStorageAvailabilityFailure(error)) {
         throw new ForumStorageUnavailableError({ cause: error });
       }
       throw error;
-    } finally {
-      await client.end();
     }
   }
 
@@ -92,8 +100,8 @@ export function createHyperdriveForumWriter(
     }),
     markTopicSolved: ({ topicId, actorId, scope }) => write((forum) => forum.markTopicSolved(topicId, actorId, scope)),
     selectBestAnswer: ({ topicId, postId, actorId, scope }) => write((forum) => forum.selectBestAnswer(topicId, postId, actorId, scope)),
-    correctTopicTitleSourceLocale: (input) => write(async (forum) => { await forum.correctTopicTitleSourceLocale(input); }),
-    correctPostBodySourceLocale: (input) => write(async (forum) => { await forum.correctPostBodySourceLocale(input); }),
+    correctTopicTitleSourceLocale: (input) => writeCorrection(async (forum) => { await forum.correctTopicTitleSourceLocale(input); }),
+    correctPostBodySourceLocale: (input) => writeCorrection(async (forum) => { await forum.correctPostBodySourceLocale(input); }),
   };
 }
 
