@@ -164,8 +164,6 @@ export const translationTasks = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     taskIdentity: text("task_identity").notNull().unique(),
     translationKind: text("translation_kind").notNull(),
-    sourceNamespace: text("source_namespace").notNull(),
-    sourceKey: text("source_key").notNull(),
     sourceFingerprint: text("source_fingerprint").notNull(),
     targetLocale: text("target_locale").notNull(),
     generationPolicyVersion: text("generation_policy_version").notNull(),
@@ -237,6 +235,10 @@ export const translationTasks = pgTable(
       table.translationKind,
       table.sourceNamespace,
       table.sourceKey,
+    ),
+    unique("translation_tasks_kind_owner_unique").on(
+      table.id,
+      table.translationKind,
     ),
     check("translation_tasks_attempt_count_check", sql`${table.attemptCount} >= 0 and ${table.attemptCount} <= ${table.maxAttempts}`),
     check("translation_tasks_max_attempts_check", sql`${table.maxAttempts} > 0`),
@@ -316,12 +318,10 @@ export const contentTranslationAllowanceAdmissions = pgTable(
   (table) => [
     foreignKey({
       name: "content_translation_allowance_admissions_task_owner_fk",
-      columns: [table.taskId, table.translationKind, table.sourceNamespace, table.sourceKey],
+      columns: [table.taskId, table.translationKind],
       foreignColumns: [
         translationTasks.id,
         translationTasks.translationKind,
-        translationTasks.sourceNamespace,
-        translationTasks.sourceKey,
       ],
     }).onDelete("cascade"),
     index("content_translation_allowance_admissions_recovery_idx").on(
@@ -334,11 +334,6 @@ export const contentTranslationAllowanceAdmissions = pgTable(
     check(
       "content_translation_allowance_admissions_kind_check",
       sql`${table.translationKind} in ('content-topic-title', 'content-post-body')`,
-    ),
-    check(
-      "content_translation_allowance_admissions_shape_check",
-      sql`(${table.translationKind} = 'content-topic-title' and ${table.sourceNamespace} = 'topic-title')
-        or (${table.translationKind} = 'content-post-body' and ${table.sourceNamespace} = 'post-body')`,
     ),
     check(
       "content_translation_allowance_admissions_generation_check",
