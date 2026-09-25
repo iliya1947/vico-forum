@@ -26,10 +26,13 @@ Vico Forum находится в ранней pre-release разработке.
 
 - Stage 0–3 foundation завершён.
 - Stage 4 forum core завершён в local/CI path.
-- Активный продуктовый этап — **Stage 5 translations/background jobs**.
-- External production-like integration намеренно отложена до **Stage 6**.
-- Обычная feature-разработка идёт через local/disposable PostgreSQL 17 и обязательный CI;
-  merge в `main` сам по себе не является external rollout.
+- Stage 5 translations/background jobs завершён в repository/local-CI path.
+- Следующий продуктовый этап — **Stage 6 pre-release external integration**.
+- External production-like integration начинается только в Stage 6; завершение Stage 5 не означает,
+  что pending migrations, OAuth, runtime roles/Hyperdrive writes, Queues/providers или deployed smoke
+  уже приняты внешне.
+- Обычная feature-разработка и её CI остаются отделены от external rollout; merge в `main` сам по
+  себе не является deployment/acceptance evidence.
 
 ## Реализованный foundation
 
@@ -342,9 +345,12 @@ no-op verification. Перед следующим настоящим external sc
 
 ## Ближайший маршрут
 
-1. Провести финальную техническую проверку Stage 5 против актуального `main`, целей Stage и
-   обязательных local/CI checks.
-2. После подтверждения технической готовности Stage 5 перейти к Stage 6 external integration по
-   `ROADMAP.md` и `docs/database/*`.
+1. Начать Stage 6 pre-release external integration по `ROADMAP.md` и `docs/database/*`.
+2. Перед provisioning и первым external schema-dependent rollout заново проверить current platform
+   configuration, exact versions, dedicated least-privilege migration capability и остальные Stage 6
+   preconditions.
 
-External rollout не входит в завершённый Stage 5 local/CI implementation path.
+Stage 5 завершён только в repository/local-CI boundary. Pending external migrations, real Google
+OAuth/bootstrap, production runtime roles/Hyperdrive writes, Cloudflare Queues/providers,
+authoritative production allowance/anti-abuse values, preview isolation, deployed smoke и
+backup/restore остаются Stage 6 работой.
