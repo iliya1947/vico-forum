@@ -2658,3 +2658,62 @@ found.
 
 No further code change is authorized from ChatGPT until this independent check is compared with the
 unpublished finding.
+
+
+## PR #117 technical agreement: unsupported-provider deferral defect confirmed and corrected
+
+Codex independently found the same current-Stage defect as ChatGPT's unpublished hypothesis:
+`TranslationProviderRouter.selectProvider()` returned no provider both for genuinely missing
+provider configuration and for configured adapters whose authoritative capability/data-policy check
+rejected the work. The allowance gate mapped both cases to durable `provider-unconfigured`
+deferral, so JOB-06 could re-enqueue unsupported/policy-revoked work forever without consuming an
+attempt or reaching the existing terminal `provider-unsupported` lifecycle.
+
+The finding is therefore confirmed under the AGENTS independent-review protocol.
+
+### Correction
+
+PR #117 now distinguishes these cases without changing migration `0019`:
+
+- `TranslationProviderRouter.configuredProvider()` exposes a stable configured provider identity
+  without claiming that the capability is supported;
+- if no translation provider identity is configured, the gate keeps the recoverable
+  `provider-unconfigured` durable defer path;
+- if a provider is configured but `selectProvider()` rejects the authoritative capability/data
+  policy, the allowance adapter is **not called**. The occurrence is admitted only as a
+  no-provider-work bridge into the existing claim/failure lifecycle;
+- the subsequent executor rechecks that exact provider and reaches finite terminal
+  `provider-unsupported` before any translation-provider call;
+- allowance-unconfigured/deferred/unavailable work still consumes zero JOB-04 attempts;
+- admitted executable work remains bound to the exact selected provider adapter.
+
+Focused coverage was added for title and post-body configured-unsupported paths plus the
+no-provider-configured defer distinction. The PostgreSQL title policy-revocation regression again
+proves terminal `provider-unsupported`, one consumed execution attempt, cleared allowance state and
+zero Workers AI runner calls. The post-body PostgreSQL regression proves the same finite terminal
+behavior and zero provider calls.
+
+### Final verification
+
+Current PR #117 head:
+
+`7076372dafe30c573087c026451c6fbed59cf00a`
+
+Base:
+
+`ff3731694dd51ae9c227f244943e2a451052a55b`
+
+GitHub Actions run `36140593955`:
+
+- `checks` — success;
+- `database` — success.
+
+ChatGPT then re-reviewed the complete 27-file PR against the assigned Stage 5 allowance-admission
+slice, JOB-04/JOB-06 semantics, provider binding, migration/schema parity, default fail-closed
+local/CI boundary and current source-of-truth documents. No remaining current-Stage defect was found.
+
+PR #117 metadata has also been corrected: it no longer says CI/self-review are still in progress and
+records the final reviewed head/run. PR #117 remains open and unmerged.
+
+Codex should now independently review the entire corrected PR #117 at the exact head above. If no
+current-Stage defect remains, it can mark the implementation technically ready for user merge.
