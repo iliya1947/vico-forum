@@ -5,11 +5,16 @@ import { authorizationForRequest } from "../authorization/request-context";
 import { AuthorizationUnavailableError } from "../../db/authorization-service";
 import { forumCategoryPath, forumSectionPath } from "../forum/paths";
 import { forumReaderForRequest } from "../forum/request-context";
+import { PostBodyPresentation, TopicTitlePresentation } from "../forum/content-translation-view";
+import {
+  contentTranslationPresentationForRequest,
+  localeContext,
+  registryForRequest,
+} from "../localization/request-context";
 import type {
   ForumMutationError,
   SourceLocaleCorrectionMutationError,
 } from "../forum/mutations.server";
-import { ForumMarkdown } from "../forum/markdown";
 import { Breadcrumbs, EmptyState, ForumRouteError, ForumShell } from "../forum/ui";
 
 export { topicAction as action } from "../forum/actions.server";
@@ -20,6 +25,34 @@ export async function loader({ params, context }: {
 }) {
   const topic = await forumReaderForRequest(context).readTopicPage(params.topicId ?? "");
   if (!topic) throw new Response("Not Found", { status: 404 });
+
+  const resolvedLocale = context.get(localeContext);
+  const loadedRegistry = await registryForRequest(context);
+  const revisions = [
+    {
+      contentType: "topic-title" as const,
+      contentId: topic.id,
+      revisionId: topic.title.id,
+      originalContent: topic.title.originalContent,
+      sourceLocale: topic.title.sourceLocale,
+    },
+    ...topic.posts.map((post) => ({
+      contentType: "post-body" as const,
+      contentId: post.id,
+      revisionId: post.body.id,
+      originalContent: post.body.originalContent,
+      sourceLocale: post.body.sourceLocale,
+    })),
+  ];
+  const presentations = await contentTranslationPresentationForRequest(context).readCurrent(
+    revisions,
+    resolvedLocale.translationLocale,
+    resolvedLocale.direction,
+    (locale) => loadedRegistry.registry.find(locale)?.locale.direction,
+  );
+  const titlePresentation = presentations[0]!;
+  const postPresentations = presentations.slice(1);
+
   const session = authSessionForRequest(context);
   let canReply = false, canManageSolution = false, canCorrectTitleSourceLocale = false;
   let correctablePostIds: string[] = [];
@@ -47,8 +80,10 @@ export async function loader({ params, context }: {
     }
   }
   return {
-    locale: params.locale ?? "en",
+    locale: resolvedLocale.translationLocale,
     topic,
+    titlePresentation,
+    postPresentations,
     canReply,
     canManageSolution,
     canCorrectTitleSourceLocale,
@@ -60,6 +95,8 @@ export default function TopicRoute() {
   const {
     locale,
     topic,
+    titlePresentation,
+    postPresentations,
     canReply,
     canManageSolution,
     canCorrectTitleSourceLocale,
@@ -67,6 +104,7 @@ export default function TopicRoute() {
   } = useLoaderData<typeof loader>();
   const actionData = useActionData<ForumMutationError | SourceLocaleCorrectionMutationError>();
   const correctablePosts = new Set(correctablePostIds);
+  const presentedPosts = new Map(postPresentations.map((presentation) => [presentation.contentId, presentation]));
   const correctionError = actionData
     && "operation" in actionData
     && actionData.operation === "sourceLocaleCorrection"
@@ -81,9 +119,9 @@ export default function TopicRoute() {
       <Breadcrumbs locale={locale} items={[
         { label: topic.section.category.name, to: forumCategoryPath(locale, topic.section.category.id) },
         { label: topic.section.name, to: forumSectionPath(locale, topic.section.id) },
-        { label: topic.title.originalContent },
+        { label: titlePresentation.content },
       ]} />
-      <section className="page-heading"><p className="eyebrow">{t("topicLabel")}</p><h1>{topic.title.originalContent}</h1><p>{t("startedBy", { author: topic.authorName })}</p>
+      <section className="page-heading"><p className="eyebrow">{t("topicLabel")}</p><TopicTitlePresentation presentation={titlePresentation} /><p>{t("startedBy", { author: topic.authorName })}</p>
         {topic.isSolved && <strong className="solved-badge">{t("solved")}</strong>}
         {topic.bestAnswerPostId && <p><a href={`#post-${encodeURIComponent(topic.bestAnswerPostId)}`}>{t("goToSolution")}</a></p>}
         {canManageSolution && !topic.isSolved && <Form method="post"><input type="hidden" name="intent" value="markSolved" /><button type="submit">{t("markSolved")}</button></Form>}
@@ -104,7 +142,7 @@ export default function TopicRoute() {
               <header><strong>{post.authorName}</strong><span>{t("postNumber", { number: index + 1 })}</span></header>
               <div className="forum-post-content">
                 {topic.bestAnswerPostId === post.id && <strong className="best-answer-label">{t("bestAnswer")}</strong>}
-                <ForumMarkdown>{post.body.originalContent}</ForumMarkdown>
+                <PostBodyPresentation presentation={presentedPosts.get(post.id)!} />
                 {correctablePosts.has(post.id) && <Form method="post" className="source-locale-form">
                   <input type="hidden" name="intent" value="correctPostSourceLocale" />
                   <input type="hidden" name="postId" value={post.id} />

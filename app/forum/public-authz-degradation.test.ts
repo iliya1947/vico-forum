@@ -7,6 +7,14 @@ import type { ForumReader } from "../../db/forum-repository";
 import { forumReaderContext } from "./request-context";
 import { loader as sectionLoader } from "../routes/section";
 import { loader as topicLoader } from "../routes/topic";
+import { ContentTranslationPresentationService } from "../localization/content-translation-presentation";
+import type { StoredContentTranslation } from "../localization/content-translation";
+import { localeRegistry } from "../localization/registry";
+import {
+  contentTranslationPresentationContext,
+  localeContext,
+  registryLoaderContext,
+} from "../localization/request-context";
 
 const section = {
   id: "section-1",
@@ -67,9 +75,35 @@ const session = {
   },
 } satisfies AuthSession;
 
+function configureTranslationPresentation(
+  context: RouterContextProvider,
+  translations: readonly StoredContentTranslation[] = [],
+) {
+  context.set(localeContext, {
+    translationLocale: "en",
+    fallbackLocales: [],
+    direction: "ltr",
+    formatting: { locale: "en", timeZone: "UTC" },
+    nativeName: "English",
+    presentationMetadata: {},
+  });
+  context.set(registryLoaderContext, async () => ({
+    registry: localeRegistry,
+    semanticIdentity: "test",
+    health: { status: "healthy" as const },
+  }));
+  context.set(
+    contentTranslationPresentationContext,
+    new ContentTranslationPresentationService({
+      readBatch: async () => ({ translations }),
+    }),
+  );
+}
+
 function contextWithAuthorizationFailure(error: Error) {
   const context = new RouterContextProvider();
   context.set(forumReaderContext, reader);
+  configureTranslationPresentation(context);
   context.set(authSessionContext, session);
   context.set(authorizationContext, {
     forUser: () => ({
@@ -80,9 +114,14 @@ function contextWithAuthorizationFailure(error: Error) {
   return context;
 }
 
-function contextWithPermissions(userId: string, permissions: readonly string[]) {
+function contextWithPermissions(
+  userId: string,
+  permissions: readonly string[],
+  translations: readonly StoredContentTranslation[] = [],
+) {
   const context = new RouterContextProvider();
   context.set(forumReaderContext, reader);
+  configureTranslationPresentation(context, translations);
   context.set(authSessionContext, {
     ...session,
     user: { ...session.user, id: userId },
@@ -95,6 +134,13 @@ function contextWithPermissions(userId: string, permissions: readonly string[]) 
       has: vi.fn(async (permission: string) => allowed.has(permission)),
     }),
   } as never);
+  return context;
+}
+
+function guestContext(translations: readonly StoredContentTranslation[] = []) {
+  const context = new RouterContextProvider();
+  context.set(forumReaderContext, reader);
+  configureTranslationPresentation(context, translations);
   return context;
 }
 
@@ -118,6 +164,45 @@ describe("public forum authorization degradation", () => {
     expect(topicResult.canManageSolution).toBe(false);
     expect(topicResult.canCorrectTitleSourceLocale).toBe(false);
     expect(topicResult.correctablePostIds).toEqual([]);
+  });
+
+  it("shows the same persisted public translation to guests and authenticated users", async () => {
+    const translations: StoredContentTranslation[] = [{
+      contentType: "topic-title",
+      contentId: "topic-1",
+      revisionId: "title-r1",
+      targetLocale: "en",
+      sourceLocale: "ru",
+      translatedContent: "Public translated topic",
+      provenance: {
+        origin: "persistent_manual",
+        attribution: "community",
+      },
+    }];
+    const translatedTopic = {
+      ...topic,
+      title: { ...topic.title, sourceLocale: "ru" },
+    };
+    const translatedReader: ForumReader = {
+      ...reader,
+      readTopicPage: async (id) => id === translatedTopic.id ? translatedTopic : undefined,
+    };
+
+    const guest = guestContext(translations);
+    guest.set(forumReaderContext, translatedReader);
+    const authenticated = contextWithPermissions("viewer-1", [], translations);
+    authenticated.set(forumReaderContext, translatedReader);
+
+    const [guestResult, authenticatedResult] = await Promise.all([
+      topicLoader({ params: { locale: "en", topicId: topic.id }, context: guest }),
+      topicLoader({ params: { locale: "en", topicId: topic.id }, context: authenticated }),
+    ]);
+
+    expect(guestResult.titlePresentation).toMatchObject({
+      selected: "translation",
+      content: "Public translated topic",
+    });
+    expect(authenticatedResult.titlePresentation).toEqual(guestResult.titlePresentation);
   });
 
   it("derives source-locale correction presentation from effective own/any permissions", async () => {

@@ -108,18 +108,7 @@ export class ContentTranslationService {
       throw error;
     }
 
-    if (!stored) return originalResult(revision, "missing");
-
-    const validation = validateStoredTranslation(stored, revision, targetLocale);
-    if (validation === "stale") return originalResult(revision, "stale");
-    if (validation === "invalid") return originalResult(revision, "invalid");
-
-    return {
-      selected: "translation",
-      content: stored.translatedContent,
-      contentLocale: targetLocale,
-      translation: stored,
-    };
+    return selectCurrentContentTranslation(revision, targetLocale, stored);
   }
 
   async write(input: ContentTranslationWriteInput): Promise<StoredContentTranslation> {
@@ -204,6 +193,31 @@ function normalizeProvenance(provenance: ContentTranslationProvenance): ContentT
   }
 
   throw new InvalidContentTranslationInputError("translation origin is invalid");
+}
+
+export function selectCurrentContentTranslation(
+  revisionInput: ContentTranslationRevision,
+  targetLocaleInput: string,
+  stored: StoredContentTranslation | undefined,
+): ContentTranslationReadResult {
+  const revision = normalizeRevision(revisionInput);
+  const targetLocale = normalizeTargetLocale(targetLocaleInput);
+
+  if (revision.sourceLocale !== "und" && revision.sourceLocale === targetLocale) {
+    return originalResult(revision, "same-locale");
+  }
+  if (!stored) return originalResult(revision, "missing");
+
+  const validation = validateStoredTranslation(stored, revision, targetLocale);
+  if (validation === "stale") return originalResult(revision, "stale");
+  if (validation === "invalid") return originalResult(revision, "invalid");
+
+  return {
+    selected: "translation",
+    content: stored.translatedContent,
+    contentLocale: targetLocale,
+    translation: stored,
+  };
 }
 
 function validateStoredTranslation(

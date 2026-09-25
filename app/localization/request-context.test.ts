@@ -2,8 +2,11 @@ import { RouterContextProvider } from "react-router";
 import { describe, expect, it } from "vitest";
 import { assemblePersistentRegistry } from "./persistent-registry";
 import {
+  ContentTranslationPresentationConfigurationError,
   RegistryLoaderConfigurationError,
   UiTranslationStoreConfigurationError,
+  contentTranslationPresentationContext,
+  contentTranslationPresentationForRequest,
   registryForRequest,
   registryLoaderContext,
   uiTranslationStoreContext,
@@ -32,6 +35,21 @@ describe("request localization context", () => {
     context.set(registryLoaderContext, async () => expected);
 
     await expect(registryForRequest(context)).resolves.toBe(expected);
+  });
+
+  it("fails explicitly when content translation presentation was not injected", () => {
+    const context = new RouterContextProvider();
+
+    expect(() => contentTranslationPresentationForRequest(context))
+      .toThrow(ContentTranslationPresentationConfigurationError);
+  });
+
+  it("returns the injected content translation presentation service", () => {
+    const context = new RouterContextProvider();
+    const service = { readCurrent: async () => [] } as never;
+    context.set(contentTranslationPresentationContext, service);
+
+    expect(contentTranslationPresentationForRequest(context)).toBe(service);
   });
 
   it("fails explicitly when the UI translation store was not injected", () => {

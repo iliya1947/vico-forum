@@ -4,9 +4,17 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { I18nextProvider } from "react-i18next";
 import { RouterContextProvider, RouterProvider, createMemoryRouter, matchRoutes } from "react-router";
 import { afterEach, describe, expect, it } from "vitest";
-import type { ForumReader } from "../../db/forum-repository";
+import type { ForumReader, ForumTopicPage } from "../../db/forum-repository";
 import { canonicalEnglishCatalog } from "../localization/catalog";
 import { createTranslationRuntime } from "../localization/runtime";
+import { ContentTranslationPresentationService, type ContentTranslationPresentation } from "../localization/content-translation-presentation";
+import type { StoredContentTranslation } from "../localization/content-translation";
+import { localeRegistry } from "../localization/registry";
+import {
+  contentTranslationPresentationContext,
+  localeContext,
+  registryLoaderContext,
+} from "../localization/request-context";
 import CategoryRoute, { loader as categoryLoader } from "../routes/category";
 import Home, { loader as homeLoader } from "../routes/home";
 import { ErrorBoundary as NotFoundErrorBoundary, loader as notFoundLoader } from "../routes/not-found";
@@ -43,10 +51,73 @@ const reader: ForumReader = {
 
 afterEach(cleanup);
 
-function context() {
+function context(
+  locale = "en",
+  direction: "ltr" | "rtl" = locale === "he" ? "rtl" : "ltr",
+  translations: readonly StoredContentTranslation[] = [],
+) {
   const value = new RouterContextProvider();
   value.set(forumReaderContext, reader);
+  value.set(localeContext, {
+    translationLocale: locale,
+    fallbackLocales: locale === "en" ? [] : ["en"],
+    direction,
+    formatting: { locale, timeZone: "UTC" },
+    nativeName: locale,
+    presentationMetadata: {},
+  });
+  value.set(registryLoaderContext, async () => ({
+    registry: localeRegistry,
+    semanticIdentity: "test",
+    health: { status: "healthy" as const },
+  }));
+  value.set(
+    contentTranslationPresentationContext,
+    new ContentTranslationPresentationService({
+      readBatch: async () => ({ translations }),
+    }),
+  );
   return value;
+}
+
+function originalPresentation(
+  contentType: "topic-title" | "post-body",
+  contentId: string,
+  revision: { id: string; originalContent: string; sourceLocale: string },
+): ContentTranslationPresentation {
+  const originalLocale = revision.sourceLocale === "und" ? undefined : revision.sourceLocale;
+  return {
+    contentType,
+    contentId,
+    revisionId: revision.id,
+    selected: "original",
+    content: revision.originalContent,
+    contentLocale: originalLocale,
+    contentDirection: originalLocale === "he" ? "rtl" : originalLocale ? "ltr" : "auto",
+    originalContent: revision.originalContent,
+    originalLocale,
+    originalDirection: originalLocale === "he" ? "rtl" : originalLocale ? "ltr" : "auto",
+    fallbackReason: "missing",
+  };
+}
+
+function topicRenderData(
+  value: ForumTopicPage = topic,
+  overrides: Record<string, unknown> = {},
+) {
+  return {
+    locale: "en",
+    topic: value,
+    titlePresentation: originalPresentation("topic-title", value.id, value.title),
+    postPresentations: value.posts.map((post) =>
+      originalPresentation("post-body", post.id, post.body)
+    ),
+    canReply: false,
+    canManageSolution: false,
+    canCorrectTitleSourceLocale: false,
+    correctablePostIds: [],
+    ...overrides,
+  };
 }
 
 function canonicalCommonResources(): Record<string, string> {
@@ -83,7 +154,7 @@ describe.each([
   { locale: "he", direction: "rtl" as const },
 ])("public forum read flow ($locale)", ({ locale, direction }) => {
   it("loads and links category → section → topic → posts with the canonical locale", async () => {
-    const requestContext = context();
+    const requestContext = context(locale, direction);
     const home = await homeLoader({ params: { locale }, context: requestContext });
     const categoryData = await categoryLoader({ params: { locale, categoryId: category.id }, context: requestContext });
     const sectionData = await sectionLoader({ params: { locale, sectionId: section.id }, context: requestContext });
@@ -112,6 +183,72 @@ describe.each([
     expect(await screen.findByRole("link", { name: "Development" })).toHaveAttribute("href", `/${locale}/categories/development%2Fcore`);
     expect(await screen.findByRole("link", { name: "TypeScript" })).toHaveAttribute("href", `/${locale}/sections/typescript%2Fbasics`);
     expect(await screen.findByText("Start with an explicit response type.")).toBeInTheDocument();
+  });
+});
+
+describe("content translation presentation", () => {
+  it("shows persisted current translations to a guest with provenance, original toggle, metadata and safe Markdown", async () => {
+    const translations: StoredContentTranslation[] = [
+      {
+        contentType: "topic-title",
+        contentId: topic.id,
+        revisionId: topic.title.id,
+        targetLocale: "he",
+        sourceLocale: "en",
+        translatedContent: "כותרת מתורגמת",
+        provenance: {
+          origin: "machine",
+          provider: "provider",
+          model: "model",
+          attribution: "Provider attribution",
+        },
+      },
+      {
+        contentType: "post-body",
+        contentId: topic.posts[0]!.id,
+        revisionId: topic.posts[0]!.body.id,
+        targetLocale: "he",
+        sourceLocale: "en",
+        translatedContent: "**טקסט מתורגם** <script>alert('x')</script> [Example](https://example.com)",
+        provenance: {
+          origin: "machine",
+          provider: "provider",
+          model: "model",
+        },
+      },
+    ];
+
+    const data = await topicLoader({
+      params: { locale: "he", topicId: topic.id },
+      context: context("he", "rtl", translations),
+    });
+
+    expect(data.titlePresentation).toMatchObject({
+      selected: "translation",
+      content: "כותרת מתורגמת",
+      contentLocale: "he",
+      contentDirection: "rtl",
+    });
+    expect(data.postPresentations[0]).toMatchObject({
+      selected: "translation",
+      contentLocale: "he",
+      contentDirection: "rtl",
+    });
+
+    renderRoute(TopicRoute, data, "/he/topics/typed-api", "he", "rtl");
+
+    const heading = await screen.findByRole("heading", { level: 1, name: "כותרת מתורגמת" });
+    expect(heading).toHaveAttribute("lang", "he");
+    expect(heading).toHaveAttribute("dir", "rtl");
+    expect(screen.getAllByText("Automatic translation")).toHaveLength(2);
+    expect(screen.getByText("Provider attribution")).toBeInTheDocument();
+    expect(screen.getAllByText("Show original")).toHaveLength(2);
+    expect(screen.getAllByText("Show translation")).toHaveLength(2);
+    expect(screen.getByText("How do I type an API?").closest("[lang]")).toHaveAttribute("lang", "en");
+    expect(screen.getByText("How do I type an API?").closest("[dir]")).toHaveAttribute("dir", "ltr");
+    expect(document.querySelector("script")).toBeNull();
+    expect(screen.getByRole("link", { name: "Example" })).toHaveAttribute("rel", "nofollow noopener noreferrer ugc");
+    expect(screen.getByRole("link", { name: "Example" })).toHaveAttribute("target", "_blank");
   });
 });
 
@@ -148,7 +285,7 @@ describe("forum path encoding", () => {
 describe("forum read states", () => {
   it("shows public solved state, highlights the answer, and links to its stable post anchor", async () => {
     const solvedTopic = { ...topic, isSolved: true, bestAnswerPostId: "answer" };
-    renderRoute(TopicRoute, { locale: "en", topic: solvedTopic, authenticated: false, canManageSolution: false }, "/en/topics/typed-api", "en", "ltr");
+    renderRoute(TopicRoute, topicRenderData(solvedTopic), "/en/topics/typed-api", "en", "ltr");
     expect(await screen.findByText("Solved")).toBeInTheDocument();
     expect(screen.getByText("Best answer").closest("li")).toHaveAttribute("id", "post-answer");
     expect(screen.getByText("Best answer").closest("li")).toHaveClass("best-answer");
@@ -173,7 +310,7 @@ describe("forum read states", () => {
 
     renderRoute(
       TopicRoute,
-      { locale: "en", topic: solvedTopic, canReply: false, canManageSolution: true },
+      topicRenderData(solvedTopic, { canManageSolution: true }),
       "/en/topics/typed-api",
       "en",
       "ltr",
@@ -206,7 +343,7 @@ describe("forum read states", () => {
   });
 
   it("shows solution controls only to the topic author", async () => {
-    const unsolved = { locale: "en", topic, canReply: true, canManageSolution: true };
+    const unsolved = topicRenderData(topic, { canReply: true, canManageSolution: true });
     const authorView = renderRoute(TopicRoute, unsolved, "/en/topics/typed-api", "en", "ltr");
     expect(await screen.findByRole("button", { name: "Mark as solved" })).toBeInTheDocument();
     authorView.unmount();
@@ -217,14 +354,10 @@ describe("forum read states", () => {
   it("renders explicit source-locale correction controls only for authorized resources", async () => {
     renderRoute(
       TopicRoute,
-      {
-        locale: "en",
-        topic,
-        canReply: false,
-        canManageSolution: false,
+      topicRenderData(topic, {
         canCorrectTitleSourceLocale: true,
         correctablePostIds: ["answer"],
-      },
+      }),
       "/en/topics/typed-api",
       "en",
       "ltr",
@@ -244,7 +377,7 @@ describe("forum read states", () => {
     expect(await screen.findByRole("heading", { name: "Create a new topic" })).toBeInTheDocument();
     authenticatedView.unmount();
 
-    renderRoute(TopicRoute, { locale: "en", topic, canReply: true, canManageSolution: false }, "/en/topics/typed-api", "en", "ltr");
+    renderRoute(TopicRoute, topicRenderData(topic, { canReply: true }), "/en/topics/typed-api", "en", "ltr");
     expect(await screen.findByRole("heading", { name: "Add a reply" })).toBeInTheDocument();
   });
 
