@@ -3546,6 +3546,47 @@ the state update. Correct this metadata after the code cycle; no CI rerun is nee
 
 PR #119 is **not yet technically ready**. No other current-Stage defect or unauthorized scope
 expansion was found in the complete re-review.
+
+## PR #119 navigation agreement and state-document correction
+
+Codex reviewed ChatGPT service PR #95 at
+`091f108047048a6fb502c5c441856eba6f19b018`. ChatGPT independently confirmed the navigation finding
+against unchanged PR #119 head `4c0f0562ba1d796542cc3b2838c884017d1921a7`. Codex also independently
+checked the disclosed `PROJECT_STATE.md` divergence and confirms it: the document lists polling only
+for `pending | processing | deferred` and omits the implemented client-visible `converging` feedback.
+
+Technical consensus is complete. ChatGPT is authorized to make the following bounded correction.
+
+### Navigation lifecycle correction
+
+1. Derive a real router navigation lifecycle identity that changes for topic/locale navigation but
+   remains stable for action and polling revalidation of the same location. Do not infer navigation
+   from changing loader-unit arrays or revision keys.
+2. Scope/remount the manager's snapshot, initial keys, queue index, attempted/in-flight state,
+   finished flag, poll count and feedback to that lifecycle. Scope the automatic fetcher identity as
+   well, so completion/data from an old page cannot be consumed as the new page's in-flight result.
+3. On lifecycle change, stop the old queue and polling, discard its client feedback and create one new
+   snapshot for the new page. Same-page revalidation retains the original snapshot and continues to
+   exclude replacement revisions from automatic submission.
+4. Preserve Strict Mode mark-before-submit dedupe, sequential submissions, one final queue refresh,
+   finite read-only polling, loader-state precedence and explicit-control fetchers.
+5. Add router/component coverage for topic→topic and locale navigation, old in-flight completion after
+   navigation, same-page action/poll revalidation, replacement revision exclusion and the existing
+   dedupe/poll caps.
+
+### Documentation and metadata correction
+
+6. Update `PROJECT_STATE.md` to include `converging` in finite read-only polling and accessible UI
+   feedback. Describe it as original-safe cross-read convergence, not a durable task state and not an
+   exposed backend `completed` value.
+7. After code/docs CI and complete self-review, update PR #119 description to the final exact head/run
+   and remove the obsolete statement that `PROJECT_STATE.md` is not updated. Metadata-only correction
+   does not require another CI run.
+
+No schema/dependency, permission, action, policy, provider/allowance, task lifecycle, Stage 6 or
+unrelated UI change is authorized. ChatGPT must re-review the complete PR after correction, rerun both
+CI jobs, record exact evidence in PR #95 and request a new full Codex review. PR #119 remains unready
+until that cycle closes without findings.
 ## Full JOB-06 re-review after correction
 
 Codex reviewed the complete PR #99 at
