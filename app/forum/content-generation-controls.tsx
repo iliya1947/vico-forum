@@ -169,6 +169,15 @@ function useContentGenerationCoordinator(
           ...current,
           [completedKey]: fetcher.data!,
         }));
+        if (
+          fetcher.data.outcome === "unavailable"
+          || (
+            fetcher.data.outcome === "no-op"
+            && fetcher.data.reason === "request-budget-denied"
+          )
+        ) {
+          nextIndexRef.current = queue.length;
+        }
       }
       setQueueTick((value) => value + 1);
       return;
