@@ -3199,6 +3199,92 @@ exclusions. No current-Stage defect or unauthorized scope expansion remains.
 
 **Final result:** PR #118 is technically ready for user merge at exact head
 `4f7fd854d979663e16c6dc82d2d40f0290efdfd5`. Any head change requires another complete review.
+
+## Updated-main verification after PR #118
+
+Codex fetched GitHub `main` at `e5ae6a92604c6cebcde13c542d6cc1ef3f009359` and verified that PR
+#118 is merged. The complete current project, Stage, translation and authorization source-of-truth
+documents were reread to their actual ends. `PROJECT_STATE.md` now records migration `0020`, dynamic
+`forum.translation.generate`, authenticated one-unit title/body actions, canonical server-derived
+target/resource/requester inputs, injected anti-abuse policy, the CNT-04 automatic-body threshold and
+the default-disabled Worker boundary as implemented facts.
+
+The only remaining ordinary Stage 5 implementation slice is generation UX/status integration.
+External provider/account approval, real allowance, Queue/bindings, credentials, production policy
+values and deployed smoke remain Stage 6 and are not blockers for local/CI completion.
+
+## Next technical agreement: generation UX, status and revalidation
+
+No implementation PR is authorized yet. ChatGPT must independently inspect the merged topic loader
+and presentation components, action result contract, dynamic authorization read path, task store/
+generation identities, current translation batch reader and React Router revalidation/fetcher
+semantics. It should confirm or refine the following bounded product contract without reopening
+already accepted owner decisions.
+
+### Fixed product decisions
+
+1. Persisted exact-current URL-locale translations remain automatically displayed to every reader,
+   with provenance, language/direction metadata and original disclosure; generation permission is a
+   separate authenticated write boundary.
+2. An authenticated reader with effective `forum.translation.generate` may automatically request
+   missing eligible title and post translations after hydration. GET/SSR remains read-only.
+3. Post bodies with authoritative CNT-04 semantic length `<= 3000` use the automatic intent. Longer
+   bodies require an explicit per-post control and a distinct server intent that still uses the same
+   permission, pseudonymization, planner and request-budget boundary.
+4. Default Worker generation remains disabled/fail-closed. Local/CI uses injected capabilities; no
+   real provider, allowance, Queue or production policy value is introduced.
+
+### Questions requiring precise technical agreement
+
+1. **Bounded eligibility payload:** determine the smallest loader data needed for client triggering
+   and controls. It may expose effective generation permission and stable public unit/revision state,
+   but must not expose actor identity, task IDs, budget/provider/allowance internals, source payloads
+   beyond already rendered public content, or make provider/planner calls during GET.
+2. **Automatic trigger idempotency:** define a per-hydration client guard keyed by exact current
+   revision + canonical target + unit. React rerenders/Strict Mode must not cause duplicate POSTs in
+   one hydration; reloads/tabs may repeat the authenticated anti-abuse request, while durable planner
+   identity and provider allowance remain the server correctness boundaries.
+3. **Long-body explicit path:** add one explicit post-body action that bypasses only the automatic
+   `3000` threshold. It must not bypass permission, authoritative topic/post membership, current
+   revision, target derivation, pseudonymization, budget, provider capability or planner checks.
+4. **Durable status read:** specify a bounded, non-sensitive server read model for current revision/
+   target units. It should distinguish at most actionable presentation states such as original/no
+   work, pending/processing/deferred, completed/current translation, and failed terminal, without
+   exposing claim tokens, attempt details, failure payloads, reservation references or unbounded
+   reasons. Decide whether this requires a batch query integrated with the existing topic loader or a
+   separate authenticated bounded status resource; avoid N queries per post.
+5. **Revalidation/polling:** queued action results should revalidate read-only presentation/status.
+   Any polling must be bounded, stop on terminal/current/no-work states, avoid provider calls and not
+   POST repeatedly. Classified status-storage unavailability must preserve original content and avoid
+   an infinite loading state; unexpected errors remain visible to the established boundary.
+6. **Action feedback:** define accessible, localized per-unit states for requesting, queued/pending,
+   deferred/unavailable, failed, explicit-required and completed/current presentation. A `429` uses
+   bounded retry timing; `503` remains retryable UI feedback. Do not reveal internal budget scope,
+   provider state or raw failure codes.
+7. **Concurrency and revision changes:** if a revision changes during action/polling, UI must converge
+   to the new exact-current original/translation and discard old unit status. It must not automatically
+   retry the superseded revision inside the same response cycle.
+
+### Proposed implementation sequence
+
+Codex provisionally prefers one final mergeable Stage 5 PR only if the bounded batch status model and
+UI remain reviewable together. Otherwise use two PRs in dependency order: (a) bounded current-unit
+status read plus explicit long-body action; (b) hydration trigger, polling/revalidation and accessible
+localized presentation. Neither option may add schema unless existing task identity/indexes cannot
+support a demonstrably bounded current-unit query.
+
+### Agreement completion criteria
+
+- ChatGPT proves the status query shape against current task identity/generation semantics and avoids
+  N-query-per-post behavior;
+- automatic hydration cannot loop POSTs, SSR remains read-only, and explicit long-body generation
+  bypasses only the threshold;
+- public original-safe presentation is preserved through missing, deferred, failed and unavailable
+  states;
+- dynamic permission changes take effect on the next request and client hints never authorize;
+- the proposal requires no real external services or unselected production policy values;
+- after agreement Codex issues the exact final Stage 5 implementation task and later performs the
+  required end-of-Stage audit against updated `main`.
 ## Full JOB-06 re-review after correction
 
 Codex reviewed the complete PR #99 at
