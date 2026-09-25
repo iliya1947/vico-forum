@@ -10,17 +10,26 @@ import type {
 import { isPostgresAvailabilityFailure } from "../app/localization/persistent-registry";
 import { DrizzleContentTranslationBatchReader } from "./content-translation-store";
 import {
+  bestEffortDiscardClient,
+  createLocalizationClient,
   isPostgresConnectionTimeout,
   isPostgresQueryTimeout,
 } from "./postgres-deadlines";
 
+interface PostgreSqlClientFactory {
+  (connectionString: string): Client;
+}
+
+const defaultClientFactory: PostgreSqlClientFactory = createLocalizationClient;
+
 /** Creates one read-only persisted content-translation capability for a Worker request. */
 export function createHyperdriveContentTranslationBatchReader(
   connectionString: string,
+  createClient: PostgreSqlClientFactory = defaultClientFactory,
 ): ContentTranslationBatchReader {
   return {
     async readBatch(identities) {
-      const client = new Client({ connectionString });
+      const client = createClient(connectionString);
       try {
         await client.connect();
         return await new DrizzleContentTranslationBatchReader(drizzle(client)).readBatch(identities);
@@ -38,11 +47,7 @@ export function createHyperdriveContentTranslationBatchReader(
         }
         throw error;
       } finally {
-        try {
-          await client.end();
-        } catch {
-          // Request-scoped cleanup is best effort and must not mask the read result/error.
-        }
+        bestEffortDiscardClient(client);
       }
     },
   };
