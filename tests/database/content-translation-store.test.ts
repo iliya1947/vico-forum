@@ -9,7 +9,7 @@ import {
   type ContentTranslationRevision,
   type ContentTranslationWriteInput,
 } from "../../app/localization/content-translation";
-import { DrizzleContentTranslationStore } from "../../db/content-translation-store";
+import { DrizzleContentTranslationBatchReader, DrizzleContentTranslationStore } from "../../db/content-translation-store";
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) throw new Error("DATABASE_URL is required for the disposable database integration test");
@@ -149,6 +149,71 @@ describe("DrizzleContentTranslationStore", () => {
       selected: "translation",
       content: "Ancien titre",
     });
+  });
+
+  it("batch-reads exact requested current title/body identities without leaking old or wrong-target rows", async () => {
+    const service = new ContentTranslationService(new DrizzleContentTranslationStore(drizzle(client)));
+    await service.write(machineWrite(titleRevision(), "fr", "Titre actuel"));
+    await service.write(machineWrite(postRevision(), "fr", "Corps actuel"));
+    await service.write(machineWrite(postRevision(), "de", "Falsches Ziel"));
+
+    await client.query("begin");
+    try {
+      await client.query(`
+        insert into forum_post_revisions
+          (id, post_id, author_id, original_content, source_locale)
+        values ('body-a-r2', 'post-a', 'author-a', 'Текущий текст', 'ru')
+      `);
+      await client.query(`
+        update forum_posts set current_revision_id = 'body-a-r2' where id = 'post-a'
+      `);
+      await client.query("commit");
+    } catch (error) {
+      await client.query("rollback");
+      throw error;
+    }
+
+    await service.write(machineWrite(postRevision({
+      revisionId: "body-a-r2",
+      originalContent: "Текущий текст",
+    }), "fr", "Corps nouveau"));
+
+    const reader = new DrizzleContentTranslationBatchReader(drizzle(client));
+    const batch = await reader.readBatch([
+      {
+        contentType: "topic-title",
+        contentId: "topic-a",
+        revisionId: "title-a-r1",
+        targetLocale: "fr",
+      },
+      {
+        contentType: "post-body",
+        contentId: "post-a",
+        revisionId: "body-a-r2",
+        targetLocale: "fr",
+      },
+    ]);
+
+    expect(batch.invalidIdentities).toEqual([]);
+    expect(batch.translations).toEqual([
+      expect.objectContaining({
+        contentType: "topic-title",
+        contentId: "topic-a",
+        revisionId: "title-a-r1",
+        targetLocale: "fr",
+        translatedContent: "Titre actuel",
+      }),
+      expect.objectContaining({
+        contentType: "post-body",
+        contentId: "post-a",
+        revisionId: "body-a-r2",
+        targetLocale: "fr",
+        translatedContent: "Corps nouveau",
+      }),
+    ]);
+    expect(batch.translations.some((translation) =>
+      translation.revisionId === "body-a-r1" || translation.targetLocale === "de"
+    )).toBe(false);
   });
 
   it("rejects wrong-owner identities in the store and at the database foreign-key boundary", async () => {
