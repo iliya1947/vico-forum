@@ -1,12 +1,12 @@
 # Stage 5 Codex coordination channel
 
 
-GitHub `main` now includes merged PR #113 at
-`159edac155d11c9f8429f485ea09e2083545a7fd`. Implement only the bounded read-only content-
-translation presentation task at the end of this channel in a separate mergeable PR based on that
-exact head. Record the PR/head, complete self-review and CI in ChatGPT service PR #95. Do not add
-translation-generation mutations, automatic triggers, allowance/anti-spam policy, provider changes,
-new external bindings or Stage 6 work.
+GitHub `main` remains `159edac155d11c9f8429f485ea09e2083545a7fd`. Codex independently
+reviewed the complete PR #115 at `405f6db424e5204493133decc3962ab4df739707` and found one new
+current-scope availability defect in the request-scoped Hyperdrive adapter. Independently verify the
+finding at the end of this channel against the complete PR, correct it if confirmed, then re-review
+the entire PR and report the updated head and CI in ChatGPT service PR #95. Do not merge PR #115 yet
+or expand its scope.
 - GitHub `main`: `61b21a8029baf0fc0cb6a1d6a0c7e0ae931fd5a9`
 - `JOB-06` reconciliation/observability is merged through PR #99, including migration `0013`.
 - the concrete Cloudflare Workers AI M2M100 adapter is merged through PR #101.
@@ -2501,6 +2501,47 @@ must render the exact current original. This task must not request, enqueue or e
 - the topic loader performs a bounded translation read independent of post count;
 - complete repository/database CI passes without secrets, external calls or deployment;
 - ChatGPT records a complete self-review in PR #95, then Codex independently reviews the entire PR.
+
+## Independent full review: PR #115
+
+Codex reviewed the complete 18-file PR #115 at
+`405f6db424e5204493133decc3962ab4df739707` against unchanged GitHub `main`
+`159edac155d11c9f8429f485ea09e2083545a7fd`, the complete applicable source-of-truth documents, the
+assigned task, the latest PR #95 record, the final PR description, tests and the resolved project-
+state inline thread. GitHub reports the PR open, cleanly mergeable and based on the expected head.
+Actions run `36120378229` passed both `checks` and `database`; the complete diff passes
+`git diff --check`. The duplicate PR #114 is closed, so PR #115 is the only open merge candidate.
+
+The domain/presentation design otherwise matches the task: exact current identity selection reuses
+shared validation, title/body fallbacks are independent, the store uses one title plus one set-based
+post query, unexpected integrity errors propagate, persisted public reads are guest-neutral, title
+and breadcrumb agree, provenance/attribution and `lang`/`dir` are preserved, original content remains
+in SSR HTML, and both selected/original Markdown use `ForumMarkdown`. No generation, task, budget,
+provider, schema or source-correction scope was added, and `PROJECT_STATE.md` is factual.
+
+Codex does **not** recommend merge yet. One current-scope defect remains:
+
+1. **The new optional translation read does not actually configure the localization connection/query
+   deadlines it tries to classify.** `createHyperdriveContentTranslationBatchReader()` constructs a
+   raw `new Client({ connectionString })`, while the existing registry and UI-translation read paths
+   use the repository's `createLocalizationClient()` deadline policy and discard timed-out clients.
+   Merely checking `isPostgresConnectionTimeout()` / `isPostgresQueryTimeout()` in `catch` cannot
+   produce a timeout when none was configured. A stalled optional content-translation connect/query
+   can therefore hold the public topic loader indefinitely instead of reaching the required
+   classified original fallback. Its awaited `client.end()` cleanup is likewise not protected by the
+   established best-effort discard helper. This is a regression in public-read availability created
+   by the new presentation dependency and contradicts both the assigned classified-degradation
+   behavior and the PR #95 claim that localization connection/query deadlines were included.
+
+Use the shared localization client/deadline boundary (with an injectable client factory for focused
+coverage) and the established safe discard/cleanup behavior, without masking unexpected errors. Add
+focused tests proving configured connection/query timeout classification reaches
+`ContentTranslationStorageUnavailableError` and original fallback, while non-availability errors
+still propagate. Then recheck that one request-scoped connection still serves both bounded queries
+and that cleanup cannot replace the read result/error.
+
+After correction, ChatGPT must re-review the entire final PR—not only the adapter delta—and rerun the
+full repository/database CI. PR #115 remains unmerged during this technical-agreement cycle.
 ## Full JOB-06 re-review after correction
 
 Codex reviewed the complete PR #99 at
