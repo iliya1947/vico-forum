@@ -5,6 +5,9 @@ import { Client, type DatabaseError } from "pg";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  ContentPostBodyAllowanceGate,
+} from "../../app/localization/content-provider-allowance";
+import {
   CONTENT_TRANSLATION_REQUESTER_SUBJECT_KEY_LENGTH,
   type ContentTranslationRequestBudgetAdmission,
 } from "../../app/localization/content-request-budget.server";
@@ -1397,7 +1400,21 @@ function createBodyExecutor(
     protectedContentPolicyVersion: CONTENT_MARKDOWN_PROTECTION_POLICY_VERSION,
     publications: executionStore,
   });
+  const allowance = new ContentPostBodyAllowanceGate({
+    store: tasks,
+    tasks,
+    adapter: { admit: async () => ({ outcome: "admitted" as const, reservationReference: "fake-body" }) },
+    provider: "fake-provider",
+    admissionLeaseDurationMs: 60_000,
+    revisions: executionStore,
+    translations,
+    localeRegistry,
+    generationPolicyVersion: "content-v1",
+    protectedContentPolicyVersion: CONTENT_MARKDOWN_PROTECTION_POLICY_VERSION,
+    executionBounds,
+  });
   return new ContentPostBodyTaskExecutor({
+    allowance,
     consumer,
     providerRouter: new TranslationProviderRouter([adapter]),
     publisher,
