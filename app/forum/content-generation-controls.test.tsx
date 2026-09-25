@@ -28,7 +28,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("react-router", () => ({
   useFetcher: (options?: { key?: string }) => {
-    const automatic = options?.key === "content-generation-auto";
+    const automatic = options?.key?.startsWith("content-generation-auto:") === true;
     const current = automatic ? mocks.auto : mocks.explicit;
     return {
       submit: automatic ? mocks.autoSubmit : mocks.explicitSubmit,
@@ -75,7 +75,7 @@ function unit(
 
 function managed(units: readonly ContentGenerationUnitView[]) {
   return (
-    <ContentGenerationManager units={units}>
+    <ContentGenerationManager lifecycleKey="page-1" units={units}>
       {units.map((current) => (
         <ContentGenerationUnitStatus key={current.key} unit={current} />
       ))}
@@ -203,7 +203,7 @@ describe("content generation client orchestration", () => {
     const units = [duplicate, duplicate];
     const rendered = render(
       <StrictMode>
-        <ContentGenerationManager units={units}>
+        <ContentGenerationManager lifecycleKey="page-1" units={units}>
           <div>content</div>
         </ContentGenerationManager>
       </StrictMode>,
@@ -214,7 +214,7 @@ describe("content generation client orchestration", () => {
     mocks.auto.state = "submitting";
     rendered.rerender(
       <StrictMode>
-        <ContentGenerationManager units={units}>
+        <ContentGenerationManager lifecycleKey="page-1" units={units}>
           <div>content</div>
         </ContentGenerationManager>
       </StrictMode>,
@@ -223,7 +223,7 @@ describe("content generation client orchestration", () => {
     mocks.auto.state = "idle";
     rendered.rerender(
       <StrictMode>
-        <ContentGenerationManager units={units}>
+        <ContentGenerationManager lifecycleKey="page-1" units={units}>
           <div>content</div>
         </ContentGenerationManager>
       </StrictMode>,
