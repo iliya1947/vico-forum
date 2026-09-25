@@ -107,10 +107,12 @@ function generationCapability(
 ): ContentGenerationActionCapability & {
   generateTopicTitle: ReturnType<typeof vi.fn>;
   generateAutomaticPostBody: ReturnType<typeof vi.fn>;
+  generateExplicitPostBody: ReturnType<typeof vi.fn>;
 } {
   return {
     generateTopicTitle: vi.fn(async () => result),
     generateAutomaticPostBody: vi.fn(async () => result),
+    generateExplicitPostBody: vi.fn(async () => result),
   };
 }
 
@@ -589,6 +591,35 @@ describe("forum write route actions", () => {
     });
   });
 
+  it("routes explicit post generation through the same authoritative server unit", async () => {
+    const capability = generationCapability();
+    const response = await topicAction({
+      request: request("/he/topics/topic-1", {
+        intent: "generateExplicitPostBodyTranslation",
+        postId: "post-1",
+        actorId: "forged",
+        targetLocale: "fr",
+        revisionId: "forged",
+      }),
+      params: { locale: "he", topicId: "topic-1" },
+      context: generationContext({ capability, topic: generationTopic }),
+    });
+
+    expect(response).toMatchObject({ init: { status: 202 } });
+    expect(capability.generateExplicitPostBody).toHaveBeenCalledWith({
+      actorId: "session-user",
+      revision: {
+        contentType: "post-body",
+        contentId: "post-1",
+        revisionId: "post-r1",
+        originalContent: "Authoritative post body",
+        sourceLocale: "en",
+      },
+      targetLocale: "he",
+    });
+    expect(capability.generateAutomaticPostBody).not.toHaveBeenCalled();
+  });
+
   it("fails closed when generation is disabled and maps bounded planner outcomes", async () => {
     const disabled = await topicAction({
       request: request("/he/topics/topic-1", {
@@ -623,6 +654,7 @@ describe("forum write route actions", () => {
         operation: "contentGeneration",
         outcome: "no-op",
         reason: "request-budget-denied",
+        retryAfterSeconds: 11,
       },
       init: { status: 429 },
     });
