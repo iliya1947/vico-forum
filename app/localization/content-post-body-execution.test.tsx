@@ -6,6 +6,7 @@ import {
   CONTENT_MARKDOWN_PROTECTION_POLICY_VERSION,
   protectMarkdownForTranslation,
 } from "./content-markdown-translation";
+import type { ContentTranslationAllowanceAdmissionResult } from "./content-translation-allowance";
 import {
   ContentPostBodyTaskExecutor,
   type ContentPostBodyExecutionBounds,
@@ -281,7 +282,11 @@ async function harness(options: {
   ));
 
   const allowance = {
-    admitPostBody: vi.fn(async () => ({ outcome: "admitted" as const })),
+    admitPostBody: vi.fn(
+      async (): Promise<ContentTranslationAllowanceAdmissionResult> => ({
+        outcome: "admitted",
+      }),
+    ),
   };
   const executor = new ContentPostBodyTaskExecutor({
     allowance,
