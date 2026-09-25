@@ -194,43 +194,50 @@ async function insertTask(input: {
   metadataOwnerColumn: "topic_id" | "post_id";
   owner: string;
 }) {
-  await setup.query(`
-    insert into translation_task_generation_heads
-      (translation_kind, source_namespace, source_key, target_locale, current_generation)
-    values ($1, $2, $3, $4, $5)
-  `, [input.kind, input.namespace, input.key, input.target, input.generation]);
-  await setup.query(`
-    insert into translation_tasks
-      (id, task_identity, translation_kind, source_namespace, source_key, source_fingerprint,
-       target_locale, generation_policy_version, generation)
-    values ($1, $2, $3, $4, $5, $6, $7, 'content-v1', $8)
-  `, [
-    input.id,
-    input.id.replaceAll("-", "").padEnd(64, "a").slice(0, 64),
-    input.kind,
-    input.namespace,
-    input.key,
-    "b".repeat(64),
-    input.target,
-    input.generation,
-  ]);
+  await setup.query("begin");
+  try {
+    await setup.query(`
+      insert into translation_task_generation_heads
+        (translation_kind, source_namespace, source_key, target_locale, current_generation)
+      values ($1, $2, $3, $4, $5)
+    `, [input.kind, input.namespace, input.key, input.target, input.generation]);
+    await setup.query(`
+      insert into translation_tasks
+        (id, task_identity, translation_kind, source_namespace, source_key, source_fingerprint,
+         target_locale, generation_policy_version, generation)
+      values ($1, $2, $3, $4, $5, $6, $7, 'content-v1', $8)
+    `, [
+      input.id,
+      input.id.replaceAll("-", "").padEnd(64, "a").slice(0, 64),
+      input.kind,
+      input.namespace,
+      input.key,
+      "b".repeat(64),
+      input.target,
+      input.generation,
+    ]);
 
-  if (input.kind === "content-topic-title") {
-    await setup.query(`
-      insert into content_topic_title_translation_tasks
-        (task_id, translation_kind, source_namespace, topic_id, revision_id,
-         revision_source_locale, resolved_source_locale, source_resolution_origin)
-      values ($1, 'content-topic-title', 'topic-title', $2, $3, 'ru', 'ru', 'revision-metadata')
-    `, [input.id, input.owner, input.revision]);
-  } else {
-    await setup.query(`
-      insert into content_post_body_translation_tasks
-        (task_id, translation_kind, source_namespace, post_id, revision_id,
-         revision_source_locale, resolved_source_locale, source_resolution_origin,
-         protected_content_policy_version)
-      values ($1, 'content-post-body', 'post-body', $2, $3, 'ru', 'ru', 'revision-metadata',
-              'cnt04-commonmark-v1')
-    `, [input.id, input.owner, input.revision]);
+    if (input.kind === "content-topic-title") {
+      await setup.query(`
+        insert into content_topic_title_translation_tasks
+          (task_id, translation_kind, source_namespace, topic_id, revision_id,
+           revision_source_locale, resolved_source_locale, source_resolution_origin)
+        values ($1, 'content-topic-title', 'topic-title', $2, $3, 'ru', 'ru', 'revision-metadata')
+      `, [input.id, input.owner, input.revision]);
+    } else {
+      await setup.query(`
+        insert into content_post_body_translation_tasks
+          (task_id, translation_kind, source_namespace, post_id, revision_id,
+           revision_source_locale, resolved_source_locale, source_resolution_origin,
+           protected_content_policy_version)
+        values ($1, 'content-post-body', 'post-body', $2, $3, 'ru', 'ru', 'revision-metadata',
+                'cnt04-commonmark-v1')
+      `, [input.id, input.owner, input.revision]);
+    }
+    await setup.query("commit");
+  } catch (error) {
+    await setup.query("rollback");
+    throw error;
   }
 }
 
