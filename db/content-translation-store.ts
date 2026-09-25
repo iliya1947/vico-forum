@@ -329,7 +329,7 @@ function postValues(translation: StoredContentTranslation) {
   };
 }
 
-type TranslationRow = {
+export type TranslationRow = {
   revisionId: string;
   targetLocale: string;
   sourceLocale: string;
@@ -340,11 +340,11 @@ type TranslationRow = {
   attribution: string | null;
 };
 
-function topicRow(row: TranslationRow & { topicId: string }): StoredContentTranslation {
+export function topicRow(row: TranslationRow & { topicId: string }): StoredContentTranslation {
   return storedRow("topic-title", row.topicId, row);
 }
 
-function postRow(row: TranslationRow & { postId: string }): StoredContentTranslation {
+export function postRow(row: TranslationRow & { postId: string }): StoredContentTranslation {
   return storedRow("post-body", row.postId, row);
 }
 
@@ -407,7 +407,7 @@ function sameTranslation(
     && JSON.stringify(left.provenance) === JSON.stringify(right.provenance);
 }
 
-function classifyStorageFailure(error: unknown): unknown {
+export function classifyStorageFailure(error: unknown): unknown {
   if (
     error instanceof ContentTranslationConflictError
     || error instanceof ContentTranslationInvalidRecordError
