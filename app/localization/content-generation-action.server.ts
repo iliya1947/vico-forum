@@ -19,8 +19,9 @@ import type {
 } from "./content-translation-planning";
 import type { ContentTranslationRevision } from "./content-translation";
 import { isPostgresAvailabilityFailure } from "./persistent-registry";
+import { MAX_AUTOMATIC_POST_TRANSLATION_SEMANTIC_CHARACTERS } from "./content-generation-policy";
 
-export const MAX_AUTOMATIC_POST_TRANSLATION_SEMANTIC_CHARACTERS = 3_000;
+export { MAX_AUTOMATIC_POST_TRANSLATION_SEMANTIC_CHARACTERS } from "./content-generation-policy";
 
 export interface ContentGenerationRequestBudgetPolicy {
   readonly cost: number;
