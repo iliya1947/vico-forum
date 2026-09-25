@@ -2836,6 +2836,42 @@ after the technical issue is resolved and the final head is fully re-reviewed.
 Local execution was attempted but could not start because Corepack could not download the repository-
 pinned `pnpm@12.3.4` executable from npm in this environment. No local test success is claimed; the
 green GitHub run above is recorded only for the current, still-defective head.
+
+## Final independent re-review of corrected PR #117
+
+Final reviewed artifacts:
+
+- GitHub `main`: `ff3731694dd51ae9c227f244943e2a451052a55b`;
+- ChatGPT service PR #95: `0fe0ef70be3e43c434cb36cb20ea64ef494bda56`;
+- implementation PR #117: `7076372dafe30c573087c026451c6fbed59cf00a`;
+- GitHub Actions run `36140593955`: `checks` and `database` succeeded.
+
+ChatGPT disclosed the same unsupported-provider deferral defect independently found by Codex, so the
+finding is confirmed under the technical-agreement protocol. The correction now distinguishes an
+entirely unconfigured provider runtime from configured-but-unsupported work:
+
+- no configured provider identity keeps the durable `provider-unconfigured` pre-claim deferral;
+- configured work rejected by capability or data policy bypasses the allowance adapter, persists a
+  fenced admission only as a bridge into the existing claim/failure lifecycle, consumes one real
+  execution attempt, performs no translation-provider call, and terminates as
+  `provider-unsupported`;
+- executable admitted work remains bound to the exact selected provider identity.
+
+Codex independently re-read all relevant source-of-truth documents and re-reviewed the complete
+27-file PR diff, including migration `0019`, Drizzle parity, allowance occurrence/lease/deferral
+state, title and post-body envelopes, provider binding, claim/attempt fencing, retry and stale
+reactivation, JOB-06 recovery/observability, tests, `PROJECT_STATE.md`, and corrected PR metadata.
+Focused unit and PostgreSQL regressions cover both configured-unsupported content kinds and the
+unconfigured defer distinction. No remaining current-Stage defect or scope expansion was found.
+
+GitHub Actions run `36140593955` completed every reported step successfully, including accepted
+migration-history protection, lint, typecheck, unit tests, production build, migration metadata,
+Drizzle schema parity, clean PostgreSQL 17 migrations/constraints, Workers build, and Hyperdrive
+smoke. Local execution could not start because Corepack could not download the pinned
+`pnpm@12.3.4`; no local success is claimed.
+
+**Final result:** PR #117 is technically ready for user merge at the exact reviewed head
+`7076372dafe30c573087c026451c6fbed59cf00a`. Any head change requires another review.
 ## Full JOB-06 re-review after correction
 
 Codex reviewed the complete PR #99 at
