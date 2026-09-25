@@ -1,8 +1,6 @@
 CREATE TABLE "content_translation_allowance_admissions" (
   "task_id" uuid PRIMARY KEY NOT NULL,
   "translation_kind" text NOT NULL,
-  "source_namespace" text NOT NULL,
-  "source_key" text NOT NULL,
   "generation" integer NOT NULL,
   "attempt_number" integer NOT NULL,
   "state" text NOT NULL,
@@ -16,9 +14,6 @@ CREATE TABLE "content_translation_allowance_admissions" (
   "updated_at" timestamp with time zone DEFAULT now() NOT NULL,
   CONSTRAINT "content_translation_allowance_admissions_kind_check"
     CHECK ("translation_kind" in ('content-topic-title', 'content-post-body')),
-  CONSTRAINT "content_translation_allowance_admissions_shape_check"
-    CHECK (("translation_kind" = 'content-topic-title' and "source_namespace" = 'topic-title')
-      or ("translation_kind" = 'content-post-body' and "source_namespace" = 'post-body')),
   CONSTRAINT "content_translation_allowance_admissions_generation_check"
     CHECK ("generation" > 0),
   CONSTRAINT "content_translation_allowance_admissions_attempt_check"
@@ -61,10 +56,13 @@ CREATE TABLE "content_translation_allowance_admissions" (
     CHECK ("updated_at" >= "created_at")
 );
 --> statement-breakpoint
+ALTER TABLE "translation_tasks"
+  ADD CONSTRAINT "translation_tasks_kind_owner_unique" UNIQUE("id", "translation_kind");
+--> statement-breakpoint
 ALTER TABLE "content_translation_allowance_admissions"
   ADD CONSTRAINT "content_translation_allowance_admissions_task_owner_fk"
-  FOREIGN KEY ("task_id", "translation_kind", "source_namespace", "source_key")
-  REFERENCES "public"."translation_tasks"("id", "translation_kind", "source_namespace", "source_key")
+  FOREIGN KEY ("task_id", "translation_kind")
+  REFERENCES "public"."translation_tasks"("id", "translation_kind")
   ON DELETE cascade ON UPDATE no action;
 --> statement-breakpoint
 CREATE INDEX "content_translation_allowance_admissions_recovery_idx"
