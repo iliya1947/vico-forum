@@ -193,7 +193,7 @@ describe("content provider allowance boundary", () => {
     const gate = new ContentTopicTitleAllowanceGate({
       store,
       adapter,
-      provider: "fake-provider",
+      providerRouter: { selectProvider: vi.fn(() => "fake-provider") },
       admissionLeaseDurationMs: 60_000,
       localeRegistry: registry,
       generationPolicyVersion: "content-v1",
@@ -216,6 +216,7 @@ describe("content provider allowance boundary", () => {
 
     await expect(gate.admit({ translationTaskId: taskId })).resolves.toEqual({
       outcome: "admitted",
+      provider: "fake-provider",
     });
     expect(adapter.admit).toHaveBeenCalledWith(expect.objectContaining({
       provider: "fake-provider",
@@ -232,6 +233,7 @@ describe("content provider allowance boundary", () => {
       taskId,
       admissionToken,
       { generation: 3, attempt: 2 },
+      "fake-provider",
       "reserve-title",
     );
   });
@@ -250,7 +252,7 @@ describe("content provider allowance boundary", () => {
       adapter: {
         admit: vi.fn(async () => ({ outcome: "admitted" as const, reservationReference: "reserve" })),
       },
-      provider: "fake-provider",
+      providerRouter: { selectProvider: vi.fn(() => "fake-provider") },
       admissionLeaseDurationMs: 60_000,
       localeRegistry: registry,
       generationPolicyVersion: "content-v1",
@@ -289,7 +291,7 @@ describe("content provider allowance boundary", () => {
     });
     const gate = new ContentTopicTitleAllowanceGate({
       store,
-      provider: "unconfigured-provider",
+      providerRouter: { selectProvider: vi.fn(() => "unconfigured-provider") },
       admissionLeaseDurationMs: 60_000,
       unconfiguredRetryMs: 1_000,
       localeRegistry: registry,
@@ -331,7 +333,7 @@ describe("content provider allowance boundary", () => {
     const gate = new ContentTopicTitleAllowanceGate({
       store,
       adapter,
-      provider: "fake-provider",
+      providerRouter: { selectProvider: vi.fn(() => "fake-provider") },
       admissionLeaseDurationMs: 60_000,
       localeRegistry: registry,
       generationPolicyVersion: "content-v1",
@@ -371,7 +373,7 @@ describe("content provider allowance boundary", () => {
     const gate = new ContentPostBodyAllowanceGate({
       store,
       adapter,
-      provider: "fake-provider",
+      providerRouter: { selectProvider: vi.fn(() => "fake-provider") },
       admissionLeaseDurationMs: 60_000,
       localeRegistry: registry,
       generationPolicyVersion: "content-v1",
@@ -396,6 +398,7 @@ describe("content provider allowance boundary", () => {
 
     await expect(gate.admit({ translationTaskId: taskId })).resolves.toEqual({
       outcome: "admitted",
+      provider: "fake-provider",
     });
     const request = requests[0];
     expect(request).toBeDefined();
