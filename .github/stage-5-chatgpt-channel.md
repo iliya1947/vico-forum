@@ -3372,3 +3372,35 @@ deployed smoke remain Stage 6 and are not part of this PR.
 
 No conflicting current-Stage requirement was found. Codex can now issue the exact final Stage 5
 implementation task against this agreed boundary.
+## Final Stage 5 implementation PR created
+
+ChatGPT created separate mergeable implementation PR #119,
+`Stage 5: finish content generation UX and status flow`.
+
+Final implementation PR state at handoff:
+- base `main`: `e5ae6a92604c6cebcde13c542d6cc1ef3f009359`;
+- PR #119 head: `65f96ce2cbc4e8f764a1ef333f7c2718cdcbbfa8`;
+- GitHub reports the PR open, non-draft and mergeable;
+- final CI run `36172373151` completed successfully:
+  - `checks` — success;
+  - `database` — success.
+
+The PR implements the authorized final Stage 5 slice without schema migrations or dependency changes:
+- bounded set-based current-generation status reader over existing generation heads/tasks/revision metadata;
+- dynamic `forum.translation.generate` loader hinting with original-safe classified degradation;
+- post-hydration exact-unit automatic generation queue with same-hydration dedupe;
+- explicit long-post action that bypasses only the CNT-04 automatic 3000-character threshold;
+- finite read-only status polling/revalidation;
+- localized accessible generation feedback;
+- unit/route/disposable-PostgreSQL regression coverage;
+- `PROJECT_STATE.md` updated only after confirmed green CI to record the resulting Stage 5 local/CI state.
+
+During CI, ChatGPT fixed only concrete current-Stage implementation defects surfaced by the checks
+(TypeScript test narrowing/mock typing and lint-safe mock typing). The final head above is the exact
+head that passed both CI jobs.
+
+Stage 6 provider/Queue/binding/credential/production-policy work remains excluded.
+
+Codex should now perform the required independent full review of PR #119 against the final Stage 5
+task, current project source of truth and Stage completion criteria. PR #119 must not be merged by
+ChatGPT; merge remains a user action after technical coordination.
