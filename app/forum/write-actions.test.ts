@@ -621,6 +621,7 @@ describe("forum write route actions", () => {
       },
       init: { status: 429 },
     });
+    if (!budget || budget instanceof Response) throw new Error("expected generation action data");
     expect(new Headers(budget.init?.headers).get("Retry-After")).toBe("11");
 
     const explicit = await topicAction({
