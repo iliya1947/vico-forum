@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-09-24
+Последнее обновление: 2026-09-25
 
 ## Назначение
 
@@ -214,7 +214,18 @@ Migration `0007`–`0010` содержит durable task lifecycle и generation-
   translations/tasks остаются historical revision-bound. Locale-aware topic UI показывает
   correction controls по optional presentation auth, а action повторно проверяет authentication,
   same-origin, current permission и resource ownership server-side. Migration `0018` расширяет
-  code-backed permission catalog/check constraint и approved initial built-in grants.
+  code-backed permission catalog/check constraint и approved initial built-in grants;
+- read-only presentation already persisted current user-content translations on the topic page:
+  loader uses authoritative current title/post revisions and the canonical validated URL locale,
+  selects only exact `contentType + contentId + revisionId + targetLocale` records through shared
+  `ContentTranslationService` validation semantics, and performs a bounded batch read with at most
+  one title query plus one set-based post-body query. Available current translations are shown
+  automatically and independently per unit; missing/invalid/classified-unavailable data falls back
+  to the exact current original without generation side effects. Topic title/breadcrumb use one
+  selected presentation, translated post bodies still pass through the existing safe
+  `ForumMarkdown` renderer, provenance/optional stored attribution and `lang`/`dir` metadata are
+  rendered, and native `details` controls expose the original without writes or provider calls.
+  Guests and authenticated users share the same persisted public read result.
 
 ### Stage 5 ещё не завершён
 
@@ -223,7 +234,9 @@ Migration `0007`–`0010` содержит durable task lifecycle и generation-
 - подключение реализованного request-budget admission к routes и согласованной
   provider-allowance/anti-spam policy; production content-provider/data-policy approval, real
   binding/credentials/live calls остаются external Stage 6 concerns;
-- route/UI integration и product UX для запроса/показа перевода пользовательского контента.
+- generation-side route/UI integration: authenticated generation permission/action, automatic
+  post-hydration trigger for eligible content, explicit long-body translation control and task/status
+  UX under the agreed provider-allowance/anti-spam boundary.
 
 Реальные Cloudflare Queue bindings, provider credentials/calls и deployed provider/Queue smoke —
 это отдельная Stage 6 external acceptance и не являются условием обычных Stage 5 feature PR.
@@ -277,7 +290,8 @@ no-op verification. Перед следующим настоящим external sc
 ## Ближайший маршрут
 
 1. Завершить согласование provider-allowance/anti-spam admission и подключить atomic admission к content routes.
-2. Завершить route/UI integration и product UX для запроса/показа перевода пользовательского контента.
+2. Завершить generation-side route/UI integration: authenticated generation action, automatic
+   eligible-content trigger, explicit long-body control and task/status UX.
 3. После завершения Stage 5 перейти к Stage 6 external integration по `ROADMAP.md` и
    `docs/database/*`.
 
