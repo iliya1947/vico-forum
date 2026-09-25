@@ -6,6 +6,7 @@ import {
   contentProviderAllowanceOccurrenceKey,
   validateContentProviderAllowanceDecision,
   type ContentProviderAllowanceAcquireResult,
+  type ContentProviderAllowanceRequest,
   type ContentProviderAllowanceStore,
 } from "./content-provider-allowance";
 import { CONTENT_MARKDOWN_PROTECTION_POLICY_VERSION } from "./content-markdown-translation";
@@ -316,8 +317,12 @@ describe("content provider allowance boundary", () => {
       occurrence: { generation: task.generation, attempt: 1 },
       admissionToken,
     });
+    const requests: ContentProviderAllowanceRequest[] = [];
     const adapter = {
-      admit: vi.fn(async () => ({ outcome: "admitted" as const })),
+      admit: vi.fn(async (request: ContentProviderAllowanceRequest) => {
+        requests.push(request);
+        return { outcome: "admitted" as const };
+      }),
     };
     const source = "Привет **мир** и `const value = 1`.";
     const gate = new ContentPostBodyAllowanceGate({
@@ -349,10 +354,11 @@ describe("content provider allowance boundary", () => {
     await expect(gate.admit({ translationTaskId: taskId })).resolves.toEqual({
       outcome: "admitted",
     });
-    const request = adapter.admit.mock.calls[0]?.[0];
-    expect(request?.contentClassification).toBe("public-forum-post-body");
-    expect(request?.envelope.maxCalls).toBeGreaterThan(0);
-    expect(request?.envelope.maxSourceCharacters).toBeLessThan(source.length);
-    expect(request?.envelope.segmentCharacterCounts).toHaveLength(request?.envelope.maxCalls ?? 0);
+    const request = requests[0];
+    expect(request).toBeDefined();
+    expect(request!.contentClassification).toBe("public-forum-post-body");
+    expect(request!.envelope.maxCalls).toBeGreaterThan(0);
+    expect(request!.envelope.maxSourceCharacters).toBeLessThan(source.length);
+    expect(request!.envelope.segmentCharacterCounts).toHaveLength(request!.envelope.maxCalls);
   });
 });
