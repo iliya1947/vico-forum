@@ -48,6 +48,23 @@ const reader: ForumReader = {
   readTopicPage: async (id) => id === topic.id ? topic : undefined,
 };
 
+function originalTopicPresentation(topicValue: typeof topic | {
+  title: typeof topic.title;
+  posts: Array<{ body: { originalContent: string; sourceLocale: string } }>;
+}) {
+  const original = (content: string, locale: string) => ({
+    selected: "original" as const,
+    displayed: { content, locale, direction: locale === "en" ? "ltr" as const : "auto" as const },
+    original: { content, locale, direction: locale === "en" ? "ltr" as const : "auto" as const },
+    translation: null,
+    fallbackReason: "missing" as const,
+  });
+  return {
+    title: original(topicValue.title.originalContent, topicValue.title.sourceLocale),
+    posts: topicValue.posts.map((post) => original(post.body.originalContent, post.body.sourceLocale)),
+  };
+}
+
 afterEach(cleanup);
 
 function context(locale = "en", direction: "ltr" | "rtl" = "ltr") {
@@ -174,7 +191,7 @@ describe("forum path encoding", () => {
 describe("forum read states", () => {
   it("shows public solved state, highlights the answer, and links to its stable post anchor", async () => {
     const solvedTopic = { ...topic, isSolved: true, bestAnswerPostId: "answer" };
-    renderRoute(TopicRoute, { locale: "en", topic: solvedTopic, authenticated: false, canManageSolution: false }, "/en/topics/typed-api", "en", "ltr");
+    renderRoute(TopicRoute, { locale: "en", topic: solvedTopic, translationPresentation: originalTopicPresentation(solvedTopic), authenticated: false, canManageSolution: false }, "/en/topics/typed-api", "en", "ltr");
     expect(await screen.findByText("Solved")).toBeInTheDocument();
     expect(screen.getByText("Best answer").closest("li")).toHaveAttribute("id", "post-answer");
     expect(screen.getByText("Best answer").closest("li")).toHaveClass("best-answer");
@@ -199,7 +216,7 @@ describe("forum read states", () => {
 
     renderRoute(
       TopicRoute,
-      { locale: "en", topic: solvedTopic, canReply: false, canManageSolution: true },
+      { locale: "en", topic: solvedTopic, translationPresentation: originalTopicPresentation(solvedTopic), canReply: false, canManageSolution: true },
       "/en/topics/typed-api",
       "en",
       "ltr",
@@ -232,7 +249,7 @@ describe("forum read states", () => {
   });
 
   it("shows solution controls only to the topic author", async () => {
-    const unsolved = { locale: "en", topic, canReply: true, canManageSolution: true };
+    const unsolved = { locale: "en", topic, translationPresentation: originalTopicPresentation(topic), canReply: true, canManageSolution: true };
     const authorView = renderRoute(TopicRoute, unsolved, "/en/topics/typed-api", "en", "ltr");
     expect(await screen.findByRole("button", { name: "Mark as solved" })).toBeInTheDocument();
     authorView.unmount();
@@ -246,6 +263,7 @@ describe("forum read states", () => {
       {
         locale: "en",
         topic,
+        translationPresentation: originalTopicPresentation(topic),
         canReply: false,
         canManageSolution: false,
         canCorrectTitleSourceLocale: true,
@@ -261,6 +279,68 @@ describe("forum read states", () => {
     expect(document.querySelector('input[name="postId"][value="answer"]')).not.toBeNull();
   });
 
+  it("auto-presents persisted translations with provenance, original controls, language metadata, and safe Markdown", async () => {
+    const translatedBody = "Translated **body** ![blocked](https://example.test/image.png) [safe link](https://example.test/docs)";
+    const translationPresentation = {
+      title: {
+        selected: "translation" as const,
+        displayed: { content: "כותרת מתורגמת", locale: "he", direction: "rtl" as const },
+        original: { content: topic.title.originalContent, locale: "en", direction: "ltr" as const },
+        translation: {
+          content: "כותרת מתורגמת",
+          locale: "he",
+          direction: "rtl" as const,
+          provenance: {
+            origin: "machine" as const,
+            provider: "provider-a",
+            model: "model-a",
+            attribution: "Provider attribution",
+          },
+        },
+      },
+      posts: [{
+        selected: "translation" as const,
+        displayed: { content: translatedBody, locale: "he", direction: "rtl" as const },
+        original: { content: topic.posts[0]!.body.originalContent, locale: "en", direction: "ltr" as const },
+        translation: {
+          content: translatedBody,
+          locale: "he",
+          direction: "rtl" as const,
+          provenance: { origin: "persistent_manual" as const },
+        },
+      }],
+    };
+
+    renderRoute(
+      TopicRoute,
+      {
+        locale: "he",
+        topic,
+        translationPresentation,
+        canReply: false,
+        canManageSolution: false,
+        canCorrectTitleSourceLocale: false,
+        correctablePostIds: [],
+      },
+      "/he/topics/typed-api",
+      "he",
+      "rtl",
+    );
+
+    expect(await screen.findByRole("heading", { name: "כותרת מתורגמת" })).toHaveAttribute("lang", "he");
+    expect(screen.getByRole("heading", { name: "כותרת מתורגמת" })).toHaveAttribute("dir", "rtl");
+    expect(screen.getByText("Provider attribution")).toBeInTheDocument();
+    expect(screen.getByText("Automatic translation")).toBeInTheDocument();
+    expect(screen.getByText("Manual translation")).toBeInTheDocument();
+    expect(screen.getAllByText("Show original")).toHaveLength(2);
+    expect(screen.getAllByText("Show translation")).toHaveLength(2);
+    expect(screen.getByText(topic.title.originalContent)).toHaveAttribute("lang", "en");
+    expect(screen.getByText(topic.posts[0]!.body.originalContent)).toBeInTheDocument();
+    expect(screen.queryByRole("img")).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "safe link" })).toHaveAttribute("rel", "nofollow noopener noreferrer ugc");
+    expect(screen.getByRole("link", { name: "safe link" })).toHaveAttribute("target", "_blank");
+  });
+
   it("shows forum write forms only for an authenticated loader result", async () => {
     const guestView = renderRoute(SectionRoute, { locale: "en", section, canCreateTopic: false }, "/en/sections/typescript", "en", "ltr");
     expect(screen.queryByRole("heading", { name: "Create a new topic" })).not.toBeInTheDocument();
@@ -270,7 +350,7 @@ describe("forum read states", () => {
     expect(await screen.findByRole("heading", { name: "Create a new topic" })).toBeInTheDocument();
     authenticatedView.unmount();
 
-    renderRoute(TopicRoute, { locale: "en", topic, canReply: true, canManageSolution: false }, "/en/topics/typed-api", "en", "ltr");
+    renderRoute(TopicRoute, { locale: "en", topic, translationPresentation: originalTopicPresentation(topic), canReply: true, canManageSolution: false }, "/en/topics/typed-api", "en", "ltr");
     expect(await screen.findByRole("heading", { name: "Add a reply" })).toBeInTheDocument();
   });
 
