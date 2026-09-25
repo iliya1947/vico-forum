@@ -7,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { useFetcher, useRevalidator } from "react-router";
+import { useFetcher, useLocation, useRevalidator } from "react-router";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 
@@ -29,14 +29,47 @@ const automaticFeedbackContext = createContext<
   ReadonlyMap<string, ContentGenerationAutomaticFeedback>
 >(EMPTY_AUTOMATIC_FEEDBACK);
 
-export function ContentGenerationManager({
+export function ContentGenerationNavigationBoundary({
+  pageIdentity,
   units,
   children,
 }: {
+  pageIdentity: string;
   units: readonly ContentGenerationUnitView[];
   children: ReactNode;
 }) {
-  const fetcher = useFetcher<ContentGenerationActionResponse>({ key: "content-generation-auto" });
+  const location = useLocation();
+  const lifecycleKey = contentGenerationNavigationLifecycleKey(location.key, pageIdentity);
+  return (
+    <ContentGenerationManager
+      key={lifecycleKey}
+      lifecycleKey={lifecycleKey}
+      units={units}
+    >
+      {children}
+    </ContentGenerationManager>
+  );
+}
+
+export function contentGenerationNavigationLifecycleKey(
+  locationKey: string,
+  pageIdentity: string,
+): string {
+  return JSON.stringify([locationKey, pageIdentity]);
+}
+
+export function ContentGenerationManager({
+  lifecycleKey,
+  units,
+  children,
+}: {
+  lifecycleKey: string;
+  units: readonly ContentGenerationUnitView[];
+  children: ReactNode;
+}) {
+  const fetcher = useFetcher<ContentGenerationActionResponse>({
+    key: `content-generation-auto:${lifecycleKey}`,
+  });
   const revalidator = useRevalidator();
   const submitRef = useRef(fetcher.submit);
   const revalidateRef = useRef(revalidator.revalidate);
