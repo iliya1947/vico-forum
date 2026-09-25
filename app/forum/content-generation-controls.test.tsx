@@ -119,14 +119,14 @@ describe("content generation client orchestration", () => {
     const rendered = render(managed(units));
 
     await waitFor(() => expect(mocks.autoSubmit).toHaveBeenCalledTimes(1));
-    expect(screen.getByText("translationRequesting")).toHaveAttribute("aria-live", "polite");
+    expect(screen.getByText("translationRequesting").getAttribute("aria-live")).toBe("polite");
 
     await completeAutomaticSubmission(rendered, units, {
       operation: "contentGeneration",
       outcome: "queued",
     });
 
-    await waitFor(() => expect(screen.getByText("translationPending")).toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByText("translationPending")).not.toBeNull());
     expect(mocks.revalidate).toHaveBeenCalledTimes(1);
   });
 
@@ -158,7 +158,7 @@ describe("content generation client orchestration", () => {
     await waitFor(() => expect(mocks.autoSubmit).toHaveBeenCalledTimes(1));
     await completeAutomaticSubmission(rendered, units, response);
 
-    await waitFor(() => expect(screen.getByText(expected)).toHaveAttribute("aria-live", "polite"));
+    await waitFor(() => expect(screen.getByText(expected).getAttribute("aria-live")).toBe("polite"));
   });
 
   it("lets refreshed loader state override stale automatic action feedback", async () => {
@@ -172,13 +172,13 @@ describe("content generation client orchestration", () => {
       reason: "request-budget-denied",
       retryAfterSeconds: 17,
     });
-    await waitFor(() => expect(screen.getByText("translationRetryAfter:17")).toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByText("translationRetryAfter:17")).not.toBeNull());
 
     const refreshed = [unit("post-1", { state: "processing", automatic: false })];
     rendered.rerender(managed(refreshed));
 
-    expect(screen.getByText("translationProcessing")).toBeInTheDocument();
-    expect(screen.queryByText("translationRetryAfter:17")).not.toBeInTheDocument();
+    expect(screen.queryByText("translationProcessing")).not.toBeNull();
+    expect(screen.queryByText("translationRetryAfter:17")).toBeNull();
   });
 
   it("drops old automatic feedback when the exact revision key is replaced", async () => {
@@ -190,12 +190,12 @@ describe("content generation client orchestration", () => {
       operation: "contentGeneration",
       outcome: "unavailable",
     });
-    await waitFor(() => expect(screen.getByText("translationUnavailable")).toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByText("translationUnavailable")).not.toBeNull());
 
     const replacement = [unit("post-1-r2", { automatic: false })];
     rendered.rerender(managed(replacement));
 
-    expect(screen.queryByText("translationUnavailable")).not.toBeInTheDocument();
+    expect(screen.queryByText("translationUnavailable")).toBeNull();
   });
 
   it("marks exact keys before submit so Strict Mode replay and duplicates do not resubmit", async () => {
