@@ -9,6 +9,7 @@ import {
 } from "react";
 import { useFetcher, useRevalidator } from "react-router";
 import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 
 import type { ContentGenerationActionResponse } from "../localization/content-generation-contract";
 import type { ContentGenerationViewModel } from "../localization/content-generation-status";
@@ -251,7 +252,7 @@ function useContentGenerationCoordinator(
 }
 
 function generationStatusText(
-  t: (key: string, options?: Record<string, unknown>) => string,
+  t: TFunction<"common">,
   unit: ContentGenerationViewModel,
   requesting: boolean,
   actionResult?: ContentGenerationActionResponse,
