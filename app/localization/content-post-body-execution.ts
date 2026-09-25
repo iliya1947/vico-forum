@@ -1,3 +1,4 @@
+import type { ContentPostBodyAllowanceGate } from "./content-provider-allowance";
 import {
   MarkdownTranslationValidationError,
   type MarkdownSegmentTranslation,
@@ -49,6 +50,13 @@ type AckExecutionResult =
 
 export type ContentPostBodyTaskExecutionResult =
   | AckExecutionResult
+  | { readonly outcome: "admission-in-progress" | "execution-in-progress"; readonly delivery: "ack" }
+  | {
+      readonly outcome: "allowance-deferred";
+      readonly delivery: "ack";
+      readonly retryNotBefore: Date;
+      readonly reason: string;
+    }
   | {
       readonly delivery: "retry";
       readonly outcome: "execution-failed";
@@ -66,6 +74,7 @@ export type ContentPostBodyTaskExecutionResult =
     };
 
 export interface ContentPostBodyTaskExecutorDependencies {
+  readonly allowance: Pick<ContentPostBodyAllowanceGate, "admit">;
   readonly consumer: Pick<ContentPostBodyTaskConsumer, "consume">;
   readonly providerRouter: Pick<TranslationProviderRouter, "supports" | "translate">;
   readonly publisher: Pick<ContentPostBodyResultPublisher, "publish">;
@@ -79,6 +88,24 @@ export class ContentPostBodyTaskExecutor {
   }
 
   async execute(message: TranslationTaskMessage): Promise<ContentPostBodyTaskExecutionResult> {
+    const admission = await this.dependencies.allowance.admit(message);
+    if (admission.outcome === "admission-in-progress" || admission.outcome === "execution-in-progress") {
+      return { outcome: admission.outcome, delivery: "ack" };
+    }
+    if (admission.outcome === "deferred") {
+      return {
+        outcome: "allowance-deferred",
+        delivery: "ack",
+        retryNotBefore: admission.retryNotBefore,
+        reason: admission.reason,
+      };
+    }
+    if (admission.outcome === "stale") return acknowledge(admission);
+    if (admission.outcome === "claim-lost") return acknowledge({ outcome: "claim-lost" });
+    if (admission.outcome === "terminal") return acknowledge({ outcome: "terminal" });
+    if (admission.outcome === "not-found") return acknowledge({ outcome: "not-found" });
+    // Exhausted work reclaims only to persist JOB-04 terminal exhaustion and performs no provider call.
+
     let consumed: ContentPostBodyTaskConsumerResult;
     try {
       consumed = await this.dependencies.consumer.consume(message);
