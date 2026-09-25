@@ -677,6 +677,47 @@ describe("content topic-title execution and publication", () => {
     expect(recoveredKey).toBe(firstKey);
   });
 
+  it("does not persist allowance after the generation head is superseded", async () => {
+    const planned = await createPlanner(client).planAndDispatch(
+      requestRevision(),
+      "he",
+      budgetAdmission(),
+    );
+    if (planned.kind !== "queued") throw new Error("expected queued content task");
+
+    const tasks = new DrizzleTranslationTaskStore(drizzle(client));
+    const acquired = await tasks.acquireContentProviderAllowance(planned.task.id, 60_000);
+    if (acquired.outcome !== "acquired") throw new Error("expected allowance lease");
+
+    await client.query(
+      `update translation_task_generation_heads
+          set current_generation = current_generation + 1
+        where translation_kind = 'content-topic-title'
+          and source_namespace = 'topic-title'
+          and source_key = 'topic-a'
+          and target_locale = 'he'`,
+    );
+
+    await expect(tasks.persistContentProviderAllowanceAdmission(
+      planned.task.id,
+      acquired.admissionToken,
+      acquired.occurrence,
+      "superseded-reservation",
+    )).resolves.toBe(false);
+
+    const row = await client.query<{
+      allowance_state: string | null;
+      attempt_count: number;
+    }>(
+      "select allowance_state, attempt_count from translation_tasks where id = $1",
+      [planned.task.id],
+    );
+    expect(row.rows[0]).toEqual({
+      allowance_state: "leasing",
+      attempt_count: 0,
+    });
+  });
+
   it("serializes concurrent admission, consumes it on claim, and advances retry occurrence", async () => {
     const planned = await createPlanner(client).planAndDispatch(
       requestRevision(),
