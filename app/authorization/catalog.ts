@@ -5,6 +5,7 @@ export const PERMISSION_CATALOG = [
   "forum.solution.manageAny",
   "forum.sourceLocale.correctOwn",
   "forum.sourceLocale.correctAny",
+  "forum.translation.generate",
   "access.authorization.manage",
 ] as const;
 
@@ -22,6 +23,7 @@ export const INITIAL_ROLE_GRANTS = {
     "forum.reply.create",
     "forum.solution.manageOwn",
     "forum.sourceLocale.correctOwn",
+    "forum.translation.generate",
   ],
   moderator: [
     "forum.topic.create",
@@ -30,6 +32,7 @@ export const INITIAL_ROLE_GRANTS = {
     "forum.solution.manageAny",
     "forum.sourceLocale.correctOwn",
     "forum.sourceLocale.correctAny",
+    "forum.translation.generate",
   ],
   admin: [...PERMISSION_CATALOG],
 } as const satisfies Record<string, readonly PermissionKey[]>;
