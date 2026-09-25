@@ -1153,6 +1153,7 @@ describe("content post-body durable planning", () => {
         planned.task.id,
         allowance.admissionToken,
         allowance.occurrence,
+        "fake-provider",
         "body-reclaim-reservation",
       )).resolves.toBe(true);
       const reclaimed = await secondStore.claimContentPostBody(planned.task.id, 60_000);
