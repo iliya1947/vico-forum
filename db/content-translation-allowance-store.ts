@@ -97,14 +97,7 @@ implements ContentTranslationAllowanceStore {
         .for("update")
         .limit(1);
 
-      if (
-        existing
-        && (
-          existing.translationKind !== translationKind
-          || existing.sourceNamespace !== task.sourceNamespace
-          || existing.sourceKey !== task.sourceKey
-        )
-      ) {
+      if (existing && existing.translationKind !== translationKind) {
         throw new ContentTranslationAllowanceIntegrityError(
           "stored allowance admission owner conflicts with translation task",
         );
@@ -151,8 +144,6 @@ implements ContentTranslationAllowanceStore {
       const values = {
         taskId: task.id,
         translationKind,
-        sourceNamespace: task.sourceNamespace,
-        sourceKey: task.sourceKey,
         generation: task.generation,
         attemptNumber,
         state: "leased",
@@ -331,14 +322,6 @@ function assertTaskKind(
   if (task.translationKind !== expectedKind) {
     throw new ContentTranslationAllowanceIntegrityError(
       "allowance admission task kind mismatch",
-    );
-  }
-  const expectedNamespace = expectedKind === "content-topic-title"
-    ? "topic-title"
-    : "post-body";
-  if (task.sourceNamespace !== expectedNamespace) {
-    throw new ContentTranslationAllowanceIntegrityError(
-      "allowance admission task namespace mismatch",
     );
   }
 }
