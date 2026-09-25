@@ -107,7 +107,7 @@ export const canonicalEnglishCatalog = {
     translationProcessing: message("translationProcessing", "Translation in progress.", "Status shown while translation work is processing."),
     translationDeferred: message("translationDeferred", "Translation is temporarily deferred. Try again later.", "Status shown when provider allowance deferred translation work."),
     translationDeferredWithRetry: message("translationDeferredWithRetry", "Translation is deferred. Retry in about {{seconds}} seconds.", "Deferred translation status with bounded retry timing.", ["seconds"]),
-    translationFailed: message("translationFailed", "Translation failed. You can try again.", "Terminal content translation failure status."),
+    translationFailed: message("translationFailed", "Translation could not be completed.", "Terminal content translation failure status."),
     translationUnavailable: message("translationUnavailable", "Translation is temporarily unavailable. Please try again later.", "Temporary content translation status/storage failure."),
     translationExplicitRequired: message("translationExplicitRequired", "This long message requires an explicit translation request.", "Status shown when automatic translation is disabled by the long-body threshold."),
     translationGenerateExplicit: message("translationGenerateExplicit", "Translate this message", "Explicit translation action for a long forum post."),
