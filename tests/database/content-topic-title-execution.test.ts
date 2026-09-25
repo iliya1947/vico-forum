@@ -211,6 +211,7 @@ describe("content topic-title execution and publication", () => {
     const planned = await createPlanner(client, enqueuer, providerCapability)
       .planAndDispatch(requestRevision(), "he", budgetAdmission());
     expect(planned.kind).toBe("queued");
+    if (planned.kind !== "queued") throw new Error("expected queued content task");
     expect(dataPolicy.allows).toHaveBeenCalledWith({
       provider: CLOUDFLARE_WORKERS_AI_PROVIDER,
       model: CLOUDFLARE_M2M100_MODEL,
