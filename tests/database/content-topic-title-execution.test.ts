@@ -6,6 +6,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
 
 import {
   ContentTopicTitleAllowanceGate,
+  contentProviderAllowanceOccurrenceKey,
 } from "../../app/localization/content-provider-allowance";
 import {
   CONTENT_TRANSLATION_REQUESTER_SUBJECT_KEY_LENGTH,
@@ -576,6 +577,161 @@ describe("content topic-title execution and publication", () => {
       await second.end();
     }
   });
+
+  it("defers provider allowance before claim without consuming the execution attempt", async () => {
+    const planned = await createPlanner(client).planAndDispatch(
+      requestRevision(),
+      "he",
+      budgetAdmission(),
+    );
+    if (planned.kind !== "queued") throw new Error("expected queued content task");
+
+    const tasks = new DrizzleTranslationTaskStore(drizzle(client));
+    const acquired = await tasks.acquireContentProviderAllowance(planned.task.id, 60_000);
+    expect(acquired.outcome).toBe("acquired");
+    if (acquired.outcome !== "acquired") throw new Error("expected allowance lease");
+
+    const retryNotBefore = new Date(Date.now() + 60_000);
+    const persisted = await tasks.persistContentProviderAllowanceDeferral(
+      planned.task.id,
+      acquired.admissionToken,
+      acquired.occurrence,
+      retryNotBefore,
+      "allowance-exhausted",
+    );
+    expect(persisted).toBeInstanceOf(Date);
+
+    await expect(tasks.claimContentTopicTitle(planned.task.id, 60_000)).resolves.toEqual({
+      outcome: "already-claimed",
+    });
+    await expect(tasks.acquireContentProviderAllowance(planned.task.id, 60_000)).resolves.toMatchObject({
+      outcome: "deferred",
+      reason: "allowance-exhausted",
+    });
+
+    const row = await client.query<{
+      attempt_count: number;
+      status: string;
+      allowance_state: string | null;
+    }>(
+      "select attempt_count, status, allowance_state from translation_tasks where id = $1",
+      [planned.task.id],
+    );
+    expect(row.rows[0]).toEqual({
+      attempt_count: 0,
+      status: "pending",
+      allowance_state: "deferred",
+    });
+  });
+
+  it("recovers an expired admission lease with the same occurrence key", async () => {
+    const planned = await createPlanner(client).planAndDispatch(
+      requestRevision(),
+      "he",
+      budgetAdmission(),
+    );
+    if (planned.kind !== "queued") throw new Error("expected queued content task");
+
+    const tasks = new DrizzleTranslationTaskStore(drizzle(client));
+    const first = await tasks.acquireContentProviderAllowance(planned.task.id, 60_000);
+    if (first.outcome !== "acquired") throw new Error("expected first allowance lease");
+    const firstKey = await contentProviderAllowanceOccurrenceKey(planned.task.id, first.occurrence);
+
+    await client.query(
+      `update translation_tasks
+          set allowance_lease_expires_at = statement_timestamp() - interval '1 second'
+        where id = $1`,
+      [planned.task.id],
+    );
+
+    const recovered = await tasks.acquireContentProviderAllowance(planned.task.id, 60_000);
+    if (recovered.outcome !== "acquired") throw new Error("expected recovered allowance lease");
+    const recoveredKey = await contentProviderAllowanceOccurrenceKey(
+      planned.task.id,
+      recovered.occurrence,
+    );
+
+    expect(recovered.admissionToken).not.toBe(first.admissionToken);
+    expect(recovered.occurrence).toEqual(first.occurrence);
+    expect(recoveredKey).toBe(firstKey);
+  });
+
+  it("serializes concurrent admission, consumes it on claim, and advances retry occurrence", async () => {
+    const planned = await createPlanner(client).planAndDispatch(
+      requestRevision(),
+      "he",
+      budgetAdmission(),
+    );
+    if (planned.kind !== "queued") throw new Error("expected queued content task");
+
+    const second = await secondClient();
+    try {
+      const firstStore = new DrizzleTranslationTaskStore(drizzle(client));
+      const secondStore = new DrizzleTranslationTaskStore(drizzle(second));
+      const [left, right] = await Promise.all([
+        firstStore.acquireContentProviderAllowance(planned.task.id, 60_000),
+        secondStore.acquireContentProviderAllowance(planned.task.id, 60_000),
+      ]);
+      const acquired = [left, right].find((result) => result.outcome === "acquired");
+      expect(acquired).toBeDefined();
+      expect([left, right].filter((result) => result.outcome === "acquired")).toHaveLength(1);
+      expect([left, right].filter((result) => result.outcome === "admission-in-progress")).toHaveLength(1);
+      if (!acquired || acquired.outcome !== "acquired") throw new Error("expected acquired allowance");
+
+      const firstKey = await contentProviderAllowanceOccurrenceKey(
+        planned.task.id,
+        acquired.occurrence,
+      );
+      await expect(firstStore.persistContentProviderAllowanceAdmission(
+        planned.task.id,
+        acquired.admissionToken,
+        acquired.occurrence,
+        "provider-reservation-1",
+      )).resolves.toBe(true);
+
+      const claims = await Promise.all([
+        firstStore.claimContentTopicTitle(planned.task.id, 60_000),
+        secondStore.claimContentTopicTitle(planned.task.id, 60_000),
+      ]);
+      const claimed = claims.find((result) => result.outcome === "claimed");
+      expect(claimed).toBeDefined();
+      expect(claims.filter((result) => result.outcome === "claimed")).toHaveLength(1);
+      if (!claimed || claimed.outcome !== "claimed") throw new Error("expected claimed task");
+      expect(claimed.task.attemptCount).toBe(1);
+
+      const afterClaim = await client.query<{
+        allowance_state: string | null;
+        allowance_attempt: number | null;
+      }>(
+        "select allowance_state, allowance_attempt from translation_tasks where id = $1",
+        [planned.task.id],
+      );
+      expect(afterClaim.rows[0]).toEqual({
+        allowance_state: null,
+        allowance_attempt: null,
+      });
+
+      await expect(firstStore.recordFailure(
+        planned.task.id,
+        claimed.task.claimToken,
+        { disposition: "retryable", code: "provider-temporary" },
+      )).resolves.toMatchObject({ outcome: "retry", attemptCount: 1 });
+
+      const next = await firstStore.acquireContentProviderAllowance(planned.task.id, 60_000);
+      if (next.outcome !== "acquired") throw new Error("expected next allowance occurrence");
+      expect(next.occurrence).toEqual({
+        generation: acquired.occurrence.generation,
+        attempt: 2,
+      });
+      await expect(contentProviderAllowanceOccurrenceKey(
+        planned.task.id,
+        next.occurrence,
+      )).resolves.not.toBe(firstKey);
+    } finally {
+      await second.end();
+    }
+  });
+
 });
 
 function createPlanner(
