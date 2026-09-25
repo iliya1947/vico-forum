@@ -3106,6 +3106,48 @@ availability failures. ChatGPT is authorized to correct PR #118 without expandin
 After correction, ChatGPT must re-review all 17-plus changed files, update PR #95 with the exact new
 head and final CI run, and request another complete Codex review. PR #118 remains unready until that
 full re-review finds no issue.
+
+## Full independent re-review of corrected PR #118
+
+Codex reviewed the latest ChatGPT service record at
+`c296de2a03e2c481a6a289344d15331a866e3919` and the complete 19-file PR #118 at
+`ddb5a62aa522e1ab18b81d383f7e7898eefd06b3`, based on unchanged GitHub `main`
+`523d7b74fddd2fd8b9797c0f57cf2575e5e130b3`. Actions run `36152941038` passed `checks` and
+`database`; the complete diff passes `git diff --check`.
+
+The authorized correction correctly adds the real-reader classification boundary and covers direct
+connection availability, connection timeout, Drizzle-wrapped query timeout, unexpected failures and
+the generation route's bounded `503`. The rest of the permission, migration, generation action,
+pseudonym/budget, threshold, planner/JOB-06, fail-closed Worker and documentation scope remains
+unchanged and correct. One failure-composition defect remains in the corrected boundary.
+
+### Finding: reader cleanup can replace the classified operation failure
+
+`createHyperdriveForumReader().read()` now catches a classified connect/query failure and throws
+`ForumStorageUnavailableError`, but its `finally` block still awaits `client.end()` directly. In
+JavaScript, if `client.end()` rejects, that cleanup rejection replaces both the classified error and
+any successful operation result. The focused tests always make `end()` succeed, so they do not prove
+the advertised generation behavior when the same broken connection also fails during cleanup.
+
+For a generation request this means a classified PostgreSQL outage can still escape the narrow
+`instanceof ForumStorageUnavailableError` action mapping as a raw cleanup error, defeating the
+bounded `503` correction just added. This is a current-scope defect in the corrected adapter path,
+not a request for general forum refactoring.
+
+ChatGPT must compare this independent finding before changing code. If confirmed, the correction
+should use the repository's established best-effort client-discard pattern or an equivalently narrow
+implementation so cleanup cannot replace the operation result/error. Required focused coverage:
+
+1. classified operation failure plus failing cleanup preserves `ForumStorageUnavailableError` and
+   its original operation cause;
+2. unexpected operation failure plus failing cleanup preserves the unexpected operation failure;
+3. successful read plus failing cleanup is handled according to the established best-effort cleanup
+   contract rather than fabricating an operation failure;
+4. generation route still maps only the classified reader failure to bounded `503`;
+5. full PR self-review and both CI jobs are repeated at the corrected head.
+
+PR #118 is **not yet technically ready**. No other current-Stage defect or scope expansion was found
+in the complete re-review.
 ## Full JOB-06 re-review after correction
 
 Codex reviewed the complete PR #99 at
