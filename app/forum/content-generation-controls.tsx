@@ -11,13 +11,16 @@ import {
 } from "../localization/content-generation-client";
 import type { ContentGenerationViewUnit } from "../localization/content-generation-view.server";
 
-type GenerationTransientFeedback =
-  | "requesting"
-  | "queued"
-  | "retry-later"
-  | "unavailable"
-  | "failed"
-  | "explicit-required";
+interface GenerationTransientFeedback {
+  readonly state:
+    | "requesting"
+    | "queued"
+    | "retry-later"
+    | "unavailable"
+    | "failed"
+    | "explicit-required";
+  readonly retryAfterSeconds?: number;
+}
 
 export function useContentGenerationOrchestrator(
   units: readonly ContentGenerationViewUnit[],
@@ -56,16 +59,19 @@ export function useContentGenerationOrchestrator(
       inFlightKey.current = null;
       const result = fetcher.data;
       const nextFeedback: GenerationTransientFeedback | undefined = result?.outcome === "queued"
-        ? "queued"
+        ? { state: "queued" }
         : result?.outcome === "explicit-required"
-          ? "explicit-required"
+          ? { state: "explicit-required" }
           : result?.outcome === "unavailable"
-            ? "unavailable"
+            ? { state: "unavailable" }
             : result?.outcome === "no-op" && result.reason === "request-budget-denied"
-              ? "retry-later"
+              ? {
+                  state: "retry-later",
+                  retryAfterSeconds: result.retryAfterSeconds,
+                }
               : result?.outcome === "no-op"
                 ? undefined
-                : "failed";
+                : { state: "failed" };
       setFeedback((current) => {
         if (nextFeedback) return { ...current, [key]: nextFeedback };
         const next = { ...current };
@@ -79,7 +85,10 @@ export function useContentGenerationOrchestrator(
       queueIndex.current += 1;
       queueStarted.current = true;
       inFlightKey.current = next.key;
-      setFeedback((current) => ({ ...current, [next.key]: "requesting" }));
+      setFeedback((current) => ({
+        ...current,
+        [next.key]: { state: "requesting" },
+      }));
       fetcher.submit(
         {
           intent: next.intent,
@@ -140,32 +149,33 @@ export function ContentGenerationUnitUi({
 
   const explicitBusy = fetcher.state !== "idle";
   const explicitResult = fetcher.data;
-  const feedback = explicitBusy
-    ? "requesting"
+  const feedback: GenerationTransientFeedback | undefined = explicitBusy
+    ? { state: "requesting" }
     : explicitResult?.outcome === "queued"
-      ? "queued"
+      ? { state: "queued" }
       : explicitResult?.outcome === "unavailable"
-        ? "unavailable"
+        ? { state: "unavailable" }
         : explicitResult?.outcome === "no-op" && explicitResult.reason === "request-budget-denied"
-          ? "retry-later"
+          ? {
+              state: "retry-later",
+              retryAfterSeconds: explicitResult.retryAfterSeconds,
+            }
           : explicitResult?.outcome === "no-op"
             ? undefined
             : transient;
 
-  const retryAfterSeconds = explicitResult?.outcome === "no-op"
-    ? explicitResult.retryAfterSeconds
-    : unit.retryAfterSeconds;
-  const stateKey = feedback === "requesting"
+  const retryAfterSeconds = feedback?.retryAfterSeconds ?? unit.retryAfterSeconds;
+  const stateKey = feedback?.state === "requesting"
     ? "translationGenerationRequesting"
-    : feedback === "queued"
+    : feedback?.state === "queued"
       ? "translationGenerationPending"
-      : feedback === "retry-later"
+      : feedback?.state === "retry-later"
         ? "translationGenerationDeferred"
-        : feedback === "unavailable"
+        : feedback?.state === "unavailable"
           ? "translationGenerationUnavailable"
-          : feedback === "failed"
+          : feedback?.state === "failed"
             ? "translationGenerationFailed"
-            : feedback === "explicit-required"
+            : feedback?.state === "explicit-required"
               ? "translationGenerationExplicitRequired"
               : unit.state === "pending"
                 ? "translationGenerationPending"
