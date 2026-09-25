@@ -1,5 +1,6 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { StrictMode } from "react";
 import userEvent from "@testing-library/user-event";
 import { I18nextProvider } from "react-i18next";
 import { createMemoryRouter, RouterProvider } from "react-router";
@@ -8,7 +9,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { canonicalEnglishCatalog } from "../localization/catalog";
 import type { ContentGenerationViewUnit } from "../localization/content-generation-view.server";
 import { createTranslationRuntime } from "../localization/runtime";
-import { ContentGenerationUnitUi } from "./content-generation-controls";
+import { ContentGenerationUnitUi, useContentGenerationOrchestrator } from "./content-generation-controls";
 
 afterEach(cleanup);
 
@@ -86,6 +87,59 @@ function renderControl(
 }
 
 describe("content generation controls", () => {
+  it("submits the hydration snapshot sequentially once under Strict Mode and revalidates once at the end", async () => {
+    const loader = vi.fn(async () => null);
+    const action = vi.fn(async () => ({
+      operation: "contentGeneration" as const,
+      outcome: "queued" as const,
+    }));
+    const units = [
+      unit({
+        key: '["topic-title","topic-1","title-r1","he"]',
+        contentType: "topic-title",
+        contentId: "topic-1",
+        revisionId: "title-r1",
+        autoEligible: true,
+        explicitRequired: false,
+      }),
+      unit({
+        autoEligible: true,
+        explicitRequired: false,
+      }),
+    ];
+
+    function Harness() {
+      useContentGenerationOrchestrator(units);
+      return null;
+    }
+
+    const router = createMemoryRouter([{
+      path: "*",
+      loader,
+      action,
+      Component: Harness,
+    }], {
+      initialEntries: ["/en/topics/topic-1"],
+    });
+
+    render(
+      <StrictMode>
+        <RouterProvider router={router} />
+      </StrictMode>,
+    );
+
+    await waitFor(() => expect(action).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(loader).toHaveBeenCalledTimes(2));
+    await new Promise((resolve) => window.setTimeout(resolve, 0));
+    expect(action).toHaveBeenCalledTimes(2);
+
+    const first = await action.mock.calls[0]![0].request.formData();
+    const second = await action.mock.calls[1]![0].request.formData();
+    expect(first.get("intent")).toBe("generateTopicTitleTranslation");
+    expect(second.get("intent")).toBe("generatePostBodyTranslation");
+    expect(second.get("postId")).toBe("post-1");
+  });
+
   it("submits only the explicit long-body intent and post id", async () => {
     const action = vi.fn(async ({ request }: { request: Request }) => {
       const form = await request.formData();
