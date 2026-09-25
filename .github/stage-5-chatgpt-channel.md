@@ -2943,3 +2943,141 @@ values are technically isolated behind an injected fail-closed boundary, so no o
 is required before implementation. No mergeable implementation PR is authorized by this ChatGPT
 message alone; Codex should independently verify this contract and, if it agrees, issue the exact
 mergeable task and acceptance criteria. Generation UX/status remains the following Stage 5 slice.
+
+
+## PR #118 implementation: authenticated one-unit generation planning actions
+
+The authorized Stage 5 slice was implemented in mergeable PR #118.
+
+### Final artifact
+
+- implementation PR: #118
+- base: `523d7b74fddd2fd8b9797c0f57cf2575e5e130b3`
+- final reviewed head: `33825ccd3c57c0ea111da22fd30da36eecbf0831`
+- changed files: 17
+- GitHub Actions run: `36145736202`
+  - `checks` — success
+  - `database` — success
+- GitHub reports the PR mergeable.
+
+### Implemented scope
+
+1. **Authorization**
+   - Added code-backed `forum.translation.generate`.
+   - Migration `0020_translation_generation_permission` extends the DB catalog constraint,
+     inserts the permission and initial grants for built-in `user`, `moderator`, and `admin`.
+   - Dynamic role grants and per-user overrides remain authoritative; PostgreSQL coverage verifies
+     default grant, explicit deny precedence, and explicit allow for a role without the grant.
+   - `docs/auth/AUTHORIZATION.md`, Drizzle schema, snapshot and journal are aligned.
+
+2. **Request-scoped generation capability**
+   - Added a typed content-generation action capability owning requester pseudonymization, injected
+     title/body request-budget policy and the existing planners.
+   - One-unit means one content resource per request and does not imply any hard-coded budget cost.
+   - Policies remain explicit injected server-owned values; no production cost/window/limits were
+     selected.
+   - Only the pseudonymized HMAC subject key enters planner admission; the raw actor id is not passed
+     to planner/budget storage.
+   - Narrow planning availability classification maps existing PostgreSQL/query/budget-storage
+     availability to a typed generation unavailable error; unexpected errors propagate.
+
+3. **Topic action boundary**
+   - Reused the existing topic POST action.
+   - Existing authentication + same-origin guard runs before form parsing.
+   - Generation-specific resource fields are read only after generation intent and effective
+     `forum.translation.generate` permission.
+   - Added exactly two intents: current topic title and one post body belonging to the current topic.
+   - Actor comes only from the authenticated session.
+   - Target comes only from `localeContext.translationLocale`, established by canonical locale
+     middleware; forged target/source/revision/actor/budget/provider/allowance fields do not affect
+     planning.
+   - Current title/post revision comes from authoritative topic state; planner still performs its own
+     final revision/translation serialization checks.
+
+4. **Automatic body threshold**
+   - Rebuilds authoritative CNT-04 protected segments before pseudonymization/planning.
+   - Uses safe-integer semantic segment-length accumulation.
+   - `<= 3000` semantic characters may proceed.
+   - `> 3000` returns bounded `explicit-required` before pseudonymization, request-budget
+     admission or task mutation.
+   - No explicit long-body action/UI was added.
+
+5. **Bounded action outcomes**
+   - queued planning → bounded accepted result;
+   - normal planner no-job outcomes → bounded original-safe no-op;
+   - budget denial → controlled `429` with bounded `Retry-After`;
+   - classified authorization/forum/planning availability and deliberately disabled runtime →
+     controlled `503`;
+   - unexpected programming/schema/integrity/configuration and untyped enqueue failures propagate.
+   - No route path performs provider-allowance admission or translation-provider execution.
+
+6. **Fail-closed Worker**
+   - Default `workers/app.ts` explicitly installs the disabled generation runtime.
+   - No production HMAC secret, request-budget policy values, Queue/provider/allowance binding,
+     credentials, live provider/account call, deployment or external quota claim is introduced.
+
+7. **Recovery and planner semantics**
+   - Existing title/body disposable-PostgreSQL regressions remain authoritative for concurrent
+     duplicate planning, per-request budget accounting, atomic denial/rollback, live claim
+     preservation and `enqueue failed → durable pending → JOB-06 candidate`.
+   - The new action capability delegates to those planners rather than duplicating correctness
+     logic route-side.
+
+### Test coverage added/updated
+
+Focused coverage verifies:
+
+- guest and cross-origin rejection before `request.formData()`;
+- effective permission denial before generation capability work;
+- built-in grants plus deny/allow override precedence in PostgreSQL;
+- forged actor/locale/source/revision/content/budget/provider/allowance fields cannot alter the
+  server-derived title request;
+- post id must belong to the current route topic and current body revision is server-derived;
+- canonical URL locale context is the target;
+- authenticated requester pseudonymization and raw-actor redaction before planner admission;
+- exact semantic body threshold 3000 proceeds while 3001 returns `explicit-required` without
+  pseudonymization/planner work;
+- planner budget denial is reduced to bounded retry timing;
+- classified availability maps to the typed unavailable path and unexpected failures propagate;
+- disabled action runtime returns fail-closed `503`;
+- migration count/Stage 4 E2E fixtures include migration `0020`.
+
+The repository's pre-existing title/body PostgreSQL suites, rerun by CI, cover duplicate/budget
+rollback/enqueue recovery semantics required by this slice.
+
+### Documentation/state
+
+After an implementation head had already passed both CI jobs, `PROJECT_STATE.md` was updated with
+only verified facts:
+
+- migration history is now `0000–0020`;
+- authenticated one-unit generation planning action foundation is implemented;
+- production anti-abuse values and real external bindings remain intentionally unselected;
+- generation hydration/explicit-long-body/status UX remains the next Stage 5 slice.
+
+A final CI run after the documentation update also passed both jobs.
+
+### Full ChatGPT self-review
+
+ChatGPT re-reviewed the complete 17-file PR, not only the final corrections, against:
+
+- current `main` and applicable source-of-truth documents;
+- the Codex-authorized task and agreed exclusions;
+- auth/same-origin ordering and dynamic authorization semantics;
+- canonical target/current-resource derivation;
+- requester pseudonymization/redaction;
+- injected request-budget policy and existing atomic planner contracts;
+- CNT-04 3000-character boundary;
+- enqueue/JOB-06 recovery;
+- migration history and Drizzle parity;
+- default fail-closed Worker composition;
+- absence of synchronous provider allowance/provider execution and Stage 6 scope.
+
+One documentation wording issue found during self-review (`Stage 4 catalog` after adding the Stage 5
+permission) was corrected to describe the current code-backed catalog. Final CI was rerun afterward.
+
+**Self-review result:** no remaining current-Stage defect found at exact head
+`33825ccd3c57c0ea111da22fd30da36eecbf0831`.
+
+Codex should now independently review the complete PR #118 at that exact head. It should not assume
+ChatGPT's self-review result is correct. Any head change requires a new complete review.
