@@ -189,7 +189,15 @@ export class DrizzleTranslationTaskStore implements
         && row.allowanceGeneration === occurrence.generation
         && row.allowanceAttempt === occurrence.attempt
       ) {
-        return { outcome: "admitted" as const, task, occurrence };
+        if (!row.allowanceProvider || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(row.allowanceProvider)) {
+          throw new TranslationTaskIntegrityError("admitted content allowance is missing provider identity");
+        }
+        return {
+          outcome: "admitted" as const,
+          task,
+          occurrence,
+          provider: row.allowanceProvider,
+        };
       }
       if (
         row.allowanceState === "leasing"
@@ -228,6 +236,7 @@ export class DrizzleTranslationTaskStore implements
           allowanceLeaseExpiresAt: leaseExpiresAt,
           allowanceRetryNotBefore: null,
           allowanceReason: null,
+          allowanceProvider: null,
           allowanceReservationReference: null,
           allowanceUpdatedAt: databaseNow,
           updatedAt: databaseNow,
@@ -253,12 +262,16 @@ export class DrizzleTranslationTaskStore implements
     id: string,
     admissionToken: string,
     occurrence: ContentProviderAllowanceOccurrence,
+    provider: string,
     reservationReference?: string,
   ): Promise<boolean> {
     if (!isUuid(id) || !isUuid(admissionToken)) {
       throw new TypeError("provider allowance admission identifiers must be UUIDs");
     }
     validateAllowanceOccurrence(occurrence);
+    if (!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(provider)) {
+      throw new TypeError("provider allowance provider identity is invalid");
+    }
     if (
       reservationReference !== undefined
       && !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(reservationReference)
@@ -281,6 +294,7 @@ export class DrizzleTranslationTaskStore implements
           allowanceLeaseExpiresAt: null,
           allowanceRetryNotBefore: null,
           allowanceReason: null,
+          allowanceProvider: provider,
           allowanceReservationReference: reservationReference ?? null,
           allowanceUpdatedAt: databaseNow,
           updatedAt: databaseNow,
@@ -336,6 +350,7 @@ export class DrizzleTranslationTaskStore implements
           allowanceLeaseExpiresAt: null,
           allowanceRetryNotBefore: persistedRetry,
           allowanceReason: reason,
+          allowanceProvider: null,
           allowanceReservationReference: null,
           allowanceUpdatedAt: databaseNow,
           reconciliationAttemptedAt: null,
@@ -1221,6 +1236,7 @@ function clearAllowanceState() {
     allowanceLeaseExpiresAt: null,
     allowanceRetryNotBefore: null,
     allowanceReason: null,
+    allowanceProvider: null,
     allowanceReservationReference: null,
     allowanceUpdatedAt: null,
   } as const;
