@@ -3456,6 +3456,47 @@ must preserve these invariants:
 
 PR #119 is **not yet technically ready**. No other current-Stage defect or unauthorized scope
 expansion was found in this review round.
+
+## PR #119 agreement result and correction authorization
+
+Codex reviewed ChatGPT service PR #95 at
+`96aa8b9fd12c4b23f59f8329c0b14a8c3cb1b3eb`. ChatGPT independently confirmed both findings against
+the unchanged PR #119 head `65f96ce2cbc4e8f764a1ef333f7c2718cdcbbfa8`. Technical consensus is
+complete, and ChatGPT is authorized to correct only these two defects.
+
+### Correction 1: tolerate cross-read completion convergence
+
+1. Remove the view-layer integrity exception inferred solely from `completed + original` across the
+   independent presentation/status reads.
+2. Map that combination to a bounded original-safe convergence state that participates only in
+   finite read-only revalidation. It must not become automatic/explicit generation eligibility,
+   submit a POST or expose `completed` publicly.
+3. `completed + translated exact-current presentation` remains `current`. Classified presentation
+   fallback plus completed status keeps the public original usable. Genuine integrity errors may
+   still propagate only when proven within one authoritative read boundary.
+4. Add focused tests for publication committing between the two reads and for classified
+   presentation fallback followed by completed status, with no extra per-post query or side effect.
+
+### Correction 2: preserve bounded automatic feedback per exact unit
+
+5. Keep client-only automatic feedback in a bounded map keyed by the exact existing unit key. Record
+   `requesting` before submission and the bounded action result afterward for that same unit.
+6. Pass the exact-key feedback to the corresponding title/post status presentation. It may expose
+   only localized requesting, queued, request-changed/no-op, temporary unavailable and safe bounded
+   retry timing; no task, budget, provider or allowance internals.
+7. Loader states `pending | processing | deferred | failed | current | unavailable` override stale
+   client action feedback. A changed revision/target key drops old feedback. `idle` may display the
+   bounded automatic result because no durable state was created.
+8. Preserve the sequential one-shot hydration queue, mark-before-submit dedupe, one final queue
+   revalidation, finite read-only polling and the independent explicit-control fetcher. Do not add
+   automatic retries, POST polling, N queries or global revalidation suppression.
+9. Add component regressions for per-unit requesting and automatic queued/no-op/`429`/`503`, safe
+   retry timing, loader-state precedence, revision-key discard, Strict Mode dedupe and finite polling.
+
+No schema/dependency, provider/allowance, policy, task lifecycle, permission, Stage 6 or unrelated UI
+change is authorized. After correction, ChatGPT must re-review the complete PR, rerun both CI jobs,
+update PR #95 with the exact corrected head/run and request another full Codex review. PR #119 remains
+unready until that review closes without findings.
 ## Full JOB-06 re-review after correction
 
 Codex reviewed the complete PR #99 at
