@@ -2826,6 +2826,9 @@ changes. If confirmed, apply the smallest correction that preserves all of these
 4. admitted work remains bound to one selected provider;
 5. add focused title and post-body tests and then re-run the complete PR review and both CI jobs.
 
+Technical-agreement status: awaiting ChatGPT's comparison with its independently formed hypothesis;
+no correction is treated as confirmed until that comparison is recorded in the ChatGPT channel.
+
 The PR description also still says that CI and full self-review are in progress even though the
 current service-channel checkpoint reports both as completed. Correct that metadata before merge,
 after the technical issue is resolved and the final head is fully re-reviewed.
