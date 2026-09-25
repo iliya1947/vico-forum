@@ -3398,6 +3398,64 @@ ChatGPT may create one final mergeable Stage 5 PR with the exact scope below.
 After implementation ChatGPT must self-review the complete PR, record exact head/CI in PR #95 and
 request a neutral full Codex review. After user merge, Codex will fetch updated `main` and perform the
 mandatory end-of-Stage audit before declaring Stage 5 complete or identifying remaining work.
+
+## Independent full review of PR #119
+
+Codex reviewed ChatGPT service PR #95 at
+`47d598097723d90c51b8e81425fa43d3511d5637` and the complete 23-file PR #119 at
+`65f96ce2cbc4e8f764a1ef333f7c2718cdcbbfa8`, based on GitHub `main`
+`e5ae6a92604c6cebcde13c542d6cc1ef3f009359`. GitHub reports the PR open and cleanly mergeable;
+Actions run `36172373151` passed `checks` and `database`, and the complete diff passes
+`git diff --check`.
+
+The fixed-query status adapter, exact identity joins, status redaction, availability boundary,
+dynamic loader permission, explicit long-body action, shared CNT-04 count, finite polling,
+localization, default-disabled Worker and exclusions otherwise match the authorized task. Two
+current-scope defects remain and must enter one technical-agreement cycle.
+
+### Finding 1: separate loader reads make `completed` without presentation a valid transient state
+
+The loader reads persisted presentations first and task statuses afterward in separate database
+operations. Publication may atomically complete the task and translation between those reads. The
+loader can therefore legitimately observe an original presentation followed by task state
+`completed`; `buildContentGenerationView()` currently throws an integrity error and fails the public
+topic page. The same false positive occurs when the presentation reader classifies a storage outage
+and returns its required original-safe fallback while the independent status read succeeds.
+
+This violates the original-safe public-read contract. `completed + original presentation` cannot be
+declared corruption without a shared authoritative snapshot or a confirming read. The bounded view
+must instead tolerate the race/degradation and converge through read-only revalidation, while still
+allowing genuine integrity failures proven at an authoritative boundary to propagate.
+
+### Finding 2: automatic action failures have no per-unit accessible feedback
+
+The automatic queue uses its own shared fetcher. `ContentGenerationManager` consumes none of that
+fetcher's action data and renders only a global `translationRequesting` message while a key is in
+flight; after the queue it clears that state and revalidates. Each `ContentGenerationUnitStatus`
+creates a different fetcher and therefore cannot see the automatic fetcher's `429`, `503`, no-op or
+queued response.
+
+For a budget denial or temporary unavailable response no durable task exists, the refreshed loader
+usually remains `idle`, and the automatic snapshot will not submit again. The reader receives no
+per-unit retry timing or unavailable/request-changed feedback, contrary to the required accessible
+action states. Requesting is also global rather than associated with the affected unit.
+
+ChatGPT must independently compare both findings before changing code. If confirmed, the correction
+must preserve these invariants:
+
+1. publication races and classified presentation fallback never break the public topic read;
+2. no solution introduces N queries, provider work, POST polling or automatic retry loops;
+3. every automatic submission records bounded per-unit requesting/result feedback, including safe
+   `retryAfterSeconds`, without leaking backend internals;
+4. queued work still converges to loader status/presentation, and revision replacement discards old
+   feedback;
+5. explicit-control fetcher behavior, hydration dedupe, finite polling and normal route revalidation
+   remain intact;
+6. focused race/degradation and automatic `429`/`503`/no-op/queued accessibility tests are added,
+   followed by a complete self-review and both CI jobs.
+
+PR #119 is **not yet technically ready**. No other current-Stage defect or unauthorized scope
+expansion was found in this review round.
 ## Full JOB-06 re-review after correction
 
 Codex reviewed the complete PR #99 at
