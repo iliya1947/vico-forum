@@ -188,6 +188,7 @@ export class ContentTopicTitleAllowanceGate {
       this.dependencies,
       acquired,
       request,
+      async () => contentTopicTitleTaskPreflight(acquired.task, this.dependencies),
     );
   }
 }
@@ -263,6 +264,7 @@ export class ContentPostBodyAllowanceGate {
       this.dependencies,
       acquired,
       request,
+      async () => contentPostBodyTaskPreflight(acquired.task, this.dependencies),
     );
   }
 }
@@ -312,6 +314,10 @@ async function resolveAdapterDecision<StaleReason extends string>(
   dependencies: CommonGateDependencies,
   acquired: Extract<ContentProviderAllowanceAcquireResult, { outcome: "acquired" }>,
   request: ContentProviderAllowanceRequest,
+  revalidate: () => Promise<
+    | { readonly outcome: "eligible" }
+    | { readonly outcome: "stale"; readonly reason: StaleReason }
+  >,
 ): Promise<ContentProviderAllowanceGateResult<StaleReason>> {
   const decision: ContentProviderAllowanceDecision = dependencies.adapter
     ? await dependencies.adapter.admit(request)
@@ -323,6 +329,19 @@ async function resolveAdapterDecision<StaleReason extends string>(
         reason: "allowance-unconfigured",
       };
   validateContentProviderAllowanceDecision(decision);
+
+  // The allowance call is deliberately outside PostgreSQL locks. Re-run authoritative preflight
+  // before persisting its result so revision/generation/translation changes during that call do not
+  // turn a stale occurrence into an admitted/deferred durable state.
+  const current = await revalidate();
+  if (current.outcome === "stale") {
+    return staleResult(
+      dependencies.store,
+      acquired.task.id,
+      acquired.admissionToken,
+      current.reason,
+    );
+  }
 
   if (decision.outcome === "admitted") {
     const persisted = await dependencies.store.persistContentProviderAllowanceAdmission(
