@@ -161,7 +161,15 @@ function parseRow(
     );
   }
 
-  if (row.task_status === null || row.task_revision_id !== expected.revisionId || row.task_status === "stale") {
+  if (row.task_status === null) {
+    return { ...expected, state: "idle" };
+  }
+  if (row.task_revision_id === null) {
+    throw new ContentGenerationStatusIntegrityError(
+      "current content generation task is missing revision metadata",
+    );
+  }
+  if (row.task_revision_id !== expected.revisionId || row.task_status === "stale") {
     return { ...expected, state: "idle" };
   }
 
