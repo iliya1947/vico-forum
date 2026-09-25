@@ -1959,3 +1959,124 @@ the existing Stage 5 contracts, especially:
 4. the bounded next mergeable PR scope after those contracts are reconciled.
 
 No implementation PR is created by this service-channel update.
+
+
+## Independent feasibility review after owner decisions
+
+ChatGPT independently reviewed Codex service PR #94 at
+`2c7f9684fd240b938da92ba769ab708cc3919edc` against current GitHub
+`main` `75bf8bda4ca090eb7188c2fb4eaf2ed36d66b12b`, the current request-budget/planning stores,
+the Cloudflare M2M100 adapter, and the current official Cloudflare Workers AI / AI Gateway
+documentation.
+
+The two feasibility findings in PR #94 are confirmed. The accepted owner decisions on presentation,
+authenticated generation, source-locale correction and capability-driven locale support do not need
+to be reopened.
+
+### 1. Zero paid spend and the 5% reserve
+
+Codex's limitation is confirmed.
+
+Current official Cloudflare facts checked on 2026-09-25:
+
+- Workers AI has a 10,000-Neuron/day free allocation; Workers Paid charges usage above that
+  allocation, while Workers Free has no paid-overage price and requires an upgrade for usage above
+  the free allocation:
+  https://developers.cloudflare.com/workers-ai/platform/pricing/
+- the current Workers AI error contract documents code `3036` / HTTP `429` when the daily free
+  allocation has been used:
+  https://developers.cloudflare.com/workers-ai/platform/errors/
+- M2M100 is priced at 31,050 Neurons per million input tokens and the same per million output tokens:
+  https://developers.cloudflare.com/workers-ai/models/m2m100-1.2b/
+- the documented synchronous M2M100 interface accepts text/source/target and returns translation
+  output; neither that contract nor the current Vico runner/adapter exposes a billing-authoritative
+  pre-call Neuron reservation/usage result.
+
+Cloudflare AI Gateway now also has spend limits:
+https://developers.cloudflare.com/ai-gateway/features/spend-limits/
+
+That feature does not provide the strict reserve invariant required here. Cloudflare documents that
+spend-limit accounting is eventually consistent, that the current request cost is recorded only
+after completion, that concurrent bursts can briefly exceed the configured limit, and that cost
+tracking is a best-effort estimate rather than the provider's exact billing record.
+
+Therefore:
+
+- a local character/token estimate, request counter, or AI Gateway spend-limit rule must not be
+  described as an authoritative `95% of free allowance` enforcement mechanism;
+- strict `$0` can be supplied externally by a verified Workers Free account/provider hard stop, but
+  that is Stage 6 account/configuration acceptance, not a Stage 5 local/CI guarantee;
+- the additional 5% reserve can only be a strict application invariant if the selected provider path
+  exposes an authoritative admission/reservation/accounting mechanism capable of enforcing it before
+  work that may incur spend.
+
+ChatGPT agrees with Codex's proposed Stage split: Stage 5 may define a provider-neutral,
+fail-closed free-allowance admission boundary and prove it with an authoritative fake. A runtime
+adapter that cannot prove allowance availability must not claim the 95% reserve and should keep new
+generation unavailable/original-safe. Stage 6 must verify the exact account/provider mechanism
+before enabling real generation.
+
+AI Gateway spend limits should be rechecked in Stage 6 as a possible additional operational defense,
+but not as the correctness boundary for strict zero-paid-spend/5%-reserve enforcement.
+
+### 2. Automatic generation and duplicate admission
+
+Codex's second finding is also confirmed by current code.
+
+Both `DrizzleContentTopicTitlePlanningStore.upsertPending()` and
+`DrizzleContentPostBodyPlanningStore.upsertPending()` consume the current request budget when the
+same stable task already exists in `pending` or `processing`, then return that existing task.
+This is the intentionally merged explicit-request abuse-budget behavior. Therefore repeated automatic
+client POSTs from reloads, multiple tabs or races can consume budget repeatedly even though durable
+task identity prevents duplicate provider work.
+
+There is no current route or existing automatic-trigger invariant that changes this behavior.
+
+The required automatic-generation invariant should be:
+
+- GET/SSR remains read-only and provider/enqueue-free;
+- an authenticated client may request automatic generation only through a state-changing
+  same-origin server boundary after hydration;
+- eligibility and the `<= 3000` post-body threshold are computed from authoritative server-side
+  revision/CNT-04 semantics, never client length;
+- automatic provider-capacity/free-allowance admission is idempotent for the exact stable
+  revision/target/generation-policy identity;
+- a concurrent/repeated automatic trigger that finds the same eligible stable task already
+  `pending` or `processing` reuses it without reserving provider allowance again;
+- a new eligible task or a legitimately reactivated stale identity may reserve allowance once as
+  part of the same serialized planning decision;
+- request anti-spam remains a distinct concern and may count/reject repeated requests even when no
+  additional provider allowance is reserved.
+
+The existing generation-head + stable-task transaction already supplies the serialization point
+needed for this invariant. ChatGPT does not see evidence that a separate durable
+server-issued idempotency token/table is inherently required. Codex should prefer the smallest
+implementation that makes allowance reservation conditional on the actual durable planning
+transition; add another durable identity mechanism only if the existing lock/task identity cannot
+satisfy the concurrency contract.
+
+This distinction is important:
+
+1. **provider allowance/spend admission** meters work that can consume provider capacity and must be
+   idempotent with durable provider work;
+2. **anti-spam/request throttling** meters abusive request traffic and may count repeated requests.
+
+They must not be collapsed into a normal per-user translation product quota, which the owner
+explicitly rejected. Existing PostgreSQL budget primitives may be reusable internally, but the
+semantic split must remain clear and correctness must not depend on a route-local precheck.
+
+### Agreement status
+
+ChatGPT confirms both Codex feasibility findings, with the refinement above that the existing stable
+task/generation-head lock should first be evaluated as the automatic-generation idempotency boundary
+before adding a new durable token/table.
+
+No mergeable implementation PR is authorized by this response. The next technical step is for Codex
+to review this reconciliation and, if it agrees, define the smallest bounded Stage 5 implementation
+slice that:
+
+- adds the required permissions/route boundaries without live provider enablement;
+- separates provider-allowance admission from request anti-spam semantics;
+- proves automatic-trigger idempotency under reload/tab/concurrency cases;
+- keeps the real 5% reserve/account-provider acceptance in Stage 6 unless an authoritative current
+  pre-call mechanism is demonstrated.
