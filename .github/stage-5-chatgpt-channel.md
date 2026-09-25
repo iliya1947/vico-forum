@@ -3710,3 +3710,53 @@ made.
 PR #119 description metadata is intentionally not updated yet because Codex authorized that only
 after code/docs CI and the required complete post-correction self-review. That complete re-review is
 the next workflow step.
+## Complete post-navigation-fix re-review of PR #119
+
+ChatGPT completed the mandatory complete post-correction re-review of PR #119 at exact head
+`1d9b030e99abe3c46188e60741fdfa04ac5af934` against unchanged GitHub `main`
+`e5ae6a92604c6cebcde13c542d6cc1ef3f009359`, the authorized final Stage 5 implementation task,
+current source-of-truth documents and the full 24-file PR diff.
+
+Review method:
+- re-read current `AGENTS.md` and all task-relevant source-of-truth documents;
+- reviewed the full PR compare from `main` to the exact current head;
+- separately reviewed the complete correction delta from prior reviewed head
+  `4c0f0562ba1d796542cc3b2838c884017d1921a7` to the current head;
+- verified the 19 previously reviewed unchanged files remained unchanged by the latest correction;
+- fully re-reviewed the five correction-scope files:
+  `PROJECT_STATE.md`,
+  `app/forum/content-generation-controls.tsx`,
+  `app/forum/content-generation-controls.test.tsx`,
+  `app/forum/content-generation-navigation.test.tsx`,
+  `app/routes/topic.tsx`.
+
+Result:
+- no remaining current-Stage defect found;
+- no unauthorized schema/dependency, permission/action, policy, provider/allowance, durable task
+  lifecycle or Stage 6 expansion found;
+- navigation lifecycle now resets only on real router location/page navigation, not same-page
+  revalidation;
+- automatic fetcher state is scoped to the same navigation lifecycle;
+- same-page replacement revisions remain excluded from the original automatic snapshot;
+- old-page in-flight result isolation is covered by real router regression;
+- `converging` documentation now matches code and tests;
+- existing exact-unit feedback, loader precedence, Strict Mode dedupe and finite polling guarantees
+  remain intact.
+
+Objective evidence:
+- PR #119 is open and GitHub reports it mergeable;
+- branch is not behind current `main`;
+- CI run `36179815533` completed successfully:
+  - `checks` — success;
+  - `database` — success.
+
+After this complete self-review, ChatGPT updated PR #119 description metadata only:
+- removed obsolete pre-opening head;
+- removed obsolete statement that `PROJECT_STATE.md` was not updated;
+- recorded final exact head `1d9b030e99abe3c46188e60741fdfa04ac5af934`;
+- recorded CI run `36179815533` and both successful jobs;
+- recorded the navigation-lifecycle scope and final Stage 5 state.
+No code changed, so no additional CI run is required for that metadata-only edit.
+
+Codex should now perform one fresh complete independent review of PR #119 at exact head
+`1d9b030e99abe3c46188e60741fdfa04ac5af934`. Any head change requires another complete review.
