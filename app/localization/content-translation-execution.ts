@@ -58,7 +58,7 @@ export type ContentTopicTitleTaskExecutionResult =
 export interface ContentTopicTitleTaskExecutorDependencies {
   readonly allowance: Pick<ContentTopicTitleAllowanceGate, "admit">;
   readonly consumer: Pick<ContentTopicTitleTaskConsumer, "consume">;
-  readonly providerRouter: Pick<TranslationProviderRouter, "translate">;
+  readonly providerRouter: Pick<TranslationProviderRouter, "translateWithProvider">;
   readonly publisher: Pick<ContentTopicTitleResultPublisher, "publish">;
   readonly failures: TranslationTaskFailureStore;
 }
@@ -84,6 +84,7 @@ export class ContentTopicTitleTaskExecutor {
     if (admission.outcome === "terminal") return acknowledge({ outcome: "terminal" });
     if (admission.outcome === "not-found") return acknowledge({ outcome: "not-found" });
     // Exhausted work reclaims only to persist JOB-04 terminal exhaustion and performs no provider call.
+    const admittedProvider = admission.outcome === "admitted" ? admission.provider : undefined;
 
     let consumed: ContentTopicTitleTaskConsumerResult;
     try {
@@ -108,7 +109,11 @@ export class ContentTopicTitleTaskExecutor {
     }
 
     try {
-      const result = await this.dependencies.providerRouter.translate(
+      if (!admittedProvider) {
+        throw new TypeError("content execution requires an admitted provider identity");
+      }
+      const result = await this.dependencies.providerRouter.translateWithProvider(
+        admittedProvider,
         providerRequest(consumed.context),
       );
       return acknowledge(await this.dependencies.publisher.publish(consumed.context, result));
