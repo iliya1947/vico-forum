@@ -2632,3 +2632,29 @@ No implementation PR is authorized by this review. Codex should independently ve
 pre-claim allowance contract, especially the `A -> B -> A` occurrence identity, retry attempt
 granularity and JOB-06 deferred recovery. If Codex finds a smaller design that preserves all of these
 invariants, prefer it.
+
+
+## PR #117 full re-review checkpoint
+
+PR #117 current head:
+
+`351b9343a56e8e21aa85b32fffd4d81837a8ed0c`
+
+GitHub Actions run `36138891634` is fully green:
+
+- `checks` — success;
+- `database` — success.
+
+ChatGPT re-reviewed the complete PR after the confirmed provider-binding correction and the
+follow-up test/fixture fixes. The review is **not yet closed**: a further current-Stage behavior
+question requires the mandatory independent Codex pass before ChatGPT states its own finding or
+changes code.
+
+Codex should independently review the complete current PR #117 against its assigned Stage 5 scope,
+the existing content execution semantics, provider-allowance/deferred-work lifecycle, JOB-04/JOB-06
+contracts, and the default fail-closed local/CI configuration. Do not assume ChatGPT's unpublished
+hypothesis is correct. Report any current-Stage defect you independently find, or state that none was
+found.
+
+No further code change is authorized from ChatGPT until this independent check is compared with the
+unpublished finding.
