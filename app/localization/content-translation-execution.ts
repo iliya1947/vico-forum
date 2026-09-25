@@ -1,3 +1,7 @@
+import type {
+  ContentTranslationAllowanceAdmissionResult,
+  ContentTranslationAllowanceAdmissionService,
+} from "./content-translation-allowance";
 import {
   ClaimedContentTopicTitleDependencyError,
   type ClaimedContentTopicTitleExecutionContext,
@@ -27,6 +31,7 @@ type AckExecutionResult =
   (
     | ContentTopicTitlePublicationResult
     | Exclude<ContentTopicTitleTaskConsumerResult, { readonly outcome: "eligible" }>
+    | Exclude<ContentTranslationAllowanceAdmissionResult, { readonly outcome: "admitted" }>
   ) & { readonly delivery: "ack" };
 
 export type ContentTopicTitleTaskExecutionResult =
@@ -48,6 +53,7 @@ export type ContentTopicTitleTaskExecutionResult =
     };
 
 export interface ContentTopicTitleTaskExecutorDependencies {
+  readonly allowance: Pick<ContentTranslationAllowanceAdmissionService, "admitTopicTitle">;
   readonly consumer: Pick<ContentTopicTitleTaskConsumer, "consume">;
   readonly providerRouter: Pick<TranslationProviderRouter, "translate">;
   readonly publisher: Pick<ContentTopicTitleResultPublisher, "publish">;
@@ -58,6 +64,11 @@ export class ContentTopicTitleTaskExecutor {
   constructor(private readonly dependencies: ContentTopicTitleTaskExecutorDependencies) {}
 
   async execute(message: TranslationTaskMessage): Promise<ContentTopicTitleTaskExecutionResult> {
+    const admission = await this.dependencies.allowance.admitTopicTitle(
+      message.translationTaskId,
+    );
+    if (admission.outcome !== "admitted") return acknowledge(admission);
+
     let consumed: ContentTopicTitleTaskConsumerResult;
     try {
       consumed = await this.dependencies.consumer.consume(message);
@@ -137,7 +148,8 @@ function providerRequest(
 function acknowledge<
   T extends
     | ContentTopicTitlePublicationResult
-    | Exclude<ContentTopicTitleTaskConsumerResult, { readonly outcome: "eligible" }>,
+    | Exclude<ContentTopicTitleTaskConsumerResult, { readonly outcome: "eligible" }>
+    | Exclude<ContentTranslationAllowanceAdmissionResult, { readonly outcome: "admitted" }>,
 >(result: T): T & { readonly delivery: "ack" } {
   return { ...result, delivery: "ack" };
 }
