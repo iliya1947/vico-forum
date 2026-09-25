@@ -3,6 +3,13 @@ import { describe, expect, it, vi } from "vitest";
 import { authSessionContext, type AuthSession } from "../auth/request-context";
 import { authorizationContext } from "../authorization/request-context";
 import { AuthorizationUnavailableError } from "../../db/authorization-service";
+import { ContentTranslationPresentationService } from "../localization/content-translation-presentation";
+import { localeRegistry } from "../localization/registry";
+import {
+  contentTranslationPresentationContext,
+  localeContext,
+  registryLoaderContext,
+} from "../localization/request-context";
 import type { ForumReader } from "../../db/forum-repository";
 import { forumReaderContext } from "./request-context";
 import { loader as sectionLoader } from "../routes/section";
@@ -67,9 +74,30 @@ const session = {
   },
 } satisfies AuthSession;
 
+function configureTopicRead(context: RouterContextProvider) {
+  context.set(localeContext, {
+    translationLocale: "en",
+    fallbackLocales: [],
+    direction: "ltr",
+    formatting: { locale: "en", timeZone: "UTC" },
+    nativeName: "English",
+    presentationMetadata: {},
+  });
+  context.set(registryLoaderContext, async () => ({
+    registry: localeRegistry,
+    semanticIdentity: "test-registry",
+    health: { status: "healthy" as const },
+  }));
+  context.set(
+    contentTranslationPresentationContext,
+    new ContentTranslationPresentationService({ readTopic: async () => ({ posts: [] }) }),
+  );
+}
+
 function contextWithAuthorizationFailure(error: Error) {
   const context = new RouterContextProvider();
   context.set(forumReaderContext, reader);
+  configureTopicRead(context);
   context.set(authSessionContext, session);
   context.set(authorizationContext, {
     forUser: () => ({
@@ -83,6 +111,7 @@ function contextWithAuthorizationFailure(error: Error) {
 function contextWithPermissions(userId: string, permissions: readonly string[]) {
   const context = new RouterContextProvider();
   context.set(forumReaderContext, reader);
+  configureTopicRead(context);
   context.set(authSessionContext, {
     ...session,
     user: { ...session.user, id: userId },
