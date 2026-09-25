@@ -6,7 +6,7 @@ import { AuthorizationUnavailableError } from "../../db/authorization-service";
 import { forumCategoryPath, forumSectionPath } from "../forum/paths";
 import { forumReaderForRequest } from "../forum/request-context";
 import { PostBodyPresentation, TopicTitlePresentation } from "../forum/content-translation-view";
-import { ContentGenerationManager, ContentGenerationUnitStatus } from "../forum/content-generation-controls";
+import { ContentGenerationNavigationBoundary, ContentGenerationUnitStatus } from "../forum/content-generation-controls";
 import {
   contentGenerationActionForRequest,
   contentGenerationStatusReaderForRequest,
@@ -153,7 +153,10 @@ export default function TopicRoute() {
     : null;
   const { t } = useTranslation("common");
   return (
-    <ContentGenerationManager units={generationUnits}>
+    <ContentGenerationNavigationBoundary
+      pageIdentity={JSON.stringify([locale, topic.id])}
+      units={generationUnits}
+    >
       <ForumShell locale={locale}>
       <Breadcrumbs locale={locale} items={[
         { label: topic.section.category.name, to: forumCategoryPath(locale, topic.section.category.id) },
@@ -203,7 +206,7 @@ export default function TopicRoute() {
         <button type="submit">{t("replySubmit")}</button>
       </Form>}
       </ForumShell>
-    </ContentGenerationManager>
+    </ContentGenerationNavigationBoundary>
   );
 }
 
