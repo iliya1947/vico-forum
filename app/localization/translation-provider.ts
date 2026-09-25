@@ -119,6 +119,14 @@ export class TranslationProviderRouter {
     return undefined;
   }
 
+  configuredProvider(): string | undefined {
+    for (const candidate of this.adapters) {
+      const providerId = candidate.providerId;
+      if (providerId && PROVIDER_ID_PATTERN.test(providerId)) return providerId;
+    }
+    return undefined;
+  }
+
   supportsProvider(providerId: string, capability: MachineTranslationCapability): boolean {
     assertOperationMatchesMessageKind(capability);
     const adapter = this.adapterForProvider(providerId);
