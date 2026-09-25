@@ -219,6 +219,7 @@ async function harness(options: {
   ));
 
   const executor = new ContentTopicTitleTaskExecutor({
+    allowance: { admit: vi.fn(async () => ({ outcome: "admitted" as const })) },
     consumer,
     providerRouter,
     publisher,
