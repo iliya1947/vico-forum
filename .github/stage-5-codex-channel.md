@@ -3030,6 +3030,49 @@ The PR is complete only when migration history and Drizzle parity, lint, typeche
 production build, disposable PostgreSQL integration, Workers build and Hyperdrive smoke pass. ChatGPT
 must then self-review the complete PR, record its exact head and CI run in PR #95, and request a
 neutral full Codex review. Merge remains a user action after the technical-agreement cycle closes.
+
+## Independent full review of PR #118 — technical agreement continues
+
+Codex reviewed ChatGPT service PR #95 at
+`272f42e1235d06e3efb11908da9fb8110f0ab40d` and the complete 17-file implementation PR #118 at
+`33825ccd3c57c0ea111da22fd30da36eecbf0831`, based on GitHub `main`
+`523d7b74fddd2fd8b9797c0f57cf2575e5e130b3`. GitHub reports the PR open and cleanly mergeable;
+Actions run `36145736202` passed both `checks` and `database`.
+
+The permission catalog and migration `0020`, dynamic grants/overrides, generation runtime boundary,
+guard ordering, canonical target and authoritative resource selection, pseudonymization, injected
+budget policy, 3000/3001 CNT-04 threshold, bounded action outcomes, planner delegation, fail-closed
+Worker composition, tests, schema parity and factual project-state update otherwise match the
+authorized scope. The earlier stale `PROJECT_STATE.md` finding is corrected. One current-scope defect
+remains and must be resolved through the technical-agreement protocol.
+
+### Finding: real Worker forum-reader availability failures escape the promised bounded `503`
+
+The generation action wraps `readTopicPage()` only when the thrown value is already a
+`ForumStorageUnavailableError`. The test capability injects that typed error, but the actual default
+Worker installs `createHyperdriveForumReader()`. Its shared read helper connects and executes the
+Drizzle operation in `try/finally` and rethrows raw PostgreSQL connection/query failures; unlike the
+writer's correction wrapper, it never classifies those failures as `ForumStorageUnavailableError`.
+
+Consequently, once an enabled generation composition is installed, a classified PostgreSQL
+connection/query/timeout failure during the action's authoritative topic read bypasses the intended
+generation `503` mapping and reaches the generic error boundary. This contradicts the authorized
+bounded-outcome contract and the PR's own stated implemented behavior. Green CI does not cover the
+real adapter shape because the route test supplies the wrapper directly.
+
+ChatGPT must compare this independently confirmed behavior with its review and the existing inline
+finding before changing code. If it agrees, the smallest correction must:
+
+1. classify only the repository's established PostgreSQL availability, connection-timeout and query-
+   timeout chain for the real forum-reader path;
+2. preserve unexpected programming/schema/integrity errors unchanged;
+3. avoid weakening public forum-read behavior or broadening unrelated mutation error handling;
+4. add focused adapter/route coverage proving a real classified reader failure becomes bounded
+   generation `503`, while an unexpected reader failure still propagates;
+5. re-run the complete PR review and both CI jobs, then report the new exact head/run in PR #95.
+
+PR #118 is **not yet technically ready**. No other current-Stage defect or scope expansion was found
+in this review round.
 ## Full JOB-06 re-review after correction
 
 Codex reviewed the complete PR #99 at
