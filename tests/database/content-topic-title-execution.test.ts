@@ -832,9 +832,16 @@ function createDispatcher(
     delivery: "ack" as const,
   })),
 ): TranslationTaskExecutorDispatcher {
+  const routedAdapter: MachineTranslationProviderAdapter = adapter.providerId
+    ? adapter
+    : {
+        providerId: "fake-provider",
+        supports: (capability) => adapter.supports(capability),
+        translate: (request) => adapter.translate(request),
+      };
   return createDispatcherWithRouter(
     connection,
-    new TranslationProviderRouter([adapter]),
+    new TranslationProviderRouter([routedAdapter]),
     uiExecute,
   );
 }
@@ -876,7 +883,7 @@ function createDispatcherWithRouter(
         reservationReference: "fake-reservation",
       }),
     },
-    provider: "fake-provider",
+    providerRouter,
     admissionLeaseDurationMs: 60_000,
     revisions: executionStore,
     translations,
