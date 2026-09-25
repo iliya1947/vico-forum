@@ -1,14 +1,20 @@
 import { canonicalizeTranslationLocale } from "../app/localization/locale";
-import type {
-  CreatePostInput,
-  CreateTopicInput,
-  CreateTopicWithInitialPostInput,
-  DrizzleForumRepository,
-  ForumRevisionContent,
-  SolutionManagementScope,
+import {
+  ConcurrentRevisionError,
+  ForumAuthorizationError,
+  ForumEntityNotFoundError,
+  ForumStateConflictError,
+  type CreatePostInput,
+  type CreateTopicInput,
+  type CreateTopicWithInitialPostInput,
+  type DrizzleForumRepository,
+  type ForumRevisionContent,
+  type SolutionManagementScope,
 } from "./forum-repository";
 
 export class InvalidForumContentError extends Error {}
+
+export type SourceLocaleCorrectionScope = "own" | "any";
 
 export class ForumService {
   constructor(private readonly repository: DrizzleForumRepository) {}
@@ -66,6 +72,76 @@ export class ForumService {
     return this.repository.revisePostBody(postId, expectedRevisionId, normalizeRevision(revision), authorId);
   }
 
+  async correctTopicTitleSourceLocale(input: {
+    topicId: string;
+    expectedRevisionId: string;
+    sourceLocale: string;
+    actorId: string;
+    scope: SourceLocaleCorrectionScope;
+  }) {
+    validateEntity(input.topicId, input.actorId);
+    requireText(input.expectedRevisionId, "expected revision id");
+    validateSourceLocaleCorrectionScope(input.scope);
+    const sourceLocale = normalizeCorrectedSourceLocale(input.sourceLocale);
+    const topic = await this.repository.readTopic(input.topicId);
+    if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
+    if (topic.title.id !== input.expectedRevisionId) {
+      throw new ForumStateConflictError("topic title current revision changed");
+    }
+    assertSourceLocaleCorrectionAuthorized(topic.authorId, input.actorId, input.scope);
+    if (topic.title.sourceLocale === sourceLocale) return;
+    try {
+      return await this.repository.reviseTopicTitle(
+        input.topicId,
+        input.expectedRevisionId,
+        { id: crypto.randomUUID(), originalContent: topic.title.originalContent, sourceLocale },
+        input.actorId,
+      );
+    } catch (error) {
+      if (error instanceof ConcurrentRevisionError) {
+        throw new ForumStateConflictError("topic title current revision changed");
+      }
+      throw error;
+    }
+  }
+
+  async correctPostBodySourceLocale(input: {
+    topicId: string;
+    postId: string;
+    expectedRevisionId: string;
+    sourceLocale: string;
+    actorId: string;
+    scope: SourceLocaleCorrectionScope;
+  }) {
+    validateEntity(input.postId, input.actorId);
+    requireText(input.topicId, "topic id");
+    requireText(input.expectedRevisionId, "expected revision id");
+    validateSourceLocaleCorrectionScope(input.scope);
+    const sourceLocale = normalizeCorrectedSourceLocale(input.sourceLocale);
+    const post = await this.repository.readPost(input.postId);
+    if (!post || post.topicId !== input.topicId) {
+      throw new ForumEntityNotFoundError("post does not exist in topic");
+    }
+    if (post.body.id !== input.expectedRevisionId) {
+      throw new ForumStateConflictError("post body current revision changed");
+    }
+    assertSourceLocaleCorrectionAuthorized(post.authorId, input.actorId, input.scope);
+    if (post.body.sourceLocale === sourceLocale) return;
+    try {
+      return await this.repository.revisePostBody(
+        input.postId,
+        input.expectedRevisionId,
+        { id: crypto.randomUUID(), originalContent: post.body.originalContent, sourceLocale },
+        input.actorId,
+      );
+    } catch (error) {
+      if (error instanceof ConcurrentRevisionError) {
+        throw new ForumStateConflictError("post body current revision changed");
+      }
+      throw error;
+    }
+  }
+
   readTopic(id: string) { return this.repository.readTopic(id); }
   readPost(id: string) { return this.repository.readPost(id); }
   readHierarchy(categoryId: string) { return this.repository.readHierarchy(categoryId); }
@@ -84,6 +160,29 @@ export class ForumService {
 
 function validateSolutionScope(scope: SolutionManagementScope) {
   if (scope !== "own" && scope !== "any") throw new InvalidForumContentError("solution scope is invalid");
+}
+
+function validateSourceLocaleCorrectionScope(scope: SourceLocaleCorrectionScope) {
+  if (scope !== "own" && scope !== "any") {
+    throw new InvalidForumContentError("source locale correction scope is invalid");
+  }
+}
+
+function normalizeCorrectedSourceLocale(value: string): string {
+  requireText(value, "source locale");
+  const sourceLocale = canonicalizeTranslationLocale(value);
+  if (!sourceLocale || sourceLocale === "und") {
+    throw new InvalidForumContentError(
+      "corrected source locale must be a canonicalizable non-und BCP-47 translation locale without formatting extensions",
+    );
+  }
+  return sourceLocale;
+}
+
+function assertSourceLocaleCorrectionAuthorized(authorId: string, actorId: string, scope: SourceLocaleCorrectionScope) {
+  if (scope === "own" && authorId !== actorId) {
+    throw new ForumAuthorizationError("actor cannot correct another author's source locale");
+  }
 }
 
 function validateEntity(id: string, authorId: string) {

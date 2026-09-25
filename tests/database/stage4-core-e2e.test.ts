@@ -36,6 +36,7 @@ const migrationFiles = [
   "0004_forum_domain_foundation.sql",
   "0005_calm_proemial_gods.sql",
   "0006_loving_sentinels.sql",
+  "0018_source_locale_correction_permissions.sql",
 ] as const;
 
 const client = new Client({ connectionString: databaseUrl, options: `-c search_path=${schemaName}` });

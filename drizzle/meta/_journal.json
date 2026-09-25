@@ -127,6 +127,13 @@
       "when": 1790268000000,
       "tag": "0017_content_translation_request_budget",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1790319600000,
+      "tag": "0018_source_locale_correction_permissions",
+      "breakpoints": true
     }
   ]
 }

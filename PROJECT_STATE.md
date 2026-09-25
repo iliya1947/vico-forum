@@ -42,7 +42,7 @@ Vico Forum находится в ранней pre-release разработке.
 - generic `/:locale/*`, runtime `LocaleRegistry`, BCP-47 resolution, LTR/RTL и request-scoped
   `i18next`;
 - persistent locale registry, persistent UI translation storage и compiled bundle storage;
-- текущая migration history — `0000`–`0017`.
+- текущая migration history — `0000`–`0018`.
 
 ## Forum core — Stage 4
 
@@ -204,16 +204,25 @@ Migration `0007`–`0010` содержит durable task lifecycle и generation-
   provider/dependency failures используют общий bounded retry lifecycle, stale/current outcomes
   ack-аются без публикации. Existing Cloudflare M2M100 path остаётся default-deny для post-body:
   concrete provider allowlisting/data-policy approval, bindings и live calls не выбраны и не
-  входят в этот local/CI foundation.
+  входят в этот local/CI foundation;
+- manual source-locale correction для topic title и post body: code-backed permissions
+  `forum.sourceLocale.correctOwn` / `forum.sourceLocale.correctAny` используют dynamic
+  authorization и authoritative resource ownership. Correction принимает canonicalizable non-`und`
+  BCP-47 source language независимо от UI LocaleRegistry, копирует только authoritative current
+  original content в новую immutable revision и меняет только source-locale metadata.
+  Expected-revision CAS fencing делает stale/concurrent correction безопасной; предыдущие
+  translations/tasks остаются historical revision-bound. Locale-aware topic UI показывает
+  correction controls по optional presentation auth, а action повторно проверяет authentication,
+  same-origin, current permission и resource ownership server-side. Migration `0018` расширяет
+  code-backed permission catalog/check constraint и approved initial built-in grants.
 
 ### Stage 5 ещё не завершён
 
 Для завершения Stage 5 local/CI path ещё нужны:
 
-- подключение реализованного request-budget admission к routes, выбор anonymous policy
-  и финальных quota values, а также user-facing manual source-locale correction flow; production
-  content-provider/data-policy approval, real binding/credentials/live calls остаются external
-  Stage 6 concerns;
+- подключение реализованного request-budget admission к routes и согласованной
+  provider-allowance/anti-spam policy; production content-provider/data-policy approval, real
+  binding/credentials/live calls остаются external Stage 6 concerns;
 - route/UI integration и product UX для запроса/показа перевода пользовательского контента.
 
 Реальные Cloudflare Queue bindings, provider credentials/calls и deployed provider/Queue smoke —
@@ -267,9 +276,8 @@ no-op verification. Перед следующим настоящим external sc
 
 ## Ближайший маршрут
 
-1. Определить anonymous/quota policy и подключить atomic request-budget admission к content routes.
-2. Завершить route/UI integration и product UX для запроса/показа перевода, включая
-   user-facing manual source-locale correction flow.
+1. Завершить согласование provider-allowance/anti-spam admission и подключить atomic admission к content routes.
+2. Завершить route/UI integration и product UX для запроса/показа перевода пользовательского контента.
 3. После завершения Stage 5 перейти к Stage 6 external integration по `ROADMAP.md` и
    `docs/database/*`.
 

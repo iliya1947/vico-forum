@@ -3,6 +3,8 @@ export const PERMISSION_CATALOG = [
   "forum.reply.create",
   "forum.solution.manageOwn",
   "forum.solution.manageAny",
+  "forum.sourceLocale.correctOwn",
+  "forum.sourceLocale.correctAny",
   "access.authorization.manage",
 ] as const;
 
@@ -15,12 +17,19 @@ export function isPermissionKey(value: unknown): value is PermissionKey {
 }
 
 export const INITIAL_ROLE_GRANTS = {
-  user: ["forum.topic.create", "forum.reply.create", "forum.solution.manageOwn"],
+  user: [
+    "forum.topic.create",
+    "forum.reply.create",
+    "forum.solution.manageOwn",
+    "forum.sourceLocale.correctOwn",
+  ],
   moderator: [
     "forum.topic.create",
     "forum.reply.create",
     "forum.solution.manageOwn",
     "forum.solution.manageAny",
+    "forum.sourceLocale.correctOwn",
+    "forum.sourceLocale.correctAny",
   ],
   admin: [...PERMISSION_CATALOG],
 } as const satisfies Record<string, readonly PermissionKey[]>;

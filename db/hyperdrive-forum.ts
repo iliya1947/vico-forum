@@ -1,9 +1,11 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Client } from "pg";
+import { isPostgresAvailabilityFailure } from "../app/localization/persistent-registry";
+import { isPostgresConnectionTimeout, isPostgresQueryTimeout } from "./postgres-deadlines";
 import type { ForumReader } from "./forum-repository";
 import type { SolutionManagementScope } from "./forum-repository";
 import { DrizzleForumRepository } from "./forum-repository";
-import { ForumService } from "./forum-service";
+import { ForumService, type SourceLocaleCorrectionScope } from "./forum-service";
 import { forumWritePolicy, type ForumWritePolicy } from "./forum-write-policy";
 
 export interface ForumWriter {
@@ -11,6 +13,15 @@ export interface ForumWriter {
   createReply(input: { topicId: string; authorId: string; body: string }): Promise<{ postId: string }>;
   markTopicSolved(input: { topicId: string; actorId: string; scope: SolutionManagementScope }): Promise<void>;
   selectBestAnswer(input: { topicId: string; postId: string; actorId: string; scope: SolutionManagementScope }): Promise<void>;
+  correctTopicTitleSourceLocale(input: { topicId: string; expectedRevisionId: string; sourceLocale: string; actorId: string; scope: SourceLocaleCorrectionScope }): Promise<void>;
+  correctPostBodySourceLocale(input: { topicId: string; postId: string; expectedRevisionId: string; sourceLocale: string; actorId: string; scope: SourceLocaleCorrectionScope }): Promise<void>;
+}
+
+export class ForumStorageUnavailableError extends Error {
+  constructor(options?: ErrorOptions) {
+    super("forum storage unavailable", options);
+    this.name = "ForumStorageUnavailableError";
+  }
 }
 
 type ClientFactory = () => Client;
@@ -51,6 +62,19 @@ export function createHyperdriveForumWriter(
     }
   }
 
+  async function writeCorrection<T>(
+    operation: (service: ForumService) => Promise<T>,
+  ): Promise<T> {
+    try {
+      return await write(operation);
+    } catch (error) {
+      if (isForumStorageAvailabilityFailure(error)) {
+        throw new ForumStorageUnavailableError({ cause: error });
+      }
+      throw error;
+    }
+  }
+
   return {
     createTopic: ({ sectionId, authorId, title, body }) => write(async (forum) => {
       const topicId = crypto.randomUUID();
@@ -76,5 +100,18 @@ export function createHyperdriveForumWriter(
     }),
     markTopicSolved: ({ topicId, actorId, scope }) => write((forum) => forum.markTopicSolved(topicId, actorId, scope)),
     selectBestAnswer: ({ topicId, postId, actorId, scope }) => write((forum) => forum.selectBestAnswer(topicId, postId, actorId, scope)),
+    correctTopicTitleSourceLocale: (input) => writeCorrection(async (forum) => { await forum.correctTopicTitleSourceLocale(input); }),
+    correctPostBodySourceLocale: (input) => writeCorrection(async (forum) => { await forum.correctPostBodySourceLocale(input); }),
   };
+}
+
+function isForumStorageAvailabilityFailure(error: unknown): boolean {
+  const seen = new Set<unknown>();
+  let current = error;
+  while (current && (typeof current === "object" || typeof current === "function") && !seen.has(current)) {
+    seen.add(current);
+    if (isPostgresAvailabilityFailure(current) || isPostgresConnectionTimeout(current) || isPostgresQueryTimeout(current)) return true;
+    current = (current as { cause?: unknown }).cause;
+  }
+  return false;
 }
