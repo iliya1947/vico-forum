@@ -108,8 +108,10 @@ export class DrizzleContentGenerationStatusReader implements ContentGenerationSt
         continue;
       }
 
+      const status = normalizeStatus(row.task_status);
       if (
-        row.allowance_state === "deferred"
+        (status === "pending" || status === "processing")
+        && row.allowance_state === "deferred"
         && row.allowance_retry_not_before instanceof Date
         && row.database_now instanceof Date
       ) {
@@ -129,7 +131,6 @@ export class DrizzleContentGenerationStatusReader implements ContentGenerationSt
         continue;
       }
 
-      const status = normalizeStatus(row.task_status);
       byIdentity.set(key, snapshot(contentType, row, targetLocale, status));
     }
 
