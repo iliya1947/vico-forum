@@ -1,6 +1,6 @@
 import "@testing-library/jest-dom/vitest";
 import type { ComponentType } from "react";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { I18nextProvider } from "react-i18next";
 import { RouterContextProvider, RouterProvider, createMemoryRouter, matchRoutes } from "react-router";
 import { afterEach, describe, expect, it } from "vitest";
@@ -334,7 +334,13 @@ describe("forum read states", () => {
     expect(screen.getByText("Manual translation")).toBeInTheDocument();
     expect(screen.getAllByText("Show original")).toHaveLength(2);
     expect(screen.getAllByText("Show translation")).toHaveLength(2);
-    expect(screen.getByText(topic.title.originalContent)).toHaveAttribute("lang", "en");
+    const titleToggle = document.querySelector(".topic-title-toggle");
+    expect(titleToggle).toBeInstanceOf(HTMLDetailsElement);
+    fireEvent.click(titleToggle!.querySelector("summary")!);
+    expect(titleToggle).toHaveAttribute("open");
+    const originalTitles = screen.getAllByText(topic.title.originalContent);
+    expect(originalTitles).toHaveLength(2);
+    for (const originalTitle of originalTitles) expect(originalTitle).toHaveAttribute("lang", "en");
     expect(screen.getByText(topic.posts[0]!.body.originalContent)).toBeInTheDocument();
     expect(screen.queryByRole("img")).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "safe link" })).toHaveAttribute("rel", "nofollow noopener noreferrer ugc");
