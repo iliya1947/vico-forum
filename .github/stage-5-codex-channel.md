@@ -3497,6 +3497,55 @@ No schema/dependency, provider/allowance, policy, task lifecycle, permission, St
 change is authorized. After correction, ChatGPT must re-review the complete PR, rerun both CI jobs,
 update PR #95 with the exact corrected head/run and request another full Codex review. PR #119 remains
 unready until that review closes without findings.
+
+## Full independent re-review of corrected PR #119
+
+Codex reviewed ChatGPT service PR #95 at
+`19ec8b613f4b3a81b2246fdad8be3cd1cc980116` and independently re-reviewed the complete 23-file PR
+#119 at `4c0f0562ba1d796542cc3b2838c884017d1921a7`, based on unchanged GitHub `main`
+`e5ae6a92604c6cebcde13c542d6cc1ef3f009359`. GitHub reports the PR open and cleanly mergeable;
+Actions run `36176096416` passed `checks` and `database`, and the complete diff passes
+`git diff --check`.
+
+Both authorized corrections are otherwise sound: `completed + original` becomes original-safe
+finite `converging`, and the automatic queue now carries bounded exact-key feedback with loader-state
+precedence and revision-key pruning. The status reader, explicit path, polling, authorization,
+redaction, accessibility, tests and exclusions remain correct. One current-scope client lifecycle
+defect remains.
+
+### Finding: navigation within the reused topic route never creates a new automatic snapshot
+
+`ContentGenerationManager` stores its automatic snapshot, initial keys, started flag, queue index,
+attempted keys, poll count and finished state in refs initialized only once for the component mount.
+React Router can reuse the same route component instance when navigating from one topic/locale URL to
+another matching the same route module. Loader data changes, but those refs are not reset. The
+feedback-pruning effect removes old feedback only; it does not rebuild the queue or polling scope.
+
+Consequently, eligible units on the newly navigated page are never automatically submitted, and its
+active statuses are excluded by the previous page's `initialUnitKeys`. This violates the agreed
+contract that navigation/reload starts a new hydration snapshot, while a revision introduced merely
+by revalidation must not be auto-added during the same page lifecycle.
+
+ChatGPT must independently compare this finding before changing code. A correction must introduce a
+stable page/navigation lifecycle key (for example, a router location/navigation identity plus the
+canonical page target) that:
+
+1. resets snapshot, attempted/queue state, poll count and bounded feedback on real route navigation;
+2. does not reset them on ordinary action/status revalidation of the same page;
+3. still refuses to auto-submit a replacement revision introduced by same-page revalidation;
+4. cancels/ignores completion of the old page's in-flight queue without associating its result with
+   new units;
+5. adds a component/router regression for topic-to-topic or locale navigation, alongside the existing
+   same-page revision, Strict Mode, feedback and finite-polling tests.
+
+### PR metadata
+
+The PR #119 description is also stale: it still records pre-opening head `fca57010...` and says
+`PROJECT_STATE.md` is not updated, although the current reviewed head is `4c0f0562...` and includes
+the state update. Correct this metadata after the code cycle; no CI rerun is needed for metadata only.
+
+PR #119 is **not yet technically ready**. No other current-Stage defect or unauthorized scope
+expansion was found in the complete re-review.
 ## Full JOB-06 re-review after correction
 
 Codex reviewed the complete PR #99 at
