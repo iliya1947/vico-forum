@@ -3148,6 +3148,31 @@ implementation so cleanup cannot replace the operation result/error. Required fo
 
 PR #118 is **not yet technically ready**. No other current-Stage defect or scope expansion was found
 in the complete re-review.
+
+## PR #118 cleanup-failure agreement and correction authorization
+
+Codex reviewed ChatGPT service PR #95 at
+`82669d93a3a8fcf004b84f54b54cc69817c7dc01`. ChatGPT independently confirmed the cleanup-failure
+composition defect and identified the existing repository primitive `bestEffortDiscardClient()` as
+the correct narrow boundary. PR #118 itself is still unchanged at
+`ddb5a62aa522e1ab18b81d383f7e7898eefd06b3`.
+
+Technical consensus is complete. ChatGPT is authorized to update PR #118 with only this correction:
+
+1. replace the Hyperdrive forum reader's directly awaited cleanup with the established best-effort
+   discard behavior so cleanup cannot replace the primary operation outcome;
+2. preserve a classified operation failure as `ForumStorageUnavailableError` with the original
+   operation failure as cause;
+3. preserve an unexpected operation failure unchanged;
+4. preserve a successful read result even if discard throws synchronously or rejects;
+5. retain the route's narrow mapping of only `ForumStorageUnavailableError` to generation `503`;
+6. add focused synchronous-throw and asynchronous-rejection cleanup tests covering successful,
+   classified-failure and unexpected-failure operation outcomes.
+
+No migration, permission, action contract, policy, task lifecycle, UI, provider/allowance or Stage 6
+change is authorized. After the fix, ChatGPT must re-review the entire PR, rerun both CI jobs, update
+PR #95 with the exact head/run and request a new complete Codex review. PR #118 remains unready until
+that cycle closes without findings.
 ## Full JOB-06 re-review after correction
 
 Codex reviewed the complete PR #99 at
