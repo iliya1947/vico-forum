@@ -789,6 +789,16 @@ export class DrizzleTranslationTaskStore implements
       and(eq(translationTasks.status, "processing"), lte(translationTasks.leaseExpiresAt, databaseNow)),
     );
 
+    const allowanceCondition = expectedKind === "ui"
+      ? sql`true`
+      : and(
+          eq(translationTasks.allowanceState, "admitted"),
+          eq(translationTasks.allowanceGeneration, translationTasks.generation),
+          eq(
+            translationTasks.allowanceAttempt,
+            sql`${translationTasks.attemptCount} + 1`,
+          ),
+        );
     const claimToken = crypto.randomUUID();
     const rows = await database
       .update(translationTasks)
@@ -798,6 +808,7 @@ export class DrizzleTranslationTaskStore implements
         claimedAt: databaseNow,
         leaseExpiresAt,
         attemptCount: sql`${translationTasks.attemptCount} + 1`,
+        ...clearAllowanceState(),
         updatedAt: databaseNow,
       })
       .where(and(
@@ -805,6 +816,7 @@ export class DrizzleTranslationTaskStore implements
         eq(translationTasks.translationKind, expectedKind),
         claimable,
         lt(translationTasks.attemptCount, translationTasks.maxAttempts),
+        allowanceCondition,
       ))
       .returning();
     if (rows[0]) {
@@ -822,6 +834,7 @@ export class DrizzleTranslationTaskStore implements
         claimToken: exhaustedClaimToken,
         claimedAt: databaseNow,
         leaseExpiresAt,
+        ...clearAllowanceState(),
         updatedAt: databaseNow,
       })
       .where(and(
@@ -892,6 +905,7 @@ export class DrizzleTranslationTaskStore implements
         lastFailureCode: failure.code,
         failureDisposition: terminalDisposition,
         failedAt: databaseNow,
+        ...clearAllowanceState(),
         updatedAt: databaseNow,
       })
       .where(terminalCondition)
@@ -922,6 +936,7 @@ export class DrizzleTranslationTaskStore implements
           lastFailureCode: failure.code,
           failureDisposition: null,
           reconciliationAttemptedAt: null,
+          ...clearAllowanceState(),
           updatedAt: databaseNow,
         })
         .where(and(currentClaim, lt(translationTasks.attemptCount, translationTasks.maxAttempts)))
@@ -957,6 +972,7 @@ export class DrizzleTranslationTaskStore implements
         failedAt: null,
         lastFailureCode: null,
         failureDisposition: null,
+        ...clearAllowanceState(),
         updatedAt: databaseNow,
       })
       .where(and(
