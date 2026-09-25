@@ -1053,6 +1053,89 @@ export class DrizzleTranslationTaskStore implements
 type TranslationTaskTransaction =
   Parameters<Parameters<NodePgDatabase["transaction"]>[0]>[0];
 
+function clearAllowanceState() {
+  return {
+    allowanceState: null,
+    allowanceGeneration: null,
+    allowanceAttempt: null,
+    allowanceClaimToken: null,
+    allowanceLeaseExpiresAt: null,
+    allowanceRetryNotBefore: null,
+    allowanceReason: null,
+    allowanceReservationReference: null,
+    allowanceUpdatedAt: null,
+  } as const;
+}
+
+function validateAllowanceOccurrence(
+  occurrence: ContentProviderAllowanceOccurrence,
+): void {
+  if (
+    !Number.isSafeInteger(occurrence.generation)
+    || occurrence.generation <= 0
+    || !Number.isSafeInteger(occurrence.attempt)
+    || occurrence.attempt <= 0
+  ) {
+    throw new TypeError("provider allowance occurrence is invalid");
+  }
+}
+
+async function markRowStaleWithoutAttempt(
+  transaction: TranslationTaskTransaction,
+  id: string,
+): Promise<void> {
+  const databaseNow = sql`statement_timestamp()`;
+  await transaction
+    .update(translationTasks)
+    .set({
+      status: "stale",
+      claimToken: null,
+      claimedAt: sql`coalesce(${translationTasks.claimedAt}, ${databaseNow})`,
+      leaseExpiresAt: null,
+      staleAt: databaseNow,
+      completedAt: null,
+      failedAt: null,
+      lastFailureCode: null,
+      failureDisposition: null,
+      ...clearAllowanceState(),
+      updatedAt: databaseNow,
+    })
+    .where(eq(translationTasks.id, id));
+}
+
+async function parseContentTaskForAllowance(
+  transaction: TranslationTaskTransaction,
+  row: TranslationTaskRow,
+): Promise<ContentTopicTitleTranslationTask | ContentPostBodyTranslationTask> {
+  if (row.translationKind === "content-topic-title") {
+    const [metadata] = await transaction
+      .select()
+      .from(contentTopicTitleTranslationTasks)
+      .where(eq(contentTopicTitleTranslationTasks.taskId, row.id))
+      .limit(1);
+    if (!metadata) {
+      throw new TranslationTaskIntegrityError(
+        "content topic-title allowance task is missing revision metadata",
+      );
+    }
+    return parseContentTopicTitleTaskRow(row, metadata);
+  }
+  if (row.translationKind === "content-post-body") {
+    const [metadata] = await transaction
+      .select()
+      .from(contentPostBodyTranslationTasks)
+      .where(eq(contentPostBodyTranslationTasks.taskId, row.id))
+      .limit(1);
+    if (!metadata) {
+      throw new TranslationTaskIntegrityError(
+        "content post-body allowance task is missing revision metadata",
+      );
+    }
+    return parseContentPostBodyTaskRow(row, metadata);
+  }
+  throw new TranslationTaskIntegrityError("provider allowance task kind is not content");
+}
+
 type RawTranslationTaskClaimResult =
   | {
       readonly outcome: "claimed";
