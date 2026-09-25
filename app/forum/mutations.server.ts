@@ -51,6 +51,16 @@ export function forumMutationGuard(request: Request, context: RouterContextProvi
   if (!requireSameOrigin(request)) return mutationFailure("origin", 403);
 }
 
+export function sourceLocaleCorrectionMutationGuard(
+  request: Request,
+  context: RouterContextProvider,
+) {
+  if (!authSessionForRequest(context)) {
+    return sourceLocaleCorrectionFailure("unauthenticated", 401);
+  }
+  if (!requireSameOrigin(request)) return sourceLocaleCorrectionFailure("origin", 403);
+}
+
 export async function runForumMutation<T>(
   request: Request,
   context: RouterContextProvider,
@@ -81,7 +91,7 @@ export async function runSourceLocaleCorrection<T>(
   context: RouterContextProvider,
   operation: (writer: ReturnType<typeof forumWriterForRequest>, actorId: string) => Promise<T>,
 ) {
-  const denied = forumMutationGuard(request, context);
+  const denied = sourceLocaleCorrectionMutationGuard(request, context);
   if (denied) return denied;
   const session = authSessionForRequest(context);
   if (!session) return sourceLocaleCorrectionFailure("unauthenticated", 401);
