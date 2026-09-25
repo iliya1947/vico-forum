@@ -65,17 +65,40 @@ export interface ContentGenerationViewModel extends ContentGenerationStatusIdent
 
 export function unavailableContentGenerationView(
   revisions: readonly ContentTranslationRevision[],
+  presentations: readonly ContentTranslationPresentation[],
   targetLocale: string,
 ): readonly ContentGenerationViewModel[] {
-  return revisions.map((revision) => ({
-    contentType: revision.contentType,
-    contentId: revision.contentId,
-    revisionId: revision.revisionId,
-    targetLocale,
-    status: "unavailable",
-    automaticEligible: false,
-    explicitRequired: false,
-  }));
+  if (presentations.length !== revisions.length) {
+    throw new ContentGenerationStatusIntegrityError(
+      "content generation unavailable view inputs must have matching cardinality",
+    );
+  }
+  return revisions.map((revision, index) => {
+    const presentation = presentations[index]!;
+    if (
+      presentation.contentType !== revision.contentType
+      || presentation.contentId !== revision.contentId
+      || presentation.revisionId !== revision.revisionId
+    ) {
+      throw new ContentGenerationStatusIntegrityError(
+        "content generation unavailable view conflicts with current presentation",
+      );
+    }
+    const status: ContentGenerationPublicStatus = presentation.selected === "translation"
+      ? "current"
+      : presentation.fallbackReason === "same-locale"
+        ? "idle"
+        : "unavailable";
+    return {
+      contentType: revision.contentType,
+      contentId: revision.contentId,
+      revisionId: revision.revisionId,
+      targetLocale,
+      status,
+      automaticEligible: false,
+      explicitRequired: false,
+    };
+  });
 }
 
 export function composeContentGenerationView(
