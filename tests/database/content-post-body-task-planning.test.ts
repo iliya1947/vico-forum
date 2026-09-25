@@ -1404,6 +1404,14 @@ function createBodyExecutor(
     protectedContentPolicyVersion: CONTENT_MARKDOWN_PROTECTION_POLICY_VERSION,
     leaseDurationMs: 60_000,
   });
+  const routedAdapter: MachineTranslationProviderAdapter = adapter.providerId
+    ? adapter
+    : {
+        providerId: "fake-provider",
+        supports: (capability) => adapter.supports(capability),
+        translate: (request) => adapter.translate(request),
+      };
+  const providerRouter = new TranslationProviderRouter([routedAdapter]);
   const publisher = new ContentPostBodyResultPublisher({
     tasks,
     revisions: executionStore,
@@ -1417,7 +1425,7 @@ function createBodyExecutor(
     store: tasks,
     tasks,
     adapter: { admit: async () => ({ outcome: "admitted" as const, reservationReference: "fake-body" }) },
-    provider: "fake-provider",
+    providerRouter,
     admissionLeaseDurationMs: 60_000,
     revisions: executionStore,
     translations,
@@ -1429,7 +1437,7 @@ function createBodyExecutor(
   return new ContentPostBodyTaskExecutor({
     allowance,
     consumer,
-    providerRouter: new TranslationProviderRouter([adapter]),
+    providerRouter,
     publisher,
     failures: tasks,
     executionBounds,
