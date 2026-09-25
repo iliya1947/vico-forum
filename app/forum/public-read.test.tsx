@@ -333,8 +333,11 @@ describe("forum read states", () => {
     expect(translatedTitle).toHaveAttribute("lang", "he");
     expect(translatedTitle).toHaveAttribute("dir", "rtl");
     expect(screen.getByText("Provider attribution")).toBeInTheDocument();
-    expect(screen.getByText("Automatic translation")).toBeInTheDocument();
-    expect(screen.getByText("Manual translation")).toBeInTheDocument();
+    const translationMetadata = [...document.querySelectorAll(".translation-meta")];
+    expect(translationMetadata).toHaveLength(2);
+    expect(translationMetadata[0]).toHaveTextContent("Automatic translation");
+    expect(translationMetadata[0]).toHaveTextContent("Provider attribution");
+    expect(translationMetadata[1]).toHaveTextContent("Manual translation");
     expect(screen.getAllByText("Show original")).toHaveLength(2);
     expect(screen.getAllByText("Show translation")).toHaveLength(2);
     const titleToggle = document.querySelector(".topic-title-toggle");
