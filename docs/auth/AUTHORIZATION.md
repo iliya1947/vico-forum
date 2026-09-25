@@ -30,7 +30,7 @@ Permission key означает существующую capability прилож
 известные permissions, но не может создавать произвольный executable permission, которого
 не знает код.
 
-Начальный Stage 4 catalog:
+Текущий code-backed catalog:
 
 - `forum.topic.create`;
 - `forum.reply.create`;
