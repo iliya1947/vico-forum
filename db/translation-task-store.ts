@@ -18,9 +18,11 @@ import {
   contentTopicTitleTaskIdentity,
 } from "../app/localization/content-translation-planning";
 import {
+  MAX_TRANSLATION_TASK_ALLOWANCE_REASON_GROUPS,
   MAX_TRANSLATION_TASK_FAILURE_GROUPS,
   TRANSLATION_TASK_RECONCILIATION_RETRY_AFTER_MS,
   validateTranslationTaskReconciliationQuery,
+  type TranslationTaskAllowanceReasonSummary,
   type TranslationTaskFailureSummary,
   type TranslationTaskObservabilitySnapshot,
   type TranslationTaskReconciliationCandidate,
@@ -493,6 +495,18 @@ export class DrizzleTranslationTaskStore implements
              )
            )
              and (
+               ${translationTasks.allowanceState} is null
+               or ${translationTasks.allowanceState} = 'admitted'
+               or (
+                 ${translationTasks.allowanceState} = 'deferred'
+                 and ${translationTasks.allowanceRetryNotBefore} <= statement_timestamp()
+               )
+               or (
+                 ${translationTasks.allowanceState} = 'leasing'
+                 and ${translationTasks.allowanceLeaseExpiresAt} <= statement_timestamp()
+               )
+             )
+             and (
                ${translationTasks.reconciliationAttemptedAt} is null
                or ${translationTasks.reconciliationAttemptedAt} <= statement_timestamp()
                  - (${TRANSLATION_TASK_RECONCILIATION_RETRY_AFTER_MS}::double precision * interval '1 millisecond')
@@ -538,6 +552,14 @@ export class DrizzleTranslationTaskStore implements
       failed_terminal: number;
       failed_retry_exhausted: number;
       failure_group_count: number;
+      allowance_leasing: number;
+      allowance_admitted: number;
+      allowance_deferred: number;
+      allowance_deferred_waiting: number;
+      allowance_deferred_ready: number;
+      oldest_deferred_age_ms: number | null;
+      earliest_allowance_retry_in_ms: number | null;
+      allowance_reason_group_count: number;
     }>(sql`
       select
         (count(*) filter (where ${translationTasks.status} = 'pending'))::integer as pending,
@@ -609,7 +631,46 @@ export class DrizzleTranslationTaskStore implements
         (
           count(distinct (${translationTasks.failureDisposition}, ${translationTasks.lastFailureCode}))
           filter (where ${translationTasks.status} = 'failed')
-        )::integer as failure_group_count
+        )::integer as failure_group_count,
+        (count(*) filter (where ${translationTasks.allowanceState} = 'leasing'))::integer
+          as allowance_leasing,
+        (count(*) filter (where ${translationTasks.allowanceState} = 'admitted'))::integer
+          as allowance_admitted,
+        (count(*) filter (where ${translationTasks.allowanceState} = 'deferred'))::integer
+          as allowance_deferred,
+        (
+          count(*) filter (
+            where ${translationTasks.allowanceState} = 'deferred'
+              and ${translationTasks.allowanceRetryNotBefore} > statement_timestamp()
+          )
+        )::integer as allowance_deferred_waiting,
+        (
+          count(*) filter (
+            where ${translationTasks.allowanceState} = 'deferred'
+              and ${translationTasks.allowanceRetryNotBefore} <= statement_timestamp()
+          )
+        )::integer as allowance_deferred_ready,
+        (
+          max(greatest(
+            0,
+            extract(epoch from (statement_timestamp() - ${translationTasks.allowanceUpdatedAt})) * 1000
+          ))
+          filter (where ${translationTasks.allowanceState} = 'deferred')
+        )::double precision as oldest_deferred_age_ms,
+        (
+          min(greatest(
+            0,
+            extract(epoch from (${translationTasks.allowanceRetryNotBefore} - statement_timestamp())) * 1000
+          ))
+          filter (
+            where ${translationTasks.allowanceState} = 'deferred'
+              and ${translationTasks.allowanceRetryNotBefore} > statement_timestamp()
+          )
+        )::double precision as earliest_allowance_retry_in_ms,
+        (
+          count(distinct ${translationTasks.allowanceReason})
+          filter (where ${translationTasks.allowanceState} = 'deferred')
+        )::integer as allowance_reason_group_count
       from ${translationTasks}
     `);
     const row = aggregate.rows[0];
@@ -631,7 +692,15 @@ export class DrizzleTranslationTaskStore implements
       !nonNegativeInteger(row.processing_at_attempt_budget) ||
       !nonNegativeInteger(row.failed_terminal) ||
       !nonNegativeInteger(row.failed_retry_exhausted) ||
-      !nonNegativeInteger(row.failure_group_count)
+      !nonNegativeInteger(row.failure_group_count) ||
+      !nonNegativeInteger(row.allowance_leasing) ||
+      !nonNegativeInteger(row.allowance_admitted) ||
+      !nonNegativeInteger(row.allowance_deferred) ||
+      !nonNegativeInteger(row.allowance_deferred_waiting) ||
+      !nonNegativeInteger(row.allowance_deferred_ready) ||
+      !nullableNonNegativeNumber(row.oldest_deferred_age_ms) ||
+      !nullableNonNegativeNumber(row.earliest_allowance_retry_in_ms) ||
+      !nonNegativeInteger(row.allowance_reason_group_count)
     ) {
       throw new TranslationTaskIntegrityError("translation task observability query returned invalid aggregates");
     }
@@ -670,6 +739,33 @@ export class DrizzleTranslationTaskStore implements
       };
     });
 
+    const allowanceGrouped = await this.database.execute<{
+      allowance_reason: string;
+      count: number;
+    }>(sql`
+      select
+        ${translationTasks.allowanceReason} as allowance_reason,
+        count(*)::integer as count
+      from ${translationTasks}
+      where ${translationTasks.allowanceState} = 'deferred'
+      group by ${translationTasks.allowanceReason}
+      order by count(*) desc, ${translationTasks.allowanceReason} asc
+      limit ${MAX_TRANSLATION_TASK_ALLOWANCE_REASON_GROUPS}
+    `);
+    const allowanceReasons: TranslationTaskAllowanceReasonSummary[] =
+      allowanceGrouped.rows.map((reason) => {
+        if (
+          !/^[a-z0-9][a-z0-9-]{0,63}$/.test(reason.allowance_reason)
+          || !nonNegativeInteger(reason.count)
+          || reason.count === 0
+        ) {
+          throw new TranslationTaskIntegrityError(
+            "translation allowance observability query returned invalid reason group",
+          );
+        }
+        return { reason: reason.allowance_reason, count: reason.count };
+      });
+
     return {
       counts: {
         pending: row.pending,
@@ -696,6 +792,17 @@ export class DrizzleTranslationTaskStore implements
         retryExhausted: row.failed_retry_exhausted,
         failureGroupCount: row.failure_group_count,
         groups,
+      },
+      allowance: {
+        leasing: row.allowance_leasing,
+        admitted: row.allowance_admitted,
+        deferred: row.allowance_deferred,
+        deferredWaiting: row.allowance_deferred_waiting,
+        deferredReady: row.allowance_deferred_ready,
+        oldestDeferredAgeMs: row.oldest_deferred_age_ms,
+        earliestRetryInMs: row.earliest_allowance_retry_in_ms,
+        reasonGroupCount: row.allowance_reason_group_count,
+        reasons: allowanceReasons,
       },
     };
   }
