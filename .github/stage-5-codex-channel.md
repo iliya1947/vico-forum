@@ -3285,6 +3285,119 @@ support a demonstrably bounded current-unit query.
 - the proposal requires no real external services or unselected production policy values;
 - after agreement Codex issues the exact final Stage 5 implementation task and later performs the
   required end-of-Stage audit against updated `main`.
+
+## Final Stage 5 UX/status agreement result
+
+Codex reviewed ChatGPT service PR #95 at
+`d9a1bca4300d3583ba10f50444d042203747f329` against GitHub `main`
+`e5ae6a92604c6cebcde13c542d6cc1ef3f009359`, the current task/generation-head indexes, content
+metadata, topic loader/action, presentation batch reader, authorization resolver and React Router
+Framework Mode contracts. The proposed batch status join is supported by existing keys and does not
+require a schema migration. One final mergeable PR is acceptable.
+
+Two implementation clarifications are binding:
+
+- loader eligibility must not run source detection or provider capability. A known same-locale unit
+  may be suppressed from automatic hints; `sourceLocale=und` remains only a hint candidate and the
+  authoritative action/planner may return a bounded no-op;
+- `defaultShouldRevalidate` is route revalidation input, not client authority. The implementation may
+  use a narrowly tested route `shouldRevalidate`/action-result contract to suppress intermediate
+  automatic-queue revalidations, but must not globally disable normal action revalidation. The final
+  queue revalidation and `useRevalidator()` polling remain explicit and read-only.
+
+## Authorized final Stage 5 implementation task: generation UX and status
+
+ChatGPT may create one final mergeable Stage 5 PR with the exact scope below.
+
+### 1. Bounded current-unit status reader
+
+1. Add a read-only status contract accepting the exact current topic-title revision, all exact
+   current post-body revisions and the canonical target locale for one topic page.
+2. Implement a fixed-query-count PostgreSQL adapter using generation head → current generation task
+   → kind-specific revision metadata. Require exact kind/content/revision/target identity; stale,
+   superseded and sibling-revision tasks do not influence the result. No per-post query loop.
+3. Collapse storage state to the public enum `idle | pending | processing | deferred | failed`.
+   Exact-current persisted translation selected by the existing presentation service becomes
+   `current` in loader composition, not from task status alone. A completed current-generation task
+   without its required persisted exact-current translation is an integrity error.
+4. Optionally expose only a bounded non-negative `retryAfterSeconds` for deferred work, derived with
+   PostgreSQL-owned time and capped for serialization. Never expose task IDs/identity, generations,
+   attempts, claims/leases, provider/allowance values or reasons, reservation references, failure
+   codes, fingerprints, policy versions, actor data or raw source beyond existing public content.
+5. Classify only established storage availability/timeout cause chains. Loader composition degrades
+   these to per-page/unit `unavailable`, preserves current/original presentation and suppresses auto/
+   polling for that response. Unexpected integrity/schema/programming failures propagate. Client
+   cleanup uses the established best-effort discard boundary.
+
+### 2. Loader authorization and presentation model
+
+6. For authenticated requests, resolve `forum.translation.generate` dynamically. Authorization
+   unavailability makes the optional UI hint false and does not fail the public topic read; POST
+   authorization remains authoritative. Guests receive no generation controls/status internals.
+7. When permitted, combine exact-current translation presentation, bounded task status, public exact
+   unit/revision/target key and authoritative shared CNT-04 semantic length into a separate generation
+   view model. Do not mutate `ContentTranslationPresentation` with task internals.
+8. Keep SSR/GET strictly read-only: no task mutation, pseudonymization, budget consumption, enqueue,
+   allowance admission, provider call or source detection. Known same-locale/current units are not
+   auto candidates; unresolved `und` may be a hint and is resolved authoritatively only by POST.
+
+### 3. Explicit long-body action
+
+9. Add one distinct explicit post-body intent/capability method. It bypasses only
+   `MAX_AUTOMATIC_POST_TRANSLATION_SEMANTIC_CHARACTERS` and delegates to a shared post planner helper.
+   It must preserve authentication, origin, dynamic permission, authoritative topic membership/
+   current revision, canonical URL target, HMAC pseudonymization, injected request-budget policy,
+   provider support, atomic planner admission and after-commit enqueue.
+10. Accept only one server-resolved post unit. Forged revision/source/target/actor/budget/provider/
+    allowance/status fields never influence execution. No title explicit variant, bulk or fan-out.
+11. Extend bounded `429` action data with the already safe integer `retryAfterSeconds`; keep the HTTP
+    header. `503` stays generic. Do not expose scopes, limits, reset timestamps or backend reasons.
+
+### 4. Hydration trigger, polling and accessible UI
+
+12. Add a client-only sequential automatic queue for exact-current eligible unit keys
+    `contentType + contentId + revisionId + targetLocale`, snapshotted once on first hydration. Mark a
+    key attempted before POST. Rerenders and Strict Mode replay cannot resubmit; newly observed
+    revision keys after revalidation are not added during that hydration. Navigation/reload may form
+    a new snapshot.
+13. Submit title and `<=3000` post automatic intents only. Long posts render an explicit per-post
+    control. Automatic queue submissions must not cause one full loader revalidation per unit; use a
+    narrowly scoped and tested React Router revalidation contract, then perform one explicit read-only
+    revalidation after the queue settles. Never suppress unrelated mutation revalidation globally.
+14. Poll only `pending | processing | deferred` through `useRevalidator()` with positive delay and a
+    finite per-hydration maximum. Polling never POSTs. Stop on no active units, `current`, `failed`,
+    `idle`, `unavailable`, revision replacement or exhaustion. Timers are implementation constants,
+    not product quota or persistence policy.
+15. Add localized, accessible per-unit feedback for requesting, queued/pending, processing,
+    deferred/retry later, failed, temporarily unavailable/retry, explicit-required and current.
+    Preserve automatic translated presentation, provenance and original disclosure. Avoid infinite
+    loading and announce relevant action state without leaking backend internals.
+
+### 5. Required verification
+
+16. Add unit/route/component and disposable PostgreSQL coverage for exact revision/target isolation,
+    current-generation join, bounded query count, completed-without-translation integrity, classified
+    degradation/unexpected propagation, dynamic permission and next-request freshness, guest parity,
+    no serialized sensitive fields, known/`und` eligibility, exact 3000/3001 behavior, explicit path
+    bypassing only the threshold, forged inputs, `429` timing, one-hydration/Strict Mode idempotency,
+    sequential queue revalidation, revision replacement, finite polling and zero polling POSTs.
+17. Prove SSR/loader executes zero generation/provider/allowance side effects and default-disabled
+    Worker remains original-safe. Re-run all presentation, action, planner, JOB-06, authorization and
+    migration/schema regressions.
+18. Update localized catalog/messages and `PROJECT_STATE.md` only with verified implemented facts.
+    No schema migration or dependency change is authorized unless a blocking contradiction is first
+    returned through technical agreement.
+
+### Excluded scope and final gate
+
+- real provider/account allowance, Queue bindings, credentials, production anti-abuse values, live
+  calls, deployment and all Stage 6 acceptance;
+- anonymous/bulk/multi-locale generation, task cancellation, admin operations or unrelated forum UI;
+- exposing internal task/provider/budget data or executing generation from SSR/GET/polling.
+
+After implementation ChatGPT must self-review the complete PR, record exact head/CI in PR #95 and
+request a neutral full Codex review. After user merge, Codex will fetch updated `main` and perform the
+mandatory end-of-Stage audit before declaring Stage 5 complete or identifying remaining work.
 ## Full JOB-06 re-review after correction
 
 Codex reviewed the complete PR #99 at
