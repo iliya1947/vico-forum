@@ -676,10 +676,10 @@ describe("forum write route actions", () => {
   });
 
   it("propagates unexpected failures from the real Hyperdrive forum reader", async () => {
-    const failure = Object.assign(new Error("relation does not exist"), { code: "42P01" });
+    const failure = new TypeError("unexpected reader configuration bug");
     const readerClient = {
-      connect: vi.fn(async () => undefined),
-      query: vi.fn(async () => { throw failure; }),
+      connect: vi.fn(async () => { throw failure; }),
+      query: vi.fn(),
       end: vi.fn(async () => undefined),
     } as unknown as Client;
     const contextValue = generationContext({ topic: generationTopic });
