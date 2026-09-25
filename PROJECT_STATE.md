@@ -215,17 +215,17 @@ Migration `0007`–`0010` содержит durable task lifecycle и generation-
   correction controls по optional presentation auth, а action повторно проверяет authentication,
   same-origin, current permission и resource ownership server-side. Migration `0018` расширяет
   code-backed permission catalog/check constraint и approved initial built-in grants;
-- read-only presentation already persisted current user-content translations on the topic page:
-  loader uses authoritative current title/post revisions and the canonical validated URL locale,
-  selects only exact `contentType + contentId + revisionId + targetLocale` records through shared
-  `ContentTranslationService` validation semantics, and performs a bounded batch read with at most
-  one title query plus one set-based post-body query. Available current translations are shown
-  automatically and independently per unit; missing/invalid/classified-unavailable data falls back
-  to the exact current original without generation side effects. Topic title/breadcrumb use one
-  selected presentation, translated post bodies still pass through the existing safe
-  `ForumMarkdown` renderer, provenance/optional stored attribution and `lang`/`dir` metadata are
-  rendered, and native `details` controls expose the original without writes or provider calls.
-  Guests and authenticated users share the same persisted public read result.
+- read-only presentation уже сохранённых current user-content translations на странице темы:
+  loader использует authoritative current title/post revisions и canonical validated URL locale,
+  выбирает только exact `contentType + contentId + revisionId + targetLocale` records через общую
+  validation semantics `ContentTranslationService` и выполняет bounded batch read максимум одним
+  title query и одним set-based post-body query. Доступный current translation автоматически и
+  независимо показывается для каждой единицы; missing/invalid/classified-unavailable данные
+  возвращают exact current original без generation side effects. Topic title и breadcrumb используют
+  одну selected presentation, translated post body по-прежнему проходит существующий safe
+  `ForumMarkdown` renderer, UI выводит provenance, optional stored attribution и `lang`/`dir`
+  metadata, а native `details` control позволяет открыть original без writes/provider calls. Guest
+  и authenticated user получают один и тот же persisted public read result.
 
 ### Stage 5 ещё не завершён
 
