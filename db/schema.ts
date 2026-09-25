@@ -301,8 +301,6 @@ export const contentTranslationAllowanceAdmissions = pgTable(
   {
     taskId: uuid("task_id").primaryKey(),
     translationKind: text("translation_kind").notNull(),
-    sourceNamespace: text("source_namespace").notNull(),
-    sourceKey: text("source_key").notNull(),
     generation: integer("generation").notNull(),
     attemptNumber: integer("attempt_number").notNull(),
     state: text("state").notNull(),
@@ -319,10 +317,7 @@ export const contentTranslationAllowanceAdmissions = pgTable(
     foreignKey({
       name: "content_translation_allowance_admissions_task_owner_fk",
       columns: [table.taskId, table.translationKind],
-      foreignColumns: [
-        translationTasks.id,
-        translationTasks.translationKind,
-      ],
+      foreignColumns: [translationTasks.id, translationTasks.translationKind],
     }).onDelete("cascade"),
     index("content_translation_allowance_admissions_recovery_idx").on(
       table.state,
@@ -349,7 +344,50 @@ export const contentTranslationAllowanceAdmissions = pgTable(
     ),
     check(
       "content_translation_allowance_admissions_reason_check",
-      sql`${table.reason} is null or ${table.reason} ~ '^[a-z0-9][a-z0-9-]{0,63}
+      sql`${table.reason} is null or ${table.reason} ~ '^[a-z0-9][a-z0-9-]{0,63}$'`,
+    ),
+    check(
+      "content_translation_allowance_admissions_reservation_check",
+      sql`${table.reservationReference} is null
+        or (char_length(${table.reservationReference}) between 1 and 256
+          and btrim(${table.reservationReference}) = ${table.reservationReference})`,
+    ),
+    check(
+      "content_translation_allowance_admissions_lifecycle_check",
+      sql`(
+        ${table.state} = 'leased'
+        and ${table.claimToken} is not null
+        and ${table.claimedAt} is not null
+        and ${table.leaseExpiresAt} is not null
+        and ${table.leaseExpiresAt} > ${table.claimedAt}
+        and ${table.retryNotBefore} is null
+        and ${table.reason} is null
+        and ${table.reservationReference} is null
+      ) or (
+        ${table.state} = 'admitted'
+        and ${table.claimToken} is null
+        and ${table.claimedAt} is null
+        and ${table.leaseExpiresAt} is null
+        and ${table.retryNotBefore} is null
+        and ${table.reason} is null
+      ) or (
+        ${table.state} = 'deferred'
+        and ${table.claimToken} is null
+        and ${table.claimedAt} is null
+        and ${table.leaseExpiresAt} is null
+        and ${table.retryNotBefore} is not null
+        and ${table.reason} is not null
+        and ${table.reservationReference} is null
+      )`,
+    ),
+    check(
+      "content_translation_allowance_admissions_timestamps_check",
+      sql`${table.updatedAt} >= ${table.createdAt}`,
+    ),
+  ],
+);
+
+export const translationTaskGenerationHeads = pgTable(
   "translation_task_generation_heads",
   {
     translationKind: text("translation_kind").notNull(),
