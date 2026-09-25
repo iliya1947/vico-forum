@@ -4,6 +4,11 @@ import {
   TranslationExecutionFailure,
   type TranslationFailureRecord,
 } from "../app/localization/translation-failures";
+import type {
+  ContentProviderAllowanceAcquireResult,
+  ContentProviderAllowanceOccurrence,
+  ContentProviderAllowanceStore,
+} from "../app/localization/content-provider-allowance";
 import { isPostgresAvailabilityFailure } from "../app/localization/persistent-registry";
 import {
   contentPostBodyTaskIdentity,
@@ -70,7 +75,8 @@ export class DrizzleTranslationTaskStore implements
   ContentPostBodyTranslationTaskStore,
   TranslationTaskKindReader,
   TranslationTaskFailureStore,
-  TranslationTaskReconciliationStore {
+  TranslationTaskReconciliationStore,
+  ContentProviderAllowanceStore {
   constructor(private readonly database: NodePgDatabase) {}
 
   async findKind(id: string): Promise<string | undefined> {
@@ -81,6 +87,279 @@ export class DrizzleTranslationTaskStore implements
       .where(eq(translationTasks.id, id))
       .limit(1);
     return row?.translationKind;
+  }
+
+  async acquireContentProviderAllowance(
+    id: string,
+    leaseDurationMs: number,
+  ): Promise<ContentProviderAllowanceAcquireResult> {
+    if (!isUuid(id)) throw new TypeError("translation task id must be a UUID");
+    if (!Number.isSafeInteger(leaseDurationMs) || leaseDurationMs <= 0) {
+      throw new TypeError("provider allowance lease duration must be a positive integer");
+    }
+
+    const initial = await this.database
+      .select({
+        translationKind: translationTasks.translationKind,
+        sourceNamespace: translationTasks.sourceNamespace,
+        sourceKey: translationTasks.sourceKey,
+        targetLocale: translationTasks.targetLocale,
+      })
+      .from(translationTasks)
+      .where(eq(translationTasks.id, id))
+      .limit(1);
+    const unit = initial[0];
+    if (!unit) return { outcome: "not-found" };
+    if (
+      unit.translationKind !== "content-topic-title"
+      && unit.translationKind !== "content-post-body"
+    ) {
+      throw new TranslationTaskKindMismatchError("content-topic-title", unit.translationKind as TranslationTaskKind);
+    }
+
+    return this.database.transaction(async (transaction) => {
+      const databaseNow = sql`statement_timestamp()`;
+      const head = await transaction.execute<{ current_generation: number }>(sql`
+        select current_generation
+          from ${translationTaskGenerationHeads}
+         where ${translationTaskGenerationHeads.translationKind} = ${unit.translationKind}
+           and ${translationTaskGenerationHeads.sourceNamespace} = ${unit.sourceNamespace}
+           and ${translationTaskGenerationHeads.sourceKey} = ${unit.sourceKey}
+           and ${translationTaskGenerationHeads.targetLocale} = ${unit.targetLocale}
+         for update
+      `);
+      const currentGeneration = head.rows[0]?.current_generation;
+      if (!Number.isSafeInteger(currentGeneration) || currentGeneration! <= 0) {
+        throw new TranslationTaskIntegrityError("content allowance generation head is missing or invalid");
+      }
+
+      const rows = await transaction
+        .select()
+        .from(translationTasks)
+        .where(eq(translationTasks.id, id))
+        .for("update")
+        .limit(1);
+      const row = rows[0];
+      if (!row) return { outcome: "not-found" as const };
+      if (
+        row.translationKind !== "content-topic-title"
+        && row.translationKind !== "content-post-body"
+      ) {
+        throw new TranslationTaskIntegrityError("provider allowance task kind changed unexpectedly");
+      }
+      if (row.generation !== currentGeneration) {
+        await markRowStaleWithoutAttempt(transaction, row.id);
+        return { outcome: "terminal" as const };
+      }
+      if (row.status === "stale" || row.status === "completed" || row.status === "failed") {
+        return { outcome: "terminal" as const };
+      }
+
+      const clock = await transaction.execute<{ now: Date }>(sql`
+        select statement_timestamp() as now
+      `);
+      const now = clock.rows[0]?.now;
+      if (!(now instanceof Date)) {
+        throw new TranslationTaskIntegrityError("provider allowance database clock is invalid");
+      }
+      if (
+        row.status === "processing"
+        && row.leaseExpiresAt
+        && row.leaseExpiresAt > now
+      ) {
+        return { outcome: "execution-in-progress" as const };
+      }
+      if (row.attemptCount >= row.maxAttempts) {
+        return { outcome: "exhausted" as const };
+      }
+
+      const occurrence = {
+        generation: row.generation,
+        attempt: row.attemptCount + 1,
+      };
+      const task = await parseContentTaskForAllowance(transaction, row);
+
+      if (
+        row.allowanceState === "admitted"
+        && row.allowanceGeneration === occurrence.generation
+        && row.allowanceAttempt === occurrence.attempt
+      ) {
+        return { outcome: "admitted" as const, task, occurrence };
+      }
+      if (
+        row.allowanceState === "leasing"
+        && row.allowanceGeneration === occurrence.generation
+        && row.allowanceAttempt === occurrence.attempt
+        && row.allowanceLeaseExpiresAt
+        && row.allowanceLeaseExpiresAt > now
+      ) {
+        return { outcome: "admission-in-progress" as const };
+      }
+      if (
+        row.allowanceState === "deferred"
+        && row.allowanceGeneration === occurrence.generation
+        && row.allowanceAttempt === occurrence.attempt
+        && row.allowanceRetryNotBefore
+        && row.allowanceRetryNotBefore > now
+        && row.allowanceReason
+      ) {
+        return {
+          outcome: "deferred" as const,
+          retryNotBefore: row.allowanceRetryNotBefore,
+          reason: row.allowanceReason,
+        };
+      }
+
+      const admissionToken = crypto.randomUUID();
+      const leaseExpiresAt = sql`${databaseNow}
+        + (${leaseDurationMs}::double precision * interval '1 millisecond')`;
+      const leased = await transaction
+        .update(translationTasks)
+        .set({
+          allowanceState: "leasing",
+          allowanceGeneration: occurrence.generation,
+          allowanceAttempt: occurrence.attempt,
+          allowanceClaimToken: admissionToken,
+          allowanceLeaseExpiresAt: leaseExpiresAt,
+          allowanceRetryNotBefore: null,
+          allowanceReason: null,
+          allowanceReservationReference: null,
+          allowanceUpdatedAt: databaseNow,
+          updatedAt: databaseNow,
+        })
+        .where(and(
+          eq(translationTasks.id, row.id),
+          eq(translationTasks.generation, occurrence.generation),
+          eq(translationTasks.attemptCount, occurrence.attempt - 1),
+        ))
+        .returning({ id: translationTasks.id });
+      if (leased.length !== 1) return { outcome: "admission-in-progress" as const };
+
+      return {
+        outcome: "acquired" as const,
+        task,
+        occurrence,
+        admissionToken,
+      };
+    });
+  }
+
+  async persistContentProviderAllowanceAdmission(
+    id: string,
+    admissionToken: string,
+    occurrence: ContentProviderAllowanceOccurrence,
+    reservationReference?: string,
+  ): Promise<boolean> {
+    if (!isUuid(id) || !isUuid(admissionToken)) {
+      throw new TypeError("provider allowance admission identifiers must be UUIDs");
+    }
+    validateAllowanceOccurrence(occurrence);
+    if (
+      reservationReference !== undefined
+      && !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(reservationReference)
+    ) {
+      throw new TypeError("provider allowance reservation reference is invalid");
+    }
+    const databaseNow = sql`statement_timestamp()`;
+    const rows = await this.database
+      .update(translationTasks)
+      .set({
+        allowanceState: "admitted",
+        allowanceClaimToken: null,
+        allowanceLeaseExpiresAt: null,
+        allowanceRetryNotBefore: null,
+        allowanceReason: null,
+        allowanceReservationReference: reservationReference ?? null,
+        allowanceUpdatedAt: databaseNow,
+        updatedAt: databaseNow,
+      })
+      .where(and(
+        eq(translationTasks.id, id),
+        eq(translationTasks.allowanceState, "leasing"),
+        eq(translationTasks.allowanceGeneration, occurrence.generation),
+        eq(translationTasks.allowanceAttempt, occurrence.attempt),
+        eq(translationTasks.allowanceClaimToken, admissionToken),
+      ))
+      .returning({ id: translationTasks.id });
+    return rows.length === 1;
+  }
+
+  async persistContentProviderAllowanceDeferral(
+    id: string,
+    admissionToken: string,
+    occurrence: ContentProviderAllowanceOccurrence,
+    retryNotBefore: Date,
+    reason: string,
+  ): Promise<Date | undefined> {
+    if (!isUuid(id) || !isUuid(admissionToken)) {
+      throw new TypeError("provider allowance deferral identifiers must be UUIDs");
+    }
+    validateAllowanceOccurrence(occurrence);
+    if (!(retryNotBefore instanceof Date) || !Number.isFinite(retryNotBefore.getTime())) {
+      throw new TypeError("provider allowance retryNotBefore must be a valid Date");
+    }
+    if (!/^[a-z0-9][a-z0-9-]{0,63}$/.test(reason)) {
+      throw new TypeError("provider allowance reason is invalid");
+    }
+    const databaseNow = sql`statement_timestamp()`;
+    const persistedRetry = sql`greatest(
+      ${retryNotBefore},
+      ${databaseNow} + interval '1 millisecond'
+    )`;
+    const rows = await this.database
+      .update(translationTasks)
+      .set({
+        allowanceState: "deferred",
+        allowanceClaimToken: null,
+        allowanceLeaseExpiresAt: null,
+        allowanceRetryNotBefore: persistedRetry,
+        allowanceReason: reason,
+        allowanceReservationReference: null,
+        allowanceUpdatedAt: databaseNow,
+        reconciliationAttemptedAt: null,
+        updatedAt: databaseNow,
+      })
+      .where(and(
+        eq(translationTasks.id, id),
+        eq(translationTasks.allowanceState, "leasing"),
+        eq(translationTasks.allowanceGeneration, occurrence.generation),
+        eq(translationTasks.allowanceAttempt, occurrence.attempt),
+        eq(translationTasks.allowanceClaimToken, admissionToken),
+      ))
+      .returning({ retryNotBefore: translationTasks.allowanceRetryNotBefore });
+    return rows[0]?.retryNotBefore ?? undefined;
+  }
+
+  async markContentTaskStaleFromAllowance(
+    id: string,
+    admissionToken: string,
+  ): Promise<boolean> {
+    if (!isUuid(id) || !isUuid(admissionToken)) {
+      throw new TypeError("provider allowance stale transition identifiers must be UUIDs");
+    }
+    const databaseNow = sql`statement_timestamp()`;
+    const rows = await this.database
+      .update(translationTasks)
+      .set({
+        status: "stale",
+        claimToken: null,
+        claimedAt: sql`coalesce(${translationTasks.claimedAt}, ${databaseNow})`,
+        leaseExpiresAt: null,
+        staleAt: databaseNow,
+        completedAt: null,
+        failedAt: null,
+        lastFailureCode: null,
+        failureDisposition: null,
+        ...clearAllowanceState(),
+        updatedAt: databaseNow,
+      })
+      .where(and(
+        eq(translationTasks.id, id),
+        eq(translationTasks.allowanceState, "leasing"),
+        eq(translationTasks.allowanceClaimToken, admissionToken),
+      ))
+      .returning({ id: translationTasks.id });
+    return rows.length === 1;
   }
 
   async upsertPending(specification: UiTranslationJobSpecification): Promise<TranslationTask> {
