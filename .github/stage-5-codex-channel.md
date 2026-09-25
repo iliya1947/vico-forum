@@ -2950,6 +2950,86 @@ unresolved anti-abuse policy configuration is either technically isolated behind
 fail-closed boundary or returned to the user as an explicit product decision. After agreement, Codex
 will issue one exact mergeable task with acceptance criteria; generation UX/status remains the final
 Stage 5 slice.
+
+## Technical agreement result: authenticated one-unit generation actions
+
+Codex reviewed ChatGPT service PR #95 at
+`e126a019f9c2cab49b2e8525d4511032c3d227af` against GitHub `main`
+`523d7b74fddd2fd8b9797c0f57cf2575e5e130b3`. Codex independently inspected the complete current
+authorization contract, topic action and mutation guards, locale context, request-scoped dependency
+composition, requester pseudonymizer and budget validation, both planners and their atomic stores,
+after-commit enqueue/JOB-06 recovery, and CNT-04 body semantics.
+
+ChatGPT's refined contract is accepted. No owner decision is required for this slice: unresolved
+anti-abuse values remain explicit injected server policy, and the default Worker exposes an
+intentional disabled generation capability that fails closed. This is not a choice of product quota
+and does not claim production readiness. The existing route guard already provides the required
+authentication and same-origin boundary before `formData()`; generation-specific fields must be
+read only after identifying the intent and confirming `forum.translation.generate`.
+
+One clarification is binding for implementation: the route-level topic/page read is only a bounded
+selection and `<= 3000` CNT-04 threshold input. The planners' own authoritative current-revision
+read and serialized transaction remain the correctness boundary. A revision changing between route
+selection and planner execution must produce the existing original-safe `revision-not-current`
+outcome, not cause the route to retry against unreviewed content in the same request.
+
+## Authorized mergeable task: authenticated generation planning actions
+
+ChatGPT may now create one mergeable implementation PR with the following exact scope.
+
+### Required implementation
+
+1. Add `forum.translation.generate` to the code-backed permission catalog, authorization docs and an
+   append-only migration with generated schema/snapshot parity. Initial grants are `user`,
+   `moderator` and `admin`; dynamic grants and user overrides remain authoritative.
+2. Add one typed request-scoped content-generation capability with an explicit disabled state. The
+   enabled composition owns the existing requester pseudonymizer, validated server-owned title/body
+   budget policies, existing planners and narrowly classified availability handling. Route code must
+   not receive raw budget-store, provider, allowance or Queue internals separately.
+3. Extend the existing topic action with exactly two authenticated same-origin intents: current topic
+   title and one post body belonging to that topic. Preserve ordering: validate route identity;
+   authenticate; verify origin; parse form; identify intent; require effective permission; then read
+   only the intent's bounded fields and authoritative resource.
+4. Derive target exclusively from `localeContext.translationLocale`. Derive actor from the session,
+   pseudonymize `{ kind: "authenticated", identity: user.id }`, and pass only `subjectKey` plus the
+   injected policy admission to the planner. Ignore/reject forged locale, source, revision, actor,
+   permission, budget, provider and allowance fields as appropriate; none may affect planning.
+5. For the automatic-eligible post intent, rebuild CNT-04 from the selected authoritative current
+   body and sum semantic segment lengths with safe-integer checks before pseudonymization or planner
+   admission. `<= 3000` may proceed; `> 3000` returns a bounded `explicit-required` no-op. Do not add
+   the later explicit-long-body intent in this PR.
+6. Invoke only the existing planner. Preserve its final revision/translation recheck, atomic request-
+   budget/task mutation, duplicate accounting, stale reactivation, completed behavior and after-
+   commit enqueue. Never perform provider allowance or provider execution in the action.
+7. Define a bounded action result contract: budget denial is `429` with safe integer `Retry-After`;
+   classified authorization/forum/planning/budget availability and disabled capability are `503`;
+   normal no-job and `explicit-required` results are original-safe; unexpected configuration,
+   integrity, schema, programming and untyped enqueue errors propagate. Already committed enqueue
+   work remains recoverable through JOB-06.
+8. Leave the default Worker generation capability explicitly disabled. Tests may inject deterministic
+   HMAC configuration, positive validated policies, fake transport and disposable PostgreSQL. Add no
+   real secret, Queue/provider binding, allowance adapter or production policy value.
+9. Add the complete focused test matrix agreed in PR #95: guard ordering; grants/deny/allow overrides;
+   forged input isolation; canonical URL target; post ownership; current revision; exact 3000/3001
+   threshold; pseudonym redaction; one-unit behavior; duplicate/budget rollback semantics; bounded
+   `429`/classified `503`; unexpected-error propagation; enqueue recovery; zero synchronous
+   allowance/provider calls; and default-disabled behavior. Update `PROJECT_STATE.md` only with
+   verified implemented facts.
+
+### Excluded scope
+
+- topic-page generation buttons, automatic hydration effect, explicit-long-body UI/action, polling,
+  status/revalidation presentation or changes to persisted-translation display;
+- anonymous, bulk, multi-unit or multi-locale generation;
+- real policy values, provider/account allowance, bindings, credentials, live calls or deployment;
+- task/allowance schema changes, provider capability expansion and unrelated refactoring.
+
+### Completion and review gate
+
+The PR is complete only when migration history and Drizzle parity, lint, typecheck, unit/route tests,
+production build, disposable PostgreSQL integration, Workers build and Hyperdrive smoke pass. ChatGPT
+must then self-review the complete PR, record its exact head and CI run in PR #95, and request a
+neutral full Codex review. Merge remains a user action after the technical-agreement cycle closes.
 ## Full JOB-06 re-review after correction
 
 Codex reviewed the complete PR #99 at
