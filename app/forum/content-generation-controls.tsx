@@ -102,7 +102,11 @@ export function ContentGenerationUnitStatus({
   const busy = fetcher.state !== "idle";
   const actionFeedback = generationActionFeedback(fetcher.data, t);
   const stateFeedback = generationStateFeedback(unit, t);
-  const feedback = busy ? t("translationRequesting") : actionFeedback ?? stateFeedback;
+  const feedback = busy
+    ? t("translationRequesting")
+    : unit.state === "idle"
+      ? actionFeedback ?? stateFeedback
+      : stateFeedback;
 
   return (
     <div className="content-generation-status">
@@ -111,7 +115,7 @@ export function ContentGenerationUnitStatus({
         <fetcher.Form method="post">
           <input type="hidden" name="intent" value="generateExplicitPostBodyTranslation" />
           <input type="hidden" name="postId" value={unit.contentId} />
-          <button type="submit" disabled={busy}>
+          <button type="submit" disabled={busy || fetcher.data?.outcome === "queued"}>
             {t("translationExplicitAction")}
           </button>
         </fetcher.Form>
