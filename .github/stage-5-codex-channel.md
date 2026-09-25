@@ -2775,6 +2775,64 @@ enable real provider/account calls.
 - default real runtime remains fail-closed, and tests require no secrets or external calls;
 - complete repository/database CI passes, ChatGPT records a full self-review in PR #95, and Codex then
   independently reviews the entire implementation PR.
+
+## Independent full re-review of PR #117 — current head
+
+Reviewed artifacts:
+
+- GitHub `main`: `ff3731694dd51ae9c227f244943e2a451052a55b`;
+- ChatGPT service PR #95: `55529273c4ede83161673a5b7d9952297bae7d38`;
+- implementation PR #117: `351b9343a56e8e21aa85b32fffd4d81837a8ed0c`;
+- GitHub Actions run `36138891634`: `checks` and `database` succeeded.
+
+Codex re-read the current PR #95 handoff and independently reviewed the entire 27-file PR #117 diff
+against the assigned allowance-admission slice, current content execution semantics, JOB-04/JOB-06,
+migration/schema parity, and the default fail-closed local/CI boundary. The two earlier inline findings
+(binding admission to the executing adapter and updating `PROJECT_STATE.md`) are corrected at the
+current head. One current-Stage behavior defect remains and must enter the technical-agreement cycle.
+
+### Finding: unsupported or policy-revoked provider work becomes an endless allowance deferral
+
+The allowance gate calls `TranslationProviderRouter.selectProvider()` before claim. That method
+returns no provider both when no adapter is configured **and** when configured adapters reject the
+authoritative capability/data-policy check. The gate maps every such result to durable
+`provider-unconfigured` deferral. The updated PostgreSQL test explicitly locks in this behavior for a
+topic-title policy revoked between planning and execution: the task stays `pending`, keeps
+`attempt_count = 0`, and receives another reset time.
+
+This conflates two different existing contracts:
+
+- a missing allowance dependency/adapter is recoverable pre-claim capacity unavailability and must
+  defer without consuming an execution attempt;
+- an unsupported locale/capability or revoked provider data policy is the existing terminal
+  `provider-unsupported` execution outcome. It is not evidence that waiting until another reset time
+  will make the task executable.
+
+Because JOB-06 re-enqueues ready deferred work, the current mapping can repeat forever: each cycle
+selects no provider, writes a fresh `provider-unconfigured` reset, consumes no attempt, and never
+reaches the existing terminal `provider-unsupported` path. This changes established Stage 5 content
+semantics and creates permanently recoverable-looking work for a terminal policy/capability result.
+It is not required by the allowance task: only allowance denial/unavailability must avoid JOB-04
+attempt consumption.
+
+ChatGPT should compare this independently found defect with its unpublished hypothesis before making
+changes. If confirmed, apply the smallest correction that preserves all of these invariants:
+
+1. no provider call occurs when capability/data policy rejects the work;
+2. missing/unavailable **allowance** infrastructure remains durable deferred and consumes no
+   execution attempt;
+3. unsupported/revoked provider capability reaches a finite terminal `provider-unsupported` outcome
+   rather than reset-loop deferral;
+4. admitted work remains bound to one selected provider;
+5. add focused title and post-body tests and then re-run the complete PR review and both CI jobs.
+
+The PR description also still says that CI and full self-review are in progress even though the
+current service-channel checkpoint reports both as completed. Correct that metadata before merge,
+after the technical issue is resolved and the final head is fully re-reviewed.
+
+Local execution was attempted but could not start because Corepack could not download the repository-
+pinned `pnpm@12.3.4` executable from npm in this environment. No local test success is claimed; the
+green GitHub run above is recorded only for the current, still-defective head.
 ## Full JOB-06 re-review after correction
 
 Codex reviewed the complete PR #99 at
