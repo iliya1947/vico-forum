@@ -295,6 +295,50 @@ describe("forum write route actions", () => {
       expect(JSON.stringify(response)).not.toContain(error.message);
     }
   });
+  it("maps only classified storage outages for ordinary content and solution mutations", async () => {
+    const contentUnavailable = writer();
+    contentUnavailable.createTopic.mockRejectedValueOnce(new ForumStorageUnavailableError());
+    const contentResponse = await sectionAction({
+      request: request("/en/sections/typescript", { title: "Unavailable", body: "Unavailable" }),
+      params: { locale: "en", sectionId: "typescript" },
+      context: context(contentUnavailable, true, allForumPermissions),
+    });
+    expect(contentResponse).toMatchObject({
+      data: { error: "unavailable" },
+      init: { status: 503 },
+    });
+
+    const contentFailure = new Error("unexpected content mutation bug");
+    const brokenContent = writer();
+    brokenContent.createTopic.mockRejectedValueOnce(contentFailure);
+    await expect(sectionAction({
+      request: request("/en/sections/typescript", { title: "Broken", body: "Broken" }),
+      params: { locale: "en", sectionId: "typescript" },
+      context: context(brokenContent, true, allForumPermissions),
+    })).rejects.toBe(contentFailure);
+
+    const solutionUnavailable = writer();
+    solutionUnavailable.markTopicSolved.mockRejectedValueOnce(new ForumStorageUnavailableError());
+    const solutionResponse = await topicAction({
+      request: request("/en/topics/topic-1", { intent: "markSolved" }),
+      params: { locale: "en", topicId: "topic-1" },
+      context: context(solutionUnavailable, true, allForumPermissions),
+    });
+    expect(solutionResponse).toMatchObject({
+      data: { error: "unavailable" },
+      init: { status: 503 },
+    });
+
+    const solutionFailure = new Error("unexpected solution mutation bug");
+    const brokenSolution = writer();
+    brokenSolution.markTopicSolved.mockRejectedValueOnce(solutionFailure);
+    await expect(topicAction({
+      request: request("/en/topics/topic-1", { intent: "markSolved" }),
+      params: { locale: "en", topicId: "topic-1" },
+      context: context(brokenSolution, true, allForumPermissions),
+    })).rejects.toBe(solutionFailure);
+  });
+
   it("derives source-locale correction scope from server permissions and ignores forged fields", async () => {
     const ownWriter = writer();
     const ownResponse = await topicAction({
