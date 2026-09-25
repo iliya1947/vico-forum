@@ -184,6 +184,7 @@ async function harness(options: {
     };
   });
   const adapter: MachineTranslationProviderAdapter = options.adapter ?? {
+    providerId: "fake-provider",
     supports: vi.fn(() => true),
     translate,
   };
@@ -219,6 +220,9 @@ async function harness(options: {
   ));
 
   const executor = new ContentTopicTitleTaskExecutor({
+    allowance: {
+      admit: vi.fn(async () => ({ outcome: "admitted" as const, provider: "fake-provider" })),
+    },
     consumer,
     providerRouter,
     publisher,
@@ -399,6 +403,7 @@ describe("ContentTopicTitleTaskExecutor", () => {
 
   it("terminalizes an unsupported provider pair", async () => {
     const adapter: MachineTranslationProviderAdapter = {
+      providerId: "fake-provider",
       supports: vi.fn(() => false),
       translate: vi.fn(),
     };

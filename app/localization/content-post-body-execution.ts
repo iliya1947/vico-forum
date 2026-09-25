@@ -1,3 +1,4 @@
+import type { ContentPostBodyAllowanceGate } from "./content-provider-allowance";
 import {
   MarkdownTranslationValidationError,
   type MarkdownSegmentTranslation,
@@ -49,6 +50,13 @@ type AckExecutionResult =
 
 export type ContentPostBodyTaskExecutionResult =
   | AckExecutionResult
+  | { readonly outcome: "admission-in-progress" | "execution-in-progress"; readonly delivery: "ack" }
+  | {
+      readonly outcome: "allowance-deferred";
+      readonly delivery: "ack";
+      readonly retryNotBefore: Date;
+      readonly reason: string;
+    }
   | {
       readonly delivery: "retry";
       readonly outcome: "execution-failed";
@@ -66,8 +74,9 @@ export type ContentPostBodyTaskExecutionResult =
     };
 
 export interface ContentPostBodyTaskExecutorDependencies {
+  readonly allowance: Pick<ContentPostBodyAllowanceGate, "admit">;
   readonly consumer: Pick<ContentPostBodyTaskConsumer, "consume">;
-  readonly providerRouter: Pick<TranslationProviderRouter, "supports" | "translate">;
+  readonly providerRouter: Pick<TranslationProviderRouter, "supportsProvider" | "translateWithProvider">;
   readonly publisher: Pick<ContentPostBodyResultPublisher, "publish">;
   readonly failures: TranslationTaskFailureStore;
   readonly executionBounds: ContentPostBodyExecutionBounds;
@@ -79,6 +88,25 @@ export class ContentPostBodyTaskExecutor {
   }
 
   async execute(message: TranslationTaskMessage): Promise<ContentPostBodyTaskExecutionResult> {
+    const admission = await this.dependencies.allowance.admit(message);
+    if (admission.outcome === "admission-in-progress" || admission.outcome === "execution-in-progress") {
+      return { outcome: admission.outcome, delivery: "ack" };
+    }
+    if (admission.outcome === "deferred") {
+      return {
+        outcome: "allowance-deferred",
+        delivery: "ack",
+        retryNotBefore: admission.retryNotBefore,
+        reason: admission.reason,
+      };
+    }
+    if (admission.outcome === "stale") return acknowledge(admission);
+    if (admission.outcome === "claim-lost") return acknowledge({ outcome: "claim-lost" });
+    if (admission.outcome === "terminal") return acknowledge({ outcome: "terminal" });
+    if (admission.outcome === "not-found") return acknowledge({ outcome: "not-found" });
+    // Exhausted work reclaims only to persist JOB-04 terminal exhaustion and performs no provider call.
+    const admittedProvider = admission.outcome === "admitted" ? admission.provider : undefined;
+
     let consumed: ContentPostBodyTaskConsumerResult;
     try {
       consumed = await this.dependencies.consumer.consume(message);
@@ -116,7 +144,10 @@ export class ContentPostBodyTaskExecutor {
     });
     if (
       capabilities.length !== consumed.context.protectedDocument.segments.length
-      || !capabilities.every((capability) => this.dependencies.providerRouter.supports(capability))
+      || !admittedProvider
+      || !capabilities.every((capability) =>
+        this.dependencies.providerRouter.supportsProvider(admittedProvider, capability)
+      )
     ) {
       return this.persistFailure(consumed.context, {
         disposition: "terminal",
@@ -131,7 +162,8 @@ export class ContentPostBodyTaskExecutor {
       // A retry may repeat earlier segment calls after a later transient failure. Vico guarantees
       // idempotent durable state, not exactly-once external provider calls.
       for (const segment of consumed.context.protectedDocument.segments) {
-        const result = await this.dependencies.providerRouter.translate(
+        const result = await this.dependencies.providerRouter.translateWithProvider(
+          admittedProvider,
           publicForumPostBodyProviderRequest({
             sourceLocale: consumed.context.task.resolvedSourceLocale,
             targetLocale: consumed.context.task.targetLocale,

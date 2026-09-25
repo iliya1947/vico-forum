@@ -51,6 +51,8 @@ export interface CloudflareWorkersAiRunner {
  * Binding provisioning and live Workers AI acceptance remain external Stage 6 concerns.
  */
 export class CloudflareM2m100TranslationProvider implements MachineTranslationProviderAdapter {
+  readonly providerId = CLOUDFLARE_WORKERS_AI_PROVIDER;
+
   constructor(
     private readonly runner: CloudflareWorkersAiRunner,
     private readonly dataPolicy: TranslationProviderDataPolicy =

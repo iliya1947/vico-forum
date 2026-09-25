@@ -61,6 +61,8 @@ beforeAll(async () => {
     "drizzle/0014_content_translation_persistence.sql",
     "drizzle/0015_content_topic_title_tasks.sql",
     "drizzle/0017_content_translation_request_budget.sql",
+
+    "drizzle/0019_content_provider_allowance_admission.sql",
   ]) {
     const sql = (await readFile(migration, "utf8"))
       .replaceAll('"public".', `"${schemaName}".`);

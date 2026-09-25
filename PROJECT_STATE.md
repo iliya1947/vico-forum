@@ -42,7 +42,7 @@ Vico Forum находится в ранней pre-release разработке.
 - generic `/:locale/*`, runtime `LocaleRegistry`, BCP-47 resolution, LTR/RTL и request-scoped
   `i18next`;
 - persistent locale registry, persistent UI translation storage и compiled bundle storage;
-- текущая migration history — `0000`–`0018`.
+- текущая migration history — `0000`–`0019`.
 
 ## Forum core — Stage 4
 
@@ -205,6 +205,21 @@ Migration `0007`–`0010` содержит durable task lifecycle и generation-
   ack-аются без публикации. Existing Cloudflare M2M100 path остаётся default-deny для post-body:
   concrete provider allowlisting/data-policy approval, bindings и live calls не выбраны и не
   входят в этот local/CI foundation;
+- provider-neutral pre-claim allowance admission для content translation execution:
+  каждый потенциальный provider attempt получает deterministic occurrence identity из durable task,
+  current generation и следующего attempt number; PostgreSQL хранит короткую admission lease,
+  admitted marker либо durable deferred `retryNotBefore`/bounded reason. Provider allowance
+  проверяется до content claim, поэтому denied/unavailable capacity не увеличивает JOB-04
+  `attemptCount`, не вызывает provider и не превращается в retry/terminal execution failure.
+  Успешный content claim атомарно потребляет admitted occurrence и только тогда начинает execution
+  attempt; retry получает новый occurrence, а stale reactivation/new generation инвалидирует старый
+  admission. Для post body allowance envelope строится из authoritative CNT-04 semantic segments и
+  покрывает весь bounded attempt. JOB-06 не re-enqueue deferred work до reset и не гоняется с live
+  admission lease, но восстанавливает ready deferred/expired lease/admitted-unclaimed work; bounded
+  observability показывает только aggregate admission/defer counts, age/reset timing и bounded
+  reasons. Migration `0019` добавляет nullable content-only allowance lifecycle metadata и recovery
+  index. Stage 5 default остаётся fail-closed без authoritative real allowance adapter: local/CI
+  contract проверяется injected fake и не утверждает реальное соблюдение 5% provider reserve;
 - manual source-locale correction для topic title и post body: code-backed permissions
   `forum.sourceLocale.correctOwn` / `forum.sourceLocale.correctAny` используют dynamic
   authorization и authoritative resource ownership. Correction принимает canonicalizable non-`und`
@@ -231,9 +246,10 @@ Migration `0007`–`0010` содержит durable task lifecycle и generation-
 
 Для завершения Stage 5 local/CI path ещё нужны:
 
-- подключение реализованного request-budget admission к routes и согласованной
-  provider-allowance/anti-spam policy; production content-provider/data-policy approval, real
-  binding/credentials/live calls остаются external Stage 6 concerns;
+- подключение реализованного request-budget admission и provider-allowance foundation к
+  authenticated generation routes; concrete anti-spam policy values ещё не выбраны. Production
+  content-provider/data-policy approval, authoritative real allowance adapter, binding/credentials
+  и live calls остаются external Stage 6 concerns;
 - generation-side route/UI integration: authenticated generation permission/action, automatic
   post-hydration trigger for eligible content, explicit long-body translation control and task/status
   UX under the agreed provider-allowance/anti-spam boundary.

@@ -242,6 +242,7 @@ async function harness(options: {
     };
   });
   const adapter: MachineTranslationProviderAdapter = options.adapter ?? {
+    providerId: "fake-provider",
     supports: vi.fn(() => options.providerSupported ?? true),
     translate,
   };
@@ -281,6 +282,9 @@ async function harness(options: {
   ));
 
   const executor = new ContentPostBodyTaskExecutor({
+    allowance: {
+      admit: vi.fn(async () => ({ outcome: "admitted" as const, provider: "fake-provider" })),
+    },
     consumer,
     providerRouter,
     publisher,
@@ -436,6 +440,7 @@ describe("ContentPostBodyTaskExecutor", () => {
       machineResultForUnitRequest(request)
     );
     const adapter: MachineTranslationProviderAdapter = {
+      providerId: "fake-provider",
       supports: vi.fn(() => {
         supportsCalls++;
         // Initial executor precheck consumes one supports call per segment.

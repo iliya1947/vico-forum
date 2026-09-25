@@ -25,6 +25,17 @@ function emptySnapshot(): TranslationTaskObservabilitySnapshot {
       failureGroupCount: 0,
       groups: [],
     },
+    allowance: {
+      leasing: 0,
+      admitted: 0,
+      deferred: 0,
+      deferredWaiting: 0,
+      deferredReady: 0,
+      oldestDeferredAgeMs: null,
+      earliestRetryInMs: null,
+      reasonGroupCount: 0,
+      reasons: [],
+    },
   };
 }
 
@@ -114,6 +125,17 @@ describe("TranslationTaskReconciler", () => {
           { disposition: "terminal", code: "provider-output-invalid", count: 4 },
           { disposition: "retry-exhausted", code: "provider-temporary", count: 2 },
         ],
+      },
+      allowance: {
+        leasing: 1,
+        admitted: 2,
+        deferred: 3,
+        deferredWaiting: 2,
+        deferredReady: 1,
+        oldestDeferredAgeMs: 5_000,
+        earliestRetryInMs: 10_000,
+        reasonGroupCount: 1,
+        reasons: [{ reason: "allowance-exhausted", count: 3 }],
       },
     };
     const reconciler = new TranslationTaskReconciler(store([], snapshot), new FakeTranslationTaskEnqueuer());

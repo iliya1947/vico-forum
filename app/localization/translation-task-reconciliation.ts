@@ -7,6 +7,7 @@ import type {
 export const MAX_TRANSLATION_TASK_RECONCILIATION_BATCH_SIZE = 100;
 export const TRANSLATION_TASK_RECONCILIATION_RETRY_AFTER_MS = 60_000;
 export const MAX_TRANSLATION_TASK_FAILURE_GROUPS = 20;
+export const MAX_TRANSLATION_TASK_ALLOWANCE_REASON_GROUPS = 20;
 
 export type TranslationTaskReconciliationReason = "pending" | "expired-processing";
 
@@ -23,6 +24,11 @@ export interface TranslationTaskReconciliationQuery {
 export interface TranslationTaskFailureSummary {
   readonly disposition: TranslationTaskFailureDisposition;
   readonly code: string;
+  readonly count: number;
+}
+
+export interface TranslationTaskAllowanceReasonSummary {
+  readonly reason: string;
   readonly count: number;
 }
 
@@ -46,6 +52,17 @@ export interface TranslationTaskObservabilitySnapshot {
     readonly retryExhausted: number;
     readonly failureGroupCount: number;
     readonly groups: readonly TranslationTaskFailureSummary[];
+  };
+  readonly allowance: {
+    readonly leasing: number;
+    readonly admitted: number;
+    readonly deferred: number;
+    readonly deferredWaiting: number;
+    readonly deferredReady: number;
+    readonly oldestDeferredAgeMs: number | null;
+    readonly earliestRetryInMs: number | null;
+    readonly reasonGroupCount: number;
+    readonly reasons: readonly TranslationTaskAllowanceReasonSummary[];
   };
 }
 

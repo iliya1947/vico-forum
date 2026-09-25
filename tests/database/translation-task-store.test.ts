@@ -38,6 +38,7 @@ beforeAll(async () => {
   await client.query(await readFile("drizzle/0010_translation_task_generation_order.sql", "utf8"));
   await client.query(await readFile("drizzle/0012_translation_task_retry_dlq.sql", "utf8"));
   await client.query(await readFile("drizzle/0013_translation_task_reconciliation.sql", "utf8"));
+  await client.query(await readFile("drizzle/0019_content_provider_allowance_admission.sql", "utf8"));
 });
 
 afterAll(async () => {

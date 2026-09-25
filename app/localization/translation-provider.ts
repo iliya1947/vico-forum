@@ -70,6 +70,11 @@ export interface MachineTranslationResult {
  * adapter selected by the router, after capability/data-policy approval.
  */
 export interface MachineTranslationProviderAdapter {
+  /**
+   * Stable provider/account routing identity. Content execution that is guarded by
+   * provider allowance requires this value so admission and execution bind to one adapter.
+   */
+  readonly providerId?: string;
   supports(capability: MachineTranslationCapability): boolean;
   translate(request: MachineTranslationRequest): Promise<MachineTranslationResult>;
 }
@@ -96,6 +101,50 @@ export class TranslationProviderRouter {
     return this.adapters.some((candidate) => candidate.supports(capability));
   }
 
+  /**
+   * Selects one concrete provider adapter that can execute the complete capability envelope.
+   * Content allowance admission uses this same stable provider id for later execution.
+   */
+  selectProvider(capabilities: readonly MachineTranslationCapability[]): string | undefined {
+    if (capabilities.length === 0) return undefined;
+    for (const capability of capabilities) assertOperationMatchesMessageKind(capability);
+
+    for (const candidate of this.adapters) {
+      const providerId = candidate.providerId;
+      if (!providerId || !PROVIDER_ID_PATTERN.test(providerId)) continue;
+      if (capabilities.every((capability) => candidate.supports(capability))) {
+        return providerId;
+      }
+    }
+    return undefined;
+  }
+
+  configuredProvider(): string | undefined {
+    for (const candidate of this.adapters) {
+      const providerId = candidate.providerId;
+      if (providerId && PROVIDER_ID_PATTERN.test(providerId)) return providerId;
+    }
+    return undefined;
+  }
+
+  supportsProvider(providerId: string, capability: MachineTranslationCapability): boolean {
+    assertOperationMatchesMessageKind(capability);
+    const adapter = this.adapterForProvider(providerId);
+    return Boolean(adapter && adapter.supports(capability));
+  }
+
+  async translateWithProvider(
+    providerId: string,
+    request: MachineTranslationRequest,
+  ): Promise<MachineTranslationResult> {
+    assertOperationMatchesMessageKind(request);
+    const adapter = this.adapterForProvider(providerId);
+    if (!adapter || !adapter.supports(machineTranslationCapability(request))) {
+      throw new UnsupportedTranslationProviderError(request);
+    }
+    return adapter.translate(request);
+  }
+
   async translate(request: MachineTranslationRequest): Promise<MachineTranslationResult> {
     assertOperationMatchesMessageKind(request);
     const capability = machineTranslationCapability(request);
@@ -103,7 +152,20 @@ export class TranslationProviderRouter {
     if (!adapter) throw new UnsupportedTranslationProviderError(request);
     return adapter.translate(request);
   }
+
+  private adapterForProvider(providerId: string): MachineTranslationProviderAdapter | undefined {
+    if (!PROVIDER_ID_PATTERN.test(providerId)) {
+      throw new TypeError("translation provider id is invalid");
+    }
+    const matches = this.adapters.filter((candidate) => candidate.providerId === providerId);
+    if (matches.length > 1) {
+      throw new TypeError(`translation provider id is ambiguous: ${providerId}`);
+    }
+    return matches[0];
+  }
 }
+
+const PROVIDER_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
 
 export function machineTranslationCapability(
   request: MachineTranslationRequest,

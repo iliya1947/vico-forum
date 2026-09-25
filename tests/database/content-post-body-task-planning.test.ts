@@ -5,6 +5,9 @@ import { Client, type DatabaseError } from "pg";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  ContentPostBodyAllowanceGate,
+} from "../../app/localization/content-provider-allowance";
+import {
   CONTENT_TRANSLATION_REQUESTER_SUBJECT_KEY_LENGTH,
   type ContentTranslationRequestBudgetAdmission,
 } from "../../app/localization/content-request-budget.server";
@@ -83,6 +86,8 @@ beforeAll(async () => {
     "drizzle/0015_content_topic_title_tasks.sql",
     "drizzle/0016_content_post_body_tasks.sql",
     "drizzle/0017_content_translation_request_budget.sql",
+
+    "drizzle/0019_content_provider_allowance_admission.sql",
   ]) {
     const sql = (await readFile(migration, "utf8"))
       .replaceAll('"public".', `"${schemaName}".`);
@@ -817,6 +822,50 @@ describe("content post-body durable planning", () => {
     expect(translate).toHaveBeenCalledTimes(document.segments.length);
   });
 
+  it("terminalizes configured unsupported post work without allowance or provider calls", async () => {
+    const enqueuer = new FakeTranslationTaskEnqueuer();
+    const planned = await createPlanner(client, enqueuer).planAndDispatch(
+      requestRevision(),
+      "he",
+      budgetAdmission(),
+    );
+    if (planned.kind !== "queued") throw new Error("expected queued body task");
+
+    const translate = vi.fn(async (request: MachineTranslationRequest) =>
+      machineResultForRequest(request)
+    );
+    const executor = createBodyExecutor(client, {
+      supports: () => false,
+      translate,
+    });
+
+    await expect(executor.execute(enqueuer.messages[0]!)).resolves.toEqual({
+      outcome: "execution-failed",
+      delivery: "terminal",
+      failureCode: "provider-unsupported",
+      terminalReason: "terminal",
+      attemptCount: 1,
+      maxAttempts: 3,
+    });
+    expect(translate).not.toHaveBeenCalled();
+
+    const task = await client.query<{
+      status: string;
+      attempt_count: number;
+      last_failure_code: string | null;
+      allowance_state: string | null;
+    }>(
+      "select status, attempt_count, last_failure_code, allowance_state from translation_tasks where id = $1",
+      [planned.task.id],
+    );
+    expect(task.rows[0]).toEqual({
+      status: "failed",
+      attempt_count: 1,
+      last_failure_code: "provider-unsupported",
+      allowance_state: null,
+    });
+  });
+
   it("retries a partial transient segment failure without publishing partial state", async () => {
     const enqueuer = new FakeTranslationTaskEnqueuer();
     const planned = await createPlanner(client, enqueuer).planAndDispatch(
@@ -1136,9 +1185,22 @@ describe("content post-body durable planning", () => {
         "update translation_tasks set claimed_at = statement_timestamp() - interval '2 seconds', lease_expires_at = statement_timestamp() - interval '1 second' where id = $1 and status = 'processing'",
         [planned.task.id],
       );
-      const reclaimed = await new DrizzleTranslationTaskStore(
-        drizzle(second),
-      ).claimContentPostBody(planned.task.id, 60_000);
+      const secondStore = new DrizzleTranslationTaskStore(drizzle(second));
+      const allowance = await secondStore.acquireContentProviderAllowance(
+        planned.task.id,
+        60_000,
+      );
+      if (allowance.outcome !== "acquired") {
+        throw new Error("expected body reclaim allowance");
+      }
+      await expect(secondStore.persistContentProviderAllowanceAdmission(
+        planned.task.id,
+        allowance.admissionToken,
+        allowance.occurrence,
+        "fake-provider",
+        "body-reclaim-reservation",
+      )).resolves.toBe(true);
+      const reclaimed = await secondStore.claimContentPostBody(planned.task.id, 60_000);
       expect(reclaimed).toMatchObject({
         outcome: "claimed",
         attemptStarted: true,
@@ -1386,6 +1448,14 @@ function createBodyExecutor(
     protectedContentPolicyVersion: CONTENT_MARKDOWN_PROTECTION_POLICY_VERSION,
     leaseDurationMs: 60_000,
   });
+  const routedAdapter: MachineTranslationProviderAdapter = adapter.providerId
+    ? adapter
+    : {
+        providerId: "fake-provider",
+        supports: (capability) => adapter.supports(capability),
+        translate: (request) => adapter.translate(request),
+      };
+  const providerRouter = new TranslationProviderRouter([routedAdapter]);
   const publisher = new ContentPostBodyResultPublisher({
     tasks,
     revisions: executionStore,
@@ -1395,9 +1465,23 @@ function createBodyExecutor(
     protectedContentPolicyVersion: CONTENT_MARKDOWN_PROTECTION_POLICY_VERSION,
     publications: executionStore,
   });
+  const allowance = new ContentPostBodyAllowanceGate({
+    store: tasks,
+    tasks,
+    adapter: { admit: async () => ({ outcome: "admitted" as const, reservationReference: "fake-body" }) },
+    providerRouter,
+    admissionLeaseDurationMs: 60_000,
+    revisions: executionStore,
+    translations,
+    localeRegistry,
+    generationPolicyVersion: "content-v1",
+    protectedContentPolicyVersion: CONTENT_MARKDOWN_PROTECTION_POLICY_VERSION,
+    executionBounds,
+  });
   return new ContentPostBodyTaskExecutor({
+    allowance,
     consumer,
-    providerRouter: new TranslationProviderRouter([adapter]),
+    providerRouter,
     publisher,
     failures: tasks,
     executionBounds,

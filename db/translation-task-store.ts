@@ -4,6 +4,11 @@ import {
   TranslationExecutionFailure,
   type TranslationFailureRecord,
 } from "../app/localization/translation-failures";
+import type {
+  ContentProviderAllowanceAcquireResult,
+  ContentProviderAllowanceOccurrence,
+  ContentProviderAllowanceStore,
+} from "../app/localization/content-provider-allowance";
 import { isPostgresAvailabilityFailure } from "../app/localization/persistent-registry";
 import {
   contentPostBodyTaskIdentity,
@@ -13,9 +18,11 @@ import {
   contentTopicTitleTaskIdentity,
 } from "../app/localization/content-translation-planning";
 import {
+  MAX_TRANSLATION_TASK_ALLOWANCE_REASON_GROUPS,
   MAX_TRANSLATION_TASK_FAILURE_GROUPS,
   TRANSLATION_TASK_RECONCILIATION_RETRY_AFTER_MS,
   validateTranslationTaskReconciliationQuery,
+  type TranslationTaskAllowanceReasonSummary,
   type TranslationTaskFailureSummary,
   type TranslationTaskObservabilitySnapshot,
   type TranslationTaskReconciliationCandidate,
@@ -70,7 +77,8 @@ export class DrizzleTranslationTaskStore implements
   ContentPostBodyTranslationTaskStore,
   TranslationTaskKindReader,
   TranslationTaskFailureStore,
-  TranslationTaskReconciliationStore {
+  TranslationTaskReconciliationStore,
+  ContentProviderAllowanceStore {
   constructor(private readonly database: NodePgDatabase) {}
 
   async findKind(id: string): Promise<string | undefined> {
@@ -81,6 +89,346 @@ export class DrizzleTranslationTaskStore implements
       .where(eq(translationTasks.id, id))
       .limit(1);
     return row?.translationKind;
+  }
+
+  async acquireContentProviderAllowance(
+    id: string,
+    leaseDurationMs: number,
+  ): Promise<ContentProviderAllowanceAcquireResult> {
+    if (!isUuid(id)) throw new TypeError("translation task id must be a UUID");
+    if (!Number.isSafeInteger(leaseDurationMs) || leaseDurationMs <= 0) {
+      throw new TypeError("provider allowance lease duration must be a positive integer");
+    }
+
+    const initial = await this.database
+      .select({
+        translationKind: translationTasks.translationKind,
+        sourceNamespace: translationTasks.sourceNamespace,
+        sourceKey: translationTasks.sourceKey,
+        targetLocale: translationTasks.targetLocale,
+      })
+      .from(translationTasks)
+      .where(eq(translationTasks.id, id))
+      .limit(1);
+    const unit = initial[0];
+    if (!unit) return { outcome: "not-found" };
+    if (
+      unit.translationKind !== "content-topic-title"
+      && unit.translationKind !== "content-post-body"
+    ) {
+      throw new TranslationTaskIntegrityError("provider allowance requires a content translation task");
+    }
+
+    return this.database.transaction(async (transaction) => {
+      const databaseNow = sql`statement_timestamp()`;
+      const head = await transaction.execute<{ current_generation: number }>(sql`
+        select current_generation
+          from ${translationTaskGenerationHeads}
+         where ${translationTaskGenerationHeads.translationKind} = ${unit.translationKind}
+           and ${translationTaskGenerationHeads.sourceNamespace} = ${unit.sourceNamespace}
+           and ${translationTaskGenerationHeads.sourceKey} = ${unit.sourceKey}
+           and ${translationTaskGenerationHeads.targetLocale} = ${unit.targetLocale}
+         for update
+      `);
+      const currentGeneration = head.rows[0]?.current_generation;
+      if (!Number.isSafeInteger(currentGeneration) || currentGeneration! <= 0) {
+        throw new TranslationTaskIntegrityError("content allowance generation head is missing or invalid");
+      }
+
+      const rows = await transaction
+        .select()
+        .from(translationTasks)
+        .where(eq(translationTasks.id, id))
+        .for("update")
+        .limit(1);
+      const row = rows[0];
+      if (!row) return { outcome: "not-found" as const };
+      if (
+        row.translationKind !== "content-topic-title"
+        && row.translationKind !== "content-post-body"
+      ) {
+        throw new TranslationTaskIntegrityError("provider allowance task kind changed unexpectedly");
+      }
+      if (row.generation !== currentGeneration) {
+        await markRowStaleWithoutAttempt(transaction, row.id);
+        return { outcome: "terminal" as const };
+      }
+      if (row.status === "stale" || row.status === "completed" || row.status === "failed") {
+        return { outcome: "terminal" as const };
+      }
+
+      const clock = await transaction.execute<{ now_ms: number | string }>(sql`
+        select floor(extract(epoch from statement_timestamp()) * 1000)::bigint as now_ms
+      `);
+      const nowMs = typeof clock.rows[0]?.now_ms === "number"
+        ? clock.rows[0].now_ms
+        : Number(clock.rows[0]?.now_ms);
+      if (!Number.isSafeInteger(nowMs) || nowMs < 0) {
+        throw new TranslationTaskIntegrityError("provider allowance database clock is invalid");
+      }
+      const now = new Date(nowMs);
+      if (
+        row.status === "processing"
+        && row.leaseExpiresAt
+        && row.leaseExpiresAt > now
+      ) {
+        return { outcome: "execution-in-progress" as const };
+      }
+      if (row.attemptCount >= row.maxAttempts) {
+        return { outcome: "exhausted" as const };
+      }
+
+      const occurrence = {
+        generation: row.generation,
+        attempt: row.attemptCount + 1,
+      };
+      const task = await parseContentTaskForAllowance(transaction, row);
+
+      if (
+        row.allowanceState === "admitted"
+        && row.allowanceGeneration === occurrence.generation
+        && row.allowanceAttempt === occurrence.attempt
+      ) {
+        if (!row.allowanceProvider || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(row.allowanceProvider)) {
+          throw new TranslationTaskIntegrityError("admitted content allowance is missing provider identity");
+        }
+        return {
+          outcome: "admitted" as const,
+          task,
+          occurrence,
+          provider: row.allowanceProvider,
+        };
+      }
+      if (
+        row.allowanceState === "leasing"
+        && row.allowanceGeneration === occurrence.generation
+        && row.allowanceAttempt === occurrence.attempt
+        && row.allowanceLeaseExpiresAt
+        && row.allowanceLeaseExpiresAt > now
+      ) {
+        return { outcome: "admission-in-progress" as const };
+      }
+      if (
+        row.allowanceState === "deferred"
+        && row.allowanceGeneration === occurrence.generation
+        && row.allowanceAttempt === occurrence.attempt
+        && row.allowanceRetryNotBefore
+        && row.allowanceRetryNotBefore > now
+        && row.allowanceReason
+      ) {
+        return {
+          outcome: "deferred" as const,
+          retryNotBefore: row.allowanceRetryNotBefore,
+          reason: row.allowanceReason,
+        };
+      }
+
+      const admissionToken = crypto.randomUUID();
+      const leaseExpiresAt = sql`${databaseNow}
+        + (${leaseDurationMs}::double precision * interval '1 millisecond')`;
+      const leased = await transaction
+        .update(translationTasks)
+        .set({
+          allowanceState: "leasing",
+          allowanceGeneration: occurrence.generation,
+          allowanceAttempt: occurrence.attempt,
+          allowanceClaimToken: admissionToken,
+          allowanceLeaseExpiresAt: leaseExpiresAt,
+          allowanceRetryNotBefore: null,
+          allowanceReason: null,
+          allowanceProvider: null,
+          allowanceReservationReference: null,
+          allowanceUpdatedAt: databaseNow,
+          updatedAt: databaseNow,
+        })
+        .where(and(
+          eq(translationTasks.id, row.id),
+          eq(translationTasks.generation, occurrence.generation),
+          eq(translationTasks.attemptCount, occurrence.attempt - 1),
+        ))
+        .returning({ id: translationTasks.id });
+      if (leased.length !== 1) return { outcome: "admission-in-progress" as const };
+
+      return {
+        outcome: "acquired" as const,
+        task,
+        occurrence,
+        admissionToken,
+      };
+    });
+  }
+
+  async persistContentProviderAllowanceAdmission(
+    id: string,
+    admissionToken: string,
+    occurrence: ContentProviderAllowanceOccurrence,
+    provider: string,
+    reservationReference?: string,
+  ): Promise<boolean> {
+    if (!isUuid(id) || !isUuid(admissionToken)) {
+      throw new TypeError("provider allowance admission identifiers must be UUIDs");
+    }
+    validateAllowanceOccurrence(occurrence);
+    if (!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(provider)) {
+      throw new TypeError("provider allowance provider identity is invalid");
+    }
+    if (
+      reservationReference !== undefined
+      && !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(reservationReference)
+    ) {
+      throw new TypeError("provider allowance reservation reference is invalid");
+    }
+
+    const unit = await this.readContentAllowanceUnit(id);
+    if (!unit) return false;
+    return this.database.transaction(async (transaction) => {
+      if (!await lockCurrentAllowanceGeneration(transaction, unit, occurrence.generation)) {
+        return false;
+      }
+      const databaseNow = sql`statement_timestamp()`;
+      const rows = await transaction
+        .update(translationTasks)
+        .set({
+          allowanceState: "admitted",
+          allowanceClaimToken: null,
+          allowanceLeaseExpiresAt: null,
+          allowanceRetryNotBefore: null,
+          allowanceReason: null,
+          allowanceProvider: provider,
+          allowanceReservationReference: reservationReference ?? null,
+          allowanceUpdatedAt: databaseNow,
+          updatedAt: databaseNow,
+        })
+        .where(and(
+          eq(translationTasks.id, id),
+          eq(translationTasks.generation, occurrence.generation),
+          eq(translationTasks.attemptCount, occurrence.attempt - 1),
+          eq(translationTasks.allowanceState, "leasing"),
+          eq(translationTasks.allowanceGeneration, occurrence.generation),
+          eq(translationTasks.allowanceAttempt, occurrence.attempt),
+          eq(translationTasks.allowanceClaimToken, admissionToken),
+        ))
+        .returning({ id: translationTasks.id });
+      return rows.length === 1;
+    });
+  }
+
+  async persistContentProviderAllowanceDeferral(
+    id: string,
+    admissionToken: string,
+    occurrence: ContentProviderAllowanceOccurrence,
+    retryNotBefore: Date,
+    reason: string,
+  ): Promise<Date | undefined> {
+    if (!isUuid(id) || !isUuid(admissionToken)) {
+      throw new TypeError("provider allowance deferral identifiers must be UUIDs");
+    }
+    validateAllowanceOccurrence(occurrence);
+    if (!(retryNotBefore instanceof Date) || !Number.isFinite(retryNotBefore.getTime())) {
+      throw new TypeError("provider allowance retryNotBefore must be a valid Date");
+    }
+    if (!/^[a-z0-9][a-z0-9-]{0,63}$/.test(reason)) {
+      throw new TypeError("provider allowance reason is invalid");
+    }
+
+    const unit = await this.readContentAllowanceUnit(id);
+    if (!unit) return undefined;
+    return this.database.transaction(async (transaction) => {
+      if (!await lockCurrentAllowanceGeneration(transaction, unit, occurrence.generation)) {
+        return undefined;
+      }
+      const databaseNow = sql`statement_timestamp()`;
+      const persistedRetry = sql`greatest(
+        ${retryNotBefore},
+        ${databaseNow} + interval '1 millisecond'
+      )`;
+      const rows = await transaction
+        .update(translationTasks)
+        .set({
+          allowanceState: "deferred",
+          allowanceClaimToken: null,
+          allowanceLeaseExpiresAt: null,
+          allowanceRetryNotBefore: persistedRetry,
+          allowanceReason: reason,
+          allowanceProvider: null,
+          allowanceReservationReference: null,
+          allowanceUpdatedAt: databaseNow,
+          reconciliationAttemptedAt: null,
+          updatedAt: databaseNow,
+        })
+        .where(and(
+          eq(translationTasks.id, id),
+          eq(translationTasks.generation, occurrence.generation),
+          eq(translationTasks.attemptCount, occurrence.attempt - 1),
+          eq(translationTasks.allowanceState, "leasing"),
+          eq(translationTasks.allowanceGeneration, occurrence.generation),
+          eq(translationTasks.allowanceAttempt, occurrence.attempt),
+          eq(translationTasks.allowanceClaimToken, admissionToken),
+        ))
+        .returning({ retryNotBefore: translationTasks.allowanceRetryNotBefore });
+      return rows[0]?.retryNotBefore ?? undefined;
+    });
+  }
+
+  private async readContentAllowanceUnit(id: string): Promise<TranslationUnit | undefined> {
+    const rows = await this.database
+      .select({
+        translationKind: translationTasks.translationKind,
+        sourceNamespace: translationTasks.sourceNamespace,
+        sourceKey: translationTasks.sourceKey,
+        targetLocale: translationTasks.targetLocale,
+      })
+      .from(translationTasks)
+      .where(eq(translationTasks.id, id))
+      .limit(1);
+    const row = rows[0];
+    if (!row) return undefined;
+    if (
+      row.translationKind !== "content-topic-title"
+      && row.translationKind !== "content-post-body"
+    ) {
+      throw new TranslationTaskIntegrityError(
+        "provider allowance persistence requires a content translation task",
+      );
+    }
+    return {
+      translationKind: row.translationKind,
+      sourceNamespace: row.sourceNamespace,
+      sourceKey: row.sourceKey,
+      targetLocale: row.targetLocale,
+    };
+  }
+
+  async markContentTaskStaleFromAllowance(
+    id: string,
+    admissionToken: string,
+  ): Promise<boolean> {
+    if (!isUuid(id) || !isUuid(admissionToken)) {
+      throw new TypeError("provider allowance stale transition identifiers must be UUIDs");
+    }
+    const databaseNow = sql`statement_timestamp()`;
+    const rows = await this.database
+      .update(translationTasks)
+      .set({
+        status: "stale",
+        claimToken: null,
+        claimedAt: sql`coalesce(${translationTasks.claimedAt}, ${databaseNow})`,
+        leaseExpiresAt: null,
+        staleAt: databaseNow,
+        completedAt: null,
+        failedAt: null,
+        lastFailureCode: null,
+        failureDisposition: null,
+        ...clearAllowanceState(),
+        updatedAt: databaseNow,
+      })
+      .where(and(
+        eq(translationTasks.id, id),
+        eq(translationTasks.allowanceState, "leasing"),
+        eq(translationTasks.allowanceClaimToken, admissionToken),
+      ))
+      .returning({ id: translationTasks.id });
+    return rows.length === 1;
   }
 
   async upsertPending(specification: UiTranslationJobSpecification): Promise<TranslationTask> {
@@ -214,6 +562,18 @@ export class DrizzleTranslationTaskStore implements
              )
            )
              and (
+               ${translationTasks.allowanceState} is null
+               or ${translationTasks.allowanceState} = 'admitted'
+               or (
+                 ${translationTasks.allowanceState} = 'deferred'
+                 and ${translationTasks.allowanceRetryNotBefore} <= statement_timestamp()
+               )
+               or (
+                 ${translationTasks.allowanceState} = 'leasing'
+                 and ${translationTasks.allowanceLeaseExpiresAt} <= statement_timestamp()
+               )
+             )
+             and (
                ${translationTasks.reconciliationAttemptedAt} is null
                or ${translationTasks.reconciliationAttemptedAt} <= statement_timestamp()
                  - (${TRANSLATION_TASK_RECONCILIATION_RETRY_AFTER_MS}::double precision * interval '1 millisecond')
@@ -259,6 +619,14 @@ export class DrizzleTranslationTaskStore implements
       failed_terminal: number;
       failed_retry_exhausted: number;
       failure_group_count: number;
+      allowance_leasing: number;
+      allowance_admitted: number;
+      allowance_deferred: number;
+      allowance_deferred_waiting: number;
+      allowance_deferred_ready: number;
+      oldest_deferred_age_ms: number | null;
+      earliest_allowance_retry_in_ms: number | null;
+      allowance_reason_group_count: number;
     }>(sql`
       select
         (count(*) filter (where ${translationTasks.status} = 'pending'))::integer as pending,
@@ -330,7 +698,46 @@ export class DrizzleTranslationTaskStore implements
         (
           count(distinct (${translationTasks.failureDisposition}, ${translationTasks.lastFailureCode}))
           filter (where ${translationTasks.status} = 'failed')
-        )::integer as failure_group_count
+        )::integer as failure_group_count,
+        (count(*) filter (where ${translationTasks.allowanceState} = 'leasing'))::integer
+          as allowance_leasing,
+        (count(*) filter (where ${translationTasks.allowanceState} = 'admitted'))::integer
+          as allowance_admitted,
+        (count(*) filter (where ${translationTasks.allowanceState} = 'deferred'))::integer
+          as allowance_deferred,
+        (
+          count(*) filter (
+            where ${translationTasks.allowanceState} = 'deferred'
+              and ${translationTasks.allowanceRetryNotBefore} > statement_timestamp()
+          )
+        )::integer as allowance_deferred_waiting,
+        (
+          count(*) filter (
+            where ${translationTasks.allowanceState} = 'deferred'
+              and ${translationTasks.allowanceRetryNotBefore} <= statement_timestamp()
+          )
+        )::integer as allowance_deferred_ready,
+        (
+          max(greatest(
+            0,
+            extract(epoch from (statement_timestamp() - ${translationTasks.allowanceUpdatedAt})) * 1000
+          ))
+          filter (where ${translationTasks.allowanceState} = 'deferred')
+        )::double precision as oldest_deferred_age_ms,
+        (
+          min(greatest(
+            0,
+            extract(epoch from (${translationTasks.allowanceRetryNotBefore} - statement_timestamp())) * 1000
+          ))
+          filter (
+            where ${translationTasks.allowanceState} = 'deferred'
+              and ${translationTasks.allowanceRetryNotBefore} > statement_timestamp()
+          )
+        )::double precision as earliest_allowance_retry_in_ms,
+        (
+          count(distinct ${translationTasks.allowanceReason})
+          filter (where ${translationTasks.allowanceState} = 'deferred')
+        )::integer as allowance_reason_group_count
       from ${translationTasks}
     `);
     const row = aggregate.rows[0];
@@ -352,7 +759,15 @@ export class DrizzleTranslationTaskStore implements
       !nonNegativeInteger(row.processing_at_attempt_budget) ||
       !nonNegativeInteger(row.failed_terminal) ||
       !nonNegativeInteger(row.failed_retry_exhausted) ||
-      !nonNegativeInteger(row.failure_group_count)
+      !nonNegativeInteger(row.failure_group_count) ||
+      !nonNegativeInteger(row.allowance_leasing) ||
+      !nonNegativeInteger(row.allowance_admitted) ||
+      !nonNegativeInteger(row.allowance_deferred) ||
+      !nonNegativeInteger(row.allowance_deferred_waiting) ||
+      !nonNegativeInteger(row.allowance_deferred_ready) ||
+      !nullableNonNegativeNumber(row.oldest_deferred_age_ms) ||
+      !nullableNonNegativeNumber(row.earliest_allowance_retry_in_ms) ||
+      !nonNegativeInteger(row.allowance_reason_group_count)
     ) {
       throw new TranslationTaskIntegrityError("translation task observability query returned invalid aggregates");
     }
@@ -391,6 +806,33 @@ export class DrizzleTranslationTaskStore implements
       };
     });
 
+    const allowanceGrouped = await this.database.execute<{
+      allowance_reason: string;
+      count: number;
+    }>(sql`
+      select
+        ${translationTasks.allowanceReason} as allowance_reason,
+        count(*)::integer as count
+      from ${translationTasks}
+      where ${translationTasks.allowanceState} = 'deferred'
+      group by ${translationTasks.allowanceReason}
+      order by count(*) desc, ${translationTasks.allowanceReason} asc
+      limit ${MAX_TRANSLATION_TASK_ALLOWANCE_REASON_GROUPS}
+    `);
+    const allowanceReasons: TranslationTaskAllowanceReasonSummary[] =
+      allowanceGrouped.rows.map((reason) => {
+        if (
+          !/^[a-z0-9][a-z0-9-]{0,63}$/.test(reason.allowance_reason)
+          || !nonNegativeInteger(reason.count)
+          || reason.count === 0
+        ) {
+          throw new TranslationTaskIntegrityError(
+            "translation allowance observability query returned invalid reason group",
+          );
+        }
+        return { reason: reason.allowance_reason, count: reason.count };
+      });
+
     return {
       counts: {
         pending: row.pending,
@@ -417,6 +859,17 @@ export class DrizzleTranslationTaskStore implements
         retryExhausted: row.failed_retry_exhausted,
         failureGroupCount: row.failure_group_count,
         groups,
+      },
+      allowance: {
+        leasing: row.allowance_leasing,
+        admitted: row.allowance_admitted,
+        deferred: row.allowance_deferred,
+        deferredWaiting: row.allowance_deferred_waiting,
+        deferredReady: row.allowance_deferred_ready,
+        oldestDeferredAgeMs: row.oldest_deferred_age_ms,
+        earliestRetryInMs: row.earliest_allowance_retry_in_ms,
+        reasonGroupCount: row.allowance_reason_group_count,
+        reasons: allowanceReasons,
       },
     };
   }
@@ -510,6 +963,16 @@ export class DrizzleTranslationTaskStore implements
       and(eq(translationTasks.status, "processing"), lte(translationTasks.leaseExpiresAt, databaseNow)),
     );
 
+    const allowanceCondition = expectedKind === "ui"
+      ? sql`true`
+      : and(
+          eq(translationTasks.allowanceState, "admitted"),
+          eq(translationTasks.allowanceGeneration, translationTasks.generation),
+          eq(
+            translationTasks.allowanceAttempt,
+            sql`${translationTasks.attemptCount} + 1`,
+          ),
+        );
     const claimToken = crypto.randomUUID();
     const rows = await database
       .update(translationTasks)
@@ -519,6 +982,7 @@ export class DrizzleTranslationTaskStore implements
         claimedAt: databaseNow,
         leaseExpiresAt,
         attemptCount: sql`${translationTasks.attemptCount} + 1`,
+        ...clearAllowanceState(),
         updatedAt: databaseNow,
       })
       .where(and(
@@ -526,6 +990,7 @@ export class DrizzleTranslationTaskStore implements
         eq(translationTasks.translationKind, expectedKind),
         claimable,
         lt(translationTasks.attemptCount, translationTasks.maxAttempts),
+        allowanceCondition,
       ))
       .returning();
     if (rows[0]) {
@@ -543,6 +1008,7 @@ export class DrizzleTranslationTaskStore implements
         claimToken: exhaustedClaimToken,
         claimedAt: databaseNow,
         leaseExpiresAt,
+        ...clearAllowanceState(),
         updatedAt: databaseNow,
       })
       .where(and(
@@ -613,6 +1079,7 @@ export class DrizzleTranslationTaskStore implements
         lastFailureCode: failure.code,
         failureDisposition: terminalDisposition,
         failedAt: databaseNow,
+        ...clearAllowanceState(),
         updatedAt: databaseNow,
       })
       .where(terminalCondition)
@@ -643,6 +1110,7 @@ export class DrizzleTranslationTaskStore implements
           lastFailureCode: failure.code,
           failureDisposition: null,
           reconciliationAttemptedAt: null,
+          ...clearAllowanceState(),
           updatedAt: databaseNow,
         })
         .where(and(currentClaim, lt(translationTasks.attemptCount, translationTasks.maxAttempts)))
@@ -678,6 +1146,7 @@ export class DrizzleTranslationTaskStore implements
         failedAt: null,
         lastFailureCode: null,
         failureDisposition: null,
+        ...clearAllowanceState(),
         updatedAt: databaseNow,
       })
       .where(and(
@@ -757,6 +1226,90 @@ export class DrizzleTranslationTaskStore implements
 
 type TranslationTaskTransaction =
   Parameters<Parameters<NodePgDatabase["transaction"]>[0]>[0];
+
+function clearAllowanceState() {
+  return {
+    allowanceState: null,
+    allowanceGeneration: null,
+    allowanceAttempt: null,
+    allowanceClaimToken: null,
+    allowanceLeaseExpiresAt: null,
+    allowanceRetryNotBefore: null,
+    allowanceReason: null,
+    allowanceProvider: null,
+    allowanceReservationReference: null,
+    allowanceUpdatedAt: null,
+  } as const;
+}
+
+function validateAllowanceOccurrence(
+  occurrence: ContentProviderAllowanceOccurrence,
+): void {
+  if (
+    !Number.isSafeInteger(occurrence.generation)
+    || occurrence.generation <= 0
+    || !Number.isSafeInteger(occurrence.attempt)
+    || occurrence.attempt <= 0
+  ) {
+    throw new TypeError("provider allowance occurrence is invalid");
+  }
+}
+
+async function markRowStaleWithoutAttempt(
+  transaction: TranslationTaskTransaction,
+  id: string,
+): Promise<void> {
+  const databaseNow = sql`statement_timestamp()`;
+  await transaction
+    .update(translationTasks)
+    .set({
+      status: "stale",
+      claimToken: null,
+      claimedAt: sql`coalesce(${translationTasks.claimedAt}, ${databaseNow})`,
+      leaseExpiresAt: null,
+      staleAt: databaseNow,
+      completedAt: null,
+      failedAt: null,
+      lastFailureCode: null,
+      failureDisposition: null,
+      ...clearAllowanceState(),
+      updatedAt: databaseNow,
+    })
+    .where(eq(translationTasks.id, id));
+}
+
+async function parseContentTaskForAllowance(
+  transaction: TranslationTaskTransaction,
+  row: TranslationTaskRow,
+): Promise<ContentTopicTitleTranslationTask | ContentPostBodyTranslationTask> {
+  if (row.translationKind === "content-topic-title") {
+    const [metadata] = await transaction
+      .select()
+      .from(contentTopicTitleTranslationTasks)
+      .where(eq(contentTopicTitleTranslationTasks.taskId, row.id))
+      .limit(1);
+    if (!metadata) {
+      throw new TranslationTaskIntegrityError(
+        "content topic-title allowance task is missing revision metadata",
+      );
+    }
+    return parseContentTopicTitleTaskRow(row, metadata);
+  }
+  if (row.translationKind === "content-post-body") {
+    const [metadata] = await transaction
+      .select()
+      .from(contentPostBodyTranslationTasks)
+      .where(eq(contentPostBodyTranslationTasks.taskId, row.id))
+      .limit(1);
+    if (!metadata) {
+      throw new TranslationTaskIntegrityError(
+        "content post-body allowance task is missing revision metadata",
+      );
+    }
+    return parseContentPostBodyTaskRow(row, metadata);
+  }
+  throw new TranslationTaskIntegrityError("provider allowance task kind is not content");
+}
 
 type RawTranslationTaskClaimResult =
   | {
@@ -1064,6 +1617,29 @@ function unitValues(specification: UiTranslationJobSpecification): TranslationUn
     sourceKey: specification.sourceIdentity.key,
     targetLocale: specification.targetLocale,
   };
+}
+
+async function lockCurrentAllowanceGeneration(
+  transaction: TranslationTaskTransaction,
+  unit: TranslationUnit,
+  expectedGeneration: number,
+): Promise<boolean> {
+  const locked = await transaction.execute<{ current_generation: number }>(sql`
+    select current_generation
+      from ${translationTaskGenerationHeads}
+     where ${translationTaskGenerationHeads.translationKind} = ${unit.translationKind}
+       and ${translationTaskGenerationHeads.sourceNamespace} = ${unit.sourceNamespace}
+       and ${translationTaskGenerationHeads.sourceKey} = ${unit.sourceKey}
+       and ${translationTaskGenerationHeads.targetLocale} = ${unit.targetLocale}
+     for update
+  `);
+  const currentGeneration = locked.rows[0]?.current_generation;
+  if (!Number.isSafeInteger(currentGeneration) || currentGeneration! <= 0) {
+    throw new TranslationTaskIntegrityError(
+      "provider allowance generation head is missing or invalid",
+    );
+  }
+  return currentGeneration === expectedGeneration;
 }
 
 function unitCondition(unit: TranslationUnit) {

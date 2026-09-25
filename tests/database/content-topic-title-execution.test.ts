@@ -5,6 +5,10 @@ import { Client } from "pg";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  ContentTopicTitleAllowanceGate,
+  contentProviderAllowanceOccurrenceKey,
+} from "../../app/localization/content-provider-allowance";
+import {
   CONTENT_TRANSLATION_REQUESTER_SUBJECT_KEY_LENGTH,
   type ContentTranslationRequestBudgetAdmission,
 } from "../../app/localization/content-request-budget.server";
@@ -83,6 +87,8 @@ beforeAll(async () => {
     "drizzle/0014_content_translation_persistence.sql",
     "drizzle/0015_content_topic_title_tasks.sql",
     "drizzle/0017_content_translation_request_budget.sql",
+
+    "drizzle/0019_content_provider_allowance_admission.sql",
   ]) {
     const sql = (await readFile(migration, "utf8"))
       .replaceAll('"public".', `"${schemaName}".`);
@@ -205,6 +211,7 @@ describe("content topic-title execution and publication", () => {
     const planned = await createPlanner(client, enqueuer, providerCapability)
       .planAndDispatch(requestRevision(), "he", budgetAdmission());
     expect(planned.kind).toBe("queued");
+    if (planned.kind !== "queued") throw new Error("expected queued content task");
     expect(dataPolicy.allows).toHaveBeenCalledWith({
       provider: CLOUDFLARE_WORKERS_AI_PROVIDER,
       model: CLOUDFLARE_M2M100_MODEL,
@@ -226,7 +233,23 @@ describe("content topic-title execution and publication", () => {
       maxAttempts: 3,
     });
     expect(run).not.toHaveBeenCalled();
-    expect(dataPolicy.allows).toHaveBeenCalledTimes(2);
+    expect(dataPolicy.allows).toHaveBeenCalledTimes(3);
+
+    const taskRow = await client.query<{
+      status: string;
+      attempt_count: number;
+      allowance_state: string | null;
+      allowance_reason: string | null;
+    }>(
+      "select status, attempt_count, allowance_state, allowance_reason from translation_tasks where id = $1",
+      [planned.task.id],
+    );
+    expect(taskRow.rows[0]).toEqual({
+      status: "failed",
+      attempt_count: 1,
+      allowance_state: null,
+      allowance_reason: null,
+    });
   });
 
   it("reactivates a stale stable identity when the same content work becomes eligible again", async () => {
@@ -235,6 +258,15 @@ describe("content topic-title execution and publication", () => {
     if (first.kind !== "queued") throw new Error("expected queued content task");
 
     const tasks = new DrizzleTranslationTaskStore(drizzle(client));
+    const allowance = await tasks.acquireContentProviderAllowance(first.task.id, 60_000);
+    if (allowance.outcome !== "acquired") throw new Error("expected allowance admission lease");
+    await expect(tasks.persistContentProviderAllowanceAdmission(
+      first.task.id,
+      allowance.admissionToken,
+      allowance.occurrence,
+      "fake-provider",
+      "fixture-reservation",
+    )).resolves.toBe(true);
     const claim = await tasks.claimContentTopicTitle(first.task.id, 60_000);
     if (claim.outcome !== "claimed") throw new Error("expected content task claim");
     await expect(tasks.markStale(first.task.id, claim.task.claimToken)).resolves.toBe(true);
@@ -563,6 +595,225 @@ describe("content topic-title execution and publication", () => {
       await second.end();
     }
   });
+
+  it("defers provider allowance before claim without consuming the execution attempt", async () => {
+    const planned = await createPlanner(client).planAndDispatch(
+      requestRevision(),
+      "he",
+      budgetAdmission(),
+    );
+    if (planned.kind !== "queued") throw new Error("expected queued content task");
+
+    const tasks = new DrizzleTranslationTaskStore(drizzle(client));
+    const acquired = await tasks.acquireContentProviderAllowance(planned.task.id, 60_000);
+    expect(acquired.outcome).toBe("acquired");
+    if (acquired.outcome !== "acquired") throw new Error("expected allowance lease");
+
+    const retryNotBefore = new Date(Date.now() + 60_000);
+    const persisted = await tasks.persistContentProviderAllowanceDeferral(
+      planned.task.id,
+      acquired.admissionToken,
+      acquired.occurrence,
+      retryNotBefore,
+      "allowance-exhausted",
+    );
+    expect(persisted).toBeInstanceOf(Date);
+
+    await expect(tasks.claimContentTopicTitle(planned.task.id, 60_000)).resolves.toEqual({
+      outcome: "already-claimed",
+    });
+    await expect(tasks.acquireContentProviderAllowance(planned.task.id, 60_000)).resolves.toMatchObject({
+      outcome: "deferred",
+      reason: "allowance-exhausted",
+    });
+
+    const row = await client.query<{
+      attempt_count: number;
+      status: string;
+      allowance_state: string | null;
+    }>(
+      "select attempt_count, status, allowance_state from translation_tasks where id = $1",
+      [planned.task.id],
+    );
+    expect(row.rows[0]).toEqual({
+      attempt_count: 0,
+      status: "pending",
+      allowance_state: "deferred",
+    });
+
+    await expect(tasks.reserveReconciliationCandidates({
+      limit: 20,
+      pendingOlderThanMs: 0,
+    })).resolves.not.toContainEqual(expect.objectContaining({ id: planned.task.id }));
+
+    await client.query(
+      `update translation_tasks
+          set allowance_retry_not_before = statement_timestamp() - interval '1 second',
+              allowance_updated_at = statement_timestamp() - interval '2 seconds'
+        where id = $1`,
+      [planned.task.id],
+    );
+    await expect(tasks.reserveReconciliationCandidates({
+      limit: 20,
+      pendingOlderThanMs: 0,
+    })).resolves.toContainEqual({
+      id: planned.task.id,
+      reason: "pending",
+    });
+  });
+
+  it("recovers an expired admission lease with the same occurrence key", async () => {
+    const planned = await createPlanner(client).planAndDispatch(
+      requestRevision(),
+      "he",
+      budgetAdmission(),
+    );
+    if (planned.kind !== "queued") throw new Error("expected queued content task");
+
+    const tasks = new DrizzleTranslationTaskStore(drizzle(client));
+    const first = await tasks.acquireContentProviderAllowance(planned.task.id, 60_000);
+    if (first.outcome !== "acquired") throw new Error("expected first allowance lease");
+    const firstKey = await contentProviderAllowanceOccurrenceKey(planned.task.id, first.occurrence);
+
+    await client.query(
+      `update translation_tasks
+          set allowance_updated_at = statement_timestamp() - interval '2 seconds',
+              allowance_lease_expires_at = statement_timestamp() - interval '1 second'
+        where id = $1`,
+      [planned.task.id],
+    );
+
+    const recovered = await tasks.acquireContentProviderAllowance(planned.task.id, 60_000);
+    if (recovered.outcome !== "acquired") throw new Error("expected recovered allowance lease");
+    const recoveredKey = await contentProviderAllowanceOccurrenceKey(
+      planned.task.id,
+      recovered.occurrence,
+    );
+
+    expect(recovered.admissionToken).not.toBe(first.admissionToken);
+    expect(recovered.occurrence).toEqual(first.occurrence);
+    expect(recoveredKey).toBe(firstKey);
+  });
+
+  it("does not persist allowance after the generation head is superseded", async () => {
+    const planned = await createPlanner(client).planAndDispatch(
+      requestRevision(),
+      "he",
+      budgetAdmission(),
+    );
+    if (planned.kind !== "queued") throw new Error("expected queued content task");
+
+    const tasks = new DrizzleTranslationTaskStore(drizzle(client));
+    const acquired = await tasks.acquireContentProviderAllowance(planned.task.id, 60_000);
+    if (acquired.outcome !== "acquired") throw new Error("expected allowance lease");
+
+    await client.query(
+      `update translation_task_generation_heads
+          set current_generation = current_generation + 1
+        where translation_kind = 'content-topic-title'
+          and source_namespace = 'topic-title'
+          and source_key = 'topic-a'
+          and target_locale = 'he'`,
+    );
+
+    await expect(tasks.persistContentProviderAllowanceAdmission(
+      planned.task.id,
+      acquired.admissionToken,
+      acquired.occurrence,
+      "fake-provider",
+      "superseded-reservation",
+    )).resolves.toBe(false);
+
+    const row = await client.query<{
+      allowance_state: string | null;
+      attempt_count: number;
+    }>(
+      "select allowance_state, attempt_count from translation_tasks where id = $1",
+      [planned.task.id],
+    );
+    expect(row.rows[0]).toEqual({
+      allowance_state: "leasing",
+      attempt_count: 0,
+    });
+  });
+
+  it("serializes concurrent admission, consumes it on claim, and advances retry occurrence", async () => {
+    const planned = await createPlanner(client).planAndDispatch(
+      requestRevision(),
+      "he",
+      budgetAdmission(),
+    );
+    if (planned.kind !== "queued") throw new Error("expected queued content task");
+
+    const second = await secondClient();
+    try {
+      const firstStore = new DrizzleTranslationTaskStore(drizzle(client));
+      const secondStore = new DrizzleTranslationTaskStore(drizzle(second));
+      const [left, right] = await Promise.all([
+        firstStore.acquireContentProviderAllowance(planned.task.id, 60_000),
+        secondStore.acquireContentProviderAllowance(planned.task.id, 60_000),
+      ]);
+      const acquired = [left, right].find((result) => result.outcome === "acquired");
+      expect(acquired).toBeDefined();
+      expect([left, right].filter((result) => result.outcome === "acquired")).toHaveLength(1);
+      expect([left, right].filter((result) => result.outcome === "admission-in-progress")).toHaveLength(1);
+      if (!acquired || acquired.outcome !== "acquired") throw new Error("expected acquired allowance");
+
+      const firstKey = await contentProviderAllowanceOccurrenceKey(
+        planned.task.id,
+        acquired.occurrence,
+      );
+      await expect(firstStore.persistContentProviderAllowanceAdmission(
+        planned.task.id,
+        acquired.admissionToken,
+        acquired.occurrence,
+        "fake-provider",
+        "provider-reservation-1",
+      )).resolves.toBe(true);
+
+      const claims = await Promise.all([
+        firstStore.claimContentTopicTitle(planned.task.id, 60_000),
+        secondStore.claimContentTopicTitle(planned.task.id, 60_000),
+      ]);
+      const claimed = claims.find((result) => result.outcome === "claimed");
+      expect(claimed).toBeDefined();
+      expect(claims.filter((result) => result.outcome === "claimed")).toHaveLength(1);
+      if (!claimed || claimed.outcome !== "claimed") throw new Error("expected claimed task");
+      expect(claimed.task.attemptCount).toBe(1);
+
+      const afterClaim = await client.query<{
+        allowance_state: string | null;
+        allowance_attempt: number | null;
+      }>(
+        "select allowance_state, allowance_attempt from translation_tasks where id = $1",
+        [planned.task.id],
+      );
+      expect(afterClaim.rows[0]).toEqual({
+        allowance_state: null,
+        allowance_attempt: null,
+      });
+
+      await expect(firstStore.recordFailure(
+        planned.task.id,
+        claimed.task.claimToken,
+        { disposition: "retryable", code: "provider-temporary" },
+      )).resolves.toMatchObject({ outcome: "retry", attemptCount: 1 });
+
+      const next = await firstStore.acquireContentProviderAllowance(planned.task.id, 60_000);
+      if (next.outcome !== "acquired") throw new Error("expected next allowance occurrence");
+      expect(next.occurrence).toEqual({
+        generation: acquired.occurrence.generation,
+        attempt: 2,
+      });
+      await expect(contentProviderAllowanceOccurrenceKey(
+        planned.task.id,
+        next.occurrence,
+      )).resolves.not.toBe(firstKey);
+    } finally {
+      await second.end();
+    }
+  });
+
 });
 
 function createPlanner(
@@ -598,9 +849,16 @@ function createDispatcher(
     delivery: "ack" as const,
   })),
 ): TranslationTaskExecutorDispatcher {
+  const routedAdapter: MachineTranslationProviderAdapter = adapter.providerId
+    ? adapter
+    : {
+        providerId: "fake-provider",
+        supports: (capability) => adapter.supports(capability),
+        translate: (request) => adapter.translate(request),
+      };
   return createDispatcherWithRouter(
     connection,
-    new TranslationProviderRouter([adapter]),
+    new TranslationProviderRouter([routedAdapter]),
     uiExecute,
   );
 }
@@ -633,7 +891,24 @@ function createDispatcherWithRouter(
     generationPolicyVersion: "content-v1",
     publications: executionStore,
   });
+  const allowance = new ContentTopicTitleAllowanceGate({
+    store: tasks,
+    tasks,
+    adapter: {
+      admit: async () => ({
+        outcome: "admitted" as const,
+        reservationReference: "fake-reservation",
+      }),
+    },
+    providerRouter,
+    admissionLeaseDurationMs: 60_000,
+    revisions: executionStore,
+    translations,
+    localeRegistry,
+    generationPolicyVersion: "content-v1",
+  });
   const contentExecutor = new ContentTopicTitleTaskExecutor({
+    allowance,
     consumer,
     providerRouter,
     publisher,
