@@ -1,4 +1,4 @@
-import { StrictMode } from "react";
+import { StrictMode, type ReactNode } from "react";
 import { act, render, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -11,7 +11,7 @@ vi.mock("react-router", () => ({
     submit,
     state: "idle",
     data: undefined,
-    Form: ({ children }: { children: React.ReactNode }) => <form>{children}</form>,
+    Form: ({ children }: { children: ReactNode }) => <form>{children}</form>,
   }),
   useRevalidator: () => ({
     state: revalidatorState,
