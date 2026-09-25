@@ -80,6 +80,24 @@ function contextWithAuthorizationFailure(error: Error) {
   return context;
 }
 
+function contextWithPermissions(userId: string, permissions: readonly string[]) {
+  const context = new RouterContextProvider();
+  context.set(forumReaderContext, reader);
+  context.set(authSessionContext, {
+    ...session,
+    user: { ...session.user, id: userId },
+    session: { ...session.session, userId },
+  });
+  const allowed = new Set(permissions);
+  context.set(authorizationContext, {
+    forUser: () => ({
+      resolve: vi.fn(),
+      has: vi.fn(async (permission: string) => allowed.has(permission)),
+    }),
+  } as never);
+  return context;
+}
+
 describe("public forum authorization degradation", () => {
   it("keeps authenticated public reads available for classified authorization outages", async () => {
     const failure = new AuthorizationUnavailableError();
@@ -98,6 +116,24 @@ describe("public forum authorization degradation", () => {
     expect(topicResult.topic).toBe(topic);
     expect(topicResult.canReply).toBe(false);
     expect(topicResult.canManageSolution).toBe(false);
+    expect(topicResult.canCorrectTitleSourceLocale).toBe(false);
+    expect(topicResult.correctablePostIds).toEqual([]);
+  });
+
+  it("derives source-locale correction presentation from effective own/any permissions", async () => {
+    const own = await topicLoader({
+      params: { locale: "en", topicId: topic.id },
+      context: contextWithPermissions("author-1", ["forum.sourceLocale.correctOwn"]),
+    });
+    expect(own.canCorrectTitleSourceLocale).toBe(true);
+    expect(own.correctablePostIds).toEqual([]);
+
+    const any = await topicLoader({
+      params: { locale: "en", topicId: topic.id },
+      context: contextWithPermissions("viewer-1", ["forum.sourceLocale.correctAny"]),
+    });
+    expect(any.canCorrectTitleSourceLocale).toBe(true);
+    expect(any.correctablePostIds).toEqual(["post-1"]);
   });
 
   it("does not hide unexpected authorization errors in public loaders", async () => {

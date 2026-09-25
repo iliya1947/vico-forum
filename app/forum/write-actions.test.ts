@@ -4,7 +4,7 @@ import type { AuthSession } from "../auth/request-context";
 import { authSessionContext } from "../auth/request-context";
 import type { PermissionKey } from "../authorization/catalog";
 import { authorizationContext } from "../authorization/request-context";
-import type { ForumWriter } from "../../db/hyperdrive-forum";
+import { ForumStorageUnavailableError, type ForumWriter } from "../../db/hyperdrive-forum";
 import { forumWriterContext } from "./request-context";
 import { action as sectionAction } from "../routes/section";
 import { action as topicAction } from "../routes/topic";
@@ -22,6 +22,8 @@ const allForumPermissions = [
   "forum.reply.create",
   "forum.solution.manageOwn",
   "forum.solution.manageAny",
+  "forum.sourceLocale.correctOwn",
+  "forum.sourceLocale.correctAny",
 ] as const satisfies readonly PermissionKey[];
 
 function request(path: string, fields: Record<string, string>, origin = "https://forum.example") {
@@ -58,6 +60,8 @@ function writer() {
     createReply: vi.fn(async () => ({ postId: "server-post" })),
     markTopicSolved: vi.fn(async () => undefined),
     selectBestAnswer: vi.fn(async () => undefined),
+    correctTopicTitleSourceLocale: vi.fn(async () => undefined),
+    correctPostBodySourceLocale: vi.fn(async () => undefined),
   } satisfies ForumWriter;
 }
 
@@ -193,6 +197,126 @@ describe("forum write route actions", () => {
       expect(JSON.stringify(response)).not.toContain(error.message);
     }
   });
+  it("derives source-locale correction scope from server permissions and ignores forged fields", async () => {
+    const ownWriter = writer();
+    const ownResponse = await topicAction({
+      request: request("/en/topics/topic-1", {
+        intent: "correctTitleSourceLocale",
+        expectedRevisionId: "title-r1",
+        sourceLocale: "ru",
+        actorId: "forged",
+        authorId: "forged",
+        role: "admin",
+        scope: "any",
+      }),
+      params: { locale: "en", topicId: "topic-1" },
+      context: context(ownWriter, true, ["forum.sourceLocale.correctOwn"]),
+    });
+    expect(ownWriter.correctTopicTitleSourceLocale).toHaveBeenCalledWith({
+      topicId: "topic-1",
+      expectedRevisionId: "title-r1",
+      sourceLocale: "ru",
+      actorId: "session-user",
+      scope: "own",
+    });
+    if (!(ownResponse instanceof Response)) throw new Error("expected correction redirect");
+    expect(ownResponse.headers.get("Location")).toBe("/en/topics/topic-1");
+
+    const anyWriter = writer();
+    const anyResponse = await topicAction({
+      request: request("/he/topics/topic-1", {
+        intent: "correctPostSourceLocale",
+        postId: "post-2",
+        expectedRevisionId: "post-r1",
+        sourceLocale: "fr",
+      }),
+      params: { locale: "he", topicId: "topic-1" },
+      context: context(anyWriter, true, ["forum.sourceLocale.correctOwn", "forum.sourceLocale.correctAny"]),
+    });
+    expect(anyWriter.correctPostBodySourceLocale).toHaveBeenCalledWith({
+      topicId: "topic-1",
+      postId: "post-2",
+      expectedRevisionId: "post-r1",
+      sourceLocale: "fr",
+      actorId: "session-user",
+      scope: "any",
+    });
+    if (!(anyResponse instanceof Response)) throw new Error("expected correction redirect");
+    expect(anyResponse.headers.get("Location")).toBe("/he/topics/topic-1#post-post-2");
+  });
+
+  it("rejects unauthorized/guest/cross-origin source-locale corrections before writing", async () => {
+    const denied = writer();
+    const deniedResponse = await topicAction({
+      request: request("/en/topics/topic-1", {
+        intent: "correctTitleSourceLocale",
+        expectedRevisionId: "title-r1",
+        sourceLocale: "ru",
+      }),
+      params: { locale: "en", topicId: "topic-1" },
+      context: context(denied, true, ["forum.reply.create"]),
+    });
+    expect(deniedResponse).toMatchObject({ data: { error: "forbidden", operation: "sourceLocaleCorrection" }, init: { status: 403 } });
+    expect(denied.correctTopicTitleSourceLocale).not.toHaveBeenCalled();
+
+    const guest = writer();
+    const guestResponse = await topicAction({
+      request: request("/en/topics/topic-1", {
+        intent: "correctTitleSourceLocale",
+        expectedRevisionId: "title-r1",
+        sourceLocale: "ru",
+      }),
+      params: { locale: "en", topicId: "topic-1" },
+      context: context(guest, false),
+    });
+    expect(guestResponse).toMatchObject({ init: { status: 401 } });
+    expect(guest.correctTopicTitleSourceLocale).not.toHaveBeenCalled();
+
+    const crossOrigin = writer();
+    const crossOriginResponse = await topicAction({
+      request: request("/en/topics/topic-1", {
+        intent: "correctTitleSourceLocale",
+        expectedRevisionId: "title-r1",
+        sourceLocale: "ru",
+      }, "https://evil.example"),
+      params: { locale: "en", topicId: "topic-1" },
+      context: context(crossOrigin),
+    });
+    expect(crossOriginResponse).toMatchObject({ init: { status: 403 } });
+    expect(crossOrigin.correctTopicTitleSourceLocale).not.toHaveBeenCalled();
+  });
+
+  it("maps only classified correction storage outages and propagates unexpected writer failures", async () => {
+    const unavailable = writer();
+    unavailable.correctTopicTitleSourceLocale.mockRejectedValueOnce(new ForumStorageUnavailableError());
+    const unavailableResponse = await topicAction({
+      request: request("/en/topics/topic-1", {
+        intent: "correctTitleSourceLocale",
+        expectedRevisionId: "title-r1",
+        sourceLocale: "ru",
+      }),
+      params: { locale: "en", topicId: "topic-1" },
+      context: context(unavailable, true, ["forum.sourceLocale.correctOwn"]),
+    });
+    expect(unavailableResponse).toMatchObject({
+      data: { error: "unavailable", operation: "sourceLocaleCorrection" },
+      init: { status: 503 },
+    });
+
+    const unexpected = writer();
+    const failure = new Error("unexpected correction bug");
+    unexpected.correctTopicTitleSourceLocale.mockRejectedValueOnce(failure);
+    await expect(topicAction({
+      request: request("/en/topics/topic-1", {
+        intent: "correctTitleSourceLocale",
+        expectedRevisionId: "title-r1",
+        sourceLocale: "ru",
+      }),
+      params: { locale: "en", topicId: "topic-1" },
+      context: context(unexpected, true, ["forum.sourceLocale.correctOwn"]),
+    })).rejects.toBe(failure);
+  });
+
   it("maps only classified authorization outages to controlled 503 responses", async () => {
     const topicWriter = writer();
     const topicUnavailable = await sectionAction({

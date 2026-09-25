@@ -214,6 +214,27 @@ describe("forum read states", () => {
     expect(screen.queryByRole("button", { name: "Mark as solved" })).not.toBeInTheDocument();
   });
 
+  it("renders explicit source-locale correction controls only for authorized resources", async () => {
+    renderRoute(
+      TopicRoute,
+      {
+        locale: "en",
+        topic,
+        canReply: false,
+        canManageSolution: false,
+        canCorrectTitleSourceLocale: true,
+        correctablePostIds: ["answer"],
+      },
+      "/en/topics/typed-api",
+      "en",
+      "ltr",
+    );
+    expect(await screen.findAllByRole("button", { name: "Correct language" })).toHaveLength(2);
+    expect(screen.getAllByText("Source language: en")).toHaveLength(2);
+    expect(document.querySelector('input[name="expectedRevisionId"][value="title-r1"]')).not.toBeNull();
+    expect(document.querySelector('input[name="postId"][value="answer"]')).not.toBeNull();
+  });
+
   it("shows forum write forms only for an authenticated loader result", async () => {
     const guestView = renderRoute(SectionRoute, { locale: "en", section, canCreateTopic: false }, "/en/sections/typescript", "en", "ltr");
     expect(screen.queryByRole("heading", { name: "Create a new topic" })).not.toBeInTheDocument();
