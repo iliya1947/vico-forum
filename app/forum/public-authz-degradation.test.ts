@@ -244,6 +244,14 @@ describe("public forum authorization degradation", () => {
 
   it("tolerates publication committing between presentation and status reads", async () => {
     const context = contextWithPermissions("viewer-1", ["forum.translation.generate"]);
+    context.set(localeContext, {
+      translationLocale: "he",
+      fallbackLocales: ["en"],
+      direction: "rtl",
+      formatting: { locale: "he", timeZone: "UTC" },
+      nativeName: "עברית",
+      presentationMetadata: {},
+    });
     const readCurrent = vi.fn(async (identities: readonly {
       contentType: "topic-title" | "post-body";
       contentId: string;
@@ -269,7 +277,7 @@ describe("public forum authorization degradation", () => {
 
     expect(result.titlePresentation).toMatchObject({
       selected: "original",
-      fallbackReason: "same-locale",
+      fallbackReason: "missing",
     });
     expect(readCurrent).toHaveBeenCalledTimes(1);
     expect(result.generationUnits).toHaveLength(2);
@@ -283,6 +291,14 @@ describe("public forum authorization degradation", () => {
 
   it("keeps classified presentation fallback usable when status already reports completed", async () => {
     const context = contextWithPermissions("viewer-1", ["forum.translation.generate"]);
+    context.set(localeContext, {
+      translationLocale: "he",
+      fallbackLocales: ["en"],
+      direction: "rtl",
+      formatting: { locale: "he", timeZone: "UTC" },
+      nativeName: "עברית",
+      presentationMetadata: {},
+    });
     context.set(
       contentTranslationPresentationContext,
       new ContentTranslationPresentationService({
