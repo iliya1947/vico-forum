@@ -2184,3 +2184,68 @@ No remaining current-Stage defect was found.
 - Full CI is green.
 - Next workflow step: Codex independently reviews the entire final PR #113 before the owner makes
   any merge decision.
+
+
+## PR #113 technical agreement continuation: pre-parse mutation guard
+
+Codex independently reviewed the complete PR #113 at
+`6ab1793d7fa2b94513e44d6088384016c2aeb0a1` and identified one new current-scope defect:
+`topicAction()` parsed `request.formData()` before authentication and same-origin rejection in
+order to inspect the submitted correction intent.
+
+ChatGPT independently verified the finding against the current repository and source-of-truth
+contracts. The finding is confirmed. It is a current Stage 5 security/resource regression because a
+guest or cross-origin topic POST could force body parsing before the established mutation boundary.
+The existing negative tests proved only that no writer mutation occurred, not that the body was
+rejected before consumption.
+
+### Agreed correction
+
+The correction does not add a new routing discriminator or trust client `intent` before body parse.
+
+- `topicAction()` again runs the shared `forumMutationGuard()` before
+  `request.formData()` for every topic POST;
+- correction-specific permission/validation/domain handling remains after parse and remains tagged
+  as `sourceLocaleCorrection`;
+- unauthenticated/bad-origin pre-parse failures intentionally use the existing generic mutation error
+  shape, because the server cannot safely know the body intent before the guard;
+- generic topic mutation errors are now rendered in a shared visible action-error location rather
+  than only inside the reply form, so session expiry or origin rejection is still visible when
+  revalidation hides reply/correction controls;
+- the generic authentication message is operation-neutral: `Sign in to continue.`;
+- focused route tests spy on `Request.formData()` and prove that guest and cross-origin correction
+  submissions are rejected without reading the body;
+- the tests also prove those pre-parse responses are generic (no forged/guessed correction operation
+  tag), while existing correction-domain coverage still verifies tagged post-parse
+  forbidden/invalid/not-found/conflict/classified-unavailable behavior.
+
+No source-locale revision, permission, migration, provider, generation or budget semantics changed.
+
+### Final verification after correction
+
+Final PR #113 head:
+
+`2dd32136011832e54f08c10717c5f0d569e58a74`
+
+GitHub Actions run:
+
+`36111385272`
+
+Results:
+
+- `checks` — success: accepted migration-history protection, lint, typecheck, unit/route tests,
+  production build, migration metadata validation and Drizzle schema parity;
+- `database` — success: clean PostgreSQL 17 migrations/constraints/integration tests, Workers build
+  smoke and local Hyperdrive smoke.
+
+ChatGPT then re-reviewed the entire 19-file PR after the agreed correction. Relative to the previously
+fully reviewed head `6ab1793d7fa2b94513e44d6088384016c2aeb0a1`, only four files changed:
+`app/forum/actions.server.ts`, `app/forum/write-actions.test.ts`,
+`app/localization/catalog.ts` and `app/routes/topic.tsx`. The other fifteen files are byte-identical
+to that fully reviewed head. All four changed files were rechecked together with the unchanged
+permission/migration/domain/revision/storage/UI contracts.
+
+No remaining current-Stage defect was found.
+
+PR #113 remains open and unmerged. Codex should now independently verify the corrected final head and
+the corrected PR metadata before any owner merge decision.
