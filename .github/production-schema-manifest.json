@@ -141,7 +141,7 @@
           "columns": [
             "id"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "e011fee44ff333a0a1f38e404f1ed1d48857a1dbbadb763ee293518e128398f3"
         }
       ],
       "indexes": []
@@ -170,7 +170,7 @@
           "columns": [
             "key"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "ed2d102c0b0d06a07d296a4d9ba0e5173bc9c581bc6f5ecc23e2f6958055fcf8"
         }
       ],
       "indexes": []
@@ -288,14 +288,14 @@
           "columns": [
             "display_name"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "8bc7757c5524015a5960f4a8734b79adc59d400eba6a0effa70aed59c72e4249"
         },
         {
           "name": "authz_roles_slug_check",
           "columns": [
             "slug"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "c9876a8f4bbb362c33fbc0ffbcb28179c2c940d5f50e61c0eb0e4c6a5987ca7e"
         }
       ],
       "indexes": []
@@ -369,7 +369,7 @@
           "columns": [
             "effect"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "35e75349602a6f75aa93abe2734674aa969b542d2222a0b4a23faf1c78eeb344"
         }
       ],
       "indexes": []
@@ -550,21 +550,21 @@
           "columns": [
             "translation_kind"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "e1964b9fc69be9906bd80a9c146b22a3407e213f04153fab6348666e979337fb"
         },
         {
           "name": "content_post_body_translation_tasks_namespace_check",
           "columns": [
             "source_namespace"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "35c61b6f9994a57b2c298a188c65e0239c0ecc15525aba7e2bcdaf33db87d4a2"
         },
         {
           "name": "content_post_body_translation_tasks_protection_policy_check",
           "columns": [
             "protected_content_policy_version"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "0a94377381ba93f08e6a892db17a11047c3cc728d6879c9a5a316acd24981072"
         },
         {
           "name": "content_post_body_translation_tasks_resolution_check",
@@ -573,28 +573,28 @@
             "revision_source_locale",
             "source_resolution_origin"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "7dc2c081630109b458ec9632469fae6a21855519ee7bc03f1a22f44edd15e4e9"
         },
         {
           "name": "content_post_body_translation_tasks_resolution_origin_check",
           "columns": [
             "source_resolution_origin"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "9c08cbbcbe098e15ccf4da532f79cd654277b85839076af8fdd24e915a42594f"
         },
         {
           "name": "content_post_body_translation_tasks_resolved_source_locale_chec",
           "columns": [
             "resolved_source_locale"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "13702f3459ff2bee7d28af0fe12e20b77e9419ecdf09acabdf2907235517720e"
         },
         {
           "name": "content_post_body_translation_tasks_revision_source_locale_chec",
           "columns": [
             "revision_source_locale"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "980843e39eb77bb2bca89709b1c0d29063b832ea00c8496a1e6738e8c804ea3b"
         }
       ],
       "indexes": []
@@ -697,14 +697,14 @@
           "columns": [
             "translation_kind"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "e03f895631d3bf7ded5f38eaef4caaf4dff8cb1ab389e68db8552bc97cb5a6f2"
         },
         {
           "name": "content_topic_title_translation_tasks_namespace_check",
           "columns": [
             "source_namespace"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "26d205e57cbb2611df3db99209125dd12eca9cdf983624a5f08fd8d7c9cd2d31"
         },
         {
           "name": "content_topic_title_translation_tasks_resolution_check",
@@ -713,28 +713,28 @@
             "revision_source_locale",
             "source_resolution_origin"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "7dc2c081630109b458ec9632469fae6a21855519ee7bc03f1a22f44edd15e4e9"
         },
         {
           "name": "content_topic_title_translation_tasks_resolution_origin_check",
           "columns": [
             "source_resolution_origin"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "9c08cbbcbe098e15ccf4da532f79cd654277b85839076af8fdd24e915a42594f"
         },
         {
           "name": "content_topic_title_translation_tasks_resolved_source_locale_ch",
           "columns": [
             "resolved_source_locale"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "13702f3459ff2bee7d28af0fe12e20b77e9419ecdf09acabdf2907235517720e"
         },
         {
           "name": "content_topic_title_translation_tasks_revision_source_locale_ch",
           "columns": [
             "revision_source_locale"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "980843e39eb77bb2bca89709b1c0d29063b832ea00c8496a1e6738e8c804ea3b"
         }
       ],
       "indexes": []
@@ -795,14 +795,14 @@
           "columns": [
             "scope"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "88ea84bddfb083d14e95468df75ac0ee677e266fcad89beec0fb349ccadaee14"
         },
         {
           "name": "content_translation_request_budget_counters_subject_check",
           "columns": [
             "subject_key"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "808c436a05459cb1b6bd4dd54653a39c6ecc9e19918078d9ce85113c1f98d8ba"
         },
         {
           "name": "content_translation_request_budget_counters_timestamps_check",
@@ -810,14 +810,14 @@
             "created_at",
             "updated_at"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "15d5bfb81035ce352a1b323f0082100f0e2104e1caa85105c947f51b6a717036"
         },
         {
           "name": "content_translation_request_budget_counters_used_units_check",
           "columns": [
             "used_units"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "006cbf356a002c2363b165b7d4b73c164a8c18c81b6e7ecf4d3ceaef31ec1e25"
         },
         {
           "name": "content_translation_request_budget_counters_window_check",
@@ -825,7 +825,7 @@
             "expires_at",
             "window_start"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "9dc72b0c5f62e9eada584be1e5aa79e8fe0bbd3afd01b0586d2f065686b61198"
         }
       ],
       "indexes": [
@@ -892,7 +892,7 @@
           "columns": [
             "name"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "33767a1bd55858c73d48eb7c3ed60d929c2237cacbfd58532f8ba93663b19b32"
         }
       ],
       "indexes": []
@@ -992,14 +992,14 @@
           "columns": [
             "attribution"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "e96c57f67a71123070833c3d02b89161641543af298f76e4a444ef754dbd2814"
         },
         {
           "name": "forum_post_body_translations_content_check",
           "columns": [
             "translated_content"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "00f78880225fe1cd2ea3608f27c0a035b329cae4e2b2ef0b4de7a0b0641856e5"
         },
         {
           "name": "forum_post_body_translations_distinct_locale_check",
@@ -1007,7 +1007,7 @@
             "source_locale",
             "target_locale"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "a8065e7ad680159ff86ee38366fb918c8763a3be9242d7bd4c0f1917a128845d"
         },
         {
           "name": "forum_post_body_translations_metadata_check",
@@ -1016,28 +1016,28 @@
             "provider",
             "provider_model"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "d1228fb66001863fc8fe6de4327ec4c62336eceb3f76ef11e6eb6e46cbe45f52"
         },
         {
           "name": "forum_post_body_translations_origin_check",
           "columns": [
             "origin"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "b4a20fb1ecd6ba099e6d3cf37e042aec7ee9f26ed16418b9cf881318c01d4fa1"
         },
         {
           "name": "forum_post_body_translations_source_locale_check",
           "columns": [
             "source_locale"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "034bbcef06f90892ac7f451e98de55526605c5914cfe0e9e51ca0a95b2ac85fc"
         },
         {
           "name": "forum_post_body_translations_target_locale_check",
           "columns": [
             "target_locale"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "404caa9bb982b3d5dbc5ee2ee34d851ed74d7a0b6466b6bfa0067fbb7d006415"
         }
       ],
       "indexes": []
@@ -1138,14 +1138,14 @@
           "columns": [
             "original_content"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "29b0a16ef15010ea71fca0c2205d354df09c7e225fbf4444a7616f6f7066275d"
         },
         {
           "name": "forum_post_revisions_source_locale_check",
           "columns": [
             "source_locale"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "034bbcef06f90892ac7f451e98de55526605c5914cfe0e9e51ca0a95b2ac85fc"
         }
       ],
       "indexes": []
@@ -1324,7 +1324,7 @@
           "columns": [
             "name"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "33767a1bd55858c73d48eb7c3ed60d929c2237cacbfd58532f8ba93663b19b32"
         }
       ],
       "indexes": [
@@ -1438,14 +1438,14 @@
           "columns": [
             "original_content"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "29b0a16ef15010ea71fca0c2205d354df09c7e225fbf4444a7616f6f7066275d"
         },
         {
           "name": "forum_topic_title_revisions_source_locale_check",
           "columns": [
             "source_locale"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "034bbcef06f90892ac7f451e98de55526605c5914cfe0e9e51ca0a95b2ac85fc"
         }
       ],
       "indexes": []
@@ -1545,14 +1545,14 @@
           "columns": [
             "attribution"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "e96c57f67a71123070833c3d02b89161641543af298f76e4a444ef754dbd2814"
         },
         {
           "name": "forum_topic_title_translations_content_check",
           "columns": [
             "translated_content"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "00f78880225fe1cd2ea3608f27c0a035b329cae4e2b2ef0b4de7a0b0641856e5"
         },
         {
           "name": "forum_topic_title_translations_distinct_locale_check",
@@ -1560,7 +1560,7 @@
             "source_locale",
             "target_locale"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "a8065e7ad680159ff86ee38366fb918c8763a3be9242d7bd4c0f1917a128845d"
         },
         {
           "name": "forum_topic_title_translations_metadata_check",
@@ -1569,28 +1569,28 @@
             "provider",
             "provider_model"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "d1228fb66001863fc8fe6de4327ec4c62336eceb3f76ef11e6eb6e46cbe45f52"
         },
         {
           "name": "forum_topic_title_translations_origin_check",
           "columns": [
             "origin"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "b4a20fb1ecd6ba099e6d3cf37e042aec7ee9f26ed16418b9cf881318c01d4fa1"
         },
         {
           "name": "forum_topic_title_translations_source_locale_check",
           "columns": [
             "source_locale"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "034bbcef06f90892ac7f451e98de55526605c5914cfe0e9e51ca0a95b2ac85fc"
         },
         {
           "name": "forum_topic_title_translations_target_locale_check",
           "columns": [
             "target_locale"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "404caa9bb982b3d5dbc5ee2ee34d851ed74d7a0b6466b6bfa0067fbb7d006415"
         }
       ],
       "indexes": []
@@ -1711,7 +1711,7 @@
             "best_answer_post_id",
             "is_solved"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "1fd4d1006d8bd1b81b2a95de4fd83ecec2d23818adddeb5810c4563a0b11b18b"
         }
       ],
       "indexes": [
@@ -1815,63 +1815,63 @@
           "columns": [
             "aliases"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "f8510ca8b84e858411098bc243fb70eaaef06000d6151df451cb4b70cf3032d6"
         },
         {
           "name": "locales_direction_check",
           "columns": [
             "direction"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "f75f2ffb1d56586acdb8586efb7604a781356b9e90003d27b7fad016606f80e2"
         },
         {
           "name": "locales_fallback_chain_shape_check",
           "columns": [
             "fallback_chain"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "33e635b63a630338db00b554b14d2656ba173fd5e07580f2147cd13bc0b8ef47"
         },
         {
           "name": "locales_match_tags_shape_check",
           "columns": [
             "match_tags"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "1bfd3a49184d226ec008b280594e750ed7574cd1be0ec2996e8c079c23c59cfe"
         },
         {
           "name": "locales_native_name_check",
           "columns": [
             "native_name"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "b1c4cf568448bb9d783516a2525a9f2287f368dee046ec74d8c5359bf86e1f08"
         },
         {
           "name": "locales_non_bootstrap_tag_check",
           "columns": [
             "tag"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "17850048e686804064e1d7c6337052850e78f9118390f0a6e6884366dd99862b"
         },
         {
           "name": "locales_presentation_metadata_object_check",
           "columns": [
             "presentation_metadata"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "365d55019d0143c7a616b3cceca60744ca8f050f5841ddba08bbcb565c2a5176"
         },
         {
           "name": "locales_publication_status_check",
           "columns": [
             "publication_status"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "cc43934a17f6d3101fe5070c7c59b49edabfa21650ce971ea3f75ee44477f300"
         },
         {
           "name": "locales_translation_status_check",
           "columns": [
             "translation_status"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "711a405a553bade6fe1677bd970e43cae97386dc5bfc2eeb51a43a10e9179428"
         }
       ],
       "indexes": []
@@ -2065,42 +2065,42 @@
             "source_namespace",
             "translation_kind"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "9327a74f725a9c4a98815c6bbdd259be23c7d007c823fcf8841a329509caf5a1"
         },
         {
           "name": "translation_task_generation_heads_generation_check",
           "columns": [
             "current_generation"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "968783a76fd6f8ec1f4fde523b710bdeaf6b98936b44bb277a40e74d18388fad"
         },
         {
           "name": "translation_task_generation_heads_key_check",
           "columns": [
             "source_key"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "0bd459bc065d0fde10823c97e4b40c1fc695f4192db9751453d7f51a946b0f71"
         },
         {
           "name": "translation_task_generation_heads_kind_check",
           "columns": [
             "translation_kind"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "f9cfc0e5f10c2ec515c47ae1eefaef996d8e657a87212f65f564f10fb85081b9"
         },
         {
           "name": "translation_task_generation_heads_locale_check",
           "columns": [
             "target_locale"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "404caa9bb982b3d5dbc5ee2ee34d851ed74d7a0b6466b6bfa0067fbb7d006415"
         },
         {
           "name": "translation_task_generation_heads_namespace_check",
           "columns": [
             "source_namespace"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "7d14f50839fe0873a8251a3f5af48f6daa85649b2e54f45e8ef1dc22a10bca9e"
         },
         {
           "name": "translation_task_generation_heads_ui_locale_check",
@@ -2108,7 +2108,7 @@
             "target_locale",
             "translation_kind"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "829def1580e02e593e34d7e0ebd6c9b80dae7aabb043a99ef7033fd1abac8803"
         }
       ],
       "indexes": []
@@ -2326,21 +2326,21 @@
           "columns": [
             "allowance_provider"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "3eeb39684a67e971b1fb1c71f8eabffe524e98ebec0084bdbaf93cfc7eca7b0e"
         },
         {
           "name": "translation_tasks_allowance_reason_check",
           "columns": [
             "allowance_reason"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "b820d10ee2e4ef49b861f4897248e94b6a54e32552c52dd95677e9bde046f1c0"
         },
         {
           "name": "translation_tasks_allowance_reservation_check",
           "columns": [
             "allowance_reservation_reference"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "86527e0d82ef5aba3eb06e585e6eb1e9ee5727cde90a403bec98874a777e2fe6"
         },
         {
           "name": "translation_tasks_allowance_shape_check",
@@ -2360,7 +2360,7 @@
             "max_attempts",
             "translation_kind"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "316946ea4d41bc70ee4123c7a3636d5308ed770a603e38e2da54795a04d35340"
         },
         {
           "name": "translation_tasks_attempt_count_check",
@@ -2368,7 +2368,7 @@
             "attempt_count",
             "max_attempts"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "9e72899bbb378ca4f740bfcc4cadf831a960808d9422f344fb001d64cd31cc34"
         },
         {
           "name": "translation_tasks_content_shape_check",
@@ -2376,49 +2376,49 @@
             "source_namespace",
             "translation_kind"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "9327a74f725a9c4a98815c6bbdd259be23c7d007c823fcf8841a329509caf5a1"
         },
         {
           "name": "translation_tasks_failure_code_check",
           "columns": [
             "last_failure_code"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "364503b073cf0930d6d375ec8fc83675e836a0877aef00478d55579d543cee45"
         },
         {
           "name": "translation_tasks_failure_disposition_check",
           "columns": [
             "failure_disposition"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "989c085db563ba34b3cf58272078a04a1b1fef82cbb47cbcc9943315c46f151a"
         },
         {
           "name": "translation_tasks_generation_check",
           "columns": [
             "generation"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "799b7602e276d11c68a909b3d65fe44134ac7dec460cdcdc6df6b01ddd5be5cb"
         },
         {
           "name": "translation_tasks_generation_policy_version_check",
           "columns": [
             "generation_policy_version"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "3e198c98b84a2690dde035d02a01bcec8f162421358e4518844deb75f353bab3"
         },
         {
           "name": "translation_tasks_identity_check",
           "columns": [
             "task_identity"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "ac09cf7aff7e07ac9c566b5201ab02f04eead8541308b1ba39cdf913a8af12b7"
         },
         {
           "name": "translation_tasks_kind_check",
           "columns": [
             "translation_kind"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "f9cfc0e5f10c2ec515c47ae1eefaef996d8e657a87212f65f564f10fb85081b9"
         },
         {
           "name": "translation_tasks_lifecycle_check",
@@ -2435,49 +2435,49 @@
             "stale_at",
             "status"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "5a6548488112350aa3e31f239885707b43e5e869678d9a2cbd7f7aa85e7daa89"
         },
         {
           "name": "translation_tasks_max_attempts_check",
           "columns": [
             "max_attempts"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "c40cfcf74266fb023f369718066da010fe3ebab5735021234f27af45fcc90515"
         },
         {
           "name": "translation_tasks_source_fingerprint_check",
           "columns": [
             "source_fingerprint"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "40d09e1319892200989100a9c9296c88812ee55b8eca04d2e263c67d7d5f31cf"
         },
         {
           "name": "translation_tasks_source_key_check",
           "columns": [
             "source_key"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "0bd459bc065d0fde10823c97e4b40c1fc695f4192db9751453d7f51a946b0f71"
         },
         {
           "name": "translation_tasks_source_namespace_check",
           "columns": [
             "source_namespace"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "7d14f50839fe0873a8251a3f5af48f6daa85649b2e54f45e8ef1dc22a10bca9e"
         },
         {
           "name": "translation_tasks_status_check",
           "columns": [
             "status"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "fbf29f34e47c9bf22efa34c9b429726f27f73984fb53184eb1f7307811c60cdf"
         },
         {
           "name": "translation_tasks_target_locale_check",
           "columns": [
             "target_locale"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "404caa9bb982b3d5dbc5ee2ee34d851ed74d7a0b6466b6bfa0067fbb7d006415"
         },
         {
           "name": "translation_tasks_timestamps_check",
@@ -2485,7 +2485,7 @@
             "created_at",
             "updated_at"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "15d5bfb81035ce352a1b323f0082100f0e2104e1caa85105c947f51b6a717036"
         },
         {
           "name": "translation_tasks_ui_target_locale_check",
@@ -2493,7 +2493,7 @@
             "target_locale",
             "translation_kind"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "829def1580e02e593e34d7e0ebd6c9b80dae7aabb043a99ef7033fd1abac8803"
         }
       ],
       "indexes": [
@@ -2635,28 +2635,28 @@
           "columns": [
             "locale"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "85f099f27a31fd37e9ed4252f5200719ba5380d623bd5f4c7d48e3f732cc1563"
         },
         {
           "name": "ui_translation_bundles_namespace_check",
           "columns": [
             "namespace"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "c1bb85d6d4782070fbd8c759a643f6651c40377a6694bcf6333a1100d22460a4"
         },
         {
           "name": "ui_translation_bundles_resources_object_check",
           "columns": [
             "resources"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "5b6d10fb03877c5d91f91d607b45686175a296f3cebcc0f98412b886bb64d45e"
         },
         {
           "name": "ui_translation_bundles_version_check",
           "columns": [
             "bundle_version"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "834be1ee19e060c97b55c85d1e1f51e58fc4ea64163b40ed049e025e43352224"
         }
       ],
       "indexes": []
@@ -2748,14 +2748,14 @@
           "columns": [
             "key"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "cc40cc9ca51e78f50c99f6911301bf9c3239b8dc3809b810a15669415c3db590"
         },
         {
           "name": "ui_translations_locale_check",
           "columns": [
             "locale"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "85f099f27a31fd37e9ed4252f5200719ba5380d623bd5f4c7d48e3f732cc1563"
         },
         {
           "name": "ui_translations_machine_metadata_check",
@@ -2765,49 +2765,49 @@
             "provider",
             "provider_model"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "df998a97fd87836fdb36186fce09462835b9ef309c4f06d2f68c1fae5af72691"
         },
         {
           "name": "ui_translations_namespace_check",
           "columns": [
             "namespace"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "c1bb85d6d4782070fbd8c759a643f6651c40377a6694bcf6333a1100d22460a4"
         },
         {
           "name": "ui_translations_origin_check",
           "columns": [
             "origin"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "b4a20fb1ecd6ba099e6d3cf37e042aec7ee9f26ed16418b9cf881318c01d4fa1"
         },
         {
           "name": "ui_translations_payload_check",
           "columns": [
             "translated_payload"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "fb93de5175d46554242ffebdd8c0914bb5ed7b881be32294fa797a4655a1b84a"
         },
         {
           "name": "ui_translations_provenance_metadata_object_check",
           "columns": [
             "provenance_metadata"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "28a6c1915f84750c15a237a2f16f09d5b36697418fe7dc17db4ed47fefc268f3"
         },
         {
           "name": "ui_translations_source_fingerprint_check",
           "columns": [
             "source_fingerprint"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "40d09e1319892200989100a9c9296c88812ee55b8eca04d2e263c67d7d5f31cf"
         },
         {
           "name": "ui_translations_status_check",
           "columns": [
             "status"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "228af7bf9e6503b05b02a2edf66845ee9f379ef764fa65d4496ae6ca44c65743"
         }
       ],
       "indexes": []
