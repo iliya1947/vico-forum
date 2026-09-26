@@ -36,8 +36,9 @@ Vico Forum находится в ранней pre-release разработке.
 - Production migration workflow больше не допускает database-owner connection: verifier требует
   dedicated migration connection, совпадающую с application owner.
 - Repository boundary для следующего schema-first rollout разделяет verifier на две fail-closed
-  фазы: pre-migration принимает только exact checked-in journal prefix не короче known-applied
-  target prefix `0000`–`0003`, post-migration требует exact complete journal и repository-owned
+  фазы: pre-migration принимает только exact checked-in migration ledger prefix по паре
+  `created_at + Drizzle SHA-256 hash`, не короче known-applied target prefix `0000`–`0003`;
+  post-migration требует exact complete timestamp+hash ledger и repository-owned
   full structural manifest `0000`–`0020`. Manifest покрывает все 27 public application tables, column defaults, PK/unique/FK/check/index
   invariants и correctness-critical trigger/function definitions + trigger enablement; CI сверяет
   этот contract с clean PostgreSQL 17. External migration этим repository change не выполняется.
@@ -344,7 +345,8 @@ acceptance остаётся evidence этого localization path, но не я�
 Dedicated least-privilege migration credential для production подтверждён external execution как
 `vico_forum_migrator`, а production migration workflow больше не содержит database-owner exception.
 Repository verifier boundary подготовлен к schema-first rollout: preflight допускает только exact
-known-applied prefix текущего journal, postflight требует полный `0000`–`0020` ledger/manifest.
+known-applied prefix текущего ledger по `created_at + Drizzle SHA-256 hash`, postflight требует
+полный `0000`–`0020` timestamp+hash ledger/manifest.
 Repository-owned accepted migration→runtime evidence при этом всё ещё заканчивается на
 `0002_ui_translation_storage`; наличие `0003` в target DB является known-applied target state,
 но не accepted migration→runtime evidence. Pending `0004`–`0020` ещё не применялись.
