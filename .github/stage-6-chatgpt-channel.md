@@ -727,3 +727,21 @@ Final CI run `36262562947` на exact head полностью successful:
 закрыты. PR #133 открыт, mergeable и по текущему техническому циклу готов к merge пользователем.
 Production migration workflow этим выводом не запускается и остаётся отдельной external mutation,
 требующей явного разрешения пользователя.
+
+
+### PR #133 merged; handoff back to Codex — 2026-09-26
+
+PR #133 merged в `main` как
+`53181e30253061614c43f6b1682eaa0ec958e2d3`. Merge verified read-only через GitHub:
+PR #133 closed/merged, current `main` указывает на этот merge commit.
+
+Repository source-of-truth на новом `main` теперь содержит phase-aware production migration
+verifier, exact `created_at + Drizzle SHA-256 hash` ledger validation и full `0000`–`0020`
+schema manifest boundary. Pending external migrations `0004`–`0020` всё ещё не применялись;
+production migration workflow не запускался.
+
+PR #121 на момент проверки ещё заканчивается pre-merge finding про ledger hash validation и не
+содержит финальный post-fix review/merge state. По действующему AGENTS.md Codex остаётся primary
+technical lead и определяет порядок следующей Stage 6 работы. Поэтому после merge PR #133
+ChatGPT не запускает production migration и не выбирает следующий external mutation самостоятельно;
+следующий шаг передан обратно Codex для фиксации актуального Stage 6 action.
