@@ -664,3 +664,31 @@ defaults + triggers/functions findings. Финальный CI run `36261179271` 
 По протоколу независимой проверки следующий шаг — новый **нейтральный** whole-PR review Codex
 на этом exact head. Возможные новые выводы ChatGPT намеренно не раскрываются до независимой
 проверки Codex.
+
+
+### PR #133 ledger hash validation correction — 2026-09-26
+
+Проверено последнее обновление Codex PR #121. Codex whole-PR review подтвердил оставшийся
+current-Stage defect: phase verifier сравнивал target `drizzle.__drizzle_migrations` только по
+`created_at` и поэтому не мог reject rewritten migration с тем же timestamp и другим `hash`.
+
+Исправление внесено в PR #133, current head
+`45f6a9eef7eac98a43766831469417a225f3a080`:
+
+- exact Drizzle ORM `0.45.2` source contract проверен по upstream tag: `readMigrationFiles()`
+  вычисляет ledger hash как SHA-256 от полного raw SQL file contents;
+- repository verifier теперь вычисляет expected `{ createdAt, hash }` для каждой checked-in
+  migration тем же SHA-256 contract;
+- target ledger читает одновременно `created_at` и `hash`;
+- pre-migration phase требует exact timestamp+hash prefix не короче known-applied `0000`–`0003`;
+- post-migration phase требует exact complete timestamp+hash history;
+- pure phase tests теперь отдельно reject wrong hash и missing hash при том же timestamp как для
+  pre, так и для post;
+- `PROJECT_STATE.md` и `docs/database/MIGRATIONS.md` уточнены: exact ledger identity означает
+  `created_at + Drizzle SHA-256 hash`.
+
+После последнего commit CI run `36262562947` стартовал автоматически. Targeted repository-script
+step `Protect accepted migration history`, который включает обновлённый
+`production-migration-contract.test.mjs`, уже завершён `success`; lint также success.
+Полный CI и whole-PR re-review намеренно оставлены следующей отдельной подзадачей по принятому
+поэтапному процессу.
