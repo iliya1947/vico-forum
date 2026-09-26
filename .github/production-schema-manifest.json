@@ -1,0 +1,2939 @@
+{
+  "version": 1,
+  "schema": "public",
+  "targetMigration": "0020_translation_generation_permission",
+  "tables": {
+    "account": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "account_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "provider_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "user_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "access_token",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "refresh_token",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "id_token",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "access_token_expires_at",
+          "type": "timestamp without time zone",
+          "nullable": true
+        },
+        {
+          "name": "refresh_token_expires_at",
+          "type": "timestamp without time zone",
+          "nullable": true
+        },
+        {
+          "name": "scope",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "password",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp without time zone",
+          "nullable": false
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp without time zone",
+          "nullable": false
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "account_pkey",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [
+        {
+          "name": "account_user_id_user_id_fk",
+          "columns": [
+            "user_id"
+          ],
+          "referencedTable": "user",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        }
+      ],
+      "checks": [],
+      "indexes": [
+        {
+          "name": "account_userId_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "user_id",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ]
+        }
+      ]
+    },
+    "authz_mutation_lock": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "integer",
+          "nullable": false
+        },
+        {
+          "name": "managers_ever_existed",
+          "type": "boolean",
+          "nullable": false
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "authz_mutation_lock_pkey",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [],
+      "checks": [
+        {
+          "name": "authz_mutation_lock_singleton_check",
+          "columns": [
+            "id"
+          ],
+          "expression": "\"authz_mutation_lock\".\"id\" = 1"
+        }
+      ],
+      "indexes": []
+    },
+    "authz_permissions": {
+      "columns": [
+        {
+          "name": "key",
+          "type": "text",
+          "nullable": false
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "authz_permissions_pkey",
+          "columns": [
+            "key"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [],
+      "checks": [
+        {
+          "name": "authz_permissions_catalog_check",
+          "columns": [
+            "key"
+          ],
+          "expression": "\"authz_permissions\".\"key\" in (\n  'forum.topic.create', 'forum.reply.create', 'forum.solution.manageOwn',\n  'forum.solution.manageAny', 'forum.sourceLocale.correctOwn',\n  'forum.sourceLocale.correctAny', 'forum.translation.generate',\n  'access.authorization.manage'\n)"
+        }
+      ],
+      "indexes": []
+    },
+    "authz_role_permissions": {
+      "columns": [
+        {
+          "name": "role_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "permission_key",
+          "type": "text",
+          "nullable": false
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "authz_role_permissions_pk",
+          "columns": [
+            "role_id",
+            "permission_key"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [
+        {
+          "name": "authz_role_permissions_permission_key_authz_permissions_key_fk",
+          "columns": [
+            "permission_key"
+          ],
+          "referencedTable": "authz_permissions",
+          "referencedColumns": [
+            "key"
+          ],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        },
+        {
+          "name": "authz_role_permissions_role_id_authz_roles_id_fk",
+          "columns": [
+            "role_id"
+          ],
+          "referencedTable": "authz_roles",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        }
+      ],
+      "checks": [],
+      "indexes": []
+    },
+    "authz_roles": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "slug",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "display_name",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "is_system",
+          "type": "boolean",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": false
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "authz_roles_pkey",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [
+        {
+          "name": "authz_roles_slug_unique",
+          "columns": [
+            "slug"
+          ],
+          "nullsNotDistinct": false
+        }
+      ],
+      "foreignKeys": [],
+      "checks": [
+        {
+          "name": "authz_roles_display_name_check",
+          "columns": [
+            "display_name"
+          ],
+          "expression": "btrim(\"authz_roles\".\"display_name\") <> ''"
+        },
+        {
+          "name": "authz_roles_slug_check",
+          "columns": [
+            "slug"
+          ],
+          "expression": "\"authz_roles\".\"slug\" = btrim(\"authz_roles\".\"slug\") and \"authz_roles\".\"slug\" ~ '^[a-z][a-z0-9-]{0,62}$'"
+        }
+      ],
+      "indexes": []
+    },
+    "authz_user_permission_overrides": {
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "permission_key",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "effect",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": false
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "authz_user_permission_overrides_pk",
+          "columns": [
+            "user_id",
+            "permission_key"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [
+        {
+          "name": "authz_user_permission_overrides_permission_key_authz_permissions_key_fk",
+          "columns": [
+            "permission_key"
+          ],
+          "referencedTable": "authz_permissions",
+          "referencedColumns": [
+            "key"
+          ],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        },
+        {
+          "name": "authz_user_permission_overrides_user_id_user_id_fk",
+          "columns": [
+            "user_id"
+          ],
+          "referencedTable": "user",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        }
+      ],
+      "checks": [
+        {
+          "name": "authz_user_permission_overrides_effect_check",
+          "columns": [
+            "effect"
+          ],
+          "expression": "\"authz_user_permission_overrides\".\"effect\" in ('allow', 'deny')"
+        }
+      ],
+      "indexes": []
+    },
+    "authz_user_roles": {
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "role_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "assigned_at",
+          "type": "timestamp with time zone",
+          "nullable": false
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "authz_user_roles_pkey",
+          "columns": [
+            "user_id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [
+        {
+          "name": "authz_user_roles_role_id_authz_roles_id_fk",
+          "columns": [
+            "role_id"
+          ],
+          "referencedTable": "authz_roles",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        },
+        {
+          "name": "authz_user_roles_user_id_user_id_fk",
+          "columns": [
+            "user_id"
+          ],
+          "referencedTable": "user",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        }
+      ],
+      "checks": [],
+      "indexes": [
+        {
+          "name": "authz_user_roles_role_id_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "role_id",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ]
+        }
+      ]
+    },
+    "content_post_body_translation_tasks": {
+      "columns": [
+        {
+          "name": "task_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "translation_kind",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "source_namespace",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "post_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "revision_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "revision_source_locale",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "resolved_source_locale",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "source_resolution_origin",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "protected_content_policy_version",
+          "type": "text",
+          "nullable": false
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "content_post_body_translation_tasks_pkey",
+          "columns": [
+            "task_id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [
+        {
+          "name": "content_post_body_translation_tasks_revision_fk",
+          "columns": [
+            "post_id",
+            "revision_id",
+            "revision_source_locale"
+          ],
+          "referencedTable": "forum_post_revisions",
+          "referencedColumns": [
+            "post_id",
+            "id",
+            "source_locale"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        },
+        {
+          "name": "content_post_body_translation_tasks_task_fk",
+          "columns": [
+            "task_id",
+            "translation_kind",
+            "source_namespace",
+            "post_id"
+          ],
+          "referencedTable": "translation_tasks",
+          "referencedColumns": [
+            "id",
+            "translation_kind",
+            "source_namespace",
+            "source_key"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        }
+      ],
+      "checks": [
+        {
+          "name": "content_post_body_translation_tasks_kind_check",
+          "columns": [
+            "translation_kind"
+          ],
+          "expression": "\"content_post_body_translation_tasks\".\"translation_kind\" = 'content-post-body'"
+        },
+        {
+          "name": "content_post_body_translation_tasks_namespace_check",
+          "columns": [
+            "source_namespace"
+          ],
+          "expression": "\"content_post_body_translation_tasks\".\"source_namespace\" = 'post-body'"
+        },
+        {
+          "name": "content_post_body_translation_tasks_protection_policy_check",
+          "columns": [
+            "protected_content_policy_version"
+          ],
+          "expression": "btrim(\"content_post_body_translation_tasks\".\"protected_content_policy_version\") <> ''"
+        },
+        {
+          "name": "content_post_body_translation_tasks_resolution_check",
+          "columns": [
+            "resolved_source_locale",
+            "revision_source_locale",
+            "source_resolution_origin"
+          ],
+          "expression": "(\n        \"content_post_body_translation_tasks\".\"source_resolution_origin\" = 'revision-metadata'\n        and lower(\"content_post_body_translation_tasks\".\"revision_source_locale\") <> 'und'\n        and \"content_post_body_translation_tasks\".\"revision_source_locale\" = \"content_post_body_translation_tasks\".\"resolved_source_locale\"\n      ) or (\n        \"content_post_body_translation_tasks\".\"source_resolution_origin\" = 'detector'\n        and lower(\"content_post_body_translation_tasks\".\"revision_source_locale\") = 'und'\n      )"
+        },
+        {
+          "name": "content_post_body_translation_tasks_resolution_origin_check",
+          "columns": [
+            "source_resolution_origin"
+          ],
+          "expression": "\"content_post_body_translation_tasks\".\"source_resolution_origin\" in ('revision-metadata', 'detector')"
+        },
+        {
+          "name": "content_post_body_translation_tasks_resolved_source_locale_check",
+          "columns": [
+            "resolved_source_locale"
+          ],
+          "expression": "\"content_post_body_translation_tasks\".\"resolved_source_locale\" = btrim(\"content_post_body_translation_tasks\".\"resolved_source_locale\")\n    and lower(\"content_post_body_translation_tasks\".\"resolved_source_locale\") <> 'und'\n    and \"content_post_body_translation_tasks\".\"resolved_source_locale\" ~ '^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*$'"
+        },
+        {
+          "name": "content_post_body_translation_tasks_revision_source_locale_check",
+          "columns": [
+            "revision_source_locale"
+          ],
+          "expression": "\"content_post_body_translation_tasks\".\"revision_source_locale\" = btrim(\"content_post_body_translation_tasks\".\"revision_source_locale\") and \"content_post_body_translation_tasks\".\"revision_source_locale\" ~ '^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*$'"
+        }
+      ],
+      "indexes": []
+    },
+    "content_topic_title_translation_tasks": {
+      "columns": [
+        {
+          "name": "task_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "translation_kind",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "source_namespace",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "topic_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "revision_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "revision_source_locale",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "resolved_source_locale",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "source_resolution_origin",
+          "type": "text",
+          "nullable": false
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "content_topic_title_translation_tasks_pkey",
+          "columns": [
+            "task_id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [
+        {
+          "name": "content_topic_title_translation_tasks_revision_fk",
+          "columns": [
+            "topic_id",
+            "revision_id",
+            "revision_source_locale"
+          ],
+          "referencedTable": "forum_topic_title_revisions",
+          "referencedColumns": [
+            "topic_id",
+            "id",
+            "source_locale"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        },
+        {
+          "name": "content_topic_title_translation_tasks_task_fk",
+          "columns": [
+            "task_id",
+            "translation_kind",
+            "source_namespace",
+            "topic_id"
+          ],
+          "referencedTable": "translation_tasks",
+          "referencedColumns": [
+            "id",
+            "translation_kind",
+            "source_namespace",
+            "source_key"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        }
+      ],
+      "checks": [
+        {
+          "name": "content_topic_title_translation_tasks_kind_check",
+          "columns": [
+            "translation_kind"
+          ],
+          "expression": "\"content_topic_title_translation_tasks\".\"translation_kind\" = 'content-topic-title'"
+        },
+        {
+          "name": "content_topic_title_translation_tasks_namespace_check",
+          "columns": [
+            "source_namespace"
+          ],
+          "expression": "\"content_topic_title_translation_tasks\".\"source_namespace\" = 'topic-title'"
+        },
+        {
+          "name": "content_topic_title_translation_tasks_resolution_check",
+          "columns": [
+            "resolved_source_locale",
+            "revision_source_locale",
+            "source_resolution_origin"
+          ],
+          "expression": "(\n        \"content_topic_title_translation_tasks\".\"source_resolution_origin\" = 'revision-metadata'\n        and lower(\"content_topic_title_translation_tasks\".\"revision_source_locale\") <> 'und'\n        and \"content_topic_title_translation_tasks\".\"revision_source_locale\" = \"content_topic_title_translation_tasks\".\"resolved_source_locale\"\n      ) or (\n        \"content_topic_title_translation_tasks\".\"source_resolution_origin\" = 'detector'\n        and lower(\"content_topic_title_translation_tasks\".\"revision_source_locale\") = 'und'\n      )"
+        },
+        {
+          "name": "content_topic_title_translation_tasks_resolution_origin_check",
+          "columns": [
+            "source_resolution_origin"
+          ],
+          "expression": "\"content_topic_title_translation_tasks\".\"source_resolution_origin\" in ('revision-metadata', 'detector')"
+        },
+        {
+          "name": "content_topic_title_translation_tasks_resolved_source_locale_check",
+          "columns": [
+            "resolved_source_locale"
+          ],
+          "expression": "\"content_topic_title_translation_tasks\".\"resolved_source_locale\" = btrim(\"content_topic_title_translation_tasks\".\"resolved_source_locale\")\n    and lower(\"content_topic_title_translation_tasks\".\"resolved_source_locale\") <> 'und'\n    and \"content_topic_title_translation_tasks\".\"resolved_source_locale\" ~ '^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*$'"
+        },
+        {
+          "name": "content_topic_title_translation_tasks_revision_source_locale_check",
+          "columns": [
+            "revision_source_locale"
+          ],
+          "expression": "\"content_topic_title_translation_tasks\".\"revision_source_locale\" = btrim(\"content_topic_title_translation_tasks\".\"revision_source_locale\") and \"content_topic_title_translation_tasks\".\"revision_source_locale\" ~ '^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*$'"
+        }
+      ],
+      "indexes": []
+    },
+    "content_translation_request_budget_counters": {
+      "columns": [
+        {
+          "name": "scope",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "subject_key",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "window_start",
+          "type": "timestamp with time zone",
+          "nullable": false
+        },
+        {
+          "name": "used_units",
+          "type": "bigint",
+          "nullable": false
+        },
+        {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": false
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "content_translation_request_budget_counters_pk",
+          "columns": [
+            "scope",
+            "subject_key",
+            "window_start"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [],
+      "checks": [
+        {
+          "name": "content_translation_request_budget_counters_scope_check",
+          "columns": [
+            "scope"
+          ],
+          "expression": "\"content_translation_request_budget_counters\".\"scope\" = btrim(\"content_translation_request_budget_counters\".\"scope\")\n        and \"content_translation_request_budget_counters\".\"scope\" ~ '^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}@[A-Za-z0-9][A-Za-z0-9._-]{0,63}$'"
+        },
+        {
+          "name": "content_translation_request_budget_counters_subject_check",
+          "columns": [
+            "subject_key"
+          ],
+          "expression": "\"content_translation_request_budget_counters\".\"subject_key\" = '_global' or \"content_translation_request_budget_counters\".\"subject_key\" ~ '^[A-Za-z0-9_-]{43}$'"
+        },
+        {
+          "name": "content_translation_request_budget_counters_timestamps_check",
+          "columns": [
+            "created_at",
+            "updated_at"
+          ],
+          "expression": "\"content_translation_request_budget_counters\".\"updated_at\" >= \"content_translation_request_budget_counters\".\"created_at\""
+        },
+        {
+          "name": "content_translation_request_budget_counters_used_units_check",
+          "columns": [
+            "used_units"
+          ],
+          "expression": "\"content_translation_request_budget_counters\".\"used_units\" >= 0 and \"content_translation_request_budget_counters\".\"used_units\" <= 9007199254740991"
+        },
+        {
+          "name": "content_translation_request_budget_counters_window_check",
+          "columns": [
+            "expires_at",
+            "window_start"
+          ],
+          "expression": "\"content_translation_request_budget_counters\".\"expires_at\" > \"content_translation_request_budget_counters\".\"window_start\""
+        }
+      ],
+      "indexes": [
+        {
+          "name": "content_translation_request_budget_counters_cleanup_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "expires_at",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "scope",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "subject_key",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "window_start",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ]
+        }
+      ]
+    },
+    "forum_categories": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "forum_categories_pkey",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [],
+      "checks": [
+        {
+          "name": "forum_categories_name_check",
+          "columns": [
+            "name"
+          ],
+          "expression": "btrim(\"forum_categories\".\"name\") <> ''"
+        }
+      ],
+      "indexes": []
+    },
+    "forum_post_body_translations": {
+      "columns": [
+        {
+          "name": "post_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "revision_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "target_locale",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "source_locale",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "translated_content",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "origin",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "provider",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "provider_model",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "attribution",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": false
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "forum_post_body_translations_pk",
+          "columns": [
+            "post_id",
+            "revision_id",
+            "target_locale"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [
+        {
+          "name": "forum_post_body_translations_revision_fk",
+          "columns": [
+            "post_id",
+            "revision_id",
+            "source_locale"
+          ],
+          "referencedTable": "forum_post_revisions",
+          "referencedColumns": [
+            "post_id",
+            "id",
+            "source_locale"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        }
+      ],
+      "checks": [
+        {
+          "name": "forum_post_body_translations_attribution_check",
+          "columns": [
+            "attribution"
+          ],
+          "expression": "\"forum_post_body_translations\".\"attribution\" is null or btrim(\"forum_post_body_translations\".\"attribution\") <> ''"
+        },
+        {
+          "name": "forum_post_body_translations_content_check",
+          "columns": [
+            "translated_content"
+          ],
+          "expression": "btrim(\"forum_post_body_translations\".\"translated_content\") <> ''"
+        },
+        {
+          "name": "forum_post_body_translations_distinct_locale_check",
+          "columns": [
+            "source_locale",
+            "target_locale"
+          ],
+          "expression": "\"forum_post_body_translations\".\"source_locale\" = 'und' or lower(\"forum_post_body_translations\".\"source_locale\") <> lower(\"forum_post_body_translations\".\"target_locale\")"
+        },
+        {
+          "name": "forum_post_body_translations_metadata_check",
+          "columns": [
+            "origin",
+            "provider",
+            "provider_model"
+          ],
+          "expression": "(\n    \"forum_post_body_translations\".\"origin\" = 'machine'\n    and \"forum_post_body_translations\".\"provider\" is not null\n    and btrim(\"forum_post_body_translations\".\"provider\") <> ''\n    and \"forum_post_body_translations\".\"provider_model\" is not null\n    and btrim(\"forum_post_body_translations\".\"provider_model\") <> ''\n  ) or (\n    \"forum_post_body_translations\".\"origin\" = 'persistent_manual'\n    and \"forum_post_body_translations\".\"provider\" is null\n    and \"forum_post_body_translations\".\"provider_model\" is null\n  )"
+        },
+        {
+          "name": "forum_post_body_translations_origin_check",
+          "columns": [
+            "origin"
+          ],
+          "expression": "\"forum_post_body_translations\".\"origin\" in ('persistent_manual', 'machine')"
+        },
+        {
+          "name": "forum_post_body_translations_source_locale_check",
+          "columns": [
+            "source_locale"
+          ],
+          "expression": "\"forum_post_body_translations\".\"source_locale\" = btrim(\"forum_post_body_translations\".\"source_locale\") and \"forum_post_body_translations\".\"source_locale\" ~ '^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*$'"
+        },
+        {
+          "name": "forum_post_body_translations_target_locale_check",
+          "columns": [
+            "target_locale"
+          ],
+          "expression": "\"forum_post_body_translations\".\"target_locale\" = btrim(\"forum_post_body_translations\".\"target_locale\")\n    and lower(\"forum_post_body_translations\".\"target_locale\") <> 'und'\n    and \"forum_post_body_translations\".\"target_locale\" ~ '^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*$'"
+        }
+      ],
+      "indexes": []
+    },
+    "forum_post_revisions": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "post_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "author_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "original_content",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "source_locale",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "forum_post_revisions_pkey",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [
+        {
+          "name": "forum_post_revisions_owner_source_unique",
+          "columns": [
+            "post_id",
+            "id",
+            "source_locale"
+          ],
+          "nullsNotDistinct": false
+        },
+        {
+          "name": "forum_post_revisions_post_id_id_unique",
+          "columns": [
+            "post_id",
+            "id"
+          ],
+          "nullsNotDistinct": false
+        }
+      ],
+      "foreignKeys": [
+        {
+          "name": "forum_post_revisions_author_id_user_id_fk",
+          "columns": [
+            "author_id"
+          ],
+          "referencedTable": "user",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        },
+        {
+          "name": "forum_post_revisions_post_id_fk",
+          "columns": [
+            "post_id"
+          ],
+          "referencedTable": "forum_posts",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        }
+      ],
+      "checks": [
+        {
+          "name": "forum_post_revisions_content_check",
+          "columns": [
+            "original_content"
+          ],
+          "expression": "btrim(\"forum_post_revisions\".\"original_content\") <> ''"
+        },
+        {
+          "name": "forum_post_revisions_source_locale_check",
+          "columns": [
+            "source_locale"
+          ],
+          "expression": "\"forum_post_revisions\".\"source_locale\" = btrim(\"forum_post_revisions\".\"source_locale\") and \"forum_post_revisions\".\"source_locale\" ~ '^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*$'"
+        }
+      ],
+      "indexes": []
+    },
+    "forum_posts": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "topic_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "author_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "current_revision_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "forum_posts_pkey",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [
+        {
+          "name": "forum_posts_topic_id_id_unique",
+          "columns": [
+            "topic_id",
+            "id"
+          ],
+          "nullsNotDistinct": false
+        }
+      ],
+      "foreignKeys": [
+        {
+          "name": "forum_posts_author_id_user_id_fk",
+          "columns": [
+            "author_id"
+          ],
+          "referencedTable": "user",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        },
+        {
+          "name": "forum_posts_current_revision_fk",
+          "columns": [
+            "id",
+            "current_revision_id"
+          ],
+          "referencedTable": "forum_post_revisions",
+          "referencedColumns": [
+            "post_id",
+            "id"
+          ],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "deferrable": true,
+          "initiallyDeferred": true
+        },
+        {
+          "name": "forum_posts_topic_id_forum_topics_id_fk",
+          "columns": [
+            "topic_id"
+          ],
+          "referencedTable": "forum_topics",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        }
+      ],
+      "checks": [],
+      "indexes": [
+        {
+          "name": "forum_posts_author_id_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "author_id",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ]
+        },
+        {
+          "name": "forum_posts_topic_id_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "topic_id",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ]
+        }
+      ]
+    },
+    "forum_sections": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "category_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "forum_sections_pkey",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [
+        {
+          "name": "forum_sections_category_id_forum_categories_id_fk",
+          "columns": [
+            "category_id"
+          ],
+          "referencedTable": "forum_categories",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        }
+      ],
+      "checks": [
+        {
+          "name": "forum_sections_name_check",
+          "columns": [
+            "name"
+          ],
+          "expression": "btrim(\"forum_sections\".\"name\") <> ''"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "forum_sections_category_id_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "category_id",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ]
+        }
+      ]
+    },
+    "forum_topic_title_revisions": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "topic_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "author_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "original_content",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "source_locale",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "forum_topic_title_revisions_pkey",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [
+        {
+          "name": "forum_topic_title_revisions_owner_source_unique",
+          "columns": [
+            "topic_id",
+            "id",
+            "source_locale"
+          ],
+          "nullsNotDistinct": false
+        },
+        {
+          "name": "forum_topic_title_revisions_topic_id_id_unique",
+          "columns": [
+            "topic_id",
+            "id"
+          ],
+          "nullsNotDistinct": false
+        }
+      ],
+      "foreignKeys": [
+        {
+          "name": "forum_topic_title_revisions_author_id_user_id_fk",
+          "columns": [
+            "author_id"
+          ],
+          "referencedTable": "user",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        },
+        {
+          "name": "forum_topic_title_revisions_topic_id_fk",
+          "columns": [
+            "topic_id"
+          ],
+          "referencedTable": "forum_topics",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        }
+      ],
+      "checks": [
+        {
+          "name": "forum_topic_title_revisions_content_check",
+          "columns": [
+            "original_content"
+          ],
+          "expression": "btrim(\"forum_topic_title_revisions\".\"original_content\") <> ''"
+        },
+        {
+          "name": "forum_topic_title_revisions_source_locale_check",
+          "columns": [
+            "source_locale"
+          ],
+          "expression": "\"forum_topic_title_revisions\".\"source_locale\" = btrim(\"forum_topic_title_revisions\".\"source_locale\") and \"forum_topic_title_revisions\".\"source_locale\" ~ '^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*$'"
+        }
+      ],
+      "indexes": []
+    },
+    "forum_topic_title_translations": {
+      "columns": [
+        {
+          "name": "topic_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "revision_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "target_locale",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "source_locale",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "translated_content",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "origin",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "provider",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "provider_model",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "attribution",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": false
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "forum_topic_title_translations_pk",
+          "columns": [
+            "topic_id",
+            "revision_id",
+            "target_locale"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [
+        {
+          "name": "forum_topic_title_translations_revision_fk",
+          "columns": [
+            "topic_id",
+            "revision_id",
+            "source_locale"
+          ],
+          "referencedTable": "forum_topic_title_revisions",
+          "referencedColumns": [
+            "topic_id",
+            "id",
+            "source_locale"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        }
+      ],
+      "checks": [
+        {
+          "name": "forum_topic_title_translations_attribution_check",
+          "columns": [
+            "attribution"
+          ],
+          "expression": "\"forum_topic_title_translations\".\"attribution\" is null or btrim(\"forum_topic_title_translations\".\"attribution\") <> ''"
+        },
+        {
+          "name": "forum_topic_title_translations_content_check",
+          "columns": [
+            "translated_content"
+          ],
+          "expression": "btrim(\"forum_topic_title_translations\".\"translated_content\") <> ''"
+        },
+        {
+          "name": "forum_topic_title_translations_distinct_locale_check",
+          "columns": [
+            "source_locale",
+            "target_locale"
+          ],
+          "expression": "\"forum_topic_title_translations\".\"source_locale\" = 'und' or lower(\"forum_topic_title_translations\".\"source_locale\") <> lower(\"forum_topic_title_translations\".\"target_locale\")"
+        },
+        {
+          "name": "forum_topic_title_translations_metadata_check",
+          "columns": [
+            "origin",
+            "provider",
+            "provider_model"
+          ],
+          "expression": "(\n    \"forum_topic_title_translations\".\"origin\" = 'machine'\n    and \"forum_topic_title_translations\".\"provider\" is not null\n    and btrim(\"forum_topic_title_translations\".\"provider\") <> ''\n    and \"forum_topic_title_translations\".\"provider_model\" is not null\n    and btrim(\"forum_topic_title_translations\".\"provider_model\") <> ''\n  ) or (\n    \"forum_topic_title_translations\".\"origin\" = 'persistent_manual'\n    and \"forum_topic_title_translations\".\"provider\" is null\n    and \"forum_topic_title_translations\".\"provider_model\" is null\n  )"
+        },
+        {
+          "name": "forum_topic_title_translations_origin_check",
+          "columns": [
+            "origin"
+          ],
+          "expression": "\"forum_topic_title_translations\".\"origin\" in ('persistent_manual', 'machine')"
+        },
+        {
+          "name": "forum_topic_title_translations_source_locale_check",
+          "columns": [
+            "source_locale"
+          ],
+          "expression": "\"forum_topic_title_translations\".\"source_locale\" = btrim(\"forum_topic_title_translations\".\"source_locale\") and \"forum_topic_title_translations\".\"source_locale\" ~ '^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*$'"
+        },
+        {
+          "name": "forum_topic_title_translations_target_locale_check",
+          "columns": [
+            "target_locale"
+          ],
+          "expression": "\"forum_topic_title_translations\".\"target_locale\" = btrim(\"forum_topic_title_translations\".\"target_locale\")\n    and lower(\"forum_topic_title_translations\".\"target_locale\") <> 'und'\n    and \"forum_topic_title_translations\".\"target_locale\" ~ '^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*$'"
+        }
+      ],
+      "indexes": []
+    },
+    "forum_topics": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "section_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "author_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "current_title_revision_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "is_solved",
+          "type": "boolean",
+          "nullable": false
+        },
+        {
+          "name": "best_answer_post_id",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "forum_topics_pkey",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [
+        {
+          "name": "forum_topics_author_id_user_id_fk",
+          "columns": [
+            "author_id"
+          ],
+          "referencedTable": "user",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        },
+        {
+          "name": "forum_topics_best_answer_topic_post_fk",
+          "columns": [
+            "id",
+            "best_answer_post_id"
+          ],
+          "referencedTable": "forum_posts",
+          "referencedColumns": [
+            "topic_id",
+            "id"
+          ],
+          "onDelete": "NO ACTION",
+          "onUpdate": "NO ACTION",
+          "deferrable": true,
+          "initiallyDeferred": true
+        },
+        {
+          "name": "forum_topics_current_title_revision_fk",
+          "columns": [
+            "id",
+            "current_title_revision_id"
+          ],
+          "referencedTable": "forum_topic_title_revisions",
+          "referencedColumns": [
+            "topic_id",
+            "id"
+          ],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "deferrable": true,
+          "initiallyDeferred": true
+        },
+        {
+          "name": "forum_topics_section_id_forum_sections_id_fk",
+          "columns": [
+            "section_id"
+          ],
+          "referencedTable": "forum_sections",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        }
+      ],
+      "checks": [
+        {
+          "name": "forum_topics_best_answer_requires_solved_check",
+          "columns": [
+            "best_answer_post_id",
+            "is_solved"
+          ],
+          "expression": "\"forum_topics\".\"best_answer_post_id\" is null or \"forum_topics\".\"is_solved\""
+        }
+      ],
+      "indexes": [
+        {
+          "name": "forum_topics_author_id_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "author_id",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ]
+        },
+        {
+          "name": "forum_topics_section_id_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "section_id",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ]
+        }
+      ]
+    },
+    "locales": {
+      "columns": [
+        {
+          "name": "tag",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "translation_status",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "publication_status",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "direction",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "fallback_chain",
+          "type": "text[]",
+          "nullable": false
+        },
+        {
+          "name": "aliases",
+          "type": "text[]",
+          "nullable": false
+        },
+        {
+          "name": "match_tags",
+          "type": "text[]",
+          "nullable": false
+        },
+        {
+          "name": "native_name",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "presentation_metadata",
+          "type": "jsonb",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": false
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "locales_pkey",
+          "columns": [
+            "tag"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [],
+      "checks": [
+        {
+          "name": "locales_aliases_shape_check",
+          "columns": [
+            "aliases"
+          ],
+          "expression": "(\n    cardinality(\"locales\".\"aliases\") = 0\n    or (array_ndims(\"locales\".\"aliases\") = 1 and array_lower(\"locales\".\"aliases\", 1) = 1)\n  ) and array_position(\"locales\".\"aliases\", null) is null"
+        },
+        {
+          "name": "locales_direction_check",
+          "columns": [
+            "direction"
+          ],
+          "expression": "\"locales\".\"direction\" in ('ltr', 'rtl')"
+        },
+        {
+          "name": "locales_fallback_chain_shape_check",
+          "columns": [
+            "fallback_chain"
+          ],
+          "expression": "(\n    cardinality(\"locales\".\"fallback_chain\") = 0\n    or (array_ndims(\"locales\".\"fallback_chain\") = 1 and array_lower(\"locales\".\"fallback_chain\", 1) = 1)\n  ) and array_position(\"locales\".\"fallback_chain\", null) is null"
+        },
+        {
+          "name": "locales_match_tags_shape_check",
+          "columns": [
+            "match_tags"
+          ],
+          "expression": "(\n    cardinality(\"locales\".\"match_tags\") = 0\n    or (array_ndims(\"locales\".\"match_tags\") = 1 and array_lower(\"locales\".\"match_tags\", 1) = 1)\n  ) and array_position(\"locales\".\"match_tags\", null) is null"
+        },
+        {
+          "name": "locales_native_name_check",
+          "columns": [
+            "native_name"
+          ],
+          "expression": "btrim(\"locales\".\"native_name\") <> ''"
+        },
+        {
+          "name": "locales_non_bootstrap_tag_check",
+          "columns": [
+            "tag"
+          ],
+          "expression": "lower(\"locales\".\"tag\") not in ('en', 'api', 'assets')"
+        },
+        {
+          "name": "locales_presentation_metadata_object_check",
+          "columns": [
+            "presentation_metadata"
+          ],
+          "expression": "jsonb_typeof(\"locales\".\"presentation_metadata\") = 'object'"
+        },
+        {
+          "name": "locales_publication_status_check",
+          "columns": [
+            "publication_status"
+          ],
+          "expression": "\"locales\".\"publication_status\" in ('inactive', 'active', 'disabled')"
+        },
+        {
+          "name": "locales_translation_status_check",
+          "columns": [
+            "translation_status"
+          ],
+          "expression": "\"locales\".\"translation_status\" in ('draft', 'generating', 'partial', 'ready')"
+        }
+      ],
+      "indexes": []
+    },
+    "rate_limit": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "key",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "count",
+          "type": "integer",
+          "nullable": false
+        },
+        {
+          "name": "last_request",
+          "type": "bigint",
+          "nullable": false
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "rate_limit_pkey",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [
+        {
+          "name": "rate_limit_key_unique",
+          "columns": [
+            "key"
+          ],
+          "nullsNotDistinct": false
+        }
+      ],
+      "foreignKeys": [],
+      "checks": [],
+      "indexes": []
+    },
+    "session": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "expires_at",
+          "type": "timestamp without time zone",
+          "nullable": false
+        },
+        {
+          "name": "token",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp without time zone",
+          "nullable": false
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp without time zone",
+          "nullable": false
+        },
+        {
+          "name": "ip_address",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "user_agent",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "user_id",
+          "type": "text",
+          "nullable": false
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "session_pkey",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [
+        {
+          "name": "session_token_unique",
+          "columns": [
+            "token"
+          ],
+          "nullsNotDistinct": false
+        }
+      ],
+      "foreignKeys": [
+        {
+          "name": "session_user_id_user_id_fk",
+          "columns": [
+            "user_id"
+          ],
+          "referencedTable": "user",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        }
+      ],
+      "checks": [],
+      "indexes": [
+        {
+          "name": "session_userId_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "user_id",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ]
+        }
+      ]
+    },
+    "translation_task_generation_heads": {
+      "columns": [
+        {
+          "name": "translation_kind",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "source_namespace",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "source_key",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "target_locale",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "current_generation",
+          "type": "integer",
+          "nullable": false
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": false
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "translation_task_generation_heads_pk",
+          "columns": [
+            "translation_kind",
+            "source_namespace",
+            "source_key",
+            "target_locale"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [],
+      "checks": [
+        {
+          "name": "translation_task_generation_heads_content_shape_check",
+          "columns": [
+            "source_namespace",
+            "translation_kind"
+          ],
+          "expression": "(\"translation_task_generation_heads\".\"translation_kind\" <> 'content-topic-title' or \"translation_task_generation_heads\".\"source_namespace\" = 'topic-title')\n        and (\"translation_task_generation_heads\".\"translation_kind\" <> 'content-post-body' or \"translation_task_generation_heads\".\"source_namespace\" = 'post-body')"
+        },
+        {
+          "name": "translation_task_generation_heads_generation_check",
+          "columns": [
+            "current_generation"
+          ],
+          "expression": "\"translation_task_generation_heads\".\"current_generation\" > 0"
+        },
+        {
+          "name": "translation_task_generation_heads_key_check",
+          "columns": [
+            "source_key"
+          ],
+          "expression": "btrim(\"translation_task_generation_heads\".\"source_key\") <> ''"
+        },
+        {
+          "name": "translation_task_generation_heads_kind_check",
+          "columns": [
+            "translation_kind"
+          ],
+          "expression": "\"translation_task_generation_heads\".\"translation_kind\" in ('ui', 'content-topic-title', 'content-post-body')"
+        },
+        {
+          "name": "translation_task_generation_heads_locale_check",
+          "columns": [
+            "target_locale"
+          ],
+          "expression": "\"translation_task_generation_heads\".\"target_locale\" = btrim(\"translation_task_generation_heads\".\"target_locale\")\n    and lower(\"translation_task_generation_heads\".\"target_locale\") <> 'und'\n    and \"translation_task_generation_heads\".\"target_locale\" ~ '^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*$'"
+        },
+        {
+          "name": "translation_task_generation_heads_namespace_check",
+          "columns": [
+            "source_namespace"
+          ],
+          "expression": "btrim(\"translation_task_generation_heads\".\"source_namespace\") <> ''"
+        },
+        {
+          "name": "translation_task_generation_heads_ui_locale_check",
+          "columns": [
+            "target_locale",
+            "translation_kind"
+          ],
+          "expression": "\"translation_task_generation_heads\".\"translation_kind\" <> 'ui' or lower(\"translation_task_generation_heads\".\"target_locale\") <> 'en'"
+        }
+      ],
+      "indexes": []
+    },
+    "translation_tasks": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "task_identity",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "translation_kind",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "source_namespace",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "source_key",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "source_fingerprint",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "target_locale",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "generation_policy_version",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "generation",
+          "type": "integer",
+          "nullable": false
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "attempt_count",
+          "type": "integer",
+          "nullable": false
+        },
+        {
+          "name": "max_attempts",
+          "type": "integer",
+          "nullable": false
+        },
+        {
+          "name": "last_failure_code",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "failure_disposition",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "reconciliation_attempted_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "claim_token",
+          "type": "uuid",
+          "nullable": true
+        },
+        {
+          "name": "claimed_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "lease_expires_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "stale_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "completed_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "failed_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": false
+        },
+        {
+          "name": "allowance_state",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "allowance_generation",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "allowance_attempt",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "allowance_claim_token",
+          "type": "uuid",
+          "nullable": true
+        },
+        {
+          "name": "allowance_lease_expires_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "allowance_retry_not_before",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "allowance_reason",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "allowance_provider",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "allowance_reservation_reference",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "allowance_updated_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "translation_tasks_pkey",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [
+        {
+          "name": "translation_tasks_content_owner_unique",
+          "columns": [
+            "id",
+            "translation_kind",
+            "source_namespace",
+            "source_key"
+          ],
+          "nullsNotDistinct": false
+        },
+        {
+          "name": "translation_tasks_task_identity_unique",
+          "columns": [
+            "task_identity"
+          ],
+          "nullsNotDistinct": false
+        },
+        {
+          "name": "translation_tasks_unit_generation_unique",
+          "columns": [
+            "translation_kind",
+            "source_namespace",
+            "source_key",
+            "target_locale",
+            "generation"
+          ],
+          "nullsNotDistinct": false
+        }
+      ],
+      "foreignKeys": [],
+      "checks": [
+        {
+          "name": "translation_tasks_allowance_provider_check",
+          "columns": [
+            "allowance_provider"
+          ],
+          "expression": "\"translation_tasks\".\"allowance_provider\" is null\n        or \"translation_tasks\".\"allowance_provider\" ~ '^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$'"
+        },
+        {
+          "name": "translation_tasks_allowance_reason_check",
+          "columns": [
+            "allowance_reason"
+          ],
+          "expression": "\"translation_tasks\".\"allowance_reason\" is null or \"translation_tasks\".\"allowance_reason\" ~ '^[a-z0-9][a-z0-9-]{0,63}$'"
+        },
+        {
+          "name": "translation_tasks_allowance_reservation_check",
+          "columns": [
+            "allowance_reservation_reference"
+          ],
+          "expression": "\"translation_tasks\".\"allowance_reservation_reference\" is null\n        or \"translation_tasks\".\"allowance_reservation_reference\" ~ '^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$'"
+        },
+        {
+          "name": "translation_tasks_allowance_shape_check",
+          "columns": [
+            "allowance_attempt",
+            "allowance_claim_token",
+            "allowance_generation",
+            "allowance_lease_expires_at",
+            "allowance_provider",
+            "allowance_reason",
+            "allowance_reservation_reference",
+            "allowance_retry_not_before",
+            "allowance_state",
+            "allowance_updated_at",
+            "attempt_count",
+            "generation",
+            "max_attempts",
+            "translation_kind"
+          ],
+          "expression": "(\n        \"translation_tasks\".\"allowance_state\" is null\n        and \"translation_tasks\".\"allowance_generation\" is null\n        and \"translation_tasks\".\"allowance_attempt\" is null\n        and \"translation_tasks\".\"allowance_claim_token\" is null\n        and \"translation_tasks\".\"allowance_lease_expires_at\" is null\n        and \"translation_tasks\".\"allowance_retry_not_before\" is null\n        and \"translation_tasks\".\"allowance_reason\" is null\n        and \"translation_tasks\".\"allowance_provider\" is null\n        and \"translation_tasks\".\"allowance_reservation_reference\" is null\n        and \"translation_tasks\".\"allowance_updated_at\" is null\n      ) or (\n        \"translation_tasks\".\"translation_kind\" in ('content-topic-title', 'content-post-body')\n        and \"translation_tasks\".\"allowance_generation\" = \"translation_tasks\".\"generation\"\n        and \"translation_tasks\".\"allowance_attempt\" = \"translation_tasks\".\"attempt_count\" + 1\n        and \"translation_tasks\".\"allowance_attempt\" <= \"translation_tasks\".\"max_attempts\"\n        and \"translation_tasks\".\"allowance_updated_at\" is not null\n        and (\n          (\n            \"translation_tasks\".\"allowance_state\" = 'leasing'\n            and \"translation_tasks\".\"allowance_claim_token\" is not null\n            and \"translation_tasks\".\"allowance_lease_expires_at\" is not null\n            and \"translation_tasks\".\"allowance_lease_expires_at\" > \"translation_tasks\".\"allowance_updated_at\"\n            and \"translation_tasks\".\"allowance_retry_not_before\" is null\n            and \"translation_tasks\".\"allowance_reason\" is null\n            and \"translation_tasks\".\"allowance_provider\" is null\n            and \"translation_tasks\".\"allowance_reservation_reference\" is null\n          ) or (\n            \"translation_tasks\".\"allowance_state\" = 'admitted'\n            and \"translation_tasks\".\"allowance_claim_token\" is null\n            and \"translation_tasks\".\"allowance_lease_expires_at\" is null\n            and \"translation_tasks\".\"allowance_retry_not_before\" is null\n            and \"translation_tasks\".\"allowance_reason\" is null\n            and \"translation_tasks\".\"allowance_provider\" is not null\n          ) or (\n            \"translation_tasks\".\"allowance_state\" = 'deferred'\n            and \"translation_tasks\".\"allowance_claim_token\" is null\n            and \"translation_tasks\".\"allowance_lease_expires_at\" is null\n            and \"translation_tasks\".\"allowance_retry_not_before\" is not null\n            and \"translation_tasks\".\"allowance_retry_not_before\" > \"translation_tasks\".\"allowance_updated_at\"\n            and \"translation_tasks\".\"allowance_reason\" is not null\n            and \"translation_tasks\".\"allowance_provider\" is null\n            and \"translation_tasks\".\"allowance_reservation_reference\" is null\n          )\n        )\n      )"
+        },
+        {
+          "name": "translation_tasks_attempt_count_check",
+          "columns": [
+            "attempt_count",
+            "max_attempts"
+          ],
+          "expression": "\"translation_tasks\".\"attempt_count\" >= 0 and \"translation_tasks\".\"attempt_count\" <= \"translation_tasks\".\"max_attempts\""
+        },
+        {
+          "name": "translation_tasks_content_shape_check",
+          "columns": [
+            "source_namespace",
+            "translation_kind"
+          ],
+          "expression": "(\"translation_tasks\".\"translation_kind\" <> 'content-topic-title' or \"translation_tasks\".\"source_namespace\" = 'topic-title')\n        and (\"translation_tasks\".\"translation_kind\" <> 'content-post-body' or \"translation_tasks\".\"source_namespace\" = 'post-body')"
+        },
+        {
+          "name": "translation_tasks_failure_code_check",
+          "columns": [
+            "last_failure_code"
+          ],
+          "expression": "\"translation_tasks\".\"last_failure_code\" is null or \"translation_tasks\".\"last_failure_code\" ~ '^[a-z0-9][a-z0-9-]{0,63}$'"
+        },
+        {
+          "name": "translation_tasks_failure_disposition_check",
+          "columns": [
+            "failure_disposition"
+          ],
+          "expression": "\"translation_tasks\".\"failure_disposition\" is null or \"translation_tasks\".\"failure_disposition\" in ('terminal', 'retry-exhausted')"
+        },
+        {
+          "name": "translation_tasks_generation_check",
+          "columns": [
+            "generation"
+          ],
+          "expression": "\"translation_tasks\".\"generation\" > 0"
+        },
+        {
+          "name": "translation_tasks_generation_policy_version_check",
+          "columns": [
+            "generation_policy_version"
+          ],
+          "expression": "btrim(\"translation_tasks\".\"generation_policy_version\") <> ''"
+        },
+        {
+          "name": "translation_tasks_identity_check",
+          "columns": [
+            "task_identity"
+          ],
+          "expression": "\"translation_tasks\".\"task_identity\" ~ '^[0-9a-f]{64}$'"
+        },
+        {
+          "name": "translation_tasks_kind_check",
+          "columns": [
+            "translation_kind"
+          ],
+          "expression": "\"translation_tasks\".\"translation_kind\" in ('ui', 'content-topic-title', 'content-post-body')"
+        },
+        {
+          "name": "translation_tasks_lifecycle_check",
+          "columns": [
+            "attempt_count",
+            "claim_token",
+            "claimed_at",
+            "completed_at",
+            "failed_at",
+            "failure_disposition",
+            "last_failure_code",
+            "lease_expires_at",
+            "max_attempts",
+            "stale_at",
+            "status"
+          ],
+          "expression": "(\n        \"translation_tasks\".\"status\" = 'pending'\n        and \"translation_tasks\".\"claim_token\" is null and \"translation_tasks\".\"claimed_at\" is null\n        and \"translation_tasks\".\"lease_expires_at\" is null and \"translation_tasks\".\"stale_at\" is null\n        and \"translation_tasks\".\"completed_at\" is null and \"translation_tasks\".\"failed_at\" is null\n        and \"translation_tasks\".\"failure_disposition\" is null and \"translation_tasks\".\"attempt_count\" < \"translation_tasks\".\"max_attempts\"\n      ) or (\n        \"translation_tasks\".\"status\" = 'processing'\n        and \"translation_tasks\".\"claim_token\" is not null and \"translation_tasks\".\"claimed_at\" is not null\n        and \"translation_tasks\".\"lease_expires_at\" is not null and \"translation_tasks\".\"lease_expires_at\" > \"translation_tasks\".\"claimed_at\"\n        and \"translation_tasks\".\"stale_at\" is null and \"translation_tasks\".\"completed_at\" is null\n        and \"translation_tasks\".\"failed_at\" is null and \"translation_tasks\".\"failure_disposition\" is null\n      ) or (\n        \"translation_tasks\".\"status\" = 'stale'\n        and \"translation_tasks\".\"claim_token\" is null and \"translation_tasks\".\"claimed_at\" is not null\n        and \"translation_tasks\".\"lease_expires_at\" is null and \"translation_tasks\".\"stale_at\" is not null\n        and \"translation_tasks\".\"stale_at\" >= \"translation_tasks\".\"claimed_at\" and \"translation_tasks\".\"completed_at\" is null\n        and \"translation_tasks\".\"failed_at\" is null and \"translation_tasks\".\"failure_disposition\" is null\n        and \"translation_tasks\".\"last_failure_code\" is null\n      ) or (\n        \"translation_tasks\".\"status\" = 'completed'\n        and \"translation_tasks\".\"claim_token\" is null and \"translation_tasks\".\"claimed_at\" is not null\n        and \"translation_tasks\".\"lease_expires_at\" is null and \"translation_tasks\".\"stale_at\" is null\n        and \"translation_tasks\".\"completed_at\" is not null and \"translation_tasks\".\"completed_at\" >= \"translation_tasks\".\"claimed_at\"\n        and \"translation_tasks\".\"failed_at\" is null and \"translation_tasks\".\"failure_disposition\" is null\n        and \"translation_tasks\".\"last_failure_code\" is null\n      ) or (\n        \"translation_tasks\".\"status\" = 'failed'\n        and \"translation_tasks\".\"claim_token\" is null and \"translation_tasks\".\"claimed_at\" is not null\n        and \"translation_tasks\".\"lease_expires_at\" is null and \"translation_tasks\".\"stale_at\" is null\n        and \"translation_tasks\".\"completed_at\" is null and \"translation_tasks\".\"failed_at\" is not null\n        and \"translation_tasks\".\"failed_at\" >= \"translation_tasks\".\"claimed_at\"\n        and \"translation_tasks\".\"failure_disposition\" is not null and \"translation_tasks\".\"last_failure_code\" is not null\n        and \"translation_tasks\".\"attempt_count\" > 0\n      )"
+        },
+        {
+          "name": "translation_tasks_max_attempts_check",
+          "columns": [
+            "max_attempts"
+          ],
+          "expression": "\"translation_tasks\".\"max_attempts\" > 0"
+        },
+        {
+          "name": "translation_tasks_source_fingerprint_check",
+          "columns": [
+            "source_fingerprint"
+          ],
+          "expression": "\"translation_tasks\".\"source_fingerprint\" ~ '^[0-9a-f]{64}$'"
+        },
+        {
+          "name": "translation_tasks_source_key_check",
+          "columns": [
+            "source_key"
+          ],
+          "expression": "btrim(\"translation_tasks\".\"source_key\") <> ''"
+        },
+        {
+          "name": "translation_tasks_source_namespace_check",
+          "columns": [
+            "source_namespace"
+          ],
+          "expression": "btrim(\"translation_tasks\".\"source_namespace\") <> ''"
+        },
+        {
+          "name": "translation_tasks_status_check",
+          "columns": [
+            "status"
+          ],
+          "expression": "\"translation_tasks\".\"status\" in ('pending', 'processing', 'stale', 'completed', 'failed')"
+        },
+        {
+          "name": "translation_tasks_target_locale_check",
+          "columns": [
+            "target_locale"
+          ],
+          "expression": "\"translation_tasks\".\"target_locale\" = btrim(\"translation_tasks\".\"target_locale\")\n    and lower(\"translation_tasks\".\"target_locale\") <> 'und'\n    and \"translation_tasks\".\"target_locale\" ~ '^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*$'"
+        },
+        {
+          "name": "translation_tasks_timestamps_check",
+          "columns": [
+            "created_at",
+            "updated_at"
+          ],
+          "expression": "\"translation_tasks\".\"updated_at\" >= \"translation_tasks\".\"created_at\""
+        },
+        {
+          "name": "translation_tasks_ui_target_locale_check",
+          "columns": [
+            "target_locale",
+            "translation_kind"
+          ],
+          "expression": "\"translation_tasks\".\"translation_kind\" <> 'ui' or lower(\"translation_tasks\".\"target_locale\") <> 'en'"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "translation_tasks_allowance_recovery_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "allowance_state",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "allowance_retry_not_before",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "allowance_lease_expires_at",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "updated_at",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "id",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ]
+        },
+        {
+          "name": "translation_tasks_reconcile_pending_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "status",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "reconciliation_attempted_at",
+              "order": "asc",
+              "nulls": "first"
+            },
+            {
+              "name": "updated_at",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "id",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ]
+        },
+        {
+          "name": "translation_tasks_reconcile_processing_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "status",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "reconciliation_attempted_at",
+              "order": "asc",
+              "nulls": "first"
+            },
+            {
+              "name": "updated_at",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "id",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "lease_expires_at",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ]
+        }
+      ]
+    },
+    "ui_translation_bundles": {
+      "columns": [
+        {
+          "name": "locale",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "namespace",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "bundle_version",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "resources",
+          "type": "jsonb",
+          "nullable": false
+        },
+        {
+          "name": "compiled_at",
+          "type": "timestamp with time zone",
+          "nullable": false
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "ui_translation_bundles_pk",
+          "columns": [
+            "locale",
+            "namespace"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [],
+      "checks": [
+        {
+          "name": "ui_translation_bundles_locale_check",
+          "columns": [
+            "locale"
+          ],
+          "expression": "btrim(\"ui_translation_bundles\".\"locale\") <> '' and lower(btrim(\"ui_translation_bundles\".\"locale\", chr(32) || chr(9) || chr(10) || chr(13) || chr(12) || chr(11))) <> 'en'"
+        },
+        {
+          "name": "ui_translation_bundles_namespace_check",
+          "columns": [
+            "namespace"
+          ],
+          "expression": "btrim(\"ui_translation_bundles\".\"namespace\") <> ''"
+        },
+        {
+          "name": "ui_translation_bundles_resources_object_check",
+          "columns": [
+            "resources"
+          ],
+          "expression": "jsonb_typeof(\"ui_translation_bundles\".\"resources\") = 'object'"
+        },
+        {
+          "name": "ui_translation_bundles_version_check",
+          "columns": [
+            "bundle_version"
+          ],
+          "expression": "\"ui_translation_bundles\".\"bundle_version\" ~ '^[0-9a-f]{64}$'"
+        }
+      ],
+      "indexes": []
+    },
+    "ui_translations": {
+      "columns": [
+        {
+          "name": "locale",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "namespace",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "key",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "origin",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "source_fingerprint",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "translated_payload",
+          "type": "jsonb",
+          "nullable": false
+        },
+        {
+          "name": "generation_policy_version",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "provider",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "provider_model",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "provenance_metadata",
+          "type": "jsonb",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": false
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "ui_translations_pk",
+          "columns": [
+            "locale",
+            "namespace",
+            "key",
+            "origin"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [],
+      "checks": [
+        {
+          "name": "ui_translations_key_check",
+          "columns": [
+            "key"
+          ],
+          "expression": "btrim(\"ui_translations\".\"key\") <> ''"
+        },
+        {
+          "name": "ui_translations_locale_check",
+          "columns": [
+            "locale"
+          ],
+          "expression": "btrim(\"ui_translations\".\"locale\") <> '' and lower(btrim(\"ui_translations\".\"locale\", chr(32) || chr(9) || chr(10) || chr(13) || chr(12) || chr(11))) <> 'en'"
+        },
+        {
+          "name": "ui_translations_machine_metadata_check",
+          "columns": [
+            "generation_policy_version",
+            "origin",
+            "provider",
+            "provider_model"
+          ],
+          "expression": "(\n        \"ui_translations\".\"origin\" = 'machine'\n        and \"ui_translations\".\"generation_policy_version\" is not null\n        and btrim(\"ui_translations\".\"generation_policy_version\") <> ''\n        and \"ui_translations\".\"provider\" is not null\n        and btrim(\"ui_translations\".\"provider\") <> ''\n      ) or (\n        \"ui_translations\".\"origin\" = 'persistent_manual'\n        and \"ui_translations\".\"generation_policy_version\" is null\n        and \"ui_translations\".\"provider\" is null\n        and \"ui_translations\".\"provider_model\" is null\n      )"
+        },
+        {
+          "name": "ui_translations_namespace_check",
+          "columns": [
+            "namespace"
+          ],
+          "expression": "btrim(\"ui_translations\".\"namespace\") <> ''"
+        },
+        {
+          "name": "ui_translations_origin_check",
+          "columns": [
+            "origin"
+          ],
+          "expression": "\"ui_translations\".\"origin\" in ('persistent_manual', 'machine')"
+        },
+        {
+          "name": "ui_translations_payload_check",
+          "columns": [
+            "translated_payload"
+          ],
+          "expression": "jsonb_typeof(\"ui_translations\".\"translated_payload\") in ('string', 'object')"
+        },
+        {
+          "name": "ui_translations_provenance_metadata_object_check",
+          "columns": [
+            "provenance_metadata"
+          ],
+          "expression": "jsonb_typeof(\"ui_translations\".\"provenance_metadata\") = 'object'"
+        },
+        {
+          "name": "ui_translations_source_fingerprint_check",
+          "columns": [
+            "source_fingerprint"
+          ],
+          "expression": "\"ui_translations\".\"source_fingerprint\" ~ '^[0-9a-f]{64}$'"
+        },
+        {
+          "name": "ui_translations_status_check",
+          "columns": [
+            "status"
+          ],
+          "expression": "\"ui_translations\".\"status\" in ('draft', 'approved', 'rejected')"
+        }
+      ],
+      "indexes": []
+    },
+    "user": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "email",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "email_verified",
+          "type": "boolean",
+          "nullable": false
+        },
+        {
+          "name": "image",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp without time zone",
+          "nullable": false
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp without time zone",
+          "nullable": false
+        },
+        {
+          "name": "locale",
+          "type": "text",
+          "nullable": true
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "user_pkey",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [
+        {
+          "name": "user_email_unique",
+          "columns": [
+            "email"
+          ],
+          "nullsNotDistinct": false
+        }
+      ],
+      "foreignKeys": [],
+      "checks": [],
+      "indexes": []
+    },
+    "verification": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "identifier",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "value",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "expires_at",
+          "type": "timestamp without time zone",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp without time zone",
+          "nullable": false
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp without time zone",
+          "nullable": false
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "verification_pkey",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [],
+      "checks": [],
+      "indexes": [
+        {
+          "name": "verification_identifier_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "identifier",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
