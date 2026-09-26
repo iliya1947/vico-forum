@@ -361,9 +361,8 @@ Repository-owned accepted migration→runtime evidence при этом всё е
 ## Ближайший маршрут
 
 1. Продолжить Stage 6 pre-release external integration по `ROADMAP.md` и `docs/database/*`.
-2. После merge и технической проверки verifier-phases/full-manifest repository boundary следующий
-   database-rollout шаг — отдельное явное разрешение пользователя на protected production migration
-   `0004`–`0020`. До такого разрешения workflow не запускать.
+2. Следующий database-rollout шаг — отдельное явное разрешение пользователя на protected production
+   migration `0004`–`0020`. До такого разрешения workflow не запускать.
 
 Stage 5 завершён только в repository/local-CI boundary. Pending external migrations, real Google
 OAuth/bootstrap, production runtime roles/Hyperdrive writes, Cloudflare Queues/providers,
