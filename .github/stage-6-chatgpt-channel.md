@@ -275,8 +275,30 @@ External identity evidence этим CI не получено: identity workflow 
 после merge PR #131 в `main`. Production migration workflow до successful identity evidence
 не запускать.
 
+### PR #131 — corrective cycle завершён
+
+После независимой проверки Codex исправлены все четыре подтверждённые проблемы PR #131:
+
+- pure exact-role test переведён на `node:test` / `node:assert` и явно включён в существующий
+  repository-script CI block;
+- `PROJECT_STATE.md` фиксирует наличие manual read-only identity path, не объявляя external
+  identity evidence выполненным;
+- verifier больше не использует private `pg.Client._connected`: cleanup опирается на локальный
+  state после успешного `connect()`;
+- PostgreSQL client получил `connectionTimeoutMillis=10000` и `query_timeout=10000`, workflow
+  получил `timeout-minutes: 5`.
+
+После исправлений весь PR повторно проверен на head
+`66360d80f3a7ce9731d42320415ff667bc5c5e0f`. PR mergeable. CI run #982 завершён
+`success`: jobs `checks` и `database` успешны; repository-script tests, lint, typecheck,
+tests, build, migration metadata/schema parity, PostgreSQL 17 migration suite и Workers smoke
+прошли. Новых проблем в полном актуальном diff не обнаружено.
+
+External identity workflow при этом не запускался и identity gate ещё не является закрытым
+external evidence.
+
 ## Текущий статус
 
-PR #131 на head `cf4c493fe47c994d5703e3d7ff14cbf7b5254078` mergeable и имеет successful CI
-run #978. Repository implementation identity gate готова к независимой проверке Codex.
-Сам external identity gate ещё не закрыт: workflow не запускался из `main`.
+PR #131 на head `66360d80f3a7ce9731d42320415ff667bc5c5e0f` прошёл corrective cycle,
+полную повторную проверку и CI run #982; новых repository-level проблем не обнаружено.
+Следующий шаг требует итоговой проверки Codex. External identity run из `main` ещё не выполнялся.
