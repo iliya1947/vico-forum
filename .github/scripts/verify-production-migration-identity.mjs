@@ -14,10 +14,16 @@ async function main() {
     throw new Error("DATABASE_URL is required");
   }
 
-  const client = new pg.Client({ connectionString });
+  const client = new pg.Client({
+    connectionString,
+    connectionTimeoutMillis: 10_000,
+    query_timeout: 10_000,
+  });
+  let connected = false;
 
   try {
     await client.connect();
+    connected = true;
     await client.query("BEGIN READ ONLY");
     const result = await client.query("SELECT current_user AS current_user");
 
@@ -28,7 +34,7 @@ async function main() {
     assertMigrationRole(result.rows[0].current_user);
     console.log(`Migration database identity verified: ${EXPECTED_ROLE}`);
   } finally {
-    if (client._connected) {
+    if (connected) {
       try {
         await client.query("ROLLBACK");
       } finally {
