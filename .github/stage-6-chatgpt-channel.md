@@ -438,9 +438,12 @@ suffix текущего checked-in journal:
 - dangerous role attributes/memberships/ownership boundaries остаются запрещены;
 - target migration ledger обязан быть **точным префиксом** checked-in journal: никакого extra,
   reordered, rewritten или divergent history;
-- для текущего production target префикс не может быть короче уже externally accepted baseline
+- для текущего production target префикс не может быть короче уже **known-applied target prefix**
   `0000`–`0003`; это защищает от запуска против пустой/не той DB;
-- уже применённый baseline `0000`–`0003` проверяется существующими stable schema/data
+- repository-owned accepted migration→runtime evidence baseline при этом остаётся
+  `0000`–`0002`; наличие `0003` в target DB подтверждено catalog/read-only evidence, но
+  не должно называться externally accepted baseline;
+- уже применённый target prefix `0000`–`0003` проверяется существующими stable schema/data
   invariants до write;
 - существующий localization runtime role остаётся exact read-only capability:
   schema `public` USAGE без CREATE, SELECT без grant option только на
