@@ -79,11 +79,12 @@ migration connection должна совпадать с application owner role.
 
 Workflow использует две разные fail-closed verification phase вокруг `db:migrate`:
 
-1. **pre-migration**: target ledger обязан быть exact prefix checked-in Drizzle journal и не может
-   быть короче known-applied target prefix `0000`–`0003`; extra/reordered/divergent history
-   rejected. До write также проверяются PostgreSQL 17/UTF-8, dedicated migrator, stable
+1. **pre-migration**: target ledger обязан быть exact prefix checked-in migrations по паре
+   `created_at + Drizzle SHA-256 hash` и не может быть короче known-applied target prefix
+   `0000`–`0003`; extra/reordered/rewritten/divergent history rejected. До write также проверяются PostgreSQL 17/UTF-8, dedicated migrator, stable
    `0000`–`0003` schema/data invariants и существующий localization least-privilege contract.
-2. **post-migration**: ledger обязан точно совпасть с complete checked-in journal, а target schema —
+2. **post-migration**: ledger обязан точно совпасть с complete checked-in migration history по
+   `created_at + Drizzle SHA-256 hash`, а target schema —
    с repository-owned full structural manifest `0000`–`0020`. Manifest покрывает 27 public
    application tables, columns/types/nullability/defaults, PK/unique/FK/check/index contract,
    manual deferrable forum foreign keys, а также correctness-critical trigger/function definitions
@@ -104,7 +105,7 @@ Target-environment verifier проверяет стабильные invariants, 
 Текущий contract включает как минимум:
 
 - PostgreSQL 17 и UTF-8;
-- phase-aware migration ledger contract: exact known-applied prefix до write и exact complete journal после write;
+- phase-aware migration ledger contract: exact `created_at + Drizzle SHA-256 hash` known-applied prefix до write и exact complete history после write;
 - repository-owned full target structural manifest для `0000`–`0020`, включая column defaults и correctness-critical triggers/functions, проверяемый CI против clean PostgreSQL 17;
 - отсутствие persistent bootstrap/reserved locale rows (`en`, `api`, `assets`);
 - отсутствие persistent canonical-English UI translation rows;
