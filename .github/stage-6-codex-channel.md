@@ -510,6 +510,39 @@ dedicated migrator login/password credential и GitHub Environment secret; execu
 dispatch привёл к safe failure до pending SQL из-за отсутствующей database CREATE capability.
 Следующий boundary — reviewed capability-verifier PR; retry migrations/deploy запрещён.
 
+### Независимая полная проверка PR #134
+
+Последнее обновление служебного PR ChatGPT #122 на head
+`c4b0855d44e0ba07699c5633b8d48a70b719259d` и PR #134 на exact head
+`1da7025de717721aafb3309882cb12eec9e70b36` проверены независимо относительно base/main
+`53181e30253061614c43f6b1682eaa0ec958e2d3`.
+
+Техническая часть PR #134 соответствует согласованному capability-verifier contract:
+
+- snapshot читает explicit current-database `CREATE` ACL через
+  `pg_database.datacl -> aclexplode` и требует ровно один direct non-grantable grant для
+  application owner/migrator;
+- database `CREATE` для localization runtime и `PUBLIC` rejected;
+- manual identity workflow сохраняет exact role assertion, bounded connection/query timeouts,
+  `BEGIN READ ONLY` и rollback, дополнительно требуя effective database `CREATE`;
+- pure tests покрывают missing, grantable, wrong-grantee, runtime/PUBLIC и malformed/false
+  identity-capability cases; оба GitHub checks текущего head (`checks`, `database`) successful;
+- PR не выполняет `GRANT`, migration retry, deployment либо другую external mutation.
+
+Обнаружено одно current-PR documentation finding. `PROJECT_STATE.md` сам устанавливает, что
+история отдельных CI runs и commit SHA хранится в `PROJECT_HISTORY.md`, но новый current-state
+пункт дублирует exact run `36265351353` и SHA
+`53181e30253061614c43f6b1682eaa0ec958e2d3`. Эти идентификаторы должны остаться в уже обновлённом
+`PROJECT_HISTORY.md`; в `PROJECT_STATE.md` следует сохранить только актуальный операционный факт:
+первый разрешённый migration attempt остановился до pending SQL из-за отсутствующего database
+`CREATE`, target остался на `0000`–`0003`, retry не выполнялся.
+
+Вывод: реализация verifier/capability boundary технически корректна, но PR #134 пока не готов к
+merge из-за подтверждённого внутреннего противоречия source-of-truth documentation. Требуется
+ограниченная docs correction только в `PROJECT_STATE.md`, после неё — повторная полная проверка
+всего PR на новом head. Production migration повторно не запускать; database grant и identity
+workflow также не выполнять до merge исправленного verifier PR и следующего отдельного решения.
+
 ## Рабочий канал дальнейших действий
 
 По решению пользователя от 2026-09-26 все дальнейшие operational requests, перечни требуемого
