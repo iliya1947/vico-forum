@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
+import { readFile } from "node:fs/promises";
 
 export const KNOWN_APPLIED_MINIMUM_TAG = "0003_gorgeous_donald_blake";
 export const PRODUCTION_MIGRATION_PHASES = Object.freeze(["pre", "post"]);
@@ -11,17 +13,34 @@ export function parseProductionMigrationPhase(value) {
   return value;
 }
 
-export function expectedMigrationHistory(journal) {
-  return journal.entries.map(({ when }) => String(when));
+export async function readExpectedMigrationHistory(
+  journal,
+  { migrationsFolder = "drizzle" } = {},
+) {
+  const expected = [];
+  for (const { tag, when } of journal.entries) {
+    const sql = await readFile(`${migrationsFolder}/${tag}.sql`, "utf8");
+    expected.push({
+      createdAt: String(when),
+      hash: createHash("sha256").update(sql).digest("hex"),
+    });
+  }
+  return expected;
 }
 
 export function assertMigrationHistoryForPhase({
   phase,
   journal,
+  expectedHistory,
   actualHistory,
 }) {
   parseProductionMigrationPhase(phase);
-  const expected = expectedMigrationHistory(journal);
+  assert.equal(
+    expectedHistory.length,
+    journal.entries.length,
+    "Expected migration history must cover every checked-in journal entry",
+  );
+
   const minimumIndex = journal.entries.findIndex(({ tag }) => tag === KNOWN_APPLIED_MINIMUM_TAG);
   assert.notEqual(
     minimumIndex,
@@ -32,8 +51,8 @@ export function assertMigrationHistoryForPhase({
   if (phase === "post") {
     assert.deepEqual(
       actualHistory,
-      expected,
-      "Post-migration database history must exactly match the checked-in Drizzle journal",
+      expectedHistory,
+      "Post-migration database history must exactly match checked-in migration timestamps and hashes",
     );
     return;
   }
@@ -43,12 +62,12 @@ export function assertMigrationHistoryForPhase({
     `Pre-migration database history must include known-applied target prefix through ${KNOWN_APPLIED_MINIMUM_TAG}`,
   );
   assert.ok(
-    actualHistory.length <= expected.length,
+    actualHistory.length <= expectedHistory.length,
     "Pre-migration database history must not contain entries beyond the checked-in Drizzle journal",
   );
   assert.deepEqual(
     actualHistory,
-    expected.slice(0, actualHistory.length),
-    "Pre-migration database history must be an exact prefix of the checked-in Drizzle journal",
+    expectedHistory.slice(0, actualHistory.length),
+    "Pre-migration database history must be an exact timestamp+hash prefix of checked-in migrations",
   );
 }
