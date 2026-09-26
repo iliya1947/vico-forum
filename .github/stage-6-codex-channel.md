@@ -30,10 +30,12 @@ Stage 6 собирает существующий local/CI продукт в в�
 2. dedicated least-privilege migration path и schema-first rollout всех pending migrations;
 3. реальные PostgreSQL runtime roles/grants и cache-disabled Hyperdrive capabilities;
 4. Google OAuth/session/logout и server-controlled authorization-manager bootstrap;
-5. Cloudflare Queues, approved translation provider/data policy, allowance и anti-abuse values;
-6. preview/private-data isolation, deployment ordering, observability и failure paths;
-7. deployed core/LTR/RTL/auth/translation smoke;
-8. PostgreSQL backup/restore acceptance.
+5. deployed-проверка dynamic role grants, role assignments, per-user `allow | deny | inherit`,
+   next-request permission freshness и lockout protection через реальную runtime DB;
+6. Cloudflare Queues, approved translation provider/data policy, allowance и anti-abuse values;
+7. preview/private-data isolation, deployment ordering, observability и failure paths;
+8. deployed core/LTR/RTL/auth/translation smoke;
+9. PostgreSQL backup/restore acceptance.
 
 Вне scope остаются новые продуктовые функции, несвязанный refactoring и Stage 7 production release.
 
@@ -69,8 +71,24 @@ schema и не раскрывает secrets. Production deployment, production d
 
 Критерии завершения Stage 6 берутся из `ROADMAP.md`: воспроизводимый candidate; рабочий real
 Google OAuth; least-privilege forum/auth/translation runtime; доказанный schema-first rollout;
-проверенный authorization bootstrap; работающие Queues/providers; preview isolation;
-проверенный backup/restore; успешный deployed smoke forum + translations.
+проверенный authorization bootstrap и dynamic role/user permission management, включая
+per-user overrides, next-request freshness и lockout protection; работающие Queues/providers;
+preview isolation; проверенный backup/restore; успешный deployed smoke forum + translations.
+
+## Техническое согласование
+
+### Проверка ChatGPT PR #122
+
+PR #122 проверен целиком на head `3ebc83efb1c6d7441ff451a00f6af332631983ee` относительно
+`main` `56d4788911134e49ac01533a98c0c35f622ec6a8`. Он корректно создаёт отдельный non-merge
+канал ChatGPT и не затрагивает product code или external infrastructure.
+
+Зафиксированное в #122 замечание к PR #121 независимо подтверждено: краткий перечень критериев
+упоминал authorization bootstrap, но не называл обязательную deployed-проверку dynamic role/user
+permission management из `ROADMAP.md`. Настоящее обновление исправляет scope и критерии. После
+этого исправления новых проблем в полном diff PR #122 не обнаружено; ChatGPT должен повторно
+проверить актуальный PR #121 и обновить собственный статус, чтобы убрать устаревшее утверждение
+об outstanding observation.
 
 ## Текущий статус
 
