@@ -953,3 +953,50 @@ retry, deployment, дополнительные GRANT/DDL и другие extern
 Следующее единственное пользовательское действие: вручную dispatch
 `Production database identity verification` на branch `main`. После запуска ChatGPT должен
 прочитать run/job/step evidence и при любом mismatch/failure остановиться без retry.
+
+
+### Bounded database CREATE capability gate — completed successfully
+
+User-authorized bounded capability gate завершён на current merged `main`
+`4c709d5aa82f6e93ddbad672afc10ad94c5e2efa`.
+
+External mutation выполнена ровно одна:
+`GRANT CREATE ON DATABASE vico_forum TO vico_forum_migrator`.
+
+Pre-grant evidence:
+- exact database `vico_forum`;
+- execution/session role и database owner = `vico_forum_owner`;
+- `vico_forum_migrator` existed and had effective database CREATE=false;
+- localization runtime had effective database CREATE=false;
+- no direct CREATE ACL for migrator/runtime/PUBLIC.
+
+Post-grant evidence:
+- migrator effective database CREATE=true;
+- exactly one direct CREATE ACL row for `vico_forum_migrator`;
+- `is_grantable=false`;
+- grantor=`vico_forum_owner`;
+- localization runtime effective CREATE=false;
+- direct CREATE rows for runtime/PUBLIC = 0.
+
+Manual read-only workflow evidence:
+- workflow: `Production database identity verification`;
+- run ID: `36268723861`;
+- exact head SHA: `4c709d5aa82f6e93ddbad672afc10ad94c5e2efa`;
+- attempt: 1;
+- job `Verify production migration identity` = success;
+- step `Verify dedicated migration identity and capability` = success;
+- log evidence: `Migration database identity and CREATE capability verified: vico_forum_migrator`.
+
+Final read-only DB recheck after workflow remained consistent:
+- migrator effective CREATE=true;
+- exactly one direct non-grantable CREATE ACL;
+- runtime effective CREATE=false;
+- runtime/PUBLIC direct CREATE rows=0.
+
+Recent manual Actions runs confirm no new `Production database migration` dispatch occurred after
+the earlier failed run. No production migration retry, deployment, additional grant, ownership,
+membership, schema/table ACL or credential change was performed.
+
+Bounded database capability gate therefore completed successfully. Per Codex coordination contract,
+next Stage 6 action must be determined in PR #121 before any migration retry or other external
+mutation.
