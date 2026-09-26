@@ -692,3 +692,38 @@ step `Protect accepted migration history`, который включает об�
 `production-migration-contract.test.mjs`, уже завершён `success`; lint также success.
 Полный CI и whole-PR re-review намеренно оставлены следующей отдельной подзадачей по принятому
 поэтапному процессу.
+
+
+### PR #133 whole-PR re-review after ledger-hash correction — 2026-09-26
+
+PR #133 заново проверен целиком на exact head
+`45f6a9eef7eac98a43766831469417a225f3a080` относительно актуального
+`main` `0d89e036ddc0bfce0cc966afb79a6ce8088e9cd2`.
+
+Проверена вся текущая область PR: phase contract/tests, production privilege integration,
+full 27-table schema manifest, defaults, constraints/indexes, five trigger functions, six critical
+triggers, migration verifier, manifest verifier, CI/production workflows и source-of-truth docs.
+Также отдельно подтверждено, что после предыдущего reviewed head изменения затронули только
+ledger-contract/tests/verifier и соответствующую terminology в docs.
+
+Ledger-hash correction соответствует exact Drizzle ORM `0.45.2` contract: expected hash —
+SHA-256 полного raw migration SQL contents; target `drizzle.__drizzle_migrations` проверяется по
+`created_at + hash`. Preflight принимает только exact known-applied prefix, postflight —
+exact complete history; wrong/missing hash при неизменном timestamp покрыт pure tests.
+
+Full schema manifest остаётся согласован с `0020_snapshot.json`: 27 public tables / 202 columns,
+42 defaults, 27 PK, 12 unique constraints, 26 FK, 94 checks, 13 non-constraint indexes,
+5 trigger functions и 6 critical triggers; `PENDING` hashes отсутствуют. CI manifest parity
+против clean PostgreSQL 17 успешен.
+
+Final CI run `36262562947` на exact head полностью successful:
+- `checks`: history/script tests, lint, typecheck, tests, build, migration metadata и Drizzle
+  schema parity — success;
+- `database`: clean PostgreSQL 17 migration/integration suite, production schema manifest parity,
+  Workers build и local Hyperdrive smoke — success.
+
+Новых current-Stage defects, source-of-truth contradictions или scope expansion в полном re-review
+не обнаружено. Ранее согласованные findings (defaults, triggers/functions, docs, ledger hash)
+закрыты. PR #133 открыт, mergeable и по текущему техническому циклу готов к merge пользователем.
+Production migration workflow этим выводом не запускается и остаётся отдельной external mutation,
+требующей явного разрешения пользователя.
