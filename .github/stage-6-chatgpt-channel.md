@@ -356,3 +356,64 @@ PR открыт, non-draft и mergeable. Никакие production migrations/de
 в рамках этой задачи не выполнялись.
 
 Следующий шаг — независимая техническая проверка PR #132 Codex до решения пользователя о merge.
+
+
+### Post-merge Stage 6 verifier/runtime analysis — 2026-09-26
+
+PR #132 подтверждён merged. Актуальный `main`:
+`0d89e036ddc0bfce0cc966afb79a6ce8088e9cd2`.
+
+Перед следующим repository change перечитаны актуальные `PROJECT.md`, `PROJECT_STATE.md`,
+`ROADMAP.md`, `docs/database/MIGRATIONS.md`, `docs/database/HYPERDRIVE.md`,
+`docs/auth/AUTHORIZATION.md`, translation contracts и текущий migration/runtime code.
+
+Read-only production Neon check подтвердил точную исходную migration boundary:
+`drizzle.__drizzle_migrations` содержит ровно четыре journal timestamps, соответствующие
+`0000`–`0003`. Следовательно current pending set для checked-in journal — `0004`–`0020`.
+В public schema сейчас восемь application tables:
+`account`, `locales`, `rate_limit`, `session`, `ui_translation_bundles`,
+`ui_translations`, `user`, `verification`; все принадлежат
+`vico_forum_migrator`.
+
+Checked-in target snapshot `0020_snapshot.json` содержит 27 public application tables.
+Кроме текущих восьми, target добавляет forum domain, dynamic authorization, durable translation
+tasks/generation heads, content translations/task metadata и content request-budget counters.
+Это фактическая schema boundary, которую следующий post-migration verifier должен уметь
+отличать от текущего pre-migration состояния.
+
+Текущий full verifier нельзя просто запускать до `db:migrate`: он требует exact полного ledger.
+Для технического согласования следующего change нужны две разные semantics:
+- pre-migration gate должен доказать dedicated migrator/role safety и отсутствие divergent/unknown
+  migration history, при этом разрешая reviewed pending suffix;
+- post-migration gate должен требовать полный exact journal и target schema/ownership invariants.
+Точный способ представления target schema contract (явный manifest против checked-in snapshot-derived
+manifest) пока не выбран; это предмет следующего технического согласования, а не готовый вывод.
+
+Runtime-capability inventory выявил важную текущую Stage 6 границу. `workers/app.ts` сейчас
+передаёт один и тот же `env.HYPERDRIVE.connectionString` в Better Auth, forum reader/writer,
+authorization, localization reads, content-translation presentation и generation-status reader.
+Но production binding `HYPERDRIVE` по действующему contract остаётся
+`vico_forum_runtime` с SELECT только на `locales`, `ui_translations`,
+`ui_translation_bundles`. Значит current `main` нельзя выкатывать как forum/auth candidate
+с этим единственным production DB capability: это не future-only hardening, а реальная Stage 6
+integration boundary.
+
+При этом authenticated content-generation action в Worker всё ещё явно disabled, а real Queue
+consumer/provider wiring ещё не существует. Поэтому выдавать production translation-worker write
+privileges только ради будущего Queue шага сейчас преждевременно. Следующий runtime-role design
+должен отделить уже необходимый web forum/auth/authorization capability от существующего
+localization read-only capability; background translation execution privileges следует привязать
+к фактическому Queue wiring в соответствующей Stage 6 задаче.
+
+По фактическим web query paths уже известен минимальный класс доступа будущего web capability:
+- read Better Auth/forum/authorization/content-presentation/status data;
+- Better Auth session/OAuth/rate-limit writes;
+- forum topic/reply/solution/source-locale-correction writes;
+- authorization management writes только через protected application boundary;
+- без schema ownership, CREATE, migration/admin capability и без механического расширения
+  существующего localization role.
+
+External mutations, migrations, grants, Hyperdrive provisioning и deployment в этой подзадаче
+не выполнялись. Следующая подзадача — сформировать конкретный reviewed contract для
+pre/post verifier и web runtime-role/binding boundary, затем передать его Codex на независимую
+техническую проверку до implementation PR.
