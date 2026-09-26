@@ -174,12 +174,52 @@ ChatGPT должен подготовить в своём служебном PR 
 
 На этом шаге не проектируются runtime grants, не применяются migrations и не выполняется deploy.
 
+### Credential replacement и решение execution identity gate
+
+Обновление PR #122 проверено целиком на head `81fda8ce58f779215e2524a5c712d58460b7b7d9`.
+Пользователь подтвердил, что в Neon Console получил connection string production branch/database
+для role `vico_forum_migrator` и без публикации значения заменил GitHub Environment secret
+`production-db / NEON_MIGRATION_DATABASE_URL`. External secret mutation выполнена с явного
+разрешения; migrations, deploy и runtime grants не выполнялись.
+
+Это не заменяет execution evidence: новый secret ещё не использовался для доказательства
+`current_user = vico_forum_migrator`. Вывод PR #122 подтверждён; новых проблем в полном diff не
+обнаружено. Existing `production-db-migrate.yml` для probe использовать нельзя из-за следующего
+за verifier mutation step `db:migrate`.
+
+Следующий mergeable repository PR должен добавить отдельный manual read-only identity workflow со
+следующим точным contract:
+
+1. отдельный workflow `Production database identity verification` с единственным
+   `workflow_dispatch`, job-level `if: github.ref == 'refs/heads/main'`, `contents: read` и
+   Environment `production-db`;
+2. concurrency group `production-db-migrations` с `cancel-in-progress: false`, чтобы identity probe
+   не пересекался с migration workflow;
+3. pinned checkout/pnpm/setup-node actions и `pnpm install --frozen-lockfile`, как в текущем
+   production migration workflow;
+4. отдельный repository script, который получает только
+   `secrets.NEON_MIGRATION_DATABASE_URL`, не логирует URL/password, подключается pinned `pg`,
+   начинает `READ ONLY` transaction и выполняет bounded `SELECT current_user`;
+5. fail closed: exact assertion `current_user === 'vico_forum_migrator'`; при успехе логируется
+   только bounded сообщение с ожидаемым role name, transaction всегда завершается `ROLLBACK`;
+6. никаких migration/verifier/schema/grant/deploy steps и никакого использования
+   `NEON_OWNER_DATABASE_URL`;
+7. CI должен lint/typecheck/test/build repository change; отдельный unit test проверяет pure
+   exact-role assertion без доступа к external DB.
+
+После merge пользователь вручную запускает identity workflow с `main`. Только successful run на
+exact `main` SHA с bounded evidence закрывает credential identity gate. До этого owner exception не
+удаляется и production migration workflow не запускается. После evidence временный identity
+workflow либо его дальнейший lifecycle оценивается отдельным решением; следующий PR удаляет
+`PRE_RELEASE_ALLOW_DATABASE_OWNER_CONNECTION=true` и усиливает migration verifier на pending
+schema до первого external migration.
+
 ## Текущий статус
 
 Stage 6 открыт на уровне координации. Repository source of truth и внешняя инфраструктура пока
-не изменялись. Read-only external preflight завершён. Следующий gate — подтвердить или безопасно
-восстановить dedicated migration credential, затем отдельным reviewed изменением удалить
-database-owner exception до первой pending external migration.
+изменились только в явно разрешённой границе GitHub Environment secret: dedicated migrator
+credential установлен, но execution identity ещё не доказан. Следующий шаг — отдельный mergeable
+PR с manual read-only identity workflow по contract выше; migrations/deploy остаются запрещены.
 
 ## Рабочий канал дальнейших действий
 
