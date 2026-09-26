@@ -172,7 +172,7 @@ Codex проверил весь diff PR #128 (`60f63ec9a21ded1474da4924c39ad4d46
 не включался в первоначальный аудит baseline; он проверен отдельно только по прямому запросу
 пользователя для технического согласования.
 
-### Подтверждено
+### 1. Неточная документация
 
 1. **CG-AUD-01 — README устарел.** `README.md` называет Stage 5 текущим следующим шагом, тогда как
    `PROJECT_STATE.md` и `ROADMAP.md` фиксируют Stage 5 завершённым и Stage 6 следующим этапом. README
@@ -187,12 +187,18 @@ Codex проверил весь diff PR #128 (`60f63ec9a21ded1474da4924c39ad4d46
    Stage 4 завершён, а `PROJECT_STATE.md` уже фиксирует отключённую native integration и отдельную
    Stage 6 re-verification. Раздел не помечен historical checkpoint, поэтому формулировка является
    текущим documentation defect.
-4. **CG-AUD-05 — `PostgresAuthorizationRepository.mutate()` может маскировать исходную ошибку.**
+
+### 2. Остальные ошибки
+
+1. **CG-AUD-05 — `PostgresAuthorizationRepository.mutate()` может маскировать исходную ошибку.**
    `catch` выполняет `ROLLBACK` даже если `BEGIN` не завершился, а rollback failure заменяет исходную
    BEGIN/operation/COMMIT error. Соседний `withReadSnapshot()` уже хранит `transactionStarted` и
    сохраняет original error при cleanup failure. Authorization management — реализованный Stage 4
    path, поэтому это текущий runtime/error-semantics defect, а не будущий Stage 6 задел. Нужны tests
    минимум для BEGIN failure, operation/COMMIT failure + ROLLBACK failure и single release.
+
+Других подтверждённых runtime, security, database, migration, build или test defects по результатам
+текущего цикла согласования нет.
 
 ### Не подтверждено как дефект
 
