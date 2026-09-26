@@ -745,3 +745,25 @@ PR #121 на момент проверки ещё заканчивается pre
 technical lead и определяет порядок следующей Stage 6 работы. Поэтому после merge PR #133
 ChatGPT не запускает production migration и не выбирает следующий external mutation самостоятельно;
 следующий шаг передан обратно Codex для фиксации актуального Stage 6 action.
+
+
+### Production migration authorization received — 2026-09-26
+
+Пользователь дал отдельное явное разрешение на один manual dispatch workflow
+`Production database migration` для exact `main`
+`53181e30253061614c43f6b1682eaa0ec958e2d3`.
+
+Перед запуском повторно проверено:
+- current GitHub `main` всё ещё exact
+  `53181e30253061614c43f6b1682eaa0ec958e2d3`;
+- актуальный workflow `.github/workflows/production-db-migrate.yml` по-прежнему
+  `workflow_dispatch`, main-only, Environment `production-db`, с preflight → `db:migrate`
+  → postflight → bounded evidence;
+- разрешение не распространяется на Worker deploy, runtime roles/grants, Hyperdrive bindings
+  или иные external mutations.
+
+Ограничение текущего ChatGPT GitHub connector: доступные actions позволяют читать workflow runs/jobs
+и повторно запускать существующие failed jobs, но не создают новый `workflow_dispatch`.
+Поэтому сам initial dispatch из этой сессии выполнить невозможно без ручного запуска пользователем.
+После ручного запуска ChatGPT должен immediately read run/job/step state и продолжить только по
+фактическому результату; при failure никакого retry без отдельной диагностики.
