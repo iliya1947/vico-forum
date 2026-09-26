@@ -164,3 +164,49 @@ OAuth acceptance и сам предполагаемый impact не подтве
 product/security решения о limits. AUD-03 требует applicability review до решения об update или
 risk acceptance. AUD-04 не требует изменения без принятого archive-link policy. Аудит не
 подтвердил ни один AUD-01–AUD-04 как текущий product defect.
+
+## Техническое согласование со служебным PR ChatGPT #128
+
+Codex проверил весь diff PR #128 (`60f63ec9a21ded1474da4924c39ad4d46103e42d`) против baseline
+`56d4788911134e49ac01533a98c0c35f622ec6a8`, source-of-truth документов и реализации. Открытый PR
+не включался в первоначальный аудит baseline; он проверен отдельно только по прямому запросу
+пользователя для технического согласования.
+
+### Подтверждено
+
+1. **CG-AUD-01 — README устарел.** `README.md` называет Stage 5 текущим следующим шагом, тогда как
+   `PROJECT_STATE.md` и `ROADMAP.md` фиксируют Stage 5 завершённым и Stage 6 следующим этапом. README
+   является активной entry-point документацией, поэтому это текущий documentation defect.
+2. **CG-AUD-02 — PROJECT_STATE содержит устаревшее `Routes пока не подключены`.** Фраза находится
+   внутри описания request-budget foundation, однако тот же текущий state ниже фиксирует подключённые
+   authenticated topic POST generation actions, использующие этот budget/planner boundary. Поскольку
+   `PROJECT_STATE.md` по собственному назначению хранит текущее фактическое состояние, это внутреннее
+   противоречие, а не допустимая historical запись.
+3. **CG-AUD-04 — HYPERDRIVE содержит истёкшую active instruction.** Раздел `External deployment
+   policy` всё ещё требует действие «до первого forum-code PR» и проверку «перед Stage 4B merge», хотя
+   Stage 4 завершён, а `PROJECT_STATE.md` уже фиксирует отключённую native integration и отдельную
+   Stage 6 re-verification. Раздел не помечен historical checkpoint, поэтому формулировка является
+   текущим documentation defect.
+4. **CG-AUD-05 — `PostgresAuthorizationRepository.mutate()` может маскировать исходную ошибку.**
+   `catch` выполняет `ROLLBACK` даже если `BEGIN` не завершился, а rollback failure заменяет исходную
+   BEGIN/operation/COMMIT error. Соседний `withReadSnapshot()` уже хранит `transactionStarted` и
+   сохраняет original error при cleanup failure. Authorization management — реализованный Stage 4
+   path, поэтому это текущий runtime/error-semantics defect, а не будущий Stage 6 задел. Нужны tests
+   минимум для BEGIN failure, operation/COMMIT failure + ROLLBACK failure и single release.
+
+### Не подтверждено как дефект
+
+**CG-AUD-03 — Stage 3 wording в ROADMAP.** Раздел находится под явным заголовком «Завершённый
+foundation» и описывает boundary на момент завершения Stage 3. Ниже roadmap отдельно фиксирует
+Stage 5 completion record и traceability `Stage 3 primitives → Stage 5 active path`.
+`PROJECT_STATE.md` прямо объявлен source of truth текущего фактического состояния. Поэтому present-
+tense `пока` может быть стилистически неоднозначным, но технического противоречия текущему state не
+создаёт; исправление необязательно.
+
+### Процесс согласования
+
+Inline review PR #128 правильно отметил, что ChatGPT опубликовал hypotheses до нейтрального запроса
+Codex и тем самым нарушил порядок `AGENTS.md`. Нейтральность первой проверки ретроспективно
+восстановить нельзя. Тем не менее каждый пункт выше проверен по первичным файлам и классифицирован
+отдельно; совпавшие CG-AUD-01, CG-AUD-02, CG-AUD-04 и CG-AUD-05 считаются технически
+подтверждёнными, CG-AUD-03 отклонён как historical wording.
