@@ -573,6 +573,39 @@ workflow также не выполнять до merge исправленног�
 external grant или migration retry: после merge Codex должен заново проверить current `main` и
 отдельно определить следующий Stage 6 gate.
 
+### PR #134 merged; database capability grant gate
+
+PR #134 подтверждён merged в GitHub `main` как
+`4c709d5aa82f6e93ddbad672afc10ad94c5e2efa`; merged head был
+`8409d770c791bf24a774a2d315baa8d792f3ad86`. Актуальный `main` и относящиеся database
+source-of-truth документы перечитаны. Repository boundary теперь проверяет и direct
+non-grantable database `CREATE` ACL, и effective capability dedicated migration identity.
+
+Следующий gate — одна явно разрешённая owner-controlled external mutation:
+
+```sql
+GRANT CREATE ON DATABASE vico_forum TO vico_forum_migrator;
+```
+
+Операционный contract:
+
+1. перед изменением подтвердить exact database `vico_forum`, database owner/admin execution
+   identity и отсутствие effective database `CREATE` у `vico_forum_migrator`;
+2. выполнить только указанный direct grant без grant option; не менять ownership, memberships,
+   runtime grants, schema/table ACL либо credentials;
+3. после изменения read-only проверить explicit ACL: ровно один direct `CREATE` для
+   `vico_forum_migrator`, `is_grantable = false`; у `vico_forum_runtime` и `PUBLIC` database
+   `CREATE` отсутствует;
+4. запустить manual read-only `Production database identity verification` только с exact merged
+   `main` и получить successful evidence exact role + effective database `CREATE`;
+5. при любом несовпадении остановиться: не исправлять дополнительно и не запускать migration;
+6. production migration run `36265351353` не rerun-ить. Новое разрешение на migration retry может
+   рассматриваться Codex только после проверки bounded grant и successful identity/capability
+   evidence.
+
+Эта запись сама не выполняет external grant или workflow dispatch. Выполнение требует явного
+разрешения пользователя, переданного ChatGPT через служебный coordination cycle.
+
 ## Рабочий канал дальнейших действий
 
 По решению пользователя от 2026-09-26 все дальнейшие operational requests, перечни требуемого
