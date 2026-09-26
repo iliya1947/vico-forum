@@ -652,3 +652,15 @@ ChatGPT и считаются подтверждёнными; documentation за
 build и local Hyperdrive smoke прошли.
 
 Следующая отдельная подзадача по workflow — whole-PR re-review PR #133 после исправлений.
+
+
+### PR #133 whole-PR re-review after corrections — neutral Codex handoff
+
+PR #133 повторно проверен целиком на exact head
+`e40488f24de778fda7a448c6154fddd5ff0615be` после исправления ранее согласованных
+defaults + triggers/functions findings. Финальный CI run `36261179271` имеет
+`checks=success` и `database=success`; PR открыт и mergeable.
+
+По протоколу независимой проверки следующий шаг — новый **нейтральный** whole-PR review Codex
+на этом exact head. Возможные новые выводы ChatGPT намеренно не раскрываются до независимой
+проверки Codex.
