@@ -133,12 +133,53 @@ branch/build topology и bindings либо Neon identity/ownership/memberships. 
 проверки не требуются и не должны передаваться. Следующее evidence должен предоставить пользователь
 из соответствующих control planes как значения настроек/identity без secret material.
 
+### Проверка завершённого read-only preflight из PR #122
+
+Последнее обновление PR #122 проверено целиком на head
+`b37bbfc7245518facacc1caa36a8a8eed79f4e99` относительно актуального `main`
+`45512ac0a9e0090cc86f284a2a050de8b8a0f6d0`. Записанные результаты согласуются с repository
+contracts и доступными публичными evidence:
+
+- native Cloudflare Git integration не подключена, Preview Base не имеет production DB binding,
+  существующий localization Hyperdrive использует `vico_forum_runtime` и cache-disabled config;
+- Neon production target и текущие owner/migrator/runtime role/ownership boundaries определены;
+- GitHub Environment и manual/main-only migration workflow проверены без чтения secret values;
+- migration, role/grant, Cloudflare binding и deployment mutations не выполнялись.
+
+Новых противоречий в полном diff PR #122 не обнаружено. Evidence, полученный ChatGPT от
+пользователя через Dashboard screenshots и authenticated connectors, зафиксирован как
+control-plane evidence пользователя; Codex не утверждает независимый доступ к этим private
+control planes.
+
+Read-only preflight завершён до фактической границы доступа. Единственный correctness-critical
+unresolved факт — identity внутри current `NEON_MIGRATION_DATABASE_URL`: metadata подтверждает
+имя secret, но не доказывает, что connection использует dedicated `vico_forum_migrator`, а не
+database owner. Production migration workflow нельзя запускать ради диагностики, поскольку он
+содержит mutation step.
+
+### Следующая задача Stage 6 — dedicated migration credential gate
+
+ChatGPT должен подготовить в своём служебном PR точную процедуру, которая:
+
+1. сверяет current Neon и GitHub capabilities с актуальной официальной документацией;
+2. позволяет пользователю локально подтвердить username current secret либо безопасно заменить
+   `NEON_MIGRATION_DATABASE_URL` на credential dedicated `vico_forum_migrator`, не раскрывая
+   connection string/password в PR или чате;
+3. отдельно перечисляет необходимые external mutations и до них запрашивает явное разрешение;
+4. не запускает `production-db-migrate.yml` до подтверждения dedicated identity;
+5. после подтверждения готовит отдельный reviewed repository change, удаляющий
+   `PRE_RELEASE_ALLOW_DATABASE_OWNER_CONNECTION=true` и сохраняющий fail-closed preflight;
+6. задаёт evidence, которым будет доказано `current_user = vico_forum_migrator` до первой pending
+   external migration.
+
+На этом шаге не проектируются runtime grants, не применяются migrations и не выполняется deploy.
+
 ## Текущий статус
 
 Stage 6 открыт на уровне координации. Repository source of truth и внешняя инфраструктура пока
-не изменялись. Публично доступная часть read-only preflight выполнена; следующий шаг — дополнить
-его read-only evidence из GitHub, Cloudflare и Neon control planes без раскрытия secrets и без
-external mutations.
+не изменялись. Read-only external preflight завершён. Следующий gate — подтвердить или безопасно
+восстановить dedicated migration credential, затем отдельным reviewed изменением удалить
+database-owner exception до первой pending external migration.
 
 ## Рабочий канал дальнейших действий
 
