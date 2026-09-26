@@ -1178,3 +1178,70 @@ runtime capability/bootstrap gate.
 
 Per the project decomposition rule, execution stops here after confirming and recording the next
 scope. The mergeable evidence PR has not yet been created.
+
+
+### Migration-evidence PR #136 created and verified — 2026-09-26
+
+Latest Codex service-channel instruction from PR #121 was executed through the mergeable
+repository-change boundary.
+
+Created PR #136 `Sync accepted Stage 6 migration evidence` from exact unchanged `main`
+`b172264e4b0db1fe68dead7d7f25b49a573eb0cd`.
+
+PR head:
+`412ef3720577c27bfd990b5fef6fd2b32141a157`.
+
+Changed files are exactly the agreed four:
+- `.github/runtime-migration-evidence.json`;
+- `PROJECT_STATE.md`;
+- `PROJECT_HISTORY.md`;
+- `docs/database/MIGRATIONS.md`.
+
+Recorded repository-owned evidence:
+- workflow run `36270353184`;
+- attempt `1`;
+- migration SHA `b172264e4b0db1fe68dead7d7f25b49a573eb0cd`;
+- journal SHA-256
+  `35f6817042e73655bc965ed26fa729c177f99fbb10903934b1958e78420c32c9`;
+- required migration tag `0020_translation_generation_permission`.
+
+The production workflow evidence was re-read through GitHub:
+- workflow path = exact `.github/workflows/production-db-migrate.yml`;
+- event = `workflow_dispatch`;
+- branch = `main`;
+- head SHA = exact evidence migration SHA;
+- run attempt = 1;
+- status/conclusion = `completed / success`;
+- metadata validation, preflight, `Apply migrations`, postflight and evidence-emission steps
+  are all successful.
+
+Journal identity was independently rechecked from exact workflow-head
+`drizzle/meta/_journal.json`: SHA-256 recomputes to the recorded
+`35f6817042e73655bc965ed26fa729c177f99fbb10903934b1958e78420c32c9`, the journal contains
+21 entries and ends at `0020_translation_generation_permission`.
+
+Git ancestry was rechecked: PR #136 is exactly four commits ahead of migration SHA
+`b172264e4b0db1fe68dead7d7f25b49a573eb0cd`, zero commits behind, and that SHA is the merge
+base, so the evidence migration revision is an ancestor of the PR head. The PR does not modify
+the Drizzle journal.
+
+Full PR diff was reviewed against the source-of-truth documents. It contains no migration SQL,
+workflow/verifier, application-code or dependency changes and keeps schema acceptance distinct
+from runtime deployment.
+
+PR CI run `36272112776` on exact head
+`412ef3720577c27bfd990b5fef6fd2b32141a157` completed `success`:
+- `checks` = success, including repository migration/evidence contract tests, lint, typecheck,
+  tests, build, migration metadata and Drizzle schema parity;
+- `database` = success, including clean PostgreSQL 17 migration/constraint suite, production
+  schema manifest parity, Workers build and local Hyperdrive smoke.
+
+Current GitHub `main` remains exact
+`b172264e4b0db1fe68dead7d7f25b49a573eb0cd`; PR #136 is open and mergeable.
+
+No external migration, retry, manual SQL, GRANT, deployment, runtime provisioning,
+OAuth/bootstrap or Queue/provider operation was performed by this PR.
+
+Next review-cycle action is a neutral independent whole-PR review by Codex of PR #136. Per the
+technical-agreement protocol, any ChatGPT-only possible review observations remain unshared until
+that independent Codex review is complete.
