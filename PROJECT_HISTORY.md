@@ -1,6 +1,6 @@
 # PROJECT_HISTORY.md
 
-Последнее обновление: 2026-09-22
+Последнее обновление: 2026-09-26
 
 ## Назначение
 
@@ -212,8 +212,14 @@ database owner. PR [#49](https://github.com/iliya1947/vico-forum/pull/49) ввё
 исключение только для owner verification/no-op evidence и preflight, запрещающий применять
 pending migrations в этом режиме.
 
-Статус: verifier corrections исправлены; owner exception остаётся временным и должен быть
-удалён до следующего настоящего external schema rollout.
+Статус: verifier corrections исправлены. В Stage 6 dedicated migration credential был
+восстановлен и отдельно доказан successful manual read-only GitHub Actions run
+`36252243734`, attempt 3, на exact `main`
+`b8bb841e29bbdcb9201a64489970f349d316ae63`: connection identity прошла exact assertion
+`current_user = vico_forum_migrator`. После этого временный database-owner exception удалён
+code-wide из production migration path. Pending migrations этим изменением не применялись;
+существующий full-ledger preflight остаётся fail-closed barrier до отдельного reviewed
+pre-migration/post-migration verifier change.
 
 Текущий source of truth: `docs/database/MIGRATIONS.md`.
 
