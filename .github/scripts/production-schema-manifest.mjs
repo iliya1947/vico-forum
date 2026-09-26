@@ -211,5 +211,21 @@ export function assertProductionSchemaManifest(actual, expected) {
     [],
     `Production schema manifest contains pending check hashes:\n${pending.join("\n")}`,
   );
-  assert.deepEqual(actual.tables, expected.tables, "Production schema does not match repository manifest");
+  assert.deepEqual(
+    normalizeTableColumns(actual.tables),
+    normalizeTableColumns(expected.tables),
+    "Production schema does not match repository manifest",
+  );
+}
+
+function normalizeTableColumns(tables) {
+  return Object.fromEntries(
+    Object.entries(tables).map(([name, table]) => [
+      name,
+      {
+        ...table,
+        columns: [...table.columns].sort((left, right) => left.name.localeCompare(right.name)),
+      },
+    ]),
+  );
 }
