@@ -625,3 +625,30 @@ clean PostgreSQL 17 suite, production schema manifest parity, Workers build и l
 ChatGPT и считаются подтверждёнными; documentation замечание закрыто уже внесёнными изменениями.
 Следующая отдельная подзадача — исправить только два подтверждённых manifest defect
 (defaults + triggers/functions), затем снова прогнать полный PR CI и выполнить whole-PR re-review.
+
+
+### PR #133 confirmed manifest defects fixed — 2026-09-26
+
+На head PR #133 `e40488f24de778fda7a448c6154fddd5ff0615be` исправлены два
+подтверждённых current-Stage defect из Codex review:
+
+- full production schema manifest теперь включает exact presence/identity всех column defaults:
+  42 expected defaults зафиксированы SHA-256 от PostgreSQL 17 `pg_get_expr(pg_attrdef...)`,
+  а отсутствие default также является частью exact column contract;
+- manifest теперь включает exact set и definition identity пяти public trigger functions и шести
+  user-defined critical triggers, плюс trigger function binding и `tgenabled` state. Это покрывает
+  immutable forum revisions, built-in authz role identity и durable content-task binding/delete
+  invariants;
+- source-of-truth docs в самом PR обновлены: full manifest contract явно включает defaults и
+  correctness-critical triggers/functions.
+
+Использованы PostgreSQL 17 system-catalog boundaries `pg_attrdef`, `pg_trigger`, `pg_proc`,
+`pg_get_expr`, `pg_get_triggerdef`, `pg_get_functiondef`. External production DB не
+изменялась; значения manifest получены только из clean disposable PostgreSQL 17 CI.
+
+Финальный CI run `36261179271` на exact head
+`e40488f24de778fda7a448c6154fddd5ff0615be` завершён полностью успешно:
+`checks=success`, `database=success`; schema-manifest parity, clean PostgreSQL 17 suite,
+build и local Hyperdrive smoke прошли.
+
+Следующая отдельная подзадача по workflow — whole-PR re-review PR #133 после исправлений.
