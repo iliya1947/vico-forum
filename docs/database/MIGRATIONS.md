@@ -94,8 +94,9 @@ Repository-owned accepted migration→runtime evidence baseline остаётся
 но не называется accepted migration→runtime evidence. Pending `0004`–`0020` этим repository
 change не применяются.
 
-Перед настоящим external schema rollout требуется merge/review этого repository boundary и отдельное
-явное разрешение пользователя на protected production migration workflow.
+Repository boundary для schema-first rollout считается готовой только после review/CI этого change.
+Сам protected production migration workflow остаётся отдельным external mutation и запускается
+только после явного разрешения пользователя.
 
 ## Production verification contract
 
