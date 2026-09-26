@@ -335,7 +335,7 @@
       "uniqueConstraints": [],
       "foreignKeys": [
         {
-          "name": "authz_user_permission_overrides_permission_key_authz_permissions_key_fk",
+          "name": "authz_user_permission_overrides_permission_key_authz_permission",
           "columns": [
             "permission_key"
           ],
@@ -583,14 +583,14 @@
           "definitionSha256": "PENDING"
         },
         {
-          "name": "content_post_body_translation_tasks_resolved_source_locale_check",
+          "name": "content_post_body_translation_tasks_resolved_source_locale_chec",
           "columns": [
             "resolved_source_locale"
           ],
           "definitionSha256": "PENDING"
         },
         {
-          "name": "content_post_body_translation_tasks_revision_source_locale_check",
+          "name": "content_post_body_translation_tasks_revision_source_locale_chec",
           "columns": [
             "revision_source_locale"
           ],
@@ -723,14 +723,14 @@
           "definitionSha256": "PENDING"
         },
         {
-          "name": "content_topic_title_translation_tasks_resolved_source_locale_check",
+          "name": "content_topic_title_translation_tasks_resolved_source_locale_ch",
           "columns": [
             "resolved_source_locale"
           ],
           "definitionSha256": "PENDING"
         },
         {
-          "name": "content_topic_title_translation_tasks_revision_source_locale_check",
+          "name": "content_topic_title_translation_tasks_revision_source_locale_ch",
           "columns": [
             "revision_source_locale"
           ],
