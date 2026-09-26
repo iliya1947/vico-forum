@@ -230,8 +230,20 @@ bootstrap. `drizzle-orm 0.45.2` безусловно выполняет `CREATE 
 
 Corrective boundary теперь отдельно проверяет direct non-grantable database `CREATE` у
 application owner/migrator, запрещает database `CREATE` для localization runtime и `PUBLIC`,
-а manual identity check подтверждает effective capability в read-only transaction. Сам external
-grant остаётся отдельным owner-controlled действием и не считается выполненным repository change.
+а manual identity check подтверждает effective capability в read-only transaction.
+
+После merge verifier boundary пользователь отдельно разрешил ровно один bounded external grant:
+`GRANT CREATE ON DATABASE vico_forum TO vico_forum_migrator`. Pre/post checks подтвердили, что
+grant direct, `is_grantable = false`, выдан database owner, а localization runtime и `PUBLIC`
+database `CREATE` не получили. Затем manual read-only
+`Production database identity verification` run `36268723861`, attempt 1, завершился
+`success` на exact `main`
+`4c709d5aa82f6e93ddbad672afc10ad94c5e2efa` и подтвердил exact
+`current_user = vico_forum_migrator` + effective database `CREATE`.
+
+Production migration retry после этого capability gate не выполнялся; pending
+`0004`–`0020` остались неприменёнными. Capability workflow не является
+migration→runtime evidence и не меняет repository-owned evidence baseline `0002`.
 
 Текущий source of truth: `docs/database/MIGRATIONS.md`.
 
