@@ -93,10 +93,9 @@ React Router/Cloudflare Workers приложения.
 - deterministic compiled locale/namespace bundle identity;
 - persistence/cache/ETag primitives.
 
-На момент завершения Stage 3 production SSR продолжал читать raw local/persistent translation
-sources и собирать bundle в request path; active generation/publish/persisted-bundle runtime path
-был отложен до Stage 5. Stage 5 впоследствии реализовал persisted-bundle runtime consumption
-с предусмотренным fallback и завершён в repository/local-CI path.
+Production SSR пока продолжает читать raw local/persistent translation sources и собирать
+bundle в request path. Active generation/publish/persisted-bundle runtime path остаётся
+Stage 5.
 
 **Translation components:** `UI-06`, `UI-07`, `UI-14` primitives, `STO-01`, `STO-02`
 persistence, `STO-04`, `STO-05` primitives.
