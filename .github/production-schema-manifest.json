@@ -8,67 +8,80 @@
         {
           "name": "id",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "account_id",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "provider_id",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "user_id",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "access_token",
           "type": "text",
-          "nullable": true
+          "nullable": true,
+          "defaultSha256": null
         },
         {
           "name": "refresh_token",
           "type": "text",
-          "nullable": true
+          "nullable": true,
+          "defaultSha256": null
         },
         {
           "name": "id_token",
           "type": "text",
-          "nullable": true
+          "nullable": true,
+          "defaultSha256": null
         },
         {
           "name": "access_token_expires_at",
           "type": "timestamp without time zone",
-          "nullable": true
+          "nullable": true,
+          "defaultSha256": null
         },
         {
           "name": "refresh_token_expires_at",
           "type": "timestamp without time zone",
-          "nullable": true
+          "nullable": true,
+          "defaultSha256": null
         },
         {
           "name": "scope",
           "type": "text",
-          "nullable": true
+          "nullable": true,
+          "defaultSha256": null
         },
         {
           "name": "password",
           "type": "text",
-          "nullable": true
+          "nullable": true,
+          "defaultSha256": null
         },
         {
           "name": "created_at",
           "type": "timestamp without time zone",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": "PENDING"
         },
         {
           "name": "updated_at",
           "type": "timestamp without time zone",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         }
       ],
       "primaryKeys": [
@@ -117,12 +130,14 @@
         {
           "name": "id",
           "type": "integer",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "managers_ever_existed",
           "type": "boolean",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": "PENDING"
         }
       ],
       "primaryKeys": [
@@ -151,7 +166,8 @@
         {
           "name": "key",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         }
       ],
       "primaryKeys": [
@@ -180,12 +196,14 @@
         {
           "name": "role_id",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "permission_key",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         }
       ],
       "primaryKeys": [
@@ -236,32 +254,38 @@
         {
           "name": "id",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "slug",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "display_name",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "is_system",
           "type": "boolean",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": "PENDING"
         },
         {
           "name": "created_at",
           "type": "timestamp with time zone",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": "PENDING"
         },
         {
           "name": "updated_at",
           "type": "timestamp with time zone",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": "PENDING"
         }
       ],
       "primaryKeys": [
@@ -305,22 +329,26 @@
         {
           "name": "user_id",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "permission_key",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "effect",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "updated_at",
           "type": "timestamp with time zone",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": "PENDING"
         }
       ],
       "primaryKeys": [
@@ -379,17 +407,20 @@
         {
           "name": "user_id",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "role_id",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "assigned_at",
           "type": "timestamp with time zone",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": "PENDING"
         }
       ],
       "primaryKeys": [
@@ -452,47 +483,56 @@
         {
           "name": "task_id",
           "type": "uuid",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "translation_kind",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "source_namespace",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "post_id",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "revision_id",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "revision_source_locale",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "resolved_source_locale",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "source_resolution_origin",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "protected_content_policy_version",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         }
       ],
       "primaryKeys": [
@@ -604,42 +644,50 @@
         {
           "name": "task_id",
           "type": "uuid",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "translation_kind",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "source_namespace",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "topic_id",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "revision_id",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "revision_source_locale",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "resolved_source_locale",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "source_resolution_origin",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         }
       ],
       "primaryKeys": [
@@ -744,37 +792,44 @@
         {
           "name": "scope",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "subject_key",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "window_start",
           "type": "timestamp with time zone",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "used_units",
           "type": "bigint",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "expires_at",
           "type": "timestamp with time zone",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "created_at",
           "type": "timestamp with time zone",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": "PENDING"
         },
         {
           "name": "updated_at",
           "type": "timestamp with time zone",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": "PENDING"
         }
       ],
       "primaryKeys": [
@@ -863,17 +918,20 @@
         {
           "name": "id",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "name",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "created_at",
           "type": "timestamp with time zone",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": "PENDING"
         }
       ],
       "primaryKeys": [
@@ -902,57 +960,68 @@
         {
           "name": "post_id",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "revision_id",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "target_locale",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "source_locale",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "translated_content",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "origin",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "provider",
           "type": "text",
-          "nullable": true
+          "nullable": true,
+          "defaultSha256": null
         },
         {
           "name": "provider_model",
           "type": "text",
-          "nullable": true
+          "nullable": true,
+          "defaultSha256": null
         },
         {
           "name": "attribution",
           "type": "text",
-          "nullable": true
+          "nullable": true,
+          "defaultSha256": null
         },
         {
           "name": "created_at",
           "type": "timestamp with time zone",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": "PENDING"
         },
         {
           "name": "updated_at",
           "type": "timestamp with time zone",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": "PENDING"
         }
       ],
       "primaryKeys": [
@@ -1047,32 +1116,38 @@
         {
           "name": "id",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "post_id",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "author_id",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "original_content",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "source_locale",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "created_at",
           "type": "timestamp with time zone",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": "PENDING"
         }
       ],
       "primaryKeys": [
@@ -1155,27 +1230,32 @@
         {
           "name": "id",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "topic_id",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "author_id",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "current_revision_id",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "created_at",
           "type": "timestamp with time zone",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": "PENDING"
         }
       ],
       "primaryKeys": [
@@ -1275,22 +1355,26 @@
         {
           "name": "id",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "category_id",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "name",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "created_at",
           "type": "timestamp with time zone",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": "PENDING"
         }
       ],
       "primaryKeys": [
@@ -1347,32 +1431,38 @@
         {
           "name": "id",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "topic_id",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "author_id",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "original_content",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "source_locale",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "created_at",
           "type": "timestamp with time zone",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": "PENDING"
         }
       ],
       "primaryKeys": [
@@ -1455,57 +1545,68 @@
         {
           "name": "topic_id",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "revision_id",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "target_locale",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "source_locale",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "translated_content",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "origin",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "provider",
           "type": "text",
-          "nullable": true
+          "nullable": true,
+          "defaultSha256": null
         },
         {
           "name": "provider_model",
           "type": "text",
-          "nullable": true
+          "nullable": true,
+          "defaultSha256": null
         },
         {
           "name": "attribution",
           "type": "text",
-          "nullable": true
+          "nullable": true,
+          "defaultSha256": null
         },
         {
           "name": "created_at",
           "type": "timestamp with time zone",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": "PENDING"
         },
         {
           "name": "updated_at",
           "type": "timestamp with time zone",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": "PENDING"
         }
       ],
       "primaryKeys": [
@@ -1600,37 +1701,44 @@
         {
           "name": "id",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "section_id",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "author_id",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "current_title_revision_id",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "is_solved",
           "type": "boolean",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": "PENDING"
         },
         {
           "name": "best_answer_post_id",
           "type": "text",
-          "nullable": true
+          "nullable": true,
+          "defaultSha256": null
         },
         {
           "name": "created_at",
           "type": "timestamp with time zone",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": "PENDING"
         }
       ],
       "primaryKeys": [
@@ -1746,57 +1854,68 @@
         {
           "name": "tag",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "translation_status",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "publication_status",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "direction",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "fallback_chain",
           "type": "text[]",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "aliases",
           "type": "text[]",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": "PENDING"
         },
         {
           "name": "match_tags",
           "type": "text[]",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": "PENDING"
         },
         {
           "name": "native_name",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "presentation_metadata",
           "type": "jsonb",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": "PENDING"
         },
         {
           "name": "created_at",
           "type": "timestamp with time zone",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": "PENDING"
         },
         {
           "name": "updated_at",
           "type": "timestamp with time zone",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": "PENDING"
         }
       ],
       "primaryKeys": [
@@ -1881,22 +2000,26 @@
         {
           "name": "id",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "key",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "count",
           "type": "integer",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "last_request",
           "type": "bigint",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         }
       ],
       "primaryKeys": [
@@ -1925,42 +2048,50 @@
         {
           "name": "id",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "expires_at",
           "type": "timestamp without time zone",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "token",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "created_at",
           "type": "timestamp without time zone",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": "PENDING"
         },
         {
           "name": "updated_at",
           "type": "timestamp without time zone",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "ip_address",
           "type": "text",
-          "nullable": true
+          "nullable": true,
+          "defaultSha256": null
         },
         {
           "name": "user_agent",
           "type": "text",
-          "nullable": true
+          "nullable": true,
+          "defaultSha256": null
         },
         {
           "name": "user_id",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         }
       ],
       "primaryKeys": [
@@ -2017,32 +2148,38 @@
         {
           "name": "translation_kind",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "source_namespace",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "source_key",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "target_locale",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "current_generation",
           "type": "integer",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "updated_at",
           "type": "timestamp with time zone",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": "PENDING"
         }
       ],
       "primaryKeys": [
@@ -2118,167 +2255,200 @@
         {
           "name": "id",
           "type": "uuid",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": "PENDING"
         },
         {
           "name": "task_identity",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "translation_kind",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "source_namespace",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "source_key",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "source_fingerprint",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "target_locale",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "generation_policy_version",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "generation",
           "type": "integer",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "status",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": "PENDING"
         },
         {
           "name": "attempt_count",
           "type": "integer",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": "PENDING"
         },
         {
           "name": "max_attempts",
           "type": "integer",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": "PENDING"
         },
         {
           "name": "last_failure_code",
           "type": "text",
-          "nullable": true
+          "nullable": true,
+          "defaultSha256": null
         },
         {
           "name": "failure_disposition",
           "type": "text",
-          "nullable": true
+          "nullable": true,
+          "defaultSha256": null
         },
         {
           "name": "reconciliation_attempted_at",
           "type": "timestamp with time zone",
-          "nullable": true
+          "nullable": true,
+          "defaultSha256": null
         },
         {
           "name": "claim_token",
           "type": "uuid",
-          "nullable": true
+          "nullable": true,
+          "defaultSha256": null
         },
         {
           "name": "claimed_at",
           "type": "timestamp with time zone",
-          "nullable": true
+          "nullable": true,
+          "defaultSha256": null
         },
         {
           "name": "lease_expires_at",
           "type": "timestamp with time zone",
-          "nullable": true
+          "nullable": true,
+          "defaultSha256": null
         },
         {
           "name": "stale_at",
           "type": "timestamp with time zone",
-          "nullable": true
+          "nullable": true,
+          "defaultSha256": null
         },
         {
           "name": "completed_at",
           "type": "timestamp with time zone",
-          "nullable": true
+          "nullable": true,
+          "defaultSha256": null
         },
         {
           "name": "failed_at",
           "type": "timestamp with time zone",
-          "nullable": true
+          "nullable": true,
+          "defaultSha256": null
         },
         {
           "name": "created_at",
           "type": "timestamp with time zone",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": "PENDING"
         },
         {
           "name": "updated_at",
           "type": "timestamp with time zone",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": "PENDING"
         },
         {
           "name": "allowance_state",
           "type": "text",
-          "nullable": true
+          "nullable": true,
+          "defaultSha256": null
         },
         {
           "name": "allowance_generation",
           "type": "integer",
-          "nullable": true
+          "nullable": true,
+          "defaultSha256": null
         },
         {
           "name": "allowance_attempt",
           "type": "integer",
-          "nullable": true
+          "nullable": true,
+          "defaultSha256": null
         },
         {
           "name": "allowance_claim_token",
           "type": "uuid",
-          "nullable": true
+          "nullable": true,
+          "defaultSha256": null
         },
         {
           "name": "allowance_lease_expires_at",
           "type": "timestamp with time zone",
-          "nullable": true
+          "nullable": true,
+          "defaultSha256": null
         },
         {
           "name": "allowance_retry_not_before",
           "type": "timestamp with time zone",
-          "nullable": true
+          "nullable": true,
+          "defaultSha256": null
         },
         {
           "name": "allowance_reason",
           "type": "text",
-          "nullable": true
+          "nullable": true,
+          "defaultSha256": null
         },
         {
           "name": "allowance_provider",
           "type": "text",
-          "nullable": true
+          "nullable": true,
+          "defaultSha256": null
         },
         {
           "name": "allowance_reservation_reference",
           "type": "text",
-          "nullable": true
+          "nullable": true,
+          "defaultSha256": null
         },
         {
           "name": "allowance_updated_at",
           "type": "timestamp with time zone",
-          "nullable": true
+          "nullable": true,
+          "defaultSha256": null
         }
       ],
       "primaryKeys": [
@@ -2595,27 +2765,32 @@
         {
           "name": "locale",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "namespace",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "bundle_version",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "resources",
           "type": "jsonb",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "compiled_at",
           "type": "timestamp with time zone",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": "PENDING"
         }
       ],
       "primaryKeys": [
@@ -2666,67 +2841,80 @@
         {
           "name": "locale",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "namespace",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "key",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "origin",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "status",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "source_fingerprint",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "translated_payload",
           "type": "jsonb",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "generation_policy_version",
           "type": "text",
-          "nullable": true
+          "nullable": true,
+          "defaultSha256": null
         },
         {
           "name": "provider",
           "type": "text",
-          "nullable": true
+          "nullable": true,
+          "defaultSha256": null
         },
         {
           "name": "provider_model",
           "type": "text",
-          "nullable": true
+          "nullable": true,
+          "defaultSha256": null
         },
         {
           "name": "provenance_metadata",
           "type": "jsonb",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": "PENDING"
         },
         {
           "name": "created_at",
           "type": "timestamp with time zone",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": "PENDING"
         },
         {
           "name": "updated_at",
           "type": "timestamp with time zone",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": "PENDING"
         }
       ],
       "primaryKeys": [
@@ -2817,42 +3005,50 @@
         {
           "name": "id",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "name",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "email",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "email_verified",
           "type": "boolean",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": "PENDING"
         },
         {
           "name": "image",
           "type": "text",
-          "nullable": true
+          "nullable": true,
+          "defaultSha256": null
         },
         {
           "name": "created_at",
           "type": "timestamp without time zone",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": "PENDING"
         },
         {
           "name": "updated_at",
           "type": "timestamp without time zone",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": "PENDING"
         },
         {
           "name": "locale",
           "type": "text",
-          "nullable": true
+          "nullable": true,
+          "defaultSha256": null
         }
       ],
       "primaryKeys": [
@@ -2881,32 +3077,38 @@
         {
           "name": "id",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "identifier",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "value",
           "type": "text",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "expires_at",
           "type": "timestamp without time zone",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": null
         },
         {
           "name": "created_at",
           "type": "timestamp without time zone",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": "PENDING"
         },
         {
           "name": "updated_at",
           "type": "timestamp without time zone",
-          "nullable": false
+          "nullable": false,
+          "defaultSha256": "PENDING"
         }
       ],
       "primaryKeys": [
@@ -2935,5 +3137,71 @@
         }
       ]
     }
-  }
+  },
+  "triggerFunctions": [
+    {
+      "name": "authz_protect_role_identity",
+      "definitionSha256": "PENDING"
+    },
+    {
+      "name": "delete_content_post_body_task_with_metadata",
+      "definitionSha256": "PENDING"
+    },
+    {
+      "name": "delete_content_topic_title_task_with_metadata",
+      "definitionSha256": "PENDING"
+    },
+    {
+      "name": "reject_forum_revision_update",
+      "definitionSha256": "PENDING"
+    },
+    {
+      "name": "require_content_topic_title_task_binding",
+      "definitionSha256": "PENDING"
+    }
+  ],
+  "triggers": [
+    {
+      "table": "authz_roles",
+      "name": "authz_protect_role_identity_trigger",
+      "function": "authz_protect_role_identity",
+      "enabled": "O",
+      "definitionSha256": "PENDING"
+    },
+    {
+      "table": "content_post_body_translation_tasks",
+      "name": "content_post_body_translation_tasks_delete_task",
+      "function": "delete_content_post_body_task_with_metadata",
+      "enabled": "O",
+      "definitionSha256": "PENDING"
+    },
+    {
+      "table": "content_topic_title_translation_tasks",
+      "name": "content_topic_title_translation_tasks_delete_task",
+      "function": "delete_content_topic_title_task_with_metadata",
+      "enabled": "O",
+      "definitionSha256": "PENDING"
+    },
+    {
+      "table": "forum_post_revisions",
+      "name": "forum_post_revisions_immutable",
+      "function": "reject_forum_revision_update",
+      "enabled": "O",
+      "definitionSha256": "PENDING"
+    },
+    {
+      "table": "forum_topic_title_revisions",
+      "name": "forum_topic_title_revisions_immutable",
+      "function": "reject_forum_revision_update",
+      "enabled": "O",
+      "definitionSha256": "PENDING"
+    },
+    {
+      "table": "translation_tasks",
+      "name": "translation_tasks_content_binding_required",
+      "function": "require_content_topic_title_task_binding",
+      "enabled": "O",
+      "definitionSha256": "PENDING"
+    }
+  ]
 }
