@@ -4,14 +4,14 @@
 
 ## Проверенный baseline
 
-- `main` на момент открытия канала: `56d4788911134e49ac01533a98c0c35f622ec6a8`
-  (`Docs: close Stage 5 local CI phase (#120)`).
-- Stage 4 forum core и Stage 5 translations/background jobs завершены в local/CI path.
+- Актуальный `main`: `45512ac0a9e0090cc86f284a2a050de8b8a0f6d0`
+  (`Docs: align current state with Stage 6 (#129)`).
+- Stage 4 forum core и Stage 5 translations/background jobs завершены в repository/local-CI path.
 - Текущий продуктовый этап — Stage 6 pre-release external integration.
-- Служебный PR Codex Stage 6 — #121; он открыт и задаёт первым шагом read-only external preflight.
-- В #121 на текущем head `372063cc8b5c1610b11ee4b969e745611cc30fd1` остаётся review-замечание
-  Codex: в кратком перечне критериев завершения не отражена обязательная deployed-проверка
-  dynamic role/user permission management из Stage 6 source of truth.
+- Служебный PR Codex Stage 6 — #121; его актуальный head при этой проверке:
+  `381759b1b27ab1fbdfb6ad814a640cabf456ea73`.
+- Ранее outstanding observation о deployed-проверке dynamic role/user permission management
+  в #121 исправлено: актуальные scope и completion criteria явно включают эту проверку.
 
 ## Scope канала
 
@@ -26,8 +26,40 @@
 platform и exact-version assumptions перед применением проверяются по актуальной официальной
 документации.
 
+## Read-only external preflight — продолжение 2026-09-26
+
+По следующему шагу из актуального PR #121 выполнена доступная из ChatGPT read-only проверка без
+external mutations и без чтения secret values.
+
+### GitHub
+
+- Актуальный repository baseline подтверждён на `45512ac0a9e0090cc86f284a2a050de8b8a0f6d0`.
+- Текущий GitHub connector намеренно не предоставляет sensitive endpoint families, включая
+  secrets APIs. Поэтому наличие/имена GitHub Environment secrets/variables через доступный
+  connector честно подтвердить нельзя; secret values не запрашивались.
+- Публично доступная часть GitHub preflight уже зафиксирована Codex в #121; новых repository
+  mutations в рамках этой проверки не выполнялось.
+
+### Neon
+
+- Подключённый Neon connector доступен, но connection не scoped к конкретному project.
+- Read-only вызов project/branch metadata без `project_id` отклонён с явным требованием передать
+  target Neon project ID.
+- В repository search по `NEON_PROJECT_ID` target project ID не найден.
+- Поэтому migration login identity, application ownership, memberships и runtime-role design input
+  пока не подтверждены. Для продолжения достаточно project ID; пароль/connection string/secret
+  material не нужны и не должны передаваться.
+
+### Cloudflare
+
+- В текущем наборе подключённых инструментов ChatGPT Cloudflare control-plane connector отсутствует.
+- Поэтому фактические production branch/auto-deploy state, preview topology и bindings из
+  Cloudflare account здесь не подтверждены. Repository documentation не подменяет это external
+  evidence.
+
 ## Текущий статус
 
-Канал ChatGPT открыт. Внешние изменения не выполнялись. До выполнения external mutations
-сначала должен быть завершён и зафиксирован read-only preflight; действия с production
-deployment/data/secrets выполняются только после явного разрешения пользователя.
+Read-only preflight продвинут до границы доступных подключений. External mutations не выполнялись.
+Для завершения оставшейся control-plane части нужны: target Neon project ID, read-only evidence
+GitHub Environment configuration и read-only Cloudflare topology/bindings через доступ к
+соответствующим control planes. Secret values для этого не требуются.
