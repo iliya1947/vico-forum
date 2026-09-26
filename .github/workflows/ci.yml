@@ -26,6 +26,7 @@ jobs:
         run: |
           node --test .github/scripts/migration-history.test.mjs
           node --test .github/scripts/production-privileges.test.mjs
+          node --test .github/scripts/production-migration-contract.test.mjs
           node --test .github/scripts/runtime-migration-evidence.test.mjs
           node --test .github/scripts/verify-production-migration-identity.test.mjs
           node .github/scripts/verify-migration-history.mjs
@@ -78,6 +79,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Test clean PostgreSQL 17 migrations and constraints
         run: pnpm db:test
+      - name: Verify production schema manifest parity
+        run: node .github/scripts/verify-production-schema-manifest.mjs
       - name: Build for Workers smoke
         run: pnpm build
       - name: Workers smoke with local Hyperdrive override

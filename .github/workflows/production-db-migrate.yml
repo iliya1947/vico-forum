@@ -36,6 +36,7 @@ jobs:
           DATABASE_URL: ${{ secrets.NEON_MIGRATION_DATABASE_URL }}
           RUNTIME_DATABASE_ROLE: ${{ vars.RUNTIME_DATABASE_ROLE }}
           MIGRATION_DATABASE_ROLE_MEMBERSHIPS: ${{ vars.MIGRATION_DATABASE_ROLE_MEMBERSHIPS }}
+          PRODUCTION_MIGRATION_PHASE: pre
       - name: Apply migrations
         run: pnpm db:migrate
         env:
@@ -46,6 +47,7 @@ jobs:
           DATABASE_URL: ${{ secrets.NEON_MIGRATION_DATABASE_URL }}
           RUNTIME_DATABASE_ROLE: ${{ vars.RUNTIME_DATABASE_ROLE }}
           MIGRATION_DATABASE_ROLE_MEMBERSHIPS: ${{ vars.MIGRATION_DATABASE_ROLE_MEMBERSHIPS }}
+          PRODUCTION_MIGRATION_PHASE: post
       - name: Emit runtime evidence
         run: |
           journal_sha256=$(sha256sum drizzle/meta/_journal.json | cut -d ' ' -f 1)

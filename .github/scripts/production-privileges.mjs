@@ -21,6 +21,7 @@ export function assertProductionPrivilegeContract(
     migrationRole,
     runtimeRole,
     migrationMemberships = [],
+    applicationTables: expectedApplicationTables = applicationTables,
   },
 ) {
   assert.ok(snapshot.databaseOwnerRole, "Expected current database owner role to exist");
@@ -115,7 +116,7 @@ export function assertProductionPrivilegeContract(
     false,
     `Runtime role ${runtimeRole} must not own schemas, tables, sequences, or views`,
   );
-  for (const table of applicationTables) {
+  for (const table of expectedApplicationTables) {
     assert.ok(
       snapshot.ownedObjects.some(
         ({ schema, name, kind, owner }) =>
@@ -198,7 +199,10 @@ export function assertProductionPrivilegeContract(
   );
 }
 
-export async function readProductionPrivilegeSnapshot(client, { migrationRole, runtimeRole }) {
+export async function readProductionPrivilegeSnapshot(
+  client,
+  { migrationRole, runtimeRole, applicationTables: expectedApplicationTables = applicationTables },
+) {
   const applicationOwners = await client.query(
     `SELECT DISTINCT owner.rolname AS role
      FROM pg_catalog.pg_class relation
@@ -208,7 +212,7 @@ export async function readProductionPrivilegeSnapshot(client, { migrationRole, r
        AND relation.relkind IN ('r', 'p')
        AND relation.relname = ANY($1::name[])
      ORDER BY owner.rolname`,
-    [applicationTables],
+    [expectedApplicationTables],
   );
   const applicationOwnerRoles = applicationOwners.rows.map(({ role }) => role);
   const applicationOwnerRole = applicationOwnerRoles.length === 1

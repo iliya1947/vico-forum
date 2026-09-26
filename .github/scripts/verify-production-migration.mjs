@@ -3,14 +3,26 @@ import { readFile } from "node:fs/promises";
 
 import pg from "pg";
 import {
+  assertMigrationHistoryForPhase,
+  parseProductionMigrationPhase,
+  readExpectedMigrationHistory,
+} from "./production-migration-contract.mjs";
+import {
+  applicationTables as baselineApplicationTables,
   assertProductionPrivilegeContract,
   readProductionPrivilegeSnapshot,
 } from "./production-privileges.mjs";
+import {
+  assertProductionSchemaManifest,
+  loadProductionSchemaManifest,
+  readProductionSchemaSnapshot,
+} from "./production-schema-manifest.mjs";
 
 const databaseUrl = globalThis.process.env.DATABASE_URL;
 assert.ok(databaseUrl, "DATABASE_URL is required");
 const runtimeRole = globalThis.process.env.RUNTIME_DATABASE_ROLE;
 assert.ok(runtimeRole, "RUNTIME_DATABASE_ROLE is required");
+const phase = parseProductionMigrationPhase(globalThis.process.env.PRODUCTION_MIGRATION_PHASE);
 const migrationMembershipsValue = globalThis.process.env.MIGRATION_DATABASE_ROLE_MEMBERSHIPS;
 assert.notEqual(
   migrationMembershipsValue,
@@ -27,9 +39,9 @@ assert.equal(
   "MIGRATION_DATABASE_ROLE_MEMBERSHIPS must not contain duplicates",
 );
 const journal = JSON.parse(await readFile("drizzle/meta/_journal.json", "utf8"));
-const expectedMigrationHistory = journal.entries.map(({ when }) => String(when));
+const expectedMigrationHistory = await readExpectedMigrationHistory(journal);
 
-const requiredTables = new Map([
+const requiredBaselineTables = new Map([
   [
     "locales",
     new Map([
@@ -97,7 +109,7 @@ const requiredTables = new Map([
   ])],
 ]);
 
-const nullableColumns = new Set([
+const nullableBaselineColumns = new Set([
   "user.image",
   "user.locale",
   "session.ip_address",
@@ -132,40 +144,34 @@ try {
   assert.equal(server.rows[0].server_encoding, "UTF8", "Expected UTF-8 server encoding");
 
   const migrationHistory = await client.query(`
-    SELECT created_at::text AS created_at
+    SELECT created_at::text AS created_at, hash
     FROM drizzle.__drizzle_migrations
     ORDER BY created_at
   `);
-  assert.deepEqual(
-    migrationHistory.rows.map(({ created_at }) => created_at),
-    expectedMigrationHistory,
-    "Database migration history does not match the checked-in Drizzle journal",
-  );
+  assertMigrationHistoryForPhase({
+    phase,
+    journal,
+    expectedHistory: expectedMigrationHistory,
+    actualHistory: migrationHistory.rows.map(({ created_at, hash }) => ({
+      createdAt: created_at,
+      hash,
+    })),
+  });
 
-  for (const [tableName, requiredColumns] of requiredTables) {
-    const tableColumns = await client.query(
-      `SELECT column_name, udt_name, is_nullable
-       FROM information_schema.columns
-       WHERE table_schema = 'public' AND table_name = $1`,
-      [tableName],
-    );
-    const columnsByName = new Map(tableColumns.rows.map((row) => [row.column_name, row]));
+  let targetManifest;
+  if (phase === "pre") {
+    await verifyKnownAppliedBaseline(client);
+  } else {
+    targetManifest = await loadProductionSchemaManifest();
     assert.equal(
-      columnsByName.size,
-      requiredColumns.size,
-      `Unexpected column set for public.${tableName}`,
+      targetManifest.targetMigration,
+      journal.entries.at(-1)?.tag,
+      "Production schema manifest must target the newest checked-in migration",
     );
-    for (const [columnName, udtName] of requiredColumns) {
-      const column = columnsByName.get(columnName);
-      assert.ok(column, `Expected public.${tableName}.${columnName} to exist`);
-      assert.equal(column.udt_name, udtName, `Unexpected type for public.${tableName}.${columnName}`);
-      const expectedNullable = nullableColumns.has(`${tableName}.${columnName}`) ? "YES" : "NO";
-      assert.equal(
-        column.is_nullable,
-        expectedNullable,
-        `Unexpected nullability for public.${tableName}.${columnName}`,
-      );
-    }
+    assertProductionSchemaManifest(
+      await readProductionSchemaSnapshot(client),
+      targetManifest,
+    );
   }
 
   const reservedLocaleRows = await client.query(`
@@ -193,17 +199,52 @@ try {
 
   const identity = await client.query("SELECT current_user AS migration_role");
   const migrationRole = identity.rows[0].migration_role;
+  const expectedApplicationTables = phase === "post"
+    ? Object.keys(targetManifest.tables).sort()
+    : baselineApplicationTables;
   const privilegeSnapshot = await readProductionPrivilegeSnapshot(client, {
     migrationRole,
     runtimeRole,
+    applicationTables: expectedApplicationTables,
   });
   assertProductionPrivilegeContract(privilegeSnapshot, {
     migrationRole,
     runtimeRole,
     migrationMemberships,
+    applicationTables: expectedApplicationTables,
   });
 
-  globalThis.console.log("Production database schema and privilege verification passed.");
+  globalThis.console.log(
+    `Production database ${phase}-migration schema and privilege verification passed.`,
+  );
 } finally {
   await client.end();
+}
+
+async function verifyKnownAppliedBaseline(database) {
+  for (const [tableName, requiredColumns] of requiredBaselineTables) {
+    const tableColumns = await database.query(
+      `SELECT column_name, udt_name, is_nullable
+       FROM information_schema.columns
+       WHERE table_schema = 'public' AND table_name = $1`,
+      [tableName],
+    );
+    const columnsByName = new Map(tableColumns.rows.map((row) => [row.column_name, row]));
+    assert.equal(
+      columnsByName.size,
+      requiredColumns.size,
+      `Unexpected column set for public.${tableName}`,
+    );
+    for (const [columnName, udtName] of requiredColumns) {
+      const column = columnsByName.get(columnName);
+      assert.ok(column, `Expected public.${tableName}.${columnName} to exist`);
+      assert.equal(column.udt_name, udtName, `Unexpected type for public.${tableName}.${columnName}`);
+      const expectedNullable = nullableBaselineColumns.has(`${tableName}.${columnName}`) ? "YES" : "NO";
+      assert.equal(
+        column.is_nullable,
+        expectedNullable,
+        `Unexpected nullability for public.${tableName}.${columnName}`,
+      );
+    }
+  }
 }
