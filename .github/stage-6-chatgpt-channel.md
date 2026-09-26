@@ -1048,3 +1048,8 @@ evidence-sync PR не выполнялось.
 
 Следующий шаг по review cycle — независимая полная проверка PR #135 Codex; merge выполняет
 пользователь только после завершения review/CI.
+
+
+Follow-up: CI run `36269482706` on exact PR #135 head
+`e59bfc79dfde7c57c6200218a93ccfbbb7d67e28` завершён `success`. PR остаётся open и
+`mergeable=true`.
