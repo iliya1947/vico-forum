@@ -4,8 +4,9 @@
 
 ## Проверенный baseline
 
-- GitHub `main` проверен 2026-09-25 командой `git ls-remote` и указывает на
-  `56d4788911134e49ac01533a98c0c35f622ec6a8` (`Docs: close Stage 5 local CI phase (#120)`).
+- GitHub `main` повторно проверен 2026-09-26 командой `git ls-remote` и указывает на
+  `45512ac0a9e0090cc86f284a2a050de8b8a0f6d0` (`Docs: align current state with Stage 6
+  (#129)`).
 - Stage 4 forum core и Stage 5 translations/background jobs завершены в local/CI boundary.
 - External acceptance pending migrations, Google OAuth, authorization bootstrap, runtime
   roles/Hyperdrive writes, Queues/providers, preview isolation, deployed smoke и backup/restore
@@ -110,8 +111,31 @@ GitHub checks `checks` и `database` завершились успешно. Со
 готов; по протоколу ChatGPT должен заново проверить весь PR после результата согласования и
 сообщить пользователю финальный результат.
 
+### Read-only external preflight — доступная из текущего окружения часть
+
+После merge PR #129 актуальный `main` повторно загружен и проверен на
+`45512ac0a9e0090cc86f284a2a050de8b8a0f6d0`. Публичный GitHub API подтверждает:
+
+- repository workflows `CI` и `Production database migration` активны;
+- последний production migration run остаётся историческим failed run от 2026-09-13 на
+  `ebd01606daf59706b78998b9174c66ccd0d8233e`: migration step завершился успешно, production
+  verifier завершился ошибкой, runtime evidence не был создан;
+- более ранние successful production migration runs относятся к 2026-09-11 и не покрывают
+  текущую migration history;
+- GitHub всё ещё показывает две временные Stage 5A workflow registrations как active, хотя их
+  YAML уже отсутствует в актуальном `main`. Это external-configuration observation для проверки,
+  а не подтверждённый runtime defect или основание самостоятельно менять настройки.
+
+Текущий execution environment не аутентифицирован в GitHub CLI, не содержит Cloudflare/Neon
+credential variables, локальных Wrangler/Neon CLI или private environment files. Поэтому из него
+невозможно честно подтвердить GitHub Environment configuration, фактическую Cloudflare
+branch/build topology и bindings либо Neon identity/ownership/memberships. Secret values для этой
+проверки не требуются и не должны передаваться. Следующее evidence должен предоставить пользователь
+из соответствующих control planes как значения настроек/identity без secret material.
+
 ## Текущий статус
 
 Stage 6 открыт на уровне координации. Repository source of truth и внешняя инфраструктура пока
-не изменялись. Следующая операция — только read-only external preflight после подтверждения
-доступа к соответствующим control planes.
+не изменялись. Публично доступная часть read-only preflight выполнена; следующий шаг — дополнить
+его read-only evidence из GitHub, Cloudflare и Neon control planes без раскрытия secrets и без
+external mutations.
