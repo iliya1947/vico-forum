@@ -326,13 +326,55 @@ PR #132 проверен целиком на head `7c5bff3a7082358b793c33c698036
 workflow после merge всё ещё нельзя запускать для pending schema; следующий отдельный шаг — дизайн
 pre-migration/post-migration phases, полного target schema verifier и runtime privilege contract.
 
+### Проверка verifier-phase и web runtime capability proposal из PR #122
+
+Актуальный `main` после merge PR #132 проверен на
+`0d89e036ddc0bfce0cc966afb79a6ce8088e9cd2`. Proposal PR #122 проверен против migration
+history `0000`–`0020`, текущего verifier, Worker wiring и фактических forum/auth/authorization/
+content-presentation/status query paths.
+
+Основные границы подтверждены:
+
+- pre-migration gate должен разрешать только exact prefix checked-in journal и reject extra,
+  reordered/divergent ledger; post-migration gate требует exact full ledger и полный target contract;
+- schema-first migration не зависит от ещё не созданной web runtime role;
+- existing `vico_forum_runtime`/`HYPERDRIVE` остаётся localization-only;
+- отдельная web role/binding покрывает только уже подключённые Better Auth, forum,
+  authorization, content-presentation и generation-status paths;
+- предложенная ACL matrix соответствует текущим query operations: Better Auth bounded CRUD;
+  forum reference reads и topic/post/revision writes; authorization management mutations;
+  translation/task status reads; task/budget/publication writes исключены до Queue/generation wiring;
+- target `0020` не использует sequences, а runtime role не требует ownership, memberships,
+  grant options или schema CREATE.
+
+До implementation нужно исправить одно source-of-truth расхождение. Repository-owned external
+migration evidence всё ещё заканчивается на `0002_ui_translation_storage`; `0003` присутствует в
+target DB и подтверждён catalog/read-only preflight после исторического failed workflow, но не
+является accepted migration→runtime evidence. Поэтому preflight вправе требовать minimum
+**known-applied target prefix `0000`–`0003`**, однако не должен называть его «externally accepted
+baseline». Accepted evidence baseline остаётся `0000`–`0002` до нового successful migration
+workflow/evidence.
+
+После этой коррекции proposal технически согласован как два последовательных boundary:
+
+1. repository PR для pre/post migration phases и repository-owned full `0000`–`0020` structural
+   manifest с CI parity против clean PostgreSQL 17;
+2. только после successful schema rollout — отдельный reviewed web role/grants, cache-disabled
+   Hyperdrive binding, exact ACL verifier и Worker wiring PR/provisioning boundary.
+
+Первый PR не создаёт web role, grants/binding и не запускает external workflow. Full target manifest
+должен покрывать 27 public tables, columns/types/nullability и correctness-critical PK/unique/FK/
+check/index invariants из manual SQL; CI доказывает parity manifest с clean migrated DB. Preflight
+проверяет stable `0000`–`0003` schema/data/privilege invariants и exact known-applied prefix;
+postflight — full manifest, ownership/ACL invariants и exact complete journal.
+
 ## Текущий статус
 
 Stage 6 открыт на уровне координации. Внешние изменения пока ограничены явно разрешённым
 dedicated migrator login/password credential и GitHub Environment secret; execution identity
-доказан successful run. Следующий шаг — отдельный mergeable PR, удаляющий owner exception
-code-wide при сохранении fail-closed barrier; PR #132 технически готов к merge,
-migrations/deploy остаются запрещены.
+доказан successful run, а PR #132 удалил owner exception code-wide. Verifier/runtime proposal
+согласован с одной обязательной terminology correction в PR #122; следующий implementation
+boundary — verifier phases/full manifest, migrations/deploy пока запрещены.
 
 ## Рабочий канал дальнейших действий
 
