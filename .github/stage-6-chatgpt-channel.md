@@ -142,10 +142,39 @@ localization Hyperdrive использует runtime role и cache-disabled conf
 Queues/provider credentials и будущие forum/auth/translation write Hyperdrive capabilities —
 не пропущенные read-only evidence, а отдельное provisioning/acceptance Stage 6.
 
+### GitHub read-only preflight — 2026-09-26
+
+С учётом уже предоставленного пользователем полного экрана Environment `production-db` и
+repository/API проверки подтверждено:
+
+- Environment `production-db` ограничивает deployment branch до `main`;
+- Required reviewers и wait timer не настроены; administrators могут bypass configured
+  protection rules;
+- Environment secrets присутствуют под именами `NEON_MIGRATION_DATABASE_URL` и
+  `NEON_OWNER_DATABASE_URL`; значения не читались и не требуются;
+- Environment variable `RUNTIME_DATABASE_ROLE=vico_forum_runtime` присутствует;
+- current `production-db-migrate.yml` — manual `workflow_dispatch`, job дополнительно требует
+  `github.ref == refs/heads/main`, использует Environment `production-db`, `contents: read`,
+  serialized concurrency и pinned setup actions;
+- workflow использует `NEON_MIGRATION_DATABASE_URL` для preflight, migration и post-verification,
+  а `NEON_OWNER_DATABASE_URL` этим workflow не используется;
+- temporary `PRE_RELEASE_ALLOW_DATABASE_OWNER_CONNECTION=true` всё ещё существует и по
+  Stage 6 contract должен быть снят до первой новой external schema migration;
+- доступный GitHub integration не предоставляет Environment/secrets endpoint и не имеет доступа
+  к branch-protection endpoint (403), поэтому текущий branch-protection/ruleset state отдельно
+  через этот connector не подтверждён. Для данного read-only preflight это не блокирует уже
+  подтверждённый production migration gate: workflow сам manual-only + main-only + Environment-bound.
+
+Единственный существенный unresolved cross-control-plane факт остаётся прежним: username внутри
+current `NEON_MIGRATION_DATABASE_URL` нельзя установить чтением GitHub Environment metadata.
+Это должно быть проверено/исправлено в dedicated migration-credential шаге Stage 6 до первого
+pending external migration, а не обходиться запуском mutation workflow ради диагностики.
+
 ## Текущий статус
 
-Neon и Cloudflare read-only external baseline собраны до доступной границы. В Neon остаётся
-недоступным без исполнения Environment secret только current username внутри
-`NEON_MIGRATION_DATABASE_URL`. Cloudflare read-only topology/bindings/Hyperdrive/preview evidence
-подтверждены. По согласованному с пользователем порядку следующая и последняя область этого
-read-only preflight — GitHub Environment/configuration.
+Read-only external preflight по согласованному порядку **Neon → Cloudflare → GitHub завершён** до
+фактической границы доступов. Собраны current external topology, production/preview bindings,
+Hyperdrive origin/runtime role/cache state, Neon role/ownership baseline и GitHub
+Environment/workflow configuration. Единственный unresolved credential fact —
+current identity `NEON_MIGRATION_DATABASE_URL`; он относится к следующему dedicated
+migration-credential шагу Stage 6 и должен быть разрешён до применения pending migrations.
