@@ -57,9 +57,33 @@ external mutations и без чтения secret values.
   Cloudflare account здесь не подтверждены. Repository documentation не подменяет это external
   evidence.
 
+
+### Neon evidence после получения target project ID
+
+Target подтверждён пользователем как Neon project `late-cell-18916701`, branch
+`br-square-flower-b2q6a3sy`. Read-only control-plane/catalog проверки дали:
+
+- project name `vico-forum`, PostgreSQL 17, region `aws-eu-central-1`;
+- указанная branch называется `production`, является primary/default и находится в state `ready`;
+- database `vico_forum` принадлежит `vico_forum_owner`;
+- существуют роли `vico_forum_owner`, `vico_forum_migrator`, `vico_forum_runtime`;
+- SQL session connector выполняет read-only query как `vico_forum_owner`;
+- PostgreSQL catalog: migrator/runtime не superuser, не CREATEDB/CREATEROLE; owner имеет
+  CREATEDB/CREATEROLE и состоит в `neon_superuser`, `vico_forum_migrator`,
+  `vico_forum_runtime`;
+- `vico_forum_migrator` владеет schema `drizzle` и текущими принятыми public relations
+  localization/Better Auth subset; runtime не владеет public relations;
+- Neon role metadata возвращает для `vico_forum_migrator` `authentication_method=no_login`,
+  тогда как PostgreSQL catalog на той же production branch возвращает `rolcanlogin=true`.
+  Это зафиксировано как control-plane/catalog discrepancy для технического разбора, без mutation.
+
+Эта проверка не применяла migrations, не меняла roles/grants/resources и не читала passwords или
+connection strings. Точный migration credential path и полный runtime grants contract ещё не
+считаются подтверждёнными только из наличия ролей.
+
 ## Текущий статус
 
-Read-only preflight продвинут до границы доступных подключений. External mutations не выполнялись.
-Для завершения оставшейся control-plane части нужны: target Neon project ID, read-only evidence
-GitHub Environment configuration и read-only Cloudflare topology/bindings через доступ к
-соответствующим control planes. Secret values для этого не требуются.
+Neon identity/ownership baseline теперь получен read-only. Остаются: технически разобрать
+расхождение migrator metadata/catalog и подтвердить фактический dedicated migration credential
+path; получить GitHub Environment configuration evidence и Cloudflare topology/bindings evidence.
+External mutations не выполнялись.
