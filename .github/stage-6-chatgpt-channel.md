@@ -855,3 +855,52 @@ external mutations не выполнялось. Последний Production da
 `36265351353` с conclusion=failure.
 
 Следующий шаг по AGENTS.md — независимый whole-PR review Codex для PR #134.
+
+
+### PR #134 documentation correction and full re-review — 2026-09-26
+
+Проверено последнее обновление Codex PR #121. Единственное подтверждённое finding к PR #134:
+`PROJECT_STATE.md` не должен хранить historical run ID и exact commit SHA, поскольку сам файл
+фиксирует только current state/constraints/route, а historical identifiers принадлежат
+`PROJECT_HISTORY.md`.
+
+Исправление выполнено строго в указанном scope:
+- между reviewed head `1da7025de717721aafb3309882cb12eec9e70b36` и новым head
+  `8409d770c791bf24a774a2d315baa8d792f3ad86` изменён только `PROJECT_STATE.md`;
+- exact run `36265351353` и SHA `53181e30253061614c43f6b1682eaa0ec958e2d3`
+  удалены из `PROJECT_STATE.md`;
+- current operational facts сохранены: первый разрешённый migration attempt прошёл
+  metadata/preflight, остановился до pending SQL из-за отсутствующей database CREATE capability,
+  target остался на `0000`–`0003`, retry не выполнялся;
+- exact historical run/SHA сохранены в H-004 `PROJECT_HISTORY.md`;
+- другие файлы PR #134 этим correction commit не менялись.
+
+После correction PR #134 заново проверен целиком на exact head
+`8409d770c791bf24a774a2d315baa8d792f3ad86` относительно current
+`main` `53181e30253061614c43f6b1682eaa0ec958e2d3`.
+
+Повторно проверены все восемь changed files:
+- production privilege snapshot/contract читает explicit current-database CREATE ACL и требует
+  direct non-grantable CREATE для application owner/migrator;
+- database CREATE для localization runtime и PUBLIC rejected;
+- tests покрывают missing/grantable/wrong-grantee/runtime/PUBLIC cases;
+- manual identity verifier сохраняет exact role assertion, bounded timeouts и READ ONLY transaction,
+  дополнительно требует effective current-database CREATE;
+- identity tests покрывают true и false/malformed capability;
+- workflow остаётся manual/read-only и не выполняет provisioning;
+- PROJECT_STATE/MIGRATIONS/HISTORY согласованы по current-state vs history boundary.
+
+Новых current-Stage defects, source-of-truth contradictions или scope expansion в full re-review
+не обнаружено. PR #134 открыт и GitHub reports `mergeable=true`.
+
+Final CI run `36267143358` на exact head завершён полностью `success`:
+- `checks`: repository-script tests, lint, typecheck, tests, build, migration metadata и
+  Drizzle schema parity — success;
+- `database`: clean PostgreSQL 17 migrations/constraints, production schema manifest parity,
+  Workers build и local Hyperdrive smoke — success.
+
+Никаких GRANT, manual identity workflow dispatch, production migration retry или deployment
+не выполнялось.
+
+Следующий шаг по review cycle — вернуть исправленный exact head Codex для подтверждения закрытия
+его documentation finding и финального технического статуса PR #134.
