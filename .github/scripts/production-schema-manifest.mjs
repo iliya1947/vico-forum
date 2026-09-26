@@ -16,8 +16,8 @@ function sortedByName(values) {
   return [...values].sort((left, right) => left.name.localeCompare(right.name));
 }
 
-function checkHash(expression) {
-  return createHash("sha256").update(expression).digest("hex");
+function definitionHash(definition) {
+  return createHash("sha256").update(definition).digest("hex");
 }
 
 export async function loadProductionSchemaManifest(path = MANIFEST_PATH) {
@@ -35,10 +35,18 @@ export async function readProductionSchemaSnapshot(client) {
       attribute.attname AS column_name,
       pg_catalog.format_type(attribute.atttypid, attribute.atttypmod) AS type,
       NOT attribute.attnotnull AS nullable,
+      CASE
+        WHEN attribute.attgenerated = '' AND attribute_default.oid IS NOT NULL
+          THEN pg_catalog.pg_get_expr(attribute_default.adbin, attribute_default.adrelid, false)
+        ELSE NULL
+      END AS default_expression,
       attribute.attnum AS ordinal
     FROM pg_catalog.pg_class relation
     JOIN pg_catalog.pg_namespace namespace ON namespace.oid = relation.relnamespace
     JOIN pg_catalog.pg_attribute attribute ON attribute.attrelid = relation.oid
+    LEFT JOIN pg_catalog.pg_attrdef attribute_default
+      ON attribute_default.adrelid = attribute.attrelid
+     AND attribute_default.adnum = attribute.attnum
     WHERE namespace.nspname = 'public'
       AND relation.relkind IN ('r', 'p')
       AND attribute.attnum > 0
@@ -124,6 +132,33 @@ export async function readProductionSchemaSnapshot(client) {
     ORDER BY table_relation.relname, index_relation.relname
   `);
 
+  const functionRows = await client.query(`
+    SELECT routine.proname AS name,
+      pg_catalog.pg_get_functiondef(routine.oid) AS definition
+    FROM pg_catalog.pg_proc routine
+    JOIN pg_catalog.pg_namespace namespace ON namespace.oid = routine.pronamespace
+    WHERE namespace.nspname = 'public'
+      AND routine.prokind = 'f'
+      AND routine.prorettype = 'pg_catalog.trigger'::pg_catalog.regtype
+    ORDER BY routine.proname
+  `);
+
+  const triggerRows = await client.query(`
+    SELECT relation.relname AS table_name,
+      trigger_row.tgname AS name,
+      routine.proname AS function_name,
+      trigger_row.tgenabled AS enabled,
+      pg_catalog.pg_get_triggerdef(trigger_row.oid, false) AS definition
+    FROM pg_catalog.pg_trigger trigger_row
+    JOIN pg_catalog.pg_class relation ON relation.oid = trigger_row.tgrelid
+    JOIN pg_catalog.pg_namespace namespace ON namespace.oid = relation.relnamespace
+    JOIN pg_catalog.pg_proc routine ON routine.oid = trigger_row.tgfoid
+    WHERE namespace.nspname = 'public'
+      AND relation.relkind IN ('r', 'p')
+      AND NOT trigger_row.tgisinternal
+    ORDER BY relation.relname, trigger_row.tgname
+  `);
+
   const tables = {};
   for (const row of columnRows.rows) {
     const table = tables[row.table_name] ??= {
@@ -138,6 +173,7 @@ export async function readProductionSchemaSnapshot(client) {
       name: row.column_name,
       type: row.type,
       nullable: row.nullable,
+      defaultSha256: row.default_expression === null ? null : definitionHash(row.default_expression),
     });
   }
 
@@ -170,7 +206,7 @@ export async function readProductionSchemaSnapshot(client) {
       table.checks.push({
         name: row.name,
         columns: [...row.columns].sort(),
-        definitionSha256: checkHash(row.check_expression),
+        definitionSha256: definitionHash(row.check_expression),
       });
     }
   }
@@ -194,26 +230,72 @@ export async function readProductionSchemaSnapshot(client) {
     table.indexes = sortedByName(table.indexes);
   }
 
-  return { tables };
+  const triggerFunctions = functionRows.rows.map((row) => ({
+    name: row.name,
+    definitionSha256: definitionHash(row.definition),
+  }));
+
+  const triggers = triggerRows.rows.map((row) => ({
+    table: row.table_name,
+    name: row.name,
+    function: row.function_name,
+    enabled: row.enabled,
+    definitionSha256: definitionHash(row.definition),
+  }));
+
+  return { tables, triggerFunctions, triggers };
 }
 
 export function assertProductionSchemaManifest(actual, expected) {
   const pending = [];
   for (const [tableName, table] of Object.entries(expected.tables)) {
+    for (const column of table.columns) {
+      if (column.defaultSha256 !== "PENDING") continue;
+      const actualColumn = actual.tables[tableName]?.columns.find(({ name }) => name === column.name);
+      pending.push(
+        `default:${tableName}.${column.name}=${actualColumn?.defaultSha256 ?? "MISSING"}`,
+      );
+    }
     for (const check of table.checks) {
       if (check.definitionSha256 !== "PENDING") continue;
       const actualCheck = actual.tables[tableName]?.checks.find(({ name }) => name === check.name);
-      pending.push(`${tableName}.${check.name}=${actualCheck?.definitionSha256 ?? "MISSING"}`);
+      pending.push(
+        `check:${tableName}.${check.name}=${actualCheck?.definitionSha256 ?? "MISSING"}`,
+      );
     }
+  }
+  for (const routine of expected.triggerFunctions ?? []) {
+    if (routine.definitionSha256 !== "PENDING") continue;
+    const actualRoutine = actual.triggerFunctions.find(({ name }) => name === routine.name);
+    pending.push(
+      `function:${routine.name}=${actualRoutine?.definitionSha256 ?? "MISSING"}`,
+    );
+  }
+  for (const trigger of expected.triggers ?? []) {
+    if (trigger.definitionSha256 !== "PENDING") continue;
+    const actualTrigger = actual.triggers.find(
+      ({ table, name }) => table === trigger.table && name === trigger.name,
+    );
+    pending.push(
+      `trigger:${trigger.table}.${trigger.name}=${actualTrigger?.definitionSha256 ?? "MISSING"}`,
+    );
   }
   assert.deepEqual(
     pending,
     [],
-    `Production schema manifest contains pending check hashes:\n${pending.join("\n")}`,
+    `Production schema manifest contains pending definition hashes:\n${pending.join("\n")}`,
   );
   assert.deepEqual(
-    normalizeTableColumns(actual.tables),
-    normalizeTableColumns(expected.tables),
+    {
+      tables: normalizeTableColumns(actual.tables),
+      triggerFunctions: actual.triggerFunctions,
+      triggers: actual.triggers,
+    },
+    {
+      tables: normalizeTableColumns(expected.tables),
+      triggerFunctions: expected.triggerFunctions ?? [],
+      triggers: expected.triggers ?? [],
+    },
     "Production schema does not match repository manifest",
   );
 }
