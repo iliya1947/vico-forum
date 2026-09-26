@@ -103,17 +103,13 @@ test("accepts the current read-only localization privilege contract", () => {
   assert.doesNotThrow(() => assertProductionPrivilegeContract(fixture(), contract));
 });
 
-test("allows database-owner connection only in explicit pre-release mode", () => {
-  const ownerConnection = {
-    ...contract,
-    migrationRole: "database_owner",
-    allowDatabaseOwnerConnection: true,
-  };
-  assert.doesNotThrow(() => assertProductionPrivilegeContract(fixture(), ownerConnection));
-
+test("rejects database-owner connection", () => {
   assert.throws(
-    () => assertProductionPrivilegeContract(fixture(), { ...ownerConnection, allowDatabaseOwnerConnection: false }),
-    /explicit pre-release mode/,
+    () => assertProductionPrivilegeContract(fixture(), {
+      ...contract,
+      migrationRole: "database_owner",
+    }),
+    /must use the application owner role/,
   );
 });
 
@@ -124,15 +120,11 @@ test("requires a dedicated connection to use the application owner role", () => 
   );
 });
 
-test("owner-connection mode still enforces least privilege on the application owner", () => {
+test("dedicated migration connection still enforces least privilege on the application owner", () => {
   const candidate = fixture();
   candidate.roles[0].rolcreatedb = true;
   assert.throws(
-    () => assertProductionPrivilegeContract(candidate, {
-      ...contract,
-      migrationRole: "database_owner",
-      allowDatabaseOwnerConnection: true,
-    }),
+    () => assertProductionPrivilegeContract(candidate, contract),
     /Application owner role migration must not directly have rolcreatedb/,
   );
 });
