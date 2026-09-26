@@ -368,13 +368,48 @@ check/index invariants из manual SQL; CI доказывает parity manifest 
 проверяет stable `0000`–`0003` schema/data/privilege invariants и exact known-applied prefix;
 postflight — full manifest, ownership/ACL invariants и exact complete journal.
 
+### Независимая повторная проверка PR #133
+
+PR #133 повторно проверен целиком на head `e40488f24de778fda7a448c6154fddd5ff0615be`
+относительно `main` `0d89e036ddc0bfce0cc966afb79a6ce8088e9cd2`: все 25 commit, 12 files,
+phase contract, 27-table manifest, defaults, constraints, indexes, five trigger functions, six
+triggers, privilege integration, workflows, documentation и CI run `36261179271`.
+
+Предыдущие review issues исправлены: manifest теперь включает column defaults и exact trigger/
+function definitions + enablement; source-of-truth описывает новые phases; terminology различает
+known-applied `0003` и accepted evidence through `0002`. Checks `checks` и `database` успешны,
+manifest не содержит `PENDING` hashes.
+
+Однако полный review обнаружил одну остающуюся correctness-проблему. Phase contract читает из
+`drizzle.__drizzle_migrations` и сравнивает только `created_at`, игнорируя ledger column `hash`.
+Поэтому target ledger с теми же timestamps, но другим migration hash пройдёт как exact prefix/full
+history, хотя документация и error semantics заявляют rejection rewritten/divergent history.
+Repository history guard защищает checked-in SQL, но не доказывает, что target DB применяла SQL с
+тем же hash.
+
+PR #133 должен до merge:
+
+1. получить expected `{ createdAt, hash }` из checked-in migration files тем же SHA-256 contract,
+   который использует pinned Drizzle migrator (предпочтительно через его official Node migration
+   reader/API, проверив exact `drizzle-orm 0.45.2` contract);
+2. читать `created_at` и `hash` из target ledger и сравнивать exact pair для каждого элемента
+   разрешённого prefix/post full history;
+3. расширить pure phase tests: правильный hash принимается, wrong/missing hash при том же timestamp
+   rejected для pre и post;
+4. обновить docs только если фактическая semantics отличается от заявленной;
+5. заново проверить весь PR и получить green `checks`/`database`.
+
+До исправления PR #133 не готов к merge; production migration workflow не запускать. Остальные
+проверенные phase/manifest boundaries новых проблем не показали и не требуют расширения scope.
+
 ## Текущий статус
 
 Stage 6 открыт на уровне координации. Внешние изменения пока ограничены явно разрешённым
 dedicated migrator login/password credential и GitHub Environment secret; execution identity
 доказан successful run, а PR #132 удалил owner exception code-wide. Verifier/runtime proposal
 согласован с одной обязательной terminology correction в PR #122; следующий implementation
-boundary — verifier phases/full manifest, migrations/deploy пока запрещены.
+boundary — PR #133 verifier phases/full manifest после исправления ledger hash validation;
+migrations/deploy пока запрещены.
 
 ## Рабочий канал дальнейших действий
 
