@@ -564,3 +564,23 @@ table privileges; Cloudflare Hyperdrive Worker binding задаётся отде
 Better Auth Drizzle adapter использует database-backed core auth schema, а configured
 `rateLimit.storage = "database"` использует отдельную rate-limit table. Это согласуется с
 границами выше и не требует расширения migration role в runtime.
+
+
+### PR #133 CI retry boundary — 2026-09-26
+
+Head `9549768fc3a38ea05411c87036c9a93997c6c583` получил CI run
+`36259414958`. Attempt #1: `checks` success, `database` failure из-за существующего
+concurrency test `tests/database/migrations.test.ts` с PostgreSQL SQLSTATE `40001`
+(`could not serialize access due to read/write dependencies among transactions`).
+Между предыдущим successful database run того же PR и этим head менялись только source-of-truth
+docs, поэтому failure не классифицирован как дефект verifier-phases/full-manifest change и код
+ради него не менялся.
+
+Выполнен rerun failed jobs того же workflow. Attempt #2: database job полностью success:
+clean PostgreSQL 17 suite, production schema manifest parity, Workers build и local Hyperdrive smoke
+все прошли. `checks` также success.
+
+Отдельно GitHub Codex review на раннем commit PR #133 оставил три замечания
+(column defaults, correctness-critical triggers/functions, documentation state). Они ещё не
+считаются исправленными в рамках этой подзадачи; следующий отдельный шаг — независимо проверить
+каждое замечание как current-Stage defect и только после технического совпадения вносить изменения.
