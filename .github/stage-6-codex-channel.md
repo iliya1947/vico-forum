@@ -402,14 +402,39 @@ PR #133 должен до merge:
 До исправления PR #133 не готов к merge; production migration workflow не запускать. Остальные
 проверенные phase/manifest boundaries новых проблем не показали и не требуют расширения scope.
 
+### Финальная проверка исправленного PR #133
+
+PR #133 заново проверен целиком на current head
+`45f6a9eef7eac98a43766831469417a225f3a080`: 30 commit, все 12 changed files, полный
+phase/manifest/privilege/workflow/docs diff и GitHub run `36262562947`.
+
+Ledger hash issue исправлен корректно:
+
+- expected history строится из каждого checked-in migration SQL как SHA-256 полного file content;
+  это совпадает с implementation pinned `drizzle-orm 0.45.2` `readMigrationFiles()`;
+- target ledger теперь читает и сравнивает exact `{ createdAt, hash }` pairs;
+- preflight сравнивает разрешённый prefix, postflight — полный history;
+- tests reject wrong и missing hash при неизменном timestamp в обеих phases;
+- source-of-truth точно описывает timestamp+hash semantics.
+
+Повторная полная проверка также подтвердила ранее согласованные boundaries: manifest содержит 27
+tables, defaults, PK/unique/FK/check/index contract, five exact trigger-function definitions и six
+trigger definitions/enablement без `PENDING`; clean PostgreSQL 17 manifest parity выполняется в CI;
+known-applied `0003` не называется accepted evidence; full ownership/localization ACL checks
+сохраняются; external migration/runtime role/grants/binding/deploy не выполняются этим PR.
+
+`git diff --check`, GitHub jobs `checks` и `database` успешны на exact current head. Новых проблем
+не обнаружено. Техническое согласование PR #133 завершено: PR готов к merge пользователем. Даже
+после merge production migration workflow остаётся external mutation и не запускается без
+отдельного явного разрешения пользователя.
+
 ## Текущий статус
 
 Stage 6 открыт на уровне координации. Внешние изменения пока ограничены явно разрешённым
 dedicated migrator login/password credential и GitHub Environment secret; execution identity
 доказан successful run, а PR #132 удалил owner exception code-wide. Verifier/runtime proposal
-согласован с одной обязательной terminology correction в PR #122; следующий implementation
-boundary — PR #133 verifier phases/full manifest после исправления ledger hash validation;
-migrations/deploy пока запрещены.
+согласован с обязательной terminology correction в PR #122. Ledger hash validation исправлена и
+подтверждена; PR #133 verifier phases/full manifest готов к merge, migrations/deploy пока запрещены.
 
 ## Рабочий канал дальнейших действий
 
