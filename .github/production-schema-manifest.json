@@ -141,7 +141,7 @@
           "columns": [
             "id"
           ],
-          "expression": "\"authz_mutation_lock\".\"id\" = 1"
+          "definitionSha256": "PENDING"
         }
       ],
       "indexes": []
@@ -170,7 +170,7 @@
           "columns": [
             "key"
           ],
-          "expression": "\"authz_permissions\".\"key\" in (\n  'forum.topic.create', 'forum.reply.create', 'forum.solution.manageOwn',\n  'forum.solution.manageAny', 'forum.sourceLocale.correctOwn',\n  'forum.sourceLocale.correctAny', 'forum.translation.generate',\n  'access.authorization.manage'\n)"
+          "definitionSha256": "PENDING"
         }
       ],
       "indexes": []
@@ -288,14 +288,14 @@
           "columns": [
             "display_name"
           ],
-          "expression": "btrim(\"authz_roles\".\"display_name\") <> ''"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "authz_roles_slug_check",
           "columns": [
             "slug"
           ],
-          "expression": "\"authz_roles\".\"slug\" = btrim(\"authz_roles\".\"slug\") and \"authz_roles\".\"slug\" ~ '^[a-z][a-z0-9-]{0,62}$'"
+          "definitionSha256": "PENDING"
         }
       ],
       "indexes": []
@@ -369,7 +369,7 @@
           "columns": [
             "effect"
           ],
-          "expression": "\"authz_user_permission_overrides\".\"effect\" in ('allow', 'deny')"
+          "definitionSha256": "PENDING"
         }
       ],
       "indexes": []
@@ -550,21 +550,21 @@
           "columns": [
             "translation_kind"
           ],
-          "expression": "\"content_post_body_translation_tasks\".\"translation_kind\" = 'content-post-body'"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "content_post_body_translation_tasks_namespace_check",
           "columns": [
             "source_namespace"
           ],
-          "expression": "\"content_post_body_translation_tasks\".\"source_namespace\" = 'post-body'"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "content_post_body_translation_tasks_protection_policy_check",
           "columns": [
             "protected_content_policy_version"
           ],
-          "expression": "btrim(\"content_post_body_translation_tasks\".\"protected_content_policy_version\") <> ''"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "content_post_body_translation_tasks_resolution_check",
@@ -573,28 +573,28 @@
             "revision_source_locale",
             "source_resolution_origin"
           ],
-          "expression": "(\n        \"content_post_body_translation_tasks\".\"source_resolution_origin\" = 'revision-metadata'\n        and lower(\"content_post_body_translation_tasks\".\"revision_source_locale\") <> 'und'\n        and \"content_post_body_translation_tasks\".\"revision_source_locale\" = \"content_post_body_translation_tasks\".\"resolved_source_locale\"\n      ) or (\n        \"content_post_body_translation_tasks\".\"source_resolution_origin\" = 'detector'\n        and lower(\"content_post_body_translation_tasks\".\"revision_source_locale\") = 'und'\n      )"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "content_post_body_translation_tasks_resolution_origin_check",
           "columns": [
             "source_resolution_origin"
           ],
-          "expression": "\"content_post_body_translation_tasks\".\"source_resolution_origin\" in ('revision-metadata', 'detector')"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "content_post_body_translation_tasks_resolved_source_locale_check",
           "columns": [
             "resolved_source_locale"
           ],
-          "expression": "\"content_post_body_translation_tasks\".\"resolved_source_locale\" = btrim(\"content_post_body_translation_tasks\".\"resolved_source_locale\")\n    and lower(\"content_post_body_translation_tasks\".\"resolved_source_locale\") <> 'und'\n    and \"content_post_body_translation_tasks\".\"resolved_source_locale\" ~ '^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*$'"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "content_post_body_translation_tasks_revision_source_locale_check",
           "columns": [
             "revision_source_locale"
           ],
-          "expression": "\"content_post_body_translation_tasks\".\"revision_source_locale\" = btrim(\"content_post_body_translation_tasks\".\"revision_source_locale\") and \"content_post_body_translation_tasks\".\"revision_source_locale\" ~ '^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*$'"
+          "definitionSha256": "PENDING"
         }
       ],
       "indexes": []
@@ -697,14 +697,14 @@
           "columns": [
             "translation_kind"
           ],
-          "expression": "\"content_topic_title_translation_tasks\".\"translation_kind\" = 'content-topic-title'"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "content_topic_title_translation_tasks_namespace_check",
           "columns": [
             "source_namespace"
           ],
-          "expression": "\"content_topic_title_translation_tasks\".\"source_namespace\" = 'topic-title'"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "content_topic_title_translation_tasks_resolution_check",
@@ -713,28 +713,28 @@
             "revision_source_locale",
             "source_resolution_origin"
           ],
-          "expression": "(\n        \"content_topic_title_translation_tasks\".\"source_resolution_origin\" = 'revision-metadata'\n        and lower(\"content_topic_title_translation_tasks\".\"revision_source_locale\") <> 'und'\n        and \"content_topic_title_translation_tasks\".\"revision_source_locale\" = \"content_topic_title_translation_tasks\".\"resolved_source_locale\"\n      ) or (\n        \"content_topic_title_translation_tasks\".\"source_resolution_origin\" = 'detector'\n        and lower(\"content_topic_title_translation_tasks\".\"revision_source_locale\") = 'und'\n      )"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "content_topic_title_translation_tasks_resolution_origin_check",
           "columns": [
             "source_resolution_origin"
           ],
-          "expression": "\"content_topic_title_translation_tasks\".\"source_resolution_origin\" in ('revision-metadata', 'detector')"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "content_topic_title_translation_tasks_resolved_source_locale_check",
           "columns": [
             "resolved_source_locale"
           ],
-          "expression": "\"content_topic_title_translation_tasks\".\"resolved_source_locale\" = btrim(\"content_topic_title_translation_tasks\".\"resolved_source_locale\")\n    and lower(\"content_topic_title_translation_tasks\".\"resolved_source_locale\") <> 'und'\n    and \"content_topic_title_translation_tasks\".\"resolved_source_locale\" ~ '^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*$'"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "content_topic_title_translation_tasks_revision_source_locale_check",
           "columns": [
             "revision_source_locale"
           ],
-          "expression": "\"content_topic_title_translation_tasks\".\"revision_source_locale\" = btrim(\"content_topic_title_translation_tasks\".\"revision_source_locale\") and \"content_topic_title_translation_tasks\".\"revision_source_locale\" ~ '^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*$'"
+          "definitionSha256": "PENDING"
         }
       ],
       "indexes": []
@@ -795,14 +795,14 @@
           "columns": [
             "scope"
           ],
-          "expression": "\"content_translation_request_budget_counters\".\"scope\" = btrim(\"content_translation_request_budget_counters\".\"scope\")\n        and \"content_translation_request_budget_counters\".\"scope\" ~ '^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}@[A-Za-z0-9][A-Za-z0-9._-]{0,63}$'"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "content_translation_request_budget_counters_subject_check",
           "columns": [
             "subject_key"
           ],
-          "expression": "\"content_translation_request_budget_counters\".\"subject_key\" = '_global' or \"content_translation_request_budget_counters\".\"subject_key\" ~ '^[A-Za-z0-9_-]{43}$'"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "content_translation_request_budget_counters_timestamps_check",
@@ -810,14 +810,14 @@
             "created_at",
             "updated_at"
           ],
-          "expression": "\"content_translation_request_budget_counters\".\"updated_at\" >= \"content_translation_request_budget_counters\".\"created_at\""
+          "definitionSha256": "PENDING"
         },
         {
           "name": "content_translation_request_budget_counters_used_units_check",
           "columns": [
             "used_units"
           ],
-          "expression": "\"content_translation_request_budget_counters\".\"used_units\" >= 0 and \"content_translation_request_budget_counters\".\"used_units\" <= 9007199254740991"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "content_translation_request_budget_counters_window_check",
@@ -825,7 +825,7 @@
             "expires_at",
             "window_start"
           ],
-          "expression": "\"content_translation_request_budget_counters\".\"expires_at\" > \"content_translation_request_budget_counters\".\"window_start\""
+          "definitionSha256": "PENDING"
         }
       ],
       "indexes": [
@@ -892,7 +892,7 @@
           "columns": [
             "name"
           ],
-          "expression": "btrim(\"forum_categories\".\"name\") <> ''"
+          "definitionSha256": "PENDING"
         }
       ],
       "indexes": []
@@ -992,14 +992,14 @@
           "columns": [
             "attribution"
           ],
-          "expression": "\"forum_post_body_translations\".\"attribution\" is null or btrim(\"forum_post_body_translations\".\"attribution\") <> ''"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "forum_post_body_translations_content_check",
           "columns": [
             "translated_content"
           ],
-          "expression": "btrim(\"forum_post_body_translations\".\"translated_content\") <> ''"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "forum_post_body_translations_distinct_locale_check",
@@ -1007,7 +1007,7 @@
             "source_locale",
             "target_locale"
           ],
-          "expression": "\"forum_post_body_translations\".\"source_locale\" = 'und' or lower(\"forum_post_body_translations\".\"source_locale\") <> lower(\"forum_post_body_translations\".\"target_locale\")"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "forum_post_body_translations_metadata_check",
@@ -1016,28 +1016,28 @@
             "provider",
             "provider_model"
           ],
-          "expression": "(\n    \"forum_post_body_translations\".\"origin\" = 'machine'\n    and \"forum_post_body_translations\".\"provider\" is not null\n    and btrim(\"forum_post_body_translations\".\"provider\") <> ''\n    and \"forum_post_body_translations\".\"provider_model\" is not null\n    and btrim(\"forum_post_body_translations\".\"provider_model\") <> ''\n  ) or (\n    \"forum_post_body_translations\".\"origin\" = 'persistent_manual'\n    and \"forum_post_body_translations\".\"provider\" is null\n    and \"forum_post_body_translations\".\"provider_model\" is null\n  )"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "forum_post_body_translations_origin_check",
           "columns": [
             "origin"
           ],
-          "expression": "\"forum_post_body_translations\".\"origin\" in ('persistent_manual', 'machine')"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "forum_post_body_translations_source_locale_check",
           "columns": [
             "source_locale"
           ],
-          "expression": "\"forum_post_body_translations\".\"source_locale\" = btrim(\"forum_post_body_translations\".\"source_locale\") and \"forum_post_body_translations\".\"source_locale\" ~ '^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*$'"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "forum_post_body_translations_target_locale_check",
           "columns": [
             "target_locale"
           ],
-          "expression": "\"forum_post_body_translations\".\"target_locale\" = btrim(\"forum_post_body_translations\".\"target_locale\")\n    and lower(\"forum_post_body_translations\".\"target_locale\") <> 'und'\n    and \"forum_post_body_translations\".\"target_locale\" ~ '^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*$'"
+          "definitionSha256": "PENDING"
         }
       ],
       "indexes": []
@@ -1138,14 +1138,14 @@
           "columns": [
             "original_content"
           ],
-          "expression": "btrim(\"forum_post_revisions\".\"original_content\") <> ''"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "forum_post_revisions_source_locale_check",
           "columns": [
             "source_locale"
           ],
-          "expression": "\"forum_post_revisions\".\"source_locale\" = btrim(\"forum_post_revisions\".\"source_locale\") and \"forum_post_revisions\".\"source_locale\" ~ '^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*$'"
+          "definitionSha256": "PENDING"
         }
       ],
       "indexes": []
@@ -1324,7 +1324,7 @@
           "columns": [
             "name"
           ],
-          "expression": "btrim(\"forum_sections\".\"name\") <> ''"
+          "definitionSha256": "PENDING"
         }
       ],
       "indexes": [
@@ -1438,14 +1438,14 @@
           "columns": [
             "original_content"
           ],
-          "expression": "btrim(\"forum_topic_title_revisions\".\"original_content\") <> ''"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "forum_topic_title_revisions_source_locale_check",
           "columns": [
             "source_locale"
           ],
-          "expression": "\"forum_topic_title_revisions\".\"source_locale\" = btrim(\"forum_topic_title_revisions\".\"source_locale\") and \"forum_topic_title_revisions\".\"source_locale\" ~ '^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*$'"
+          "definitionSha256": "PENDING"
         }
       ],
       "indexes": []
@@ -1545,14 +1545,14 @@
           "columns": [
             "attribution"
           ],
-          "expression": "\"forum_topic_title_translations\".\"attribution\" is null or btrim(\"forum_topic_title_translations\".\"attribution\") <> ''"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "forum_topic_title_translations_content_check",
           "columns": [
             "translated_content"
           ],
-          "expression": "btrim(\"forum_topic_title_translations\".\"translated_content\") <> ''"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "forum_topic_title_translations_distinct_locale_check",
@@ -1560,7 +1560,7 @@
             "source_locale",
             "target_locale"
           ],
-          "expression": "\"forum_topic_title_translations\".\"source_locale\" = 'und' or lower(\"forum_topic_title_translations\".\"source_locale\") <> lower(\"forum_topic_title_translations\".\"target_locale\")"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "forum_topic_title_translations_metadata_check",
@@ -1569,28 +1569,28 @@
             "provider",
             "provider_model"
           ],
-          "expression": "(\n    \"forum_topic_title_translations\".\"origin\" = 'machine'\n    and \"forum_topic_title_translations\".\"provider\" is not null\n    and btrim(\"forum_topic_title_translations\".\"provider\") <> ''\n    and \"forum_topic_title_translations\".\"provider_model\" is not null\n    and btrim(\"forum_topic_title_translations\".\"provider_model\") <> ''\n  ) or (\n    \"forum_topic_title_translations\".\"origin\" = 'persistent_manual'\n    and \"forum_topic_title_translations\".\"provider\" is null\n    and \"forum_topic_title_translations\".\"provider_model\" is null\n  )"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "forum_topic_title_translations_origin_check",
           "columns": [
             "origin"
           ],
-          "expression": "\"forum_topic_title_translations\".\"origin\" in ('persistent_manual', 'machine')"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "forum_topic_title_translations_source_locale_check",
           "columns": [
             "source_locale"
           ],
-          "expression": "\"forum_topic_title_translations\".\"source_locale\" = btrim(\"forum_topic_title_translations\".\"source_locale\") and \"forum_topic_title_translations\".\"source_locale\" ~ '^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*$'"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "forum_topic_title_translations_target_locale_check",
           "columns": [
             "target_locale"
           ],
-          "expression": "\"forum_topic_title_translations\".\"target_locale\" = btrim(\"forum_topic_title_translations\".\"target_locale\")\n    and lower(\"forum_topic_title_translations\".\"target_locale\") <> 'und'\n    and \"forum_topic_title_translations\".\"target_locale\" ~ '^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*$'"
+          "definitionSha256": "PENDING"
         }
       ],
       "indexes": []
@@ -1711,7 +1711,7 @@
             "best_answer_post_id",
             "is_solved"
           ],
-          "expression": "\"forum_topics\".\"best_answer_post_id\" is null or \"forum_topics\".\"is_solved\""
+          "definitionSha256": "PENDING"
         }
       ],
       "indexes": [
@@ -1815,63 +1815,63 @@
           "columns": [
             "aliases"
           ],
-          "expression": "(\n    cardinality(\"locales\".\"aliases\") = 0\n    or (array_ndims(\"locales\".\"aliases\") = 1 and array_lower(\"locales\".\"aliases\", 1) = 1)\n  ) and array_position(\"locales\".\"aliases\", null) is null"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "locales_direction_check",
           "columns": [
             "direction"
           ],
-          "expression": "\"locales\".\"direction\" in ('ltr', 'rtl')"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "locales_fallback_chain_shape_check",
           "columns": [
             "fallback_chain"
           ],
-          "expression": "(\n    cardinality(\"locales\".\"fallback_chain\") = 0\n    or (array_ndims(\"locales\".\"fallback_chain\") = 1 and array_lower(\"locales\".\"fallback_chain\", 1) = 1)\n  ) and array_position(\"locales\".\"fallback_chain\", null) is null"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "locales_match_tags_shape_check",
           "columns": [
             "match_tags"
           ],
-          "expression": "(\n    cardinality(\"locales\".\"match_tags\") = 0\n    or (array_ndims(\"locales\".\"match_tags\") = 1 and array_lower(\"locales\".\"match_tags\", 1) = 1)\n  ) and array_position(\"locales\".\"match_tags\", null) is null"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "locales_native_name_check",
           "columns": [
             "native_name"
           ],
-          "expression": "btrim(\"locales\".\"native_name\") <> ''"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "locales_non_bootstrap_tag_check",
           "columns": [
             "tag"
           ],
-          "expression": "lower(\"locales\".\"tag\") not in ('en', 'api', 'assets')"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "locales_presentation_metadata_object_check",
           "columns": [
             "presentation_metadata"
           ],
-          "expression": "jsonb_typeof(\"locales\".\"presentation_metadata\") = 'object'"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "locales_publication_status_check",
           "columns": [
             "publication_status"
           ],
-          "expression": "\"locales\".\"publication_status\" in ('inactive', 'active', 'disabled')"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "locales_translation_status_check",
           "columns": [
             "translation_status"
           ],
-          "expression": "\"locales\".\"translation_status\" in ('draft', 'generating', 'partial', 'ready')"
+          "definitionSha256": "PENDING"
         }
       ],
       "indexes": []
@@ -2065,42 +2065,42 @@
             "source_namespace",
             "translation_kind"
           ],
-          "expression": "(\"translation_task_generation_heads\".\"translation_kind\" <> 'content-topic-title' or \"translation_task_generation_heads\".\"source_namespace\" = 'topic-title')\n        and (\"translation_task_generation_heads\".\"translation_kind\" <> 'content-post-body' or \"translation_task_generation_heads\".\"source_namespace\" = 'post-body')"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "translation_task_generation_heads_generation_check",
           "columns": [
             "current_generation"
           ],
-          "expression": "\"translation_task_generation_heads\".\"current_generation\" > 0"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "translation_task_generation_heads_key_check",
           "columns": [
             "source_key"
           ],
-          "expression": "btrim(\"translation_task_generation_heads\".\"source_key\") <> ''"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "translation_task_generation_heads_kind_check",
           "columns": [
             "translation_kind"
           ],
-          "expression": "\"translation_task_generation_heads\".\"translation_kind\" in ('ui', 'content-topic-title', 'content-post-body')"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "translation_task_generation_heads_locale_check",
           "columns": [
             "target_locale"
           ],
-          "expression": "\"translation_task_generation_heads\".\"target_locale\" = btrim(\"translation_task_generation_heads\".\"target_locale\")\n    and lower(\"translation_task_generation_heads\".\"target_locale\") <> 'und'\n    and \"translation_task_generation_heads\".\"target_locale\" ~ '^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*$'"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "translation_task_generation_heads_namespace_check",
           "columns": [
             "source_namespace"
           ],
-          "expression": "btrim(\"translation_task_generation_heads\".\"source_namespace\") <> ''"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "translation_task_generation_heads_ui_locale_check",
@@ -2108,7 +2108,7 @@
             "target_locale",
             "translation_kind"
           ],
-          "expression": "\"translation_task_generation_heads\".\"translation_kind\" <> 'ui' or lower(\"translation_task_generation_heads\".\"target_locale\") <> 'en'"
+          "definitionSha256": "PENDING"
         }
       ],
       "indexes": []
@@ -2326,21 +2326,21 @@
           "columns": [
             "allowance_provider"
           ],
-          "expression": "\"translation_tasks\".\"allowance_provider\" is null\n        or \"translation_tasks\".\"allowance_provider\" ~ '^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$'"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "translation_tasks_allowance_reason_check",
           "columns": [
             "allowance_reason"
           ],
-          "expression": "\"translation_tasks\".\"allowance_reason\" is null or \"translation_tasks\".\"allowance_reason\" ~ '^[a-z0-9][a-z0-9-]{0,63}$'"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "translation_tasks_allowance_reservation_check",
           "columns": [
             "allowance_reservation_reference"
           ],
-          "expression": "\"translation_tasks\".\"allowance_reservation_reference\" is null\n        or \"translation_tasks\".\"allowance_reservation_reference\" ~ '^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$'"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "translation_tasks_allowance_shape_check",
@@ -2360,7 +2360,7 @@
             "max_attempts",
             "translation_kind"
           ],
-          "expression": "(\n        \"translation_tasks\".\"allowance_state\" is null\n        and \"translation_tasks\".\"allowance_generation\" is null\n        and \"translation_tasks\".\"allowance_attempt\" is null\n        and \"translation_tasks\".\"allowance_claim_token\" is null\n        and \"translation_tasks\".\"allowance_lease_expires_at\" is null\n        and \"translation_tasks\".\"allowance_retry_not_before\" is null\n        and \"translation_tasks\".\"allowance_reason\" is null\n        and \"translation_tasks\".\"allowance_provider\" is null\n        and \"translation_tasks\".\"allowance_reservation_reference\" is null\n        and \"translation_tasks\".\"allowance_updated_at\" is null\n      ) or (\n        \"translation_tasks\".\"translation_kind\" in ('content-topic-title', 'content-post-body')\n        and \"translation_tasks\".\"allowance_generation\" = \"translation_tasks\".\"generation\"\n        and \"translation_tasks\".\"allowance_attempt\" = \"translation_tasks\".\"attempt_count\" + 1\n        and \"translation_tasks\".\"allowance_attempt\" <= \"translation_tasks\".\"max_attempts\"\n        and \"translation_tasks\".\"allowance_updated_at\" is not null\n        and (\n          (\n            \"translation_tasks\".\"allowance_state\" = 'leasing'\n            and \"translation_tasks\".\"allowance_claim_token\" is not null\n            and \"translation_tasks\".\"allowance_lease_expires_at\" is not null\n            and \"translation_tasks\".\"allowance_lease_expires_at\" > \"translation_tasks\".\"allowance_updated_at\"\n            and \"translation_tasks\".\"allowance_retry_not_before\" is null\n            and \"translation_tasks\".\"allowance_reason\" is null\n            and \"translation_tasks\".\"allowance_provider\" is null\n            and \"translation_tasks\".\"allowance_reservation_reference\" is null\n          ) or (\n            \"translation_tasks\".\"allowance_state\" = 'admitted'\n            and \"translation_tasks\".\"allowance_claim_token\" is null\n            and \"translation_tasks\".\"allowance_lease_expires_at\" is null\n            and \"translation_tasks\".\"allowance_retry_not_before\" is null\n            and \"translation_tasks\".\"allowance_reason\" is null\n            and \"translation_tasks\".\"allowance_provider\" is not null\n          ) or (\n            \"translation_tasks\".\"allowance_state\" = 'deferred'\n            and \"translation_tasks\".\"allowance_claim_token\" is null\n            and \"translation_tasks\".\"allowance_lease_expires_at\" is null\n            and \"translation_tasks\".\"allowance_retry_not_before\" is not null\n            and \"translation_tasks\".\"allowance_retry_not_before\" > \"translation_tasks\".\"allowance_updated_at\"\n            and \"translation_tasks\".\"allowance_reason\" is not null\n            and \"translation_tasks\".\"allowance_provider\" is null\n            and \"translation_tasks\".\"allowance_reservation_reference\" is null\n          )\n        )\n      )"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "translation_tasks_attempt_count_check",
@@ -2368,7 +2368,7 @@
             "attempt_count",
             "max_attempts"
           ],
-          "expression": "\"translation_tasks\".\"attempt_count\" >= 0 and \"translation_tasks\".\"attempt_count\" <= \"translation_tasks\".\"max_attempts\""
+          "definitionSha256": "PENDING"
         },
         {
           "name": "translation_tasks_content_shape_check",
@@ -2376,49 +2376,49 @@
             "source_namespace",
             "translation_kind"
           ],
-          "expression": "(\"translation_tasks\".\"translation_kind\" <> 'content-topic-title' or \"translation_tasks\".\"source_namespace\" = 'topic-title')\n        and (\"translation_tasks\".\"translation_kind\" <> 'content-post-body' or \"translation_tasks\".\"source_namespace\" = 'post-body')"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "translation_tasks_failure_code_check",
           "columns": [
             "last_failure_code"
           ],
-          "expression": "\"translation_tasks\".\"last_failure_code\" is null or \"translation_tasks\".\"last_failure_code\" ~ '^[a-z0-9][a-z0-9-]{0,63}$'"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "translation_tasks_failure_disposition_check",
           "columns": [
             "failure_disposition"
           ],
-          "expression": "\"translation_tasks\".\"failure_disposition\" is null or \"translation_tasks\".\"failure_disposition\" in ('terminal', 'retry-exhausted')"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "translation_tasks_generation_check",
           "columns": [
             "generation"
           ],
-          "expression": "\"translation_tasks\".\"generation\" > 0"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "translation_tasks_generation_policy_version_check",
           "columns": [
             "generation_policy_version"
           ],
-          "expression": "btrim(\"translation_tasks\".\"generation_policy_version\") <> ''"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "translation_tasks_identity_check",
           "columns": [
             "task_identity"
           ],
-          "expression": "\"translation_tasks\".\"task_identity\" ~ '^[0-9a-f]{64}$'"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "translation_tasks_kind_check",
           "columns": [
             "translation_kind"
           ],
-          "expression": "\"translation_tasks\".\"translation_kind\" in ('ui', 'content-topic-title', 'content-post-body')"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "translation_tasks_lifecycle_check",
@@ -2435,49 +2435,49 @@
             "stale_at",
             "status"
           ],
-          "expression": "(\n        \"translation_tasks\".\"status\" = 'pending'\n        and \"translation_tasks\".\"claim_token\" is null and \"translation_tasks\".\"claimed_at\" is null\n        and \"translation_tasks\".\"lease_expires_at\" is null and \"translation_tasks\".\"stale_at\" is null\n        and \"translation_tasks\".\"completed_at\" is null and \"translation_tasks\".\"failed_at\" is null\n        and \"translation_tasks\".\"failure_disposition\" is null and \"translation_tasks\".\"attempt_count\" < \"translation_tasks\".\"max_attempts\"\n      ) or (\n        \"translation_tasks\".\"status\" = 'processing'\n        and \"translation_tasks\".\"claim_token\" is not null and \"translation_tasks\".\"claimed_at\" is not null\n        and \"translation_tasks\".\"lease_expires_at\" is not null and \"translation_tasks\".\"lease_expires_at\" > \"translation_tasks\".\"claimed_at\"\n        and \"translation_tasks\".\"stale_at\" is null and \"translation_tasks\".\"completed_at\" is null\n        and \"translation_tasks\".\"failed_at\" is null and \"translation_tasks\".\"failure_disposition\" is null\n      ) or (\n        \"translation_tasks\".\"status\" = 'stale'\n        and \"translation_tasks\".\"claim_token\" is null and \"translation_tasks\".\"claimed_at\" is not null\n        and \"translation_tasks\".\"lease_expires_at\" is null and \"translation_tasks\".\"stale_at\" is not null\n        and \"translation_tasks\".\"stale_at\" >= \"translation_tasks\".\"claimed_at\" and \"translation_tasks\".\"completed_at\" is null\n        and \"translation_tasks\".\"failed_at\" is null and \"translation_tasks\".\"failure_disposition\" is null\n        and \"translation_tasks\".\"last_failure_code\" is null\n      ) or (\n        \"translation_tasks\".\"status\" = 'completed'\n        and \"translation_tasks\".\"claim_token\" is null and \"translation_tasks\".\"claimed_at\" is not null\n        and \"translation_tasks\".\"lease_expires_at\" is null and \"translation_tasks\".\"stale_at\" is null\n        and \"translation_tasks\".\"completed_at\" is not null and \"translation_tasks\".\"completed_at\" >= \"translation_tasks\".\"claimed_at\"\n        and \"translation_tasks\".\"failed_at\" is null and \"translation_tasks\".\"failure_disposition\" is null\n        and \"translation_tasks\".\"last_failure_code\" is null\n      ) or (\n        \"translation_tasks\".\"status\" = 'failed'\n        and \"translation_tasks\".\"claim_token\" is null and \"translation_tasks\".\"claimed_at\" is not null\n        and \"translation_tasks\".\"lease_expires_at\" is null and \"translation_tasks\".\"stale_at\" is null\n        and \"translation_tasks\".\"completed_at\" is null and \"translation_tasks\".\"failed_at\" is not null\n        and \"translation_tasks\".\"failed_at\" >= \"translation_tasks\".\"claimed_at\"\n        and \"translation_tasks\".\"failure_disposition\" is not null and \"translation_tasks\".\"last_failure_code\" is not null\n        and \"translation_tasks\".\"attempt_count\" > 0\n      )"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "translation_tasks_max_attempts_check",
           "columns": [
             "max_attempts"
           ],
-          "expression": "\"translation_tasks\".\"max_attempts\" > 0"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "translation_tasks_source_fingerprint_check",
           "columns": [
             "source_fingerprint"
           ],
-          "expression": "\"translation_tasks\".\"source_fingerprint\" ~ '^[0-9a-f]{64}$'"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "translation_tasks_source_key_check",
           "columns": [
             "source_key"
           ],
-          "expression": "btrim(\"translation_tasks\".\"source_key\") <> ''"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "translation_tasks_source_namespace_check",
           "columns": [
             "source_namespace"
           ],
-          "expression": "btrim(\"translation_tasks\".\"source_namespace\") <> ''"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "translation_tasks_status_check",
           "columns": [
             "status"
           ],
-          "expression": "\"translation_tasks\".\"status\" in ('pending', 'processing', 'stale', 'completed', 'failed')"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "translation_tasks_target_locale_check",
           "columns": [
             "target_locale"
           ],
-          "expression": "\"translation_tasks\".\"target_locale\" = btrim(\"translation_tasks\".\"target_locale\")\n    and lower(\"translation_tasks\".\"target_locale\") <> 'und'\n    and \"translation_tasks\".\"target_locale\" ~ '^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*$'"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "translation_tasks_timestamps_check",
@@ -2485,7 +2485,7 @@
             "created_at",
             "updated_at"
           ],
-          "expression": "\"translation_tasks\".\"updated_at\" >= \"translation_tasks\".\"created_at\""
+          "definitionSha256": "PENDING"
         },
         {
           "name": "translation_tasks_ui_target_locale_check",
@@ -2493,7 +2493,7 @@
             "target_locale",
             "translation_kind"
           ],
-          "expression": "\"translation_tasks\".\"translation_kind\" <> 'ui' or lower(\"translation_tasks\".\"target_locale\") <> 'en'"
+          "definitionSha256": "PENDING"
         }
       ],
       "indexes": [
@@ -2635,28 +2635,28 @@
           "columns": [
             "locale"
           ],
-          "expression": "btrim(\"ui_translation_bundles\".\"locale\") <> '' and lower(btrim(\"ui_translation_bundles\".\"locale\", chr(32) || chr(9) || chr(10) || chr(13) || chr(12) || chr(11))) <> 'en'"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "ui_translation_bundles_namespace_check",
           "columns": [
             "namespace"
           ],
-          "expression": "btrim(\"ui_translation_bundles\".\"namespace\") <> ''"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "ui_translation_bundles_resources_object_check",
           "columns": [
             "resources"
           ],
-          "expression": "jsonb_typeof(\"ui_translation_bundles\".\"resources\") = 'object'"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "ui_translation_bundles_version_check",
           "columns": [
             "bundle_version"
           ],
-          "expression": "\"ui_translation_bundles\".\"bundle_version\" ~ '^[0-9a-f]{64}$'"
+          "definitionSha256": "PENDING"
         }
       ],
       "indexes": []
@@ -2748,14 +2748,14 @@
           "columns": [
             "key"
           ],
-          "expression": "btrim(\"ui_translations\".\"key\") <> ''"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "ui_translations_locale_check",
           "columns": [
             "locale"
           ],
-          "expression": "btrim(\"ui_translations\".\"locale\") <> '' and lower(btrim(\"ui_translations\".\"locale\", chr(32) || chr(9) || chr(10) || chr(13) || chr(12) || chr(11))) <> 'en'"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "ui_translations_machine_metadata_check",
@@ -2765,49 +2765,49 @@
             "provider",
             "provider_model"
           ],
-          "expression": "(\n        \"ui_translations\".\"origin\" = 'machine'\n        and \"ui_translations\".\"generation_policy_version\" is not null\n        and btrim(\"ui_translations\".\"generation_policy_version\") <> ''\n        and \"ui_translations\".\"provider\" is not null\n        and btrim(\"ui_translations\".\"provider\") <> ''\n      ) or (\n        \"ui_translations\".\"origin\" = 'persistent_manual'\n        and \"ui_translations\".\"generation_policy_version\" is null\n        and \"ui_translations\".\"provider\" is null\n        and \"ui_translations\".\"provider_model\" is null\n      )"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "ui_translations_namespace_check",
           "columns": [
             "namespace"
           ],
-          "expression": "btrim(\"ui_translations\".\"namespace\") <> ''"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "ui_translations_origin_check",
           "columns": [
             "origin"
           ],
-          "expression": "\"ui_translations\".\"origin\" in ('persistent_manual', 'machine')"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "ui_translations_payload_check",
           "columns": [
             "translated_payload"
           ],
-          "expression": "jsonb_typeof(\"ui_translations\".\"translated_payload\") in ('string', 'object')"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "ui_translations_provenance_metadata_object_check",
           "columns": [
             "provenance_metadata"
           ],
-          "expression": "jsonb_typeof(\"ui_translations\".\"provenance_metadata\") = 'object'"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "ui_translations_source_fingerprint_check",
           "columns": [
             "source_fingerprint"
           ],
-          "expression": "\"ui_translations\".\"source_fingerprint\" ~ '^[0-9a-f]{64}$'"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "ui_translations_status_check",
           "columns": [
             "status"
           ],
-          "expression": "\"ui_translations\".\"status\" in ('draft', 'approved', 'rejected')"
+          "definitionSha256": "PENDING"
         }
       ],
       "indexes": []
