@@ -46,6 +46,23 @@ export function assertProductionPrivilegeContract(
     "Production migration connection must use the application owner role",
   );
 
+  const migrationDatabaseCreate = snapshot.databasePrivileges.filter(
+    ({ grantee, privilege }) => grantee === applicationOwnerRole && privilege === "CREATE",
+  );
+  assert.deepEqual(
+    migrationDatabaseCreate.map(({ is_grantable }) => is_grantable),
+    [false],
+    `Application owner role ${applicationOwnerRole} must have exactly one direct non-grantable CREATE privilege on the current database`,
+  );
+  assert.deepEqual(
+    snapshot.databasePrivileges.filter(
+      ({ grantee, privilege }) =>
+        privilege === "CREATE" && (grantee === runtimeRole || grantee === "PUBLIC"),
+    ),
+    [],
+    "Runtime role and PUBLIC must not have CREATE privilege on the current database",
+  );
+
   const roles = new Map(snapshot.roles.map((role) => [role.rolname, role]));
   const runtime = roles.get(runtimeRole);
   const applicationOwner = roles.get(applicationOwnerRole);
@@ -233,6 +250,22 @@ export async function readProductionPrivilegeSnapshot(
      JOIN pg_catalog.pg_roles owner ON owner.oid = database.datdba
      WHERE database.datname = current_database()`,
   );
+  const databasePrivileges = await client.query(
+    `SELECT
+       CASE acl.grantee WHEN 0 THEN 'PUBLIC' ELSE grantee.rolname END AS grantee,
+       grantor.rolname AS grantor,
+       acl.privilege_type AS privilege,
+       acl.is_grantable
+     FROM pg_catalog.pg_database database
+     CROSS JOIN LATERAL pg_catalog.aclexplode(
+       COALESCE(database.datacl, '{}'::aclitem[])
+     ) acl
+     LEFT JOIN pg_catalog.pg_roles grantee ON grantee.oid = acl.grantee
+     LEFT JOIN pg_catalog.pg_roles grantor ON grantor.oid = acl.grantor
+     WHERE database.datname = current_database()
+       AND acl.privilege_type = 'CREATE'
+     ORDER BY 1, 2, 3, 4`,
+  );
   const memberships = await client.query(
     `SELECT member.rolname AS member, granted.rolname AS role,
        membership.admin_option, membership.inherit_option, membership.set_option
@@ -372,6 +405,7 @@ export async function readProductionPrivilegeSnapshot(
   return {
     roles: roleRows.rows,
     databaseOwnerRole: databaseOwner.rows[0]?.role ?? null,
+    databasePrivileges: databasePrivileges.rows,
     applicationOwnerRoles,
     memberships: memberships.rows,
     ownedObjects: ownedObjects.rows,
