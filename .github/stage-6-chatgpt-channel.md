@@ -231,9 +231,34 @@ Official references checked:
   для `vico_forum_migrator` в Neon Console и сразу сохранить его как
   `production-db / NEON_MIGRATION_DATABASE_URL` в GitHub, не отправляя значение в чат.
 
+### Dedicated migration secret replaced — identity evidence pending
+
+Пользователь в Neon Console выбрал production branch, database `vico_forum`, role
+`vico_forum_migrator`, скопировал показанный Neon connection string и без публикации значения
+заменил GitHub Environment `production-db` secret `NEON_MIGRATION_DATABASE_URL`.
+
+Это закрывает credential-replacement mutation, но ещё не является execution evidence: GitHub
+Actions пока не выполнял подключение новым secret и `current_user` через него не проверялся.
+
+Проверен текущий `.github/workflows/production-db-migrate.yml`: использовать его для identity
+probe нельзя, поскольку после verifier он содержит реальный `pnpm db:migrate`. Доступный GitHub
+connector не умеет dispatch нового workflow и не предоставляет generic Actions-dispatch write.
+
+Минимальный следующий repository boundary для технического согласования: отдельный
+non-migrating identity-check path на `main`, bound to Environment `production-db`, который
+подключается только через `NEON_MIGRATION_DATABASE_URL`, выполняет read-only
+`SELECT current_user`/эквивалентную fail-closed проверку ожидаемой роли
+`vico_forum_migrator`, не печатает connection string/password и не содержит migration/deploy
+steps. Такой mergeable repository PR здесь не создан: по AGENTS.md отдельный mergeable PR после
+работы Codex создаётся ChatGPT по переданной Codex задаче. Требуется техническое решение Codex о
+точном repository change.
+
+До identity evidence production migration workflow не запускать; owner-mode exception не удалён,
+migrations/deploy/runtime grants не выполнялись.
+
 ## Текущий статус
 
-Dedicated credential получаем для правильной Neon role, но GitHub Environment secret ещё не
-заменён из-за отсутствия secrets-write capability у GitHub connector. Следующее действие —
-ручная secret-to-secret control-plane замена без раскрытия значения. После неё нужен отдельный
-non-migrating identity evidence до repository change и до pending migrations.
+Dedicated `vico_forum_migrator` connection string установлен пользователем в
+`production-db / NEON_MIGRATION_DATABASE_URL`. Остался execution identity gate: доказать через
+GitHub Environment secret `current_user = vico_forum_migrator` без migration. Следующий
+repository change должен быть согласован Codex; production migration workflow до этого не запускать.
