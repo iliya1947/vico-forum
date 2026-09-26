@@ -43,9 +43,9 @@ provider binding и production data) не выполнялся: по `PROJECT_ST
 6. JSON/Markdown links/secrets проверены отдельными repository-wide сканами; dependency graph
    подтверждён через `pnpm audit` и `pnpm why`.
 
-## Подтверждённые проблемы
+## Findings и степень подтверждения
 
-### AUD-01 — auth endpoint может удалить только что выпущенную session cookie — Medium
+### AUD-01 — conflicting auth `Set-Cookie` headers — подтверждённое поведение, production impact требует Google OAuth acceptance
 
 `workers/app.ts` до маршрутизации всегда вызывает `initializeAuthContext()`, включая
 `/api/auth/*`. Если входящая Better Auth cookie истекла, pre-routing `getSession()` возвращает
@@ -59,30 +59,36 @@ better-auth.session_token=<new token>; Max-Age=604800; ...
 better-auth.session_token=; Max-Age=0; ...
 ```
 
-Следствие: auth callback/sign-in, получивший истёкшую cookie, может создать server-side session,
-но финальный response следом удалит browser cookie. Текущий test проверяет перенос refresh cookie
-на обычную страницу, но не конфликт pre-routing cookies с cookies самого auth endpoint.
+Подтверждено именно формирование response с двумя конфликтующими directives одного cookie name.
+Предполагаемое следствие: auth callback/sign-in, получивший истёкшую cookie, может создать
+server-side session, после чего browser применит clearing directive. Reproduction использовал тот
+же Better Auth cookie/session boundary с включённым test-only email/password flow, а не реальный
+Google OAuth callback. Поэтому конфликт response headers является текущим дефектом boundary, но
+частота и пользовательский impact production Google OAuth остаются непроверенными до Stage 6
+acceptance. Severity до этой проверки не фиксируется.
 
 Рекомендуемое направление: auth resource route не должен получать post-handler clearing cookies
 из предварительного session lookup либо merge должен разрешать одинаковые cookie names в пользу
 auth handler. Нужен regression integration test именно для expired-cookie + successful auth response.
 
-### AUD-02 — forum write boundary не ограничивает размер title/body — Medium
+### AUD-02 — forum write boundary не ограничивает размер title/body — hardening gap, не подтверждённый Stage 5 defect
 
 `requiredFormText()` и `ForumService.requireText()` проверяют только непустое значение. PostgreSQL
 хранит title/post body как unbounded `text`; database constraints также проверяют только `btrim(...)`
 на непустоту. Auth, permission, same-origin и пятисекундный cooldown присутствуют, но authenticated
 client может регулярно отправлять platform-sized title/body.
 
-Следствие: непропорциональные DB storage, SSR/Markdown parsing и будущие translation-planning costs;
-cooldown ограничивает частоту, но не стоимость одной операции. Это расходится с заявленным
-server-side validation/basic anti-abuse boundary первого релиза.
+Возможное следствие: непропорциональные DB storage, SSR/Markdown parsing и будущие
+translation-planning costs; cooldown ограничивает частоту, но не стоимость одной операции. Однако
+проверенные contracts не задают конкретный maximum title/body и не утверждают, что application
+limit уже реализован в Stage 5. Поэтому отсутствие limit подтверждено, но считать его дефектом
+текущего Stage без отдельного product/security решения нельзя.
 
 Рекомендуемое направление: единые server-owned byte/character limits для topic title и post body,
 проверяемые до DB write, с tests на Unicode, Markdown и граничные значения. Client limits могут
 дублировать UX, но не заменять server validation.
 
-### AUD-03 — две известные transitive tooling vulnerabilities — High/Moderate
+### AUD-03 — две transitive tooling advisories — advisory подтверждены, exploitability не подтверждена
 
 `pnpm audit --audit-level low` завершился с code 1:
 
@@ -90,18 +96,20 @@ server-side validation/basic anti-abuse boundary первого релиза.
 - Moderate: `esbuild@0.18.20` через
   `drizzle-kit -> @esbuild-kit/esm-loader -> @esbuild-kit/core-utils`; patched `>=0.25.0`.
 
-`pnpm why` подтверждает development/build paths; прямых imports из application runtime нет. Это
-снижает deployed-runtime exposure, но сохраняет local/CI risk. Исправление следует делать через
-проверенное обновление owning top-level dependencies/resolution, а не неподтверждённый override.
+`pnpm why` подтверждает development/build paths; прямых imports из application runtime нет.
+Подтверждено присутствие версий, совпадающих с advisory ranges. Эксплуатация в фактических Vico
+build/CI inputs не воспроизводилась, поэтому severity advisory нельзя автоматически переносить на
+severity проекта. Требуется applicability review; исправление следует делать через проверенное
+обновление owning top-level dependencies/resolution, а не неподтверждённый override.
 
-### AUD-04 — три broken relative links в архивных копиях — Low
+### AUD-04 — три broken relative links в архивных копиях — подтверждённый факт, не подтверждённый defect
 
 - `doc_old/docs/translation/PROVIDERS_AND_JOBS_old_22.9.26_1.md` содержит два неразрешимых link;
 - `doc_old/docs/translation/STORAGE_AND_VERSIONING_old_22.9.26_1.md` содержит один.
 
 Все relative links в актуальной документации разрешаются. Архивные ссылки не влияют на active
 contracts; проект не фиксирует policy, должны ли перемещённые historical copies оставаться
-navigable или сохраняться байт-в-байт.
+navigable или сохраняться байт-в-байт. Без такого policy это observation, а не основание для fix.
 
 ## Предупреждения без текущего дефекта
 
@@ -139,6 +147,8 @@ Content-generation runtime в `workers/app.ts` остаётся намеренн
 Hyperdrive writes, Queues/providers и deployment acceptance корректно остаются Stage 6. В active
 documentation не найдено утверждений, будто эти external checks уже завершены.
 
-До исправления AUD-01 и принятия решения по AUD-02 проект нельзя считать готовым к Stage 6 auth
-acceptance. AUD-03 требует dependency remediation либо документированного risk acceptance перед
-release. AUD-04 может быть закрыт отдельным решением об archive policy.
+До разрешения conflicting-cookie boundary из AUD-01 нельзя считать Google OAuth acceptance
+проверенным; окончательный impact должен установить Stage 6 smoke. AUD-02 требует отдельного
+product/security решения о limits. AUD-03 требует applicability review до решения об update или
+risk acceptance. AUD-04 не требует изменения без принятого archive-link policy. Аудит не
+подтвердил, что AUD-02–AUD-04 являются текущими product defects.
