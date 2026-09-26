@@ -82,8 +82,7 @@ export async function runForumMutation<T>(
         "Retry-After": String(Math.max(1, Math.ceil(error.retryAfterMs / 1_000))),
       });
     }
-    if (error instanceof ForumStorageUnavailableError) return mutationFailure("unavailable", 503);
-    throw error;
+    return mutationFailure("unavailable", 503);
   }
 }
 
