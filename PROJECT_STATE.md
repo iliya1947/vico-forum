@@ -31,6 +31,9 @@ Vico Forum находится в ранней pre-release разработке.
 - External production-like integration начинается только в Stage 6; завершение Stage 5 не означает,
   что pending migrations, OAuth, runtime roles/Hyperdrive writes, Queues/providers или deployed smoke
   уже приняты внешне.
+- Для Stage 6 добавлен manual read-only production database identity verification path: он проверяет
+  dedicated migration connection как `vico_forum_migrator` до external migration. Наличие workflow
+  само по себе не является external identity evidence; успешный run из `main` ещё требуется.
 - Обычная feature-разработка и её CI остаются отделены от external rollout; merge в `main` сам по
   себе не является deployment/acceptance evidence.
 
