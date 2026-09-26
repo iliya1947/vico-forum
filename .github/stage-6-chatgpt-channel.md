@@ -256,9 +256,27 @@ steps. Такой mergeable repository PR здесь не создан: по AGE
 До identity evidence production migration workflow не запускать; owner-mode exception не удалён,
 migrations/deploy/runtime grants не выполнялись.
 
+### Mergeable identity workflow PR #131
+
+По зафиксированному Codex contract создан отдельный mergeable PR #131. После первого CI run
+обнаружен текущий PR-дефект: ESLint не применял Node globals к новому `.mjs` verifier. Дефект
+исправлен минимальным расширением существующего ESLint file pattern на
+`.github/scripts/**/*.mjs`.
+
+Актуальный head PR #131: `cf4c493fe47c994d5703e3d7ff14cbf7b5254078`.
+Повторный CI run #978 завершён `success`; PR mergeable. Полный актуальный diff повторно
+проверен: workflow остаётся manual/read-only, использует Environment `production-db`, общий
+`production-db-migrations` concurrency gate и только `NEON_MIGRATION_DATABASE_URL`;
+verifier выполняет `BEGIN READ ONLY`, bounded `SELECT current_user`, exact assertion
+`vico_forum_migrator` и `ROLLBACK`. Migration/schema/grant/deploy/owner-secret steps
+отсутствуют. Unit test покрывает exact-role assertion.
+
+External identity evidence этим CI не получено: identity workflow может быть запущен только
+после merge PR #131 в `main`. Production migration workflow до successful identity evidence
+не запускать.
+
 ## Текущий статус
 
-Dedicated `vico_forum_migrator` connection string установлен пользователем в
-`production-db / NEON_MIGRATION_DATABASE_URL`. Остался execution identity gate: доказать через
-GitHub Environment secret `current_user = vico_forum_migrator` без migration. Следующий
-repository change должен быть согласован Codex; production migration workflow до этого не запускать.
+PR #131 на head `cf4c493fe47c994d5703e3d7ff14cbf7b5254078` mergeable и имеет successful CI
+run #978. Repository implementation identity gate готова к независимой проверке Codex.
+Сам external identity gate ещё не закрыт: workflow не запускался из `main`.
