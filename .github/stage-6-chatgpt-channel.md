@@ -904,3 +904,52 @@ Final CI run `36267143358` на exact head завершён полностью `
 
 Следующий шаг по review cycle — вернуть исправленный exact head Codex для подтверждения закрытия
 его documentation finding и финального технического статуса PR #134.
+
+
+### Bounded database CREATE capability gate — grant completed, identity workflow pending
+
+Проверено последнее обновление Codex PR #121. Current `main` перед gate:
+`4c709d5aa82f6e93ddbad672afc10ad94c5e2efa` (merge PR #134). Capability-verifier contract
+и current `PROJECT_STATE.md` / `ROADMAP.md` / `docs/database/MIGRATIONS.md` перечитаны.
+
+Пользователь явно разрешил только один bounded external change:
+`GRANT CREATE ON DATABASE vico_forum TO vico_forum_migrator`, без grant option.
+
+Pre-grant read-only check:
+- current database = `vico_forum`;
+- execution/session role = exact database owner `vico_forum_owner`;
+- database owner = `vico_forum_owner`;
+- `vico_forum_migrator` существует;
+- migrator effective database CREATE = false;
+- localization runtime effective database CREATE = false;
+- explicit database CREATE ACL до изменения содержал только owner и Neon service role;
+  migrator/runtime/PUBLIC direct CREATE отсутствовал.
+
+Выполнена ровно одна разрешённая mutation:
+`GRANT CREATE ON DATABASE vico_forum TO vico_forum_migrator`.
+
+Post-grant read-only check:
+- migrator effective database CREATE = true;
+- direct CREATE ACL rows for migrator = exactly 1;
+- migrator `is_grantable = false`;
+- grantor = `vico_forum_owner`;
+- localization runtime effective CREATE = false;
+- direct CREATE rows for runtime/PUBLIC = 0;
+- других grants, ownership/membership/schema/table ACL changes не выполнялось.
+
+После grant current GitHub `main` повторно проверен и остаётся exact
+`4c709d5aa82f6e93ddbad672afc10ad94c5e2efa`.
+Current `.github/workflows/production-db-identity.yml` на этом main содержит manual
+`workflow_dispatch` и exact read-only identity+effective-CREATE verifier из PR #134.
+
+Ограничение текущего GitHub connector: доступные actions поддерживают чтение workflow
+runs/jobs и rerun существующих runs/jobs, но не создают новый `workflow_dispatch`.
+Последний identity workflow run остаётся старым successful run на pre-#134 SHA; его rerun
+не подходит, потому что contract требует current merged main.
+
+Поэтому gate остановлен строго перед manual identity/capability dispatch. Production migration
+retry, deployment, дополнительные GRANT/DDL и другие external mutations не выполнялись.
+
+Следующее единственное пользовательское действие: вручную dispatch
+`Production database identity verification` на branch `main`. После запуска ChatGPT должен
+прочитать run/job/step evidence и при любом mismatch/failure остановиться без retry.
