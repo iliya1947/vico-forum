@@ -170,11 +170,54 @@ current `NEON_MIGRATION_DATABASE_URL` нельзя установить чтен
 Это должно быть проверено/исправлено в dedicated migration-credential шаге Stage 6 до первого
 pending external migration, а не обходиться запуском mutation workflow ради диагностики.
 
+### Dedicated migration credential gate — procedure research 2026-09-26
+
+После последнего обновления Codex PR #121 проверены current repository contracts и актуальные
+официальные platform capabilities.
+
+Подтверждённый безопасный gate:
+
+1. До подтверждения dedicated identity **не запускать** `production-db-migrate.yml`: workflow
+   содержит `db:migrate`, а current owner-mode предназначен только для no-op verification.
+2. Neon API имеет read operation `GET /projects/{project_id}/connection_uri`, где явно задаются
+   `branch_id`, `database_name` и `role_name`; значит connection URI для production branch,
+   database `vico_forum` и role `vico_forum_migrator` можно получить без schema migration.
+   URI содержит credential material и не должен попадать в Git, PR, logs или чат.
+3. GitHub Environment secret можно заменить in-place в Environment `production-db`; GitHub
+   официально поддерживает create/update environment secret, а secret value после сохранения не
+   раскрывается. Environment secret доступен только job, который ссылается на этот Environment.
+4. Поэтому preferred recovery path: пользователь получает Neon connection URI **именно для
+   `vico_forum_migrator`** непосредственно в Neon control plane и сразу записывает его как новое
+   значение существующего GitHub Environment secret `NEON_MIGRATION_DATABASE_URL`, не копируя
+   значение в PR/чат. Если Neon не может выдать usable URI без password reset/rotation, такая
+   rotation является отдельной external credential mutation и требует явного разрешения.
+5. Само обновление `NEON_MIGRATION_DATABASE_URL` также является external secret mutation и до
+   выполнения требует явного разрешения пользователя.
+6. После замены secret evidence identity должен быть получен **до pending migrations** отдельным
+   non-migrating execution path, который подключается через Environment secret и выводит только
+   bounded result `current_user = vico_forum_migrator` (без URI/password). Existing production
+   migration workflow для этой диагностики не используется.
+7. Только после такого evidence следующий repository step — отдельное reviewed изменение,
+   удаляющее `PRE_RELEASE_ALLOW_DATABASE_OWNER_CONNECTION=true` и сохраняющее fail-closed
+   migration preflight. Runtime grants, migrations и deploy остаются за пределами этого gate.
+
+Текущие tools подтверждают дополнительное ограничение: Neon connector способен запросить
+connection string с explicit `role_name`, но результат содержит privileged password; GitHub
+connector этой сессии не предоставляет Environment-secret write endpoint. Поэтому автоматический
+secret-to-secret transfer без раскрытия credential текущим toolchain недоступен; безопасная
+граница — Neon/GitHub control planes пользователя.
+
+Official references checked:
+- Neon API Reference: Retrieve connection URI;
+- GitHub Docs: Using secrets in GitHub Actions;
+- GitHub Docs: Deployments and environments / Managing environments;
+- GitHub REST: environment secret create/update contract.
+
+Никаких external mutations, migrations или deployment в этой подзадаче не выполнено.
+
 ## Текущий статус
 
-Read-only external preflight по согласованному порядку **Neon → Cloudflare → GitHub завершён** до
-фактической границы доступов. Собраны current external topology, production/preview bindings,
-Hyperdrive origin/runtime role/cache state, Neon role/ownership baseline и GitHub
-Environment/workflow configuration. Единственный unresolved credential fact —
-current identity `NEON_MIGRATION_DATABASE_URL`; он относится к следующему dedicated
-migration-credential шагу Stage 6 и должен быть разрешён до применения pending migrations.
+Dedicated migration credential gate спроектирован до mutation boundary. Следующий шаг требует
+явного решения пользователя: разрешить получение dedicated `vico_forum_migrator` credential
+и замену `production-db / NEON_MIGRATION_DATABASE_URL` без раскрытия secret material. До этого
+production migration workflow не запускается.
