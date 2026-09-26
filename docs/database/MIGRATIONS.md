@@ -106,12 +106,18 @@ Repository verifier поэтому дополнительно требует:
   `has_database_privilege(current_user, current_database(), 'CREATE') = true` внутри
   read-only transaction.
 
-Этот contract только проверяет capability. Он не выполняет `GRANT`, migration retry или deploy.
+Этот contract только проверяет capability и сам не выполняет `GRANT`, migration retry или deploy.
+После merge verifier boundary отдельный bounded owner-controlled grant был выполнен и проверен:
+dedicated `vico_forum_migrator` имеет direct non-grantable database `CREATE`, localization
+runtime и `PUBLIC` этой capability не получили. Последующий manual read-only identity/capability
+workflow на current `main` успешно подтвердил exact migration role и effective database
+`CREATE`.
 
 Repository-owned accepted migration→runtime evidence baseline остаётся
-`0002_ui_translation_storage`. Migration `0003` подтверждена как known-applied target state,
-но не называется accepted migration→runtime evidence. Pending `0004`–`0020` этим repository
-change не применяются.
+`0002_ui_translation_storage`. Capability workflow не является migration→runtime evidence.
+Migration `0003` подтверждена как known-applied target state, но не называется accepted
+migration→runtime evidence. Pending `0004`–`0020` по-прежнему не применялись; новый production
+migration dispatch требует отдельного явного разрешения пользователя.
 
 Repository boundary для schema-first rollout считается готовой только после review/CI этого change.
 Сам protected production migration workflow остаётся отдельным external mutation и запускается
@@ -230,6 +236,11 @@ runtime evidence для `0003` не блокирует Stage 4B forum developmen
 Первый разрешённый rollout pending `0004`–`0020` выявил не schema defect, а недостающую
 migration-tool capability: dedicated migrator должен иметь database `CREATE`, потому что pinned
 Drizzle migrator каждый run выполняет idempotent `CREATE SCHEMA IF NOT EXISTS drizzle`.
-Capability предоставляется отдельно owner-controlled grant без grant option и только после
-reviewed verifier boundary. До подтверждённого grant + manual identity/capability evidence
-production migration retry не разрешён.
+После reviewed verifier boundary capability была предоставлена отдельным owner-controlled direct
+grant без grant option. Pre/post ACL checks и manual read-only identity/capability workflow
+подтвердили exact dedicated migrator и effective database `CREATE`, при этом localization runtime
+и `PUBLIC` capability не получили.
+
+Этот capability gate не применял pending migrations и не обновлял migration→runtime evidence.
+Production migration retry остаётся отдельной external mutation и требует нового явного разрешения
+пользователя после сверки актуального `main`.
