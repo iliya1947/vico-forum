@@ -35,22 +35,19 @@ Vico Forum находится в ранней pre-release разработке.
   production Environment secret реально подключается как exact `vico_forum_migrator`.
 - Production migration workflow больше не допускает database-owner connection: verifier требует
   dedicated migration connection, совпадающую с application owner.
-- Repository boundary для следующего schema-first rollout разделяет verifier на две fail-closed
-  фазы: pre-migration принимает только exact checked-in migration ledger prefix по паре
-  `created_at + Drizzle SHA-256 hash`, не короче known-applied target prefix `0000`–`0003`;
-  post-migration требует exact complete timestamp+hash ledger и repository-owned
-  full structural manifest `0000`–`0020`. Manifest покрывает все 27 public application tables, column defaults, PK/unique/FK/check/index
-  invariants и correctness-critical trigger/function definitions + trigger enablement; CI сверяет
-  этот contract с clean PostgreSQL 17. External migration этим repository change не выполняется.
-- Первый явно разрешённый production migration attempt прошёл metadata/preflight, но остановился
-  на bootstrap `db:migrate` до pending migration SQL: pinned Drizzle migrator выполняет
-  `CREATE SCHEMA IF NOT EXISTS drizzle`, а dedicated migrator не имел database-level
-  `CREATE`. Ledger и public application schema остались на `0000`–`0003` baseline.
-- Repository privilege boundary требует direct non-grantable `CREATE` на текущую database
-  именно для application owner/migrator и запрещает database `CREATE` для localization runtime
-  и `PUBLIC`. Bounded capability gate выполнен: dedicated migrator получил ровно этот direct
-  non-grantable `CREATE`, runtime/`PUBLIC` его не получили, а manual read-only identity/capability
-  workflow подтвердил exact `vico_forum_migrator` и effective database `CREATE`.
+- Production migration boundary разделяет verifier на две fail-closed фазы: pre-migration принимает
+  только exact checked-in migration ledger prefix по паре `created_at + Drizzle SHA-256 hash`,
+  а post-migration требует exact complete timestamp+hash ledger и repository-owned full structural
+  manifest `0000`–`0020` со schema/ownership/ACL invariants.
+- Stage 6 schema-first migration выполнена: production target прошёл metadata/preflight,
+  pending `0004`–`0020` применены, а postflight подтвердил complete `0000`–`0020`
+  ledger, full structural manifest и production privilege contract.
+- Repository-owned migration→runtime evidence теперь подтверждает accepted migration through
+  `0020_translation_generation_permission`. Это закрывает schema-first evidence gate, но не
+  означает, что schema-dependent Worker/runtime уже развёрнут.
+- Repository privilege boundary по-прежнему требует direct non-grantable `CREATE` на текущую
+  database именно для application owner/migrator и запрещает database `CREATE` для localization
+  runtime и `PUBLIC`; bounded identity/capability gate подтверждён external execution.
 - Обычная feature-разработка и её CI остаются отделены от external rollout; merge в `main` сам по
   себе не является deployment/acceptance evidence.
 
@@ -340,9 +337,10 @@ rollout по `docs/database/MIGRATIONS.md`.
 
 Repository/local-CI state намеренно может опережать внешний pre-release environment.
 
-Текущее repository-owned migration evidence относится к `0002_ui_translation_storage`; более
-новые auth/forum/translation migrations не считаются externally accepted только по факту их
-наличия в `main`.
+Текущее repository-owned migration evidence относится к
+`0020_translation_generation_permission` и подтверждает successful target migration +
+postflight verification полного `0000`–`0020` schema contract. Это evidence schema-first
+границы; schema-dependent runtime rollout ещё не выполнен.
 
 Существующий внешний localization foundation использует read-only Hyperdrive capability для
 `locales`, `ui_translations` и `ui_translation_bundles`. Ранее выполненный real Hyperdrive
@@ -352,21 +350,15 @@ acceptance остаётся evidence этого localization path, но не я�
 `main` отключён. Перед Stage 6 фактическую external configuration необходимо проверить заново.
 
 Dedicated least-privilege migration credential для production подтверждён external execution как
-`vico_forum_migrator`, а production migration workflow больше не содержит database-owner exception.
-Repository verifier boundary подготовлен к schema-first rollout: preflight допускает только exact
-known-applied prefix текущего ledger по `created_at + Drizzle SHA-256 hash`, postflight требует
-полный `0000`–`0020` timestamp+hash ledger/manifest. Первый разрешённый migration attempt
-доказал, что dedicated migrator дополнительно нуждается в direct database `CREATE` capability
-для pinned Drizzle bootstrap; attempt остановился до pending SQL и не изменил accepted target baseline.
-Repository-owned accepted migration→runtime evidence при этом всё ещё заканчивается на
-`0002_ui_translation_storage`; наличие `0003` в target DB является known-applied target state,
-но не accepted migration→runtime evidence. Required direct non-grantable database `CREATE`
-capability для migrator уже предоставлена и подтверждена manual read-only identity/capability
-workflow, но pending `0004`–`0020` ещё не применялись.
+`vico_forum_migrator`, production migration workflow не содержит database-owner exception, а
+required direct non-grantable database `CREATE` capability подтверждена manual read-only
+identity/capability workflow. Последующий authorized schema-first migration успешно применил
+`0004`–`0020`; production postflight подтвердил complete ledger, full structural manifest и
+privilege contract. Repository-owned evidence теперь покрывает `0020`, но Worker deployment,
+runtime roles/Hyperdrive writes и другие schema-dependent runtime capabilities ещё не выкатывались.
 
 До Stage 6 не считаются выполненными:
 
-- применение/acceptance всех pending external migrations;
 - real Google OAuth configuration и smoke;
 - server-controlled bootstrap первого authorization manager;
 - реальные forum/auth/translation write runtime roles и Hyperdrive bindings;
@@ -376,14 +368,12 @@ workflow, но pending `0004`–`0020` ещё не применялись.
 
 ## Ближайший маршрут
 
-1. Продолжить Stage 6 pre-release external integration по `ROADMAP.md` и `docs/database/*`.
-2. После merge текущего evidence-sync change Codex заново сверяет актуальный `main` и отдельно
-   решает, можно ли запрашивать явное разрешение пользователя на новый production migration
-   dispatch.
-3. Production migration не запускать и failed attempt не rerun-ить без нового отдельного явного
-   разрешения пользователя.
+1. После merge migration-evidence change Codex заново сверяет актуальный `main` и определяет
+   следующий Stage 6 runtime capability/bootstrap gate.
+2. Schema-dependent runtime rollout не выполнять до этой сверки и отдельного согласованного
+   operational scope.
 
-Stage 5 завершён только в repository/local-CI boundary. Pending external migrations, real Google
-OAuth/bootstrap, production runtime roles/Hyperdrive writes, Cloudflare Queues/providers,
-authoritative production allowance/anti-abuse values, preview isolation, deployed smoke и
-backup/restore остаются Stage 6 работой.
+Stage 5 завершён только в repository/local-CI boundary. Real Google OAuth/bootstrap, production
+runtime roles/Hyperdrive writes, Cloudflare Queues/providers, authoritative production
+allowance/anti-abuse values, preview isolation, deployed smoke и backup/restore остаются Stage 6
+работой.
