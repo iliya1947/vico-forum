@@ -87,17 +87,14 @@ https://developers.cloudflare.com/hyperdrive/configuration/local-development/
 
 ## External deployment policy
 
-Ранее native Cloudflare Workers Builds был подключён к GitHub `main`. По current Cloudflare
-Build Branches contract push в production branch запускает build и deploy command.
+Ранее native Cloudflare Workers Builds был подключён к GitHub `main`. Для forum-first workflow
+ordinary merge в active development `main` не должен автоматически означать production
+promotion. По текущему состоянию проекта native Cloudflare Git integration для active development
+`main` отключён.
 
-Для нового forum-first workflow ordinary merge в active development `main` не должен
-автоматически означать production promotion. До первого forum-code PR нужно через current
-Cloudflare Branch control выбрать управляемый вариант: отключить production auto-deploy от
-active development branch, использовать отдельную release branch или эквивалентно отделить
-feature merges от production deployment.
-
-Точное external setting не хранится в Git и должно быть проверено в актуальном Cloudflare UI
-перед Stage 4B merge.
+Точное external setting не хранится в Git. На Stage 6 перед provisioning и первым external
+schema-dependent rollout фактическую Cloudflare branch/build topology необходимо заново проверить
+в актуальном Cloudflare UI и сохранить отделение feature merges от production deployment.
 
 Official reference:
 
