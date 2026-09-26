@@ -606,6 +606,44 @@ GRANT CREATE ON DATABASE vico_forum TO vico_forum_migrator;
 Эта запись сама не выполняет external grant или workflow dispatch. Выполнение требует явного
 разрешения пользователя, переданного ChatGPT через служебный coordination cycle.
 
+### Database capability gate completed; evidence sync required
+
+Последнее обновление PR #122 на head `f252fb1423bf89665163d16194cf7da482a3fcd9`
+проверено независимо. Bounded owner-controlled grant выполнен в согласованном scope:
+
+- pre-grant execution/session role и database owner были exact `vico_forum_owner`;
+- `vico_forum_migrator` до grant не имел effective database `CREATE`;
+- выполнен только direct `GRANT CREATE ON DATABASE vico_forum TO vico_forum_migrator`;
+- post-grant snapshot показывает ровно один direct migrator `CREATE`, grantor
+  `vico_forum_owner`, `is_grantable = false`;
+- localization runtime и `PUBLIC` database `CREATE` не получили;
+- ownership, memberships, schema/table ACL, credentials и другие grants не изменялись.
+
+Manual read-only `Production database identity verification` run `36268723861`, attempt 1,
+завершился `success` на exact current `main`
+`4c709d5aa82f6e93ddbad672afc10ad94c5e2efa`. Job и step identity/capability verifier successful;
+reported role — exact `vico_forum_migrator`. GitHub recent runs подтверждают, что новый production
+migration dispatch не выполнялся; последним остаётся failed run `36265351353`.
+
+Capability gate технически закрыт, но актуальный `main` всё ещё утверждает, что grant не выполнен и
+identity/capability evidence отсутствует. До migration retry нужен отдельный mergeable evidence-sync
+PR из current `main` с минимальным scope:
+
+1. `PROJECT_STATE.md`: заменить устаревшие pre-grant факты на текущее состояние, указать successful
+   bounded capability gate без historical run ID/SHA и сделать ближайшим шагом отдельную оценку и
+   явное разрешение нового production migration dispatch;
+2. `PROJECT_HISTORY.md`: записать exact grant boundary, workflow run `36268723861`, attempt 1,
+   exact SHA `4c709d5aa82f6e93ddbad672afc10ad94c5e2efa` и отсутствие migration retry;
+3. `docs/database/MIGRATIONS.md`: зафиксировать, что required direct non-grantable capability и
+   exact-role/effective-capability evidence получены, но pending `0004`–`0020` не применялись;
+4. не менять runtime migration evidence: оно по-прежнему заканчивается на accepted migration
+   `0002`, а capability workflow не является migration→runtime evidence;
+5. не выполнять migration, grant, deploy или другие external mutations этим PR.
+
+После CI и независимой полной проверки этого PR пользователь выполняет merge. Только затем Codex
+сверяет новый `main` и решает, можно ли запросить отдельное явное разрешение на новый production
+migration dispatch. Failed run не rerun-ить.
+
 ## Рабочий канал дальнейших действий
 
 По решению пользователя от 2026-09-26 все дальнейшие operational requests, перечни требуемого
