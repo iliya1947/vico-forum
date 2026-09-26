@@ -2,7 +2,7 @@
 
 Классический веб-форум для обсуждения разработки с ChatGPT, Codex, Cursor, Claude и другими AI-инструментами.
 
-Проект находится на ранней стадии разработки. Forum core Stage 4 завершён в local/CI path; текущий продуктовый приоритет — automatic translations и background jobs Stage 5.
+Проект находится на ранней стадии разработки. Stage 0–5 завершены в repository/local-CI path; текущий продуктовый приоритет — Stage 6 pre-release external integration.
 
 ## Документация
 
@@ -18,14 +18,9 @@
 
 ## Разработка
 
-Stage 0–4 завершены в текущем local/CI path. Forum MVP включает public read, Better Auth session boundary, authenticated topic/reply participation, safe Markdown, anti-spam cooldown, solved/best-answer flow и dynamic PostgreSQL-backed authorization с management UI по [`docs/auth/AUTHORIZATION.md`](./docs/auth/AUTHORIZATION.md).
+Stage 0–5 завершены в текущем repository/local-CI path. Forum MVP включает public read, Better Auth session boundary, authenticated topic/reply participation, safe Markdown, anti-spam cooldown, solved/best-answer flow и dynamic PostgreSQL-backed authorization с management UI по [`docs/auth/AUTHORIZATION.md`](./docs/auth/AUTHORIZATION.md).
 
-Текущий следующий шаг — **Stage 5**:
-
-1. завершить automatic UI translation generation/runtime path;
-2. реализовать revision-bound translation пользовательского контента;
-3. добавить durable background jobs/provider integration согласно [`TRANSLATION_ARCHITECTURE.md`](./TRANSLATION_ARCHITECTURE.md) и [`ROADMAP.md`](./ROADMAP.md);
-4. real Google OAuth, pending external migrations, authorization bootstrap, Neon/Hyperdrive runtime capabilities, Cloudflare Queues/providers и production-like smoke остаются Stage 6 external integration.
+Текущий следующий шаг — **Stage 6 pre-release external integration** согласно [`PROJECT_STATE.md`](./PROJECT_STATE.md) и [`ROADMAP.md`](./ROADMAP.md): pending external migrations, real Google OAuth, authorization bootstrap, production runtime roles/Hyperdrive writes, Cloudflare Queues/providers и production-like smoke.
 
 Обычная разработка до pre-release проверяется локально и в CI. Merge feature-кода сам по себе не должен означать production rollout. Реальные external environment migrations/deploy/smoke являются отдельным pre-release/release процессом.
 
