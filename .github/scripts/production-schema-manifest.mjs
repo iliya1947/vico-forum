@@ -62,21 +62,21 @@ export async function readProductionSchemaSnapshot(client) {
         ELSE NULL
       END AS check_expression,
       ARRAY(
-        SELECT attribute.attname
+        SELECT attribute.attname::text
         FROM unnest(constraint_row.conkey) WITH ORDINALITY AS key(attnum, ordinal)
         JOIN pg_catalog.pg_attribute attribute
           ON attribute.attrelid = constraint_row.conrelid
          AND attribute.attnum = key.attnum
         ORDER BY key.ordinal
-      ) AS columns,
+      )::text[] AS columns,
       ARRAY(
-        SELECT attribute.attname
+        SELECT attribute.attname::text
         FROM unnest(constraint_row.confkey) WITH ORDINALITY AS key(attnum, ordinal)
         JOIN pg_catalog.pg_attribute attribute
           ON attribute.attrelid = constraint_row.confrelid
          AND attribute.attnum = key.attnum
         ORDER BY key.ordinal
-      ) AS referenced_columns
+      )::text[] AS referenced_columns
     FROM pg_catalog.pg_constraint constraint_row
     JOIN pg_catalog.pg_class relation ON relation.oid = constraint_row.conrelid
     JOIN pg_catalog.pg_namespace namespace ON namespace.oid = relation.relnamespace
