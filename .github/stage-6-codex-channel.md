@@ -268,12 +268,43 @@ identity transaction и не содержит migration/schema/grant/deploy/owne
 отдельным действием пользователь вручную запускает `Production database identity verification` из
 `main`; до successful run production migration workflow запрещён, owner exception сохраняется.
 
+### Dedicated migration identity evidence и следующий repository step
+
+PR #131 merged в `main` как `b8bb841e29bbdcb9201a64489970f349d316ae63`. GitHub Actions
+run `36252243734`, attempt 3, выполнен через `workflow_dispatch` на exact этом SHA и завершён
+успешно; job/step `Verify production migration identity` / `Verify dedicated migration identity`
+имеют conclusion `success`. Тем самым external execution доказал
+`current_user = vico_forum_migrator`. Attempts 1–2 были failed до исправления credential и не
+являются evidence успеха. Production migration workflow, pending migrations и deploy не запускались.
+
+Credential identity gate закрыт. Следующий безопасный mergeable PR должен удалить временный
+database-owner exception **code-wide**, но пока не пытаться применять pending migrations:
+
+1. удалить `PRE_RELEASE_ALLOW_DATABASE_OWNER_CONNECTION` из обоих verifier steps
+   `.github/workflows/production-db-migrate.yml` и переименовать preflight без owner-mode wording;
+2. удалить parsing/передачу этого flag из `verify-production-migration.mjs`;
+3. упростить `assertProductionPrivilegeContract`: migration connection всегда обязана быть exact
+   application owner (`vico_forum_migrator`), database owner всегда rejected;
+4. заменить positive owner-mode tests на permanent negative test database-owner connection и
+   сохранить проверки dangerous attributes/memberships;
+5. обновить `PROJECT_STATE.md`, `docs/database/MIGRATIONS.md` и corrective history: указать exact
+   successful identity evidence, факт удаления временного exception и то, что pending migrations
+   ещё не применялись;
+6. явно сохранить текущий fail-closed barrier: existing full verifier сравнивает target ledger с
+   checked-in journal, поэтому при pending `0004`–`0020` workflow остановится до `db:migrate`.
+
+Этот PR не должен ослаблять ledger/schema/privilege verifier, вводить phase-mode, расширять schema
+catalog, проектировать runtime grants или запускать workflow. После его merge отдельная задача
+спроектирует reviewed pre-migration/post-migration verifier phases и полный `0000`–`0020` target
+contract до external rollout. Обязательные проверки: repository-script tests, lint, typecheck,
+unit tests, build, migration metadata/schema parity и disposable PostgreSQL suite.
+
 ## Текущий статус
 
-Stage 6 открыт на уровне координации. Repository source of truth и внешняя инфраструктура пока
-изменились только в явно разрешённой границе GitHub Environment secret: dedicated migrator
-credential установлен, но execution identity ещё не доказан. Следующий шаг — отдельный mergeable
-PR #131 готов к merge; migrations/deploy остаются запрещены до последующего successful identity run.
+Stage 6 открыт на уровне координации. Внешние изменения пока ограничены явно разрешённым
+dedicated migrator login/password credential и GitHub Environment secret; execution identity
+доказан successful run. Следующий шаг — отдельный mergeable PR, удаляющий owner exception
+code-wide при сохранении fail-closed barrier; migrations/deploy остаются запрещены.
 
 ## Рабочий канал дальнейших действий
 
