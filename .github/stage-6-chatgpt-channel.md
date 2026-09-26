@@ -112,12 +112,40 @@ connection strings. Точный migration credential path и полный runti
 GitHub Environment secret; доступный ChatGPT GitHub connector secrets/dispatch произвольного
 diagnostic job не предоставляет. Production DB mutation для получения этого факта не выполнялась.
 
+### Cloudflare read-only preflight — 2026-09-26
+
+Пользователь предоставил фактические данные Cloudflare Dashboard; никаких Cloudflare mutations
+в этой проверке не выполнялось.
+
+- Production Worker: `vico-forum`, workers.dev route `vico-forum.iliya1947a.workers.dev`.
+- Native Workers Builds Git integration сейчас **не подключена**: Settings предлагает
+  `Connect to a repository`; следовательно текущий `main` не auto-promotes production через
+  этот native Git path.
+- Production bindings: один Hyperdrive binding
+  `HYPERDRIVE -> vico-forum-registry`.
+- Preview Base: connected bindings отсутствуют. Production Hyperdrive capability не выдана
+  базовой preview configuration.
+- Queue consumers и cron triggers сейчас отсутствуют.
+- Production logs включены, invocation logs сохраняются в Workers dashboard; sampling logs 100%.
+  Traces выключены; telemetry export destination отсутствует.
+- Hyperdrive `vico-forum-registry`: PostgreSQL, database `vico_forum`, user
+  `vico_forum_runtime`, port 5432. Origin host относится к production Neon target.
+- Hyperdrive query caching явно disabled; Metrics также показал запросы как Cache Disabled и
+  cached bytes 0 B.
+- Hyperdrive soft maximum connections: 20.
+- Repository `wrangler.jsonc` соответствует production binding ID
+  `aa1fb9feeff44a23ae12d88eefceb942` и содержит `redact_query_string=true`.
+
+Вывод read-only preflight: текущая external topology сохраняет separation feature merges от
+native automatic production deploy; Preview Base не имеет production DB binding; существующий
+localization Hyperdrive использует runtime role и cache-disabled configuration. Отсутствующие
+Queues/provider credentials и будущие forum/auth/translation write Hyperdrive capabilities —
+не пропущенные read-only evidence, а отдельное provisioning/acceptance Stage 6.
 
 ## Текущий статус
 
-Neon read-only preflight доведён до фактической границы доступов: topology, database/role ownership,
-memberships и current workflow contract подтверждены; current username внутри
-`NEON_MIGRATION_DATABASE_URL` остаётся единственным недоступным read-only evidence.
-PR #130 не должен merge в `main` и может быть закрыт как неиспользованный diagnostic attempt.
-Следующая внешняя область после Neon — Cloudflare; GitHub Environment audit остаётся последним
-по согласованному с пользователем порядку.
+Neon и Cloudflare read-only external baseline собраны до доступной границы. В Neon остаётся
+недоступным без исполнения Environment secret только current username внутри
+`NEON_MIGRATION_DATABASE_URL`. Cloudflare read-only topology/bindings/Hyperdrive/preview evidence
+подтверждены. По согласованному с пользователем порядку следующая и последняя область этого
+read-only preflight — GitHub Environment/configuration.
