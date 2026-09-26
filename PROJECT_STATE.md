@@ -46,10 +46,11 @@ Vico Forum находится в ранней pre-release разработке.
   на bootstrap `db:migrate` до pending migration SQL: pinned Drizzle migrator выполняет
   `CREATE SCHEMA IF NOT EXISTS drizzle`, а dedicated migrator не имел database-level
   `CREATE`. Ledger и public application schema остались на `0000`–`0003` baseline.
-- Repository privilege boundary теперь требует direct non-grantable `CREATE` на текущую database
+- Repository privilege boundary требует direct non-grantable `CREATE` на текущую database
   именно для application owner/migrator и запрещает database `CREATE` для localization runtime
-  и `PUBLIC`; manual identity verifier дополнительно проверяет effective database `CREATE`
-  внутри read-only transaction. Сам external `GRANT` этим repository change не выполняется.
+  и `PUBLIC`. Bounded capability gate выполнен: dedicated migrator получил ровно этот direct
+  non-grantable `CREATE`, runtime/`PUBLIC` его не получили, а manual read-only identity/capability
+  workflow подтвердил exact `vico_forum_migrator` и effective database `CREATE`.
 - Обычная feature-разработка и её CI остаются отделены от external rollout; merge в `main` сам по
   себе не является deployment/acceptance evidence.
 
@@ -359,8 +360,9 @@ known-applied prefix текущего ledger по `created_at + Drizzle SHA-256 
 для pinned Drizzle bootstrap; attempt остановился до pending SQL и не изменил accepted target baseline.
 Repository-owned accepted migration→runtime evidence при этом всё ещё заканчивается на
 `0002_ui_translation_storage`; наличие `0003` в target DB является known-applied target state,
-но не accepted migration→runtime evidence. Pending `0004`–`0020` ещё не применялись, а
-database `CREATE` grant для migrator ещё не выполнен.
+но не accepted migration→runtime evidence. Required direct non-grantable database `CREATE`
+capability для migrator уже предоставлена и подтверждена manual read-only identity/capability
+workflow, но pending `0004`–`0020` ещё не применялись.
 
 До Stage 6 не считаются выполненными:
 
@@ -375,11 +377,11 @@ database `CREATE` grant для migrator ещё не выполнен.
 ## Ближайший маршрут
 
 1. Продолжить Stage 6 pre-release external integration по `ROADMAP.md` и `docs/database/*`.
-2. После merge capability-verifier change отдельно получить явное разрешение пользователя на
-   owner-controlled `GRANT CREATE ON DATABASE vico_forum TO vico_forum_migrator` без grant option.
-3. После grant получить successful manual identity/capability workflow evidence на exact `main`.
-   Только затем заново оценивать разрешение на production migration retry; failed production
-   migration attempt не rerun-ить автоматически.
+2. После merge текущего evidence-sync change Codex заново сверяет актуальный `main` и отдельно
+   решает, можно ли запрашивать явное разрешение пользователя на новый production migration
+   dispatch.
+3. Production migration не запускать и failed attempt не rerun-ить без нового отдельного явного
+   разрешения пользователя.
 
 Stage 5 завершён только в repository/local-CI boundary. Pending external migrations, real Google
 OAuth/bootstrap, production runtime roles/Hyperdrive writes, Cloudflare Queues/providers,
