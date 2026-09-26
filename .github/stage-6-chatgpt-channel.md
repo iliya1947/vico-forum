@@ -1053,3 +1053,36 @@ evidence-sync PR не выполнялось.
 Follow-up: CI run `36269482706` on exact PR #135 head
 `e59bfc79dfde7c57c6200218a93ccfbbb7d67e28` завершён `success`. PR остаётся open и
 `mergeable=true`.
+
+
+### Production migration dispatch authorization — pre-dispatch verification complete
+
+User explicitly authorized exactly one **new** manual dispatch of
+`Production database migration` on exact `main`
+`b172264e4b0db1fe68dead7d7f25b49a573eb0cd`. This authorization is not a rerun of failed
+run `36265351353`.
+
+Before dispatch, current project/regulatory state was re-read:
+- current `main` = exact authorized SHA
+  `b172264e4b0db1fe68dead7d7f25b49a573eb0cd`;
+- current `.github/workflows/production-db-migrate.yml` blob =
+  `48c63ca6fedc845e48fe541e6e31e5a6ade30f44`;
+- that workflow blob is unchanged from pre-evidence-sync main
+  `4c709d5aa82f6e93ddbad672afc10ad94c5e2efa`;
+- workflow remains manual `workflow_dispatch`, main-only, protected `production-db`
+  Environment, with metadata validation → fail-closed preflight → `db:migrate` → postflight
+  → bounded runtime-evidence summary;
+- latest existing production migration run remains failed run `36265351353`; no migration run
+  exists yet for authorized SHA.
+
+Current ChatGPT GitHub connector still exposes workflow reads/jobs/logs and rerun of existing
+runs/jobs, but **does not expose creation of a new workflow_dispatch**. Using rerun APIs would
+violate the user's explicit requirement that this be a new dispatch, not rerun of the old run.
+
+Therefore execution is stopped safely **before** dispatch. No migration, manual SQL, additional
+grant, deploy, or other external operation has been performed in this authorization step.
+
+Required next action is one manual GitHub UI dispatch by the user:
+`Actions → Production database migration → Run workflow → main → Run workflow`.
+After that ChatGPT will inspect the new run, verify exact head SHA/attempt and all step conclusions,
+extract bounded migration evidence, and stop without retry/manual repair on any failure.
