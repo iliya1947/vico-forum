@@ -1,10 +1,15 @@
-# Full project audit — 2026-09-26
+# Repository audit record — 2026-09-26
+
+> **Status: incomplete for a full-project audit.** This record documents the repository checks
+> actually completed. It must not be cited as evidence that every source line, every behavioral
+> path, database integration, deployed integration, dependency license, or external system has been
+> fully audited.
 
 ## Scope
 
-This is a self-contained audit of repository revision `56d4788`. It covers all 288 files tracked
-by that revision: current source-of-truth documentation, archived documentation, application and
-database code, migrations and their snapshots, automation, configuration, and tests.
+This is a self-contained repository review of revision `56d4788`. All 288 tracked paths were
+inventoried and included in automated structural checks where applicable. The review does **not**
+claim a manual, line-by-line semantic inspection of every implementation and test file.
 
 Open pull requests are explicitly outside the audit scope. Their branches, diffs, review comments,
 CI results, and descriptions were neither fetched nor used as evidence. The audit evaluates only
@@ -19,7 +24,8 @@ the audited product baseline.
   links in all 29 Markdown files.
 - Inventoried all tracked code, tests, SQL migrations, Drizzle snapshots, workflows, scripts, and
   configuration; parsed all 27 tracked JSON files; checked relative Markdown links and scanned
-  tracked files for credential-shaped values.
+  tracked files for credential-shaped values. Inventory and automated scanning are not substitutes
+  for manual semantic review of every file.
 - Installed the lockfile-pinned dependencies with pnpm 12.3.4 under Node 24.15.0, then ran lint,
   typecheck, all non-database unit tests, the production build, and Drizzle metadata validation.
 - Ran the dependency-free migration-history, production-privilege, and runtime-evidence suites
@@ -92,10 +98,10 @@ not force an unreviewed dependency override.
 
 ## Conclusion
 
-Within the repository-only scope, the implemented Stage 0–5 baseline is internally consistent with
-the current source-of-truth documents and passes every executable non-database functional project
-check. No current application-code, migration-metadata, active-documentation, secret-exposure,
-build, lint, type, or unit-test defect was confirmed. Confirmed findings are two transitive
-development-tool dependency advisories and three broken links inside historical copies. The
-unavailable database/external checks remain explicitly unverified rather than being reported as
-successful.
+The completed checks establish that the repository passes its executable non-database functional
+checks and that no defect was confirmed by the reviewed structural, documentation, build, lint,
+type, unit-test, migration-metadata, and secret-pattern checks. They do **not** establish that the
+whole project has been fully audited or is defect-free. Confirmed findings are two transitive
+development-tool dependency advisories and three broken links inside historical copies. Database,
+external integrations, exact pinned-runtime reproduction, license compliance, and exhaustive
+manual semantic review remain incomplete and must not be reported as successful.
