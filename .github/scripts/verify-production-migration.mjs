@@ -5,6 +5,7 @@ import pg from "pg";
 import {
   assertMigrationHistoryForPhase,
   parseProductionMigrationPhase,
+  readExpectedMigrationHistory,
 } from "./production-migration-contract.mjs";
 import {
   applicationTables as baselineApplicationTables,
@@ -38,6 +39,7 @@ assert.equal(
   "MIGRATION_DATABASE_ROLE_MEMBERSHIPS must not contain duplicates",
 );
 const journal = JSON.parse(await readFile("drizzle/meta/_journal.json", "utf8"));
+const expectedMigrationHistory = await readExpectedMigrationHistory(journal);
 
 const requiredBaselineTables = new Map([
   [
@@ -142,14 +144,18 @@ try {
   assert.equal(server.rows[0].server_encoding, "UTF8", "Expected UTF-8 server encoding");
 
   const migrationHistory = await client.query(`
-    SELECT created_at::text AS created_at
+    SELECT created_at::text AS created_at, hash
     FROM drizzle.__drizzle_migrations
     ORDER BY created_at
   `);
   assertMigrationHistoryForPhase({
     phase,
     journal,
-    actualHistory: migrationHistory.rows.map(({ created_at }) => created_at),
+    expectedHistory: expectedMigrationHistory,
+    actualHistory: migrationHistory.rows.map(({ created_at, hash }) => ({
+      createdAt: created_at,
+      hash,
+    })),
   });
 
   let targetManifest;
