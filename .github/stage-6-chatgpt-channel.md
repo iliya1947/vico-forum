@@ -417,3 +417,147 @@ External mutations, migrations, grants, Hyperdrive provisioning и deployment в
 не выполнялись. Следующая подзадача — сформировать конкретный reviewed contract для
 pre/post verifier и web runtime-role/binding boundary, затем передать его Codex на независимую
 техническую проверку до implementation PR.
+
+
+### Proposed verifier phases and web runtime capability contract — 2026-09-26
+
+Эта секция фиксирует результат второй design-подзадачи для технической проверки Codex.
+Repository implementation PR пока не создавался, external mutations не выполнялись.
+
+#### 1. Production migration workflow: phase semantics
+
+Следующий repository change должен разделить один нынешний full verifier на две разные
+semantics вокруг существующего `pnpm db:migrate`.
+
+**Pre-migration gate** должен быть read-only и fail closed, но разрешать именно reviewed pending
+suffix текущего checked-in journal:
+
+- PostgreSQL major `17` и UTF-8;
+- exact current migration identity/application owner — dedicated `vico_forum_migrator`, database
+  owner rejected;
+- dangerous role attributes/memberships/ownership boundaries остаются запрещены;
+- target migration ledger обязан быть **точным префиксом** checked-in journal: никакого extra,
+  reordered, rewritten или divergent history;
+- для текущего production target префикс не может быть короче уже externally accepted baseline
+  `0000`–`0003`; это защищает от запуска против пустой/не той DB;
+- уже применённый baseline `0000`–`0003` проверяется существующими stable schema/data
+  invariants до write;
+- существующий localization runtime role остаётся exact read-only capability:
+  schema `public` USAGE без CREATE, SELECT без grant option только на
+  `locales`, `ui_translations`, `ui_translation_bundles`; PUBLIC relation/column grants и
+  неожиданные default grants по-прежнему rejected.
+
+Такой preflight допускает текущий факт `0000`–`0003` + pending `0004`–`0020`, но не
+ослабляет provenance/history safety. Повторный запуск после уже полного rollout также допустим:
+полный journal является собственным точным префиксом и `db:migrate` становится no-op.
+
+**Post-migration gate** выполняется только после успешного `db:migrate` и требует:
+
+- exact полный ledger `0000`–`0020` текущего checked-in revision;
+- все 27 target public application tables и их stable structural contract;
+- application objects принадлежат dedicated migrator/application owner, runtime roles не владеют
+  schema/tables/sequences/views;
+- migration/application owner по-прежнему least-privilege и distinct от database owner;
+- localization runtime ACL не расширен новой forum/auth/translation schema;
+- PUBLIC не получил relation/column grants, grant options или schema CREATE;
+- существующие immutable data invariants (reserved/bootstrap locale exclusion и persistent
+  canonical-English exclusion) сохраняются.
+
+Под “full target schema contract” здесь понимаются не только названия таблиц. Verifier должен
+покрывать стабильную структуру accepted `0000`–`0020`: columns/type/nullability и те
+PK/unique/FK/check/index invariants, от которых зависит runtime correctness, включая manual SQL
+constraints, которых может не быть достаточно вывести только из Drizzle TypeScript schema.
+Способ хранения/получения repository-owned target manifest не навязывается. Но CI обязан
+доказывать, что verifier contract соответствует clean PostgreSQL 17 после применения всей
+checked-in migration history, чтобы production verifier и migrations не расходились вручную.
+
+Migration workflow на этом шаге **не должен** требовать ещё не созданную web runtime role:
+schema-first rollout должен иметь возможность успешно завершить migration evidence до
+runtime-role provisioning.
+
+#### 2. Отдельная web runtime database capability
+
+Текущий `vico_forum_runtime` и binding `HYPERDRIVE` остаются localization-only и не
+расширяются. Для deployed forum/auth candidate нужен отдельный login role и отдельный
+cache-disabled Hyperdrive binding.
+
+Базовые role invariants:
+
+- LOGIN;
+- no SUPERUSER / CREATEDB / CREATEROLE / REPLICATION / BYPASSRLS;
+- no role memberships;
+- no schema/table/sequence/view ownership;
+- `public`: USAGE, no CREATE;
+- no grant options;
+- target schema `0020` не содержит sequences, поэтому web capability не требует sequence grants;
+- migration/admin credential никогда не передаётся Worker.
+
+Минимальная ACL матрица по фактическим **сейчас подключённым** Worker paths:
+
+**Better Auth domain**
+- `user`, `session`, `account`, `verification`, `rate_limit`:
+  `SELECT, INSERT, UPDATE, DELETE`.
+  Это domain-bounded CRUD для Better Auth database adapter и database rate-limit storage; granular
+  endpoint-by-endpoint tightening не требуется как pre-release blocker.
+
+**Forum web domain**
+- `forum_categories`, `forum_sections`: `SELECT` only — runtime create-category/section
+  capability в Worker сейчас не экспонируется;
+- `forum_topics`, `forum_posts`: `SELECT, INSERT, UPDATE`;
+- `forum_topic_title_revisions`, `forum_post_revisions`: `SELECT, INSERT`;
+- DELETE/TRUNCATE/REFERENCES/TRIGGER не требуются.
+
+**Dynamic authorization domain**
+- `authz_permissions`: `SELECT` only;
+- `authz_roles`: `SELECT, INSERT, UPDATE, DELETE`;
+- `authz_role_permissions`: `SELECT, INSERT, DELETE`;
+- `authz_user_roles`: `SELECT, INSERT, UPDATE`;
+- `authz_user_permission_overrides`: `SELECT, INSERT, UPDATE, DELETE`;
+- `authz_mutation_lock`: `SELECT, UPDATE`;
+- code-backed permission catalog не получает runtime INSERT/UPDATE/DELETE.
+
+**Persisted content presentation / generation-status reads**
+- `forum_topic_title_translations`, `forum_post_body_translations`: `SELECT`;
+- `translation_tasks`, `translation_task_generation_heads`,
+  `content_topic_title_translation_tasks`, `content_post_body_translation_tasks`: `SELECT`.
+
+**Явно не входят в web role сейчас**
+- `locales`, `ui_translations`, `ui_translation_bundles`: остаются существующей
+  localization capability;
+- `content_translation_request_budget_counters` и любые task/publication writes: authenticated
+  generation runtime в Worker сейчас disabled;
+- translation task execution/publication/reconciliation writes: real Queue consumer/provider
+  ещё не wired и получит отдельный reviewed capability только в соответствующей Stage 6 задаче.
+
+Worker wiring boundary после provisioning:
+- registry/UI-translation reads продолжают использовать существующий localization `HYPERDRIVE`;
+- Better Auth, forum reader/writer, authorization, persisted content-translation presentation и
+  generation-status reader переходят на новый web Hyperdrive binding;
+- один credential больше не обслуживает одновременно localization read-only и forum/auth writes.
+
+После внешнего создания role/grants/Hyperdrive, но **до deployment**, repository-owned read-only
+runtime privilege verification должна доказать exact ACL matrix, отсутствие ownership/membership/
+grant options/CREATE и separation от migrator/localization role. Это отдельная acceptance boundary
+после schema migration, а не условие успешности самого migration workflow.
+
+#### 3. Stage 6 ordering после согласования
+
+Предлагаемая последовательность, не выполняемая этой design-задачей:
+
+`reviewed verifier-phase PR`
+→ merge
+→ explicit user authorization на production migration
+→ migration workflow: preflight → `0004`–`0020` → postflight → evidence
+→ reviewed web runtime role/grant + Worker binding change
+→ explicit external provisioning
+→ runtime privilege verification
+→ только затем schema-dependent deployed forum/auth smoke.
+
+Google OAuth, authorization-manager bootstrap, Queue/provider, preview isolation и backup/restore
+остаются последующими Stage 6 задачами.
+
+Проверены актуальные официальные contracts: PostgreSQL 17 разделяет schema `USAGE`/CREATE и
+table privileges; Cloudflare Hyperdrive Worker binding задаётся отдельным binding name/config ID;
+Better Auth Drizzle adapter использует database-backed core auth schema, а configured
+`rateLimit.storage = "database"` использует отдельную rate-limit table. Это согласуется с
+границами выше и не требует расширения migration role в runtime.
