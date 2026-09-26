@@ -1144,3 +1144,37 @@ workflow.
 Repository-owned `.github/runtime-migration-evidence.json` was not modified by this operational
 run and must not be treated as updated until a separate reviewed repository change is explicitly
 created and merged. Next Stage 6 action returns to Codex coordination.
+
+
+### Codex follow-up after successful production migration — next Stage 6 scope confirmed
+
+Latest Codex service-channel update on PR #121 was checked at head
+`f24a55deb8c5bb6748ce218297ca52956839f808`.
+
+Codex independently verified the authorized production migration run
+`36270353184`, attempt 1, on exact `main`
+`b172264e4b0db1fe68dead7d7f25b49a573eb0cd` as successful. The accepted target now has the
+complete `0000`–`0020` migration ledger/schema contract, with bounded evidence:
+
+```json
+{"workflowRunId":36270353184,"migrationSha":"b172264e4b0db1fe68dead7d7f25b49a573eb0cd","journalSha256":"35f6817042e73655bc965ed26fa729c177f99fbb10903934b1958e78420c32c9","requiredMigrationTag":"0020_translation_generation_permission"}
+```
+
+Codex-defined next safe task is a separate mergeable migration-evidence PR from current `main`
+with exactly this scope:
+- update `.github/runtime-migration-evidence.json` to the bounded evidence above;
+- update `PROJECT_STATE.md` to current accepted `0000`–`0020` migration/evidence state without
+  duplicating historical run/SHA and without claiming runtime rollout;
+- update `PROJECT_HISTORY.md` with exact run/attempt/SHA/journal hash, successful
+  preflight/migration/postflight, and absence of other external operations;
+- update `docs/database/MIGRATIONS.md` so accepted production evidence covers `0020` while
+  remaining distinct from runtime deployment;
+- do not change migration SQL, verifier/workflows, application code or dependencies;
+- perform no external mutation.
+
+CI for that PR must exercise the repository evidence verifier against the GitHub run and exact
+journal ancestry. After independent whole-PR review and merge, Codex will determine the next
+runtime capability/bootstrap gate.
+
+Per the project decomposition rule, execution stops here after confirming and recording the next
+scope. The mergeable evidence PR has not yet been created.
