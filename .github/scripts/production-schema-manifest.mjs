@@ -53,7 +53,7 @@ export async function readProductionSchemaSnapshot(client) {
       constraint_row.condeferrable AS deferrable,
       constraint_row.condeferred AS initially_deferred,
       constraint_row.convalidated AS validated,
-      constraint_row.connullsnotdistinct AS nulls_not_distinct,
+      COALESCE(constraint_index.indnullsnotdistinct, false) AS nulls_not_distinct,
       referenced.relname AS referenced_table,
       constraint_row.confupdtype AS on_update_code,
       constraint_row.confdeltype AS on_delete_code,
@@ -81,6 +81,7 @@ export async function readProductionSchemaSnapshot(client) {
     JOIN pg_catalog.pg_class relation ON relation.oid = constraint_row.conrelid
     JOIN pg_catalog.pg_namespace namespace ON namespace.oid = relation.relnamespace
     LEFT JOIN pg_catalog.pg_class referenced ON referenced.oid = constraint_row.confrelid
+    LEFT JOIN pg_catalog.pg_index constraint_index ON constraint_index.indexrelid = constraint_row.conindid
     WHERE namespace.nspname = 'public'
       AND relation.relkind IN ('r', 'p')
       AND constraint_row.contype IN ('p', 'u', 'f', 'c')
