@@ -216,8 +216,8 @@ pending migrations в этом режиме.
 восстановлен и отдельно доказан successful manual read-only GitHub Actions run
 `36252243734`, attempt 3, на exact `main`
 `b8bb841e29bbdcb9201a64489970f349d316ae63`: connection identity прошла exact assertion
-`current_user = vico_forum_migrator`. После этого временный database-owner exception удалён
-code-wide из production migration path. Pending migrations этим изменением не применялись;
+`current_user = vico_forum_migrator`. После этого PR [#132](https://github.com/iliya1947/vico-forum/pull/132)
+удаляет временный database-owner exception code-wide из production migration path. Pending migrations этим изменением не применялись;
 существующий full-ledger preflight остаётся fail-closed barrier до отдельного reviewed
 pre-migration/post-migration verifier change.
 
