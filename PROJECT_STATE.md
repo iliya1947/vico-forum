@@ -141,8 +141,9 @@ Migration `0007`–`0010` содержит durable task lifecycle и generation-
   transaction, что final current-revision/current-translation recheck и durable task
   upsert/dedup/reactivation. Ineligible/current/completed work остаётся free, eligible
   pending/processing duplicate request повторно учитывается budget, denial/error откатывает
-  counters вместе с task mutation, а enqueue остаётся after-commit. Routes пока не подключены;
-  anonymous enablement и финальные quota values не выбраны;
+  counters вместе с task mutation, а enqueue остаётся after-commit. Authenticated generation routes
+  подключены через существующий topic POST boundary; anonymous enablement и финальные quota values
+  не выбраны;
 - on-demand durable planning для topic-title translation: planner повторно читает current immutable
   title revision из PostgreSQL, проверяет active canonical target и provider-neutral support,
   выполняет atomic request-budget admission вместе с final serialized revision/translation recheck
