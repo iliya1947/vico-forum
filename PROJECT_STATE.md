@@ -38,8 +38,9 @@ Vico Forum находится в ранней pre-release разработке.
 - Repository boundary для следующего schema-first rollout разделяет verifier на две fail-closed
   фазы: pre-migration принимает только exact checked-in journal prefix не короче known-applied
   target prefix `0000`–`0003`, post-migration требует exact complete journal и repository-owned
-  full structural manifest `0000`–`0020`. Manifest покрывает все 27 public application tables,
-  а CI сверяет его с clean PostgreSQL 17. External migration этим repository change не выполняется.
+  full structural manifest `0000`–`0020`. Manifest покрывает все 27 public application tables, column defaults, PK/unique/FK/check/index
+  invariants и correctness-critical trigger/function definitions + trigger enablement; CI сверяет
+  этот contract с clean PostgreSQL 17. External migration этим repository change не выполняется.
 - Обычная feature-разработка и её CI остаются отделены от external rollout; merge в `main` сам по
   себе не является deployment/acceptance evidence.
 
