@@ -77,19 +77,26 @@ external execution identity как exact `vico_forum_migrator` через manual
 `PRE_RELEASE_ALLOW_DATABASE_OWNER_CONNECTION`: database-owner connection всегда rejected, а
 migration connection должна совпадать с application owner role.
 
-Перед `db:migrate` по-прежнему выполняется полный preflight verifier, который требует, чтобы
-checked-in Drizzle journal уже полностью присутствовал в target DB. Поэтому при текущих pending
-migrations workflow fail closed завершится **до** migration write. Это намеренный временный barrier:
-этот change удаляет owner exception, но ещё не вводит pre-migration/post-migration verifier phases
-для применения новой forum/auth/translation schema.
+Workflow использует две разные fail-closed verification phase вокруг `db:migrate`:
 
-Перед следующим настоящим external schema rollout нужно:
+1. **pre-migration**: target ledger обязан быть exact prefix checked-in Drizzle journal и не может
+   быть короче known-applied target prefix `0000`–`0003`; extra/reordered/divergent history
+   rejected. До write также проверяются PostgreSQL 17/UTF-8, dedicated migrator, stable
+   `0000`–`0003` schema/data invariants и существующий localization least-privilege contract.
+2. **post-migration**: ledger обязан точно совпасть с complete checked-in journal, а target schema —
+   с repository-owned full structural manifest `0000`–`0020`. Manifest покрывает 27 public
+   application tables, columns/types/nullability, PK/unique/FK/check/index contract, включая
+   manual deferrable forum foreign keys; ownership/ACL invariants проверяются уже на полном наборе
+   application tables.
 
-1. отдельно спроектировать и review pre-migration/post-migration verifier phases;
-2. расширить target verification contract на фактическую pending schema и reviewed runtime
-   privilege model;
-3. только после этого применять pending migrations через protected target-environment workflow
-   и фиксировать migration → runtime evidence.
+Repository-owned accepted migration→runtime evidence baseline остаётся
+`0002_ui_translation_storage`. Migration `0003` подтверждена как known-applied target state,
+но не называется accepted migration→runtime evidence. Pending `0004`–`0020` этим repository
+change не применяются.
+
+Repository boundary для schema-first rollout считается готовой только после review/CI этого change.
+Сам protected production migration workflow остаётся отдельным external mutation и запускается
+только после явного разрешения пользователя.
 
 ## Production verification contract
 
@@ -97,8 +104,8 @@ Target-environment verifier проверяет стабильные invariants, 
 Текущий contract включает как минимум:
 
 - PostgreSQL 17 и UTF-8;
-- migration ledger против checked-in Drizzle journal;
-- expected schema shape для уже принятых localization/translation/Better Auth tables;
+- phase-aware migration ledger contract: exact known-applied prefix до write и exact complete journal после write;
+- repository-owned full target structural manifest для `0000`–`0020`, проверяемый CI против clean PostgreSQL 17;
 - отсутствие persistent bootstrap/reserved locale rows (`en`, `api`, `assets`);
 - отсутствие persistent canonical-English UI translation rows;
 - current connection role, application owner и configured runtime role attributes/memberships;

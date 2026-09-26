@@ -34,9 +34,12 @@ Vico Forum находится в ранней pre-release разработке.
 - Stage 6 dedicated migration identity подтверждена внешним manual read-only workflow из `main`:
   production Environment secret реально подключается как exact `vico_forum_migrator`.
 - Production migration workflow больше не допускает database-owner connection: verifier требует
-  dedicated migration connection, совпадающую с application owner. Existing full preflight по-прежнему
-  fail closed требует полного совпадения target migration ledger с checked-in journal, поэтому
-  pending external migrations ещё не могут пройти к `db:migrate` до следующего reviewed verifier-phase change.
+  dedicated migration connection, совпадающую с application owner.
+- Repository boundary для следующего schema-first rollout разделяет verifier на две fail-closed
+  фазы: pre-migration принимает только exact checked-in journal prefix не короче known-applied
+  target prefix `0000`–`0003`, post-migration требует exact complete journal и repository-owned
+  full structural manifest `0000`–`0020`. Manifest покрывает все 27 public application tables,
+  а CI сверяет его с clean PostgreSQL 17. External migration этим repository change не выполняется.
 - Обычная feature-разработка и её CI остаются отделены от external rollout; merge в `main` сам по
   себе не является deployment/acceptance evidence.
 
@@ -315,6 +318,7 @@ adapter, production anti-abuse values, provider/data-policy approval и deployed
 - production build;
 - Drizzle migration metadata;
 - clean PostgreSQL 17 migration/integration suite;
+- production full-schema manifest parity против clean PostgreSQL 17;
 - Workers build и local Hyperdrive smoke.
 
 Обычный PR CI не выполняет live GitHub Actions verification старого external migration evidence.
@@ -338,9 +342,11 @@ acceptance остаётся evidence этого localization path, но не я�
 
 Dedicated least-privilege migration credential для production подтверждён external execution как
 `vico_forum_migrator`, а production migration workflow больше не содержит database-owner exception.
-Pending external migrations при этом ещё не применялись: текущий full preflight требует, чтобы target
-migration ledger уже полностью совпадал с checked-in journal, и потому останавливает rollout до
-`db:migrate` при наличии pending schema.
+Repository verifier boundary подготовлен к schema-first rollout: preflight допускает только exact
+known-applied prefix текущего journal, postflight требует полный `0000`–`0020` ledger/manifest.
+Repository-owned accepted migration→runtime evidence при этом всё ещё заканчивается на
+`0002_ui_translation_storage`; наличие `0003` в target DB является known-applied target state,
+но не accepted migration→runtime evidence. Pending `0004`–`0020` ещё не применялись.
 
 До Stage 6 не считаются выполненными:
 
@@ -355,9 +361,8 @@ migration ledger уже полностью совпадал с checked-in journa
 ## Ближайший маршрут
 
 1. Продолжить Stage 6 pre-release external integration по `ROADMAP.md` и `docs/database/*`.
-2. Следующим database-rollout шагом отдельно спроектировать и review pre-migration/post-migration
-   verifier phases и полный target contract для pending schema; до этого production migration workflow
-   не запускать для применения pending migrations.
+2. Следующий database-rollout шаг — отдельное явное разрешение пользователя на protected production
+   migration `0004`–`0020`. До такого разрешения workflow не запускать.
 
 Stage 5 завершён только в repository/local-CI boundary. Pending external migrations, real Google
 OAuth/bootstrap, production runtime roles/Hyperdrive writes, Cloudflare Queues/providers,
