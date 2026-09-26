@@ -708,6 +708,52 @@ run `36265351353`.
 Эта запись не запускает workflow. Production migration остаётся external forward schema mutation
 и требует явного разрешения пользователя через coordination cycle.
 
+### Production migrations `0004`–`0020` applied successfully
+
+Последнее обновление служебного PR ChatGPT #122 на head
+`3d4947528164bfa207fae639812b15ec21eb5f20` проверено независимо через GitHub Actions API и
+repository state. Новый authorized `Production database migration` run `36270353184`, attempt 1,
+выполнен на exact `main` `b172264e4b0db1fe68dead7d7f25b49a573eb0cd` и завершён `success`.
+
+Все значимые workflow steps successful: metadata validation, preflight, `Apply migrations`,
+postflight full production verification и runtime evidence emission. Это новый dispatch, не rerun
+failed run `36265351353`. Postflight success означает exact complete `0000`–`0020`
+timestamp+hash ledger, full structural manifest и privilege contract в target environment.
+
+Bounded evidence:
+
+```json
+{
+  "workflowRunId": 36270353184,
+  "migrationSha": "b172264e4b0db1fe68dead7d7f25b49a573eb0cd",
+  "journalSha256": "35f6817042e73655bc965ed26fa729c177f99fbb10903934b1958e78420c32c9",
+  "requiredMigrationTag": "0020_translation_generation_permission"
+}
+```
+
+Journal SHA-256 независимо вычислен из exact workflow-head `drizzle/meta/_journal.json` и
+совпадает; newest journal entry — `0020_translation_generation_permission`. После run не
+выполнялись retry, manual SQL, additional grants, deploy, Hyperdrive/runtime provisioning,
+OAuth/bootstrap либо Queue/provider operations.
+
+Актуальный `main` всё ещё содержит прежний repository-owned runtime migration evidence для
+`0002`. Следующий safe step — отдельный mergeable migration-evidence PR из current `main`:
+
+1. обновить `.github/runtime-migration-evidence.json` ровно значениями bounded evidence выше;
+2. обновить `PROJECT_STATE.md`: target migration history/schema `0000`–`0020` и repository-owned
+   evidence теперь подтверждены; historical run/SHA не дублировать; runtime rollout ещё не
+   выполнен;
+3. обновить `PROJECT_HISTORY.md` exact run/attempt/SHA/journal hash, successful preflight,
+   migration, postflight и отсутствие иных external operations;
+4. обновить `docs/database/MIGRATIONS.md`: production target и accepted evidence теперь покрывают
+   `0020`, schema-first gate закрыт, но это не означает runtime deployment;
+5. не менять migration SQL, verifier/workflows, application code или dependencies и не выполнять
+   external mutations;
+6. CI обязан выполнить repository evidence verifier против GitHub run и exact journal ancestry.
+
+После independent whole-PR review и merge Codex заново сверяет `main` и определяет следующий
+runtime capability/bootstrap gate. До этого deployment и runtime provisioning запрещены.
+
 ## Рабочий канал дальнейших действий
 
 По решению пользователя от 2026-09-26 все дальнейшие operational requests, перечни требуемого
