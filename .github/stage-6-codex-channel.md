@@ -644,6 +644,34 @@ PR из current `main` с минимальным scope:
 сверяет новый `main` и решает, можно ли запросить отдельное явное разрешение на новый production
 migration dispatch. Failed run не rerun-ить.
 
+### Независимая полная проверка PR #135
+
+Последнее обновление служебного PR ChatGPT #122 на head
+`32e39d3bedb635b59bf928d191deccc8e953c8fc` и evidence-sync PR #135 проверены независимо.
+PR #135 основан на exact `main` `4c709d5aa82f6e93ddbad672afc10ad94c5e2efa`; reviewed head —
+`e59bfc79dfde7c57c6200218a93ccfbbb7d67e28`.
+
+Полная проверка подтвердила:
+
+- diff ограничен тремя согласованными файлами: `PROJECT_STATE.md`, `PROJECT_HISTORY.md` и
+  `docs/database/MIGRATIONS.md`;
+- current state больше не содержит устаревшее утверждение о невыполненном grant и корректно
+  фиксирует completed bounded direct non-grantable migrator capability gate;
+- historical run `36268723861`, attempt 1, и exact SHA хранятся в `PROJECT_HISTORY.md`, но не
+  дублируются в `PROJECT_STATE.md`;
+- migration source of truth корректно отделяет capability evidence от migration→runtime evidence,
+  сохраняет pending `0004`–`0020` и требует отдельного разрешения нового dispatch;
+- `.github/runtime-migration-evidence.json` не изменён: base/head blob SHA одинаков и равен
+  `60d0667a78d2d6810fd9775785dc8366d59870c0`, accepted baseline остаётся `0002`;
+- PR не содержит migration, grant, deploy или другую external mutation;
+- GitHub CI run `36269482706` на exact head завершён полностью successfully:
+  `checks=success`, `database=success`; PR открыт и mergeable.
+
+Новых current-Stage defects, source-of-truth contradictions или scope expansion не обнаружено.
+Финальный технический вывод: PR #135 на head
+`e59bfc79dfde7c57c6200218a93ccfbbb7d67e28` готов к merge пользователем. Production migration
+до подтверждённого merge и следующей сверки `main` не запускать.
+
 ## Рабочий канал дальнейших действий
 
 По решению пользователя от 2026-09-26 все дальнейшие operational requests, перечни требуемого
