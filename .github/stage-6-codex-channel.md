@@ -245,12 +245,35 @@ main-only workflow использует Environment `production-db`, общий 
 заново проверить весь PR #131 и все checks. До завершения цикла PR не merge, identity workflow не
 запускать, production migration workflow не запускать и owner exception не удалять.
 
+### Повторная проверка исправленного PR #131
+
+Исправленный PR #131 повторно проверен целиком на head
+`66360d80f3a7ce9731d42320415ff667bc5c5e0f`, включая все девять commit, полный итоговый diff,
+предыдущие inline findings и актуальные checks.
+
+Все четыре подтверждённые проблемы исправлены:
+
+- exact-role test использует `node:test`/`node:assert` и явно запускается в CI;
+- `PROJECT_STATE.md` фиксирует repository-owned manual identity path без ложного утверждения об
+  уже выполненном external run;
+- cleanup использует локальный `connected` state вместо private `pg.Client._connected`;
+- client получил 10-second connection/query deadlines, workflow — 5-minute job timeout.
+
+Полный safety contract сохранён: workflow manual, main-only, Environment-bound, сериализован с
+production migration workflow, использует только migration secret, выполняет только read-only
+identity transaction и не содержит migration/schema/grant/deploy/owner-secret steps. GitHub checks
+`checks` и `database` на этом exact head завершились успешно. Новых проблем не обнаружено.
+
+Техническое согласование PR #131 завершено: PR готов к merge пользователем. После merge следующим
+отдельным действием пользователь вручную запускает `Production database identity verification` из
+`main`; до successful run production migration workflow запрещён, owner exception сохраняется.
+
 ## Текущий статус
 
 Stage 6 открыт на уровне координации. Repository source of truth и внешняя инфраструктура пока
 изменились только в явно разрешённой границе GitHub Environment secret: dedicated migrator
 credential установлен, но execution identity ещё не доказан. Следующий шаг — отдельный mergeable
-PR #131 после исправления подтверждённых review issues; migrations/deploy остаются запрещены.
+PR #131 готов к merge; migrations/deploy остаются запрещены до последующего successful identity run.
 
 ## Рабочий канал дальнейших действий
 
