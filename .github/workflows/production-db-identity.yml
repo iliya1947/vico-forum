@@ -29,7 +29,7 @@ jobs:
           node-version-file: .node-version
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - name: Verify dedicated migration identity
+      - name: Verify dedicated migration identity and capability
         run: node .github/scripts/verify-production-migration-identity.mjs
         env:
           DATABASE_URL: ${{ secrets.NEON_MIGRATION_DATABASE_URL }}

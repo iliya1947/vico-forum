@@ -8,6 +8,14 @@ export function assertMigrationRole(actualRole) {
   }
 }
 
+export function assertMigrationDatabaseCreateCapability(canCreate) {
+  if (canCreate !== true) {
+    throw new Error(
+      `Migration database role ${EXPECTED_ROLE} must have effective CREATE privilege on the current database`,
+    );
+  }
+}
+
 async function main() {
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) {
@@ -25,14 +33,27 @@ async function main() {
     await client.connect();
     connected = true;
     await client.query("BEGIN READ ONLY");
-    const result = await client.query("SELECT current_user AS current_user");
+    const result = await client.query(`
+      SELECT
+        current_user AS current_user,
+        pg_catalog.has_database_privilege(
+          current_user,
+          current_database(),
+          'CREATE'
+        ) AS can_create
+    `);
 
-    if (result.rowCount !== 1 || typeof result.rows[0]?.current_user !== "string") {
-      throw new Error("Could not determine migration database role");
+    if (
+      result.rowCount !== 1
+      || typeof result.rows[0]?.current_user !== "string"
+      || typeof result.rows[0]?.can_create !== "boolean"
+    ) {
+      throw new Error("Could not determine migration database identity and CREATE capability");
     }
 
     assertMigrationRole(result.rows[0].current_user);
-    console.log(`Migration database identity verified: ${EXPECTED_ROLE}`);
+    assertMigrationDatabaseCreateCapability(result.rows[0].can_create);
+    console.log(`Migration database identity and CREATE capability verified: ${EXPECTED_ROLE}`);
   } finally {
     if (connected) {
       try {

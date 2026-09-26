@@ -42,6 +42,14 @@ Vico Forum находится в ранней pre-release разработке.
   full structural manifest `0000`–`0020`. Manifest покрывает все 27 public application tables, column defaults, PK/unique/FK/check/index
   invariants и correctness-critical trigger/function definitions + trigger enablement; CI сверяет
   этот contract с clean PostgreSQL 17. External migration этим repository change не выполняется.
+- Первый явно разрешённый production migration attempt прошёл metadata/preflight, но остановился
+  на bootstrap `db:migrate` до pending migration SQL: pinned Drizzle migrator выполняет
+  `CREATE SCHEMA IF NOT EXISTS drizzle`, а dedicated migrator не имел database-level
+  `CREATE`. Ledger и public application schema остались на `0000`–`0003` baseline.
+- Repository privilege boundary теперь требует direct non-grantable `CREATE` на текущую database
+  именно для application owner/migrator и запрещает database `CREATE` для localization runtime
+  и `PUBLIC`; manual identity verifier дополнительно проверяет effective database `CREATE`
+  внутри read-only transaction. Сам external `GRANT` этим repository change не выполняется.
 - Обычная feature-разработка и её CI остаются отделены от external rollout; merge в `main` сам по
   себе не является deployment/acceptance evidence.
 
@@ -346,10 +354,13 @@ Dedicated least-privilege migration credential для production подтвер�
 `vico_forum_migrator`, а production migration workflow больше не содержит database-owner exception.
 Repository verifier boundary подготовлен к schema-first rollout: preflight допускает только exact
 known-applied prefix текущего ledger по `created_at + Drizzle SHA-256 hash`, postflight требует
-полный `0000`–`0020` timestamp+hash ledger/manifest.
+полный `0000`–`0020` timestamp+hash ledger/manifest. Первый разрешённый migration attempt
+доказал, что dedicated migrator дополнительно нуждается в direct database `CREATE` capability
+для pinned Drizzle bootstrap; attempt остановился до pending SQL и не изменил accepted target baseline.
 Repository-owned accepted migration→runtime evidence при этом всё ещё заканчивается на
 `0002_ui_translation_storage`; наличие `0003` в target DB является known-applied target state,
-но не accepted migration→runtime evidence. Pending `0004`–`0020` ещё не применялись.
+но не accepted migration→runtime evidence. Pending `0004`–`0020` ещё не применялись, а
+database `CREATE` grant для migrator ещё не выполнен.
 
 До Stage 6 не считаются выполненными:
 
@@ -364,8 +375,11 @@ Repository-owned accepted migration→runtime evidence при этом всё е
 ## Ближайший маршрут
 
 1. Продолжить Stage 6 pre-release external integration по `ROADMAP.md` и `docs/database/*`.
-2. Следующий database-rollout шаг — отдельное явное разрешение пользователя на protected production
-   migration `0004`–`0020`. До такого разрешения workflow не запускать.
+2. После merge capability-verifier change отдельно получить явное разрешение пользователя на
+   owner-controlled `GRANT CREATE ON DATABASE vico_forum TO vico_forum_migrator` без grant option.
+3. После grant получить successful manual identity/capability workflow evidence на exact `main`.
+   Только затем заново оценивать разрешение на production migration retry; failed production
+   migration attempt не rerun-ить автоматически.
 
 Stage 5 завершён только в repository/local-CI boundary. Pending external migrations, real Google
 OAuth/bootstrap, production runtime roles/Hyperdrive writes, Cloudflare Queues/providers,

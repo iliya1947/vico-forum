@@ -90,6 +90,24 @@ Workflow использует две разные fail-closed verification phase
    manual deferrable forum foreign keys, а также correctness-critical trigger/function definitions
    и trigger enablement; ownership/ACL invariants проверяются уже на полном наборе application tables.
 
+Stage 6 manual migration attempt `36265351353` на exact `main`
+`53181e30253061614c43f6b1682eaa0ec958e2d3` прошёл metadata/preflight, но `db:migrate`
+остановился до pending migration SQL. Pinned `drizzle-orm 0.45.2` PostgreSQL migrator перед
+чтением ledger безусловно выполняет `CREATE SCHEMA IF NOT EXISTS drizzle`; PostgreSQL 17 требует
+для этого database-level `CREATE`. Dedicated `vico_forum_migrator` этой capability не имел.
+После failure ledger и public application schema остались на known-applied `0000`–`0003`;
+retry не выполнялся.
+
+Repository verifier поэтому дополнительно требует:
+
+- direct non-grantable database `CREATE` ACL для exact application owner/migration role;
+- отсутствие database `CREATE` у localization runtime role и `PUBLIC`;
+- manual identity workflow проверяет и exact `vico_forum_migrator`, и effective
+  `has_database_privilege(current_user, current_database(), 'CREATE') = true` внутри
+  read-only transaction.
+
+Этот contract только проверяет capability. Он не выполняет `GRANT`, migration retry или deploy.
+
 Repository-owned accepted migration→runtime evidence baseline остаётся
 `0002_ui_translation_storage`. Migration `0003` подтверждена как known-applied target state,
 но не называется accepted migration→runtime evidence. Pending `0004`–`0020` этим repository
@@ -110,6 +128,8 @@ Target-environment verifier проверяет стабильные invariants, 
 - отсутствие persistent bootstrap/reserved locale rows (`en`, `api`, `assets`);
 - отсутствие persistent canonical-English UI translation rows;
 - current connection role, application owner и configured runtime role attributes/memberships;
+- direct non-grantable database `CREATE` для application owner/migrator при отсутствии этой
+  capability у localization runtime и `PUBLIC`;
 - application table ownership;
 - schema/table/sequence privileges, column ACL/grant options, `PUBLIC` grants и default ACL;
 - отсутствие неожиданных cross-domain runtime grants/ownership.
@@ -204,3 +224,12 @@ runtime evidence для `0003` не блокирует Stage 4B forum developmen
 Когда Better Auth runtime и forum writes будут готовиться к Stage 6 external integration,
 все pending migrations должны быть применены/verified и соответствующий evidence обновлён
 до external runtime rollout.
+
+### Stage 6 migration bootstrap capability
+
+Первый разрешённый rollout pending `0004`–`0020` выявил не schema defect, а недостающую
+migration-tool capability: dedicated migrator должен иметь database `CREATE`, потому что pinned
+Drizzle migrator каждый run выполняет idempotent `CREATE SCHEMA IF NOT EXISTS drizzle`.
+Capability предоставляется отдельно owner-controlled grant без grant option и только после
+reviewed verifier boundary. До подтверждённого grant + manual identity/capability evidence
+production migration retry не разрешён.
