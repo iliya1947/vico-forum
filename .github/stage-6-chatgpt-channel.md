@@ -215,9 +215,25 @@ Official references checked:
 
 Никаких external mutations, migrations или deployment в этой подзадаче не выполнено.
 
+### Dedicated credential mutation attempt — 2026-09-26
+
+Пользователь явно разрешил получить новый credential `vico_forum_migrator` и заменить
+`production-db / NEON_MIGRATION_DATABASE_URL`.
+
+- Neon connector успешно выполнил dedicated connection-string request для production branch,
+  database `vico_forum`, role `vico_forum_migrator`. Credential material в чат/PR не выводился.
+- Доступный GitHub connector повторно проверен: sensitive secrets API не поддерживается, а
+  Environment-secret write action отсутствует. Поэтому безопасно передать полученное secret
+  material напрямую Neon → GitHub средствами текущего toolchain невозможно.
+- GitHub secret **не изменён**. Migration workflow, migrations, deploy и runtime grants не
+  запускались/не изменялись.
+- Gate остаётся закрыт до ручной control-plane замены пользователем: получить connection string
+  для `vico_forum_migrator` в Neon Console и сразу сохранить его как
+  `production-db / NEON_MIGRATION_DATABASE_URL` в GitHub, не отправляя значение в чат.
+
 ## Текущий статус
 
-Dedicated migration credential gate спроектирован до mutation boundary. Следующий шаг требует
-явного решения пользователя: разрешить получение dedicated `vico_forum_migrator` credential
-и замену `production-db / NEON_MIGRATION_DATABASE_URL` без раскрытия secret material. До этого
-production migration workflow не запускается.
+Dedicated credential получаем для правильной Neon role, но GitHub Environment secret ещё не
+заменён из-за отсутствия secrets-write capability у GitHub connector. Следующее действие —
+ручная secret-to-secret control-plane замена без раскрытия значения. После неё нужен отдельный
+non-migrating identity evidence до repository change и до pending migrations.
