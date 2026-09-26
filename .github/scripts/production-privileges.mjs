@@ -21,7 +21,6 @@ export function assertProductionPrivilegeContract(
     migrationRole,
     runtimeRole,
     migrationMemberships = [],
-    allowDatabaseOwnerConnection = false,
   },
 ) {
   assert.ok(snapshot.databaseOwnerRole, "Expected current database owner role to exist");
@@ -40,19 +39,11 @@ export function assertProductionPrivilegeContract(
     "Application owner role must not own the current database",
   );
 
-  if (migrationRole === snapshot.databaseOwnerRole) {
-    assert.equal(
-      allowDatabaseOwnerConnection,
-      true,
-      "Database-owner connection is allowed only in explicit pre-release mode",
-    );
-  } else {
-    assert.equal(
-      migrationRole,
-      applicationOwnerRole,
-      "Dedicated migration connection must use the application owner role",
-    );
-  }
+  assert.equal(
+    migrationRole,
+    applicationOwnerRole,
+    "Production migration connection must use the application owner role",
+  );
 
   const roles = new Map(snapshot.roles.map((role) => [role.rolname, role]));
   const runtime = roles.get(runtimeRole);

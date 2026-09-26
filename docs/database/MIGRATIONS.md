@@ -71,24 +71,25 @@ Workflow **Production database migration** запускается вручную
 ограничен `refs/heads/main`, serializes production DB migrations и проверяет exact checked-out
 `github.sha`.
 
-После PR #49 текущий pre-release workflow временно допускает database-owner connection
-только для **owner verification/no-op evidence**. Перед `db:migrate` выполняется полный
-preflight verifier, который обязан доказать, что checked-in Drizzle journal уже полностью
-присутствует в target DB. Если есть хотя бы одна pending migration, workflow должен завершиться
-до migration write.
+Stage 6 восстановил dedicated least-privilege migration credential и отдельно доказал
+external execution identity как exact `vico_forum_migrator` через manual read-only workflow из
+`main`. Production migration workflow после этого больше не содержит
+`PRE_RELEASE_ALLOW_DATABASE_OWNER_CONNECTION`: database-owner connection всегда rejected, а
+migration connection должна совпадать с application owner role.
 
-Следствие: текущий owner-mode **не предназначен для применения новой forum/auth/translation
-schema**.
+Перед `db:migrate` по-прежнему выполняется полный preflight verifier, который требует, чтобы
+checked-in Drizzle journal уже полностью присутствовал в target DB. Поэтому при текущих pending
+migrations workflow fail closed завершится **до** migration write. Это намеренный временный barrier:
+этот change удаляет owner exception, но ещё не вводит pre-migration/post-migration verifier phases
+для применения новой forum/auth/translation schema.
 
 Перед следующим настоящим external schema rollout нужно:
 
-1. убрать `PRE_RELEASE_ALLOW_DATABASE_OWNER_CONNECTION=true` owner exception;
-2. восстановить/проверить dedicated least-privilege migration connection;
-3. проверить актуальный migration role/ownership contract;
-4. только после этого применять pending migration через protected target-environment workflow.
-
-Временный owner exception должен быть удалён в любом случае до первого release с
-реальными/private production data.
+1. отдельно спроектировать и review pre-migration/post-migration verifier phases;
+2. расширить target verification contract на фактическую pending schema и reviewed runtime
+   privilege model;
+3. только после этого применять pending migrations через protected target-environment workflow
+   и фиксировать migration → runtime evidence.
 
 ## Production verification contract
 

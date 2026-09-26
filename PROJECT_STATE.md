@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-09-25
+Последнее обновление: 2026-09-26
 
 ## Назначение
 
@@ -31,9 +31,12 @@ Vico Forum находится в ранней pre-release разработке.
 - External production-like integration начинается только в Stage 6; завершение Stage 5 не означает,
   что pending migrations, OAuth, runtime roles/Hyperdrive writes, Queues/providers или deployed smoke
   уже приняты внешне.
-- Для Stage 6 добавлен manual read-only production database identity verification path: он проверяет
-  dedicated migration connection как `vico_forum_migrator` до external migration. Наличие workflow
-  само по себе не является external identity evidence; успешный run из `main` ещё требуется.
+- Stage 6 dedicated migration identity подтверждена внешним manual read-only workflow из `main`:
+  production Environment secret реально подключается как exact `vico_forum_migrator`.
+- Production migration workflow больше не допускает database-owner connection: verifier требует
+  dedicated migration connection, совпадающую с application owner. Existing full preflight по-прежнему
+  fail closed требует полного совпадения target migration ledger с checked-in journal, поэтому
+  pending external migrations ещё не могут пройти к `db:migrate` до следующего reviewed verifier-phase change.
 - Обычная feature-разработка и её CI остаются отделены от external rollout; merge в `main` сам по
   себе не является deployment/acceptance evidence.
 
@@ -333,9 +336,11 @@ acceptance остаётся evidence этого localization path, но не я�
 По зафиксированному состоянию проекта native Cloudflare Git integration для active development
 `main` отключён. Перед Stage 6 фактическую external configuration необходимо проверить заново.
 
-Текущий production migration workflow временно допускает database-owner connection только для
-no-op verification. Перед следующим настоящим external schema rollout необходимо восстановить
-и проверить dedicated least-privilege migration capability и убрать owner exception.
+Dedicated least-privilege migration credential для production подтверждён external execution как
+`vico_forum_migrator`, а production migration workflow больше не содержит database-owner exception.
+Pending external migrations при этом ещё не применялись: текущий full preflight требует, чтобы target
+migration ledger уже полностью совпадал с checked-in journal, и потому останавливает rollout до
+`db:migrate` при наличии pending schema.
 
 До Stage 6 не считаются выполненными:
 
@@ -349,10 +354,10 @@ no-op verification. Перед следующим настоящим external sc
 
 ## Ближайший маршрут
 
-1. Начать Stage 6 pre-release external integration по `ROADMAP.md` и `docs/database/*`.
-2. Перед provisioning и первым external schema-dependent rollout заново проверить current platform
-   configuration, exact versions, dedicated least-privilege migration capability и остальные Stage 6
-   preconditions.
+1. Продолжить Stage 6 pre-release external integration по `ROADMAP.md` и `docs/database/*`.
+2. Следующим database-rollout шагом отдельно спроектировать и review pre-migration/post-migration
+   verifier phases и полный target contract для pending schema; до этого production migration workflow
+   не запускать для применения pending migrations.
 
 Stage 5 завершён только в repository/local-CI boundary. Pending external migrations, real Google
 OAuth/bootstrap, production runtime roles/Hyperdrive writes, Cloudflare Queues/providers,
