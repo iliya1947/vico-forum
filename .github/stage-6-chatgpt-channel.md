@@ -297,8 +297,38 @@ tests, build, migration metadata/schema parity, PostgreSQL 17 migration suite и
 External identity workflow при этом не запускался и identity gate ещё не является закрытым
 external evidence.
 
+### Dedicated migration identity evidence — success 2026-09-26
+
+PR #131 merged в `main` как commit
+`b8bb841e29bbdcb9201a64489970f349d316ae63`. Manual workflow
+`Production database identity verification`, run ID `36252243734`, был выполнен именно
+на этом `main` SHA.
+
+Первые два attempt выявили malformed migration credential: connection string для
+`vico_forum_migrator` не содержал password, поэтому `pg` завершался ошибкой
+`SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string`. Причина устранена
+без пересоздания роли: существующей least-privilege роли сохранены ownership/grants,
+она получила login/password credential, а GitHub Environment secret
+`production-db / NEON_MIGRATION_DATABASE_URL` был заменён пользователем свежим
+password-bearing connection string. Secret value не публиковался.
+
+Attempt #3 того же workflow run завершён `success`. Step
+`Verify dedicated migration identity` завершён `success`, то есть Environment secret
+реально подключился к production Neon и exact assertion
+`current_user = vico_forum_migrator` прошёл. Таким образом dedicated migration identity
+gate теперь имеет external execution evidence.
+
+Эта проверка была read-only. Production migration workflow, pending migrations, deployment,
+runtime grants и другие schema/runtime mutations не запускались.
+
 ## Текущий статус
 
-PR #131 на head `66360d80f3a7ce9731d42320415ff667bc5c5e0f` прошёл corrective cycle,
-полную повторную проверку и CI run #982; новых repository-level проблем не обнаружено.
-Следующий шаг требует итоговой проверки Codex. External identity run из `main` ещё не выполнялся.
+Dedicated migration identity подтверждена успешным GitHub Actions run
+`36252243734`, attempt #3, на exact `main`
+`b8bb841e29bbdcb9201a64489970f349d316ae63`.
+
+По текущему Stage 6 contract production migration workflow пока запускать нельзя:
+до первой pending external schema migration требуется отдельное reviewed repository change,
+которое убирает временный `PRE_RELEASE_ALLOW_DATABASE_OWNER_CONNECTION=true` owner exception
+и сохраняет/усиливает fail-closed migration verifier. Следующий технический шаг должен определить
+Codex.
