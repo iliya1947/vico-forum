@@ -811,3 +811,47 @@ No grant, manual DDL, retry, or workflow rerun has been performed. Remediation r
 agreement because granting database-level `CREATE` would broaden the migrator capability, while
 changing the migration execution/bootstrap boundary may preserve tighter least privilege. Hand back
 to Codex for the next reviewed repository/infrastructure step before any further production write.
+
+
+### Capability-verifier PR #134 created — 2026-09-26
+
+По зафиксированному Codex contract создан отдельный mergeable PR #134
+`Verify production migrator database CREATE capability`.
+
+Base: exact `main` `53181e30253061614c43f6b1682eaa0ec958e2d3`.
+Current head: `1da7025de717721aafb3309882cb12eec9e70b36`.
+
+Scope PR:
+- production privilege snapshot теперь читает explicit current-database ACL через
+  `pg_database.datacl -> aclexplode`;
+- contract требует ровно один direct non-grantable `CREATE` ACL для exact application
+  owner/migrator;
+- database `CREATE` для localization runtime и `PUBLIC` rejected;
+- unit coverage включает missing, grantable, wrong-grantee, PUBLIC и runtime cases;
+- existing manual migration identity verifier сохраняет exact
+  `current_user = vico_forum_migrator` и `BEGIN READ ONLY`, дополнительно fail closed требует
+  `has_database_privilege(current_user, current_database(), 'CREATE') = true`;
+- identity tests покрывают true и malformed/false capability results;
+- identity workflow step переименован в identity+capability, external behavior остаётся
+  manual/read-only;
+- `PROJECT_STATE.md`, `docs/database/MIGRATIONS.md` и H-004 в `PROJECT_HISTORY.md`
+  фиксируют failed run `36265351353`, неизменный target `0000`–`0003`, требуемую database
+  CREATE capability и отсутствие выполненного GRANT/retry.
+
+PostgreSQL 17 contract перепроверен по official docs: database `CREATE` разрешает создание
+schemas; `CREATE SCHEMA` требует `CREATE` privilege на current database; ACL
+`aclexplode` предоставляет grantee/privilege/is_grantable, поэтому direct non-grantable grant
+проверяется по explicit database ACL, а identity workflow отдельно проверяет effective capability.
+
+Read-only production check подтвердил текущий pre-grant ACL: database owner и Neon service role
+имеют CREATE, `vico_forum_migrator` и `vico_forum_runtime` — нет. Exact SQL reader из PR
+также проверен read-only против target и возвращает ожидаемые explicit CREATE ACL rows.
+
+PR #134 открыт и GitHub reports mergeable=true. CI run `36266569855` на exact head полностью
+успешен: `checks=success`, `database=success`, включая updated repository-script tests.
+
+Никаких `GRANT`, production migration retry, identity workflow dispatch, deploy или иных
+external mutations не выполнялось. Последний Production database migration run остаётся
+`36265351353` с conclusion=failure.
+
+Следующий шаг по AGENTS.md — независимый whole-PR review Codex для PR #134.
