@@ -767,3 +767,47 @@ ChatGPT не запускает production migration и не выбирает с
 Поэтому сам initial dispatch из этой сессии выполнить невозможно без ручного запуска пользователем.
 После ручного запуска ChatGPT должен immediately read run/job/step state и продолжить только по
 фактическому результату; при failure никакого retry без отдельной диагностики.
+
+
+### Production migration run #36265351353 failed before pending schema — root cause diagnosed
+
+Authorized manual workflow run `36265351353` executed on exact approved `main`
+`53181e30253061614c43f6b1682eaa0ec958e2d3` and completed `failure`.
+
+Observed workflow result:
+- metadata validation: success;
+- production preflight: success;
+- `pnpm db:migrate`: failure;
+- postflight/evidence: skipped;
+- no retry was performed.
+
+Read-only production diagnostics after the failure confirm:
+- Drizzle ledger remains exactly four rows / `0000`–`0003`; no pending ledger entry exists;
+- public application tables remain the eight baseline tables only; no forum/authz/translation-task
+  tables from `0004+` exist;
+- no stray public functions exist;
+- existing UI constraints required by later migrations are present;
+- `vico_forum_migrator` owns the Drizzle schema/table/sequence, can write the ledger, has
+  `CREATE` on schema `public`, and can use `plpgsql`;
+- crucially, `vico_forum_migrator` has **no database-level `CREATE` privilege** on
+  `vico_forum`.
+
+The root cause is the pinned Drizzle migrator bootstrap itself, before any pending migration SQL:
+`drizzle-orm 0.45.2` `PgDialect.migrate()` unconditionally executes
+
+`CREATE SCHEMA IF NOT EXISTS <migrationsSchema>`
+
+before checking the existing migration table/history. PostgreSQL 17 documents that invoking
+`CREATE SCHEMA` requires `CREATE` privilege on the current database. The dedicated migrator
+intentionally lacks that privilege, so `drizzle-kit migrate` (which delegates to the same
+`drizzle-orm/node-postgres` migrator) fails at bootstrap even though the existing `drizzle`
+schema is already owned by the migrator.
+
+This is a **current Stage 6 rollout defect**, not future hardening: the reviewed production workflow
+cannot apply any pending migration with the current least-privilege role. The failed run did not
+reach `0004` and left the target schema/ledger at the pre-run `0000`–`0003` state.
+
+No grant, manual DDL, retry, or workflow rerun has been performed. Remediation requires technical
+agreement because granting database-level `CREATE` would broaden the migrator capability, while
+changing the migration execution/bootstrap boundary may preserve tighter least privilege. Hand back
+to Codex for the next reviewed repository/infrastructure step before any further production write.
