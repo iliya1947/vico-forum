@@ -457,13 +457,58 @@ Repository boundary для schema-first rollout готова, но следую�
 repository PR фиксирует run ID, exact migration SHA, journal SHA-256 и newest migration `0020` в
 runtime evidence/state до любого schema-dependent runtime rollout.
 
+### Failed production migration run `36265351353`
+
+Последнее обновление PR #122 на head `3a721d8ff26f334dec76ac612d29f42f29014df3` и GitHub run
+проверены независимо. Authorized run выполнялся на exact approved SHA
+`53181e30253061614c43f6b1682eaa0ec958e2d3`: metadata и preflight successful, `db:migrate`
+failed, postflight/evidence skipped. Повторный run не выполнялся.
+
+Read-only diagnostics из PR #122 подтверждены source contracts:
+
+- ledger и public schema остались на `0000`–`0003`/baseline; pending migration SQL не начинался;
+- pinned `drizzle-orm 0.45.2` `PgDialect.migrate()` безусловно выполняет
+  `CREATE SCHEMA IF NOT EXISTS drizzle` до чтения ledger;
+- PostgreSQL 17 требует database-level `CREATE` privilege даже для `CREATE SCHEMA IF NOT EXISTS`;
+- dedicated `vico_forum_migrator` владеет существующими migration/application objects и имеет
+  schema-level `public CREATE`, но не имеет database-level `CREATE` на `vico_forum`.
+
+Root cause подтверждён: migration role имеет корректную identity и object ownership, но pinned
+Drizzle bootstrap требует ещё одну реальную migration capability. Это database privilege `CREATE`,
+не role attribute `CREATEDB`, не database ownership и не runtime capability.
+
+Техническое решение: не реализовывать custom fork migration runner и не возвращать owner mode.
+Dedicated migrator должен получить прямой non-grantable `CREATE ON DATABASE vico_forum`, поскольку
+это минимальная capability, фактически требуемая pinned production migration tool на каждом run.
+Credential остаётся только в protected GitHub Environment; runtime roles не получают этот grant.
+
+Перед external grant нужен отдельный reviewed repository PR:
+
+1. production privilege snapshot читает database ACL и требует ровно direct non-grantable
+   database `CREATE` для application owner/migrator; PUBLIC и localization runtime database CREATE
+   rejected;
+2. manual identity verifier дополнительно fail closed проверяет effective
+   `has_database_privilege(current_user, current_database(), 'CREATE') = true`, сохраняя exact role
+   assertion и read-only transaction;
+3. tests покрывают missing/grantable/wrong-grantee/PUBLIC/runtime database CREATE и identity
+   capability result;
+4. `PROJECT_STATE.md`, `MIGRATIONS.md` и history фиксируют failed run, отсутствие applied pending
+   schema и требуемую database CREATE capability без утверждения, что grant уже выполнен;
+5. никаких GRANT, migration, retry или deploy этот PR не выполняет.
+
+После merge потребуется отдельное явное разрешение пользователя на один owner-controlled
+`GRANT CREATE ON DATABASE vico_forum TO vico_forum_migrator` без `GRANT OPTION`, затем successful
+manual identity/capability workflow evidence на exact `main`. Только после этого Codex заново
+оценивает authorization на production migration retry. Текущий failed workflow не rerun-ить.
+
 ## Текущий статус
 
 Stage 6 открыт на уровне координации. Внешние изменения пока ограничены явно разрешённым
 dedicated migrator login/password credential и GitHub Environment secret; execution identity
 доказан successful run, а PR #132 удалил owner exception code-wide. Verifier/runtime proposal
 реализован merged PR #133. Следующий gate — явное user authorization на один production migration
-dispatch exact `main` SHA; без него migrations/deploy запрещены.
+dispatch привёл к safe failure до pending SQL из-за отсутствующей database CREATE capability.
+Следующий boundary — reviewed capability-verifier PR; retry migrations/deploy запрещён.
 
 ## Рабочий канал дальнейших действий
 
