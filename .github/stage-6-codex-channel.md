@@ -299,12 +299,40 @@ catalog, проектировать runtime grants или запускать wor
 contract до external rollout. Обязательные проверки: repository-script tests, lint, typecheck,
 unit tests, build, migration metadata/schema parity и disposable PostgreSQL suite.
 
+### Независимая проверка PR #132
+
+PR #132 проверен целиком на head `7c5bff3a7082358b793c33c69803688df9700d67` относительно
+`main` `b8bb841e29bbdcb9201a64489970f349d316ae63`: восемь commit, все семь changed files,
+итоговый diff, documentation state/history и актуальные checks.
+
+Результат соответствует contract:
+
+- workflow и verifier больше не принимают owner-exception flag;
+- privilege contract безусловно требует migration connection == application owner и negative
+  coverage permanently rejects database owner;
+- остальные least-privilege attributes/membership/ownership/grant checks сохранены;
+- `PROJECT_STATE.md`, `MIGRATIONS.md` и H-004 точно отделяют successful identity evidence от ещё
+  не применённых pending migrations;
+- full-ledger preflight остаётся fail closed и остановит current pending rollout до `db:migrate`;
+- phase design, schema expansion, runtime grants, migrations и deploy не добавлены.
+
+Поиск актуального PR head не обнаружил оставшихся executable references к
+`PRE_RELEASE_ALLOW_DATABASE_OWNER_CONNECTION` или `allowDatabaseOwnerConnection`; единственное
+упоминание flag осталось как historical/current-state documentation в `MIGRATIONS.md`.
+`git diff --check`, GitHub jobs `checks` и `database` успешны на exact reviewed head. Новых
+проблем не обнаружено.
+
+Техническое согласование PR #132 завершено: PR готов к merge пользователем. Production migration
+workflow после merge всё ещё нельзя запускать для pending schema; следующий отдельный шаг — дизайн
+pre-migration/post-migration phases, полного target schema verifier и runtime privilege contract.
+
 ## Текущий статус
 
 Stage 6 открыт на уровне координации. Внешние изменения пока ограничены явно разрешённым
 dedicated migrator login/password credential и GitHub Environment secret; execution identity
 доказан successful run. Следующий шаг — отдельный mergeable PR, удаляющий owner exception
-code-wide при сохранении fail-closed barrier; migrations/deploy остаются запрещены.
+code-wide при сохранении fail-closed barrier; PR #132 технически готов к merge,
+migrations/deploy остаются запрещены.
 
 ## Рабочий канал дальнейших действий
 
