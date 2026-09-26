@@ -27,6 +27,7 @@ jobs:
           node --test .github/scripts/migration-history.test.mjs
           node --test .github/scripts/production-privileges.test.mjs
           node --test .github/scripts/runtime-migration-evidence.test.mjs
+          node --test .github/scripts/verify-production-migration-identity.test.mjs
           node .github/scripts/verify-migration-history.mjs
       - name: Lint
         run: pnpm lint
