@@ -217,9 +217,21 @@ pending migrations в этом режиме.
 `36252243734`, attempt 3, на exact `main`
 `b8bb841e29bbdcb9201a64489970f349d316ae63`: connection identity прошла exact assertion
 `current_user = vico_forum_migrator`. После этого PR [#132](https://github.com/iliya1947/vico-forum/pull/132)
-удаляет временный database-owner exception code-wide из production migration path. Pending migrations этим изменением не применялись;
-существующий full-ledger preflight остаётся fail-closed barrier до отдельного reviewed
-pre-migration/post-migration verifier change.
+удалил временный database-owner exception code-wide из production migration path. Pending migrations
+этим изменением не применялись; PR #133 затем добавил phase-aware ledger/schema verification.
+
+Последующий authorized Stage 6 run `36265351353` на exact `main`
+`53181e30253061614c43f6b1682eaa0ec958e2d3` прошёл preflight, но остановился на
+`db:migrate` до pending SQL. Причина оказалась ещё одной ошибочной verifier assumption:
+application-object ownership и schema-level `CREATE` недостаточны для pinned Drizzle migration
+bootstrap. `drizzle-orm 0.45.2` безусловно выполняет `CREATE SCHEMA IF NOT EXISTS drizzle`,
+для чего PostgreSQL требует database-level `CREATE`. Dedicated migrator этой capability не имел.
+После failure ledger/public schema остались на `0000`–`0003`; retry не выполнялся.
+
+Corrective boundary теперь отдельно проверяет direct non-grantable database `CREATE` у
+application owner/migrator, запрещает database `CREATE` для localization runtime и `PUBLIC`,
+а manual identity check подтверждает effective capability в read-only transaction. Сам external
+grant остаётся отдельным owner-controlled действием и не считается выполненным repository change.
 
 Текущий source of truth: `docs/database/MIGRATIONS.md`.
 
