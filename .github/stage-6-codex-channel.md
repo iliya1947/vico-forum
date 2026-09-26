@@ -672,6 +672,42 @@ PR #135 основан на exact `main` `4c709d5aa82f6e93ddbad672afc10ad94c5e2e
 `e59bfc79dfde7c57c6200218a93ccfbbb7d67e28` готов к merge пользователем. Production migration
 до подтверждённого merge и следующей сверки `main` не запускать.
 
+### PR #135 merged; production migration dispatch gate
+
+PR #135 подтверждён merged в GitHub `main` как
+`b172264e4b0db1fe68dead7d7f25b49a573eb0cd`; merged head был
+`e59bfc79dfde7c57c6200218a93ccfbbb7d67e28`. Актуальные `PROJECT.md`, `PROJECT_STATE.md`,
+`PROJECT_HISTORY.md`, `ROADMAP.md`, `docs/database/MIGRATIONS.md` и
+`docs/database/HYPERDRIVE.md` перечитаны полностью.
+
+Все repository и capability prerequisites для следующего schema-first migration attempt теперь
+закрыты: exact dedicated identity и effective/direct non-grantable database `CREATE` доказаны,
+pre/post verifier phase и full ledger/schema manifest находятся в `main`, documentation evidence
+синхронизировано. Pending migrations остаются `0004`–`0020`.
+
+Следующий допустимый шаг — только после нового явного разрешения пользователя выполнить один новый
+manual dispatch workflow `Production database migration` на exact `main`
+`b172264e4b0db1fe68dead7d7f25b49a573eb0cd`. Это должен быть новый dispatch, а не rerun failed
+run `36265351353`.
+
+Разрешаемый contract:
+
+1. перед dispatch повторно подтвердить, что GitHub `main` остаётся exact указанным SHA и workflow
+   definition не изменился;
+2. выполнить ровно один `workflow_dispatch` на branch `main`;
+3. workflow обязан пройти metadata validation и fail-closed preflight до любых pending writes;
+4. при success применить pending `0004`–`0020`, затем требовать successful postflight exact full
+   ledger/manifest/ACL contract и bounded workflow summary evidence;
+5. при любом failure остановиться без rerun, manual SQL repair, deploy или additional grant;
+6. не выполнять Worker deployment, Hyperdrive/runtime grants, OAuth/bootstrap, Queues/providers
+   или другие external Stage 6 операции;
+7. после завершения передать Codex exact run ID, attempt, head SHA, job/step conclusions и bounded
+   migration evidence. Даже successful workflow ещё требует отдельного reviewed evidence-sync PR
+   до schema-dependent runtime rollout.
+
+Эта запись не запускает workflow. Production migration остаётся external forward schema mutation
+и требует явного разрешения пользователя через coordination cycle.
+
 ## Рабочий канал дальнейших действий
 
 По решению пользователя от 2026-09-26 все дальнейшие operational requests, перечни требуемого
