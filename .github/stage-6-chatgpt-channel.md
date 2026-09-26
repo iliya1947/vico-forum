@@ -584,3 +584,44 @@ clean PostgreSQL 17 suite, production schema manifest parity, Workers build и l
 (column defaults, correctness-critical triggers/functions, documentation state). Они ещё не
 считаются исправленными в рамках этой подзадачи; следующий отдельный шаг — независимо проверить
 каждое замечание как current-Stage defect и только после технического совпадения вносить изменения.
+
+
+### PR #133 Codex review reconciliation — 2026-09-26
+
+Независимо проверены три замечания Codex review к раннему commit PR #133
+(`2fc990998a`) против текущего head `9549768fc3a38ea05411c87036c9a93997c6c583`.
+
+1. **Column defaults — подтверждённый current-Stage defect.**
+   Текущий production schema snapshot/manifest сравнивает column name/type/nullability, но не
+   default expressions. Это реально ослабляет post-migration gate: например
+   `forum_topics.is_solved` имеет schema default `false`, а `forum_topics.created_at` —
+   `now()`; `DrizzleForumRepository.createTopic()` и `createTopicWithInitialPost()` эти поля
+   не передают. Потеря или изменение default может сломать production writes, при этом текущий
+   manifest verifier такой drift пропустит. Для заявленного full structural manifest это не
+   future hardening, а дефект текущей Stage 6 acceptance boundary.
+
+2. **Correctness-critical triggers/functions — подтверждённый current-Stage defect.**
+   Manifest сейчас покрывает tables/columns/PK/unique/FK/check/index, но не trigger/function
+   contract. Accepted migrations создают DB-level correctness invariants, в частности:
+   - `reject_forum_revision_update()` +
+     `forum_topic_title_revisions_immutable` /
+     `forum_post_revisions_immutable`;
+   - `authz_protect_role_identity()` +
+     `authz_protect_role_identity_trigger`;
+   - content-task binding/delete functions и triggers из `0015`–`0016`, включая
+     deferred content-binding constraint trigger.
+   Clean PostgreSQL tests уже опираются на эти database invariants (например immutable forum
+   revisions). Если trigger/function отсутствует или trigger disabled, текущий postflight может
+   принять schema, которая нарушает runtime assumptions. Поэтому это также реальный defect
+   current verifier/full-manifest scope.
+
+3. **Documentation state — замечание было корректным на reviewed commit, но уже исправлено.**
+   Текущий PR head обновляет `PROJECT_STATE.md` и `docs/database/MIGRATIONS.md`: они уже
+   описывают phase-aware pre/post contract, known-applied target prefix `0000`–`0003`,
+   full postflight manifest `0000`–`0020` и отдельное user authorization до external
+   production migration. В текущем head противоречия, указанного Codex, больше нет.
+
+Итог технического согласования: два code-level замечания Codex совпали с независимой проверкой
+ChatGPT и считаются подтверждёнными; documentation замечание закрыто уже внесёнными изменениями.
+Следующая отдельная подзадача — исправить только два подтверждённых manifest defect
+(defaults + triggers/functions), затем снова прогнать полный PR CI и выполнить whole-PR re-review.
