@@ -36,6 +36,14 @@ function fixture() {
       },
     ],
     databaseOwnerRole: "database_owner",
+    databasePrivileges: [
+      {
+        grantee: "migration",
+        grantor: "database_owner",
+        privilege: "CREATE",
+        is_grantable: false,
+      },
+    ],
     applicationOwnerRoles: ["migration"],
     memberships: [
       {
@@ -118,6 +126,45 @@ test("requires a dedicated connection to use the application owner role", () => 
     () => assertProductionPrivilegeContract(fixture(), { ...contract, migrationRole: "unexpected_login" }),
     /must use the application owner role/,
   );
+});
+
+test("requires direct non-grantable database CREATE for the migration/application owner", () => {
+  const missing = fixture();
+  missing.databasePrivileges = [];
+  assert.throws(
+    () => assertProductionPrivilegeContract(missing, contract),
+    /exactly one direct non-grantable CREATE privilege/,
+  );
+
+  const grantable = fixture();
+  grantable.databasePrivileges[0].is_grantable = true;
+  assert.throws(
+    () => assertProductionPrivilegeContract(grantable, contract),
+    /exactly one direct non-grantable CREATE privilege/,
+  );
+
+  const wrongGrantee = fixture();
+  wrongGrantee.databasePrivileges[0].grantee = "unexpected_role";
+  assert.throws(
+    () => assertProductionPrivilegeContract(wrongGrantee, contract),
+    /exactly one direct non-grantable CREATE privilege/,
+  );
+});
+
+test("rejects database CREATE for PUBLIC and runtime", () => {
+  for (const grantee of ["PUBLIC", "runtime"]) {
+    const candidate = fixture();
+    candidate.databasePrivileges.push({
+      grantee,
+      grantor: "database_owner",
+      privilege: "CREATE",
+      is_grantable: false,
+    });
+    assert.throws(
+      () => assertProductionPrivilegeContract(candidate, contract),
+      /Runtime role and PUBLIC must not have CREATE privilege/,
+    );
+  }
 });
 
 test("dedicated migration connection still enforces least privilege on the application owner", () => {
