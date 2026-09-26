@@ -1086,3 +1086,61 @@ Required next action is one manual GitHub UI dispatch by the user:
 `Actions → Production database migration → Run workflow → main → Run workflow`.
 After that ChatGPT will inspect the new run, verify exact head SHA/attempt and all step conclusions,
 extract bounded migration evidence, and stop without retry/manual repair on any failure.
+
+
+### Production database migration run completed successfully — 2026-09-26
+
+User-authorized **new** manual dispatch completed successfully.
+
+Workflow evidence:
+- workflow: `Production database migration`;
+- run ID: `36270353184`;
+- run attempt: `1`;
+- event: `workflow_dispatch`;
+- branch: `main`;
+- exact head SHA: `b172264e4b0db1fe68dead7d7f25b49a573eb0cd`;
+- overall status/conclusion: `completed / success`;
+- job `Migrate production database`: `completed / success`.
+
+All job steps on attempt 1 completed successfully:
+1. `Set up job` — success;
+2. `Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09` — success;
+3. `Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1` — success;
+4. `Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38` — success;
+5. `Run pnpm install --frozen-lockfile` — success;
+6. `Validate migration metadata` — success;
+7. `Verify production migration preflight` — success;
+8. `Apply migrations` — success;
+9. `Verify production database` — success;
+10. `Emit runtime evidence` — success;
+18. setup-node post step — success;
+19. pnpm/action-setup post step — success;
+20. checkout post step — success;
+21. `Complete job` — success.
+
+Relevant job-log evidence:
+- Drizzle reported `migrations applied successfully!`;
+- postflight reported
+  `Production database post-migration schema and privilege verification passed.`;
+- bounded evidence step wrote the workflow summary for this run/head.
+
+Migration evidence emitted by the workflow contract:
+```json
+{"workflowRunId":36270353184,"migrationSha":"b172264e4b0db1fe68dead7d7f25b49a573eb0cd","journalSha256":"35f6817042e73655bc965ed26fa729c177f99fbb10903934b1958e78420c32c9"}
+```
+
+The journal SHA-256 was independently recomputed from exact
+`drizzle/meta/_journal.json` at the workflow head. The same computation was cross-checked against
+the previously repository-owned accepted evidence revision and reproduced its known journal hash,
+confirming the hashing path. The checked-in journal newest entry at this head is
+`0020_translation_generation_permission`, and successful postflight required exact complete
+timestamp+hash ledger plus the full `0000`–`0020` schema/privilege manifest.
+
+This was a new dispatch, not a rerun of failed run `36265351353`.
+No retry, manual SQL, additional GRANT, deployment, Hyperdrive/runtime grant, OAuth/bootstrap,
+Queue/provider operation or other external Stage 6 mutation was performed after the successful
+workflow.
+
+Repository-owned `.github/runtime-migration-evidence.json` was not modified by this operational
+run and must not be treated as updated until a separate reviewed repository change is explicitly
+created and merged. Next Stage 6 action returns to Codex coordination.
