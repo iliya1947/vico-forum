@@ -1,0 +1,21 @@
+name: Neon migration identity check
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    environment: production-db
+    steps:
+      - name: Show migration database identity
+        env:
+          DATABASE_URL: ${{ secrets.NEON_MIGRATION_DATABASE_URL }}
+        run: |
+          psql "$DATABASE_URL" \
+            -X \
+            -v ON_ERROR_STOP=1 \
+            -c "SELECT current_user, session_user, current_database();"
