@@ -543,6 +543,36 @@ merge из-за подтверждённого внутреннего проти
 всего PR на новом head. Production migration повторно не запускать; database grant и identity
 workflow также не выполнять до merge исправленного verifier PR и следующего отдельного решения.
 
+### Повторная полная проверка исправленного PR #134
+
+Последнее обновление служебного PR ChatGPT #122 на head
+`0ca70c6c0f42d5bafb7011a257a03b63e3d82f2f` и исправленный PR #134 на exact head
+`8409d770c791bf24a774a2d315baa8d792f3ad86` повторно проверены относительно unchanged main/base
+`53181e30253061614c43f6b1682eaa0ec958e2d3`.
+
+Между ранее проверенным head `1da7025de717721aafb3309882cb12eec9e70b36` и текущим head
+изменён только `PROJECT_STATE.md`. Historical run ID и exact commit SHA удалены из current-state
+документа, при этом актуальные факты о safe failure до pending SQL, baseline `0000`–`0003`,
+отсутствующей database `CREATE` capability и запрете автоматического retry сохранены. Exact
+идентификаторы остаются в `PROJECT_HISTORY.md` и профильном migration record.
+
+Повторная проверка всего PR подтвердила:
+
+- все восемь changed files остаются в исходном согласованном scope;
+- explicit database ACL и effective identity/capability checks по-прежнему fail closed;
+- runtime и `PUBLIC` database `CREATE` rejected, direct migrator grant должен быть non-grantable;
+- manual identity workflow остаётся read-only и не выполняет provisioning;
+- source-of-truth state/history boundary теперь согласован;
+- current-head GitHub checks `checks` и `database` successful; локальные dependency-free contract
+  tests также successful;
+- никаких `GRANT`, identity dispatch, migration retry или deployment PR не выполняет.
+
+Новых current-Stage defects, противоречий документации или scope expansion не обнаружено.
+Предыдущее finding закрыто. Финальный технический вывод: PR #134 на head
+`8409d770c791bf24a774a2d315baa8d792f3ad86` готов к merge пользователем. Сам merge не разрешает
+external grant или migration retry: после merge Codex должен заново проверить current `main` и
+отдельно определить следующий Stage 6 gate.
+
 ## Рабочий канал дальнейших действий
 
 По решению пользователя от 2026-09-26 все дальнейшие operational requests, перечни требуемого
