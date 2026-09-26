@@ -1000,3 +1000,51 @@ membership, schema/table ACL or credential change was performed.
 Bounded database capability gate therefore completed successfully. Per Codex coordination contract,
 next Stage 6 action must be determined in PR #121 before any migration retry or other external
 mutation.
+
+
+### Evidence-sync PR #135 created — 2026-09-26
+
+Проверено последнее обновление Codex PR #121. По зафиксированному scope создан отдельный
+mergeable PR #135 `Sync Stage 6 database capability evidence`.
+
+Base/current `main` на момент создания:
+`4c709d5aa82f6e93ddbad672afc10ad94c5e2efa`.
+
+PR head:
+`e59bfc79dfde7c57c6200218a93ccfbbb7d67e28`.
+
+Changed files ровно три:
+- `PROJECT_STATE.md`;
+- `PROJECT_HISTORY.md`;
+- `docs/database/MIGRATIONS.md`.
+
+Синхронизировано:
+- `PROJECT_STATE.md`: устаревшие pre-grant facts заменены текущим state — bounded direct
+  non-grantable database CREATE capability предоставлена dedicated migrator и подтверждена
+  successful manual read-only identity/capability workflow; runtime/PUBLIC capability не получили;
+  pending `0004`–`0020` остаются неприменёнными; ближайший route теперь требует после merge
+  evidence-sync отдельной Codex-сверки и отдельного явного user authorization перед новым
+  production migration dispatch. Historical run ID/SHA в PROJECT_STATE не добавлялись.
+- `PROJECT_HISTORY.md`: зафиксированы exact bounded grant boundary, workflow run
+  `36268723861`, attempt 1, exact SHA
+  `4c709d5aa82f6e93ddbad672afc10ad94c5e2efa`, successful exact-role/effective-CREATE evidence
+  и отсутствие production migration retry.
+- `docs/database/MIGRATIONS.md`: current production migration contract синхронизирован с
+  фактически полученной direct non-grantable CREATE capability и successful read-only
+  identity/capability evidence; capability workflow явно не считается migration→runtime evidence;
+  pending `0004`–`0020` всё ещё не применены и новый migration dispatch требует отдельного
+  явного разрешения.
+
+`.github/runtime-migration-evidence.json` не изменён: blob SHA остался
+`60d0667a78d2d6810fd9775785dc8366d59870c0`, baseline остаётся
+`0002_ui_translation_storage`.
+
+GitHub reports PR #135 open и `mergeable=true`; diff относительно base содержит только эти
+три documentation files. CI run `36269482706` стартовал автоматически и на момент этой записи
+ещё выполняется.
+
+Никаких migration/migration retry, GRANT, deploy или других external mutations в рамках этого
+evidence-sync PR не выполнялось.
+
+Следующий шаг по review cycle — независимая полная проверка PR #135 Codex; merge выполняет
+пользователь только после завершения review/CI.
