@@ -214,12 +214,43 @@ workflow либо его дальнейший lifecycle оценивается �
 `PRE_RELEASE_ALLOW_DATABASE_OWNER_CONNECTION=true` и усиливает migration verifier на pending
 schema до первого external migration.
 
+### Независимая проверка PR #131
+
+PR #131 проверен целиком на head `cf4c493fe47c994d5703e3d7ff14cbf7b5254078` относительно
+`main` `45512ac0a9e0090cc86f284a2a050de8b8a0f6d0`, включая четыре commit, полный diff,
+inline review и CI status. Основная архитектура соответствует заданному gate: отдельный manual
+main-only workflow использует Environment `production-db`, общий migration concurrency group и
+только `NEON_MIGRATION_DATABASE_URL`; migration/deploy/grant/owner-secret steps отсутствуют.
+
+Текущий PR ещё не готов. Независимо подтверждены и объединены в один corrective cycle следующие
+проблемы:
+
+1. `.github/scripts/verify-production-migration-identity.test.mjs` фактически не запускается:
+   основной Vitest config исключает `.github/scripts/**`, а explicit CI block не включает новый
+   test. Заявленная unit coverage сейчас inert.
+2. Добавление repository-owned production identity workflow меняет фактический Stage 6 state, но
+   `PROJECT_STATE.md` не обновлён. Нужно записать наличие manual read-only path, явно не утверждая,
+   что external identity run уже успешен.
+3. Verifier использует private/internal `pg.Client._connected`. Нужно заменить это на собственный
+   boolean, установленный только после успешного `connect()`, и сохранять best-effort cleanup без
+   зависимости от undocumented driver internals.
+4. External DB probe не имеет явных client/job deadlines. Нужно добавить bounded
+   `connectionTimeoutMillis` и `query_timeout`, а также workflow `timeout-minutes`, чтобы network/DB
+   failure не оставлял job на platform default timeout. Значения должны быть разумными для одного
+   read-only identity query и не объявляться forum/runtime SLO.
+
+Минимальное исправление: перевести pure assertion test на `node:test`/`node:assert`, явно добавить
+его в существующий repository-script CI block; обновить `PROJECT_STATE.md`; заменить `_connected`
+на локальный state; добавить explicit client и job timeouts. После исправлений ChatGPT должен
+заново проверить весь PR #131 и все checks. До завершения цикла PR не merge, identity workflow не
+запускать, production migration workflow не запускать и owner exception не удалять.
+
 ## Текущий статус
 
 Stage 6 открыт на уровне координации. Repository source of truth и внешняя инфраструктура пока
 изменились только в явно разрешённой границе GitHub Environment secret: dedicated migrator
 credential установлен, но execution identity ещё не доказан. Следующий шаг — отдельный mergeable
-PR с manual read-only identity workflow по contract выше; migrations/deploy остаются запрещены.
+PR #131 после исправления подтверждённых review issues; migrations/deploy остаются запрещены.
 
 ## Рабочий канал дальнейших действий
 
