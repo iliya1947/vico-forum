@@ -332,3 +332,27 @@ Dedicated migration identity подтверждена успешным GitHub Ac
 которое убирает временный `PRE_RELEASE_ALLOW_DATABASE_OWNER_CONNECTION=true` owner exception
 и сохраняет/усиливает fail-closed migration verifier. Следующий технический шаг должен определить
 Codex.
+
+
+### Owner-exception removal PR #132 — 2026-09-26
+
+По последнему contract из служебного PR Codex #121 создан отдельный mergeable PR
+[#132](https://github.com/iliya1947/vico-forum/pull/132) из exact `main`
+`b8bb841e29bbdcb9201a64489970f349d316ae63`.
+
+Head PR #132: `7c5bff3a7082358b793c33c69803688df9700d67`.
+
+Изменение ограничено согласованной границей:
+- `PRE_RELEASE_ALLOW_DATABASE_OWNER_CONNECTION` удалён из обоих verifier steps production migration workflow и из verifier script;
+- production privilege contract теперь всегда требует migration connection == application owner и не имеет owner-mode exception;
+- positive owner-mode tests заменены permanent negative database-owner coverage; dangerous attributes/memberships проверки сохранены;
+- `PROJECT_STATE.md`, `docs/database/MIGRATIONS.md` и corrective H-004 в `PROJECT_HISTORY.md` обновлены фактическим successful identity evidence и состоянием после удаления exception;
+- existing full-ledger preflight сохранён без ослабления: pending migrations по-прежнему остановят workflow до `db:migrate`;
+- pre/post migration verifier phases, schema-catalog expansion, runtime grants, migrations и deployment не входят в PR.
+
+Полный diff PR #132 повторно проверен после последнего commit. GitHub CI run #988
+(`36255852504`) завершён успешно: jobs `checks` и `database` имеют conclusion `success`.
+PR открыт, non-draft и mergeable. Никакие production migrations/deploy/runtime-grant mutations
+в рамках этой задачи не выполнялись.
+
+Следующий шаг — независимая техническая проверка PR #132 Codex до решения пользователя о merge.
