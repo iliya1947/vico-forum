@@ -81,9 +81,43 @@ Target подтверждён пользователем как Neon project `la
 connection strings. Точный migration credential path и полный runtime grants contract ещё не
 считаются подтверждёнными только из наличия ролей.
 
+### Neon read-only preflight — завершённая доступная проверка
+
+После проверки актуального production workflow и PostgreSQL catalog уточнена текущая модель:
+
+- current `production-db-migrate.yml` уже выполняет verifier **до** `db:migrate`;
+  при `PRE_RELEASE_ALLOW_DATABASE_OWNER_CONNECTION=true` он допускает временный owner-mode,
+  но pending migrations должны остановиться на preflight до применения;
+- production database `vico_forum` owner: `vico_forum_owner`;
+- единый application-table owner для текущего набора таблиц:
+  `vico_forum_migrator`;
+- `vico_forum_owner` имеет membership в `vico_forum_migrator` с
+  `ADMIN OPTION=true, INHERIT=false, SET=false`, и аналогичную administrative membership
+  в `vico_forum_runtime`;
+- Neon connector session работает как database owner `vico_forum_owner`; это не доказывает
+  identity GitHub secret;
+- исторический workflow #3 (13 Sep) действительно подключался как `vico_forum_owner` и после
+  применения тогдашних migrations упал на privilege verification. Current workflow с preflight
+  устроен иначе;
+- GitHub Environment screenshot подтверждает наличие current secret
+  `NEON_MIGRATION_DATABASE_URL`, отдельного `NEON_OWNER_DATABASE_URL` и variable
+  `RUNTIME_DATABASE_ROLE=vico_forum_runtime`, но GitHub не раскрывает username secret;
+- без исполнения Environment secret нельзя доказать, что текущий
+  `NEON_MIGRATION_DATABASE_URL` уже переключён с owner на `vico_forum_migrator`.
+  Существующий production workflow для этой цели запускать не следует: он содержит mutation step
+  `db:migrate`. Временный PR #130 не был merged и не даёт dispatch workflow из default branch.
+
+Вывод: Neon control-plane/catalog baseline собран. Единственный не подтверждённый факт —
+**current identity secret `NEON_MIGRATION_DATABASE_URL`**. Его проверка требует исполнения
+GitHub Environment secret; доступный ChatGPT GitHub connector secrets/dispatch произвольного
+diagnostic job не предоставляет. Production DB mutation для получения этого факта не выполнялась.
+
+
 ## Текущий статус
 
-Neon identity/ownership baseline теперь получен read-only. Остаются: технически разобрать
-расхождение migrator metadata/catalog и подтвердить фактический dedicated migration credential
-path; получить GitHub Environment configuration evidence и Cloudflare topology/bindings evidence.
-External mutations не выполнялись.
+Neon read-only preflight доведён до фактической границы доступов: topology, database/role ownership,
+memberships и current workflow contract подтверждены; current username внутри
+`NEON_MIGRATION_DATABASE_URL` остаётся единственным недоступным read-only evidence.
+PR #130 не должен merge в `main` и может быть закрыт как неиспользованный diagnostic attempt.
+Следующая внешняя область после Neon — Cloudflare; GitHub Environment audit остаётся последним
+по согласованному с пользователем порядку.
