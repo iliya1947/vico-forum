@@ -428,13 +428,42 @@ known-applied `0003` не называется accepted evidence; full ownership
 после merge production migration workflow остаётся external mutation и не запускается без
 отдельного явного разрешения пользователя.
 
+### PR #133 merged и production migration authorization gate
+
+Актуальный GitHub `main` проверен на `53181e30253061614c43f6b1682eaa0ec958e2d3` — merge PR
+#133. Последнее обновление PR #122 на head `1241df0a47d40baa3205fb2dbfad3f3d8e8afec9`
+корректно фиксирует merge, отсутствие external migration и передачу следующего решения Codex;
+новых проблем в служебном diff не обнаружено.
+
+Repository boundary для schema-first rollout готова, но следующий шаг является внешней mutation и
+не выводится из общего «продолжить Stage 6». Требуется отдельное явное разрешение пользователя на
+один manual dispatch workflow `Production database migration` именно с `main`
+`53181e30253061614c43f6b1682eaa0ec958e2d3`.
+
+Разрешаемая операция при согласии:
+
+1. workflow проверяет metadata и preflight: exact known-applied timestamp+hash prefix through
+   `0003`, dedicated migrator, stable baseline и localization least privilege;
+2. только при successful preflight применяет pending migrations `0004`–`0020` к production-like
+   Neon database `vico_forum`;
+3. postflight требует exact full timestamp+hash ledger, full 27-table manifest, data invariants,
+   ownership и ACL contract;
+4. workflow emit-ит bounded migration evidence; никакой Worker deployment, runtime role/grant,
+   Hyperdrive binding или application traffic switch не выполняется.
+
+Это forward external schema mutation. Если preflight или postflight failed, автоматический повтор
+либо ручное исправление запрещены до отдельной диагностики. Разрешение привязано к указанному SHA;
+при изменении `main` требуется новая сверка и новое разрешение. После successful run отдельный
+repository PR фиксирует run ID, exact migration SHA, journal SHA-256 и newest migration `0020` в
+runtime evidence/state до любого schema-dependent runtime rollout.
+
 ## Текущий статус
 
 Stage 6 открыт на уровне координации. Внешние изменения пока ограничены явно разрешённым
 dedicated migrator login/password credential и GitHub Environment secret; execution identity
 доказан successful run, а PR #132 удалил owner exception code-wide. Verifier/runtime proposal
-согласован с обязательной terminology correction в PR #122. Ledger hash validation исправлена и
-подтверждена; PR #133 verifier phases/full manifest готов к merge, migrations/deploy пока запрещены.
+реализован merged PR #133. Следующий gate — явное user authorization на один production migration
+dispatch exact `main` SHA; без него migrations/deploy запрещены.
 
 ## Рабочий канал дальнейших действий
 
