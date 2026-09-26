@@ -205,6 +205,32 @@ test("requires runtime and application owner roles to be distinct from the datab
   assert.throws(() => assertProductionPrivilegeContract(applicationOwner, contract), /Application owner role must not own/);
 });
 
+test("supports a phase-specific application table ownership set", () => {
+  const candidate = fixture();
+  candidate.ownedObjects.push({
+    schema: "public",
+    name: "forum_topics",
+    kind: "table",
+    owner: "migration",
+  });
+  assert.doesNotThrow(() =>
+    assertProductionPrivilegeContract(candidate, {
+      ...contract,
+      applicationTables: [...applicationTables, "forum_topics"],
+    }),
+  );
+
+  candidate.ownedObjects.find(({ name }) => name === "forum_topics").owner = "someone_else";
+  assert.throws(
+    () =>
+      assertProductionPrivilegeContract(candidate, {
+        ...contract,
+        applicationTables: [...applicationTables, "forum_topics"],
+      }),
+    /own public\.forum_topics/,
+  );
+});
+
 test("rejects ambiguous application ownership", () => {
   const candidate = fixture();
   candidate.applicationOwnerRoles = ["migration", "other_owner"];
