@@ -4629,3 +4629,65 @@ not been performed yet.
 
 No Cloudflare/Neon/GitHub Environment mutation, DB credential/default change, Hyperdrive operation,
 deploy, OAuth/bootstrap or Queue/provider action was performed.
+
+
+### Repository preparation PR #140 — CI green and ready for independent review
+
+Mergeable PR: #140 `Prepare Stage 6 web runtime wiring`.
+
+Exact repository identity:
+
+- base: `main` at `d4c82a3729e9cdda89b6122ea1438dfb53150a12`;
+- head branch: `chatgpt/stage-6-web-runtime-prep`;
+- head SHA: `a41f59d000f56f9cdbe66b44ab64f29461de69b6`;
+- PR remains open, non-draft and mergeable;
+- exact diff scope: 11 files, 213 additions / 70 deletions, branch `ahead 11 / behind 0`.
+
+Full PR diff was re-reviewed after PR creation against current `main`, the Stage 6 task,
+current source-of-truth docs and Codex's accepted preparation scope. No current-Stage defect or
+unrelated change was found.
+
+The bounded change remains exactly:
+
+1. current Stage 6 web-role/grant/verifier and Cloudflare Gate 0 documentation sync;
+2. one shared caller-side web PostgreSQL boundary for Better Auth, forum and authorization:
+   `connectionTimeoutMillis=3000`, `query_timeout=7000`;
+3. external `lock_timeout=2s` / `statement_timeout=5s` remain planned docs-only role defaults,
+   not repository session SETs and not accepted external calibration;
+4. production Worker no longer injects the Hyperdrive-backed content-generation status reader
+   while the generation action runtime remains disabled;
+5. focused deadline/source-wiring tests;
+6. current sole `HYPERDRIVE` binding/config remains unchanged. No `WEB_HYPERDRIVE`,
+   resource ID, second local override, credential/default mutation, ACL change, migration,
+   dependency, provider/Queue/OAuth/bootstrap work, Cloudflare/Neon mutation or deploy is included.
+
+Authoritative PR CI:
+
+- workflow: `CI`;
+- run ID: `36326348303`;
+- head: exact `a41f59d000f56f9cdbe66b44ab64f29461de69b6`;
+- conclusion: `success`;
+- job `checks` ID `108639746059`: `success`;
+- job `database` ID `108639746131`: `success`.
+
+Every executed required step completed successfully. In particular:
+
+- accepted migration-history/provisioning contract checks;
+- lint;
+- typecheck;
+- unit/route tests;
+- production build;
+- migration metadata;
+- Drizzle schema parity;
+- clean PostgreSQL 17 migration/constraint suite;
+- production schema-manifest parity;
+- runtime privilege probes;
+- split-authority web relation-provisioning probes;
+- Workers build;
+- existing single-binding local Hyperdrive smoke.
+
+The earlier local clone limitation is therefore superseded for verification by completed
+authoritative PR CI; no local success is separately claimed.
+
+No merge was performed. Per `AGENTS.md`, PR #140 now goes to Codex for neutral independent full
+review before any merge or external credential/role-default/Hyperdrive choreography.
