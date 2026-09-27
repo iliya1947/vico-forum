@@ -1589,3 +1589,134 @@ one domain-bounded role (Option A) or split further inside the same Worker (Opti
 exact repository verifier representation for that choice.
 
 No external mutation or mergeable implementation PR was created by this audit.
+
+
+### Runtime privilege provisioning-preparation PR #137 — implementation + verification
+
+Latest Codex service-channel decision from PR #121 was executed as a repository-only change.
+
+Created mergeable PR #137 `Add Stage 6 runtime privilege verifier` from exact unchanged `main`
+`61b9e809cb39d2f554bf052e00d0bf6f0f66ec53`.
+
+Final PR head:
+`5108799e4ad47f829ac6e9ff17b2ad945a384f77`.
+
+Changed files are exactly nine:
+- `.github/scripts/runtime-privileges.mjs`;
+- `.github/scripts/runtime-privileges.test.mjs`;
+- `.github/scripts/verify-production-runtime-privileges.mjs`;
+- `.github/scripts/verify-runtime-privilege-probes.mjs`;
+- `.github/workflows/ci.yml`;
+- `.github/workflows/production-runtime-privileges.yml`;
+- `PROJECT_STATE.md`;
+- `docs/database/HYPERDRIVE.md`;
+- `docs/database/MIGRATIONS.md`.
+
+No migration SQL, Worker binding topology/runtime wiring, dependency, production role/grant,
+Hyperdrive, deployment, OAuth, Queue/provider or other external mutation was performed.
+
+#### Accepted repository contract implemented
+
+Named capabilities are separate from environment-specific role names:
+- existing `localization-read` keeps exact SELECT on
+  `locales`, `ui_translations`, `ui_translation_bundles`;
+- future `web` covers only current HTTP Better Auth/forum/dynamic-authorization/persisted
+  content-presentation operations;
+- content generation remains disabled, so web receives no
+  `authz_permissions`, translation-task/generation-head/request-budget or UI-localization grants.
+
+The exact web relation matrix matches the Codex-approved scope:
+- Better Auth `user/session/account/verification/rate_limit`: SELECT/INSERT/UPDATE/DELETE;
+- `forum_categories/forum_sections`: SELECT;
+- `forum_topics/forum_posts`: SELECT/INSERT/UPDATE;
+- immutable forum revision tables: SELECT/INSERT;
+- persisted forum content translation tables: SELECT;
+- `authz_roles`: SELECT/INSERT/UPDATE/DELETE;
+- `authz_role_permissions`: SELECT/INSERT/DELETE;
+- `authz_user_roles`: SELECT/INSERT/UPDATE;
+- `authz_user_permission_overrides`: SELECT/INSERT/UPDATE/DELETE;
+- `authz_mutation_lock`: SELECT/UPDATE.
+
+Runtime role verifier now checks:
+- distinct roles, LOGIN and effective database CONNECT;
+- no dangerous role attributes;
+- no effective/direct database CREATE;
+- no inherited memberships, unsafe inbound memberships or runtime-owned
+  schemas/tables/sequences/views/functions;
+- exact public-schema USAGE for each runtime role, no schema CREATE;
+- exact relation ACLs without grant options;
+- no runtime column/direct-function/sequence/default grants;
+- no PUBLIC relation/column/direct-function/database-CREATE privileges;
+- PUBLIC schema USAGE may be present non-grantable or absent (both safe); any other PUBLIC schema
+  privilege is rejected;
+- only the already accepted hard-wired-equivalent PUBLIC function EXECUTE/type USAGE default
+  semantics are tolerated.
+
+The separate manual `Production runtime privilege verification` workflow is main-only and
+read-only. It uses the existing protected `production-db` environment and
+`NEON_MIGRATION_DATABASE_URL`, with existing `RUNTIME_DATABASE_ROLE` plus future
+`WEB_RUNTIME_DATABASE_ROLE`. It is not coupled to production migration workflow and was not
+dispatched in this task.
+
+#### Review/CI defects found and corrected before acceptance
+
+Three current-Stage verifier/test defects were found during PR verification:
+
+1. Static ownership test changed `databaseOwnerRole` without isolating stale fixture
+   memberships, so it failed on the wrong assertion. CI run `36301003628` and the initial
+   automated Codex review independently identified the same problem. The candidate fixture now
+   removes unrelated memberships before testing the database-owner invariant.
+
+2. Clean PostgreSQL can have `pg_database.datacl IS NULL`; using
+   `aclexplode('{}'::aclitem[])` fails because the empty ACL array is dimensionless. Runtime
+   snapshot now uses effective database defaults through
+   `acldefault('d', database.datdba)`.
+
+3. Clean CI database has no PUBLIC schema ACL, while production baseline may expose non-grantable
+   PUBLIC USAGE. Runtime verifier originally required PUBLIC USAGE unconditionally. It now accepts
+   the stricter absent-PUBLIC-USAGE state or exact non-grantable public.USAGE, while rejecting
+   CREATE/other PUBLIC schema privileges.
+
+The initial automated Codex review also identified that LOGIN alone is insufficient for a
+Hyperdrive origin identity when database CONNECT is revoked. The final verifier explicitly requires
+effective database CONNECT for both runtime roles and has a negative unit case for its absence.
+
+#### Final CI/evidence
+
+Final CI run `36301325287` on exact head
+`5108799e4ad47f829ac6e9ff17b2ad945a384f77` completed `success`.
+
+`checks` = success:
+- accepted migration-history/static contracts;
+- runtime privilege unit contract;
+- lint;
+- typecheck;
+- full tests;
+- build;
+- migration metadata;
+- Drizzle schema parity.
+
+`database` = success:
+- clean PostgreSQL 17 migrations/integration suite;
+- production schema manifest parity;
+- **runtime privilege probes**;
+- Workers build;
+- local Hyperdrive smoke.
+
+The runtime privilege probe creates disposable test runtime roles, applies the exact proposed ACL,
+checks the catalog contract and executes representative positive operations/row locks plus negative
+cross-domain, forbidden DELETE/immutable-update and DDL probes. The script refuses non-`*_test`
+databases.
+
+Final whole-PR self-review confirms:
+- PR remains exactly 9 scoped files;
+- base/main is still exact
+  `61b9e809cb39d2f554bf052e00d0bf6f0f66ec53`;
+- PR is open, non-draft and mergeable, zero commits behind main;
+- no current-Stage issue remains from ChatGPT review;
+- two automated Codex review comments were made against an earlier head; both findings have been
+  addressed, but the latest final head has not yet received the required independent whole-PR
+  Codex re-review.
+
+Next review-cycle action: Codex independently re-review the complete current PR #137 at head
+`5108799e4ad47f829ac6e9ff17b2ad945a384f77`. Merge remains user-controlled.
