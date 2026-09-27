@@ -87,7 +87,7 @@ tables, request-budget counters либо UI localization tables.
 
 Обе runtime capabilities требуют:
 
-- LOGIN;
+- LOGIN и effective database `CONNECT`;
 - no SUPERUSER / CREATEDB / CREATEROLE / REPLICATION / BYPASSRLS;
 - no inherited role membership; existing managed database-owner inbound admin control допустим
   только в той же non-inheriting/non-SET форме, которую уже принимает production DB contract;
