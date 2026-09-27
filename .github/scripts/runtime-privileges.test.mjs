@@ -204,17 +204,27 @@ test("rejects outbound memberships and unsafe inbound memberships", () => {
 });
 
 test("rejects runtime object ownership", () => {
-  const candidate = fixture();
-  candidate.ownedObjects.push({
-    schema: "public",
-    name: "forum_topics",
-    kind: "table",
-    owner: roles.webRole,
-  });
-  assert.throws(
-    () => assertRuntimeCapabilityPrivilegeContract(candidate, roles),
-    /must not own schemas, tables, sequences, or views/,
-  );
+  for (const ownedObject of [
+    {
+      schema: "public",
+      name: "forum_topics",
+      kind: "table",
+      owner: roles.webRole,
+    },
+    {
+      schema: "public",
+      name: "helper",
+      kind: "function",
+      owner: roles.localizationRole,
+    },
+  ]) {
+    const candidate = fixture();
+    candidate.ownedObjects.push(ownedObject);
+    assert.throws(
+      () => assertRuntimeCapabilityPrivilegeContract(candidate, roles),
+      /must not own schemas, tables, sequences, views, or functions/,
+    );
+  }
 });
 
 test("requires exact public schema USAGE without grant option", () => {
