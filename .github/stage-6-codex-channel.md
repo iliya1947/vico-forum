@@ -1660,6 +1660,38 @@ web runtime boundary — добавить shared deadlines и fail-closed genera
 evidence. Текущий вывод: **PR #140 пока не готов к merge**. External credential/default/Hyperdrive
 operations также запрещены.
 
+### Повторная независимая полная проверка исправленного PR #140
+
+Последнее обновление служебного PR ChatGPT #122 на head
+`8635acc573a4c94c125c9cbba58605732645a32f` и исправленный PR #140 повторно проверены целиком.
+Текущий exact head PR #140 — `74332a7b665bafd6100ffac157da307e2cc3cf91`; base/current `main`
+остаётся `d4c82a3729e9cdda89b6122ea1438dfb53150a12`.
+
+Correction от предыдущего reviewed head меняет только `PROJECT_STATE.md`: repository preparation
+теперь корректно описана как уже присутствующая **в change set** без ложного pre-claim merge,
+external acceptance или deploy; первым future action указана отдельно разрешаемая credential /
+role-default / cache-disabled Hyperdrive choreography, затем отдельные binding/routing и deploy
+gates. Подтверждённая проблема закрыта.
+
+Полный повторный review всех 11 files подтвердил прежний вывод по остальному scope:
+
+- shared web Client/Pool caller deadlines exact `3000/7000ms`, `max: 1` сохранён для authorization;
+- Better Auth, forum и authorization используют shared boundary, injection seams не удалены;
+- disabled production generation-status DB capability не inject-ится и ACL не расширены;
+- current single `HYPERDRIVE`, ID/local override, migrations, dependencies, CI topology, runtime ACL
+  matrix и external state не изменены;
+- state/history/runbooks различают accepted role/grants/verifier от отсутствующих credential,
+  server defaults, new Hyperdrive, binding/routing и deployment.
+
+GitHub CI run `36327163142` на exact corrected head завершился `success`; jobs
+`checks=success` (`108642023850`) и `database=success` (`108642023679`), все executed steps passed.
+PR open, non-draft, mergeable и не merged. Новых current-Stage defects, contradictions или unrelated
+scope expansion не обнаружено.
+
+Финальный технический вывод: **PR #140 на head
+`74332a7b665bafd6100ffac157da307e2cc3cf91` готов к merge пользователем**. До merge и следующей
+post-merge сверки credential/default/Hyperdrive external choreography запрещена.
+
 ## Рабочий канал дальнейших действий
 
 По решению пользователя от 2026-09-26 все дальнейшие operational requests, перечни требуемого
