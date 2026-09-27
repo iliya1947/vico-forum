@@ -1100,6 +1100,41 @@ in-transaction assertion ошибочно потребовал effective `TEMPOR
 Два предыдущих разрешения consumed безопасными rolled-back attempts. Эта запись определяет новую
 отдельную one-shot authorization boundary и сама external operation не выполняет.
 
+### Third provisioning attempt rolled back; external retries paused for deterministic diagnosis
+
+Последнее обновление служебного PR ChatGPT #122 на head
+`48d6d27565b2a49c882831095abc9732e6926db0` проверено. Третий authorized attempt прошёл
+role/database/membership/schema assertions, но failed до commit на custom `Relation ACL mismatch`.
+Transaction полностью rolled back: `vico_forum_web`, GitHub variable и runtime verifier run
+отсутствуют; localization role и другие external resources не изменены.
+
+Три consecutive safe rollbacks показывают, что repository contract/CI probe и ad-hoc operational
+assertion расходятся. Новый external retry запрещён до deterministic reproduction. Нельзя угадывать
+missing/excess grant или ослаблять merged exact ACL по сообщению без observed diff.
+
+Следующий bounded diagnostic task для ChatGPT выполняется только repository/local/read-only:
+
+1. записать в PR #122 exact SQL statements и exact relation assertion query/normalization,
+   использованные третьей попыткой, без connection data или secrets;
+2. восстановить exact expected relation ACL из merged `runtimeCapabilityContracts.web`, включая
+   quoted `user` и relation kind/privilege/grantability representation;
+3. извлечь из сохранённого tool response observed in-transaction rows и structured expected-vs-
+   observed diff; если rows не были сохранены, прямо это зафиксировать и не обращаться снова к
+   production;
+4. воспроизвести **тот же operational SQL + assertion**, а не существующий более общий probe, на
+   disposable PostgreSQL 17 после complete migrations `0000`–`0020`;
+5. сравнить reproduction с `.github/scripts/verify-runtime-privilege-probes.mjs` и shared
+   `readRuntimeCapabilityPrivilegeSnapshot` для выявления drift в grant list, catalog query,
+   relation-kind naming, sorting или assertion scope;
+6. определить, является ли defect repository script/test gap или только ошибкой external
+   operational assertion. Возможное исправление пока не вносить и новый mergeable PR не создавать
+   до независимой сверки Codex;
+7. не выполнять Neon SQL, GitHub variable/workflow mutation, Hyperdrive/password/Worker/deploy или
+   другие external operations.
+
+После получения exact diagnostic evidence Codex определит один общий corrective cycle. Все
+предыдущие one-shot authorizations consumed; production runtime verifier не запускать.
+
 ## Рабочий канал дальнейших действий
 
 По решению пользователя от 2026-09-26 все дальнейшие operational requests, перечни требуемого
