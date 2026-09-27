@@ -891,6 +891,39 @@ function-`EXECUTE`, `TRIGGER`, `REFERENCES`, schema/database `CREATE` privileges
 Role deadlines и exact new Hyperdrive binding name/ID относятся к последующему reviewed runtime
 wiring + external calibration step; их нельзя молча унаследовать от localization read path.
 
+### Независимая полная проверка PR #137
+
+Последнее обновление служебного PR ChatGPT #122 на head
+`9329a8dab98ff680226de48f59a29968933aaa1c` и provisioning-preparation PR #137 проверены
+независимо. PR основан на exact `main` `61b9e809cb39d2f554bf052e00d0bf6f0f66ec53`;
+reviewed head — `5108799e4ad47f829ac6e9ff17b2ad945a384f77`.
+
+Полная проверка всех девяти changed files подтвердила:
+
+- named `localization-read` и `web` contracts точно соответствуют согласованной relation/privilege
+  matrix и не включают deferred translation planning/background capabilities;
+- snapshot/assertion fail closed проверяет distinct LOGIN roles, effective database `CONNECT`,
+  отсутствие effective/direct database `CREATE`, dangerous attributes, memberships, ownership,
+  grant options и неожиданных schema/relation/column/sequence/function/default/PUBLIC privileges;
+- исправления clean-database ACL defaults, optional safe PUBLIC schema USAGE и effective CONNECT
+  присутствуют на current head; ранние automated review findings закрыты;
+- disposable PostgreSQL 17 probe защищён `*_test` guard, применяет exact grants, выполняет positive
+  table/row-lock probes и negative cross-domain/write/delete/DDL probes;
+- manual `Production runtime privilege verification` отделён от migration workflow, main-only,
+  read-only, использует protected `production-db` Environment и ещё не запускался;
+- docs/state называют contract planned и не утверждают external role/grant/binding/deployment;
+- Worker runtime wiring, migrations и dependencies не изменены; external mutations отсутствуют.
+
+Локально successful: syntax checks трёх scripts и 13/13 pure contract tests. GitHub CI run
+`36301325287` на exact head полностью successful: `checks=success`, `database=success`, включая
+clean PostgreSQL 17 runtime privilege probes, full tests/build и Workers smoke.
+
+Новых current-Stage defects, source-of-truth contradictions или scope expansion не обнаружено.
+Финальный технический вывод: PR #137 на head
+`5108799e4ad47f829ac6e9ff17b2ad945a384f77` готов к merge пользователем. External PostgreSQL role/
+grant creation, Hyperdrive provisioning, verifier dispatch и deployment до post-merge сверки `main`
+не выполнять.
+
 ## Рабочий канал дальнейших действий
 
 По решению пользователя от 2026-09-26 все дальнейшие operational requests, перечни требуемого
