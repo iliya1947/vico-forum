@@ -386,8 +386,7 @@ runtime roles/Hyperdrive writes и другие schema-dependent runtime capabil
 
 - real Google OAuth configuration и smoke;
 - server-controlled bootstrap первого authorization manager;
-- usable web runtime credential + database-role deadline defaults + cache-disabled Hyperdrive
-  binding/Worker routing;
+- usable web runtime credential + cache-disabled Hyperdrive binding/Worker routing;
 - отдельные translation background/maintenance runtime capabilities;
 - Cloudflare Queues и реальные translation providers;
 - final preview/private-data isolation recheck для write-capability rollout;
@@ -402,8 +401,10 @@ external credential/default configuration или deploy.
 
 1. Этот change set добавляет только manual main-only protected one-time path для bootstrap
    credential существующей `vico_forum_web`; merge сам credential не создаёт. После отдельного
-   explicit authorization выполнить credential bootstrap → новый cache-disabled web Hyperdrive →
-   safe metadata evidence.
+   explicit authorization выполнить единственный bootstrap с bounded 30-minute password lease →
+   новый cache-disabled web Hyperdrive → safe metadata evidence → owner-finalization lease в
+   `VALID UNTIL 'infinity'`. Если evidence/finalization не завершены до expiry, credential не
+   продлевается: `PASSWORD NULL`, cleanup созданного unbound resource и stop без rerun.
 2. После successful choreography отдельным reviewed PR подключить реальный web binding/routing.
 3. Затем только по явному разрешению выполнить deploy, real-path smoke/calibration и следующие
    Stage 6 OAuth/bootstrap/Queue gates.
