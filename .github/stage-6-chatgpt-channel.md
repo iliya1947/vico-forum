@@ -5339,3 +5339,53 @@ No external secret was created, no workflow was dispatched, and no Neon/Cloudfla
 Hyperdrive, Worker binding/routing, deploy, migration or ACL-matrix change was performed.
 
 PR #141 CI/full review is a separate next subtask; no readiness claim is made by this record.
+
+
+### PR #141 full review and CI accepted
+
+PR #141 was rechecked end-to-end after creation against Codex's agreed repository-only bootstrap
+scope, current `main` and current PostgreSQL 17/GitHub Actions behavior.
+
+During review two current-Stage implementation defects were found and corrected on the PR branch:
+
+- the first workflow revision accidentally contained literal backslashes before GitHub expression
+  markers, which would have corrupted checkout/env values at dispatch time;
+- initial CI run `36338492325` failed only at lint because of one
+  `no-useless-assignment` violation in the compensation path.
+
+The review also strengthened the existing secret-safety requirement without broadening the
+operation: production preflight now fail-closes not only on
+`log_parameter_max_length_on_error=0` but also on disabled statement/duration sampling paths
+(`log_statement=none`, `log_duration=off`,
+`log_min_duration_statement=-1`, `log_min_duration_sample=-1`,
+`log_transaction_sample_rate=0`) before a SCRAM verifier is sent as a bind parameter.
+Current production read-only inspection confirmed those exact values, with
+`scram_iterations=4096`. PostgreSQL 17 documentation confirms that
+`log_parameter_max_length_on_error=0` excludes bind values from error messages and that SCRAM
+verifiers use the accepted
+`SCRAM-SHA-256$iterations:salt$StoredKey:ServerKey` format.
+
+Docs were also corrected so the already externally accepted `2s/5s` role defaults are no longer
+labelled merely planned.
+
+Final PR #141 state after the corrections:
+
+- base remains exact current `main`
+  `6f262bf4374440e36096fd315a9c3ff4f42eba27`;
+- head `ee8b7ea35fbfb5806ed587ea22ab86f7162e253d`;
+- mergeable=true, behind main=0;
+- changed files: 8; no migrations, dependencies, ACL-matrix changes, Worker binding/routing or
+  external resource changes;
+- CI run `36338774077` completed successfully:
+  - `checks`: success, including history-contract tests, lint, typecheck, unit tests, build,
+    migration metadata and schema parity;
+  - `database`: success, including clean PostgreSQL 17 migrations, runtime privilege probes,
+    split-authority relation provisioning, new web credential bootstrap success + forced
+    compensation probe, Workers build and local Hyperdrive smoke.
+
+Full post-fix review found no remaining current-Stage defect in PR #141. No external bootstrap
+secret was created and the production bootstrap workflow was not dispatched. Neon/Cloudflare state
+therefore remains unchanged.
+
+Next process step is independent Codex review of PR #141. The user still owns merge. External
+credential bootstrap remains separately authorization-gated after merge.
