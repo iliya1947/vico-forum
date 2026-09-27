@@ -181,8 +181,10 @@ Runtime privilege acceptance отделена от production migration workflow
 
 Runtime verifier требует для обоих roles LOGIN без dangerous attributes, отсутствие inherited
 memberships/ownership, `public.USAGE` без `CREATE`, отсутствие database `CREATE`, grant
-options, column/sequence/direct-function privileges и unexpected default/PUBLIC grants. Existing
-managed database-owner inbound admin control допускается только в уже принятой non-inheriting /
+options, column/sequence/direct-function privileges и unexpected default/PUBLIC grants. PUBLIC
+default boundary сохраняет только уже принятую hard-wired-equivalent function `EXECUTE` / type
+`USAGE` semantics; runtime roles default grants не получают. Existing managed database-owner
+inbound admin control допускается только в уже принятой non-inheriting /
 non-SET форме.
 
 Этот repository contract **не** означает, что web PostgreSQL role, grants или Hyperdrive binding
