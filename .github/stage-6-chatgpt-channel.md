@@ -5569,3 +5569,52 @@ dispatch:
   routing, deploy, OAuth/bootstrap/Queue/provider mutation is included.
 
 No external mutation was performed by this readiness check.
+
+
+### Full leased credential + Hyperdrive gate authorized; Part 1 preflight partially complete
+
+The user explicitly authorized the complete leased credential + Hyperdrive gate including the
+reviewed compensation boundary.
+
+Part 1 fresh read-only preflight was started before any mutation.
+
+Passed GitHub/repository checks:
+
+- exact current `main` is `2915b1982f8295064b0ad2f7a5aa324d4c923316`;
+- merged `wrangler.jsonc` still contains only the existing
+  `HYPERDRIVE -> aa1fb9feeff44a23ae12d88eefceb942` binding and no
+  `WEB_HYPERDRIVE`;
+- dispatch history contains zero runs for
+  `.github/workflows/production-web-credential-bootstrap.yml`, so the one-shot first
+  run/first attempt remains unused.
+
+Passed Neon production checks on exact branch/database:
+
+- `current_user=session_user=vico_forum_owner`, database `vico_forum`;
+- `vico_forum_web` remains LOGIN + NOINHERIT with no
+  SUPERUSER/CREATEDB/CREATEROLE/REPLICATION/BYPASSRLS;
+- owner is the only inbound runtime-role member and retains
+  ADMIN=true / INHERIT=false / SET=false;
+- exact database-role defaults remain `lock_timeout=2s`,
+  `statement_timeout=5s`;
+- exact database/schema effective boundary remains CONNECT yes / CREATE no and public.USAGE
+  non-grantable;
+- direct relation ACL inspection via catalog `aclexplode` shows exact 50 web privilege pairs,
+  zero grantable pairs; localization runtime remains exactly 3 SELECT pairs, zero non-SELECT and
+  zero grantable pairs;
+- PostgreSQL 17/UTF8/logging/SCRAM preconditions required by the merged workflow remain exact:
+  bind-parameter-on-error length 0, statement logging none, duration off, min duration/sample -1,
+  transaction sample rate 0, SCRAM iterations 4096;
+- Neon control-plane metadata still reports `vico_forum_web.authentication_method=no_login`,
+  consistent with the intended pre-bootstrap state.
+
+Cloudflare account-state preflight cannot be completed from the currently connected toolset:
+there is no Cloudflare/Hyperdrive connector or account API available to ChatGPT, and plugin
+discovery returned no Cloudflare Hyperdrive plugin. Public web access cannot read authenticated
+account state. Therefore the gate remains stopped before secret creation/bootstrap dispatch.
+
+The only remaining Part 1 evidence is a fresh read-only Cloudflare Dashboard check of:
+(1) Hyperdrive list still contains only the accepted localization resource and no
+`vico-forum-web`; (2) production Worker still has only the existing localization Hyperdrive
+binding and no `WEB_HYPERDRIVE`; (3) preview/base isolation remains zero private DB
+bindings/vars/secrets. No external mutation has started.
