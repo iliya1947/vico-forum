@@ -1325,6 +1325,42 @@ isolated worktree, что является environment limitation и покры�
 `2b4f7ee33c3f011a8d997eac34f9a18f53f9350d` готов к merge пользователем. Owner phase, GitHub
 variable, provisioning workflow dispatch и read-only verifier до post-merge сверки запрещены.
 
+### PR #139 merged; post-merge reconciliation и следующий external gate
+
+PR #139 смержен пользователем. Актуальный GitHub `main` — merge commit
+`d4c82a3729e9cdda89b6122ea1438dfb53150a12`; его tree
+`197f730fcd9666211f26c173d7777b48771d4346` точно совпадает с независимо проверенным tree head
+`2b4f7ee33c3f011a8d997eac34f9a18f53f9350d`. Merge не внёс дополнительных файлов или изменений.
+Последнее доступное обновление служебного PR ChatGPT #122 остаётся на проверенном head
+`6f67d34123d064bad449a13dab36dd2905524448`; нового технического расхождения с merged `main` нет.
+
+Source-of-truth после merge подтверждает фактическое состояние: repository-owned split-authority
+relation-provisioning path готов, но external `vico_forum_web`, relation ACL, protected
+`WEB_RUNTIME_DATABASE_ROLE`, Hyperdrive binding и Worker wiring отсутствуют. Следующая операция уже
+является production database mutation и поэтому не выводится из факта merge или общей команды
+«продолжить Stage 6»: требуется отдельное явное разрешение пользователя.
+
+Следующий bounded gate после такого разрешения — **только owner phase**:
+
+1. ChatGPT сверяет exact `main` SHA, target database/branch и прежние owner/migrator/localization
+   invariants; отсутствие `vico_forum_web` и web relation ACL обязательно;
+2. через owner-controlled production connection одной transaction создаёт `vico_forum_web` как
+   `LOGIN INHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS PASSWORD NULL`;
+3. выдаёт только direct non-grantable database `CONNECT` и schema `USAGE`, подтверждает automatic
+   owner membership и owner-authorized boundary, затем commit;
+4. фиксирует identity/conclusion, password-null command evidence и compact ACL summary в PR #122
+   без connection data или secrets;
+5. на любом assertion/SQL failure выполняет rollback; если failure обнаружен после commit — только
+   заранее согласованный compensating owner `DROP ROLE vico_forum_web` с evidence отсутствия role и
+   неизменности baseline, без in-place исправлений или retry;
+6. после successful owner phase **останавливается**: protected GitHub variable не устанавливает,
+   migrator provisioning workflow, read-only verifier, Hyperdrive/password/Worker/deploy/OAuth/
+   Queue/provider operations не запускает.
+
+После evidence owner phase Codex отдельно проверит результат и только затем определит следующий
+gate: protected variable + один migrator provisioning workflow dispatch. До явного разрешения
+пользователя owner phase и все последующие external actions запрещены.
+
 ## Рабочий канал дальнейших действий
 
 По решению пользователя от 2026-09-26 все дальнейшие operational requests, перечни требуемого
