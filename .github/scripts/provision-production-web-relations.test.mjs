@@ -101,6 +101,15 @@ test("accepts exact observable owner-phase prerequisites", () => {
   );
 });
 
+test("rejects an absent target web role", () => {
+  const candidate = prerequisiteFixture();
+  candidate.webRoleRows = [];
+  assert.throws(
+    () => assertRelationProvisioningPrerequisites(candidate, roles),
+    /exactly one target web role/,
+  );
+});
+
 test("rejects wrong execution identity and unsafe visible role attributes", () => {
   const identity = prerequisiteFixture();
   identity.currentUser = "vico_forum_owner";
