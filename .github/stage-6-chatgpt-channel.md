@@ -3861,3 +3861,269 @@ No mergeable PR or DB mutation is justified by this subtask alone.
 Next preflight subtask after explicit user continuation: combine subtasks 1–4 into the minimal
 reviewed Stage 6 ordering, identify the exact repository-preparation PR scope and the external gates
 that must remain separately authorized.
+
+
+### Runtime-wiring preflight — subtask 5/5: minimal reviewed ordering and repository scope
+
+This entry completes the five-part bounded read-only runtime-wiring preflight requested by Codex.
+No Cloudflare/Neon/GitHub external mutation, credential operation, deploy or mergeable PR was
+performed.
+
+Exact repository target remains:
+
+`main = d4c82a3729e9cdda89b6122ea1438dfb53150a12`.
+
+The ordering below is a ChatGPT technical proposal for independent Codex review; under the project
+review protocol it is not yet an accepted implementation instruction.
+
+#### Newly identified current-Stage documentation drift
+
+Current `main` still states in `PROJECT_STATE.md` that external web PostgreSQL role/grants and
+protected `WEB_RUNTIME_DATABASE_ROLE` are absent.
+
+That statement is now stale relative to the already accepted Stage 6 evidence:
+
+- `vico_forum_web` exists;
+- owner phase committed successfully;
+- protected `WEB_RUNTIME_DATABASE_ROLE=vico_forum_web` was set;
+- exact 50 web relation privilege pairs were provisioned;
+- production runtime privilege verifier run `36318081404` completed successfully for both
+  localization and web roles.
+
+What is still genuinely absent is:
+
+- usable web-role password/credential;
+- web-role database-specific deadline defaults;
+- separate cache-disabled web Hyperdrive;
+- web Worker binding/routing;
+- deployed web runtime acceptance.
+
+This is a **current Stage 6 source-of-truth drift hypothesis**, not future groundwork. It should be
+independently checked by Codex and corrected in the next mergeable documentation/runtime-preparation
+change if confirmed. ChatGPT did not edit `main` documentation here.
+
+#### Gate 0 — resolve private Cloudflare topology before any runtime-code merge
+
+Subtask 2 remains the one unresolved evidence gap.
+
+Before merging any runtime-affecting wiring-preparation or binding change, obtain authenticated
+read-only Cloudflare evidence for the current `vico-forum` Worker/Build project:
+
+- current production branch/build trigger state;
+- whether preview deployments/builds are enabled;
+- which bindings/resources preview inherits;
+- current deployed `HYPERDRIVE` binding/config presence;
+- current localization Hyperdrive caching state;
+- whether a dashboard-only configuration differs from checked-in `wrangler.jsonc`.
+
+Reason: the project contract requires ordinary `main` merges not to imply production promotion,
+and preview must not receive production web write/private-data capability. Repository history says
+native Git integration is disabled, but the project explicitly requires fresh Stage 6 verification
+because that private setting is not stored in Git.
+
+If production/preview auto-deploy is active, stop and resolve deployment/preview isolation before
+merging runtime code. Do not treat repository history as fresh control-plane proof.
+
+#### Gate 1 — one small repository wiring-preparation PR, no external binding ID
+
+After Gate 0 proves merges cannot unexpectedly promote the Worker, create one mergeable
+wiring-preparation PR from exact current `main`.
+
+Minimal scope:
+
+1. **Synchronize factual Stage 6 state**
+   - update `PROJECT_STATE.md` and relevant database/runbook history so the accepted web role,
+     grants, protected variable and successful runtime verifier are recorded as external facts;
+   - continue to state clearly that password, web Hyperdrive, Worker binding and deployed
+     acceptance are not complete.
+
+2. **Define the web client deadline boundary**
+   - add one shared web PostgreSQL client/pool profile corresponding to the reviewed initial
+     calibration:
+     `connectionTimeoutMillis=3000ms`,
+     `query_timeout=7000ms`;
+   - keep server-side `lock_timeout=2s` and `statement_timeout=5s` external role defaults, not
+     hard-coded session SETs;
+   - tests must verify caller-side ordering/values and preserve the existing exact timeout
+     classification semantics.
+
+3. **Make the dormant generation-status boundary fail closed at Worker composition**
+   - while `contentGenerationActionContext` remains disabled, the HTTP Worker must not prepare to
+     route `createHyperdriveContentGenerationStatusReader` through either accepted HTTP runtime
+     capability;
+   - do not widen web/localization ACL and do not enable generation.
+
+4. **Prepare tests/structure for two connection capabilities without inventing an external ID**
+   - no second Hyperdrive ID is written yet;
+   - no Cloudflare resource/binding is created by this PR;
+   - no provider/Queue/OAuth/bootstrap scope expansion;
+   - adapter public/domain contracts remain unchanged.
+
+The implementation method remains open to Codex. Existing auth/forum/authz/content-presentation
+constructors already have injectable Client/Pool boundaries, so a large refactor is not required.
+
+Readiness for this PR:
+
+- full CI green;
+- current one-binding local smoke remains green;
+- no `WEB_HYPERDRIVE` ID/config is guessed;
+- content generation remains disabled;
+- documentation no longer claims the already-provisioned web role/grants are absent.
+
+#### Gate 2 — separately authorized production web credential + server deadline defaults
+
+Only after Gate 1 review/merge, perform a new explicit external authorization gate against exact
+production role `vico_forum_web`.
+
+The gate should atomically establish:
+
+- a usable generated password/credential for `vico_forum_web`;
+- database-specific role defaults for database `vico_forum`:
+  `lock_timeout=2s`,
+  `statement_timeout=5s`.
+
+Required post-check must prove, without revealing the password:
+
+- role attributes/ACL/membership are otherwise unchanged;
+- direct database/schema/relation capability remains the already accepted contract;
+- exact database-role settings are present;
+- localization role/settings remain unchanged.
+
+Secret material must not be written to service PRs, logs or repository files.
+
+Failure before commit => rollback. Any post-commit recovery/rotation path requires its own reviewed
+contract; do not improvise cleanup that drops the already accepted web grants.
+
+#### Gate 3 — separately authorized new cache-disabled web Hyperdrive
+
+After the web credential/defaults are accepted, create a **new** Hyperdrive configuration rather
+than mutating the accepted localization configuration.
+
+Proposed safe naming:
+
+- external Hyperdrive resource: a web-specific `vico-forum` name;
+- Worker binding name: **`WEB_HYPERDRIVE`**.
+
+No existing repository contract already reserves a different web binding name, so
+`WEB_HYPERDRIVE` is a proposal for Codex review, not an accepted name yet.
+
+Required external properties:
+
+- same production Neon database target;
+- origin user exact `vico_forum_web`;
+- SQL query caching disabled;
+- existing localization Hyperdrive remains untouched;
+- no credential value exposed in evidence.
+
+Record only safe resource identity/config metadata needed by the subsequent repository wiring PR.
+
+If private Cloudflare topology from Gate 0 shows preview inheritance, this resource must not be made
+available to preview/private-data paths until preview is explicitly isolated or disabled.
+
+#### Gate 4 — atomic binding + Worker routing PR
+
+Once the real web Hyperdrive ID exists, perform binding configuration and application routing in
+**one mergeable PR**, because splitting a binding from its code routing would create an
+unnecessarily incoherent intermediate state.
+
+Proposed routing contract:
+
+**Existing `HYPERDRIVE` / localization-read**
+- locale registry;
+- persistent UI translation store/bundles.
+
+**New `WEB_HYPERDRIVE` / web**
+- Better Auth;
+- forum reader/writer;
+- dynamic authorization;
+- persisted topic-title/post-body translation presentation.
+
+**Neither accepted HTTP binding**
+- content-generation status/task path while generation remains disabled.
+
+This PR should also:
+
+- wire the shared web Client/Pool caller deadlines from Gate 1 into Better Auth/forum/authz/content
+  presentation;
+- add the returned real Hyperdrive ID to `wrangler.jsonc`;
+- update local CI with
+  `CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_WEB_HYPERDRIVE` pointing to the same disposable
+  local PostgreSQL 17 test database;
+- preserve the existing
+  `CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE`;
+- add focused tests proving capability routing/fail-closed generation behavior;
+- update `docs/database/HYPERDRIVE.md` / `PROJECT_STATE.md` to distinguish
+  repository-wired-but-not-yet-deployed state from external deployment acceptance.
+
+No migration, ACL widening, provider, Queue, OAuth bootstrap or unrelated refactor belongs in this
+PR.
+
+#### Gate 5 — explicit deployment + real web Hyperdrive acceptance
+
+Deployment remains a separate external mutation requiring explicit user authorization.
+
+Before deploy:
+
+- recheck exact merged `main`;
+- recheck preview isolation/build topology;
+- confirm the required Worker secrets/environment needed by the currently merged application are
+  present and appropriate for the target candidate.
+
+Do not silently expand this database-wiring gate into Google OAuth setup merely because the Worker
+contains Better Auth. If required auth secrets are not ready, stop and let Codex order the separate
+OAuth gate before full application deployment.
+
+After deployment, the web runtime acceptance should prove at minimum:
+
+- existing localization reads still use the localization capability;
+- public forum reads use the web capability successfully;
+- fresh auth/session/authorization DB access works through cache-disabled web Hyperdrive once the
+  relevant auth environment is ready;
+- controlled forum write + immediate read observes fresh data;
+- authorization next-request freshness remains intact;
+- origin sessions through the web Hyperdrive observe
+  `lock_timeout=2s` / `statement_timeout=5s`;
+- caller-side connection/query timeout behavior is bounded;
+- controlled short lock contention validates the initial 2s web lock policy;
+- no task/generation relation access is available through the web capability;
+- preview cannot exercise production web write/private-data capability.
+
+The initial `3s / 2s / 5s / 7s` profile is accepted only after this real path calibration; adjust
+from measured evidence if needed.
+
+#### Minimal sequence
+
+Proposed shortest safe order:
+
+1. fresh read-only Cloudflare topology/preview evidence;
+2. repository wiring-preparation + factual evidence-sync PR;
+3. explicit web credential + DB role deadline-default gate;
+4. explicit new cache-disabled web Hyperdrive provisioning;
+5. atomic real binding + Worker routing PR using the returned config ID;
+6. explicit deploy + real Hyperdrive/runtime smoke/calibration;
+7. Codex reviews evidence and only then orders the next Stage 6 slice (OAuth/bootstrap or another
+   remaining external gate).
+
+This keeps every irreversible/external action separately authorized, avoids widening the accepted
+localization capability, and avoids creating a guessed binding in Git before the external resource
+exists.
+
+#### Preflight completion
+
+All five requested read-only preflight subtasks are now complete to the extent allowed by the
+available tools.
+
+Resolved:
+
+- adapter-to-capability mapping;
+- generation-status mismatch/fail-closed requirement;
+- exact current Wrangler/Hyperdrive platform support;
+- initial web deadline profile;
+- proposed minimal repository/external sequencing.
+
+Still unresolved by tool access:
+
+- fresh authenticated private Cloudflare Build/preview/binding/caching topology.
+
+No mergeable PR should be created from these findings until Codex independently reviews the
+completed preflight and either confirms the proposal or records a technical disagreement.
