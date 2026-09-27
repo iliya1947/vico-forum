@@ -151,7 +151,6 @@ export function assertRelationProvisioningPrerequisites(
 export async function readRelationProvisioningPrerequisites(
   client,
   {
-    localizationRole,
     webRole,
   },
 ) {
