@@ -5497,3 +5497,75 @@ bootstrap/Neon/Cloudflare mutation was executed.
 
 Next process step is Codex independent re-review of final PR #141. User remains sole merger and
 external credential choreography remains separately authorization-gated after merge.
+
+
+### Leased credential + Hyperdrive UI readiness confirmed; explicit authorization requested
+
+Latest Codex PR #121 head `8b65230d60ff7d55319cbc2fcf68696f504d54d9` was checked after user merge of
+PR #141. Current GitHub `main` is `2915b1982f8295064b0ad2f7a5aa324d4c923316`, the merge commit
+for reviewed PR #141.
+
+Pre-authorization readiness checks:
+
+- merged `.github/workflows/production-web-credential-bootstrap.yml` is present on default
+  branch and still uses `workflow_dispatch`;
+- current repository dispatch history contains **zero** runs for
+  `Bootstrap production web credential`, so its repository-owned
+  `GITHUB_RUN_NUMBER=1 / GITHUB_RUN_ATTEMPT=1` one-shot path remains unused;
+- current Neon read-only catalog check on production `vico_forum` executes as
+  `current_user=session_user=vico_forum_owner`; `vico_forum_web` remains LOGIN + NOINHERIT with
+  no SUPERUSER/CREATEDB/CREATEROLE/REPLICATION/BYPASSRLS, `rolvaliduntil IS NULL`, and exact
+  database-role settings `lock_timeout=2s`, `statement_timeout=5s`;
+- current Neon control-plane metadata still reports `vico_forum_web.authentication_method=no_login`,
+  consistent with the intended pre-bootstrap PASSWORD NULL state;
+- no repository merge action can have created a Hyperdrive, binding or secret; mutable Cloudflare
+  resource/topology state must still be rechecked read-only as gate step 1 immediately after
+  authorization.
+
+UI-path availability was rechecked against current official product documentation and the
+already-used project control-plane paths:
+
+1. **GitHub Environment secret UI:** repository Settings → Environments → `production-db` →
+   Environment secrets supports adding the temporary
+   `WEB_RUNTIME_DATABASE_PASSWORD_BOOTSTRAP`; GitHub documents that environment secrets are only
+   exposed to jobs referencing that environment.
+2. **GitHub manual dispatch UI:** Actions supports manual execution for a default-branch
+   `workflow_dispatch` workflow. The merged bootstrap workflow is therefore dispatchable without
+   local tooling.
+3. **Cloudflare Hyperdrive UI:** current Cloudflare documentation supports Dashboard →
+   Hyperdrive → Create Configuration using an origin connection string; Hyperdrive supports
+   `caching.disabled=true`, and the project has already used/inspected the dashboard Hyperdrive
+   controls. The gate will create exactly one unbound `vico-forum-web` and verify caching disabled
+   before accepting it.
+4. **Neon SQL Editor UI:** the current Neon Console exposes SQL Editor and allows SQL execution on
+   the selected branch/database. The same owner-assisted SQL Editor path already successfully
+   applied and verified the production `2s/5s` defaults. It is ready for the post-Hyperdrive
+   owner-only `VALID UNTIL 'infinity'` finalization transaction.
+5. **Cleanup UI paths:** the temporary GitHub Environment secret can be removed after acceptance;
+   Cloudflare exposes delete for a Hyperdrive configuration in its dashboard settings/Danger zone,
+   providing the reviewed failure cleanup path for an unbound resource.
+
+Conclusion: all required browser/UI paths for the complete leased credential + Hyperdrive
+choreography are available. No partial execution has started. Because the 30-minute password lease
+starts only when the bootstrap workflow commits the credential, the sequence will be started only
+after explicit authorization and after a fresh read-only exact-state preflight.
+
+Requested explicit authorization must cover the complete bounded gate, not merely a bootstrap
+dispatch:
+
+- create exactly one temporary `production-db` Environment secret from a user-generated password
+  kept out of chat/PR/tool output;
+- dispatch `Bootstrap production web credential` exactly once with confirmation
+  `web-credential-bootstrap-confirmed`, with no rerun;
+- on success, create exactly one unbound cache-disabled Cloudflare Hyperdrive
+  `vico-forum-web` for direct Neon `vico_forum` / `vico_forum_web`;
+- after accepted safe Hyperdrive evidence while the lease is active, execute the reviewed
+  owner-controlled Neon SQL Editor finalization to `VALID UNTIL 'infinity'`;
+- delete the temporary GitHub secret and record sanitized evidence;
+- if failure occurs after credential success, first revoke with `PASSWORD NULL`, then delete any
+  created unbound Hyperdrive and temporary secret; no retry/rerun;
+- ambiguous finalization is reconciled read-only via `pg_roles.rolvaliduntil`;
+- stop after success or compensation. No `wrangler.jsonc`, `WEB_HYPERDRIVE`, Worker binding,
+  routing, deploy, OAuth/bootstrap/Queue/provider mutation is included.
+
+No external mutation was performed by this readiness check.
