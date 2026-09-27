@@ -1879,3 +1879,65 @@ authorization are required before another external provisioning attempt.
 Technical point for the next coordination cycle: the required owner administrative-control
 invariant should be verified after `CREATE ROLE`; in this PostgreSQL 17 execution context,
 re-issuing the same owner membership grant is not a valid step.
+
+
+### Corrected web-role provisioning retry — failed safely, transaction rolled back
+
+User explicitly authorized exactly one corrected repeat of the bounded web-role provisioning gate
+defined by Codex PR #121.
+
+Before the attempt, exact state was revalidated:
+
+- GitHub `main` remained
+  `4cef0297bb41ff3a18ee0ad82315aef940146596`;
+- Neon project `late-cell-18916701`, production branch
+  `br-square-flower-b2q6a3sy`, database `vico_forum`;
+- current/session/database owner = exact `vico_forum_owner`;
+- owner is non-superuser with `CREATEROLE`, so PostgreSQL 17 automatically creates the
+  owner membership for a role created by this user as
+  `ADMIN TRUE, SET FALSE, INHERIT FALSE`;
+- `vico_forum_web` remained absent;
+- existing `vico_forum_runtime` remained exact localization-only:
+  direct non-grantable CONNECT, public-schema USAGE, SELECT only on
+  `locales`, `ui_translations`, `ui_translation_bundles`, expected owner membership.
+
+The one corrected retry used a single transaction and intentionally omitted the explicit
+owner-membership `GRANT`. The transaction attempted:
+- passwordless safe-attribute `CREATE ROLE vico_forum_web`;
+- exact reviewed direct database/schema/relation ACL;
+- fail-closed in-transaction contract assertions.
+
+The transaction failed before commit with:
+
+`Effective database privilege mismatch for vico_forum_web`.
+
+No retry or in-place correction was attempted.
+
+Read-only rollback/root-cause evidence after failure:
+
+- `vico_forum_web` does not exist;
+- Neon role list is unchanged:
+  `vico_forum_owner`, `vico_forum_runtime`, `vico_forum_migrator`;
+- PUBLIC database ACL is exact non-grantable `CONNECT` + `TEMPORARY`;
+- existing `vico_forum_runtime` has no direct `TEMPORARY`, but
+  `has_database_privilege(..., 'TEMPORARY') = true` through PUBLIC.
+
+Therefore the failed in-transaction assertion was stricter than the merged repository contract:
+it required effective `TEMPORARY=false` for `vico_forum_web`, while merged
+`runtime-privileges.mjs` only forbids **direct** runtime `TEMPORARY` and explicitly permits
+non-grantable PUBLIC `TEMPORARY` (or its absence). Under the current production PUBLIC ACL,
+effective TEMPORARY is expected even though the runtime role has no direct TEMPORARY grant.
+
+The single transaction rolled back completely; no role or ACL mutation persisted.
+
+Because this authorized retry failed:
+- `WEB_RUNTIME_DATABASE_ROLE` was not created/updated;
+- `Production runtime privilege verification` was not dispatched;
+- no Hyperdrive/password/credential/Worker binding/deployment/OAuth/Queue/provider operation was
+  performed.
+
+This explicit one-retry authorization is consumed. A further external attempt requires a new
+Codex-reviewed operation and new explicit user authorization. The next operation should keep the
+merged repository contract authoritative: check direct runtime database ACL for absence of
+TEMPORARY/CREATE/grant options while allowing effective TEMPORARY inherited from accepted PUBLIC
+database ACL.
