@@ -4205,3 +4205,24 @@ Together with the earlier preview evidence:
 Remaining Gate 0 checks are the configuration details of `vico-forum-registry`: origin role
 identity and query-cache state, plus deployment/version/route visibility sufficient to detect
 dashboard-only drift.
+
+
+### Cloudflare Gate 0 — evidence 3: production binding matches checked-in localization topology
+
+Fresh owner-provided Cloudflare dashboard evidence was reviewed for Worker `vico-forum`.
+
+Observed from Settings → Bindings with the `Production` tab selected:
+
+- one connected production binding is shown;
+- type: `Hyperdrive`;
+- binding name: `HYPERDRIVE`;
+- bound Hyperdrive resource name: `vico-forum-registry`;
+- no second web Hyperdrive binding is present in the visible production bindings list;
+- no setting was changed while collecting this evidence.
+
+This matches the checked-in `wrangler.jsonc` topology at the binding-name level: current runtime
+has one localization Hyperdrive binding named `HYPERDRIVE`. It also confirms that the future web
+binding has not been provisioned/wired yet.
+
+The screenshot does not expose the Hyperdrive resource's origin username or query-cache
+configuration. Those remain the next read-only Gate 0 evidence items.
