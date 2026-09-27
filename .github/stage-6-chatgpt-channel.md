@@ -5634,3 +5634,39 @@ A fresh GitHub read-only check immediately afterward confirms:
 
 The password lease has therefore not started yet. Next action is the single manual dispatch with
 exact confirmation `web-credential-bootstrap-confirmed`. No rerun is permitted.
+
+
+### Full gate Part 2: one-shot bootstrap failed; compensation state verified
+
+Authorized one-shot production bootstrap was dispatched exactly once:
+
+- workflow: `Bootstrap production web credential`;
+- run ID `36345841051`;
+- workflow run number `1`, attempt `1`;
+- exact main head `2915b1982f8295064b0ad2f7a5aa324d4c923316`;
+- pre-Environment one-shot guard completed successfully;
+- bootstrap job reached `Bootstrap exact web runtime credential` and completed **failure**;
+- no rerun was performed and none is authorized by this gate.
+
+Workflow logging intentionally emitted only the bounded generic failure and did not disclose
+credential/verifier details. The Cloudflare Hyperdrive creation step was not started because the
+workflow did not succeed.
+
+Immediate read-only Neon reconciliation after failure:
+
+- observed at PostgreSQL server time `2026-09-27T19:51:40.587Z`;
+- exact role `vico_forum_web` remains LOGIN + NOINHERIT, with no
+  SUPERUSER/CREATEDB/CREATEROLE/REPLICATION/BYPASSRLS;
+- `pg_authid.rolpassword IS NULL = true`;
+- `pg_roles.rolvaliduntil IS NULL`;
+- exact accepted database-role defaults remain
+  `lock_timeout=2s`, `statement_timeout=5s`;
+- Neon control-plane metadata again reports `authentication_method=no_login`;
+- its metadata `updated_at` moved to the workflow failure timestamp, but no secret material is
+  observable.
+
+Therefore the required fail-closed post-failure state is verified: no usable web credential
+remains. Accepted role/defaults/grants remain the durable baseline. Because the one-shot workflow
+has now consumed run number 1, it must never be rerun or redispatched as a recovery mechanism.
+The temporary GitHub Environment secret must be deleted, then the gate stops and requires a new
+reviewed recovery path. No Hyperdrive/binding/routing/deploy mutation was started.
