@@ -1533,6 +1533,54 @@ Node/action и future `pg` SSL-mode warnings не являются defect тек
 Этот read-only audit не повторяет уже закрытую ACL-проверку: его цель — доказать binding topology,
 adapter routing, preview isolation и deadlines до первого web credential/Hyperdrive mutation.
 
+### Runtime-wiring preflight reviewed; fresh Cloudflare topology remains Gate 0
+
+Последнее обновление служебного PR ChatGPT #122 на head
+`6096efce2836dadf38755ced87fb4cd10fd2070c` и весь five-part preflight проверены независимо по
+current `main`, Worker composition, database adapters, accepted ACL contracts и database source of
+truth.
+
+Подтверждено:
+
+- existing `HYPERDRIVE` должен остаться localization-only для registry и UI translation reads;
+- future cache-disabled web capability должна обслуживать Better Auth, forum, dynamic
+  authorization и persisted forum-content translation presentation;
+- generation-status adapter читает четыре task/generation relations, отсутствующие в обеих
+  accepted HTTP capabilities; пока generation action disabled, он должен быть fail-closed и не
+  routed ни через одну из них, без ACL widening;
+- exact Wrangler `4.130.0`/Hyperdrive model поддерживает отдельную cache-disabled configuration,
+  несколько bindings и per-binding local overrides; reuse/widening localization pool не требуется;
+- initial web calibration profile `connection=3s`, `lock=2s`, `statement=5s`, `query=7s` сохраняет
+  корректный порядок deadlines и разумно соответствует текущим bounded auth/forum/authz paths, но
+  остаётся initial profile до real-path measurement;
+- `PROJECT_STATE.md` теперь фактически stale: external web role/grants/protected variable и
+  successful verifier уже существуют, тогда как web credential, role deadline defaults,
+  Hyperdrive/binding/routing/deployment всё ещё отсутствуют.
+
+Один sequencing refinement обязателен до external credential gate: создание usable web password и
+нового Hyperdrive нельзя оставлять как бессрочно разнесённые независимые состояния. После
+repository preparation потребуется единая отдельно авторизованная bounded choreography:
+credential + role defaults → новый cache-disabled Hyperdrive → safe metadata evidence; при failure
+до usable Hyperdrive должен существовать заранее проверенный credential-null/rotation recovery,
+который не удаляет accepted role/ACL. Exact secret-transfer и recovery contract определяется после
+Cloudflare topology evidence, не сейчас.
+
+Текущий **Gate 0** остаётся единственным следующим шагом и полностью read-only: ChatGPT должен
+организовать authenticated evidence фактического Cloudflare `vico-forum` control plane:
+
+1. Workers Builds production branch/trigger и auto-deploy state;
+2. preview enablement/branch filters и какие bindings/resources/secrets доступны preview;
+3. deployed Worker versions/routes и соответствие checked-in config без раскрытия secrets;
+4. existing localization `HYPERDRIVE` binding/config presence, origin role identity и query-cache
+   state;
+5. dashboard-only drift относительно `wrangler.jsonc`.
+
+Если auto-deploy активен либо preview наследует production private/write capability, preflight
+останавливается и фиксирует exact safe finding без mutations. До Gate 0 evidence запрещены
+mergeable wiring-preparation PR, password/deadline changes, Hyperdrive provisioning, binding config
+и deploy. Технические details остаются в PR #121; дальнейшую control-plane координацию выполняет
+ChatGPT и записывает sanitized evidence в PR #122.
+
 ## Рабочий канал дальнейших действий
 
 По решению пользователя от 2026-09-26 все дальнейшие operational requests, перечни требуемого
