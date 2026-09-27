@@ -3056,3 +3056,117 @@ No external mutation occurred in this turn:
 
 The user's authorization has therefore not been consumed by the intended control-plane mutation.
 A capable GitHub control-plane execution path is required before this exact gate can proceed.
+
+
+### Migrator relation-grant gate — successful; exact run and ACL evidence recorded
+
+The user completed the previously authorized owner-controlled GitHub steps:
+
+- protected Environment variable `WEB_RUNTIME_DATABASE_ROLE=vico_forum_web`;
+- one manual dispatch of `Provision production web relation grants`;
+- exact confirmation input `owner-phase-password-null-confirmed`.
+
+GitHub evidence:
+
+- workflow: `.github/workflows/production-web-relation-provision.yml`;
+- workflow ID: `368254678`;
+- run ID: **`36316236607`**;
+- run number: `1`;
+- run attempt: `1`;
+- event: `workflow_dispatch`;
+- branch: `main`;
+- exact head SHA:
+  `d4c82a3729e9cdda89b6122ea1438dfb53150a12`;
+- status: `completed`;
+- conclusion: **`success`**;
+- started: `2026-09-27T11:35:44Z`;
+- updated/completed: `2026-09-27T11:36:12Z`;
+- protected deployment environment: `production-db`.
+
+Exact job:
+
+- job ID: `108611362591`;
+- name: `Provision production web relation grants`;
+- conclusion: **success**.
+
+All reported job steps completed successfully:
+
+1. Set up job;
+2. pinned checkout;
+3. pinned pnpm setup;
+4. pinned Node setup;
+5. `pnpm install --frozen-lockfile`;
+6. **Provision exact web relation grants**;
+7. post Node setup;
+8. post pnpm setup;
+9. post checkout;
+10. complete job.
+
+No rerun occurred.
+
+The two GitHub UI annotations visible on the successful run are runner/tooling lifecycle notices:
+Node.js 20 deprecation for an action runtime and a future `ubuntu-latest` image transition.
+They did not fail the current Stage 6 gate and do not indicate a current provisioning-contract
+defect. Treat them as future CI-maintenance signals only unless they become active failures in the
+current supported runner window.
+
+#### Read-only production ACL post-check
+
+After the successful workflow, ChatGPT performed one read-only Neon catalog check against the
+same production target. No SQL mutation was executed.
+
+Observed web role:
+
+- `vico_forum_web`;
+- LOGIN=true;
+- NOINHERIT (`rolinherit=false`);
+- SUPERUSER/CREATEDB/CREATEROLE/REPLICATION/BYPASSRLS all false.
+
+Observed automatic owner membership:
+
+- `vico_forum_owner -> vico_forum_web`;
+- `ADMIN TRUE`;
+- `INHERIT FALSE`;
+- `SET FALSE`.
+
+Observed owner-phase ACL remains exact:
+
+- direct database ACL:
+  `CONNECT, grantable=false` only;
+- schema ACL:
+  `public.USAGE, grantable=false` only.
+
+Observed relation-grant result:
+
+- expected relation privilege pairs: **50**;
+- actual relation privilege pairs: **50**;
+- missing pairs: **0**;
+- excess pairs: **0**;
+- grantable pairs: **0**.
+
+Existing localization capability remains unchanged:
+
+- `locales.SELECT`;
+- `ui_translation_bundles.SELECT`;
+- `ui_translations.SELECT`;
+- all non-grantable.
+
+This confirms that the split-authority relation-grant phase executed successfully under the reviewed
+production contract and produced the exact merged web ACL matrix without widening grant options or
+disturbing localization ACL.
+
+Per the bounded-gate stop condition, ChatGPT did **not**:
+
+- dispatch `Production runtime privilege verification`;
+- create/rotate any web database password or Hyperdrive credential;
+- provision/modify Hyperdrive;
+- wire Worker bindings;
+- deploy;
+- configure OAuth;
+- create Queue/provider resources;
+- perform any retry or ad-hoc correction.
+
+The authorized protected-variable + one-dispatch gate is consumed successfully.
+
+Next action belongs to Codex: independently review this evidence and define the next separately
+authorized Stage 6 gate.
