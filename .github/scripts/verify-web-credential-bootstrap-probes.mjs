@@ -1,0 +1,171 @@
+import assert from "node:assert/strict";
+import pg from "pg";
+
+import {
+  BOOTSTRAP_CONFIRMATION_TOKEN,
+  EXPECTED_WEB_ROLE,
+  bootstrapProductionWebCredential,
+  deriveScramSha256Verifier,
+  revokeWebCredential,
+} from "./bootstrap-production-web-credential.mjs";
+
+const databaseUrl = process.env.DATABASE_URL;
+assert.ok(databaseUrl, "DATABASE_URL is required");
+
+const parsed = new URL(databaseUrl);
+const databaseName = decodeURIComponent(parsed.pathname.replace(/^\//, ""));
+assert.ok(
+  databaseName.endsWith("_test"),
+  "Web credential bootstrap probes may run only against a disposable *_test database",
+);
+
+const admin = new pg.Client({ connectionString: databaseUrl });
+let connected = false;
+const ownerPassword = "VicoCiOwnerPassword-2026-Only!";
+const webPassword = "VicoCiWebBootstrapPassword-2026!";
+const ownerRole = "vico_forum_owner";
+
+function connectionStringFor(role, password) {
+  const target = new URL(databaseUrl);
+  target.username = role;
+  target.password = password;
+  return target.toString();
+}
+
+async function assertPasswordNull(client) {
+  const result = await client.query(
+    "SELECT rolpassword IS NULL AS password_is_null FROM pg_catalog.pg_authid WHERE rolname = $1",
+    [EXPECTED_WEB_ROLE],
+  );
+  assert.equal(result.rows[0]?.password_is_null, true);
+}
+
+try {
+  await admin.connect();
+  connected = true;
+
+  const roleState = await admin.query(
+    "SELECT count(*)::integer AS count FROM pg_catalog.pg_roles WHERE rolname = ANY($1::name[])",
+    [[ownerRole, "vico_forum_runtime", EXPECTED_WEB_ROLE]],
+  );
+  assert.equal(
+    roleState.rows[0]?.count,
+    3,
+    "Credential bootstrap probes require the production-like runtime roles from the preceding split-authority probe",
+  );
+
+  const iterations = await admin.query(
+    "SELECT current_setting('scram_iterations')::integer AS iterations",
+  );
+  const ownerVerifier = deriveScramSha256Verifier(ownerPassword, {
+    iterations: iterations.rows[0].iterations,
+  });
+  await admin.query("BEGIN");
+  await admin.query(
+    "SELECT pg_catalog.set_config('vico.ci_owner_scram_verifier', $1, true)",
+    [ownerVerifier],
+  );
+  await admin.query(
+    "DO $vico_ci_owner_password$ DECLARE v_verifier text := pg_catalog.current_setting('vico.ci_owner_scram_verifier', true); BEGIN EXECUTE pg_catalog.format('ALTER ROLE %I PASSWORD %L', 'vico_forum_owner', v_verifier); END $vico_ci_owner_password$;",
+  );
+  await admin.query("COMMIT");
+  await admin.query(
+    'ALTER ROLE "' + EXPECTED_WEB_ROLE + '" IN DATABASE "' + databaseName
+      + '" SET lock_timeout = \'2s\'',
+  );
+  await admin.query(
+    'ALTER ROLE "' + EXPECTED_WEB_ROLE + '" IN DATABASE "' + databaseName
+      + '" SET statement_timeout = \'5s\'',
+  );
+  await admin.query('ALTER ROLE "' + EXPECTED_WEB_ROLE + '" PASSWORD NULL');
+  await assertPasswordNull(admin);
+
+  const ownerDatabaseUrl = connectionStringFor(ownerRole, ownerPassword);
+  await bootstrapProductionWebCredential(
+    {
+      ownerDatabaseUrl,
+      webRole: EXPECTED_WEB_ROLE,
+      password: webPassword,
+      confirmation: BOOTSTRAP_CONFIRMATION_TOKEN,
+    },
+    {
+      expectedDatabase: databaseName,
+      allowNonNeon: true,
+      credentialLeaseSeconds: 2,
+    },
+  );
+
+  const webClient = new pg.Client({
+    connectionString: connectionStringFor(EXPECTED_WEB_ROLE, webPassword),
+  });
+  await webClient.connect();
+  try {
+    const identity = await webClient.query(
+      "SELECT current_user AS current_user, current_database() AS current_database",
+    );
+    assert.deepEqual(identity.rows[0], {
+      current_user: EXPECTED_WEB_ROLE,
+      current_database: databaseName,
+    });
+  } finally {
+    await webClient.end();
+  }
+
+  const leased = await admin.query(
+    "SELECT rolvaliduntil IS NOT NULL AS has_expiry, rolvaliduntil > pg_catalog.clock_timestamp() AS active FROM pg_catalog.pg_roles WHERE rolname = $1",
+    [EXPECTED_WEB_ROLE],
+  );
+  assert.deepEqual(leased.rows[0], {
+    has_expiry: true,
+    active: true,
+  });
+
+  await new Promise((resolve) => setTimeout(resolve, 2500));
+
+  const expired = await admin.query(
+    "SELECT rolvaliduntil <= pg_catalog.clock_timestamp() AS expired FROM pg_catalog.pg_roles WHERE rolname = $1",
+    [EXPECTED_WEB_ROLE],
+  );
+  assert.equal(expired.rows[0]?.expired, true);
+
+  const expiredClient = new pg.Client({
+    connectionString: connectionStringFor(EXPECTED_WEB_ROLE, webPassword),
+    connectionTimeoutMillis: 2_000,
+  });
+  await assert.rejects(expiredClient.connect(), /password authentication failed/i);
+  await expiredClient.end().catch(() => {});
+
+  await revokeWebCredential(ownerDatabaseUrl, {
+    expectedDatabase: databaseName,
+    allowNonNeon: true,
+  });
+  await assertPasswordNull(admin);
+
+  await assert.rejects(
+    bootstrapProductionWebCredential(
+      {
+        ownerDatabaseUrl,
+        webRole: EXPECTED_WEB_ROLE,
+        password: webPassword,
+        confirmation: BOOTSTRAP_CONFIRMATION_TOKEN,
+      },
+      {
+        expectedDatabase: databaseName,
+        allowNonNeon: true,
+        async verifyCredential() {
+          throw new Error("forced post-commit verification failure");
+        },
+      },
+    ),
+    /Production web credential bootstrap failed/,
+  );
+  await assertPasswordNull(admin);
+
+  console.log(
+    "Web credential bootstrap PostgreSQL 17 success and compensation probes passed.",
+  );
+} finally {
+  if (connected) {
+    await admin.end();
+  }
+}

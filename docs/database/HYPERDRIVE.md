@@ -44,9 +44,9 @@ capabilities:
 
 Production role names остаются environment-specific inputs. Current production evidence использует
 `vico_forum_runtime` через `RUNTIME_DATABASE_ROLE` и уже provisioned `vico_forum_web` через
-protected `WEB_RUNTIME_DATABASE_ROLE`. Exact web relation grants и shared runtime privilege
-verification приняты, но usable web credential, отдельный web Hyperdrive и Worker routing ещё не
-созданы.
+protected `WEB_RUNTIME_DATABASE_ROLE`. Exact web relation grants, shared runtime privilege
+verification и server-side `lock_timeout=2s` / `statement_timeout=5s` defaults приняты, но usable
+web credential, отдельный web Hyperdrive и Worker routing ещё не созданы.
 
 Reviewed web relation ACL:
 
@@ -132,6 +132,57 @@ Fresh auth/session/permission и read-after-write paths должны испол�
 Hyperdrive. Cloudflare допускает несколько Hyperdrive configurations/bindings для одной
 application; exact web binding name/ID и forum/auth deadline defaults выбираются в отдельном
 runtime-wiring step и этим contract не задаются.
+
+### One-time web credential bootstrap preparation
+
+Repository содержит manual main-only workflow
+`.github/workflows/production-web-credential-bootstrap.yml` для единственного bootstrap usable
+credential уже принятой SQL-created `vico_forum_web`. Workflow использует protected
+`NEON_OWNER_DATABASE_URL`, `WEB_RUNTIME_DATABASE_ROLE` и временный Environment secret
+`WEB_RUNTIME_DATABASE_PASSWORD_BOOTSTRAP`; merge сам по себе ничего во внешней БД не меняет.
+
+До доступа к Environment secrets/production DB отдельный guard job требует exact
+`refs/heads/main`, `GITHUB_RUN_NUMBER=1`, `GITHUB_RUN_ATTEMPT=1` и exact confirmation token.
+Поэтому новый dispatch либо rerun этого workflow после первого run не может дойти до bootstrap
+step. В самом bootstrap script тот же run/attempt contract проверяется повторно до DB connection.
+
+Перед password mutation workflow fail closed проверяет exact production owner/session/database,
+safe role attributes/membership, принятые `2s/5s` defaults, полный localization/web ACL contract,
+direct/unpooled Neon owner target, disabled bind-parameter values in error logging и отключённые
+statement/duration logging/sampling paths. Cleartext password не включается в SQL: runner локально
+строит PostgreSQL SCRAM-SHA-256 verifier, а server получает verifier bind-параметром через
+transaction-local setting.
+
+Первичная password mutation атомарно ставит verifier вместе с server-owned bounded
+`VALID UNTIL` lease на **30 минут** от PostgreSQL server clock. После commit workflow выполняет
+отдельный bounded login как `vico_forum_web` и проверяет exact database + `2s/5s` defaults.
+Обычный caught post-mutation failure без retry сначала возвращает `PASSWORD NULL`. Если runner
+будет аварийно остановлен, отменён, потерян или убит timeout после commit и JavaScript compensation
+не успеет выполниться, password authentication автоматически перестанет принимать этот credential
+после истечения `VALID UNTIL`; role/grants/defaults при этом не меняются.
+
+30-minute lease — только bootstrap safety window, а не production credential lifetime.
+До accepted Hyperdrive evidence его запрещено продлевать. После successful creation и проверки
+ровно одного unbound cache-disabled `vico-forum-web` на direct Neon origin, пока lease ещё active,
+ChatGPT координирует отдельную owner-controlled transaction в Neon SQL Editor: exact
+owner/session/database + safe role/default/ACL assertions → проверка finite future
+`pg_roles.rolvaliduntil` → только `ALTER ROLE vico_forum_web VALID UNTIL 'infinity'` → post-check
+`rolvaliduntil = 'infinity'::timestamptz` → commit. Только этот post-Hyperdrive шаг превращает
+leased bootstrap password в durable web credential.
+
+Если Hyperdrive evidence либо owner-finalization не завершены до expiry, workflow не dispatch-ится
+и не rerun-ится повторно. Gate считается failed: owner-controlled reconciliation сначала оставляет
+или возвращает `PASSWORD NULL`, затем удаляется любой созданный unbound `vico-forum-web`;
+accepted grants/defaults сохраняются, после чего требуется новый reviewed recovery path. Если
+finalization outcome неоднозначен, сначала выполняется read-only check `pg_roles.rolvaliduntil`;
+`infinity` означает finalized success, любое finite/expired значение не считается acceptance.
+
+Этот workflow является временным bootstrap mechanism. До отдельного explicit authorization,
+охватывающего bootstrap + Hyperdrive creation + finalize/compensation boundary, запрещено создавать
+bootstrap secret или dispatch-ить workflow. После accepted Hyperdrive + finalized credential
+evidence временный GitHub Environment secret удаляется, а lifecycle bootstrap workflow/script
+удаляются отдельным cleanup PR. Successful credential bootstrap сам по себе не означает
+Hyperdrive/binding/deploy acceptance.
 
 Official reference:
 
@@ -282,15 +333,14 @@ external rollout.
 ```text
 connectionTimeoutMillis = 3000ms   (node-postgres caller)
 query_timeout            = 7000ms   (node-postgres caller)
-lock_timeout             = 2s       (planned database+role default)
-statement_timeout        = 5s       (planned database+role default)
+lock_timeout             = 2s       (database+role default; applied)
+statement_timeout        = 5s       (database+role default; applied)
 ```
 
-Repository preparation задаёт только caller-side Client/Pool values. Server-side
-`lock_timeout` / `statement_timeout` ещё не применены к `vico_forum_web`; usable credential
-и real web Hyperdrive также отсутствуют. Значения являются initial rollout profile, а не
-принятым production SLO или real-path calibration. Их acceptance требует отдельного external
-gate и измерений через фактический cache-disabled web Hyperdrive.
+Server-side `lock_timeout` / `statement_timeout` уже применены и отдельно проверены для
+`vico_forum_web`. Usable credential и real web Hyperdrive пока отсутствуют. Эти значения остаются
+initial rollout profile, а не принятым production SLO или real-path calibration; фактическая
+runtime acceptance по-прежнему требует измерений через новый cache-disabled web Hyperdrive.
 
 Инвариант web profile:
 
