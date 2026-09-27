@@ -392,10 +392,11 @@ runtime roles/Hyperdrive writes и другие schema-dependent runtime capabil
 
 ## Ближайший маршрут
 
-1. Провести независимую проверку и merge repository-only split-authority relation-provisioning PR.
-2. После merge Codex заново сверяет актуальный `main` и отдельно авторизует bounded owner phase,
-   protected `WEB_RUNTIME_DATABASE_ROLE` setup, один migrator provisioning workflow dispatch и
-   последующий read-only runtime verifier. Merge сам ни один из этих external steps не выполняет.
+1. Repository split-authority relation-provisioning mechanism готов для Stage 6 external gate;
+   Codex после merge заново сверяет актуальный `main` и exact production preconditions.
+2. Owner phase, protected `WEB_RUNTIME_DATABASE_ROLE` setup, один migrator provisioning workflow
+   dispatch и последующий read-only runtime verifier выполняются только как отдельно разрешённая
+   bounded external sequence; repository merge сам ни один из этих шагов не запускает.
 3. Hyperdrive binding name/ID, forum/auth role deadlines, Worker wiring и deployment остаются
    отдельным reviewed runtime-wiring gate после privilege provisioning/verification.
 
