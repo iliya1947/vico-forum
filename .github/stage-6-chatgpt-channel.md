@@ -1813,3 +1813,69 @@ No external operation was executed.
 Next review-cycle action is independent Codex whole-PR review of current PR #138. Merge remains
 user-controlled; runtime role creation/GRANT, production verifier dispatch and Hyperdrive/runtime
 provisioning remain blocked until post-merge Codex re-evaluation.
+
+
+### Bounded web-role provisioning gate — failed safely, transaction rolled back
+
+User explicitly authorized the bounded external web-role provisioning gate described by Codex
+service PR #121.
+
+Before mutation, current repository/control-plane state was rechecked:
+
+- exact GitHub `main`:
+  `4cef0297bb41ff3a18ee0ad82315aef940146596`;
+- Neon project: `late-cell-18916701` / `vico-forum`;
+- production branch: `br-square-flower-b2q6a3sy`, primary/default, ready;
+- database: `vico_forum`;
+- execution/session role: exact `vico_forum_owner`;
+- database owner: exact `vico_forum_owner`;
+- `vico_forum_web` absent;
+- existing `vico_forum_runtime` remained exact localization-only:
+  direct non-grantable database CONNECT, public-schema USAGE, SELECT only on
+  `locales`, `ui_translations`, `ui_translation_bundles`, expected owner admin membership,
+  no column/function/default ACL or object ownership.
+
+A single Neon SQL transaction was then attempted with the authorized bounded operations:
+- `CREATE ROLE vico_forum_web LOGIN PASSWORD NULL NOSUPERUSER NOCREATEDB NOCREATEROLE
+  NOINHERIT NOREPLICATION NOBYPASSRLS`;
+- explicit owner administrative membership;
+- exact reviewed database/schema/relation grants;
+- fail-closed in-transaction post-provision assertions.
+
+The transaction failed on the explicit membership statement before commit:
+
+`ADMIN option cannot be granted back to your own grantor`.
+
+PostgreSQL 17 role semantics explain the failure: when a non-superuser with `CREATEROLE`
+creates a role, PostgreSQL automatically grants the created role back to the creator as
+`ADMIN TRUE, SET FALSE, INHERIT FALSE`. The explicit second grant therefore attempts to grant
+ADMIN back to the current grantor and is rejected.
+
+Official PostgreSQL 17 references checked:
+- https://www.postgresql.org/docs/17/role-attributes.html
+- PostgreSQL 17 GRANT-on-roles documentation.
+
+Per the Codex gate rule ("on mismatch/failure rollback/stop without additional fixes"), no retry,
+manual repair or alternate SQL was attempted.
+
+Read-only rollback verification after the failure confirmed:
+- `vico_forum_web` does **not** exist;
+- Neon role list remains only
+  `vico_forum_owner`, `vico_forum_runtime`, `vico_forum_migrator`;
+- current/session role remains `vico_forum_owner`.
+
+Therefore the failed transaction persisted **no** new role or grants.
+
+Because the DB transaction failed, the subsequent authorized steps were not executed:
+- `WEB_RUNTIME_DATABASE_ROLE` GitHub Environment variable was not set;
+- `Production runtime privilege verification` was not dispatched;
+- no Hyperdrive/password/credential/Worker binding/deployment/OAuth/Queue/provider operation was
+  performed.
+
+The previous provisioning authorization is consumed by this failed one-shot attempt under the
+explicit no-retry boundary. A new Codex-reviewed bounded operation and new explicit user
+authorization are required before another external provisioning attempt.
+
+Technical point for the next coordination cycle: the required owner administrative-control
+invariant should be verified after `CREATE ROLE`; in this PostgreSQL 17 execution context,
+re-issuing the same owner membership grant is not a valid step.
