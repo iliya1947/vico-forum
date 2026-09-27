@@ -1938,6 +1938,47 @@ ChatGPT-coordinated owner UI unbound cache-disabled Hyperdrive с тем же lo
 ChatGPT может создать mergeable repository-only bootstrap PR из current `main` и записать exact
 base/head/diff/CI evidence в PR #122. Предыдущий local-psql gate отменён.
 
+### Независимая полная проверка PR #141 — дополнительные исправления обязательны
+
+PR #141 полностью проверен на current head `ee8b7ea35fbfb5806ed587ea22ab86f7162e253d`
+против exact base/current `main` `6f262bf4374440e36096fd315a9c3ff4f42eba27`, включая все 8
+changed files, latest fixes, PR #122 head `4084e370df18454bd4f9fb57c8c45b17091142df`, inline review и
+CI run `36338774077` (`checks=success`, `database=success`). Исправления workflow expressions,
+logging preflight и applied-default docs частично корректны; SCRAM derivation, parameterized
+server-side application, ACL preflight, login proof и normal caught-error compensation реализованы
+разумно.
+
+Однако полная проверка выявила три current-Stage проблемы:
+
+1. **Credential может остаться usable после неконтролируемого завершения runner.** Password commit
+   происходит до отдельного login proof, а compensation существует только внутри JavaScript
+   `catch`. Process crash, job cancellation/timeout или runner loss после `COMMIT` не гарантируют
+   выполнение `PASSWORD NULL`; credential остаётся активным бессрочно без accepted evidence. Для
+   fail-closed bootstrap password должен первоначально применяться с server-owned bounded
+   `VALID UNTIL` lease. После successful Hyperdrive evidence отдельная owner assertion может
+   финализировать `VALID UNTIL 'infinity'`; без финализации credential автоматически expires.
+2. **One-time workflow фактически допускает повторный dispatch/rerun.** Preflight не может наблюдать
+   passwordless state через доступный catalog и потому второй запуск с временным secret бесшумно
+   rotate-ит уже принятый credential. Workflow/script должны до DB connection требовать exact first
+   `GITHUB_RUN_NUMBER=1` и `GITHUB_RUN_ATTEMPT=1` (либо эквивалентный repository-owned one-shot
+   marker) и иметь contract tests. Confirmation token сам по себе one-shot не доказывает.
+3. **`PROJECT_STATE.md` остаётся внутренне противоречивым.** Current-state sections правильно
+   говорят, что `2s/5s` defaults applied, но список незавершённого Stage 6 всё ещё включает
+   `database-role deadline defaults`. Нужно удалить уже выполненную часть, сохранив credential /
+   Hyperdrive binding/routing как outstanding.
+
+Required corrective cycle на той же ветке PR #141:
+
+- добавить bounded credential lease и tests для expiry/forced termination-safe semantics;
+- определить в docs точную post-Hyperdrive finalize/expiry recovery choreography без pre-claim;
+- запретить dispatch/rerun не-first run/attempt до secrets/DB access и покрыть тестами;
+- исправить stale `PROJECT_STATE.md` statement;
+- затем заново проверить весь PR и exact-head CI. Scope не расширять до external execution,
+  Hyperdrive API, binding/routing или deploy.
+
+Текущий вывод: **PR #141 не готов к merge**. Temporary bootstrap secret создавать и workflow
+dispatch выполнять запрещено до corrective cycle и повторной независимой полной проверки.
+
 ## Рабочий канал дальнейших действий
 
 По решению пользователя от 2026-09-26 все дальнейшие operational requests, перечни требуемого
