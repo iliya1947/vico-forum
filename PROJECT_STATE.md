@@ -52,7 +52,11 @@ Vico Forum находится в ранней pre-release разработке.
   отдельную future `web` capability. Repository verifier покрывает exact relation/schema ACL и
   полный database ACL boundary для `CONNECT` / `CREATE` / `TEMPORARY`, включая grant options
   и safe `datacl IS NULL` defaults; disposable PostgreSQL 17 CI path проверяет proposed grants.
-  External web PostgreSQL role, grants, Hyperdrive binding и Worker wiring ещё не выполнены.
+  Для production split-authority boundary repository также содержит отдельный manual main-only
+  relation-grant path: owner phase остаётся отдельным evidence step, а exact table grants
+  выполняются существующим protected `vico_forum_migrator` credential и derive-ятся только из
+  shared `runtimeCapabilityContracts.web`. Merge этого workflow сам provisioning не запускает.
+  External web PostgreSQL role/grants, Hyperdrive binding и Worker wiring ещё не выполнены.
   Content-generation runtime остаётся disabled и не входит в web ACL.
 - Обычная feature-разработка и её CI остаются отделены от external rollout; merge в `main` сам по
   себе не является deployment/acceptance evidence.
@@ -335,6 +339,9 @@ adapter, production anti-abuse values, provider/data-policy approval и deployed
 - production full-schema manifest parity против clean PostgreSQL 17;
 - named `localization-read` / `web` runtime privilege contract и disposable PostgreSQL 17
   positive/negative grant probes, включая row-lock и forbidden cross-domain/DDL checks;
+- split-authority web relation-provisioning contract: exact grants derive-ятся из shared web
+  capability, а disposable PostgreSQL 17 проверяет successful migrator-owner phase и rollback
+  при forbidden prerequisite drift;
 - Workers build и local Hyperdrive smoke.
 
 Обычный PR CI не выполняет live GitHub Actions verification старого external migration evidence.
@@ -355,9 +362,12 @@ postflight verification полного `0000`–`0020` schema contract. Это e
 acceptance остаётся evidence этого localization path, но не является gate для обычных feature PR.
 
 Repository уже содержит reviewed exact ACL/verifier contract для отдельной future web runtime
-capability (Better Auth + forum + dynamic authorization + persisted forum-content reads). Это
-только provisioning-preparation: external web role/grants, cache-disabled Hyperdrive binding и
-Worker wiring ещё отсутствуют.
+capability (Better Auth + forum + dynamic authorization + persisted forum-content reads), а также
+защищённый manual relation-grant execution path под existing migration credential. Passwordless
+состояние web role остаётся owner-phase command/evidence invariant: migrator не может достоверно
+читать password verifier и вместо этого требует exact operator confirmation token до DB write.
+Это всё ещё только provisioning-preparation: external web role/grants, protected
+`WEB_RUNTIME_DATABASE_ROLE`, cache-disabled Hyperdrive binding и Worker wiring отсутствуют.
 
 По зафиксированному состоянию проекта native Cloudflare Git integration для active development
 `main` отключён. Перед Stage 6 фактическую external configuration необходимо проверить заново.
@@ -382,10 +392,11 @@ runtime roles/Hyperdrive writes и другие schema-dependent runtime capabil
 
 ## Ближайший маршрут
 
-1. Провести независимую проверку и merge corrective runtime database-ACL verifier PR.
-2. После merge Codex заново сверяет актуальный `main` и определяет отдельный bounded external
-   provisioning scope для web PostgreSQL role/grants; до явного разрешения external mutation не
-   выполнять.
+1. Repository split-authority relation-provisioning mechanism готов для Stage 6 external gate;
+   Codex после merge заново сверяет актуальный `main` и exact production preconditions.
+2. Owner phase, protected `WEB_RUNTIME_DATABASE_ROLE` setup, один migrator provisioning workflow
+   dispatch и последующий read-only runtime verifier выполняются только как отдельно разрешённая
+   bounded external sequence; repository merge сам ни один из этих шагов не запускает.
 3. Hyperdrive binding name/ID, forum/auth role deadlines, Worker wiring и deployment остаются
    отдельным reviewed runtime-wiring gate после privilege provisioning/verification.
 

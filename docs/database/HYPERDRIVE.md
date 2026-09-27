@@ -103,12 +103,21 @@ tables, request-budget counters либо UI localization tables.
   hard-wired-equivalent function `EXECUTE` / type `USAGE` default semantics, без
   relation/sequence/schema defaults.
 
-Repository verifier:
+Repository verifier/provisioning preparation:
 - `.github/scripts/runtime-privileges.mjs` хранит named capability contracts и читает полный
   database ACL через `aclexplode(COALESCE(datacl, acldefault('d', datdba)))`, поэтому default
   `datacl IS NULL` и explicit runtime grants проверяются одной fail-closed границей;
 - `.github/scripts/verify-runtime-privilege-probes.mjs` применяет exact grants к disposable
   PostgreSQL 17 и выполняет positive/negative SQL probes;
+- manual main-only relation-provisioning workflow использует existing protected migration
+  connection как exact `vico_forum_migrator`, проверяет observable owner-phase prerequisites и
+  derive-ит все table GRANT statements только из `runtimeCapabilityContracts.web`;
+- passwordlessness не читается migrator из `pg_roles`: owner phase создаёт role exact
+  `PASSWORD NULL`, а provisioning workflow до DB connection требует reviewed confirmation token
+  `owner-phase-password-null-confirmed`; token — operator evidence, не DB-derived password check;
+- relation GRANTs выполняются одной transaction и перед commit проходят shared full runtime
+  privilege assertion; CI отдельно моделирует successful split-authority path и rollback при
+  prerequisite drift;
 - manual main-only `Production runtime privilege verification` после отдельного external
   provisioning выполняет read-only catalog verification обоих roles.
 
