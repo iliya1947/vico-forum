@@ -1210,6 +1210,48 @@ identities, с passwordless/unbound role и обязательным compensatin
 intermediate role, exact phase assertions и заранее разрешённым compensating DROP. Diagnostic
 authorization consumed; новый staged gate требует отдельного явного разрешения пользователя.
 
+### Split-authority preflight blocked; reviewed migrator execution path required
+
+Последнее обновление служебного PR ChatGPT #122 на head
+`a9d0c298de1e751699bd06cc834c1db6308e801b` проверено. Split-authority preflight подтвердил exact
+production ownership и grant authority, но ни одной mutation не выполнил: current Neon SQL tool
+всегда исполняется как `vico_forum_owner` и не может использовать existing protected migrator
+connection; `SET ROLE` корректно запрещён accepted `SET FALSE` membership.
+
+Authorization не была использована: web role/ACL/variable/workflow/Hyperdrive отсутствуют. Нельзя
+ослаблять membership или переносить ownership ради ограничения инструмента. Следующий safe step —
+repository-owned manual provisioning path для relation grants под уже существующим
+`NEON_MIGRATION_DATABASE_URL`, аналогично остальным protected workflows.
+
+Нужен отдельный mergeable PR из current `main` со scope:
+
+1. добавить script для **relation-grant phase**, который импортирует
+   `runtimeCapabilityContracts.web` и не дублирует ACL list;
+2. script должен требовать `DATABASE_URL`, `RUNTIME_DATABASE_ROLE`, `WEB_RUNTIME_DATABASE_ROLE` и
+   explicit confirmation token; проверять exact `current_user = vico_forum_migrator`, что он
+   является единственным owner всех expected web relations, а target web role уже существует;
+3. до write проверить owner-phase prerequisites: passwordless role attributes/membership,
+   effective/direct database ACL и schema `USAGE` без `CREATE`; не создавать role и не менять эти
+   grants;
+4. внутри одной transaction выдать exact relation grants, затем вызвать shared snapshot + full
+   `assertRuntimeCapabilityPrivilegeContract` для localization/web и commit только при exact match;
+   на любой ошибке rollback;
+5. добавить manual main-only workflow в protected `production-db` Environment, serialized общей
+   `production-db-migrations` concurrency group, с pinned actions, bounded job timeout и existing
+   `NEON_MIGRATION_DATABASE_URL` + role variables; confirmation input обязан fail closed;
+6. workflow merge сам ничего не запускает. Owner phase, protected variable setup и dispatch остаются
+   отдельными explicitly authorized operations после merge;
+7. unit tests должны доказать exact SQL derivation из contract, confirmation/identity/ownership/
+   prerequisite failures, transaction rollback и no secret logging; disposable PostgreSQL 17 CI
+   должен выполнить successful relation-grant phase и forbidden-drift failure;
+8. обновить `PROJECT_STATE.md`, `docs/database/HYPERDRIVE.md`, `docs/database/MIGRATIONS.md` только
+   как planned execution mechanism; не утверждать external provisioning;
+9. не менять Worker/runtime bindings, migrations, dependencies, existing privilege matrix и не
+   выполнять external mutations.
+
+После independent review/merge этого PR Codex заново авторизует owner phase → protected variable →
+new migrator provisioning workflow → read-only verifier sequence. До этого provisioning запрещён.
+
 ## Рабочий канал дальнейших действий
 
 По решению пользователя от 2026-09-26 все дальнейшие operational requests, перечни требуемого
