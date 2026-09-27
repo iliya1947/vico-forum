@@ -35,16 +35,18 @@ locale/namespace. Это остаётся той же request-scoped read-only c
 ## Stage 6 reviewed web capability contract
 
 После schema-first acceptance through `0020` repository фиксирует две отдельные HTTP runtime
-capabilities, но **не утверждает**, что новая production role или Hyperdrive binding уже созданы:
+capabilities:
 
 1. `localization-read` — существующие `HYPERDRIVE` + environment-specific localization role,
    только `SELECT` на `locales`, `ui_translations`, `ui_translation_bundles`;
-2. `web` — отдельная future cache-disabled capability для Better Auth, forum, dynamic
-   authorization и persisted forum-content presentation.
+2. `web` — отдельная cache-disabled capability для Better Auth, forum, dynamic authorization и
+   persisted forum-content presentation.
 
-Production role names остаются external inputs. Existing localization role передаётся verifier как
-`RUNTIME_DATABASE_ROLE`; новая web role после отдельного provisioning будет передаваться как
-`WEB_RUNTIME_DATABASE_ROLE`.
+Production role names остаются environment-specific inputs. Current production evidence использует
+`vico_forum_runtime` через `RUNTIME_DATABASE_ROLE` и уже provisioned `vico_forum_web` через
+protected `WEB_RUNTIME_DATABASE_ROLE`. Exact web relation grants и shared runtime privilege
+verification приняты, но usable web credential, отдельный web Hyperdrive и Worker routing ещё не
+созданы.
 
 Reviewed web relation ACL:
 
@@ -121,8 +123,10 @@ Repository verifier/provisioning preparation:
 - manual main-only `Production runtime privilege verification` после отдельного external
   provisioning выполняет read-only catalog verification обоих roles.
 
-Migration workflow намеренно не зависит от ещё не provisioned web role. Runtime privilege
-verification — отдельная post-schema acceptance boundary.
+Current production sequence уже прошла owner phase, migrator-owned exact relation grants и
+successful read-only runtime privilege verification для `vico_forum_runtime` и
+`vico_forum_web`. Migration workflow при этом остаётся независимым от наличия web role:
+runtime privilege verification — отдельная post-schema acceptance boundary.
 
 Fresh auth/session/permission и read-after-write paths должны использовать cache-disabled
 Hyperdrive. Cloudflare допускает несколько Hyperdrive configurations/bindings для одной
@@ -192,12 +196,16 @@ https://developers.cloudflare.com/hyperdrive/configuration/local-development/
 
 Ранее native Cloudflare Workers Builds был подключён к GitHub `main`. Для forum-first workflow
 ordinary merge в active development `main` не должен автоматически означать production
-promotion. По текущему состоянию проекта native Cloudflare Git integration для active development
-`main` отключён.
+promotion.
 
-Точное external setting не хранится в Git. На Stage 6 перед provisioning и первым external
-schema-dependent rollout фактическую Cloudflare branch/build topology необходимо заново проверить
-в актуальном Cloudflare UI и сохранить отделение feature merges от production deployment.
+Fresh Stage 6 Gate 0 в Cloudflare UI подтвердил текущее состояние: native Git Builds integration
+отключён; live Production Worker намеренно отстаёт от repository `main`; Production содержит
+только `HYPERDRIVE -> vico-forum-registry`; `Previews Base` не имеет bindings или runtime
+variables/secrets. Production и preview `workers.dev` URLs включены, custom domains/routes
+отсутствуют.
+
+Это mutable external state и оно не хранится в Git как authoritative configuration, поэтому перед
+будущим deploy topology перепроверяется ещё раз.
 
 Official reference:
 
@@ -242,8 +250,10 @@ capability фактически read-only и доступные данные п�
 До любой preview capability с auth/forum writes или private production data preview path
 должен быть изолирован отдельными resources/secrets либо отключён.
 
-Stage 6 обязан заново проверить фактическую Cloudflare branch/build topology перед real auth
-и forum write acceptance.
+Stage 6 Gate 0 уже подтвердил zero bindings и zero runtime variables/secrets у
+`Previews Base`. Перед real auth/forum write deployment эта mutable topology перепроверяется, и
+preview по-прежнему не должен получать production private/write capability без отдельной
+изоляции.
 
 ## PostgreSQL deadlines
 
@@ -266,6 +276,27 @@ lock_timeout < statement_timeout < query_timeout
 forum/auth SLO. Новые forum/auth queries не должны автоматически наследовать их как
 архитектурную константу; deadlines выбираются по фактическому path и проверяются ближе к
 external rollout.
+
+Первый reviewed web runtime profile использует отдельные initial values:
+
+```text
+connectionTimeoutMillis = 3000ms   (node-postgres caller)
+query_timeout            = 7000ms   (node-postgres caller)
+lock_timeout             = 2s       (planned database+role default)
+statement_timeout        = 5s       (planned database+role default)
+```
+
+Repository preparation задаёт только caller-side Client/Pool values. Server-side
+`lock_timeout` / `statement_timeout` ещё не применены к `vico_forum_web`; usable credential
+и real web Hyperdrive также отсутствуют. Значения являются initial rollout profile, а не
+принятым production SLO или real-path calibration. Их acceptance требует отдельного external
+gate и измерений через фактический cache-disabled web Hyperdrive.
+
+Инвариант web profile:
+
+```text
+lock_timeout < statement_timeout < query_timeout
+```
 
 Role defaults применяются новым PostgreSQL origin sessions. Administrative catalog check
 подтверждает configuration, но не доказывает state уже существующей pooled origin session.
