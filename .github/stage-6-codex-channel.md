@@ -830,6 +830,67 @@ Audit contract для ChatGPT:
 и первый mergeable verifier/provisioning-preparation PR. Это отделяет design evidence от
 труднообратимого external provisioning.
 
+### Runtime capability audit result and first verifier PR
+
+Последнее обновление служебного PR ChatGPT #122 на head
+`f8f21a485429ac3230eb3de2307ee8eebd899627` проверено независимо по актуальному `main`, runtime
+composition и database repositories. Audit корректно выявил, что current Worker использует один
+generic `HYPERDRIVE` connection для всех adapters, хотя external role за ним остаётся только
+localization read-only; content generation action при этом fail-closed disabled.
+
+Матрица операций подтверждена для Better Auth, forum, dynamic authorization, localization,
+deferred generation planning, background execution/publication и maintenance paths. В частности,
+PostgreSQL 17 действительно требует `UPDATE` вместе с `SELECT` для используемых `FOR UPDATE` /
+`FOR SHARE` locks; current code напрямую не читает `authz_permissions`; runtime sequence,
+function-`EXECUTE`, `TRIGGER`, `REFERENCES`, schema/database `CREATE` privileges не нужны.
+
+Архитектурное решение для первого runtime boundary — **Option A**:
+
+- сохранить существующие `HYPERDRIVE` + `vico_forum_runtime` как localization-only read capability;
+- добавить одну отдельную cache-disabled web capability для единого текущего HTTP Worker:
+  Better Auth + forum + dynamic authorization + forum content-presentation reads;
+- не выдавать web capability translation planning/task/publication privileges, пока generation
+  action disabled и Queue/background runtime не provisioned;
+- background translation и maintenance capabilities проектировать позже как отдельную execution
+  boundary;
+- не дробить auth/forum/authz на несколько origin pools внутри одного Worker: это не изолирует
+  Worker compromise, но добавляет binding/pool/operational complexity. Cross-domain least privilege
+  достигается meaningful HTTP-vs-background boundary.
+
+Первый mergeable provisioning-preparation PR должен быть repository-only и иметь scope:
+
+1. добавить named runtime capability contract для `localization-read` и `web`, сохраняя
+   environment-specific PostgreSQL role names как inputs (`RUNTIME_DATABASE_ROLE` для existing
+   localization role и новый `WEB_RUNTIME_DATABASE_ROLE`);
+2. web ACL exact union:
+   - Better Auth `user`, `session`, `account`, `verification`, `rate_limit` —
+     `SELECT/INSERT/UPDATE/DELETE`;
+   - `forum_categories`, `forum_sections` — `SELECT`;
+   - `forum_topics`, `forum_posts` — `SELECT/INSERT/UPDATE`;
+   - `forum_topic_title_revisions`, `forum_post_revisions` — `SELECT/INSERT`;
+   - `forum_topic_title_translations`, `forum_post_body_translations` — `SELECT`;
+   - `authz_roles` — `SELECT/INSERT/UPDATE/DELETE`;
+   - `authz_role_permissions` — `SELECT/INSERT/DELETE`;
+   - `authz_user_roles` — `SELECT/INSERT/UPDATE`;
+   - `authz_user_permission_overrides` — `SELECT/INSERT/UPDATE/DELETE`;
+   - `authz_mutation_lock` — `SELECT/UPDATE`;
+   - никаких direct grants на `authz_permissions`, task/budget/UI localization tables;
+3. verifier должен для обоих roles требовать intended LOGIN, no dangerous attributes,
+   memberships/ownership/grant options, schema `USAGE` without `CREATE`, no database `CREATE`, no
+   unexpected relation/column/sequence/function/default/PUBLIC privileges;
+4. disposable PostgreSQL 17 tests должны применить exact grants и выполнить representative
+   positive probes, включая row-lock operations, плюс negative cross-domain write/DELETE/DDL probes;
+5. добавить отдельный manual main-only read-only production runtime privilege verification path,
+   не связывая его с production migration workflow; external run выполняется только после будущего
+   отдельного provisioning authorization;
+6. обновить `docs/database/HYPERDRIVE.md`, `docs/database/MIGRATIONS.md` и `PROJECT_STATE.md` только
+   как planned/reviewed contract, не утверждая, что role, grant, binding или deployment выполнены;
+7. не менять пока Worker binding topology/runtime wiring, migration SQL или dependencies и не
+   выполнять Neon/Cloudflare provisioning, deploy либо другие external mutations.
+
+Role deadlines и exact new Hyperdrive binding name/ID относятся к последующему reviewed runtime
+wiring + external calibration step; их нельзя молча унаследовать от localization read path.
+
 ## Рабочий канал дальнейших действий
 
 По решению пользователя от 2026-09-26 все дальнейшие operational requests, перечни требуемого
