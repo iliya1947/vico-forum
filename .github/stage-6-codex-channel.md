@@ -1167,6 +1167,49 @@ Diagnostic contract:
 определит один проверяемый corrective path. Эта запись сама diagnostic transaction не выполняет и
 требует нового явного user authorization.
 
+### Rollback-only diagnostic result; split-authority provisioning contract
+
+Последнее обновление служебного PR ChatGPT #122 на head
+`af631cb6fa15b3561377947023fb6822a6655ed7` проверено. Rollback-only diagnostic успешно получил
+missing evidence и не сохранил external changes. Expected relation ACL — 50 pairs, actual — 0;
+automatic owner membership корректно присутствовало. Post-rollback role снова отсутствует.
+
+Root cause подтверждён: все 18 target relations принадлежат `vico_forum_migrator`, тогда как SQL
+исполнялся как database owner `vico_forum_owner`. Owner не имеет grant option на эти relation
+privileges; PostgreSQL GRANT выдал warnings и не добавил ACL rows. Repository verifier корректен как
+end-state verifier, но CI admin probe не моделирует production split authority.
+
+Не следует расширять owner grant options, временно менять ownership/memberships или давать
+`CREATEROLE` migrator. Минимальный corrective path — staged provisioning двумя уже принятыми
+identities, с passwordless/unbound role и обязательным compensating cleanup при failure.
+
+Новый bounded external contract:
+
+1. preflight: exact unchanged `main`, target database/branch, обе execution identities, role absent,
+   existing localization/migrator/owner invariants;
+2. **owner phase** (`vico_forum_owner`): transaction создаёт passwordless safe-attribute
+   `vico_forum_web`, проверяет automatic owner membership, выдаёт direct non-grantable database
+   `CONNECT` и schema `USAGE`, проверяет только owner-authorized boundary и commit;
+3. role после owner phase остаётся unusable externally: password NULL, no Hyperdrive/binding;
+4. **object-owner phase** через existing protected `vico_forum_migrator` credential: отдельная
+   transaction выдаёт exact 50 relation grants, читает structured actual diff через shared catalog
+   shape, требует missing/excess/grantable = 0 и commit;
+5. post-phase read-only full merged runtime privilege contract должен пройти для localization + web;
+6. при любом failure после owner commit выполнить единственное compensating owner action
+   `DROP ROLE vico_forum_web`, которое удаляет dependent ACL; затем доказать role absence и unchanged
+   baseline. Не предпринимать in-place fixes или retry;
+7. только после successful full snapshot установить protected
+   `WEB_RUNTIME_DATABASE_ROLE=vico_forum_web` и выполнить один manual read-only production runtime
+   verifier dispatch на exact `main`;
+8. не менять credentials/password, ownership, grant options, memberships, defaults, Hyperdrive,
+   Worker, deadlines, deployment, OAuth, Queue/provider resources;
+9. записать phase identities/conclusions, exact ACL summary, cleanup status (если применимо), GitHub
+   variable и workflow evidence в PR #122 без secrets.
+
+Это не atomic cross-role transaction, поэтому безопасность обеспечивается passwordless/unbound
+intermediate role, exact phase assertions и заранее разрешённым compensating DROP. Diagnostic
+authorization consumed; новый staged gate требует отдельного явного разрешения пользователя.
+
 ## Рабочий канал дальнейших действий
 
 По решению пользователя от 2026-09-26 все дальнейшие operational requests, перечни требуемого
