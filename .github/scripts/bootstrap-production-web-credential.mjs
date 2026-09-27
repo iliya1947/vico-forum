@@ -315,8 +315,9 @@ export async function applyScramVerifier(
     [verifier, String(leaseSeconds)],
   );
   await client.query(
-    "DO $vico_web_credential_bootstrap$ DECLARE v_verifier text := pg_catalog.current_setting('vico.web_bootstrap_scram_verifier', true); v_lease_seconds integer := pg_catalog.current_setting('vico.web_bootstrap_lease_seconds', true)::integer; v_valid_until timestamptz; BEGIN IF v_verifier IS NULL OR pg_catalog.left(v_verifier, 14) <> 'SCRAM-SHA-256
-
+    "DO $vico_web_credential_bootstrap$ DECLARE v_verifier text := pg_catalog.current_setting('vico.web_bootstrap_scram_verifier', true); v_lease_seconds integer := pg_catalog.current_setting('vico.web_bootstrap_lease_seconds', true)::integer; v_valid_until timestamptz; BEGIN IF v_verifier IS NULL OR pg_catalog.left(v_verifier, 14) <> 'SCRAM-SHA-256$' THEN RAISE EXCEPTION 'web credential bootstrap verifier unavailable or invalid'; END IF; IF v_lease_seconds <= 0 THEN RAISE EXCEPTION 'web credential bootstrap lease unavailable or invalid'; END IF; v_valid_until := pg_catalog.clock_timestamp() + pg_catalog.make_interval(secs => v_lease_seconds); EXECUTE pg_catalog.format('ALTER ROLE %I PASSWORD %L VALID UNTIL %L', 'vico_forum_web', v_verifier, v_valid_until); END $vico_web_credential_bootstrap$;",
+  );
+}
 export async function revokeWebCredential(
   ownerDatabaseUrl,
   {
