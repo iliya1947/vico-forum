@@ -145,7 +145,7 @@ export function assertRuntimeCapabilityPrivilegeContract(
     assert.equal(
       snapshot.ownedObjects.some(({ owner }) => owner === runtimeRole),
       false,
-      `Runtime role ${runtimeRole} must not own schemas, tables, sequences, or views`,
+      `Runtime role ${runtimeRole} must not own schemas, tables, sequences, views, or functions`,
     );
 
     const schemaPrivileges = sorted(
@@ -327,6 +327,14 @@ export async function readRuntimeCapabilityPrivilegeSnapshot(
      WHERE namespace.nspname NOT IN ('pg_catalog', 'information_schema')
        AND namespace.nspname !~ '^pg_toast'
        AND relation.relkind IN ('r', 'p', 'S', 'v', 'm', 'f')
+       AND owner.rolname = ANY($1::name[])
+     UNION ALL
+     SELECT namespace.nspname, routine.proname, 'function', owner.rolname
+     FROM pg_catalog.pg_proc routine
+     JOIN pg_catalog.pg_namespace namespace ON namespace.oid = routine.pronamespace
+     JOIN pg_catalog.pg_roles owner ON owner.oid = routine.proowner
+     WHERE namespace.nspname NOT IN ('pg_catalog', 'information_schema')
+       AND namespace.nspname !~ '^pg_'
        AND owner.rolname = ANY($1::name[])
      ORDER BY 1, 2, 3, 4`,
     [runtimeRoles],
