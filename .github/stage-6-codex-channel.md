@@ -789,6 +789,47 @@ verifier успешно выполнен в GitHub `checks`, а run metadata д�
 проверить новый `main` и определить первый bounded schema-dependent runtime capability/bootstrap
 gate; до этого deployment и runtime provisioning не выполнять.
 
+### PR #136 merged; runtime capability design audit
+
+PR #136 подтверждён merged в GitHub `main` как
+`61b9e809cb39d2f554bf052e00d0bf6f0f66ec53`; merged head был
+`412ef3720577c27bfd990b5fef6fd2b32141a157`. Актуальный `main` и все относящиеся project,
+migration, Hyperdrive, authorization и translation source-of-truth документы перечитаны полностью.
+Schema-first gate и repository-owned evidence теперь закрыты through `0020`; runtime rollout ещё
+не выполнен.
+
+Следующий безопасный шаг — не provisioning, а bounded repository-only audit фактических database
+capabilities. Он нужен до выбора PostgreSQL roles и Hyperdrive bindings, поскольку документы прямо
+запрещают механически расширять существующий read-only localization role, а infrastructure DB
+roles нельзя смешивать с application authorization roles.
+
+Audit contract для ChatGPT:
+
+1. проверить весь production runtime composition и entrypoints: web/auth/session, authorization
+   resolution/admin mutations, forum reads/writes, localization registry/UI/content reads,
+   translation planning/execution/publication, Queue consumers и reconciliation paths;
+2. для каждого independently deployable execution path составить exact matrix
+   `operation → tables/sequences/functions → SELECT/INSERT/UPDATE/DELETE/USAGE/EXECUTE`, включая
+   transaction, row-lock и trigger side effects;
+3. зафиксировать фактическую Cloudflare binding topology в code/config/types и отделить уже
+   существующий read-only `HYPERDRIVE` path от ещё не provisioned write paths;
+4. определить минимальные capability boundaries и возможное число runtime DB roles/bindings только
+   как технические варианты, явно выделив architecture choices, которые нельзя решить по текущим
+   source contracts;
+5. проверить preview/private-data exposure: какие bindings могут быть доступны preview и какие
+   write paths должны быть отсутствующими/fail closed до явного provisioning;
+6. определить repository verifier/test changes, которые смогут доказать proposed grants на
+   disposable PostgreSQL до external creation;
+7. проверить официальную документацию exact current Cloudflare Hyperdrive/Workers binding model и
+   PostgreSQL 17 privilege semantics для затрагиваемых capabilities;
+8. записать результаты только в служебный PR ChatGPT #122. Пока не создавать mergeable
+   implementation PR, не менять code/config/dependencies и не выполнять Neon/Cloudflare/OAuth/
+   Queue/provider/deployment mutations.
+
+После независимой сверки audit result Codex зафиксирует конкретный минимальный role/binding contract
+и первый mergeable verifier/provisioning-preparation PR. Это отделяет design evidence от
+труднообратимого external provisioning.
+
 ## Рабочий канал дальнейших действий
 
 По решению пользователя от 2026-09-26 все дальнейшие operational requests, перечни требуемого
