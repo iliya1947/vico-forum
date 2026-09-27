@@ -5142,3 +5142,34 @@ Preflight conclusion: Part 3+4 may proceed to the already-authorized owner-assis
 for exact `vico_forum_web`, followed immediately by creation of one new unbound cache-disabled
 `vico-forum-web` Hyperdrive using the direct/unpooled Neon origin. Any failure after password
 creation enters the pre-authorized compensation path; no retry.
+
+
+### Part 3 password-reset assumption failed; gate stopped before credential creation
+
+During the authorized Part 3+4 gate, owner-assisted Neon UI execution reached the exact
+`vico_forum_web` role on production and invoked the reviewed `Reset password` action once.
+
+Neon rejected the operation with the UI error:
+
+`cannot update password for role without password`
+
+No usable password was created. No Cloudflare Hyperdrive creation was attempted. No Worker
+binding/routing/deploy action occurred. Because failure happened before credential creation,
+the credential-revocation/resource-cleanup compensation path was not needed.
+
+This is the same Neon behavior previously encountered for the dedicated migrator role: Reset
+password rotates/replaces an existing managed password; it does not initialize the first managed
+password for a role intentionally created with `PASSWORD NULL`.
+
+Therefore the currently accepted Part 3 contract contains a real current-Stage execution defect:
+it assumes Neon UI `Reset password` can bootstrap a passwordless role. The explicit contract also
+forbids silently substituting SQL/API execution when that UI path is unavailable, so the gate is
+stopped safely here.
+
+A prior project precedent exists for the migrator credential: the initial password bootstrap used
+a separate reviewed secret-safe mechanism rather than Neon Reset-password-on-PASSWORD-NULL. Codex
+should independently re-evaluate that precedent for `vico_forum_web` and define a new exact
+credential-bootstrap gate before any further mutation.
+
+Accepted Part 2 database-specific defaults remain in place and are not rolled back. Existing role,
+grants and localization Hyperdrive remain unchanged.
