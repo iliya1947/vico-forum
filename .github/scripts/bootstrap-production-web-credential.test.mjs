@@ -126,6 +126,15 @@ test("rejects deadline-default drift before shared ACL assertion", () => {
   );
 });
 
+
+test("rejects full runtime ACL drift before credential mutation", () => {
+  const candidate = preflightFixture();
+  assert.throws(
+    () => assertBootstrapPreflight(candidate),
+    /Expected current database owner role/,
+  );
+});
+
 test("accepts only the exact direct Neon production target", () => {
   assert.doesNotThrow(() =>
     assertDirectOwnerTarget(
