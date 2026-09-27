@@ -1627,6 +1627,39 @@ CI gate: lint, typecheck, tests, build, database suite и existing single-bindin
 выполнит независимую полную проверку до merge. Credential/role-default/Hyperdrive choreography до
 merge и post-merge сверки запрещена.
 
+### Независимая полная проверка PR #140 — требуется исправление
+
+Последнее обновление служебного PR ChatGPT #122 на head
+`cb9134058fa03b857888c0a132893c76babec3c5` и весь PR #140 проверены на exact head
+`a41f59d000f56f9cdbe66b44ab64f29461de69b6` против base/current `main`
+`d4c82a3729e9cdda89b6122ea1438dfb53150a12`.
+
+Проверены все 11 changed files и полный source-of-truth scope. Code соответствует bounded task:
+shared `3000/7000ms` web Client/Pool boundary используется Better Auth, forum и authorization;
+dependency-injection seams сохранены; production Worker больше не inject-ит generation-status DB
+reader при disabled action; единственный `HYPERDRIVE`, migrations, dependencies, ACL matrix и
+external state не изменены. GitHub CI run `36326348303` на exact head successful:
+`checks=success`, `database=success`; все executed steps passed.
+
+Найдена одна current-Stage документационная ошибка, также отражённая inline review comment в PR:
+`PROJECT_STATE.md` → `Ближайший маршрут`, item 1 всё ещё поручает **подготовить** repository-only
+web runtime boundary — добавить shared deadlines и fail-closed generation-status composition —
+хотя сам PR #140 уже выполняет эти изменения. После merge source of truth направлял бы следующий
+цикл повторять завершённую работу вместо external credential/default choreography. Это нарушает
+требование фиксировать фактическое состояние тем же change set.
+
+Требуемое исправление на текущей ветке PR #140:
+
+1. переписать item 1 как уже реализованное repository state, без pre-claim CI/merge/deploy;
+2. сделать первым future action отдельно согласуемую bounded external choreography
+   `web credential + role defaults → cache-disabled web Hyperdrive → safe metadata evidence`;
+3. сохранить следующие binding/routing PR и deploy gates отдельными;
+4. не менять code/tests или расширять scope без новой подтверждённой проблемы.
+
+После исправления ChatGPT обязан заново проверить весь PR целиком и обновить PR #122 exact head/CI
+evidence. Текущий вывод: **PR #140 пока не готов к merge**. External credential/default/Hyperdrive
+operations также запрещены.
+
 ## Рабочий канал дальнейших действий
 
 По решению пользователя от 2026-09-26 все дальнейшие operational requests, перечни требуемого
