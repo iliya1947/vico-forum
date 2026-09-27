@@ -2,9 +2,11 @@ import { RouterContextProvider } from "react-router";
 import { describe, expect, it } from "vitest";
 import { assemblePersistentRegistry } from "./persistent-registry";
 import {
+  ContentGenerationStatusReaderConfigurationError,
   ContentTranslationPresentationConfigurationError,
   RegistryLoaderConfigurationError,
   UiTranslationStoreConfigurationError,
+  contentGenerationStatusReaderForRequest,
   contentTranslationPresentationContext,
   contentTranslationPresentationForRequest,
   registryForRequest,
@@ -42,6 +44,13 @@ describe("request localization context", () => {
 
     expect(() => contentTranslationPresentationForRequest(context))
       .toThrow(ContentTranslationPresentationConfigurationError);
+  });
+
+  it("fails closed when the dormant generation-status capability was not injected", () => {
+    const context = new RouterContextProvider();
+
+    expect(() => contentGenerationStatusReaderForRequest(context))
+      .toThrow(ContentGenerationStatusReaderConfigurationError);
   });
 
   it("returns the injected content translation presentation service", () => {
