@@ -2239,3 +2239,274 @@ or another PostgreSQL/Neon execution detail cannot be distinguished from the ret
 
 No corrective repository change or mergeable PR was created. Independent Codex review is required
 before choosing the next corrective cycle.
+
+
+### Rollback-only production diagnostic — exact relation ACL root-cause evidence
+
+User explicitly authorized the single rollback-only diagnostic transaction requested by the latest
+Codex PR #121 entry. No provisioning commit, GitHub Environment variable, workflow dispatch,
+Hyperdrive/password/Worker/deploy/OAuth/Queue/provider mutation was performed.
+
+Exact repository target before diagnostic:
+`main = 4cef0297bb41ff3a18ee0ad82315aef940146596`.
+
+Read-only preflight reconfirmed:
+- database/current/session/database-owner = exact `vico_forum` /
+  `vico_forum_owner`;
+- `vico_forum_web` absent;
+- existing `vico_forum_runtime` unchanged:
+  direct non-grantable CONNECT, public.USAGE, relation SELECT only on
+  `locales`, `ui_translations`, `ui_translation_bundles`;
+- PUBLIC database ACL = non-grantable CONNECT + TEMPORARY.
+
+#### Diagnostic transaction shape
+
+The transaction replayed the exact third-attempt operational SQL before the failing assertion:
+
+```sql
+CREATE ROLE vico_forum_web
+  LOGIN
+  PASSWORD NULL
+  NOSUPERUSER
+  NOCREATEDB
+  NOCREATEROLE
+  NOINHERIT
+  NOREPLICATION
+  NOBYPASSRLS;
+
+GRANT CONNECT ON DATABASE vico_forum TO vico_forum_web;
+GRANT USAGE ON SCHEMA public TO vico_forum_web;
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE
+  public."user",
+  public.session,
+  public.account,
+  public.verification,
+  public.rate_limit
+TO vico_forum_web;
+
+GRANT SELECT ON TABLE
+  public.forum_categories,
+  public.forum_sections,
+  public.forum_topic_title_translations,
+  public.forum_post_body_translations
+TO vico_forum_web;
+
+GRANT SELECT, INSERT, UPDATE ON TABLE
+  public.forum_topics,
+  public.forum_posts
+TO vico_forum_web;
+
+GRANT SELECT, INSERT ON TABLE
+  public.forum_topic_title_revisions,
+  public.forum_post_revisions
+TO vico_forum_web;
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE
+  public.authz_roles,
+  public.authz_user_permission_overrides
+TO vico_forum_web;
+
+GRANT SELECT, INSERT, DELETE ON TABLE
+  public.authz_role_permissions
+TO vico_forum_web;
+
+GRANT SELECT, INSERT, UPDATE ON TABLE
+  public.authz_user_roles
+TO vico_forum_web;
+
+GRANT SELECT, UPDATE ON TABLE
+  public.authz_mutation_lock
+TO vico_forum_web;
+```
+
+Instead of the previous pass/fail assertion, the final transaction statement read the actual ACL
+with the same catalog basis as the shared verifier:
+
+```sql
+SELECT
+  n.nspname::text AS schema,
+  c.relname::text AS name,
+  CASE c.relkind
+    WHEN 'S' THEN 'sequence'
+    WHEN 'v' THEN 'view'
+    WHEN 'm' THEN 'view'
+    ELSE 'table'
+  END::text AS kind,
+  grantee.rolname::text AS grantee,
+  grantor.rolname::text AS grantor,
+  acl.privilege_type::text AS privilege,
+  acl.is_grantable
+FROM pg_catalog.pg_class c
+JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+CROSS JOIN LATERAL pg_catalog.aclexplode(
+  COALESCE(
+    c.relacl,
+    pg_catalog.acldefault(
+      CASE WHEN c.relkind='S' THEN 's'::"char" ELSE 'r'::"char" END,
+      c.relowner
+    )
+  )
+) acl
+LEFT JOIN pg_catalog.pg_roles grantee ON grantee.oid = acl.grantee
+LEFT JOIN pg_catalog.pg_roles grantor ON grantor.oid = acl.grantor
+WHERE n.nspname = 'public'
+  AND c.relkind IN ('r','p','S','v','m','f')
+  AND grantee.rolname = 'vico_forum_web';
+```
+
+The statement computed `missing`, `excess`, `grantable`, full `actual`,
+shared-verifier normalized shape and automatic role membership, then deliberately raised
+`P0001` with the compact JSON payload. That intentional exception aborted the complete
+transaction; COMMIT was impossible.
+
+#### Exact diagnostic payload
+
+Returned PostgreSQL exception payload:
+
+```json
+{
+  "expected_count": 50,
+  "actual_count": 0,
+  "excess": [],
+  "grantable": [],
+  "actual": [],
+  "shared_shape": [],
+  "membership": [
+    {
+      "role": "vico_forum_web",
+      "member": "vico_forum_owner",
+      "grantor": "cloud_admin",
+      "set_option": false,
+      "admin_option": true,
+      "inherit_option": false
+    }
+  ],
+  "missing": [
+    {"name":"account","privilege":"DELETE"},
+    {"name":"account","privilege":"INSERT"},
+    {"name":"account","privilege":"SELECT"},
+    {"name":"account","privilege":"UPDATE"},
+    {"name":"authz_mutation_lock","privilege":"SELECT"},
+    {"name":"authz_mutation_lock","privilege":"UPDATE"},
+    {"name":"authz_role_permissions","privilege":"DELETE"},
+    {"name":"authz_role_permissions","privilege":"INSERT"},
+    {"name":"authz_role_permissions","privilege":"SELECT"},
+    {"name":"authz_roles","privilege":"DELETE"},
+    {"name":"authz_roles","privilege":"INSERT"},
+    {"name":"authz_roles","privilege":"SELECT"},
+    {"name":"authz_roles","privilege":"UPDATE"},
+    {"name":"authz_user_permission_overrides","privilege":"DELETE"},
+    {"name":"authz_user_permission_overrides","privilege":"INSERT"},
+    {"name":"authz_user_permission_overrides","privilege":"SELECT"},
+    {"name":"authz_user_permission_overrides","privilege":"UPDATE"},
+    {"name":"authz_user_roles","privilege":"INSERT"},
+    {"name":"authz_user_roles","privilege":"SELECT"},
+    {"name":"authz_user_roles","privilege":"UPDATE"},
+    {"name":"forum_categories","privilege":"SELECT"},
+    {"name":"forum_post_body_translations","privilege":"SELECT"},
+    {"name":"forum_post_revisions","privilege":"INSERT"},
+    {"name":"forum_post_revisions","privilege":"SELECT"},
+    {"name":"forum_posts","privilege":"INSERT"},
+    {"name":"forum_posts","privilege":"SELECT"},
+    {"name":"forum_posts","privilege":"UPDATE"},
+    {"name":"forum_sections","privilege":"SELECT"},
+    {"name":"forum_topic_title_revisions","privilege":"INSERT"},
+    {"name":"forum_topic_title_revisions","privilege":"SELECT"},
+    {"name":"forum_topic_title_translations","privilege":"SELECT"},
+    {"name":"forum_topics","privilege":"INSERT"},
+    {"name":"forum_topics","privilege":"SELECT"},
+    {"name":"forum_topics","privilege":"UPDATE"},
+    {"name":"rate_limit","privilege":"DELETE"},
+    {"name":"rate_limit","privilege":"INSERT"},
+    {"name":"rate_limit","privilege":"SELECT"},
+    {"name":"rate_limit","privilege":"UPDATE"},
+    {"name":"session","privilege":"DELETE"},
+    {"name":"session","privilege":"INSERT"},
+    {"name":"session","privilege":"SELECT"},
+    {"name":"session","privilege":"UPDATE"},
+    {"name":"user","privilege":"DELETE"},
+    {"name":"user","privilege":"INSERT"},
+    {"name":"user","privilege":"SELECT"},
+    {"name":"user","privilege":"UPDATE"},
+    {"name":"verification","privilege":"DELETE"},
+    {"name":"verification","privilege":"INSERT"},
+    {"name":"verification","privilege":"SELECT"},
+    {"name":"verification","privilege":"UPDATE"}
+  ]
+}
+```
+
+This proves the prior `Relation ACL mismatch` was not a one-row normalization drift:
+**all 50 expected relation privileges were absent inside the transaction**.
+The automatic PostgreSQL 17 owner administrative membership was present exactly as expected.
+
+#### Mandatory post-check and grant-authority evidence
+
+After the intentional rollback, a separate read-only post-check confirmed:
+- `vico_forum_web` is absent;
+- permanent localization ACL remains unchanged;
+- current/session user remains `vico_forum_owner`.
+
+The same post-check also identified the execution-authority boundary that explains the zero-row
+ACL result:
+
+- every one of the 18 target web relations is owned by
+  `vico_forum_migrator`, not `vico_forum_owner`;
+- for every checked target relation and every relevant
+  SELECT / INSERT / UPDATE / DELETE privilege,
+  `vico_forum_owner` has `WITH GRANT OPTION = false`.
+
+Target relation owners observed:
+
+```text
+account                              vico_forum_migrator
+authz_mutation_lock                  vico_forum_migrator
+authz_role_permissions               vico_forum_migrator
+authz_roles                          vico_forum_migrator
+authz_user_permission_overrides      vico_forum_migrator
+authz_user_roles                     vico_forum_migrator
+forum_categories                     vico_forum_migrator
+forum_post_body_translations         vico_forum_migrator
+forum_post_revisions                 vico_forum_migrator
+forum_posts                          vico_forum_migrator
+forum_sections                       vico_forum_migrator
+forum_topic_title_revisions          vico_forum_migrator
+forum_topic_title_translations       vico_forum_migrator
+forum_topics                         vico_forum_migrator
+rate_limit                           vico_forum_migrator
+session                              vico_forum_migrator
+user                                 vico_forum_migrator
+verification                         vico_forum_migrator
+```
+
+Official PostgreSQL 17 GRANT semantics match the observed behavior:
+a non-owner can grant only privileges for which it has grant option; when named privileges lack
+grant option PostgreSQL can proceed with warnings while granting only the subset actually
+grantable. Object owners are always treated as holding all grant options.
+
+References checked:
+- PostgreSQL 17 `GRANT` reference / documentation;
+- PostgreSQL 17 section 5.8 Privileges.
+
+#### Diagnostic classification for Codex review
+
+Evidence now rules out the previously suspected static relation-set/assertion mismatch:
+
+- merged web contract expected set = 50 pairs;
+- operational expected set = 50 pairs;
+- diagnostic actual relation ACL = 0 pairs;
+- no excess or grantable rows existed;
+- automatic role membership was correct;
+- target relation ownership/grant authority differs from the database-owner execution role.
+
+The shared repository runtime verifier remains an end-state ACL verifier; the existing disposable
+PostgreSQL probe runs under its test/admin execution identity and does not prove that
+`vico_forum_owner` can issue production table grants.
+
+A current-Stage operational/provisioning-authority defect is therefore strongly evidenced, but no
+corrective repository or production action is taken here. Per independent-review protocol, Codex
+must now independently classify the ownership/grant-authority mismatch and define one common
+corrective path.
+
+The authorized diagnostic transaction was rollback-only and is consumed.
