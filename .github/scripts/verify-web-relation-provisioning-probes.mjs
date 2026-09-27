@@ -66,6 +66,9 @@ async function setupProductionLikeAuthority(admin) {
   await admin.query(
     `ALTER DATABASE ${quoteIdentifier(databaseName)} OWNER TO ${quoteIdentifier(ownerRole)}`,
   );
+  await admin.query(
+    `ALTER SCHEMA public OWNER TO ${quoteIdentifier(ownerRole)}`,
+  );
 
   for (const relation of expectedWebRelationNames()) {
     await admin.query(
@@ -82,17 +85,18 @@ async function setupProductionLikeAuthority(admin) {
     await admin.query(
       `GRANT USAGE ON SCHEMA public TO ${quoteIdentifier(localizationRole)}`,
     );
-    await admin.query(
-      `GRANT SELECT ON TABLE
-        public.locales,
-        public.ui_translations,
-        public.ui_translation_bundles
-       TO ${quoteIdentifier(localizationRole)}`,
-    );
     await createOwnerPhaseWebRole(admin, webRole);
   } finally {
     await admin.query("RESET ROLE");
   }
+
+  await admin.query(
+    `GRANT SELECT ON TABLE
+      public.locales,
+      public.ui_translations,
+      public.ui_translation_bundles
+     TO ${quoteIdentifier(localizationRole)}`,
+  );
 }
 
 async function assertNoRelationPrivileges(admin, role) {
