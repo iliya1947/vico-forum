@@ -4264,3 +4264,39 @@ Combined Gate 0 evidence now establishes:
 Remaining read-only Gate 0 evidence: current deployed Worker version/deployment route/domain state,
 to confirm the live deployment surface and check for dashboard-only drift relative to the
 repository config. No external mutation has been performed.
+
+
+### Cloudflare Gate 0 — evidence 5: active deployment is intentionally behind current main
+
+Fresh owner-provided Cloudflare dashboard evidence was reviewed for Worker `vico-forum` on the
+`Deployments` page.
+
+Observed from the active deployment panel and version/build history:
+
+- active Cloudflare Worker version ID: `78f87645`;
+- traffic allocation: `100%`;
+- deployment shown as approximately 12 days old;
+- active version history row is associated with branch `main` and
+  `docs: reprioritize roadmap around forum core (#50)`;
+- the corresponding recent-build row shows commit prefix `e26d145`.
+
+GitHub PR #50 independently resolves that deployment source to merged commit:
+
+`e26d145609f942f82209057662ea92422efa99f9`.
+
+Current repository `main` is:
+
+`d4c82a3729e9cdda89b6122ea1438dfb53150a12`.
+
+Therefore the live Worker is deliberately behind current `main`; this is consistent with the now
+disconnected native Git Builds integration and with the project policy that ordinary feature merges
+must not imply production promotion.
+
+This is not classified as a deployment defect by itself. Stage 6 explicitly expects the external
+pre-release candidate to lag repository development until a reviewed runtime rollout is authorized.
+
+The deployment screenshot also supports that an active production Worker exists and currently
+receives all production traffic. No deploy, rollback, promote or traffic change was performed.
+
+Remaining Gate 0 read-only evidence: exact current Worker domain/route exposure. After that, the
+Cloudflare topology preflight can be closed and returned to Codex for independent review.
