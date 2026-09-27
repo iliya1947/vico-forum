@@ -3390,3 +3390,116 @@ No external mutation and no repository implementation PR was created.
 
 Next preflight subtask after explicit user continuation: read-only Cloudflare Worker/Build branch,
 preview topology, existing `HYPERDRIVE` binding and caching-state verification.
+
+
+### Runtime-wiring preflight — subtask 2/5: repository topology verified; private Cloudflare topology not observable
+
+This entry records only subtask 2 of the bounded read-only runtime-wiring preflight:
+Cloudflare Worker/Build branch topology, preview isolation, existing Hyperdrive binding/config and
+caching state. No Cloudflare mutation, repository implementation PR, credential operation or deploy
+was performed.
+
+Exact repository target remains:
+
+`main = d4c82a3729e9cdda89b6122ea1438dfb53150a12`.
+
+#### Tool/access preflight
+
+The available ChatGPT toolset has no Cloudflare account connector. Plugin-directory lookup for
+`Cloudflare Workers Hyperdrive` returned no installable plugin. Therefore this session cannot
+authenticate to the user's private Cloudflare control plane.
+
+This matters because the current source-of-truth explicitly says actual Workers Builds branch
+settings are external state and are not stored in Git; Stage 6 requires them to be rechecked in the
+actual Cloudflare control plane before write/private-data rollout.
+
+Accordingly no claim below treats repository configuration as proof of the current private
+Cloudflare dashboard state.
+
+#### Repository-side topology confirmed from current main
+
+`wrangler.jsonc` currently defines:
+
+- Worker name `vico-forum`;
+- entry point `./workers/app.ts`;
+- one Hyperdrive binding only:
+  `HYPERDRIVE`;
+- one checked-in Hyperdrive configuration ID for that binding;
+- no `env.*` blocks;
+- no second web Hyperdrive binding;
+- no checked-in routes/custom-domain stanza;
+- no checked-in preview-specific Hyperdrive/resource isolation stanza.
+
+The current Worker composition likewise references only:
+
+`env.HYPERDRIVE.connectionString`.
+
+Repository GitHub Actions contain:
+
+- PR-only CI/build/local Hyperdrive smoke;
+- manual production database identity/migration/runtime-privilege/provisioning workflows.
+
+There is **no repository GitHub Actions Worker deploy workflow** and no `wrangler deploy` script in
+`package.json`.
+
+PR CI uses only the local override
+`CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE` against disposable PostgreSQL 17.
+That is local test wiring, not external preview/production Cloudflare evidence.
+
+#### What repository source-of-truth says about external state
+
+Current `docs/database/HYPERDRIVE.md` and `PROJECT_STATE.md` state that:
+
+- native Cloudflare Workers Builds had previously been connected to GitHub `main`;
+- the recorded project state says that integration for active development `main` was later
+  disabled;
+- exact external build/branch setting is intentionally not represented in Git and must be
+  rechecked in Cloudflare during Stage 6;
+- existing deployed localization foundation uses the read-only localization Hyperdrive path;
+- the separate cache-disabled web Hyperdrive binding and Worker wiring are not yet accepted;
+- before any preview capability gains auth/forum writes or private production data, preview must be
+  isolated with separate resources/secrets or disabled.
+
+This repository record is useful history/baseline, but it is **not** fresh Cloudflare
+control-plane evidence.
+
+#### Facts that cannot be honestly verified in this session
+
+Without authenticated Cloudflare account access, this subtask cannot currently prove:
+
+1. whether native Workers Builds integration is still disabled today;
+2. which production branch, preview branches or branch filters the Cloudflare project currently
+   uses;
+3. whether preview deployments are enabled and, if so, what bindings/secrets/resources they inherit;
+4. whether any currently deployed Worker version is attached to the checked-in `HYPERDRIVE`
+   binding ID;
+5. the current Hyperdrive configuration's origin username/credential identity;
+6. actual Hyperdrive query-cache state/configuration in Cloudflare;
+7. whether any dashboard-only binding/config drift exists relative to `wrangler.jsonc`.
+
+Public repository data or a public Worker response cannot establish these private configuration
+facts, so no web/public inference was substituted.
+
+#### Stage classification
+
+No repository defect is established by this access limitation.
+
+However, **fresh private Cloudflare topology evidence remains a current Stage 6 gate** before
+auth/forum write/private-data deployment, because the project's own preview/private-data boundary
+requires it.
+
+The checked-in repository currently has no mechanism that would accidentally deploy the new web
+capability through GitHub Actions. The unresolved risk is external dashboard/build topology, not
+repository CI.
+
+The future web binding must remain separate from the existing localization binding, and preview
+must not inherit production web write/private-data capability unless explicitly isolated and
+accepted.
+
+No mergeable PR is justified from this subtask alone. First the actual Cloudflare external state
+must be observed through an authenticated control-plane path or equivalent owner-provided evidence.
+
+Next preflight subtask after explicit user continuation: official-documentation verification for
+the exact current Wrangler/Hyperdrive version and supported separate cache-disabled web binding /
+credential update model. That research can proceed independently of the unresolved private
+Cloudflare visibility gap.
