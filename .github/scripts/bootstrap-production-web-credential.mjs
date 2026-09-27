@@ -136,7 +136,7 @@ export async function readBootstrapPreflight(
     "SELECT current_user AS current_user, session_user AS session_user, current_database() AS current_database",
   );
   const server = await client.query(
-    "SELECT current_setting('server_version_num')::integer AS version_num, current_setting('server_encoding') AS server_encoding, current_setting('log_parameter_max_length_on_error')::integer AS log_parameter_max_length_on_error, current_setting('scram_iterations')::integer AS scram_iterations",
+    "SELECT current_setting('server_version_num')::integer AS version_num, current_setting('server_encoding') AS server_encoding, current_setting('log_parameter_max_length_on_error')::integer AS log_parameter_max_length_on_error, current_setting('log_statement') AS log_statement, current_setting('log_duration')::boolean AS log_duration, current_setting('log_min_duration_statement')::integer AS log_min_duration_statement, current_setting('log_min_duration_sample')::integer AS log_min_duration_sample, current_setting('log_transaction_sample_rate')::double precision AS log_transaction_sample_rate, current_setting('scram_iterations')::integer AS scram_iterations",
   );
   const role = await client.query(
     "SELECT rolname, rolsuper, rolcreatedb, rolcreaterole, rolinherit, rolcanlogin, rolreplication, rolbypassrls FROM pg_catalog.pg_roles WHERE rolname = $1",
@@ -205,6 +205,31 @@ export function assertBootstrapPreflight(
     snapshot.server.log_parameter_max_length_on_error,
     0,
     "Bind-parameter values must be disabled in server error logging",
+  );
+  assert.equal(
+    snapshot.server.log_statement,
+    "none",
+    "Statement logging must be disabled during credential bootstrap",
+  );
+  assert.equal(
+    snapshot.server.log_duration,
+    false,
+    "Duration logging must be disabled during credential bootstrap",
+  );
+  assert.equal(
+    snapshot.server.log_min_duration_statement,
+    -1,
+    "Duration-based statement logging must be disabled during credential bootstrap",
+  );
+  assert.equal(
+    snapshot.server.log_min_duration_sample,
+    -1,
+    "Sampled duration logging must be disabled during credential bootstrap",
+  );
+  assert.equal(
+    snapshot.server.log_transaction_sample_rate,
+    0,
+    "Transaction statement sampling must be disabled during credential bootstrap",
   );
   assert.ok(
     Number.isSafeInteger(snapshot.server.scram_iterations)
@@ -475,7 +500,6 @@ export async function bootstrapProductionWebCredential(
       } catch {
         // Ambiguous mutation outcome is handled by compensation below.
       }
-      transactionStarted = false;
     }
 
     if (credentialMutationAttempted) {
