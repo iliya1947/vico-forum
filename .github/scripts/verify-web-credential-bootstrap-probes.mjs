@@ -91,6 +91,7 @@ try {
     {
       expectedDatabase: databaseName,
       allowNonNeon: true,
+      credentialLeaseSeconds: 2,
     },
   );
 
@@ -109,6 +110,30 @@ try {
   } finally {
     await webClient.end();
   }
+
+  const leased = await admin.query(
+    "SELECT rolvaliduntil IS NOT NULL AS has_expiry, rolvaliduntil > pg_catalog.clock_timestamp() AS active FROM pg_catalog.pg_roles WHERE rolname = $1",
+    [EXPECTED_WEB_ROLE],
+  );
+  assert.deepEqual(leased.rows[0], {
+    has_expiry: true,
+    active: true,
+  });
+
+  await new Promise((resolve) => setTimeout(resolve, 2500));
+
+  const expired = await admin.query(
+    "SELECT rolvaliduntil <= pg_catalog.clock_timestamp() AS expired FROM pg_catalog.pg_roles WHERE rolname = $1",
+    [EXPECTED_WEB_ROLE],
+  );
+  assert.equal(expired.rows[0]?.expired, true);
+
+  const expiredClient = new pg.Client({
+    connectionString: connectionStringFor(EXPECTED_WEB_ROLE, webPassword),
+    connectionTimeoutMillis: 2_000,
+  });
+  await assert.rejects(expiredClient.connect(), /password authentication failed/i);
+  await expiredClient.end().catch(() => {});
 
   await revokeWebCredential(ownerDatabaseUrl, {
     expectedDatabase: databaseName,
