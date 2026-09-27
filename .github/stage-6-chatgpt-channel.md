@@ -3661,3 +3661,203 @@ The remaining unresolved item from subtask 2 is external topology evidence, not 
 Next preflight subtask after explicit user continuation: derive web PostgreSQL/client deadlines from
 the actual Better Auth/forum/authz request paths rather than copying localization
 `500/1500/2000ms` defaults.
+
+
+### Runtime-wiring preflight — subtask 4/5: initial web PostgreSQL/client deadline profile
+
+This entry records only subtask 4 of the bounded read-only runtime-wiring preflight. It derives an
+initial deadline profile from the actual Better Auth/forum/authz request paths and current platform
+semantics. No role setting, password, Hyperdrive, Worker, repository implementation or deploy was
+mutated.
+
+Exact repository target remains:
+
+`main = d4c82a3729e9cdda89b6122ea1438dfb53150a12`.
+
+Official references checked:
+
+- node-postgres Client configuration:
+  https://node-postgres.com/apis/client
+- node-postgres Pool configuration:
+  https://node-postgres.com/apis/pool
+- PostgreSQL `statement_timeout` / `lock_timeout`:
+  https://www.postgresql.org/docs/current/runtime-config-client.html
+- Cloudflare Hyperdrive connection pooling:
+  https://developers.cloudflare.com/hyperdrive/concepts/connection-pooling/
+- Cloudflare Hyperdrive connection lifecycle:
+  https://developers.cloudflare.com/hyperdrive/concepts/connection-lifecycle/
+- Cloudflare Hyperdrive limits:
+  https://developers.cloudflare.com/hyperdrive/platform/limits/
+
+#### Current code behavior
+
+The accepted localization path already has:
+
+- client `connectionTimeoutMillis = 1000`;
+- client `query_timeout = 2000`;
+- database+role defaults:
+  `lock_timeout = 500ms`,
+  `statement_timeout = 1500ms`.
+
+The web adapters currently do **not** apply those localization client settings:
+
+- Better Auth creates plain `new Client({ connectionString })`;
+- forum creates plain `new Client({ connectionString })`;
+- authorization creates request-local `new Pool({ connectionString, max: 1 })`.
+
+That is correct for the current repository boundary because web Hyperdrive wiring has not yet been
+accepted. It becomes a current Stage 6 requirement when the new web binding is wired.
+
+A read-only production catalog check also confirmed:
+
+- `vico_forum_runtime` has database-specific
+  `lock_timeout=500ms`, `statement_timeout=1500ms`;
+- `vico_forum_web` currently has **no** database-specific role settings.
+
+No DB setting was changed.
+
+#### Actual web query/locking shapes
+
+**Better Auth**
+
+The runtime owns one DB client per auth operation and uses the database-backed Better Auth tables:
+`user`, `session`, `account`, `verification`, `rate_limit`.
+The schema provides primary/unique/index support for the identity/session/account/verification and
+rate-limit keys. These paths need fresh reads and short writes, not localization-tight timeouts.
+
+**Public forum reads**
+
+The public reader executes bounded category/section/topic queries with joins/aggregates over forum
+tables and `user`. Topic page loading uses separate topic and post queries. These are still
+ordinary request-path SQL, but they are broader than the tiny indexed localization reads.
+
+**Forum writes**
+
+Topic/reply creation intentionally serializes each author's posting through:
+
+`SELECT user ... FOR UPDATE`
+
+and, while holding that row lock, reads the author's latest post and performs the forum inserts in
+the same transaction.
+
+Solved/best-answer mutations similarly lock the topic row `FOR UPDATE`.
+
+These critical sections contain only DB work and are designed to be short; there is no external
+provider/API work inside them. A `500ms` lock timeout would nevertheless be unnecessarily tight
+for legitimate concurrent requests and transient Hyperdrive/origin scheduling.
+
+**Authorization reads**
+
+Per-request authorization resolution uses a repeatable-read read-only snapshot and several
+small queries. The management page additionally reads all current users/roles/grants/overrides.
+The permission catalog is currently only eight code-backed keys.
+
+**Authorization writes**
+
+Every authorization mutation deliberately serializes on the singleton
+`authz_mutation_lock ... FOR UPDATE`. While holding it, the transaction:
+
+- counts managers before;
+- verifies the actor's effective permission;
+- performs the requested mutation;
+- counts managers after;
+- may update the singleton state;
+- commits.
+
+`replaceRoleGrants` can additionally perform one insert per selected permission. With the current
+eight-key catalog this is still bounded and small, but it is materially more work than one
+localization lookup.
+
+#### Initial web deadline profile
+
+For the first cache-disabled web Hyperdrive acceptance, use this **initial calibration profile**:
+
+```text
+connectionTimeoutMillis = 3000ms
+lock_timeout             = 2000ms   (database+role default)
+statement_timeout        = 5000ms   (database+role default)
+query_timeout            = 7000ms   (node-postgres Client/Pool)
+```
+
+Required ordering:
+
+```text
+lock_timeout < statement_timeout < query_timeout
+```
+
+Rationale:
+
+- **3s connection timeout**: still fails boundedly at the Worker client layer, but gives the
+  freshness-sensitive web path more room than the already calibrated tiny localization reads;
+- **2s lock timeout**: permits normal short contention on the per-author forum mutex and the
+  authorization singleton without allowing an HTTP request to queue behind a lock for a long
+  period;
+- **5s statement timeout**: gives forum aggregate reads, Better Auth CRUD, authorization snapshot
+  reads and bounded management mutations materially more room than localization while still
+  killing pathological individual statements well below Hyperdrive's current 60s statement limit;
+- **7s client query timeout**: leaves a 2s margin for PostgreSQL's server-side timeout to surface as
+  the specific SQLSTATE/message before the client-side read timeout becomes the outer failure.
+
+These are **not production SLO claims**. They are initial safe rollout values derived from current
+query shapes and must be measured through the actual new cache-disabled Hyperdrive before final
+Stage 6 acceptance. If real p95/p99 or controlled lock tests show a mismatch, adjust from observed
+evidence rather than mechanically preserving these numbers.
+
+#### Server vs client placement
+
+Keep the same separation already proven for localization:
+
+- `lock_timeout` and `statement_timeout` as PostgreSQL database+role defaults on the
+  `vico_forum_web` origin role;
+- `connectionTimeoutMillis` and `query_timeout` in the web node-postgres Client/Pool factory.
+
+This ensures every newly established web origin session receives the server deadlines while all
+application-created Clients/Pools have bounded caller-side waits.
+
+Cloudflare Hyperdrive's transaction pooling means server session state is reset between borrowers;
+database+role defaults are the stable source for new origin sessions, matching the existing
+localization acceptance model.
+
+#### Settings deliberately not added
+
+Do **not** add additional timeout knobs merely for completeness in the first web rollout:
+
+- no copied localization values;
+- no global/database-wide `statement_timeout`;
+- no `idle_in_transaction_session_timeout` or PostgreSQL 17 `transaction_timeout` yet;
+- no per-route timeout matrix;
+- no long-running transaction wrappers to preserve session settings.
+
+Current transactions contain no external calls or intentional idle period, and Better Auth's
+internal transaction behavior should not be constrained by new server-wide knobs without a
+demonstrated need.
+
+#### Failure classification / code implication
+
+Current forum and authorization availability wrappers already classify the exact known
+node-postgres connection/query timeout shapes through `postgres-deadlines.ts`.
+
+The upcoming wiring-preparation implementation should therefore introduce one shared web
+Client/Pool configuration boundary rather than independently hard-code timeout values in Better
+Auth, forum and authorization adapters. Exact code shape remains an implementation choice, but all
+three web adapter families must receive the same caller-side profile.
+
+Server-side `55P03` lock timeout and exact `57014` statement timeout are already recognized by
+the shared timeout classifier.
+
+#### Stage classification
+
+No already-deployed runtime defect is established: the web capability is not yet Worker-wired.
+
+This is a **current Stage 6 wiring requirement**:
+
+- web client connections must not remain unbounded when the new binding becomes active;
+- the web role needs reviewed database-specific lock/statement defaults before deployed acceptance;
+- real Hyperdrive calibration is required because local Hyperdrive overrides bypass real pooling
+  and network behavior.
+
+No mergeable PR or DB mutation is justified by this subtask alone.
+
+Next preflight subtask after explicit user continuation: combine subtasks 1–4 into the minimal
+reviewed Stage 6 ordering, identify the exact repository-preparation PR scope and the external gates
+that must remain separately authorized.
