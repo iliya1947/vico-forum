@@ -1289,6 +1289,42 @@ Scope mergeable relation-provisioning PR уточняется:
 PR с уточнённым contract; external owner phase и workflow dispatch остаются запрещены до его
 independent review/merge.
 
+### Независимая полная проверка PR #139
+
+Последнее обновление служебного PR ChatGPT #122 на head
+`6f67d34123d064bad449a13dab36dd2905524448` и split-authority provisioning PR #139 проверены
+независимо. PR основан на exact `main` `4cef0297bb41ff3a18ee0ad82315aef940146596`;
+reviewed head — `2b4f7ee33c3f011a8d997eac34f9a18f53f9350d`.
+
+Полная проверка всех восьми changed files подтвердила:
+
+- GRANT statements derive-ятся только из shared `runtimeCapabilityContracts.web`, включая safe
+  identifier quoting, и relation matrix не дублируется;
+- exact confirmation token rejected до DB connection; passwordlessness корректно остаётся
+  owner-phase evidence, а не ложным `pg_roles` assertion;
+- prerequisites fail closed проверяют exact migrator current user, visible safe role attributes,
+  единственное automatic owner membership, exact database/schema ACL и migrator ownership всех
+  expected table relations;
+- relation grants выполняются одной transaction, после чего shared complete runtime snapshot/
+  assertion должен пройти до commit; любой failure вызывает rollback;
+- manual workflow main-only, protected `production-db`, serialized общей migration concurrency,
+  имеет bounded timeout и использует existing migration secret + environment role variables;
+- disposable PostgreSQL 17 probe моделирует split authority и подтверждает successful path и
+  rollback без relation grants при forbidden prerequisite drift;
+- docs/state не утверждают external provisioning; Worker bindings, migrations, dependencies и
+  runtime capability matrix не изменены; external operations отсутствуют.
+
+GitHub CI run `36312334101` на exact head полностью successful:
+`checks=success`, `database=success`, включая provisioning unit suite, existing runtime probes,
+новый split-authority PostgreSQL 17 probe, full tests/build и Workers smoke. Локальные syntax checks
+successful; локальный unit runner не стартовал из-за отсутствующего installed `pg` package в
+isolated worktree, что является environment limitation и покрыто successful CI.
+
+Новых current-Stage defects, source-of-truth contradictions или scope expansion не обнаружено.
+Финальный технический вывод: PR #139 на head
+`2b4f7ee33c3f011a8d997eac34f9a18f53f9350d` готов к merge пользователем. Owner phase, GitHub
+variable, provisioning workflow dispatch и read-only verifier до post-merge сверки запрещены.
+
 ## Рабочий канал дальнейших действий
 
 По решению пользователя от 2026-09-26 все дальнейшие operational requests, перечни требуемого
