@@ -4750,3 +4750,187 @@ run. No external credential/default/Hyperdrive/deploy operation was performed.
 
 PR #140 is ready for Codex's next independent full review. It remains unmerged until the user
 decides after technical agreement.
+
+
+### Credential + role-default + Hyperdrive choreography design
+
+Post-merge source state:
+
+- current `main`: `6f262bf4374440e36096fd315a9c3ff4f42eba27` (merged PR #140);
+- repository preparation is now in `main`: shared web caller deadlines, accepted external-state
+  docs, and fail-closed disabled generation-status composition;
+- external state is still unchanged by this design task: `vico_forum_web` remains without a usable
+  application credential; database-specific web role defaults, a second web Hyperdrive,
+  Worker binding/routing and deploy are not yet accepted.
+
+This section defines the bounded executable choreography only. No PostgreSQL, Neon, Cloudflare,
+GitHub Environment or Worker mutation was executed while producing it.
+
+#### 1. Read-only execution preflight
+
+Immediately before any authorized mutation, re-confirm all of the following and stop on drift:
+
+1. GitHub `main` is the exact reviewed revision intended for the operation.
+2. Neon target is the intended production project/default branch and database
+   `vico_forum`.
+3. PostgreSQL role is exact `vico_forum_web`, with the previously accepted LOGIN/NOINHERIT,
+   memberships, database/schema/relation ACL and no accepted capability widening.
+4. No database-specific `lock_timeout` / `statement_timeout` role defaults for this web profile
+   have already been applied unexpectedly.
+5. Cloudflare target account/application is the intended `vico-forum` Worker.
+6. Existing localization Hyperdrive remains exact `vico-forum-registry`, backed by
+   `vico_forum_runtime` / database `vico_forum`, query caching disabled.
+7. Proposed `vico-forum-web` Hyperdrive does not already exist.
+8. No `WEB_HYPERDRIVE` Worker binding/routing exists yet and preview isolation remains the
+   previously accepted zero-binding/zero-runtime-secret boundary.
+
+Any mismatch is a hard stop before mutation.
+
+#### 2. Database-specific role defaults
+
+The PostgreSQL owner-controlled step is limited to exact `vico_forum_web` in database
+`vico_forum`:
+
+- `lock_timeout = 2s`;
+- `statement_timeout = 5s`.
+
+The settings must be database-specific role defaults, not global role defaults and not application
+session `SET` statements. After application, verify via catalog evidence that the exact
+database-specific values are present and separately re-check that accepted role attributes,
+memberships and ACL remain unchanged.
+
+These server defaults affect new sessions. Repository caller-side web deadlines stay
+`connectionTimeoutMillis=3000` and `query_timeout=7000`, preserving
+`lock_timeout < statement_timeout < query_timeout`.
+
+#### 3. Secret-safe usable credential
+
+The usable password for `vico_forum_web` must never pass through ChatGPT, PR text, repository,
+GitHub Actions logs, shell history or copied command text.
+
+The owner-assisted boundary is therefore:
+
+1. reset/generate the password directly in Neon UI for exact role `vico_forum_web`;
+2. obtain exact Neon direct/unpooled connection details for role `vico_forum_web` and database
+   `vico_forum`;
+3. transfer those details directly into Cloudflare's Hyperdrive creation UI without pasting the
+   password or full connection string into this chat or service PR.
+
+A tool/API path that returns the privileged connection string or password to ChatGPT is not used.
+Password-verifier state is not claimed observable through this path.
+
+Official behavior checked for this design:
+
+- Neon exposes role password reset as a credential mutation;
+- Cloudflare's Neon guidance uses direct/unpooled Neon connectivity because Hyperdrive performs its
+  own pooling;
+- Cloudflare Hyperdrive treats the origin password as write-only secret material and does not
+  expose it back through safe metadata reads.
+
+#### 4. New cache-disabled web Hyperdrive
+
+Create one new Hyperdrive configuration with proposed stable name:
+
+`vico-forum-web`
+
+Required target:
+
+- origin user: `vico_forum_web`;
+- database: `vico_forum`;
+- query caching: disabled.
+
+This step must not mutate:
+
+- existing `vico-forum-registry`;
+- current Worker binding/config;
+- `wrangler.jsonc`;
+- preview bindings/resources/secrets;
+- runtime ACL;
+- migrations.
+
+Cloudflare validates connectivity during Hyperdrive creation. Successful resource creation is not
+yet application wiring/deploy acceptance.
+
+Official references used while defining the contract:
+
+- Cloudflare Hyperdrive query caching:
+  https://developers.cloudflare.com/hyperdrive/concepts/query-caching/
+- Cloudflare Neon integration:
+  https://developers.cloudflare.com/hyperdrive/examples/connect-to-postgres/postgres-database-providers/neon/
+- Cloudflare Hyperdrive API:
+  https://developers.cloudflare.com/api/resources/hyperdrive/
+- PostgreSQL 17 `ALTER ROLE`:
+  https://www.postgresql.org/docs/17/sql-alterrole.html
+
+#### 5. Safe success evidence
+
+After successful Hyperdrive creation, record only non-secret metadata:
+
+- exact Hyperdrive name;
+- resource ID;
+- origin role = `vico_forum_web`;
+- database = `vico_forum`;
+- query caching disabled;
+- successful connection/resource validation;
+- exact database-specific role defaults;
+- unchanged accepted role attributes/memberships/ACL;
+- existing localization Hyperdrive unchanged;
+- absence of any Worker binding/routing change.
+
+Do not record host, password, full connection string, secret fields or password verifier.
+
+#### 6. Failure and compensating recovery
+
+No automatic retry.
+
+Failure before credential creation:
+- no secret recovery required;
+- if role defaults were already applied, restore their exact preflight state and verify.
+
+Failure after usable password exists but before accepted Hyperdrive evidence:
+- first revoke usability by returning `vico_forum_web` to `PASSWORD NULL` or equivalently
+  rotating/revoking the just-created credential through the accepted owner-controlled path;
+- then restore database-specific defaults to exact preflight state if the choreography is being
+  fully compensated.
+
+If a new `vico-forum-web` Hyperdrive resource was created but acceptance did not complete:
+- after credential revocation, delete the new, still-unbound Hyperdrive resource when safe;
+- never delete or modify `vico-forum-registry`;
+- verify no Worker binding was introduced.
+
+If deletion of the failed new Hyperdrive resource itself fails:
+- keep the credential revoked;
+- prove the resource remains unbound from the Worker;
+- stop and record safe metadata for the unresolved orphaned resource. Do not continue to binding or
+  deploy.
+
+The accepted production role/grants themselves are not dropped as compensation; only the new
+credential/default/resource layer is within this choreography.
+
+#### 7. Mandatory stop after success
+
+Even after successful safe metadata evidence, stop. This choreography does not authorize:
+
+- `wrangler.jsonc` changes;
+- adding `WEB_HYPERDRIVE`;
+- Worker routing/composition changes;
+- deploy;
+- real-path deadline calibration/smoke;
+- OAuth/bootstrap;
+- Queue/provider operations.
+
+Those remain separate reviewed/authorized Stage 6 gates.
+
+#### 8. Tool-capability split
+
+ChatGPT can perform repository/GitHub verification and available safe Neon metadata checks.
+A future PostgreSQL defaults mutation can only occur after explicit user authorization and exact
+target resolution.
+
+The password reset/secret copy and Cloudflare Hyperdrive creation remain owner-assisted UI actions
+for this choreography because the password must not traverse ChatGPT/tool output and no
+authenticated Cloudflare control-plane connector is currently available here.
+
+Codex should independently review this choreography contract before any external authorization is
+requested. The next technical output must define the exact bounded authorization boundary or
+identify a defect in this design; no mutation is implied by this record.
