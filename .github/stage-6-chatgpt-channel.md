@@ -4300,3 +4300,37 @@ receives all production traffic. No deploy, rollback, promote or traffic change 
 
 Remaining Gate 0 read-only evidence: exact current Worker domain/route exposure. After that, the
 Cloudflare topology preflight can be closed and returned to Codex for independent review.
+
+
+### Cloudflare Gate 0 — evidence 6: production and preview workers.dev exposure; no custom routes
+
+Fresh owner-provided Cloudflare dashboard evidence was reviewed for Worker `vico-forum` on the
+`Domains` page.
+
+Observed:
+
+- Production Worker URL is enabled on the account `workers.dev` subdomain;
+- Preview wildcard Worker URL is also enabled;
+- the UI states both URLs are publicly reachable unless Access is enabled;
+- no custom domains are configured;
+- no custom zone routes are configured;
+- no setting was changed while collecting this evidence.
+
+This establishes that preview is an externally reachable surface in principle, even though prior
+Gate 0 evidence shows `Previews Base` currently has **no connected bindings** and native Git Builds
+is disconnected.
+
+Stage classification:
+
+- preview URL enablement alone is not a current defect;
+- it becomes unsafe only if production private/write resources or secrets are made available to a
+  preview deployment;
+- current binding evidence shows no such preview binding exposure, but preview runtime
+  variables/secrets still need one final read-only check before declaring the preview/private-data
+  topology fully observed.
+
+Production exposure is currently only the account `workers.dev` URL; there are no custom
+domains/routes to account for in the first Stage 6 runtime rollout.
+
+Remaining Gate 0 evidence: `Previews Base` runtime variables/secrets presence/absence. Secret
+values must remain masked and must not be copied into service PR evidence.
