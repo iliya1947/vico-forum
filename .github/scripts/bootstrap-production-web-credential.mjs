@@ -269,7 +269,277 @@ export async function applyScramVerifier(
     [verifier],
   );
   await client.query(
-    "DO $vico_web_credential_bootstrap$ DECLARE v_verifier text := pg_catalog.current_setting('vico.web_bootstrap_scram_verifier', true); BEGIN IF v_verifier IS NULL OR pg_catalog.position('SCRAM-SHA-256$' IN v_verifier) <> 1 THEN RAISE EXCEPTION 'web credential bootstrap verifier unavailable or invalid'; END IF; EXECUTE pg_catalog.format('ALTER ROLE %I PASSWORD %L', 'vico_forum_web', v_verifier); END $vico_web_credential_bootstrap$;",
+    "DO $vico_web_credential_bootstrap$ DECLARE v_verifier text := pg_catalog.current_setting('vico.web_bootstrap_scram_verifier', true); BEGIN IF v_verifier IS NULL OR pg_catalog.left(v_verifier, 14) <> 'SCRAM-SHA-256 THEN RAISE EXCEPTION 'web credential bootstrap verifier unavailable or invalid'; END IF; EXECUTE pg_catalog.format('ALTER ROLE %I PASSWORD %L', 'vico_forum_web', v_verifier); END $vico_web_credential_bootstrap$;",
+  );
+}
+
+export async function revokeWebCredential(
+  ownerDatabaseUrl,
+  {
+    expectedDatabase = EXPECTED_DATABASE,
+    allowNonNeon = false,
+    clientFactory = (options) => new pg.Client(options),
+  } = {},
+) {
+  assertDirectOwnerTarget(ownerDatabaseUrl, {
+    expectedDatabase,
+    allowNonNeon,
+  });
+
+  const client = clientFactory({
+    connectionString: ownerDatabaseUrl,
+    connectionTimeoutMillis: 10_000,
+    query_timeout: 10_000,
+  });
+  let connected = false;
+  let transactionStarted = false;
+
+  try {
+    await client.connect();
+    connected = true;
+    const identity = await client.query(
+      "SELECT current_user AS current_user, session_user AS session_user, current_database() AS current_database",
+    );
+    assert.equal(
+      identity.rows[0]?.current_user,
+      EXPECTED_OWNER_ROLE,
+      "Credential compensation must execute as exact " + EXPECTED_OWNER_ROLE,
+    );
+    assert.equal(
+      identity.rows[0]?.session_user,
+      EXPECTED_OWNER_ROLE,
+      "Credential compensation session must be exact " + EXPECTED_OWNER_ROLE,
+    );
+    assert.equal(
+      identity.rows[0]?.current_database,
+      expectedDatabase,
+      "Credential compensation must target exact database " + expectedDatabase,
+    );
+
+    await client.query("BEGIN");
+    transactionStarted = true;
+    await client.query('ALTER ROLE "vico_forum_web" PASSWORD NULL');
+    await client.query("COMMIT");
+    transactionStarted = false;
+  } catch (error) {
+    if (transactionStarted) {
+      try {
+        await client.query("ROLLBACK");
+      } catch {
+        // Preserve the primary compensation failure.
+      }
+    }
+    throw error;
+  } finally {
+    if (connected) {
+      await client.end();
+    }
+  }
+}
+
+export function buildWebConnectionString(
+  ownerDatabaseUrl,
+  password,
+  { expectedDatabase = EXPECTED_DATABASE, allowNonNeon = false } = {},
+) {
+  const target = assertDirectOwnerTarget(ownerDatabaseUrl, {
+    expectedDatabase,
+    allowNonNeon,
+  });
+  target.username = EXPECTED_WEB_ROLE;
+  target.password = password;
+  return target.toString();
+}
+
+export async function verifyWebCredentialConnection(
+  webDatabaseUrl,
+  {
+    expectedDatabase = EXPECTED_DATABASE,
+    clientFactory = (options) => new pg.Client(options),
+  } = {},
+) {
+  const client = clientFactory({
+    connectionString: webDatabaseUrl,
+    connectionTimeoutMillis: 10_000,
+    query_timeout: 10_000,
+  });
+  let connected = false;
+  let transactionStarted = false;
+
+  try {
+    await client.connect();
+    connected = true;
+    await client.query("BEGIN READ ONLY");
+    transactionStarted = true;
+    const result = await client.query(
+      "SELECT current_user AS current_user, session_user AS session_user, current_database() AS current_database, current_setting('lock_timeout') AS lock_timeout, current_setting('statement_timeout') AS statement_timeout",
+    );
+    assert.equal(result.rows.length, 1, "Expected one web credential verification row");
+    assert.deepEqual(
+      result.rows[0],
+      {
+        current_user: EXPECTED_WEB_ROLE,
+        session_user: EXPECTED_WEB_ROLE,
+        current_database: expectedDatabase,
+        lock_timeout: "2s",
+        statement_timeout: "5s",
+      },
+      "Web credential login must preserve exact identity/database/defaults",
+    );
+    await client.query("ROLLBACK");
+    transactionStarted = false;
+  } finally {
+    if (transactionStarted) {
+      try {
+        await client.query("ROLLBACK");
+      } catch {
+        // Preserve the original verification failure.
+      }
+    }
+    if (connected) {
+      await client.end();
+    }
+  }
+}
+
+export async function bootstrapProductionWebCredential(
+  {
+    ownerDatabaseUrl,
+    webRole,
+    password,
+    confirmation,
+  },
+  {
+    expectedDatabase = EXPECTED_DATABASE,
+    allowNonNeon = false,
+    clientFactory = (options) => new pg.Client(options),
+    verifyCredential = verifyWebCredentialConnection,
+    compensate = revokeWebCredential,
+  } = {},
+) {
+  assertBootstrapConfirmation(confirmation);
+  assert.equal(webRole, EXPECTED_WEB_ROLE, "Unexpected WEB_RUNTIME_DATABASE_ROLE");
+  assertBootstrapPassword(password);
+  assertDirectOwnerTarget(ownerDatabaseUrl, {
+    expectedDatabase,
+    allowNonNeon,
+  });
+
+  const owner = clientFactory({
+    connectionString: ownerDatabaseUrl,
+    connectionTimeoutMillis: 10_000,
+    query_timeout: 10_000,
+  });
+  let connected = false;
+  let transactionStarted = false;
+  let credentialMutationAttempted = false;
+
+  try {
+    await owner.connect();
+    connected = true;
+    await owner.query("BEGIN");
+    transactionStarted = true;
+
+    const preflight = await readBootstrapPreflight(owner, {
+      webRole,
+      localizationRole: EXPECTED_LOCALIZATION_ROLE,
+    });
+    assertBootstrapPreflight(preflight, {
+      expectedDatabase,
+      webRole,
+      localizationRole: EXPECTED_LOCALIZATION_ROLE,
+    });
+
+    const verifier = deriveScramSha256Verifier(password, {
+      iterations: preflight.server.scram_iterations,
+    });
+    credentialMutationAttempted = true;
+    await applyScramVerifier(owner, verifier, { webRole });
+
+    await owner.query("COMMIT");
+    transactionStarted = false;
+
+    const webDatabaseUrl = buildWebConnectionString(
+      ownerDatabaseUrl,
+      password,
+      { expectedDatabase, allowNonNeon },
+    );
+    await verifyCredential(webDatabaseUrl, {
+      expectedDatabase,
+      clientFactory,
+    });
+  } catch {
+    if (transactionStarted) {
+      try {
+        await owner.query("ROLLBACK");
+      } catch {
+        // Ambiguous mutation outcome is handled by compensation below.
+      }
+      transactionStarted = false;
+    }
+
+    if (credentialMutationAttempted) {
+      try {
+        await compensate(ownerDatabaseUrl, {
+          expectedDatabase,
+          allowNonNeon,
+          clientFactory,
+        });
+      } catch {
+        throw new Error(
+          "Production web credential bootstrap failed and credential compensation failed",
+        );
+      }
+    }
+
+    throw new Error("Production web credential bootstrap failed");
+  } finally {
+    if (connected) {
+      try {
+        await owner.end();
+      } catch {
+        // Do not expose connection details while preserving bounded workflow output.
+      }
+    }
+  }
+}
+
+export async function runCli({
+  env = process.env,
+  logger = console,
+  bootstrap = bootstrapProductionWebCredential,
+} = {}) {
+  try {
+    assertBootstrapConfirmation(env.BOOTSTRAP_CONFIRMATION);
+    assert.ok(env.NEON_OWNER_DATABASE_URL, "NEON_OWNER_DATABASE_URL is required");
+    assert.ok(
+      env.WEB_RUNTIME_DATABASE_ROLE,
+      "WEB_RUNTIME_DATABASE_ROLE is required",
+    );
+    assert.ok(
+      env.WEB_RUNTIME_DATABASE_PASSWORD_BOOTSTRAP,
+      "WEB_RUNTIME_DATABASE_PASSWORD_BOOTSTRAP is required",
+    );
+
+    await bootstrap({
+      ownerDatabaseUrl: env.NEON_OWNER_DATABASE_URL,
+      webRole: env.WEB_RUNTIME_DATABASE_ROLE,
+      password: env.WEB_RUNTIME_DATABASE_PASSWORD_BOOTSTRAP,
+      confirmation: env.BOOTSTRAP_CONFIRMATION,
+    });
+
+    logger.log("Production web credential bootstrap verified.");
+    return 0;
+  } catch {
+    logger.error("Production web credential bootstrap failed.");
+    return 1;
+  }
+}
+
+if (import.meta.url === "file://" + process.argv[1]) {
+  process.exitCode = await runCli();
+}
+ THEN RAISE EXCEPTION 'web credential bootstrap verifier unavailable or invalid'; END IF; EXECUTE pg_catalog.format('ALTER ROLE %I PASSWORD %L', 'vico_forum_web', v_verifier); END $vico_web_credential_bootstrap$;",
   );
 }
 
