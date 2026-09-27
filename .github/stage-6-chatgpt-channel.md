@@ -2892,3 +2892,110 @@ Accordingly this authorized owner phase was **not started**:
 
 The authorization has not been consumed by a production mutation. Codex must reconcile the role
 inheritance flag first, after which a new/clarified bounded owner-phase instruction can be executed.
+
+
+### Corrected bounded owner phase — successful; stopped before next gate
+
+User explicitly authorized only the corrected bounded owner phase with `NOINHERIT`, then required
+ChatGPT to stop after recording evidence here.
+
+Fresh repository target before mutation:
+
+- exact GitHub `main`:
+  `d4c82a3729e9cdda89b6122ea1438dfb53150a12`;
+- merged split-authority provisioning mechanism from PR #139 present in `main`;
+- Neon project `late-cell-18916701`;
+- production branch `br-square-flower-b2q6a3sy`, primary/default, PostgreSQL 17;
+- database `vico_forum`.
+
+Read-only preflight confirmed:
+
+- current/session/database owner = exact `vico_forum_owner`;
+- `vico_forum_web` absent;
+- existing `vico_forum_runtime` unchanged:
+  direct non-grantable database CONNECT, public.USAGE, SELECT only on
+  `locales`, `ui_translation_bundles`, `ui_translations`;
+- web relation ACL count = 0;
+- all 18 expected web target tables remain owned by exact `vico_forum_migrator`;
+- public schema owner is PostgreSQL `pg_database_owner`, so current database owner retains schema
+  owner authority without changing schema ownership.
+
+One owner-controlled transaction then executed exactly the bounded owner phase:
+
+```sql
+CREATE ROLE vico_forum_web
+  LOGIN
+  PASSWORD NULL
+  NOINHERIT
+  NOSUPERUSER
+  NOCREATEDB
+  NOCREATEROLE
+  NOREPLICATION
+  NOBYPASSRLS;
+
+GRANT CONNECT ON DATABASE vico_forum TO vico_forum_web;
+GRANT USAGE ON SCHEMA public TO vico_forum_web;
+```
+
+Before commit, in-transaction fail-closed assertions required:
+
+- exact execution identity/database owner;
+- exact visible web-role attributes, including `NOINHERIT`;
+- exactly one automatic inbound owner administrative membership:
+  member `vico_forum_owner` → role `vico_forum_web`,
+  `ADMIN TRUE, INHERIT FALSE, SET FALSE`;
+- effective database CONNECT=true and CREATE=false;
+- exact direct web database ACL = one non-grantable CONNECT;
+- exact web schema ACL = one non-grantable `public.USAGE`;
+- zero web relation, column, function and default privileges;
+- zero web-owned schema/relation/function objects;
+- unchanged localization relation baseline.
+
+The transaction completed successfully and committed.
+
+Passwordlessness evidence is the exact reviewed owner-phase command above with
+`PASSWORD NULL`. As already documented, this is command/evidence state rather than a claimed
+migrator-readable `pg_roles` password check.
+
+Read-only post-commit evidence:
+
+- database/current/session owner:
+  `vico_forum` / `vico_forum_owner` / `vico_forum_owner`;
+- web role:
+  - `LOGIN=true`;
+  - `NOINHERIT` (`rolinherit=false`);
+  - `NOSUPERUSER`;
+  - `NOCREATEDB`;
+  - `NOCREATEROLE`;
+  - `NOREPLICATION`;
+  - `NOBYPASSRLS`;
+- automatic membership:
+  `vico_forum_owner -> vico_forum_web`,
+  grantor `cloud_admin`,
+  `ADMIN TRUE, INHERIT FALSE, SET FALSE`;
+- effective web database:
+  CONNECT=true, CREATE=false;
+  TEMPORARY=true only through accepted PUBLIC database semantics, not as a direct web grant;
+- direct web database ACL:
+  `CONNECT, grantable=false` only;
+- web schema ACL:
+  `public.USAGE, grantable=false` only;
+- web relation ACL count = 0;
+- web-owned object count = 0;
+- localization baseline remains unchanged:
+  direct non-grantable CONNECT, public.USAGE, SELECT only on
+  `locales`, `ui_translation_bundles`, `ui_translations`.
+
+No compensating cleanup was required.
+
+Per the user's explicit stop boundary, nothing after owner phase was executed:
+
+- `WEB_RUNTIME_DATABASE_ROLE` was not created/updated;
+- migrator relation-provisioning workflow was not dispatched;
+- production runtime verifier was not dispatched;
+- no Hyperdrive/password credential creation/rotation/Worker binding/deploy/OAuth/Queue/provider
+  operation was performed.
+
+The bounded owner-phase authorization is consumed successfully. The production intermediate role is
+now intentionally passwordless/unbound with no relation privileges, awaiting independent Codex
+review and a separately authorized next gate.
