@@ -51,9 +51,10 @@ Vico Forum находится в ранней pre-release разработке.
 - Stage 6 runtime contract разделяет existing `localization-read` и отдельную `web`
   capability. Production owner/migrator sequence уже создала `vico_forum_web`, установила
   protected `WEB_RUNTIME_DATABASE_ROLE`, выдала exact reviewed relation grants и прошла successful
-  read-only runtime privilege verification для обеих runtime roles. Web role всё ещё не имеет
-  usable application credential и database-role deadline defaults; отдельный cache-disabled
-  Hyperdrive, Worker binding/routing и deployed web-runtime acceptance ещё отсутствуют.
+  read-only runtime privilege verification для обеих runtime roles. Для web role отдельно применены
+  и проверены database-role defaults `lock_timeout=2s` и `statement_timeout=5s`. Usable
+  application credential всё ещё отсутствует; отдельный cache-disabled Hyperdrive, Worker
+  binding/routing и deployed web-runtime acceptance ещё отсутствуют.
   Content-generation runtime остаётся disabled и не входит в web ACL.
 - Обычная feature-разработка и её CI остаются отделены от external rollout; merge в `main` сам по
   себе не является deployment/acceptance evidence.
@@ -362,9 +363,10 @@ Repository содержит reviewed exact ACL/verifier contract для отде
 capability (Better Auth + forum + dynamic authorization + persisted forum-content reads) и
 защищённый split-authority execution path. Production evidence уже подтверждает созданную
 `vico_forum_web` role, protected `WEB_RUNTIME_DATABASE_ROLE=vico_forum_web`, exact 50/50
-non-grantable relation privilege pairs и successful read-only runtime privilege verifier.
-Usable web credential, database-role deadline defaults, отдельный web Hyperdrive, Worker
-binding/routing и deployed web-runtime acceptance ещё отсутствуют.
+non-grantable relation privilege pairs, successful read-only runtime privilege verifier и
+database-role defaults `lock_timeout=2s` / `statement_timeout=5s`.
+Usable web credential, отдельный web Hyperdrive, Worker binding/routing и deployed web-runtime
+acceptance ещё отсутствуют.
 
 Fresh Stage 6 Cloudflare Gate 0 подтвердил: native Git Builds integration отключён; Production
 имеет только `HYPERDRIVE -> vico-forum-registry` под `vico_forum_runtime` с disabled query
@@ -398,8 +400,10 @@ docs sync, единые caller deadlines для Better Auth/forum/authorization 
 generation-status composition без изменения текущего `HYPERDRIVE`. Это не утверждает merge,
 external credential/default configuration или deploy.
 
-1. После merge отдельно согласовать bounded external choreography:
-   web credential + role defaults → новый cache-disabled web Hyperdrive → safe metadata evidence.
+1. Этот change set добавляет только manual main-only protected one-time path для bootstrap
+   credential существующей `vico_forum_web`; merge сам credential не создаёт. После отдельного
+   explicit authorization выполнить credential bootstrap → новый cache-disabled web Hyperdrive →
+   safe metadata evidence.
 2. После successful choreography отдельным reviewed PR подключить реальный web binding/routing.
 3. Затем только по явному разрешению выполнить deploy, real-path smoke/calibration и следующие
    Stage 6 OAuth/bootstrap/Queue gates.
