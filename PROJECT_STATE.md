@@ -393,13 +393,16 @@ runtime roles/Hyperdrive writes и другие schema-dependent runtime capabil
 
 ## Ближайший маршрут
 
-1. Подготовить repository-only web runtime wiring boundary: factual Stage 6 docs sync, единые
-   caller deadlines для Better Auth/forum/authorization и fail-closed disabled generation-status
-   composition без изменения текущего `HYPERDRIVE`.
-2. После merge отдельно согласовать bounded external choreography:
+Repository-only web runtime wiring preparation в этом change set уже включает factual Stage 6
+docs sync, единые caller deadlines для Better Auth/forum/authorization и fail-closed disabled
+generation-status composition без изменения текущего `HYPERDRIVE`. Это не утверждает merge,
+external credential/default configuration или deploy.
+
+1. После merge отдельно согласовать bounded external choreography:
    web credential + role defaults → новый cache-disabled web Hyperdrive → safe metadata evidence.
-3. Отдельным reviewed PR подключить реальный web binding/routing; затем только по явному разрешению
-   выполнить deploy, real-path smoke/calibration и следующие Stage 6 OAuth/bootstrap/Queue gates.
+2. После successful choreography отдельным reviewed PR подключить реальный web binding/routing.
+3. Затем только по явному разрешению выполнить deploy, real-path smoke/calibration и следующие
+   Stage 6 OAuth/bootstrap/Queue gates.
 
 Stage 5 завершён только в repository/local-CI boundary. Real Google OAuth/bootstrap, remaining
 production runtime wiring/Hyperdrive credentials, Cloudflare Queues/providers, authoritative
