@@ -5618,3 +5618,19 @@ The only remaining Part 1 evidence is a fresh read-only Cloudflare Dashboard che
 `vico-forum-web`; (2) production Worker still has only the existing localization Hyperdrive
 binding and no `WEB_HYPERDRIVE`; (3) preview/base isolation remains zero private DB
 bindings/vars/secrets. No external mutation has started.
+
+
+### Full gate Part 2: temporary bootstrap secret created
+
+The user confirmed creation of the temporary GitHub Environment secret
+`WEB_RUNTIME_DATABASE_PASSWORD_BOOTSTRAP` in exact Environment `production-db` using a locally
+generated password that was not disclosed in chat.
+
+A fresh GitHub read-only check immediately afterward confirms:
+
+- current `main` remains `2915b1982f8295064b0ad2f7a5aa324d4c923316`;
+- `Bootstrap production web credential` still has zero workflow_dispatch runs, so the one-shot
+  `GITHUB_RUN_NUMBER=1 / GITHUB_RUN_ATTEMPT=1` path remains unused.
+
+The password lease has therefore not started yet. Next action is the single manual dispatch with
+exact confirmation `web-credential-bootstrap-confirmed`. No rerun is permitted.
