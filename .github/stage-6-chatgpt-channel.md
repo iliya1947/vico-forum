@@ -4178,3 +4178,30 @@ does it prove production bindings/config details. Those remain separate read-onl
 
 Next evidence needed: Production → Bindings for exact current production binding names/types, then
 the production Hyperdrive configuration details/caching state.
+
+
+### Cloudflare Gate 0 — evidence 3: production binding matches repository configuration
+
+Fresh owner-provided Cloudflare dashboard evidence was reviewed for Worker `vico-forum`.
+
+Observed from Settings → Bindings with the `Production` tab selected:
+
+- exactly one connected production binding is visible;
+- type: `Hyperdrive`;
+- binding name: `HYPERDRIVE`;
+- target configuration name: `vico-forum-registry`;
+- no second web Hyperdrive binding is present;
+- no setting was changed while collecting the evidence.
+
+This matches checked-in `wrangler.jsonc`, which currently contains exactly one
+`HYPERDRIVE` binding, and confirms there is no dashboard-only second web binding drift at this
+point.
+
+Together with the earlier preview evidence:
+
+- Production has the existing localization Hyperdrive binding;
+- Previews Base has no connected bindings.
+
+Remaining Gate 0 checks are the configuration details of `vico-forum-registry`: origin role
+identity and query-cache state, plus deployment/version/route visibility sufficient to detect
+dashboard-only drift.
