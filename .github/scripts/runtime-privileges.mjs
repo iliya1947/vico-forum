@@ -99,6 +99,11 @@ export function assertRuntimeCapabilityPrivilegeContract(
     }
 
     assert.equal(
+      snapshot.effectiveDatabaseConnect.find(({ role: candidate }) => candidate === runtimeRole)?.has_connect,
+      true,
+      `Runtime role ${runtimeRole} must have effective database CONNECT`,
+    );
+    assert.equal(
       snapshot.effectiveDatabaseCreate.find(({ role: candidate }) => candidate === runtimeRole)?.has_create,
       false,
       `Runtime role ${runtimeRole} must not have effective database CREATE`,
@@ -290,6 +295,13 @@ export async function readRuntimeCapabilityPrivilegeSnapshot(
      ORDER BY 1, 2, 3`,
     [runtimeRoles],
   );
+  const effectiveDatabaseConnect = await client.query(
+    `SELECT role_name AS role,
+       pg_catalog.has_database_privilege(role_name, current_database(), 'CONNECT') AS has_connect
+     FROM unnest($1::text[]) role_name
+     ORDER BY role_name`,
+    [runtimeRoles],
+  );
   const effectiveDatabaseCreate = await client.query(
     `SELECT role_name AS role,
        pg_catalog.has_database_privilege(role_name, current_database(), 'CREATE') AS has_create
@@ -431,6 +443,7 @@ export async function readRuntimeCapabilityPrivilegeSnapshot(
     roles: roleRows.rows,
     databaseOwnerRole: databaseOwner.rows[0]?.role ?? null,
     databaseCreatePrivileges: databaseCreatePrivileges.rows,
+    effectiveDatabaseConnect: effectiveDatabaseConnect.rows,
     effectiveDatabaseCreate: effectiveDatabaseCreate.rows,
     memberships: memberships.rows,
     ownedObjects: ownedObjects.rows,
