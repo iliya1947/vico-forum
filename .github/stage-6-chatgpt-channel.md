@@ -5440,3 +5440,60 @@ Official contracts checked for this correction:
 No external secret, DB mutation, workflow dispatch, Hyperdrive change, binding/routing or deploy was
 performed. PR #141 remains mergeable from the same exact main base. Full post-fix review and
 exact-head CI are the next separate subtask; no final readiness claim is made here.
+
+
+### PR #141 corrective full re-review complete
+
+After implementing Codex findings from PR #121 head
+`eebaae09ad9b2ab28101cbd08984644ddfb9d9d7`, PR #141 was re-reviewed again as a whole against
+current `main` `6f262bf4374440e36096fd315a9c3ff4f42eba27`, all 8 changed files, the agreed
+repository-only scope, PostgreSQL 17 documentation and GitHub Actions run semantics.
+
+During this re-review two implementation defects introduced in the corrective edit itself were found
+and fixed before any readiness claim:
+
+- the first lease edit had left a truncated/duplicated tail in
+  `.github/scripts/bootstrap-production-web-credential.mjs`; the file was restored to one complete
+  598-line module with exactly one copy of each bootstrap/compensation/CLI boundary;
+- the successful CLI unit-test fixture initially omitted the new first-run environment variables;
+  the fixture now supplies exact `GITHUB_RUN_NUMBER=1` and `GITHUB_RUN_ATTEMPT=1`.
+
+Final PR #141 head is
+`d374325dbbc1cf44d08c7974694b609b500af25a`.
+
+Exact-head CI evidence:
+
+- workflow run `36342570162`, run number `1160`;
+- attempt 1: `checks=success`; `database` failed in an unchanged pre-existing concurrent locale
+  test with PostgreSQL `40001 serialization_failure` before the PR-specific credential probe;
+  PR #141 does not touch that code/test;
+- one rerun of only the failed database job on the exact same head was used to distinguish the
+  existing concurrency flake from a PR regression;
+- run attempt 2 completed `conclusion=success`;
+- final `checks=success`: repository contract tests, bootstrap/workflow unit tests, lint,
+  typecheck, application tests, build, migration metadata and Drizzle parity all passed;
+- final `database=success`: clean PostgreSQL 17 migrations, schema manifest, runtime privilege
+  probes, split-authority web provisioning, **web credential lease + expiry + compensation probe**,
+  Workers build and local Hyperdrive smoke all passed.
+
+Final full review confirms:
+
+- initial password is bounded by a PostgreSQL server-clock 30-minute `VALID UNTIL` lease;
+- normal post-mutation failure attempts immediate `PASSWORD NULL`; unexpected runner termination
+  is bounded for subsequent password authentication by server-owned expiry;
+- repeat dispatch/rerun is blocked before Environment/secrets/DB by exact first run + first attempt,
+  and the script repeats this assertion before DB connection;
+- bootstrap remains exact-main/manual/protected, cleartext password is not interpolated into client
+  SQL or logs, and the full accepted role/default/ACL contract is checked before mutation;
+- docs define the later Hyperdrive evidence → owner finalization
+  `VALID UNTIL 'infinity'` / expiry cleanup path without claiming it has run;
+- stale deadline-default outstanding state is removed;
+- no migration, dependency, runtime ACL matrix, Worker binding/routing, deployment or external
+  resource change is included.
+
+No additional current-Stage defect was found in the final full review. PR #141 remains open,
+mergeable, base=current main, behind=0. No external bootstrap secret was created and no production
+bootstrap/Neon/Cloudflare mutation was executed.
+
+Next process step is Codex independent re-review of final PR #141. User remains sole merger and
+external credential choreography remains separately authorization-gated after merge.
