@@ -1064,6 +1064,42 @@ grant от creator не нужен и недопустим.
 
 Это новая one-shot external authorization boundary; сама запись ничего не выполняет.
 
+### Corrected provisioning retry rolled back; exact effective/direct ACL distinction
+
+Последнее обновление служебного PR ChatGPT #122 на head
+`21902a0810d83736234c614d2a3c4cfd8416d5c5` проверено. Второй authorized attempt снова failed
+до commit и полностью rolled back. `vico_forum_web`, GitHub variable и verifier run отсутствуют;
+других external changes не было.
+
+Failure произошёл не из-за merged repository contract и не из-за GRANT matrix. Custom
+in-transaction assertion ошибочно потребовал effective `TEMPORARY=false`. Production database
+сохраняет accepted non-grantable PUBLIC `TEMPORARY`, поэтому любой role получает effective
+`TEMPORARY=true` через PUBLIC. Merged verifier намеренно допускает этот PostgreSQL default и
+запрещает только **direct** runtime `TEMPORARY`, grant options и direct/effective `CREATE`.
+
+Следующая исправленная one-shot operation должна использовать merged contract буквально:
+
+1. повторить preflight и подтвердить unchanged exact `main`, owner/session/database, отсутствие
+   `vico_forum_web` и exact existing localization role;
+2. создать passwordless role и exact grants одной transaction, без explicit membership GRANT;
+3. membership assertion: automatic owner row exact `ADMIN TRUE, INHERIT FALSE, SET FALSE`;
+4. database assertions:
+   - effective `CONNECT=true`;
+   - effective `CREATE=false`;
+   - direct web ACL — ровно optional/non-grantable `CONNECT` (в этой операции он выдан);
+   - direct web `TEMPORARY`/`CREATE` и любые grant options отсутствуют;
+   - **не** требовать effective `TEMPORARY=false`; accepted PUBLIC non-grantable
+     `CONNECT`/`TEMPORARY` остаются допустимыми;
+5. остальные role/schema/relation/column/sequence/function/default/ownership assertions — exact
+   merged `runtimeCapabilityContracts.web`; commit только при полном match;
+6. после commit установить protected variable и выполнить один manual read-only verifier dispatch;
+7. при failure остановиться без retry/fix; прежние запреты credentials/Hyperdrive/Worker/deploy/
+   OAuth/Queue/providers сохраняются;
+8. передать bounded evidence через PR #122.
+
+Два предыдущих разрешения consumed безопасными rolled-back attempts. Эта запись определяет новую
+отдельную one-shot authorization boundary и сама external operation не выполняет.
+
 ## Рабочий канал дальнейших действий
 
 По решению пользователя от 2026-09-26 все дальнейшие operational requests, перечни требуемого
