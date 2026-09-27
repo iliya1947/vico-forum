@@ -69,6 +69,9 @@ async function setupProductionLikeAuthority(admin) {
   await admin.query(
     `ALTER SCHEMA public OWNER TO ${quoteIdentifier(ownerRole)}`,
   );
+  await admin.query(
+    `GRANT USAGE ON SCHEMA public TO ${quoteIdentifier(migratorRole)}`,
+  );
 
   for (const relation of expectedWebRelationNames()) {
     await admin.query(
