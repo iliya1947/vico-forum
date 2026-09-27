@@ -2510,3 +2510,81 @@ must now independently classify the ownership/grant-authority mismatch and defin
 corrective path.
 
 The authorized diagnostic transaction was rollback-only and is consumed.
+
+
+### Split-authority provisioning gate — stopped safely at execution-identity preflight
+
+User explicitly authorized the split-authority web-role provisioning gate from the latest
+Codex PR #121 entry.
+
+No production mutation was executed because the mandatory preflight requirement — availability
+of both exact execution identities through the current tooling — is not satisfied.
+
+Exact repository target remained:
+`main = 4cef0297bb41ff3a18ee0ad82315aef940146596`.
+
+Read-only Neon preflight confirmed:
+
+- database/current/session/database-owner = exact
+  `vico_forum` / `vico_forum_owner`;
+- `vico_forum_web` is absent;
+- existing `vico_forum_runtime` relation ACL remains exact localization-only SELECT on
+  `locales`, `ui_translations`, `ui_translation_bundles`;
+- `vico_forum_owner` has the expected automatic administrative memberships for
+  `vico_forum_runtime` and `vico_forum_migrator`, both
+  `ADMIN TRUE, INHERIT FALSE, SET FALSE`;
+- all 18 web target relations are owned by `vico_forum_migrator`;
+- `vico_forum_owner` has 0 relevant target-table privileges WITH GRANT OPTION;
+- `vico_forum_migrator` has 72/72 SELECT/INSERT/UPDATE/DELETE owner-level grantable capabilities
+  across those 18 target relations.
+
+This independently confirms the split-authority design: owner phase must create/control the role
+and database/schema ACL, while relation grants must execute as the object owner
+`vico_forum_migrator`.
+
+#### Tooling boundary
+
+The currently connected Neon SQL execution tools expose:
+
+- `run_sql(project_id, branch_id, database_name, sql)`;
+- `run_sql_transaction(project_id, branch_id, database_name, sql_statements)`.
+
+Neither accepts a PostgreSQL `role_name` or an existing connection string. On this target both
+execute as `vico_forum_owner`.
+
+Neon `get_connection_string` can resolve a connection string for a named role, including
+`vico_forum_migrator`, but the current ChatGPT toolset has no SQL executor that accepts that
+connection string. The local runtime also has no PostgreSQL client/driver available, and project
+workflow rules do not permit inventing a new credential transport or repository workflow for this
+gate.
+
+Using `SET ROLE vico_forum_migrator` is also not an allowed substitute:
+the actual membership is `SET FALSE`, and Codex explicitly required the existing protected
+migrator credential rather than changing memberships/authority.
+
+The current GitHub connector likewise exposes repository/workflow evidence reads and existing
+rerun operations, but no environment-variable write or new `workflow_dispatch` action usable for
+the later gate steps. Therefore those post-provision steps also cannot be truthfully executed from
+this chat session.
+
+#### Safety decision
+
+Because object-owner phase cannot be executed under the required identity, the owner phase was
+**not started**. This avoids intentionally creating a passwordless intermediate
+`vico_forum_web` role only to require compensating cleanup immediately.
+
+Accordingly:
+- no `CREATE ROLE`;
+- no database/schema/relation `GRANT`;
+- no compensating `DROP ROLE`;
+- no password/credential retrieval or rotation;
+- no GitHub Environment variable change;
+- no production runtime verifier dispatch;
+- no Hyperdrive/Worker/deploy/OAuth/Queue/provider operation.
+
+The user's split-authority authorization has not been used for a provisioning mutation; execution
+is blocked by missing exact-identity/control-plane tooling in this session.
+
+Codex should decide the next reviewed execution mechanism for the already accepted
+`vico_forum_migrator` credential (and GitHub variable/dispatch path) without weakening the
+split-authority contract.
