@@ -2003,3 +2003,239 @@ This authorization is consumed. The exact cause of the relation-assertion mismat
 mutated around or guessed into production; the next coordination cycle must diagnose it
 read-only/repository-side and define any further one-shot attempt before another external
 authorization.
+
+
+### Deterministic diagnosis after third provisioning rollback — repository/local/read-only
+
+Latest Codex service PR #121 paused all production retries and requested deterministic diagnosis
+only. No Neon SQL, GitHub Environment/workflow mutation, Hyperdrive/password/Worker/deploy or
+other external operation was performed in this diagnostic cycle.
+
+Exact GitHub `main` remained:
+`4cef0297bb41ff3a18ee0ad82315aef940146596`.
+
+#### Exact third-attempt operational SQL
+
+The third attempt used the following DDL/GRANT statements before the fail-closed assertion:
+
+```sql
+CREATE ROLE vico_forum_web
+  LOGIN
+  PASSWORD NULL
+  NOSUPERUSER
+  NOCREATEDB
+  NOCREATEROLE
+  NOINHERIT
+  NOREPLICATION
+  NOBYPASSRLS;
+
+GRANT CONNECT ON DATABASE vico_forum TO vico_forum_web;
+GRANT USAGE ON SCHEMA public TO vico_forum_web;
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE
+  public."user",
+  public.session,
+  public.account,
+  public.verification,
+  public.rate_limit
+TO vico_forum_web;
+
+GRANT SELECT ON TABLE
+  public.forum_categories,
+  public.forum_sections,
+  public.forum_topic_title_translations,
+  public.forum_post_body_translations
+TO vico_forum_web;
+
+GRANT SELECT, INSERT, UPDATE ON TABLE
+  public.forum_topics,
+  public.forum_posts
+TO vico_forum_web;
+
+GRANT SELECT, INSERT ON TABLE
+  public.forum_topic_title_revisions,
+  public.forum_post_revisions
+TO vico_forum_web;
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE
+  public.authz_roles,
+  public.authz_user_permission_overrides
+TO vico_forum_web;
+
+GRANT SELECT, INSERT, DELETE ON TABLE
+  public.authz_role_permissions
+TO vico_forum_web;
+
+GRANT SELECT, INSERT, UPDATE ON TABLE
+  public.authz_user_roles
+TO vico_forum_web;
+
+GRANT SELECT, UPDATE ON TABLE
+  public.authz_mutation_lock
+TO vico_forum_web;
+```
+
+The exact relation assertion portion that raised `Relation ACL mismatch` was:
+
+```sql
+WITH expected(name, privilege) AS (
+  VALUES
+    ('user','SELECT'),('user','INSERT'),('user','UPDATE'),('user','DELETE'),
+    ('session','SELECT'),('session','INSERT'),('session','UPDATE'),('session','DELETE'),
+    ('account','SELECT'),('account','INSERT'),('account','UPDATE'),('account','DELETE'),
+    ('verification','SELECT'),('verification','INSERT'),('verification','UPDATE'),('verification','DELETE'),
+    ('rate_limit','SELECT'),('rate_limit','INSERT'),('rate_limit','UPDATE'),('rate_limit','DELETE'),
+    ('forum_categories','SELECT'),
+    ('forum_sections','SELECT'),
+    ('forum_topics','SELECT'),('forum_topics','INSERT'),('forum_topics','UPDATE'),
+    ('forum_posts','SELECT'),('forum_posts','INSERT'),('forum_posts','UPDATE'),
+    ('forum_topic_title_revisions','SELECT'),('forum_topic_title_revisions','INSERT'),
+    ('forum_post_revisions','SELECT'),('forum_post_revisions','INSERT'),
+    ('forum_topic_title_translations','SELECT'),
+    ('forum_post_body_translations','SELECT'),
+    ('authz_roles','SELECT'),('authz_roles','INSERT'),('authz_roles','UPDATE'),('authz_roles','DELETE'),
+    ('authz_role_permissions','SELECT'),('authz_role_permissions','INSERT'),('authz_role_permissions','DELETE'),
+    ('authz_user_roles','SELECT'),('authz_user_roles','INSERT'),('authz_user_roles','UPDATE'),
+    ('authz_user_permission_overrides','SELECT'),('authz_user_permission_overrides','INSERT'),
+    ('authz_user_permission_overrides','UPDATE'),('authz_user_permission_overrides','DELETE'),
+    ('authz_mutation_lock','SELECT'),('authz_mutation_lock','UPDATE')
+),
+actual AS (
+  SELECT
+    c.relname::text AS name,
+    acl.privilege_type::text AS privilege,
+    acl.is_grantable
+  FROM pg_catalog.pg_class c
+  JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+  CROSS JOIN LATERAL pg_catalog.aclexplode(
+    COALESCE(
+      c.relacl,
+      pg_catalog.acldefault(
+        CASE WHEN c.relkind='S' THEN 's'::"char" ELSE 'r'::"char" END,
+        c.relowner
+      )
+    )
+  ) acl
+  LEFT JOIN pg_catalog.pg_roles grantee ON grantee.oid = acl.grantee
+  WHERE n.nspname = 'public'
+    AND c.relkind IN ('r','p','S','v','m','f')
+    AND grantee.rolname = 'vico_forum_web'
+)
+SELECT count(*) INTO bad_count
+FROM (
+  (
+    SELECT name, privilege FROM expected
+    EXCEPT
+    SELECT name, privilege FROM actual WHERE NOT is_grantable
+  )
+  UNION ALL
+  (
+    SELECT name, privilege FROM actual
+    EXCEPT
+    SELECT name, privilege FROM expected
+  )
+  UNION ALL
+  (
+    SELECT name, privilege FROM actual WHERE is_grantable
+  )
+) diff;
+
+IF bad_count <> 0 THEN
+  RAISE EXCEPTION 'Relation ACL mismatch';
+END IF;
+```
+
+Normalization in that operational assertion is therefore:
+- expected identity = `(relation name, privilege)`;
+- actual identity = `(relation name, privilege)`;
+- `is_grantable=false` is required separately;
+- schema is fixed to `public`;
+- relation kind, grantor and grantee are not part of the compared tuple after the catalog filter.
+
+#### Exact expected contract comparison
+
+Merged `runtimeCapabilityContracts.web` was expanded independently into normalized
+`(relation, privilege)` pairs and compared with both the third-attempt GRANT list and the
+third-attempt `expected` CTE.
+
+Result:
+- merged contract pairs: **50**;
+- operational GRANT pairs: **50**;
+- operational assertion expected pairs: **50**;
+- contract → operational missing: **0**;
+- operational → contract excess: **0**.
+
+So there is no static missing/excess privilege in the written third-attempt grant list or its
+expected CTE.
+
+#### Observed in-transaction rows / diff availability
+
+The third-attempt Neon tool call returned only the raised exception text
+`Relation ACL mismatch`. The transaction did **not** return or persist the `actual` CTE rows,
+`bad_count` constituents, or a structured missing/excess diff before rollback.
+
+Therefore:
+- observed in-transaction relation rows are **not available**;
+- an observed expected-vs-actual diff cannot honestly be reconstructed after rollback;
+- per Codex instruction, no production re-query/retry was performed to recreate them.
+
+The existing rollback evidence remains the only production observation after the failed
+transaction: `vico_forum_web` is absent and localization ACL is unchanged.
+
+#### Comparison with repository PG17 probe/shared verifier
+
+Repository CI path is not an exact reproduction of the operational transaction:
+
+1. `verify-runtime-privilege-probes.mjs:createRole()` creates CI roles with
+   `LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS`; it does not specify
+   `NOINHERIT` and does not create the production passwordless role shape.
+2. CI does not issue direct database `CONNECT`; it relies on effective CONNECT and the shared
+   contract permits direct non-grantable CONNECT to be optional.
+3. CI `grantCapability()` iterates `runtimeCapabilityContracts.web` and emits one
+   `GRANT <privileges> ON TABLE <relation>` per relation. The production operation grouped
+   relations with equal privilege sets into fewer GRANT statements.
+4. CI then reads the shared catalog snapshot and normalizes relation ACL as
+   `schema.name.kind.privilege.grantable=<bool>`.
+5. The third operational assertion instead uses a custom query and compares only
+   `name + privilege`, with grantability checked separately. It does not compare relation kind,
+   schema (beyond fixed `public` scope), grantor or grantee tuple.
+6. The successful disposable PostgreSQL 17 CI therefore proves the merged capability contract and
+   shared snapshot/assertion path, but it does **not** execute the exact grouped production SQL plus
+   the exact custom `EXCEPT` assertion that failed.
+
+The operational normalized expected set is identical to the repository contract, so the failure
+cannot currently be attributed to a static grant-list drift.
+
+#### Exact replay limitation
+
+The requested exact local reproduction cannot be executed in the current ChatGPT runtime without
+violating the bounded task:
+
+- no local `postgres`, `initdb`, `pg_ctl`, Docker or Podman binary is available;
+- no embedded PostgreSQL Python package is installed;
+- container network access is disabled, so a PostgreSQL 17 server/package cannot be fetched;
+- Codex explicitly prohibited Neon SQL and GitHub workflow/control-plane mutation for this
+  diagnostic task.
+
+Accordingly, no substitute remote database or new workflow was used and no simulated result is
+presented as a PostgreSQL 17 reproduction.
+
+A pure set-level static replay was performed only as supporting evidence: all 50 expected contract
+pairs and all 50 operational pairs are identical, missing=0, excess=0. This is not claimed as the
+required PostgreSQL reproduction.
+
+#### Current classification
+
+Current evidence does **not** confirm a defect in `runtimeCapabilityContracts.web` or in the
+shared repository privilege verifier:
+- the merged relation set and operational written set are identical;
+- repository disposable PostgreSQL 17 shared-contract probe is already known successful;
+- no production `actual` relation rows were captured.
+
+There is, however, a concrete diagnostic/test-shape gap: the exact production grouped GRANT SQL
+and custom relation `EXCEPT` assertion are not exercised by the repository probe. Whether the
+third failure is caused by that ad-hoc operational assertion, a production-specific catalog state,
+or another PostgreSQL/Neon execution detail cannot be distinguished from the retained evidence.
+
+No corrective repository change or mergeable PR was created. Independent Codex review is required
+before choosing the next corrective cycle.
