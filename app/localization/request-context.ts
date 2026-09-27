@@ -47,6 +47,13 @@ export class UiTranslationStoreConfigurationError extends Error {
   }
 }
 
+export class ContentGenerationStatusReaderConfigurationError extends Error {
+  constructor(options?: ErrorOptions) {
+    super("content generation status reader is not configured", options);
+    this.name = "ContentGenerationStatusReaderConfigurationError";
+  }
+}
+
 export async function registryForRequest(context: RouterContextProvider) {
   let load: () => Promise<LoadedLocaleRegistry>;
   try {
@@ -85,5 +92,9 @@ export function contentGenerationActionForRequest(
 export function contentGenerationStatusReaderForRequest(
   context: RouterContextProvider,
 ): ContentGenerationStatusReader {
-  return context.get(contentGenerationStatusReaderContext);
+  try {
+    return context.get(contentGenerationStatusReaderContext);
+  } catch (error) {
+    throw new ContentGenerationStatusReaderConfigurationError({ cause: error });
+  }
 }
