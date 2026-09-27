@@ -280,7 +280,7 @@ export async function readRuntimeCapabilityPrivilegeSnapshot(
        acl.is_grantable
      FROM pg_catalog.pg_database database
      CROSS JOIN LATERAL pg_catalog.aclexplode(
-       COALESCE(database.datacl, '{}'::aclitem[])
+       COALESCE(database.datacl, pg_catalog.acldefault('d', database.datdba))
      ) acl
      LEFT JOIN pg_catalog.pg_roles grantee ON grantee.oid = acl.grantee
      LEFT JOIN pg_catalog.pg_roles grantor ON grantor.oid = acl.grantor
