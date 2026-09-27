@@ -179,8 +179,9 @@ Runtime privilege acceptance отделена от production migration workflow
    `Production runtime privilege verification` read-only проверяет exact roles/ACLs в target DB;
 4. только после successful privilege evidence может рассматриваться Worker wiring/deployment.
 
-Runtime verifier требует для обоих roles LOGIN без dangerous attributes, отсутствие inherited
-memberships/ownership, `public.USAGE` без `CREATE`, отсутствие database `CREATE`, grant
+Runtime verifier требует для обоих roles LOGIN + effective database `CONNECT`, отсутствие
+dangerous attributes, inherited memberships/ownership, `public.USAGE` без `CREATE`, отсутствие
+database `CREATE`, grant
 options, column/sequence/direct-function privileges и unexpected default/PUBLIC grants. PUBLIC
 default boundary сохраняет только уже принятую hard-wired-equivalent function `EXECUTE` / type
 `USAGE` semantics; runtime roles default grants не получают. Existing managed database-owner
