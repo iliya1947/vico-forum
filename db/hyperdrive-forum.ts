@@ -1,5 +1,5 @@
 import { drizzle } from "drizzle-orm/node-postgres";
-import { Client } from "pg";
+import type { Client } from "pg";
 import { isPostgresAvailabilityFailure } from "../app/localization/persistent-registry";
 import { bestEffortDiscardClient, createWebClient, isPostgresConnectionTimeout, isPostgresQueryTimeout } from "./postgres-deadlines";
 import type { ForumReader } from "./forum-repository";
@@ -57,7 +57,7 @@ export function createHyperdriveForumReader(
 /** Creates the forum mutation capability exposed to one Worker request. */
 export function createHyperdriveForumWriter(
   connectionString: string,
-  clientFactory: ClientFactory = () => new Client({ connectionString }),
+  clientFactory: ClientFactory = createWebClient,
   writePolicy: ForumWritePolicy = forumWritePolicy,
 ): ForumWriter {
   async function write<T>(operation: (service: ForumService) => Promise<T>): Promise<T> {
