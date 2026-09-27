@@ -4362,3 +4362,160 @@ Gate 0 read-only Cloudflare topology preflight is complete to the evidence level
 the owner UI. Next action belongs to Codex: independently review this evidence and either accept
 Gate 0 or identify a specific unresolved control-plane fact before any mergeable wiring-preparation
 PR or web credential/Hyperdrive mutation.
+
+
+### Repository preparation PR — subtask 1/3: exact implementation scope fixed
+
+Codex accepted Cloudflare Gate 0 and authorized the first mergeable repository-only preparation PR.
+This entry records only the implementation scope audit. No mergeable branch/file change, external
+mutation, binding change, credential operation or deploy was performed yet.
+
+Exact source baseline:
+
+`main = d4c82a3729e9cdda89b6122ea1438dfb53150a12`.
+
+Before defining the change set, current `AGENTS.md`, `PROJECT.md`, `PROJECT_STATE.md`,
+`PROJECT_HISTORY.md`, `ROADMAP.md`, `docs/database/HYPERDRIVE.md`,
+`docs/database/MIGRATIONS.md`, `docs/auth/AUTHORIZATION.md` and the relevant translation
+contracts/current Worker adapters were read against current `main`.
+
+#### Confirmed current-Stage issues addressed by this PR
+
+1. **Stage 6 state documentation is stale.**
+
+Current `PROJECT_STATE.md` / database runbooks still say the external web PostgreSQL role/grants
+and protected `WEB_RUNTIME_DATABASE_ROLE` are absent. Accepted evidence now proves:
+
+- production role `vico_forum_web` exists with the reviewed safe attributes/membership;
+- exact reviewed web relation grants are installed (50 expected / 50 actual privilege pairs,
+  zero missing/excess/grantable);
+- protected `WEB_RUNTIME_DATABASE_ROLE=vico_forum_web` exists;
+- production runtime privilege verifier completed successfully for both runtime roles;
+- usable web password, web database-role deadline defaults, separate web Hyperdrive, Worker
+  web binding/routing and deployed web-runtime acceptance are still absent.
+
+This is a current Stage 6 documentation defect, not future groundwork.
+
+2. **Future web HTTP DB adapters still default to unbounded node-postgres clients/pools.**
+
+Current defaults are:
+
+- Better Auth: plain `new Client({ connectionString })`;
+- forum reader/writer: plain `new Client({ connectionString })`;
+- authorization: `new Pool({ connectionString, max: 1 })`.
+
+The accepted initial wiring profile requires one reusable caller-side definition:
+
+- `connectionTimeoutMillis = 3000`;
+- `query_timeout = 7000`.
+
+Server defaults remain external planned configuration only:
+
+- `lock_timeout = 2s`;
+- `statement_timeout = 5s`.
+
+No session `SET` belongs in repository code.
+
+3. **Production Worker injects a generation-status DB reader even though generation is disabled.**
+
+`workers/app.ts` currently constructs
+`createHyperdriveContentGenerationStatusReader(connectionString)` from the sole localization
+connection and stores it in `contentGenerationStatusReaderContext`.
+
+That adapter requires task/generation relations intentionally absent from both accepted HTTP
+capabilities. The route currently stays operationally safe because
+`DISABLED_CONTENT_GENERATION_ACTION_RUNTIME` makes `canGenerateTranslations=false` before the
+reader is requested. The preparation PR should remove this production Worker injection entirely.
+If code later reaches the status-reader helper while generation is disabled/unconfigured, the
+missing request capability must fail closed instead of touching task tables through an HTTP role.
+
+This is a current Stage 6 wiring-preparation requirement; it does not justify ACL widening or
+generation enablement.
+
+#### Exact bounded code scope
+
+Expected implementation files:
+
+- `db/postgres-deadlines.ts`
+  - add one web deadline definition;
+  - add reusable web Client and Pool creation boundary;
+  - preserve existing localization values/classifiers unchanged.
+
+- `app/auth/auth.server.ts`
+  - default Better Auth client factory uses the shared web Client creator;
+  - injected test factory contract stays available.
+
+- `db/hyperdrive-forum.ts`
+  - reader/writer defaults use the same shared web Client creator;
+  - explicit injected factories stay supported.
+
+- `db/hyperdrive-authorization.ts`
+  - default request-local Pool uses the shared web Pool creator while preserving `max: 1`;
+  - injected Pool factory stays supported.
+
+- `workers/app.ts`
+  - remove the Hyperdrive-backed generation-status reader import/injection;
+  - keep `DISABLED_CONTENT_GENERATION_ACTION_RUNTIME`;
+  - keep the existing single `HYPERDRIVE` connection for all currently wired adapters in this
+    preparation PR. Actual localization/web split remains the later real-binding PR.
+
+Focused tests are expected in existing deadline/auth/forum/authz/request-context suites, with a
+small Worker/source contract test only if needed to prove the dormant status reader is not injected.
+No public/domain API needs to change.
+
+#### Exact bounded documentation scope
+
+- `PROJECT_STATE.md`
+  - replace stale provisioning-preparation claims with accepted role/grant/verifier facts;
+  - preserve the distinction that Worker web wiring/deploy is not accepted;
+  - update the nearest route accordingly.
+
+- `PROJECT_HISTORY.md`
+  - add a concise Stage 6 external-integration checkpoint recording the privilege-provisioning and
+    Cloudflare Gate 0 transition without turning history into current policy.
+
+- `docs/database/HYPERDRIVE.md`
+  - record accepted external web-role/grant state;
+  - record Gate 0 topology facts relevant to web wiring;
+  - document the initial web caller/server deadline split as planned, not calibrated acceptance;
+  - continue to state that separate web Hyperdrive/binding/deploy are absent.
+
+- `docs/database/MIGRATIONS.md`
+  - update runtime-privilege wording from future/unprovisioned role to accepted privilege evidence;
+  - retain schema/runtime separation and no claim that Worker rollout occurred.
+
+No migration SQL, migration evidence file, runtime ACL matrix, role names in portable migrations,
+dependency, provider/Queue/OAuth/bootstrap contract or external state is changed.
+
+#### Explicit non-scope preserved
+
+This PR must not:
+
+- modify `wrangler.jsonc` or its existing `HYPERDRIVE` ID;
+- add `WEB_HYPERDRIVE` or any placeholder resource ID;
+- add a second local Hyperdrive override;
+- change Cloudflare settings;
+- set/rotate `vico_forum_web` password;
+- change PostgreSQL role defaults;
+- create/update Hyperdrive;
+- deploy;
+- alter relation grants or runtime capability matrices;
+- enable content generation;
+- change dependencies or migrations.
+
+#### Verification scope for subtask 2
+
+Implementation verification should include:
+
+- focused unit tests for exact web Client/Pool options and deadline ordering;
+- proof Better Auth, forum and authorization default factories use the shared web definition;
+- proof production Worker no longer injects a Hyperdrive generation-status reader while action
+  runtime is disabled;
+- `pnpm lint`;
+- `pnpm typecheck`;
+- `pnpm test`;
+- `pnpm build`;
+- database/CI-equivalent checks where available, with final authoritative full CI after PR creation;
+- full diff review to guard against unrelated documentation rewrites.
+
+Subtask 2 may create the implementation branch and changes only after explicit user continuation.
