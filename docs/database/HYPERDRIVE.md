@@ -44,9 +44,9 @@ capabilities:
 
 Production role names остаются environment-specific inputs. Current production evidence использует
 `vico_forum_runtime` через `RUNTIME_DATABASE_ROLE` и уже provisioned `vico_forum_web` через
-protected `WEB_RUNTIME_DATABASE_ROLE`. Exact web relation grants и shared runtime privilege
-verification приняты, но usable web credential, отдельный web Hyperdrive и Worker routing ещё не
-созданы.
+protected `WEB_RUNTIME_DATABASE_ROLE`. Exact web relation grants, shared runtime privilege
+verification и server-side `lock_timeout=2s` / `statement_timeout=5s` defaults приняты, но usable
+web credential, отдельный web Hyperdrive и Worker routing ещё не созданы.
 
 Reviewed web relation ACL:
 
@@ -132,6 +132,27 @@ Fresh auth/session/permission и read-after-write paths должны испол�
 Hyperdrive. Cloudflare допускает несколько Hyperdrive configurations/bindings для одной
 application; exact web binding name/ID и forum/auth deadline defaults выбираются в отдельном
 runtime-wiring step и этим contract не задаются.
+
+### One-time web credential bootstrap preparation
+
+Repository содержит manual main-only workflow
+`.github/workflows/production-web-credential-bootstrap.yml` для единственного bootstrap usable
+credential уже принятой SQL-created `vico_forum_web`. Workflow использует protected
+`NEON_OWNER_DATABASE_URL`, `WEB_RUNTIME_DATABASE_ROLE` и временный Environment secret
+`WEB_RUNTIME_DATABASE_PASSWORD_BOOTSTRAP`; merge сам по себе ничего во внешней БД не меняет.
+
+Перед password mutation workflow fail closed проверяет exact production owner/session/database,
+safe role attributes/membership, принятые `2s/5s` defaults, полный localization/web ACL contract,
+direct/unpooled Neon owner target и disabled bind-parameter values in error logging. Cleartext
+password не включается в SQL: runner локально строит PostgreSQL SCRAM-SHA-256 verifier, а server
+получает verifier параметром через transaction-local setting. После commit выполняется отдельный
+bounded login как `vico_forum_web`; failure/ambiguous outcome без retry возвращает credential в
+`PASSWORD NULL`.
+
+Этот workflow является временным bootstrap mechanism. До отдельного explicit authorization
+запрещено создавать bootstrap secret или dispatch-ить workflow. Successful credential bootstrap
+сам по себе также не создаёт Hyperdrive/binding/deploy. После accepted Hyperdrive evidence временный
+secret удаляется, а lifecycle bootstrap workflow/script рассматривается отдельным cleanup PR.
 
 Official reference:
 
@@ -286,11 +307,10 @@ lock_timeout             = 2s       (planned database+role default)
 statement_timeout        = 5s       (planned database+role default)
 ```
 
-Repository preparation задаёт только caller-side Client/Pool values. Server-side
-`lock_timeout` / `statement_timeout` ещё не применены к `vico_forum_web`; usable credential
-и real web Hyperdrive также отсутствуют. Значения являются initial rollout profile, а не
-принятым production SLO или real-path calibration. Их acceptance требует отдельного external
-gate и измерений через фактический cache-disabled web Hyperdrive.
+Server-side `lock_timeout` / `statement_timeout` уже применены и отдельно проверены для
+`vico_forum_web`. Usable credential и real web Hyperdrive пока отсутствуют. Эти значения остаются
+initial rollout profile, а не принятым production SLO или real-path calibration; фактическая
+runtime acceptance по-прежнему требует измерений через новый cache-disabled web Hyperdrive.
 
 Инвариант web profile:
 
