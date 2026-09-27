@@ -1,7 +1,7 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Client } from "pg";
 import { isPostgresAvailabilityFailure } from "../app/localization/persistent-registry";
-import { bestEffortDiscardClient, isPostgresConnectionTimeout, isPostgresQueryTimeout } from "./postgres-deadlines";
+import { bestEffortDiscardClient, createWebClient, isPostgresConnectionTimeout, isPostgresQueryTimeout } from "./postgres-deadlines";
 import type { ForumReader } from "./forum-repository";
 import type { SolutionManagementScope } from "./forum-repository";
 import { DrizzleForumRepository } from "./forum-repository";
@@ -24,15 +24,15 @@ export class ForumStorageUnavailableError extends Error {
   }
 }
 
-type ClientFactory = () => Client;
+type ClientFactory = (connectionString: string) => Client;
 
 /** Creates the public forum read capability exposed to one Worker request. */
 export function createHyperdriveForumReader(
   connectionString: string,
-  clientFactory: ClientFactory = () => new Client({ connectionString }),
+  clientFactory: ClientFactory = createWebClient,
 ): ForumReader {
   async function read<T>(operation: (repository: DrizzleForumRepository) => Promise<T>): Promise<T> {
-    const client = clientFactory();
+    const client = clientFactory(connectionString);
     try {
       await client.connect();
       return await operation(new DrizzleForumRepository(drizzle(client)));
@@ -61,7 +61,7 @@ export function createHyperdriveForumWriter(
   writePolicy: ForumWritePolicy = forumWritePolicy,
 ): ForumWriter {
   async function write<T>(operation: (service: ForumService) => Promise<T>): Promise<T> {
-    const client = clientFactory();
+    const client = clientFactory(connectionString);
     try {
       await client.connect();
       return await operation(new ForumService(new DrizzleForumRepository(drizzle(client), writePolicy)));
