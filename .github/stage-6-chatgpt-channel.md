@@ -4992,3 +4992,49 @@ Part 1 conclusion: exact-target/drift preflight passes. The choreography may pro
 the already-authorized database-specific role-default mutation
 `lock_timeout=2s`, `statement_timeout=5s` with post-check. Secret/password and Hyperdrive
 creation remain later parts and have not started.
+
+
+### Authorized choreography Part 2 — role-default mutation blocked before write
+
+User explicitly authorized the accepted Stage 6 bounded external choreography including defined
+compensation. Part 1 read-only preflight had passed.
+
+Before the Part 2 mutation, a fresh Neon SQL session confirmed exact execution identity:
+
+- current_user = `vico_forum_owner`;
+- session_user = `vico_forum_owner`;
+- current_database = `vico_forum`.
+
+The intended single bounded mutation was prepared to:
+
+- fail closed unless execution identity/database were exact;
+- fail closed if `vico_forum_web` did not exist;
+- fail closed if any database-specific role settings already existed;
+- set only:
+  - `lock_timeout = 2s`;
+  - `statement_timeout = 5s`;
+  for exact role `vico_forum_web` in exact database `vico_forum`.
+
+The Neon connector rejected the write call before confirmed SQL execution with:
+
+`401 supplied credentials do not pass authentication`
+
+Per the accepted choreography, **no mutation retry was attempted**.
+
+A subsequent read-only verification succeeded and confirmed:
+
+- `pg_db_role_setting` for `vico_forum_web` in `vico_forum` is still empty.
+
+Therefore:
+
+- role defaults were not changed;
+- password/credential step was not started;
+- no Hyperdrive resource was created or changed;
+- no Worker binding/config/routing/deploy action occurred;
+- no compensation was required because the write did not take effect.
+
+Current gate is stopped safely at Part 2. The blocker is execution-path authentication for the
+owner-controlled PostgreSQL mutation, not a database-state drift or contract defect.
+
+Do not retry the mutation automatically. Codex should independently assess the next bounded
+execution path before any further external mutation.
