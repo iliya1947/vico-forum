@@ -1345,7 +1345,7 @@ relation-provisioning path готов, но external `vico_forum_web`, relation 
 1. ChatGPT сверяет exact `main` SHA, target database/branch и прежние owner/migrator/localization
    invariants; отсутствие `vico_forum_web` и web relation ACL обязательно;
 2. через owner-controlled production connection одной transaction создаёт `vico_forum_web` как
-   `LOGIN INHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS PASSWORD NULL`;
+   `LOGIN NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS PASSWORD NULL`;
 3. выдаёт только direct non-grantable database `CONNECT` и schema `USAGE`, подтверждает automatic
    owner membership и owner-authorized boundary, затем commit;
 4. фиксирует identity/conclusion, password-null command evidence и compact ACL summary в PR #122
@@ -1360,6 +1360,34 @@ relation-provisioning path готов, но external `vico_forum_web`, relation 
 После evidence owner phase Codex отдельно проверит результат и только затем определит следующий
 gate: protected variable + один migrator provisioning workflow dispatch. До явного разрешения
 пользователя owner phase и все последующие external actions запрещены.
+
+### Owner-phase inheritance contradiction исправлено; mutation не выполнялась
+
+Последнее обновление служебного PR ChatGPT #122 на head
+`eefc1d4081cb8f09322ffb24a2053bc659a320d6` проверено. ChatGPT корректно остановился до database
+connection/mutation: предыдущая запись Codex ошибочно требовала `INHERIT`, тогда как merged
+`.github/scripts/provision-production-web-relations.mjs` fail closed требует target web role
+`NOINHERIT`, а database source-of-truth запрещает inherited runtime membership.
+
+Расхождение подтверждено независимо. Это дефект инструкции Codex, а не PR #139 или merged
+repository contract. Исправление выше заменяет единственный ошибочный attribute на `NOINHERIT`;
+остальной bounded owner-phase contract не меняется. ChatGPT подтвердил отсутствие `CREATE ROLE`,
+database/schema grants, compensating `DROP`, GitHub variable, workflow dispatch, verifier и прочих
+external operations. Предыдущее разрешение не было использовано production mutation.
+
+Исправленный owner-phase gate:
+
+1. exact role attributes: `LOGIN NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION
+   NOBYPASSRLS PASSWORD NULL`;
+2. только direct non-grantable database `CONNECT`, schema `USAGE` без `CREATE` и automatic
+   database-owner inbound admin membership с `inherit_option=false`, `set_option=false`;
+3. все прежние preconditions, transactional assertions, rollback/compensating cleanup и evidence
+   requirements сохраняются;
+4. после successful owner phase обязательна остановка до независимой проверки Codex.
+
+Поскольку предыдущая явная авторизация ссылалась на ошибочно описанную owner phase и операция не
+начиналась, исправленный production mutation gate требует нового явного разрешения пользователя.
+До него external actions запрещены.
 
 ## Рабочий канал дальнейших действий
 
