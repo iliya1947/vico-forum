@@ -5173,3 +5173,50 @@ credential-bootstrap gate before any further mutation.
 
 Accepted Part 2 database-specific defaults remain in place and are not rolled back. Existing role,
 grants and localization Hyperdrive remain unchanged.
+
+
+### Migrator credential precedent rechecked; prior bootstrap claim corrected
+
+The user asked to stop reinventing the credential path and reuse the already completed
+`vico_forum_migrator` precedent. That precedent was re-read from both service channels,
+current project history and live Neon metadata.
+
+Correction: the previously stated claim that the migrator credential was bootstrapped by a
+temporary GitHub Actions SCRAM/`PQencryptPasswordConn` workflow is not supported by the project
+record and must not be relied on.
+
+What the recorded migrator path actually proves:
+
+- on 2026-09-26 the migration credential gate obtained a Neon production connection string for
+  exact role `vico_forum_migrator`;
+- the owner then copied that connection string directly from Neon Console into protected GitHub
+  Environment secret `production-db / NEON_MIGRATION_DATABASE_URL`, without publishing it;
+- the separate merged read-only identity workflow subsequently proved
+  `current_user = vico_forum_migrator`;
+- current Neon control-plane metadata now reports
+  `vico_forum_migrator.authentication_method=password`.
+
+The record does **not** contain evidence that a GitHub workflow created the first password for
+that role. It also does not establish that the migrator and web roles had the same provenance:
+the current `vico_forum_web` was explicitly SQL-created during Stage 6 with `PASSWORD NULL`,
+whereas the migrator role predates this web-role owner phase.
+
+Current live Neon metadata strengthens that distinction:
+
+- `vico_forum_migrator`: `authentication_method=password`,
+  created 2026-09-13, updated 2026-09-26;
+- `vico_forum_web`: `authentication_method=no_login`,
+  created 2026-09-27 by the reviewed SQL owner phase.
+
+Official current Neon API behavior also separates these operations:
+connection-URI retrieval is a GET/read of an existing role credential, while Reset password is
+the explicit password mutation endpoint. Therefore merely repeating "copy the connection string"
+cannot bootstrap `vico_forum_web` while it remains a SQL-created PASSWORD NULL/no-managed-password
+role.
+
+Conclusion for this subtask: there is no verified reusable "migrator first-password bootstrap"
+mechanism in the project record. The reusable precedent is only the post-credential
+secret-transfer/identity-verification pattern. The next technical task must therefore design a
+web-only first-password bootstrap for the existing `vico_forum_web` without changing its accepted
+role/grant contract, or explicitly compare that with recreating the role through Neon-managed role
+creation and re-provisioning. No external mutation is authorized by this record.
