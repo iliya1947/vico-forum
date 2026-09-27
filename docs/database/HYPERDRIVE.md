@@ -141,18 +141,48 @@ credential уже принятой SQL-created `vico_forum_web`. Workflow исп
 `NEON_OWNER_DATABASE_URL`, `WEB_RUNTIME_DATABASE_ROLE` и временный Environment secret
 `WEB_RUNTIME_DATABASE_PASSWORD_BOOTSTRAP`; merge сам по себе ничего во внешней БД не меняет.
 
+До доступа к Environment secrets/production DB отдельный guard job требует exact
+`refs/heads/main`, `GITHUB_RUN_NUMBER=1`, `GITHUB_RUN_ATTEMPT=1` и exact confirmation token.
+Поэтому новый dispatch либо rerun этого workflow после первого run не может дойти до bootstrap
+step. В самом bootstrap script тот же run/attempt contract проверяется повторно до DB connection.
+
 Перед password mutation workflow fail closed проверяет exact production owner/session/database,
 safe role attributes/membership, принятые `2s/5s` defaults, полный localization/web ACL contract,
-direct/unpooled Neon owner target, disabled bind-parameter values in error logging и отключённые statement/duration sampling paths на время bootstrap. Cleartext
-password не включается в SQL: runner локально строит PostgreSQL SCRAM-SHA-256 verifier, а server
-получает verifier параметром через transaction-local setting. После commit выполняется отдельный
-bounded login как `vico_forum_web`; failure/ambiguous outcome без retry возвращает credential в
-`PASSWORD NULL`.
+direct/unpooled Neon owner target, disabled bind-parameter values in error logging и отключённые
+statement/duration logging/sampling paths. Cleartext password не включается в SQL: runner локально
+строит PostgreSQL SCRAM-SHA-256 verifier, а server получает verifier bind-параметром через
+transaction-local setting.
 
-Этот workflow является временным bootstrap mechanism. До отдельного explicit authorization
-запрещено создавать bootstrap secret или dispatch-ить workflow. Successful credential bootstrap
-сам по себе также не создаёт Hyperdrive/binding/deploy. После accepted Hyperdrive evidence временный
-secret удаляется, а lifecycle bootstrap workflow/script рассматривается отдельным cleanup PR.
+Первичная password mutation атомарно ставит verifier вместе с server-owned bounded
+`VALID UNTIL` lease на **30 минут** от PostgreSQL server clock. После commit workflow выполняет
+отдельный bounded login как `vico_forum_web` и проверяет exact database + `2s/5s` defaults.
+Обычный caught post-mutation failure без retry сначала возвращает `PASSWORD NULL`. Если runner
+будет аварийно остановлен, отменён, потерян или убит timeout после commit и JavaScript compensation
+не успеет выполниться, password authentication автоматически перестанет принимать этот credential
+после истечения `VALID UNTIL`; role/grants/defaults при этом не меняются.
+
+30-minute lease — только bootstrap safety window, а не production credential lifetime.
+До accepted Hyperdrive evidence его запрещено продлевать. После successful creation и проверки
+ровно одного unbound cache-disabled `vico-forum-web` на direct Neon origin, пока lease ещё active,
+ChatGPT координирует отдельную owner-controlled transaction в Neon SQL Editor: exact
+owner/session/database + safe role/default/ACL assertions → проверка finite future
+`pg_roles.rolvaliduntil` → только `ALTER ROLE vico_forum_web VALID UNTIL 'infinity'` → post-check
+`rolvaliduntil = 'infinity'::timestamptz` → commit. Только этот post-Hyperdrive шаг превращает
+leased bootstrap password в durable web credential.
+
+Если Hyperdrive evidence либо owner-finalization не завершены до expiry, workflow не dispatch-ится
+и не rerun-ится повторно. Gate считается failed: owner-controlled reconciliation сначала оставляет
+или возвращает `PASSWORD NULL`, затем удаляется любой созданный unbound `vico-forum-web`;
+accepted grants/defaults сохраняются, после чего требуется новый reviewed recovery path. Если
+finalization outcome неоднозначен, сначала выполняется read-only check `pg_roles.rolvaliduntil`;
+`infinity` означает finalized success, любое finite/expired значение не считается acceptance.
+
+Этот workflow является временным bootstrap mechanism. До отдельного explicit authorization,
+охватывающего bootstrap + Hyperdrive creation + finalize/compensation boundary, запрещено создавать
+bootstrap secret или dispatch-ить workflow. После accepted Hyperdrive + finalized credential
+evidence временный GitHub Environment secret удаляется, а lifecycle bootstrap workflow/script
+удаляются отдельным cleanup PR. Successful credential bootstrap сам по себе не означает
+Hyperdrive/binding/deploy acceptance.
 
 Official reference:
 
