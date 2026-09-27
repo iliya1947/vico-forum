@@ -2,8 +2,11 @@ import { describe, expect, it, vi } from "vitest";
 import type { Client } from "pg";
 import {
   LOCALIZATION_DB_DEADLINES,
+  WEB_DB_CALLER_DEADLINES,
   bestEffortDiscardClient,
   createLocalizationClient,
+  createWebClient,
+  createWebPool,
   isPostgresConnectionTimeout,
   isPostgresQueryTimeout,
   isPostgresStatementTimeout,
@@ -23,6 +26,36 @@ describe("PostgreSQL deadlines", () => {
       .toBeLessThan(LOCALIZATION_DB_DEADLINES.statementTimeoutMillis);
     expect(LOCALIZATION_DB_DEADLINES.statementTimeoutMillis)
       .toBeLessThan(LOCALIZATION_DB_DEADLINES.queryTimeoutMillis);
+  });
+
+  it("configures the shared web client and pool caller deadlines", async () => {
+    const connectionString = "postgres://web@hyperdrive/vico";
+    const client = createWebClient(connectionString);
+    const configuredClient = client as unknown as {
+      connectionParameters: { query_timeout: number };
+      _connectionTimeoutMillis: number;
+    };
+
+    expect(configuredClient._connectionTimeoutMillis)
+      .toBe(WEB_DB_CALLER_DEADLINES.connectionTimeoutMillis);
+    expect(configuredClient.connectionParameters.query_timeout)
+      .toBe(WEB_DB_CALLER_DEADLINES.queryTimeoutMillis);
+
+    const pool = createWebPool(connectionString);
+    const configuredPool = pool as unknown as {
+      options: {
+        connectionTimeoutMillis: number;
+        max: number;
+        query_timeout: number;
+      };
+    };
+
+    expect(configuredPool.options.connectionTimeoutMillis)
+      .toBe(WEB_DB_CALLER_DEADLINES.connectionTimeoutMillis);
+    expect(configuredPool.options.query_timeout)
+      .toBe(WEB_DB_CALLER_DEADLINES.queryTimeoutMillis);
+    expect(configuredPool.options.max).toBe(1);
+    await pool.end();
   });
 
   it.each([
