@@ -1252,6 +1252,43 @@ repository-owned manual provisioning path для relation grants под уже �
 После independent review/merge этого PR Codex заново авторизует owner phase → protected variable →
 new migrator provisioning workflow → read-only verifier sequence. До этого provisioning запрещён.
 
+### Passwordless observability boundary resolved for provisioning workflow
+
+Последнее обновление служебного PR ChatGPT #122 на head
+`d26cac0dd3c16fb0f590b8959cff416fe8bd7b92` проверено. ChatGPT корректно остановил repository
+implementation до изменений: exact migrator identity не может достоверно проверить passwordless
+state через `pg_roles`, потому что PostgreSQL 17 маскирует `rolpassword`; `pg_authid`/`pg_shadow`
+правомерно недоступны. Расширять catalog privileges нельзя.
+
+Решение: passwordlessness является **owner-phase command/evidence invariant**, а не условием,
+повторно наблюдаемым migrator. Owner создаёт role exact statement с `PASSWORD NULL`; до Hyperdrive
+gate usable credential не существует. Migrator workflow проверяет только доступные ему independent
+catalog invariants и требует явное operator confirmation, что reviewed owner phase завершена.
+
+Scope mergeable relation-provisioning PR уточняется:
+
+1. убрать невозможное чтение/утверждение `rolpassword` из migrator script и не называть masked
+   `pg_roles.rolpassword` evidence;
+2. сохранить checks exact current user, safe visible role attributes, automatic owner membership,
+   database/schema prerequisites, exact object ownership и target role existence;
+3. workflow `workflow_dispatch` должен иметь обязательный confirmation input с exact reviewed token,
+   например `owner-phase-password-null-confirmed`; mismatch fail closed до DB connection/write;
+4. docs и workflow UI явно объясняют: token подтверждает отдельное owner-phase evidence, но не
+   является database-derived password check;
+5. script по-прежнему derivе-ит grants только из `runtimeCapabilityContracts.web`, выполняет их
+   transactionally под exact migrator и вызывает shared full end-state assertion до commit;
+6. tests покрывают отсутствующий/неверный confirmation, отсутствие role/prerequisites, wrong
+   current user/ownership, rollback и successful disposable PostgreSQL path; они не имитируют
+   password observability;
+7. остальные условия предыдущего PR scope сохраняются: protected main-only workflow, shared
+   concurrency, no external execution, no Worker/migration/dependency/capability-matrix change;
+8. `PROJECT_STATE.md`/database docs фиксируют разделение owner evidence и migrator-observable
+   verification без заявления, что provisioning выполнен.
+
+Это устраняет ложное требование, не ослабляя credential boundary. ChatGPT может создать mergeable
+PR с уточнённым contract; external owner phase и workflow dispatch остаются запрещены до его
+independent review/merge.
+
 ## Рабочий канал дальнейших действий
 
 По решению пользователя от 2026-09-26 все дальнейшие operational requests, перечни требуемого
