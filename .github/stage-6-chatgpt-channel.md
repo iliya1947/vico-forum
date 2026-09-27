@@ -5389,3 +5389,54 @@ therefore remains unchanged.
 
 Next process step is independent Codex review of PR #141. The user still owns merge. External
 credential bootstrap remains separately authorization-gated after merge.
+
+
+### PR #141 corrective cycle: Codex findings implemented
+
+Codex PR #121 head `eebaae09ad9b2ab28101cbd08984644ddfb9d9d7` independently identified three
+current-Stage defects in PR #141. All three were confirmed against current PR code and official
+PostgreSQL 17 / GitHub Actions contracts, then corrected on the same PR branch.
+
+Corrections now on PR #141 head `9611900229844d6ae2709df89e5ef018cd962b4d`:
+
+1. **Termination-safe bounded credential lease**
+   - initial SCRAM credential is now applied together with a server-clock
+     `VALID UNTIL` lease;
+   - production default lease is 30 minutes;
+   - the transaction verifies that the resulting lease is active and bounded before commit;
+   - ordinary post-mutation failures still attempt immediate `PASSWORD NULL` compensation;
+   - unexpected runner/process cancellation after commit is bounded by PostgreSQL password expiry,
+     so an unaccepted credential cannot remain usable indefinitely;
+   - disposable PostgreSQL 17 probe now uses a short test lease, proves immediate login, waits for
+     expiry, proves fresh password authentication is rejected, then continues compensation tests.
+
+2. **One-shot dispatch/rerun boundary**
+   - workflow now has a separate pre-Environment guard job with no production secrets;
+   - it requires exact main ref, `GITHUB_RUN_NUMBER=1`, `GITHUB_RUN_ATTEMPT=1` and the exact
+     confirmation token before the Environment-bound bootstrap job can start;
+   - bootstrap job also has exact main + first-run + first-attempt job condition;
+   - CLI repeats run/attempt assertions before any DB connection;
+   - unit/workflow-contract tests cover repeat dispatch/rerun rejection and prove the guard section
+     contains neither Environment binding nor secret references.
+
+3. **State/documentation correction**
+   - stale outstanding `database-role deadline defaults` was removed from `PROJECT_STATE.md`;
+   - source-of-truth docs now define the lease as bootstrap-only, not production lifetime;
+   - exact post-Hyperdrive path is documented without pre-claim:
+     accepted unbound cache-disabled Hyperdrive evidence while the lease is active → owner-controlled
+     Neon SQL Editor assertion → only `ALTER ROLE vico_forum_web VALID UNTIL 'infinity'` →
+     post-check → commit;
+   - if evidence/finalization misses expiry, no rerun is allowed: keep/restore `PASSWORD NULL`,
+     delete any created unbound web Hyperdrive and stop for a new reviewed recovery path;
+   - ambiguous finalization is reconciled read-only via `pg_roles.rolvaliduntil`.
+
+Official contracts checked for this correction:
+- PostgreSQL 17 documents `VALID UNTIL` as password-expiration semantics and exposes
+  `pg_roles.rolvaliduntil`; `ALTER ROLE ... VALID UNTIL 'infinity'` restores unlimited password
+  validity;
+- GitHub documents `GITHUB_RUN_NUMBER` as starting at 1 and increasing for each new run of a
+  workflow, while `GITHUB_RUN_ATTEMPT` starts at 1 and increments for reruns.
+
+No external secret, DB mutation, workflow dispatch, Hyperdrive change, binding/routing or deploy was
+performed. PR #141 remains mergeable from the same exact main base. Full post-fix review and
+exact-head CI are the next separate subtask; no final readiness claim is made here.
