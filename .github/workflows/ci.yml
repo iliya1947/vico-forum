@@ -28,6 +28,8 @@ jobs:
           node --test .github/scripts/production-privileges.test.mjs
           node --test .github/scripts/runtime-privileges.test.mjs
           node --test .github/scripts/provision-production-web-relations.test.mjs
+          node --test .github/scripts/bootstrap-production-web-credential.test.mjs
+          node --test .github/scripts/production-web-credential-bootstrap-workflow.test.mjs
           node --test .github/scripts/production-migration-contract.test.mjs
           node --test .github/scripts/runtime-migration-evidence.test.mjs
           node --test .github/scripts/verify-production-migration-identity.test.mjs
@@ -87,6 +89,8 @@ jobs:
         run: node .github/scripts/verify-runtime-privilege-probes.mjs
       - name: Verify split-authority web relation provisioning
         run: node .github/scripts/verify-web-relation-provisioning-probes.mjs
+      - name: Verify web credential bootstrap and compensation
+        run: node .github/scripts/verify-web-credential-bootstrap-probes.mjs
       - name: Build for Workers smoke
         run: pnpm build
       - name: Workers smoke with local Hyperdrive override
