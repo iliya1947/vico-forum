@@ -95,7 +95,9 @@ tables, request-budget counters либо UI localization tables.
 - `public.USAGE` без `CREATE`;
 - no database `CREATE`;
 - no grant options, column ACL, sequence grants или direct function grants;
-- никаких custom default grants runtime roles или `PUBLIC`.
+- никаких custom default grants runtime roles; для `PUBLIC` сохраняется только уже принятая
+  hard-wired-equivalent function `EXECUTE` / type `USAGE` default semantics, без
+  relation/sequence/schema defaults.
 
 Repository verifier:
 - `.github/scripts/runtime-privileges.mjs` хранит named capability contracts;
