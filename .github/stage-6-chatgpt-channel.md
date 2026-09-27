@@ -1720,3 +1720,96 @@ Final whole-PR self-review confirms:
 
 Next review-cycle action: Codex independently re-review the complete current PR #137 at head
 `5108799e4ad47f829ac6e9ff17b2ad945a384f77`. Merge remains user-controlled.
+
+
+### Runtime database-ACL verifier correction PR #138 — implemented and verified
+
+Latest Codex service-channel correction request from PR #121 was executed as a bounded
+repository-only change from exact `main`
+`01e74b5ddbe6f339acfe7e60a75d85592b422674`.
+
+Created mergeable PR #138 `Correct Stage 6 runtime database ACL verification`.
+
+Final PR head:
+`2f35e41fd0da4aad4a9f549e73f7cb3a459f3c3f`.
+
+Changed files are exactly five:
+- `.github/scripts/runtime-privileges.mjs`;
+- `.github/scripts/runtime-privileges.test.mjs`;
+- `PROJECT_STATE.md`;
+- `docs/database/HYPERDRIVE.md`;
+- `docs/database/MIGRATIONS.md`.
+
+No relation capability matrix, migration SQL, production migration workflow, Worker code,
+dependency, production role/grant, workflow dispatch, Hyperdrive provisioning or deployment was
+changed/performed.
+
+#### Corrected database ACL contract
+
+The previous runtime snapshot filtered `pg_database.datacl` to `CREATE` only, which could not
+detect direct runtime `CONNECT WITH GRANT OPTION`, direct `TEMPORARY`, or other unexpected
+database ACL rows.
+
+The shared runtime verifier now:
+- reads all ACL rows for both runtime roles and `PUBLIC`;
+- preserves `datacl IS NULL` behavior with
+  `aclexplode(COALESCE(datacl, acldefault('d', datdba)))`;
+- still requires effective `CONNECT=true` for both runtime roles;
+- still requires effective `CREATE=false` for both runtime roles;
+- permits each runtime role only optional direct non-grantable `CONNECT`;
+- rejects runtime direct `TEMPORARY`, `CREATE`, grantable `CONNECT`, grant options and any
+  unexpected database privilege;
+- permits `PUBLIC` only non-grantable hard-wired-equivalent `CONNECT` /
+  `TEMPORARY` or their absence;
+- rejects `PUBLIC CREATE`, grant options and any unexpected database privilege.
+
+The production read-only workflow and disposable PostgreSQL probe already consume this shared
+snapshot/assertion path, so no workflow or probe wiring change was needed.
+
+Unit coverage now explicitly includes:
+- allowed direct non-grantable runtime CONNECT;
+- grantable runtime CONNECT rejection;
+- runtime TEMPORARY rejection;
+- direct/effective runtime CREATE rejection;
+- allowed hard-wired-equivalent PUBLIC CONNECT/TEMPORARY or absence;
+- PUBLIC grantable CONNECT/TEMPORARY, CREATE and unexpected privilege rejection;
+- snapshot query preservation of the `datacl IS NULL -> acldefault('d', datdba)` path and removal
+  of the old CREATE-only filter.
+
+#### CI / re-review evidence
+
+GitHub CI run `36302230154` on exact head
+`2f35e41fd0da4aad4a9f549e73f7cb3a459f3c3f` completed `success`.
+
+`checks` = success:
+- accepted migration-history/static contract tests;
+- runtime privilege unit tests;
+- lint;
+- typecheck;
+- full tests;
+- build;
+- migration metadata;
+- Drizzle schema parity.
+
+`database` = success:
+- clean PostgreSQL 17 migration/integration suite;
+- production schema manifest parity;
+- corrected **runtime privilege probes**;
+- Workers build;
+- local Hyperdrive smoke.
+
+Full current-head diff review confirms:
+- exact scope remains five agreed files;
+- PR base is exact current `main`
+  `01e74b5ddbe6f339acfe7e60a75d85592b422674`;
+- PR is open, non-draft and mergeable;
+- current `main` has not moved;
+- docs/state describe the corrected reviewed verifier boundary without claiming web-role
+  provisioning or external acceptance;
+- no current-Stage defect or scope expansion was found in ChatGPT whole-PR re-review.
+
+No external operation was executed.
+
+Next review-cycle action is independent Codex whole-PR review of current PR #138. Merge remains
+user-controlled; runtime role creation/GRANT, production verifier dispatch and Hyperdrive/runtime
+provisioning remain blocked until post-merge Codex re-evaluation.
