@@ -1,7 +1,7 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { betterAuth } from "better-auth";
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
-import { Client } from "pg";
+import type { Client } from "pg";
 import type { AuthRuntime, AuthSession } from "./request-context";
 import {
   account,
@@ -11,6 +11,7 @@ import {
   user,
   verification,
 } from "../../db/schema";
+import { createWebClient } from "../../db/postgres-deadlines";
 
 export interface BetterAuthEnvironment {
   readonly BETTER_AUTH_SECRET: string;
@@ -59,7 +60,7 @@ function createAuth(database: NodePgDatabase, env: BetterAuthEnvironment) {
 export function createHyperdriveAuthRuntime(
   connectionString: string,
   env: BetterAuthEnvironment,
-  createClient: (connectionString: string) => Client = (value) => new Client({ connectionString: value }),
+  createClient: (connectionString: string) => Client = createWebClient,
 ): AuthRuntime {
   async function useAuth<T>(operation: (auth: ReturnType<typeof createAuth>) => Promise<T>): Promise<T> {
     const client = createClient(connectionString);

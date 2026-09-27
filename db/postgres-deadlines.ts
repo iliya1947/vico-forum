@@ -1,4 +1,4 @@
-import { Client } from "pg";
+import { Client, Pool } from "pg";
 
 /** Initial values; keep the server deadlines below the caller deadline and calibrate in staging. */
 export const LOCALIZATION_DB_DEADLINES = {
@@ -8,11 +8,33 @@ export const LOCALIZATION_DB_DEADLINES = {
   statementTimeoutMillis: 1_500,
 } as const;
 
+export const WEB_DB_CALLER_DEADLINES = {
+  connectionTimeoutMillis: 3_000,
+  queryTimeoutMillis: 7_000,
+} as const;
+
 export function createLocalizationClient(connectionString: string): Client {
   return new Client({
     connectionString,
     connectionTimeoutMillis: LOCALIZATION_DB_DEADLINES.connectionTimeoutMillis,
     query_timeout: LOCALIZATION_DB_DEADLINES.queryTimeoutMillis,
+  });
+}
+
+export function createWebClient(connectionString: string): Client {
+  return new Client({
+    connectionString,
+    connectionTimeoutMillis: WEB_DB_CALLER_DEADLINES.connectionTimeoutMillis,
+    query_timeout: WEB_DB_CALLER_DEADLINES.queryTimeoutMillis,
+  });
+}
+
+export function createWebPool(connectionString: string): Pool {
+  return new Pool({
+    connectionString,
+    max: 1,
+    connectionTimeoutMillis: WEB_DB_CALLER_DEADLINES.connectionTimeoutMillis,
+    query_timeout: WEB_DB_CALLER_DEADLINES.queryTimeoutMillis,
   });
 }
 

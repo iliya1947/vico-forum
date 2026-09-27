@@ -48,15 +48,12 @@ Vico Forum находится в ранней pre-release разработке.
 - Repository privilege boundary по-прежнему требует direct non-grantable `CREATE` на текущую
   database именно для application owner/migrator и запрещает database `CREATE` для localization
   runtime и `PUBLIC`; bounded identity/capability gate подтверждён external execution.
-- Stage 6 runtime provisioning-preparation contract разделяет existing `localization-read` и
-  отдельную future `web` capability. Repository verifier покрывает exact relation/schema ACL и
-  полный database ACL boundary для `CONNECT` / `CREATE` / `TEMPORARY`, включая grant options
-  и safe `datacl IS NULL` defaults; disposable PostgreSQL 17 CI path проверяет proposed grants.
-  Для production split-authority boundary repository также содержит отдельный manual main-only
-  relation-grant path: owner phase остаётся отдельным evidence step, а exact table grants
-  выполняются существующим protected `vico_forum_migrator` credential и derive-ятся только из
-  shared `runtimeCapabilityContracts.web`. Merge этого workflow сам provisioning не запускает.
-  External web PostgreSQL role/grants, Hyperdrive binding и Worker wiring ещё не выполнены.
+- Stage 6 runtime contract разделяет existing `localization-read` и отдельную `web`
+  capability. Production owner/migrator sequence уже создала `vico_forum_web`, установила
+  protected `WEB_RUNTIME_DATABASE_ROLE`, выдала exact reviewed relation grants и прошла successful
+  read-only runtime privilege verification для обеих runtime roles. Web role всё ещё не имеет
+  usable application credential и database-role deadline defaults; отдельный cache-disabled
+  Hyperdrive, Worker binding/routing и deployed web-runtime acceptance ещё отсутствуют.
   Content-generation runtime остаётся disabled и не входит в web ACL.
 - Обычная feature-разработка и её CI остаются отделены от external rollout; merge в `main` сам по
   себе не является deployment/acceptance evidence.
@@ -361,16 +358,19 @@ postflight verification полного `0000`–`0020` schema contract. Это e
 `locales`, `ui_translations` и `ui_translation_bundles`. Ранее выполненный real Hyperdrive
 acceptance остаётся evidence этого localization path, но не является gate для обычных feature PR.
 
-Repository уже содержит reviewed exact ACL/verifier contract для отдельной future web runtime
-capability (Better Auth + forum + dynamic authorization + persisted forum-content reads), а также
-защищённый manual relation-grant execution path под existing migration credential. Passwordless
-состояние web role остаётся owner-phase command/evidence invariant: migrator не может достоверно
-читать password verifier и вместо этого требует exact operator confirmation token до DB write.
-Это всё ещё только provisioning-preparation: external web role/grants, protected
-`WEB_RUNTIME_DATABASE_ROLE`, cache-disabled Hyperdrive binding и Worker wiring отсутствуют.
+Repository содержит reviewed exact ACL/verifier contract для отдельной web runtime
+capability (Better Auth + forum + dynamic authorization + persisted forum-content reads) и
+защищённый split-authority execution path. Production evidence уже подтверждает созданную
+`vico_forum_web` role, protected `WEB_RUNTIME_DATABASE_ROLE=vico_forum_web`, exact 50/50
+non-grantable relation privilege pairs и successful read-only runtime privilege verifier.
+Usable web credential, database-role deadline defaults, отдельный web Hyperdrive, Worker
+binding/routing и deployed web-runtime acceptance ещё отсутствуют.
 
-По зафиксированному состоянию проекта native Cloudflare Git integration для active development
-`main` отключён. Перед Stage 6 фактическую external configuration необходимо проверить заново.
+Fresh Stage 6 Cloudflare Gate 0 подтвердил: native Git Builds integration отключён; Production
+имеет только `HYPERDRIVE -> vico-forum-registry` под `vico_forum_runtime` с disabled query
+caching; `Previews Base` не имеет bindings или runtime variables/secrets; production и preview
+`workers.dev` URLs включены, custom domains/routes отсутствуют. Перед будущим deploy эта mutable
+control-plane topology всё равно перепроверяется.
 
 Dedicated least-privilege migration credential для production подтверждён external execution как
 `vico_forum_migrator`, production migration workflow не содержит database-owner exception, а
@@ -380,27 +380,31 @@ identity/capability workflow. Последующий authorized schema-first mig
 privilege contract. Repository-owned evidence теперь покрывает `0020`, но Worker deployment,
 runtime roles/Hyperdrive writes и другие schema-dependent runtime capabilities ещё не выкатывались.
 
-До Stage 6 не считаются выполненными:
+До завершения Stage 6 ещё не выполнены:
 
 - real Google OAuth configuration и smoke;
 - server-controlled bootstrap первого authorization manager;
-- external web runtime role/grants + cache-disabled Hyperdrive binding/Worker wiring;
+- usable web runtime credential + database-role deadline defaults + cache-disabled Hyperdrive
+  binding/Worker routing;
 - отдельные translation background/maintenance runtime capabilities;
 - Cloudflare Queues и реальные translation providers;
-- preview/private-data isolation для write capabilities;
+- final preview/private-data isolation recheck для write-capability rollout;
 - full production-like deployment smoke и backup/restore acceptance.
 
 ## Ближайший маршрут
 
-1. Repository split-authority relation-provisioning mechanism готов для Stage 6 external gate;
-   Codex после merge заново сверяет актуальный `main` и exact production preconditions.
-2. Owner phase, protected `WEB_RUNTIME_DATABASE_ROLE` setup, один migrator provisioning workflow
-   dispatch и последующий read-only runtime verifier выполняются только как отдельно разрешённая
-   bounded external sequence; repository merge сам ни один из этих шагов не запускает.
-3. Hyperdrive binding name/ID, forum/auth role deadlines, Worker wiring и deployment остаются
-   отдельным reviewed runtime-wiring gate после privilege provisioning/verification.
+Repository-only web runtime wiring preparation в этом change set уже включает factual Stage 6
+docs sync, единые caller deadlines для Better Auth/forum/authorization и fail-closed disabled
+generation-status composition без изменения текущего `HYPERDRIVE`. Это не утверждает merge,
+external credential/default configuration или deploy.
 
-Stage 5 завершён только в repository/local-CI boundary. Real Google OAuth/bootstrap, production
-runtime roles/Hyperdrive writes, Cloudflare Queues/providers, authoritative production
-allowance/anti-abuse values, preview isolation, deployed smoke и backup/restore остаются Stage 6
-работой.
+1. После merge отдельно согласовать bounded external choreography:
+   web credential + role defaults → новый cache-disabled web Hyperdrive → safe metadata evidence.
+2. После successful choreography отдельным reviewed PR подключить реальный web binding/routing.
+3. Затем только по явному разрешению выполнить deploy, real-path smoke/calibration и следующие
+   Stage 6 OAuth/bootstrap/Queue gates.
+
+Stage 5 завершён только в repository/local-CI boundary. Real Google OAuth/bootstrap, remaining
+production runtime wiring/Hyperdrive credentials, Cloudflare Queues/providers, authoritative
+production allowance/anti-abuse values, final preview isolation, deployed smoke и backup/restore
+остаются Stage 6 работой.

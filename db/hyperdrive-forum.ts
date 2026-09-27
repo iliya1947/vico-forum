@@ -1,7 +1,12 @@
 import { drizzle } from "drizzle-orm/node-postgres";
-import { Client } from "pg";
+import type { Client } from "pg";
 import { isPostgresAvailabilityFailure } from "../app/localization/persistent-registry";
-import { bestEffortDiscardClient, isPostgresConnectionTimeout, isPostgresQueryTimeout } from "./postgres-deadlines";
+import {
+  bestEffortDiscardClient,
+  createWebClient,
+  isPostgresConnectionTimeout,
+  isPostgresQueryTimeout,
+} from "./postgres-deadlines";
 import type { ForumReader } from "./forum-repository";
 import type { SolutionManagementScope } from "./forum-repository";
 import { DrizzleForumRepository } from "./forum-repository";
@@ -29,7 +34,7 @@ type ClientFactory = () => Client;
 /** Creates the public forum read capability exposed to one Worker request. */
 export function createHyperdriveForumReader(
   connectionString: string,
-  clientFactory: ClientFactory = () => new Client({ connectionString }),
+  clientFactory: ClientFactory = () => createWebClient(connectionString),
 ): ForumReader {
   async function read<T>(operation: (repository: DrizzleForumRepository) => Promise<T>): Promise<T> {
     const client = clientFactory();
@@ -57,7 +62,7 @@ export function createHyperdriveForumReader(
 /** Creates the forum mutation capability exposed to one Worker request. */
 export function createHyperdriveForumWriter(
   connectionString: string,
-  clientFactory: ClientFactory = () => new Client({ connectionString }),
+  clientFactory: ClientFactory = () => createWebClient(connectionString),
   writePolicy: ForumWritePolicy = forumWritePolicy,
 ): ForumWriter {
   async function write<T>(operation: (service: ForumService) => Promise<T>): Promise<T> {

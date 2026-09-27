@@ -167,8 +167,9 @@ translation execution/publication и maintenance остаются отдельн
 boundary.
 
 Production role names environment-specific и не hard-code-ятся в migrations. Repository verifier
-получает existing localization role через `RUNTIME_DATABASE_ROLE`, а будущую web role — через
-`WEB_RUNTIME_DATABASE_ROLE`.
+получает existing localization role через `RUNTIME_DATABASE_ROLE`, а current provisioned web role
+через protected `WEB_RUNTIME_DATABASE_ROLE`; current production value подтверждён как
+`vico_forum_web`.
 
 Runtime privilege acceptance отделена от production migration workflow:
 
@@ -188,6 +189,10 @@ Runtime privilege acceptance отделена от production migration workflow
    `Production runtime privilege verification` read-only проверяет exact roles/ACLs в target DB;
 6. только после successful privilege evidence может рассматриваться Worker wiring/deployment.
 
+Current production execution завершила owner phase, exact migrator relation grants и read-only
+runtime privilege verification successfully. Это принимает database privilege boundary, но не
+создаёт usable web credential, Hyperdrive binding или Worker rollout.
+
 Runtime verifier требует для обоих roles LOGIN + effective database `CONNECT`, отсутствие
 dangerous attributes, inherited memberships/ownership, `public.USAGE` без `CREATE` и полный
 database ACL contract. Runtime role допускает только optional direct non-grantable `CONNECT`;
@@ -201,9 +206,11 @@ default boundary сохраняет только уже принятую hard-wi
 inbound admin control допускается только в уже принятой non-inheriting /
 non-SET форме.
 
-Этот repository contract **не** означает, что web PostgreSQL role, grants или Hyperdrive binding
-уже созданы. Migration workflow намеренно не требует ещё не provisioned web role, поэтому будущая
-schema migration остаётся независимой от runtime provisioning.
+Current production уже имеет reviewed web PostgreSQL role и exact relation grants, подтверждённые
+shared runtime verifier. Это **не** означает, что usable web credential, cache-disabled Hyperdrive
+binding, Worker routing или deployment уже существуют. Migration workflow намеренно остаётся
+независимым от web runtime provisioning, поэтому будущая schema migration не связывается с
+наличием или rollout web capability.
 
 Runtime-role deadline defaults и exact new Hyperdrive binding name/ID — operational runtime-wiring
 configuration, не portable schema. Existing localization defaults/acceptance и reviewed web matrix

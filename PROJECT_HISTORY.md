@@ -1,6 +1,6 @@
 # PROJECT_HISTORY.md
 
-Последнее обновление: 2026-09-26
+Последнее обновление: 2026-09-27
 
 ## Назначение
 
@@ -106,6 +106,26 @@ semantics; эта часть позже исправлена PR #76.
 - [#73](https://github.com/iliya1947/vico-forum/pull/73) — provider-neutral execution pipeline;
 - [#74](https://github.com/iliya1947/vico-forum/pull/74) — atomic persisted bundle publication;
 - [#75](https://github.com/iliya1947/vico-forum/pull/75) — persisted bundle runtime reads.
+
+
+### 2026-09-25 — 2026-09-27: Stage 6 schema и web runtime privilege gates
+
+Stage 6 начал собирать repository/local-CI продукт в внешний pre-release candidate. Dedicated
+`vico_forum_migrator` был восстановлен и проверен, migration bootstrap получил требуемый direct
+database `CREATE`, а последующий authorized migration run успешно применил и проверил
+`0004`–`0020`.
+
+После schema gate отдельная split-authority sequence создала production role
+`vico_forum_web`, установила protected `WEB_RUNTIME_DATABASE_ROLE`, выдала exact reviewed web
+relation grants и завершила read-only runtime privilege verification обеих HTTP capabilities.
+Usable web credential, role deadline defaults, отдельный web Hyperdrive и Worker routing при этом
+не создавались.
+
+Fresh Cloudflare Gate 0 затем подтвердил, что native Git Builds integration отключён, live Worker
+намеренно отстаёт от current `main`, Production содержит только localization
+`HYPERDRIVE -> vico-forum-registry`, а `Previews Base` не имеет bindings или runtime
+variables/secrets. Это позволило перейти к repository-only подготовке будущего web wiring без
+автоматического production promotion.
 
 ## Corrective ledger
 
