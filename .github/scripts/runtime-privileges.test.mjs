@@ -353,6 +353,31 @@ test("rejects direct column, function and default privileges", () => {
   );
 });
 
+test("allows only hard-wired-equivalent PUBLIC function/type defaults", () => {
+  const candidate = fixture();
+  candidate.defaultPrivileges.push(
+    {
+      owner: "migration",
+      schema: "*",
+      object_type: "f",
+      grantee: "PUBLIC",
+      privilege: "EXECUTE",
+      is_grantable: false,
+    },
+    {
+      owner: "migration",
+      schema: "*",
+      object_type: "T",
+      grantee: "PUBLIC",
+      privilege: "USAGE",
+      is_grantable: false,
+    },
+  );
+  assert.doesNotThrow(() =>
+    assertRuntimeCapabilityPrivilegeContract(candidate, roles)
+  );
+});
+
 test("rejects unexpected PUBLIC privileges", () => {
   const schema = fixture();
   schema.schemaPrivileges.push({
@@ -404,6 +429,6 @@ test("rejects unexpected PUBLIC privileges", () => {
   });
   assert.throws(
     () => assertRuntimeCapabilityPrivilegeContract(defaults, roles),
-    /PUBLIC must not receive custom default privileges/,
+    /PUBLIC must not receive unexpected custom default privileges/,
   );
 });
