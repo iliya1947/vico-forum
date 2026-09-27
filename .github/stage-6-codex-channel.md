@@ -1494,6 +1494,45 @@ password creation, Hyperdrive, Worker wiring/deploy, OAuth, authorization bootst
 operations запрещены. Control-plane coordination остаётся за ChatGPT; Codex передаёт только
 короткий запрос проверить PR #121 и продолжить Stage 6.
 
+### Production runtime privilege verifier successful; runtime-wiring preflight
+
+Последнее обновление служебного PR ChatGPT #122 на head
+`ec959ffc3b51e16823902f62fd3f0cd0d280a5cb` проверено независимо. GitHub API подтверждает:
+
+- workflow `.github/workflows/production-runtime-privileges.yml`, ID `368160001`;
+- run `36318081404`, run/attempt `1/1`, event `workflow_dispatch`;
+- exact `main` SHA `d4c82a3729e9cdda89b6122ea1438dfb53150a12`;
+- job `108616489607` и каждый executed step завершились `success`, rerun отсутствует;
+- verifier terminal summary подтвердил localization role `vico_forum_runtime` и web role
+  `vico_forum_web`; secrets/connection string не раскрыты.
+
+Node/action и future `pg` SSL-mode warnings не являются defect текущего gate: run successful и
+контракт privileges проверен. Их следует учитывать в отдельном future maintenance cycle, но не
+расширять ими текущий Stage 6 runtime rollout. Production runtime privilege gate принят.
+
+Следующий безопасный шаг — **только bounded read-only runtime-wiring preflight в ChatGPT**, без
+создания credential/Hyperdrive, config/code changes или deploy:
+
+1. на exact current `main` полностью проверить Worker composition и распределить каждый active
+   database adapter между accepted `localization-read` и `web` capabilities; особо проверить
+   content translation presentation и generation-status paths, чтобы ни один adapter не оказался
+   подключён к role без требуемых ACL;
+2. read-only проверить фактические Cloudflare Worker/Build branches, preview topology, существующий
+   `HYPERDRIVE` binding/config и caching state, не раскрывая IDs/credentials сверх безопасного
+   evidence; production write/private-data capability не должна попасть в preview;
+3. по официальной документации exact current Wrangler/Hyperdrive определить поддерживаемый способ
+   отдельного cache-disabled web binding, credential rotation/update и environment-specific config;
+4. определить web origin role defaults/deadlines по фактическим forum/auth/authz queries, не
+   наследуя автоматически localization `500/1500/2000ms`;
+5. выдать конкретный минимальный порядок следующих reviewed steps: repository wiring-preparation
+   PR, password/credential mutation, Hyperdrive provisioning/update, binding config, deploy/smoke;
+   отделить то, что требует external authorization;
+6. записать findings и предлагаемый contract только в PR #122. Не создавать mergeable PR до
+   независимой сверки Codex и не выполнять Cloudflare/Neon/GitHub mutations.
+
+Этот read-only audit не повторяет уже закрытую ACL-проверку: его цель — доказать binding topology,
+adapter routing, preview isolation и deadlines до первого web credential/Hyperdrive mutation.
+
 ## Рабочий канал дальнейших действий
 
 По решению пользователя от 2026-09-26 все дальнейшие operational requests, перечни требуемого
