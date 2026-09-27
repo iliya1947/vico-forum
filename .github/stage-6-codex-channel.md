@@ -1692,6 +1692,44 @@ scope expansion не обнаружено.
 `74332a7b665bafd6100ffac157da307e2cc3cf91` готов к merge пользователем**. До merge и следующей
 post-merge сверки credential/default/Hyperdrive external choreography запрещена.
 
+### PR #140 merged; credential/Hyperdrive choreography design gate
+
+PR #140 смержен пользователем. Актуальный GitHub `main` — merge commit
+`6f262bf4374440e36096fd315a9c3ff4f42eba27`; его tree
+`7f22d218ba9647471dcf822defc3e9d5ab542dc4` точно совпадает с независимо проверенным tree head
+`74332a7b665bafd6100ffac157da307e2cc3cf91`. Merge не внёс дополнительных изменений.
+
+Repository preparation теперь фактически находится в `main`: docs/state синхронизированы, shared
+web caller deadlines и fail-closed disabled generation composition приняты. External state после
+merge не изменился: `vico_forum_web` остаётся passwordless, server role defaults отсутствуют, новый
+web Hyperdrive/binding/routing/deploy не выполнены.
+
+Следующий safe step — ещё не mutation, а bounded operational-design task в ChatGPT. До запроса
+явной авторизации ChatGPT должен записать в PR #122 один executable choreography contract:
+
+1. exact identities/target и read-only preflight для production role/database и Cloudflare account;
+2. PostgreSQL owner transaction только для database-specific role defaults
+   `lock_timeout=2s`, `statement_timeout=5s`, с post-check сохранности accepted role/ACL;
+3. способ создать usable strong credential так, чтобы password никогда не попадал в chat, PR,
+   shell history, workflow log или repository; определить owner/user UI boundary передачи secret
+   непосредственно из Neon в Cloudflare;
+4. создание нового cache-disabled Hyperdrive resource с proposed stable name `vico-forum-web`,
+   origin user exact `vico_forum_web`, database `vico_forum`, без mutation existing
+   `vico-forum-registry` и без Worker binding/config update;
+5. safe metadata evidence: resource name/ID, origin role/database, caching disabled и connection
+   health без host/password; password verifier не заявлять observable;
+6. explicit failure boundaries и compensating recovery: до successful Hyperdrive evidence usable
+   credential должен быть возвращён в `PASSWORD NULL` либо безопасно rotated/revoked; если resource
+   уже создан, определить delete/retain decision и доказать отсутствие unintended binding;
+7. остановка после evidence: не менять `wrangler.jsonc`, не добавлять `WEB_HYPERDRIVE`, не deploy,
+   не выполнять OAuth/bootstrap/Queue/provider operations;
+8. разделить действия, которые ChatGPT способен выполнить инструментом, от owner-assisted UI steps;
+   Codex не поручает control-plane operations пользователю напрямую.
+
+Task пока только проектирует проверяемую choreography по current official Neon/Cloudflare behavior.
+Не выполнять password/default/Hyperdrive mutations и не создавать mergeable PR. После независимой
+сверки Codex зафиксирует exact authorization boundary.
+
 ## Рабочий канал дальнейших действий
 
 По решению пользователя от 2026-09-26 все дальнейшие operational requests, перечни требуемого
