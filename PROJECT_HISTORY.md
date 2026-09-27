@@ -241,9 +241,22 @@ database `CREATE` не получили. Затем manual read-only
 `4c709d5aa82f6e93ddbad672afc10ad94c5e2efa` и подтвердил exact
 `current_user = vico_forum_migrator` + effective database `CREATE`.
 
-Production migration retry после этого capability gate не выполнялся; pending
-`0004`–`0020` остались неприменёнными. Capability workflow не является
-migration→runtime evidence и не меняет repository-owned evidence baseline `0002`.
+После capability gate пользователь отдельно разрешил один новый manual dispatch
+`Production database migration`, не rerun предыдущего failed run. Run `36270353184`,
+attempt 1, выполнен на exact `main`
+`b172264e4b0db1fe68dead7d7f25b49a573eb0cd` и завершён `success`.
+
+Metadata validation и preflight завершились успешно, затем Drizzle применил pending
+`0004`–`0020`; postflight подтвердил exact complete `0000`–`0020`
+timestamp+hash ledger, full structural manifest и production privilege contract. Journal SHA-256
+для workflow-head равен
+`35f6817042e73655bc965ed26fa729c177f99fbb10903934b1958e78420c32c9`, newest migration tag —
+`0020_translation_generation_permission`.
+
+После run не выполнялись retry, manual SQL, дополнительные grants, deployment,
+Hyperdrive/runtime provisioning, OAuth/bootstrap либо Queue/provider operations. Отдельный
+migration-evidence change переводит repository-owned accepted evidence с historical `0002`
+на этот successful `0020` gate; это не является runtime deployment.
 
 Текущий source of truth: `docs/database/MIGRATIONS.md`.
 

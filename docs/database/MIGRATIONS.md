@@ -113,15 +113,16 @@ runtime и `PUBLIC` этой capability не получили. Последую�
 workflow на current `main` успешно подтвердил exact migration role и effective database
 `CREATE`.
 
-Repository-owned accepted migration→runtime evidence baseline остаётся
-`0002_ui_translation_storage`. Capability workflow не является migration→runtime evidence.
-Migration `0003` подтверждена как known-applied target state, но не называется accepted
-migration→runtime evidence. Pending `0004`–`0020` по-прежнему не применялись; новый production
-migration dispatch требует отдельного явного разрешения пользователя.
+После capability gate пользователь отдельно разрешил один новый manual production migration
+dispatch. Он успешно применил pending `0004`–`0020`; post-migration verification подтвердила
+exact complete `0000`–`0020` ledger, repository-owned full structural manifest и production
+privilege contract. Repository-owned accepted migration→runtime evidence теперь покрывает
+`0020_translation_generation_permission`.
 
-Repository boundary для schema-first rollout считается готовой только после review/CI этого change.
-Сам protected production migration workflow остаётся отдельным external mutation и запускается
-только после явного разрешения пользователя.
+Schema-first migration/evidence gate для текущей migration history тем самым закрыт. Это не
+означает, что Worker, runtime DB roles/Hyperdrive capabilities, OAuth или translation
+Queue/provider runtime уже развёрнуты; schema-dependent runtime rollout остаётся отдельным Stage 6
+шагом.
 
 ## Production verification contract
 
@@ -197,16 +198,17 @@ contract, но не обращается к GitHub Actions API и не треб�
 workflow run.
 
 Live verification workflow identity, `main`, successful completion, ancestry и journal coverage
-выполняется только как часть фактического **external schema-dependent runtime rollout**.
+обязательна на границе фактического **external schema-dependent runtime rollout**.
 Скрипт `.github/scripts/verify-runtime-migration-evidence.mjs` и repository-owned evidence
-сохраняются для этой границы; подключение live verifier к Stage 6 rollout выполняется вместе
-с реализацией самого external release path.
+сохраняются для этой границы.
 
-Evidence file не должен обновляться при каждой development migration. Он обновляется тогда,
-когда external runtime действительно начинает зависеть от новой migration.
+Evidence file не обновляется при каждой development migration. Он фиксирует successful target
+migration, выбранную как schema gate для следующего schema-dependent external runtime rollout;
+само обновление evidence не утверждает, что runtime уже deployed.
 
-Текущий evidence относится к `0002_ui_translation_storage`, потому что deployed Worker
-пока не зависит от Better Auth schema `0003`.
+Текущий evidence относится к `0020_translation_generation_permission`: successful Stage 6
+production migration уже проверила полный `0000`–`0020` target, а schema-dependent runtime
+rollout ещё не выполнен.
 
 ## Исторические rollout checkpoints
 
@@ -227,9 +229,9 @@ Stage 4A runtime dependency не добавлялась: Better Auth initializat
 OAuth, auth Hyperdrive/role/grants и Worker auth writes отсутствуют. Поэтому отсутствие
 runtime evidence для `0003` не блокирует Stage 4B forum development.
 
-Когда Better Auth runtime и forum writes будут готовиться к Stage 6 external integration,
-все pending migrations должны быть применены/verified и соответствующий evidence обновлён
-до external runtime rollout.
+Stage 6 schema-first prerequisite для Better Auth/forum/translation runtime теперь выполнен:
+все migrations through `0020` применены/verified, а repository-owned evidence обновлён до
+external runtime rollout.
 
 ### Stage 6 migration bootstrap capability
 
@@ -241,6 +243,7 @@ grant без grant option. Pre/post ACL checks и manual read-only identity/capa
 подтвердили exact dedicated migrator и effective database `CREATE`, при этом localization runtime
 и `PUBLIC` capability не получили.
 
-Этот capability gate не применял pending migrations и не обновлял migration→runtime evidence.
-Production migration retry остаётся отдельной external mutation и требует нового явного разрешения
-пользователя после сверки актуального `main`.
+Сам capability gate не применял pending migrations и не обновлял migration→runtime evidence.
+После отдельного явного разрешения пользователя последующий manual production migration run
+успешно применил `0004`–`0020` и прошёл full postflight verification. Repository-owned evidence
+для следующего schema-dependent runtime rollout теперь фиксирует этот successful `0020` gate.
