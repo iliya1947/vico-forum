@@ -48,6 +48,10 @@ function fixture() {
     ],
     databaseOwnerRole: "database_owner",
     databaseCreatePrivileges: [],
+    effectiveDatabaseConnect: [
+      { role: roles.localizationRole, has_connect: true },
+      { role: roles.webRole, has_connect: true },
+    ],
     effectiveDatabaseCreate: [
       { role: roles.localizationRole, has_create: false },
       { role: roles.webRole, has_create: false },
@@ -114,6 +118,19 @@ test("requires both runtime roles to exist and LOGIN", () => {
     () => assertRuntimeCapabilityPrivilegeContract(noLogin, roles),
     /must be able to log in/,
   );
+});
+
+test("requires effective database CONNECT for both runtime roles", () => {
+  for (const role of [roles.localizationRole, roles.webRole]) {
+    const candidate = fixture();
+    candidate.effectiveDatabaseConnect.find(
+      ({ role: candidateRole }) => candidateRole === role,
+    ).has_connect = false;
+    assert.throws(
+      () => assertRuntimeCapabilityPrivilegeContract(candidate, roles),
+      /must have effective database CONNECT/,
+    );
+  }
 });
 
 test("rejects dangerous attributes, database ownership and CREATE", () => {
