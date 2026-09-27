@@ -991,6 +991,45 @@ PR основан на exact `main` `01e74b5ddbe6f339acfe7e60a75d85592b422674`; 
 `2f35e41fd0da4aad4a9f549e73f7cb3a459f3c3f` готов к merge пользователем. External role/grant,
 runtime verifier dispatch, Hyperdrive provisioning и deployment до post-merge сверки запрещены.
 
+### PR #138 merged; bounded web database role provisioning gate
+
+PR #138 подтверждён merged в GitHub `main` как
+`4cef0297bb41ff3a18ee0ad82315aef940146596`; merged head был
+`2f35e41fd0da4aad4a9f549e73f7cb3a459f3c3f`. Актуальный `main`, corrected runtime verifier,
+workflow и database source-of-truth документы проверены. Runtime verifier ещё не запускался.
+
+Следующий gate — одна явно разрешаемая owner-controlled external provisioning transaction для
+environment-specific web role `vico_forum_web`, затем read-only evidence. Этот gate не создаёт
+Hyperdrive и намеренно не выдаёт usable password: credential будет отдельно сгенерирован/rotated
+только в будущем Hyperdrive provisioning gate, без передачи секрета через Git/PR/chat.
+
+Bounded contract:
+
+1. preflight подтвердить exact `main` `4cef0297bb41ff3a18ee0ad82315aef940146596`, database
+   `vico_forum`, session/current user и database owner exact `vico_forum_owner`, отсутствие role
+   `vico_forum_web` и неизменный existing localization role contract;
+2. в одной transaction создать `vico_forum_web LOGIN PASSWORD NULL` с
+   `NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOREPLICATION NOBYPASSRLS`;
+3. сохранить owner administrative control только как membership
+   `vico_forum_web TO vico_forum_owner WITH ADMIN TRUE, INHERIT FALSE, SET FALSE`;
+4. выдать direct non-grantable `CONNECT` на database `vico_forum`, `USAGE` на schema `public` и
+   exact reviewed relation ACL из merged `runtimeCapabilityContracts.web`; никаких default,
+   column, sequence, function, ownership, schema/database CREATE/TEMPORARY либо grant-option grants;
+5. post-provision read-only snapshot должен полностью совпасть с merged contract для
+   `vico_forum_runtime` + `vico_forum_web`; при mismatch rollback/stop без дополнительных fixes;
+6. только после exact DB snapshot установить protected GitHub Environment variable
+   `WEB_RUNTIME_DATABASE_ROLE=vico_forum_web` без изменения secrets;
+7. выполнить один manual read-only `Production runtime privilege verification` dispatch на exact
+   `main`; при failure остановиться без retry или исправлений;
+8. не создавать/изменять Hyperdrive, password/credential, Worker bindings, role deadlines,
+   deployment, OAuth, Queue/provider resources или другие external capabilities;
+9. передать в PR #122 bounded evidence: pre/post role/ACL summary без секретов, variable name/value,
+   workflow run ID/attempt/head SHA и job/step conclusions.
+
+После successful evidence потребуется отдельный repository evidence-sync PR до Hyperdrive
+provisioning. Эта запись сама external operations не выполняет; требуется явное разрешение
+пользователя через coordination cycle.
+
 ## Рабочий канал дальнейших действий
 
 По решению пользователя от 2026-09-26 все дальнейшие operational requests, перечни требуемого
