@@ -107,7 +107,6 @@ Repository verifier:
 - `.github/scripts/runtime-privileges.mjs` хранит named capability contracts и читает полный
   database ACL через `aclexplode(COALESCE(datacl, acldefault('d', datdba)))`, поэтому default
   `datacl IS NULL` и explicit runtime grants проверяются одной fail-closed границей;
-- `.github/scripts/runtime-privileges.mjs` хранит named capability contracts;
 - `.github/scripts/verify-runtime-privilege-probes.mjs` применяет exact grants к disposable
   PostgreSQL 17 и выполняет positive/negative SQL probes;
 - manual main-only `Production runtime privilege verification` после отдельного external
