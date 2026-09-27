@@ -5038,3 +5038,63 @@ owner-controlled PostgreSQL mutation, not a database-state drift or contract def
 
 Do not retry the mutation automatically. Codex should independently assess the next bounded
 execution path before any further external mutation.
+
+
+### Authorized Part 2-only gate — role defaults accepted
+
+User explicitly authorized the reviewed Part 2-only owner-default gate including
+rollback/reconciliation boundary.
+
+Immediately before execution, read-only reconciliation reconfirmed:
+
+- current `main`: `6f262bf4374440e36096fd315a9c3ff4f42eba27`;
+- execution identity/database baseline:
+  `current_user=session_user=vico_forum_owner`,
+  `current_database()=vico_forum`;
+- `vico_forum_web` remained LOGIN + NOINHERIT and without
+  SUPERUSER/CREATEDB/CREATEROLE/REPLICATION/BYPASSRLS;
+- database-specific role settings were empty.
+
+The owner then executed the reviewed single transaction in Neon SQL Editor on exact production
+branch/database. Owner-provided UI evidence shows all six statements completed successfully:
+
+1. `BEGIN`;
+2. pre-write fail-closed assertion block;
+3. `ALTER ROLE vico_forum_web IN DATABASE vico_forum SET lock_timeout='2s'`;
+4. `ALTER ROLE vico_forum_web IN DATABASE vico_forum SET statement_timeout='5s'`;
+5. pre-commit exact-settings assertion block;
+6. `COMMIT`.
+
+No retry occurred.
+
+A separate post-commit read-only catalog verification through the connected Neon database path
+confirmed:
+
+- current/session user still `vico_forum_owner`;
+- current database still `vico_forum`;
+- exact database-specific settings are now:
+  - `lock_timeout=2s`;
+  - `statement_timeout=5s`;
+- no other database-specific role setting is present;
+- `vico_forum_web` attributes remain unchanged:
+  LOGIN=true, NOINHERIT, no SUPERUSER/CREATEDB/CREATEROLE/REPLICATION/BYPASSRLS;
+- accepted inbound owner membership remains admin=true, inherit=false, set=false;
+- database ACL remains only safe non-grantable PUBLIC CONNECT/TEMPORARY plus
+  non-grantable `vico_forum_web CONNECT`;
+- public schema ACL remains safe non-grantable PUBLIC USAGE plus
+  non-grantable `vico_forum_web USAGE`;
+- direct web relation privilege set is exact 50 pairs;
+- grantable relation privileges: 0;
+- missing expected relation privileges: 0;
+- unexpected relation privileges: 0.
+
+Part 2-only gate is therefore accepted. No rollback/reconciliation was required.
+
+Mandatory stop observed:
+
+- password reset was not started;
+- no new Hyperdrive resource was created;
+- no Worker binding/config/routing/deploy action occurred;
+- no OAuth/bootstrap/Queue/provider operation occurred.
+
+Further Stage 6 work requires the next reviewed/authorized gate.
