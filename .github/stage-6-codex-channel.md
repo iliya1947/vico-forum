@@ -1030,6 +1030,40 @@ Bounded contract:
 provisioning. Эта запись сама external operations не выполняет; требуется явное разрешение
 пользователя через coordination cycle.
 
+### First web-role provisioning attempt rolled back; corrected one-shot contract
+
+Последнее обновление служебного PR ChatGPT #122 на head
+`a63cf24476252642f0f7fb8de4efe3e5b8006635` проверено. Authorized transaction прошла preflight,
+но failed до commit на лишнем explicit membership `GRANT`: PostgreSQL 17 вернул
+`ADMIN option cannot be granted back to your own grantor`. Вся transaction rolled back.
+
+Post-failure read-only evidence подтверждает: `vico_forum_web` отсутствует, role/grants не
+сохранены, GitHub variable не создан, runtime verifier не запускался, Hyperdrive/credential/
+deployment не изменялись. Предыдущее разрешение consumed; retry не выполнялся.
+
+Root cause независимо подтверждён официальной PostgreSQL 17 role semantics. Когда non-superuser с
+`CREATEROLE` создаёт role, PostgreSQL автоматически выполняет эквивалент
+`GRANT created_role TO creator WITH ADMIN TRUE, SET FALSE, INHERIT FALSE`, причём grantor —
+bootstrap superuser. Именно это уже соответствует merged verifier contract; повторный explicit
+grant от creator не нужен и недопустим.
+
+Исправленный bounded operation отличается только удалением explicit owner-membership statement:
+
+1. заново выполнить полный preflight из предыдущего gate и подтвердить, что role по-прежнему
+   отсутствует, а `main` остаётся `4cef0297bb41ff3a18ee0ad82315aef940146596`;
+2. одной transaction создать passwordless `vico_forum_web` с теми же safe attributes;
+3. read-only/in-transaction assertion должен подтвердить автоматически созданное owner membership
+   exact `ADMIN TRUE, INHERIT FALSE, SET FALSE`; не выдавать и не изменять membership вручную;
+4. применить тот же exact non-grantable database/schema/relation ACL и полный in-transaction
+   contract assertion; commit только при exact match;
+5. затем установить `WEB_RUNTIME_DATABASE_ROLE=vico_forum_web` и выполнить один manual read-only
+   production runtime verifier dispatch на exact `main`;
+6. при любом failure остановиться без retry/fix; все прежние запреты Hyperdrive/password/Worker/
+   deployment/OAuth/Queue/provider operations сохраняются;
+7. передать bounded pre/post/workflow evidence без секретов через PR #122.
+
+Это новая one-shot external authorization boundary; сама запись ничего не выполняет.
+
 ## Рабочий канал дальнейших действий
 
 По решению пользователя от 2026-09-26 все дальнейшие operational requests, перечни требуемого
