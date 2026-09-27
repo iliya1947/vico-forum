@@ -2021,6 +2021,49 @@ one-shot `GITHUB_RUN_NUMBER` будущего отдельного workflow.
 `d374325dbbc1cf44d08c7974694b609b500af25a` готов к merge пользователем**. До merge и post-merge
 сверки запрещены temporary secret creation, bootstrap dispatch и credential/Hyperdrive mutations.
 
+### PR #141 merged; exact leased credential + Hyperdrive execution gate
+
+PR #141 смержен пользователем. Актуальный GitHub `main` — merge commit
+`2915b1982f8295064b0ad2f7a5aa324d4c923316`; его tree
+`760b7dbde2d4682f3c67782b712c57b8bb3cbcf8` точно совпадает с reviewed head
+`d374325dbbc1cf44d08c7974694b609b500af25a`. Merge не внёс дополнительных изменений.
+Workflow ID `368522905` active; workflow runs отсутствуют (`total_count=0`), поэтому exact
+first-run/first-attempt one-shot boundary ещё доступна.
+
+Следующий Stage 6 gate — единая отдельно явно разрешаемая choreography, включая success и cleanup:
+
+1. ChatGPT выполняет read-only preflight exact `main`, zero workflow runs, accepted role/defaults/
+   ACL, absence usable credential/new Hyperdrive/`WEB_HYPERDRIVE`, unchanged localization resource
+   и preview isolation;
+2. владелец по координации ChatGPT локально генерирует/сохраняет strong printable-ASCII password
+   24–256 chars и создаёт только temporary Environment secret
+   `WEB_RUNTIME_DATABASE_PASSWORD_BOOTSTRAP`; значение не передаётся в chat/PR/tool output;
+3. ровно один dispatch `Bootstrap production web credential` с exact confirmation
+   `web-credential-bootstrap-confirmed`; дождаться terminal result, никогда не rerun;
+4. только после workflow success и пока server lease active создать через Cloudflare UI ровно один
+   unbound cache-disabled Hyperdrive `vico-forum-web` на direct Neon origin, database
+   `vico_forum`, user `vico_forum_web`, используя локально сохранённый password;
+5. после safe Hyperdrive metadata/connectivity evidence и до lease expiry выполнить owner-controlled
+   Neon SQL Editor transaction: exact owner/database/role/default/ACL + finite future
+   `rolvaliduntil` assertions → только `ALTER ROLE vico_forum_web VALID UNTIL 'infinity'` → exact
+   post-check → commit;
+6. удалить temporary GitHub Environment secret и записать sanitized evidence в PR #122; success
+   означает durable credential + unbound resource, но не binding/routing/deploy acceptance;
+7. при workflow failure не rerun: удалить temporary secret, проверить bounded workflow compensation
+   conclusion и `rolvaliduntil`; password verifier не объявлять observable, остановиться и открыть
+   новый reviewed recovery path;
+8. при failure после workflow success: сначала `PASSWORD NULL`, затем удалить созданный unbound
+   resource и temporary secret; accepted role/grants/defaults не менять. Ambiguous finalization
+   сначала reconciles `pg_roles.rolvaliduntil`: только `infinity` после accepted Hyperdrive evidence
+   считается success;
+9. после success либо cleanup обязательна остановка. `wrangler.jsonc`, `WEB_HYPERDRIVE`, routing,
+   deploy, OAuth/bootstrap/Queue/provider operations запрещены.
+
+30-minute lease требует непрерывного owner-assisted окна; ChatGPT до authorization должен
+подтвердить готовность всех UI paths и не начинать gate частично. Общая команда «продолжить» не
+заменяет explicit authorization на полный gate и compensation. Codex напрямую control-plane steps
+пользователю не поручает.
+
 ## Рабочий канал дальнейших действий
 
 По решению пользователя от 2026-09-26 все дальнейшие operational requests, перечни требуемого
