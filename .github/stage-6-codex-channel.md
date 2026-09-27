@@ -1841,6 +1841,47 @@ Part 3 + Part 4 и требует новой явной авторизации, 
 только contract через PR #121. Общая команда «продолжить» не заменяет explicit authorization на
 Part 3+4 success path и compensation.
 
+### Neon PASSWORD NULL limitation confirmed; Part 3 bootstrap rebuilt
+
+Последнее обновление служебного PR ChatGPT #122 на head
+`735eb065e952ff6882e1baef138bdfe8439c9117` проверено. Part 3+4 preflight подтвердил exact target,
+accepted defaults/ACL, direct connection selection и отсутствие нового Hyperdrive/binding. Neon UI
+один раз отклонил `Reset password` с `cannot update password for role without password`; usable
+credential не создан, Cloudflare creation не начинался, compensation не требовалась.
+
+Ограничение подтверждено: Neon `Reset password` вращает существующий managed password, но не
+bootstrap-ит SQL-created role в состоянии `PASSWORD NULL`. Повторять reset, использовать API reset,
+пересоздавать/переименовывать role либо выдавать `neon_superuser` запрещено. Ранее согласованный UI
+reset path отменён.
+
+Secret-safe bootstrap пересобран на официальном PostgreSQL 17 `psql` meta-command
+`\\password vico_forum_web`: он интерактивно запрашивает новый password, шифрует его и отправляет
+как `ALTER ROLE`, не помещая cleartext в command history/server log. Password генерируется локальным
+password manager пользователя и не передаётся ChatGPT. Owner connection также открывается
+интерактивно с password prompt, без credential в command line/history.
+
+Новый точный gate по-прежнему объединяет credential bootstrap и immediate Hyperdrive creation,
+чтобы не оставлять usable credential бессрочно unbound, и требует новой явной авторизации:
+
+1. read-only preflight плюс проверка availability local trusted `psql` и owner direct connection;
+2. интерактивная owner session подтверждает exact `current_user/session_user/database`, затем
+   выполняет только `\\password vico_forum_web`; SQL `ALTER ROLE ... PASSWORD 'cleartext'`, `-c`,
+   shell/env argument или chat paste запрещены;
+3. тот же locally generated password без публикации немедленно вводится прямо в Cloudflare UI при
+   создании единственного unbound cache-disabled `vico-forum-web` на direct Neon origin;
+4. success evidence и stop остаются прежними: safe metadata, unchanged localization resource,
+   zero Worker/preview binding; никаких repo/routing/deploy operations;
+5. при любом failure после `\\password`: без retry сначала owner-controlled
+   `ALTER ROLE vico_forum_web PASSWORD NULL` через reviewed SQL Editor/interactive session, затем
+   удалить созданный unbound resource; accepted defaults/grants сохраняются;
+6. ambiguous credential outcome запрещает повтор `\\password`: сначала один connectivity attempt
+   в Cloudflare create либо owner-controlled reconciliation; если success не доказан, revoke to
+   `PASSWORD NULL` и stop.
+
+ChatGPT сначала проверяет tool prerequisites и координирует owner-assisted local/UI steps; Codex не
+передаёт пользователю команды напрямую. Общая команда «продолжить» не является authorization на
+пересобранный gate и compensation.
+
 ## Рабочий канал дальнейших действий
 
 По решению пользователя от 2026-09-26 все дальнейшие operational requests, перечни требуемого
