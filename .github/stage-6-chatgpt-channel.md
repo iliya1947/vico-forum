@@ -4934,3 +4934,61 @@ authenticated Cloudflare control-plane connector is currently available here.
 Codex should independently review this choreography contract before any external authorization is
 requested. The next technical output must define the exact bounded authorization boundary or
 identify a defect in this design; no mutation is implied by this record.
+
+
+### Authorized credential/Hyperdrive choreography — read-only preflight complete
+
+User explicitly authorized the previously accepted bounded external choreography including its
+defined compensation. This section records **only Part 1: read-only preflight**. No role-default,
+password, Hyperdrive, binding, routing or deploy mutation was performed.
+
+GitHub/repository target:
+
+- exact current `main`: `6f262bf4374440e36096fd315a9c3ff4f42eba27`;
+- checked-in `wrangler.jsonc` still contains exactly one Worker Hyperdrive binding
+  `HYPERDRIVE` pointing at the existing localization configuration ID;
+- repository contains no `WEB_HYPERDRIVE`.
+
+Neon target was resolved from owner-provided project settings and independently queried through the
+connected Neon control-plane/database tools:
+
+- project ID: `late-cell-18916701`, project name `vico-forum`;
+- branch ID: `br-square-flower-b2q6a3sy`, branch name `production`;
+- branch is primary/default and ready;
+- PostgreSQL version 17;
+- database: `vico_forum`, owner `vico_forum_owner`;
+- exact runtime role: `vico_forum_web`.
+
+Direct read-only PostgreSQL catalog preflight on `vico_forum` confirmed:
+
+- `vico_forum_web`: LOGIN=true, NOINHERIT, no SUPERUSER/CREATEDB/CREATEROLE/REPLICATION/BYPASSRLS;
+- database-specific role settings for this role/database are currently empty;
+- accepted owner inbound membership remains non-inheriting/non-SET;
+- direct database CONNECT remains non-grantable;
+- public schema USAGE remains non-grantable;
+- exact previously accepted 50 direct relation privilege pairs remain present and non-grantable;
+- no ACL widening was observed.
+
+Neon's control-plane role metadata reports the role with `authentication_method=no_login`; this
+field was not treated as authoritative for PostgreSQL LOGIN because direct PostgreSQL catalog
+evidence confirms `rolcanlogin=true`. Credential usability/password state is therefore still
+treated as the separate secret boundary defined by the accepted choreography.
+
+Fresh owner-provided Cloudflare Production evidence confirmed:
+
+- Worker `vico-forum` Production bindings contain exactly one Hyperdrive binding:
+  `HYPERDRIVE -> vico-forum-registry`;
+- no `WEB_HYPERDRIVE` binding exists;
+- existing Hyperdrive configuration `vico-forum-registry` targets database `vico_forum`,
+  user `vico_forum_runtime`, and query caching is disabled;
+- the existing localization configuration was not edited.
+
+For preview isolation, the previously accepted same-Stage owner evidence already established
+`Previews Base` with zero bindings and zero runtime variables/secrets. The owner explicitly
+reconfirmed during this immediate preflight that those sections remain empty. No contradictory
+control-plane evidence was observed, so repeating identical screenshots was not required.
+
+Part 1 conclusion: exact-target/drift preflight passes. The choreography may proceed to Part 2 only:
+the already-authorized database-specific role-default mutation
+`lock_timeout=2s`, `statement_timeout=5s` with post-check. Secret/password and Hyperdrive
+creation remain later parts and have not started.
