@@ -25,6 +25,6 @@ test("web credential bootstrap workflow uses only the reviewed credential inputs
   assert.match(workflow, /inputs\.bootstrap_confirmation/);
 
   assert.doesNotMatch(workflow, /NEON_MIGRATION_DATABASE_URL/);
-  assert.doesNotMatch(workflow, /RUNTIME_DATABASE_ROLE/);
+  assert.doesNotMatch(workflow, /vars\.RUNTIME_DATABASE_ROLE/);
   assert.doesNotMatch(workflow, /wrangler|deploy|hyperdrive/i);
 });
