@@ -172,12 +172,21 @@ Production role names environment-specific и не hard-code-ятся в migrati
 
 Runtime privilege acceptance отделена от production migration workflow:
 
-1. PR CI проверяет named capability contract unit tests;
-2. disposable PostgreSQL 17 получает exact proposed grants и выполняет representative positive
-   queries/row-locks плюс negative cross-domain, DELETE и DDL probes;
-3. после отдельного external provisioning manual main-only
+1. PR CI проверяет named capability contract и relation-provisioning unit tests;
+2. disposable PostgreSQL 17 получает exact proposed grants, выполняет representative positive
+   queries/row-locks плюс negative cross-domain, DELETE и DDL probes и отдельно моделирует
+   production split authority: database owner создаёт prerequisites, а exact object owner
+   `vico_forum_migrator` выполняет relation-grant transaction;
+3. external owner phase остаётся отдельной явно разрешаемой operation: passwordless
+   `PASSWORD NULL` фиксируется как command/evidence invariant, потому что migrator не имеет и не
+   должен получать доступ к password verifier catalogs;
+4. protected manual relation-provisioning workflow требует exact confirmation token до DB
+   connection, проверяет exact migrator identity, owner-phase DB/schema/membership prerequisites и
+   ownership всех web relations, derive-ит GRANT SQL только из shared web capability и перед commit
+   запускает shared full end-state verifier;
+5. после отдельного external provisioning manual main-only
    `Production runtime privilege verification` read-only проверяет exact roles/ACLs в target DB;
-4. только после successful privilege evidence может рассматриваться Worker wiring/deployment.
+6. только после successful privilege evidence может рассматриваться Worker wiring/deployment.
 
 Runtime verifier требует для обоих roles LOGIN + effective database `CONNECT`, отсутствие
 dangerous attributes, inherited memberships/ownership, `public.USAGE` без `CREATE` и полный
