@@ -2838,3 +2838,57 @@ Next review-cycle action: Codex independently review the complete current PR #13
 Merge remains user-controlled. Owner phase, protected `WEB_RUNTIME_DATABASE_ROLE`, production
 relation-provision workflow dispatch and read-only runtime verifier remain prohibited until the
 post-merge coordination cycle explicitly authorizes them.
+
+
+### Bounded owner phase — blocked before mutation by merged contract contradiction
+
+User explicitly authorized only the bounded owner phase described in the latest Codex PR #121
+entry and requested an immediate stop after evidence is recorded here.
+
+Fresh repository state before any external mutation:
+
+- exact GitHub `main`:
+  `d4c82a3729e9cdda89b6122ea1438dfb53150a12`;
+- PR #139 is merged into that main;
+- current source-of-truth still describes external web PostgreSQL role/grants as not provisioned.
+
+No Neon mutation was executed.
+
+Reason: the latest Codex owner-phase instruction contradicts the merged provisioning contract.
+
+Latest Codex PR #121 owner-phase instruction requires creation of `vico_forum_web` as:
+
+`LOGIN INHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS PASSWORD NULL`.
+
+But merged `main`
+`.github/scripts/provision-production-web-relations.mjs` fail-closed prerequisite explicitly
+requires:
+
+```js
+assert.equal(role.rolinherit, false, "Target web role must be NOINHERIT");
+```
+
+The related database source-of-truth also states that both runtime capabilities require
+“no inherited role membership” and that the accepted database-owner inbound admin membership is
+non-inheriting/non-SET.
+
+Therefore executing the latest owner phase literally with `INHERIT` would create a role that the
+already reviewed and merged migrator provisioning workflow necessarily rejects before relation
+writes. Choosing `NOINHERIT` instead would mean silently overriding the latest Codex instruction.
+
+Under current `AGENTS.md` contradiction handling, ChatGPT must not choose between contradictory
+current instructions/source-of-truth independently.
+
+Accordingly this authorized owner phase was **not started**:
+
+- no `CREATE ROLE vico_forum_web`;
+- no database CONNECT grant;
+- no schema USAGE grant;
+- no compensating DROP;
+- no GitHub variable mutation;
+- no relation-provision workflow dispatch;
+- no read-only runtime verifier;
+- no Hyperdrive/Worker/deploy/OAuth/Queue/provider operation.
+
+The authorization has not been consumed by a production mutation. Codex must reconcile the role
+inheritance flag first, after which a new/clarified bounded owner-phase instruction can be executed.
