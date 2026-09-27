@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-09-26
+Последнее обновление: 2026-09-27
 
 ## Назначение
 
@@ -48,6 +48,10 @@ Vico Forum находится в ранней pre-release разработке.
 - Repository privilege boundary по-прежнему требует direct non-grantable `CREATE` на текущую
   database именно для application owner/migrator и запрещает database `CREATE` для localization
   runtime и `PUBLIC`; bounded identity/capability gate подтверждён external execution.
+- Stage 6 runtime provisioning-preparation contract разделяет existing `localization-read` и
+  отдельную future `web` capability. Repository verifier/CI доказывают exact proposed ACL на
+  disposable PostgreSQL 17, но external web PostgreSQL role, grants, Hyperdrive binding и Worker
+  wiring ещё не выполнены. Content-generation runtime остаётся disabled и не входит в web ACL.
 - Обычная feature-разработка и её CI остаются отделены от external rollout; merge в `main` сам по
   себе не является deployment/acceptance evidence.
 
@@ -327,6 +331,8 @@ adapter, production anti-abuse values, provider/data-policy approval и deployed
 - Drizzle migration metadata;
 - clean PostgreSQL 17 migration/integration suite;
 - production full-schema manifest parity против clean PostgreSQL 17;
+- named `localization-read` / `web` runtime privilege contract и disposable PostgreSQL 17
+  positive/negative grant probes, включая row-lock и forbidden cross-domain/DDL checks;
 - Workers build и local Hyperdrive smoke.
 
 Обычный PR CI не выполняет live GitHub Actions verification старого external migration evidence.
@@ -346,6 +352,11 @@ postflight verification полного `0000`–`0020` schema contract. Это e
 `locales`, `ui_translations` и `ui_translation_bundles`. Ранее выполненный real Hyperdrive
 acceptance остаётся evidence этого localization path, но не является gate для обычных feature PR.
 
+Repository уже содержит reviewed exact ACL/verifier contract для отдельной future web runtime
+capability (Better Auth + forum + dynamic authorization + persisted forum-content reads). Это
+только provisioning-preparation: external web role/grants, cache-disabled Hyperdrive binding и
+Worker wiring ещё отсутствуют.
+
 По зафиксированному состоянию проекта native Cloudflare Git integration для active development
 `main` отключён. Перед Stage 6 фактическую external configuration необходимо проверить заново.
 
@@ -361,17 +372,20 @@ runtime roles/Hyperdrive writes и другие schema-dependent runtime capabil
 
 - real Google OAuth configuration и smoke;
 - server-controlled bootstrap первого authorization manager;
-- реальные forum/auth/translation write runtime roles и Hyperdrive bindings;
+- external web runtime role/grants + cache-disabled Hyperdrive binding/Worker wiring;
+- отдельные translation background/maintenance runtime capabilities;
 - Cloudflare Queues и реальные translation providers;
 - preview/private-data isolation для write capabilities;
 - full production-like deployment smoke и backup/restore acceptance.
 
 ## Ближайший маршрут
 
-1. После merge migration-evidence change Codex заново сверяет актуальный `main` и определяет
-   следующий Stage 6 runtime capability/bootstrap gate.
-2. Schema-dependent runtime rollout не выполнять до этой сверки и отдельного согласованного
-   operational scope.
+1. Провести независимую проверку и merge reviewed runtime privilege provisioning-preparation PR.
+2. После merge Codex заново сверяет актуальный `main` и определяет отдельный bounded external
+   provisioning scope для web PostgreSQL role/grants; до явного разрешения external mutation не
+   выполнять.
+3. Hyperdrive binding name/ID, forum/auth role deadlines, Worker wiring и deployment остаются
+   отдельным reviewed runtime-wiring gate после privilege provisioning/verification.
 
 Stage 5 завершён только в repository/local-CI boundary. Real Google OAuth/bootstrap, production
 runtime roles/Hyperdrive writes, Cloudflare Queues/providers, authoritative production
