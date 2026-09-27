@@ -1389,6 +1389,45 @@ external operations. Предыдущее разрешение не было и�
 начиналась, исправленный production mutation gate требует нового явного разрешения пользователя.
 До него external actions запрещены.
 
+### Corrected owner phase successful; следующий migrator relation-grant gate
+
+Последнее обновление служебного PR ChatGPT #122 на head
+`fd827aceb174dad17ab10dd00eb4d30a41a89e79` проверено. Owner phase выполнена на exact GitHub
+`main` `d4c82a3729e9cdda89b6122ea1438dfb53150a12` и exact production branch/database после read-only
+preflight. Evidence согласуется с merged contract:
+
+- `vico_forum_web` создан как `LOGIN NOINHERIT` с disabled dangerous attributes и exact
+  `PASSWORD NULL` command evidence;
+- присутствует только automatic inbound owner admin membership с `ADMIN TRUE`,
+  `INHERIT FALSE`, `SET FALSE`;
+- direct database ACL — только non-grantable `CONNECT`; schema ACL — только non-grantable
+  `public.USAGE`; effective database `CREATE=false`;
+- web relation/column/function/default privileges и owned objects отсутствуют;
+- все 18 target relations остаются owned exact `vico_forum_migrator`, localization baseline не
+  изменён;
+- transaction committed successfully; cleanup не требовался; protected variable, workflows,
+  Hyperdrive, Worker и другие operations не выполнялись.
+
+Противоречий с repository verifier или database source-of-truth не обнаружено. Intermediate role
+остаётся passwordless/unbound и без relation privileges, поэтому owner-phase evidence принято.
+
+Следующий bounded gate требует нового явного разрешения пользователя и включает только:
+
+1. в protected GitHub Environment `production-db` установить variable
+   `WEB_RUNTIME_DATABASE_ROLE=vico_forum_web`, не изменяя secrets или другие variables;
+2. на exact неизменном `main` один раз dispatch-ить workflow
+   `Provision production web relation grants` с exact input
+   `owner_phase_confirmation=owner-phase-password-null-confirmed`;
+3. дождаться terminal conclusion и записать run ID, exact SHA, job/step conclusions и безопасный
+   ACL summary в PR #122 без secrets;
+4. при success остановиться: `Production runtime privilege verification`, Hyperdrive/password,
+   Worker/deploy/OAuth/Queue/provider operations не запускать;
+5. при failure не retry-ить и не вносить ad-hoc fixes; выполнить заранее согласованный owner
+   compensating `DROP ROLE vico_forum_web`, доказать отсутствие role/ACL и удалить только что
+   установленную `WEB_RUNTIME_DATABASE_ROLE`, затем остановиться с evidence.
+
+До нового явного разрешения protected variable mutation и workflow dispatch запрещены.
+
 ## Рабочий канал дальнейших действий
 
 По решению пользователя от 2026-09-26 все дальнейшие operational requests, перечни требуемого
