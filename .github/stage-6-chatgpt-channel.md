@@ -3503,3 +3503,161 @@ Next preflight subtask after explicit user continuation: official-documentation 
 the exact current Wrangler/Hyperdrive version and supported separate cache-disabled web binding /
 credential update model. That research can proceed independently of the unresolved private
 Cloudflare visibility gap.
+
+
+### Runtime-wiring preflight — subtask 3/5: official Wrangler/Hyperdrive contract
+
+This entry records only subtask 3 of the bounded read-only runtime-wiring preflight. It verifies the
+supported Cloudflare mechanism for a separate cache-disabled web Hyperdrive, credential
+create/update/rotation, and environment-specific bindings. No Cloudflare/Neon mutation, repository
+implementation PR or deploy was performed.
+
+Exact repository target remains:
+
+`main = d4c82a3729e9cdda89b6122ea1438dfb53150a12`.
+
+Exact repository toolchain:
+
+- `wrangler = 4.130.0`;
+- `@cloudflare/vite-plugin = 1.54.6`.
+
+The conclusions below were checked against current official Cloudflare documentation and the
+Cloudflare `workers-sdk` source at exact tag `wrangler@4.130.0`.
+
+Official references:
+
+- https://developers.cloudflare.com/hyperdrive/concepts/query-caching/
+- https://developers.cloudflare.com/hyperdrive/reference/wrangler-commands/
+- https://developers.cloudflare.com/hyperdrive/configuration/rotate-credentials/
+- https://developers.cloudflare.com/hyperdrive/configuration/local-development/
+- https://developers.cloudflare.com/workers/wrangler/configuration/
+- https://developers.cloudflare.com/workers/wrangler/environments/
+- https://developers.cloudflare.com/workers/vite-plugin/reference/cloudflare-environments/
+
+#### Separate cache-disabled web configuration is directly supported
+
+Cloudflare explicitly recommends a separate cache-disabled Hyperdrive configuration for freshness-
+sensitive reads such as authentication, sessions, permissions and read-after-write paths.
+
+Supported create form:
+
+`wrangler hyperdrive create <name> --connection-string="<...>" --caching-disabled`
+
+Cloudflare also explicitly supports multiple Hyperdrive configurations/bindings from one
+application, including multiple configurations targeting the same database.
+
+This matches the already reviewed Vico capability split:
+
+- existing `HYPERDRIVE` remains the localization-read capability;
+- future web capability should use a second Hyperdrive configuration with query caching disabled;
+- Better Auth, forum writes/reads requiring freshness, authorization, and persisted forum-content
+  presentation can be routed through that second binding;
+- there is no reason to repurpose or credential-widen the existing localization configuration.
+
+Cloudflare documents that caching is enabled by default and that write operations do not invalidate
+cached SELECT results. Therefore the existing project requirement that the web capability be
+cache-disabled is not merely conservative: it directly follows the documented consistency model.
+
+#### Exact Wrangler 4.130.0 command support
+
+Cloudflare's exact `wrangler@4.130.0` source confirms that both Hyperdrive `create` and
+`update` accept:
+
+- `--connection-string`;
+- `--origin-host` / `--origin-port`;
+- `--database`;
+- `--origin-user`;
+- `--origin-password`;
+- `--caching-disabled`;
+- `--max-age`;
+- `--swr`;
+- TLS/mTLS options and origin connection-limit options.
+
+Exact `create` also supports an optional binding name and config-file update path. This means the
+new external Hyperdrive resource can be created independently and its returned configuration ID can
+then be reviewed before repository wiring is merged; automatic config mutation is not required.
+
+Exact `update` performs a partial config patch, so later credential rotation can update the
+existing web Hyperdrive either with a full connection string or selected origin fields.
+
+#### Credential creation/rotation semantics
+
+Current Cloudflare guidance supports two rotation models:
+
+1. create a new Hyperdrive configuration with new origin credentials, then move the Worker binding
+   to the new config — easiest rollback because the old config remains intact;
+2. update the existing Hyperdrive configuration in place with new origin credentials.
+
+Cloudflare documents an important in-place update behavior:
+
+- updating credentials does **not** purge query cache;
+- updating credentials does **not** tear down the existing origin connection pool;
+- newly established connections use the updated connection information.
+
+Cloudflare now also exposes a pool restart operation. Restart drains existing connections and
+forces new ones, but Cloudflare describes it as a break-glass action because in-flight requests can
+briefly fail. Therefore a restart is not a default credential-update step.
+
+For Vico's first web setup there is no accepted web Hyperdrive configuration yet. The simplest
+supported shape is therefore:
+
+- create/set the future web PostgreSQL credential under a separately authorized DB gate;
+- create a **new** cache-disabled web Hyperdrive using that credential;
+- bind its returned ID separately in repository wiring;
+- leave the existing localization Hyperdrive unchanged.
+
+This avoids any need to mutate or restart the accepted localization pool during initial web
+provisioning.
+
+Later rotation policy can independently choose new-config cutover for easiest rollback or in-place
+update when appropriate; that decision is not needed to complete the first web wiring.
+
+#### Worker environment / preview implications
+
+Wrangler documents bindings as non-inheritable environment configuration. If Vico introduces named
+Cloudflare environments, each environment must explicitly declare its own Hyperdrive bindings;
+a top-level production-capable binding must not be assumed to carry safely into a named preview
+environment.
+
+With the Cloudflare Vite plugin, `CLOUDFLARE_ENV` selects the Cloudflare environment at dev/build
+time. Current official docs note that setting `CLOUDFLARE_ENV` at `vite preview` or
+`wrangler deploy` time does not retroactively change the environment selected for the built
+artifact.
+
+No named environment layout is selected here because subtask 2 established that the actual private
+Cloudflare Build/preview topology is still unobservable from this session. The relevant conclusion
+is only that Wrangler has a supported explicit isolation mechanism and Hyperdrive bindings must be
+defined per environment if that mechanism is used.
+
+#### Local development with two bindings
+
+Official Hyperdrive local-development behavior is per binding:
+
+`CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_<BINDING_NAME>`.
+
+Thus a future second web binding can receive its own local override while the existing
+`HYPERDRIVE` keeps its current override.
+
+In local mode these connection strings bypass Hyperdrive itself, so Hyperdrive query caching and
+pooling are not exercised. Real cache-disabled Hyperdrive acceptance therefore remains an external
+Stage 6 check rather than something local CI can prove.
+
+#### Stage classification / reviewed implication
+
+No conflict was found between current Cloudflare capabilities and
+`docs/database/HYPERDRIVE.md`. The repository's planned two-capability design is supported by the
+current platform and exact pinned Wrangler version.
+
+No current-Stage reason exists to:
+
+- widen the localization role;
+- reuse the existing localization Hyperdrive with web credentials;
+- enable query caching on the web capability;
+- restart the accepted localization Hyperdrive;
+- introduce a dependency/toolchain upgrade merely to obtain these features.
+
+The remaining unresolved item from subtask 2 is external topology evidence, not platform support.
+
+Next preflight subtask after explicit user continuation: derive web PostgreSQL/client deadlines from
+the actual Better Auth/forum/authz request paths rather than copying localization
+`500/1500/2000ms` defaults.
