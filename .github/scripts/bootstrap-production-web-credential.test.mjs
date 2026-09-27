@@ -8,6 +8,7 @@ import {
   assertBootstrapPassword,
   assertBootstrapPreflight,
   assertDirectOwnerTarget,
+  assertOneShotRun,
   assertScramVerifier,
   deriveScramSha256Verifier,
   runCli,
@@ -40,6 +41,23 @@ test("requires the exact bootstrap confirmation token", () => {
     assert.throws(
       () => assertBootstrapConfirmation(value),
       /BOOTSTRAP_CONFIRMATION/,
+    );
+  }
+});
+
+
+test("allows only the first workflow run and first attempt", () => {
+  assert.doesNotThrow(() => assertOneShotRun("1", "1"));
+
+  for (const [runNumber, runAttempt] of [
+    ["2", "1"],
+    ["1", "2"],
+    ["2", "3"],
+    [undefined, undefined],
+  ]) {
+    assert.throws(
+      () => assertOneShotRun(runNumber, runAttempt),
+      /GITHUB_RUN_(NUMBER|ATTEMPT)=1/,
     );
   }
 });
@@ -180,6 +198,40 @@ test("accepts only the exact direct Neon production target", () => {
   );
 });
 
+
+test("CLI rejects repeat runs before entering bootstrap", async () => {
+  let bootstrapCalled = false;
+  const output = [];
+
+  const code = await runCli({
+    env: {
+      GITHUB_RUN_NUMBER: "2",
+      GITHUB_RUN_ATTEMPT: "1",
+      BOOTSTRAP_CONFIRMATION: BOOTSTRAP_CONFIRMATION_TOKEN,
+      NEON_OWNER_DATABASE_URL:
+        "postgresql://owner:secret@ep-example.eu-central-1.aws.neon.tech/vico_forum",
+      WEB_RUNTIME_DATABASE_ROLE: EXPECTED_WEB_ROLE,
+      WEB_RUNTIME_DATABASE_PASSWORD_BOOTSTRAP:
+        "WebBootstrapSecret-2026-Example!",
+    },
+    logger: {
+      log(message) {
+        output.push(message);
+      },
+      error(message) {
+        output.push(message);
+      },
+    },
+    async bootstrap() {
+      bootstrapCalled = true;
+    },
+  });
+
+  assert.equal(code, 1);
+  assert.equal(bootstrapCalled, false);
+  assert.deepEqual(output, ["Production web credential bootstrap failed."]);
+});
+
 test("CLI never logs owner URL, password, or verifier on failure", async () => {
   const ownerUrl =
     "postgresql://owner:owner-secret@ep-example.eu-central-1.aws.neon.tech/vico_forum";
@@ -190,6 +242,8 @@ test("CLI never logs owner URL, password, or verifier on failure", async () => {
 
   const code = await runCli({
     env: {
+      GITHUB_RUN_NUMBER: "1",
+      GITHUB_RUN_ATTEMPT: "1",
       BOOTSTRAP_CONFIRMATION: BOOTSTRAP_CONFIRMATION_TOKEN,
       NEON_OWNER_DATABASE_URL: ownerUrl,
       WEB_RUNTIME_DATABASE_ROLE: EXPECTED_WEB_ROLE,
