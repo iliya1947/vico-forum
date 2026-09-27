@@ -1428,7 +1428,7 @@ preflight. Evidence согласуется с merged contract:
 
 До нового явного разрешения protected variable mutation и workflow dispatch запрещены.
 
-### GitHub control-plane execution blocker; owner action required
+### GitHub control-plane execution blocker; дальнейшая координация через ChatGPT
 
 Последнее обновление служебного PR ChatGPT #122 на head
 `3e09bab1340cd1fa51a7a25f9bb8268fce62b494` проверено. ChatGPT корректно сверил exact `main`,
@@ -1444,7 +1444,7 @@ control-plane limitation, а не defect repository contract.
 
 Авторизованный gate не начат и authorization не consumed: variable не изменена, workflow не
 dispatch-ился, Neon mutation/cleanup и последующие runtime operations отсутствуют. Единственный
-доступный безопасный execution path — две owner-controlled GitHub UI/API операции пользователя:
+доступный безопасный execution path требует двух owner-controlled GitHub UI/API операций:
 
 1. в Environment `production-db` создать/update variable exact
    `WEB_RUNTIME_DATABASE_ROLE=vico_forum_web`, не меняя secrets или другие variables;
@@ -1456,6 +1456,13 @@ dispatch-ился, Neon mutation/cleanup и последующие runtime opera
    evidence в PR #122; при failure ChatGPT выполняет уже авторизованный compensating cleanup и
    фиксирует доказательство role/ACL absence. Секреты, URL подключения и значения secret fields не
    передавать. Автоматический retry и ad-hoc correction запрещены.
+
+Correction по каналу выполнения: Codex не должен поручать пользователю эти control-plane операции
+напрямую. В соответствии с решением пользователя все такие действия координируются в чате с
+ChatGPT; PR #121 передаёт только contract и ограничения, а короткий handoff просит ChatGPT проверить
+последнее обновление и продолжить Stage 6. Если connector ChatGPT не способен выполнить write,
+именно ChatGPT должен организовать следующий user-assisted control-plane шаг и затем записать
+результат в PR #122. Codex не дублирует operational instructions пользователю в ответе.
 
 ## Рабочий канал дальнейших действий
 
