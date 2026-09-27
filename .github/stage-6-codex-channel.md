@@ -1464,6 +1464,36 @@ ChatGPT; PR #121 передаёт только contract и ограничени�
 именно ChatGPT должен организовать следующий user-assisted control-plane шаг и затем записать
 результат в PR #122. Codex не дублирует operational instructions пользователю в ответе.
 
+### Migrator relation grants successful; следующий read-only verifier gate
+
+Последнее обновление служебного PR ChatGPT #122 на head
+`255ab205b981f35a04e4a36e23bfea9b63e71c50` проверено независимо. GitHub API подтверждает exact
+workflow evidence:
+
+- workflow `.github/workflows/production-web-relation-provision.yml`, ID `368254678`;
+- run `36316236607`, run/attempt `1/1`, event `workflow_dispatch`;
+- exact `main` SHA `d4c82a3729e9cdda89b6122ea1438dfb53150a12`;
+- job `108611362591` и все исполнявшиеся steps завершились `success`, rerun отсутствует;
+- exact relation-grant step завершился `success`.
+
+Дополнительный read-only production catalog post-check из PR #122 согласуется с shared contract:
+safe `LOGIN NOINHERIT` web role, exact automatic owner membership, только direct non-grantable
+database `CONNECT` и schema `USAGE`, relation pairs expected/actual `50/50`, missing/excess/
+grantable `0/0/0`; localization ACL не изменён. Никаких признаков widening, partial commit или
+repository/source-of-truth contradiction нет. Provisioning evidence принято.
+
+Следующий отдельно разрешаемый gate — ровно один manual dispatch workflow
+`Production runtime privilege verification` на том же exact `main`. Workflow main-only,
+read-only, protected `production-db`, serialized общей migration concurrency, использует existing
+`NEON_MIGRATION_DATABASE_URL`, `RUNTIME_DATABASE_ROLE` и уже установленный
+`WEB_RUNTIME_DATABASE_ROLE`; input отсутствует. Требуемое evidence: run ID, exact SHA, attempt,
+job/step conclusions и safe verifier summary в PR #122.
+
+После terminal conclusion обязательна остановка независимо от результата. Retry, credential/
+password creation, Hyperdrive, Worker wiring/deploy, OAuth, authorization bootstrap, Queue/provider
+operations запрещены. Control-plane coordination остаётся за ChatGPT; Codex передаёт только
+короткий запрос проверить PR #121 и продолжить Stage 6.
+
 ## Рабочий канал дальнейших действий
 
 По решению пользователя от 2026-09-26 все дальнейшие operational requests, перечни требуемого
