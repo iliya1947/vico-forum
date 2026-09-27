@@ -126,6 +126,7 @@ test("rejects dangerous attributes, database ownership and CREATE", () => {
 
   const databaseOwner = fixture();
   databaseOwner.databaseOwnerRole = roles.webRole;
+  databaseOwner.memberships = [];
   assert.throws(
     () => assertRuntimeCapabilityPrivilegeContract(databaseOwner, roles),
     /must not own the current database/,
