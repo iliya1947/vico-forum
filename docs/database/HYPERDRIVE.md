@@ -143,7 +143,7 @@ credential уже принятой SQL-created `vico_forum_web`. Workflow исп
 
 Перед password mutation workflow fail closed проверяет exact production owner/session/database,
 safe role attributes/membership, принятые `2s/5s` defaults, полный localization/web ACL contract,
-direct/unpooled Neon owner target и disabled bind-parameter values in error logging. Cleartext
+direct/unpooled Neon owner target, disabled bind-parameter values in error logging и отключённые statement/duration sampling paths на время bootstrap. Cleartext
 password не включается в SQL: runner локально строит PostgreSQL SCRAM-SHA-256 verifier, а server
 получает verifier параметром через transaction-local setting. После commit выполняется отдельный
 bounded login как `vico_forum_web`; failure/ambiguous outcome без retry возвращает credential в
@@ -303,8 +303,8 @@ external rollout.
 ```text
 connectionTimeoutMillis = 3000ms   (node-postgres caller)
 query_timeout            = 7000ms   (node-postgres caller)
-lock_timeout             = 2s       (planned database+role default)
-statement_timeout        = 5s       (planned database+role default)
+lock_timeout             = 2s       (database+role default; applied)
+statement_timeout        = 5s       (database+role default; applied)
 ```
 
 Server-side `lock_timeout` / `statement_timeout` уже применены и отдельно проверены для
