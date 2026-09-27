@@ -16,6 +16,7 @@ test("web credential bootstrap workflow is manual, main-only, and production-bou
 });
 
 test("web credential bootstrap workflow uses only the reviewed credential inputs", () => {
+  assert.doesNotMatch(workflow, /\\\$\{\{/);
   assert.match(workflow, /secrets\.NEON_OWNER_DATABASE_URL/);
   assert.match(workflow, /vars\.WEB_RUNTIME_DATABASE_ROLE/);
   assert.match(
