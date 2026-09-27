@@ -108,10 +108,20 @@ export function assertRuntimeCapabilityPrivilegeContract(
       false,
       `Runtime role ${runtimeRole} must not have effective database CREATE`,
     );
+    const databasePrivileges = sorted(
+      snapshot.databasePrivileges
+        .filter(({ grantee }) => grantee === runtimeRole)
+        .map(
+          ({ privilege, is_grantable }) =>
+            `${privilege}.grantable=${is_grantable}`,
+        ),
+    );
     assert.deepEqual(
-      snapshot.databaseCreatePrivileges.filter(({ grantee }) => grantee === runtimeRole),
+      databasePrivileges.filter(
+        (privilege) => privilege !== "CONNECT.grantable=false",
+      ),
       [],
-      `Runtime role ${runtimeRole} must not have direct database CREATE`,
+      `Unexpected direct database privileges for runtime role ${runtimeRole}`,
     );
 
     const outboundMemberships = snapshot.memberships.filter(
@@ -198,10 +208,22 @@ export function assertRuntimeCapabilityPrivilegeContract(
     );
   }
 
+  const publicDatabasePrivileges = sorted(
+    snapshot.databasePrivileges
+      .filter(({ grantee }) => grantee === "PUBLIC")
+      .map(
+        ({ privilege, is_grantable }) =>
+          `${privilege}.grantable=${is_grantable}`,
+      ),
+  );
   assert.deepEqual(
-    snapshot.databaseCreatePrivileges.filter(({ grantee }) => grantee === "PUBLIC"),
+    publicDatabasePrivileges.filter(
+      (privilege) =>
+        privilege !== "CONNECT.grantable=false"
+        && privilege !== "TEMPORARY.grantable=false",
+    ),
     [],
-    "PUBLIC must not have database CREATE",
+    "Unexpected PUBLIC database privileges",
   );
 
   const publicSchemaPrivileges = sorted(
@@ -280,10 +302,11 @@ export async function readRuntimeCapabilityPrivilegeSnapshot(
      JOIN pg_catalog.pg_roles owner ON owner.oid = database.datdba
      WHERE database.datname = current_database()`,
   );
-  const databaseCreatePrivileges = await client.query(
+  const databasePrivileges = await client.query(
     `SELECT
        CASE acl.grantee WHEN 0 THEN 'PUBLIC' ELSE grantee.rolname END AS grantee,
        grantor.rolname AS grantor,
+       acl.privilege_type AS privilege,
        acl.is_grantable
      FROM pg_catalog.pg_database database
      CROSS JOIN LATERAL pg_catalog.aclexplode(
@@ -292,9 +315,8 @@ export async function readRuntimeCapabilityPrivilegeSnapshot(
      LEFT JOIN pg_catalog.pg_roles grantee ON grantee.oid = acl.grantee
      LEFT JOIN pg_catalog.pg_roles grantor ON grantor.oid = acl.grantor
      WHERE database.datname = current_database()
-       AND acl.privilege_type = 'CREATE'
        AND (acl.grantee = 0 OR grantee.rolname = ANY($1::name[]))
-     ORDER BY 1, 2, 3`,
+     ORDER BY 1, 2, 3, 4`,
     [runtimeRoles],
   );
   const effectiveDatabaseConnect = await client.query(
@@ -444,7 +466,7 @@ export async function readRuntimeCapabilityPrivilegeSnapshot(
   return {
     roles: roleRows.rows,
     databaseOwnerRole: databaseOwner.rows[0]?.role ?? null,
-    databaseCreatePrivileges: databaseCreatePrivileges.rows,
+    databasePrivileges: databasePrivileges.rows,
     effectiveDatabaseConnect: effectiveDatabaseConnect.rows,
     effectiveDatabaseCreate: effectiveDatabaseCreate.rows,
     memberships: memberships.rows,
