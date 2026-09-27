@@ -1,0 +1,30 @@
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import test from "node:test";
+
+const workflow = fs.readFileSync(
+  new URL("../workflows/production-web-credential-bootstrap.yml", import.meta.url),
+  "utf8",
+);
+
+test("web credential bootstrap workflow is manual, main-only, and production-bound", () => {
+  assert.match(workflow, /workflow_dispatch:/);
+  assert.match(workflow, /github\.ref == 'refs\/heads\/main'/);
+  assert.match(workflow, /environment: production-db/);
+  assert.match(workflow, /group: production-db-migrations/);
+  assert.match(workflow, /timeout-minutes: 5/);
+});
+
+test("web credential bootstrap workflow uses only the reviewed credential inputs", () => {
+  assert.match(workflow, /secrets\.NEON_OWNER_DATABASE_URL/);
+  assert.match(workflow, /vars\.WEB_RUNTIME_DATABASE_ROLE/);
+  assert.match(
+    workflow,
+    /secrets\.WEB_RUNTIME_DATABASE_PASSWORD_BOOTSTRAP/,
+  );
+  assert.match(workflow, /inputs\.bootstrap_confirmation/);
+
+  assert.doesNotMatch(workflow, /NEON_MIGRATION_DATABASE_URL/);
+  assert.doesNotMatch(workflow, /RUNTIME_DATABASE_ROLE/);
+  assert.doesNotMatch(workflow, /wrangler|deploy|hyperdrive/i);
+});
