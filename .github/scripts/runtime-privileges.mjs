@@ -227,11 +227,23 @@ export function assertRuntimeCapabilityPrivilegeContract(
     [],
     "PUBLIC must not have explicit function privileges",
   );
-  assert.deepEqual(
-    snapshot.defaultPrivileges.filter(({ grantee }) => grantee === "PUBLIC"),
-    [],
-    "PUBLIC must not receive custom default privileges",
+  const publicDefaults = snapshot.defaultPrivileges.filter(
+    ({ grantee }) => grantee === "PUBLIC",
   );
+  for (const privilege of publicDefaults) {
+    const allowedHardWiredEquivalent =
+      privilege.schema === "*"
+      && privilege.is_grantable === false
+      && (
+        (privilege.object_type === "f" && privilege.privilege === "EXECUTE")
+        || (privilege.object_type === "T" && privilege.privilege === "USAGE")
+      );
+    assert.equal(
+      allowedHardWiredEquivalent,
+      true,
+      "PUBLIC must not receive unexpected custom default privileges",
+    );
+  }
 }
 
 export async function readRuntimeCapabilityPrivilegeSnapshot(
