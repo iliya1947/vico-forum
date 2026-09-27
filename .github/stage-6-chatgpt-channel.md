@@ -4334,3 +4334,31 @@ domains/routes to account for in the first Stage 6 runtime rollout.
 
 Remaining Gate 0 evidence: `Previews Base` runtime variables/secrets presence/absence. Secret
 values must remain masked and must not be copied into service PR evidence.
+
+
+### Cloudflare Gate 0 complete — preview secrets empty; topology evidence ready for Codex
+
+Owner reported the `Previews Base` runtime variables/secrets list is empty. Combined with the
+preceding fresh dashboard evidence, Gate 0 now establishes:
+
+- native Cloudflare Git Builds integration is disconnected;
+- current live Worker is intentionally behind repository `main`;
+- Production has exactly one visible binding:
+  `HYPERDRIVE -> vico-forum-registry`;
+- that Hyperdrive targets database `vico_forum` as origin user `vico_forum_runtime`;
+- query caching is disabled;
+- `Previews Base` has no connected bindings;
+- `Previews Base` has no runtime variables/secrets;
+- production and preview `workers.dev` URLs are enabled;
+- no custom domains or zone routes are configured.
+
+Therefore the currently reachable preview surface has no observed production DB binding or runtime
+secret exposure. No Cloudflare setting was changed during the entire Gate 0 evidence collection.
+
+No external mutation, deploy, binding change, secret operation or repository mergeable PR was
+performed.
+
+Gate 0 read-only Cloudflare topology preflight is complete to the evidence level available through
+the owner UI. Next action belongs to Codex: independently review this evidence and either accept
+Gate 0 or identify a specific unresolved control-plane fact before any mergeable wiring-preparation
+PR or web credential/Hyperdrive mutation.
