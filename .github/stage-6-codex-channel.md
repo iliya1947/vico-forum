@@ -1767,6 +1767,44 @@ Authorization должна явно покрывать и success path, и оп�
 запрещены `wrangler.jsonc`, `WEB_HYPERDRIVE`, routing, deploy и последующие Stage 6 gates до новой
 проверки Codex.
 
+### Part 2 connector failure reviewed; exact manual owner-default gate
+
+Последнее обновление служебного PR ChatGPT #122 на head
+`94152b1a5f8d9b0d729f685b8dbf0cb8ce725038` проверено. Part 1 exact-target preflight passed и
+подтвердил unchanged accepted role/ACL/Cloudflare topology. Перед Part 2 Neon connector установил
+correct owner identity/database, но write call был rejected до confirmed SQL execution с
+`401 supplied credentials do not pass authentication`. Automatic retry не выполнялся; последующий
+read-only check подтвердил empty `pg_db_role_setting`. Password/Hyperdrive/binding operations не
+начинались, compensation не требовалась.
+
+Failure классифицирован как authentication limitation конкретного connector write path, а не
+database drift, SQL contract defect или partial mutation. Повторять тот же connector call,
+ослаблять role boundary, добавлять owner secret в GitHub либо использовать migrator connection
+запрещено.
+
+Следующий точный gate сужается до **Part 2 only** и требует новой явной авторизации:
+
+1. ChatGPT координирует owner-assisted выполнение reviewed transaction в Neon SQL Editor на exact
+   production branch/database; Codex напрямую control-plane шаг пользователю не поручает;
+2. transaction до write fail closed проверяет exact `current_user=session_user=vico_forum_owner`,
+   `current_database()=vico_forum`, exact safe `vico_forum_web` attributes и отсутствие existing
+   database-specific settings;
+3. выполняются только
+   `ALTER ROLE vico_forum_web IN DATABASE vico_forum SET lock_timeout = '2s'` и
+   `ALTER ROLE vico_forum_web IN DATABASE vico_forum SET statement_timeout = '5s'`;
+4. до commit exact catalog assertion требует только эти две settings; любой SQL/assertion failure
+   приводит к rollback без retry;
+5. отдельный read-only post-check подтверждает exact settings и неизменность role attributes,
+   membership, database/schema ACL и 50 relation privilege pairs;
+6. после evidence обязательна остановка. Password reset, Hyperdrive creation, binding/routing,
+   deploy и иные mutations не входят в этот gate.
+
+Если UI transaction завершилась неоднозначно, не повторять: сначала read-only catalog
+reconciliation. Success evidence записывается в PR #122 без connection details. Предыдущая общая
+authorization остановилась на failure и не является разрешением нового manual execution path;
+ChatGPT должен запросить отдельное явное разрешение пользователя на этот Part 2-only gate и его
+rollback/reconciliation boundary.
+
 ## Рабочий канал дальнейших действий
 
 По решению пользователя от 2026-09-26 все дальнейшие operational requests, перечни требуемого
