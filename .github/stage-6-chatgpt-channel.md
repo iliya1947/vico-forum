@@ -4519,3 +4519,113 @@ Implementation verification should include:
 - full diff review to guard against unrelated documentation rewrites.
 
 Subtask 2 may create the implementation branch and changes only after explicit user continuation.
+
+
+### Repository preparation PR — subtask 2/3: implementation branch ready; PR not opened yet
+
+Implementation was created from exact base:
+
+`main = d4c82a3729e9cdda89b6122ea1438dfb53150a12`
+
+on branch:
+
+`chatgpt/stage-6-web-runtime-prep`
+
+Current branch head:
+
+`a41f59d000f56f9cdbe66b44ab64f29461de69b6`.
+
+No mergeable PR has been opened yet; this preserves the agreed 3-subtask decomposition.
+
+#### Implemented code
+
+1. `db/postgres-deadlines.ts`
+   - added shared `WEB_DB_CALLER_DEADLINES`:
+     - `connectionTimeoutMillis = 3000`;
+     - `queryTimeoutMillis = 7000`;
+   - added `createWebClient()`;
+   - added `createWebPool()` preserving authorization's request-local `max: 1`;
+   - no web `lock_timeout` / `statement_timeout` session setting was added to code.
+
+2. Better Auth / forum / authorization defaults now reuse that shared boundary:
+   - `app/auth/auth.server.ts` defaults to `createWebClient`;
+   - both forum reader/writer defaults use `createWebClient`;
+   - authorization's default request-local pool uses `createWebPool`;
+   - existing dependency-injection hooks remain intact for tests.
+
+3. `workers/app.ts`
+   - removed construction/injection of
+     `createHyperdriveContentGenerationStatusReader`;
+   - kept `DISABLED_CONTENT_GENERATION_ACTION_RUNTIME`;
+   - therefore disabled generation no longer prepares a DB path to task/generation relations
+     through the sole HTTP binding;
+   - current single `HYPERDRIVE` binding/routing remains otherwise unchanged.
+
+#### Tests added/updated
+
+- `db/postgres-deadlines.test.ts` verifies exact shared web Client/Pool caller deadline options and
+  authorization pool `max: 1`;
+- new `db/web-runtime-wiring.test.ts` is a focused source-contract guard proving:
+  - Better Auth, both forum factories and authorization use the shared web factory boundary;
+  - production Worker retains disabled generation action and does not inject a generation-status
+    Hyperdrive reader.
+
+#### Documentation synchronized
+
+Updated only the agreed current-state/runbook files:
+
+- `PROJECT_STATE.md`;
+- `PROJECT_HISTORY.md`;
+- `docs/database/HYPERDRIVE.md`;
+- `docs/database/MIGRATIONS.md`.
+
+They now distinguish:
+
+- accepted production `vico_forum_web` role + protected variable + exact relation grants +
+  successful runtime verifier;
+- accepted Cloudflare Gate 0 topology;
+- still absent usable web credential, database-role server defaults, separate web Hyperdrive,
+  Worker web binding/routing and deployed web acceptance;
+- caller-side `3000/7000ms` repository preparation from planned external
+  `lock=2s / statement=5s` defaults and later real-path calibration.
+
+#### Full changed-file scope
+
+Only these 11 files differ from the exact base:
+
+- `PROJECT_HISTORY.md`;
+- `PROJECT_STATE.md`;
+- `app/auth/auth.server.ts`;
+- `db/hyperdrive-authorization.ts`;
+- `db/hyperdrive-forum.ts`;
+- `db/postgres-deadlines.test.ts`;
+- `db/postgres-deadlines.ts`;
+- `db/web-runtime-wiring.test.ts` (new);
+- `docs/database/HYPERDRIVE.md`;
+- `docs/database/MIGRATIONS.md`;
+- `workers/app.ts`.
+
+Explicit static scope assertions passed and independently confirmed no changes to:
+
+- `wrangler.jsonc`;
+- `package.json`;
+- `.github/scripts/runtime-privileges.mjs`;
+- `.github/workflows/ci.yml`;
+- `.github/runtime-migration-evidence.json`.
+
+Therefore no binding ID, dependency, migration, runtime ACL matrix, CI topology or accepted
+migration evidence changed.
+
+#### Local execution limitation
+
+A local checkout/test attempt in ChatGPT's container could not start because that runtime has no
+DNS/network access to `github.com`; the clone failed before repository checkout. This is an
+execution-environment limitation, not a test failure, and no successful local lint/typecheck/test/
+build is claimed.
+
+The authoritative full checks remain the normal PR CI gate. Per decomposition, opening the PR,
+observing CI, full PR diff re-review and recording final PR evidence belong to subtask 3/3 and have
+not been performed yet.
+
+No Cloudflare/Neon/GitHub Environment mutation, DB credential/default change, Hyperdrive operation,
+deploy, OAuth/bootstrap or Queue/provider action was performed.
