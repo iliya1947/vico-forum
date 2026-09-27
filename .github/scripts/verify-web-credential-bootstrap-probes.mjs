@@ -5,6 +5,7 @@ import {
   BOOTSTRAP_CONFIRMATION_TOKEN,
   EXPECTED_WEB_ROLE,
   bootstrapProductionWebCredential,
+  deriveScramSha256Verifier,
   revokeWebCredential,
 } from "./bootstrap-production-web-credential.mjs";
 
@@ -53,10 +54,21 @@ try {
     "Credential bootstrap probes require the production-like runtime roles from the preceding split-authority probe",
   );
 
-  await admin.query(
-    'ALTER ROLE "' + ownerRole + '" PASSWORD $1',
-    [ownerPassword],
+  const iterations = await admin.query(
+    "SELECT current_setting('scram_iterations')::integer AS iterations",
   );
+  const ownerVerifier = deriveScramSha256Verifier(ownerPassword, {
+    iterations: iterations.rows[0].iterations,
+  });
+  await admin.query("BEGIN");
+  await admin.query(
+    "SELECT pg_catalog.set_config('vico.ci_owner_scram_verifier', $1, true)",
+    [ownerVerifier],
+  );
+  await admin.query(
+    "DO $vico_ci_owner_password$ DECLARE v_verifier text := pg_catalog.current_setting('vico.ci_owner_scram_verifier', true); BEGIN EXECUTE pg_catalog.format('ALTER ROLE %I PASSWORD %L', 'vico_forum_owner', v_verifier); END $vico_ci_owner_password$;",
+  );
+  await admin.query("COMMIT");
   await admin.query(
     'ALTER ROLE "' + EXPECTED_WEB_ROLE + '" IN DATABASE "' + databaseName
       + '" SET lock_timeout = \'2s\'',
