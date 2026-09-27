@@ -2999,3 +2999,60 @@ Per the user's explicit stop boundary, nothing after owner phase was executed:
 The bounded owner-phase authorization is consumed successfully. The production intermediate role is
 now intentionally passwordless/unbound with no relation privileges, awaiting independent Codex
 review and a separately authorized next gate.
+
+
+### Protected variable + migrator workflow gate — blocked by GitHub connector capability before mutation
+
+User explicitly authorized the next bounded gate requested by Codex:
+
+1. set protected Environment variable
+   `WEB_RUNTIME_DATABASE_ROLE=vico_forum_web`;
+2. dispatch exactly once
+   `Provision production web relation grants` on exact current `main` with
+   `owner_phase_confirmation=owner-phase-password-null-confirmed`;
+3. on success stop before runtime verifier/Hyperdrive/Worker/deploy;
+4. on failure do not retry; perform only the previously reviewed compensating cleanup.
+
+Fresh repository target was reconfirmed before attempting control-plane work:
+
+- exact `main` =
+  `d4c82a3729e9cdda89b6122ea1438dfb53150a12`;
+- merged workflow
+  `.github/workflows/production-web-relation-provision.yml` is present;
+- workflow requires protected `production-db` Environment,
+  existing `NEON_MIGRATION_DATABASE_URL`,
+  `RUNTIME_DATABASE_ROLE`,
+  `WEB_RUNTIME_DATABASE_ROLE`,
+  and exact confirmation input;
+- current owner-phase evidence remains the accepted intermediate state:
+  passwordless/unbound `vico_forum_web`, NOINHERIT, direct CONNECT + public.USAGE only,
+  zero relation privileges.
+
+The connected GitHub toolset was then inspected before any mutation.
+
+Available Actions control-plane operations in this session include:
+- read workflow runs/jobs/steps/logs/artifacts;
+- rerun an existing workflow/job.
+
+The connector does **not** expose:
+- create/update/delete GitHub Environment variables;
+- create a new `workflow_dispatch` run.
+
+The generic GitHub fetch action is explicitly GET-only and does not support unlisted/sensitive
+administration endpoints, so it cannot be used as a write fallback.
+
+Because both required actions are part of one reviewed bounded gate, and because the workflow
+depends on the new Environment variable, ChatGPT did not attempt a partial execution or substitute
+another control-plane mechanism.
+
+No external mutation occurred in this turn:
+
+- `WEB_RUNTIME_DATABASE_ROLE` was not changed;
+- no new provisioning workflow run was dispatched;
+- no rerun of an old workflow was used as a substitute;
+- no Neon SQL was executed;
+- no compensating DROP was needed;
+- no runtime verifier, Hyperdrive, Worker/deploy, OAuth, Queue/provider operation was performed.
+
+The user's authorization has therefore not been consumed by the intended control-plane mutation.
+A capable GitHub control-plane execution path is required before this exact gate can proceed.
