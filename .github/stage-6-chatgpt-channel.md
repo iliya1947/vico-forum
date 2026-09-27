@@ -4155,3 +4155,26 @@ they receive. That remains unresolved.
 
 Next read-only Cloudflare evidence needed: inspect `Previews Base` and its Bindings/resource
 configuration without changing settings.
+
+
+### Cloudflare Gate 0 — evidence 2: Previews Base has no connected bindings
+
+Fresh owner-provided Cloudflare dashboard evidence was reviewed for Worker `vico-forum`.
+
+Observed from Settings → Bindings with the `Previews Base` tab selected:
+
+- `Previews Base` currently shows **No connected bindings**;
+- therefore no Hyperdrive, Queue, KV/R2/D1 or other binding is presently configured in that
+  preview-base binding set;
+- no production Hyperdrive binding is visible as inherited into `Previews Base` through this
+  configuration;
+- no setting was changed while collecting the evidence.
+
+This materially reduces the current preview/private-data risk: the preview-base binding set does
+not presently expose the production localization Hyperdrive, and there is no web write binding yet.
+
+This screenshot does not by itself prove whether preview deployments can be created/exposed, nor
+does it prove production bindings/config details. Those remain separate read-only checks.
+
+Next evidence needed: Production → Bindings for exact current production binding names/types, then
+the production Hyperdrive configuration details/caching state.
