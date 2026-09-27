@@ -754,6 +754,41 @@ OAuth/bootstrap либо Queue/provider operations.
 После independent whole-PR review и merge Codex заново сверяет `main` и определяет следующий
 runtime capability/bootstrap gate. До этого deployment и runtime provisioning запрещены.
 
+### Независимая полная проверка PR #136
+
+Последнее обновление служебного PR ChatGPT #122 на head
+`34fc1e49b2524d021b9d0cfe16d02e3a5256b7db` и migration-evidence PR #136 проверены независимо.
+PR основан на exact `main` `b172264e4b0db1fe68dead7d7f25b49a573eb0cd`; reviewed head —
+`412ef3720577c27bfd990b5fef6fd2b32141a157`.
+
+Полная проверка подтвердила:
+
+- diff ограничен четырьмя согласованными evidence/source-of-truth файлами и не меняет migration
+  SQL, verifier/workflows, application code или dependencies;
+- `.github/runtime-migration-evidence.json` точно фиксирует run `36270353184`, migration SHA,
+  journal SHA-256 и required tag `0020_translation_generation_permission`;
+- journal на evidence SHA и PR head содержит 21 entry, заканчивается `0020`, его SHA-256 равен
+  `35f6817042e73655bc965ed26fa729c177f99fbb10903934b1958e78420c32c9`, а evidence SHA является
+  ancestor PR head;
+- `PROJECT_STATE.md` корректно фиксирует accepted complete `0000`–`0020` schema/evidence без
+  historical identifiers и без ложного утверждения о runtime deployment;
+- `PROJECT_HISTORY.md` содержит exact historical run/attempt/SHA/hash и границы выполненной
+  операции; `docs/database/MIGRATIONS.md` согласованно отделяет schema-first evidence gate от
+  будущего runtime rollout;
+- dependency-free evidence unit tests successful; GitHub CI run `36272112776` на exact head
+  полностью successful: `checks=success`, `database=success`;
+- никаких external mutations PR не выполняет.
+
+Локальный live evidence verifier дошёл до GitHub API fetch, но Node network был недоступен в
+текущем окружении (`ENETUNREACH`); это environment limitation, а не defect PR. Exact тот же live
+verifier успешно выполнен в GitHub `checks`, а run metadata дополнительно проверена read-only API.
+
+Новых current-Stage defects, source-of-truth contradictions или scope expansion не обнаружено.
+Финальный технический вывод: PR #136 на head
+`412ef3720577c27bfd990b5fef6fd2b32141a157` готов к merge пользователем. После merge Codex должен
+проверить новый `main` и определить первый bounded schema-dependent runtime capability/bootstrap
+gate; до этого deployment и runtime provisioning не выполнять.
+
 ## Рабочий канал дальнейших действий
 
 По решению пользователя от 2026-09-26 все дальнейшие operational requests, перечни требуемого
