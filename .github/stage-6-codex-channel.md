@@ -960,6 +960,37 @@ repository PR из current `main`:
 После full review/CI и merge correction Codex снова определит bounded external `vico_forum_web`
 role/grant operation. До этого текущий production runtime verifier не запускать.
 
+### Независимая полная проверка PR #138
+
+Последнее обновление служебного PR ChatGPT #122 на head
+`a2f18229db0261bb59694504c3de33d6fbd4463a` и corrective PR #138 проверены независимо.
+PR основан на exact `main` `01e74b5ddbe6f339acfe7e60a75d85592b422674`; reviewed head —
+`2f35e41fd0da4aad4a9f549e73f7cb3a459f3c3f`.
+
+Полная проверка всех пяти changed files подтвердила:
+
+- snapshot теперь читает все database ACL rows для runtime roles и `PUBLIC`, включает
+  `privilege_type`, сохраняет `datacl IS NULL` fallback через `acldefault('d', datdba)` и больше
+  не фильтрует только `CREATE`;
+- runtime role допускает только optional direct non-grantable `CONNECT`; grantable `CONNECT`,
+  direct `TEMPORARY`, `CREATE` и иные database privileges rejected;
+- `PUBLIC` допускает только non-grantable hard-wired-equivalent `CONNECT` / `TEMPORARY` либо их
+  отсутствие; `CREATE`, grant options и unexpected privileges rejected;
+- existing effective `CONNECT=true` и effective `CREATE=false` checks сохранены;
+- unit coverage включает все согласованные positive/negative cases и static snapshot SQL check;
+- shared contract автоматически применяется disposable PostgreSQL probe и manual production
+  runtime verifier; workflows, relation capability matrix, Worker code и migrations не изменены;
+- docs/state корректно описывают reviewed verifier boundary без заявления о provisioning.
+
+Локально successful: syntax check и 18/18 runtime privilege contract tests. GitHub CI run
+`36302230154` на exact head полностью successful: `checks=success`, `database=success`, включая
+исправленные PostgreSQL 17 probes, full tests/build и Workers smoke.
+
+Новых current-Stage defects, source-of-truth contradictions или scope expansion не обнаружено.
+Финальный технический вывод: PR #138 на head
+`2f35e41fd0da4aad4a9f549e73f7cb3a459f3c3f` готов к merge пользователем. External role/grant,
+runtime verifier dispatch, Hyperdrive provisioning и deployment до post-merge сверки запрещены.
+
 ## Рабочий канал дальнейших действий
 
 По решению пользователя от 2026-09-26 все дальнейшие operational requests, перечни требуемого
