@@ -1941,3 +1941,65 @@ Codex-reviewed operation and new explicit user authorization. The next operation
 merged repository contract authoritative: check direct runtime database ACL for absence of
 TEMPORARY/CREATE/grant options while allowing effective TEMPORARY inherited from accepted PUBLIC
 database ACL.
+
+
+### Third one-shot web-role provisioning attempt — relation assertion failed, full rollback
+
+User explicitly authorized one additional corrected one-shot provisioning attempt defined by the
+latest Codex PR #121 entry.
+
+Preflight was repeated before mutation and matched the reviewed boundary:
+
+- exact GitHub `main` remained
+  `4cef0297bb41ff3a18ee0ad82315aef940146596`;
+- Neon project `late-cell-18916701`, production branch
+  `br-square-flower-b2q6a3sy`, database `vico_forum`;
+- current/session/database owner = exact `vico_forum_owner`;
+- `vico_forum_web` absent;
+- existing `vico_forum_runtime` unchanged: direct non-grantable database CONNECT,
+  public-schema USAGE, SELECT only on
+  `locales`, `ui_translations`, `ui_translation_bundles`, expected owner membership;
+- PUBLIC database ACL remained non-grantable CONNECT + TEMPORARY.
+
+PostgreSQL 17 official documentation was rechecked before the attempt:
+- databases grant PUBLIC CONNECT and TEMPORARY by default;
+- non-superuser CREATEROLE creation automatically grants the new role back to its creator as
+  ADMIN TRUE, SET FALSE, INHERIT FALSE.
+
+The authorized transaction then:
+- created passwordless `vico_forum_web` with the reviewed safe role attributes;
+- intentionally omitted manual owner-membership GRANT;
+- applied the reviewed database/schema/relation GRANT statements;
+- used the corrected database assertion:
+  effective CONNECT=true, effective CREATE=false, exact direct non-grantable CONNECT only,
+  with no requirement that effective TEMPORARY be false;
+- continued with exact membership/schema/relation/column/function/default/ownership assertions.
+
+The transaction failed before commit with:
+
+`Relation ACL mismatch`.
+
+Per the one-shot boundary, no retry, alternate SQL, manual repair, role cleanup, GRANT adjustment,
+GitHub variable change or workflow dispatch was attempted.
+
+Read-only rollback verification after the failure confirmed:
+
+- `vico_forum_web` does not exist;
+- role list remains exactly the previous Vico roles:
+  `vico_forum_owner`, `vico_forum_runtime`, `vico_forum_migrator`;
+- existing localization relation ACL remains exactly SELECT on
+  `locales`, `ui_translation_bundles`, `ui_translations`;
+- current/session role remains `vico_forum_owner`.
+
+Therefore the transaction persisted no role or grant changes.
+
+Because this attempt failed before commit:
+- `WEB_RUNTIME_DATABASE_ROLE` was not set;
+- `Production runtime privilege verification` was not dispatched;
+- no Hyperdrive/password/credential/Worker binding/deployment/OAuth/Queue/provider operation was
+  performed.
+
+This authorization is consumed. The exact cause of the relation-assertion mismatch has not been
+mutated around or guessed into production; the next coordination cycle must diagnose it
+read-only/repository-side and define any further one-shot attempt before another external
+authorization.
