@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       owner_phase_confirmation:
-        description: Confirm reviewed owner phase created the web role with PASSWORD NULL
+        description: Enter owner-phase-password-null-confirmed after reviewed owner phase created the web role with PASSWORD NULL
         required: true
         type: string
 
