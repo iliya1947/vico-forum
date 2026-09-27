@@ -4226,3 +4226,41 @@ binding has not been provisioned/wired yet.
 
 The screenshot does not expose the Hyperdrive resource's origin username or query-cache
 configuration. Those remain the next read-only Gate 0 evidence items.
+
+
+### Cloudflare Gate 0 — evidence 4: localization Hyperdrive origin and cache state verified
+
+Fresh owner-provided Cloudflare dashboard evidence was reviewed for Hyperdrive configuration
+`vico-forum-registry`.
+
+Observed safely from the Settings page:
+
+- configuration name: `vico-forum-registry`;
+- database name: `vico_forum`;
+- origin user: `vico_forum_runtime`;
+- PostgreSQL port: `5432`;
+- password is masked in the UI and was not copied or recorded;
+- query caching is explicitly **disabled** for this Hyperdrive configuration;
+- configured origin connection soft limit shown by Cloudflare: `20`;
+- no setting was changed while collecting this evidence.
+
+The database host was visible in the owner screenshot, but it is intentionally not copied into this
+coordination channel because the Stage 6 evidence need is resource identity/capability, not origin
+connection detail.
+
+This confirms that the currently deployed production `HYPERDRIVE` binding points to the accepted
+localization runtime role and that the existing localization Hyperdrive is cache-disabled. It also
+confirms there is no need to mutate or repurpose this accepted configuration for the future web
+capability.
+
+Combined Gate 0 evidence now establishes:
+
+- native Cloudflare Git Builds integration is disconnected;
+- `Previews Base` has no connected bindings;
+- Production has one visible binding, `HYPERDRIVE -> vico-forum-registry`;
+- that Hyperdrive targets database `vico_forum` as `vico_forum_runtime`;
+- query caching is disabled.
+
+Remaining read-only Gate 0 evidence: current deployed Worker version/deployment route/domain state,
+to confirm the live deployment surface and check for dashboard-only drift relative to the
+repository config. No external mutation has been performed.
