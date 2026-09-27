@@ -1979,6 +1979,48 @@ Required corrective cycle на той же ветке PR #141:
 Текущий вывод: **PR #141 не готов к merge**. Temporary bootstrap secret создавать и workflow
 dispatch выполнять запрещено до corrective cycle и повторной независимой полной проверки.
 
+### Финальная независимая полная проверка исправленного PR #141
+
+Последнее обновление служебного PR ChatGPT #122 на head
+`9f437aafd45a653ec1a2f63b892d0665761d7bdc` и финальный PR #141 повторно проверены целиком.
+Exact head — `d374325dbbc1cf44d08c7974694b609b500af25a`, base/current `main` —
+`6f262bf4374440e36096fd315a9c3ff4f42eba27`; PR open, non-draft, mergeable, behind 0.
+
+Все три подтверждённые проблемы закрыты:
+
+- initial SCRAM credential получает server-clock `VALID UNTIL` lease 30 минут; transaction до
+  commit проверяет active bounded `rolvaliduntil`, disposable PostgreSQL 17 probe доказывает
+  immediate login, expiry rejection и `PASSWORD NULL` compensation;
+- отдельный pre-Environment/no-secret guard, bootstrap job condition и script assertion требуют
+  exact main, `GITHUB_RUN_NUMBER=1`, `GITHUB_RUN_ATTEMPT=1` до production DB connection; repeat
+  dispatch/rerun fail closed;
+- `PROJECT_STATE.md` больше не перечисляет уже applied role defaults как outstanding, а docs точно
+  разделяют bootstrap lease, post-Hyperdrive owner finalization в `infinity` и expiry cleanup.
+
+Повторный review всех 8 changed files также подтвердил:
+
+- module восстановлен без duplicated/truncated tail, cleartext/verifier не interpolated в client
+  SQL/logging, server logging preconditions fail closed;
+- preflight требует exact direct Neon owner target, PG17/UTF8/SCRAM settings, owner/web/localization
+  identities, accepted membership/defaults и полный ACL contract;
+- post-commit web login проверяет exact identity/database/`2s`/`5s`; ordinary failure выполняет
+  bounded revocation, а uncontrolled termination ограничен server-owned expiry;
+- workflow manual/main-only/protected/serialized с pinned actions и bounded timeout; temporary
+  secret отсутствует в repository;
+- migrations, dependencies, runtime ACL matrix, Worker bindings/routing, Hyperdrive resources и
+  external state не изменены.
+
+Exact-head CI run `36342570162`: attempt 1 имел unrelated existing database serialization flake;
+единственный rerun failed job на том же SHA завершил attempt 2 полностью successful. Jobs
+`checks=success` (`108685654779`) и `database=success` (`108685653862`), включая credential lease /
+expiry / compensation probe. Это CI workflow, не production bootstrap workflow, и не влияет на
+one-shot `GITHUB_RUN_NUMBER` будущего отдельного workflow.
+
+Новых current-Stage defects, contradictions или unrelated scope expansion не обнаружено.
+Финальный технический вывод: **PR #141 на head
+`d374325dbbc1cf44d08c7974694b609b500af25a` готов к merge пользователем**. До merge и post-merge
+сверки запрещены temporary secret creation, bootstrap dispatch и credential/Hyperdrive mutations.
+
 ## Рабочий канал дальнейших действий
 
 По решению пользователя от 2026-09-26 все дальнейшие operational requests, перечни требуемого
