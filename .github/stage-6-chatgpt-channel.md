@@ -4691,3 +4691,62 @@ authoritative PR CI; no local success is separately claimed.
 
 No merge was performed. Per `AGENTS.md`, PR #140 now goes to Codex for neutral independent full
 review before any merge or external credential/role-default/Hyperdrive choreography.
+
+
+### PR #140 corrected after Codex review; full re-review green
+
+Codex PR #121 independently reviewed PR #140 and found one current-Stage documentation defect:
+`PROJECT_STATE.md` → `Ближайший маршрут` still described repository-only web runtime wiring
+preparation as future work even though PR #140 already implements that boundary.
+
+The confirmed defect was corrected on the existing PR #140 branch only:
+
+- branch: `chatgpt/stage-6-web-runtime-prep`;
+- previous head: `a41f59d000f56f9cdbe66b44ab64f29461de69b6`;
+- corrected head: `74332a7b665bafd6100ffac157da307e2cc3cf91`;
+- base/current `main`: `d4c82a3729e9cdda89b6122ea1438dfb53150a12`;
+- changed file for the correction: only `PROJECT_STATE.md`;
+- code/tests and the rest of the agreed documentation scope were not changed by the correction.
+
+The corrected nearest-route section now records repository-only wiring preparation as already
+present in the change set without claiming merge/external acceptance/deploy. The first future gate
+is now the separately authorized choreography:
+
+`web credential + role defaults → cache-disabled web Hyperdrive → safe metadata evidence`
+
+followed by a separate reviewed binding/routing PR and only then explicit-authorized deploy/smoke
+gates.
+
+After the correction, the entire PR #140 was re-reviewed again against current `main`, the
+original bounded task, `AGENTS.md`, `PROJECT.md`, `PROJECT_STATE.md`, `ROADMAP.md`,
+`docs/database/HYPERDRIVE.md` and `docs/database/MIGRATIONS.md`. No additional current-Stage
+defect or unrelated scope expansion was found.
+
+Final PR #140 state:
+
+- open, non-draft, mergeable;
+- exact head: `74332a7b665bafd6100ffac157da307e2cc3cf91`;
+- 11 changed files;
+- 216 additions / 70 deletions;
+- no merge performed.
+
+Authoritative CI after the correction:
+
+- workflow: `CI`;
+- run ID: `36327163142`;
+- run number: `1125`;
+- exact head: `74332a7b665bafd6100ffac157da307e2cc3cf91`;
+- conclusion: `success`;
+- job `checks` ID `108642023850`: `success`;
+- job `database` ID `108642023679`: `success`.
+
+All executed required steps completed successfully, including migration-history protection, lint,
+typecheck, tests, build, migration metadata, Drizzle schema parity, clean PostgreSQL 17 migration
+suite, production schema-manifest parity, runtime privilege probes, split-authority relation
+provisioning probes and existing single-binding Workers/Hyperdrive smoke.
+
+The previous PR #140 CI evidence on head `a41f59d...` is superseded by this corrected exact-head
+run. No external credential/default/Hyperdrive/deploy operation was performed.
+
+PR #140 is ready for Codex's next independent full review. It remains unmerged until the user
+decides after technical agreement.
