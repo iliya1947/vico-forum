@@ -32,6 +32,92 @@ locale/namespace. Это остаётся той же request-scoped read-only c
 Новые forum/auth/translation write-capabilities не добавляются в этот role механически.
 Они проектируются по фактическим runtime operations на Stage 6 external integration.
 
+## Stage 6 reviewed web capability contract
+
+После schema-first acceptance through `0020` repository фиксирует две отдельные HTTP runtime
+capabilities, но **не утверждает**, что новая production role или Hyperdrive binding уже созданы:
+
+1. `localization-read` — существующие `HYPERDRIVE` + environment-specific localization role,
+   только `SELECT` на `locales`, `ui_translations`, `ui_translation_bundles`;
+2. `web` — отдельная future cache-disabled capability для Better Auth, forum, dynamic
+   authorization и persisted forum-content presentation.
+
+Production role names остаются external inputs. Existing localization role передаётся verifier как
+`RUNTIME_DATABASE_ROLE`; новая web role после отдельного provisioning будет передаваться как
+`WEB_RUNTIME_DATABASE_ROLE`.
+
+Reviewed web relation ACL:
+
+```text
+user, session, account, verification, rate_limit
+  SELECT, INSERT, UPDATE, DELETE
+
+forum_categories, forum_sections
+  SELECT
+
+forum_topics, forum_posts
+  SELECT, INSERT, UPDATE
+
+forum_topic_title_revisions, forum_post_revisions
+  SELECT, INSERT
+
+forum_topic_title_translations, forum_post_body_translations
+  SELECT
+
+authz_roles
+  SELECT, INSERT, UPDATE, DELETE
+
+authz_role_permissions
+  SELECT, INSERT, DELETE
+
+authz_user_roles
+  SELECT, INSERT, UPDATE
+
+authz_user_permission_overrides
+  SELECT, INSERT, UPDATE, DELETE
+
+authz_mutation_lock
+  SELECT, UPDATE
+```
+
+`user.UPDATE` также нужен существующему forum cooldown mutex через `SELECT ... FOR UPDATE`.
+При текущем Worker composition content generation остаётся disabled, поэтому web capability
+намеренно **не** получает direct grants на `authz_permissions`, translation task/generation-head
+tables, request-budget counters либо UI localization tables.
+
+Обе runtime capabilities требуют:
+
+- LOGIN;
+- no SUPERUSER / CREATEDB / CREATEROLE / REPLICATION / BYPASSRLS;
+- no inherited role membership; existing managed database-owner inbound admin control допустим
+  только в той же non-inheriting/non-SET форме, которую уже принимает production DB contract;
+- no schema/table/sequence/view ownership;
+- `public.USAGE` без `CREATE`;
+- no database `CREATE`;
+- no grant options, column ACL, sequence grants или direct function grants;
+- никаких custom default grants runtime roles или `PUBLIC`.
+
+Repository verifier:
+- `.github/scripts/runtime-privileges.mjs` хранит named capability contracts;
+- `.github/scripts/verify-runtime-privilege-probes.mjs` применяет exact grants к disposable
+  PostgreSQL 17 и выполняет positive/negative SQL probes;
+- manual main-only `Production runtime privilege verification` после отдельного external
+  provisioning выполняет read-only catalog verification обоих roles.
+
+Migration workflow намеренно не зависит от ещё не provisioned web role. Runtime privilege
+verification — отдельная post-schema acceptance boundary.
+
+Fresh auth/session/permission и read-after-write paths должны использовать cache-disabled
+Hyperdrive. Cloudflare допускает несколько Hyperdrive configurations/bindings для одной
+application; exact web binding name/ID и forum/auth deadline defaults выбираются в отдельном
+runtime-wiring step и этим contract не задаются.
+
+Official reference:
+
+```text
+https://developers.cloudflare.com/hyperdrive/concepts/query-caching/
+```
+
 ## Development path
 
 Cloudflare официально поддерживает local Hyperdrive development через
