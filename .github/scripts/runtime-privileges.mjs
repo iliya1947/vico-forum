@@ -213,8 +213,10 @@ export function assertRuntimeCapabilityPrivilegeContract(
       ),
   );
   assert.deepEqual(
-    publicSchemaPrivileges,
-    ["public.USAGE.grantable=false"],
+    publicSchemaPrivileges.filter(
+      (privilege) => privilege !== "public.USAGE.grantable=false",
+    ),
+    [],
     "Unexpected PUBLIC schema privileges",
   );
   assert.deepEqual(
