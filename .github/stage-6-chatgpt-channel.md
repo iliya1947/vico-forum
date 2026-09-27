@@ -5220,3 +5220,75 @@ secret-transfer/identity-verification pattern. The next technical task must ther
 web-only first-password bootstrap for the existing `vico_forum_web` without changing its accepted
 role/grant contract, or explicitly compare that with recreating the role through Neon-managed role
 creation and re-provisioning. No external mutation is authorized by this record.
+
+
+### Web-only credential bootstrap research; GitHub protected workflow candidate
+
+After correcting the migrator-history assumption, the current Stage 6 first-password problem was
+re-evaluated against current `main`, live Neon metadata, Neon documentation and PostgreSQL 17.
+
+Current facts:
+
+- exact current `main` remains `6f262bf4374440e36096fd315a9c3ff4f42eba27`;
+- production `vico_forum_web` remains the accepted SQL-created role with
+  `authentication_method=no_login` in Neon control-plane metadata;
+- PostgreSQL catalog still shows the accepted safe role attributes and the durable
+  `lock_timeout=2s` / `statement_timeout=5s` database-role defaults;
+- accepted 50 relation privilege pairs and existing localization capability are not to be rebuilt
+  merely to obtain a credential.
+
+Platform findings:
+
+1. Neon Console/API `Reset password` cannot bootstrap this existing SQL-created
+   `PASSWORD NULL` role; this was already proven by the current gate failure.
+2. Neon SQL Editor is browser-based and supports a documented subset of psql-style
+   meta-commands, but Neon explicitly states that not all psql meta-commands are supported.
+   The documented supported set does not include `\password`. Therefore the project must not
+   assume SQL Editor can provide the psql interactive password mechanism without separate proof.
+3. Recreating the role through Neon-managed role creation is a materially broader operation:
+   it destroys an already accepted privilege/default/membership state and changes role provenance.
+   Neon documentation also distinguishes Console/CLI/API-created roles from SQL-created roles for
+   platform-granted capabilities such as replication. That path should not be the default workaround
+   for a credential-only problem.
+4. PostgreSQL 17 explicitly supports supplying an already SCRAM-encrypted password verifier to
+   `CREATE ROLE` / `ALTER ROLE`; a valid SCRAM verifier is stored as-is. PostgreSQL also warns
+   against sending a cleartext password in SQL because it can enter client history/server logs.
+
+A web-only candidate therefore exists without changing the accepted role/grant contract:
+
+- add a temporary reviewed, manual-only, main-only GitHub Actions workflow bound to the existing
+  protected `production-db` Environment;
+- the owner generates one strong ASCII password in a password manager and stores the same value in
+  a temporary Environment secret, proposed name
+  `WEB_RUNTIME_DATABASE_PASSWORD_BOOTSTRAP`; the value is never passed through chat/PR/logs;
+- the workflow uses existing `NEON_OWNER_DATABASE_URL`, protected
+  `WEB_RUNTIME_DATABASE_ROLE=vico_forum_web`, and an exact confirmation token;
+- a repository script uses Node core crypto to derive a PostgreSQL SCRAM-SHA-256 verifier locally
+  from the temporary secret, and sends only that verifier in the owner-controlled
+  `ALTER ROLE vico_forum_web PASSWORD '<SCRAM verifier>'`; neither cleartext nor verifier is
+  logged;
+- before mutation it fail-closes on exact owner/session/database, exact target role, accepted safe
+  role attributes, accepted database-role defaults and current privilege contract;
+- after the password commit it attempts a bounded login as exact `vico_forum_web` using the same
+  secret only in runner memory and verifies exact identity/database/defaults;
+- if that post-mutation credential check fails, the same authorized owner path first restores
+  `PASSWORD NULL` and stops without retry;
+- on credential success the owner immediately uses the locally retained same password in the
+  Cloudflare UI to create the already-reviewed single unbound cache-disabled
+  `vico-forum-web` Hyperdrive on the direct/unpooled Neon origin;
+- if Cloudflare creation/evidence fails after credential success, existing compensation remains:
+  revoke to `PASSWORD NULL` first, then delete any created unbound resource, with no retry;
+- after accepted Hyperdrive evidence, delete the temporary GitHub Environment bootstrap secret.
+  A follow-up repository cleanup should remove the one-time bootstrap workflow/script if Codex
+  agrees that no recurring operational need exists.
+
+This candidate intentionally does not change role identity, grants, memberships, defaults,
+`wrangler.jsonc`, Worker bindings/routing, deployment, OAuth, Queue/provider configuration or
+the localization resource. It requires a reviewed repository PR before any new credential mutation.
+
+No external mutation was performed in this research step.
+
+Codex should independently evaluate the web-only requirement and the candidate boundary before a
+mergeable implementation PR or any new authorization is requested. In particular it should verify
+that deriving and applying a SCRAM verifier in the protected workflow is preferable to any simpler
+current Neon web-only mechanism and that the compensation/cleanup boundary is complete.
