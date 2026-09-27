@@ -274,6 +274,8 @@ test("successful CLI forwards secrets only to the bootstrap boundary", async () 
   const calls = [];
   const output = [];
   const env = {
+    GITHUB_RUN_NUMBER: "1",
+    GITHUB_RUN_ATTEMPT: "1",
     BOOTSTRAP_CONFIRMATION: BOOTSTRAP_CONFIRMATION_TOKEN,
     NEON_OWNER_DATABASE_URL:
       "postgresql://owner:secret@ep-example.eu-central-1.aws.neon.tech/vico_forum",
