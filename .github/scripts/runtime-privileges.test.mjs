@@ -406,6 +406,16 @@ test("allows only hard-wired-equivalent PUBLIC function/type defaults", () => {
   );
 });
 
+test("allows PUBLIC schema USAGE to be absent", () => {
+  const candidate = fixture();
+  candidate.schemaPrivileges = candidate.schemaPrivileges.filter(
+    ({ grantee }) => grantee !== "PUBLIC",
+  );
+  assert.doesNotThrow(() =>
+    assertRuntimeCapabilityPrivilegeContract(candidate, roles)
+  );
+});
+
 test("rejects unexpected PUBLIC privileges", () => {
   const schema = fixture();
   schema.schemaPrivileges.push({
