@@ -131,7 +131,7 @@ export function assertRelationProvisioningPrerequisites(
 
   const expectedNames = expectedWebRelationNames();
   assert.deepEqual(
-    snapshot.relationOwners.map(({ name }) => name),
+    sorted(snapshot.relationOwners.map(({ name }) => name)),
     expectedNames,
     "Expected every web capability relation to exist exactly once",
   );
