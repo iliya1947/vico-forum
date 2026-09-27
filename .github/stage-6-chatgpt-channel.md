@@ -5098,3 +5098,47 @@ Mandatory stop observed:
 - no OAuth/bootstrap/Queue/provider operation occurred.
 
 Further Stage 6 work requires the next reviewed/authorized gate.
+
+
+### Authorized Part 3+4 gate — preflight complete
+
+User explicitly authorized the reviewed Part 3+4 credential + Hyperdrive gate including its
+defined compensation.
+
+This section records only the preflight boundary. No password reset, Hyperdrive creation, binding,
+routing or deploy mutation has occurred yet.
+
+Repository/DB state reconfirmed:
+
+- current `main`: `6f262bf4374440e36096fd315a9c3ff4f42eba27`;
+- exact database-specific defaults remain accepted:
+  `lock_timeout=2s`, `statement_timeout=5s`;
+- `vico_forum_web` role attributes and accepted membership remain unchanged;
+- direct relation ACL count remains 50 with zero grantable relation privileges.
+
+Owner-provided Neon UI evidence confirmed on exact project/branch/database:
+
+- project `vico-forum`, branch `production`, database `vico_forum`;
+- exact role `vico_forum_web`;
+- role action menu exposes `Reset password`;
+- Connect dialog allows exact `vico_forum_web` role against database `vico_forum`;
+- Connection pooling is disabled, giving the required direct/unpooled Neon origin path;
+- connection string currently has no usable password before reset, as expected.
+
+Owner-provided Cloudflare Hyperdrive list evidence confirmed:
+
+- exactly one existing configuration is present;
+- it is `vico-forum-registry`;
+- no `vico-forum-web` Hyperdrive resource exists before the credential mutation.
+
+Previously accepted same-Stage Cloudflare evidence remains unchanged for:
+
+- existing localization resource `vico-forum-registry`;
+- Production Worker binding `HYPERDRIVE -> vico-forum-registry`;
+- no `WEB_HYPERDRIVE`;
+- Preview Base zero bindings and zero runtime variables/secrets.
+
+Preflight conclusion: Part 3+4 may proceed to the already-authorized owner-assisted password reset
+for exact `vico_forum_web`, followed immediately by creation of one new unbound cache-disabled
+`vico-forum-web` Hyperdrive using the direct/unpooled Neon origin. Any failure after password
+creation enters the pre-authorized compensation path; no retry.
