@@ -2648,3 +2648,193 @@ and review one explicit replacement for the unobservable passwordless assertion 
 making passwordlessness an owner-phase evidence/confirmation invariant while the migrator script
 checks all DB-observable prerequisites) before a mergeable relation-grant workflow can honestly
 satisfy its contract.
+
+
+### Split-authority relation-provisioning PR #139 — implemented, CI-clean, awaiting independent Codex review
+
+Latest Codex service PR #121 request was executed as a repository-only mergeable change.
+
+Created PR #139 `Add split-authority web relation provisioning workflow` from exact unchanged
+`main`:
+
+`4cef0297bb41ff3a18ee0ad82315aef940146596`.
+
+Final PR head:
+
+`2b4f7ee33c3f011a8d997eac34f9a18f53f9350d`.
+
+PR is open, non-draft, mergeable, eight changed files, and current `main` has not moved.
+
+Changed files are exactly:
+
+- `.github/scripts/provision-production-web-relations.mjs`;
+- `.github/scripts/provision-production-web-relations.test.mjs`;
+- `.github/scripts/verify-web-relation-provisioning-probes.mjs`;
+- `.github/workflows/production-web-relation-provision.yml`;
+- `.github/workflows/ci.yml`;
+- `PROJECT_STATE.md`;
+- `docs/database/HYPERDRIVE.md`;
+- `docs/database/MIGRATIONS.md`.
+
+No migration SQL, dependency, Worker/runtime binding, capability matrix, production role/grant,
+GitHub variable, workflow dispatch, Hyperdrive provisioning or deployment mutation was performed.
+
+#### Provisioning script contract
+
+`.github/scripts/provision-production-web-relations.mjs` imports the shared
+`runtimeCapabilityContracts.web`; the relation grant list is not duplicated.
+
+The script:
+
+- requires `DATABASE_URL`, `RUNTIME_DATABASE_ROLE`, `WEB_RUNTIME_DATABASE_ROLE`;
+- requires exact confirmation token
+  `owner-phase-password-null-confirmed` before DB connection;
+- requires exact `current_user = vico_forum_migrator`;
+- requires one existing web role with visible safe attributes:
+  LOGIN, NOINHERIT, no SUPERUSER/CREATEDB/CREATEROLE/REPLICATION/BYPASSRLS;
+- requires only the accepted automatic database-owner membership:
+  `ADMIN TRUE, INHERIT FALSE, SET FALSE`;
+- requires effective database CONNECT=true / CREATE=false;
+- requires direct web database ACL to be exactly non-grantable CONNECT;
+- requires exact `public.USAGE` and no schema CREATE;
+- requires every relation named by the shared web capability to exist as a table/partitioned table
+  and be owned by exact `vico_forum_migrator`;
+- begins one transaction, generates every relation GRANT directly from
+  `runtimeCapabilityContracts.web.relations`, then runs the shared
+  `readRuntimeCapabilityPrivilegeSnapshot` +
+  `assertRuntimeCapabilityPrivilegeContract`;
+- commits only on exact full end-state match and rolls back on any error;
+- logs only bounded generic success/failure messages and never logs the connection string.
+
+Passwordlessness is intentionally not read through the migrator connection. PostgreSQL 17
+`pg_roles.rolpassword` is masked and the migrator correctly lacks access to `pg_authid` /
+`pg_shadow`. Therefore `PASSWORD NULL` remains the reviewed owner-phase command/evidence
+invariant. The confirmation token is explicit operator evidence, not a claimed DB-derived password
+check.
+
+#### Protected manual workflow
+
+Added `Provision production web relation grants`:
+
+- `workflow_dispatch` only;
+- required string input `owner_phase_confirmation`;
+- UI description explicitly tells the operator to enter exact
+  `owner-phase-password-null-confirmed` only after reviewed owner phase created the role with
+  `PASSWORD NULL`;
+- main-only job;
+- protected `production-db` Environment;
+- shared `production-db-migrations` concurrency group, `cancel-in-progress: false`;
+- five-minute job timeout;
+- pinned checkout/pnpm/node actions matching existing production workflows;
+- existing `NEON_MIGRATION_DATABASE_URL` plus
+  `RUNTIME_DATABASE_ROLE` / `WEB_RUNTIME_DATABASE_ROLE`;
+- workflow merge does not launch it.
+
+No manual production provisioning workflow was dispatched in this task.
+
+#### Test coverage
+
+Unit/static tests verify:
+
+- exact GRANT derivation from the shared web capability, including quoted `user`;
+- missing/wrong owner-phase confirmation rejection;
+- missing target role rejection;
+- wrong execution identity rejection;
+- unsafe visible role attributes rejection;
+- missing/unsafe automatic owner membership rejection;
+- effective/direct database ACL and schema prerequisite drift rejection;
+- missing/wrong-owner/wrong-kind target relations rejection;
+- commit occurs only after shared full runtime assertion;
+- shared end-state failure rolls the transaction back;
+- confirmation failure occurs before provisioning;
+- success/failure logging does not expose connection strings/secrets.
+
+Disposable PostgreSQL 17 CI separately models production split authority:
+
+- disposable database + public schema are owner-controlled;
+- exact web target relations are transferred to `vico_forum_migrator`;
+- migrator gets schema USAGE required to address owned relations;
+- owner phase creates localization/web roles and web DB/schema prerequisites;
+- the relation-grant function is then executed with
+  `SET ROLE vico_forum_migrator` only inside disposable CI to model exact `current_user` +
+  object ownership;
+- the real shared runtime verifier must accept the final localization + web state;
+- a separate drift role with forbidden direct TEMPORARY is rejected before relation writes and
+  retains zero relation privileges after rollback.
+
+Production does not use CI `SET ROLE`; the protected workflow uses the already accepted
+migration credential.
+
+#### CI findings fixed during verification
+
+Initial CI exposed only defects in the new test/fixture implementation, not a change to the
+production capability contract:
+
+1. lint found an unused prerequisite-reader parameter; removed;
+2. first disposable PG17 probe modeled a public schema not controlled by the test owner, so owner
+   setup could not grant schema USAGE; fixture corrected to model owner-controlled public schema;
+3. second probe correctly showed the test migrator could not address `public.*` relations without
+   schema USAGE; disposable fixture now grants migrator public.USAGE.
+
+No production script privilege boundary was broadened to make those fixture failures pass.
+
+#### Final verification
+
+Final CI run:
+
+`36312334101`
+
+on exact PR head:
+
+`2b4f7ee33c3f011a8d997eac34f9a18f53f9350d`
+
+completed fully successful.
+
+`checks` = success:
+
+- accepted migration/static contracts including new provisioning unit suite;
+- lint;
+- typecheck;
+- full test suite;
+- build;
+- migration metadata;
+- Drizzle schema parity.
+
+`database` = success:
+
+- clean PostgreSQL 17 migration/integration suite;
+- production schema manifest parity;
+- existing runtime privilege probes;
+- **split-authority web relation provisioning probe**;
+- Workers build;
+- local Hyperdrive smoke.
+
+#### Whole-PR re-review
+
+Full current-head diff was re-reviewed after CI.
+
+One current-Stage documentation defect was found and corrected before the final head:
+`PROJECT_STATE.md` originally described the nearest route as “review/merge this current PR”,
+which would become stale immediately after merge. It now records the durable post-merge state:
+repository split-authority mechanism ready → Codex rechecks exact main/production preconditions →
+owner phase / protected variable / one migrator workflow / read-only verifier remain separately
+authorized external operations.
+
+Final whole-PR review finds no remaining current-Stage defect or scope expansion.
+
+Current evidence:
+
+- base/main still exact
+  `4cef0297bb41ff3a18ee0ad82315aef940146596`;
+- final head
+  `2b4f7ee33c3f011a8d997eac34f9a18f53f9350d`;
+- PR #139 open, non-draft, mergeable;
+- exact eight-file scope;
+- final CI `36312334101` fully green;
+- no PR review comments/reviews yet;
+- no external provisioning action executed.
+
+Next review-cycle action: Codex independently review the complete current PR #139 at final head.
+Merge remains user-controlled. Owner phase, protected `WEB_RUNTIME_DATABASE_ROLE`, production
+relation-provision workflow dispatch and read-only runtime verifier remain prohibited until the
+post-merge coordination cycle explicitly authorizes them.
