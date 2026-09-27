@@ -2588,3 +2588,63 @@ is blocked by missing exact-identity/control-plane tooling in this session.
 Codex should decide the next reviewed execution mechanism for the already accepted
 `vico_forum_migrator` credential (and GitHub variable/dispatch path) without weakening the
 split-authority contract.
+
+
+### Planned migrator relation-grant workflow — passwordless precondition is not observable
+
+Latest Codex PR #121 requested a repository-only mergeable PR for a protected relation-grant
+phase executed by the existing `NEON_MIGRATION_DATABASE_URL` / exact
+`vico_forum_migrator` identity.
+
+Before changing repository files, the requested production preconditions were checked for
+technical observability.
+
+Exact repository target remains:
+
+`main = 4cef0297bb41ff3a18ee0ad82315aef940146596`.
+
+The requested script contract says that, before relation GRANTs, the migrator-connected script
+must verify the existing web role is passwordless in addition to checking its safe attributes and
+automatic owner membership.
+
+That passwordless check cannot be implemented truthfully under the accepted migrator identity:
+
+1. PostgreSQL 17 `pg_roles` is deliberately a public-safe view of `pg_authid`; its
+   `rolpassword` column does not expose password presence and is defined by PostgreSQL source as
+   the unconditional literal `'********'::text`.
+2. `pg_authid.rolpassword` is authoritative and is NULL when the role has no password, but
+   `pg_authid` is intentionally not publicly readable because it contains password verifiers.
+3. `pg_shadow.passwd` is likewise protected and not a public inspection path.
+4. Read-only production privilege inquiry confirmed:
+   - `vico_forum_migrator` SELECT on `pg_catalog.pg_roles` = true;
+   - SELECT on `pg_catalog.pg_authid` = false;
+   - SELECT on `pg_catalog.pg_shadow` = false.
+
+Official PostgreSQL 17 references checked:
+- https://www.postgresql.org/docs/17/view-pg-roles.html
+- https://www.postgresql.org/docs/17/catalog-pg-authid.html
+- https://www.postgresql.org/docs/17/view-pg-shadow.html
+- PostgreSQL REL_17_STABLE `src/backend/catalog/system_views.sql`, where `pg_roles` defines
+  `'********'::text as rolpassword`.
+
+Other requested checks are technically implementable with the migrator credential:
+- exact `current_user = vico_forum_migrator`;
+- target role existence and safe non-password role attributes from `pg_roles`;
+- exact automatic owner membership from `pg_auth_members`;
+- database/schema owner-phase ACL prerequisites;
+- exact ownership of all relations derived from `runtimeCapabilityContracts.web`;
+- transactionally derived exact relation GRANT SQL;
+- shared end-state snapshot + `assertRuntimeCapabilityPrivilegeContract`;
+- rollback on any failure.
+
+But silently treating `pg_roles.rolpassword` as a passwordless proof would be false, and adding
+new privileges such as SELECT on `pg_authid`, changing memberships/ownership, or inventing a new
+credential/control-plane channel would violate the reviewed Stage 6 boundary.
+
+No implementation branch/PR was created and no external mutation was performed.
+
+This is a current Stage 6 provisioning-mechanism blocker, not future hardening. Codex must choose
+and review one explicit replacement for the unobservable passwordless assertion (for example,
+making passwordlessness an owner-phase evidence/confirmation invariant while the migrator script
+checks all DB-observable prerequisites) before a mergeable relation-grant workflow can honestly
+satisfy its contract.
