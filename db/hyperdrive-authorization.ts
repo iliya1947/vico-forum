@@ -1,4 +1,4 @@
-import { Pool } from "pg";
+import type { Pool } from "pg";
 import { isPostgresAvailabilityFailure } from "../app/localization/persistent-registry";
 import {
   AuthorizationService,
@@ -7,19 +7,17 @@ import {
 } from "./authorization-service";
 import { PostgresAuthorizationRepository } from "./authorization-repository";
 import {
+  createWebPool,
   isPostgresConnectionTimeout,
   isPostgresQueryTimeout,
 } from "./postgres-deadlines";
 
 type AuthorizationPoolFactory = (connectionString: string) => Pool;
 
-const defaultPoolFactory: AuthorizationPoolFactory = (connectionString) =>
-  new Pool({ connectionString, max: 1 });
-
 /** Creates a request-local resolver and cache; PostgreSQL remains authoritative. */
 export function createHyperdriveAuthorization(
   connectionString: string,
-  createPool: AuthorizationPoolFactory = defaultPoolFactory,
+  createPool: AuthorizationPoolFactory = createWebPool,
 ): AuthorizationManagementCapability {
   const cache = new Map<string, ReturnType<PostgresAuthorizationRepository["resolveUser"]>>();
 
