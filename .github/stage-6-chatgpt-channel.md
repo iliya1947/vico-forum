@@ -1245,3 +1245,347 @@ OAuth/bootstrap or Queue/provider operation was performed by this PR.
 Next review-cycle action is a neutral independent whole-PR review by Codex of PR #136. Per the
 technical-agreement protocol, any ChatGPT-only possible review observations remain unshared until
 that independent Codex review is complete.
+
+
+### Post-migration repository-only runtime capability audit — 2026-09-27
+
+Последнее обновление Codex service PR #121 проверено на head
+`05437b396217b8cd3e73b7ee6ccaff205e37d370`. Current GitHub `main` после merge PR #136 —
+exact `61b9e809cb39d2f554bf052e00d0bf6f0f66ec53`.
+
+Scope этой подзадачи ограничен repository-only audit. Код/config/dependencies не менялись,
+Neon/Cloudflare/OAuth/Queue/provider/deploy mutations не выполнялись.
+
+#### Проверенные source-of-truth и external contracts
+
+Сверены текущие `PROJECT.md`, `PROJECT_STATE.md`, `ROADMAP.md`,
+`docs/database/MIGRATIONS.md`, `docs/database/HYPERDRIVE.md`,
+`docs/auth/AUTHORIZATION.md`, translation contracts и production DB/runtime entrypoints.
+
+Актуальные primary contracts дополнительно проверены:
+- PostgreSQL 17 privileges:
+  https://www.postgresql.org/docs/17/ddl-priv.html
+- PostgreSQL 17 trigger contract:
+  https://www.postgresql.org/docs/17/sql-createtrigger.html
+- Cloudflare Hyperdrive binding / caching / pooling:
+  https://developers.cloudflare.com/hyperdrive/get-started/
+  https://developers.cloudflare.com/hyperdrive/concepts/query-caching/
+  https://developers.cloudflare.com/hyperdrive/concepts/connection-pooling/
+- Cloudflare Worker Previews:
+  https://developers.cloudflare.com/workers/previews/
+  https://developers.cloudflare.com/workers/previews/configuration/
+- Better Auth pinned `1.7.4` release/source and Drizzle adapter:
+  https://github.com/better-auth/better-auth/releases/tag/v1.7.4
+  source tag `v1.7.4`, `packages/drizzle-adapter/src/drizzle-adapter.ts`.
+
+Relevant verified platform facts:
+- PostgreSQL row-locking `SELECT ... FOR UPDATE/SHARE` requires `SELECT` plus `UPDATE`
+  privilege on at least one column of the locked relation.
+- Target `0020` schema has no sequences. No runtime sequence `USAGE` grant is required by the
+  checked-in schema.
+- Hyperdrive supports multiple bindings/configurations; reads requiring fresh auth/session/
+  permission/read-after-write state should use cache-disabled Hyperdrive.
+- current Worker Previews require Wrangler >= `4.135.0`; project is pinned to `4.130.0`.
+- Queue consumers cannot target Worker Previews under the current Cloudflare Preview model.
+
+#### 1. Actual repository runtime topology
+
+Current `wrangler.jsonc` contains exactly one DB binding:
+`HYPERDRIVE -> aa1fb9feeff44a23ae12d88eefceb942`.
+
+`workers/app.ts` has only a `fetch` handler. It currently passes the same
+`env.HYPERDRIVE.connectionString` into:
+- Better Auth;
+- forum reader/writer;
+- authorization resolver/management;
+- locale registry/UI translation reads;
+- persisted content-translation reads;
+- content-generation status reader.
+
+The Worker does **not** currently expose a Queue consumer or scheduled reconciliation handler, and
+Wrangler contains no Queue producer/consumer binding.
+
+Authenticated content generation is also explicitly disabled in production composition through
+`DISABLED_CONTENT_GENERATION_ACTION_RUNTIME`. Therefore task planning/enqueue writes and
+generation-status polling are not part of the currently executable Worker request path.
+
+Existing Stage 6 control-plane evidence remains:
+- production `HYPERDRIVE` connects through `vico_forum_runtime`;
+- that role is localization read-only;
+- Hyperdrive is cache-disabled;
+- Preview Base has no connected production DB binding;
+- native Cloudflare Git auto-deploy for active `main` is disabled.
+
+Conclusion from repository + recorded control-plane evidence: current `main` cannot be deployed
+as a real forum/auth candidate while all DB adapters continue to use the existing single
+localization-only credential. A new runtime binding boundary is required before deployed forum/auth
+smoke.
+
+#### 2. Exact current request-path DB capability matrix
+
+This matrix describes the **currently executable fetch path with generation still disabled**.
+
+##### Existing localization capability — unchanged
+
+| Operation | Relations | Required table privileges |
+| --- | --- | --- |
+| locale registry read | `locales` | SELECT |
+| persisted UI translation read | `ui_translations` | SELECT |
+| persisted UI bundle read | `ui_translation_bundles` | SELECT |
+
+Existing role invariants remain: LOGIN; `public` USAGE only; no schema/database CREATE; no
+ownership/memberships/grant options; no unrelated relation privileges.
+
+##### New web capability required for forum/auth deployment
+
+**Better Auth `1.7.4` domain**
+
+The configured adapter schema contains exactly
+`user`, `session`, `account`, `verification`, `rate_limit`.
+The pinned Drizzle adapter implements generic create/find/update/delete/consume operations and
+database rate limiting uses the configured `rate_limit` model. For the library-owned
+`/api/auth/*` boundary the practical domain-level ACL is:
+
+| Relations | Privileges |
+| --- | --- |
+| `user`, `session`, `account`, `verification`, `rate_limit` | SELECT, INSERT, UPDATE, DELETE |
+
+This is intentionally a Better-Auth-domain grant rather than an unverified endpoint-by-endpoint
+subset.
+
+**Forum domain**
+
+| Operation | Relations | Privileges |
+| --- | --- | --- |
+| public hierarchy/topic reads | `forum_categories`, `forum_sections` | SELECT |
+| topic/reply/solution current-state read/write | `forum_topics`, `forum_posts` | SELECT, INSERT, UPDATE |
+| immutable title/body revision read/create | `forum_topic_title_revisions`, `forum_post_revisions` | SELECT, INSERT |
+| forum per-author cooldown mutex | `user` | SELECT + UPDATE required by `FOR UPDATE` |
+| persisted content presentation | `forum_topic_title_translations`, `forum_post_body_translations` | SELECT |
+
+No current Worker route requires forum DELETE/TRUNCATE/REFERENCES/TRIGGER privilege.
+Repository methods that create categories/sections exist, but no current Worker action exposes
+them; runtime INSERT on those tables is therefore not required by the present request path.
+
+**Dynamic authorization domain**
+
+| Relation | Current repository operations | Privileges |
+| --- | --- | --- |
+| `authz_roles` | read/create/rename/delete custom role | SELECT, INSERT, UPDATE, DELETE |
+| `authz_role_permissions` | read/replace grants | SELECT, INSERT, DELETE |
+| `authz_user_roles` | read/upsert assignment | SELECT, INSERT, UPDATE |
+| `authz_user_permission_overrides` | read/upsert/delete override | SELECT, INSERT, UPDATE, DELETE |
+| `authz_mutation_lock` | lock/read/update bootstrap marker | SELECT, UPDATE |
+| `user` | resolve/list users and count managers | SELECT |
+| `authz_permissions` | no direct current repository query | **no direct runtime table grant required** |
+
+The `authz_mutation_lock FOR UPDATE` requirement is already covered by UPDATE.
+The `authz_protect_role_identity` trigger introduces no additional relation access beyond
+`authz_roles`.
+
+**Correction to the earlier provisional web matrix in this service channel:** direct SELECT on
+`authz_permissions` is not used by current authorization code; the permission universe is
+code-backed. Also, task/status relations do not belong in the immediate web ACL while content
+generation remains disabled.
+
+#### 3. Generation-planning capability if/when the current request action is enabled
+
+This is implemented code but **not currently wired** in the production Worker. If Stage 6 later
+enables the existing request-side planner, the web capability must additionally gain:
+
+| Relation | Required privileges / reason |
+| --- | --- |
+| `translation_tasks` | SELECT, INSERT, UPDATE |
+| `translation_task_generation_heads` | SELECT, INSERT, UPDATE; generation head is row-locked |
+| `content_topic_title_translation_tasks` | SELECT, INSERT |
+| `content_post_body_translation_tasks` | SELECT, INSERT |
+| `content_translation_request_budget_counters` | SELECT, INSERT, UPDATE |
+| `forum_topics`, `forum_posts` | SELECT + UPDATE because planners lock current rows |
+| `forum_topic_title_revisions`, `forum_post_revisions` | SELECT + UPDATE because planners lock revisions |
+| `forum_topic_title_translations`, `forum_post_body_translations` | SELECT + UPDATE because current translation rows are read `FOR UPDATE` |
+
+This is a material privilege expansion. It should not be granted as part of the immediate
+forum/auth runtime provisioning while generation is still disabled.
+
+The deferred content-binding trigger on `translation_tasks` reads the matching content task
+metadata at transaction commit, so content task DML also relies on SELECT access to the
+corresponding metadata table.
+
+#### 4. Background translation execution/publication capability
+
+The code exists in repository/local-CI but there is currently no deployed Queue consumer. A future
+background execution role, if one role serves UI + content jobs, needs the union below.
+
+**Task lifecycle / allowance / retry**
+- `translation_tasks`: SELECT, UPDATE;
+- `translation_task_generation_heads`: SELECT + UPDATE because generation rows are locked;
+- `content_topic_title_translation_tasks`,
+  `content_post_body_translation_tasks`: SELECT.
+
+**UI translation publication**
+- `ui_translations`: SELECT, INSERT, UPDATE;
+- `ui_translation_bundles`: INSERT, UPDATE;
+- `translation_tasks`: UPDATE;
+- `translation_task_generation_heads`: SELECT + UPDATE for namespace/head locking.
+
+**Topic-title content execution/publication**
+- `forum_topics`: SELECT + UPDATE for current-row lock;
+- `forum_topic_title_revisions`: SELECT + UPDATE for `FOR SHARE`;
+- `forum_topic_title_translations`: SELECT, INSERT, UPDATE;
+- title task metadata + task/head tables as above.
+
+**Post-body content execution/publication**
+- `forum_posts`: SELECT + UPDATE for current-row lock;
+- `forum_post_revisions`: SELECT + UPDATE for `FOR SHARE`;
+- `forum_post_body_translations`: SELECT, INSERT, UPDATE;
+- post task metadata + task/head tables as above.
+
+The UPDATE privilege on immutable revision relations is required by PostgreSQL row-lock semantics,
+not because application code updates revision content. Existing immutable-revision triggers still
+reject actual UPDATE statements. This coupling must be represented honestly in the privilege
+contract if the current locking design is kept.
+
+No checked-in runtime path requires sequence grants. No application query directly invokes custom
+stored functions. Trigger functions are existing schema objects and no runtime role needs
+TRIGGER/CREATE privilege.
+
+#### 5. Reconciliation / maintenance capability
+
+Current reconciliation code uses durable task state:
+- `translation_tasks`: SELECT, UPDATE for reserve/recovery/observability.
+
+Request-budget cleanup additionally requires:
+- `content_translation_request_budget_counters`: SELECT, UPDATE (row-lock requirement), DELETE.
+
+Whether this maintenance path shares the background translation role or receives a smaller
+separate role is an operational architecture choice; repository contracts do not currently decide
+it.
+
+Local `db:reconcile-ui-bundles` is explicitly disposable-`*_test` tooling and is not a
+production runtime capability.
+
+#### 6. Trigger side effects relevant to grants
+
+Current `0020` manifest has these correctness-critical trigger classes:
+- immutable forum revision UPDATE rejection;
+- authorization built-in role identity protection;
+- deferred content-task metadata binding checks;
+- metadata-delete cleanup of matching translation task.
+
+For currently planned operations:
+- authz role UPDATE/DELETE fires only role-identity validation;
+- content task INSERT/UPDATE fires deferred metadata-binding validation and therefore needs metadata
+  SELECT;
+- current runtime paths do not DELETE content task metadata, so the metadata-delete trigger's
+  internal task DELETE does not add an immediate DELETE grant requirement;
+- revision content is never updated by application logic, but row-locking still forces UPDATE
+  privilege for future translation planning/execution roles.
+
+#### 7. Runtime role/binding design options
+
+These are audit-derived options, **not yet an architecture decision**.
+
+**Option A — smallest meaningful pre-release split**
+- keep existing localization read-only role/binding unchanged;
+- add one cache-disabled **web runtime** role/binding for Better Auth + forum + authorization +
+  persisted content presentation;
+- keep generation disabled;
+- add a separate **background translation** role/binding only when Queue/provider wiring is actually
+  implemented; reconciliation may initially share that background role.
+
+This requires only one new DB/Hyperdrive capability for the next forum/auth rollout and preserves a
+real execution-boundary split between HTTP request handling and later background translation work.
+
+**Option B — finer request-side split**
+- separate Better Auth from forum/authorization, optionally split authorization again;
+- bind multiple cache-disabled Hyperdrive configurations to the same Worker.
+
+This narrows accidental cross-domain SQL access, but all bindings still exist in the same Worker
+deployment and each Hyperdrive configuration maintains its own origin pool (current Cloudflare
+minimum is 5 origin connections per config). The extra role/config count therefore has real
+operational cost/complexity and does not isolate a full Worker compromise.
+
+**Option C — one broad role for request + background**
+- simplest ACL count but gives the public request Worker translation task/publication privileges
+  before that execution path is needed.
+- This removes the meaningful HTTP-vs-background boundary and is not required by current code.
+
+The repository does not force a choice between A and B. The strongest current architectural
+boundary is HTTP Worker vs future background worker; more granular splitting inside the same HTTP
+Worker is an explicit complexity/security trade-off for Codex/user decision.
+
+#### 8. Hyperdrive caching and binding consequences
+
+Auth/session/permissions, task lifecycle, locks and read-after-write flows require fresh reads.
+Current Cloudflare documentation explicitly recommends a cache-disabled Hyperdrive configuration
+for authentication, sessions, permissions and read-after-write state.
+
+Therefore any new web/background write-capable Hyperdrive candidate must be cache-disabled unless a
+specific stale-tolerant read path is intentionally separated.
+
+Multiple Hyperdrive bindings are supported. Binding names should express capability rather than
+reuse one generic `HYPERDRIVE`; exact names and environment-specific role names are not chosen by
+this audit.
+
+#### 9. Preview/private-data boundary
+
+Repository state:
+- current `wrangler.jsonc` has only top-level production `HYPERDRIVE`;
+- no repository `previews` block;
+- pinned Wrangler is `4.130.0`;
+- recorded control-plane preflight says Preview Base has no connected production DB binding and
+  native Git auto-deploy is disabled.
+
+Therefore there is **no currently evidenced Preview access to production private DB data**.
+
+Before enabling write-capable previews, one of these must be chosen:
+- keep preview DB capabilities disabled; or
+- upgrade Wrangler to a version supporting current Worker Previews (current docs require >=
+  `4.135.0`) and configure Preview-specific safe resources/bindings, never production DB
+  credentials.
+
+Cloudflare currently does not support Queue consumers targeting Worker Previews. Real background
+Queue acceptance therefore needs either an isolated non-production Worker/Queue topology or no
+Preview consumer path; this choice belongs to the later Queue Stage 6 task.
+
+#### 10. Repository verifier/test changes needed before external provisioning
+
+Current `production-privileges.mjs` models one localization `runtimeRole` and asserts exactly
+three SELECT grants. It cannot yet prove the future multi-capability runtime topology.
+
+A reviewed provisioning-prep PR should, before any Neon role/grant creation:
+
+1. represent named runtime **capability contracts** separately from environment-specific role names;
+2. make privilege snapshot/contract code accept multiple runtime roles and exact per-role ACL sets;
+3. assert for every runtime role:
+   - LOGIN as intended;
+   - no SUPERUSER/CREATEDB/CREATEROLE/REPLICATION/BYPASSRLS;
+   - no memberships or object ownership;
+   - public schema USAGE only, no CREATE;
+   - no database CREATE;
+   - no grant options;
+   - no unexpected relation/column/sequence/function grants;
+4. retain exact PUBLIC/default-ACL protections;
+5. in disposable PostgreSQL 17 CI, create test roles, apply the proposed GRANT matrix and
+   execute representative positive probes under each role, including the actual
+   `FOR UPDATE/SHARE` statements that require UPDATE;
+6. add negative probes proving forbidden cross-domain writes, DELETEs and DDL fail;
+7. keep this runtime-capability verifier separate from the already completed schema migration
+   workflow so a future schema migration does not depend on already provisioned runtime roles;
+8. after external provisioning, run the same contract read-only against production before Worker
+   deployment.
+
+No reason was found to grant runtime roles schema CREATE, ownership, migration capability,
+sequence privileges, TRIGGER or REFERENCES.
+
+#### Audit conclusion / next technical decision
+
+The immediate runtime provisioning boundary can be limited to **forum/auth web execution while
+content generation remains disabled**. Translation task/planning/background write privileges are
+not prerequisites for that first deployed forum/auth candidate.
+
+The main technical choice Codex now needs to resolve is whether the first web runtime capability is
+one domain-bounded role (Option A) or split further inside the same Worker (Option B), plus the
+exact repository verifier representation for that choice.
+
+No external mutation or mergeable implementation PR was created by this audit.
