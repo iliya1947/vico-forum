@@ -4127,3 +4127,31 @@ Still unresolved by tool access:
 
 No mergeable PR should be created from these findings until Codex independently reviews the
 completed preflight and either confirms the proposal or records a technical disagreement.
+
+
+### Cloudflare Gate 0 — evidence 1: native Git Builds integration is disconnected
+
+Fresh owner-provided Cloudflare dashboard evidence was reviewed for Worker `vico-forum` on the
+Production settings screen.
+
+Observed safely from the screenshot:
+
+- Worker: `vico-forum`;
+- environment tab shown: `Production`;
+- Settings → Builds section shows `Git repository` with action `Connect`;
+- therefore no Git repository is currently connected to native Cloudflare Workers Builds for this
+  Worker/environment;
+- no automatic GitHub `main` build/deploy path is currently established through native Workers
+  Builds;
+- no setting was changed while collecting this evidence.
+
+This confirms the repository source-of-truth statement that native Cloudflare Git integration is
+disabled today, eliminating the risk that merely merging the upcoming repository wiring-preparation
+PR would automatically promote it through native Workers Builds.
+
+The same screenshot also shows the `Previews Base` runtime tab exists, but it does **not** by
+itself prove whether previews are enabled for external traffic or which bindings/secrets/resources
+they receive. That remains unresolved.
+
+Next read-only Cloudflare evidence needed: inspect `Previews Base` and its Bindings/resource
+configuration without changing settings.
