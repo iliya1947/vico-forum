@@ -151,24 +151,50 @@ production role grants или external catalog acceptance для ещё не в�
 ## Runtime privilege model
 
 Runtime capabilities разделяются по реальной ответственности и principle of least privilege.
-Не следует автоматически расширять существующий localization runtime role на forum/auth writes.
+Existing localization role не расширяется на forum/auth writes.
 
-Текущий localization role остаётся read-only для:
+После schema-first acceptance `0000`–`0020` reviewed repository contract разделяет две HTTP
+capabilities:
 
-```text
-public.locales
-public.ui_translations
-public.ui_translation_bundles
-```
+- `localization-read`: только `SELECT` на `locales`, `ui_translations`,
+  `ui_translation_bundles`;
+- `web`: Better Auth CRUD, forum read/write, dynamic authorization management и persisted
+  forum-content presentation reads по exact ACL matrix из `HYPERDRIVE.md`.
 
-Forum/auth/translation write-capabilities проектируются по фактическим query patterns ближе к
-Stage 6 external integration. До этого их correctness проверяется на development/test DB без
-преждевременного provisioning production roles.
+При текущем Worker composition content-generation action остаётся disabled, поэтому web role не
+получает task/generation-head/request-budget/UI-translation write capabilities. Background
+translation execution/publication и maintenance остаются отдельной будущей Stage 6 execution
+boundary.
 
-Production role names остаются environment-specific и не hard-code-ятся в portable migrations.
+Production role names environment-specific и не hard-code-ятся в migrations. Repository verifier
+получает existing localization role через `RUNTIME_DATABASE_ROLE`, а будущую web role — через
+`WEB_RUNTIME_DATABASE_ROLE`.
 
-Runtime-role deadline defaults — operational role configuration, не portable schema. Existing
-localization defaults/acceptance описаны в `HYPERDRIVE.md`.
+Runtime privilege acceptance отделена от production migration workflow:
+
+1. PR CI проверяет named capability contract unit tests;
+2. disposable PostgreSQL 17 получает exact proposed grants и выполняет representative positive
+   queries/row-locks плюс negative cross-domain, DELETE и DDL probes;
+3. после отдельного external provisioning manual main-only
+   `Production runtime privilege verification` read-only проверяет exact roles/ACLs в target DB;
+4. только после successful privilege evidence может рассматриваться Worker wiring/deployment.
+
+Runtime verifier требует для обоих roles LOGIN + effective database `CONNECT`, отсутствие
+dangerous attributes, inherited memberships/ownership, `public.USAGE` без `CREATE`, отсутствие
+database `CREATE`, grant
+options, column/sequence/direct-function privileges и unexpected default/PUBLIC grants. PUBLIC
+default boundary сохраняет только уже принятую hard-wired-equivalent function `EXECUTE` / type
+`USAGE` semantics; runtime roles default grants не получают. Existing managed database-owner
+inbound admin control допускается только в уже принятой non-inheriting /
+non-SET форме.
+
+Этот repository contract **не** означает, что web PostgreSQL role, grants или Hyperdrive binding
+уже созданы. Migration workflow намеренно не требует ещё не provisioned web role, поэтому будущая
+schema migration остаётся независимой от runtime provisioning.
+
+Runtime-role deadline defaults и exact new Hyperdrive binding name/ID — operational runtime-wiring
+configuration, не portable schema. Existing localization defaults/acceptance и reviewed web matrix
+описаны в `HYPERDRIVE.md`.
 
 ## Migration → runtime evidence
 
