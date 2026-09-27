@@ -93,14 +93,20 @@ tables, request-budget counters либо UI localization tables.
   только в той же non-inheriting/non-SET форме, которую уже принимает production DB contract;
 - no schema/table/sequence/view ownership;
 - `public.USAGE` без `CREATE`;
-- no database `CREATE`;
+- complete database ACL snapshot по `CONNECT` / `CREATE` / `TEMPORARY`: runtime role может
+  иметь только optional direct non-grantable `CONNECT`; direct `TEMPORARY`, `CREATE`, grant
+  option или иная database capability запрещены;
+- `PUBLIC` database ACL допускает только hard-wired-equivalent non-grantable
+  `CONNECT` / `TEMPORARY` либо их отсутствие; `CREATE` и grant options запрещены;
 - no grant options, column ACL, sequence grants или direct function grants;
 - никаких custom default grants runtime roles; для `PUBLIC` сохраняется только уже принятая
   hard-wired-equivalent function `EXECUTE` / type `USAGE` default semantics, без
   relation/sequence/schema defaults.
 
 Repository verifier:
-- `.github/scripts/runtime-privileges.mjs` хранит named capability contracts;
+- `.github/scripts/runtime-privileges.mjs` хранит named capability contracts и читает полный
+  database ACL через `aclexplode(COALESCE(datacl, acldefault('d', datdba)))`, поэтому default
+  `datacl IS NULL` и explicit runtime grants проверяются одной fail-closed границей;
 - `.github/scripts/verify-runtime-privilege-probes.mjs` применяет exact grants к disposable
   PostgreSQL 17 и выполняет positive/negative SQL probes;
 - manual main-only `Production runtime privilege verification` после отдельного external

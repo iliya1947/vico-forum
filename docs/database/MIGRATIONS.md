@@ -180,9 +180,13 @@ Runtime privilege acceptance отделена от production migration workflow
 4. только после successful privilege evidence может рассматриваться Worker wiring/deployment.
 
 Runtime verifier требует для обоих roles LOGIN + effective database `CONNECT`, отсутствие
-dangerous attributes, inherited memberships/ownership, `public.USAGE` без `CREATE`, отсутствие
-database `CREATE`, grant
-options, column/sequence/direct-function privileges и unexpected default/PUBLIC grants. PUBLIC
+dangerous attributes, inherited memberships/ownership, `public.USAGE` без `CREATE` и полный
+database ACL contract. Runtime role допускает только optional direct non-grantable `CONNECT`;
+direct `TEMPORARY`, `CREATE`, grant options и иные database privileges rejected. `PUBLIC`
+допускает только hard-wired-equivalent non-grantable `CONNECT` / `TEMPORARY` либо их отсутствие;
+`CREATE`, grant options и иные database privileges rejected. Snapshot сохраняет safe
+`datacl IS NULL` semantics через PostgreSQL `acldefault('d', datdba)`. Также запрещены
+unexpected column/sequence/direct-function privileges и unexpected default/PUBLIC grants. PUBLIC
 default boundary сохраняет только уже принятую hard-wired-equivalent function `EXECUTE` / type
 `USAGE` semantics; runtime roles default grants не получают. Existing managed database-owner
 inbound admin control допускается только в уже принятой non-inheriting /

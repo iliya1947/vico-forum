@@ -49,10 +49,11 @@ Vico Forum находится в ранней pre-release разработке.
   database именно для application owner/migrator и запрещает database `CREATE` для localization
   runtime и `PUBLIC`; bounded identity/capability gate подтверждён external execution.
 - Stage 6 runtime provisioning-preparation contract разделяет existing `localization-read` и
-  отдельную future `web` capability. Repository содержит verifier/CI path для exact proposed ACL
-  на disposable PostgreSQL 17, но external web PostgreSQL role, grants, Hyperdrive binding и
-  Worker wiring ещё не выполнены. Content-generation runtime остаётся disabled и не входит в
-  web ACL.
+  отдельную future `web` capability. Repository verifier покрывает exact relation/schema ACL и
+  полный database ACL boundary для `CONNECT` / `CREATE` / `TEMPORARY`, включая grant options
+  и safe `datacl IS NULL` defaults; disposable PostgreSQL 17 CI path проверяет proposed grants.
+  External web PostgreSQL role, grants, Hyperdrive binding и Worker wiring ещё не выполнены.
+  Content-generation runtime остаётся disabled и не входит в web ACL.
 - Обычная feature-разработка и её CI остаются отделены от external rollout; merge в `main` сам по
   себе не является deployment/acceptance evidence.
 
@@ -381,7 +382,7 @@ runtime roles/Hyperdrive writes и другие schema-dependent runtime capabil
 
 ## Ближайший маршрут
 
-1. Провести независимую проверку и merge reviewed runtime privilege provisioning-preparation PR.
+1. Провести независимую проверку и merge corrective runtime database-ACL verifier PR.
 2. После merge Codex заново сверяет актуальный `main` и определяет отдельный bounded external
    provisioning scope для web PostgreSQL role/grants; до явного разрешения external mutation не
    выполнять.

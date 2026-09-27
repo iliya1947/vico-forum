@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   assertRuntimeCapabilityPrivilegeContract,
+  readRuntimeCapabilityPrivilegeSnapshot,
   runtimeCapabilityContracts,
 } from "./runtime-privileges.mjs";
 
@@ -47,7 +48,20 @@ function fixture() {
       },
     ],
     databaseOwnerRole: "database_owner",
-    databaseCreatePrivileges: [],
+    databasePrivileges: [
+      {
+        grantee: "PUBLIC",
+        grantor: "database_owner",
+        privilege: "CONNECT",
+        is_grantable: false,
+      },
+      {
+        grantee: "PUBLIC",
+        grantor: "database_owner",
+        privilege: "TEMPORARY",
+        is_grantable: false,
+      },
+    ],
     effectiveDatabaseConnect: [
       { role: roles.localizationRole, has_connect: true },
       { role: roles.webRole, has_connect: true },
@@ -133,6 +147,45 @@ test("requires effective database CONNECT for both runtime roles", () => {
   }
 });
 
+test("accepts optional direct non-grantable runtime database CONNECT", () => {
+  const candidate = fixture();
+  candidate.databasePrivileges.push({
+    grantee: roles.webRole,
+    grantor: "database_owner",
+    privilege: "CONNECT",
+    is_grantable: false,
+  });
+  assert.doesNotThrow(() =>
+    assertRuntimeCapabilityPrivilegeContract(candidate, roles)
+  );
+});
+
+test("rejects unexpected or grantable runtime database ACL", () => {
+  const grantableConnect = fixture();
+  grantableConnect.databasePrivileges.push({
+    grantee: roles.webRole,
+    grantor: "database_owner",
+    privilege: "CONNECT",
+    is_grantable: true,
+  });
+  assert.throws(
+    () => assertRuntimeCapabilityPrivilegeContract(grantableConnect, roles),
+    /Unexpected direct database privileges/,
+  );
+
+  const temporary = fixture();
+  temporary.databasePrivileges.push({
+    grantee: roles.localizationRole,
+    grantor: "database_owner",
+    privilege: "TEMPORARY",
+    is_grantable: false,
+  });
+  assert.throws(
+    () => assertRuntimeCapabilityPrivilegeContract(temporary, roles),
+    /Unexpected direct database privileges/,
+  );
+});
+
 test("rejects dangerous attributes, database ownership and CREATE", () => {
   const dangerous = fixture();
   dangerous.roles.find(({ rolname }) => rolname === roles.webRole).rolbypassrls = true;
@@ -157,25 +210,15 @@ test("rejects dangerous attributes, database ownership and CREATE", () => {
   );
 
   const directCreate = fixture();
-  directCreate.databaseCreatePrivileges.push({
+  directCreate.databasePrivileges.push({
     grantee: roles.webRole,
     grantor: "database_owner",
+    privilege: "CREATE",
     is_grantable: false,
   });
   assert.throws(
     () => assertRuntimeCapabilityPrivilegeContract(directCreate, roles),
-    /must not have direct database CREATE/,
-  );
-
-  const publicCreate = fixture();
-  publicCreate.databaseCreatePrivileges.push({
-    grantee: "PUBLIC",
-    grantor: "database_owner",
-    is_grantable: false,
-  });
-  assert.throws(
-    () => assertRuntimeCapabilityPrivilegeContract(publicCreate, roles),
-    /PUBLIC must not have database CREATE/,
+    /Unexpected direct database privileges/,
   );
 });
 
@@ -414,6 +457,64 @@ test("allows PUBLIC schema USAGE to be absent", () => {
   assert.doesNotThrow(() =>
     assertRuntimeCapabilityPrivilegeContract(candidate, roles)
   );
+});
+
+test("allows hard-wired-equivalent PUBLIC database ACL or its absence", () => {
+  assert.doesNotThrow(() =>
+    assertRuntimeCapabilityPrivilegeContract(fixture(), roles)
+  );
+
+  const absent = fixture();
+  absent.databasePrivileges = [];
+  assert.doesNotThrow(() =>
+    assertRuntimeCapabilityPrivilegeContract(absent, roles)
+  );
+});
+
+test("rejects unsafe PUBLIC database ACL", () => {
+  for (const privilege of [
+    { privilege: "CONNECT", is_grantable: true },
+    { privilege: "TEMPORARY", is_grantable: true },
+    { privilege: "CREATE", is_grantable: false },
+    { privilege: "EXECUTE", is_grantable: false },
+  ]) {
+    const candidate = fixture();
+    candidate.databasePrivileges.push({
+      grantee: "PUBLIC",
+      grantor: "database_owner",
+      ...privilege,
+    });
+    assert.throws(
+      () => assertRuntimeCapabilityPrivilegeContract(candidate, roles),
+      /Unexpected PUBLIC database privileges/,
+    );
+  }
+});
+
+test("snapshot database ACL query preserves datacl NULL fallback and all privilege types", async () => {
+  const queries = [];
+  const client = {
+    async query(sql) {
+      queries.push(sql);
+      return { rows: [] };
+    },
+  };
+
+  const snapshot = await readRuntimeCapabilityPrivilegeSnapshot(client, roles);
+  assert.deepEqual(snapshot.databasePrivileges, []);
+
+  const databaseAclQuery = queries.find(
+    (sql) =>
+      sql.includes("FROM pg_catalog.pg_database database")
+      && sql.includes("pg_catalog.aclexplode"),
+  );
+  assert.ok(databaseAclQuery, "Expected runtime database ACL snapshot query");
+  assert.match(
+    databaseAclQuery,
+    /COALESCE\(database\.datacl, pg_catalog\.acldefault\('d', database\.datdba\)\)/,
+  );
+  assert.doesNotMatch(databaseAclQuery, /acl\.privilege_type\s*=\s*'CREATE'/);
+  assert.match(databaseAclQuery, /acl\.privilege_type AS privilege/);
 });
 
 test("rejects unexpected PUBLIC privileges", () => {
