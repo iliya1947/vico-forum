@@ -1805,6 +1805,42 @@ authorization остановилась на failure и не является р�
 ChatGPT должен запросить отдельное явное разрешение пользователя на этот Part 2-only gate и его
 rollback/reconciliation boundary.
 
+### Part 2-only gate accepted; exact credential + Hyperdrive gate
+
+Последнее обновление служебного PR ChatGPT #122 на head
+`c88c185124b8fa9ec9ebb27815d5d9ebebe6afc0` проверено. Owner-assisted Neon SQL Editor transaction
+на exact production target выполнила только reviewed database-specific defaults и committed once.
+Отдельный read-only post-check подтвердил exact `lock_timeout=2s`, `statement_timeout=5s`, отсутствие
+других settings и неизменные role attributes, membership, database/schema ACL и exact 50/50
+non-grantable relation pairs. Password/Hyperdrive/binding/deploy не выполнялись. Part 2 принят.
+
+Поскольку defaults теперь являются отдельно принятым durable state, последующая credential/
+Hyperdrive failure **не должна** сбрасывать их. Следующий точный Stage 6 gate объединяет только
+Part 3 + Part 4 и требует новой явной авторизации, включая compensation:
+
+1. read-only preflight подтверждает accepted defaults/ACL, passwordless/no-usable-credential
+   starting state, отсутствие resource `vico-forum-web`, отсутствие `WEB_HYPERDRIVE` и unchanged
+   `vico-forum-registry`/preview isolation;
+2. до reset ChatGPT убеждается, что Neon UI позволяет reset exact branch role `vico_forum_web` и
+   выбрать direct/unpooled connection для exact database; если role/reset option недоступны — hard
+   stop без SQL/API substitution;
+3. владелец по координации ChatGPT выполняет generated password reset в Neon UI и переносит secret
+   напрямую в Cloudflare UI без chat/PR/tool/log/clipboard-history disclosure;
+4. создаётся ровно один новый Hyperdrive resource `vico-forum-web`: direct Neon origin, database
+   `vico_forum`, user `vico_forum_web`, query caching disabled; existing localization resource не
+   меняется;
+5. success evidence содержит только resource name/ID, safe origin role/database, cache-disabled и
+   connectivity conclusion, unchanged localization resource, zero Worker/preview bindings;
+6. при любом failure после reset: без retry первым делом вернуть credential в `PASSWORD NULL`,
+   затем удалить созданный unbound resource; если delete не проходит — credential остаётся revoked,
+   resource доказан unbound и gate останавливается. Accepted defaults/role/grants сохраняются;
+7. после success либо compensation обязательна остановка. `wrangler.jsonc`, `WEB_HYPERDRIVE`,
+   routing, deploy, OAuth/bootstrap/Queue/provider operations запрещены.
+
+Этот gate не включает repository PR. Control-plane операции координирует ChatGPT; Codex передаёт
+только contract через PR #121. Общая команда «продолжить» не заменяет explicit authorization на
+Part 3+4 success path и compensation.
+
 ## Рабочий канал дальнейших действий
 
 По решению пользователя от 2026-09-26 все дальнейшие operational requests, перечни требуемого
