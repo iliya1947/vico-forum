@@ -1135,6 +1135,38 @@ missing/excess grant или ослаблять merged exact ACL по сообщ�
 После получения exact diagnostic evidence Codex определит один общий corrective cycle. Все
 предыдущие one-shot authorizations consumed; production runtime verifier не запускать.
 
+### Relation ACL diagnosis reviewed; rollback-only production diagnostic required
+
+Последнее обновление служебного PR ChatGPT #122 на head
+`c2b9b48b9a0edbb3af54762c4f85ae204be311c7` проверено. Static comparison подтвердил полное
+совпадение merged contract, operational GRANT list и custom expected CTE: по 50 normalized pairs,
+missing=0, excess=0. Existing repository PostgreSQL 17 probe прошёл, но он не исполняет exact
+grouped production SQL + custom `EXCEPT` assertion. Actual in-transaction rows третьего attempt
+не были сохранены, поэтому root cause доказанно не установлен.
+
+Нельзя разрешать ещё один commit attempt или менять repository contract без observed catalog diff.
+Следующий safe step — одна явно разрешённая **rollback-only diagnostic transaction** в том же
+production-like Neon target. Она не является provisioning retry и не может commit.
+
+Diagnostic contract:
+
+1. повторить read-only preflight: exact `main`, owner/session/database, role absent, existing
+   localization/PUBLIC ACL unchanged;
+2. `BEGIN`, выполнить exact third-attempt `CREATE ROLE` + grouped GRANT SQL без custom assertions;
+3. прочитать actual rows тем же catalog query, а также shared-verifier shape
+   `schema.name.kind.privilege.grantable`, и вычислить structured arrays `missing`, `excess`,
+   `grantable`, включая grantor/grantee/kind в diagnostic payload;
+4. завершить transaction намеренным exception с компактным JSON payload либо явным `ROLLBACK`
+   после гарантированного возврата payload; **COMMIT запрещён при любом результате**;
+5. post-check подтвердить отсутствие `vico_forum_web` и неизменность permanent ACL;
+6. не устанавливать GitHub variable, не dispatch-ить verifier и не выполнять Hyperdrive/password/
+   Worker/deploy/OAuth/Queue/provider operations;
+7. записать exact diagnostic payload и SQL в PR #122 без connection data/secrets.
+
+Только после этого Codex классифицирует production-specific catalog behavior либо assertion bug и
+определит один проверяемый corrective path. Эта запись сама diagnostic transaction не выполняет и
+требует нового явного user authorization.
+
 ## Рабочий канал дальнейших действий
 
 По решению пользователя от 2026-09-26 все дальнейшие operational requests, перечни требуемого
