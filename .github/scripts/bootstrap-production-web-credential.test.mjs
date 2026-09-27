@@ -71,6 +71,11 @@ function preflightFixture() {
       version_num: 170000,
       server_encoding: "UTF8",
       log_parameter_max_length_on_error: 0,
+      log_statement: "none",
+      log_duration: false,
+      log_min_duration_statement: -1,
+      log_min_duration_sample: -1,
+      log_transaction_sample_rate: 0,
       scram_iterations: 4096,
     },
     roleRows: [
@@ -105,6 +110,16 @@ test("rejects wrong owner identity before any credential mutation", () => {
   assert.throws(
     () => assertBootstrapPreflight(candidate),
     /execute as exact vico_forum_owner/,
+  );
+});
+
+
+test("rejects statement logging that could expose a verifier", () => {
+  const candidate = preflightFixture();
+  candidate.server.log_statement = "ddl";
+  assert.throws(
+    () => assertBootstrapPreflight(candidate),
+    /Statement logging must be disabled/,
   );
 });
 
