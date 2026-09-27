@@ -1581,6 +1581,52 @@ mergeable wiring-preparation PR, password/deadline changes, Hyperdrive provision
 и deploy. Технические details остаются в PR #121; дальнейшую control-plane координацию выполняет
 ChatGPT и записывает sanitized evidence в PR #122.
 
+### Cloudflare Gate 0 accepted; первый repository preparation PR
+
+Последнее обновление служебного PR ChatGPT #122 на head
+`2de409dc74b8d0e2d8218f00c2b65d2f8c33e364` проверено. Owner-provided read-only Cloudflare UI
+evidence образует согласованный полный snapshot:
+
+- native Git Builds disconnected, поэтому merge в `main` не является automatic deployment;
+- active production Worker остаётся на старом accepted commit и 100% traffic, что соответствует
+  намеренному lag до Stage 6 rollout;
+- Production имеет только `HYPERDRIVE -> vico-forum-registry`; origin role exact
+  `vico_forum_runtime`, database `vico_forum`, query caching disabled;
+- Previews Base имеет zero bindings и zero runtime variables/secrets;
+- production и preview `workers.dev` URLs enabled, но custom domains/routes отсутствуют;
+- никакие Cloudflare settings не изменялись.
+
+Evidence согласуется с checked-in topology и ранее зафиксированным external state. Preview URL сам
+по себе не является defect: при zero bindings/secrets он не получает production private/write
+capability. Gate 0 принят; перед будущим deploy topology всё равно перепроверяется как mutable
+control-plane state.
+
+ChatGPT может создать первый mergeable **repository-only preparation PR** из exact current `main`.
+Обязательный scope:
+
+1. синхронизировать `PROJECT_STATE.md`, `PROJECT_HISTORY.md` и database runbooks с принятыми фактами:
+   web role/grants/protected variable/runtime verifier готовы; credential, role defaults, new
+   Hyperdrive, binding/routing и deploy ещё отсутствуют;
+2. добавить единый reusable web PostgreSQL client/pool configuration boundary с caller deadlines
+   `connectionTimeoutMillis=3000` и `query_timeout=7000`; Better Auth, forum и authorization
+   factories должны использовать одну definition, без session `SET` и без server defaults в code;
+3. оставить external server defaults `lock_timeout=2s`, `statement_timeout=5s` только planned
+   contract в docs, не выполнять DB mutation и не объявлять calibration accepted;
+4. убрать production Worker injection Hyperdrive-backed generation-status reader, пока generation
+   action disabled: при ошибочном вызове path должен fail closed через отсутствующую capability, а
+   не обращаться к task tables под localization/web role; ACL не расширять;
+5. добавить focused unit/source contract tests для exact web client options, использования shared
+   factory всеми тремя adapter families и dormant generation-status boundary;
+6. сохранить текущий один binding `HYPERDRIVE`, его ID и local override без изменений; не добавлять
+   `WEB_HYPERDRIVE`, placeholder ID или second local override до создания real resource;
+7. не менять public/domain contracts, dependencies, migrations, runtime ACL matrix, provider/Queue/
+   OAuth/bootstrap scope; не выполнять Cloudflare/Neon/GitHub mutations или deploy.
+
+CI gate: lint, typecheck, tests, build, database suite и existing single-binding Workers smoke.
+После создания PR ChatGPT записывает base/head, полный diff scope и CI status в PR #122; Codex
+выполнит независимую полную проверку до merge. Credential/role-default/Hyperdrive choreography до
+merge и post-merge сверки запрещена.
+
 ## Рабочий канал дальнейших действий
 
 По решению пользователя от 2026-09-26 все дальнейшие operational requests, перечни требуемого
