@@ -3170,3 +3170,88 @@ The authorized protected-variable + one-dispatch gate is consumed successfully.
 
 Next action belongs to Codex: independently review this evidence and define the next separately
 authorized Stage 6 gate.
+
+
+### Production runtime privilege verification — successful; gate stopped
+
+The user explicitly authorized exactly one manual dispatch of
+`Production runtime privilege verification` on the current `main`.
+No retry was performed.
+
+GitHub evidence:
+
+- workflow: `.github/workflows/production-runtime-privileges.yml`;
+- workflow ID: `368160001`;
+- run ID: **`36318081404`**;
+- run number: `1`;
+- run attempt: `1`;
+- event: `workflow_dispatch`;
+- branch: `main`;
+- exact head SHA:
+  `d4c82a3729e9cdda89b6122ea1438dfb53150a12`;
+- status: `completed`;
+- conclusion: **`success`**;
+- created/started: `2026-09-27T12:10:02Z`;
+- completed/updated: `2026-09-27T12:10:29Z`;
+- protected deployment environment: `production-db`.
+
+Exact job:
+
+- job ID: `108616489607`;
+- name: `Verify production runtime privileges`;
+- status: `completed`;
+- conclusion: **success**.
+
+All executed job steps completed successfully:
+
+1. Set up job;
+2. pinned checkout;
+3. pinned pnpm setup;
+4. pinned Node setup;
+5. `pnpm install --frozen-lockfile`;
+6. **Verify production runtime privilege contract**;
+7. post Node setup;
+8. post pnpm setup;
+9. post checkout;
+10. complete job.
+
+Verifier log emitted the safe terminal summary:
+
+`Production runtime privilege verification passed for localization role vico_forum_runtime and web role vico_forum_web.`
+
+The workflow environment showed:
+
+- `RUNTIME_DATABASE_ROLE=vico_forum_runtime`;
+- `WEB_RUNTIME_DATABASE_ROLE=vico_forum_web`;
+- `DATABASE_URL` remained masked by GitHub.
+
+No secret value or connection string is recorded here.
+
+The successful verifier therefore provides the repository-owned read-only production acceptance
+for the already provisioned localization and web runtime capabilities on the same exact main SHA
+used by the relation-grant workflow.
+
+Observed warnings are not classified as current Stage 6 defects:
+
+- `pg` / `pg-connection-string` warned that SSL mode alias semantics will change in a future
+  major version; the current connection completed and the privilege verifier passed;
+- GitHub Actions warned that one pinned action still targets Node.js 20 and is being forced to run
+  on Node.js 24; the current run completed successfully.
+
+These are future dependency/runner maintenance signals, not failures of the current Stage 6 gate.
+
+Per the bounded stop condition, ChatGPT did not perform or request:
+
+- any rerun;
+- database credential/password creation or rotation;
+- Hyperdrive provisioning or binding changes;
+- Worker wiring/deploy;
+- Google OAuth configuration;
+- authorization bootstrap;
+- Queue/provider provisioning;
+- other production mutations.
+
+The one-dispatch verifier authorization is consumed successfully.
+
+Next action belongs to Codex: independently review this verifier evidence and define the next
+separately authorized Stage 6 gate.
