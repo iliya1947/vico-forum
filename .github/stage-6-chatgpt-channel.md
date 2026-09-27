@@ -3255,3 +3255,138 @@ The one-dispatch verifier authorization is consumed successfully.
 
 Next action belongs to Codex: independently review this verifier evidence and define the next
 separately authorized Stage 6 gate.
+
+
+### Runtime-wiring preflight — subtask 1/5: Worker DB adapter capability map
+
+Codex requested a bounded read-only runtime-wiring preflight after successful production runtime
+privilege verification. Per project decomposition rules, this entry records only subtask 1:
+current Worker composition and capability routing. No Cloudflare topology check, official
+Wrangler/Hyperdrive research, deadline selection, repository PR, credential mutation or deploy was
+performed yet.
+
+Exact repository target:
+
+`main = d4c82a3729e9cdda89b6122ea1438dfb53150a12`.
+
+#### Current composition
+
+`workers/app.ts` currently obtains exactly one database connection string:
+
+```ts
+const connectionString = env.HYPERDRIVE.connectionString;
+```
+
+That single connection is currently passed to every request-side PostgreSQL adapter:
+
+- Better Auth runtime;
+- forum reader;
+- forum writer;
+- locale registry loader;
+- persistent UI translation store/bundle reader;
+- persisted content-translation presentation reader;
+- dynamic authorization capability;
+- content-generation status reader.
+
+`wrangler.jsonc` likewise exposes only one binding, `HYPERDRIVE`.
+
+This is still the pre-wiring repository composition. It must not be interpreted as evidence that
+the newly accepted web role is already connected to the Worker.
+
+#### Exact capability routing derived from current queries
+
+**Keep on accepted `localization-read` capability / existing `HYPERDRIVE`:**
+
+1. `createHyperdriveRegistryLoader`
+   - reads `locales`;
+   - fits the accepted localization-only relation set.
+
+2. `createHyperdriveUiTranslationStore`
+   - reads `ui_translations` and `ui_translation_bundles`;
+   - fits the accepted localization-only relation set.
+
+**Route to the accepted cache-disabled `web` capability in the future wiring step:**
+
+3. `createHyperdriveAuthRuntime`
+   - Better Auth schema is exactly
+     `user`, `session`, `account`, `verification`, `rate_limit`;
+   - accepted web ACL has SELECT/INSERT/UPDATE/DELETE on all five.
+
+4. `createHyperdriveForumReader` / `createHyperdriveForumWriter`
+   - current repository operations use
+     `forum_categories`, `forum_sections`, `forum_topics`, `forum_posts`,
+     `forum_topic_title_revisions`, `forum_post_revisions`, and Better Auth `user`;
+   - current reads/writes match the reviewed web matrix;
+   - the existing per-author cooldown mutex performs `SELECT ... FOR UPDATE` on `user`, matching
+     the already reviewed reason for web `user.UPDATE`.
+
+5. `createHyperdriveAuthorization`
+   - current repository queries use `user`,
+     `authz_roles`, `authz_role_permissions`, `authz_user_roles`,
+     `authz_user_permission_overrides`, `authz_mutation_lock`;
+   - it does not query the deliberately excluded `authz_permissions` table;
+   - its SELECT/INSERT/UPDATE/DELETE operations match the accepted web ACL exactly.
+
+6. `createHyperdriveContentTranslationBatchReader` used by
+   `ContentTranslationPresentationService`
+   - request-side presentation reads only
+     `forum_topic_title_translations` and `forum_post_body_translations`;
+   - those two relations are explicitly SELECT-only in the accepted web capability;
+   - therefore persisted forum-content **presentation belongs to web**, not to localization-read.
+
+#### Adapter that cannot be assigned to either accepted HTTP capability
+
+7. `createHyperdriveContentGenerationStatusReader`
+
+Its SQL reads all of:
+
+- `translation_task_generation_heads`;
+- `translation_tasks`;
+- `content_topic_title_translation_tasks`;
+- `content_post_body_translation_tasks`.
+
+These relations are intentionally absent from both accepted runtime capability matrices. In
+particular, `docs/database/HYPERDRIVE.md` explicitly says the current web capability must not
+receive translation task/generation-head grants while content generation remains disabled.
+
+Current main is nevertheless safe from an actual status-table query:
+
+- Worker composition sets
+  `contentGenerationActionContext = DISABLED_CONTENT_GENERATION_ACTION_RUNTIME`;
+- `app/routes/topic.tsx` computes
+  `canGenerateTranslations = permission && contentGenerationActionForRequest(context).enabled`;
+- the status reader is called only inside `if (canGenerateTranslations)`;
+- with the current Worker composition that condition is always false.
+
+Therefore the status adapter is **injected but operationally dormant**: it receives the current
+connection string object, but no PostgreSQL client/query is created through it on the current
+disabled-generation request path.
+
+#### Stage classification
+
+No defect was found in the already accepted localization/web ACL matrices.
+
+The current one-binding Worker composition is also not classified as a regression in an already
+accepted web deployment: web Worker wiring has not happened yet and Stage 6 is explicitly at the
+runtime-wiring boundary.
+
+There is, however, one **current Stage 6 wiring requirement/blocker**:
+
+- the upcoming wiring-preparation change must split localization adapters from web adapters;
+- it must **not** simply route `contentGenerationStatusReader` to the new web binding, because the
+  web role correctly lacks its four task/generation relations;
+- while content generation remains disabled, the wiring must preserve a state in which this
+  status path cannot perform DB access under either accepted HTTP runtime role;
+- widening the web ACL with task/generation tables merely to satisfy the dormant adapter would
+  contradict the reviewed capability contract.
+
+The exact code shape for preserving the disabled status path is intentionally not selected in this
+audit; that belongs to the later reviewed repository wiring-preparation design.
+
+Deadline/client-factory behavior is deliberately deferred to preflight subtask 4/5 rather than
+mixed into this capability-routing result.
+
+No external mutation and no repository implementation PR was created.
+
+Next preflight subtask after explicit user continuation: read-only Cloudflare Worker/Build branch,
+preview topology, existing `HYPERDRIVE` binding and caching-state verification.
