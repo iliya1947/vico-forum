@@ -1428,6 +1428,35 @@ preflight. Evidence согласуется с merged contract:
 
 До нового явного разрешения protected variable mutation и workflow dispatch запрещены.
 
+### GitHub control-plane execution blocker; owner action required
+
+Последнее обновление служебного PR ChatGPT #122 на head
+`3e09bab1340cd1fa51a7a25f9bb8268fce62b494` проверено. ChatGPT корректно сверил exact `main`,
+merged workflow и accepted owner-phase intermediate state, затем остановился до mutation:
+доступный connector умеет читать/rerun существующие Actions runs, но не умеет создавать Environment
+variables или новый `workflow_dispatch`. GET-only fallback не является допустимым write path.
+
+Независимая проверка текущей Codex environment дала тот же результат: GitHub write token отсутствует;
+public API подтверждает, что workflow ID `368254678` в
+`.github/workflows/production-web-relation-provision.yml` активен. Repository redesign, rerun старого
+workflow или ослабление protected Environment ради ограничения инструментов запрещены. Это
+control-plane limitation, а не defect repository contract.
+
+Авторизованный gate не начат и authorization не consumed: variable не изменена, workflow не
+dispatch-ился, Neon mutation/cleanup и последующие runtime operations отсутствуют. Единственный
+доступный безопасный execution path — две owner-controlled GitHub UI/API операции пользователя:
+
+1. в Environment `production-db` создать/update variable exact
+   `WEB_RUNTIME_DATABASE_ROLE=vico_forum_web`, не меняя secrets или другие variables;
+2. из Actions на exact `main` `d4c82a3729e9cdda89b6122ea1438dfb53150a12` один раз запустить
+   `Provision production web relation grants` с exact input
+   `owner_phase_confirmation=owner-phase-password-null-confirmed`;
+3. не запускать повторно при failure и не запускать runtime verifier/Hyperdrive/Worker/deploy;
+4. после terminal conclusion передать ChatGPT только короткий запрос проверить run и записать
+   evidence в PR #122; при failure ChatGPT выполняет уже авторизованный compensating cleanup и
+   фиксирует доказательство role/ACL absence. Секреты, URL подключения и значения secret fields не
+   передавать. Автоматический retry и ad-hoc correction запрещены.
+
 ## Рабочий канал дальнейших действий
 
 По решению пользователя от 2026-09-26 все дальнейшие operational requests, перечни требуемого
