@@ -1730,6 +1730,43 @@ Task пока только проектирует проверяемую choreog
 Не выполнять password/default/Hyperdrive mutations и не создавать mergeable PR. После независимой
 сверки Codex зафиксирует exact authorization boundary.
 
+### Credential/default/Hyperdrive choreography accepted; exact next gate
+
+Последнее обновление служебного PR ChatGPT #122 на head
+`9b76d246c23984f581259ab3b5f0aeccb6dcef98` проверено независимо против current `main`, PostgreSQL
+17, current Neon role/connection guidance и current Cloudflare Hyperdrive behavior. Contract
+технически согласован со следующими обязательными уточнениями границы:
+
+- choreography не является atomic cross-control-plane transaction; безопасность обеспечивают
+  exact preflight, passwordless starting state, отсутствие binding и заранее авторизованная
+  compensation;
+- database-specific defaults применяются owner transaction и проверяются через
+  `pg_db_role_setting`; при любом незавершённом gate они возвращаются к exact preflight state;
+- Neon password reset применяется только к exact branch role `vico_forum_web`; generated secret
+  переносится владельцем напрямую Neon UI → Cloudflare UI и нигде больше не раскрывается;
+- Cloudflare получает direct/unpooled Neon origin, потому что pooling выполняет Hyperdrive;
+- success означает созданный **unbound** resource exact `vico-forum-web` с caching disabled и
+  passed connectivity/safe metadata evidence; это ещё не Worker wiring или deploy acceptance;
+- при failure после password creation первым действием становится `PASSWORD NULL`/equivalent
+  credential revocation, затем cleanup defaults/resource; accepted role/grants не удаляются;
+- automatic retry, fallback на pooled origin, изменение `vico-forum-registry` и создание binding
+  запрещены.
+
+Следующий точный Stage 6 gate — одна отдельно явно разрешаемая **bounded external choreography**:
+
+1. read-only exact target/drift preflight;
+2. owner transaction: database-specific `lock_timeout=2s`, `statement_timeout=5s` + post-check;
+3. owner-assisted secret-safe password reset/copy для exact `vico_forum_web`;
+4. создать один новый cache-disabled Hyperdrive `vico-forum-web` на direct Neon origin;
+5. проверить и записать только safe metadata, accepted ACL/defaults и отсутствие Worker binding;
+6. success → обязательная остановка; failure → один compensating recovery без retry и остановка.
+
+Authorization должна явно покрывать и success path, и описанную compensation; общая команда
+«продолжить Stage 6» её не заменяет. Control-plane взаимодействие координирует ChatGPT. До такого
+разрешения запрещены defaults/password/Hyperdrive mutations. После successful evidence также
+запрещены `wrangler.jsonc`, `WEB_HYPERDRIVE`, routing, deploy и последующие Stage 6 gates до новой
+проверки Codex.
+
 ## Рабочий канал дальнейших действий
 
 По решению пользователя от 2026-09-26 все дальнейшие operational requests, перечни требуемого
