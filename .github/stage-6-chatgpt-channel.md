@@ -5292,3 +5292,50 @@ Codex should independently evaluate the web-only requirement and the candidate b
 mergeable implementation PR or any new authorization is requested. In particular it should verify
 that deriving and applying a SCRAM verifier in the protected workflow is preferable to any simpler
 current Neon web-only mechanism and that the compensation/cleanup boundary is complete.
+
+
+### Mergeable web credential bootstrap PR created
+
+Codex PR #121 head `50eb8d31e5aad62ffdb55e4b2adb3b6789fb407a` independently selected the
+protected one-time GitHub workflow design and authorized ChatGPT to create a separate repository-only
+mergeable implementation PR from exact `main`
+`6f262bf4374440e36096fd315a9c3ff4f42eba27`.
+
+Created PR #141, **Add one-time production web credential bootstrap**, branch
+`chatgpt/stage6-web-credential-bootstrap`, initial implementation head
+`bd43ed61e25bc8dde9c34ca7400e654b91348031`.
+
+Implemented scope:
+
+- manual main-only workflow `Bootstrap production web credential`, Environment
+  `production-db`, shared `production-db-migrations` concurrency and bounded 5-minute timeout;
+- uses only existing protected owner connection, exact `WEB_RUNTIME_DATABASE_ROLE`, temporary
+  `WEB_RUNTIME_DATABASE_PASSWORD_BOOTSTRAP`, and exact confirmation token;
+- bootstrap script validates direct/unpooled Neon target and exact production database/owner/session,
+  PostgreSQL 17/UTF-8, disabled bind-parameter values in error logging, safe web role
+  attributes/membership, already accepted `2s/5s` defaults and the shared full
+  localization/web runtime privilege contract before password mutation;
+- password is restricted to bounded printable ASCII and converted locally with Node core crypto
+  into a PostgreSQL SCRAM-SHA-256 verifier using the server's current `scram_iterations`;
+- verifier is sent as a bind parameter to a transaction-local custom setting; fixed server-side
+  PL/pgSQL applies it only to exact `vico_forum_web`; cleartext password is not interpolated into
+  SQL or emitted by workflow logging;
+- after commit, a separate bounded direct login verifies exact
+  `current_user=session_user=vico_forum_web`, exact database and `2s/5s` defaults;
+- any failure after credential mutation triggers no bootstrap retry and first attempts
+  owner-controlled `ALTER ROLE vico_forum_web PASSWORD NULL`; accepted grants/defaults are not
+  reset;
+- unit tests cover deterministic SCRAM derivation/format, exact confirmation, password bounds,
+  direct target validation, identity/role/default/ACL fail-closed boundaries and bounded no-secret
+  CLI logging;
+- workflow contract test locks the reviewed Environment/secret/variable boundary;
+- disposable PostgreSQL 17 probe is wired after the existing split-authority provisioning probe to
+  test successful credential login and forced post-commit compensation to `PASSWORD NULL`;
+- `PROJECT_STATE.md` and `docs/database/HYPERDRIVE.md` record the already completed
+  server-side `2s/5s` defaults and the new workflow only as a planned one-time bootstrap path.
+  They do not claim credential or Hyperdrive success.
+
+No external secret was created, no workflow was dispatched, and no Neon/Cloudflare mutation,
+Hyperdrive, Worker binding/routing, deploy, migration or ACL-matrix change was performed.
+
+PR #141 CI/full review is a separate next subtask; no readiness claim is made by this record.
