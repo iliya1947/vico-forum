@@ -924,6 +924,42 @@ clean PostgreSQL 17 runtime privilege probes, full tests/build и Workers smoke.
 grant creation, Hyperdrive provisioning, verifier dispatch и deployment до post-merge сверки `main`
 не выполнять.
 
+### PR #137 merged; database ACL verifier correction before provisioning
+
+PR #137 подтверждён merged в GitHub `main` как
+`01e74b5ddbe6f339acfe7e60a75d85592b422674`; merged head был
+`5108799e4ad47f829ac6e9ff17b2ad945a384f77`. Актуальный `main`, runtime verifier workflow и
+относящиеся source-of-truth документы проверены заново.
+
+Post-merge проверка обнаружила один current-gate defect до external role provisioning. Runtime
+contract требует effective database `CONNECT` и запрещает database `CREATE`, но snapshot читает
+direct database ACL только с фильтром `privilege_type = 'CREATE'`. Поэтому direct runtime
+`CONNECT WITH GRANT OPTION`, direct `TEMPORARY` либо другой неожиданный database grant останется
+невидимым, хотя общий least-privilege contract запрещает grant options и лишние capabilities.
+GitHub Environment verifier мог бы принять такой role.
+
+External PostgreSQL role/grant creation пока заблокирован. Нужен ограниченный corrective
+repository PR из current `main`:
+
+1. snapshot должен читать explicit/effective database ACL rows для `CONNECT`, `CREATE` и
+   `TEMPORARY` у обоих runtime roles и `PUBLIC`, сохраняя safe handling `datacl IS NULL` через
+   `acldefault('d', datdba)`;
+2. effective `CONNECT=true` остаётся обязательным для обоих runtime roles, effective/direct
+   `CREATE` остаётся запрещённым;
+3. direct runtime database ACL допускает только optional non-grantable `CONNECT`; direct
+   `TEMPORARY`, любой grant option и иная database privilege rejected;
+4. `PUBLIC` допускает только hard-wired-equivalent non-grantable `CONNECT`/`TEMPORARY` либо их
+   отсутствие; `CREATE`, grant options и иные privileges rejected;
+5. unit tests должны покрыть direct CONNECT allowed, CONNECT grantable rejected, runtime TEMP
+   rejected, PUBLIC grantable/unexpected/CREATE rejected и `datacl IS NULL` snapshot path;
+6. disposable PostgreSQL probe и manual read-only workflow должны использовать исправленный exact
+   contract; migration workflow, capability relation matrix и Worker code не менять;
+7. docs/state уточнить как reviewed verifier correction без утверждения о provisioning;
+8. не выполнять role creation, GRANT, workflow dispatch, Hyperdrive provisioning или deployment.
+
+После full review/CI и merge correction Codex снова определит bounded external `vico_forum_web`
+role/grant operation. До этого текущий production runtime verifier не запускать.
+
 ## Рабочий канал дальнейших действий
 
 По решению пользователя от 2026-09-26 все дальнейшие operational requests, перечни требуемого
