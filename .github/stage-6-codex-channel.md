@@ -1882,6 +1882,62 @@ ChatGPT сначала проверяет tool prerequisites и координи
 передаёт пользователю команды напрямую. Общая команда «продолжить» не является authorization на
 пересобранный gate и compensation.
 
+### Web-only credential bootstrap: protected one-time workflow selected
+
+Последнее обновление служебного PR ChatGPT #122 на head
+`ef53fc42dfaf462d502719b622ad659b9855a237` проверено. Исторический migrator precedent уточнён
+корректно: он доказывает safe secret transfer и identity verification после появления credential,
+но не содержит воспроизводимого first-password bootstrap для SQL-created `PASSWORD NULL` role.
+
+Независимая оценка вариантов:
+
+- Neon Reset UI/API неприменимы к `authentication_method=no_login`/`PASSWORD NULL`;
+- role recreation/rename разрушает accepted OID-bound ownership/grants/defaults и может добавить
+  Neon-managed elevated memberships, поэтому отклонено;
+- local `psql \\password` технически secret-safe, но создаёт unverifiable local tool/owner-session
+  boundary и хуже воспроизводится для production evidence;
+- protected one-time GitHub workflow использует уже существующий `NEON_OWNER_DATABASE_URL`, exact
+  `main`, Environment/concurrency controls и позволяет автоматизировать assertions, login proof и
+  compensation без раскрытия password.
+
+Выбран последний вариант. До external credential mutation нужен отдельный mergeable
+**repository-only bootstrap PR** со scope:
+
+1. manual main-only workflow в `production-db`, shared `production-db-migrations` concurrency,
+   bounded timeout, pinned actions и exact confirmation token;
+2. inputs только existing owner secret `NEON_OWNER_DATABASE_URL`, protected variable
+   `WEB_RUNTIME_DATABASE_ROLE`, temporary secret `WEB_RUNTIME_DATABASE_PASSWORD_BOOTSTRAP`; secret
+   создаётся пользователем только после merge и не входит в PR;
+3. script fail closed проверяет exact owner/session/database, target role, accepted attributes,
+   membership, `2s/5s` defaults, full accepted ACL, direct/unpooled owner target и disabled
+   server bind-parameter-on-error logging before mutation;
+4. Node core crypto локально выводит valid PostgreSQL SCRAM-SHA-256 verifier из temporary secret;
+   cleartext и verifier никогда не логируются;
+5. verifier передаётся server-side без включения в logged SQL text: parameterized transaction-local
+   custom setting + fixed PL/pgSQL block выполняют dynamic `ALTER ROLE ... PASSWORD` для exact
+   constant role; interpolation secret/verifier в client SQL string запрещена;
+6. после commit script собирает web connection URL только in-memory из validated direct/unpooled
+   owner target + exact web role/password и выполняет bounded read-only login assertion
+   `current_user=vico_forum_web`, exact database/defaults;
+7. при post-commit/ambiguous failure owner path без retry устанавливает `PASSWORD NULL`, фиксирует
+   bounded compensation conclusion и завершает workflow failure; accepted defaults/grants не
+   сбрасываются;
+8. tests: pure SCRAM derivation/format, no-secret logging contract, wrong confirmation/identity/
+   precondition failures, disposable PostgreSQL 17 successful web login и forced post-commit
+   compensation; workflow contract test;
+9. docs/state называют path temporary planned bootstrap и не утверждают credential/Hyperdrive
+   success. Migrations, ACL matrix, dependencies, Worker/binding/routing не меняются.
+
+После independent review/merge: пользователь создаёт temporary secret из locally generated strong
+password, один раз dispatch-ит credential workflow, затем при success немедленно создаёт через
+ChatGPT-coordinated owner UI unbound cache-disabled Hyperdrive с тем же locally retained password.
+После accepted Hyperdrive evidence temporary GitHub secret удаляется, а workflow/script удаляются
+отдельным cleanup PR. До review/merge implementation PR никакие secrets или external mutations не
+выполнять.
+
+ChatGPT может создать mergeable repository-only bootstrap PR из current `main` и записать exact
+base/head/diff/CI evidence в PR #122. Предыдущий local-psql gate отменён.
+
 ## Рабочий канал дальнейших действий
 
 По решению пользователя от 2026-09-26 все дальнейшие operational requests, перечни требуемого
