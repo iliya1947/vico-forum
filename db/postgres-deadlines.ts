@@ -1,4 +1,4 @@
-import { Client } from "pg";
+import { Client, Pool, type ClientConfig } from "pg";
 
 /** Initial values; keep the server deadlines below the caller deadline and calibrate in staging. */
 export const LOCALIZATION_DB_DEADLINES = {
@@ -7,6 +7,30 @@ export const LOCALIZATION_DB_DEADLINES = {
   lockTimeoutMillis: 500,
   statementTimeoutMillis: 1_500,
 } as const;
+
+export const WEB_DB_DEADLINES = {
+  connectionTimeoutMillis: 3_000,
+  queryTimeoutMillis: 7_000,
+} as const;
+
+export function webPostgresConfig(connectionString: string): ClientConfig {
+  return {
+    connectionString,
+    connectionTimeoutMillis: WEB_DB_DEADLINES.connectionTimeoutMillis,
+    query_timeout: WEB_DB_DEADLINES.queryTimeoutMillis,
+  };
+}
+
+export function createWebClient(connectionString: string): Client {
+  return new Client(webPostgresConfig(connectionString));
+}
+
+export function createWebPool(connectionString: string): Pool {
+  return new Pool({
+    ...webPostgresConfig(connectionString),
+    max: 1,
+  });
+}
 
 export function createLocalizationClient(connectionString: string): Client {
   return new Client({
