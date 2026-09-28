@@ -6757,3 +6757,44 @@ The temporary Environment secret `WEB_RUNTIME_DATABASE_PASSWORD_RECOVERY_V2` mus
 as the final authorized compensation cleanup. The connected GitHub integration cannot mutate
 Environment secrets, so this deletion is an operator UI action. After deletion, execution stops
 for analysis; recovery-v2 is consumed and must not be retried.
+
+
+### Recovery-v2 commit failure analysis — 2026-09-28
+
+The failed one-shot recovery-v2 run produced a materially different failure from the earlier
+input-stage failure:
+
+- bounded result: `stage=commit reason=sqlstate_XX000 compensation=verified`;
+- all earlier mutation-path stages necessarily completed before the failure:
+  owner connect, transaction begin, preflight read/assert, verifier derivation,
+  `apply-verifier`, lease read and lease assertion;
+- the failure occurred specifically while executing `COMMIT`;
+- independent post-run catalog reconciliation confirms `PASSWORD NULL` and
+  `rolvaliduntil IS NULL`, corroborating `compensation=verified`.
+
+This exposes a real current-Stage gap in the previous evidence model. The rollback-only production
+probe proved that the SCRAM verifier + finite lease operation can be applied and inspected inside a
+transaction and then rolled back, but by construction it never exercised transaction commit.
+Therefore that probe could not prove that Neon accepts the same role-password mutation through the
+commit boundary.
+
+Historical operator evidence adds an important contrast:
+`vico_forum_migrator` successfully received its first password through a normal plaintext
+`ALTER ROLE ... PASSWORD ...` statement in Neon SQL Editor, whereas recovery-v2 sends a
+client-derived PostgreSQL SCRAM verifier as the password value and failed only at commit.
+
+PostgreSQL 17 itself supports pre-encrypted role passwords, so the failure cannot be attributed to
+core PostgreSQL syntax alone. Current Neon documentation also states that Neon applies its own
+password security/role-management behavior to SQL-created or SQL-updated roles. A plausible current
+hypothesis is therefore a Neon commit-time role/password hook or synchronization path that does not
+accept the precomputed verifier form used by recovery-v2. This is **not yet proven root cause**:
+Neon branch log query for the exact failure window returned no available log records, and the
+workflow intentionally suppresses raw server error text.
+
+The important confirmed conclusion is narrower and sufficient to stop redesign-by-guessing:
+the repository recovery design treated rollback-only verifier evidence as stronger than it was.
+Commit compatibility is now an unproven and in fact failed boundary. No further recovery mechanism
+should be selected until Codex independently reviews this exact failure, the historical successful
+migrator process, and the Neon/PostgreSQL password behavior.
+
+No retry, new credential mutation, Hyperdrive, binding/routing or deploy is authorized or performed.
