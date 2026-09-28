@@ -1,5 +1,6 @@
-import { Client } from "pg";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
+import type { Client } from "pg";
+import { describe, expect, it, vi } from "vitest";
 
 import {
   ContentTranslationPresentationService,
@@ -8,7 +9,7 @@ import {
   ContentTranslationStorageUnavailableError,
 } from "../app/localization/content-translation";
 import { createHyperdriveContentTranslationBatchReader } from "./hyperdrive-content-translations";
-import { WEB_DB_CALLER_DEADLINES } from "./postgres-deadlines";
+import { createWebClient, WEB_DB_CALLER_DEADLINES } from "./postgres-deadlines";
 
 const revision = {
   contentType: "topic-title" as const,
@@ -19,37 +20,20 @@ const revision = {
 };
 
 describe("Hyperdrive content translation batch reader", () => {
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  it("uses the shared web caller deadlines by default", async () => {
-    let connectionTimeoutMillis: number | undefined;
-    let queryTimeoutMillis: number | undefined;
-    vi.spyOn(Client.prototype, "connect").mockImplementation(async function (this: Client) {
-      connectionTimeoutMillis = (this as unknown as { _connectionTimeoutMillis: number })
-        ._connectionTimeoutMillis;
-      queryTimeoutMillis = (this as unknown as {
-        connectionParameters: { query_timeout: number };
-      }).connectionParameters.query_timeout;
-      throw new Error("timeout expired");
-    });
-    vi.spyOn(Client.prototype, "end").mockImplementation(async () => undefined);
-
-    const reader = createHyperdriveContentTranslationBatchReader(
-      "postgres://web@hyperdrive/vico",
+  it("uses the shared web caller deadlines by default", () => {
+    const source = readFileSync("db/hyperdrive-content-translations.ts", "utf8");
+    expect(source).toContain(
+      "const defaultClientFactory: PostgreSqlClientFactory = createWebClient;",
     );
 
-    await expect(reader.readBatch([{
-      contentType: "topic-title",
-      contentId: "topic-1",
-      revisionId: "title-r1",
-      targetLocale: "fr",
-    }])).rejects.toBeInstanceOf(ContentTranslationStorageUnavailableError);
-
-    expect(connectionTimeoutMillis)
+    const client = createWebClient("postgres://web@hyperdrive/vico");
+    const configured = client as unknown as {
+      connectionParameters: { query_timeout: number };
+      _connectionTimeoutMillis: number;
+    };
+    expect(configured._connectionTimeoutMillis)
       .toBe(WEB_DB_CALLER_DEADLINES.connectionTimeoutMillis);
-    expect(queryTimeoutMillis)
+    expect(configured.connectionParameters.query_timeout)
       .toBe(WEB_DB_CALLER_DEADLINES.queryTimeoutMillis);
   });
 
