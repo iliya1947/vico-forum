@@ -6926,3 +6926,58 @@ by this PR.
 
 Next step per Codex PR #121: Codex should fully review PR #145 against the current Stage 6 scope,
 source-of-truth documents and terminal CI before any merge or deployment decision.
+
+### PR #145 corrective cycle завершён — 2026-09-28
+
+Проверено последнее обновление служебного Codex PR #121 и подтверждённый corrective set для
+mergeable PR #145. Исправлены оба согласованных current-Stage дефекта:
+
+1. `createHyperdriveContentTranslationBatchReader` теперь по умолчанию использует shared
+   `createWebClient`, поэтому persisted content-presentation reads получают принятый web caller
+   profile `connectionTimeoutMillis=3000ms` / `query_timeout=7000ms`. Добавлен focused contract
+   test, связывающий default adapter с `createWebClient` и проверяющий exact
+   `WEB_DB_CALLER_DEADLINES`.
+2. `docs/database/MIGRATIONS.md` и `PROJECT_STATE.md` синхронизированы с уже принятым external
+   state: usable `vico_forum_web` credential и отдельный unbound cache-disabled
+   `vico-forum-web` Hyperdrive существуют; незавершёнными остаются merge repository wiring,
+   production Worker binding/routing/deploy и deployed acceptance.
+
+Оба соответствующих inline review threads PR #145 после исправлений помечены resolved.
+
+Финальная полная проверка PR #145 выполнена заново на exact state:
+
+- base/current `main`: `9b4d535221d0ecfa23c1209d34e43edc785a073a`;
+- final head: `9974b2090adf59ec3224a6fc5173a52b85e139c2`;
+- compare: 16 commits ahead, 0 behind, 11 changed files, +261/-80;
+- изменённые файлы: `.github/workflows/ci.yml`, `PROJECT_HISTORY.md`, `PROJECT_STATE.md`,
+  `db/hyperdrive-content-translations.test.ts`, `db/hyperdrive-content-translations.ts`,
+  `docs/database/HYPERDRIVE.md`, `docs/database/MIGRATIONS.md`, `workers/app.ts`,
+  `workers/database-bindings.test.ts`, `workers/database-bindings.ts`, `wrangler.jsonc`.
+
+Проверены весь итоговый diff, split-binding routing, fail-closed отсутствие cross-capability
+fallback, web/localization deadline separation, disabled content-generation DB capability,
+документация и отсутствие изменений migrations/dependencies/ACL matrix. Новых current-Stage
+дефектов или scope expansion не обнаружено.
+
+Terminal CI на exact final head:
+
+- workflow `CI`, run `36477873048`, run number `1229`: `success`;
+- job `checks` `109116089850`: `success`;
+- job `database` `109116089260`: `success`;
+- migration-history protection, lint, generated Worker typecheck, full unit tests, build,
+  migration metadata и Drizzle schema parity: `success`;
+- clean PostgreSQL 17 suite, production schema manifest, runtime privilege/provisioning/
+  credential probes, Workers build и split-Hyperdrive smoke: `success`.
+
+До final head два промежуточных corrective heads выявили PR-local lint defect в новом focused
+test (`@typescript-eslint/no-this-alias`); test был переписан, и terminal exact-head CI выше
+подтверждает исправление. Эти промежуточные failed runs не являются acceptance evidence.
+
+Итог ChatGPT re-review: PR #145 соответствует согласованному repository-only Stage 6 scope и на
+final exact head новых проблем не обнаружено. Никаких Cloudflare binding mutations, preview
+changes, deployment, credential rotation, database mutation или иных external operations в этом
+corrective cycle не выполнялось.
+
+Следующий шаг по регламенту: Codex должен независимо заново полностью проверить PR #145 на final
+head перед merge/deployment decision.
+
