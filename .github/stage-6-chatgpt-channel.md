@@ -6816,3 +6816,33 @@ Cleanup state is now complete for the failed recovery-v2 attempt:
 
 Per the current staged-work protocol, stop here before the next Stage 6 subtask. The next step
 requires a fresh explicit user `продолжай`.
+
+
+### Authorized exact precedent gate — 2026-09-28
+
+Owner explicitly authorized the next Stage 6 gate exactly as recorded in Codex PR #121:
+
+- repeat the already successful `vico_forum_migrator` precedent for `vico_forum_web`;
+- execute one plaintext mutation in Neon SQL Editor under exact `vico_forum_owner`:
+  `ALTER ROLE vico_forum_web PASSWORD '<fresh secret>';`;
+- obtain a fresh direct connection string for the exact production branch/database/role;
+- use that exact credential to create one unbound cache-disabled Hyperdrive
+  `vico-forum-web` and verify connectivity;
+- the owner explicitly accepts the cleartext SQL Editor history risk for this gate; delete the
+  history entry afterward if Neon UI supports it;
+- on any failure before accepted Hyperdrive, only proven compensation is authorized:
+  `ALTER ROLE vico_forum_web PASSWORD NULL`, delete any newly-created unbound Hyperdrive, then
+  stop without retry;
+- binding, routing, deployment and any other external mutations remain forbidden.
+
+Preflight immediately before the operator SQL step:
+
+- current `main` remains `9b4d535221d0ecfa23c1209d34e43edc785a073a`;
+- Codex PR #121 remains on head `7b867a01b200be21bbc1236b8655f7f1d923cf57`;
+- live production state is exact `current_user=session_user=vico_forum_owner`,
+  database `vico_forum`, target `vico_forum_web LOGIN=true`,
+  `PASSWORD NULL`, `rolvaliduntil IS NULL`.
+
+No mutation has been executed yet under this gate. Because the exact authorized path is Neon SQL
+Editor and the connected model tools do not operate that UI, the first mutation is an operator UI
+step. The secret must not be pasted into chat or service PR.
