@@ -6041,3 +6041,38 @@ No new recovery secret was created, no recovery workflow was dispatched, and no 
 Hyperdrive, binding/routing or deploy external operation was performed.
 
 Next process step is independent Codex review of PR #143 and its exact-head CI before merge.
+
+
+### PR #143 confirmed reconciliation-boundary correction
+
+Codex independent review on PR #121 head
+`934db0bd75fdcef67ed33322f6e8ff6b744fd6f2` confirmed one current-Stage blocker in PR #143:
+`allowNonNeon` was destructured but unused in
+`.github/scripts/recover-production-web-credential.mjs`, leaving reconciliation without its own
+direct-target assertion and causing the exact-head lint failure.
+
+Applied only the agreed narrow correction:
+
+- `reconcileCompensatedCredential()` now independently calls
+  `assertDirectOwnerTarget(ownerDatabaseUrl, { expectedDatabase, allowNonNeon })` before
+  candidate-login rejection checking or owner-client construction;
+- added a focused pure regression test proving default fail-closed rejection of a non-Neon
+  reconciliation owner target before any candidate-login/client access, and proving
+  `allowNonNeon: true` passes that exact target gate in the disposable/test path.
+
+Correction commits:
+
+- `2f09c39aa152265f2e52b516c484e8fa81e254f0` — reconciliation target assertion;
+- `f18adc156911853ac30035e2bfe3fa176ac70986` — regression test.
+
+Compared with previous PR #143 head
+`e4308ca958adbc2bd91ba288abb55074e8040cb1`, the correction changes exactly two files
+(+5 in implementation, +39 in test). No recovery stage mapping, mutation/lease/login semantics,
+compensation policy, workflow/one-shot guard, docs or external state was changed.
+
+PR #143 remains open and mergeable=true at head
+`f18adc156911853ac30035e2bfe3fa176ac70986`. Exact-head CI run `36405613838` has been queued;
+no green-CI claim is made yet.
+
+No recovery secret, workflow dispatch, credential mutation, Hyperdrive, finalization,
+binding/routing or deploy operation was performed.
