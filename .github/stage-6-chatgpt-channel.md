@@ -6718,3 +6718,42 @@ Immediate pre-execution verification:
 The connected GitHub integration still does not expose a fresh workflow-dispatch action, so the
 owner must perform the single manual dispatch in GitHub UI. No recovery-v2 dispatch or other
 external mutation has yet been performed in this execution window.
+
+
+### Recovery-v2 execution failed safely — 2026-09-28
+
+Authorized one-shot recovery-v2 was dispatched exactly once from unchanged `main`.
+
+Observed evidence:
+
+- workflow: `Recover production web credential v2`, ID `369157285`;
+- run ID: `36450964587`;
+- run number/attempt: `1/1`;
+- event: `workflow_dispatch`;
+- head SHA: `9b4d535221d0ecfa23c1209d34e43edc785a073a`;
+- pre-Environment guard job
+  `Require first recovery v2 dispatch and validated input evidence`: `success`;
+- recovery job `Recover production web credential v2`: `failure`;
+- bounded recovery evidence:
+  `WEB_CREDENTIAL_RECOVERY_V2 stage=commit reason=sqlstate_XX000 compensation=verified`.
+
+Per the reviewed recovery contract, no retry or second dispatch is permitted. Because recovery did
+not complete successfully, no Hyperdrive creation/finalization path was entered.
+
+Immediate live read-only production reconciliation after the failed run confirms exact safe state
+for `vico_forum_web`:
+
+- `LOGIN=true`;
+- `PASSWORD NULL`;
+- `rolvaliduntil IS NULL`;
+- no SUPERUSER / CREATEDB / CREATEROLE / REPLICATION / BYPASSRLS;
+- owner/session/database remain exact accepted production target.
+
+Therefore the workflow's bounded `compensation=verified` is corroborated by an independent
+post-run catalog check: no usable web credential remains. No `vico-forum-web` Hyperdrive was
+created by ChatGPT and no binding/routing/deploy occurred.
+
+The temporary Environment secret `WEB_RUNTIME_DATABASE_PASSWORD_RECOVERY_V2` must now be deleted
+as the final authorized compensation cleanup. The connected GitHub integration cannot mutate
+Environment secrets, so this deletion is an operator UI action. After deletion, execution stops
+for analysis; recovery-v2 is consumed and must not be retried.
