@@ -2429,6 +2429,49 @@ mutation. После его результата Codex отдельно опре
 всем success/compensation choreography. До этого запрещены recovery secret creation, dispatch,
 credential mutation, Hyperdrive, finalization, binding/routing и deploy.
 
+### Recovery readiness preflight partially complete; operator-assisted read-only gate
+
+Последнее обновление служебного PR ChatGPT #122 проверено на head
+`e798d25785bd0960ccc4c69a724735e5ba81d333`. Независимо повторно подтверждены current `main`
+`63e9a7ae4d5c6ef196f0bede93ae7f9f7deab1b0`, active recovery workflow ID `369003053` и zero
+runs. Official Cloudflare docs по-прежнему подтверждают отдельное создание PostgreSQL Hyperdrive
+configuration и возможность отключить query caching; это platform capability, не evidence
+конкретного account state.
+
+Принято sanitized live read-only DB evidence из PR #122: exact owner/database, PG17/logging/SCRAM,
+`vico_forum_web` safe attributes/membership, `PASSWORD NULL`, `rolvaliduntil IS NULL`, exact
+`2s/5s` defaults и localization/web ACL contract проходят; repository не содержит
+`WEB_HYPERDRIVE`. Эти факты закрывают repository/database часть readiness.
+
+Общий readiness gate пока **не закрыт**, потому что available connector не мог независимо видеть:
+
+- current absence `production-db / WEB_RUNTIME_DATABASE_PASSWORD_RECOVERY` secret;
+- current Cloudflare account state: отсутствие уже созданного `vico-forum-web`, неизменность
+  existing localization Hyperdrive и preview/production bindings/routes;
+- фактическую готовность пользователя и ChatGPT пройти без перерыва всё 30-minute success/cleanup
+  окно.
+
+Следующий gate остаётся read-only и operator-assisted через ChatGPT. Пользователь должен в UI,
+не создавая и не меняя ресурсы:
+
+1. открыть GitHub `production-db` Environment secrets и подтвердить только имя/отсутствие
+   `WEB_RUNTIME_DATABASE_PASSWORD_RECOVERY`; значения secrets не раскрывать и список других имён
+   не копировать;
+2. открыть Cloudflare Hyperdrive/Worker settings и подтвердить отсутствие configuration
+   `vico-forum-web` и binding `WEB_HYPERDRIVE`, наличие только принятого localization
+   `HYPERDRIVE -> vico-forum-registry`, disabled caching для него и отсутствие preview bindings/
+   secrets; ничего не создавать и не редактировать;
+3. подтвердить, что Neon SQL Editor owner path и Cloudflare Create Configuration UI доступны, но
+   не выполнять SQL и не нажимать create/save;
+4. отдельно подтвердить возможность выделить непрерывное окно минимум 30 минут для будущего gate
+   с immediate compensation/cleanup, не начиная его;
+5. ChatGPT записывает только sanitized yes/no evidence в PR #122 и останавливается.
+
+Только после этого Codex сможет сформировать единое explicit authorization сообщение для
+secret → one-shot recovery → evidence → cache-disabled unbound Hyperdrive → owner finalization
+или compensation → secret/resource cleanup. Текущий gate не разрешает secret creation, dispatch,
+credential mutation, Hyperdrive creation, SQL finalization, binding/routing или deploy.
+
 ## Рабочий канал дальнейших действий
 
 По решению пользователя от 2026-09-26 все дальнейшие operational requests, перечни требуемого
