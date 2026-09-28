@@ -6394,3 +6394,76 @@ dispatched, and no production/Cloudflare/Neon external mutation was performed.
 
 Next process step is Codex independent full review of PR #144 exact head and task scope before any
 merge or future external validation/recovery authorization.
+
+
+### Migrator/web credential precondition comparison — 2026-09-28
+
+Checked current `main` `9b4d535221d0ecfa23c1209d34e43edc785a073a`, current Neon
+production target and the historical Stage 6 service-channel evidence for the successful
+`vico_forum_migrator` credential recovery.
+
+Important correction to the immediately preceding chat handoff: the accessible retained evidence
+does **not** prove the exact Neon UI label/operator sequence used to install the migrator's first
+password. It proves the before/after state and successful read-only login, but the specific claim
+that the historical action was exactly `Roles -> Change password` is not sufficiently evidenced
+by the retained source. That UI label must not be treated as recovered fact.
+
+What is proved about the migrator precedent:
+
+- before the successful credential, Neon control-plane evidence had reported
+  `authentication_method=no_login` while PostgreSQL catalog reported `rolcanlogin=true`;
+- the first two read-only identity attempts failed because the connection string supplied through
+  `NEON_MIGRATION_DATABASE_URL` had no password;
+- without recreating the role or changing its ownership/grants, the existing role subsequently
+  acquired a password-bearing credential;
+- the Environment secret was replaced with a fresh password-bearing connection string for exact
+  `vico_forum_migrator`;
+- attempt 3 of run `36252243734` then successfully proved
+  `current_user = vico_forum_migrator`.
+
+Current live comparison:
+
+- `vico_forum_migrator`:
+  Neon `authentication_method=password`; PostgreSQL `LOGIN=true`,
+  `password_is_null=false`, `rolvaliduntil IS NULL`;
+- `vico_forum_web`:
+  Neon `authentication_method=no_login`; PostgreSQL `LOGIN=true`,
+  `password_is_null=true`, `rolvaliduntil IS NULL`;
+- both are non-superuser and have no `CREATEDB`, `CREATEROLE`, `REPLICATION` or
+  `BYPASSRLS`;
+- exact owner administrative relationship is the same for both targets:
+  `vico_forum_owner` is member with `ADMIN=true, INHERIT=false, SET=false`, grantor
+  `cloud_admin`;
+- `vico_forum_owner` currently has `CREATEROLE=true`;
+- object ownership differs materially for runtime purpose but not for password assignment:
+  migrator currently owns 29 public/drizzle relations, web owns 0.
+
+PostgreSQL 17 official documentation confirms that:
+
+- `LOGIN` is the attribute required for a role to be used as an initial connection identity;
+- a null stored password makes password authentication fail;
+- `ALTER ROLE ... PASSWORD` changes the role password without changing unrelated role
+  attributes;
+- a non-superuser `CREATEROLE` administrator with `ADMIN OPTION` over a non-superuser role can
+  alter most of that role's attributes, including its password.
+
+Official references:
+- https://www.postgresql.org/docs/17/role-attributes.html
+- https://www.postgresql.org/docs/17/auth-password.html
+- https://www.postgresql.org/docs/17/sql-alterrole.html
+- https://api-docs.neon.tech/reference/resetprojectbranchrolepassword
+
+Technical conclusion for this subtask:
+
+There is no proved PostgreSQL-role-state difference that blocks applying the same **class of
+first-password bootstrap** to `vico_forum_web`: its current state matches the historically observed
+pre-password migrator state in the correctness-critical dimensions `LOGIN=true` +
+Neon `no_login`/PostgreSQL null password, and the same owner has the same ADMIN relationship.
+
+The only remaining blocker to claiming exact historical-process reuse is historical operator
+provenance: the retained records do not establish the exact Neon UI/API/SQL mechanism that first
+set the migrator password. Therefore recovery-v2 must stay paused, but no additional password
+workflow layer is justified merely by a difference between the two role states.
+
+No secret, password, credential, workflow dispatch, Hyperdrive resource, SQL mutation, binding,
+routing or deploy operation was performed in this comparison.
