@@ -6981,3 +6981,33 @@ corrective cycle не выполнялось.
 Следующий шаг по регламенту: Codex должен независимо заново полностью проверить PR #145 на final
 head перед merge/deployment decision.
 
+### Post-merge pre-deploy topology gate — blocked by authenticated Cloudflare access
+
+После merge PR #145 актуальный `main` независимо подтверждён как
+`743cb3f1c48b17d58c42cdaa6e561512fd4efb94`; PR #145 имеет `merged=true`, а merge commit
+является текущим `main`. Перед попыткой получить external evidence полностью перечитаны
+актуальные `PROJECT.md`, `PROJECT_STATE.md`, `ROADMAP.md`,
+`docs/database/HYPERDRIVE.md` и `docs/database/MIGRATIONS.md`.
+
+Следующий gate по PR #121 действительно требует fresh authenticated read-only Cloudflare
+control-plane evidence непосредственно перед deploy: Builds connection/auto-deploy, current
+Production version/traffic/bindings, Preview Base isolation, обе Hyperdrive configurations и
+routes/deploy path.
+
+В текущей ChatGPT-сессии этот gate завершить нельзя без подмены evidence:
+
+- Cloudflare connector/tool отсутствует;
+- поиск доступных ChatGPT plugins по `Cloudflare` вернул zero plugins;
+- доступного browser/computer-use tool с authenticated Cloudflare dashboard session в этой
+  сессии нет;
+- public web может проверить Cloudflare documentation, но не account-only Worker bindings,
+  Preview Base variables/secrets, Builds connection или Hyperdrive account metadata.
+
+Поэтому stale Gate 0 evidence не переиспользуется и fresh topology не объявляется проверенной.
+Никаких Cloudflare binding/deployment/preview/traffic, credential или database mutations не
+выполнялось.
+
+Для продолжения нужен authenticated browser-capable session (например ChatGPT Work/Cloud Browser)
+либо fresh dashboard evidence, после чего gate проверяется строго read-only и только затем
+передаётся Codex для определения отдельного deploy + smoke boundary.
+
