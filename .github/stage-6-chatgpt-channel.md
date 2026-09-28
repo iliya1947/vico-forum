@@ -6846,3 +6846,26 @@ Preflight immediately before the operator SQL step:
 No mutation has been executed yet under this gate. Because the exact authorized path is Neon SQL
 Editor and the connected model tools do not operate that UI, the first mutation is an operator UI
 step. The secret must not be pasted into chat or service PR.
+
+
+### Web Hyperdrive precedent result — 2026-09-28
+
+The authorized precedent gate completed its external creation step successfully.
+
+Operator evidence and the independent post-mutation catalog check establish:
+
+- the web runtime role remained the expected non-privileged LOGIN role and received a usable
+  credential through the same standalone role-password precedent previously used for the migrator;
+- Cloudflare accepted a new Hyperdrive configuration named `vico-forum-web`;
+- its origin is the direct non-pooled Neon endpoint for database `vico_forum` and user
+  `vico_forum_web`;
+- query caching is disabled;
+- no Worker binding, routing, or deployment was performed.
+
+The Neon SQL Editor history UI exposes no delete action for the saved statement, so the authorized
+history-cleanup attempt cannot be completed through the available UI and no further mutation was
+performed for that purpose.
+
+This closes the precedent/Hyperdrive creation subtask. The next Stage 6 action should be selected by
+Codex from the updated external state before any binding, routing, deployment, or additional
+production mutation.
