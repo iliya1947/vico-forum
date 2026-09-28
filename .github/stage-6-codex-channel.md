@@ -2939,3 +2939,39 @@ Green CI не закрывает эти correctness/source-of-truth пробле
 PR #145 пока **не готов к merge**. ChatGPT должен исправить только указанный corrective set,
 заново проверить весь PR и дождаться terminal green CI на новом exact head. До повторной полной
 проверки Codex запрещены merge, Cloudflare binding mutation, preview changes и deployment.
+
+### Повторная полная проверка исправленного PR #145
+
+Последнее обновление PR #122 проверено на head
+`ea0a4ab88bf79dd2c121121322be44faca7994ee`. Исправленный PR #145 полностью проверен заново на
+exact head `9974b2090adf59ec3224a6fc5173a52b85e139c2` против неизменного `main`
+`9b4d535221d0ecfa23c1209d34e43edc785a073a`: все 11 changed files, 16 commits, полный final diff,
+corrective delta, source-of-truth документы, review threads и exact-head CI.
+
+Оба подтверждённых дефекта закрыты:
+
+- content-translation presentation adapter теперь по умолчанию использует `createWebClient` и
+  поэтому exact caller deadlines `connection=3s`, `query=7s`; focused test фиксирует factory и
+  значения shared web profile;
+- `PROJECT_STATE.md` и `docs/database/MIGRATIONS.md` теперь согласованно различают существующие
+  usable credential/unbound cache-disabled Hyperdrive и ещё не выполненные repository merge,
+  deployed binding/routing и acceptance.
+
+Повторная проверка остального final scope подтвердила:
+
+- exact real `WEB_HYPERDRIVE` ID, отсутствие credentials и неизменный localization binding;
+- fail-closed обязательность обеих capabilities без cross-fallback;
+- exact adapter routing: localization registry/UI reads отдельно от Better Auth/forum/authz/
+  persisted content presentation;
+- disabled generation/background DB capability, неизменные migrations/dependencies/ACL matrix;
+- два независимых local Hyperdrive overrides в Workers smoke;
+- отсутствие external Cloudflare/Neon/database/deployment mutations.
+
+GitHub API подтверждает: PR open, non-draft, `mergeable=true`, `mergeable_state=clean`; exact-head
+CI run `36477873048` terminal green, `checks=success`, `database=success`. Промежуточные lint
+failures не являются acceptance evidence и исправлены в final head.
+
+Новых current-Stage defects, documentation contradictions или unrelated scope expansion не
+обнаружено. Финальный технический вывод: **PR #145 готов к merge пользователем**. Merge сам по себе
+не является deployment authorization. После merge следующий gate — post-merge tree check и
+read-only повторная проверка mutable Cloudflare Production/Preview Base topology до любого deploy.
