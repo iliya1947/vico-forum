@@ -1,6 +1,6 @@
 # PROJECT_HISTORY.md
 
-Последнее обновление: 2026-09-27
+Последнее обновление: 2026-09-28
 
 ## Назначение
 
@@ -108,7 +108,7 @@ semantics; эта часть позже исправлена PR #76.
 - [#75](https://github.com/iliya1947/vico-forum/pull/75) — persisted bundle runtime reads.
 
 
-### 2026-09-25 — 2026-09-27: Stage 6 schema и web runtime privilege gates
+### 2026-09-25 — 2026-09-28: Stage 6 schema и web runtime privilege gates
 
 Stage 6 начал собирать repository/local-CI продукт в внешний pre-release candidate. Dedicated
 `vico_forum_migrator` был восстановлен и проверен, migration bootstrap получил требуемый direct
@@ -126,6 +126,16 @@ Fresh Cloudflare Gate 0 затем подтвердил, что native Git Build
 `HYPERDRIVE -> vico-forum-registry`, а `Previews Base` не имеет bindings или runtime
 variables/secrets. Это позволило перейти к repository-only подготовке будущего web wiring без
 автоматического production promotion.
+
+После этого credential bootstrap/recovery path несколько раз завершался безопасным failure:
+первый recovery остановился на input contract, recovery-v2 — на `COMMIT` с SQLSTATE `XX000`,
+после чего compensation вернула `PASSWORD NULL`. Вместо нового recovery redesign был восстановлен
+и повторён уже рабочий migrator precedent: owner выполнил standalone
+`ALTER ROLE vico_forum_web PASSWORD ...`, credential стал usable, а Cloudflare принял отдельный
+direct-origin `vico-forum-web` Hyperdrive с disabled query caching. Конфигурация остаётся
+unbound; Worker binding/routing/deploy не выполнялись. Neon SQL Editor сохранил plaintext history
+entry и не предоставил UI delete action, поэтому этот owner-authorized operational risk остался
+зафиксированным фактом, а не основанием для новой credential rotation.
 
 ## Corrective ledger
 
