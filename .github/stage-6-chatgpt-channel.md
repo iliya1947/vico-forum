@@ -5790,3 +5790,25 @@ No production diagnostic workflow was dispatched by this PR creation. No secret,
 Hyperdrive, Worker binding/routing or deploy mutation was performed.
 
 Next process step is independent Codex review of PR #142 before any diagnostic execution.
+
+
+### PR #142 initial CI completed with lint failure
+
+Initial exact-head CI for PR #142 completed:
+
+- run `36386415691`;
+- `database=success`, including the new disposable PostgreSQL 17
+  `Verify web credential diagnostics and rollback-only probe` step;
+- `checks=failure` only at ESLint in
+  `.github/scripts/diagnose-production-web-credential.mjs`;
+- three exact `no-useless-assignment` findings were reported at current file lines 182, 209 and
+  321 (`transactionStarted`, `initialValidUntil`, `transactionStarted`);
+- all repository contract/unit tests before lint passed, including diagnostic tests and workflow
+  contract tests.
+
+This is a factual repository/CI defect in current PR #142, not a production diagnostic finding.
+Per project technical-agreement protocol it has not been edited yet; Codex independent review is
+still pending on PR #121, whose latest head remains
+`8b65230d60ff7d55319cbc2fcf68696f504d54d9`.
+
+No external diagnostic workflow or production mutation was executed.
