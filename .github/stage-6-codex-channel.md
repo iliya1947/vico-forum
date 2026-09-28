@@ -2472,6 +2472,59 @@ secret → one-shot recovery → evidence → cache-disabled unbound Hyperdrive 
 или compensation → secret/resource cleanup. Текущий gate не разрешает secret creation, dispatch,
 credential mutation, Hyperdrive creation, SQL finalization, binding/routing или deploy.
 
+### Recovery readiness complete; exact continuous execution authorization boundary
+
+Последнее обновление служебного PR ChatGPT #122 проверено на head
+`9935c881939277d587d9969e90b5e01803774183`. Operator-assisted evidence закрывает оставшиеся
+readiness gaps: recovery secret отсутствует; `vico-forum-web` Hyperdrive и `WEB_HYPERDRIVE`
+binding отсутствуют; existing localization Hyperdrive/cache и preview topology неизменны; Neon
+owner и Cloudflare create paths доступны; пользователь подтвердил непрерывное 30-minute окно.
+Независимая API-сверка снова подтверждает zero runs recovery workflow ID `369003053`.
+
+Следующий gate является одним неделимым externally mutating execution window и требует отдельного
+явного разрешения пользователя. Разрешение должно охватывать одновременно success path и все
+compensation/cleanup branches; частично начинать gate запрещено.
+
+После exact authorization ChatGPT координирует только следующую choreography:
+
+1. непосредственно перед началом повторно сверить exact current `main`, workflow ID `369003053`,
+   zero runs, safe role state (`PASSWORD NULL`, no accepted credential), отсутствие
+   `vico-forum-web`/`WEB_HYPERDRIVE` и доступность всех UI paths; любое расхождение — stop;
+2. пользователь локально генерирует fresh strong printable-ASCII password 24–256 chars, хранит его
+   только локально и создаёт ровно один temporary `production-db` Environment secret
+   `WEB_RUNTIME_DATABASE_PASSWORD_RECOVERY`; значение не передаётся в chat/PR/screenshots/logs;
+3. выполнить ровно один dispatch `Recover production web credential` из exact current `main` с
+   confirmation `web-credential-recovery-confirmed`; дождаться terminal result, никогда не rerun и
+   не делать второй dispatch;
+4. если workflow не завершился bounded success
+   `stage=complete reason=ok compensation=not-required`, не создавать Hyperdrive: проверить
+   bounded compensation evidence и read-only safe credential state, при `failed`/ambiguous outcome
+   немедленно выполнить owner-controlled `PASSWORD NULL` compensation с exact identity/database/
+   role assertions; удалить temporary secret и остановиться;
+5. только после bounded success и пока server lease active создать через Cloudflare UI ровно одну
+   **unbound**, cache-disabled configuration `vico-forum-web` на direct non-pooler Neon origin,
+   database `vico_forum`, user `vico_forum_web`, используя локальный password; existing
+   `vico-forum-registry`, Worker bindings/routes и Preview Base не менять;
+6. до lease expiry получить sanitized Hyperdrive metadata/connectivity evidence: exact name,
+   unique configuration ID, PostgreSQL/direct origin, cache disabled, successful connection, no
+   Worker binding. Secret/connection string не записывать;
+7. после accepted Hyperdrive evidence выполнить в Neon SQL Editor одну owner-controlled transaction:
+   exact current/session user `vico_forum_owner`, database `vico_forum`, target role/defaults/
+   membership/ACL assertions и finite future `rolvaliduntil` → только
+   `ALTER ROLE vico_forum_web VALID UNTIL 'infinity'` → exact post-check infinity → commit;
+8. ambiguous finalization сначала reconciles read-only: только infinity вместе с accepted exact
+   Hyperdrive evidence считается success. При любом failure до accepted finalization выполнить
+   `PASSWORD NULL`, удалить любой созданный unbound `vico-forum-web` и temporary secret, сохранить
+   accepted role/defaults/grants и остановиться;
+9. на success удалить temporary GitHub secret, удалить локальную password copy после подтверждения,
+   что Hyperdrive сохранён и credential finalized, и записать в PR #122 только sanitized run/
+   bounded-result/Hyperdrive/finalization/cleanup evidence;
+10. обязательная остановка после success или cleanup. Не добавлять `WEB_HYPERDRIVE` binding, не
+    менять `wrangler.jsonc`, routing/preview topology и не deploy-ить.
+
+Это разрешение ещё не дано данным техническим выводом. До явного пользовательского сообщения,
+которое ссылается на этот exact boundary, запрещено создавать recovery secret или начинать шаг 3.
+
 ## Рабочий канал дальнейших действий
 
 По решению пользователя от 2026-09-26 все дальнейшие operational requests, перечни требуемого
