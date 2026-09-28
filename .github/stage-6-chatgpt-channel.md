@@ -5993,3 +5993,51 @@ Current external state remains unchanged by this cleanup:
 Cleanup subtask is complete. The next separately reviewed repository-only task is the mergeable
 production web credential recovery PR in the exact scope recorded in Codex PR #121 head
 `2cfa216b876108a3c8523955c5e20de546d9e05f`.
+
+
+### Diagnostic secret cleanup and recovery PR #143
+
+The user confirmed deletion of the temporary diagnostic
+`WEB_RUNTIME_DATABASE_PASSWORD_BOOTSTRAP` Environment secret. The deleted value was not
+disclosed and is not reused.
+
+Created separate mergeable repository-only PR #143,
+**Add production web credential recovery path**, from exact current `main`
+`ab1705aeb737a77aad0ad39d8fc1fb055bae5dc9`.
+
+Initial PR head: `e4308ca958adbc2bd91ba288abb55074e8040cb1`.
+GitHub reports `mergeable=true`, behind main=0. Initial CI run `36398318663` has been queued;
+no green-CI claim is made yet.
+
+The PR stays inside the recovery boundary agreed in Codex PR #121 head
+`2cfa216b876108a3c8523955c5e20de546d9e05f`:
+
+- new manual main-only workflow
+  `.github/workflows/production-web-credential-recovery.yml` has its own workflow identity/run
+  counter, shared `production-db-migrations` concurrency, pre-Environment/no-secret guard,
+  exact confirmation `web-credential-recovery-confirmed` and first-run/first-attempt enforcement;
+- recovery script repeats one-shot assertions before DB access and uses a fresh future secret
+  boundary `WEB_RUNTIME_DATABASE_PASSWORD_RECOVERY`; no secret value is stored in repository;
+- exact reviewed direct-owner/preflight, SCRAM derivation/application, 30-minute finite lease,
+  in-transaction active/bounded assertion, commit and exact web login helpers are reused;
+- output is bounded to
+  `WEB_CREDENTIAL_RECOVERY stage=<stage> reason=<bounded-code> compensation=<status>`;
+  exception text, URLs, cleartext password, verifier and SQL text are not logged;
+- after any attempted credential mutation, ordinary failure performs `PASSWORD NULL`
+  compensation and bounded reconciliation: exact candidate credential must receive PostgreSQL
+  authentication rejection and accepted owner/preflight contract must still pass;
+- uncontrolled termination after commit remains bounded by the server-owned finite lease;
+- unit tests cover success, each operational bounded failure stage, compensation status and
+  no-secret output;
+- workflow contract tests cover main-only/one-shot/protected/secret separation and absence of
+  Hyperdrive/routing/deploy operations;
+- disposable PostgreSQL 17 CI probe covers successful recovery/login, finite-expiry rejection and
+  forced post-commit failure compensation;
+- `PROJECT_STATE.md` and `docs/database/HYPERDRIVE.md` record completed diagnostics/secret
+  cleanup and describe only recovery preparation; factual external state remains no accepted web
+  credential and no web Hyperdrive.
+
+No new recovery secret was created, no recovery workflow was dispatched, and no credential,
+Hyperdrive, binding/routing or deploy external operation was performed.
+
+Next process step is independent Codex review of PR #143 and its exact-head CI before merge.
