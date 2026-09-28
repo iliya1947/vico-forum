@@ -6261,3 +6261,54 @@ Next process step belongs to Codex: use this sanitized YES/NO evidence to define
 explicit authorization boundary for the future continuous
 secret -> one-shot recovery -> bounded evidence -> cache-disabled unbound Hyperdrive ->
 owner finalization or compensation -> temporary-secret/resource cleanup window.
+
+
+### Recovery execution failure — one-shot consumed before DB mutation
+
+User explicitly authorized the exact continuous execution window recorded in Codex PR #121.
+Immediately before dispatch, exact `main` was still
+`63e9a7ae4d5c6ef196f0bede93ae7f9f7deab1b0`, latest Codex coordination head was
+`62496059fe0ed83d36519f2f90be6a3740416385`, recovery workflow had zero prior runs, and live
+read-only Neon inspection still showed `vico_forum_web` with `PASSWORD NULL` and
+`rolvaliduntil IS NULL`.
+
+Operator created the fresh temporary Environment secret
+`production-db / WEB_RUNTIME_DATABASE_PASSWORD_RECOVERY` locally without disclosing its value.
+Exactly one manual dispatch of workflow ID `369003053` was then performed from `main` with the
+required confirmation token.
+
+Observed execution evidence:
+
+- run ID: `36423327132`;
+- run number: `1`;
+- attempt: `1`;
+- head SHA: `63e9a7ae4d5c6ef196f0bede93ae7f9f7deab1b0`;
+- one-shot guard: success;
+- recovery job: failure;
+- bounded recovery output:
+  `WEB_CREDENTIAL_RECOVERY stage=input reason=contract_mismatch compensation=not-required`.
+
+Because the failure occurred at `stage=input` with `compensation=not-required`, the recovery
+script did not reach owner DB connection or credential mutation. A fresh live read-only Neon check
+after the failed run independently confirmed exact safe state remains:
+`current_user=session_user=vico_forum_owner`, database `vico_forum`,
+`vico_forum_web PASSWORD NULL`, `rolvaliduntil IS NULL`. No Hyperdrive was created; no
+finalization/binding/routing/deploy occurred.
+
+The exact failed input assertion is intentionally not exposed by bounded workflow output. Current
+evidence narrows it to the pre-connect input contract. Guard success proves exact main/run/attempt
+and confirmation. Job environment showed exact `WEB_RUNTIME_DATABASE_ROLE=vico_forum_web`.
+The same existing `NEON_OWNER_DATABASE_URL` had passed the earlier successful preflight and
+rollback diagnostics, so password-format validation is a leading hypothesis, but it is **not
+confirmed** from the available evidence and must not be recorded as root cause without independent
+proof.
+
+The workflow's first-run/first-attempt contract is now consumed. **No rerun or second dispatch of
+this recovery workflow is permitted.** The user has additionally required that no further recovery
+attempt be proposed until the next path is independently reviewed and all inputs/assumptions can be
+validated before any one-shot or mutating step, specifically including the exact recovery-password
+contract. A future path must not rely on an unvalidated human-created secret and then spend its
+one-shot execution merely to discover an input-format mismatch.
+
+Immediate remaining cleanup is only deletion of the temporary recovery Environment secret by the
+operator. No other external mutation is authorized or required for this failed attempt.
