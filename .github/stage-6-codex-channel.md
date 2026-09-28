@@ -2393,6 +2393,42 @@ credential recovery → cache-disabled Hyperdrive → owner finalization/compens
 запрещены secret creation, dispatch, credential mutation, Hyperdrive, finalization,
 binding/routing и deploy.
 
+### PR #143 merged; continuous recovery choreography readiness gate
+
+Merge пользователя подтверждён через GitHub:
+
+- PR #143 closed/merged `2026-09-28T10:31:47Z`;
+- актуальный `main` — merge commit `63e9a7ae4d5c6ef196f0bede93ae7f9f7deab1b0`;
+- merged head — полностью проверенный
+  `f18adc156911853ac30035e2bfe3fa176ac70986`;
+- merge tree `1e0cc717bcfe533b92ff662392337dd84b4b0ebf` точно совпадает с reviewed head tree;
+  merge-time drift отсутствует;
+- recovery workflow `Recover production web credential`, ID `369003053`, active, runs отсутствуют.
+
+Следующий Stage 6 gate пока только **read-only readiness preflight** под координацией ChatGPT.
+Нужно до запроса explicit execution authorization подтвердить и записать sanitized evidence в
+служебный PR #122:
+
+1. exact current `main`, active recovery workflow ID `369003053`, zero runs и доступность
+   first-run/first-attempt guard;
+2. отсутствие нового `WEB_RUNTIME_DATABASE_PASSWORD_RECOVERY` Environment secret; старый
+   diagnostic/bootstrap secret удалён и не переиспользуется;
+3. current production role остаётся в safe pre-recovery state: exact `vico_forum_web`, accepted
+   role attributes/membership/defaults/ACL, candidate credential отсутствует, usable web
+   Hyperdrive/`WEB_HYPERDRIVE` отсутствуют;
+4. Cloudflare UI готов создать ровно один unbound cache-disabled `vico-forum-web` на direct Neon
+   origin, не изменяя existing localization Hyperdrive, bindings, routes или preview topology;
+5. Neon owner SQL Editor path готов для immediate post-Hyperdrive finite-lease verification и
+   единственного `VALID UNTIL 'infinity'` finalization, а также для `PASSWORD NULL` compensation;
+6. владелец и ChatGPT могут непрерывно завершить secret → one-shot recovery → bounded evidence →
+   Hyperdrive creation/verification → owner finalization → temporary-secret cleanup в пределах
+   30-minute server lease, включая fail-closed cleanup при любой остановке.
+
+Readiness preflight не создаёт secret/resource, не dispatch-ит workflow и не выполняет SQL
+mutation. После его результата Codex отдельно определит единое exact authorization boundary со
+всем success/compensation choreography. До этого запрещены recovery secret creation, dispatch,
+credential mutation, Hyperdrive, finalization, binding/routing и deploy.
+
 ## Рабочий канал дальнейших действий
 
 По решению пользователя от 2026-09-26 все дальнейшие operational requests, перечни требуемого
