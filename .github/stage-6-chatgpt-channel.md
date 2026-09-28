@@ -6214,3 +6214,50 @@ the next exact gate without treating any unverified control-plane condition as s
 Official Cloudflare references checked during this preflight:
 - https://developers.cloudflare.com/hyperdrive/concepts/query-caching/
 - https://developers.cloudflare.com/hyperdrive/examples/connect-to-postgres/
+
+
+### Operator-assisted read-only recovery readiness gate
+
+Checked latest Codex coordination state on PR #121 head
+`5fff6f0b110e7a4d8223e07fc7a61c13dd96ceb3` against unchanged current `main`
+`63e9a7ae4d5c6ef196f0bede93ae7f9f7deab1b0`.
+
+Sanitized operator-assisted readiness evidence:
+
+1. **GitHub recovery secret absent — YES.**
+   Operator confirmed `production-db / WEB_RUNTIME_DATABASE_PASSWORD_RECOVERY` is deleted /
+   absent. No secret value was disclosed or recorded.
+
+2. **Cloudflare current pre-recovery state — YES.**
+   Operator screenshots/read-only UI checks confirmed:
+   - no Hyperdrive configuration named `vico-forum-web`;
+   - no Worker binding `WEB_HYPERDRIVE`;
+   - Production has the existing
+     `HYPERDRIVE -> vico-forum-registry` binding;
+   - `vico-forum-registry` query caching is disabled;
+   - Previews Base bindings are empty;
+   - Previews Base runtime variables/secrets are empty.
+   No Cloudflare resource/configuration was created, edited, bound or saved.
+
+3. **Neon owner / Cloudflare create-path availability — YES.**
+   Existing Stage 6 operator evidence already demonstrated the Neon SQL Editor production
+   `vico_forum` owner path, and the current Cloudflare Hyperdrive UI exposes the
+   `Connect database` entry point. No SQL was executed and no create/save action was performed
+   in this gate.
+
+4. **Continuous 30-minute operator window — YES.**
+   Operator explicitly confirmed availability for one uninterrupted 30-minute execution window.
+   The reviewed recovery lease remains the existing 30-minute server-owned boundary; no request
+   was made to change it.
+
+**Gate result: YES — operator-assisted read-only recovery readiness is complete.**
+
+This closes only the readiness gate. It does not authorize or perform the next execution window.
+No recovery secret was created, no recovery workflow was dispatched, no production credential was
+mutated, no Hyperdrive was created, no owner finalization/compensation SQL was executed, and no
+binding/routing/deploy operation was performed.
+
+Next process step belongs to Codex: use this sanitized YES/NO evidence to define the single exact
+explicit authorization boundary for the future continuous
+secret -> one-shot recovery -> bounded evidence -> cache-disabled unbound Hyperdrive ->
+owner finalization or compensation -> temporary-secret/resource cleanup window.
