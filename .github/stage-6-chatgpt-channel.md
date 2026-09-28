@@ -5881,3 +5881,38 @@ dispatched, and no Neon/Hyperdrive/deploy mutation was performed.
 Under the project agreement loop, the next step is Codex's final independent rereview of this exact
 corrected head + terminal CI. PR #142 should not be merged and no production diagnostic should be
 dispatched until that rereview is recorded.
+
+
+### Read-only web credential diagnostic gate — success
+
+After PR #142 merge and Codex final approval, the Stage 6 read-only credential diagnostic gate was
+executed by the user through the published manual workflow only. No rollback-only probe or other
+mutation was executed.
+
+Sanitized evidence:
+
+- current GitHub `main`: `ab1705aeb737a77aad0ad39d8fc1fb055bae5dc9`;
+- workflow: `Diagnose production web credential preflight`;
+- workflow path: `.github/workflows/production-web-credential-preflight-diagnostic.yml`;
+- run ID: `36389416755`;
+- event: `workflow_dispatch`;
+- exact head SHA: `ab1705aeb737a77aad0ad39d8fc1fb055bae5dc9`;
+- run number: `1`;
+- run attempt: `1`;
+- workflow conclusion: `success`;
+- job `Diagnose production web credential preflight`: `success`;
+- bounded diagnostic output:
+  `WEB_CREDENTIAL_DIAGNOSTIC stage=preflight reason=ok rollback=ok`.
+
+Interpretation is intentionally limited to the diagnostic contract: the exact current owner/direct
+target, server logging/SCRAM settings, web-role attributes/membership, accepted `2s/5s`
+database-role defaults and full localization/web ACL preflight all passed in production. The
+read-only transaction completed its explicit rollback successfully.
+
+This result does **not** identify the original bootstrap failure inside the mutation interval; it
+rules out the current read-only preflight as the failing stage and narrows the next evidence need
+to the separately reviewed rollback-only SCRAM/finite-`VALID UNTIL` probe.
+
+No temporary web password was used by this gate. No credential, role, defaults, grants, Hyperdrive,
+Worker binding/routing or deploy state was changed. The rollback-only workflow remains
+undispatched and requires separate explicit authorization after Codex analysis.
