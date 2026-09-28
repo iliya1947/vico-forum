@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -43,5 +44,31 @@ describe("runtime database binding routing", () => {
       expect(error).toBeInstanceOf(RuntimeDatabaseBindingConfigurationError);
       expect((error as RuntimeDatabaseBindingConfigurationError).bindingName).toBe(bindingName);
     }
+  });
+});
+
+
+describe("Worker capability composition", () => {
+  const source = readFileSync(new URL("./app.ts", import.meta.url), "utf8");
+
+  it("routes localization-only adapters through localizationConnectionString", () => {
+    expect(source).toContain("createHyperdriveRegistryLoader(localizationConnectionString)");
+    expect(source).toContain("createHyperdriveUiTranslationStore(localizationConnectionString)");
+  });
+
+  it("routes web adapters through webConnectionString", () => {
+    expect(source).toContain("createHyperdriveAuthRuntime(webConnectionString");
+    expect(source).toContain("createHyperdriveForumReader(webConnectionString)");
+    expect(source).toContain("createHyperdriveForumWriter(webConnectionString)");
+    expect(source).toContain("createHyperdriveContentTranslationBatchReader(webConnectionString)");
+    expect(source).toContain("createHyperdriveAuthorization(webConnectionString)");
+  });
+
+  it("keeps database binding lookup fail-closed and content generation disabled", () => {
+    expect(source).toContain("resolveRuntimeDatabaseConnectionStrings(env)");
+    expect(source).toContain("DISABLED_CONTENT_GENERATION_ACTION_RUNTIME");
+    expect(source).not.toContain("env.HYPERDRIVE.connectionString");
+    expect(source).not.toContain("env.WEB_HYPERDRIVE.connectionString");
+    expect(source).not.toContain("createHyperdriveContentGenerationStatusReader");
   });
 });
