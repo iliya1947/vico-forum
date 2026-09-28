@@ -273,6 +273,61 @@ Official reference:
 https://developers.cloudflare.com/hyperdrive/concepts/query-caching/
 ```
 
+### Validated-input recovery v2 preparation
+
+Первый reviewed recovery workflow был затем externally запущен ровно один раз на exact `main`.
+Pre-Environment one-shot guard прошёл, но recovery job завершился bounded result:
+
+```text
+WEB_CREDENTIAL_RECOVERY stage=input reason=contract_mismatch compensation=not-required
+```
+
+Failure произошёл до owner DB connection и credential mutation. Post-failure live read-only
+reconciliation снова подтвердила `PASSWORD NULL` и `rolvaliduntil IS NULL`; temporary recovery
+secret удалён, `vico-forum-web` Hyperdrive не создавался, finalization/binding/routing/deploy не
+выполнялись. Этот recovery workflow consumed: rerun и второй dispatch запрещены. Bounded output не
+различает exact input assertion, поэтому password-format mismatch не считается доказанной root
+cause.
+
+Recovery v2 preparation разделяет проверку input и one-shot mutation boundary:
+
+- отдельный repeatable manual main-only workflow
+  `.github/workflows/production-web-credential-input-validation.yml` использует protected
+  `NEON_OWNER_DATABASE_URL`, `WEB_RUNTIME_DATABASE_ROLE` и будущий temporary
+  `WEB_RUNTIME_DATABASE_PASSWORD_RECOVERY_V2`;
+- validator до mutation различает bounded input reasons
+  `password_missing | password_length | password_charset | role_mismatch | owner_target`, затем
+  выполняет exact owner/direct-target production preflight только внутри `BEGIN READ ONLY` и
+  завершает его explicit `ROLLBACK`;
+- successful validation output фиксирует только run ID, exact head SHA, run attempt и
+  `stage=complete reason=ok rollback=verified`; password value/length/hash/verifier, URL и raw
+  exception message не логируются;
+- invalid secret можно заменить и выполнить новый validation dispatch: validation workflow не
+  использует one-shot run counter и не расходует recovery-v2 identity;
+- отдельный `.github/workflows/production-web-credential-recovery-v2.yml` имеет собственный
+  one-shot run counter. До protected Environment его guard принимает validation run ID, читает
+  exact run через GitHub Actions REST API с read-only `GITHUB_TOKEN` и fail closed проверяет
+  expected validation workflow path, `workflow_dispatch`, completed/success, exact same current
+  `main` SHA и attempt 1;
+- после accepted validation secret до immediate recovery-v2 dispatch не должен изменяться;
+  recovery-v2 всё равно повторяет password/role/owner-target assertions до DB connection и только
+  затем использует ранее reviewed recovery core;
+- lease/login/compensation semantics не меняются: 30-minute server-owned `VALID UNTIL`,
+  post-commit exact web login/default proof, caught-failure `PASSWORD NULL` compensation и
+  bounded reconciliation остаются теми же.
+
+Merge recovery v2 preparation не создаёт secret и не запускает validation/recovery. До отдельного
+explicit authorization запрещены новый v2 secret, validation dispatch, recovery-v2 dispatch,
+credential mutation, Hyperdrive, finalization, binding/routing и deploy.
+
+Official GitHub references checked for this gate:
+
+```text
+https://docs.github.com/en/rest/actions/workflow-runs
+https://docs.github.com/en/actions/tutorials/authenticate-with-github_token
+https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax
+```
+
 ## Development path
 
 Cloudflare официально поддерживает local Hyperdrive development через
