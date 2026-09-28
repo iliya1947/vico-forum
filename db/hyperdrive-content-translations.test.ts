@@ -24,9 +24,14 @@ describe("Hyperdrive content translation batch reader", () => {
   });
 
   it("uses the shared web caller deadlines by default", async () => {
-    let client: Client | undefined;
+    let connectionTimeoutMillis: number | undefined;
+    let queryTimeoutMillis: number | undefined;
     vi.spyOn(Client.prototype, "connect").mockImplementation(async function (this: Client) {
-      client = this;
+      connectionTimeoutMillis = (this as unknown as { _connectionTimeoutMillis: number })
+        ._connectionTimeoutMillis;
+      queryTimeoutMillis = (this as unknown as {
+        connectionParameters: { query_timeout: number };
+      }).connectionParameters.query_timeout;
       throw new Error("timeout expired");
     });
     vi.spyOn(Client.prototype, "end").mockImplementation(async () => undefined);
@@ -42,14 +47,9 @@ describe("Hyperdrive content translation batch reader", () => {
       targetLocale: "fr",
     }])).rejects.toBeInstanceOf(ContentTranslationStorageUnavailableError);
 
-    expect(client).toBeDefined();
-    const configured = client as unknown as {
-      connectionParameters: { query_timeout: number };
-      _connectionTimeoutMillis: number;
-    };
-    expect(configured._connectionTimeoutMillis)
+    expect(connectionTimeoutMillis)
       .toBe(WEB_DB_CALLER_DEADLINES.connectionTimeoutMillis);
-    expect(configured.connectionParameters.query_timeout)
+    expect(queryTimeoutMillis)
       .toBe(WEB_DB_CALLER_DEADLINES.queryTimeoutMillis);
   });
 
