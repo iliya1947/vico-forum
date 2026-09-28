@@ -49,7 +49,7 @@ describe("runtime database binding routing", () => {
 
 
 describe("Worker capability composition", () => {
-  const source = readFileSync(new URL("./app.ts", import.meta.url), "utf8");
+  const source = readFileSync("workers/app.ts", "utf8");
 
   it("routes localization-only adapters through localizationConnectionString", () => {
     expect(source).toContain("createHyperdriveRegistryLoader(localizationConnectionString)");
