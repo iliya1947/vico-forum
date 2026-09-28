@@ -2307,6 +2307,52 @@ gate, должен быть удалён через координацию ChatG
 Этот PR после green CI проходит полный независимый review Codex до merge. Новый secret, dispatch,
 durable mutation, Hyperdrive, finalization, binding/routing и deploy этим gate не разрешены.
 
+### Независимая полная проверка PR #143
+
+Проверены актуальные GitHub `main` `ab1705aeb737a77aad0ad39d8fc1fb055bae5dc9`, служебный PR
+ChatGPT #122 на head `90067b9c3201180779e16ad37c6f3261c427386e` и весь PR #143 на
+head `e4308ca958adbc2bd91ba288abb55074e8040cb1`: все 8 changed files, recovery
+orchestration, workflow, pure/workflow tests, disposable PostgreSQL 17 probe, CI wiring и изменения
+`PROJECT_STATE.md` / `docs/database/HYPERDRIVE.md`. PR open, non-draft, mergeable=true, но
+mergeable state `unstable` из-за failed required check.
+
+Подтверждено соответствие основной recovery architecture согласованной границе:
+
+- новый workflow имеет отдельную identity/run counter, manual main-only dispatch, exact recovery
+  token, pre-Environment/no-secret first-run/first-attempt guard, protected `production-db`, shared
+  concurrency и pinned actions;
+- script независимо повторяет one-shot/input/direct-target checks, exact accepted preflight,
+  locally derived SCRAM и 30-minute server-clock lease с in-transaction bounded assertion;
+- success требует commit и отдельный exact web login/database/`2s`/`5s` proof;
+- caught failure после начала mutation выполняет `PASSWORD NULL` compensation, candidate-login
+  rejection reconciliation и повторный accepted preflight; output ограничен bounded
+  stage/reason/compensation, исходные exception/URL/password/verifier не выводятся;
+- workflow не содержит Hyperdrive/binding/routing/deploy operations; docs не записывают будущий
+  recovery success заранее и подтверждают cleanup diagnostic secret;
+- tests охватывают все declared recovery stages, one-shot/secret boundary, success, finite expiry
+  и forced post-commit failure compensation; database job с этими probes успешен.
+
+Полный review подтвердил один current-Stage blocker:
+
+- exact-head CI run `36398318663`: `database=success`, но `checks=failure` на lint;
+- `.github/scripts/recover-production-web-credential.mjs:135` destructure-ит
+  `allowNonNeon`, но не использует его в `reconcileCompensatedCredential`, что даёт
+  `no-unused-vars`;
+- наиболее корректная узкая correction — не просто удалить option, а использовать её для
+  независимого `assertDirectOwnerTarget(ownerDatabaseUrl, { expectedDatabase, allowNonNeon })`
+  в reconciliation boundary до candidate-login/owner connection. Exported reconciliation тогда
+  самостоятельно сохраняет direct-target contract и CI disposable path продолжает явно разрешать
+  non-Neon target;
+- добавить/уточнить pure test, доказывающий fail-closed invalid reconciliation owner target и
+  successful `allowNonNeon: true` test path, затем повторно запустить полный CI.
+
+Других current-Stage defects, documentation contradictions или unrelated scope expansion в полном
+PR не найдено. Технический вывод: **PR #143 пока не готов к merge из-за подтверждённого lint/
+reconciliation-boundary defect**. После узкой correction ChatGPT должен заново проверить весь PR,
+а Codex — выполнить повторную независимую полную проверку exact new head с terminal CI. До green
+merge запрещены новый recovery secret, workflow dispatch, credential mutation, Hyperdrive,
+finalization, binding/routing и deploy.
+
 ## Рабочий канал дальнейших действий
 
 По решению пользователя от 2026-09-26 все дальнейшие operational requests, перечни требуемого
