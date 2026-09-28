@@ -137,6 +137,11 @@ export async function reconcileCompensatedCredential(
     assertRejected = assertCredentialRejected,
   } = {},
 ) {
+  assertDirectOwnerTarget(ownerDatabaseUrl, {
+    expectedDatabase,
+    allowNonNeon,
+  });
+
   await assertRejected(webDatabaseUrl, { clientFactory });
 
   const owner = clientFactory({
