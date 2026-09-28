@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import type { Client } from "pg";
 import { describe, expect, it, vi } from "vitest";
 
@@ -8,6 +9,7 @@ import {
   ContentTranslationStorageUnavailableError,
 } from "../app/localization/content-translation";
 import { createHyperdriveContentTranslationBatchReader } from "./hyperdrive-content-translations";
+import { createWebClient, WEB_DB_CALLER_DEADLINES } from "./postgres-deadlines";
 
 const revision = {
   contentType: "topic-title" as const,
@@ -18,6 +20,23 @@ const revision = {
 };
 
 describe("Hyperdrive content translation batch reader", () => {
+  it("uses the shared web caller deadlines by default", () => {
+    const source = readFileSync("db/hyperdrive-content-translations.ts", "utf8");
+    expect(source).toContain(
+      "const defaultClientFactory: PostgreSqlClientFactory = createWebClient;",
+    );
+
+    const client = createWebClient("postgres://web@hyperdrive/vico");
+    const configured = client as unknown as {
+      connectionParameters: { query_timeout: number };
+      _connectionTimeoutMillis: number;
+    };
+    expect(configured._connectionTimeoutMillis)
+      .toBe(WEB_DB_CALLER_DEADLINES.connectionTimeoutMillis);
+    expect(configured.connectionParameters.query_timeout)
+      .toBe(WEB_DB_CALLER_DEADLINES.queryTimeoutMillis);
+  });
+
   it("degrades connection timeout to original fallback and discards the client", async () => {
     const end = vi.fn(async () => { throw new Error("cleanup failed"); });
     const createClient = vi.fn(() => ({

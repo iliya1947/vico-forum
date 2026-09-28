@@ -11,7 +11,7 @@ import { isPostgresAvailabilityFailure } from "../app/localization/persistent-re
 import { DrizzleContentTranslationBatchReader } from "./content-translation-store";
 import {
   bestEffortDiscardClient,
-  createLocalizationClient,
+  createWebClient,
   isPostgresConnectionTimeout,
   isPostgresQueryTimeout,
 } from "./postgres-deadlines";
@@ -20,7 +20,7 @@ interface PostgreSqlClientFactory {
   (connectionString: string): Client;
 }
 
-const defaultClientFactory: PostgreSqlClientFactory = createLocalizationClient;
+const defaultClientFactory: PostgreSqlClientFactory = createWebClient;
 
 /** Creates one read-only persisted content-translation capability for a Worker request. */
 export function createHyperdriveContentTranslationBatchReader(

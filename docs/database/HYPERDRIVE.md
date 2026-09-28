@@ -43,10 +43,13 @@ capabilities:
    persisted forum-content presentation.
 
 Production role names остаются environment-specific inputs. Current production evidence использует
-`vico_forum_runtime` через `RUNTIME_DATABASE_ROLE` и уже provisioned `vico_forum_web` через
+`vico_forum_runtime` через `RUNTIME_DATABASE_ROLE` и provisioned `vico_forum_web` через
 protected `WEB_RUNTIME_DATABASE_ROLE`. Exact web relation grants, shared runtime privilege
-verification и server-side `lock_timeout=2s` / `statement_timeout=5s` defaults приняты, но usable
-web credential, отдельный web Hyperdrive и Worker routing ещё не созданы.
+verification и server-side `lock_timeout=2s` / `statement_timeout=5s` defaults приняты.
+Standalone owner-controlled password assignment по рабочему migrator precedent создал usable web
+credential, а Cloudflare принял отдельный direct-origin cache-disabled Hyperdrive
+`vico-forum-web`. Он пока не подключён к deployed Worker; production binding/routing/deploy
+остаются отдельным gate.
 
 Reviewed web relation ACL:
 
@@ -129,9 +132,11 @@ successful read-only runtime privilege verification для `vico_forum_runtime` 
 runtime privilege verification — отдельная post-schema acceptance boundary.
 
 Fresh auth/session/permission и read-after-write paths должны использовать cache-disabled
-Hyperdrive. Cloudflare допускает несколько Hyperdrive configurations/bindings для одной
-application; exact web binding name/ID и forum/auth deadline defaults выбираются в отдельном
-runtime-wiring step и этим contract не задаются.
+Hyperdrive. Для текущего repository wiring выбран отдельный binding `WEB_HYPERDRIVE` на existing
+configuration `vico-forum-web` (ID `a4e99f358a9f4953a7045db8f733974d`). Existing
+`HYPERDRIVE` остаётся localization-only. Наличие binding в repository config не означает, что он
+уже применён к deployed Worker: production binding mutation и deploy выполняются только отдельным
+external gate.
 
 ### One-time web credential bootstrap preparation
 
@@ -330,6 +335,37 @@ https://docs.github.com/en/actions/tutorials/authenticate-with-github_token
 https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax
 ```
 
+## Accepted web credential and unbound Hyperdrive — 2026-09-28
+
+Recovery-v2 был externally выполнен ровно один раз и завершился на transaction `COMMIT` с
+bounded `sqlstate_XX000`; compensation была independently подтверждена и вернула
+`vico_forum_web` в `PASSWORD NULL`. Recovery-v2 consumed и не rerun-ится.
+
+После этого Stage 6 вернулся к уже успешному migrator precedent. Owner в Neon SQL Editor выполнил
+standalone `ALTER ROLE vico_forum_web PASSWORD ...`; независимый catalog check подтвердил
+обычную non-privileged LOGIN role с usable credential и прежними safe attributes/defaults.
+Тем же credential Cloudflare успешно создал один direct-origin public Hyperdrive
+`vico-forum-web` для production database `vico_forum`, user `vico_forum_web`, с query caching
+disabled. Configuration создана и connection validation прошла, но Worker binding/routing/deploy
+не выполнялись.
+
+Neon SQL Editor history для plaintext statement не имеет доступного delete action в текущем UI.
+Этот принятый owner-authorized operational risk не требует новой rotation сам по себе.
+
+Repository wiring разделяет capabilities fail closed:
+
+```text
+HYPERDRIVE
+  → localization registry + UI translation reads only
+
+WEB_HYPERDRIVE
+  → Better Auth + forum read/write + dynamic authorization
+  → persisted forum-content translation presentation only
+```
+
+Content-generation action/status/provider/background capabilities остаются disabled и не получают
+web DB capability в этом wiring step.
+
 ## Development path
 
 Cloudflare официально поддерживает local Hyperdrive development через
@@ -338,11 +374,14 @@ Cloudflare официально поддерживает local Hyperdrive develo
 работает локально и подключается прямо к указанной DB; Hyperdrive pooling/query caching не
 участвуют.
 
-Для Vico это означает:
+Для Vico split-capability wiring использует два независимых local overrides:
 
 ```text
 local/disposable PostgreSQL 17
-→ CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE
+├─ CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE
+│  → localization-read
+└─ CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_WEB_HYPERDRIVE
+   → web
 → Workers-compatible local runtime
 → app/db integration tests
 ```
@@ -365,6 +404,8 @@ DATABASE_URL='postgresql://postgres:postgres@127.0.0.1:5432/vico_forum_test' \
   pnpm db:test
 
 export CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE=\
+'postgresql://postgres:postgres@127.0.0.1:5432/vico_forum_test'
+export CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_WEB_HYPERDRIVE=\
 'postgresql://postgres:postgres@127.0.0.1:5432/vico_forum_test'
 pnpm build
 pnpm exec vite preview --host 127.0.0.1 --port 4173 \
@@ -478,9 +519,10 @@ statement_timeout        = 5s       (database+role default; applied)
 ```
 
 Server-side `lock_timeout` / `statement_timeout` уже применены и отдельно проверены для
-`vico_forum_web`. Usable credential и real web Hyperdrive пока отсутствуют. Эти значения остаются
-initial rollout profile, а не принятым production SLO или real-path calibration; фактическая
-runtime acceptance по-прежнему требует измерений через новый cache-disabled web Hyperdrive.
+`vico_forum_web`. Usable credential и отдельный cache-disabled `vico-forum-web` Hyperdrive уже
+существуют, но deployed Worker routing и real-path calibration ещё не выполнялись. Эти значения
+остаются initial rollout profile, а не принятым production SLO; фактическая runtime acceptance
+требует отдельного deploy/smoke gate.
 
 Инвариант web profile:
 

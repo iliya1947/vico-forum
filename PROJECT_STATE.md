@@ -49,27 +49,16 @@ Vico Forum находится в ранней pre-release разработке.
   database именно для application owner/migrator и запрещает database `CREATE` для localization
   runtime и `PUBLIC`; bounded identity/capability gate подтверждён external execution.
 - Stage 6 runtime contract разделяет existing `localization-read` и отдельную `web`
-  capability. Production owner/migrator sequence уже создала `vico_forum_web`, установила
-  protected `WEB_RUNTIME_DATABASE_ROLE`, выдала exact reviewed relation grants и прошла successful
-  read-only runtime privilege verification для обеих runtime roles. Для web role отдельно применены
-  и проверены database-role defaults `lock_timeout=2s` и `statement_timeout=5s`.
-  Первый one-shot credential bootstrap был externally запущен и завершился failure до принятия
-  usable credential; post-failure reconciliation подтвердила `PASSWORD NULL`,
-  `rolvaliduntil IS NULL` и сохранность принятых defaults/grants. One-shot bootstrap consumed.
-  Последующие отдельно разрешённые read-only preflight и rollback-only SCRAM/finite-lease
-  diagnostics оба завершились успешно; rollback-only probe подтвердил explicit rollback и
-  отсутствие принятого credential. Затем отдельный reviewed recovery workflow был запущен ровно
-  один раз на `main` и завершился до owner DB connection с bounded result
-  `stage=input reason=contract_mismatch compensation=not-required`; post-failure read-only
-  проверка снова подтвердила `PASSWORD NULL` и `rolvaliduntil IS NULL`, temporary recovery
-  secret удалён, Hyperdrive не создавался. Этот recovery workflow тоже consumed и не rerun-ится.
-  Точная root cause input mismatch не доказана; password-format mismatch остаётся только
-  гипотезой. Текущий change set подготавливает отдельный validated-input recovery v2 path:
-  repeatable read-only validation будущего v2 secret + exact DB preflight должна успешно пройти
-  до отдельного one-shot recovery-v2 dispatch. Validation/recovery v2 ещё не выполнялись.
-  Отдельный cache-disabled web Hyperdrive, Worker binding/routing и deployed web-runtime
-  acceptance всё ещё отсутствуют. Content-generation runtime остаётся disabled и не входит в
-  web ACL.
+  capability. Production sequence уже создала `vico_forum_web`, установила protected
+  `WEB_RUNTIME_DATABASE_ROLE`, выдала exact reviewed relation grants и приняла database-role
+  defaults `lock_timeout=2s` / `statement_timeout=5s`. После нескольких consumed
+  bootstrap/recovery попыток рабочий standalone `ALTER ROLE ... PASSWORD ...` precedent был
+  повторён под owner: usable web credential установлен без изменения grants/defaults, а Cloudflare
+  успешно создал отдельный unbound direct-origin `vico-forum-web` Hyperdrive с disabled query
+  caching. Worker binding/routing и deployment ещё не приняты внешне. Текущий repository-only
+  change set добавляет `WEB_HYPERDRIVE` wiring отдельно от localization `HYPERDRIVE`; content
+  generation runtime остаётся disabled/fail-closed и не получает task/provider/background DB
+  capability.
 - Обычная feature-разработка и её CI остаются отделены от external rollout; merge в `main` сам по
   себе не является deployment/acceptance evidence.
 
@@ -375,12 +364,12 @@ acceptance остаётся evidence этого localization path, но не я�
 
 Repository содержит reviewed exact ACL/verifier contract для отдельной web runtime
 capability (Better Auth + forum + dynamic authorization + persisted forum-content reads) и
-защищённый split-authority execution path. Production evidence уже подтверждает созданную
+защищённый split-authority execution path. Production evidence подтверждает созданную
 `vico_forum_web` role, protected `WEB_RUNTIME_DATABASE_ROLE=vico_forum_web`, exact 50/50
-non-grantable relation privilege pairs, successful read-only runtime privilege verifier и
-database-role defaults `lock_timeout=2s` / `statement_timeout=5s`.
-Usable web credential, отдельный web Hyperdrive, Worker binding/routing и deployed web-runtime
-acceptance ещё отсутствуют.
+non-grantable relation privilege pairs, successful read-only runtime privilege verifier,
+database-role defaults `lock_timeout=2s` / `statement_timeout=5s` и usable credential.
+Cloudflare отдельно содержит unbound direct-origin cache-disabled Hyperdrive `vico-forum-web`.
+Production Worker binding/routing и deployed web-runtime acceptance ещё не выполнены.
 
 Fresh Stage 6 Cloudflare Gate 0 подтвердил: native Git Builds integration отключён; Production
 имеет только `HYPERDRIVE -> vico-forum-registry` под `vico_forum_runtime` с disabled query
@@ -400,7 +389,9 @@ runtime roles/Hyperdrive writes и другие schema-dependent runtime capabil
 
 - real Google OAuth configuration и smoke;
 - server-controlled bootstrap первого authorization manager;
-- usable web runtime credential + cache-disabled Hyperdrive binding/Worker routing;
+- merge текущего repository-only `WEB_HYPERDRIVE` wiring + production Worker binding/routing
+  и deployed web-runtime acceptance для уже существующих usable credential и cache-disabled
+  `vico-forum-web`;
 - отдельные translation background/maintenance runtime capabilities;
 - Cloudflare Queues и реальные translation providers;
 - final preview/private-data isolation recheck для write-capability rollout;
@@ -408,29 +399,23 @@ runtime roles/Hyperdrive writes и другие schema-dependent runtime capabil
 
 ## Ближайший маршрут
 
-Repository-only web runtime wiring preparation в этом change set уже включает factual Stage 6
-docs sync, единые caller deadlines для Better Auth/forum/authorization и fail-closed disabled
-generation-status composition без изменения текущего `HYPERDRIVE`. Это не утверждает merge,
-external credential/default configuration или deploy.
+Текущий change set выполняет только repository wiring уже созданной web capability:
 
-1. Consumed bootstrap, rollback-only diagnostic и первый recovery workflow не
-   rerun-ить. Recovery v2 preparation добавляет отдельный repeatable manual main-only protected
-   validator будущего `WEB_RUNTIME_DATABASE_PASSWORD_RECOVERY_V2`: exact password/role/owner-target
-   input checks + `BEGIN READ ONLY` production preflight + explicit rollback с bounded evidence.
-2. Только successful validation run с exact same current `main` SHA и accepted first attempt
-   может быть указан новому recovery-v2 one-shot workflow. Его pre-Environment guard через
-   GitHub Actions API проверяет exact validation workflow/run/conclusion/head/attempt до доступа
-   к Environment secrets. Secret между accepted validation и будущим recovery-v2 dispatch
-   изменяться не должен. Merge этой preparation ничего внешне не запускает.
-3. Recovery v2 сохраняет reviewed 30-minute lease, exact web login proof и fail-closed
-   `PASSWORD NULL` compensation/reconciliation. После green CI и полных независимых reviews
-   validation dispatch, recovery-v2 dispatch и последующее recovery → Hyperdrive → finalization
-   окно требуют отдельного explicit authorization.
-4. Только после successful credential recovery вернуться к созданию отдельного cache-disabled
-   `vico-forum-web` Hyperdrive и последующему reviewed binding/routing PR; затем по отдельному
-   разрешению выполнить deploy, real-path smoke/calibration и следующие Stage 6 gates.
+1. `wrangler.jsonc` получает отдельный `WEB_HYPERDRIVE` с exact configuration ID
+   существующего `vico-forum-web`; existing localization `HYPERDRIVE` не меняется.
+2. Worker composition использует localization binding только для registry/UI translation reads,
+   а web binding — для Better Auth, forum reader/writer, dynamic authorization и persisted
+   content-translation presentation. Отсутствие любого обязательного binding fail closed без
+   cross-capability fallback.
+3. Content-generation action/status/provider/background capabilities остаются disabled и не
+   получают web DB routing.
+4. PR CI должен пройти lint, generated Worker typecheck, unit/full tests, build, PostgreSQL suite
+   и Workers smoke с двумя отдельными local Hyperdrive overrides.
+5. После merge перед любым deploy отдельно перепроверяется mutable Production/Preview Base
+   topology. Preview не должен получить production write-capable `WEB_HYPERDRIVE` без отдельной
+   изоляции. Binding mutation/deploy/traffic switch требуют отдельного explicit authorization.
 
 Stage 5 завершён только в repository/local-CI boundary. Real Google OAuth/bootstrap, remaining
-production runtime wiring/Hyperdrive credentials, Cloudflare Queues/providers, authoritative
-production allowance/anti-abuse values, final preview isolation, deployed smoke и backup/restore
-остаются Stage 6 работой.
+production runtime rollout, Cloudflare Queues/providers, authoritative production
+allowance/anti-abuse values, final preview isolation, deployed smoke и backup/restore остаются
+Stage 6 работой.
