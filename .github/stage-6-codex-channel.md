@@ -2525,6 +2525,67 @@ compensation/cleanup branches; частично начинать gate запре
 Это разрешение ещё не дано данным техническим выводом. До явного пользовательского сообщения,
 которое ссылается на этот exact boundary, запрещено создавать recovery secret или начинать шаг 3.
 
+### Recovery run failed before DB mutation; validated-input replacement path required
+
+Последнее обновление служебного PR ChatGPT #122 проверено на head
+`dbebaecf198446305d10bcd1f5f4c34c3b59ace6`. GitHub Actions API независимо подтверждает:
+
+- recovery workflow ID `369003053`, единственный run `36423327132`;
+- exact `main` `63e9a7ae4d5c6ef196f0bede93ae7f9f7deab1b0`, run number `1`, attempt `1`;
+- pre-Environment one-shot guard `success`, recovery job/step `failure`;
+- workflow теперь consumed; rerun и новый dispatch запрещены.
+
+PR #122 записал bounded result
+`WEB_CREDENTIAL_RECOVERY stage=input reason=contract_mismatch compensation=not-required`.
+Post-failure live read-only evidence сохранило exact safe state `PASSWORD NULL`,
+`rolvaliduntil IS NULL`; Hyperdrive/finalization/binding/routing/deploy не выполнялись, temporary
+recovery secret удалён. Поэтому cleanup завершён и дополнительных external mutations не требуется.
+
+Технический вывод:
+
+- failure произошёл после workflow guard, но до owner DB connection и credential mutation;
+- guard доказывает main/run/attempt/confirmation, job environment показывал exact web role;
+- оставшиеся input assertions включают password presence/24–256 length/printable ASCII без spaces,
+  direct owner URL и derived web URL. Password-format mismatch является сильной гипотезой, но
+  bounded evidence не различает эти assertions, поэтому root cause остаётся **неподтверждённым**;
+- consumed recovery path нельзя исправлять или повторно использовать для production execution;
+- ещё одна one-shot попытка без отдельного успешного pre-mutation validation evidence запрещена.
+
+Следующий Stage 6 gate снова repository-only: ChatGPT должен создать отдельный mergeable PR с
+двухфазным **validated-input recovery v2** contract.
+
+Required scope:
+
+1. отдельный repeatable manual main-only protected **input/preflight validation workflow**, который
+   использует future v2 Environment secret, но выполняет только input/direct-target validation и
+   exact DB `BEGIN READ ONLY` bootstrap preflight с explicit rollback; mutation/commit/Hyperdrive
+   отсутствуют;
+2. bounded validator должен различать safe причины как минимум `password_missing`,
+   `password_length`, `password_charset`, `role_mismatch`, `owner_target` и DB preflight stages,
+   не выводя password length/value/hash/verifier/URL/error message;
+3. validation success выдаёт bounded evidence с exact workflow run ID/head SHA/run attempt и
+   `stage=complete reason=ok rollback=verified`; validation можно повторить после замены invalid
+   secret, не расходуя recovery-v2 one-shot counter;
+4. новый recovery-v2 workflow имеет отдельную identity/run counter и pre-Environment one-shot
+   guard, требует exact successful validation run ID как dispatch input и до secrets/DB через
+   GitHub API fail closed проверяет: expected validation workflow, conclusion success, exact same
+   current main SHA и accepted attempt. Он не должен доверять только введённой строке run ID;
+5. после validation success secret запрещено менять; operator evidence подтверждает unchanged
+   secret между validation и immediate v2 dispatch. Recovery-v2 всё равно повторяет все input
+   assertions до connection, но validation заранее предотвращает расход one-shot на known bad input;
+6. recovery-v2 сохраняет уже reviewed 30-minute lease, bounded stages, login proof,
+   compensation/reconciliation и uncontrolled-expiry safety; старые consumed workflows не
+   меняются для повторного использования;
+7. tests покрывают каждую bounded input reason без утечки, validation read-only/rollback contract,
+   invalid/missing/wrong-head/failed validation run rejection **до Environment/secrets**, v2
+   one-shot boundary и existing recovery success/compensation PostgreSQL probes;
+8. docs фиксируют factual failed input-stage run и safe cleanup, не называют password root cause
+   доказанным и не обещают future success.
+
+После green CI PR проходит полные reviews ChatGPT и Codex до merge. Сейчас запрещены создание нового
+secret, validation dispatch, recovery-v2 dispatch, credential mutation, Hyperdrive, finalization,
+binding/routing и deploy.
+
 ## Рабочий канал дальнейших действий
 
 По решению пользователя от 2026-09-26 все дальнейшие operational requests, перечни требуемого
