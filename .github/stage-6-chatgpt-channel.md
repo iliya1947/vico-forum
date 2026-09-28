@@ -6609,3 +6609,44 @@ the exact role identity before later mutations.
 
 This guardrail is process documentation only. It does not authorize any password/secret mutation,
 workflow dispatch, Hyperdrive creation, binding/routing or deploy.
+
+
+### Authorized validated-input v2 gate preflight — 2026-09-28
+
+Owner explicitly authorized only:
+- creation of temporary Environment secret `WEB_RUNTIME_DATABASE_PASSWORD_RECOVERY_V2`;
+- one read-only manual dispatch of `Validate production web credential input`;
+- no recovery-v2 and no other external mutations.
+
+Preflight completed before any mutation:
+
+- exact current `main` remains `9b4d535221d0ecfa23c1209d34e43edc785a073a`;
+- Codex service PR #121 remains on reviewed head
+  `a7620f2c7916dac9e84a9a18ff9654b3333ee13a`;
+- `.github/workflows/production-web-credential-input-validation.yml` exists on current main with
+  exact name `Validate production web credential input`;
+- `.github/workflows/production-web-credential-recovery-v2.yml` exists on current main with
+  exact name `Recover production web credential v2`;
+- GitHub Actions run inventory contains zero runs for validation workflow ID `369157284` and
+  zero runs for recovery-v2 workflow ID `369157285`;
+- live production read-only PostgreSQL check still shows exact `vico_forum_web` with
+  `LOGIN=true`, `PASSWORD NULL`, `rolvaliduntil IS NULL`, and no dangerous role attributes.
+
+No evidence of drift requiring the owner to repeat already-confirmed Cloudflare/UI checks was found.
+The prior request that the owner manually re-check all four UI facts was unnecessary and was
+withdrawn.
+
+Tooling boundary for this execution window:
+the currently connected GitHub integration exposes repository reads/writes and workflow-run
+inspection/re-run operations, but does **not** expose Environment-secret create/update APIs or a
+new `workflow_dispatch` action. No Cloudflare account connector is available. Plugin discovery
+also returned no Cloudflare plugin. Therefore ChatGPT cannot perform the authorized secret creation
+or fresh validation dispatch directly through the currently available connections.
+
+No secret, credential, SQL mutation, workflow dispatch, Hyperdrive, binding/routing or deploy
+operation was performed during this preflight.
+
+Next operator action is limited to creating the one temporary v2 Environment secret with a fresh
+value satisfying the already-reviewed validator contract. After that, ChatGPT will re-check the
+repository/run boundary and provide only the exact validation dispatch step; recovery-v2 remains
+forbidden.
