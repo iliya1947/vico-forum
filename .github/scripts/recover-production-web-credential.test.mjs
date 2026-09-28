@@ -8,6 +8,7 @@ import {
   assertRecoveryOneShot,
   compensateAndReconcileCredential,
   formatRecoveryResult,
+  reconcileCompensatedCredential,
   recoverProductionWebCredential,
   runCli,
   safeRecoveryReason,
@@ -218,6 +219,44 @@ test("successful recovery returns bounded success result", async () => {
     compensation: "not-required",
   });
   assert.deepEqual(compensationCalls, []);
+});
+
+test("reconciliation independently validates owner target and honors allowNonNeon", async () => {
+  const input = {
+    ownerDatabaseUrl: OWNER_URL,
+    webDatabaseUrl:
+      "postgresql://vico_forum_web:candidate@localhost/vico_forum",
+    webRole: WEB_ROLE,
+  };
+  let rejectedCheckCalls = 0;
+
+  await assert.rejects(
+    reconcileCompensatedCredential(input, {
+      async assertRejected() {
+        rejectedCheckCalls += 1;
+      },
+      clientFactory() {
+        throw new Error("clientFactory must not be reached for invalid target");
+      },
+    }),
+    /Owner target must use a Neon origin/,
+  );
+  assert.equal(rejectedCheckCalls, 0);
+
+  await assert.rejects(
+    reconcileCompensatedCredential(input, {
+      allowNonNeon: true,
+      async assertRejected() {
+        rejectedCheckCalls += 1;
+        throw new Error("passed-direct-target-validation");
+      },
+      clientFactory() {
+        throw new Error("clientFactory must not be reached after sentinel");
+      },
+    }),
+    /passed-direct-target-validation/,
+  );
+  assert.equal(rejectedCheckCalls, 1);
 });
 
 test("compensation distinguishes verified, reconciled-safe, and failed", async () => {
