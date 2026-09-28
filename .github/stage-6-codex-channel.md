@@ -2112,6 +2112,50 @@ ESLint failures**. Следующий точный Stage 6 gate — repository-o
 повторная полная независимая проверка; никакой external diagnostic execution до green merge не
 разрешён.
 
+### Финальная независимая проверка исправленного PR #142
+
+Исправленный PR #142 повторно проверен целиком на exact head
+`1df49b37105c2ce6390e0ad05c9e9c16ec4e0e18` против неизменившегося GitHub `main`
+`2915b1982f8295064b0ad2f7a5aa324d4c923316`. Также проверено последнее обновление служебного PR
+ChatGPT #122 на head `69f23f1b9c384bcae99531afabf3e311d7c7164a`. PR #142 open, non-draft,
+mergeable=true, mergeable state `clean`, behind main=0.
+
+Corrective commit по сравнению с ранее полностью проверенным head
+`9bcd009721485e1bcb495131c248555970dbeaa9` изменяет только
+`.github/scripts/diagnose-production-web-credential.mjs` (+1/-3):
+
+- удалены две бесполезные catch-path записи `transactionStarted = false` после уже выполненной
+  rollback attempt;
+- `initialValidUntil` объявлен без бесполезного `null` initializer;
+- stage mapping, transaction lifetime, explicit success-path `ROLLBACK`, rollback failure
+  reporting, one-shot guard, secret boundary, workflows, tests и docs не изменены.
+
+Заново сверены все 9 changed files и весь первоначальный technical scope: read-only exact
+preflight, rollback-only SCRAM/finite-lease probe без `COMMIT`, post-rollback contract, bounded
+non-secret output, protected main-only workflows, pre-Environment one-shot guard, disposable
+PostgreSQL 17 probe, CI wiring и factual state/docs update. Исправление не создаёт новой ветви
+поведения и закрывает все три подтверждённые lint findings. Новых current-Stage defects,
+противоречий или unrelated scope expansion не обнаружено.
+
+Exact-head CI run `36387812143`, attempt 1, terminal success:
+
+- `checks=success` (job `108816840427`): repository contracts, lint, typecheck, tests, build,
+  migration metadata и schema parity;
+- `database=success` (job `108816840060`): clean PostgreSQL 17 suite, manifests/runtime grants,
+  split-authority probes, новый rollback-only diagnostic probe, existing bootstrap compensation,
+  Workers build и local Hyperdrive smoke.
+
+Локальный dependency install в текущем Codex environment дополнительно попытался воспроизвести
+узкие tests, но registry download был недоступен; это environment limitation, не PR failure.
+Repository diff clean по `git diff --check`, а authoritative exact-head CI полностью green.
+
+Финальный технический вывод: **PR #142 на head
+`1df49b37105c2ce6390e0ad05c9e9c16ec4e0e18` готов к merge пользователем**. Следующий точный
+Stage 6 gate после merge — сверить exact merged `main`, затем сначала выполнить только manual
+read-only `Diagnose production web credential preflight`. Rollback-only workflow остаётся
+запрещён до анализа read-only evidence и отдельного explicit authorization; merge сам по себе не
+разрешает credential mutation, Hyperdrive creation, binding/routing или deploy.
+
 ## Рабочий канал дальнейших действий
 
 По решению пользователя от 2026-09-26 все дальнейшие operational requests, перечни требуемого
