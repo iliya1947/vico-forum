@@ -2064,6 +2064,54 @@ first-run/first-attempt one-shot boundary ещё доступна.
 заменяет explicit authorization на полный gate и compensation. Codex напрямую control-plane steps
 пользователю не поручает.
 
+### Независимая полная проверка PR #142 после завершения CI
+
+Проверены актуальные служебный PR ChatGPT #122 на head
+`545529d17b9803da8a138abec04c3b15a8c72e65`, GitHub `main`
+`2915b1982f8295064b0ad2f7a5aa324d4c923316` и весь PR #142 на head
+`9bcd009721485e1bcb495131c248555970dbeaa9`: все 9 changed files, workflows, diagnostic
+implementation, unit/workflow contracts, disposable PostgreSQL probe, CI integration и изменения
+`PROJECT_STATE.md` / `docs/database/HYPERDRIVE.md`. PR не выполняет внешний diagnostic,
+credential mutation, Hyperdrive operation или deploy.
+
+Архитектурная граница PR корректна:
+
+- read-only workflow получает только owner URL и exact web-role variable, использует protected
+  `production-db`, main-only condition и общую migration concurrency;
+- rollback probe отделён собственным pre-Environment one-shot guard и только guarded job получает
+  temporary password secret;
+- mutation probe применяет exact existing SCRAM/finite-lease implementation только внутри
+  transaction, не содержит `COMMIT`, явно выполняет `ROLLBACK`, затем повторно проверяет accepted
+  preflight и исходный `rolvaliduntil`;
+- output ограничен `stage`, bounded `reason` и rollback status; exception message, URL, password,
+  verifier и SQL text не выводятся;
+- disposable PostgreSQL 17 probe подтверждает read-only path, rollback-only mutation path и
+  отсутствие persisted password/expiry; docs точно фиксируют consumed bootstrap и не выдают
+  diagnostics за credential acceptance.
+
+Полный review подтвердил один блокирующий corrective set, уже независимо видимый в завершённом CI:
+
+- exact-head run `36386415691`: `database=success`, включая новый rollback-only probe;
+  `checks=failure` на ESLint;
+- `.github/scripts/diagnose-production-web-credential.mjs` содержит три
+  `no-useless-assignment`: сброс `transactionStarted = false` после rollback в двух catch paths и
+  начальную запись `initialValidUntil = null`, которая всегда заменяется до чтения;
+- это реальные repository/CI defects текущего PR. Они не меняют diagnostic contract, но PR при
+  красном required check не готов к merge.
+
+Требуемая узкая correction для ChatGPT: удалить только две бесполезные catch-path записи
+`transactionStarted = false`, объявить `initialValidUntil` без бесполезного initializer, затем
+заново запустить полный CI. Не менять stage mapping, transaction/rollback semantics, workflows,
+one-shot guard, docs или external state. После исправления Codex должен повторно проверить весь
+PR #142 на новом head с terminal CI; до этого PR не merge-ить и оба production diagnostic workflow
+не dispatch-ить.
+
+Технический вывод: substantive diagnostic/recovery design согласован, иных current-Stage defects
+в полном PR не найдено, но **PR #142 пока не готов к merge исключительно из-за трёх подтверждённых
+ESLint failures**. Следующий точный Stage 6 gate — repository-only corrective cycle PR #142 и
+повторная полная независимая проверка; никакой external diagnostic execution до green merge не
+разрешён.
+
 ## Рабочий канал дальнейших действий
 
 По решению пользователя от 2026-09-26 все дальнейшие operational requests, перечни требуемого
