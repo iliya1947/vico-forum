@@ -2192,6 +2192,59 @@ Merge пользователя подтверждён через GitHub посл
 deploy. Решение о rollback-only probe принимается только после независимого анализа read-only
 evidence и отдельного explicit authorization.
 
+### Read-only credential diagnostic succeeded; rollback-only authorization boundary
+
+Последнее обновление служебного PR ChatGPT #122 проверено на head
+`17f06ff504815dd567bdc24e642b4a1d4384dd7c`. Заявленное evidence независимо сверено через
+GitHub Actions API:
+
+- workflow `Diagnose production web credential preflight`, ID `368843837`;
+- run `36389416755`, `workflow_dispatch`, run number `1`, attempt `1`;
+- exact head `ab1705aeb737a77aad0ad39d8fc1fb055bae5dc9` (current `main`);
+- workflow/job/step `Run bounded read-only diagnostic` — terminal `success`;
+- rollback-only workflow ID `368843839` по-прежнему имеет zero runs.
+
+Служебный PR #122 записал bounded result
+`WEB_CREDENTIAL_DIAGNOSTIC stage=preflight reason=ok rollback=ok`. GitHub public API не даёт
+скачать raw Actions logs без admin authentication, поэтому сама строка сверена по service evidence;
+при этом код diagnostic возвращает successful process только после exact preflight assertions и
+успешного explicit rollback, а GitHub независимо подтверждает successful bounded step.
+
+Технический вывод read-only gate:
+
+- current exact direct owner/database/session, PostgreSQL 17 logging/SCRAM prerequisites,
+  `vico_forum_web` attributes/membership, accepted `2s/5s` defaults и localization/web ACL contract
+  проходят сейчас;
+- исходный bootstrap failure не относится к current read-only preflight interval;
+- остаётся различить `apply-verifier` и последующий in-transaction lease read/assertion;
+- read-only gate не создал credential, не использовал temporary password и не изменил external
+  state.
+
+Следующий технически обоснованный gate — один separately authorized **rollback-only diagnostic**.
+Это внешняя временная password/lease mutation внутри transaction, хотя contract требует rollback
+и отсутствие persisted credential, поэтому общая команда «продолжить» не заменяет explicit user
+authorization.
+
+После явного разрешения ChatGPT должен:
+
+1. перед dispatch сверить exact current `main`, workflow ID `368843839`, zero prior runs, accepted
+   successful read-only evidence и доступность именно reviewed temporary Environment secret без
+   раскрытия/вывода его значения; если secret был удалён или его provenance неоднозначен — stop,
+   не создавать replacement самостоятельно в рамках этого разрешения;
+2. выполнить ровно один first-run/first-attempt dispatch `Probe production web credential rollback`
+   с exact confirmation `web-credential-rollback-probe-confirmed`; никогда не rerun;
+3. дождаться terminal result и записать только sanitized run/head/job metadata и bounded
+   `WEB_CREDENTIAL_DIAGNOSTIC` line в PR #122;
+4. независимо от success/failure остановиться, не запускать durable bootstrap и не создавать
+   Hyperdrive; удалить temporary Environment secret после сохранения evidence, если его дальнейшее
+   хранение не требуется для уже завершённого probe;
+5. передать evidence Codex для определения нового durable credential recovery design.
+
+Если preconditions не подтверждены, guard не проходит, rollback имеет status `failed` либо
+workflow outcome неоднозначен, gate немедленно останавливается для read-only reconciliation.
+Запрещены repeat dispatch/rerun, original bootstrap, durable credential mutation, Hyperdrive,
+binding/routing и deploy.
+
 ## Рабочий канал дальнейших действий
 
 По решению пользователя от 2026-09-26 все дальнейшие operational requests, перечни требуемого
