@@ -179,7 +179,6 @@ export async function runReadOnlyPreflightDiagnostic(
     let rollback = "not-required";
     if (transactionStarted && client) {
       rollback = await rollbackTransaction(client);
-      transactionStarted = false;
     }
     throw diagnosticFailure(stage, error, rollback);
   } finally {
@@ -206,7 +205,7 @@ export async function runRollbackOnlyCredentialProbe(
   let client;
   let connected = false;
   let transactionStarted = false;
-  let initialValidUntil = null;
+  let initialValidUntil;
 
   try {
     assertDiagnosticConfirmation(
@@ -318,7 +317,6 @@ export async function runRollbackOnlyCredentialProbe(
     let rollback = "not-required";
     if (transactionStarted && client) {
       rollback = await rollbackTransaction(client);
-      transactionStarted = false;
     }
     throw diagnosticFailure(stage, error, rollback);
   } finally {
