@@ -6123,3 +6123,94 @@ binding/routing or deploy external operation was performed.
 
 Next process step is Codex's final independent rereview of this exact corrected head + terminal CI
 before user merge.
+
+
+### Read-only recovery readiness preflight after PR #143 merge
+
+Checked the latest Codex coordination update on PR #121 head
+`d2355e9cd185a6dd404de4368d417172aaa4a032` and exact current `main`
+`63e9a7ae4d5c6ef196f0bede93ae7f9f7deab1b0`. This subtask was strictly read-only with
+respect to production/external infrastructure. No recovery secret/resource was created, no
+workflow was dispatched, no SQL mutation was executed, and no Hyperdrive/binding/routing/deploy
+operation was performed.
+
+Readiness evidence:
+
+1. **GitHub recovery workflow boundary — confirmed.**
+   - merged workflow `.github/workflows/production-web-credential-recovery.yml` is present on
+     exact current `main`;
+   - latest Codex evidence identifies workflow ID `369003053` as active;
+   - current repository Actions run listing contains no run with workflow ID `369003053`;
+   - checked-in guard requires exact `refs/heads/main`, `GITHUB_RUN_NUMBER=1`,
+     `GITHUB_RUN_ATTEMPT=1` and confirmation `web-credential-recovery-confirmed` before the
+     protected Environment job, and the recover job repeats the main/run/attempt boundary.
+   Therefore the repository/Actions evidence is still consistent with an unused first-run /
+   first-attempt recovery path.
+
+2. **Recovery Environment secret absence — not independently observable with the available
+   GitHub connector.**
+   GitHub secret APIs are intentionally unavailable to this connector, so the current existence
+   or absence of `production-db / WEB_RUNTIME_DATABASE_PASSWORD_RECOVERY` cannot be verified
+   read-only here. The last recorded operator evidence in this service channel says the old
+   diagnostic `WEB_RUNTIME_DATABASE_PASSWORD_BOOTSTRAP` secret was deleted and that no new
+   recovery secret had been created. That historical evidence is preserved, but it is not promoted
+   to a fresh live control-plane assertion.
+
+3. **Production PostgreSQL safe pre-recovery state — confirmed live, read-only.**
+   Connected Neon read-only inspection on production / `vico_forum` currently executes as
+   `current_user=session_user=vico_forum_owner`. PostgreSQL reports version 17 / UTF-8 and the
+   accepted bootstrap logging/SCRAM settings. Exact `vico_forum_web` catalog state is:
+   `LOGIN`, `NOINHERIT`, no SUPERUSER/CREATEDB/CREATEROLE/REPLICATION/BYPASSRLS,
+   `PASSWORD NULL`, `rolvaliduntil IS NULL`; inbound membership is only
+   `vico_forum_owner -> vico_forum_web` with admin=true, inherit=false, set=false; database-role
+   defaults are exactly `lock_timeout=2s` and `statement_timeout=5s`.
+   Runtime ACL comparison against the merged repository contract is exact:
+   `localization-read` has 3 expected SELECT grants, `web` has all 50 expected non-grantable
+   relation privilege pairs, PUBLIC has zero relation privileges, both runtime roles have effective
+   CONNECT and no CREATE, no runtime-owned objects, no column/function/default grants, and only the
+   accepted database/schema PUBLIC/runtime privileges.
+   The production Neon branch is ready and its read-write compute is active with a distinct direct
+   non-pooler origin host. Repository `wrangler.jsonc` still contains only the existing
+   `HYPERDRIVE` binding, and default-branch code search finds no `WEB_HYPERDRIVE` symbol.
+
+4. **Cloudflare creation path — platform capability confirmed, current account/UI readiness not
+   independently confirmed.**
+   Current official Cloudflare Hyperdrive documentation confirms that a PostgreSQL Hyperdrive
+   configuration can be created from the dashboard, that query caching can be disabled per
+   configuration, and that configuration creation is distinct from subsequently binding its ID to
+   a Worker. This supports the planned unbound cache-disabled design technically.
+   However, no Cloudflare account connector is available and the plugin directory exposes no
+   Cloudflare connector. The last operator/control-plane evidence recorded on 2026-09-27 showed
+   Production with only `HYPERDRIVE -> vico-forum-registry`, query caching disabled on that
+   localization configuration, no `WEB_HYPERDRIVE`, and empty Preview Base bindings/secrets.
+   The current Cloudflare UI state, absence of an already-created `vico-forum-web`, and readiness
+   of the exact Create Configuration form were not freshly observable in this preflight.
+
+5. **Neon owner finalization/compensation path — database access confirmed; prior SQL Editor
+   evidence remains applicable.**
+   The production branch is ready and current connected read-only SQL succeeds as exact
+   `vico_forum_owner` on `vico_forum`, including catalog access needed to inspect
+   `rolvaliduntil`, password-null state, role defaults, membership and ACL. Prior operator
+   evidence in this Stage 6 channel already demonstrated a successful owner-controlled Neon Console
+   SQL Editor transaction on the same production database. No finalization or compensation SQL was
+   executed now.
+
+6. **Continuous 30-minute choreography — technically bounded but not fully proven as an execution
+   readiness fact.**
+   The merged recovery contract provides a server-owned 30-minute finite lease and a 5-minute
+   recovery workflow timeout, so the intended sequence remains technically compatible with one
+   continuous window. But current live Cloudflare account readiness, current recovery-secret
+   absence, and uninterrupted operator availability for the full secret -> one-shot recovery ->
+   bounded evidence -> Hyperdrive creation/verification -> owner finalization -> secret cleanup
+   sequence cannot all be established by the available read-only tooling.
+
+**Readiness result:** production database/repository recovery prerequisites are green, but the
+overall execution-readiness gate is **not yet fully evidenced**. The missing live evidence is
+limited to GitHub Environment secret presence/absence, current Cloudflare account/UI state, and the
+continuous operator/control-plane window. Therefore this preflight does **not** support requesting
+or inferring recovery execution authorization yet. Codex should use this sanitized result to decide
+the next exact gate without treating any unverified control-plane condition as satisfied.
+
+Official Cloudflare references checked during this preflight:
+- https://developers.cloudflare.com/hyperdrive/concepts/query-caching/
+- https://developers.cloudflare.com/hyperdrive/examples/connect-to-postgres/
