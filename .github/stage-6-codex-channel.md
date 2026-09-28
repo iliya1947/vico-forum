@@ -2586,6 +2586,54 @@ Required scope:
 secret, validation dispatch, recovery-v2 dispatch, credential mutation, Hyperdrive, finalization,
 binding/routing и deploy.
 
+### Независимая полная проверка PR #144
+
+Проверены актуальный GitHub `main` `63e9a7ae4d5c6ef196f0bede93ae7f9f7deab1b0`, последнее
+обновление служебного PR ChatGPT #122 на head
+`a547028ed8f884d24eccefdd1bbfdbb12eff9001` и весь PR #144 на exact head
+`dca16d4787807876a859249296895a50e13e7f01`: все 11 changed files, validator,
+validation-run verifier, recovery-v2 wrapper, оба workflows, pure/workflow tests, CI wiring и
+изменения `PROJECT_STATE.md` / `docs/database/HYPERDRIVE.md`. PR open, non-draft,
+mergeable=true, mergeable state `clean`, behind main=0.
+
+Полный review подтвердил согласованный validated-input recovery-v2 contract:
+
+- repeatable main-only protected validator различает bounded password/role/owner reasons, выполняет
+  exact accepted DB preflight только в `BEGIN READ ONLY`, явно rollback-ит и не содержит mutation/
+  commit/Hyperdrive path;
+- validation output содержит только run ID, exact head SHA, attempt и bounded stage/reason/rollback;
+  password value/length/hash/verifier, URL и raw exception не выводятся;
+- recovery-v2 имеет отдельную one-shot identity. Его pre-Environment/no-secret guard до protected
+  job получает exact validation run через current-repository GitHub Actions API и проверяет run ID,
+  workflow path, `workflow_dispatch`, completed/success, `main`, exact current SHA и attempt 1;
+- guard также требует explicit unchanged-secret confirmation; recovery-v2 повторяет static input
+  assertions и только затем delegates к уже reviewed lease/login/compensation core;
+- workflow permissions ограничены `actions: read`/`contents: read`, API version/endpoint фактически
+  принимаются GitHub, actions pinned, shared concurrency и timeouts сохранены;
+- consumed workflows не сделаны reusable; docs фактически записывают failed input-stage run,
+  safe cleanup и неизвестную root cause без premature success;
+- tests покрывают bounded input reasons/no-secret output/read-only rollback, validation-run metadata
+  rejection, pre-Environment separation, v2 one-shot assertions и unchanged-secret gate.
+
+Первоначальный reviewed head `6a940c33fc62b558ed36011d6bfc1c9320e77a53` имел только две
+`no-useless-assignment` lint ошибки validator catch paths. Финальный correction commit
+`dca16d4787807876a859249296895a50e13e7f01` удаляет ровно эти две бесполезные записи в одном
+файле; rollback semantics не изменены.
+
+Exact-head CI run `36429909643` terminal green:
+
+- `checks=success` (job `108953116789`): новые pure/workflow contracts, lint, typecheck, tests,
+  build, migration metadata и schema parity;
+- `database=success` (job `108953117395`): clean PostgreSQL 17 suite, runtime/split-authority/
+  diagnostic/recovery probes, Workers build и local Hyperdrive smoke.
+
+Новых current-Stage defects, documentation contradictions или unrelated scope expansion не
+обнаружено. Финальный технический вывод: **PR #144 на head
+`dca16d4787807876a859249296895a50e13e7f01` готов к merge пользователем**. Merge является только
+repository preparation. До post-merge tree/workflow сверки и отдельного authorization запрещены
+v2 secret creation, validation dispatch, recovery-v2 dispatch, credential mutation, Hyperdrive,
+finalization, binding/routing и deploy.
+
 ## Рабочий канал дальнейших действий
 
 По решению пользователя от 2026-09-26 все дальнейшие operational requests, перечни требуемого
