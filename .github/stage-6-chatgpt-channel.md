@@ -6467,3 +6467,64 @@ workflow layer is justified merely by a difference between the two role states.
 
 No secret, password, credential, workflow dispatch, Hyperdrive resource, SQL mutation, binding,
 routing or deploy operation was performed in this comparison.
+
+
+### First-password bootstrap mechanism decision — 2026-09-28
+
+Completed the third recovery-analysis subtask without external mutation.
+
+Historical evidence was re-queried beyond the service PRs. The retained original-chat context proves
+only this operator sequence around the successful migrator repair: select exact
+`vico_forum_migrator` in Neon, use a pencil/edit control, then copy the connection string and
+replace `production-db / NEON_MIGRATION_DATABASE_URL`; the user confirmed the GitHub secret
+update. The retained context still does not state what exact password-setting operation the
+pencil/edit control performed. Therefore the exact historical first-password mechanism cannot be
+reliably reconstructed and must not be invented.
+
+Current official/platform capability review:
+
+- Neon currently exposes a documented existing-role operation
+  `POST .../roles/{role_name}/reset_password`, and the connected Neon tool exposes the same
+  `reset_postgres_role_password` capability. No separate documented/control-plane
+  `set_initial_password` operation was found.
+- For this exact `vico_forum_web` role, the already-recorded Stage 6 execution proved that Neon
+  Console `Reset password` fails while the role has no existing password:
+  `cannot update password for role without password`. Repeating the equivalent reset path is
+  therefore not a verified bootstrap.
+- PostgreSQL 17 officially permits setting a first password on an existing LOGIN role with
+  `ALTER ROLE ... PASSWORD`. The current `vico_forum_owner` has `CREATEROLE` and the exact
+  `ADMIN OPTION` relationship needed to administer non-superuser `vico_forum_web`.
+- PostgreSQL also explicitly warns that sending cleartext passwords in an `ALTER USER/ROLE`
+  command can expose them in command logs/activity and recommends client-side encryption before
+  sending such a command. Therefore a raw plaintext Neon SQL Editor command is not selected as the
+  project credential path merely because it would technically work.
+- Current repository diagnostics already proved the secret-safe SCRAM-verifier mechanism itself on
+  exact production state: the rollback-only probe applied the verifier + finite lease inside a
+  transaction and successfully rolled it back. The unresolved failure in the consumed recovery
+  occurred earlier at input validation, not in the SCRAM/lease DB operation.
+
+Official references checked:
+- https://api-docs.neon.tech/reference/resetprojectbranchrolepassword
+- https://www.postgresql.org/docs/17/role-attributes.html
+- https://www.postgresql.org/docs/17/auth-password.html
+- https://www.postgresql.org/docs/17/libpq-misc.html
+- https://www.postgresql.org/docs/17/sql-alterrole.html
+
+Decision:
+
+1. Exact historical migrator process cannot be selected because its password-setting UI/control-plane
+   step is not recoverable from retained evidence.
+2. Neon reset cannot be selected because it is already proven inapplicable to this exact current
+   `PASSWORD NULL` role state.
+3. Raw plaintext SQL Editor bootstrap is technically possible but is not the selected secret-safe
+   production process.
+4. The already-reviewed validated-input recovery-v2 path is therefore the minimal currently
+   reproducible secret-safe path: its separate repeatable validator exists specifically to remove
+   the input ambiguity that consumed recovery v1, while the underlying SCRAM/finite-lease operation
+   has already been proven independently by rollback-only production evidence.
+
+This decision does not authorize v2 secret creation, validation dispatch, recovery-v2 dispatch,
+credential mutation, Hyperdrive, finalization, binding/routing or deploy. Before any external
+execution, Codex should independently review this recovered-precedent analysis and either agree
+that validated-input recovery-v2 is again the next gate or identify concrete evidence for a simpler
+supported first-password bootstrap.
