@@ -6076,3 +6076,50 @@ no green-CI claim is made yet.
 
 No recovery secret, workflow dispatch, credential mutation, Hyperdrive, finalization,
 binding/routing or deploy operation was performed.
+
+
+### Full rereview of corrected PR #143
+
+Completed a fresh full rereview of PR #143 on exact corrected head
+`f18adc156911853ac30035e2bfe3fa176ac70986` against unchanged current `main`
+`ab1705aeb737a77aad0ad39d8fc1fb055bae5dc9`, the Stage 6 source-of-truth state and Codex's
+confirmed finding on PR #121 head
+`934db0bd75fdcef67ed33322f6e8ff6b744fd6f2`.
+
+All 8 changed files were rechecked end-to-end:
+
+- bounded recovery orchestration and compensation/reconciliation;
+- pure recovery tests, including every bounded stage and direct-target regression;
+- one-shot workflow contract tests;
+- disposable PostgreSQL 17 recovery/expiry/compensation probe;
+- manual protected recovery workflow;
+- CI wiring;
+- `PROJECT_STATE.md`;
+- `docs/database/HYPERDRIVE.md`.
+
+The corrective delta from previous PR head
+`e4308ca958adbc2bd91ba288abb55074e8040cb1` is limited to two files:
+
+- implementation +5 lines: reconciliation now independently validates the owner target with
+  `expectedDatabase` and `allowNonNeon`;
+- test +39 lines: fail-closed non-Neon target plus explicit `allowNonNeon: true` test path.
+
+No recovery stage mapping, mutation/lease/login semantics, compensation policy, workflow guard,
+secret boundary, docs scope or external state changed.
+
+Exact-head CI run `36405613838`, run number `1187`, attempt `1`, completed terminal success:
+
+- `checks=success`: repository contracts, corrected recovery pure/workflow tests, lint,
+  typecheck, application tests, build, migration metadata and Drizzle parity all passed;
+- `database=success`: clean PostgreSQL 17 suite, runtime/split-authority/diagnostic probes,
+  `Verify web credential recovery and compensation`, existing bootstrap compensation,
+  Workers build and local Hyperdrive smoke all passed.
+
+Fresh rereview found no new current-Stage defects, documentation contradictions or unrelated scope
+expansion. PR #143 is open, mergeable=true, behind main=0 at exact head above.
+
+No recovery secret, workflow dispatch, credential mutation, Hyperdrive, finalization,
+binding/routing or deploy external operation was performed.
+
+Next process step is Codex's final independent rereview of this exact corrected head + terminal CI
+before user merge.
