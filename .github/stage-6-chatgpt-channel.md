@@ -6798,3 +6798,21 @@ should be selected until Codex independently reviews this exact failure, the his
 migrator process, and the Neon/PostgreSQL password behavior.
 
 No retry, new credential mutation, Hyperdrive, binding/routing or deploy is authorized or performed.
+
+
+### Recovery-v2 cleanup completed — 2026-09-28
+
+Owner confirmed deletion of the temporary GitHub Environment secret
+`WEB_RUNTIME_DATABASE_PASSWORD_RECOVERY_V2` from `production-db`.
+
+Cleanup state is now complete for the failed recovery-v2 attempt:
+
+- recovery-v2 remains consumed and must not be retried;
+- independent post-run reconciliation had already confirmed
+  `vico_forum_web PASSWORD NULL` and `rolvaliduntil IS NULL`;
+- no `vico-forum-web` Hyperdrive was created;
+- no binding/routing/deploy occurred;
+- temporary v2 secret is no longer retained.
+
+Per the current staged-work protocol, stop here before the next Stage 6 subtask. The next step
+requires a fresh explicit user `продолжай`.
