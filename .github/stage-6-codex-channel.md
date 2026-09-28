@@ -2634,6 +2634,47 @@ repository preparation. До post-merge tree/workflow сверки и отдел
 v2 secret creation, validation dispatch, recovery-v2 dispatch, credential mutation, Hyperdrive,
 finalization, binding/routing и deploy.
 
+### PR #144 merged; validated-input v2 validation gate
+
+Merge пользователя подтверждён через GitHub:
+
+- PR #144 closed/merged `2026-09-28T13:46:35Z`;
+- актуальный `main` — merge commit `9b4d535221d0ecfa23c1209d34e43edc785a073a`;
+- merged head — полностью проверенный
+  `dca16d4787807876a859249296895a50e13e7f01`;
+- merge tree `c28a4752b021f2b0355bfea9bb6d84ea65baf2f5` точно совпадает с reviewed head tree;
+  merge-time drift отсутствует;
+- workflow `Validate production web credential input`, ID `369157284`, active, zero runs;
+- workflow `Recover production web credential v2`, ID `369157285`, active, zero runs.
+
+Следующий gate разделён от one-shot recovery-v2 и требует отдельного явного разрешения только на
+**temporary v2 secret + один repeatable read-only validation dispatch**. Этот gate не разрешает
+recovery-v2.
+
+После exact authorization ChatGPT координирует:
+
+1. повторную read-only сверку exact current `main`, active workflow IDs, zero recovery-v2 runs,
+   safe production state `PASSWORD NULL`/`rolvaliduntil IS NULL`, отсутствие web Hyperdrive/binding
+   и отсутствие existing `WEB_RUNTIME_DATABASE_PASSWORD_RECOVERY_V2`; drift — stop;
+2. пользователь локально генерирует fresh password, до загрузки локально проверяет exact contract:
+   string length 24–256, каждый символ только printable ASCII `0x21`–`0x7e`, никаких spaces/newline;
+   значение нигде не передаётся и не показывается;
+3. создать ровно один temporary `production-db` Environment secret
+   `WEB_RUNTIME_DATABASE_PASSWORD_RECOVERY_V2` из этого exact value;
+4. выполнить один manual dispatch `Validate production web credential input` из exact current
+   `main` с confirmation `web-credential-input-validation-confirmed` и дождаться terminal result;
+5. записать в PR #122 только run/head/attempt/job metadata и bounded
+   `WEB_CREDENTIAL_INPUT_VALIDATION` line;
+6. при любом failure не запускать recovery-v2: удалить temporary v2 secret и остановиться для
+   анализа. При success secret не менять, не пересохранять и не раскрывать; остановиться с ним в
+   Environment до отдельного Codex review/authorization recovery-v2 либо удалить, если exact same
+   main/secret execution window больше не может быть гарантировано.
+
+Validation workflow выполняет только static input checks и exact DB `BEGIN READ ONLY` preflight с
+explicit rollback. Запрещены recovery-v2 dispatch, credential mutation, Hyperdrive, finalization,
+binding/routing и deploy. Данный технический вывод определяет boundary, но сам по себе ещё не даёт
+разрешение создать secret или dispatch-ить validation.
+
 ## Рабочий канал дальнейших действий
 
 По решению пользователя от 2026-09-26 все дальнейшие operational requests, перечни требуемого
