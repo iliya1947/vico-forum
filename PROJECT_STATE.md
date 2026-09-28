@@ -55,10 +55,15 @@ Vico Forum находится в ранней pre-release разработке.
   и проверены database-role defaults `lock_timeout=2s` и `statement_timeout=5s`.
   Первый one-shot credential bootstrap был externally запущен и завершился failure до принятия
   usable credential; post-failure reconciliation подтвердила `PASSWORD NULL`,
-  `rolvaliduntil IS NULL` и сохранность принятых defaults/grants. One-shot workflow теперь
-  считается consumed и не используется для recovery. Отдельный cache-disabled web Hyperdrive,
-  Worker binding/routing и deployed web-runtime acceptance ещё отсутствуют.
-  Content-generation runtime остаётся disabled и не входит в web ACL.
+  `rolvaliduntil IS NULL` и сохранность принятых defaults/grants. One-shot workflow считается
+  consumed и не используется для recovery. Последующие отдельно разрешённые read-only preflight
+  и rollback-only SCRAM/finite-lease diagnostics оба завершились успешно; rollback-only probe
+  подтвердил explicit rollback и отсутствие принятого credential. Его временный diagnostic secret
+  удалён и не переиспользуется. Историческая причина первого failure остаётся недоказанной.
+  Этот change set только подготавливает новый отдельно reviewed one-shot recovery path; он ещё не
+  выполнялся. Отдельный cache-disabled web Hyperdrive, Worker binding/routing и deployed
+  web-runtime acceptance всё ещё отсутствуют. Content-generation runtime остаётся disabled и не
+  входит в web ACL.
 - Обычная feature-разработка и её CI остаются отделены от external rollout; merge в `main` сам по
   себе не является deployment/acceptance evidence.
 
@@ -402,15 +407,17 @@ docs sync, единые caller deadlines для Better Auth/forum/authorization 
 generation-status composition без изменения текущего `HYPERDRIVE`. Это не утверждает merge,
 external credential/default configuration или deploy.
 
-1. Consumed one-shot bootstrap не rerun-ить. Этот recovery change set добавляет отдельные
-   manual main-only diagnostics: сначала bounded read-only exact-preflight с safe stage/reason
-   output; только после отдельного explicit authorization — one-shot rollback-only SCRAM +
-   finite-`VALID UNTIL` probe без `COMMIT`, с post-`ROLLBACK` verification. По его evidence
-   определить точный failure stage и согласовать новый credential recovery path.
-2. Только после successful credential recovery вернуться к созданию отдельного cache-disabled
-   `vico-forum-web` Hyperdrive и последующему reviewed binding/routing PR.
-3. Затем только по явному разрешению выполнить deploy, real-path smoke/calibration и следующие
-   Stage 6 OAuth/bootstrap/Queue gates.
+1. Consumed bootstrap и rollback-only diagnostic не rerun-ить. Этот change set
+   подготавливает новый manual main-only one-shot production web credential recovery path с
+   bounded stage/reason/compensation evidence, fresh recovery secret boundary, 30-minute
+   server-owned lease, post-commit exact web login proof и fail-closed `PASSWORD NULL`
+   compensation/reconciliation. Merge сам recovery не запускает.
+2. После green CI и полного независимого review Codex новая credential попытка, новый temporary
+   recovery secret и непрерывное recovery → Hyperdrive → finalization окно требуют отдельного
+   explicit authorization. До этого никаких credential/Hyperdrive external operations.
+3. Только после successful credential recovery вернуться к созданию отдельного cache-disabled
+   `vico-forum-web` Hyperdrive и последующему reviewed binding/routing PR; затем по отдельному
+   разрешению выполнить deploy, real-path smoke/calibration и следующие Stage 6 gates.
 
 Stage 5 завершён только в repository/local-CI boundary. Real Google OAuth/bootstrap, remaining
 production runtime wiring/Hyperdrive credentials, Cloudflare Queues/providers, authoritative

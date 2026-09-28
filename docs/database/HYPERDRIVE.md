@@ -216,8 +216,56 @@ PostgreSQL SQLSTATE выводится только как bounded `sqlstate_XXX
 
 Rollback-only probe не является новым credential acceptance и не разрешает Hyperdrive creation.
 Его единственная задача — различить `apply-verifier`, `lease-read/lease-assert` и соседние
-preflight stages без сохранения credential в production. Любой следующий durable bootstrap path
-проектируется и авторизуется отдельно после диагностического evidence.
+preflight stages без сохранения credential в production.
+
+Оба production diagnostics уже были отдельно разрешены и выполнены после merge diagnostic path:
+read-only preflight завершился `stage=preflight reason=ok rollback=ok`, rollback-only probe —
+`stage=rollback-probe reason=ok rollback=verified`. Это подтверждает текущую работоспособность
+accepted preflight и exact in-transaction SCRAM/finite-lease operation, но не восстанавливает
+историческую причину failed bootstrap. Temporary diagnostic secret после gate удалён и не может
+переиспользоваться.
+
+### Production web credential recovery preparation
+
+Этот change set добавляет новый, отдельный от consumed bootstrap и diagnostics, manual main-only
+workflow `.github/workflows/production-web-credential-recovery.yml`. Merge сам по себе не создаёт
+credential и не выполняет external operation.
+
+Recovery boundary:
+
+- отдельный workflow identity/run counter и exact confirmation
+  `web-credential-recovery-confirmed`;
+- pre-Environment guard без secrets требует exact `refs/heads/main`,
+  `GITHUB_RUN_NUMBER=1` и `GITHUB_RUN_ATTEMPT=1`; recovery script повторяет first-run/attempt
+  assertions до DB access;
+- protected inputs: existing `NEON_OWNER_DATABASE_URL`,
+  `WEB_RUNTIME_DATABASE_ROLE` и **новый** temporary Environment secret
+  `WEB_RUNTIME_DATABASE_PASSWORD_RECOVERY`. Старое diagnostic/bootstrap значение не
+  переиспользуется;
+- до mutation повторяется exact direct-owner/bootstrap preflight;
+- runner локально derive-ит SCRAM verifier; одна transaction применяет verifier вместе с
+  server-clock 30-minute `VALID UNTIL`, затем до commit проверяет active/bounded lease;
+- после commit отдельный exact login как `vico_forum_web` проверяет database и принятые
+  `lock_timeout=2s` / `statement_timeout=5s`;
+- bounded output имеет только
+  `WEB_CREDENTIAL_RECOVERY stage=<stage> reason=<bounded-code> compensation=<status>`.
+  Exception text, URLs, cleartext password, verifier и SQL text не логируются;
+- ordinary failure после начала credential mutation сначала пытается `PASSWORD NULL`, затем
+  bounded reconciliation требует PostgreSQL authentication rejection exact candidate credential и
+  повторно проверяет accepted preflight. Результат compensation ограничен
+  `verified | reconciled-safe | failed`;
+- неконтролируемое завершение после commit ограничено server-owned 30-minute expiry, как и в
+  reviewed bootstrap safety model.
+
+Disposable PostgreSQL 17 CI покрывает successful recovery/login, finite-expiry rejection и
+post-commit forced-failure compensation; unit/contract tests покрывают каждый bounded recovery
+stage, secret-safe output и one-shot workflow boundary.
+
+Этот recovery workflow **не** создаёт Hyperdrive, не меняет Worker binding/routing и не deploy-ит.
+Новый recovery secret создаётся только в будущем непрерывном execution window после отдельного
+explicit authorization и только после merge + полного независимого review этого PR. Successful
+recovery сам по себе остаётся leased credential evidence; Hyperdrive creation и post-Hyperdrive
+`VALID UNTIL 'infinity'` finalization выполняются только в отдельно согласованной choreography.
 
 Official reference:
 
