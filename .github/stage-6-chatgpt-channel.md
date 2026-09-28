@@ -5846,3 +5846,38 @@ PR #142 remains open, mergeable=true, based on exact main
 No production diagnostic workflow or external mutation was executed during this correction.
 Next process step is a fresh full rereview of PR #142 on this exact head and continuation of the
 Codex/ChatGPT technical-agreement loop before merge/external execution.
+
+
+### Full rereview of corrected PR #142
+
+Completed a fresh full rereview of PR #142 on exact corrected head
+`1df49b37105c2ce6390e0ad05c9e9c16ec4e0e18` against current `main`
+`2915b1982f8295064b0ad2f7a5aa324d4c923316`, the Stage 6 source-of-truth state and Codex's
+independent findings recorded on PR #121 head
+`034d4ff4e26685e068bc74f36074b1b6ae4a42ab`.
+
+All 9 changed files were rechecked, including:
+
+- diagnostic implementation and bounded reason mapping;
+- unit tests and workflow contract tests;
+- disposable PostgreSQL 17 read-only + rollback-only probe;
+- both manual production diagnostic workflows;
+- CI integration;
+- `PROJECT_STATE.md`;
+- `docs/database/HYPERDRIVE.md`.
+
+The agreed corrective commit is exactly +1/-3 in the diagnostic implementation and changes only
+the three confirmed ESLint assignments. No transaction, rollback, stage mapping, workflow,
+one-shot guard, documentation or external-state behavior changed.
+
+Exact-head CI run `36387812143` is terminal success on attempt 1. Both `checks` and
+`database` are successful. The database job again proves the diagnostic path against disposable
+PostgreSQL 17 and leaves password/expiry unpersisted after rollback.
+
+Fresh rereview found no new current-Stage defects or contradictions in PR #142. The recovery
+boundary remains repository-only until merge; neither production diagnostic workflow has been
+dispatched, and no Neon/Hyperdrive/deploy mutation was performed.
+
+Under the project agreement loop, the next step is Codex's final independent rereview of this exact
+corrected head + terminal CI. PR #142 should not be merged and no production diagnostic should be
+dispatched until that rereview is recorded.
