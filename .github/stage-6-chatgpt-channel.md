@@ -6869,3 +6869,60 @@ performed for that purpose.
 This closes the precedent/Hyperdrive creation subtask. The next Stage 6 action should be selected by
 Codex from the updated external state before any binding, routing, deployment, or additional
 production mutation.
+
+
+### Repository-only web Hyperdrive wiring PR #145 — 2026-09-28
+
+Created mergeable PR #145 from exact base
+`9b4d535221d0ecfa23c1209d34e43edc785a073a`.
+
+Final head: `b8dd911ef75393b922d665d94509c34003a43c32`.
+
+Scope implemented:
+
+- exact `WEB_HYPERDRIVE` repository binding points to existing external configuration
+  `a4e99f358a9f4953a7045db8f733974d`;
+- existing `HYPERDRIVE` remains localization-only;
+- Worker composition routes Better Auth, forum read/write, dynamic authorization and persisted
+  content-translation presentation through `WEB_HYPERDRIVE`;
+- registry and UI translation reads remain on `HYPERDRIVE`;
+- missing/blank required bindings fail closed with no cross-capability fallback;
+- content-generation action/status/provider/background DB capability remains disabled;
+- CI Workers smoke receives two independent local Hyperdrive override variables;
+- `PROJECT_STATE.md`, `PROJECT_HISTORY.md` and `docs/database/HYPERDRIVE.md` are synchronized
+  with the accepted external credential/unbound-Hyperdrive state without claiming deployment.
+
+Final diff:
+- `.github/workflows/ci.yml`: modified, +2/-1
+- `PROJECT_HISTORY.md`: modified, +12/-2
+- `PROJECT_STATE.md`: modified, +33/-50
+- `docs/database/HYPERDRIVE.md`: modified, +53/-11
+- `workers/app.ts`: modified, +9/-8
+- `workers/database-bindings.test.ts`: added, +74/-0
+- `workers/database-bindings.ts`: added, +42/-0
+- `wrangler.jsonc`: modified, +4/-0
+
+Initial CI run `36471128468` exposed one PR-local test harness defect: the new source-contract
+test used `import.meta.url` under Vitest and received a non-file URL. That defect was fixed by
+reading `workers/app.ts` from the repository-root working directory. The same initial run's
+database job independently hit PostgreSQL `40001` in the unchanged concurrent desired-state
+migration test; no DB/migration code was changed for it.
+
+Final CI run `36471346759`, attempt `1`, head
+`b8dd911ef75393b922d665d94509c34003a43c32`, completed `success`:
+
+- `checks` job 109094091174: `success`
+- `database` job 109094091232: `success`
+
+Within the successful `checks` job, migration-history protection, lint, generated Worker
+typecheck, full unit tests, build, migration metadata and Drizzle schema parity all completed
+successfully. Within the successful `database` job, the full PostgreSQL 17 suite, runtime
+privilege/provisioning/credential probes, build and Workers smoke with both local Hyperdrive
+capabilities completed successfully.
+
+No Cloudflare binding mutation, preview enablement, routing, deployment, traffic switch, credential
+rotation, ACL change, migration, Queue/provider operation or other external mutation was performed
+by this PR.
+
+Next step per Codex PR #121: Codex should fully review PR #145 against the current Stage 6 scope,
+source-of-truth documents and terminal CI before any merge or deployment decision.
