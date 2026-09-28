@@ -5670,3 +5670,69 @@ remains. Accepted role/defaults/grants remain the durable baseline. Because the 
 has now consumed run number 1, it must never be rerun or redispatched as a recovery mechanism.
 The temporary GitHub Environment secret must be deleted, then the gate stops and requires a new
 reviewed recovery path. No Hyperdrive/binding/routing/deploy mutation was started.
+
+
+### Failed bootstrap diagnosis — Part 1 narrowing
+
+Current main `2915b1982f8295064b0ad2f7a5aa324d4c923316`, full current project state and the
+web credential/Hyperdrive source-of-truth path were re-read before diagnosis. No new external
+mutation was performed.
+
+The failed production run remains:
+
+- workflow run `36345841051`;
+- run number `1`, attempt `1`;
+- exact main head `2915b1982f8295064b0ad2f7a5aa324d4c923316`;
+- one-shot guard success;
+- `Bootstrap exact web runtime credential` failure;
+- no Hyperdrive step was started.
+
+The 200-character bootstrap password is not a credible length failure: the merged script accepts
+24–256 printable-ASCII characters and validates this before constructing the PostgreSQL owner
+client. The run reached the node-postgres connection path, so this validation passed.
+
+Fresh read-only owner-session checks still show `lock_timeout=0`,
+`statement_timeout=0`, `transaction_timeout=0`; the bootstrap was not killed by an inherited
+owner-side 2s/5s deadline.
+
+PostgreSQL 17 contract materially narrows the failed stage:
+
+- `ALTER ROLE` states that attributes not mentioned retain their previous settings;
+- `PASSWORD NULL` and `VALID UNTIL` are separate role attributes;
+- `pg_roles.rolvaliduntil` is the password-expiry field;
+- a non-superuser with CREATEROLE may change most properties, including password-related role
+  attributes, for a non-superuser/non-replication target for which it has ADMIN OPTION.
+  Current production still shows owner CREATEROLE and exact owner→web ADMIN membership, while
+  `vico_forum_web` is non-superuser/non-replication.
+
+Immediately after the failed run, reconciliation showed
+`pg_authid.rolpassword IS NULL=true` and `pg_roles.rolvaliduntil IS NULL`.
+Under PostgreSQL ALTER ROLE semantics, if the initial leased credential transaction had committed
+and only the later web-login verification had failed, the compensation command
+`ALTER ROLE vico_forum_web PASSWORD NULL` would not clear an already committed
+`VALID UNTIL` value because that attribute is not mentioned. Therefore the observed NULL expiry
+rules out the post-COMMIT login verification as the failure point.
+
+Neon role control-plane metadata `updated_at` moved to the workflow failure timestamp and ended
+again at `authentication_method=no_login`. This is consistent with the script entering its
+credential-mutation/compensation region rather than failing during the earlier read-only
+preflight. Because `credentialMutationAttempted` is set immediately before
+`applyScramVerifier()`, the remaining failure interval is narrowed to:
+
+1. `applyScramVerifier()` itself — transaction-local verifier/lease settings or the fixed
+   PL/pgSQL dynamic `ALTER ROLE ... PASSWORD <SCRAM> VALID UNTIL <timestamp>`; or
+2. the immediately following pre-COMMIT lease catalog query/assertion.
+
+The current generic catch intentionally destroyed the distinction between those two cases.
+Neon query logs for the exact run window returned no statements/errors, so the original failure
+cannot be reconstructed retrospectively from server telemetry available to this session.
+
+This is a current Stage 6 recovery defect, not future groundwork: Stage 6 cannot obtain the web
+credential/Hyperdrive capability until the failed bootstrap is diagnosed.
+
+Next repository task should therefore add a separate diagnostic/recovery workflow rather than
+modify or rerun the consumed one-shot workflow. The diagnostic path should emit bounded
+stage/reason codes without error messages/secret/verifier/SQL text, first prove the full read-only
+preflight and then, only under a separately reviewed/authorized mutation probe, execute the exact
+SCRAM + finite VALID UNTIL operation inside a transaction followed by explicit ROLLBACK so no
+credential survives the diagnostic run.
