@@ -2975,3 +2975,35 @@ failures не являются acceptance evidence и исправлены в fi
 обнаружено. Финальный технический вывод: **PR #145 готов к merge пользователем**. Merge сам по себе
 не является deployment authorization. После merge следующий gate — post-merge tree check и
 read-only повторная проверка mutable Cloudflare Production/Preview Base topology до любого deploy.
+
+### PR #145 merged; read-only pre-deploy topology gate
+
+Merge подтверждён независимо:
+
+- PR #145 имеет `merged=true`, merge time `2026-09-28T20:38:00Z`;
+- актуальный `main` — `743cb3f1c48b17d58c42cdaa6e561512fd4efb94`;
+- merge tree `8d1d228ebe0fe3410e1d85057ec475d9c4965a39` точно совпадает с полностью проверенным
+  PR head `9974b2090adf59ec3224a6fc5173a52b85e139c2`; merge-time drift отсутствует;
+- repository `main` теперь содержит exact split `HYPERDRIVE` / `WEB_HYPERDRIVE` wiring, но merge
+  сам по себе не изменил Cloudflare deployment или traffic.
+
+Следующий единственный gate полностью read-only. ChatGPT должен получить и записать sanitized
+authenticated Cloudflare evidence непосредственно перед любым deploy:
+
+1. native Git Builds по-прежнему disconnected/auto-deploy отсутствует;
+2. текущая Production Worker version/commit и traffic остаются прежними, то есть новый merge ещё не
+   deployed;
+3. Production bindings до deploy не содержат активный `WEB_HYPERDRIVE`, а существующий
+   `HYPERDRIVE -> vico-forum-registry` не изменён;
+4. `Previews Base` по-прежнему имеет zero bindings и zero runtime variables/secrets; preview не
+   наследует production private/write capability;
+5. unbound configuration `vico-forum-web` существует с exact expected ID/name, direct Neon origin,
+   database/user и disabled query caching; existing localization configuration неизменна;
+6. production/preview routes, workers.dev/custom-domain topology и deployment UI path доступны для
+   отдельного bounded deploy gate;
+7. сверить dashboard state с merged `wrangler.jsonc`, не раскрывая origin credential/connection
+   string и не меняя resources/settings.
+
+До независимой проверки этого evidence запрещены deployment, binding mutation, preview changes,
+traffic switch, credential rotation и database mutation. Если topology совпадает, Codex отдельно
+определит exact deploy + smoke boundary и запросит новое явное разрешение владельца.
