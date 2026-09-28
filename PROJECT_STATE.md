@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-09-27
+Последнее обновление: 2026-09-28
 
 ## Назначение
 
@@ -55,15 +55,21 @@ Vico Forum находится в ранней pre-release разработке.
   и проверены database-role defaults `lock_timeout=2s` и `statement_timeout=5s`.
   Первый one-shot credential bootstrap был externally запущен и завершился failure до принятия
   usable credential; post-failure reconciliation подтвердила `PASSWORD NULL`,
-  `rolvaliduntil IS NULL` и сохранность принятых defaults/grants. One-shot workflow считается
-  consumed и не используется для recovery. Последующие отдельно разрешённые read-only preflight
-  и rollback-only SCRAM/finite-lease diagnostics оба завершились успешно; rollback-only probe
-  подтвердил explicit rollback и отсутствие принятого credential. Его временный diagnostic secret
-  удалён и не переиспользуется. Историческая причина первого failure остаётся недоказанной.
-  Этот change set только подготавливает новый отдельно reviewed one-shot recovery path; он ещё не
-  выполнялся. Отдельный cache-disabled web Hyperdrive, Worker binding/routing и deployed
-  web-runtime acceptance всё ещё отсутствуют. Content-generation runtime остаётся disabled и не
-  входит в web ACL.
+  `rolvaliduntil IS NULL` и сохранность принятых defaults/grants. One-shot bootstrap consumed.
+  Последующие отдельно разрешённые read-only preflight и rollback-only SCRAM/finite-lease
+  diagnostics оба завершились успешно; rollback-only probe подтвердил explicit rollback и
+  отсутствие принятого credential. Затем отдельный reviewed recovery workflow был запущен ровно
+  один раз на `main` и завершился до owner DB connection с bounded result
+  `stage=input reason=contract_mismatch compensation=not-required`; post-failure read-only
+  проверка снова подтвердила `PASSWORD NULL` и `rolvaliduntil IS NULL`, temporary recovery
+  secret удалён, Hyperdrive не создавался. Этот recovery workflow тоже consumed и не rerun-ится.
+  Точная root cause input mismatch не доказана; password-format mismatch остаётся только
+  гипотезой. Текущий change set подготавливает отдельный validated-input recovery v2 path:
+  repeatable read-only validation будущего v2 secret + exact DB preflight должна успешно пройти
+  до отдельного one-shot recovery-v2 dispatch. Validation/recovery v2 ещё не выполнялись.
+  Отдельный cache-disabled web Hyperdrive, Worker binding/routing и deployed web-runtime
+  acceptance всё ещё отсутствуют. Content-generation runtime остаётся disabled и не входит в
+  web ACL.
 - Обычная feature-разработка и её CI остаются отделены от external rollout; merge в `main` сам по
   себе не является deployment/acceptance evidence.
 
@@ -407,15 +413,20 @@ docs sync, единые caller deadlines для Better Auth/forum/authorization 
 generation-status composition без изменения текущего `HYPERDRIVE`. Это не утверждает merge,
 external credential/default configuration или deploy.
 
-1. Consumed bootstrap и rollback-only diagnostic не rerun-ить. Этот change set
-   подготавливает новый manual main-only one-shot production web credential recovery path с
-   bounded stage/reason/compensation evidence, fresh recovery secret boundary, 30-minute
-   server-owned lease, post-commit exact web login proof и fail-closed `PASSWORD NULL`
-   compensation/reconciliation. Merge сам recovery не запускает.
-2. После green CI и полного независимого review Codex новая credential попытка, новый temporary
-   recovery secret и непрерывное recovery → Hyperdrive → finalization окно требуют отдельного
-   explicit authorization. До этого никаких credential/Hyperdrive external operations.
-3. Только после successful credential recovery вернуться к созданию отдельного cache-disabled
+1. Consumed bootstrap, rollback-only diagnostic и первый recovery workflow не
+   rerun-ить. Recovery v2 preparation добавляет отдельный repeatable manual main-only protected
+   validator будущего `WEB_RUNTIME_DATABASE_PASSWORD_RECOVERY_V2`: exact password/role/owner-target
+   input checks + `BEGIN READ ONLY` production preflight + explicit rollback с bounded evidence.
+2. Только successful validation run с exact same current `main` SHA и accepted first attempt
+   может быть указан новому recovery-v2 one-shot workflow. Его pre-Environment guard через
+   GitHub Actions API проверяет exact validation workflow/run/conclusion/head/attempt до доступа
+   к Environment secrets. Secret между accepted validation и будущим recovery-v2 dispatch
+   изменяться не должен. Merge этой preparation ничего внешне не запускает.
+3. Recovery v2 сохраняет reviewed 30-minute lease, exact web login proof и fail-closed
+   `PASSWORD NULL` compensation/reconciliation. После green CI и полных независимых reviews
+   validation dispatch, recovery-v2 dispatch и последующее recovery → Hyperdrive → finalization
+   окно требуют отдельного explicit authorization.
+4. Только после successful credential recovery вернуться к созданию отдельного cache-disabled
    `vico-forum-web` Hyperdrive и последующему reviewed binding/routing PR; затем по отдельному
    разрешению выполнить deploy, real-path smoke/calibration и следующие Stage 6 gates.
 
