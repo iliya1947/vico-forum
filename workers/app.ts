@@ -16,6 +16,7 @@ import { createHyperdriveAuthRuntime, type BetterAuthEnvironment } from "../app/
 import { initializeAuthContext, withAuthSessionCookies } from "../app/auth/session-context";
 import { authorizationContext } from "../app/authorization/request-context";
 import { createHyperdriveAuthorization } from "../db/hyperdrive-authorization";
+import { resolveRuntimeDatabaseConnectionStrings } from "./database-bindings";
 
 const requestHandler = createRequestHandler(
   () => import("virtual:react-router/server-build"),
@@ -25,20 +26,20 @@ const requestHandler = createRequestHandler(
 export default {
   async fetch(request, env) {
     const context = new RouterContextProvider();
-    const connectionString = env.HYPERDRIVE.connectionString;
-    const auth = createHyperdriveAuthRuntime(connectionString, env as Env & BetterAuthEnvironment);
+    const { localizationConnectionString, webConnectionString } = resolveRuntimeDatabaseConnectionStrings(env);
+    const auth = createHyperdriveAuthRuntime(webConnectionString, env as Env & BetterAuthEnvironment);
     const authHeaders = await initializeAuthContext(context, request, auth);
-    context.set(forumReaderContext, createHyperdriveForumReader(connectionString));
-    context.set(forumWriterContext, createHyperdriveForumWriter(connectionString));
-    context.set(registryLoaderContext, createHyperdriveRegistryLoader(connectionString));
-    context.set(uiTranslationStoreContext, createHyperdriveUiTranslationStore(connectionString));
+    context.set(forumReaderContext, createHyperdriveForumReader(webConnectionString));
+    context.set(forumWriterContext, createHyperdriveForumWriter(webConnectionString));
+    context.set(registryLoaderContext, createHyperdriveRegistryLoader(localizationConnectionString));
+    context.set(uiTranslationStoreContext, createHyperdriveUiTranslationStore(localizationConnectionString));
     context.set(
       contentTranslationPresentationContext,
       new ContentTranslationPresentationService(
-        createHyperdriveContentTranslationBatchReader(connectionString),
+        createHyperdriveContentTranslationBatchReader(webConnectionString),
       ),
     );
-    context.set(authorizationContext, createHyperdriveAuthorization(connectionString));
+    context.set(authorizationContext, createHyperdriveAuthorization(webConnectionString));
     context.set(contentGenerationActionContext, DISABLED_CONTENT_GENERATION_ACTION_RUNTIME);
     const response = await requestHandler(request, context);
     return withAuthSessionCookies(response, authHeaders);
