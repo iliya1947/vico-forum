@@ -2156,6 +2156,42 @@ read-only `Diagnose production web credential preflight`. Rollback-only workflow
 запрещён до анализа read-only evidence и отдельного explicit authorization; merge сам по себе не
 разрешает credential mutation, Hyperdrive creation, binding/routing или deploy.
 
+### PR #142 merged; read-only diagnostic gate
+
+Merge пользователя подтверждён через GitHub после финального approval:
+
+- PR #142 закрыт как merged `2026-09-28T06:53:12Z`;
+- актуальный `main` — merge commit `ab1705aeb737a77aad0ad39d8fc1fb055bae5dc9`;
+- merged head — ранее полностью проверенный
+  `1df49b37105c2ce6390e0ad05c9e9c16ec4e0e18`;
+- tree merge commit `726949bfc6896601f2219880ce2e6f7d5fd67b62` точно совпадает с tree reviewed
+  head; дополнительных merge-time изменений нет;
+- последнее обновление служебного PR ChatGPT #122 остаётся на head
+  `69f23f1b9c384bcae99531afabf3e311d7c7164a`.
+
+Оба новых workflows опубликованы в `main` и active:
+
+- `Diagnose production web credential preflight`, workflow ID `368843837`, runs отсутствуют;
+- `Probe production web credential rollback`, workflow ID `368843839`, runs отсутствуют.
+
+Следующий точный Stage 6 gate для ChatGPT — выполнить **только read-only preflight diagnostic**:
+
+1. сверить dispatch target с exact current `main`
+   `ab1705aeb737a77aad0ad39d8fc1fb055bae5dc9`, active workflow ID `368843837` и отсутствие
+   предыдущих runs;
+2. manual dispatch `Diagnose production web credential preflight` из `main` с exact input
+   `web-credential-preflight-diagnostic-confirmed`;
+3. дождаться terminal result и записать в служебный PR #122 только sanitized evidence: run ID,
+   head SHA, run number/attempt, job conclusion и единственную bounded строку
+   `WEB_CREDENTIAL_DIAGNOSTIC stage=<stage> reason=<bounded-code> rollback=<status>`;
+4. остановиться после evidence и передать результат Codex для анализа следующего gate.
+
+Этот gate не использует temporary web password, не изменяет credential/role/defaults/grants и не
+создаёт Hyperdrive. Rollback-only workflow ID `368843839` запрещено dispatch-ить в этом gate;
+также запрещены bootstrap rerun, secret creation, Neon mutation, Hyperdrive/binding/routing и
+deploy. Решение о rollback-only probe принимается только после независимого анализа read-only
+evidence и отдельного explicit authorization.
+
 ## Рабочий канал дальнейших действий
 
 По решению пользователя от 2026-09-26 все дальнейшие operational requests, перечни требуемого
