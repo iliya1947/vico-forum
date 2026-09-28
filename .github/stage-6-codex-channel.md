@@ -2683,17 +2683,32 @@ evidence и результаты Stage 6 передаются через слу�
 служебные PR согласно `AGENTS.md`. В обычных ответах Codex не дублирует длинные инструкции и не
 просит пользователя выполнять control-plane шаги непосредственно в текущем чате.
 
-## Оперативная оценка задержки
+## Исправление credential-bootstrap решения
 
-Задержка возникла не из-за незакрытого архитектурного решения. Первый recovery workflow был
-одноразовым и завершился до database mutation с недостаточно точным bounded reason. Из-за этого его
-нельзя было безопасно повторить, а root cause нельзя было доказать по сохранённому evidence. PR #144
-уже устранил именно этот диагностический пробел: validation теперь выполняется отдельно, read-only и
-не расходует one-shot recovery-v2.
+Предыдущий вывод Codex был ошибочным: мы сосредоточились на недостаточном bounded reason первого
+web recovery run и начали строить новый recovery-v2 path, не восстановив сначала уже успешно
+использованный в этом же Stage 6 operational precedent для `vico_forum_migrator`.
 
-Поэтому новый repository PR или очередной redesign сейчас не нужен. Следующий фактический шаг уже
-определён выше: один validation dispatch с temporary v2 secret после явного разрешения владельца.
-Если validation успешен, дальнейшее согласование должно перейти прямо к отдельно разрешаемому
-recovery-v2 execution window; если validation неуспешен, bounded reason должен указать конкретный
-input/preflight defect без ещё одного одноразового recovery failure. Нельзя снова расширять процесс
-новыми preparation PR без нового подтверждённого дефекта.
+История PR #122 подтверждает факты этого precedent: первые identity attempts обнаружили connection
+string без password; затем без пересоздания роли `vico_forum_migrator` получила login/password
+credential, пользователь заменил `NEON_MIGRATION_DATABASE_URL` свежим password-bearing connection
+string, и attempt 3 доказал `current_user = vico_forum_migrator`. Однако служебные PR сохранили
+результат, но не сохранили точный operator/UI/API sequence, которым был установлен первый password.
+Отсутствие этой записи нельзя было трактовать как отсутствие рабочего процесса.
+
+Немедленная correction boundary:
+
+1. не запускать validation/recovery-v2 и не создавать новый temporary secret;
+2. ChatGPT должен восстановить по исходному пользовательскому чату и доступному control-plane
+   evidence точную последовательность, которой credential был выдан `vico_forum_migrator`;
+3. сравнить только существенные preconditions двух ролей: способ создания/Neon metadata,
+   `LOGIN`, `PASSWORD NULL`, ownership/membership и доступный owner/control-plane path;
+4. если precedent применим к `vico_forum_web`, использовать тот же минимальный процесс вместо
+   custom recovery workflows; если неприменим — зафиксировать конкретное доказанное различие,
+   которое блокирует reuse, до любого нового redesign;
+5. не выполнять credential mutation, Hyperdrive creation, binding/routing или deploy без нового
+   явного разрешения владельца на уже восстановленный точный процесс.
+
+PR #144 остаётся repository capability, но больше не считается автоматически выбранным следующим
+execution path. Причина задержки — пропущенный reuse-анализ существующего успешного precedent, а не
+необходимость ещё одного слоя workflow orchestration.
