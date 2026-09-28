@@ -12,6 +12,10 @@
     {
       "binding": "HYPERDRIVE",
       "id": "aa1fb9feeff44a23ae12d88eefceb942"
+    },
+    {
+      "binding": "WEB_HYPERDRIVE",
+      "id": "a4e99f358a9f4953a7045db8f733974d"
     }
   ]
 }
