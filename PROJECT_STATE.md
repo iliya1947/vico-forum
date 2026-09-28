@@ -389,7 +389,9 @@ runtime roles/Hyperdrive writes и другие schema-dependent runtime capabil
 
 - real Google OAuth configuration и smoke;
 - server-controlled bootstrap первого authorization manager;
-- usable web runtime credential + cache-disabled Hyperdrive binding/Worker routing;
+- merge текущего repository-only `WEB_HYPERDRIVE` wiring + production Worker binding/routing
+  и deployed web-runtime acceptance для уже существующих usable credential и cache-disabled
+  `vico-forum-web`;
 - отдельные translation background/maintenance runtime capabilities;
 - Cloudflare Queues и реальные translation providers;
 - final preview/private-data isolation recheck для write-capability rollout;
