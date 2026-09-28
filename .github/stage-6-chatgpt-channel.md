@@ -6528,3 +6528,40 @@ credential mutation, Hyperdrive, finalization, binding/routing or deploy. Before
 execution, Codex should independently review this recovered-precedent analysis and either agree
 that validated-input recovery-v2 is again the next gate or identify concrete evidence for a simpler
 supported first-password bootstrap.
+
+
+### Historical migrator first-password mechanism recovered from operator evidence — 2026-09-28
+
+Owner supplied direct Neon SQL Editor evidence from 2026-09-26 showing a saved query titled
+`set password for vico_forum_migrator role` and the exact statement shape:
+
+`ALTER ROLE vico_forum_migrator PASSWORD '<redacted>';`
+
+The password value is redacted and is not reproduced here.
+
+This resolves the previously missing historical step. The successful migrator recovery sequence is
+now evidenced as:
+
+1. exact existing `vico_forum_migrator` role remained in place;
+2. first password was assigned in Neon SQL Editor through
+   `ALTER ROLE vico_forum_migrator PASSWORD ...`;
+3. a fresh password-bearing connection string for the same role was obtained from Neon;
+4. `production-db / NEON_MIGRATION_DATABASE_URL` was replaced without exposing the secret;
+5. read-only identity workflow run `36252243734`, attempt 3, proved
+   `current_user = vico_forum_migrator`.
+
+This operator evidence supersedes the immediately preceding uncertainty about the exact
+first-password mechanism and invalidates the provisional conclusion that the historical process
+could not be reconstructed.
+
+Current live comparison already recorded above shows `vico_forum_web` has the same relevant
+pre-password state: PostgreSQL `LOGIN=true`, password NULL, Neon
+`authentication_method=no_login`, and the same `vico_forum_owner` administrative relationship.
+
+No conclusion is yet made here that the exact migrator process should automatically be executed for
+`vico_forum_web`. That reuse decision must be independently reviewed against current Stage 6
+requirements, especially secret exposure/logging and the current accepted web credential safety
+boundary, before any mutation.
+
+No SQL, secret, workflow dispatch, credential mutation, Hyperdrive, binding/routing or deploy
+operation was performed by this record.
