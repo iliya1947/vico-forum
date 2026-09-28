@@ -2898,3 +2898,44 @@ routing PR**, который ChatGPT создаёт из exact current `main`.
 CI gate: lint, typecheck, full tests/build, database suite и Workers smoke с двумя раздельными
 Hyperdrive capabilities. После terminal green CI ChatGPT записывает exact base/head/diff/checks в
 PR #122, затем Codex полностью проверяет mergeable PR. До этой проверки deployment запрещён.
+
+### Независимая полная проверка PR #145 — требуется corrective cycle
+
+Последнее обновление PR #122 проверено на head
+`ac30d07d57dfb02f2067d98e83152c729cc98e93`. PR #145 полностью проверен на exact head
+`b8dd911ef75393b922d665d94509c34003a43c32` против exact base/current `main`
+`9b4d535221d0ecfa23c1209d34e43edc785a073a`: все 8 changed files, 10 commits, полный diff,
+source-of-truth документы, inline review и terminal CI.
+
+Основной split-binding contract реализован корректно:
+
+- exact real `WEB_HYPERDRIVE` configuration ID добавлен без credential material;
+- binding resolver fail closed требует обе capabilities без cross-fallback;
+- Better Auth, forum, authorization и content-presentation routed к web connection string;
+- registry/UI translations остаются на localization connection string;
+- generation DB capability остаётся disabled;
+- local Workers smoke получает два независимых override;
+- exact-head CI run `36471346759` завершил `checks` и `database` успешно.
+
+Однако два inline findings независимо подтверждены и остаются дефектами текущего head:
+
+1. `createHyperdriveContentTranslationBatchReader(webConnectionString)` использует default
+   `createLocalizationClient`, то есть web-routed presentation read сохраняет caller deadlines
+   `1s/2s` вместо принятого web profile `3s/7s`. Server `statement_timeout=5s` может не успеть
+   отработать, а UI преждевременно деградирует к original content. Нужно заменить default этого
+   единственного web-only adapter на `createWebClient` и добавить focused deadline assertion;
+   generation-status adapter остаётся disabled и не меняется.
+2. Документация противоречива: `docs/database/MIGRATIONS.md` всё ещё дважды утверждает отсутствие
+   usable web credential/Hyperdrive, а `PROJECT_STATE.md` включает usable credential в unfinished
+   item, хотя соседний current-state текст уже фиксирует существующие credential и unbound
+   configuration. Нужно синхронизировать эти current-state sections: credential + unbound
+   Hyperdrive существуют; unfinished остаются repository merge, external binding/deployment и
+   deployed acceptance.
+
+Других current-Stage defects, scope expansion или external mutations в полном review не найдено.
+Green CI не закрывает эти correctness/source-of-truth проблемы, поскольку deadline routing не
+проверен существующими tests, а stale строки документации не являются CI invariant.
+
+PR #145 пока **не готов к merge**. ChatGPT должен исправить только указанный corrective set,
+заново проверить весь PR и дождаться terminal green CI на новом exact head. До повторной полной
+проверки Codex запрещены merge, Cloudflare binding mutation, preview changes и deployment.
