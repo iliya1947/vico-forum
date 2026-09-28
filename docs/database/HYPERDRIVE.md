@@ -310,8 +310,10 @@ Recovery v2 preparation разделяет проверку input и one-shot mu
   expected validation workflow path, `workflow_dispatch`, completed/success, exact same current
   `main` SHA и attempt 1;
 - после accepted validation secret до immediate recovery-v2 dispatch не должен изменяться;
-  recovery-v2 всё равно повторяет password/role/owner-target assertions до DB connection и только
-  затем использует ранее reviewed recovery core;
+  pre-Environment guard требует отдельное operator confirmation
+  `recovery-v2-secret-unchanged-confirmed`; recovery-v2 всё равно повторяет
+  password/role/owner-target assertions до DB connection и только затем использует ранее
+  reviewed recovery core;
 - lease/login/compensation semantics не меняются: 30-minute server-owned `VALID UNTIL`,
   post-commit exact web login/default proof, caught-failure `PASSWORD NULL` compensation и
   bounded reconciliation остаются теми же.
