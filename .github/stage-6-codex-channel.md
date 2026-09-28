@@ -2807,3 +2807,48 @@ compensation branches. Общая команда «продолжить Stage 6�
 
 Binding, routing, `wrangler.jsonc`, preview topology и deployment не входят в этот gate. Повторный
 validation/recovery dispatch и новые repository PR запрещены без нового подтверждённого дефекта.
+
+### Recovery-v2 failure: возврат к рабочему precedent
+
+Последнее обновление PR #122 проверено на head
+`7feaeaf7d8ed713b2244a1308cc6196e2d6980f5`. GitHub Actions API независимо подтверждает exact
+one-shot run `36450964587`, run number/attempt `1/1`, exact `main`
+`9b4d535221d0ecfa23c1209d34e43edc785a073a`: validation-evidence guard завершён `success`, recovery
+job завершён `failure`.
+
+Bounded result `stage=commit reason=sqlstate_XX000 compensation=verified` согласуется с merged
+script: stages apply-verifier, lease read/assert уже прошли, а исключение возникло на `COMMIT`.
+Независимый catalog post-check подтверждает безопасное состояние `PASSWORD NULL` и
+`rolvaliduntil IS NULL`; Hyperdrive, binding, routing и deploy не выполнялись. Recovery-v2 consumed,
+его retry запрещён. Temporary v2 Environment secret должен быть удалён как уже разрешённый cleanup.
+
+Это является доказанным блокирующим различием между усложнённым path и рабочим precedent:
+
+- rollback-only probe не проверял commit и поэтому не доказывал production viability;
+- precomputed SCRAM-verifier transaction дошла до commit и была отклонена Neon с `XX000`;
+- historical plaintext `ALTER ROLE vico_forum_migrator PASSWORD ...` в Neon SQL Editor успешно
+  commit-нулась и дала usable connection string.
+
+Следовательно recovery-v2 больше не является выбранным execution path. Не создаём recovery-v3,
+новый verifier, новый diagnostic workflow или repository PR. Возвращаемся к уже рабочему exact
+precedent, применимость которого к `vico_forum_web` ранее подтверждена role-state сравнением.
+
+После удаления temporary v2 secret следующий gate должен быть сформулирован только как повторение
+precedent и отдельно явно разрешён владельцем:
+
+1. fresh password создаётся локально и не публикуется;
+2. в Neon SQL Editor под exact `vico_forum_owner` выполняется единственная mutation формы
+   `ALTER ROLE vico_forum_web PASSWORD '<fresh secret>';`;
+3. из Neon получается fresh direct connection string для exact production branch/database/role;
+4. тем же credential создаётся один unbound cache-disabled Hyperdrive `vico-forum-web` и
+   проверяется connectivity;
+5. при любом failure до accepted Hyperdrive выполняется только proven compensation
+   `ALTER ROLE vico_forum_web PASSWORD NULL`, удаляется созданный unbound resource и процесс
+   останавливается без retry;
+6. на success локальная password copy удаляется, фиксируется только sanitized evidence и процесс
+   останавливается без binding/routing/deploy.
+
+Риск cleartext SQL Editor history теперь известен и должен быть явно включён в authorization, а
+после операции history entry с credential должен быть удалён средствами Neon UI, если такая
+операция доступна. Этот риск не является основанием снова заменять доказанно рабочий process новым
+непроверенным механизмом.
