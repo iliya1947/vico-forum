@@ -5916,3 +5916,56 @@ to the separately reviewed rollback-only SCRAM/finite-`VALID UNTIL` probe.
 No temporary web password was used by this gate. No credential, role, defaults, grants, Hyperdrive,
 Worker binding/routing or deploy state was changed. The rollback-only workflow remains
 undispatched and requires separate explicit authorization after Codex analysis.
+
+
+### Rollback-only web credential diagnostic gate — success
+
+User explicitly authorized exactly one rollback-only diagnostic gate within the boundary recorded in
+Codex service PR #121 head `68585ed42a05569df059b63b0265a675737eef24`.
+
+Pre-dispatch checks confirmed:
+
+- current GitHub `main`: `ab1705aeb737a77aad0ad39d8fc1fb055bae5dc9`;
+- reviewed workflow:
+  `.github/workflows/production-web-credential-rollback-probe.yml`;
+- zero prior runs for `Probe production web credential rollback`;
+- accepted successful read-only gate evidence remained current;
+- user confirmed the reviewed temporary Environment secret was available without disclosing its
+  value.
+
+The user then performed the single authorized manual dispatch. Sanitized evidence:
+
+- workflow: `Probe production web credential rollback`;
+- run ID: `36391075878`;
+- event: `workflow_dispatch`;
+- exact head SHA: `ab1705aeb737a77aad0ad39d8fc1fb055bae5dc9`;
+- run number: `1`;
+- run attempt: `1`;
+- one-shot guard job: `success`;
+- rollback-probe job: `success`;
+- workflow conclusion: `success`;
+- total matching rollback-probe runs after completion: exactly one;
+- bounded diagnostic output:
+  `WEB_CREDENTIAL_DIAGNOSTIC stage=rollback-probe reason=ok rollback=verified`.
+
+Interpretation is limited to the reviewed diagnostic contract. In the exact current production
+context, the diagnostic successfully:
+
+1. repeated the accepted bootstrap preflight;
+2. derived the SCRAM verifier in runner memory;
+3. executed the exact SCRAM + finite-`VALID UNTIL` mutation inside a transaction;
+4. read and asserted the active bounded lease inside that transaction;
+5. executed explicit `ROLLBACK`;
+6. reran the accepted preflight and verified the original `rolvaliduntil` state was restored.
+
+The diagnostic implementation contains no `COMMIT` path, and the terminal evidence reports
+`rollback=verified`. Therefore this gate did not accept or persist a web credential.
+
+This evidence means the original failed bootstrap is not reproducible in either the current
+read-only preflight interval or the current in-transaction SCRAM/lease interval. It still does not
+establish the historical root cause of run `36345841051`; any durable credential recovery design
+must be determined separately from this evidence.
+
+No repeat dispatch/rerun, original bootstrap, durable credential mutation, Hyperdrive operation,
+Worker binding/routing or deploy was performed. Per the user's instruction, execution stops after
+recording this evidence.
