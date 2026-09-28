@@ -5812,3 +5812,37 @@ still pending on PR #121, whose latest head remains
 `8b65230d60ff7d55319cbc2fcf68696f504d54d9`.
 
 No external diagnostic workflow or production mutation was executed.
+
+
+### PR #142 confirmed lint correction and green exact-head CI
+
+After Codex independent full review on PR #121 head
+`034d4ff4e26685e068bc74f36074b1b6ae4a42ab`, the only confirmed current-Stage defects in
+PR #142 were the three ESLint `no-useless-assignment` findings already visible in initial CI.
+
+Applied exactly the agreed narrow correction on PR #142:
+
+- removed the two catch-path assignments `transactionStarted = false` after rollback attempts;
+- changed `let initialValidUntil = null;` to an uninitialized declaration;
+- no stage mapping, transaction/rollback semantics, workflows, one-shot guard, docs or external
+  state were changed.
+
+Correction commit: `1df49b37105c2ce6390e0ad05c9e9c16ec4e0e18`.
+Compare from previous PR head `9bcd009721485e1bcb495131c248555970dbeaa9` contains exactly
+one file with +1/-3 lines.
+
+Exact-head CI run `36387812143`, run number `1173`, attempt `1`, completed success:
+
+- `checks=success`: repository contract tests, lint, typecheck, unit tests, build, migration
+  metadata and Drizzle schema parity all passed;
+- `database=success`: clean PostgreSQL 17 migrations, schema manifest, runtime privilege probes,
+  split-authority provisioning, the new web credential diagnostics/rollback-only probe, existing
+  bootstrap/compensation probe, Workers build and local Hyperdrive smoke all passed.
+
+PR #142 remains open, mergeable=true, based on exact main
+`2915b1982f8295064b0ad2f7a5aa324d4c923316`, current head
+`1df49b37105c2ce6390e0ad05c9e9c16ec4e0e18`.
+
+No production diagnostic workflow or external mutation was executed during this correction.
+Next process step is a fresh full rereview of PR #142 on this exact head and continuation of the
+Codex/ChatGPT technical-agreement loop before merge/external execution.
