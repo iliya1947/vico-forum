@@ -2353,6 +2353,46 @@ reconciliation-boundary defect**. После узкой correction ChatGPT до�
 merge запрещены новый recovery secret, workflow dispatch, credential mutation, Hyperdrive,
 finalization, binding/routing и deploy.
 
+### Финальная независимая проверка исправленного PR #143
+
+Исправленный PR #143 повторно проверен целиком на exact head
+`f18adc156911853ac30035e2bfe3fa176ac70986` против неизменившегося GitHub `main`
+`ab1705aeb737a77aad0ad39d8fc1fb055bae5dc9`. Последнее обновление служебного PR ChatGPT #122
+проверено на head `5309c17256277826093cf82aa41776a22bd86b8d`. PR #143 open, non-draft,
+mergeable=true, mergeable state `clean`, behind main=0.
+
+Corrective delta от ранее полностью проверенного head
+`e4308ca958adbc2bd91ba288abb55074e8040cb1` состоит ровно из двух файлов (+44):
+
+- `reconcileCompensatedCredential()` теперь до candidate-login/owner-client access независимо
+  вызывает `assertDirectOwnerTarget(ownerDatabaseUrl, { expectedDatabase, allowNonNeon })`;
+- focused pure test доказывает default fail-closed rejection non-Neon target до любого downstream
+  access и successful проход этой границы только при explicit `allowNonNeon: true` test option;
+- recovery stage mapping, transaction/lease/login semantics, compensation policy, workflow guard,
+  secret boundary, docs и external state не изменены.
+
+Заново сверены все 8 changed files и полный scope: bounded one-shot recovery orchestration,
+direct-owner/preflight contract, SCRAM + finite lease + commit, post-commit exact login,
+compensation/reconciliation, no-secret output, protected workflow, pure/workflow tests, disposable
+PostgreSQL probes, CI wiring и factual docs. Подтверждённая reconciliation-boundary проблема
+закрыта; новых current-Stage defects, contradictions или unrelated expansion не обнаружено.
+
+Exact-head CI run `36405613838`, attempt 1, terminal success:
+
+- `checks=success` (job `108873485908`): repository contracts, recovery tests, lint, typecheck,
+  application tests, build, migration metadata и schema parity;
+- `database=success` (job `108873486183`): clean PostgreSQL 17 suite, runtime/split-authority/
+  diagnostic probes, recovery success/expiry/compensation probe, existing bootstrap compensation,
+  Workers build и local Hyperdrive smoke.
+
+Финальный технический вывод: **PR #143 на head
+`f18adc156911853ac30035e2bfe3fa176ac70986` готов к merge пользователем**. Merge остаётся только
+repository preparation и не разрешает создание recovery secret или запуск workflow. После merge
+Codex должен сверить exact merged tree и определить отдельно явно разрешаемое непрерывное
+credential recovery → cache-disabled Hyperdrive → owner finalization/compensation окно. До этого
+запрещены secret creation, dispatch, credential mutation, Hyperdrive, finalization,
+binding/routing и deploy.
+
 ## Рабочий канал дальнейших действий
 
 По решению пользователя от 2026-09-26 все дальнейшие operational requests, перечни требуемого
