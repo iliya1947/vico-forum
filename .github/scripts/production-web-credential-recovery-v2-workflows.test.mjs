@@ -2,6 +2,11 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import test from "node:test";
 
+import {
+  assertRecoveryV2OneShot,
+  assertValidationRunId,
+} from "./recover-production-web-credential-v2.mjs";
+
 const validationWorkflow = fs.readFileSync(
   new URL("../workflows/production-web-credential-input-validation.yml", import.meta.url),
   "utf8",
@@ -45,6 +50,7 @@ test("recovery v2 validation gate runs before Environment or secret access", () 
   assert.match(guard, /GITHUB_RUN_NUMBER/);
   assert.match(guard, /GITHUB_RUN_ATTEMPT/);
   assert.match(guard, /web-credential-recovery-v2-confirmed/);
+  assert.match(guard, /recovery-v2-secret-unchanged-confirmed/);
   assert.match(guard, /actions\/runs\/\$VALIDATION_RUN_ID/);
   assert.match(guard, /verify-recovery-v2-validation-run\.mjs/);
   assert.doesNotMatch(guard, /environment:/);
@@ -56,6 +62,10 @@ test("recovery v2 validation gate runs before Environment or secret access", () 
 });
 
 test("recovery v2 has independent one-shot identity and repeats input checks", () => {
+  assert.doesNotThrow(() => assertRecoveryV2OneShot("1", "1"));
+  assert.throws(() => assertRecoveryV2OneShot("2", "1"));
+  assert.doesNotThrow(() => assertValidationRunId("12345"));
+  assert.throws(() => assertValidationRunId("not-a-run"));
   assert.match(recoveryWorkflow, /name: Recover production web credential v2/);
   assert.match(
     recoveryWorkflow,
