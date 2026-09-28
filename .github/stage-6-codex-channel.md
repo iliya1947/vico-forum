@@ -2852,3 +2852,49 @@ precedent и отдельно явно разрешён владельцем:
 после операции history entry с credential должен быть удалён средствами Neon UI, если такая
 операция доступна. Этот риск не является основанием снова заменять доказанно рабочий process новым
 непроверенным механизмом.
+
+### Рабочий precedent завершён; переход к repository wiring
+
+Последнее обновление PR #122 проверено на head
+`3a9b9a4dee5358813c6cefce4af2288032a82a83`. Принято operator/control-plane evidence:
+
+- failed recovery-v2 cleanup завершён, temporary v2 secret удалён;
+- exact standalone `ALTER ROLE vico_forum_web PASSWORD ...` precedent выполнен под owner;
+- live catalog post-check подтверждает прежние safe role attributes и usable credential;
+- Cloudflare создал отдельный unbound Hyperdrive `vico-forum-web` на direct non-pooled Neon origin,
+  database `vico_forum`, user `vico_forum_web`, query caching disabled;
+- existing `vico-forum-registry` не изменён; Worker binding, routing и deployment не выполнялись;
+- Neon SQL Editor history не предоставляет delete action, поэтому принятый cleartext-history risk
+  остаётся фактом выполненного owner-authorized precedent, а не поводом менять credential снова.
+
+External credential/Hyperdrive gate закрыт. Новая credential rotation, recovery или Hyperdrive
+recreation не требуется. Следующий безопасный шаг — один mergeable **repository-only binding and
+routing PR**, который ChatGPT создаёт из exact current `main`.
+
+Обязательный scope PR:
+
+1. синхронизировать `PROJECT_STATE.md`, `PROJECT_HISTORY.md` и `docs/database/HYPERDRIVE.md` с
+   фактом usable web credential и созданного unbound cache-disabled `vico-forum-web`, не утверждая
+   binding/deployment acceptance;
+2. добавить в `wrangler.jsonc` production binding `WEB_HYPERDRIVE` с exact configuration ID уже
+   созданного `vico-forum-web`; placeholder/fake ID запрещён, connection string/credential в Git не
+   добавляются;
+3. в Worker composition оставить `env.HYPERDRIVE.connectionString` только для registry loader и UI
+   translation store;
+4. использовать `env.WEB_HYPERDRIVE.connectionString` для Better Auth, forum reader/writer,
+   authorization и persisted content-translation presentation;
+5. сохранить generation-status/content-generation DB capability disabled/fail-closed; не расширять
+   ACL и не подключать translation task/provider/background writes;
+6. fail closed при отсутствии любого обязательного binding; не fallback-ить web adapters на
+   localization `HYPERDRIVE` и не fallback-ить localization reads на `WEB_HYPERDRIVE`;
+7. обновить generated Worker environment types штатной repository-командой и добавить focused
+   source/unit contract tests для exact two-binding routing и отсутствия cross-capability fallback;
+8. сохранить shared web deadlines `connection=3s`, `lock=2s`, `statement=5s`, `query=7s`, текущие
+   migrations, dependencies и runtime privilege matrix без изменений;
+9. не выполнять Cloudflare binding mutation, deployment, preview enablement или traffic switch из
+   этого PR. Перед deploy отдельно повторно проверить mutable production/Preview Base topology и
+   доказать, что preview не получает production `WEB_HYPERDRIVE` write capability.
+
+CI gate: lint, typecheck, full tests/build, database suite и Workers smoke с двумя раздельными
+Hyperdrive capabilities. После terminal green CI ChatGPT записывает exact base/head/diff/checks в
+PR #122, затем Codex полностью проверяет mergeable PR. До этой проверки deployment запрещён.
