@@ -6312,3 +6312,30 @@ one-shot execution merely to discover an input-format mismatch.
 
 Immediate remaining cleanup is only deletion of the temporary recovery Environment secret by the
 operator. No other external mutation is authorized or required for this failed attempt.
+
+
+### Failed recovery cleanup complete
+
+Operator confirmed deletion of the temporary GitHub Environment secret
+`production-db / WEB_RUNTIME_DATABASE_PASSWORD_RECOVERY` after failed one-shot recovery run
+`36423327132`.
+
+Cleanup result:
+
+- temporary recovery secret: deleted by operator;
+- production web credential: remains absent (`PASSWORD NULL`, `rolvaliduntil IS NULL`) from the
+  post-failure live read-only verification already recorded above;
+- `vico-forum-web` Hyperdrive: not created;
+- Worker binding/routing/deploy: not changed;
+- no rerun or second dispatch was performed.
+
+The consumed recovery workflow remains permanently ineligible for another run under its reviewed
+first-run/first-attempt contract.
+
+User requirement for any future recovery path is now explicit: do not propose another production
+credential attempt until the replacement path has independently verified every prerequisite and
+input before any one-shot/mutating boundary, including an exact pre-dispatch validation mechanism
+for the recovery password contract. The current failed path must first be independently analyzed
+with Codex; password format remains only a hypothesis until confirmed.
+
+No further external mutation is authorized by this cleanup record.
