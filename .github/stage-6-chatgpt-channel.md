@@ -6683,3 +6683,38 @@ deploy was performed.
 Per the agreed gate, the temporary v2 secret must now remain unchanged. The next action requires
 Codex review of this exact validation evidence and a separate explicit owner authorization before
 any recovery-v2 execution.
+
+
+### Authorized recovery-v2 execution window — 2026-09-28
+
+Owner explicitly authorized one continuous execution window, limited to the exact boundary recorded
+in Codex PR #121:
+
+- one `Recover production web credential v2` dispatch using accepted validation run
+  `36449688425`;
+- on recovery success, creation of one unbound cache-disabled `vico-forum-web` Hyperdrive using
+  the exact validated credential, followed by owner finalization
+  `ALTER ROLE vico_forum_web VALID UNTIL 'infinity'`;
+- on failure or ambiguous outcome, only the recorded reconciliation/compensation actions are
+  authorized, including restoring `PASSWORD NULL`, deleting any newly-created unbound Hyperdrive,
+  and deleting the temporary secret;
+- retry, repeated validation/recovery dispatch, binding, routing, deploy and other external
+  mutations remain forbidden.
+
+Immediate pre-execution verification:
+
+- current `main` is still `9b4d535221d0ecfa23c1209d34e43edc785a073a`;
+- Codex PR #121 current head is `040b962a85abbae44a59e321fa547eb323119297`;
+- accepted validation run `36449688425` remains the only run of validation workflow
+  `369157284`, attempt `1`, conclusion `success`, exact same main SHA;
+- recovery-v2 workflow `369157285` still has zero runs;
+- live read-only production check still shows `vico_forum_web` with `LOGIN=true`,
+  `PASSWORD NULL`, `rolvaliduntil IS NULL` and no dangerous role attributes;
+- recovery-v2 workflow exact inputs on current main are:
+  `validation_run_id`,
+  `secret_unchanged_confirmation`,
+  `recovery_confirmation`.
+
+The connected GitHub integration still does not expose a fresh workflow-dispatch action, so the
+owner must perform the single manual dispatch in GitHub UI. No recovery-v2 dispatch or other
+external mutation has yet been performed in this execution window.
