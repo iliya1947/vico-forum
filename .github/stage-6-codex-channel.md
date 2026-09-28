@@ -2761,3 +2761,49 @@ validation.
 
 Эта проверка не выполняла SQL mutation, secret creation, workflow dispatch, Hyperdrive creation,
 binding/routing или deploy.
+
+### Successful validated-input gate принят
+
+Последнее обновление PR #122 проверено на head
+`f5737bcc97998b772c6bae7c085284149d5da946`. GitHub Actions evidence независимо подтверждено:
+
+- workflow `Validate production web credential input`, ID `369157284`;
+- единственный run `36449688425`, run number/attempt `1/1`, event `workflow_dispatch`;
+- exact current `main` `9b4d535221d0ecfa23c1209d34e43edc785a073a`;
+- run, main-only guard job, validation job и все выполненные steps завершены `success`;
+- bounded result сообщает `stage=complete reason=ok rollback=verified`;
+- workflow `Recover production web credential v2`, ID `369157285`, по-прежнему имеет zero runs.
+
+Validation доказала только static secret contract и exact owner/direct-target DB preflight в
+read-only transaction с rollback. Credential ещё не изменён, Hyperdrive не создан. Temporary
+`WEB_RUNTIME_DATABASE_PASSWORD_RECOVERY_V2` должен оставаться неизменным; его замена или повторное
+сохранение аннулирует связь с run `36449688425`.
+
+Следующий точный Stage 6 gate — единое непрерывное **recovery-v2 → unbound Hyperdrive → owner
+finalization** execution window. Оно требует нового явного разрешения владельца, включая success и
+compensation branches. Общая команда «продолжить Stage 6» не разрешает эти production mutations.
+
+После явного разрешения ChatGPT должен:
+
+1. подтвердить unchanged temporary secret, exact unchanged `main`, zero recovery-v2 runs,
+   successful validation run `36449688425` и доступность Neon/Cloudflare control-plane paths;
+2. один раз dispatch-ить `Recover production web credential v2` с exact inputs:
+   `validation_run_id=36449688425`,
+   `secret_unchanged_confirmation=recovery-v2-secret-unchanged-confirmed`,
+   `recovery_confirmation=web-credential-recovery-v2-confirmed`;
+3. при любом non-success/ambiguous result не выполнять retry или Hyperdrive creation; reconcile
+   credential state и обеспечить `PASSWORD NULL`, удалить temporary secret и остановиться;
+4. только после bounded recovery success и successful web login proof создать один новый
+   **unbound**, direct-origin, cache-disabled Hyperdrive `vico-forum-web` с тем же exact credential;
+5. при Hyperdrive creation/connectivity failure удалить новый unbound resource, вернуть web role в
+   `PASSWORD NULL`, удалить temporary secret и остановиться; accepted defaults/grants сохраняются;
+6. после accepted Hyperdrive metadata/connectivity evidence до 30-minute lease expiry выполнить
+   owner-controlled exact preflight и только `VALID UNTIL 'infinity'` finalization;
+7. при ambiguous finalization сначала выполнить read-only reconciliation; только exact infinity +
+   accepted Hyperdrive считается success, иначе удалить resource, установить `PASSWORD NULL` и
+   удалить temporary secret;
+8. на success удалить temporary secret и локальную password copy, записать только sanitized
+   evidence в PR #122 и остановиться.
+
+Binding, routing, `wrangler.jsonc`, preview topology и deployment не входят в этот gate. Повторный
+validation/recovery dispatch и новые repository PR запрещены без нового подтверждённого дефекта.
