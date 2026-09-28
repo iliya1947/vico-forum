@@ -6650,3 +6650,36 @@ Next operator action is limited to creating the one temporary v2 Environment sec
 value satisfying the already-reviewed validator contract. After that, ChatGPT will re-check the
 repository/run boundary and provide only the exact validation dispatch step; recovery-v2 remains
 forbidden.
+
+
+### Validated-input v2 gate result — 2026-09-28
+
+Owner created the authorized temporary Environment secret
+`WEB_RUNTIME_DATABASE_PASSWORD_RECOVERY_V2` and manually dispatched exactly one
+`Validate production web credential input` run from `main`.
+
+Observed exact evidence:
+
+- workflow ID: `369157284`;
+- run ID: `36449688425`;
+- run number: `1`;
+- run attempt: `1`;
+- event: `workflow_dispatch`;
+- head SHA: `9b4d535221d0ecfa23c1209d34e43edc785a073a`;
+- run conclusion: `success`;
+- guard job `Require main validation dispatch`: `success`;
+- validation job `Validate production web credential input`: `success`;
+- every reported step in the validation job completed successfully;
+- bounded validator evidence:
+  `WEB_CREDENTIAL_INPUT_VALIDATION run_id=36449688425 head_sha=9b4d535221d0ecfa23c1209d34e43edc785a073a run_attempt=1 stage=complete reason=ok rollback=verified`.
+
+This proves the current temporary v2 secret satisfies the reviewed static input contract and that
+the exact owner/direct-target production DB preflight completed inside the read-only/explicit
+rollback boundary.
+
+No recovery-v2 dispatch, credential mutation, Hyperdrive creation, finalization, binding/routing or
+deploy was performed.
+
+Per the agreed gate, the temporary v2 secret must now remain unchanged. The next action requires
+Codex review of this exact validation evidence and a separate explicit owner authorization before
+any recovery-v2 execution.
