@@ -6565,3 +6565,47 @@ boundary, before any mutation.
 
 No SQL, secret, workflow dispatch, credential mutation, Hyperdrive, binding/routing or deploy
 operation was performed by this record.
+
+
+### Credential-recovery precedent-first process guardrail — 2026-09-28
+
+This incident exposed a process failure: a new custom web credential recovery stack was designed
+before reconstructing an already successful same-Stage credential bootstrap precedent for
+`vico_forum_migrator`. The missing historical detail was incorrectly treated as evidence that no
+reusable process existed. User-supplied Neon SQL Editor history later proved the exact missing step.
+
+For any future credential/bootstrap/recovery task in this project, use this order before designing
+or merging another mechanism:
+
+1. **Precedent search first.** Search repository history, both Stage service channels, prior workflow
+   evidence and available operator/control-plane history for the same class of operation.
+2. **Reconstruct the exact prior sequence.** Separate proved steps from gaps. A gap in service-PR
+   documentation is not evidence that the step never existed; obtain operator/control-plane
+   evidence before redesigning around the gap.
+3. **Compare current vs precedent preconditions.** Check exact role/resource state, identity,
+   privileges, ownership/membership, password/login state, target environment and platform
+   capability. Classify only concrete differences that can actually block reuse.
+4. **Reuse by default when materially equivalent.** If no blocking difference is proved, start from
+   the already successful process. A new workflow/recovery layer requires a specific demonstrated
+   incompatibility, not uncertainty alone.
+5. **Validate one-shot inputs before mutation.** For any remaining one-shot boundary, validate every
+   checkable input/prerequisite through a repeatable non-mutating gate first; do not spend a
+   one-shot run to discover an avoidable input-format or target-selection error.
+6. **Keep historical process and current safety review separate.** A previously successful method is
+   evidence of feasibility, not automatic authorization to repeat it. Re-evaluate current secret
+   exposure/logging/compensation requirements before execution.
+7. **Record operator-visible steps after success.** The service channel must preserve the exact
+   control-plane action used (UI path/API/SQL statement shape with secret redacted), not only the
+   resulting state, so the process remains reproducible.
+8. **No local-project assumption.** The user has no local project copy. Project/repository checks and
+   execution instructions must use GitHub/CI and available external control planes unless the user
+   explicitly changes that constraint.
+
+For the current `vico_forum_web` incident, the recovered precedent is now exact enough for
+independent reuse review: first password for the existing migrator role was set in Neon SQL Editor
+with `ALTER ROLE vico_forum_migrator PASSWORD '<redacted>';`, then a fresh password-bearing Neon
+connection string replaced the protected GitHub secret, and a separate read-only workflow proved
+the exact role identity before later mutations.
+
+This guardrail is process documentation only. It does not authorize any password/secret mutation,
+workflow dispatch, Hyperdrive creation, binding/routing or deploy.
