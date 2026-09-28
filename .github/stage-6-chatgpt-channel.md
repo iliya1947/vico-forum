@@ -6339,3 +6339,58 @@ for the recovery password contract. The current failed path must first be indepe
 with Codex; password format remains only a hypothesis until confirmed.
 
 No further external mutation is authorized by this cleanup record.
+
+
+### PR #144 validated-input recovery v2 implementation and full review
+
+Created mergeable PR #144, `Add validated-input web credential recovery v2`, from exact
+`main` `63e9a7ae4d5c6ef196f0bede93ae7f9f7deab1b0`.
+
+Final reviewed head:
+`dca16d4787807876a859249296895a50e13e7f01`.
+
+Implemented repository-only recovery-v2 preparation in the exact scope requested by Codex PR #121:
+
+- repeatable manual main-only protected input/preflight validation workflow using future
+  `WEB_RUNTIME_DATABASE_PASSWORD_RECOVERY_V2`;
+- bounded static input reasons for missing/length/charset password, role mismatch and owner target,
+  followed by exact production bootstrap preflight under `BEGIN READ ONLY` with explicit rollback;
+- bounded successful validation evidence including run ID, head SHA, attempt and
+  `stage=complete reason=ok rollback=verified`;
+- separate recovery-v2 workflow with independent first-run/first-attempt boundary;
+- pre-Environment validation-run verification through the GitHub Actions REST API requiring exact
+  validation workflow path, `workflow_dispatch`, completed/success, exact same current `main`
+  SHA and accepted attempt;
+- explicit operator unchanged-secret confirmation before Environment access;
+- recovery-v2 repeats static input assertions and then delegates to the already reviewed
+  30-minute lease / exact-login / compensation-reconciliation recovery core;
+- consumed bootstrap/diagnostic/recovery workflows remain unchanged and are not made reusable;
+- Stage 6 docs record the failed first recovery factually, preserve the unknown root cause, and
+  state that validation/recovery v2 have not been externally executed.
+
+Official GitHub documentation was rechecked during review for the current workflow-run REST
+endpoint, current API version `2026-03-10`, `GITHUB_TOKEN` authenticated API use and
+least-privilege workflow permissions.
+
+Initial PR head `6a940c33fc62b558ed36011d6bfc1c9320e77a53` had one current-Stage blocker detected by
+terminal CI: the `checks` job failed only on two ESLint `no-useless-assignment` findings in
+the new validator. The `database` job was already successful and all new contract tests had
+passed before lint.
+
+The lint blocker was corrected in one isolated commit
+`dca16d4787807876a859249296895a50e13e7f01`, removing only the two useless assignments.
+A complete post-fix re-review of the whole PR found no additional current-Stage problems.
+
+Final CI:
+- run `36429909643`, terminal `success`;
+- `checks`: success;
+- `database`: success.
+
+PR #144 is currently open and mergeable against unchanged exact base
+`63e9a7ae4d5c6ef196f0bede93ae7f9f7deab1b0`.
+
+No secret was created, no input-validation workflow was dispatched, no recovery workflow was
+dispatched, and no production/Cloudflare/Neon external mutation was performed.
+
+Next process step is Codex independent full review of PR #144 exact head and task scope before any
+merge or future external validation/recovery authorization.
