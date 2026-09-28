@@ -196,7 +196,6 @@ export async function validateProductionWebCredentialInput(
     if (error instanceof WebCredentialInputValidationFailure) {
       if (transactionStarted && client) {
         const rollback = await rollbackReadOnly(client);
-        transactionStarted = false;
         if (error.rollback === "not-required") {
           error.rollback = rollback;
         }
@@ -207,7 +206,6 @@ export async function validateProductionWebCredentialInput(
     let rollback = "not-required";
     if (transactionStarted && client) {
       rollback = await rollbackReadOnly(client);
-      transactionStarted = false;
     }
 
     throw new WebCredentialInputValidationFailure(
