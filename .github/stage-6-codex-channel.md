@@ -2245,6 +2245,68 @@ workflow outcome неоднозначен, gate немедленно остан�
 Запрещены repeat dispatch/rerun, original bootstrap, durable credential mutation, Hyperdrive,
 binding/routing и deploy.
 
+### Rollback-only credential diagnostic succeeded; durable recovery PR boundary
+
+Последнее обновление служебного PR ChatGPT #122 проверено на head
+`0d855158b8b85364bb9327689ce621dff93d9ed7c`. GitHub Actions metadata независимо подтверждает:
+
+- workflow `Probe production web credential rollback`, ID `368843839`;
+- единственный run `36391075878`, `workflow_dispatch`, run number `1`, attempt `1`;
+- exact current `main` `ab1705aeb737a77aad0ad39d8fc1fb055bae5dc9`;
+- pre-Environment one-shot guard, rollback-probe job и step
+  `Run rollback-only SCRAM lease diagnostic` — terminal `success`;
+- matching workflow runs после gate — ровно один; rerun/re-dispatch запрещены.
+
+PR #122 записал bounded result
+`WEB_CREDENTIAL_DIAGNOSTIC stage=rollback-probe reason=ok rollback=verified`. По reviewed contract
+это доказывает для текущего production context: accepted preflight → verifier derivation → exact
+SCRAM + finite lease mutation → active bounded lease read/assertion внутри transaction → explicit
+rollback → post-rollback accepted preflight и восстановленный исходный `rolvaliduntil`. Diagnostic
+не имеет `COMMIT`, поэтому usable credential не принят и Hyperdrive не создан.
+
+Техническое согласование:
+
+- current read-only preflight и current exact in-transaction mutation/lease interval оба успешно
+  воспроизводятся;
+- historical root cause failed run `36345841051` восстановить по имеющемуся evidence нельзя;
+- нельзя объявлять исходный failure исправленным только на основании diagnostic success;
+- однако диагностический gate снимает blocking uncertainty о поддержке exact SCRAM/lease operation
+  в текущем Neon/PostgreSQL context и позволяет подготовить новый отдельно reviewed durable
+  recovery path;
+- consumed original bootstrap и consumed rollback probe никогда не rerun-ятся.
+
+Перед новой credential попыткой reviewed temporary Environment secret, использованный diagnostic
+gate, должен быть удалён через координацию ChatGPT и факт удаления записан sanitized в PR #122.
+Его значение нельзя переиспользовать для durable recovery. Это cleanup текущего завершённого gate,
+не разрешение на новый secret или credential mutation.
+
+Следующий repository-only Stage 6 gate — ChatGPT создаёт отдельный mergeable PR с новым one-shot
+**production web credential recovery** path. Требуемый узкий scope:
+
+1. новый manual main-only protected workflow с новым workflow identity/run counter, общей
+   `production-db-migrations` concurrency, pre-Environment/no-secret guard и exact recovery
+   confirmation token; first run/first attempt enforced и workflow, и script;
+2. новый recovery orchestration module может reuse только уже reviewed pure/preflight/SCRAM/login/
+   revoke helpers, но должен иметь bounded stage/reason/compensation output, чтобы новый failure не
+   схлопывался в generic result;
+3. до mutation — exact direct owner target и полный accepted bootstrap preflight; mutation — одна
+   transaction с locally derived SCRAM verifier и server-clock finite 30-minute `VALID UNTIL`,
+   in-transaction active/bounded lease assertion, затем commit;
+4. после commit — exact bounded login как `vico_forum_web` с database + `2s/5s` assertions;
+   ordinary failure после mutation обязан выполнить `PASSWORD NULL` compensation и bounded
+   reconciliation; uncontrolled termination остаётся ограничен server-owned expiry;
+5. workflow не создаёт Hyperdrive, binding/routing и не deploy-ит; temporary secret отсутствует в
+   repository и создаётся только в будущем separately authorized continuous execution window;
+6. pure unit/workflow contract tests и disposable PostgreSQL 17 probe обязаны покрыть success,
+   each bounded failure stage, compensation, no-secret output, one-shot guard и finite-expiry
+   safety; CI должен включать их явно;
+7. `PROJECT_STATE.md` и `docs/database/HYPERDRIVE.md` обновляются только как recovery preparation:
+   current factual external state остаётся `PASSWORD NULL`/no accepted credential/no web
+   Hyperdrive; никакой будущий success не записывается заранее.
+
+Этот PR после green CI проходит полный независимый review Codex до merge. Новый secret, dispatch,
+durable mutation, Hyperdrive, finalization, binding/routing и deploy этим gate не разрешены.
+
 ## Рабочий канал дальнейших действий
 
 По решению пользователя от 2026-09-26 все дальнейшие operational requests, перечни требуемого
