@@ -5969,3 +5969,27 @@ must be determined separately from this evidence.
 No repeat dispatch/rerun, original bootstrap, durable credential mutation, Hyperdrive operation,
 Worker binding/routing or deploy was performed. Per the user's instruction, execution stops after
 recording this evidence.
+
+
+### Diagnostic temporary secret cleanup completed
+
+After the successful rollback-only diagnostic gate, the user confirmed deletion of the temporary
+GitHub Environment secret `WEB_RUNTIME_DATABASE_PASSWORD_BOOTSTRAP` from
+`production-db`.
+
+This is sanitized operator evidence only; the secret value was never disclosed to ChatGPT and is
+not stored in the repository, service PRs, logs or tool output. The deleted diagnostic secret must
+not be reused for durable credential recovery.
+
+Current external state remains unchanged by this cleanup:
+
+- no accepted web credential;
+- no web Hyperdrive;
+- no Worker binding/routing change;
+- no deploy;
+- consumed original bootstrap remains non-rerunnable;
+- consumed rollback-only diagnostic remains non-rerunnable.
+
+Cleanup subtask is complete. The next separately reviewed repository-only task is the mergeable
+production web credential recovery PR in the exact scope recorded in Codex PR #121 head
+`2cfa216b876108a3c8523955c5e20de546d9e05f`.
