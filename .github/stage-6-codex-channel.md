@@ -2712,3 +2712,52 @@ string, и attempt 3 доказал `current_user = vico_forum_migrator`. Одн
 PR #144 остаётся repository capability, но больше не считается автоматически выбранным следующим
 execution path. Причина задержки — пропущенный reuse-анализ существующего успешного precedent, а не
 необходимость ещё одного слоя workflow orchestration.
+
+### Независимая проверка восстановленного migrator precedent
+
+Последнее обновление PR #122 проверено на head
+`edf6898cf17aa5ae31ea310ee1c7632f12b5f060`. Пользовательское Neon SQL Editor evidence восстановило
+пропущенный шаг: первый password существующей роли был установлен командой формы
+`ALTER ROLE vico_forum_migrator PASSWORD '<redacted>';`, после чего password-bearing connection
+string был сохранён в GitHub Environment и отдельный read-only workflow доказал exact identity.
+
+Применимость к `vico_forum_web` **функционально подтверждена**:
+
+- обе роли являются существующими `LOGIN` roles; исходное web-состояние — `PASSWORD NULL`;
+- обе non-superuser roles администрируются `vico_forum_owner` через одинаковое automatic
+  `ADMIN=true, INHERIT=false, SET=false` membership;
+- owner имеет `CREATEROLE`; PostgreSQL 17 разрешает такому администратору менять password target
+  non-superuser role без пересоздания роли и без изменения ownership/grants;
+- различие object ownership (migrator владеет application objects, web не владеет ничем) не влияет
+  на возможность password assignment;
+- Neon reset для exact `PASSWORD NULL` web role уже фактически отклонён, но это не блокирует
+  PostgreSQL `ALTER ROLE ... PASSWORD` path, который использовал migrator.
+
+Литеральное повторение plaintext SQL Editor statement при этом не принимается как безопасный
+операторский процесс: официальный PostgreSQL 17 contract предупреждает, что cleartext password в
+`ALTER ROLE` передаётся серверу открытым текстом и может сохраниться в client history/server log;
+предоставленный historical evidence как раз происходит из сохранённой SQL Editor history.
+
+Это не означает, что нужен другой credential mechanism. Merged recovery-v2 реализует тот же
+подтверждённый PostgreSQL primitive — `ALTER ROLE vico_forum_web PASSWORD ...` — но передаёт
+client-derived SCRAM-SHA-256 verifier вместо cleartext password, добавляет finite 30-minute lease,
+login proof и compensation. Rollback-only production probe уже доказал применимость этого exact
+SCRAM/lease mutation к текущей web role; первый consumed recovery не дошёл до неё и упал на input
+validation.
+
+Итог согласования:
+
+1. восстановленный migrator process доказывает, что first-password bootstrap для существующей
+   `vico_forum_web` роли допустим без recreation или Neon reset;
+2. recovery-v2 не является альтернативной придуманной password model — это secret-safe execution
+   того же `ALTER ROLE` bootstrap с уже проверенными safety boundaries;
+3. отдельный repeatable validator из PR #144 должен использоваться только как pre-mutation проверка
+   secret/target inputs, а не как начало нового redesign cycle;
+4. следующий точный gate остаётся одним temporary v2 secret и одним read-only validation dispatch
+   на неизменном `main`; он требует отдельного явного разрешения владельца;
+5. при successful validation и unchanged secret следующим шагом будет немедленное отдельное
+   разрешение one-shot recovery-v2 + unbound cache-disabled Hyperdrive + owner finalization;
+6. новые repository PR или credential mechanisms запрещены без нового подтверждённого дефекта.
+
+Эта проверка не выполняла SQL mutation, secret creation, workflow dispatch, Hyperdrive creation,
+binding/routing или deploy.
