@@ -190,8 +190,10 @@ Runtime privilege acceptance отделена от production migration workflow
 6. только после successful privilege evidence может рассматриваться Worker wiring/deployment.
 
 Current production execution завершила owner phase, exact migrator relation grants и read-only
-runtime privilege verification successfully. Это принимает database privilege boundary, но не
-создаёт usable web credential, Hyperdrive binding или Worker rollout.
+runtime privilege verification successfully. Последующий owner-controlled standalone password
+precedent создал usable web credential, а Cloudflare принял отдельный unbound cache-disabled
+Hyperdrive `vico-forum-web`. Это не означает, что production Worker binding/routing или rollout
+уже выполнены.
 
 Runtime verifier требует для обоих roles LOGIN + effective database `CONNECT`, отсутствие
 dangerous attributes, inherited memberships/ownership, `public.USAGE` без `CREATE` и полный
@@ -206,9 +208,10 @@ default boundary сохраняет только уже принятую hard-wi
 inbound admin control допускается только в уже принятой non-inheriting /
 non-SET форме.
 
-Current production уже имеет reviewed web PostgreSQL role и exact relation grants, подтверждённые
-shared runtime verifier. Это **не** означает, что usable web credential, cache-disabled Hyperdrive
-binding, Worker routing или deployment уже существуют. Migration workflow намеренно остаётся
+Current production уже имеет reviewed web PostgreSQL role, exact relation grants и usable
+credential, подтверждённые соответствующими Stage 6 gates. Cloudflare содержит отдельную unbound
+cache-disabled configuration `vico-forum-web`; repository wiring готовится отдельно, а deployed
+Worker binding/routing и deployment ещё не приняты. Migration workflow намеренно остаётся
 независимым от web runtime provisioning, поэтому будущая schema migration не связывается с
 наличием или rollout web capability.
 
