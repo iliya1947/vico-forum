@@ -5736,3 +5736,57 @@ stage/reason codes without error messages/secret/verifier/SQL text, first prove 
 preflight and then, only under a separately reviewed/authorized mutation probe, execute the exact
 SCRAM + finite VALID UNTIL operation inside a transaction followed by explicit ROLLBACK so no
 credential survives the diagnostic run.
+
+
+### Diagnostic/recovery PR #142 created
+
+Created separate mergeable repository-only PR #142,
+**Add web credential failure diagnostics**, from exact current `main`
+`2915b1982f8295064b0ad2f7a5aa324d4c923316`.
+
+Initial PR head: `9bcd009721485e1bcb495131c248555970dbeaa9`.
+GitHub reports mergeable=true, behind main=0. Initial CI run `36386415691` started and is still
+in progress; no readiness claim is made yet.
+
+Implemented diagnostic boundary:
+
+- new manual main-only
+  `.github/workflows/production-web-credential-preflight-diagnostic.yml` uses
+  `production-db`, shared `production-db-migrations` concurrency and only
+  `NEON_OWNER_DATABASE_URL` + `WEB_RUNTIME_DATABASE_ROLE`; it does not receive the web
+  password secret and repeats the exact existing bootstrap preflight read-only;
+- new manual main-only
+  `.github/workflows/production-web-credential-rollback-probe.yml` has a separate pre-Environment
+  one-shot guard requiring first run/first attempt and exact
+  `web-credential-rollback-probe-confirmed`; only the guarded Environment-bound probe can access
+  the temporary password secret;
+- shared diagnostic script emits only
+  `WEB_CREDENTIAL_DIAGNOSTIC stage=<stage> reason=<bounded-code> rollback=<status>`.
+  Assertion failures become `contract_mismatch`, PostgreSQL errors expose only bounded SQLSTATE,
+  known transport failures expose only bounded transport code. Exception messages, URL, password,
+  verifier and SQL text are never logged;
+- read-only mode distinguishes owner-connect, transaction begin, preflight read and preflight
+  assertion;
+- rollback-probe mode reuses the exact reviewed SCRAM derivation and `applyScramVerifier()`,
+  distinguishes verifier derivation, apply-verifier, lease read and lease assertion, and contains
+  no `COMMIT` path;
+- after exact SCRAM + 5-minute diagnostic `VALID UNTIL` is visible inside the transaction, the
+  probe executes explicit `ROLLBACK`, then reruns the accepted preflight and verifies that
+  `rolvaliduntil` returned to its original value;
+- disposable PostgreSQL 17 CI probe is placed after split-authority relation provisioning and
+  before the existing durable bootstrap probe; it proves read-only diagnostic success,
+  rollback-only SCRAM/lease success and no persisted password/expiry after rollback;
+- unit/workflow-contract tests cover bounded reason mapping, no-secret output, secret separation,
+  no-`COMMIT` diagnostic implementation, read-only workflow secret minimization and rollback
+  one-shot guard placement before Environment/secrets.
+
+Source-of-truth docs were updated to record the factual failed external one-shot:
+post-failure reconciliation retained `PASSWORD NULL`, `rolvaliduntil IS NULL`, accepted
+defaults/grants and no web Hyperdrive; the original bootstrap workflow is now marked consumed and
+must not be rerun. The nearest route now points to read-only diagnostic first, then a separately
+authorized rollback-only probe, then a newly reviewed durable recovery design.
+
+No production diagnostic workflow was dispatched by this PR creation. No secret, Neon credential,
+Hyperdrive, Worker binding/routing or deploy mutation was performed.
+
+Next process step is independent Codex review of PR #142 before any diagnostic execution.
