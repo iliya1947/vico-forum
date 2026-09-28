@@ -52,9 +52,12 @@ Vico Forum находится в ранней pre-release разработке.
   capability. Production owner/migrator sequence уже создала `vico_forum_web`, установила
   protected `WEB_RUNTIME_DATABASE_ROLE`, выдала exact reviewed relation grants и прошла successful
   read-only runtime privilege verification для обеих runtime roles. Для web role отдельно применены
-  и проверены database-role defaults `lock_timeout=2s` и `statement_timeout=5s`. Usable
-  application credential всё ещё отсутствует; отдельный cache-disabled Hyperdrive, Worker
-  binding/routing и deployed web-runtime acceptance ещё отсутствуют.
+  и проверены database-role defaults `lock_timeout=2s` и `statement_timeout=5s`.
+  Первый one-shot credential bootstrap был externally запущен и завершился failure до принятия
+  usable credential; post-failure reconciliation подтвердила `PASSWORD NULL`,
+  `rolvaliduntil IS NULL` и сохранность принятых defaults/grants. One-shot workflow теперь
+  считается consumed и не используется для recovery. Отдельный cache-disabled web Hyperdrive,
+  Worker binding/routing и deployed web-runtime acceptance ещё отсутствуют.
   Content-generation runtime остаётся disabled и не входит в web ACL.
 - Обычная feature-разработка и её CI остаются отделены от external rollout; merge в `main` сам по
   себе не является deployment/acceptance evidence.
@@ -399,13 +402,13 @@ docs sync, единые caller deadlines для Better Auth/forum/authorization 
 generation-status composition без изменения текущего `HYPERDRIVE`. Это не утверждает merge,
 external credential/default configuration или deploy.
 
-1. Этот change set добавляет только manual main-only protected one-time path для bootstrap
-   credential существующей `vico_forum_web`; merge сам credential не создаёт. После отдельного
-   explicit authorization выполнить единственный bootstrap с bounded 30-minute password lease →
-   новый cache-disabled web Hyperdrive → safe metadata evidence → owner-finalization lease в
-   `VALID UNTIL 'infinity'`. Если evidence/finalization не завершены до expiry, credential не
-   продлевается: `PASSWORD NULL`, cleanup созданного unbound resource и stop без rerun.
-2. После successful choreography отдельным reviewed PR подключить реальный web binding/routing.
+1. Consumed one-shot bootstrap не rerun-ить. Этот recovery change set добавляет отдельные
+   manual main-only diagnostics: сначала bounded read-only exact-preflight с safe stage/reason
+   output; только после отдельного explicit authorization — one-shot rollback-only SCRAM +
+   finite-`VALID UNTIL` probe без `COMMIT`, с post-`ROLLBACK` verification. По его evidence
+   определить точный failure stage и согласовать новый credential recovery path.
+2. Только после successful credential recovery вернуться к созданию отдельного cache-disabled
+   `vico-forum-web` Hyperdrive и последующему reviewed binding/routing PR.
 3. Затем только по явному разрешению выполнить deploy, real-path smoke/calibration и следующие
    Stage 6 OAuth/bootstrap/Queue gates.
 
