@@ -141,6 +141,12 @@ credential уже принятой SQL-created `vico_forum_web`. Workflow исп
 `NEON_OWNER_DATABASE_URL`, `WEB_RUNTIME_DATABASE_ROLE` и временный Environment secret
 `WEB_RUNTIME_DATABASE_PASSWORD_BOOTSTRAP`; merge сам по себе ничего во внешней БД не меняет.
 
+Этот one-shot path уже был externally использован один раз и завершился failure. Post-failure
+reconciliation подтвердила `PASSWORD NULL`, `rolvaliduntil IS NULL`, сохранность accepted
+`2s/5s` defaults/grants и отсутствие созданного web Hyperdrive. Поэтому исходный bootstrap
+workflow считается **consumed**: его нельзя rerun-ить или использовать новым dispatch как recovery
+mechanism.
+
 До доступа к Environment secrets/production DB отдельный guard job требует exact
 `refs/heads/main`, `GITHUB_RUN_NUMBER=1`, `GITHUB_RUN_ATTEMPT=1` и exact confirmation token.
 Поэтому новый dispatch либо rerun этого workflow после первого run не может дойти до bootstrap
@@ -183,6 +189,35 @@ bootstrap secret или dispatch-ить workflow. После accepted Hyperdrive
 evidence временный GitHub Environment secret удаляется, а lifecycle bootstrap workflow/script
 удаляются отдельным cleanup PR. Successful credential bootstrap сам по себе не означает
 Hyperdrive/binding/deploy acceptance.
+
+
+### Web credential failure diagnostics
+
+Recovery после consumed one-shot отделён от нового credential bootstrap. Repository предоставляет
+два manual main-only diagnostic workflows с общей `production-db-migrations` concurrency и
+protected Environment `production-db`:
+
+- `.github/workflows/production-web-credential-preflight-diagnostic.yml` — read-only повторяет
+  exact owner/direct-target, PostgreSQL logging/SCRAM, role/membership, `2s/5s` defaults и полный
+  localization/web ACL preflight. Temporary web password ему не передаётся.
+- `.github/workflows/production-web-credential-rollback-probe.yml` — отдельный one-shot
+  diagnostic, доступный только после exact confirmation и отдельного external authorization.
+  Он использует temporary password только in-memory, выполняет тот же SCRAM + finite
+  `VALID UNTIL` operation внутри PostgreSQL transaction, проверяет lease внутри transaction и
+  **всегда завершает mutation path через `ROLLBACK`; `COMMIT` в diagnostic implementation
+  отсутствует**. После rollback заново проверяются accepted preflight contract и исходное
+  `rolvaliduntil`.
+
+Diagnostic output намеренно ограничен одной машинно-читаемой строкой
+`WEB_CREDENTIAL_DIAGNOSTIC stage=<stage> reason=<bounded-code> rollback=<status>`. Исходные
+exception message, connection URL, cleartext password, SCRAM verifier и SQL text не логируются.
+PostgreSQL SQLSTATE выводится только как bounded `sqlstate_XXXXX`; assertion drift —
+`contract_mismatch`; известные transport failures — bounded transport code.
+
+Rollback-only probe не является новым credential acceptance и не разрешает Hyperdrive creation.
+Его единственная задача — различить `apply-verifier`, `lease-read/lease-assert` и соседние
+preflight stages без сохранения credential в production. Любой следующий durable bootstrap path
+проектируется и авторизуется отдельно после диагностического evidence.
 
 Official reference:
 
