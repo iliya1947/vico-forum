@@ -1,5 +1,5 @@
-import type { Client } from "pg";
-import { describe, expect, it, vi } from "vitest";
+import { Client } from "pg";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   ContentTranslationPresentationService,
@@ -8,6 +8,7 @@ import {
   ContentTranslationStorageUnavailableError,
 } from "../app/localization/content-translation";
 import { createHyperdriveContentTranslationBatchReader } from "./hyperdrive-content-translations";
+import { WEB_DB_CALLER_DEADLINES } from "./postgres-deadlines";
 
 const revision = {
   contentType: "topic-title" as const,
@@ -18,6 +19,40 @@ const revision = {
 };
 
 describe("Hyperdrive content translation batch reader", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("uses the shared web caller deadlines by default", async () => {
+    let client: Client | undefined;
+    vi.spyOn(Client.prototype, "connect").mockImplementation(async function (this: Client) {
+      client = this;
+      throw new Error("timeout expired");
+    });
+    vi.spyOn(Client.prototype, "end").mockImplementation(async () => undefined);
+
+    const reader = createHyperdriveContentTranslationBatchReader(
+      "postgres://web@hyperdrive/vico",
+    );
+
+    await expect(reader.readBatch([{
+      contentType: "topic-title",
+      contentId: "topic-1",
+      revisionId: "title-r1",
+      targetLocale: "fr",
+    }])).rejects.toBeInstanceOf(ContentTranslationStorageUnavailableError);
+
+    expect(client).toBeDefined();
+    const configured = client as unknown as {
+      connectionParameters: { query_timeout: number };
+      _connectionTimeoutMillis: number;
+    };
+    expect(configured._connectionTimeoutMillis)
+      .toBe(WEB_DB_CALLER_DEADLINES.connectionTimeoutMillis);
+    expect(configured.connectionParameters.query_timeout)
+      .toBe(WEB_DB_CALLER_DEADLINES.queryTimeoutMillis);
+  });
+
   it("degrades connection timeout to original fallback and discards the client", async () => {
     const end = vi.fn(async () => { throw new Error("cleanup failed"); });
     const createClient = vi.fn(() => ({
