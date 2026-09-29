@@ -7098,3 +7098,31 @@ deployment remains the pre-Stage-6 baseline:
 This confirms the merged Stage 6 split-binding repository state has not yet been deployed to the
 production Worker. No deployment or traffic mutation was performed during this evidence capture.
 
+### Preview isolation recheck remains required — 2026-09-29
+
+Re-read of current `PROJECT_STATE.md`, `ROADMAP.md`, and
+`docs/database/HYPERDRIVE.md`, together with current Cloudflare Worker Previews documentation,
+resolves the remaining question about the Previews Base snapshot.
+
+Cloudflare's current contract is that Preview bindings/vars/secrets do **not** inherit production
+settings automatically; production top-level Hyperdrive bindings therefore do not by themselves
+give a Preview `WEB_HYPERDRIVE`. However, Previews Base is an independent mutable dashboard/config
+surface and can be populated explicitly/imported separately. Repository history alone cannot prove
+its current account state.
+
+The project source of truth explicitly requires this mutable topology to be rechecked before real
+auth/forum write deployment:
+
+- `PROJECT_STATE.md`: before any deploy, mutable Production/Preview Base topology is rechecked and
+  Preview must not receive production write-capable `WEB_HYPERDRIVE` without isolation;
+- `ROADMAP.md` Stage 6 item 7 requires preview/non-production isolation from production private
+  data/write capabilities or disabling that Preview path;
+- `docs/database/HYPERDRIVE.md` repeats the same pre-write-deployment Preview Base recheck.
+
+Therefore the earlier chat-side conclusion that the Previews Base snapshot could be omitted was
+incorrect. The minimized Codex gate remains appropriate: only one current Previews Base isolation
+snapshot is still needed; Builds and Hyperdrive detail screens remain accepted and do not need
+repetition.
+
+No Preview, binding, deployment, traffic, credential, or database mutation was performed.
+
