@@ -7354,3 +7354,36 @@ traffic, binding, credential or database mutation was performed.
 
 Next step is Codex independent full review of PR #146 before any merge or external provisioning.
 
+### Mergeable Worker rollout preparation PR created — 2026-09-29
+
+Following Codex's selected deployment-control path, ChatGPT created mergeable PR #146
+`Stage 6: prepare protected Worker rollout` from exact main
+`743cb3f1c48b17d58c42cdaa6e561512fd4efb94`.
+
+PR #146 scope is preparation only. It adds:
+
+- manual main-only protected `production-worker` workflow with exact SHA and explicit upload /
+  promotion confirmations;
+- pre-Environment verification of accepted live migration→runtime evidence through
+  `0020_translation_generation_permission`;
+- exact repository build and local split-Hyperdrive smoke before Cloudflare access;
+- pinned repository Wrangler `4.130.0`;
+- baseline resolution for current accepted version prefix `78f87645`;
+- exact Worker version upload without traffic using protected auth runtime values;
+- structured Wrangler output parsing and Version URL pre-traffic smoke;
+- optional same-run 100% promotion with post-deploy public/auth/database-read smoke;
+- automatic rollback to exact resolved baseline version at 100% on automated rollout failure;
+- static/unit tests guarding main/SHA/confirmation ordering, secret non-disclosure, upload-before-
+  promotion, baseline rollback, no Builds reconnect/Deploy Hook, and no DB/schema mutation;
+- source-of-truth updates recording preparation only.
+
+No Google OAuth client, GitHub Environment/secrets/token, Cloudflare Worker version, deployment,
+traffic, binding, Builds connection, Deploy Hook, Hyperdrive, credential or database mutation was
+performed.
+
+Current PR #146 head is `51f84287dee7341003aff122832884f4e62fb42a`. Pull-request CI run
+`36555764982` completed successfully with conclusion `success`.
+
+Next required step is independent full PR #146 review by Codex before any merge or external
+configuration/rollout authorization.
+
