@@ -7309,3 +7309,48 @@ owner-authorized gate covering Google OAuth client creation, four runtime auth v
 version creation, pre-traffic smoke when available, promotion, post-deploy smoke, rollback to
 `78f87645` on failure, and restoration of the Builds-disconnected policy.
 
+### PR #146 prepared: protected Production Worker rollout workflow — 2026-09-29
+
+Created mergeable PR #146 from exact current `main`
+`743cb3f1c48b17d58c42cdaa6e561512fd4efb94`.
+
+PR head:
+`51f84287dee7341003aff122832884f4e62fb42a`
+
+Scope is repository preparation only:
+
+- manual main-only `Production Worker rollout` workflow behind protected Environment
+  `production-worker`;
+- exact authorized SHA + explicit upload/promotion confirmations; reruns fail closed via
+  `GITHUB_RUN_ATTEMPT=1`;
+- pre-Cloudflare live migration→runtime evidence verification for accepted `0020`, disposable
+  PostgreSQL verification, build and local split-Hyperdrive Workers smoke;
+- exact repository Wrangler `4.130.0`;
+- `wrangler versions upload` creates a Worker version without production traffic promotion;
+- protected auth values are injected only from Environment variables/secrets; secret file exists
+  only in `RUNNER_TEMP` and is cleaned up;
+- Wrangler NDJSON output is parsed for exact uploaded version ID + Version URL;
+- bounded GET-only Version URL smoke covers public LTR/RTL/localization, both DB paths and Better
+  Auth session endpoint before any promotion;
+- promotion is same-run only and requires the separate promotion confirmation;
+- automated promotion/smoke failure restores 100% traffic to the exact full baseline version
+  resolved from accepted prefix `78f87645`, then verifies rollback;
+- interactive Google sign-in/session/logout deliberately remains owner post-deploy smoke;
+- no Builds reconnect, Deploy Hook, database/schema mutation or external action is performed by the
+  PR itself.
+
+Source-of-truth updates: `PROJECT_STATE.md`, `docs/database/HYPERDRIVE.md`,
+`docs/database/MIGRATIONS.md`.
+
+Current official Cloudflare documentation was checked for Versions/Deployments, Version URLs,
+Wrangler commands, secrets-file behavior and structured `WRANGLER_OUTPUT_FILE_PATH` output before
+finalizing the workflow.
+
+Exact-head PR CI run `36555764982`, attempt 1, completed successfully:
+`checks=success`, `database=success`. PR #146 is open, non-draft and mergeable.
+
+No OAuth client, GitHub Environment/secret, Cloudflare API token, Worker version/deployment,
+traffic, binding, credential or database mutation was performed.
+
+Next step is Codex independent full review of PR #146 before any merge or external provisioning.
+
