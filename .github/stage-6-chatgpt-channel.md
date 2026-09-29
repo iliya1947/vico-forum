@@ -7032,3 +7032,26 @@ This satisfies the Hyperdrive-detail portion of the read-only pre-deploy topolog
 Production bindings, Preview Base isolation, Builds/auto-deploy, deployed Worker version/traffic
 and routes still require fresh evidence before any deployment authorization.
 
+### Pre-deploy topology gate: evidence minimization review — 2026-09-29
+
+Fresh owner-provided Cloudflare Dashboard evidence additionally confirms native Workers Builds
+remains disconnected: Settings → Builds shows `Git repository → Connect`, so no Cloudflare
+Git-backed auto-deploy is active.
+
+Recorded Stage 6 execution since the earlier accepted Gate 0 contains no authorized Cloudflare
+Worker binding mutation, Preview Base change, Worker deployment/traffic switch, route/custom-domain
+change or Git Builds reconnection. PR #145 merge was repository-only and could not mutate that
+control-plane state. Today's fresh Hyperdrive evidence separately confirms the newly relevant
+`vico-forum-web` configuration still exists with the expected exact ID/database/user and disabled
+query caching.
+
+Because repeated dashboard screenshots for unchanged surfaces create operator work without adding
+evidence tied to an intervening mutation, ChatGPT does not independently relax Codex's existing
+fresh-topology requirement. Instead, this is returned to Codex for a narrow technical decision:
+determine which remaining topology items truly require a new authenticated dashboard read
+immediately before deploy, and which can be accepted from the controlled operation history plus
+the fresh Builds/Hyperdrive evidence already supplied.
+
+Until that decision is agreed, no deploy, binding mutation, preview change, traffic switch,
+credential rotation or database mutation is authorized or performed.
+
