@@ -154,6 +154,22 @@ test("upload and Version URL smoke precede optional promotion with exact baselin
   assert.match(workflow, /interactive Google sign-in\/session\/logout smoke: still required by operator/);
 });
 
+test("post-promotion deployment status and assertion failures reach rollback decision", () => {
+  const promotionStart = workflow.indexOf("name: Promote exact version, smoke, and rollback on failure");
+  assert.ok(promotionStart >= 0);
+
+  const promotion = workflow.slice(promotionStart);
+  assert.match(
+    promotion,
+    /if ! pnpm exec wrangler deployments status[\s\S]*?--json > "\$production_json"; then[\s\S]*?rollout_failed=true[\s\S]*?elif ! node \.github\/scripts\/production-worker-rollout\.mjs[\s\S]*?assert-deployment "\$production_json" "\$VERSION_ID"; then[\s\S]*?rollout_failed=true/,
+  );
+
+  const rollbackIndex = promotion.indexOf('if [ "$rollout_failed" = "true" ]; then');
+  const statusIndex = promotion.indexOf("if ! pnpm exec wrangler deployments status");
+  const assertionIndex = promotion.indexOf("elif ! node .github/scripts/production-worker-rollout.mjs");
+  assert.ok(statusIndex >= 0 && assertionIndex > statusIndex && rollbackIndex > assertionIndex);
+});
+
 test("workflow does not reconnect Builds, use Deploy Hooks, or mutate production database schema", () => {
   assert.doesNotMatch(workflow, /deploy hook|builds connect|github app/i);
   assert.doesNotMatch(workflow, /wrangler deploy(?!ments)/);
