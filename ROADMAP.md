@@ -111,11 +111,22 @@ Stage 4A был выполнен до reprioritization roadmap и сохраня
   auth write-capability.
 
 Stage 4A **не задаёт следующий infrastructure шаг**. Forum-core работа 4B–4E и Stage 5 translation
-implementation впоследствии завершены в local/CI path; следующий продуктовый этап — Stage 6.
+implementation впоследствии завершены в local/CI path; следующим этапом общей release sequence
+остаётся Stage 6, но его orchestration сейчас поставлен на паузу отдельным UI/UX priority.
 
 ---
 
 # Active product-first roadmap
+
+## Текущий standalone priority — UI/UX product pass
+
+По решению владельца Stage 6 external-integration orchestration временно поставлен на паузу.
+До его явного возобновления активна отдельная UI/UX-задача для уже существующего forum core.
+Она не меняет нумерацию или архитектурный scope завершённых Stage 0–5 и не объявляет выполненными
+оставшиеся Stage 6 gates.
+
+Scope, порядок реализации, GitHub Pages progress preview, обязательная real-runtime browser
+acceptance matrix и definition of done зафиксированы в [`docs/UI_UX_PASS.md`](docs/UI_UX_PASS.md).
 
 ## Stage 4 — сделать рабочее ядро форума — завершён
 
