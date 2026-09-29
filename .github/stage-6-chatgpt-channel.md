@@ -7420,3 +7420,27 @@ mergeable state `clean`.
 No external OAuth, GitHub Environment/token/secret, Cloudflare version/deployment/traffic,
 Hyperdrive/binding, credential or database mutation was performed.
 
+### Unified rollout gate — Google OAuth client created — 2026-09-29
+
+Owner completed the Google Auth Platform portion of the authorized unified rollout gate.
+
+Sanitized evidence:
+
+- Google Cloud project: `Vico Forum`;
+- OAuth audience: `External`;
+- publishing status: `Testing`;
+- OAuth client type: `Web application`;
+- client name: `Vico Forum Production`;
+- Client ID:
+  `727021515826-agv36q7kvuq92c1t4dbimhgbe3a4ph4r.apps.googleusercontent.com`;
+- authorized redirect URI:
+  `https://vico-forum.iliya1947a.workers.dev/api/auth/callback/google`;
+- JavaScript origin was not required for the current server-side Better Auth redirect flow;
+- Client Secret remains owner-held and was not posted to chat or repository.
+
+Exactly one OAuth client was created. No Cloudflare API token, GitHub `production-worker`
+Environment/secret/variable, Worker version, deployment, traffic, Hyperdrive/binding, credential,
+or database mutation has been performed yet.
+
+Next unified-gate stage is Cloudflare API token + protected GitHub Environment provisioning.
+
