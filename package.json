@@ -17,7 +17,8 @@
     "preview": "pnpm build && vite preview",
     "lint": "eslint .",
     "typecheck": "wrangler types && react-router typegen && tsc -b",
-    "test": "vitest run"
+    "test": "vitest run",
+    "ui-preview:build": "vite build --config app/ui-preview/vite.config.ts"
   },
   "dependencies": {
     "@better-auth/drizzle-adapter": "1.7.4",
