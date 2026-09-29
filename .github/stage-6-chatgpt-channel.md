@@ -7173,3 +7173,27 @@ recommended to avoid redirect mismatch.
 No Cloudflare/Google configuration, deployment, credential, database, or traffic mutation was
 performed.
 
+### Production auth public URL fixed — 2026-09-29
+
+Owner opened the current Cloudflare Workers production deployment through the dashboard `Visit`
+action and supplied the live locale URL:
+
+`https://vico-forum.iliya1947a.workers.dev/ru/`
+
+Therefore the production Better Auth base URL for the current workers.dev deployment is:
+
+`https://vico-forum.iliya1947a.workers.dev`
+
+and the Google OAuth callback required by the existing Better Auth route is:
+
+`https://vico-forum.iliya1947a.workers.dev/api/auth/callback/google`
+
+The locale segment is intentionally not part of `BETTER_AUTH_URL` or the callback because
+`app/routes.ts` mounts `api/auth/*` outside the locale namespace.
+
+The visited page is visibly still the old translation-foundation deployment, consistent with the
+accepted Production baseline version `78f87645`; no Stage 6 deploy occurred during this check.
+
+No Cloudflare/Google configuration, deployment, credential, database, or traffic mutation was
+performed.
+
