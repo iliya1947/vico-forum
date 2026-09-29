@@ -3396,3 +3396,45 @@ reviewed artifact; следующий путь обязан сначала ис�
 чтобы не потерять audit evidence. Google OAuth client не дублируется. До read-only проверки
 запрещены version deletion, token rotation/replacement, workflow rerun/dispatch, promotion, traffic
 mutation, credential rotation и database mutation.
+
+### Existing-version pre-traffic smoke принят; manual promotion gate
+
+Последнее обновление PR #122 проверено на head
+`84ba581eb025cd138331bd8030c89284c114df20`. Принято owner-provided GET-only evidence для exact
+existing unpromoted version `b11a64f4-3c1d-42a4-adf7-c9202d4fc8f6` по Version URL
+`https://b11a64f4-vico-forum.iliya1947a.workers.dev`:
+
+- `/ru/` успешно отрисовал forum index и public forum DB read;
+- `/he/` успешно отрисовал RTL presentation;
+- `/iw/` redirect, expected 404 boundaries и `/api/auth/get-session` соответствуют smoke contract;
+- workflow rerun/dispatch, second token/version, promotion и traffic mutation не выполнялись.
+
+Pre-traffic gate закрыт. Новый artifact, token replacement или rollout workflow не нужен. Следующий
+gate — manual promotion **той же самой version** и production/auth smoke; он требует отдельного
+явного разрешения владельца, включая создание Better Auth user/session rows при Google login и
+manual rollback branch.
+
+После authorization ChatGPT координирует только:
+
+1. final read-only check: baseline `78f87645` всё ещё 100%, target version ID unchanged, Builds
+   disconnected, Preview Base empty;
+2. через Cloudflare Versions/Deployments UI направить 100% traffic на exact
+   `b11a64f4-3c1d-42a4-adf7-c9202d4fc8f6`; не создавать новую version и не использовать workflow;
+3. сразу проверить active deployment ID/traffic и Production bindings: exact `HYPERDRIVE`,
+   `WEB_HYPERDRIVE` и четыре auth bindings без secret values;
+4. выполнить production GET-only smoke на `https://vico-forum.iliya1947a.workers.dev` тем же
+   LTR/RTL/redirect/forum/auth-session contract;
+5. выполнить owner interactive Google sign-in, проверить persisted session и authenticated UI/
+   action boundary, затем logout и next-request anonymous state;
+6. при любом promotion/public/auth failure немедленно вернуть baseline `78f87645` на 100% через
+   Dashboard, подтвердить rollback traffic и базовый `/ru/`/`/he/` smoke, не удаляя автоматически
+   созданные auth rows и не повторяя promotion;
+7. при success записать sanitized target version/traffic/binding/public/auth/logout evidence в
+   PR #122 и остановиться. Authorization-manager bootstrap и другие Stage 6 gates не выполнять.
+
+Недостаточный API token/workflow Environment cleanup не входит в promotion gate: они больше не
+нужны для execution, но изменяются только отдельным решением после сохранения rollout evidence.
+
+До explicit authorization запрещены promotion/traffic mutation, Google login, rollback test,
+version/token/Environment mutation, credential rotation и database mutation кроме неизбежных
+Better Auth user/session writes внутри отдельно разрешённого interactive smoke.
