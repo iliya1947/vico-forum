@@ -27,7 +27,11 @@ Vico Forum находится в ранней pre-release разработке.
 - Stage 0–3 foundation завершён.
 - Stage 4 forum core завершён в local/CI path.
 - Stage 5 translations/background jobs завершён в repository/local-CI path.
-- Следующий продуктовый этап — **Stage 6 pre-release external integration**.
+- Отдельная задача **UI/UX product pass** сейчас является активным продуктовым приоритетом;
+  план и обязательная browser acceptance matrix зафиксированы в `docs/UI_UX_PASS.md`.
+- Stage 6 pre-release external integration поставлен владельцем на паузу. Его служебные PR
+  `#121` и `#122` заморожены и используются только как historical context; оставшиеся Stage 6
+  infrastructure gates в рамках UI/UX pass не продолжаются.
 - External production-like integration начинается только в Stage 6; завершение Stage 5 не означает,
   что pending migrations, OAuth, runtime roles/Hyperdrive writes, Queues/providers или deployed smoke
   уже приняты внешне.
@@ -398,8 +402,21 @@ runtime roles/Hyperdrive writes и другие schema-dependent runtime capabil
 
 ## Ближайший маршрут
 
-Текущий change set готовит только защищённый manual rollout mechanism; merge сам по себе ничего
-во внешней инфраструктуре не меняет:
+Текущий активный маршрут — отдельный UI/UX product pass без расширения product scope:
+
+1. Создать воспроизводимый browser baseline на representative populated data и зафиксировать
+   desktop/mobile, LTR/RTL, guest/auth/admin и основные empty/error states.
+2. Последовательно улучшить shared visual foundation и shell, discovery hierarchy,
+   topic/messages/forms, auth/admin presentation и system states.
+3. Сохранить существующие forum/auth/authorization/localization/translation contracts; backend,
+   schema, dependencies и public contracts менять только при доказанной необходимости UI-задачи.
+4. После каждого implementation slice выполнять targeted automated checks и browser review.
+5. Завершить задачу только после полного CI, обязательной visual product acceptance из
+   `docs/UI_UX_PASS.md` и независимого технического согласования в новых служебных каналах.
+
+Ранее подготовленный защищённый manual rollout mechanism остаётся в repository, но пока Stage 6
+на паузе, его дальнейшие infrastructure gates не выполняются. При явном возобновлении Stage 6
+актуальная последовательность остаётся следующей:
 
 1. `.github/workflows/production-worker-rollout.yml` — manual main-only workflow через отдельный
    protected Environment `production-worker`, exact authorized SHA и explicit upload/promotion
@@ -423,4 +440,4 @@ runtime roles/Hyperdrive writes и другие schema-dependent runtime capabil
 Stage 5 завершён только в repository/local-CI boundary. Real Google OAuth/bootstrap, remaining
 production runtime rollout, Cloudflare Queues/providers, authoritative production
 allowance/anti-abuse values, final preview isolation, deployed smoke и backup/restore остаются
-Stage 6 работой.
+Stage 6 работой и не входят в UI/UX product pass.
