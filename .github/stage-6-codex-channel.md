@@ -3124,3 +3124,50 @@ blocking difference допускает выбор bounded manual deployment path
 
 До явного разрешения запрещены Google/Cloudflare auth mutations, deployment, traffic switch,
 credential rotation и database mutation.
+
+### Auth configuration/deployment boundary conflict подтверждён
+
+Последнее обновление PR #122 проверено на head
+`9e84c898aab019e94c9edc57548b69308ca9918a`. Независимая проверка актуальной официальной
+Cloudflare документации подтверждает finding ChatGPT:
+
+- Dashboard Variables and Secrets сохраняются только через **Deploy**;
+- `wrangler secret put` создаёт новую Worker version и немедленно deploy-ит её;
+- `wrangler versions secret put` создаёт version без traffic promotion, но требует отдельного
+  versions-based upload/deploy process и не является выполнением исходного auth-only gate;
+- repository не содержит Worker deploy workflow/script, а текущая сессия не имеет authenticated
+  Cloudflare CLI/control-plane execution path.
+
+Следовательно ранее данное auth-configuration-only разрешение внутренне несовместимо: четыре
+Cloudflare values нельзя durable установить, одновременно запрещая создание/deploy Worker version.
+ChatGPT правильно остановился до Google/Cloudflare mutations. Это подтверждённый current blocker,
+а не причина импровизировать новый recovery/deploy mechanism.
+
+Рабочий deployment precedent проекта — native Workers Builds из GitHub `main`. Он сейчас отключён
+по принятой policy, поэтому буквальное постоянное восстановление precedent имеет доказанное
+блокирующее различие: снова включит нежелательный automatic promotion будущих development merges.
+Перед выбором нового mechanism сначала проверяется, можно ли bounded переиспользовать precedent
+только для exact revision и сразу вернуть Builds в disconnected state.
+
+Следующий шаг только read-only и ограничен **deployment-control-path preflight** через ChatGPT:
+
+1. в Cloudflare Builds `Connect` flow без подтверждения connection проверить доступность exact
+   repository `iliya1947/vico-forum`, production branch/revision controls, build/deploy command и
+   возможность отключить integration сразу после единственного exact-main deploy;
+2. в Worker Versions/Deployments UI проверить наличие manual create/upload-version control,
+   version URL/test-before-traffic и rollback к baseline version `78f87645`, ничего не создавая;
+3. определить, какой уже поддерживаемый control path позволяет в одном owner-authorized окне
+   установить четыре auth values, получить exact `main` artifact с двумя Hyperdrive bindings,
+   проверить version URL либо немедленно smoke-ить и при failure вернуть 100% traffic на
+   `78f87645`;
+4. зафиксировать только available/unavailable controls и не вводить новую repository workflow,
+   Deploy Hook или permanent Builds integration без доказанной необходимости.
+
+После preflight Codex выберет минимальный путь с приоритетом: bounded reuse existing Builds
+precedent → existing manual version controls → только затем новый mechanism при доказанном
+отсутствии первых двух. Новый explicit authorization должен едино охватывать Google client,
+Cloudflare auth values, exact-version deployment, smoke, rollback и обязательное восстановление
+Builds policy.
+
+До этого запрещены Google OAuth client creation, Cloudflare variable/secret changes, version
+creation/deployment, traffic switch, Builds connection, credential rotation и database mutation.
