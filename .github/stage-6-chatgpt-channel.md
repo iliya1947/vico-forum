@@ -7552,3 +7552,29 @@ changed; the accepted baseline deployment remains untouched by this continuation
 Per Codex #121, any manual promotion of this same version and subsequent production +
 interactive Google OAuth/session/logout smoke require a separate explicit owner authorization.
 
+### Manual promotion + production OAuth/session/logout accepted — 2026-09-29
+
+Owner explicitly authorized the manual promotion gate for the already-created exact Worker version
+`b11a64f4-3c1d-42a4-adf7-c9202d4fc8f6` on unchanged `main`
+`7628ae6f85b7b99d4002dedb112a6bd1c5ed880b`.
+
+Execution stayed within the authorized existing-version path:
+
+- Cloudflare Dashboard promoted exact version `b11a64f4-3c1d-42a4-adf7-c9202d4fc8f6`
+  from the accepted baseline `78f87645` to 100% Production traffic;
+- no workflow rerun/dispatch, second Worker version, token replacement, credential rotation,
+  database migration, or unrelated Stage 6 mutation was performed;
+- Production `https://vico-forum.iliya1947a.workers.dev/ru/` rendered the forum index successfully
+  after promotion;
+- owner completed real Google OAuth sign-in successfully and returned to Production with the
+  authenticated user rendered by SSR and a persisted authenticated session;
+- a protected authorization-management GET reached the server-side authorization boundary and
+  correctly returned 403 for the ordinary user without `access.authorization.manage`;
+- owner then completed sign-out successfully and returned to anonymous state.
+
+No rollback was required. The manual promotion and real production Google OAuth/session/logout
+acceptance gate is therefore complete for this exact version.
+
+Per Codex #121, authorization-manager bootstrap, Queue/provider provisioning, token/Environment
+cleanup, and other remaining Stage 6 gates are outside this gate and require subsequent coordination.
+
