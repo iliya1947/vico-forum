@@ -204,8 +204,8 @@ jobs:
         run: |
           set -euo pipefail
           secrets_file="$RUNNER_TEMP/production-worker-secrets.json"
-          upload_log="$RUNNER_TEMP/production-worker-upload.log"
-          trap 'rm -f "$secrets_file" "$upload_log"' EXIT
+          output_file="$RUNNER_TEMP/production-worker-wrangler-output.ndjson"
+          trap 'rm -f "$secrets_file" "$output_file"' EXIT
           umask 077
 
           SECRETS_FILE="$secrets_file" node --input-type=module <<'NODE'
@@ -219,12 +219,20 @@ jobs:
           NODE
 
           short_sha="${GITHUB_SHA:0:12}"
-          if ! pnpm exec wrangler versions upload             --name "$WORKER_NAME"             --tag "stage6-$short_sha"             --message "Stage 6 exact $GITHUB_SHA"             --var "BETTER_AUTH_URL:$BETTER_AUTH_URL"             --var "GOOGLE_CLIENT_ID:$GOOGLE_CLIENT_ID"             --secrets-file "$secrets_file"             --strict             > "$upload_log" 2>&1; then
+          if ! WRANGLER_OUTPUT_FILE_PATH="$output_file" pnpm exec wrangler versions upload \
+            --name "$WORKER_NAME" \
+            --tag "stage6-$short_sha" \
+            --message "Stage 6 exact $GITHUB_SHA" \
+            --var "BETTER_AUTH_URL:$BETTER_AUTH_URL" \
+            --var "GOOGLE_CLIENT_ID:$GOOGLE_CLIENT_ID" \
+            --secrets-file "$secrets_file" \
+            --strict; then
             echo "::error::Worker version upload failed before any traffic promotion."
             exit 1
           fi
 
-          node .github/scripts/production-worker-rollout.mjs             parse-upload "$upload_log" "$GITHUB_OUTPUT"
+          node .github/scripts/production-worker-rollout.mjs \
+            parse-upload "$output_file" "$GITHUB_OUTPUT"
       - name: Verify uploaded version exists
         shell: bash
         env:
