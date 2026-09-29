@@ -290,8 +290,12 @@ jobs:
 
           if [ "$rollout_failed" = "false" ]; then
             production_json="$RUNNER_TEMP/worker-deployment-after.json"
-            pnpm exec wrangler deployments status --name "$WORKER_NAME" --json > "$production_json"
-            if ! node .github/scripts/production-worker-rollout.mjs               assert-deployment "$production_json" "$VERSION_ID"; then
+            if ! pnpm exec wrangler deployments status \
+              --name "$WORKER_NAME" \
+              --json > "$production_json"; then
+              rollout_failed=true
+            elif ! node .github/scripts/production-worker-rollout.mjs \
+              assert-deployment "$production_json" "$VERSION_ID"; then
               rollout_failed=true
             fi
           fi
