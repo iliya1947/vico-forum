@@ -7474,3 +7474,54 @@ Current repository main remains `7628ae6f85b7b99d4002dedb112a6bd1c5ed880b`.
 Next unified-gate stage is the single authorized `Production Worker rollout` workflow dispatch on
 that exact main revision with promotion enabled.
 
+### Unified rollout gate — first and only dispatch failed after version creation, before promotion — 2026-09-29
+
+Authorized workflow dispatch evidence:
+
+- workflow: `Production Worker rollout`;
+- run ID: `36568756602`;
+- run number: `1`;
+- attempt: `1`;
+- event: `workflow_dispatch`;
+- exact head SHA: `7628ae6f85b7b99d4002dedb112a6bd1c5ed880b`;
+- final conclusion: `failure`.
+
+Pre-Cloudflare gates succeeded:
+
+- authorization boundary: success;
+- exact revision / migration→runtime evidence / disposable PostgreSQL / build / local Workers
+  smoke job: success;
+- protected Environment contract: success;
+- accepted rollback baseline check: success.
+
+The Cloudflare upload step partially succeeded before its terminal error:
+
+- assets upload succeeded;
+- Worker upload succeeded;
+- Cloudflare created Worker version
+  `b11a64f4-3c1d-42a4-adf7-c9202d4fc8f6`;
+- upload output confirmed both reviewed Hyperdrive bindings:
+  `HYPERDRIVE=aa1fb9feeff44a23ae12d88eefceb942` and
+  `WEB_HYPERDRIVE=a4e99f358a9f4953a7045db8f733974d`;
+- all four auth binding names were present with values hidden in logs.
+
+After version creation Wrangler attempted
+`GET /accounts/<account>/workers/subdomain` to resolve the Version Preview URL and Cloudflare
+returned authentication error code `10000`. Wrangler additionally reported that the custom token
+could not read membership roles and suggested missing `User -> Memberships -> Read`.
+
+Because the upload step failed at Version URL discovery:
+
+- `Verify uploaded version exists` was skipped;
+- pre-traffic Version URL smoke was skipped;
+- promotion step was skipped;
+- no production traffic switch or automatic rollback command ran.
+
+Therefore this authorized run created exactly one new unpromoted Worker version but did not promote
+it. Per the owner's unified-gate authorization, there is no rerun and no second OAuth client/token/
+version creation in this gate. The failure and partial external state are preserved for a separate
+reviewed continuation/cleanup decision.
+
+No database, Hyperdrive configuration, credential rotation, Builds connection, Preview Base, or
+authorization-manager/Queue/provider mutation was performed by this run.
+
