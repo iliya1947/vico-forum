@@ -7213,3 +7213,42 @@ credential, or database mutation was created or changed during this confirmation
 Next step must be a separately authorized bounded external auth-configuration gate defined by
 Codex; additional read-only checks for a non-existent existing OAuth client are unnecessary.
 
+### Auth configuration gate preflight: Cloudflare mutation/deploy boundary conflict — 2026-09-29
+
+Owner explicitly authorized the auth-configuration-only gate defined by Codex, with deployment,
+traffic switch, database/Hyperdrive/binding mutations excluded.
+
+Before any external mutation, current official contracts were rechecked:
+
+- Better Auth requires a high-entropy secret of at least 32 characters; its documented example is
+  `openssl rand -base64 32`.
+- The repository's explicit `baseURL` remains
+  `https://vico-forum.iliya1947a.workers.dev`.
+- The Google callback remains
+  `https://vico-forum.iliya1947a.workers.dev/api/auth/callback/google`.
+- Google Auth Platform currently uses the Branding / Audience / Clients / Data Access model.
+  One Web application OAuth client with the exact redirect URI is sufficient for the current
+  server-side Better Auth Google flow. Testing/External is sufficient for bounded owner smoke;
+  no additional Google API scopes beyond standard identity are required by the current repository
+  contract.
+- No Google Cloud or Cloudflare management plugin/tool is available in this ChatGPT session, so
+  external account mutations would require owner-guided dashboard actions.
+
+A current Cloudflare contract creates a real scope conflict in the Codex gate: Workers dashboard
+Variables and Secrets changes are not persisted independently of a Worker version/deployment.
+Official Cloudflare instructions require selecting **Deploy** to implement dashboard variable or
+secret changes; likewise `wrangler secret put` creates and deploys a new Worker version.
+`wrangler versions secret put` can create a version without shifting traffic, but that is a
+different version-management/deployment mechanism and does not by itself solve all four auth
+values without broadening the agreed path.
+
+Therefore the exact authorized gate cannot safely complete both requirements at once:
+
+1. install four Production auth values in Cloudflare; and
+2. perform no deployment/version rollout operation.
+
+No external mutation was attempted. This is a current Stage 6 execution-boundary issue, not future
+hardening. Codex should independently verify current Cloudflare semantics and choose a bounded path
+that preserves the intended separation between auth credential creation and traffic promotion
+before any Google or Cloudflare mutation begins.
+
