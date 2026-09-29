@@ -1,27 +1,21 @@
-import { useMemo, useState } from "react";
-import { I18nextProvider, useTranslation } from "react-i18next";
-import { Link, RouterProvider, createMemoryRouter } from "react-router";
+import { useEffect, useMemo, useState, type ComponentType } from "react";
+import { I18nextProvider } from "react-i18next";
+import { RouterProvider, createMemoryRouter } from "react-router";
 
 import { HeaderAuthProvider, type HeaderAuthUser } from "../auth/auth-controls";
-import {
-  Breadcrumbs,
-  EmptyState,
-  ForumShell,
-} from "../forum/ui";
-import {
-  PostBodyPresentation,
-  TopicTitlePresentation,
-} from "../forum/content-translation-view";
-import {
-  forumCategoryPath,
-  forumSectionPath,
-  forumTopicPath,
-} from "../forum/paths";
+import { PERMISSION_CATALOG, type PermissionKey } from "../authorization/catalog";
+import { ForumRouteError } from "../forum/ui";
 import type { ContentTranslationPresentation } from "../localization/content-translation-presentation";
+import AuthorizationAdmin from "../routes/authorization-admin";
+import CategoryRoute from "../routes/category";
+import Home from "../routes/home";
+import SectionRoute from "../routes/section";
+import TopicRoute from "../routes/topic";
 import { previewTranslationRuntime } from "./preview-i18n";
 
 type Direction = "ltr" | "rtl";
 type PreviewIdentity = "guest" | "user" | "manager";
+type PreviewView = "home" | "category" | "section" | "topic" | "admin" | "empty" | "not-found";
 
 interface Scenario {
   id: string;
@@ -30,27 +24,132 @@ interface Scenario {
   direction: Direction;
   identity: PreviewIdentity;
   path: string;
-  view: "home" | "section" | "topic" | "admin" | "states";
+  view: PreviewView;
 }
 
 export const scenarios: readonly Scenario[] = [
   { id: "home-ltr", label: "Home · LTR · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en", view: "home" },
+  { id: "category-ltr", label: "Category · LTR · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/development", view: "category" },
   { id: "section-ltr", label: "Section · LTR · user", locale: "en", direction: "ltr", identity: "user", path: "/en/sections/typescript", view: "section" },
   { id: "topic-ltr", label: "Solved topic · LTR · user", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api", view: "topic" },
   { id: "topic-rtl", label: "Translated topic · RTL · manager", locale: "he", direction: "rtl", identity: "manager", path: "/he/topics/typed-api", view: "topic" },
   { id: "admin-ltr", label: "Authorization · LTR · manager", locale: "en", direction: "ltr", identity: "manager", path: "/en/admin/authorization", view: "admin" },
-  { id: "states-ltr", label: "Empty + error states · LTR", locale: "en", direction: "ltr", identity: "guest", path: "/en/states", view: "states" },
+  { id: "empty-ltr", label: "Empty section · LTR", locale: "en", direction: "ltr", identity: "guest", path: "/en/sections/empty", view: "empty" },
+  { id: "not-found-ltr", label: "404 state · LTR", locale: "en", direction: "ltr", identity: "guest", path: "/en/missing", view: "not-found" },
 ] as const;
 
 const categoryId = "development";
 const sectionId = "typescript";
 const topicId = "typed-api";
 
+const category = {
+  id: categoryId,
+  name: "Development",
+  sections: [
+    { id: sectionId, name: "TypeScript & architecture", topicCount: 3, postCount: 23 },
+    { id: "cloud", name: "Cloud & deployment", topicCount: 5, postCount: 41 },
+    { id: "databases", name: "Databases", topicCount: 2, postCount: 12 },
+  ],
+};
+
+const section = {
+  id: sectionId,
+  name: "TypeScript & architecture",
+  category: { id: categoryId, name: "Development" },
+  topics: [
+    {
+      id: topicId,
+      authorName: "Alex Rivera",
+      postCount: 3,
+      createdAt: new Date("2026-09-27T10:00:00Z"),
+      title: {
+        id: "title-r1",
+        originalContent: "How should I structure a typed API client?",
+        sourceLocale: "en",
+      },
+    },
+    {
+      id: "rtl-markdown",
+      authorName: "Noa Levi",
+      postCount: 4,
+      createdAt: new Date("2026-09-27T12:00:00Z"),
+      title: {
+        id: "title-r2",
+        originalContent: "Mixed RTL content with code blocks",
+        sourceLocale: "en",
+      },
+    },
+    {
+      id: "worker-auth",
+      authorName: "Sam Chen",
+      postCount: 12,
+      createdAt: new Date("2026-09-28T08:00:00Z"),
+      title: {
+        id: "title-r3",
+        originalContent: "Worker auth: session boundary vs permissions",
+        sourceLocale: "en",
+      },
+    },
+  ],
+};
+
+const topic = {
+  id: topicId,
+  sectionId,
+  authorId: "alex",
+  authorName: "Alex Rivera",
+  createdAt: new Date("2026-09-27T10:00:00Z"),
+  isSolved: true,
+  bestAnswerPostId: "answer",
+  title: section.topics[0]!.title,
+  section: {
+    id: sectionId,
+    name: "TypeScript & architecture",
+    category: { id: categoryId, name: "Development" },
+  },
+  posts: [
+    {
+      id: "question",
+      topicId,
+      authorId: "alex",
+      authorName: "Alex Rivera",
+      createdAt: new Date("2026-09-27T10:00:00Z"),
+      body: {
+        id: "post-r1",
+        originalContent: "I want strong typing without coupling the whole app to one HTTP library.",
+        sourceLocale: "en",
+      },
+    },
+    {
+      id: "answer",
+      topicId,
+      authorId: "sam",
+      authorName: "Sam Chen",
+      createdAt: new Date("2026-09-27T11:00:00Z"),
+      body: {
+        id: "post-r2",
+        originalContent: "Separate the HTTP layer from domain types so each boundary can be tested independently.",
+        sourceLocale: "en",
+      },
+    },
+    {
+      id: "followup",
+      topicId,
+      authorId: "maya",
+      authorName: "Maya Cohen",
+      createdAt: new Date("2026-09-27T12:00:00Z"),
+      body: {
+        id: "post-r3",
+        originalContent: "Also test overflow with a long identifier: this-is-a-very-long-unbroken-technical-identifier-that-must-not-break-the-layout",
+        sourceLocale: "en",
+      },
+    },
+  ],
+};
+
 function previewUser(identity: PreviewIdentity): HeaderAuthUser | null {
   if (identity === "guest") return null;
-  if (identity === "manager") {
-    return { name: "Maya Cohen", canManageAuthorization: true };
-  }
+  if (identity === "manager") return { name: "Maya Cohen", canManageAuthorization: true };
   return { name: "Alex Rivera" };
 }
 
@@ -102,16 +201,29 @@ export function EmbeddedPreview({ scenarioId }: { scenarioId: string }) {
     () => previewTranslationRuntime(scenario.locale, scenario.direction),
     [scenario.locale, scenario.direction],
   );
-  const router = useMemo(
-    () => createMemoryRouter([{
-      path: "*",
-      element: <ScenarioView scenario={scenario} />,
-    }], { initialEntries: [scenario.path] }),
-    [scenario],
-  );
+  const router = useMemo(() => previewRouter(scenario), [scenario]);
 
-  document.documentElement.lang = scenario.locale;
-  document.documentElement.dir = scenario.direction;
+  useEffect(() => {
+    document.documentElement.lang = scenario.locale;
+    document.documentElement.dir = scenario.direction;
+
+    const stopMutation = (event: Event) => {
+      event.preventDefault();
+      event.stopPropagation();
+    };
+    const stopAuth = (event: MouseEvent) => {
+      if ((event.target as Element | null)?.closest(".auth-controls button")) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    };
+    document.addEventListener("submit", stopMutation, true);
+    document.addEventListener("click", stopAuth, true);
+    return () => {
+      document.removeEventListener("submit", stopMutation, true);
+      document.removeEventListener("click", stopAuth, true);
+    };
+  }, [scenario.locale, scenario.direction]);
 
   return (
     <HeaderAuthProvider initialUser={previewUser(scenario.identity)}>
@@ -122,200 +234,170 @@ export function EmbeddedPreview({ scenarioId }: { scenarioId: string }) {
   );
 }
 
-function ScenarioView({ scenario }: { scenario: Scenario }) {
+function previewRouter(scenario: Scenario) {
+  if (scenario.view === "not-found") {
+    return createMemoryRouter([{
+      path: "*",
+      loader: () => {
+        throw new Response("Not Found", { status: 404 });
+      },
+      ErrorBoundary: ForumRouteError,
+    }], { initialEntries: [scenario.path] });
+  }
+
+  const route = previewRoute(scenario);
+  return createMemoryRouter([{
+    path: "*",
+    Component: route.Component,
+    loader: () => route.data,
+  }], { initialEntries: [scenario.path] });
+}
+
+function previewRoute(scenario: Scenario): { Component: ComponentType; data: unknown } {
   switch (scenario.view) {
     case "home":
-      return <HomePreview locale={scenario.locale} />;
+      return {
+        Component: Home,
+        data: {
+          locale: scenario.locale,
+          categories: [
+            { id: categoryId, name: "Development", sectionCount: 3 },
+            { id: "tools", name: "AI coding tools", sectionCount: 3 },
+            { id: "showcase", name: "Projects & showcase", sectionCount: 2 },
+          ],
+        },
+      };
+    case "category":
+      return { Component: CategoryRoute, data: { locale: scenario.locale, category } };
     case "section":
-      return <SectionPreview locale={scenario.locale} />;
+      return {
+        Component: SectionRoute,
+        data: { locale: scenario.locale, section, canCreateTopic: true },
+      };
+    case "empty":
+      return {
+        Component: SectionRoute,
+        data: {
+          locale: scenario.locale,
+          section: {
+            id: "empty",
+            name: "New community section",
+            category: { id: categoryId, name: "Development" },
+            topics: [],
+          },
+          canCreateTopic: false,
+        },
+      };
     case "topic":
-      return <TopicPreview locale={scenario.locale} direction={scenario.direction} />;
+      return {
+        Component: TopicRoute,
+        data: topicData(scenario.locale, scenario.direction),
+      };
     case "admin":
-      return <AdminPreview locale={scenario.locale} />;
-    case "states":
-      return <StatesPreview locale={scenario.locale} />;
+      return {
+        Component: AuthorizationAdmin,
+        data: authorizationData(scenario.locale),
+      };
+    case "not-found":
+      throw new Error("not-found is handled by previewRouter");
   }
 }
 
-function HomePreview({ locale }: { locale: string }) {
-  const { t } = useTranslation("common");
-  const categories = [
-    { id: categoryId, name: "Development", count: 4 },
-    { id: "tools", name: "AI coding tools", count: 3 },
-    { id: "showcase", name: "Projects & showcase", count: 2 },
-  ];
-
-  return (
-    <ForumShell locale={locale}>
-      <section className="page-heading">
-        <p className="eyebrow">{t("forumIndex")}</p>
-        <h1>{t("categoriesHeading")}</h1>
-        <p>{t("categoriesIntro")}</p>
-      </section>
-      <ul className="forum-list">
-        {categories.map((category) => (
-          <li key={category.id}>
-            <Link className="forum-list-link" to={forumCategoryPath(locale, category.id)}>
-              <strong>{category.name}</strong>
-              <span>{t("sectionCount", { count: category.count })}</span>
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </ForumShell>
-  );
-}
-
-function SectionPreview({ locale }: { locale: string }) {
-  const { t } = useTranslation("common");
-  const topics = [
-    { id: topicId, title: "How should I structure a typed API client?", author: "Alex Rivera", posts: 7 },
-    { id: "rtl-markdown", title: "Mixed RTL content with code blocks", author: "Noa Levi", posts: 4 },
-    { id: "worker-auth", title: "Worker auth: session boundary vs permissions", author: "Sam Chen", posts: 12 },
-  ];
-
-  return (
-    <ForumShell locale={locale}>
-      <Breadcrumbs locale={locale} items={[
-        { label: "Development", to: forumCategoryPath(locale, categoryId) },
-        { label: "TypeScript & architecture" },
-      ]} />
-      <section className="page-heading">
-        <p className="eyebrow">{t("sectionLabel")}</p>
-        <h1>TypeScript & architecture</h1>
-      </section>
-      <div className="topic-table" role="table" aria-label={t("topicsHeading")}>
-        <div className="topic-row topic-table-header" role="row">
-          <span role="columnheader">{t("topicColumn")}</span>
-          <span role="columnheader">{t("postsColumn")}</span>
-        </div>
-        {topics.map((topic) => (
-          <div className="topic-row" role="row" key={topic.id}>
-            <span role="cell">
-              <Link to={forumTopicPath(locale, topic.id)}>{topic.title}</Link>
-              <small>{t("startedBy", { author: topic.author })}</small>
-            </span>
-            <span role="cell" className="count-cell">{topic.posts}</span>
-          </div>
-        ))}
-      </div>
-      <form className="forum-write-form" onSubmit={(event) => event.preventDefault()}>
-        <h2>{t("createTopicHeading")}</h2>
-        <label>{t("topicTitleLabel")}<input name="title" defaultValue="" /></label>
-        <label>{t("initialPostLabel")}<textarea name="body" rows={7} defaultValue="" /></label>
-        <button type="submit">{t("createTopicSubmit")}</button>
-      </form>
-    </ForumShell>
-  );
-}
-
-function TopicPreview({ locale, direction }: { locale: "en" | "he"; direction: Direction }) {
-  const { t } = useTranslation("common");
+function topicData(locale: "en" | "he", direction: Direction) {
   const rtl = direction === "rtl";
-  const title = topicTitlePresentation(rtl);
-  const posts = postPresentations(rtl);
+  const translatedTopic = rtl ? {
+    ...topic,
+    authorName: "נועה לוי",
+    section: {
+      ...topic.section,
+      name: "TypeScript וארכיטקטורה",
+      category: { id: categoryId, name: "פיתוח" },
+    },
+    posts: topic.posts.map((post, index) => ({
+      ...post,
+      authorName: ["נועה לוי", "יואב כהן", "מאיה כהן"][index]!,
+    })),
+  } : topic;
 
-  return (
-    <ForumShell locale={locale}>
-      <Breadcrumbs locale={locale} items={[
-        { label: rtl ? "פיתוח" : "Development", to: forumCategoryPath(locale, categoryId) },
-        { label: rtl ? "TypeScript וארכיטקטורה" : "TypeScript & architecture", to: forumSectionPath(locale, sectionId) },
-        { label: title.content },
-      ]} />
-      <section className="page-heading">
-        <p className="eyebrow">{t("topicLabel")}</p>
-        <TopicTitlePresentation presentation={title} />
-        <p>{t("startedBy", { author: rtl ? "נועה לוי" : "Alex Rivera" })}</p>
-        <strong className="solved-badge">{t("solved")}</strong>
-        <p><a href="#post-answer">{t("goToSolution")}</a></p>
-      </section>
-      <ol className="post-list">
-        {posts.map((post, index) => (
-          <li
-            id={post.id === "answer" ? "post-answer" : `post-${post.id}`}
-            className={`forum-post${post.id === "answer" ? " best-answer" : ""}`}
-            key={post.id}
-          >
-            <header>
-              <strong>{post.author}</strong>
-              <span>{t("postNumber", { number: index + 1 })}</span>
-            </header>
-            <div className="forum-post-content">
-              {post.id === "answer" && <strong className="best-answer-label">{t("bestAnswer")}</strong>}
-              <PostBodyPresentation presentation={post.presentation} />
-            </div>
-          </li>
-        ))}
-      </ol>
-      <form className="forum-write-form" onSubmit={(event) => event.preventDefault()}>
-        <h2>{t("replyHeading")}</h2>
-        <label>{t("replyBodyLabel")}<textarea name="body" rows={7} defaultValue="" /></label>
-        <button type="submit">{t("replySubmit")}</button>
-      </form>
-    </ForumShell>
-  );
+  return {
+    locale,
+    topic: translatedTopic,
+    titlePresentation: topicTitlePresentation(rtl),
+    postPresentations: postPresentations(rtl),
+    generationUnits: [],
+    canReply: true,
+    canManageSolution: false,
+    canCorrectTitleSourceLocale: false,
+    correctablePostIds: [],
+  };
 }
 
-function AdminPreview({ locale }: { locale: string }) {
-  const { t } = useTranslation("common");
-  const permissions = [
-    "forum.topic.create",
-    "forum.reply.create",
-    "forum.solution.manageOwn",
-    "forum.translation.generate",
-    "access.authorization.manage",
+function authorizationData(locale: string) {
+  const roleUser = {
+    id: "role-user",
+    slug: "user",
+    displayName: "User",
+    isSystem: true,
+  };
+  const roleModerator = {
+    id: "role-moderator",
+    slug: "moderator",
+    displayName: "Moderator",
+    isSystem: true,
+  };
+  const roleAdmin = {
+    id: "role-admin",
+    slug: "admin",
+    displayName: "Admin",
+    isSystem: true,
+  };
+  const userGrants: PermissionKey[] = ["forum.topic.create", "forum.reply.create"];
+  const moderatorGrants: PermissionKey[] = [
+    ...userGrants,
+    "forum.solution.manageAny",
+    "forum.sourceLocale.correctAny",
   ];
+  const adminGrants: PermissionKey[] = [...PERMISSION_CATALOG];
 
-  return (
-    <ForumShell locale={locale}>
-      <section className="page-heading"><h1>{t("authorizationHeading")}</h1></section>
-      <section>
-        <h2>{t("rolesHeading")}</h2>
-        <article className="admin-card">
-          <h3>Moderator <code>moderator</code> <small>{t("builtInRole")}</small></h3>
-          <fieldset>
-            <legend>{t("permissionsHeading")}</legend>
-            {permissions.map((permission, index) => (
-              <label className="permission-row" key={permission}>
-                <input type="checkbox" defaultChecked={index < 4} />
-                <code>{permission}</code>
-              </label>
-            ))}
-          </fieldset>
-          <button type="button">{t("save")}</button>
-        </article>
-      </section>
-      <section>
-        <h2>{t("usersHeading")}</h2>
-        <article className="admin-card">
-          <h3>Maya Cohen <small>maya@example.test</small></h3>
-          <div className="admin-inline">
-            <label>{t("assignedRole")}<select defaultValue="admin"><option value="user">User</option><option value="admin">Admin</option></select></label>
-            <button type="button">{t("save")}</button>
-          </div>
-          <h4>{t("effectivePermissions")}</h4>
-          <ul>{permissions.map((permission) => <li key={permission}><code>{permission}</code></li>)}</ul>
-        </article>
-      </section>
-    </ForumShell>
-  );
-}
-
-function StatesPreview({ locale }: { locale: string }) {
-  const { t } = useTranslation("common");
-  return (
-    <ForumShell locale={locale}>
-      <section className="page-heading">
-        <p className="eyebrow">Representative states</p>
-        <h1>Empty and error presentation</h1>
-      </section>
-      <EmptyState>{t("topicsEmpty")}</EmptyState>
-      <section className="route-state" role="alert">
-        <h1>{t("forumNotFoundHeading")}</h1>
-        <p>{t("forumNotFoundBody")}</p>
-      </section>
-    </ForumShell>
-  );
+  return {
+    locale,
+    permissions: PERMISSION_CATALOG,
+    roles: [
+      { ...roleUser, grants: userGrants },
+      { ...roleModerator, grants: moderatorGrants },
+      { ...roleAdmin, grants: adminGrants },
+    ],
+    users: [
+      {
+        id: "maya",
+        name: "Maya Cohen",
+        email: "maya@example.test",
+        role: roleAdmin,
+        explicitAssignment: true,
+        authorization: {
+          role: roleAdmin,
+          explicitAssignment: true,
+          grants: adminGrants,
+          overrides: {},
+          effectivePermissions: adminGrants,
+        },
+      },
+      {
+        id: "alex",
+        name: "Alex Rivera",
+        email: "alex@example.test",
+        role: roleUser,
+        explicitAssignment: false,
+        authorization: {
+          role: roleUser,
+          explicitAssignment: false,
+          grants: userGrants,
+          overrides: { "forum.translation.generate": "allow" as const },
+          effectivePermissions: [...userGrants, "forum.translation.generate"],
+        },
+      },
+    ],
+  };
 }
 
 function topicTitlePresentation(rtl: boolean): ContentTranslationPresentation {
@@ -339,100 +421,111 @@ function topicTitlePresentation(rtl: boolean): ContentTranslationPresentation {
       },
     };
   }
+  return originalPresentation(
+    "topic-title",
+    topicId,
+    "title-r1",
+    "How should I structure a typed API client?",
+    "en",
+    "ltr",
+  );
+}
 
+function postPresentations(rtl: boolean): ContentTranslationPresentation[] {
+  return [
+    originalPresentation(
+      "post-body",
+      "question",
+      "post-r1",
+      rtl
+        ? "אני רוצה טיפוסים חזקים בלי לקשור את כל האפליקציה לספריית HTTP אחת."
+        : "I want strong typing without coupling the whole app to one HTTP library.",
+      rtl ? "he" : "en",
+      rtl ? "rtl" : "ltr",
+    ),
+    rtl
+      ? translatedPresentation(
+          "answer",
+          "post-r2",
+          "הפרד בין שכבת ה-HTTP לבין הטיפוסים של הדומיין. כך אפשר לבדוק כל גבול בנפרד.\n\n```ts\ntype ApiResult<T> = { data: T; status: number };\n```",
+          "he",
+          "rtl",
+          "Separate the HTTP layer from domain types so each boundary can be tested independently.",
+          "en",
+          "ltr",
+        )
+      : translatedPresentation(
+          "answer",
+          "post-r2",
+          "Separate the HTTP layer from domain types so each boundary can be tested independently.\n\n```ts\ntype ApiResult<T> = { data: T; status: number };\n```",
+          "en",
+          "ltr",
+          "הפרידו בין שכבת ה-HTTP לבין הטיפוסים של הדומיין.",
+          "he",
+          "rtl",
+        ),
+    originalPresentation(
+      "post-body",
+      "followup",
+      "post-r3",
+      rtl
+        ? "כדאי גם לבדוק overflow עם מזהה ארוך מאוד: this-is-a-very-long-unbroken-technical-identifier-that-must-not-break-the-layout"
+        : "Also test overflow with a long identifier: this-is-a-very-long-unbroken-technical-identifier-that-must-not-break-the-layout",
+      rtl ? "he" : "en",
+      rtl ? "rtl" : "ltr",
+    ),
+  ];
+}
+
+function originalPresentation(
+  contentType: "topic-title" | "post-body",
+  contentId: string,
+  revisionId: string,
+  content: string,
+  locale: string,
+  direction: Direction,
+): ContentTranslationPresentation {
   return {
-    contentType: "topic-title",
-    contentId: topicId,
-    revisionId: "title-r1",
+    contentType,
+    contentId,
+    revisionId,
     selected: "original",
-    content: "How should I structure a typed API client?",
-    contentLocale: "en",
-    contentDirection: "ltr",
-    originalContent: "How should I structure a typed API client?",
-    originalLocale: "en",
-    originalDirection: "ltr",
+    content,
+    contentLocale: locale,
+    contentDirection: direction,
+    originalContent: content,
+    originalLocale: locale,
+    originalDirection: direction,
     fallbackReason: "same-locale",
   };
 }
 
-function postPresentations(rtl: boolean): Array<{
-  id: string;
-  author: string;
-  presentation: ContentTranslationPresentation;
-}> {
-  const answer: ContentTranslationPresentation = rtl
-    ? {
-        contentType: "post-body",
-        contentId: "answer",
-        revisionId: "post-r2",
-        selected: "translation",
-        content: "הפרד בין שכבת ה-HTTP לבין הטיפוסים של הדומיין. כך אפשר לבדוק כל גבול בנפרד.\n\n```ts\ntype ApiResult<T> = { data: T; status: number };\n```",
-        contentLocale: "he",
-        contentDirection: "rtl",
-        originalContent: "Separate the HTTP layer from domain types so each boundary can be tested independently.",
-        originalLocale: "en",
-        originalDirection: "ltr",
-        provenance: {
-          origin: "machine",
-          provider: "preview",
-          model: "representative",
-          attribution: "Representative preview data",
-        },
-      }
-    : {
-        contentType: "post-body",
-        contentId: "answer",
-        revisionId: "post-r2",
-        selected: "translation",
-        content: "Separate the HTTP layer from domain types so each boundary can be tested independently.\n\n```ts\ntype ApiResult<T> = { data: T; status: number };\n```",
-        contentLocale: "en",
-        contentDirection: "ltr",
-        originalContent: "הפרידו בין שכבת ה-HTTP לבין הטיפוסים של הדומיין.",
-        originalLocale: "he",
-        originalDirection: "rtl",
-        provenance: {
-          origin: "persistent_manual",
-          attribution: "Representative preview data",
-        },
-      };
-
-  const followup: ContentTranslationPresentation = {
+function translatedPresentation(
+  contentId: string,
+  revisionId: string,
+  content: string,
+  contentLocale: string,
+  contentDirection: Direction,
+  originalContent: string,
+  originalLocale: string,
+  originalDirection: Direction,
+): ContentTranslationPresentation {
+  return {
     contentType: "post-body",
-    contentId: "followup",
-    revisionId: "post-r3",
-    selected: "original",
-    content: rtl
-      ? "כדאי גם לבדוק overflow עם מזהה ארוך מאוד: this-is-a-very-long-unbroken-technical-identifier-that-must-not-break-the-layout"
-      : "Also test overflow with a long identifier: this-is-a-very-long-unbroken-technical-identifier-that-must-not-break-the-layout",
-    contentLocale: rtl ? "he" : "en",
-    contentDirection: rtl ? "rtl" : "ltr",
-    originalContent: rtl
-      ? "כדאי גם לבדוק overflow עם מזהה ארוך מאוד: this-is-a-very-long-unbroken-technical-identifier-that-must-not-break-the-layout"
-      : "Also test overflow with a long identifier: this-is-a-very-long-unbroken-technical-identifier-that-must-not-break-the-layout",
-    originalLocale: rtl ? "he" : "en",
-    originalDirection: rtl ? "rtl" : "ltr",
-    fallbackReason: "same-locale",
+    contentId,
+    revisionId,
+    selected: "translation",
+    content,
+    contentLocale,
+    contentDirection,
+    originalContent,
+    originalLocale,
+    originalDirection,
+    provenance: {
+      origin: "machine",
+      provider: "preview",
+      model: "representative",
+      attribution: "Representative preview data",
+    },
   };
-
-  return [
-    { id: "question", author: rtl ? "נועה לוי" : "Alex Rivera", presentation: {
-      contentType: "post-body",
-      contentId: "question",
-      revisionId: "post-r1",
-      selected: "original",
-      content: rtl
-        ? "אני רוצה טיפוסים חזקים בלי לקשור את כל האפליקציה לספריית HTTP אחת."
-        : "I want strong typing without coupling the whole app to one HTTP library.",
-      contentLocale: rtl ? "he" : "en",
-      contentDirection: rtl ? "rtl" : "ltr",
-      originalContent: rtl
-        ? "אני רוצה טיפוסים חזקים בלי לקשור את כל האפליקציה לספריית HTTP אחת."
-        : "I want strong typing without coupling the whole app to one HTTP library.",
-      originalLocale: rtl ? "he" : "en",
-      originalDirection: rtl ? "rtl" : "ltr",
-      fallbackReason: "same-locale",
-    } },
-    { id: "answer", author: rtl ? "יואב כהן" : "Sam Chen", presentation: answer },
-    { id: "followup", author: rtl ? "מאיה כהן" : "Maya Cohen", presentation: followup },
-  ];
 }
