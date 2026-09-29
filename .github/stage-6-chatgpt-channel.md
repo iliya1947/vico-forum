@@ -7252,3 +7252,60 @@ hardening. Codex should independently verify current Cloudflare semantics and ch
 that preserves the intended separation between auth credential creation and traffic promotion
 before any Google or Cloudflare mutation begins.
 
+### Deployment-control-path preflight — 2026-09-29
+
+Read-only preflight completed from current official Cloudflare documentation plus the already
+captured current Deployments screenshot. No additional repeated owner screenshot was requested.
+
+Confirmed supported controls:
+
+- Workers Builds can be reconnected to an existing Worker and disconnected again.
+- Its deploy command is configurable. Using `npx wrangler versions upload` creates a Worker
+  version without promoting it to active traffic.
+- Cloudflare can manually trigger a Builds production build for a branch or exact `commit_hash`
+  through the Builds API, but this requires the GitHub App connection plus a user-scoped API token.
+  A Deploy Hook is another manual trigger, but creating one would introduce a new control resource.
+- Worker Versions and Deployments are decoupled. `wrangler versions upload` uploads without
+  promotion; Version URLs can test a version before production traffic; rollback from the dashboard
+  or Wrangler can immediately restore an earlier version to 100% traffic.
+- Existing dashboard evidence already shows baseline version `78f87645` retained in Version
+  History and currently serving 100%, so a concrete rollback target exists.
+- Dashboard code editor can Save a new version without promotion, but it does not provide a
+  repository-faithful way to build/upload the current multi-file React Router project from exact
+  Git `main`; it is therefore not a suitable exact-main artifact path for this Stage 6 rollout.
+
+Important execution constraints found:
+
+1. **Temporary Builds reuse is technically available but not self-sufficient for exact current
+   `main` from the present state.** Official guidance for an existing Worker says a new Git push
+   triggers the build. Triggering the already-existing exact main revision without a new repository
+   mutation needs either the Builds API (new user-scoped Cloudflare API token) or a newly created
+   Deploy Hook. Those are additional mechanisms/credentials, not part of the old disconnected
+   precedent.
+2. **Manual version upload is the cleanest Cloudflare version semantic but is not currently
+   executable through this ChatGPT session.** The project has no existing authenticated Cloudflare
+   CLI/control-plane connector and the owner has no local repository clone. Using Wrangler directly
+   would therefore require a new execution path (for example a temporary CI workflow or new local
+   setup).
+3. Cloudflare supports uploading runtime secrets together with an undeployed version via
+   `wrangler versions upload --secrets-file`; secrets omitted from that file are preserved.
+   Build variables/secrets in Workers Builds are build-time only and do not become runtime bindings
+   automatically.
+4. Version URLs are generated for uploaded versions when enabled; by default they follow the
+   `workers.dev` setting when no separate Version URL override exists. Current project evidence
+   confirms `workers.dev` is enabled, but a separate account-level Version URL override was not
+   re-opened/read in this preflight because no chosen path yet depends on it.
+
+Result: the first two preferred control families are supported by Cloudflare, but neither provides
+an immediately executable exact-main path with the tools currently available without introducing
+one additional trigger/auth execution mechanism. This is a real current Stage 6 deployment-control
+constraint, not future hardening.
+
+No Builds connection, API token, Deploy Hook, Worker version, OAuth client, runtime variable/secret,
+deployment, traffic, binding, credential, or database mutation was performed.
+
+Codex should now choose the minimum new execution mechanism, if any, and define one combined
+owner-authorized gate covering Google OAuth client creation, four runtime auth values, exact-main
+version creation, pre-traffic smoke when available, promotion, post-deploy smoke, rollback to
+`78f87645` on failure, and restoration of the Builds-disconnected policy.
+
