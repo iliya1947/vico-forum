@@ -7444,3 +7444,33 @@ or database mutation has been performed yet.
 
 Next unified-gate stage is Cloudflare API token + protected GitHub Environment provisioning.
 
+### Unified rollout gate — production-worker Environment provisioned — 2026-09-29
+
+Owner completed the GitHub Environment portion of the authorized unified rollout gate.
+
+Sanitized evidence from the GitHub Environment UI:
+
+- Environment: `production-worker`;
+- deployment branch policy was configured for branch `main`;
+- Environment secrets present by name only:
+  - `BETTER_AUTH_SECRET`;
+  - `CLOUDFLARE_ACCOUNT_ID`;
+  - `CLOUDFLARE_API_TOKEN`;
+  - `GOOGLE_CLIENT_SECRET`;
+- Environment variables present:
+  - `BETTER_AUTH_URL`;
+  - `GOOGLE_CLIENT_ID`.
+
+The owner-created Cloudflare token was scoped to specified Worker `vico-forum` with
+Individual Workers `Editor` and no additional permission groups; token value was not posted to
+chat or repository.
+
+No secret value was read or recorded. No workflow dispatch, Worker version upload/deployment,
+traffic mutation, Hyperdrive/binding mutation, credential rotation, or database mutation has been
+performed yet.
+
+Current repository main remains `7628ae6f85b7b99d4002dedb112a6bd1c5ed880b`.
+
+Next unified-gate stage is the single authorized `Production Worker rollout` workflow dispatch on
+that exact main revision with promotion enabled.
+
