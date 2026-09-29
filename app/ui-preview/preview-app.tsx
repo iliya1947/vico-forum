@@ -1,16 +1,18 @@
-import { useEffect, useMemo, useState, type ComponentType } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { I18nextProvider } from "react-i18next";
 import { RouterProvider, createMemoryRouter } from "react-router";
 
 import { HeaderAuthProvider, type HeaderAuthUser } from "../auth/auth-controls";
 import { PERMISSION_CATALOG, type PermissionKey } from "../authorization/catalog";
+import { AuthorizationAdminView } from "../authorization/admin-view";
 import { ForumRouteError } from "../forum/ui";
+import {
+  CategoryView,
+  HomeView,
+  SectionView,
+  TopicView,
+} from "../forum/views";
 import type { ContentTranslationPresentation } from "../localization/content-translation-presentation";
-import AuthorizationAdmin from "../routes/authorization-admin";
-import CategoryRoute from "../routes/category";
-import Home from "../routes/home";
-import SectionRoute from "../routes/section";
-import TopicRoute from "../routes/topic";
 import { previewTranslationRuntime } from "./preview-i18n";
 
 type Direction = "ltr" | "rtl";
@@ -245,59 +247,56 @@ function previewRouter(scenario: Scenario) {
     }], { initialEntries: [scenario.path] });
   }
 
-  const route = previewRoute(scenario);
   return createMemoryRouter([{
     path: "*",
-    Component: route.Component,
-    loader: () => route.data,
+    element: previewElement(scenario),
   }], { initialEntries: [scenario.path] });
 }
 
-function previewRoute(scenario: Scenario): { Component: ComponentType; data: unknown } {
+function previewElement(scenario: Scenario) {
   switch (scenario.view) {
     case "home":
-      return {
-        Component: Home,
-        data: {
-          locale: scenario.locale,
-          categories: [
+      return (
+        <HomeView
+          locale={scenario.locale}
+          categories={[
             { id: categoryId, name: "Development", sectionCount: 3 },
             { id: "tools", name: "AI coding tools", sectionCount: 3 },
             { id: "showcase", name: "Projects & showcase", sectionCount: 2 },
-          ],
-        },
-      };
+          ]}
+        />
+      );
     case "category":
-      return { Component: CategoryRoute, data: { locale: scenario.locale, category } };
+      return <CategoryView locale={scenario.locale} category={category} />;
     case "section":
-      return {
-        Component: SectionRoute,
-        data: { locale: scenario.locale, section, canCreateTopic: true },
-      };
+      return (
+        <SectionView
+          locale={scenario.locale}
+          section={section}
+          canCreateTopic
+        />
+      );
     case "empty":
-      return {
-        Component: SectionRoute,
-        data: {
-          locale: scenario.locale,
-          section: {
+      return (
+        <SectionView
+          locale={scenario.locale}
+          section={{
             id: "empty",
             name: "New community section",
             category: { id: categoryId, name: "Development" },
             topics: [],
-          },
-          canCreateTopic: false,
-        },
-      };
-    case "topic":
-      return {
-        Component: TopicRoute,
-        data: topicData(scenario.locale, scenario.direction),
-      };
-    case "admin":
-      return {
-        Component: AuthorizationAdmin,
-        data: authorizationData(scenario.locale),
-      };
+          }}
+          canCreateTopic={false}
+        />
+      );
+    case "topic": {
+      const data = topicData(scenario.locale, scenario.direction);
+      return <TopicView {...data} />;
+    }
+    case "admin": {
+      const data = authorizationData(scenario.locale);
+      return <AuthorizationAdminView {...data} />;
+    }
     case "not-found":
       throw new Error("not-found is handled by previewRouter");
   }
