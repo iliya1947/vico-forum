@@ -28,3 +28,28 @@ Browser screenshots не добавляются в служебный канал
 После полного self-review ChatGPT создаёт отдельный mergeable implementation PR. Codex затем
 независимо проверяет весь PR по действующему регламенту. До этого следующий visual-redesign slice
 не начинается.
+
+## Independent review of PR #151
+
+Codex независимо проверил весь PR `#151` на head
+`5b288954d054f8db5a40d6fce514452aa9c726b4`, его successful CI/Pages runs и фактически
+опубликованный URL `https://iliya1947.github.io/vico-forum/`.
+
+Обнаружен current-slice runtime defect, объясняющий blank Pages result. Preview напрямую импортирует
+route modules `home`, `category`, `section`, `topic` и `authorization-admin` из standalone Vite
+client build. Эти route modules co-locate server loaders/actions и импортируют server-only
+request-context/database code. В обычном React Router application build server exports обрабатывает
+framework plugin, но preview config использует plain Vite без этой границы. В результате browser
+bundle включает Node/server dependency path и падает до `createRoot()` с фактической ошибкой:
+
+```text
+ReferenceError: Buffer is not defined
+```
+
+HTTP document и hashed JS/CSS assets при этом возвращают `200`, поэтому build, artifact upload и
+Pages deploy закономерно зелёные, но `#root` остаётся пустым.
+
+Исправление не выполнялось. Безопасное направление — вынести client-safe presentation components
+из co-located route modules либо предоставить эквивалентную build boundary, которая доказанно не
+включает server-only graph. Добавление browser `Buffer` polyfill не устраняет архитектурную причину.
+До технического согласования и исправления этого дефекта следующий UI/UX slice не начинается.
