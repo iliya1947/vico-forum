@@ -7525,3 +7525,30 @@ reviewed continuation/cleanup decision.
 No database, Hyperdrive configuration, credential rotation, Builds connection, Preview Base, or
 authorization-manager/Queue/provider mutation was performed by this run.
 
+### Existing-version GET-only smoke passed — 2026-09-29
+
+Continuation used only the already-created unpromoted Worker version from failed rollout run
+`36568756602`; no workflow rerun/dispatch, token replacement, second Worker version, promotion,
+traffic mutation, binding mutation, credential rotation, or database mutation was performed.
+
+Exact existing version:
+
+- full version ID: `b11a64f4-3c1d-42a4-adf7-c9202d4fc8f6`;
+- Version URL used by the owner:
+  `https://b11a64f4-vico-forum.iliya1947a.workers.dev`.
+
+Owner browser GET-only verification matched the current repository smoke contract:
+
+- `/ru/` rendered the forum index successfully and exercised the public forum read path;
+- `/he/` rendered successfully with the expected Hebrew/RTL presentation;
+- `/iw/` redirected to `/he/`;
+- `/api/auth/get-session` returned the expected auth-session endpoint response without error;
+- `/he/topic` returned 404;
+- `/api/test` returned 404.
+
+This closes the bounded pre-traffic smoke for the existing version. Production traffic was not
+changed; the accepted baseline deployment remains untouched by this continuation.
+
+Per Codex #121, any manual promotion of this same version and subsequent production +
+interactive Google OAuth/session/logout smoke require a separate explicit owner authorization.
+
