@@ -7139,3 +7139,37 @@ specific contradictory evidence or drift.
 
 No Preview, binding, deployment, traffic, credential, or database mutation was performed.
 
+### Auth readiness: repository contract and already-known state — 2026-09-29
+
+Current `main` was checked against the Better Auth runtime before requesting any additional
+operator evidence.
+
+Repository contract:
+
+- `.env.example` declares exactly `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`,
+  `GOOGLE_CLIENT_ID`, and `GOOGLE_CLIENT_SECRET`;
+- `app/auth/auth.server.ts` passes all four values directly into Better Auth: explicit
+  `secret`, explicit `baseURL`, and Google `clientId` / `clientSecret`;
+- `workers/app.ts` creates the auth runtime unconditionally during request initialization, before
+  the React Router request handler;
+- `app/routes.ts` mounts Better Auth at `api/auth/*`, so the default Google provider callback is
+  `<BETTER_AUTH_URL>/api/auth/callback/google`.
+
+Current accepted project state still records real Google OAuth configuration/smoke as unfinished.
+The accepted Cloudflare Gate 0 / controlled Stage 6 operation history contains no authorized
+Production variables/secrets mutation that would have configured these four auth values. Therefore
+no repeated Cloudflare screenshot is requested merely to rediscover the expected absent auth
+configuration; the next external configuration gate should assume these production auth values
+still need provisioning unless contradictory current operator evidence exists.
+
+The one value still needed to define the exact mutation boundary is the current public Production
+Worker base URL. Current project evidence says workers.dev is enabled and no custom domain/route is
+configured, but the account-specific workers.dev hostname is not stored in the repository.
+
+Official Better Auth documentation was rechecked: production Google OAuth redirect must use the
+application base URL plus `/api/auth/callback/google`, and an explicit production base URL is
+recommended to avoid redirect mismatch.
+
+No Cloudflare/Google configuration, deployment, credential, database, or traffic mutation was
+performed.
+
