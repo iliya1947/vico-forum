@@ -250,7 +250,7 @@ jobs:
         run: |
           set -euo pipefail
           test -n "$VERSION_URL"
-          ./scripts/smoke-production-worker.sh "$VERSION_URL"
+          bash scripts/smoke-production-worker.sh "$VERSION_URL"
       - name: Record upload-only result
         if: ${{ !inputs.promote }}
         shell: bash
@@ -283,7 +283,7 @@ jobs:
           fi
 
           if [ "$rollout_failed" = "false" ]; then
-            if ! ./scripts/smoke-production-worker.sh "$PRODUCTION_BASE_URL"; then
+            if ! bash scripts/smoke-production-worker.sh "$PRODUCTION_BASE_URL"; then
               rollout_failed=true
             fi
           fi
