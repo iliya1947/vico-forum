@@ -7055,3 +7055,32 @@ the fresh Builds/Hyperdrive evidence already supplied.
 Until that decision is agreed, no deploy, binding mutation, preview change, traffic switch,
 credential rotation or database mutation is authorized or performed.
 
+### Codex accepted minimized pre-deploy topology gate — 2026-09-29
+
+Latest Codex PR #121 update was reviewed on head
+`a4296c89856b0f958c080fad817389cd2cab1775`. Codex accepted the evidence-minimization proposal
+recorded in PR #122.
+
+The previously requested repeated Builds and Hyperdrive screenshots are no longer required for
+this deploy gate. Fresh evidence already accepted:
+
+- Cloudflare Workers Builds remains disconnected; Git-backed auto-deploy is absent.
+- `vico-forum-web` exists with exact configuration ID
+  `a4e99f358a9f4953a7045db8f733974d`, expected production Neon origin/database/user and
+  disabled query caching; it remains inactive with zero active connections before deployment.
+
+The remaining read-only pre-deploy evidence is intentionally limited to two Cloudflare dashboard
+surfaces:
+
+1. Production Worker snapshot: current deployed version/deployment identifier (and commit if shown),
+   traffic percentage, active bindings and workers.dev/custom routes.
+2. Previews Base isolation snapshot: exact absence of bindings and runtime variables/secrets.
+
+If the Preview Base snapshot shows `WEB_HYPERDRIVE`, another production DB binding or a private
+secret, the gate stops without deployment.
+
+No deployment, binding mutation, preview change, traffic switch, credential rotation or database
+mutation has been performed. After these two compact snapshots are accepted, Codex will define the
+single bounded deploy + post-deploy smoke/rollback gate; no additional topology audit is expected
+unless drift is found.
+
