@@ -9,6 +9,8 @@
 - Stage 6 orchestration и старые служебные PR `#121`/`#122` остаются заморожены.
 - UI/UX implementation не начиналась.
 - Ниже зафиксированы reviewed scope, plan и acceptance criteria только для координации этой задачи.
+- ChatGPT полностью перепроверил исправленный PR `#148` на head
+  `c6dbbe5c34bb59b350833da5a3434acc594d2708`; новых current-task дефектов не обнаружено.
 
 ## Technical consensus with ChatGPT PR #147
 
@@ -16,10 +18,34 @@ ChatGPT и Codex независимо обнаружили один и тот ж
 PR `#148`: non-merge service branch одновременно содержал постоянные изменения
 `PROJECT_STATE.md`, `ROADMAP.md`, `README.md` и `docs/UI_UX_PASS.md`.
 
-Дефект подтверждён. PR `#148` исправлен как чистый coordination channel: постоянные project-facing
-изменения удалены из его diff. Если reviewed documentation должна попасть в `main` до реализации,
-она передаётся отдельным handoff для mergeable PR по `AGENTS.md`. После этого исправления требуется
-повторная полная проверка PR `#148`; implementation до её завершения не начинается.
+Дефект подтверждён и исправлен. PR `#148` является чистым coordination channel: постоянные
+project-facing изменения удалены из его diff. Повторная полная проверка ChatGPT подтвердила
+исправление без новых возможных проблем.
+
+## Owner decision: GitHub Pages visual progress preview
+
+Для наблюдения за визуальным прогрессом используется отдельный лёгкий статический UI-preview на
+GitHub Pages с representative/mock data. Он должен показывать визуально значимые состояния,
+включая desktop/mobile и LTR/RTL, без необходимости локального клона или полного backend/runtime.
+
+Pages-preview не является параллельным продуктом и не заменяет real-runtime acceptance. Он не
+доказывает SSR, auth, database-backed flows, permissions или translation/runtime behavior. Эти
+границы и финальная product acceptance проверяются отдельно на настоящем Worker/runtime. Preview
+mechanism должен оставаться минимальным, обратимым и внутри текущего UI/UX scope.
+
+## Persistent documentation handoff
+
+До implementation требуется отдельный mergeable documentation PR, который перенесёт reviewed
+постоянный план в `main` и синхронизирует фактический активный приоритет. Handoff должен содержать
+только:
+
+- `docs/UI_UX_PASS.md` с reviewed execution plan ниже и решением о GitHub Pages preview;
+- минимальные обновления `PROJECT_STATE.md`, `ROADMAP.md` и `README.md`, фиксирующие паузу Stage 6,
+  активный standalone UI/UX pass и ссылку на постоянный план.
+
+Служебный файл `.github/ui-ux-codex-channel.md` в mergeable PR не переносится. После merge
+documentation PR реализация начинается с reproducible visual baseline/preview slice; Stage 6 gates
+не продолжаются.
 
 ## Reviewed execution plan
 
@@ -52,6 +78,8 @@ The pass must preserve these existing constraints:
 - translated user content retains its own `lang`/`dir`, provenance and original-content fallback;
 - no search, reporting, moderation, profile, reputation, notification or other future product
   feature is introduced as part of visual polish;
+- GitHub Pages is only a static representative-data visual preview and never substitutes for
+  real-runtime functional or final product acceptance;
 - schema, dependencies, backend services and public contracts change only if a demonstrated UI
   requirement cannot be met through presentation code.
 
@@ -113,6 +141,9 @@ dependency requires a concrete need, official-version verification and separate 
 - Define deterministic representative data covering multiple categories and sections, populated
   and empty sections, short and long topics, solved and unsolved discussions, a best answer,
   Markdown/code, long unbroken content, translation presentation, several roles and users.
+- Build a minimal reversible GitHub Pages visual preview from representative/mock data so the owner
+  can inspect current UI progress without a full backend/runtime; reuse the current presentation
+  rather than creating an alternative product UI.
 - Provide a local way to exercise guest and authenticated presentation without weakening production
   authentication or authorization boundaries.
 - Capture baseline desktop/mobile LTR/RTL views and record concrete usability/accessibility defects.
@@ -179,6 +210,7 @@ Product acceptance is blocking and must use a real browser rather than component
 
 | Dimension | Required coverage |
 | --- | --- |
+| Environment | GitHub Pages for progress viewing; actual Worker/runtime for functional and final acceptance |
 | Viewports | Desktop, narrow mobile and at least one intermediate/tablet width |
 | Direction | Full LTR UI, full RTL UI, and mixed-direction topic content |
 | Identity | Guest, authenticated regular user and authorization manager |
@@ -207,5 +239,7 @@ The task is complete only when:
 - existing forum, authorization, localization and translation behavior remains covered and the
   full required CI suite passes;
 - browser evidence and remaining non-blocking limitations are recorded truthfully;
+- the lightweight Pages preview exposes representative visual progress without being cited as
+  evidence for SSR/auth/database/permission/translation-runtime acceptance;
 - independent review reaches no outstanding confirmed defects within this task's scope;
 - `PROJECT_STATE.md` reflects the actual accepted result rather than planned work.
