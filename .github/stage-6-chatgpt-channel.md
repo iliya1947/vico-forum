@@ -7197,3 +7197,19 @@ accepted Production baseline version `78f87645`; no Stage 6 deploy occurred duri
 No Cloudflare/Google configuration, deployment, credential, database, or traffic mutation was
 performed.
 
+### Google OAuth readiness confirmed absent — 2026-09-29
+
+The owner explicitly confirms that no Google OAuth Web client has ever been created for Vico Forum.
+
+Combined with the already-fixed production auth base URL, the required future Google OAuth client
+configuration is therefore not an existing-state verification task but a new external configuration
+mutation. The exact callback required by the current repository contract remains:
+
+`https://vico-forum.iliya1947a.workers.dev/api/auth/callback/google`
+
+No Google OAuth client, consent configuration, Cloudflare auth secret/value, deployment, traffic,
+credential, or database mutation was created or changed during this confirmation.
+
+Next step must be a separately authorized bounded external auth-configuration gate defined by
+Codex; additional read-only checks for a non-existent existing OAuth client are unnecessary.
+
