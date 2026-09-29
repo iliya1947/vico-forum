@@ -445,6 +445,41 @@ Official reference:
 https://developers.cloudflare.com/workers/ci-cd/builds/build-branches/
 ```
 
+## Protected production Worker rollout preparation
+
+Repository содержит отдельный manual workflow `.github/workflows/production-worker-rollout.yml`
+для Stage 6 runtime rollout без возврата к постоянному Git Builds auto-deploy.
+
+Preparation contract:
+
+- только `workflow_dispatch` на exact `main` SHA с explicit upload confirmation;
+- protected Environment `production-worker` передаёт Cloudflare account/token и четыре auth
+  values; secret values не логируются и не сохраняются как artifacts;
+- до Cloudflare access выполняются accepted live migration→runtime evidence check для `0020`,
+  disposable PostgreSQL contract, build и local split-Hyperdrive Workers smoke;
+- pinned repository Wrangler `4.130.0` выполняет `versions upload`, то есть создаёт version
+  без production traffic promotion;
+- versioned workers.dev URL используется для bounded GET-only public/auth/database-read smoke;
+- production promotion требует отдельного confirmation input и допускается только для version,
+  созданной тем же authorized run;
+- baseline production version prefix `78f87645` разрешается в полный version ID перед upload и
+  обязан обслуживать 100% traffic; automated promotion/smoke failure возвращает 100% traffic на
+  этот exact baseline и проверяет rollback;
+- interactive Google sign-in/session/logout остаётся отдельным owner post-deploy smoke.
+
+Сам preparation PR не создаёт GitHub Environment/secrets, Google OAuth client, Cloudflare API token,
+Worker version/deployment и не меняет traffic/bindings. Dispatch и external provisioning требуют
+отдельного explicit authorization после merge и review.
+
+Official references:
+
+```text
+https://developers.cloudflare.com/workers/versions-and-deployments/
+https://developers.cloudflare.com/workers/versions-and-deployments/version-urls/
+https://developers.cloudflare.com/workers/wrangler/commands/workers/
+https://developers.cloudflare.com/workers/configuration/secrets/
+```
+
 ## External schema/runtime ordering
 
 Когда runtime **реально выкатывается** во внешний pre-release/production environment и
