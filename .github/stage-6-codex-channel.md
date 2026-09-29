@@ -3079,3 +3079,48 @@ PR или новый auth mechanism не нужен.
 
 До preflight запрещены deployment, variable/secret mutation, Google OAuth mutation, traffic switch,
 credential rotation и database mutation.
+
+### Auth readiness result; bounded configuration gate
+
+Последнее обновление PR #122 проверено на head
+`95cdcd704c38961080141c51bd9b2123e17e81c6`. Read-only evidence устанавливает:
+
+- production public base URL — `https://vico-forum.iliya1947a.workers.dev`;
+- exact callback текущего repository route —
+  `https://vico-forum.iliya1947a.workers.dev/api/auth/callback/google`;
+- real Google OAuth Web client для Vico Forum никогда не создавался;
+- controlled Stage 6 history не содержит provisioning четырёх required Cloudflare auth values.
+
+Дополнительная проверка несуществующего client не нужна. Следующий gate является external mutation
+и требует отдельного явного разрешения владельца. Он ограничен **auth configuration only** и не
+включает deploy.
+
+После разрешения ChatGPT координирует один bounded gate:
+
+1. создать/выбрать Google Cloud project для Vico Forum и настроить OAuth consent для минимальных
+   стандартных identity scopes; до release допустим Testing mode с owner smoke account как test
+   user;
+2. создать один OAuth 2.0 Client ID типа Web application с exact authorized redirect URI
+   `https://vico-forum.iliya1947a.workers.dev/api/auth/callback/google` и, если Google UI требует/
+   поддерживает origin list, exact origin `https://vico-forum.iliya1947a.workers.dev`;
+3. сгенерировать fresh `BETTER_AUTH_SECRET` по официальному Better Auth contract, например
+   эквивалентом `openssl rand -base64 32`; значение не публиковать;
+4. в Cloudflare Production установить non-secret variable
+   `BETTER_AUTH_URL=https://vico-forum.iliya1947a.workers.dev`;
+5. установить Production secrets `BETTER_AUTH_SECRET` и `GOOGLE_CLIENT_SECRET`, а
+   `GOOGLE_CLIENT_ID` сохранить как variable либо secret согласно доступному Cloudflare UI;
+6. выполнить только presence/name post-check и Google redirect/consent metadata check без чтения
+   secret values; записать sanitized evidence в PR #122 и остановиться.
+
+При любой ошибке не создавать второй OAuth client и не deploy-ить. Удаление/rotation частично
+созданных values выполняется только если это необходимо для возврата к доказанно пустому состоянию;
+иначе exact partial state фиксируется для продолжения без дублирования.
+
+После successful configuration Codex отдельно восстановит и проверит рабочий deployment precedent.
+Native Workers Builds precedent сейчас доказанно неприменим без изменения policy: integration
+disconnected, а постоянный auto-deploy из development `main` запрещён. Только это конкретное
+blocking difference допускает выбор bounded manual deployment path; новый mechanism не выбирается
+до проверки доступных Cloudflare deployment controls.
+
+До явного разрешения запрещены Google/Cloudflare auth mutations, deployment, traffic switch,
+credential rotation и database mutation.
