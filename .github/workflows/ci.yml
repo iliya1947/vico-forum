@@ -37,6 +37,7 @@ jobs:
           node --test .github/scripts/validate-production-web-credential-input.test.mjs
           node --test .github/scripts/verify-recovery-v2-validation-run.test.mjs
           node --test .github/scripts/production-web-credential-recovery-v2-workflows.test.mjs
+          node --test .github/scripts/production-worker-rollout.test.mjs
           node --test .github/scripts/production-migration-contract.test.mjs
           node --test .github/scripts/runtime-migration-evidence.test.mjs
           node --test .github/scripts/verify-production-migration-identity.test.mjs
