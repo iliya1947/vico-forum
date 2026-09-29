@@ -1,0 +1,126 @@
+body.ui-preview-controller {
+  background: #111820;
+}
+
+.preview-controller {
+  max-width: 80rem;
+  margin-inline: auto;
+  padding: 1.25rem;
+}
+
+.preview-toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 1.5rem;
+  margin-block-end: 1rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid #40505e;
+  border-radius: 0.5rem;
+  color: #f4f7fa;
+  background: #1b2630;
+}
+
+.preview-toolbar h1 {
+  margin-block: 0.1rem 0.35rem;
+  font-size: clamp(1.4rem, 3vw, 2rem);
+}
+
+.preview-toolbar p {
+  margin: 0;
+  color: #c8d2da;
+}
+
+.preview-eyebrow {
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.preview-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.8rem;
+}
+
+.preview-controls label,
+.preview-controls fieldset {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+}
+
+.preview-controls fieldset {
+  grid-template-columns: repeat(2, auto);
+  border: 0;
+  padding: 0;
+}
+
+.preview-controls legend {
+  grid-column: 1 / -1;
+  padding: 0;
+}
+
+.preview-controls select,
+.preview-controls button {
+  min-height: 2.5rem;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid #6e7d89;
+  border-radius: 0.3rem;
+  color: #f4f7fa;
+  background: #263540;
+  font: inherit;
+}
+
+.preview-controls button[aria-pressed="true"] {
+  border-color: #fff;
+  background: #3d5568;
+}
+
+.preview-frame-wrap {
+  overflow: auto;
+  min-height: 60rem;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  background: #d9dfe4;
+  text-align: center;
+}
+
+.preview-frame {
+  display: block;
+  width: min(100%, 72rem);
+  height: 58rem;
+  margin-inline: auto;
+  border: 1px solid #8b98a3;
+  background: #eef1f4;
+}
+
+.preview-frame-wrap[data-viewport="mobile"] .preview-frame {
+  width: 390px;
+  max-width: 100%;
+}
+
+body.ui-preview-embedded {
+  background: #eef1f4;
+}
+
+body.ui-preview-embedded .forum-shell {
+  text-align: start;
+}
+
+body.ui-preview-embedded .auth-controls button {
+  pointer-events: none;
+}
+
+@media (max-width: 48rem) {
+  .preview-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .preview-controls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
