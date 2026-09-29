@@ -3308,3 +3308,52 @@ suite проходит 10/10.
 только repository preparation и не разрешает OAuth/client, GitHub Environment/token/secret,
 workflow dispatch, Worker version/deployment или traffic mutations. После merge требуется
 post-merge tree/workflow check до определения единого external execution gate.
+
+### PR #146 merged; unified auth and Worker rollout authorization gate
+
+Merge подтверждён независимо:
+
+- PR #146 имеет `merged=true`, merge time `2026-09-29T11:09:30Z`;
+- актуальный `main` — `7628ae6f85b7b99d4002dedb112a6bd1c5ed880b`;
+- merge tree `5d03afd1e96f02893bbeea1cb2f35a46709df02f` точно совпадает с reviewed PR head tree;
+- workflow `Production Worker rollout`, ID `370069459`, published из default branch и active;
+- merge не создал OAuth client, GitHub Environment/secrets, Cloudflare token/version/deployment и
+  не изменил production traffic.
+
+Следующий gate является единым continuous external window и требует нового явного разрешения
+владельца, которое охватывает success, automatic rollback и manual emergency rollback. Общая команда
+«продолжить Stage 6» таким разрешением не является.
+
+После authorization ChatGPT координирует:
+
+1. final read-only check exact unchanged `main`, active workflow, baseline `78f87645` at 100%,
+   Builds disconnected, empty Preview Base и existing Hyperdrive state; drift — stop;
+2. создать один Google OAuth Web client в prepared consent/testing configuration с exact callback
+   `https://vico-forum.iliya1947a.workers.dev/api/auth/callback/google` и owner smoke account;
+3. создать least-privilege Cloudflare API token для exact account/Worker version upload,
+   versions/deployments read и traffic deployment operations; token value не публиковать;
+4. создать protected GitHub Environment `production-worker`, разрешённый только для `main`, и
+   установить secrets `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `BETTER_AUTH_SECRET`,
+   `GOOGLE_CLIENT_SECRET`; variables `BETTER_AUTH_URL=https://vico-forum.iliya1947a.workers.dev`
+   и `GOOGLE_CLIENT_ID`; значения secrets не передавать в чат/PR;
+5. один раз dispatch-ить workflow на exact `main` с:
+   `expected_sha=7628ae6f85b7b99d4002dedb112a6bd1c5ed880b`,
+   `upload_confirmation=production-worker-version-upload-confirmed`, `promote=true`,
+   `promotion_confirmation=production-worker-promotion-confirmed`;
+6. при failure до promotion остановиться без rerun: production traffic остаётся baseline; сохранить
+   sanitized failure stage и решить cleanup отдельно без второго client/token/version;
+7. при caught failure после promotion принять только verified automatic rollback на exact baseline
+   at 100%; при cancellation/runner loss немедленно проверить traffic и owner-controlled вернуть
+   `78f87645` на 100% через Dashboard до иных действий;
+8. после successful workflow выполнить owner interactive Google sign-in → persisted session →
+   authenticated page/action boundary → logout → next-request anonymous verification. При failure
+   выполнить manual rollback на baseline без workflow rerun;
+9. зафиксировать sanitized workflow/version/traffic/smoke evidence в PR #122 и остановиться. Не
+   выполнять authorization-manager bootstrap, Queue/provider provisioning или другие Stage 6 gates.
+
+После success Cloudflare token и GitHub Environment lifecycle оцениваются отдельно; их немедленная
+rotation/deletion не включена автоматически, чтобы не сломать воспроизводимый rollback/audit path.
+Native Builds остаётся disconnected.
+
+До нового explicit authorization запрещены Google OAuth client, Cloudflare token, GitHub
+Environment/secrets, workflow dispatch, Worker version/deployment и traffic mutations.
