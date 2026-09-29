@@ -9,6 +9,11 @@ import type {
 } from "../../db/forum-repository";
 import type { ContentTranslationPresentation } from "../localization/content-translation-presentation";
 import type { ContentGenerationUnitView } from "../localization/content-generation-view";
+import type { ContentGenerationActionResponse } from "../localization/content-generation-response";
+import type {
+  ForumMutationError,
+  SourceLocaleCorrectionMutationError,
+} from "./mutations.server";
 import { forumCategoryPath, forumSectionPath, forumTopicPath } from "./paths";
 import { PostBodyPresentation, TopicTitlePresentation } from "./content-translation-view";
 import {
@@ -90,7 +95,7 @@ export function SectionView({
   locale: string;
   section: ForumSectionPage;
   canCreateTopic: boolean;
-  actionData?: { readonly error?: string };
+  actionData?: ForumMutationError;
 }) {
   const { t } = useTranslation("common");
   return (
@@ -133,10 +138,10 @@ export function SectionView({
   );
 }
 
-export interface TopicViewActionData {
-  readonly operation?: string;
-  readonly error?: string;
-}
+export type TopicViewActionData =
+  | ForumMutationError
+  | SourceLocaleCorrectionMutationError
+  | ContentGenerationActionResponse;
 
 export function TopicView({
   locale,
@@ -164,10 +169,12 @@ export function TopicView({
   const correctablePosts = new Set(correctablePostIds);
   const generationByContentId = new Map(generationUnits.map((unit) => [unit.contentId, unit]));
   const presentedPosts = new Map(postPresentations.map((presentation) => [presentation.contentId, presentation]));
-  const correctionError = actionData?.operation === "sourceLocaleCorrection"
+  const correctionError = actionData
+    && "operation" in actionData
+    && actionData.operation === "sourceLocaleCorrection"
     ? actionData.error
     : null;
-  const forumWriteError = actionData && actionData.operation === undefined
+  const forumWriteError = actionData && !("operation" in actionData)
     ? actionData.error
     : null;
   const { t } = useTranslation("common");
