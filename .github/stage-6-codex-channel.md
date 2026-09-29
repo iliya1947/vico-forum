@@ -3438,3 +3438,60 @@ manual rollback branch.
 До explicit authorization запрещены promotion/traffic mutation, Google login, rollback test,
 version/token/Environment mutation, credential rotation и database mutation кроме неизбежных
 Better Auth user/session writes внутри отдельно разрешённого interactive smoke.
+
+### Production Worker and Google OAuth acceptance complete
+
+Последнее обновление PR #122 проверено на head
+`d5c783ee947f50fc309abfeb2bc417272a72c636`. Принято owner/control-plane evidence для exact
+version `b11a64f4-3c1d-42a4-adf7-c9202d4fc8f6` на unchanged repository `main`
+`7628ae6f85b7b99d4002dedb112a6bd1c5ed880b`:
+
+- Dashboard manual promotion направил 100% Production traffic на exact target version;
+- production `/ru/` forum index успешно работает после promotion;
+- real Google OAuth sign-in завершён, SSR показывает authenticated user и session persisted;
+- protected authorization-management GET дошёл до server authorization boundary и корректно
+  вернул 403 обычному пользователю без `access.authorization.manage`;
+- logout завершён и следующий state anonymous;
+- rerun/second version/token replacement/credential rotation/migration не выполнялись;
+- rollback не потребовался.
+
+Production Worker rollout и real Google OAuth/session/logout gate закрыты. Созданные Better Auth
+user/account/session rows являются ожидаемым результатом явно разрешённого smoke, а не drift.
+
+Следующий Stage 6 blocker — server-controlled bootstrap первого authorization manager. Прямой
+bootstrap через `vico_forum_owner` не выбирается: application relations принадлежат
+`vico_forum_migrator`, а ранее подтверждённая split-authority модель не даёт owner relation-write
+authority/`SET ROLE`. Рабочий repository precedent — protected GitHub workflow с existing dedicated
+`NEON_MIGRATION_DATABASE_URL` под exact object owner/migrator.
+
+Следующий безопасный шаг — отдельный mergeable **repository-only authorization bootstrap PR**,
+который ChatGPT создаёт из current `main`:
+
+1. manual main-only workflow через existing protected `production-db` Environment и shared
+   `production-db-migrations` concurrency, без Cloudflare/Worker deployment permissions;
+2. pre-Environment guard: exact confirmation token, exact expected SHA, `refs/heads/main`, attempt
+   boundary; target identity передаётся только как protected secret/variable, не как public workflow
+   input или log;
+3. script подключается только через `NEON_MIGRATION_DATABASE_URL`, exact asserts
+   `current_user=vico_forum_migrator`, database `vico_forum`, PostgreSQL 17 и ownership target
+   authorization relations;
+4. transaction locks singleton `authz_mutation_lock FOR UPDATE` и fail closed требует:
+   `managers_ever_existed=false`, current effective manager count `0`, exact one existing Better Auth
+   target user, exact built-in `admin` role и существующий admin grant
+   `access.authorization.manage`;
+5. единственная bootstrap mutation назначает target user built-in `admin` role и атомарно ставит
+   `managers_ever_existed=true`; никаких изменений role grants/catalog или других users;
+6. before commit exact post-check требует target effective manage permission, manager count `1`,
+   explicit admin assignment и lock flag true; error всегда rollback;
+7. bounded output содержит только success/failure stage без user ID/email, token, URL или row dump;
+8. повторный dispatch после success fail closed по DB state и ничего не меняет; не добавлять
+   публичный/bootstrap HTTP endpoint;
+9. pure/unit workflow tests и disposable PostgreSQL 17 probe покрывают success, missing/ambiguous
+   user, pre-existing manager/lock, missing admin grant, rollback и redacted output;
+10. `PROJECT_STATE.md`, `PROJECT_HISTORY.md` и `docs/auth/AUTHORIZATION.md` синхронизируются с
+    фактом deployed Worker/OAuth acceptance и описывают bootstrap как prepared, но не executed.
+
+PR не выполняет bootstrap или другую external mutation. После green CI и полных reviews merge,
+target-user secret provisioning и dispatch требуют отдельных решений. Cleanup недостаточного
+Cloudflare token/`production-worker` Environment также остаётся отдельным later gate и не смешивается
+с authorization bootstrap.
