@@ -3040,3 +3040,42 @@ snapshots ChatGPT фиксирует только sanitized yes/no/identifier ev
 
 До получения двух snapshots по-прежнему запрещены deploy, binding/preview mutation, traffic
 switch, credential rotation и database mutation.
+
+### Pre-deploy topology accepted; auth configuration readiness next
+
+Последнее обновление PR #122 проверено на head
+`4007be81244e2d4fe915a397f4dc7234efb9cb57`. Принято evidence:
+
+- Production остаётся на baseline version `78f87645`, 100% traffic, то есть merged Stage 6 runtime
+  ещё не deployed;
+- owner явно подтвердил, что `Previews Base` остаётся неизменным и пустым: zero bindings и zero
+  runtime variables/secrets;
+- fresh Builds/Hyperdrive evidence принято предыдущим решением, а controlled operation history не
+  содержит Worker binding/route/preview/deployment mutations.
+
+Противоречащего drift не обнаружено. Read-only topology gate закрыт; дополнительный Cloudflare
+topology audit или повторные screenshots сейчас не нужны.
+
+Немедленно deploy-ить всё ещё нельзя по отдельной доказанной причине, не связанной с topology:
+merged Worker создаёт Better Auth runtime на каждом request и требует четыре production values —
+`BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`. Current
+source-of-truth прямо фиксирует real Google OAuth configuration/smoke как ещё не выполненный Stage 6
+gate. Deploy без подтверждённой auth configuration может сломать даже public request initialization.
+
+Следующий единственный шаг — bounded **read-only auth readiness preflight** через ChatGPT:
+
+1. подтвердить в Cloudflare Production только наличие/отсутствие четырёх required variable/secret
+   names без чтения secret values;
+2. зафиксировать exact production public base URL, который должен стать `BETTER_AUTH_URL`;
+3. подтвердить в Google Cloud наличие Web OAuth client и exact authorized redirect URI
+   `<BETTER_AUTH_URL>/api/auth/callback/google` согласно Better Auth `1.7.4` integration contract;
+4. подтвердить OAuth consent/testing state, достаточный для bounded owner smoke account;
+5. записать только sanitized yes/no, base URL и redirect URI; ничего не создавать и не изменять.
+
+Если все значения уже корректно существуют, Codex сразу определит deploy + auth/session/logout +
+public LTR/RTL/database smoke gate. Если отсутствуют, следующий gate будет только exact
+Google/Cloudflare configuration mutations и deploy, с явным разрешением владельца; новый repository
+PR или новый auth mechanism не нужен.
+
+До preflight запрещены deployment, variable/secret mutation, Google OAuth mutation, traffic switch,
+credential rotation и database mutation.
