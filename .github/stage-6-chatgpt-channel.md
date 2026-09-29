@@ -7578,3 +7578,59 @@ acceptance gate is therefore complete for this exact version.
 Per Codex #121, authorization-manager bootstrap, Queue/provider provisioning, token/Environment
 cleanup, and other remaining Stage 6 gates are outside this gate and require subsequent coordination.
 
+### Pause handoff — UI/UX product pass moved to a separate Codex task and new ChatGPT chat — 2026-09-29
+
+Owner explicitly paused the current Stage 6 coordination here and will handle the newly exposed
+forum UI/UX defect in a separate Codex task and a new ChatGPT chat.
+
+Stable handoff state:
+
+- repository `main` remains
+  `7628ae6f85b7b99d4002dedb112a6bd1c5ed880b`;
+- exact Worker version `b11a64f4-3c1d-42a4-adf7-c9202d4fc8f6` is promoted to 100%
+  Production traffic;
+- production forum render is live at
+  `https://vico-forum.iliya1947a.workers.dev`;
+- real Google OAuth sign-in, persisted authenticated session, ordinary-user server-side
+  authorization denial, and sign-out were accepted;
+- no rollback was required;
+- remaining Stage 6 infrastructure/application gates are intentionally paused; no
+  authorization-manager bootstrap, Queue/provider provisioning, token/Environment cleanup,
+  credential rotation, new Worker rollout, or other external mutation should be inferred from
+  this handoff.
+
+New current product defect exposed by real browser acceptance:
+
+- the existing forum UI is functionally implemented but visually remains a technical/scaffold-like
+  MVP rather than a finished forum product;
+- this is not a Cloudflare/deployment defect;
+- current `app/styles.css` and forum route composition provide only a minimal visual system;
+- the defect was missed because prior Stage 4/5 acceptance emphasized functional/automated
+  criteria and did not include a full visual product acceptance on representative forum data.
+
+Separate Codex task boundary:
+
+Result:
+- deliver a coherent production-quality UI/UX pass for the existing Vico Forum core without
+  expanding product scope.
+
+Area:
+- existing forum shell/navigation and current core screens/states only: forum index/categories,
+  category/section/topic/post presentation, write/auth/admin presentation, empty/error states,
+  responsive behavior, and existing LTR/RTL locales.
+- preserve existing forum architecture, routes, authorization, localization, translation,
+  database, and deployment contracts unless a change is demonstrably required by this UI task.
+
+Ready when:
+- the current forum no longer presents as scaffold/technical MVP;
+- representative populated data and empty/error/auth states are visually coherent;
+- desktop/mobile and LTR/RTL are visually accepted in a real browser;
+- existing functional/security/i18n behavior remains covered by CI;
+- a deliberate visual product acceptance is performed before the task is called complete.
+
+Implementation details are intentionally not prescribed here. The new Codex task should read
+current `main`, `AGENTS.md`, and relevant source-of-truth documents and determine the technical
+implementation itself.
+
+This service channel is paused at this point.
+
