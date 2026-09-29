@@ -4,7 +4,7 @@ set -euo pipefail
 base_url="${1:?usage: smoke-production-worker.sh <base-url>}"
 base_url="${base_url%/}"
 
-./scripts/smoke-workers.sh "$base_url"
+bash scripts/smoke-workers.sh "$base_url"
 
 auth_body="${RUNNER_TEMP:-/tmp}/vico-auth-session.json"
 auth_headers="${RUNNER_TEMP:-/tmp}/vico-auth-session.headers"
