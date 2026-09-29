@@ -7387,3 +7387,36 @@ Current PR #146 head is `51f84287dee7341003aff122832884f4e62fb42a`. Pull-request
 Next required step is independent full PR #146 review by Codex before any merge or external
 configuration/rollout authorization.
 
+### PR #146 corrective cycle and full re-review — 2026-09-29
+
+Codex's independently confirmed blocking finding was fixed on PR #146:
+
+- after successful promotion, failure of `wrangler deployments status` is now guarded and sets
+  `rollout_failed=true` rather than escaping under `set -euo pipefail`;
+- failure of the subsequent exact deployment assertion uses the same guarded path;
+- both failures therefore reach the existing baseline rollback block;
+- focused workflow-contract regression coverage now asserts that both post-promotion verification
+  failures occur before and feed the rollback decision.
+
+After the fix ChatGPT re-reviewed the entire PR #146 on exact head
+`39d87024473838ae3d9905018ae81b9b7b3a6fac` against unchanged main
+`743cb3f1c48b17d58c42cdaa6e561512fd4efb94`, covering all 8 changed files and the full final
+diff, source-of-truth docs, workflow ordering, secret handling, migration evidence boundary,
+Version URL smoke, promotion/rollback semantics and scope exclusions.
+
+Cloudflare/Wrangler semantics were rechecked against the pinned `wrangler 4.130.0` source and
+current official docs: `versions upload` supports CLI vars, secrets file and no-traffic version
+creation; the structured output contract contains the version ID and preview URL used by the
+helper; `deployments status --json` and `versions deploy <id>@100% -y` are supported.
+
+No new current-Stage defects, documentation contradictions, or unrelated scope expansion were
+found in the full re-review. Known manual cancellation/runner-loss rollback limitations remain an
+operational boundary already identified by Codex, not a newly fixable workflow defect.
+
+Exact-head pull-request CI run `36558418160` is terminal green:
+`checks=success`, `database=success`. GitHub reports PR #146 open, non-draft, mergeable with
+mergeable state `clean`.
+
+No external OAuth, GitHub Environment/token/secret, Cloudflare version/deployment/traffic,
+Hyperdrive/binding, credential or database mutation was performed.
+
