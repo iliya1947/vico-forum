@@ -7084,3 +7084,17 @@ mutation has been performed. After these two compact snapshots are accepted, Cod
 single bounded deploy + post-deploy smoke/rollback gate; no additional topology audit is expected
 unless drift is found.
 
+### Fresh Cloudflare Production deployment snapshot — 2026-09-29
+
+Owner-provided current Cloudflare Workers dashboard evidence confirms the active production
+deployment remains the pre-Stage-6 baseline:
+
+- active Version ID: `78f87645`;
+- traffic: `100%` to that version;
+- dashboard shows it was deployed 14 days earlier;
+- corresponding version-history entry is on `main` with commit message
+  `docs: reprioritize roadmap around forum core (#50)`.
+
+This confirms the merged Stage 6 split-binding repository state has not yet been deployed to the
+production Worker. No deployment or traffic mutation was performed during this evidence capture.
+
