@@ -3357,3 +3357,42 @@ Native Builds остаётся disconnected.
 
 До нового explicit authorization запрещены Google OAuth client, Cloudflare token, GitHub
 Environment/secrets, workflow dispatch, Worker version/deployment и traffic mutations.
+
+### Failed rollout run принят; existing-version continuation only
+
+Последнее обновление PR #122 проверено на head
+`19e2fbaf45685a98a1b8eb02ca908a7f259798ff`. GitHub Actions API независимо подтверждает единственный
+run `36568756602`, run/attempt `1/1`, exact head
+`7628ae6f85b7b99d4002dedb112a6bd1c5ed880b`, terminal `failure`:
+
+- authorization guard и полный pre-Cloudflare verify job завершены `success`;
+- protected Environment contract и baseline `78f87645` check завершены `success`;
+- upload step завершён `failure`; все последующие verify/smoke/promotion steps skipped;
+- workflow имеет ровно один run; rerun и новый dispatch запрещены текущим решением.
+
+Принято bounded Cloudflare evidence из PR #122: upload фактически создал unpromoted version
+`b11a64f4-3c1d-42a4-adf7-c9202d4fc8f6` с exact двумя Hyperdrive bindings и четырьмя auth binding
+names. Failure возник после version creation при discovery Version Preview URL: custom token не смог
+выполнить Workers subdomain read (`10000`) и Wrangler указал на недоступный membership-role read.
+Promotion не начинался, поэтому rollback не требовался и baseline traffic должен остаться 100%.
+
+Это не основание создавать второй token/version или проектировать rollout-v2. Уже существует exact
+reviewed artifact; следующий путь обязан сначала использовать его.
+
+Следующий gate полностью read-only и выполняется через Cloudflare Dashboard/public URL:
+
+1. подтвердить baseline `78f87645` всё ещё обслуживает 100% Production traffic;
+2. открыть existing version `b11a64f4-3c1d-42a4-adf7-c9202d4fc8f6` и сверить tag/message exact
+   `main`, оба Hyperdrive binding IDs и четыре auth binding names без secret values;
+3. получить Dashboard-provided Version URL для **этой же** version, если он доступен, и выполнить
+   GET-only `scripts/smoke-production-worker.sh` equivalent: LTR/RTL/locale redirects, public DB
+   reads и `/api/auth/get-session`;
+4. если Version URL отсутствует или smoke failed, остановиться без promotion, rerun, second version
+   или token replacement; записать exact bounded blocker;
+5. если smoke successful, зафиксировать sanitized evidence и остановиться. Manual promotion той же
+   version + post-deploy/interactive OAuth smoke потребует отдельного явного разрешения.
+
+Недостаточный Cloudflare token и GitHub Environment сохраняются без изменения до решения cleanup,
+чтобы не потерять audit evidence. Google OAuth client не дублируется. До read-only проверки
+запрещены version deletion, token rotation/replacement, workflow rerun/dispatch, promotion, traffic
+mutation, credential rotation и database mutation.
