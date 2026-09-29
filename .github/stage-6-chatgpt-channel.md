@@ -7011,3 +7011,24 @@ routes/deploy path.
 либо fresh dashboard evidence, после чего gate проверяется строго read-only и только затем
 передаётся Codex для определения отдельного deploy + smoke boundary.
 
+### Fresh Cloudflare evidence: vico-forum-web Hyperdrive details — 2026-09-29
+
+Owner-provided current Cloudflare Dashboard evidence confirms the existing
+`vico-forum-web` Hyperdrive configuration:
+
+- configuration ID remains `a4e99f358a9f4953a7045db8f733974d`;
+- configuration name: `vico-forum-web`;
+- direct Neon origin host matches the existing production Neon endpoint;
+- PostgreSQL port: `5432`;
+- database: `vico_forum`;
+- user: `vico_forum_web`;
+- password is masked in UI; no credential value was exposed;
+- Hyperdrive query caching is explicitly disabled;
+- maximum connections soft limit shown as `20`;
+- prior list evidence shows this configuration currently `Inactive` with zero active
+  connections, consistent with it not yet being bound/used by the deployed Worker.
+
+This satisfies the Hyperdrive-detail portion of the read-only pre-deploy topology gate only.
+Production bindings, Preview Base isolation, Builds/auto-deploy, deployed Worker version/traffic
+and routes still require fresh evidence before any deployment authorization.
+
