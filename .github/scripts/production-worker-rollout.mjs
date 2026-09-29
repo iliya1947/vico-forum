@@ -67,19 +67,25 @@ export function assertSingleVersionDeployment(value, expectedVersionId) {
 }
 
 export function parseVersionUploadOutput(output) {
-  const versionMatch = output.match(/Worker Version ID:\s*([0-9a-f-]{36})/i);
-  assert.ok(versionMatch, "Wrangler upload output does not contain a Worker Version ID");
-  assert.match(versionMatch[1], UUID_PATTERN, "Wrangler upload returned an invalid Worker Version ID");
+  const entries = output
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => JSON.parse(line));
 
-  const urlMatch = output.match(/Version (?:Preview )?URL:\s*(https:\/\/[^\s]+)/i);
-  assert.ok(urlMatch, "Wrangler upload output does not contain a Version URL");
+  const uploads = entries.filter((entry) => entry?.type === "version-upload");
+  assert.equal(uploads.length, 1, "Wrangler output must contain exactly one version-upload record");
 
-  const previewUrl = new URL(urlMatch[1]);
+  const upload = uploads[0];
+  assert.match(upload.version_id, UUID_PATTERN, "Wrangler output returned an invalid Worker Version ID");
+  assert.equal(typeof upload.preview_url, "string", "Wrangler output does not contain a Version URL");
+
+  const previewUrl = new URL(upload.preview_url);
   assert.equal(previewUrl.protocol, "https:", "Version URL must use HTTPS");
   assert.ok(previewUrl.hostname.endsWith(".workers.dev"), "Version URL must use workers.dev");
 
   return {
-    versionId: versionMatch[1].toLowerCase(),
+    versionId: upload.version_id.toLowerCase(),
     previewUrl: previewUrl.toString().replace(/\/$/, ""),
   };
 }
@@ -107,7 +113,7 @@ async function cli(argv) {
 
   if (command === "parse-upload") {
     const [outputPath, githubOutputPath] = args;
-    assert.ok(outputPath && githubOutputPath, "parse-upload requires <wrangler-output> <github-output>");
+    assert.ok(outputPath && githubOutputPath, "parse-upload requires <wrangler-output-file> <github-output>");
     const parsed = parseVersionUploadOutput(await readFile(outputPath, "utf8"));
     await appendFile(
       githubOutputPath,
