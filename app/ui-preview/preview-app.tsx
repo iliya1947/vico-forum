@@ -357,6 +357,10 @@ function authorizationData(locale: string) {
     "forum.sourceLocale.correctAny",
   ];
   const adminGrants: PermissionKey[] = [...PERMISSION_CATALOG];
+  const userEffectivePermissions: PermissionKey[] = [
+    ...userGrants,
+    "forum.translation.generate",
+  ];
 
   return {
     locale,
@@ -392,7 +396,7 @@ function authorizationData(locale: string) {
           explicitAssignment: false,
           grants: userGrants,
           overrides: { "forum.translation.generate": "allow" as const },
-          effectivePermissions: [...userGrants, "forum.translation.generate"],
+          effectivePermissions: userEffectivePermissions,
         },
       },
     ],
