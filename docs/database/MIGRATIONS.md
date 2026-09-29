@@ -124,6 +124,21 @@ Schema-first migration/evidence gate для текущей migration history т�
 Queue/provider runtime уже развёрнуты; schema-dependent runtime rollout остаётся отдельным Stage 6
 шагом.
 
+## Runtime rollout workflow evidence gate
+
+Prepared Stage 6 Worker rollout workflow
+`.github/workflows/production-worker-rollout.yml` consumes the existing migration→runtime
+evidence boundary before any Cloudflare Environment access or Worker version upload.
+
+For an authorized exact-main rollout it executes
+`.github/scripts/verify-runtime-migration-evidence.mjs`, so the successful production migration
+run, exact migration SHA/journal hash and required `0020_translation_generation_permission`
+coverage must still be valid and ancestral to the exact runtime revision. Failure stops before
+Cloudflare mutation.
+
+The workflow preparation itself does not apply migrations, alter database privileges, upload a
+Worker version or switch traffic. Those external actions remain separately authorized.
+
 ## Production verification contract
 
 Target-environment verifier проверяет стабильные invariants, а не mutable product state.
