@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-09-28
+Последнее обновление: 2026-09-29
 
 ## Назначение
 
@@ -55,10 +55,10 @@ Vico Forum находится в ранней pre-release разработке.
   bootstrap/recovery попыток рабочий standalone `ALTER ROLE ... PASSWORD ...` precedent был
   повторён под owner: usable web credential установлен без изменения grants/defaults, а Cloudflare
   успешно создал отдельный unbound direct-origin `vico-forum-web` Hyperdrive с disabled query
-  caching. Worker binding/routing и deployment ещё не приняты внешне. Текущий repository-only
-  change set добавляет `WEB_HYPERDRIVE` wiring отдельно от localization `HYPERDRIVE`; content
-  generation runtime остаётся disabled/fail-closed и не получает task/provider/background DB
-  capability.
+  caching. Split `HYPERDRIVE` / `WEB_HYPERDRIVE` wiring уже merged в `main`, но production
+  Worker всё ещё остаётся на старом baseline deployment и новый web binding/runtime ещё не принят
+  внешне. Content generation runtime остаётся disabled/fail-closed и не получает
+  task/provider/background DB capability.
 - Обычная feature-разработка и её CI остаются отделены от external rollout; merge в `main` сам по
   себе не является deployment/acceptance evidence.
 
@@ -371,11 +371,11 @@ database-role defaults `lock_timeout=2s` / `statement_timeout=5s` и usable cred
 Cloudflare отдельно содержит unbound direct-origin cache-disabled Hyperdrive `vico-forum-web`.
 Production Worker binding/routing и deployed web-runtime acceptance ещё не выполнены.
 
-Fresh Stage 6 Cloudflare Gate 0 подтвердил: native Git Builds integration отключён; Production
-имеет только `HYPERDRIVE -> vico-forum-registry` под `vico_forum_runtime` с disabled query
-caching; `Previews Base` не имеет bindings или runtime variables/secrets; production и preview
-`workers.dev` URLs включены, custom domains/routes отсутствуют. Перед будущим deploy эта mutable
-control-plane topology всё равно перепроверяется.
+Fresh Stage 6 pre-deploy recheck подтвердил: native Git Builds integration остаётся отключённой;
+Production продолжает обслуживаться baseline version `78f87645` со 100% traffic; owner подтвердил
+неизменный пустой `Previews Base` без bindings/runtime variables/secrets; production workers.dev
+URL — `https://vico-forum.iliya1947a.workers.dev`. Existing `vico-forum-web` Hyperdrive
+по-прежнему unbound/inactive и cache-disabled. Topology gate закрыт без deployment mutation.
 
 Dedicated least-privilege migration credential для production подтверждён external execution как
 `vico_forum_migrator`, production migration workflow не содержит database-owner exception, а
@@ -389,9 +389,8 @@ runtime roles/Hyperdrive writes и другие schema-dependent runtime capabil
 
 - real Google OAuth configuration и smoke;
 - server-controlled bootstrap первого authorization manager;
-- merge текущего repository-only `WEB_HYPERDRIVE` wiring + production Worker binding/routing
-  и deployed web-runtime acceptance для уже существующих usable credential и cache-disabled
-  `vico-forum-web`;
+- production Worker rollout merged split-binding revision + deployed web-runtime acceptance для
+  уже существующих usable credential и cache-disabled `vico-forum-web`;
 - отдельные translation background/maintenance runtime capabilities;
 - Cloudflare Queues и реальные translation providers;
 - final preview/private-data isolation recheck для write-capability rollout;
@@ -399,21 +398,27 @@ runtime roles/Hyperdrive writes и другие schema-dependent runtime capabil
 
 ## Ближайший маршрут
 
-Текущий change set выполняет только repository wiring уже созданной web capability:
+Текущий change set готовит только защищённый manual rollout mechanism; merge сам по себе ничего
+во внешней инфраструктуре не меняет:
 
-1. `wrangler.jsonc` получает отдельный `WEB_HYPERDRIVE` с exact configuration ID
-   существующего `vico-forum-web`; existing localization `HYPERDRIVE` не меняется.
-2. Worker composition использует localization binding только для registry/UI translation reads,
-   а web binding — для Better Auth, forum reader/writer, dynamic authorization и persisted
-   content-translation presentation. Отсутствие любого обязательного binding fail closed без
-   cross-capability fallback.
-3. Content-generation action/status/provider/background capabilities остаются disabled и не
-   получают web DB routing.
-4. PR CI должен пройти lint, generated Worker typecheck, unit/full tests, build, PostgreSQL suite
-   и Workers smoke с двумя отдельными local Hyperdrive overrides.
-5. После merge перед любым deploy отдельно перепроверяется mutable Production/Preview Base
-   topology. Preview не должен получить production write-capable `WEB_HYPERDRIVE` без отдельной
-   изоляции. Binding mutation/deploy/traffic switch требуют отдельного explicit authorization.
+1. `.github/workflows/production-worker-rollout.yml` — manual main-only workflow через отдельный
+   protected Environment `production-worker`, exact authorized SHA и explicit upload/promotion
+   confirmations.
+2. До Cloudflare access workflow повторно проверяет accepted live migration→runtime evidence для
+   `0020`, disposable PostgreSQL contract, exact build и local split-Hyperdrive Workers smoke.
+3. Exact pinned Wrangler `4.130.0` сначала создаёт новую Worker version через
+   `versions upload` без traffic promotion. Runtime auth values поступают только из protected
+   Environment; secrets используются из runner temp и не сохраняются как artifacts.
+4. Uploaded version должна пройти GET-only public/auth/database-read smoke через Version URL.
+   Promotion допускается только для version из того же authorized run и только при отдельном
+   confirmation input.
+5. После promotion выполняется production smoke. При automated failure workflow возвращает 100%
+   traffic на accepted baseline version prefix `78f87645` и проверяет rollback state.
+6. Interactive Google sign-in/session/logout остаётся owner post-deploy smoke и не автоматизируется
+   через CI.
+7. Подготовительный PR не создаёт `production-worker` Environment, Cloudflare API token,
+   Google OAuth client/auth secrets, Worker version/deployment и не меняет traffic. Всё это требует
+   отдельного explicit authorization после merge и review.
 
 Stage 5 завершён только в repository/local-CI boundary. Real Google OAuth/bootstrap, remaining
 production runtime rollout, Cloudflare Queues/providers, authoritative production
