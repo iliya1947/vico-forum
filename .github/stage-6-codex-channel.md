@@ -3007,3 +3007,36 @@ authenticated Cloudflare evidence непосредственно перед лю
 До независимой проверки этого evidence запрещены deployment, binding mutation, preview changes,
 traffic switch, credential rotation и database mutation. Если topology совпадает, Codex отдельно
 определит exact deploy + smoke boundary и запросит новое явное разрешение владельца.
+
+### Pre-deploy evidence minimization decision
+
+Последнее обновление PR #122 проверено на head
+`6c47de10831c12411a67e860d3cf227867f4760e`. Принято fresh owner-provided evidence:
+
+- Workers Builds остаётся disconnected, Git-backed auto-deploy отсутствует;
+- `vico-forum-web` существует с exact configuration ID
+  `a4e99f358a9f4953a7045db8f733974d`, direct production Neon origin, database/user
+  `vico_forum` / `vico_forum_web`, masked password и disabled query caching;
+- configuration inactive/zero active connections согласуется с отсутствием deployed binding/use.
+
+Повторно запрашивать эти же Builds/Hyperdrive screens перед текущим deploy не требуется: после
+evidence не было разрешённых операций, способных изменить их, а repository merge control plane не
+меняет. Однако отсутствие разрешённой mutation не доказывает все остальные mutable account
+surfaces, и safety-critical preview isolation нельзя выводить только из истории действий.
+
+Минимальный оставшийся read-only evidence set сужается до двух dashboard surfaces:
+
+1. **Production Worker snapshot:** current deployed version/deployment identifier (и commit, если UI
+   его показывает), traffic percentage, current active bindings, workers.dev/custom routes. Это
+   фиксирует rollback/smoke baseline; повторно открывать Builds и Hyperdrive details не нужно.
+2. **Previews Base isolation snapshot:** exact absence bindings и runtime variables/secrets.
+   Если `WEB_HYPERDRIVE`, другой production DB binding или private secret присутствует — stop без
+   deploy. Общие non-secret build settings сами по себе этот gate не блокируют.
+
+Это не просьба повторять все четыре ранее проверенные Cloudflare области. После этих двух compact
+snapshots ChatGPT фиксирует только sanitized yes/no/identifier evidence в PR #122. Codex затем
+сразу определяет один bounded deploy + post-deploy smoke/rollback gate; новый preparation PR или
+дополнительный topology audit без обнаруженного drift не допускается.
+
+До получения двух snapshots по-прежнему запрещены deploy, binding/preview mutation, traffic
+switch, credential rotation и database mutation.
