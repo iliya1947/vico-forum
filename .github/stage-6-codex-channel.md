@@ -3171,3 +3171,62 @@ Builds policy.
 
 До этого запрещены Google OAuth client creation, Cloudflare variable/secret changes, version
 creation/deployment, traffic switch, Builds connection, credential rotation и database mutation.
+
+### Deployment control path selected: protected GitHub workflow
+
+Последнее обновление PR #122 проверено на head
+`1f9394b197f750a2252fcb3064241bc107f599b4`. Preflight независимо согласуется с официальными
+Cloudflare controls:
+
+- temporary Builds reuse требует новый push, user-scoped Builds API token или новый Deploy Hook и
+  потому не является самодостаточным exact-existing-main precedent;
+- Dashboard editor не создаёт repository-faithful React Router artifact;
+- manual `wrangler versions upload` является минимальным supported no-traffic version primitive,
+  но у владельца нет local clone, а текущая ChatGPT session не имеет Cloudflare execution tool;
+- repository-owned protected GitHub Actions execution уже является используемым в Stage 6
+  precedent для production DB gates и обеспечивает exact SHA, Environment secrets, CI audit trail
+  и one-shot/fail-closed checks.
+
+Первые два preferred deployment paths имеют доказанные blocking differences. Поэтому минимальный
+новый mechanism теперь обоснован: отдельный mergeable repository PR с **manual protected Worker
+version/deployment workflow**. Это не разрешает его dispatch и не выполняет external mutations.
+
+ChatGPT должен создать PR из exact current `main` со следующим scope:
+
+1. новый manual main-only workflow, protected отдельным Environment `production-worker`, с
+   `contents: read`, serialized concurrency и `cancel-in-progress: false`;
+2. pre-Environment guard требует exact confirmation и explicit expected SHA, равный `github.sha`;
+   rerun автоматически не означает authorization нового traffic switch;
+3. pinned checkout/Node/pnpm setup, `pnpm install --frozen-lockfile`, full build и repository smoke
+   prerequisites выполняются до Cloudflare upload;
+4. exact pinned `wrangler 4.130.0` вызывается из repository dependency, без `latest`, Deploy Hook,
+   Builds reconnect или dashboard code editing;
+5. Environment contract использует least-privilege `CLOUDFLARE_API_TOKEN`,
+   `CLOUDFLARE_ACCOUNT_ID` и четыре auth values; secret values не печатаются и не сохраняются как
+   artifacts. Temporary secrets file создаётся только в runner temp с cleanup trap;
+6. workflow сначала выполняет `wrangler versions upload` exact checked-out artifact с runtime auth
+   values и merged two-Hyperdrive config, получает bounded version identifier и **не переключает
+   traffic**;
+7. version URL availability и exact supported pre-traffic smoke contract должны быть проверены по
+   Wrangler/Cloudflare contract. Если version URL недоступен, workflow останавливается после upload
+   без promotion, а не ослабляет gate;
+8. production promotion является отдельным explicit workflow input/confirmation и допускается
+   только для version, созданной в том же authorized run после successful pre-traffic smoke;
+9. после promotion выполняется bounded public LTR/RTL/redirect/auth-endpoint/database-read smoke;
+   при failure workflow возвращает 100% traffic на exact baseline version `78f87645` и проверяет
+   rollback conclusion;
+10. interactive Google sign-in/session/logout остаётся operator post-deploy smoke; его failure
+    требует owner-controlled rollback к `78f87645`, а не автоматический retry;
+11. unit/static workflow tests проверяют main/SHA/confirmation guards, upload-before-promotion,
+    secret non-disclosure, exact baseline rollback, no Builds reconnect/Deploy Hook, and no
+    database/schema mutation;
+12. docs фиксируют preparation only. Никакие Google/GitHub/Cloudflare secrets/environments/tokens,
+    versions, deployments или traffic этим PR не создаются.
+
+После green CI и полных reviews отдельно разрешаемый continuous gate сможет охватить: Google OAuth
+client → GitHub `production-worker` Environment values → exact-main workflow dispatch → version
+smoke → promotion → public/auth operator smoke → rollback при failure. Постоянный auto-deploy
+останется отключённым.
+
+До merge и отдельного explicit authorization запрещены OAuth/client creation, Environment/token/
+secret provisioning, workflow dispatch, version upload/deployment и traffic mutation.
