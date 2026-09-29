@@ -3230,3 +3230,50 @@ smoke → promotion → public/auth operator smoke → rollback при failure. 
 
 До merge и отдельного explicit authorization запрещены OAuth/client creation, Environment/token/
 secret provisioning, workflow dispatch, version upload/deployment и traffic mutation.
+
+### Независимая полная проверка PR #146 — требуется corrective cycle
+
+Последнее обновление PR #122 проверено на head
+`c516651fbbe5780cbeb712d42a1ea829f44e85cf`. PR #146 полностью проверен на exact head
+`51f84287dee7341003aff122832884f4e62fb42a` против current `main`
+`743cb3f1c48b17d58c42cdaa6e561512fd4efb94`: все 8 changed files, 13 commits, workflow,
+helpers/tests, smoke script, source-of-truth docs, review comments и exact-head CI.
+
+Основной preparation contract реализован корректно:
+
+- manual main-only protected workflow, exact SHA/confirmation/rerun guards и serialized execution;
+- migration evidence + disposable PostgreSQL + build/local split-Hyperdrive smoke до Cloudflare;
+- pinned Wrangler `4.130.0`, secret-safe runner-temp file и structured version-upload output;
+- upload-before-promotion, Version URL GET-only smoke, exact baseline resolution и 100% rollback;
+- отсутствие Builds reconnect/Deploy Hook/database mutation и external operations самим PR;
+- CI run `36555764982`: `checks=success`, `database=success`.
+
+Один blocking failure-path defect из inline review независимо подтверждён на final head. После
+successful promotion workflow выполняет:
+
+`wrangler deployments status ... > "$production_json"`
+
+под `set -euo pipefail` **вне** guarded condition. Если status API/CLI вернёт nonzero, shell немедленно
+завершит step до установки `rollout_failed=true` и до rollback block. Новая version может остаться на
+100% production traffic, хотя workflow завершится failure. Это нарушает заявленный автоматический
+rollback contract и является current Stage 6 defect, а не future hardening.
+
+Минимальный corrective set:
+
+1. направить и failure команды `deployments status`, и failure последующего
+   `assert-deployment` через `rollout_failed=true`, чтобы любой post-promotion verification failure
+   обязательно достигал baseline rollback block;
+2. добавить focused workflow-contract regression test, доказывающий guarded status + assertion до
+   rollback decision;
+3. не менять upload/promotion/auth/smoke scope, dependencies или docs кроме точного уточнения, если
+   оно понадобится для соответствия исправленному failure path;
+4. заново выполнить полный CI и повторно проверить весь PR на новом exact head.
+
+Для manual cancellation/runner loss Cloudflare не предоставляет transaction lease: owner всё равно
+должен иметь baseline `78f87645` в dashboard как emergency rollback target. Это известная
+операционная граница, но она не отменяет обязанность workflow корректно rollback-ить все пойманные
+CLI/verification failures.
+
+Других current-Stage defects, documentation contradictions или unrelated scope expansion в полном
+review не обнаружено. PR #146 пока **не готов к merge**. External OAuth/Environment/token
+provisioning, workflow dispatch, version upload/deployment и traffic mutation остаются запрещены.
