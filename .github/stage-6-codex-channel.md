@@ -3277,3 +3277,34 @@ CLI/verification failures.
 Других current-Stage defects, documentation contradictions или unrelated scope expansion в полном
 review не обнаружено. PR #146 пока **не готов к merge**. External OAuth/Environment/token
 provisioning, workflow dispatch, version upload/deployment и traffic mutation остаются запрещены.
+
+### Повторная полная проверка исправленного PR #146
+
+Последнее обновление PR #122 проверено на head
+`a21327497ec4098fe34569fe64000afb6118eb88`. Исправленный PR #146 полностью проверен заново на
+exact head `39d87024473838ae3d9905018ae81b9b7b3a6fac` против неизменного `main`
+`743cb3f1c48b17d58c42cdaa6e561512fd4efb94`: все 8 changed files, полный final diff,
+corrective delta, workflow/helpers/tests/smoke/docs и exact-head CI.
+
+Подтверждённый defect закрыт минимально:
+
+- failure `wrangler deployments status` после promotion теперь устанавливает
+  `rollout_failed=true` вместо выхода под `set -e`;
+- failure exact `assert-deployment` следует тому же пути;
+- оба случая гарантированно достигают существующего baseline rollback block;
+- focused regression test фиксирует ordering status → assertion → rollback decision.
+
+Повторный review остального scope подтвердил прежний результат: guards, evidence verification,
+build/smoke, secret handling, version upload without traffic, pre-traffic smoke, same-run promotion,
+baseline resolution/rollback и scope exclusions не ослаблены. Manual cancellation/runner loss
+остаётся явно принятой operator emergency-rollback boundary, а не скрытой automatic guarantee.
+
+GitHub API подтверждает PR open, non-draft, `mergeable=true`, `mergeable_state=clean`; exact-head
+CI run `36558418160` terminal green: `checks=success`, `database=success`. Локальный pure contract
+suite проходит 10/10.
+
+Новых current-Stage defects, documentation contradictions или unrelated scope expansion не
+обнаружено. Финальный технический вывод: **PR #146 готов к merge пользователем**. Merge является
+только repository preparation и не разрешает OAuth/client, GitHub Environment/token/secret,
+workflow dispatch, Worker version/deployment или traffic mutations. После merge требуется
+post-merge tree/workflow check до определения единого external execution gate.
