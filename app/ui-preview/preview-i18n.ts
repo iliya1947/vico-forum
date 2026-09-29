@@ -1,7 +1,6 @@
-import type { Resource } from "i18next";
-
 import { canonicalEnglishCatalog } from "../localization/catalog";
 import { createTranslationRuntime } from "../localization/runtime";
+import type { ResourceBundle } from "../localization/sources";
 
 function canonicalCommonResources(): Record<string, string> {
   const resources: Record<string, string> = {};
@@ -87,7 +86,7 @@ const hebrew: Record<string, string> = {
 };
 
 export function previewTranslationRuntime(locale: "en" | "he", direction: "ltr" | "rtl") {
-  const resourcesByLocale: Resource = locale === "he"
+  const resourcesByLocale: Record<string, ResourceBundle> = locale === "he"
     ? { en: { common: english }, he: { common: hebrew } }
     : { en: { common: english } };
 
