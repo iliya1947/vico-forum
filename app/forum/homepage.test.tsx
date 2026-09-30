@@ -85,11 +85,11 @@ describe("homepage target presentation", () => {
     expect(screen.getByRole("heading", { name: "Latest topics" })).toBeVisible();
     expect(screen.getAllByText("12").length).toBeGreaterThan(0);
     expect(screen.getAllByText("48").length).toBeGreaterThan(0);
-    expect(screen.queryByRole("link", { name: "Pinned three" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Pinned three" })).toBeVisible();
+    expect(screen.queryByRole("link", { name: "Latest three" })).not.toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: "Show more topics" }));
 
-    expect(screen.getByRole("link", { name: "Pinned three" })).toBeVisible();
     expect(screen.getByRole("link", { name: "Latest three" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Show fewer topics" })).toHaveAttribute("aria-expanded", "true");
   });
