@@ -62,7 +62,7 @@ export const canonicalEnglishCatalog = {
     pinnedHeading: message("pinnedHeading", "Pinned", "Heading for pinned topics in a homepage forum block."),
     latestTopicsHeading: message("latestTopicsHeading", "Latest topics", "Heading for latest topics in a homepage forum block."),
     homepageSectionFallbackDescription: message("homepageSectionFallbackDescription", "Sections, discussions, and practical answers in this area.", "Fallback description for a database-backed homepage category."),
-    homepagePinnedEmpty: message("homepagePinnedEmpty", "No pinned topics yet.", "Empty pinned-topic area on a real homepage category."),
+    homepagePinnedEmpty: message("homepagePinnedEmpty", "Pinned topics are under development.", "Truthful placeholder while pinned-topic persistence is not implemented."),
     homepageLatestEmpty: message("homepageLatestEmpty", "No topics yet.", "Empty latest-topic area on a real homepage category."),
     homepageExpand: message("homepageExpand", "Show more topics", "Accessible label for expanding a homepage forum block."),
     homepageCollapse: message("homepageCollapse", "Show fewer topics", "Accessible label for collapsing a homepage forum block."),
