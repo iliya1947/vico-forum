@@ -44,6 +44,19 @@ const topic = {
 
 const reader: ForumReader = {
   listCategories: async () => [{ id: category.id, name: category.name, sectionCount: 1 }],
+  readHomepage: async () => [{
+    id: category.id,
+    name: category.name,
+    sectionCount: 1,
+    topicCount: 1,
+    messageCount: 1,
+    latestTopics: [{
+      id: topic.id,
+      title: topic.title.originalContent,
+      authorName: topic.authorName,
+      activityAt: topic.posts[0]!.createdAt,
+    }],
+  }],
   readCategory: async (id) => id === category.id ? category : undefined,
   readSection: async (id) => id === section.id ? section : undefined,
   readTopicPage: async (id) => id === topic.id ? topic : undefined,

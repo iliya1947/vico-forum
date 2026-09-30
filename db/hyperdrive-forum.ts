@@ -53,6 +53,7 @@ export function createHyperdriveForumReader(
 
   return {
     listCategories: () => read((repository) => repository.listCategories()),
+    readHomepage: (latestTopicsPerCategory) => read((repository) => repository.readHomepage(latestTopicsPerCategory)),
     readCategory: (id) => read((repository) => repository.readCategory(id)),
     readSection: (id) => read((repository) => repository.readSection(id)),
     readTopicPage: (id) => read((repository) => repository.readTopicPage(id)),

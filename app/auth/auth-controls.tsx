@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { Link, useLocation, useRevalidator } from "react-router";
 import { useTranslation } from "react-i18next";
+import { underDevelopmentPath } from "../forum/paths";
 import { authClientActions, type AuthClientActions } from "./auth-client";
 
 export interface HeaderAuthUser { readonly name: string; readonly canManageAuthorization?: boolean }
@@ -9,6 +10,10 @@ const HeaderAuthContext = createContext<{
   user: HeaderAuthUser | null;
   setUser(user: HeaderAuthUser | null): void;
 } | null>(null);
+
+export function useHeaderAuthUser(): HeaderAuthUser | null {
+  return useContext(HeaderAuthContext)?.user ?? null;
+}
 
 export function HeaderAuthProvider({ initialUser, children }: {
   initialUser: HeaderAuthUser | null;
@@ -77,7 +82,12 @@ export function AuthControls({ locale, actions = authClientActions }: {
 
   return (
     <div className="auth-controls">
-      {user ? <span className="auth-user">{user.name}</span> : null}
+      {user ? (
+        <Link className="auth-user" to={underDevelopmentPath(locale, "profiles")}>
+          <span className="auth-avatar" aria-hidden="true">{user.name.trim().slice(0, 1).toUpperCase()}</span>
+          <span>{user.name}</span>
+        </Link>
+      ) : null}
       {user?.canManageAuthorization ? <Link to={`/${encodeURIComponent(locale)}/admin/authorization`}>{t("authorizationNav")}</Link> : null}
       <button type="button" disabled={pending} onClick={user ? signOut : signIn}>
         {pending ? t("authPending") : user ? t("signOut") : t("signInGoogle")}

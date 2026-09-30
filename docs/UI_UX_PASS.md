@@ -207,23 +207,25 @@ mobile-width previewing and representative LTR/RTL/identity/content states. The 
 deployed preview renders after the server/client boundary defect was fixed. This does not mark the
 full later browser acceptance matrix complete.
 
-### 2. Foundations, shell and approved homepage frame — next bounded slice
+### 2. Foundations, shell and approved homepage frame — repository implementation complete
 
-- Introduce centralized semantic tokens and base typography, surfaces, links, focus and
-  reduced-motion rules.
-- Implement Light/Dark as one geometry: first-use `prefers-color-scheme`, persisted manual
-  Light/Dark selection, and no separate System mode.
-- Refine the shared shell into the approved two-zone header/navigation structure and add the footer
-  destinations needed by the target composition.
-- Implement the approved homepage block geometry, responsive one-column behavior and exact desktop
-  expand-control positioning against representative data; preserve real application data wherever
-  the current contracts already provide it.
-- Add the shared localized `Under development` page/checklist and route unfinished approved
-  controls there rather than faking their behavior.
+The bounded implementation now covers semantic tokens, persisted Light/Dark, the approved two-zone
+shell/header/footer composition, homepage block geometry and the shared localized
+`Under development` page/checklist. Repository CI and the Pages preview pass for this
+implementation, while owner visual/browser acceptance remains required before this slice is treated
+as accepted.
+
+- Real application homepage counts and latest-topic data continue to come from the existing forum
+  reader; unavailable pinning and online-presence capabilities are not represented as fake runtime
+  data.
+- The Pages fixture carries representative target-only data, including the approved six-destination
+  order and pinned-topic presentation, so visual work can be reviewed without inventing production
+  persistence.
 - Search, notifications, unread state, drafts/autosave, profiles and other heavier missing
-  subsystems are not implemented in this slice merely because their target controls are visible.
-- Keep `<html lang>`/`dir`, SSR/hydration, canonical locale-aware links and existing protected
-  server boundaries unchanged.
+  subsystems are still separate bounded work. Their approved pre-release entry points route to
+  `Under development` instead of pretending to work.
+- `<html lang>`/`dir`, SSR/hydration, canonical locale-aware links and existing protected server
+  boundaries remain unchanged.
 
 ### 3. Forum discovery beyond the homepage
 

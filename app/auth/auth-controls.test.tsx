@@ -85,6 +85,8 @@ describe("forum header auth controls", () => {
     const client = actions();
     renderControls({ name: "Ada Lovelace" }, client);
     expect(await screen.findByText("Ada Lovelace")).toBeVisible();
+    expect(screen.getByRole("link", { name: "Ada Lovelace" }))
+      .toHaveAttribute("href", "/en/under-development?feature=profiles");
     await userEvent.click(screen.getByRole("button", { name: "Sign out" }));
     expect(await screen.findByRole("button", { name: "Sign in with Google" })).toBeVisible();
     expect(screen.queryByText("Ada Lovelace")).not.toBeInTheDocument();

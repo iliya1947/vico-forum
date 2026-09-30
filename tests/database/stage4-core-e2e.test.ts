@@ -196,6 +196,44 @@ describe("Stage 4 connected forum authorization flow", () => {
     expect(publicTopic).toMatchObject({ isSolved: true, bestAnswerPostId: reply.id });
     expect(publicTopic?.posts.find((post) => post.id === reply.id)?.body.originalContent).toBe("Connected reply");
 
+    const newerTopicId = await createTopic("e2e-author", "Author", "Newer but inactive topic");
+    await client.query(
+      `update forum_topics
+       set created_at = case id
+         when $1 then timestamptz '2026-09-01T00:00:00Z'
+         when $2 then timestamptz '2026-09-05T00:00:00Z'
+         else created_at
+       end
+       where id in ($1, $2)`,
+      [topicId, newerTopicId],
+    );
+    await client.query(
+      `update forum_posts
+       set created_at = case
+         when id = $3 then timestamptz '2026-09-10T00:00:00Z'
+         when topic_id = $1 then timestamptz '2026-09-01T00:00:00Z'
+         when topic_id = $2 then timestamptz '2026-09-05T00:00:00Z'
+         else created_at
+       end
+       where topic_id in ($1, $2)`,
+      [topicId, newerTopicId, reply.id],
+    );
+
+    const homepage = await forum.readHomepage(1);
+    const homepageCategory = homepage.find((entry) => entry.id === "e2e-category");
+    expect(homepageCategory).toMatchObject({
+      sectionCount: 1,
+      topicCount: 2,
+      messageCount: 3,
+    });
+    expect(homepageCategory?.latestTopics).toHaveLength(1);
+    expect(homepageCategory?.latestTopics[0]).toMatchObject({
+      id: topicId,
+      title: "Core E2E topic",
+      authorName: "Author",
+      activityAt: new Date("2026-09-10T00:00:00.000Z"),
+    });
+
     const managementPool = scopedPool();
     const authorization = new AuthorizationService(new PostgresAuthorizationRepository(managementPool));
     try {

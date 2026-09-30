@@ -1,4 +1,5 @@
 import { generatePath } from "react-router";
+import type { UnderDevelopmentFeatureId } from "./under-development";
 
 export function forumIndexPath(locale: string) {
   return generatePath("/:locale", { locale });
@@ -14,4 +15,10 @@ export function forumSectionPath(locale: string, sectionId: string) {
 
 export function forumTopicPath(locale: string, topicId: string) {
   return generatePath("/:locale/topics/:topicId", { locale, topicId });
+}
+
+
+export function underDevelopmentPath(locale: string, feature?: UnderDevelopmentFeatureId) {
+  const path = generatePath("/:locale/under-development", { locale });
+  return feature ? `${path}?feature=${encodeURIComponent(feature)}` : path;
 }

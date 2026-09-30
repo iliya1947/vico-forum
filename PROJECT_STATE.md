@@ -33,10 +33,14 @@ Vico Forum находится в ранней pre-release разработке.
 - Первый bounded UI/UX slice уже merged: deterministic representative baseline, client-safe
   presentation boundaries и GitHub Pages visual-progress preview. Владелец подтвердил, что
   исправленный live preview рендерится; это не заменяет будущую real-runtime acceptance.
-- В следующем UI/UX slice уже реализована и repository-CI/Pages-проверена первая bounded часть:
-  centralized semantic visual tokens, Light/Dark с first-use `prefers-color-scheme`, persisted
-  manual choice с pre-hydration bootstrap и основа two-zone shell/header. Это не означает
-  завершение всего slice или финальную browser/real-runtime acceptance.
+- В текущем UI/UX slice реализованы и repository-CI/Pages-проверены semantic visual tokens,
+  Light/Dark с first-use `prefers-color-scheme` и persisted manual choice, two-zone shell/header,
+  approved homepage frame и общая локализованная страница `Under development`. Runtime homepage
+  использует только существующие forum data для counts/latest topics; отсутствующие pinning и
+  online-presence capability не имитируются real data. Это не означает финальную browser/real-runtime
+  acceptance всего UI/UX pass.
+- Target search, notifications и незавершённые footer/product entry points во время owner-only
+  pre-release ведут на общую `Under development` page/checklist вместо fake behavior.
 - Для owner-only pre-release незавершённые approved target functions могут оставаться видимыми и
   вести на общую локализованную страницу `Under development` со списком оставшейся работы.
   Публичный запуск не выполняется до завершения и acceptance утверждённого target product.
@@ -414,16 +418,16 @@ runtime roles/Hyperdrive writes и другие schema-dependent runtime capabil
 
 Текущий активный маршрут — standalone UI/UX product pass по утверждённому target-product contract:
 
-1. Первый bounded slice — reproducible visual baseline + GitHub Pages progress preview — завершён и
-   merged.
-2. Первая bounded часть следующего slice реализована и прошла repository CI/Pages:
-   centralized semantic visual tokens, Light/Dark с first-use `prefers-color-scheme`, persisted
-   manual choice с pre-hydration bootstrap и основа two-zone shell/header.
-3. Следующая часть этого slice: завершить approved shell/header/footer composition, homepage frame
-   по утверждённому макету и общую локализованную страницу `Under development`.
-4. Уже существующие product capabilities подключаются к реальным данным/поведению. Approved, но
-   тяжёлые ещё отсутствующие подсистемы получают целевое место в UI и временный переход на
-   `Under development`; их backend/domain implementation остаётся отдельными bounded задачами.
+1. Reproducible visual baseline + GitHub Pages progress preview завершён и merged.
+2. Foundations/homepage implementation теперь покрывает semantic tokens, persisted Light/Dark,
+   two-zone shell/header/footer, approved homepage block geometry, lower information zone и общую
+   локализованную `Under development` page/checklist; repository CI/Pages для implementation
+   пройдены. Owner visual/browser acceptance этого slice ещё не считается завершённой.
+3. Следующий bounded UI/UX шаг после acceptance текущего homepage slice определяется из
+   `docs/UI_UX_PASS.md`: forum discovery beyond homepage и последующие topic/message/participation
+   improvements. Heavy approved subsystems из `Under development` остаются отдельными bounded tasks.
+4. Уже существующие product capabilities подключаются к реальным данным/поведению; незавершённые
+   approved entry points не имитируют работу и временно ведут на `Under development`.
 5. После каждого implementation slice выполнять targeted automated checks и browser review.
 6. Завершить UI/UX pass только после полного CI и обязательной real-runtime visual/product
    acceptance из `docs/UI_UX_PASS.md`; GitHub Pages не заменяет эту проверку.
