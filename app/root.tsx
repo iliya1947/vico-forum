@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Links, Meta, Outlet, Scripts, ScrollRestoration, useMatches } from "react-router";
 import type { ResolvedLocaleContext } from "./localization/locale";
 import type { TranslationSnapshot } from "./localization/resource-loader";
+import { THEME_BOOTSTRAP_SCRIPT } from "./theme";
 import "./styles.css";
 
 function isLocaleContext(value: unknown): value is ResolvedLocaleContext {
@@ -28,11 +29,16 @@ export function Layout({ children }: { children: ReactNode }) {
     .find((candidate) => candidate !== undefined);
 
   return (
-    <html lang={locale?.translationLocale ?? "en"} dir={locale?.direction ?? "ltr"}>
+    <html
+      lang={locale?.translationLocale ?? "en"}
+      dir={locale?.direction ?? "ltr"}
+      suppressHydrationWarning
+    >
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <Meta />
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP_SCRIPT }} />
         <Links />
       </head>
       <body>
