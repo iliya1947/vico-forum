@@ -39,6 +39,9 @@ Vico Forum находится в ранней pre-release разработке.
   использует только существующие forum data для counts/latest topics; отсутствующие pinning и
   online-presence capability не имитируются real data. Это не означает финальную browser/real-runtime
   acceptance всего UI/UX pass.
+- Owner visual review merged homepage frame не принял: Desktop Pages-preview заметно расходился
+  с утверждённым mockup по композиции и геометрии category cards. Текущий bounded correction
+  ограничен Desktop homepage; owner visual acceptance этого slice остаётся открытой.
 - Target search, notifications и незавершённые footer/product entry points во время owner-only
   pre-release ведут на общую `Under development` page/checklist вместо fake behavior.
 - Для owner-only pre-release незавершённые approved target functions могут оставаться видимыми и
@@ -419,10 +422,10 @@ runtime roles/Hyperdrive writes и другие schema-dependent runtime capabil
 Текущий активный маршрут — standalone UI/UX product pass по утверждённому target-product contract:
 
 1. Reproducible visual baseline + GitHub Pages progress preview завершён и merged.
-2. Foundations/homepage implementation теперь покрывает semantic tokens, persisted Light/Dark,
-   two-zone shell/header/footer, approved homepage block geometry, lower information zone и общую
-   локализованную `Under development` page/checklist; repository CI/Pages для implementation
-   пройдены. Owner visual/browser acceptance этого slice ещё не считается завершённой.
+2. Foundations/homepage implementation технически merged и repository-CI/Pages-проверена, но
+   первый owner visual review Desktop homepage не прошёл из-за существенного расхождения с
+   утверждённым mockup. Текущий ближайший шаг — bounded Desktop-homepage visual correction и
+   повторная owner Pages-проверка; Mobile/RTL и следующие discovery/topic slices пока не продолжаются.
 3. Следующий bounded UI/UX шаг после acceptance текущего homepage slice определяется из
    `docs/UI_UX_PASS.md`: forum discovery beyond homepage и последующие topic/message/participation
    improvements. Heavy approved subsystems из `Under development` остаются отдельными bounded tasks.
