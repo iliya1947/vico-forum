@@ -7,9 +7,15 @@ This document is the execution plan for the standalone UI/UX product pass starte
 Its service PRs `#121` and `#122` are frozen historical context and are not working channels
 for this pass.
 
-The goal is to make the existing forum core feel like a finished, contemporary forum rather
-than a technical scaffold. This pass does not add product capabilities. The existing domain,
-authorization, localization, translation, security and persistence contracts remain authoritative.
+The goal is to make Vico Forum look and behave like the approved target product rather than a
+technical scaffold or a cosmetic layer over the current MVP. Existing domain, authorization,
+localization, translation, security and persistence contracts remain authoritative.
+
+The owner has explicitly approved target-product UI decisions that include functionality not yet
+implemented in the current repository. The UI/UX pass may implement small self-contained frontend
+behavior when it is cheap and naturally belongs to the presentation layer. Heavier missing
+subsystems are represented in the target UI now but remain separate implementation tasks rather
+than being silently expanded inside a visual slice.
 
 ## GitHub Pages visual progress preview
 
@@ -22,8 +28,9 @@ Pages-preview не является параллельным продуктом 
 translation/runtime behavior. Эти границы и финальная product acceptance проверяются отдельно на
 настоящем Worker/runtime окружении.
 
-Preview-механизм должен оставаться минимальным, обратимым, переиспользовать текущую presentation
-реализацию и не расширять product scope.
+Preview-механизм должен оставаться минимальным, обратимым и переиспользовать ту же presentation
+реализацию, что и приложение. Он может показывать approved target UI states, но не должен
+становиться отдельной реализацией продукта или подменять отсутствующую backend/domain logic.
 
 ## Source-of-truth boundaries
 
@@ -41,8 +48,16 @@ The pass must preserve these existing constraints:
 - canonical English remains the UI source of truth and every new user-facing string goes through
   the existing translation catalog;
 - translated user content retains its own `lang`/`dir`, provenance and original-content fallback;
-- no search, reporting, moderation, profile, reputation, notification or other future product
-  feature is introduced as part of visual polish;
+- approved target-product controls may be present before their heavier backend/domain subsystem is
+  implemented; small self-contained frontend behavior may be completed in the UI/UX pass, while
+  heavier missing functionality remains a separate bounded product task;
+- during the owner-only pre-release period, unfinished approved functions remain visible and route
+  to one shared localized `Under development` page instead of pretending to work; that page also
+  lists the still-unfinished approved functions and is reduced as they are implemented;
+- the `Under development` page is a temporary pre-release aid and is not part of the public
+  release experience;
+- there is no public launch before the approved target product is complete and accepted by the
+  owner;
 - GitHub Pages is only a static representative-data visual preview and never substitutes for
   real-runtime functional or final product acceptance;
 - schema, dependencies, backend services and public contracts change only if a demonstrated UI
@@ -99,29 +114,116 @@ social feed. It should establish:
 The implementation should prefer repository-native React and CSS. A new component or styling
 dependency requires a concrete need, official-version verification and separate justification.
 
+## Owner-approved target UI contract
+
+### Visual foundation and theme
+
+- Vico Orange is the primary brand accent over neutral technical surfaces.
+- The interface stays information-dense and forum-oriented, using compact horizontal rows rather
+  than oversized dashboard cards, with moderate radii and minimal shadow.
+- Light and Dark use identical geometry, components and layout. Theme-sensitive colors, surfaces,
+  borders, text, state colors, code treatment and shadow are centralized semantic tokens.
+- On first use, `prefers-color-scheme` selects Light or Dark. There is no separate permanent
+  “System” theme option. A manual Light/Dark choice is persisted and then wins.
+- Desktop, tablet and mobile are the same product presentation rearranged responsively. RTL/LTR are
+  the same design; code remains LTR inside RTL UI.
+
+### Homepage contract
+
+The next homepage implementation follows the owner-approved mockup rather than inventing a new
+composition:
+
+1. Preserve the two horizontal header zones: global search in the upper zone and compact primary
+   navigation below it, followed by the forum blocks and the lower information zone.
+2. Remove `Users`, `Rules`, `Help` and a global `Create topic` action from the main top
+   navigation. Topic creation belongs inside a concrete forum section. Rules and Help move to the
+   footer; About Vico, Feedback and Privacy are footer-level destinations. Final language-switcher
+   placement remains open.
+3. Keep global search as an approved target function. Authenticated UI keeps notifications and an
+   account/avatar entry point; the notification badge is shown only for unread notifications.
+4. The six approved primary forum destinations appear in this order:
+   `Help & solutions`, `Vibe Coding & AI tools`, `Development`,
+   `Deploy & infrastructure`, `Projects & reviews`, `Community`.
+   The visual label “section” does not change the authoritative domain hierarchy
+   `category → section → topic → messages`.
+5. Every homepage forum block uses the same four-part structure: icon/name/description,
+   `Pinned`, `Latest topics`, and section statistics.
+6. `Pinned` is mandatory in the target presentation, visually secondary to the section title but
+   clearly discoverable, with compact topics and orange markers.
+7. `Latest topics` shows topic title, author/avatar and relative activity time; the same area is
+   designed to carry approved topic states such as solved, unanswered, unread and new.
+8. Section statistics use real topic/message counts in the real application. Representative/mock
+   identities and numbers are allowed only in the Pages visual fixture.
+9. The circular orange expand control expands more pinned/latest content in the same block; it does
+   not navigate. On desktop its horizontal center aligns exactly with the divider between
+   `Pinned` and `Latest topics`, and its vertical center sits on the card bottom boundary so it
+   straddles the edge. The coordinate is consistent across all cards and independent of text
+   height. Mobile adapts the control to the single-column structure instead of forcing the desktop
+   coordinate.
+10. The lower homepage zone keeps `Who's online` and `Forum statistics`, using only useful real
+    metrics such as topics, messages, registered users and online count when available.
+11. Mobile preserves the same substantive content in one column:
+    description → pinned → latest topics → statistics.
+
+### Topic, message and authoring target
+
+- The original question remains first. When a best answer exists, it is visually promoted directly
+  after the first message while retaining its real message anchor/number; the remaining discussion
+  stays linear below it.
+- Every message has a permanent anchor number and copy-link action. The target product supports
+  reply/quote of a concrete message or selected text, while parent messages expose links to their
+  direct replies without turning the discussion into a Reddit-style tree.
+- Topic lists are designed for quickly scanning solved/unanswered/pinned state, technology tags,
+  relative activity and reply counts; an unanswered filter is approved.
+- Authoring evolves toward a full editor panel with inline code, fenced code/language selection,
+  syntax highlighting, copy and optional wrapping; code remains LTR inside RTL UI.
+- Approved authenticated-user targets include unread/new state and jump-to-first-unread,
+  drafts/autosave, notifications, and persisted Light/Dark preference.
+- User profiles remain forum profiles rather than a social network: avatar, name, short bio, role,
+  join date, message count, best-answer count, and optional GitHub/site links are appropriate;
+  friends/followers/stories/profile likes/personal social feed are not.
+
+### Unfinished-function pre-release behavior
+
+Pre-release is for the owner’s acceptance only. Approved target controls are not hidden merely
+because their implementation is incomplete. Until a function exists:
+
+- its real-app entry point routes to one shared localized `Under development` page;
+- that page identifies the requested unfinished function, provides a safe return to the forum, and
+  lists the approved functions still in development;
+- when a function is implemented, its temporary destination is replaced with the real behavior and
+  it is removed from the unfinished list;
+- no extra feature-flag layer or duplicate preview-only presentation is introduced solely for this
+  workflow.
+
 ## Delivery plan
 
-### 1. Reproducible visual baseline
+### 1. Reproducible visual baseline — completed
 
-- Define deterministic representative data covering multiple categories and sections, populated
-  and empty sections, short and long topics, solved and unsolved discussions, a best answer,
-  Markdown/code, long unbroken content, translation presentation, several roles and users.
-- Build a minimal reversible GitHub Pages visual preview from representative/mock data so the owner
-  can inspect current UI progress without a full backend/runtime; reuse the current presentation
-  rather than creating an alternative product UI.
-- Provide a local way to exercise guest and authenticated presentation without weakening production
-  authentication or authorization boundaries.
-- Capture baseline desktop/mobile LTR/RTL views and record concrete usability/accessibility defects.
-- Confirm all current routes and state variants before changing shared presentation primitives.
+The first bounded slice is merged. It provides deterministic representative data, the reversible
+GitHub Pages visual-progress preview, client-safe presentation boundaries, real mobile-width
+previewing and representative LTR/RTL/identity/content states. The owner confirmed the deployed
+preview renders after the server/client boundary defect was fixed.
 
-### 2. Foundations and shell
+### 2. Foundations, shell and approved homepage frame — next bounded slice
 
-- Introduce design tokens and base typography, surface, link, focus and reduced-motion rules.
-- Refine the shared shell, header, navigation, content width and responsive behavior.
-- Build small semantic UI primitives before route-specific styling so states stay consistent.
-- Keep `<html lang>`/`dir`, SSR/hydration and canonical locale-aware links unchanged.
+- Introduce centralized semantic tokens and base typography, surfaces, links, focus and
+  reduced-motion rules.
+- Implement Light/Dark as one geometry: first-use `prefers-color-scheme`, persisted manual
+  Light/Dark selection, and no separate System mode.
+- Refine the shared shell into the approved two-zone header/navigation structure and add the footer
+  destinations needed by the target composition.
+- Implement the approved homepage block geometry, responsive one-column behavior and exact desktop
+  expand-control positioning against representative data; preserve real application data wherever
+  the current contracts already provide it.
+- Add the shared localized `Under development` page/checklist and route unfinished approved
+  controls there rather than faking their behavior.
+- Search, notifications, unread state, drafts/autosave, profiles and other heavier missing
+  subsystems are not implemented in this slice merely because their target controls are visible.
+- Keep `<html lang>`/`dir`, SSR/hydration, canonical locale-aware links and existing protected
+  server boundaries unchanged.
 
-### 3. Forum discovery
+### 3. Forum discovery beyond the homepage
 
 - Redesign the home/category/section hierarchy for scanning, meaningful counts and clear click
   targets.
