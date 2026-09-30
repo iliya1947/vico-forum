@@ -40,8 +40,11 @@ Vico Forum находится в ранней pre-release разработке.
   online-presence capability не имитируются real data. Это не означает финальную browser/real-runtime
   acceptance всего UI/UX pass.
 - Owner visual review merged homepage frame не принял: Desktop Pages-preview заметно расходился
-  с утверждённым mockup по композиции и геометрии category cards. Текущий bounded correction
-  ограничен Desktop homepage; owner visual acceptance этого slice остаётся открытой.
+  с утверждённым mockup по композиции/геометрии category cards; после первого correction pass
+  владелец отдельно подтвердил неверный Light/Dark orange treatment и поломку homepage reflow при
+  browser zoom 150%+. Текущий bounded correction остаётся ограничен homepage visual acceptance:
+  palette и zoom/reflow исправляются до следующей owner Pages-проверки; следующие UI/UX slices
+  не продолжаются.
 - Target search, notifications и незавершённые footer/product entry points во время owner-only
   pre-release ведут на общую `Under development` page/checklist вместо fake behavior.
 - Для owner-only pre-release незавершённые approved target functions могут оставаться видимыми и
@@ -423,9 +426,11 @@ runtime roles/Hyperdrive writes и другие schema-dependent runtime capabil
 
 1. Reproducible visual baseline + GitHub Pages progress preview завершён и merged.
 2. Foundations/homepage implementation технически merged и repository-CI/Pages-проверена, но
-   первый owner visual review Desktop homepage не прошёл из-за существенного расхождения с
-   утверждённым mockup. Текущий ближайший шаг — bounded Desktop-homepage visual correction и
-   повторная owner Pages-проверка; Mobile/RTL и следующие discovery/topic slices пока не продолжаются.
+   owner visual acceptance ещё не пройдена. После геометрического correction владелец подтвердил
+   ещё два текущих homepage defect: Light/Dark palette не совпадает с approved mockup и zoom 150%+
+   проваливается в старую oversized reflow-разметку. Текущий ближайший шаг — завершить этот bounded
+   homepage correction и повторить owner Pages-проверку; следующие discovery/topic slices не
+   продолжаются.
 3. Следующий bounded UI/UX шаг после acceptance текущего homepage slice определяется из
    `docs/UI_UX_PASS.md`: forum discovery beyond homepage и последующие topic/message/participation
    improvements. Heavy approved subsystems из `Under development` остаются отдельными bounded tasks.
