@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, lte, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import {
   forumCategories,
@@ -15,6 +15,22 @@ export interface ForumCategorySummary {
   id: string;
   name: string;
   sectionCount: number;
+}
+
+export interface ForumHomepageTopicSummary {
+  id: string;
+  title: string;
+  authorName: string;
+  activityAt: Date;
+}
+
+export interface ForumHomepageCategorySummary {
+  id: string;
+  name: string;
+  sectionCount: number;
+  topicCount: number;
+  messageCount: number;
+  latestTopics: ForumHomepageTopicSummary[];
 }
 
 export interface ForumSectionSummary {
@@ -59,6 +75,7 @@ export interface ForumTopicPage extends ForumTopic {
 
 export interface ForumReader {
   listCategories(): Promise<ForumCategorySummary[]>;
+  readHomepage(latestTopicsPerCategory?: number): Promise<ForumHomepageCategorySummary[]>;
   readCategory(id: string): Promise<ForumCategoryPage | undefined>;
   readSection(id: string): Promise<ForumSectionPage | undefined>;
   readTopicPage(id: string): Promise<ForumTopicPage | undefined>;
@@ -223,6 +240,93 @@ export class DrizzleForumRepository {
       .leftJoin(forumSections, eq(forumSections.categoryId, forumCategories.id))
       .groupBy(forumCategories.id, forumCategories.name, forumCategories.createdAt)
       .orderBy(asc(forumCategories.createdAt), asc(forumCategories.id));
+  }
+
+  async readHomepage(latestTopicsPerCategory = 6): Promise<ForumHomepageCategorySummary[]> {
+    if (!Number.isInteger(latestTopicsPerCategory) || latestTopicsPerCategory < 1 || latestTopicsPerCategory > 20) {
+      throw new RangeError("latestTopicsPerCategory must be an integer between 1 and 20");
+    }
+
+    const categories = await this.database
+      .select({
+        id: forumCategories.id,
+        name: forumCategories.name,
+        sectionCount: sql<number>`count(distinct ${forumSections.id})::int`,
+        topicCount: sql<number>`count(distinct ${forumTopics.id})::int`,
+        messageCount: sql<number>`count(distinct ${forumPosts.id})::int`,
+      })
+      .from(forumCategories)
+      .leftJoin(forumSections, eq(forumSections.categoryId, forumCategories.id))
+      .leftJoin(forumTopics, eq(forumTopics.sectionId, forumSections.id))
+      .leftJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
+      .groupBy(forumCategories.id, forumCategories.name, forumCategories.createdAt)
+      .orderBy(asc(forumCategories.createdAt), asc(forumCategories.id));
+
+    const topicActivity = this.database
+      .select({
+        categoryId: forumSections.categoryId,
+        id: forumTopics.id,
+        title: forumTopicTitleRevisions.originalContent,
+        authorName: user.name,
+        activityAt: sql<Date>`greatest(
+          ${forumTopics.createdAt},
+          coalesce(max(${forumPosts.createdAt}), ${forumTopics.createdAt})
+        )`.as("activity_at"),
+      })
+      .from(forumTopics)
+      .innerJoin(forumSections, eq(forumSections.id, forumTopics.sectionId))
+      .innerJoin(forumTopicTitleRevisions, and(
+        eq(forumTopicTitleRevisions.topicId, forumTopics.id),
+        eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId),
+      ))
+      .innerJoin(user, eq(user.id, forumTopics.authorId))
+      .leftJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
+      .groupBy(forumTopics.id, forumSections.categoryId, forumTopicTitleRevisions.id, user.name)
+      .as("homepage_topic_activity");
+
+    const rankedTopics = this.database
+      .select({
+        categoryId: topicActivity.categoryId,
+        id: topicActivity.id,
+        title: topicActivity.title,
+        authorName: topicActivity.authorName,
+        activityAt: topicActivity.activityAt,
+        activityRank: sql<number>`row_number() over (
+          partition by ${topicActivity.categoryId}
+          order by ${topicActivity.activityAt} desc, ${topicActivity.id} desc
+        )::int`.as("activity_rank"),
+      })
+      .from(topicActivity)
+      .as("homepage_ranked_topics");
+
+    const latestTopics = await this.database
+      .select({
+        categoryId: rankedTopics.categoryId,
+        id: rankedTopics.id,
+        title: rankedTopics.title,
+        authorName: rankedTopics.authorName,
+        activityAt: rankedTopics.activityAt,
+      })
+      .from(rankedTopics)
+      .where(lte(rankedTopics.activityRank, latestTopicsPerCategory))
+      .orderBy(asc(rankedTopics.categoryId), asc(rankedTopics.activityRank));
+
+    const latestByCategory = new Map<string, ForumHomepageTopicSummary[]>();
+    for (const topic of latestTopics) {
+      const list = latestByCategory.get(topic.categoryId) ?? [];
+      list.push({
+        id: topic.id,
+        title: topic.title,
+        authorName: topic.authorName,
+        activityAt: topic.activityAt,
+      });
+      latestByCategory.set(topic.categoryId, list);
+    }
+
+    return categories.map((category) => ({
+      ...category,
+      latestTopics: latestByCategory.get(category.id) ?? [],
+    }));
   }
 
   async readCategory(id: string): Promise<ForumCategoryPage | undefined> {
