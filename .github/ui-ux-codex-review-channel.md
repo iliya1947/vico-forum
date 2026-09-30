@@ -122,3 +122,80 @@ GitHub API повторно проверен по exact head `2d7a06f42fed176501
 ## Рекомендуемое следующее действие владельца
 
 Проверить этот служебный PR Codex, затем merge PR #151 при согласии с выводом. После merge передать ChatGPT следующий bounded UI/UX slice с обязательным учётом последних owner decisions из #147 и синхронизацией persistent UI/UX documentation в соответствующем implementation/documentation PR.
+
+---
+
+# Update 2026-09-30 — independent review of PR #154
+
+## Review request and boundaries
+
+По новому запросу владельца повторно проверены последнее обновление служебного PR ChatGPT #147 и полный mergeable PR #154. Проверка остаётся строго read-only: implementation PR #154, его branch, project code/configuration и durable project documentation не изменялись. В служебном PR #153 обновлён только этот communication-файл.
+
+На diff служебного PR #153 к моменту проверки отсутствуют inline review comments, reviews и issue comments, требующие отдельного исправления.
+
+## Current baseline and handoff
+
+- Актуальный `main`: `79f005edf8fdeb50c5b7a115ce35353dfa7dee7a` (`Add GitHub Pages UI progress preview (#151)`). Первый baseline/Pages-preview slice действительно merged после предыдущего review.
+- PR #154 создан от этого exact main и имеет head `09a7e187762f13b886ded02691e6f647cb479efb`.
+- Последнее обновление #147 фиксирует создание #154, его intended documentation-only boundary, self-review и успешный exact-head CI run `36738188972`.
+- Повторно сверены актуальные `AGENTS.md`, `PROJECT.md`, `PROJECT_STATE.md`, `ROADMAP.md`, `docs/UI_UX_PASS.md`, предыдущие owner decisions в #147 и фактическое состояние merged #151.
+
+## Full PR #154 review
+
+### Scope and diff integrity
+
+PR #154 изменяет ровно три durable source-of-truth files:
+
+- `docs/UI_UX_PASS.md`;
+- `PROJECT_STATE.md`;
+- `ROADMAP.md`.
+
+Полный diff: 4 commits, 3 files, +173/−44. Application code, preview implementation, workflows/configuration, dependencies, schema/migrations, backend/runtime и Stage 6 infrastructure не изменяются. Заявленный documentation-only boundary соблюдён.
+
+### Alignment with owner decisions
+
+Изменения корректно переносят из служебного #147 в durable source of truth все решения, необходимые до следующего implementation slice:
+
+1. UI/UX pass строит утверждённый target product, а не только косметически улучшает текущий MVP.
+2. Небольшое self-contained frontend behavior допустимо закрывать внутри pass; тяжёлые отсутствующие backend/domain subsystems остаются отдельными bounded tasks.
+3. До завершения таких subsystems их approved real-app entry points ведут на одну локализованную страницу `Under development`, которая показывает запрошенную функцию, safe return и живой checklist оставшихся функций.
+4. Публичного запуска до завершения и owner acceptance target product не будет; временная страница не объявлена permanent public feature.
+5. Homepage contract сохраняет approved mockup direction: Vico Orange, Light/Dark с одинаковой геометрией, two-zone header, шесть утверждённых destinations в точном порядке, four-part forum blocks, lower information zone, mobile/RTL rules и уточнённое положение circular expand control.
+6. Existing capabilities должны использовать real data/behavior; mock identities/counts допустимы только в Pages fixture.
+7. Target topic/message/editor/profile/authenticated-user behavior записан без ложного утверждения, что search, notifications, unread, drafts/autosave, profiles и другие тяжёлые subsystems уже реализованы.
+
+Canonical locale/i18n, classic hierarchy, server-side authorization/security, content translation, preview/runtime separation и Stage 6 pause сохранены. Русские approved labels записаны как product labels, но документ отдельно сохраняет canonical English/i18n implementation contract; hard-coded runtime locale list или bypass translation catalog не предписан.
+
+### Factual state and roadmap consistency
+
+- `PROJECT_STATE.md` правдиво датирован 2026-09-30 и фиксирует только уже подтверждённые факты merged #151: deterministic preview baseline, client-safe presentation boundaries и owner confirmation, что исправленный live preview рендерится.
+- Документ прямо не объявляет Pages доказательством final runtime acceptance и не заявляет UI/UX pass завершённым.
+- Ближайший bounded slice одинаково определён в `PROJECT_STATE.md` и `docs/UI_UX_PASS.md`: semantic tokens/theme, shell/header/footer, approved homepage frame и shared `Under development` page.
+- `ROADMAP.md` сохраняет Stage 0–5 completion record и paused Stage 6, но обновляет first-production-release scope только теми target functions, которые владелец отдельно утвердил. Старое Stage 4 ограничение «не добавлять search без отдельного решения» остаётся исторически корректным для завершённого Stage 4: отдельное owner decision теперь явно существует.
+- Heavier target subsystems не ошибочно помещены в следующий visual slice и не объявлены реализованными; они остаются отдельными будущими bounded implementation tasks до public launch.
+
+В полном результирующем тексте трёх документов не обнаружено внутреннего противоречия, ложного completion claim, незаявленного architecture/schema/dependency change либо нарушения текущего Stage boundary.
+
+## CI and mergeability
+
+GitHub API проверен по exact head `09a7e187762f13b886ded02691e6f647cb479efb`:
+
+- PR #154: `mergeable: true`, `mergeable_state: clean`;
+- CI run `36738188972`: completed/success, attempt 1, exact head совпадает;
+- job `checks`: success, включая install, migration-history guard, lint, typecheck, tests, application build, UI-preview build и migration metadata/parity;
+- job `database`: success, включая clean PostgreSQL 17 migrations/constraints, production schema parity, runtime/credential probes, Workers build и split-Hyperdrive smoke;
+- exact-head check suite содержит также successful Pages `build` и `deploy` run `36738121659`, потому что branch соответствует существующему `chatgpt/ui-*` trigger;
+- GitHub merge ref имеет parents exact `main` `79f005e...` и exact PR head `09a7e18...`;
+- независимый локальный `git merge-tree` не обнаружил conflict.
+
+Поскольку PR documentation-only, зелёные build/runtime checks являются regression gate, но сами по себе не заменяют content review; полный content review выполнен выше.
+
+## Independent conclusion
+
+**PR #154 на head `09a7e187762f13b886ded02691e6f647cb479efb` технически готов к merge. Блокирующих дефектов текущего documentation-sync scope не обнаружено.**
+
+PR устраняет ранее зафиксированное расхождение между durable UI/UX source of truth и позднейшими owner decisions из #147, не реализует будущие subsystems преждевременно и не преувеличивает фактическое состояние проекта. После merge source of truth будет достаточным для передачи следующего bounded UI implementation slice ChatGPT.
+
+## Recommended next owner action
+
+Merge PR #154. После merge передать ChatGPT следующий bounded slice, уже зафиксированный в `PROJECT_STATE.md` и `docs/UI_UX_PASS.md`; служебные PR #147 и #153 продолжать использовать только как non-merge communication channels.
