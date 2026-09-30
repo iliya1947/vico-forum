@@ -33,6 +33,7 @@ const hebrew: Record<string, string> = {
   aboutVicoNav: "על Vico",
   feedbackNav: "משוב",
   privacyNav: "פרטיות",
+  homeForumSectionsHeading: "מדורי הפורום",
   pinnedHeading: "נעוצים",
   latestTopicsHeading: "נושאים אחרונים",
   homepageSectionFallbackDescription: "מדורים, דיונים ותשובות מעשיות בתחום הזה.",
