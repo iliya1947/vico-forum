@@ -17,4 +17,5 @@ export interface HomepageCategoryOverview {
   latestTopics: readonly HomepageTopicSummary[];
 }
 
-export const HOMEPAGE_COMPACT_TOPIC_LIMIT = 2;
+export const HOMEPAGE_COMPACT_PINNED_LIMIT = 3;
+export const HOMEPAGE_COMPACT_LATEST_LIMIT = 2;
