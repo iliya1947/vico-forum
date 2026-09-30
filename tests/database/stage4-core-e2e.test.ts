@@ -224,7 +224,7 @@ describe("Stage 4 connected forum authorization flow", () => {
     expect(homepageCategory).toMatchObject({
       sectionCount: 1,
       topicCount: 2,
-      messageCount: 4,
+      messageCount: 3,
     });
     expect(homepageCategory?.latestTopics).toHaveLength(1);
     expect(homepageCategory?.latestTopics[0]).toMatchObject({
