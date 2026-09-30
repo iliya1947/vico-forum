@@ -10,6 +10,10 @@ const HeaderAuthContext = createContext<{
   setUser(user: HeaderAuthUser | null): void;
 } | null>(null);
 
+export function useHeaderAuthUser(): HeaderAuthUser | null {
+  return useContext(HeaderAuthContext)?.user ?? null;
+}
+
 export function HeaderAuthProvider({ initialUser, children }: {
   initialUser: HeaderAuthUser | null;
   children: ReactNode;
