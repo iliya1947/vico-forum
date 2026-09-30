@@ -145,7 +145,6 @@ export function ForumShell({ locale, children }: { locale: string; children: Rea
           <Link to={underDevelopmentPath(locale, "feedback")}>{t("feedbackNav")}</Link>
           <Link to={underDevelopmentPath(locale, "privacy")}>{t("privacyNav")}</Link>
         </nav>
-        <p>{t("footerPreReleaseNote")}</p>
       </footer>
     </main>
   );
