@@ -451,3 +451,98 @@ Technical-consensus cycle закрыт:
 ## Recommended next owner action
 
 Merge PR #155. Следующий homepage/`Under development` subtask начинать отдельно после merge, от обновлённого `main`; PR #153 и #147 продолжают оставаться non-merge communication channels.
+
+---
+
+# Update 2026-09-30 — independent full review of PR #156
+
+## Request, baseline and scope
+
+Проверены последнее обновление служебного PR ChatGPT #147 и весь PR #156 на актуальном head `8b43c54614673ed13159d33b4e2880c2f9763217`. Проверка выполнена read-only: PR #156, implementation, durable project documentation и configuration не изменялись; дополнен только communication-файл PR #153.
+
+- current `main` и PR base: `65216f91271d2abe8652bf5b25b2d88d4b0995ed` (merged #155);
+- PR head: `8b43c54614673ed13159d33b4e2880c2f9763217`;
+- 34 commits, 20 changed files, +1421/−65;
+- latest #147 фиксирует claimed final scope, exact-head automated evidence и отсутствие owner/browser/final-runtime acceptance claim, затем запрашивает независимый whole-PR review.
+
+На PR #153 и #156 отсутствуют новые issue comments, требующие ответа. На #156 есть три inline automated review comments старого head; актуальный full diff независимо перепроверен, а не принят по этим comments без проверки.
+
+## Full-PR review — verified parts
+
+Подтверждены корректные части bounded implementation:
+
+1. Shared locale-aware `/:locale/under-development` route/view использует code-owned typed checklist, валидирует requested feature against allowlist, показывает requested status, safe return и все remaining approved items.
+2. Search, authenticated notifications/account и footer destinations ведут на shared temporary route, а не имитируют отсутствующее поведение; guest не получает notification entry.
+3. Новые user-facing strings идут через canonical English catalog; Pages-only Hebrew resources остаются fixture resources, а production locale model не получает hard-coded locale universe.
+4. Homepage presentation имеет four-part card geometry, truthful runtime empty state для отсутствующего pinning, lower information zone, in-place expand/collapse, logical RTL positioning и mobile single-column adaptation.
+5. Real runtime counts берутся из existing category/section data; online presence и pinning не подменяются fake runtime counts/topics. Approved six-destination mock labels/order остаются только в Pages fixture.
+6. Preview покрывает LTR/RTL homepage и `Under development`, representative pinned/latest data и reused application presentation boundaries.
+7. `PROJECT_STATE.md` и `docs/UI_UX_PASS.md` обновлены без заявления owner visual/browser или final real-runtime acceptance; Stage 6 и heavy subsystem boundaries сохранены.
+8. Dependencies, schema/migrations, write/authz boundaries и Stage 6 infrastructure не изменены.
+
+Route/path composition, i18n boundary, shared shell integration, requested-feature validation, component state and focused tests не показывают нового security/public-contract defect.
+
+## Blocking finding 1 — unbounded N+1 homepage read path
+
+Новая homepage loader composition не имеет bounded homepage repository query:
+
+- сначала выполняет `listCategories()`;
+- затем для каждой category вызывает `readCategory()`;
+- затем для каждого section вызывает `readSection()`;
+- каждый `readSection()` делает отдельный section query и отдельный topics query;
+- topics query возвращает все topics section, после чего route объединяет все rows, сортирует их в JavaScript и только затем оставляет 6.
+
+Итоговая request shape — минимум `1 + categoryCount + 2 × sectionCount` SQL queries и transfer всех topic rows всех sections на каждый homepage request. Рост forum content напрямую увеличивает query fan-out и transferred rows для главной страницы. Это очевидная latency/database-load regression именно нового public landing path, а не optimization future stage.
+
+Current head не добавляет repository method, bounded SQL `LIMIT`/window query или integration test для homepage read shape. Green CI проверяет correctness, но не ограничивает query count/rows. Finding соответствует inline comment, но подтверждён независимым чтением final route и repository implementation.
+
+## Blocking finding 2 — “Latest topics” uses topic creation, not latest activity
+
+`readSection()` предоставляет `ForumTopicSummary.createdAt` из `forumTopics.createdAt`. Homepage loader переносит это значение в `activityAt`, сортирует по нему и показывает его через relative-time UI.
+
+Новый reply создаёт `forumPosts.createdAt`, но не изменяет `forumTopics.createdAt`. Поэтому старый topic с новым reply:
+
+- не поднимается в `Latest topics`;
+- показывает возраст создания topic вместо последней discussion activity;
+- может быть полностью вытеснен шестью более новыми по creation-time, но менее активными topics.
+
+Это противоречит approved homepage contract: latest area показывает relative **activity** time и должна отражать scan path активных discussions. Current final head не вычисляет `max(post.createdAt/topic.createdAt)` и не тестирует reply-driven reorder. Finding соответствует inline comment старого head, но independently воспроизведён по final data flow.
+
+## Other reviewed boundaries
+
+- `PROJECT_STATE.md` sync устраняет старый inline documentation finding и правдиво отмечает repository/Pages implementation evidence.
+- Отсутствие runtime pinned data показано как development-status link; disabled expand control при отсутствии дополнительных rows не выдаёт fake capability.
+- Relative formatter использует loader-provided reference time, поэтому SSR/hydration snapshot deterministic.
+- Unknown `feature` query value не отражается как arbitrary text и не расширяет checklist.
+- Pages preview remains representative only; mock counts/identities/pins не попадают в real loader.
+
+Других current-scope defects в полном diff не найдено.
+
+## CI, Pages, live artifact and mergeability
+
+Exact head `8b43c54614673ed13159d33b4e2880c2f9763217` проверен через GitHub API:
+
+- PR `mergeable: true`, `mergeable_state: clean`; current main не ушёл от base;
+- CI run `36753232549`: `checks` success, `database` success;
+- lint, typecheck, tests, app build, UI-preview build, migration/parity, PostgreSQL, runtime/credential probes и Workers smoke successful;
+- Pages run `36753226737`: build/upload/deploy success;
+- exact-head checks: 4/4 success;
+- merge ref parents совпадают с exact main/head; local `git merge-tree` conflict не обнаружил;
+- live Pages URL отвечает HTTP 200 и отдаёт final-head asset set.
+
+Зелёные checks не опровергают query-shape и activity-semantics findings, поскольку targeted homepage tests используют supplied presentation data и не проверяют database-backed loader/repository behavior.
+
+## Independent technical conclusion
+
+**PR #156 на head `8b43c54614673ed13159d33b4e2880c2f9763217` пока не готов к merge.**
+
+Найдены два блокирующих defect текущего homepage slice:
+
+1. public homepage выполняет unbounded category/section N+1 reads и загружает все topic rows до in-memory top-6;
+2. `Latest topics` сортируется и датируется временем создания topic, игнорируя activity новых replies.
+
+Согласно technical-consensus protocol исправления не должны начинаться до независимой проверки выводов ChatGPT. Codex ничего не реализовал и не исправил. После согласования/исправления требуется новая полная проверка всего актуального PR, его CI, Pages и documentation claims.
+
+## Recommended next owner action
+
+Передать ChatGPT короткий запрос проверить обновление служебного PR Codex #153 и независимо воспроизвести/оценить два findings по PR #156. PR #156 не merge до завершения технического согласования.
