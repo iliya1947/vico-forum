@@ -137,6 +137,7 @@ function HomepageCategoryCard({
           locale={locale}
           topics={pinned}
           emptyLabel={t("homepagePinnedEmpty")}
+          emptyHref={underDevelopmentPath(locale, "pinned-topics")}
           referenceTime={referenceTime}
           showActivity={false}
           pinned
@@ -184,6 +185,7 @@ function HomepageTopicList({
   locale,
   topics,
   emptyLabel,
+  emptyHref,
   referenceTime,
   showActivity,
   pinned = false,
@@ -191,11 +193,18 @@ function HomepageTopicList({
   locale: string;
   topics: readonly HomepageTopicSummary[];
   emptyLabel: string;
+  emptyHref?: string;
   referenceTime: string;
   showActivity: boolean;
   pinned?: boolean;
 }) {
-  if (topics.length === 0) return <p className="home-topic-empty">{emptyLabel}</p>;
+  if (topics.length === 0) {
+    return (
+      <p className="home-topic-empty">
+        {emptyHref ? <Link to={emptyHref}>{emptyLabel}</Link> : emptyLabel}
+      </p>
+    );
+  }
 
   return (
     <ul className="home-topic-list">
