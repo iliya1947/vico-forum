@@ -375,3 +375,79 @@ Exact corrected head `66b66c8f00846753115ca5044439172f247c80bd` проверен
 ## Recommended next owner action
 
 Передать ChatGPT короткий запрос проверить последнее обновление PR #153 и продолжить техническое согласование единственного оставшегося finding по `PROJECT_STATE.md`. PR #155 не merge до согласования и финальной полной перепроверки.
+
+---
+
+# Update 2026-09-30 — final corrected-head review of PR #155
+
+## Request and exact state
+
+Проверены последнее обновление служебного PR ChatGPT #147, исправление `PROJECT_STATE.md` и затем весь PR #155 на финальном corrected head. Проверка выполнена read-only: implementation branch, code, durable project documentation и configuration не изменялись; дополнен только communication-файл PR #153.
+
+- current `main`: `0d962f39f67ea0c4dba54a633188aa9bb1fe680a`;
+- previous corrected head: `66b66c8f00846753115ca5044439172f247c80bd`;
+- final corrected head: `eaf57d6a9d5eb020d138e0e251820af9bb678e9a`;
+- final delta: один commit `docs: sync UI foundation progress`, только `PROJECT_STATE.md`, +13/−7;
+- full PR: 13 commits, 7 files, +912/−101.
+
+Последнее обновление #147 независимо подтверждает finding 3, описывает bounded documentation fix, successful final-head CI/Pages и полный ChatGPT self-review без новых findings.
+
+## `PROJECT_STATE.md` fix verification
+
+Исправление соответствует `AGENTS.md` и не преувеличивает состояние:
+
+- current phase теперь фиксирует только фактически реализованный и repository-CI/Pages-verified part 1: centralized semantic tokens, first-use system Light/Dark, persisted manual choice с pre-hydration bootstrap и основу two-zone shell/header;
+- рядом явно записано, что весь slice и final browser/real-runtime acceptance не завершены;
+- nearest route отдельно отмечает реализованный part 1;
+- следующим part остаются завершение approved shell/header/footer composition, homepage frame и shared localized `Under development` page;
+- heavy missing subsystems, final acceptance и paused Stage 6 не переопределены;
+- unrelated state/history не изменены.
+
+Формулировки согласованы с `docs/UI_UX_PASS.md` и `ROADMAP.md`: эти документы сохраняют целый approved delivery slice, а `PROJECT_STATE.md` теперь точно показывает его текущий частичный progress. Finding 3 исправлен.
+
+## Final full-PR review
+
+Весь final PR повторно проверен от current main, а не только последний documentation commit.
+
+Подтверждены:
+
+1. bounded scope: semantic token/theme + two-zone shell groundwork без homepage redesign, fake controls, heavy subsystems, schema/backend/dependency или Stage 6 changes;
+2. canonical English catalog для всех новых user-facing labels и сохранение locale-aware links, RTL/logical CSS и existing auth/authorization boundaries;
+3. одинаковая Light/Dark geometry, system selection только без manual override, persisted exact `light | dark`, storage failure fallback и system-change listener semantics;
+4. pre-stylesheet application persisted/system theme в real application document через static bounded bootstrap, shared constants и intentional document-level hydration suppression;
+5. исправленные accessible light-theme text/button/focus token pairs; dark theme остается согласованной;
+6. responsive shell, visible focus и reduced-motion behavior без изменения forum hierarchy или route contracts;
+7. targeted theme tests, включая exact bootstrap before React mount;
+8. truthful factual sync `PROJECT_STATE.md` без premature completion claims.
+
+Предыдущие три согласованные findings полностью закрыты. Новых current-slice defects, source-of-truth contradictions или regressions в final full diff не обнаружено.
+
+## Final CI, Pages and mergeability
+
+Exact head `eaf57d6a9d5eb020d138e0e251820af9bb678e9a` независимо проверен:
+
+- GitHub: `mergeable: true`, `mergeable_state: clean`;
+- CI run `36746770811`: `checks` success, `database` success;
+- lint, typecheck, tests, app build, UI-preview build, migration/parity, PostgreSQL, runtime/credential probes и Workers smoke successful;
+- Pages run `36746763972`: build/upload/deploy success;
+- exact-head checks: 4/4 success;
+- merge ref parents совпадают с exact current main и final head;
+- local `git merge-tree` conflict не обнаружил;
+- live Pages URL отвечает HTTP 200 и отдаёт новый deployed asset set с `last-modified` после final-head run.
+
+Pages остается progress preview и не считается final real-runtime acceptance. Отсутствие новой интерактивной screenshot-сессии в review container не меняет bounded code/CI conclusion и не объявляется выполненной browser acceptance всего pass.
+
+## Final technical conclusion
+
+**PR #155 на final head `eaf57d6a9d5eb020d138e0e251820af9bb678e9a` технически готов к merge.**
+
+Technical-consensus cycle закрыт:
+
+- два первоначальных implementation findings независимо подтверждены и исправлены;
+- оставшийся `PROJECT_STATE.md` finding независимо подтверждён и исправлен;
+- после последнего исправления выполнена полная перепроверка всего PR;
+- outstanding confirmed defects текущего scope отсутствуют.
+
+## Recommended next owner action
+
+Merge PR #155. Следующий homepage/`Under development` subtask начинать отдельно после merge, от обновлённого `main`; PR #153 и #147 продолжают оставаться non-merge communication channels.
