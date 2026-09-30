@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, isRouteErrorResponse, useRouteError } from "react-router";
 import { useTranslation } from "react-i18next";
-import { forumIndexPath } from "./paths";
-import { AuthControls } from "../auth/auth-controls";
+import { forumIndexPath, underDevelopmentPath } from "./paths";
+import { AuthControls, useHeaderAuthUser } from "../auth/auth-controls";
 import { DARK_THEME_QUERY, THEME_STORAGE_KEY, type Theme } from "../theme";
 
 function readStoredTheme(): Theme | null {
@@ -74,8 +74,28 @@ export function ThemeToggle() {
   );
 }
 
+function SearchIcon() {
+  return (
+    <svg className="ui-icon" aria-hidden="true" viewBox="0 0 24 24">
+      <circle cx="11" cy="11" r="6.5" />
+      <path d="m16 16 4.25 4.25" />
+    </svg>
+  );
+}
+
+function BellIcon() {
+  return (
+    <svg className="ui-icon" aria-hidden="true" viewBox="0 0 24 24">
+      <path d="M6.5 9.5a5.5 5.5 0 0 1 11 0v4l1.75 2.25H4.75L6.5 13.5z" />
+      <path d="M10 18.25a2.3 2.3 0 0 0 4 0" />
+    </svg>
+  );
+}
+
 export function ForumShell({ locale, children }: { locale: string; children: ReactNode }) {
   const { t } = useTranslation("common");
+  const authUser = useHeaderAuthUser();
+
   return (
     <main className="forum-shell">
       <header className="site-header">
@@ -84,18 +104,49 @@ export function ForumShell({ locale, children }: { locale: string; children: Rea
             <Link className="brand" to={forumIndexPath(locale)}>{t("productName")}</Link>
             <span className="site-tagline">{t("forumTagline")}</span>
           </div>
+
+          <Link
+            className="site-search"
+            to={underDevelopmentPath(locale, "search")}
+            aria-label={t("searchForum")}
+          >
+            <SearchIcon />
+            <span>{t("searchForum")}</span>
+          </Link>
+
           <div className="site-header-actions">
+            {authUser ? (
+              <Link
+                className="header-icon-link"
+                to={underDevelopmentPath(locale, "notifications")}
+                aria-label={t("notifications")}
+              >
+                <BellIcon />
+              </Link>
+            ) : null}
             <ThemeToggle />
             <AuthControls locale={locale} />
           </div>
         </div>
         <nav className="site-primary-nav" aria-label={t("primaryNavigation")}>
-          <Link to={forumIndexPath(locale)}>{t("forumIndex")}</Link>
+          <Link to={forumIndexPath(locale)}>{t("forumHomeNav")}</Link>
         </nav>
       </header>
+
       <div className="forum-content">
         {children}
       </div>
+
+      <footer className="site-footer">
+        <nav aria-label={t("footerNavigation")}>
+          <Link to={underDevelopmentPath(locale, "rules")}>{t("rulesNav")}</Link>
+          <Link to={underDevelopmentPath(locale, "help")}>{t("helpNav")}</Link>
+          <Link to={underDevelopmentPath(locale, "about")}>{t("aboutVicoNav")}</Link>
+          <Link to={underDevelopmentPath(locale, "feedback")}>{t("feedbackNav")}</Link>
+          <Link to={underDevelopmentPath(locale, "privacy")}>{t("privacyNav")}</Link>
+        </nav>
+        <p>{t("footerPreReleaseNote")}</p>
+      </footer>
     </main>
   );
 }
@@ -107,7 +158,7 @@ export function Breadcrumbs({ locale, items }: {
   const { t } = useTranslation("common");
   return (
     <nav className="breadcrumbs" aria-label={t("breadcrumbsLabel")}>
-      <Link to={forumIndexPath(locale)}>{t("forumIndex")}</Link>
+      <Link to={forumIndexPath(locale)}>{t("forumHomeNav")}</Link>
       {items.map((item, index) => (
         <span key={`${item.label}-${index}`}>
           <span aria-hidden="true"> / </span>
