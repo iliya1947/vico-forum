@@ -108,6 +108,27 @@ describe("homepage target presentation", () => {
     expect(screen.getByRole("link", { name: "Rules" }))
       .toHaveAttribute("href", "/en/under-development?feature=rules");
   });
+
+  it("does not pretend pinned-topic data exists when runtime pinning is unavailable", async () => {
+    renderView(
+      <HomeView
+        locale="en"
+        referenceTime="2026-09-30T16:00:00.000Z"
+        categories={[{
+          id: "development",
+          name: "Development",
+          sectionCount: 1,
+          topicCount: 1,
+          messageCount: 1,
+          pinnedTopics: [],
+          latestTopics: [],
+        }]}
+      />,
+    );
+
+    expect(await screen.findByRole("link", { name: "Pinned topics are under development." }))
+      .toHaveAttribute("href", "/en/under-development?feature=pinned-topics");
+  });
 });
 
 describe("under development page", () => {
