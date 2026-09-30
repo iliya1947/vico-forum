@@ -13,12 +13,12 @@
   --color-text-muted: #68717a;
   --color-border: #d6dadd;
   --color-border-strong: #b9c0c5;
-  --color-accent: #f36f21;
-  --color-accent-hover: #d95b0d;
+  --color-accent: #d95b0d;
+  --color-accent-hover: #b84400;
   --color-accent-soft: #fff0e6;
   --color-on-accent: #ffffff;
   --color-danger: #a82828;
-  --color-focus: #f36f21;
+  --color-focus: #8f3500;
   --shadow-panel: 0 0.25rem 0.9rem rgb(20 24 28 / 7%);
 
   /* Compatibility aliases for the existing presentation while it is migrated slice by slice. */
@@ -568,14 +568,14 @@ select {
   border: 0;
   border-radius: 0.4rem;
   color: var(--color-on-accent);
-  background: var(--color-accent);
+  background: var(--color-accent-hover);
   font: inherit;
   font-weight: 750;
   cursor: pointer;
 }
 
 .forum-write-form button:hover {
-  background: var(--color-accent-hover);
+  background: var(--color-focus);
 }
 
 .forum-write-form [role="alert"] {
