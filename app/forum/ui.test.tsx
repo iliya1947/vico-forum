@@ -5,6 +5,7 @@ import { I18nextProvider } from "react-i18next";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { canonicalEnglishCatalog } from "../localization/catalog";
 import { createTranslationRuntime } from "../localization/runtime";
+import { THEME_BOOTSTRAP_SCRIPT } from "../theme";
 import { ThemeToggle } from "./ui";
 
 function canonicalCommonResources(): Record<string, string> {
@@ -72,6 +73,17 @@ afterEach(() => {
 });
 
 describe("ThemeToggle", () => {
+  it("applies a persisted manual choice before React mounts", () => {
+    window.localStorage.setItem("vico-theme", "light");
+    installMatchMedia(true);
+
+    // Execute the exact inline bootstrap emitted by the document shell.
+    // eslint-disable-next-line no-eval
+    window.eval(THEME_BOOTSTRAP_SCRIPT);
+
+    expect(document.documentElement).toHaveAttribute("data-theme", "light");
+  });
+
   it("uses the system preference when no manual choice exists, then persists a manual choice", async () => {
     installMatchMedia(true);
     renderToggle();
