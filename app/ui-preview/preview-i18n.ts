@@ -36,7 +36,7 @@ const hebrew: Record<string, string> = {
   pinnedHeading: "נעוצים",
   latestTopicsHeading: "נושאים אחרונים",
   homepageSectionFallbackDescription: "מדורים, דיונים ותשובות מעשיות בתחום הזה.",
-  homepagePinnedEmpty: "אין עדיין נושאים נעוצים.",
+  homepagePinnedEmpty: "נושאים נעוצים עדיין בפיתוח.",
   homepageLatestEmpty: "אין עדיין נושאים.",
   homepageExpand: "הצגת נושאים נוספים",
   homepageCollapse: "הצגת פחות נושאים",
