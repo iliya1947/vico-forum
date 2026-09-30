@@ -1,10 +1,6 @@
 import { useLoaderData } from "react-router";
 import { UnderDevelopmentView } from "../forum/under-development-view";
 
-export function meta() {
-  return [{ title: "Under development · Vico Forum" }];
-}
-
 export function loader({ request, params }: { request: Request; params: { locale?: string } }) {
   return {
     locale: params.locale ?? "en",
