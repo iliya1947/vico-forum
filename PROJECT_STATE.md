@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-09-29
+Последнее обновление: 2026-09-30
 
 ## Назначение
 
@@ -28,7 +28,14 @@ Vico Forum находится в ранней pre-release разработке.
 - Stage 4 forum core завершён в local/CI path.
 - Stage 5 translations/background jobs завершён в repository/local-CI path.
 - Отдельная задача **UI/UX product pass** сейчас является активным продуктовым приоритетом;
-  план и обязательная browser acceptance matrix зафиксированы в `docs/UI_UX_PASS.md`.
+  актуальный target-product contract, порядок реализации и обязательная browser acceptance matrix
+  зафиксированы в `docs/UI_UX_PASS.md`.
+- Первый bounded UI/UX slice уже merged: deterministic representative baseline, client-safe
+  presentation boundaries и GitHub Pages visual-progress preview. Владелец подтвердил, что
+  исправленный live preview рендерится; это не заменяет будущую real-runtime acceptance.
+- Для owner-only pre-release незавершённые approved target functions могут оставаться видимыми и
+  вести на общую локализованную страницу `Under development` со списком оставшейся работы.
+  Публичный запуск не выполняется до завершения и acceptance утверждённого target product.
 - Stage 6 pre-release external integration поставлен владельцем на паузу; оставшиеся Stage 6
   infrastructure gates не продолжаются до отдельного указания.
 - External production-like integration начинается только в Stage 6; завершение Stage 5 не означает,
@@ -401,16 +408,20 @@ runtime roles/Hyperdrive writes и другие schema-dependent runtime capabil
 
 ## Ближайший маршрут
 
-Текущий активный маршрут — standalone UI/UX product pass без расширения product scope:
+Текущий активный маршрут — standalone UI/UX product pass по утверждённому target-product contract:
 
-1. Создать воспроизводимый visual baseline на representative data и лёгкий GitHub Pages preview
-   для просмотра прогресса владельцем.
-2. Последовательно улучшить shared visual foundation/shell, discovery hierarchy,
-   topics/messages/forms, auth/admin presentation и system states.
-3. После каждого implementation slice выполнять targeted automated checks и browser review.
-4. Завершить задачу только после полного CI и обязательной real-runtime visual/product acceptance
-   из `docs/UI_UX_PASS.md`; GitHub Pages не заменяет эту проверку.
-5. Stage 6 infrastructure gates остаются на паузе до отдельного указания владельца.
+1. Первый bounded slice — reproducible visual baseline + GitHub Pages progress preview — завершён и
+   merged.
+2. Следующий bounded slice: semantic visual tokens, Light/Dark с first-use
+   `prefers-color-scheme` и persisted manual choice, approved two-zone shell/header/footer,
+   homepage frame по утверждённому макету и общая локализованная страница `Under development`.
+3. Уже существующие product capabilities подключаются к реальным данным/поведению. Approved, но
+   тяжёлые ещё отсутствующие подсистемы получают целевое место в UI и временный переход на
+   `Under development`; их backend/domain implementation остаётся отдельными bounded задачами.
+4. После каждого implementation slice выполнять targeted automated checks и browser review.
+5. Завершить UI/UX pass только после полного CI и обязательной real-runtime visual/product
+   acceptance из `docs/UI_UX_PASS.md`; GitHub Pages не заменяет эту проверку.
+6. Stage 6 infrastructure gates остаются на паузе до отдельного указания владельца.
 
 Ранее подготовленный защищённый manual rollout mechanism остаётся в repository. При явном
 возобновлении Stage 6 актуальная последовательность остаётся следующей:
