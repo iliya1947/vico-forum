@@ -3,11 +3,7 @@ import { Link, isRouteErrorResponse, useRouteError } from "react-router";
 import { useTranslation } from "react-i18next";
 import { forumIndexPath } from "./paths";
 import { AuthControls } from "../auth/auth-controls";
-
-type Theme = "light" | "dark";
-
-const THEME_STORAGE_KEY = "vico-theme";
-const DARK_THEME_QUERY = "(prefers-color-scheme: dark)";
+import { DARK_THEME_QUERY, THEME_STORAGE_KEY, type Theme } from "../theme";
 
 function readStoredTheme(): Theme | null {
   try {
