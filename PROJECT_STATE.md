@@ -33,6 +33,10 @@ Vico Forum находится в ранней pre-release разработке.
 - Первый bounded UI/UX slice уже merged: deterministic representative baseline, client-safe
   presentation boundaries и GitHub Pages visual-progress preview. Владелец подтвердил, что
   исправленный live preview рендерится; это не заменяет будущую real-runtime acceptance.
+- В следующем UI/UX slice уже реализована и repository-CI/Pages-проверена первая bounded часть:
+  centralized semantic visual tokens, Light/Dark с first-use `prefers-color-scheme`, persisted
+  manual choice с pre-hydration bootstrap и основа two-zone shell/header. Это не означает
+  завершение всего slice или финальную browser/real-runtime acceptance.
 - Для owner-only pre-release незавершённые approved target functions могут оставаться видимыми и
   вести на общую локализованную страницу `Under development` со списком оставшейся работы.
   Публичный запуск не выполняется до завершения и acceptance утверждённого target product.
@@ -412,16 +416,18 @@ runtime roles/Hyperdrive writes и другие schema-dependent runtime capabil
 
 1. Первый bounded slice — reproducible visual baseline + GitHub Pages progress preview — завершён и
    merged.
-2. Следующий bounded slice: semantic visual tokens, Light/Dark с first-use
-   `prefers-color-scheme` и persisted manual choice, approved two-zone shell/header/footer,
-   homepage frame по утверждённому макету и общая локализованная страница `Under development`.
-3. Уже существующие product capabilities подключаются к реальным данным/поведению. Approved, но
+2. Первая bounded часть следующего slice реализована и прошла repository CI/Pages:
+   centralized semantic visual tokens, Light/Dark с first-use `prefers-color-scheme`, persisted
+   manual choice с pre-hydration bootstrap и основа two-zone shell/header.
+3. Следующая часть этого slice: завершить approved shell/header/footer composition, homepage frame
+   по утверждённому макету и общую локализованную страницу `Under development`.
+4. Уже существующие product capabilities подключаются к реальным данным/поведению. Approved, но
    тяжёлые ещё отсутствующие подсистемы получают целевое место в UI и временный переход на
    `Under development`; их backend/domain implementation остаётся отдельными bounded задачами.
-4. После каждого implementation slice выполнять targeted automated checks и browser review.
-5. Завершить UI/UX pass только после полного CI и обязательной real-runtime visual/product
+5. После каждого implementation slice выполнять targeted automated checks и browser review.
+6. Завершить UI/UX pass только после полного CI и обязательной real-runtime visual/product
    acceptance из `docs/UI_UX_PASS.md`; GitHub Pages не заменяет эту проверку.
-6. Stage 6 infrastructure gates остаются на паузе до отдельного указания владельца.
+7. Stage 6 infrastructure gates остаются на паузе до отдельного указания владельца.
 
 Ранее подготовленный защищённый manual rollout mechanism остаётся в repository. При явном
 возобновлении Stage 6 актуальная последовательность остаётся следующей:
