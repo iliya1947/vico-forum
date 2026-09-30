@@ -268,10 +268,10 @@ export class DrizzleForumRepository {
         id: forumTopics.id,
         title: forumTopicTitleRevisions.originalContent,
         authorName: user.name,
-        activityAt: sql<Date>`greatest(
+        activityAt: sql`greatest(
           ${forumTopics.createdAt},
           coalesce(max(${forumPosts.createdAt}), ${forumTopics.createdAt})
-        )`.as("activity_at"),
+        )`.mapWith(forumTopics.createdAt).as("activity_at"),
       })
       .from(forumTopics)
       .innerJoin(forumSections, eq(forumSections.id, forumTopics.sectionId))
