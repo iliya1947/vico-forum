@@ -92,12 +92,20 @@ function BellIcon() {
   );
 }
 
-export function ForumShell({ locale, children }: { locale: string; children: ReactNode }) {
+export function ForumShell({
+  locale,
+  children,
+  variant,
+}: {
+  locale: string;
+  children: ReactNode;
+  variant?: "home";
+}) {
   const { t } = useTranslation("common");
   const authUser = useHeaderAuthUser();
 
   return (
-    <main className="forum-shell">
+    <main className={variant === "home" ? "forum-shell home-shell" : "forum-shell"}>
       <header className="site-header">
         <div className="site-header-top">
           <div className="brand-lockup">
