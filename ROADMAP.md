@@ -128,6 +128,14 @@ implementation впоследствии завершены в local/CI path; с�
 Scope, порядок реализации, GitHub Pages progress preview, обязательная real-runtime browser
 acceptance matrix и definition of done зафиксированы в [`docs/UI_UX_PASS.md`](docs/UI_UX_PASS.md).
 
+Владелец отдельно утвердил target-product подход: UI проектируется как целевой Vico Forum, а не
+только как косметика поверх текущего MVP. Небольшое self-contained frontend behavior может
+закрываться внутри UI/UX pass, если это естественно и дёшево; тяжёлые ещё отсутствующие
+backend/domain функции остаются отдельными bounded задачами. В owner-only pre-release их целевые
+entry points могут вести на общую локализованную страницу `Under development` со списком
+незавершённых approved функций. Публичный запуск не выполняется до завершения и acceptance
+утверждённого target product.
+
 ## Stage 4 — сделать рабочее ядро форума — завершён
 
 Stage 4 завершён в local/CI path серией компактных PR `4B → 4C → 4D → 4E`. Ниже сохраняется
@@ -405,7 +413,13 @@ infrastructure diagnostics в production прекращаются; рисков�
 - generic BCP-47 locale routing, SSR, LTR/RTL, canonical English + local/manual/machine UI translation;
 - revision-bound on-demand translation пользовательского контента с original fallback;
 - server-side validation/authz, применимая CSRF/origin protection и basic anti-spam/rate limiting;
-- воспроизводимые migrations, CI и production-safe external/runtime boundaries.
+- воспроизводимые migrations, CI и production-safe external/runtime boundaries;
+- approved target-product forum UX до публичного запуска: глобальный поиск, уведомления,
+  unread/new state и переход к первому непрочитанному, drafts/autosave, forum-oriented user
+  profiles, technology tags и unanswered filtering, permanent message anchors/copy-link,
+  reply/quote relationships без tree layout и полноценный editor/code presentation;
+- целевой Light/Dark UX с first-use system preference и persisted manual choice.
 
-Поиск, жалобы, блокировки, reputation/audit log и другие дополнительные возможности не
-входят в обязательный объём без отдельного продуктового решения.
+Жалобы, блокировки, reputation/audit log, social-network profile mechanics и другие возможности,
+которые владелец отдельно не утвердил, не входят в обязательный объём без нового продуктового
+решения.
