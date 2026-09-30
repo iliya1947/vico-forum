@@ -50,6 +50,8 @@ jobs:
         run: pnpm test
       - name: Build
         run: pnpm build
+      - name: Build UI preview
+        run: pnpm ui-preview:build
       - name: Validate migration metadata
         run: pnpm db:check
       - name: Verify Drizzle schema parity
