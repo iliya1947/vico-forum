@@ -59,6 +59,7 @@ export const canonicalEnglishCatalog = {
     aboutVicoNav: message("aboutVicoNav", "About Vico", "Footer link to product information.", [], ["Vico"]),
     feedbackNav: message("feedbackNav", "Feedback", "Footer link to feedback."),
     privacyNav: message("privacyNav", "Privacy", "Footer link to privacy information."),
+    homeForumSectionsHeading: message("homeForumSectionsHeading", "Forum sections", "Heading above the primary forum blocks on the homepage."),
     pinnedHeading: message("pinnedHeading", "Pinned", "Heading for pinned topics in a homepage forum block."),
     latestTopicsHeading: message("latestTopicsHeading", "Latest topics", "Heading for latest topics in a homepage forum block."),
     homepageSectionFallbackDescription: message("homepageSectionFallbackDescription", "Sections, discussions, and practical answers in this area.", "Fallback description for a database-backed homepage category."),
