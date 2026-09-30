@@ -546,3 +546,96 @@ Exact head `8b43c54614673ed13159d33b4e2880c2f9763217` проверен чере�
 ## Recommended next owner action
 
 Передать ChatGPT короткий запрос проверить обновление служебного PR Codex #153 и независимо воспроизвести/оценить два findings по PR #156. PR #156 не merge до завершения технического согласования.
+
+---
+
+# Update 2026-09-30 — corrected-head re-review of PR #156
+
+## Request and exact state
+
+Проверены последнее обновление служебного PR ChatGPT #147, исправления двух confirmed findings и затем весь PR #156 на corrected head `a961952aedb3fdc2649b2d6f2dc039ea07b4db29`. Проверка read-only: implementation branch, code, durable documentation и configuration не изменялись; дополнен только communication-файл PR #153.
+
+- current main/base: `65216f91271d2abe8652bf5b25b2d88d4b0995ed`;
+- old reviewed head: `8b43c54614673ed13159d33b4e2880c2f9763217`;
+- corrected head: `a961952aedb3fdc2649b2d6f2dc039ea07b4db29`;
+- fix range: 8 commits, 6 files, +179/−27;
+- full PR: 42 commits, 25 files, +1574/−66.
+
+Latest #147 independently confirms both findings, records intermediate integration corrections, exact-head automated evidence and ChatGPT full-PR re-review without additional current-scope defect.
+
+## Finding 1 fix — bounded homepage read verified
+
+Новый `ForumReader.readHomepage(latestTopicsPerCategory)` заменяет route-level fan-out:
+
+- input bound validated as integer `1..20` with default 6;
+- first set query returns one aggregate row per category with distinct section/topic/message counts;
+- second set query computes per-topic activity, ranks topics per category with PostgreSQL `row_number()` and filters `activityRank <= latestTopicsPerCategory` before transfer;
+- route делает один `readHomepage(6)` call и только преобразует repository `Date` в serialized ISO presentation data;
+- Hyperdrive reader exposes exact method;
+- all existing `ForumReader` test doubles compile against the extended interface.
+
+Таким образом old `1 + categories + 2 × sections` application query fan-out удалён, а all-topics transfer + in-memory sort/slice заменены двумя set queries и database-side per-category top-N. Finding 1 исправлен.
+
+## Finding 2 fix — latest discussion activity verified
+
+Repository activity semantics теперь:
+
+`greatest(topic.created_at, coalesce(max(post.created_at), topic.created_at))`.
+
+Подтверждены:
+
+- topic без posts корректно использует topic creation time;
+- topic с later reply получает reply timestamp;
+- ranking выполняется per category по activity descending с deterministic topic-id tie-break;
+- raw SQL expression использует Drizzle timestamp decoder через `.mapWith(forumTopics.createdAt)`, сохраняя declared `Date` contract;
+- connected PostgreSQL test создаёт newer inactive topic и older topic с later reply, вызывает `readHomepage(1)` и подтверждает returned older/replied topic, exact reply timestamp и bounded one-row result;
+- aggregate expected counts соответствуют реально сохранённым posts fixture.
+
+Finding 2 исправлен.
+
+## Final whole-PR re-review
+
+После проверки fixes весь PR повторно сверён с current main, `AGENTS.md`, `PROJECT.md`, `PROJECT_STATE.md`, `ROADMAP.md`, `docs/UI_UX_PASS.md`, owner decisions и всеми 25 changed files.
+
+Подтверждены:
+
+1. approved four-part homepage presentation, expand geometry, responsive/RTL behavior и lower information zone;
+2. truthful runtime counts/latest activity from bounded repository data;
+3. no fake runtime pinning/online-presence data; Pages-only representative pins/counts/identities remain isolated;
+4. shared localized `Under development` route/checklist, requested-feature allowlist, safe return и temporary entry routing for search/notifications/account/footer destinations;
+5. guest/authenticated header behavior and existing auth/authorization boundaries;
+6. canonical English catalog and generic locale routing; Pages Hebrew resources remain preview fixtures only;
+7. deterministic SSR/hydration relative-time reference input;
+8. truthful `PROJECT_STATE.md` / `docs/UI_UX_PASS.md` repository implementation status without owner-browser/final-runtime acceptance claim;
+9. no schema migration, dependency, write-path, Stage 6 or production mutation.
+
+The new repository contract is wired through runtime and tests; query/activity integration is exercised on PostgreSQL. Previous documentation inline finding was already resolved in the final full diff. New current-scope defects, source-of-truth contradictions or regressions were not found.
+
+## CI, Pages, live artifact and mergeability
+
+Exact corrected head independently checked:
+
+- GitHub `mergeable: true`, `mergeable_state: clean`; main still equals PR base;
+- CI run `36761520142`: `checks` success, `database` success;
+- lint, typecheck, tests, app build, UI-preview build, migration/parity, PostgreSQL, runtime/credential probes and Workers smoke successful;
+- Pages run `36761511455`: build/upload/deploy success;
+- exact-head checks: 4/4 success;
+- merge ref parents match exact main/head; local `git merge-tree` found no conflict;
+- live Pages URL returns HTTP 200 and serves the current preview asset set.
+
+Pages remains progress evidence only. Owner visual/browser acceptance and final real-runtime acceptance are still not claimed.
+
+## Final technical conclusion
+
+**PR #156 on corrected head `a961952aedb3fdc2649b2d6f2dc039ea07b4db29` is technically ready to merge.**
+
+Technical-consensus cycle is closed:
+
+- both previously confirmed homepage findings are corrected;
+- corrections are covered by runtime wiring and connected database evidence;
+- the entire corrected PR was re-reviewed;
+- no outstanding confirmed defect remains in the bounded scope.
+
+## Recommended next owner action
+
+Merge PR #156. Record owner visual/browser acceptance separately if performed; do not interpret Pages/CI as final real-runtime acceptance. Start the next forum-discovery slice only as a separate bounded task from updated main.
