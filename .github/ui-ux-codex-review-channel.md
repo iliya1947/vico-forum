@@ -199,3 +199,95 @@ PR устраняет ранее зафиксированное расхожде
 ## Recommended next owner action
 
 Merge PR #154. После merge передать ChatGPT следующий bounded slice, уже зафиксированный в `PROJECT_STATE.md` и `docs/UI_UX_PASS.md`; служебные PR #147 и #153 продолжать использовать только как non-merge communication channels.
+
+---
+
+# Update 2026-09-30 — independent review of PR #155
+
+## Review request and boundaries
+
+По запросу владельца проверены последнее обновление служебного PR ChatGPT #147 и полный mergeable PR #155. Проверка строго read-only: branch/head #155, application code, project documentation и configuration не изменялись; в служебном PR #153 дополнен только этот communication-файл.
+
+На PR #153 и #155 к моменту проверки отсутствуют inline review comments, submitted reviews и issue comments, требующие отдельного ответа.
+
+## Current baseline and handoff
+
+- Актуальный `main`: `0d962f39f67ea0c4dba54a633188aa9bb1fe680a` (`Align UI/UX target product contract (#154)`).
+- PR #155 создан от exact current main; head `df89619e48f5729f9c20bdb155e54ea9dd218cab`.
+- Последнее обновление #147 определяет scope как part 1 следующего bounded slice: semantic visual tokens, Light/Dark behavior и two-zone shell groundwork; homepage, `Under development` route и heavy target subsystems намеренно отложены.
+- Повторно сверены `AGENTS.md`, `PROJECT.md`, `PROJECT_STATE.md`, `ROADMAP.md`, `docs/UI_UX_PASS.md`, owner decisions в #147 и текущая presentation implementation.
+
+## Full PR #155 review
+
+### Scope and architecture
+
+Полный diff содержит 5 commits, 4 files, +868/−93:
+
+- new `app/forum/ui.test.tsx`;
+- changed `app/forum/ui.tsx`;
+- changed canonical English catalog in `app/localization/catalog.ts`;
+- changed `app/styles.css`.
+
+PR не меняет dependencies, schema/migrations, backend/domain services, public routes, auth/authorization operations, translation architecture, preview workflow или Stage 6 infrastructure. Новые user-facing strings проходят canonical English catalog. Existing locale-aware forum/auth links сохранены. Homepage redesign, missing target subsystems и fake controls в PR не добавлены. Заявленный bounded scope соблюдён.
+
+Theme implementation корректно:
+
+- принимает только stored `light | dark` и fail-safe переживает недоступный localStorage;
+- использует `prefers-color-scheme` при отсутствии stored choice;
+- сохраняет manual choice и прекращает реагировать на system changes после manual override;
+- оставляет одинаковую component/layout geometry для Light/Dark;
+- имеет targeted component tests для initial system Dark → manual Light и stored Light overriding system Dark.
+
+Shell получает две визуальные зоны, semantic tokens, responsive layout, logical properties, reduced-motion-safe transitions и localized accessible labels. Client/server/domain boundaries не нарушены.
+
+### Blocking finding 1 — light-theme foreground contrast
+
+Новый light token set системно использует Orange как foreground для обычного текста и одновременно использует белый текст на Orange button background:
+
+- `--color-accent-hover: #d95b0d` на `--color-surface: #ffffff` даёт contrast ratio **3.85:1**;
+- `--color-on-accent: #ffffff` на `--color-accent: #f36f21` даёт **2.95:1**;
+- focus Orange `#f36f21` на canvas `#f2f3f4` даёт **2.66:1**.
+
+Эти пары фактически применяются к global links, breadcrumbs/topic links, translation summary/status labels, create/reply submit buttons и shared focus outline. Значительная часть текста имеет обычный размер (`0.85–0.9rem` либо default body), поэтому требуемый минимум для normal text не достигается; Orange focus indicator также не достигает 3:1 к соседнему светлому фону. Dark-theme пары проверенного дефекта не имеют.
+
+Это current-slice defect, а не future polish: PR именно вводит authoritative semantic colors и заявляет shared visible focus, тогда как `docs/UI_UX_PASS.md` требует доступные focus/contrast states и отсутствие color-only/inaccessible presentation. Green CI не проверяет computed color contrast.
+
+### Blocking finding 2 — persisted choice is applied only after hydration
+
+`ThemeToggle` читает localStorage и устанавливает `data-theme` только внутри `useEffect`. До выполнения effect server HTML не содержит stored theme marker:
+
+- при system Dark + stored manual Light initial paint использует dark media-query tokens, затем переключается на Light;
+- при system Light + stored manual Dark initial paint использует Light, затем переключается на Dark.
+
+Следовательно, persisted manual choice не выигрывает на initial paint и пользователь получает wrong-theme flash на full navigation/reload. Target contract требует, чтобы persisted manual choice затем выигрывал над system preference; текущая реализация выполняет это только после hydration. Existing tests ждут effect-completed DOM и поэтому не обнаруживают initial-paint boundary.
+
+Это также относится непосредственно к заявленному theme foundation. Исправление должно быть отдельно спроектировано с учётом SSR/CSP/hydration, но Codex ничего не реализует и не выбирает implementation здесь.
+
+## CI, Pages and mergeability
+
+GitHub API проверен по exact head `df89619e48f5729f9c20bdb155e54ea9dd218cab`:
+
+- PR: `mergeable: true`, `mergeable_state: clean`;
+- CI run `36742106436`: completed/success, exact head; `checks` и `database` successful;
+- success подтверждён для lint, typecheck, tests, application build, UI-preview build, migration/parity checks, clean PostgreSQL 17, Workers build/smoke и runtime/credential probes;
+- Pages run `36742072780`: build/upload/deploy successful на exact head;
+- exact-head check suite содержит 4 successful checks;
+- GitHub merge ref имеет parents exact main `0d962f3...` и exact head `df89619...`;
+- локальный `git merge-tree` не обнаружил conflict.
+
+CI/Pages доказывают build/deploy regression gate, но не опровергают найденные contrast и pre-hydration theme defects. Новая интерактивная browser/screenshot acceptance не выполнена: в review container отсутствует Chromium/Chrome. Выводы выше следуют непосредственно из final CSS token values, selector usage и initial execution order.
+
+## Independent conclusion
+
+**PR #155 на head `df89619e48f5729f9c20bdb155e54ea9dd218cab` пока не готов к merge.**
+
+Найдены два блокирующих дефекта текущего slice:
+
+1. light semantic accent pairs не обеспечивают требуемый contrast для ordinary link/button text и shared focus indication;
+2. persisted manual theme применяется только post-hydration, поэтому не выигрывает на initial paint и вызывает wrong-theme flash при несовпадении с system preference.
+
+Остальной scope и boundary PR согласованы с проектом; CI, Pages и mergeability зелёные. Согласно technical-consensus protocol fixes не должны выполняться до независимой проверки выводов ChatGPT. Codex не изменял PR #155 и не предписывает конкретную реализацию исправлений.
+
+## Recommended next owner action
+
+Передать ChatGPT короткий запрос проверить обновление служебного PR Codex #153 и независимо воспроизвести/оценить оба findings по PR #155. PR #155 не merge до завершения технического согласования и последующей полной перепроверки актуального head.
