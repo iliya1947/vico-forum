@@ -141,10 +141,11 @@ composition:
    placement remains open.
 3. Keep global search as an approved target function. Authenticated UI keeps notifications and an
    account/avatar entry point; the notification badge is shown only for unread notifications.
-4. The six approved primary forum destinations appear in this order:
-   `Help & solutions`, `Vibe Coding & AI tools`, `Development`,
-   `Deploy & infrastructure`, `Projects & reviews`, `Community`.
-   The visual label “section” does not change the authoritative domain hierarchy
+4. The six approved primary forum destinations follow the owner’s labels and order:
+   `Помощь и решения`, `Vibe Coding и AI-инструменты`, `Разработка`,
+   `Deploy и инфраструктура`, `Проекты и разборы`, `Сообщество`.
+   Implementation still routes user-facing strings through the canonical English/i18n catalog;
+   these approved product labels do not change the authoritative domain hierarchy
    `category → section → topic → messages`.
 5. Every homepage forum block uses the same four-part structure: icon/name/description,
    `Pinned`, `Latest topics`, and section statistics.
@@ -198,12 +199,13 @@ because their implementation is incomplete. Until a function exists:
 
 ## Delivery plan
 
-### 1. Reproducible visual baseline — completed
+### 1. Reproducible visual baseline — preview foundation merged
 
-The first bounded slice is merged. It provides deterministic representative data, the reversible
-GitHub Pages visual-progress preview, client-safe presentation boundaries, real mobile-width
-previewing and representative LTR/RTL/identity/content states. The owner confirmed the deployed
-preview renders after the server/client boundary defect was fixed.
+The first bounded baseline/preview slice is merged. It provides deterministic representative data,
+the reversible GitHub Pages visual-progress preview, client-safe presentation boundaries, real
+mobile-width previewing and representative LTR/RTL/identity/content states. The owner confirmed the
+deployed preview renders after the server/client boundary defect was fixed. This does not mark the
+full later browser acceptance matrix complete.
 
 ### 2. Foundations, shell and approved homepage frame — next bounded slice
 
