@@ -48,12 +48,6 @@ export function HomeView({
 
   return (
     <ForumShell locale={locale}>
-      <section className="home-intro">
-        <p className="eyebrow">{t("forumIndex")}</p>
-        <h1>{t("homepageHeading")}</h1>
-        <p>{t("homepageIntro")}</p>
-      </section>
-
       {categories.length === 0 ? <EmptyState>{t("categoriesEmpty")}</EmptyState> : (
         <section className="home-forum-sections" aria-label={t("categoriesHeading")}>
           {categories.map((category) => (
@@ -145,6 +139,7 @@ function HomepageCategoryCard({
           emptyLabel={t("homepagePinnedEmpty")}
           referenceTime={referenceTime}
           showActivity={false}
+          pinned
         />
       </div>
 
@@ -191,12 +186,14 @@ function HomepageTopicList({
   emptyLabel,
   referenceTime,
   showActivity,
+  pinned = false,
 }: {
   locale: string;
   topics: readonly HomepageTopicSummary[];
   emptyLabel: string;
   referenceTime: string;
   showActivity: boolean;
+  pinned?: boolean;
 }) {
   if (topics.length === 0) return <p className="home-topic-empty">{emptyLabel}</p>;
 
@@ -204,7 +201,10 @@ function HomepageTopicList({
     <ul className="home-topic-list">
       {topics.map((topic) => (
         <li key={topic.id}>
-          <Link to={forumTopicPath(locale, topic.id)}>{topic.title}</Link>
+          <span className="home-topic-title">
+            {pinned ? <span className="home-pinned-marker" aria-hidden="true" /> : null}
+            <Link to={forumTopicPath(locale, topic.id)}>{topic.title}</Link>
+          </span>
           {showActivity ? (
             <span className="home-topic-meta">
               <span className="home-topic-avatar" aria-hidden="true">
