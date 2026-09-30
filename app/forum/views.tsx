@@ -75,10 +75,6 @@ export function HomeView({
           <h2>{t("forumStatisticsHeading")}</h2>
           <dl className="forum-statistics">
             <div>
-              <dt>{t("categoriesHeading")}</dt>
-              <dd>{categories.length}</dd>
-            </div>
-            <div>
               <dt>{t("sectionLabel")}</dt>
               <dd>{totals.sections}</dd>
             </div>
