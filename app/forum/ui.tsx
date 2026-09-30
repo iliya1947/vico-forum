@@ -109,7 +109,14 @@ export function ForumShell({
       <header className="site-header">
         <div className="site-header-top">
           <div className="brand-lockup">
-            <Link className="brand" to={forumIndexPath(locale)}>{t("productName")}</Link>
+            <Link className="brand" to={forumIndexPath(locale)} aria-label={t("productName")}>
+              {variant === "home" ? (
+                <>
+                  <span className="brand-primary">Vico</span>
+                  <span className="brand-accent"> Forum</span>
+                </>
+              ) : t("productName")}
+            </Link>
             <span className="site-tagline">{t("forumTagline")}</span>
           </div>
 
