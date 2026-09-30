@@ -202,7 +202,7 @@ function homepageCategories(locale: "en" | "he"): HomepageCategoryOverview[] {
         "Show projects, request reviews, and discuss implementation choices.",
         "General discussion and community topics.",
       ];
-  const icons = ["?", "AI", "</>", "↥", "◇", "#"];
+  const icons = ["help", "ai", "code", "deploy", "projects", "community"];
   const ids = ["help-solutions", "vibe-ai-tools", "development", "deploy-infrastructure", "projects-reviews", "community"];
 
   return ids.map((id, index) => ({
