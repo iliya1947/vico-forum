@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { I18nextProvider } from "react-i18next";
-import { RouterProvider, createMemoryRouter } from "react-router";
+import { RouterProvider, createMemoryRouter, useSearchParams } from "react-router";
 
 import { HeaderAuthProvider, type HeaderAuthUser } from "../auth/auth-controls";
 import { PERMISSION_CATALOG, type PermissionKey } from "../authorization/catalog";
 import { AuthorizationAdminView } from "../authorization/admin-view";
+import type { HomepageCategoryOverview } from "../forum/homepage";
+import { UnderDevelopmentView } from "../forum/under-development-view";
 import { ForumRouteError } from "../forum/ui";
 import {
   CategoryView,
@@ -17,7 +19,7 @@ import { previewTranslationRuntime } from "./preview-i18n";
 
 type Direction = "ltr" | "rtl";
 type PreviewIdentity = "guest" | "user" | "manager";
-type PreviewView = "home" | "category" | "section" | "topic" | "admin" | "empty" | "not-found";
+type PreviewView = "home" | "category" | "section" | "topic" | "admin" | "empty" | "under-development" | "not-found";
 
 interface Scenario {
   id: string;
@@ -31,6 +33,9 @@ interface Scenario {
 
 export const scenarios: readonly Scenario[] = [
   { id: "home-ltr", label: "Home · LTR · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en", view: "home" },
+  { id: "home-rtl", label: "Home · RTL · user", locale: "he", direction: "rtl", identity: "user", path: "/he", view: "home" },
+  { id: "under-development-ltr", label: "Under development · LTR", locale: "en", direction: "ltr", identity: "guest", path: "/en/under-development?feature=search", view: "under-development" },
+  { id: "under-development-rtl", label: "Under development · RTL", locale: "he", direction: "rtl", identity: "user", path: "/he/under-development?feature=notifications", view: "under-development" },
   { id: "category-ltr", label: "Category · LTR · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/development", view: "category" },
   { id: "section-ltr", label: "Section · LTR · user", locale: "en", direction: "ltr", identity: "user", path: "/en/sections/typescript", view: "section" },
   { id: "topic-ltr", label: "Solved topic · LTR · user", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api", view: "topic" },
@@ -149,6 +154,79 @@ const topic = {
   ],
 };
 
+
+const previewReferenceTime = "2026-09-30T16:00:00.000Z";
+
+function homepageTopic(
+  id: string,
+  title: string,
+  authorName: string,
+  activityAt: string,
+) {
+  return { id, title, authorName, activityAt };
+}
+
+function homepageCategories(locale: "en" | "he"): HomepageCategoryOverview[] {
+  const rtl = locale === "he";
+  const names = rtl
+    ? [
+        "עזרה ופתרונות",
+        "Vibe Coding וכלי AI",
+        "פיתוח",
+        "Deploy ותשתיות",
+        "פרויקטים וביקורות",
+        "קהילה",
+      ]
+    : [
+        "Help & solutions",
+        "Vibe Coding & AI tools",
+        "Development",
+        "Deploy & infrastructure",
+        "Projects & reviews",
+        "Community",
+      ];
+  const descriptions = rtl
+    ? [
+        "שאלות, תקלות ופתרונות טכניים בדוקים.",
+        "תהליכי עבודה, סוכנים, מודלים וכלי פיתוח עם AI.",
+        "Frontend, backend, ארכיטקטורה, שפות ובדיקות.",
+        "Hosting, מסדי נתונים, CI/CD, ענן ותפעול.",
+        "הצגת פרויקטים, ביקורות ודיון בהחלטות מימוש.",
+        "דיונים כלליים וחיי הקהילה.",
+      ]
+    : [
+        "Questions, troubleshooting, and verified technical solutions.",
+        "AI coding workflows, agents, models, and tools.",
+        "Frontend, backend, architecture, languages, and testing.",
+        "Hosting, databases, CI/CD, cloud, and operations.",
+        "Show projects, request reviews, and discuss implementation choices.",
+        "General discussion and community topics.",
+      ];
+  const icons = ["?", "AI", "</>", "↥", "◇", "#"];
+  const ids = ["help-solutions", "vibe-ai-tools", "development", "deploy-infrastructure", "projects-reviews", "community"];
+
+  return ids.map((id, index) => ({
+    id,
+    name: names[index]!,
+    description: descriptions[index]!,
+    icon: icons[index]!,
+    sectionCount: [4, 5, 6, 4, 3, 3][index]!,
+    topicCount: [38, 64, 91, 43, 27, 31][index]!,
+    messageCount: [214, 387, 624, 296, 148, 203][index]!,
+    pinnedTopics: [
+      homepageTopic(`${id}-pinned-1`, rtl ? "כללי המדור ומשאבים שימושיים" : "Section guide and useful resources", "Vico Team", "2026-09-29T09:30:00.000Z"),
+      homepageTopic(`${id}-pinned-2`, rtl ? "לפני שפותחים נושא חדש" : "Before you open a new topic", "Maya Cohen", "2026-09-28T14:00:00.000Z"),
+      homepageTopic(`${id}-pinned-3`, rtl ? "אוסף קישורים מומלץ" : "Recommended reference collection", "Sam Chen", "2026-09-27T18:00:00.000Z"),
+    ],
+    latestTopics: [
+      homepageTopic(`${id}-latest-1`, rtl ? "איך לבחור את הגבול הנכון לפתרון?" : "How do I choose the right boundary for this?", "Alex Rivera", "2026-09-30T15:42:00.000Z"),
+      homepageTopic(`${id}-latest-2`, rtl ? "מה הדרך הפשוטה לבדוק את זה?" : "What is the simplest way to test this?", "Noa Levi", "2026-09-30T13:15:00.000Z"),
+      homepageTopic(`${id}-latest-3`, rtl ? "דוגמה מעשית מפרויקט אמיתי" : "A practical example from a real project", "Sam Chen", "2026-09-29T17:30:00.000Z"),
+      homepageTopic(`${id}-latest-4`, rtl ? "האם כדאי לפשט את המבנה?" : "Should this structure be simplified?", "Maya Cohen", "2026-09-28T11:00:00.000Z"),
+    ],
+  }));
+}
+
 function previewUser(identity: PreviewIdentity): HeaderAuthUser | null {
   if (identity === "guest") return null;
   if (identity === "manager") return { name: "Maya Cohen", canManageAuthorization: true };
@@ -247,10 +325,26 @@ function previewRouter(scenario: Scenario) {
     }], { initialEntries: [scenario.path] });
   }
 
-  return createMemoryRouter([{
-    path: "*",
-    element: previewElement(scenario),
-  }], { initialEntries: [scenario.path] });
+  return createMemoryRouter([
+    {
+      path: "/:locale/under-development",
+      element: <PreviewUnderDevelopment locale={scenario.locale} />,
+    },
+    {
+      path: "*",
+      element: previewElement(scenario),
+    },
+  ], { initialEntries: [scenario.path] });
+}
+
+function PreviewUnderDevelopment({ locale }: { locale: "en" | "he" }) {
+  const [searchParams] = useSearchParams();
+  return (
+    <UnderDevelopmentView
+      locale={locale}
+      requestedFeature={searchParams.get("feature")}
+    />
+  );
 }
 
 function previewElement(scenario: Scenario) {
@@ -259,13 +353,12 @@ function previewElement(scenario: Scenario) {
       return (
         <HomeView
           locale={scenario.locale}
-          categories={[
-            { id: categoryId, name: "Development", sectionCount: 3 },
-            { id: "tools", name: "AI coding tools", sectionCount: 3 },
-            { id: "showcase", name: "Projects & showcase", sectionCount: 2 },
-          ]}
+          categories={homepageCategories(scenario.locale)}
+          referenceTime={previewReferenceTime}
         />
       );
+    case "under-development":
+      return <PreviewUnderDevelopment locale={scenario.locale} />;
     case "category":
       return <CategoryView locale={scenario.locale} category={category} />;
     case "section":
