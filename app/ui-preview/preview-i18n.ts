@@ -1,6 +1,14 @@
 import { canonicalEnglishCatalog } from "../localization/catalog";
+import { manualTranslationPacks } from "../localization/manual-packs";
 import { createTranslationRuntime } from "../localization/runtime";
 import type { ResourceBundle } from "../localization/sources";
+
+export const PREVIEW_LOCALES = ["en", "ru", "he"] as const;
+export type PreviewLocale = (typeof PREVIEW_LOCALES)[number];
+
+export function isPreviewLocale(locale: string): locale is PreviewLocale {
+  return PREVIEW_LOCALES.some((candidate) => candidate === locale);
+}
 
 function canonicalCommonResources(): Record<string, string> {
   const resources: Record<string, string> = {};
@@ -16,131 +24,42 @@ function canonicalCommonResources(): Record<string, string> {
   return resources;
 }
 
+function manualCommonResources(locale: Exclude<PreviewLocale, "en">): Record<string, string> {
+  const messages = manualTranslationPacks[locale]?.common;
+  if (!messages) throw new Error(`Missing preview manual pack: ${locale}`);
+
+  const resources: Record<string, string> = {};
+  for (const [key, translation] of Object.entries(messages)) {
+    if (typeof translation.value === "string") {
+      resources[key] = translation.value;
+      continue;
+    }
+    for (const [branch, value] of Object.entries(translation.value)) {
+      resources[`${key}_${branch}`] = value;
+    }
+  }
+  return resources;
+}
+
 const english = canonicalCommonResources();
+const russian = manualCommonResources("ru");
+const hebrew = manualCommonResources("he");
 
-const hebrew: Record<string, string> = {
-  ...english,
-  productName: "Vico Forum",
-  forumTagline: "שאלות, דיונים ותשובות מעשיות",
-  forumIndex: "ראשי",
-  forumHomeNav: "ראשי",
-  unansweredNav: "ללא תשובה",
-  tagsNav: "תגיות",
-  popularNav: "פופולרי",
-  unreadNav: "לא נקראו",
-  enterForumSection: "פתיחת {{section}}",
-  forumDiscoveryDevelopmentStatus: "{{section}}: מצב פיתוח",
-  primaryNavigation: "ניווט ראשי",
-  searchForum: "חיפוש בפורום",
-  notifications: "התראות",
-  footerNavigation: "ניווט תחתון",
-  rulesNav: "כללים",
-  helpNav: "עזרה",
-  aboutVicoNav: "על Vico",
-  feedbackNav: "משוב",
-  privacyNav: "פרטיות",
-  homeForumSectionsHeading: "מדורי הפורום",
-  pinnedHeading: "נעוצים",
-  latestTopicsHeading: "נושאים אחרונים",
-  homepageSectionFallbackDescription: "מדורים, דיונים ותשובות מעשיות בתחום הזה.",
-  homepagePinnedEmpty: "נושאים נעוצים עדיין בפיתוח.",
-  homepageLatestEmpty: "אין עדיין נושאים.",
-  homepageExpand: "הצגת נושאים נוספים",
-  homepageCollapse: "הצגת פחות נושאים",
-  forumStatisticsHeading: "סטטיסטיקות הפורום",
-  whosOnlineHeading: "מי מחובר",
-  onlinePresencePending: "תצוגת משתמשים מחוברים עדיין בפיתוח.",
-  viewDevelopmentStatus: "הצגת מצב הפיתוח",
-  underDevelopmentEyebrow: "Pre-release",
-  underDevelopmentHeading: "בפיתוח",
-  underDevelopmentIntro: "העמוד מרכז פונקציות מאושרות של Vico Forum שעדיין לא הושלמו. בתקופת ה-pre-release נקודות הכניסה נשארות גלויות במקום לדמות פעולה שאינה קיימת.",
-  underDevelopmentRequested: "{{feature}} עדיין לא הושלם.",
-  underDevelopmentRemainingHeading: "עדיין בפיתוח",
-  underDevelopmentBackToForum: "חזרה לפורום",
-  underDevelopmentFeatureSearch: "חיפוש גלובלי בפורום",
-  underDevelopmentFeatureNotifications: "התראות",
-  underDevelopmentFeaturePinnedTopics: "ניהול נושאים נעוצים",
-  underDevelopmentFeatureUnread: "מצב חדש/לא נקרא ומעבר לראשון שלא נקרא",
-  underDevelopmentFeatureDrafts: "טיוטות ושמירה אוטומטית",
-  underDevelopmentFeatureProfiles: "פרופילי משתמשי הפורום",
-  underDevelopmentFeatureTechnologyTags: "תגיות טכנולוגיה",
-  underDevelopmentFeatureUnansweredFilter: "סינון ללא תשובה",
-  underDevelopmentFeaturePopular: "נושאים פופולריים לפי תקופת פעילות",
-  underDevelopmentFeatureForumDiscovery: "תצוגת קטגוריות ומדורי הפורום",
-  underDevelopmentFeatureMessageLinks: "קישורים קבועים להודעות והעתקת קישור",
-  underDevelopmentFeatureReplyQuote: "קשרים של תגובה וציטוט",
-  underDevelopmentFeatureEditor: "עורך מלא וכלי קוד",
-  underDevelopmentFeatureOnlinePresence: "מי מחובר",
-  underDevelopmentFeatureRules: "עמוד כללי הפורום",
-  underDevelopmentFeatureHelp: "עמוד עזרה",
-  underDevelopmentFeatureAbout: "על Vico",
-  underDevelopmentFeatureFeedback: "משוב",
-  underDevelopmentFeaturePrivacy: "עמוד פרטיות",
-  categoriesHeading: "קטגוריות",
-  categoriesIntro: "עיון בפורום לפי קטגוריה ומדור.",
-  breadcrumbsLabel: "פירורי לחם",
-  categoryLabel: "קטגוריה",
-  sectionLabel: "מדור",
-  topicLabel: "נושא",
-  topicsHeading: "נושאים",
-  topicColumn: "נושא",
-  postsColumn: "הודעות",
-  sectionCount_one: "{{count}} מדור",
-  sectionCount_two: "{{count}} מדורים",
-  sectionCount_many: "{{count}} מדורים",
-  sectionCount_other: "{{count}} מדורים",
-  topicCount_one: "{{count}} נושא",
-  topicCount_two: "{{count}} נושאים",
-  topicCount_many: "{{count}} נושאים",
-  topicCount_other: "{{count}} נושאים",
-  messageCount_one: "{{count}} הודעה",
-  messageCount_two: "{{count}} הודעות",
-  messageCount_many: "{{count}} הודעות",
-  messageCount_other: "{{count}} הודעות",
-  startedBy: "נפתח על ידי {{author}}",
-  postNumber: "הודעה #{{number}}",
-  createTopicHeading: "יצירת נושא חדש",
-  topicTitleLabel: "כותרת הנושא",
-  initialPostLabel: "הודעה ראשונה",
-  createTopicSubmit: "יצירת נושא",
-  replyHeading: "הוספת תגובה",
-  replyBodyLabel: "תגובה",
-  replySubmit: "פרסום תגובה",
-  solved: "נפתר",
-  markSolved: "סימון כנפתר",
-  bestAnswer: "התשובה הטובה ביותר",
-  selectBestAnswer: "בחירה כתשובה הטובה ביותר",
-  goToSolution: "מעבר לפתרון",
-  automaticTranslation: "תרגום אוטומטי",
-  manualTranslation: "תרגום ידני",
-  showOriginal: "הצגת המקור",
-  showTranslation: "הצגת התרגום",
-  authorizationNav: "הרשאות",
-  authorizationHeading: "ניהול הרשאות",
-  rolesHeading: "תפקידים",
-  usersHeading: "משתמשים",
-  roleSlug: "מזהה תפקיד",
-  displayName: "שם תצוגה",
-  createRole: "יצירת תפקיד",
-  save: "שמירה",
-  deleteRole: "מחיקת תפקיד",
-  builtInRole: "מובנה",
-  permissionsHeading: "הרשאות",
-  effectivePermissions: "הרשאות בפועל",
-  assignedRole: "תפקיד משויך",
-  defaultRole: "תפקיד ברירת מחדל",
-  overrideInherit: "ירושה",
-  overrideAllow: "אפשר",
-  overrideDeny: "חסום",
-  signInGoogle: "כניסה עם Google",
-  signOut: "יציאה",
-  forumNotFoundHeading: "עמוד הפורום לא נמצא",
-  forumNotFoundBody: "הקטגוריה, המדור או הנושא אינם קיימים.",
-};
+const previewMetadata = {
+  en: { nativeName: "English" },
+  ru: { nativeName: "Русский" },
+  he: { nativeName: "עברית" },
+} as const;
 
-export function previewTranslationRuntime(locale: "en" | "he", direction: "ltr" | "rtl") {
-  const resourcesByLocale: Record<string, ResourceBundle> = locale === "he"
-    ? { en: { common: english }, he: { common: hebrew } }
+export function previewTranslationRuntime(locale: PreviewLocale, direction: "ltr" | "rtl") {
+  const localizedCommon = locale === "ru"
+    ? russian
+    : locale === "he"
+      ? hebrew
+      : undefined;
+
+  const resourcesByLocale: Record<string, ResourceBundle> = localizedCommon
+    ? { en: { common: english }, [locale]: { common: localizedCommon } }
     : { en: { common: english } };
 
   return createTranslationRuntime({
@@ -149,13 +68,13 @@ export function previewTranslationRuntime(locale: "en" | "he", direction: "ltr" 
       fallbackLocales: locale === "en" ? [] : ["en"],
       direction,
       formatting: { locale, timeZone: "UTC" },
-      nativeName: locale === "he" ? "עברית" : "English",
+      nativeName: previewMetadata[locale].nativeName,
       presentationMetadata: {},
     },
     fallbackLocales: locale === "en" ? [] : ["en"],
     resourcesByLocale,
-    bundleVersions: locale === "he"
-      ? { en: { common: "preview-en" }, he: { common: "preview-he" } }
+    bundleVersions: localizedCommon
+      ? { en: { common: "preview-en" }, [locale]: { common: `preview-${locale}` } }
       : { en: { common: "preview-en" } },
     staleKeys: {},
   });

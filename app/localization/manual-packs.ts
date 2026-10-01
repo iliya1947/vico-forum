@@ -1,20 +1,27 @@
-import type { TranslationPack } from "./sources";
+import type { UiKey } from "./catalog";
+import { reviewedCommonFingerprints } from "./manual-fingerprints";
+import { hebrewCommonValues, russianCommonValues } from "./manual-values";
+import type { TranslationPack, TranslationValue } from "./sources";
+import type { ProviderTranslationValue } from "./translation-validation";
+
+type CommonKey = UiKey<"common">;
+type CommonValues = Readonly<Record<CommonKey, ProviderTranslationValue>>;
+
+function reviewedCommonPack(values: CommonValues): TranslationPack {
+  return {
+    common: Object.fromEntries(
+      Object.entries(values).map(([key, value]) => [
+        key,
+        {
+          value,
+          sourceFingerprint: reviewedCommonFingerprints[key as CommonKey],
+        } satisfies TranslationValue,
+      ]),
+    ),
+  };
+}
 
 export const manualTranslationPacks: Readonly<Record<string, TranslationPack>> = {
-  ru: {
-    common: {
-      heading: {
-        value: "Основа переводов",
-        sourceFingerprint: "85062b96bd9c772b8c4a8d77cadd15ac4dc47ec0476d2486f022f29b78eb7e1a",
-      },
-    },
-  },
-  he: {
-    common: {
-      heading: {
-        value: "תשתית תרגום",
-        sourceFingerprint: "85062b96bd9c772b8c4a8d77cadd15ac4dc47ec0476d2486f022f29b78eb7e1a",
-      },
-    },
-  },
+  ru: reviewedCommonPack(russianCommonValues),
+  he: reviewedCommonPack(hebrewCommonValues),
 };

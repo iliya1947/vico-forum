@@ -15,40 +15,51 @@ import {
   TopicView,
 } from "../forum/views";
 import type { ContentTranslationPresentation } from "../localization/content-translation-presentation";
-import { previewTranslationRuntime } from "./preview-i18n";
+import type { ContentGenerationUnitView } from "../localization/content-generation-view";
+import { isPreviewLocale, previewTranslationRuntime, type PreviewLocale } from "./preview-i18n";
+import { LocaleNavigationProvider } from "../localization/locale-navigation";
+import { localeRegistry } from "../localization/registry";
 
 type Direction = "ltr" | "rtl";
 type PreviewIdentity = "guest" | "user" | "manager";
 type PreviewView = "home" | "category" | "section" | "topic" | "admin" | "empty" | "under-development" | "not-found";
 
+type PreviewVariant =
+  | "empty-category"
+  | "section-form-error"
+  | "topic-reply-error"
+  | "topic-unsolved"
+  | "topic-tools";
+
 interface Scenario {
   id: string;
   label: string;
-  locale: "en" | "he";
+  locale: PreviewLocale;
   direction: Direction;
   identity: PreviewIdentity;
   path: string;
   view: PreviewView;
+  variant?: PreviewVariant;
 }
 
 export const scenarios: readonly Scenario[] = [
-  { id: "home-ltr", label: "Home · LTR · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en", view: "home" },
-  { id: "home-rtl", label: "Home · RTL · user", locale: "he", direction: "rtl", identity: "user", path: "/he", view: "home" },
-  { id: "under-development-ltr", label: "Under development · LTR", locale: "en", direction: "ltr", identity: "guest", path: "/en/under-development?feature=search", view: "under-development" },
-  { id: "under-development-rtl", label: "Under development · RTL", locale: "he", direction: "rtl", identity: "user", path: "/he/under-development?feature=notifications", view: "under-development" },
-  { id: "category-ltr", label: "Category · LTR · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/development", view: "category" },
-  { id: "category-rtl", label: "Category · RTL · user", locale: "he", direction: "rtl", identity: "user", path: "/he/categories/development", view: "category" },
-  { id: "category-empty-ltr", label: "Empty category · LTR", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/empty", view: "category" },
-  { id: "section-ltr", label: "Section · LTR · user", locale: "en", direction: "ltr", identity: "user", path: "/en/sections/typescript", view: "section" },
-  { id: "section-rtl", label: "Section · RTL · user", locale: "he", direction: "rtl", identity: "user", path: "/he/sections/typescript", view: "section" },
-  { id: "section-form-error-ltr", label: "Create topic error · LTR", locale: "en", direction: "ltr", identity: "user", path: "/en/sections/typescript", view: "section" },
-  { id: "topic-ltr", label: "Solved topic · LTR · user", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api", view: "topic" },
-  { id: "topic-reply-error-ltr", label: "Reply error · LTR", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api", view: "topic" },
-  { id: "topic-unsolved-ltr", label: "Unsolved topic · LTR · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/topics/typed-api", view: "topic" },
-  { id: "topic-rtl", label: "Translated topic · RTL · manager", locale: "he", direction: "rtl", identity: "manager", path: "/he/topics/typed-api", view: "topic" },
-  { id: "admin-ltr", label: "Authorization · LTR · manager", locale: "en", direction: "ltr", identity: "manager", path: "/en/admin/authorization", view: "admin" },
-  { id: "empty-ltr", label: "Empty section · LTR", locale: "en", direction: "ltr", identity: "guest", path: "/en/sections/empty", view: "empty" },
-  { id: "not-found-ltr", label: "404 state · LTR", locale: "en", direction: "ltr", identity: "guest", path: "/en/missing", view: "not-found" },
+  { id: "home-guest", label: "Home · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en", view: "home" },
+  { id: "home-user", label: "Home · user", locale: "en", direction: "ltr", identity: "user", path: "/en", view: "home" },
+  { id: "under-development-search", label: "Under development · search · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/under-development?feature=search", view: "under-development" },
+  { id: "under-development-notifications", label: "Under development · notifications · user", locale: "en", direction: "ltr", identity: "user", path: "/en/under-development?feature=notifications", view: "under-development" },
+  { id: "category-guest", label: "Category · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/development", view: "category" },
+  { id: "category-user", label: "Category · user", locale: "en", direction: "ltr", identity: "user", path: "/en/categories/development", view: "category" },
+  { id: "category-empty", label: "Empty category · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/empty", view: "category", variant: "empty-category" },
+  { id: "section-user", label: "Section · user", locale: "en", direction: "ltr", identity: "user", path: "/en/sections/typescript", view: "section" },
+  { id: "section-form-error", label: "Create topic error · user", locale: "en", direction: "ltr", identity: "user", path: "/en/sections/typescript", view: "section", variant: "section-form-error" },
+  { id: "topic-solved-user", label: "Solved topic · user", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api", view: "topic" },
+  { id: "topic-solved-manager", label: "Solved topic · manager", locale: "en", direction: "ltr", identity: "manager", path: "/en/topics/typed-api", view: "topic" },
+  { id: "topic-reply-error", label: "Reply error · user", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api", view: "topic", variant: "topic-reply-error" },
+  { id: "topic-unsolved", label: "Unsolved topic · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/topics/typed-api", view: "topic", variant: "topic-unsolved" },
+  { id: "topic-tools", label: "Topic tools · manager", locale: "en", direction: "ltr", identity: "manager", path: "/en/topics/typed-api", view: "topic", variant: "topic-tools" },
+  { id: "admin", label: "Authorization · manager", locale: "en", direction: "ltr", identity: "manager", path: "/en/admin/authorization", view: "admin" },
+  { id: "empty-section", label: "Empty section · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/sections/empty", view: "empty" },
+  { id: "not-found", label: "404 state · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/missing", view: "not-found" },
 ] as const;
 
 const categoryId = "development";
@@ -58,6 +69,35 @@ const topicId = "typed-api";
 const previewBuildKey =
   document.querySelector<HTMLScriptElement>('script[type="module"][src]')?.src ?? "dev";
 
+const PREVIEW_LOCALE_STORAGE_KEY = "vico-ui-preview-locale";
+
+function initialPreviewLocale(): PreviewLocale {
+  try {
+    const stored = window.sessionStorage.getItem(PREVIEW_LOCALE_STORAGE_KEY);
+    if (stored && isPreviewLocale(stored)) return stored;
+  } catch {
+    // Preview storage is optional; fall back to English when unavailable.
+  }
+  return "en";
+}
+
+const previewLocaleOptions = localeRegistry.activeLocales()
+  .filter((locale) => isPreviewLocale(locale.tag))
+  .map(({ tag, nativeName, direction }) => ({ tag, nativeName, direction }))
+  .sort((left, right) => left.tag < right.tag ? -1 : left.tag > right.tag ? 1 : 0);
+
+function scenarioForLocale(scenario: Scenario, locale: PreviewLocale): Scenario {
+  const definition = localeRegistry.find(locale)?.locale;
+  if (!definition) return scenario;
+
+  return {
+    ...scenario,
+    locale,
+    direction: definition.direction,
+    path: scenario.path.replace(/^\/[^/?#]+/, `/${locale}`),
+  };
+}
+
 const category = {
   id: categoryId,
   name: "Development",
@@ -65,6 +105,16 @@ const category = {
     { id: sectionId, name: "TypeScript & architecture", topicCount: 3, postCount: 23 },
     { id: "cloud", name: "Cloud & deployment", topicCount: 5, postCount: 41 },
     { id: "databases", name: "Databases", topicCount: 2, postCount: 12 },
+  ],
+};
+
+const categoryRu = {
+  id: categoryId,
+  name: "Разработка",
+  sections: [
+    { id: sectionId, name: "TypeScript и архитектура", topicCount: 3, postCount: 23 },
+    { id: "cloud", name: "Облако и deploy", topicCount: 5, postCount: 41 },
+    { id: "databases", name: "Базы данных", topicCount: 2, postCount: 12 },
   ],
 };
 
@@ -123,6 +173,13 @@ const section = {
       },
     },
   ],
+};
+
+const sectionRu = {
+  id: sectionId,
+  name: "TypeScript и архитектура",
+  category: { id: categoryId, name: "Разработка" },
+  topics: section.topics,
 };
 
 const sectionRtl = {
@@ -232,8 +289,9 @@ function homepageTopic(
   return { id, title, authorName, activityAt };
 }
 
-function homepageCategories(locale: "en" | "he"): HomepageCategoryOverview[] {
+function homepageCategories(locale: PreviewLocale): HomepageCategoryOverview[] {
   const rtl = locale === "he";
+  const russian = locale === "ru";
   const names = rtl
     ? [
         "עזרה ופתרונות",
@@ -243,14 +301,23 @@ function homepageCategories(locale: "en" | "he"): HomepageCategoryOverview[] {
         "פרויקטים וביקורות",
         "קהילה",
       ]
-    : [
-        "Help & solutions",
-        "Vibe Coding & AI tools",
-        "Development",
-        "Deploy & infrastructure",
-        "Projects & reviews",
-        "Community",
-      ];
+    : russian
+      ? [
+          "Помощь и решения",
+          "Vibe Coding и AI-инструменты",
+          "Разработка",
+          "Deploy и инфраструктура",
+          "Проекты и разборы",
+          "Сообщество",
+        ]
+      : [
+          "Help & solutions",
+          "Vibe Coding & AI tools",
+          "Development",
+          "Deploy & infrastructure",
+          "Projects & reviews",
+          "Community",
+        ];
   const descriptions = rtl
     ? [
         "שאלות, תקלות ופתרונות טכניים בדוקים.",
@@ -260,14 +327,23 @@ function homepageCategories(locale: "en" | "he"): HomepageCategoryOverview[] {
         "הצגת פרויקטים, ביקורות ודיון בהחלטות מימוש.",
         "דיונים כלליים וחיי הקהילה.",
       ]
-    : [
-        "Questions, troubleshooting, and verified technical solutions.",
-        "AI coding workflows, agents, models, and tools.",
-        "Frontend, backend, architecture, languages, and testing.",
-        "Hosting, databases, CI/CD, cloud, and operations.",
-        "Show projects, request reviews, and discuss implementation choices.",
-        "General discussion and community topics.",
-      ];
+    : russian
+      ? [
+          "Вопросы, диагностика и проверенные технические решения.",
+          "AI-процессы разработки, агенты, модели и инструменты.",
+          "Frontend, backend, архитектура, языки и тестирование.",
+          "Hosting, базы данных, CI/CD, облако и эксплуатация.",
+          "Показывайте проекты, просите разбор и обсуждайте решения.",
+          "Общие обсуждения и жизнь сообщества.",
+        ]
+      : [
+          "Questions, troubleshooting, and verified technical solutions.",
+          "AI coding workflows, agents, models, and tools.",
+          "Frontend, backend, architecture, languages, and testing.",
+          "Hosting, databases, CI/CD, cloud, and operations.",
+          "Show projects, request reviews, and discuss implementation choices.",
+          "General discussion and community topics.",
+        ];
   const icons = ["help", "ai", "code", "deploy", "projects", "community"];
   const ids = ["help-solutions", "vibe-ai-tools", "development", "deploy-infrastructure", "projects-reviews", "community"];
 
@@ -280,15 +356,15 @@ function homepageCategories(locale: "en" | "he"): HomepageCategoryOverview[] {
     topicCount: [38, 64, 91, 43, 27, 31][index]!,
     messageCount: [214, 387, 624, 296, 148, 203][index]!,
     pinnedTopics: [
-      homepageTopic(`${id}-pinned-1`, rtl ? "כללי המדור ומשאבים שימושיים" : "Section guide and useful resources", "Vico Team", "2026-09-29T09:30:00.000Z"),
-      homepageTopic(`${id}-pinned-2`, rtl ? "לפני שפותחים נושא חדש" : "Before you open a new topic", "Maya Cohen", "2026-09-28T14:00:00.000Z"),
-      homepageTopic(`${id}-pinned-3`, rtl ? "אוסף קישורים מומלץ" : "Recommended reference collection", "Sam Chen", "2026-09-27T18:00:00.000Z"),
+      homepageTopic(`${id}-pinned-1`, rtl ? "כללי המדור ומשאבים שימושיים" : russian ? "Правила раздела и полезные материалы" : "Section guide and useful resources", "Vico Team", "2026-09-29T09:30:00.000Z"),
+      homepageTopic(`${id}-pinned-2`, rtl ? "לפני שפותחים נושא חדש" : russian ? "Перед созданием новой темы" : "Before you open a new topic", "Maya Cohen", "2026-09-28T14:00:00.000Z"),
+      homepageTopic(`${id}-pinned-3`, rtl ? "אוסף קישורים מומלץ" : russian ? "Рекомендуемая подборка материалов" : "Recommended reference collection", "Sam Chen", "2026-09-27T18:00:00.000Z"),
     ],
     latestTopics: [
-      homepageTopic(`${id}-latest-1`, rtl ? "איך לבחור את הגבול הנכון לפתרון?" : "How do I choose the right boundary for this?", "Alex Rivera", "2026-09-30T15:42:00.000Z"),
-      homepageTopic(`${id}-latest-2`, rtl ? "מה הדרך הפשוטה לבדוק את זה?" : "What is the simplest way to test this?", "Noa Levi", "2026-09-30T13:15:00.000Z"),
-      homepageTopic(`${id}-latest-3`, rtl ? "דוגמה מעשית מפרויקט אמיתי" : "A practical example from a real project", "Sam Chen", "2026-09-29T17:30:00.000Z"),
-      homepageTopic(`${id}-latest-4`, rtl ? "האם כדאי לפשט את המבנה?" : "Should this structure be simplified?", "Maya Cohen", "2026-09-28T11:00:00.000Z"),
+      homepageTopic(`${id}-latest-1`, rtl ? "איך לבחור את הגבול הנכון לפתרון?" : russian ? "Как выбрать правильную границу решения?" : "How do I choose the right boundary for this?", "Alex Rivera", "2026-09-30T15:42:00.000Z"),
+      homepageTopic(`${id}-latest-2`, rtl ? "מה הדרך הפשוטה לבדוק את זה?" : russian ? "Как проще всего это проверить?" : "What is the simplest way to test this?", "Noa Levi", "2026-09-30T13:15:00.000Z"),
+      homepageTopic(`${id}-latest-3`, rtl ? "דוגמה מעשית מפרויקט אמיתי" : russian ? "Практический пример из реального проекта" : "A practical example from a real project", "Sam Chen", "2026-09-29T17:30:00.000Z"),
+      homepageTopic(`${id}-latest-4`, rtl ? "האם כדאי לפשט את המבנה?" : russian ? "Стоит ли упростить эту структуру?" : "Should this structure be simplified?", "Maya Cohen", "2026-09-28T11:00:00.000Z"),
     ],
   }));
 }
@@ -343,15 +419,20 @@ export function PreviewController() {
 
 export function EmbeddedPreview({ scenarioId }: { scenarioId: string }) {
   const scenario = scenarios.find((candidate) => candidate.id === scenarioId) ?? scenarios[0]!;
-  const runtime = useMemo(
-    () => previewTranslationRuntime(scenario.locale, scenario.direction),
-    [scenario.locale, scenario.direction],
+  const [previewLocale, setPreviewLocale] = useState<PreviewLocale>(initialPreviewLocale);
+  const activeScenario = useMemo(
+    () => scenarioForLocale(scenario, previewLocale),
+    [scenario, previewLocale],
   );
-  const router = useMemo(() => previewRouter(scenario), [scenario]);
+  const runtime = useMemo(
+    () => previewTranslationRuntime(activeScenario.locale, activeScenario.direction),
+    [activeScenario.locale, activeScenario.direction],
+  );
+  const router = useMemo(() => previewRouter(activeScenario), [activeScenario]);
 
   useEffect(() => {
-    document.documentElement.lang = scenario.locale;
-    document.documentElement.dir = scenario.direction;
+    document.documentElement.lang = activeScenario.locale;
+    document.documentElement.dir = activeScenario.direction;
 
     const stopMutation = (event: Event) => {
       event.preventDefault();
@@ -369,14 +450,27 @@ export function EmbeddedPreview({ scenarioId }: { scenarioId: string }) {
       document.removeEventListener("submit", stopMutation, true);
       document.removeEventListener("click", stopAuth, true);
     };
-  }, [scenario.locale, scenario.direction]);
+  }, [activeScenario.locale, activeScenario.direction]);
 
   return (
-    <HeaderAuthProvider initialUser={previewUser(scenario.identity)}>
-      <I18nextProvider i18n={runtime}>
-        <RouterProvider router={router} />
-      </I18nextProvider>
-    </HeaderAuthProvider>
+    <LocaleNavigationProvider
+      locales={previewLocaleOptions}
+      onLocaleChange={(locale) => {
+        if (!isPreviewLocale(locale)) return;
+        setPreviewLocale(locale);
+        try {
+          window.sessionStorage.setItem(PREVIEW_LOCALE_STORAGE_KEY, locale);
+        } catch {
+          // Preview storage is optional; the active iframe still switches immediately.
+        }
+      }}
+    >
+      <HeaderAuthProvider initialUser={previewUser(activeScenario.identity)}>
+        <I18nextProvider i18n={runtime}>
+          <RouterProvider router={router} />
+        </I18nextProvider>
+      </HeaderAuthProvider>
+    </LocaleNavigationProvider>
   );
 }
 
@@ -403,7 +497,7 @@ function previewRouter(scenario: Scenario) {
   ], { initialEntries: [scenario.path] });
 }
 
-function PreviewUnderDevelopment({ locale }: { locale: "en" | "he" }) {
+function PreviewUnderDevelopment({ locale }: { locale: PreviewLocale }) {
   const [searchParams] = useSearchParams();
   return (
     <UnderDevelopmentView
@@ -430,11 +524,13 @@ function previewElement(scenario: Scenario) {
         <CategoryView
           locale={scenario.locale}
           category={
-            scenario.id === "category-empty-ltr"
+            scenario.variant === "empty-category"
               ? emptyCategory
-              : scenario.direction === "rtl"
-                ? categoryRtl
-                : category
+              : scenario.locale === "ru"
+                ? categoryRu
+                : scenario.direction === "rtl"
+                  ? categoryRtl
+                  : category
           }
         />
       );
@@ -442,9 +538,9 @@ function previewElement(scenario: Scenario) {
       return (
         <SectionView
           locale={scenario.locale}
-          section={scenario.direction === "rtl" ? sectionRtl : section}
+          section={scenario.locale === "ru" ? sectionRu : scenario.direction === "rtl" ? sectionRtl : section}
           canCreateTopic
-          actionData={scenario.id === "section-form-error-ltr" ? { error: "rateLimited" } : undefined}
+          actionData={scenario.variant === "section-form-error" ? { error: "rateLimited" } : undefined}
         />
       );
     case "empty":
@@ -453,24 +549,39 @@ function previewElement(scenario: Scenario) {
           locale={scenario.locale}
           section={{
             id: "empty",
-            name: "New community section",
-            category: { id: categoryId, name: "Development" },
+            name: scenario.locale === "ru"
+              ? "Новый раздел сообщества"
+              : scenario.locale === "he"
+                ? "מדור קהילה חדש"
+                : "New community section",
+            category: {
+              id: categoryId,
+              name: scenario.locale === "ru"
+                ? "Разработка"
+                : scenario.locale === "he"
+                  ? "פיתוח"
+                  : "Development",
+            },
             topics: [],
           }}
           canCreateTopic={false}
         />
       );
     case "topic": {
+      const solved = scenario.variant !== "topic-unsolved"
+        && scenario.variant !== "topic-reply-error"
+        && scenario.variant !== "topic-tools";
       const data = topicData(
         scenario.locale,
         scenario.direction,
         scenario.identity,
-        scenario.id !== "topic-unsolved-ltr" && scenario.id !== "topic-reply-error-ltr",
+        solved,
+        scenario.identity === "manager",
       );
       return (
         <TopicView
           {...data}
-          actionData={scenario.id === "topic-reply-error-ltr" ? { error: "rateLimited" } : undefined}
+          actionData={scenario.variant === "topic-reply-error" ? { error: "rateLimited" } : undefined}
         />
       );
     }
@@ -484,12 +595,14 @@ function previewElement(scenario: Scenario) {
 }
 
 function topicData(
-  locale: "en" | "he",
+  locale: PreviewLocale,
   direction: Direction,
   identity: PreviewIdentity,
   solved: boolean,
+  showSecondaryControls: boolean,
 ) {
   const rtl = direction === "rtl";
+  const russian = locale === "ru";
   const baseTopic = {
     ...topic,
     isSolved: solved,
@@ -507,6 +620,13 @@ function topicData(
       ...post,
       authorName: ["נועה לוי", "יואב כהן", "מאיה כהן"][index]!,
     })),
+  } : russian ? {
+    ...baseTopic,
+    section: {
+      ...baseTopic.section,
+      name: "TypeScript и архитектура",
+      category: { id: categoryId, name: "Разработка" },
+    },
   } : baseTopic;
 
   return {
@@ -514,12 +634,53 @@ function topicData(
     topic: translatedTopic,
     titlePresentation: topicTitlePresentation(rtl),
     postPresentations: postPresentations(rtl),
-    generationUnits: [],
+    generationUnits: showSecondaryControls && locale !== "en"
+      ? topicToolsGenerationUnits(locale)
+      : [],
     canReply: identity !== "guest",
-    canManageSolution: false,
-    canCorrectTitleSourceLocale: false,
-    correctablePostIds: [],
+    canManageSolution: showSecondaryControls,
+    canCorrectTitleSourceLocale: showSecondaryControls,
+    correctablePostIds: showSecondaryControls
+      ? translatedTopic.posts.map((post) => post.id)
+      : [],
   };
+}
+
+function topicToolsGenerationUnits(
+  targetLocale: PreviewLocale,
+): ContentGenerationUnitView[] {
+  return [
+    {
+      key: JSON.stringify(["topic-title", topicId, "title-r1", targetLocale]),
+      contentType: "topic-title",
+      contentId: topicId,
+      revisionId: "title-r1",
+      targetLocale,
+      state: "current",
+      automatic: false,
+      explicitRequired: false,
+    },
+    {
+      key: JSON.stringify(["post-body", "answer", "post-r2", targetLocale]),
+      contentType: "post-body",
+      contentId: "answer",
+      revisionId: "post-r2",
+      targetLocale,
+      state: "current",
+      automatic: false,
+      explicitRequired: false,
+    },
+    {
+      key: JSON.stringify(["post-body", "followup", "post-r3", targetLocale]),
+      contentType: "post-body",
+      contentId: "followup",
+      revisionId: "post-r3",
+      targetLocale,
+      state: "failed",
+      automatic: false,
+      explicitRequired: false,
+    },
+  ];
 }
 
 function authorizationData(locale: string) {

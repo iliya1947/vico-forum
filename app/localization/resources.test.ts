@@ -168,8 +168,71 @@ describe("UI translation resources", () => {
     );
   });
 
-  it("validates every real manual pack without requiring zero stale entries", async () => {
-    await expect(validateTranslationPacks(manualTranslationPacks)).resolves.toHaveProperty("staleKeys");
+  it("keeps the reviewed Russian and Hebrew packs complete and current", async () => {
+    const canonicalKeys = Object.keys(canonicalEnglishCatalog.common).sort();
+    const validation = await validateTranslationPacks(manualTranslationPacks);
+
+    expect(Object.keys(manualTranslationPacks.ru?.common ?? {}).sort()).toEqual(canonicalKeys);
+    expect(Object.keys(manualTranslationPacks.he?.common ?? {}).sort()).toEqual(canonicalKeys);
+    expect(validation.staleKeys.ru ?? []).toEqual([]);
+    expect(validation.staleKeys.he ?? []).toEqual([]);
+  });
+
+  it.each([
+    {
+      locale: "ru",
+      direction: "ltr" as const,
+      nativeName: "Русский",
+      expected: {
+        topicTools: "Инструменты темы",
+        messageTools: "Инструменты сообщения",
+        sourceLocale: "Язык оригинала: en",
+        one: "1 сообщение",
+        two: "2 сообщения",
+        many: "5 сообщений",
+      },
+    },
+    {
+      locale: "he",
+      direction: "rtl" as const,
+      nativeName: "עברית",
+      expected: {
+        topicTools: "כלי נושא",
+        messageTools: "כלי הודעה",
+        sourceLocale: "שפת המקור: en",
+        one: "1 הודעה",
+        two: "2 הודעות",
+        many: "5 הודעות",
+      },
+    },
+  ])("loads the complete $locale manual pack without English fallback for reviewed UI", async ({
+    locale: targetLocale,
+    direction,
+    nativeName,
+    expected,
+  }) => {
+    const snapshot = await new TranslationResourceLoader([
+      new LocalTranslationSource(manualTranslationPacks),
+      new CanonicalEnglishSource(),
+    ]).load({
+      translationLocale: targetLocale,
+      fallbackLocales: ["en"],
+      direction,
+      formatting: { locale: targetLocale, timeZone: "UTC" },
+      nativeName,
+      presentationMetadata: {},
+    }, ["common"]);
+    const runtime = createTranslationRuntime(snapshot);
+
+    expect(snapshot.staleKeys[targetLocale] ?? []).toEqual([]);
+    expect(Object.keys(snapshot.resourcesByLocale[targetLocale]?.common ?? {}).length)
+      .toBeGreaterThan(Object.keys(canonicalEnglishCatalog.common).length);
+    expect(runtime.t("topicTools")).toBe(expected.topicTools);
+    expect(runtime.t("messageTools")).toBe(expected.messageTools);
+    expect(runtime.t("sourceLocaleCurrent", { locale: "en" })).toBe(expected.sourceLocale);
+    expect(runtime.t("messageCount", { count: 1 })).toBe(expected.one);
+    expect(runtime.t("messageCount", { count: 2 })).toBe(expected.two);
+    expect(runtime.t("messageCount", { count: 5 })).toBe(expected.many);
   });
 
   it("rejects unknown identities and invalid current translations during full-pack validation", async () => {
