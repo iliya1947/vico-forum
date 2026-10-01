@@ -3844,3 +3844,522 @@ p {
     width: 100%;
   }
 }
+
+
+/* Authorization management: keep the dynamic permission model readable without changing mutations. */
+.admin-shell .forum-content {
+  background: var(--color-canvas);
+}
+
+.admin-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0;
+  padding: 1rem;
+  border-inline: 1px solid var(--color-border);
+  border-block-end: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.admin-heading .eyebrow,
+.admin-section-heading .eyebrow {
+  margin: 0;
+  color: var(--color-accent);
+  font-size: 0.66rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-heading h1,
+.admin-section-heading h2 {
+  margin: 0.12rem 0 0;
+  color: var(--color-text);
+  line-height: 1.2;
+}
+
+.admin-heading h1 {
+  font-size: clamp(1.35rem, 3vw, 1.85rem);
+}
+
+.admin-result {
+  max-width: 28rem;
+  margin: 0;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  background: var(--color-surface-muted);
+  font-size: 0.76rem;
+  font-weight: 750;
+  line-height: 1.4;
+}
+
+.admin-result-success {
+  border-inline-start: 0.25rem solid var(--color-accent);
+  color: var(--color-text);
+}
+
+.admin-result-error {
+  border-inline-start: 0.25rem solid var(--color-danger);
+  color: var(--color-danger);
+}
+
+.admin-workspace {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.admin-section {
+  min-width: 0;
+}
+
+.admin-section-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-block-end: 0.55rem;
+}
+
+.admin-section-heading h2 {
+  font-size: 1.15rem;
+}
+
+.admin-section-count,
+.admin-meta-count,
+.admin-badge,
+.admin-muted-badge {
+  display: inline-flex;
+  min-height: 1.55rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0.18rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.admin-section-count,
+.admin-badge {
+  border: 1px solid var(--color-accent);
+  color: var(--color-accent-hover);
+  background: var(--color-accent-soft);
+}
+
+.admin-meta-count,
+.admin-muted-badge {
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  background: var(--color-surface-muted);
+}
+
+.admin-create-role,
+.admin-card {
+  border: 1px solid var(--color-border);
+  border-radius: 0.6rem;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-panel);
+}
+
+.admin-create-role {
+  display: grid;
+  grid-template-columns: minmax(10rem, 0.8fr) minmax(12rem, 1fr) auto;
+  gap: 0.7rem;
+  align-items: end;
+  margin-block-end: 0.65rem;
+  padding: 0.75rem;
+}
+
+.admin-create-role label,
+.admin-rename-role label,
+.admin-role-assignment label {
+  display: grid;
+  min-width: 0;
+  gap: 0.3rem;
+  color: var(--color-text);
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.admin-create-role input,
+.admin-rename-role input,
+.admin-role-assignment select,
+.admin-override-row select {
+  width: 100%;
+  min-height: 2.15rem;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 0.4rem;
+  color: var(--color-text);
+  background: var(--color-surface-muted);
+  font: inherit;
+  font-size: 0.76rem;
+}
+
+.admin-create-role input:focus,
+.admin-rename-role input:focus,
+.admin-role-assignment select:focus,
+.admin-override-row select:focus {
+  border-color: var(--color-accent);
+  background: var(--color-surface);
+  outline: 0.13rem solid var(--color-accent-soft);
+  outline-offset: 0.06rem;
+}
+
+.admin-primary-action,
+.admin-secondary-action,
+.admin-compact-action,
+.admin-danger-action {
+  display: inline-flex;
+  min-height: 2.15rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0.42rem 0.7rem;
+  border-radius: 0.4rem;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.admin-primary-action {
+  border: 1px solid var(--color-accent);
+  color: var(--color-action-on-accent);
+  background: var(--color-accent);
+}
+
+.admin-primary-action:hover,
+.admin-primary-action:focus-visible {
+  border-color: var(--color-accent-hover);
+  background: var(--color-accent-hover);
+}
+
+.admin-secondary-action,
+.admin-compact-action {
+  border: 1px solid var(--color-border-strong);
+  color: var(--color-text);
+  background: var(--color-surface);
+}
+
+.admin-secondary-action:hover,
+.admin-secondary-action:focus-visible,
+.admin-compact-action:hover,
+.admin-compact-action:focus-visible {
+  border-color: var(--color-accent);
+  color: var(--color-accent-hover);
+}
+
+.admin-role-list,
+.admin-user-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.admin-card {
+  min-width: 0;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+.admin-card-heading {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding: 0.75rem 0.85rem;
+  border-block-end: 1px solid var(--color-border);
+  background: var(--color-surface-muted);
+}
+
+.admin-card-title,
+.admin-card-badges {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.admin-card-title h3,
+.admin-user-identity h3 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 0.9rem;
+  line-height: 1.2;
+}
+
+.admin-card-title code,
+.admin-user-identity small {
+  color: var(--color-text-muted);
+  font-size: 0.68rem;
+}
+
+.admin-rename-role {
+  display: grid;
+  grid-template-columns: minmax(12rem, 1fr) auto;
+  gap: 0.55rem;
+  align-items: end;
+  padding: 0.7rem 0.85rem;
+  border-block-end: 1px solid var(--color-border);
+}
+
+.admin-permissions-form {
+  padding: 0.75rem 0.85rem 0.85rem;
+}
+
+.admin-permissions-form fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.admin-permissions-form legend,
+.admin-user-panel h4 {
+  margin: 0 0 0.55rem;
+  padding: 0;
+  color: var(--color-text);
+  font-size: 0.72rem;
+  font-weight: 850;
+}
+
+.admin-permission-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.35rem;
+}
+
+.admin-permission-option {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  min-height: 2.15rem;
+  padding: 0.38rem 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.4rem;
+  color: var(--color-text-muted);
+  background: var(--color-surface-muted);
+  cursor: pointer;
+}
+
+.admin-permission-option:hover,
+.admin-permission-option:focus-within {
+  border-color: var(--color-accent);
+  color: var(--color-text);
+}
+
+.admin-permission-option input {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  accent-color: var(--color-accent);
+}
+
+.admin-permission-option code,
+.admin-override-row code,
+.admin-effective-permissions code {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 0.67rem;
+  unicode-bidi: isolate;
+}
+
+.admin-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-block-start: 0.65rem;
+}
+
+.admin-danger-zone {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0.65rem 0.85rem;
+  border-block-start: 1px solid var(--color-border);
+  background: color-mix(in srgb, var(--color-danger) 4%, var(--color-surface));
+}
+
+.admin-danger-zone form {
+  margin: 0;
+}
+
+.admin-danger-action {
+  border: 1px solid color-mix(in srgb, var(--color-danger) 65%, var(--color-border));
+  color: var(--color-danger);
+  background: transparent;
+}
+
+.admin-danger-action:hover,
+.admin-danger-action:focus-visible {
+  background: color-mix(in srgb, var(--color-danger) 10%, transparent);
+}
+
+.admin-user-identity {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.admin-user-identity > div {
+  min-width: 0;
+}
+
+.admin-user-identity small {
+  display: block;
+  overflow: hidden;
+  margin-block-start: 0.15rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-user-avatar {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  flex: none;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--color-action-on-accent);
+  background: var(--color-accent);
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.admin-user-body {
+  display: grid;
+  gap: 0;
+}
+
+.admin-user-panel {
+  min-width: 0;
+  padding: 0.75rem 0.85rem;
+}
+
+.admin-user-panel + .admin-user-panel {
+  border-block-start: 1px solid var(--color-border);
+}
+
+.admin-role-assignment {
+  display: grid;
+  grid-template-columns: minmax(10rem, 16rem) auto auto;
+  gap: 0.55rem;
+  align-items: end;
+}
+
+.admin-muted-badge {
+  align-self: center;
+}
+
+.admin-override-list {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.admin-override-row {
+  display: grid;
+  grid-template-columns: minmax(12rem, 1fr) minmax(7rem, 9rem) auto;
+  gap: 0.5rem;
+  align-items: center;
+  min-width: 0;
+  padding: 0.38rem 0.45rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.4rem;
+  background: var(--color-surface-muted);
+}
+
+.admin-effective-permissions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-effective-permissions li {
+  max-width: 100%;
+  padding: 0.26rem 0.45rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  color: var(--color-text-muted);
+  background: var(--color-surface-muted);
+}
+
+@media (max-width: 52rem) {
+  .admin-create-role {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .admin-create-role .admin-primary-action {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+
+  .admin-permission-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 38rem) {
+  .admin-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-workspace {
+    padding: 0.75rem;
+  }
+
+  .admin-create-role,
+  .admin-rename-role,
+  .admin-role-assignment,
+  .admin-override-row {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-create-role .admin-primary-action,
+  .admin-rename-role .admin-secondary-action,
+  .admin-role-assignment .admin-secondary-action,
+  .admin-compact-action {
+    width: 100%;
+    justify-self: stretch;
+  }
+
+  .admin-card-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .admin-card-badges {
+    width: 100%;
+  }
+
+  .admin-form-actions {
+    justify-content: stretch;
+  }
+
+  .admin-form-actions .admin-primary-action {
+    width: 100%;
+  }
+
+  .admin-danger-zone {
+    justify-content: stretch;
+  }
+
+  .admin-danger-zone form,
+  .admin-danger-action {
+    width: 100%;
+  }
+
+  .admin-user-identity {
+    width: 100%;
+  }
+}
