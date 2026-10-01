@@ -57,13 +57,13 @@ Vico Forum находится в ранней pre-release разработке.
   clickable cards с реальными counts и orange entry rail, добавлены responsive/RTL-safe geometry
   и representative LTR/RTL/empty-category Pages states. Repository CI и Pages для принятой
   реализации проходят. Следующая bounded UI/UX подзадача после merge — Section page.
-- Section-page discovery slice реализован в отдельном PR поверх принятого homepage/category
-  visual standard: approved header/logo/discovery nav переиспользованы без backend/DB изменений;
-  heading показывает только derived topic/message totals, topic rows стали full-card links с
-  реальными author/message данными и orange entry rail, create-topic остаётся существующим
-  section-local write flow с компактным in-page entry point, добавлены responsive/RTL/empty-section
-  presentation states. Repository CI и Pages для текущей реализации проходят; owner visual
-  acceptance этого slice ещё не зафиксирована.
+- Section-page discovery slice в PR #160 прошёл owner visual acceptance в GitHub Pages:
+  approved header/logo/discovery nav переиспользованы без backend/DB изменений; heading показывает
+  только derived topic/message totals, topic rows стали full-card links с реальными author/message
+  данными и orange entry rail, create-topic остаётся существующим section-local write flow с
+  компактным in-page entry point, добавлены responsive/RTL/empty-section presentation states.
+  Repository CI и Pages для принятой реализации проходят. Следующая bounded UI/UX подзадача после
+  merge — Topics/messages/participation.
 - Target search, notifications и незавершённые footer/product entry points во время owner-only
   pre-release ведут на общую `Under development` page/checklist вместо fake behavior.
 - Для owner-only pre-release незавершённые approved target functions могут оставаться видимыми и
