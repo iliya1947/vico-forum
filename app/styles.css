@@ -1415,6 +1415,10 @@ p {
     grid-template-columns: 1fr;
   }
 
+  .home-shell .site-tagline {
+    white-space: normal;
+  }
+
   .brand-lockup,
   .site-header-actions,
   .site-search {
@@ -1512,8 +1516,11 @@ p {
   }
 
   .home-shell .site-tagline {
-    max-width: 15rem;
+    max-width: none;
+    overflow: visible;
     font-size: 0.72rem;
+    text-overflow: clip;
+    white-space: nowrap;
   }
 
   .home-shell .site-search {
