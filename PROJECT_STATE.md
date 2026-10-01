@@ -71,7 +71,8 @@ Vico Forum находится в ранней pre-release разработке.
   safe Markdown/code rendering, translation provenance/original disclosure и текущие protected
   controls; добавлены responsive/RTL-safe geometry и solved/unsolved/translated preview states.
   Full authoring-form redesign и secondary-control cleanup остаются отдельными следующими slices.
-  CI/Pages и owner visual acceptance PR #161 ещё не зафиксированы.
+  Repository CI и Pages для текущей реализации проходят; owner visual acceptance PR #161 ещё не
+  зафиксирована.
 - Target search, notifications и незавершённые footer/product entry points во время owner-only
   pre-release ведут на общую `Under development` page/checklist вместо fake behavior.
 - Для owner-only pre-release незавершённые approved target functions могут оставаться видимыми и
