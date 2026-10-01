@@ -181,7 +181,7 @@ describe.each([
     expect(topicData.generationUnits).toEqual([]);
 
     const homeView = renderRoute(Home, home, `/${locale}`, locale, direction);
-    expect(await screen.findByRole("link", { name: /Development/ })).toHaveAttribute("href", `/${locale}/categories/development%2Fcore`);
+    expect(await screen.findByRole("link", { name: "Development" })).toHaveAttribute("href", `/${locale}/categories/development%2Fcore`);
     expect(document.querySelector(`[dir="${direction}"]`)).toBeInTheDocument();
     homeView.unmount();
 
