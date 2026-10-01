@@ -45,6 +45,7 @@ export const canonicalEnglishCatalog = {
     },
     forumTagline: message("forumTagline", "Questions, discussions, and practical answers", "Forum header tagline."),
     primaryNavigation: message("primaryNavigation", "Primary navigation", "Accessible label for the forum primary navigation."),
+    skipToContent: message("skipToContent", "Skip to content", "Keyboard shortcut link that moves focus past the shared forum header."),
     themeLabel: message("themeLabel", "Theme", "Theme control label before the client preference is resolved."),
     lightTheme: message("lightTheme", "Light", "Compact label for switching to the light theme."),
     darkTheme: message("darkTheme", "Dark", "Compact label for switching to the dark theme."),
