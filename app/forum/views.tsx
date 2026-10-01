@@ -532,6 +532,18 @@ export function TopicView({
   const forumWriteError = actionData && !("operation" in actionData)
     ? actionData.error
     : null;
+  const originalPost = topic.posts[0];
+  const bestAnswerPost = topic.bestAnswerPostId
+    ? topic.posts.find((post) => post.id === topic.bestAnswerPostId)
+    : undefined;
+  const orderedPosts = originalPost
+    ? [
+        originalPost,
+        ...(bestAnswerPost && bestAnswerPost.id !== originalPost.id ? [bestAnswerPost] : []),
+        ...topic.posts.slice(1).filter((post) => post.id !== bestAnswerPost?.id),
+      ]
+    : [];
+  const messageNumberById = new Map(topic.posts.map((post, index) => [post.id, index + 1]));
   const { t } = useTranslation("common");
 
   return (
@@ -539,29 +551,40 @@ export function TopicView({
       pageIdentity={JSON.stringify([locale, topic.id])}
       units={generationUnits}
     >
-      <ForumShell locale={locale}>
+      <ForumShell locale={locale} variant="topic">
         <Breadcrumbs locale={locale} items={[
           { label: topic.section.category.name, to: forumCategoryPath(locale, topic.section.category.id) },
           { label: topic.section.name, to: forumSectionPath(locale, topic.section.id) },
           { label: titlePresentation.content },
         ]} />
-        <section className="page-heading">
-          <p className="eyebrow">{t("topicLabel")}</p>
-          <TopicTitlePresentation presentation={titlePresentation} />
-          <ContentGenerationUnitStatus unit={generationByContentId.get(topic.id)} />
-          <p>{t("startedBy", { author: topic.authorName })}</p>
-          {topic.isSolved && <strong className="solved-badge">{t("solved")}</strong>}
-          {topic.bestAnswerPostId && (
-            <p><a href={`#post-${encodeURIComponent(topic.bestAnswerPostId)}`}>{t("goToSolution")}</a></p>
-          )}
-          {canManageSolution && !topic.isSolved && (
-            <Form method="post">
-              <input type="hidden" name="intent" value="markSolved" />
-              <button type="submit">{t("markSolved")}</button>
-            </Form>
-          )}
+
+        <section className="topic-heading">
+          <div className="topic-heading-main">
+            <p className="eyebrow">{t("topicLabel")}</p>
+            <TopicTitlePresentation presentation={titlePresentation} />
+            <ContentGenerationUnitStatus unit={generationByContentId.get(topic.id)} />
+            <div className="topic-heading-meta">
+              <span>{t("startedBy", { author: topic.authorName })}</span>
+              {topic.isSolved && <strong className="solved-badge">{t("solved")}</strong>}
+            </div>
+          </div>
+
+          <div className="topic-heading-actions">
+            {topic.bestAnswerPostId && (
+              <a className="topic-solution-link" href={`#post-${encodeURIComponent(topic.bestAnswerPostId)}`}>
+                {t("goToSolution")}
+              </a>
+            )}
+            {canManageSolution && !topic.isSolved && (
+              <Form method="post">
+                <input type="hidden" name="intent" value="markSolved" />
+                <button type="submit">{t("markSolved")}</button>
+              </Form>
+            )}
+          </div>
+
           {canCorrectTitleSourceLocale && (
-            <Form method="post" className="source-locale-form">
+            <Form method="post" className="source-locale-form topic-heading-secondary">
               <input type="hidden" name="intent" value="correctTitleSourceLocale" />
               <input type="hidden" name="expectedRevisionId" value={topic.title.id} />
               <p>{t("sourceLocaleCurrent", { locale: topic.title.sourceLocale })}</p>
@@ -578,58 +601,94 @@ export function TopicView({
             </Form>
           )}
         </section>
-        {correctionError && <p role="alert">{t(`sourceLocaleCorrectionError_${correctionError}`)}</p>}
-        {forumWriteError && <p role="alert">{t(`forumWriteError_${forumWriteError}`)}</p>}
-        {topic.posts.length === 0 ? <EmptyState>{t("postsEmpty")}</EmptyState> : (
-          <ol className="post-list">
-            {topic.posts.map((post, index) => (
-              <li
-                id={`post-${post.id}`}
-                className={`forum-post${topic.bestAnswerPostId === post.id ? " best-answer" : ""}`}
-                key={post.id}
-              >
-                <header>
-                  <strong>{post.authorName}</strong>
-                  <span>{t("postNumber", { number: index + 1 })}</span>
-                </header>
-                <div className="forum-post-content">
-                  {topic.bestAnswerPostId === post.id && (
-                    <strong className="best-answer-label">{t("bestAnswer")}</strong>
-                  )}
-                  <PostBodyPresentation presentation={presentedPosts.get(post.id)!} />
-                  <ContentGenerationUnitStatus unit={generationByContentId.get(post.id)} />
-                  {correctablePosts.has(post.id) && (
-                    <Form method="post" className="source-locale-form">
-                      <input type="hidden" name="intent" value="correctPostSourceLocale" />
-                      <input type="hidden" name="postId" value={post.id} />
-                      <input type="hidden" name="expectedRevisionId" value={post.body.id} />
-                      <p>{t("sourceLocaleCurrent", { locale: post.body.sourceLocale })}</p>
-                      <label>
-                        {t("sourceLocaleCorrectionInput")}
-                        <input
-                          name="sourceLocale"
-                          required
-                          defaultValue={post.body.sourceLocale === "und" ? "" : post.body.sourceLocale}
-                          autoComplete="off"
-                        />
-                      </label>
-                      <button type="submit">{t("sourceLocaleCorrectionSubmit")}</button>
-                    </Form>
-                  )}
-                  {canManageSolution && topic.isSolved && topic.bestAnswerPostId !== post.id && (
-                    <Form method="post" className="solution-form">
-                      <input type="hidden" name="intent" value="selectBestAnswer" />
-                      <input type="hidden" name="postId" value={post.id} />
-                      <button type="submit">{t("selectBestAnswer")}</button>
-                    </Form>
-                  )}
-                </div>
-              </li>
-            ))}
+
+        {correctionError && <p className="topic-page-alert" role="alert">{t(`sourceLocaleCorrectionError_${correctionError}`)}</p>}
+        {forumWriteError && <p className="topic-page-alert" role="alert">{t(`forumWriteError_${forumWriteError}`)}</p>}
+
+        {orderedPosts.length === 0 ? (
+          <div className="topic-empty">
+            <EmptyState>{t("postsEmpty")}</EmptyState>
+          </div>
+        ) : (
+          <ol className="post-list topic-message-list">
+            {orderedPosts.map((post) => {
+              const messageNumber = messageNumberById.get(post.id)!;
+              const isOriginalQuestion = post.id === originalPost?.id;
+              const isBestAnswer = topic.bestAnswerPostId === post.id;
+
+              return (
+                <li
+                  id={`post-${post.id}`}
+                  className={[
+                    "forum-post",
+                    "topic-message",
+                    isOriginalQuestion ? "original-question" : "",
+                    isBestAnswer ? "best-answer" : "",
+                  ].filter(Boolean).join(" ")}
+                  key={post.id}
+                >
+                  <header className="topic-message-author">
+                    <span className="topic-message-avatar" aria-hidden="true">
+                      {post.authorName.trim().slice(0, 1).toUpperCase()}
+                    </span>
+                    <span className="topic-message-author-copy">
+                      <strong>{post.authorName}</strong>
+                    </span>
+                  </header>
+
+                  <div className="forum-post-content">
+                    <div className="topic-message-toolbar">
+                      <span className="topic-message-labels">
+                        {isOriginalQuestion && (
+                          <strong className="original-question-label">{t("originalQuestion")}</strong>
+                        )}
+                        {isBestAnswer && (
+                          <strong className="best-answer-label">{t("bestAnswer")}</strong>
+                        )}
+                      </span>
+                      <a className="topic-message-anchor" href={`#post-${encodeURIComponent(post.id)}`}>
+                        {t("postNumber", { number: messageNumber })}
+                      </a>
+                    </div>
+
+                    <PostBodyPresentation presentation={presentedPosts.get(post.id)!} />
+                    <ContentGenerationUnitStatus unit={generationByContentId.get(post.id)} />
+
+                    {correctablePosts.has(post.id) && (
+                      <Form method="post" className="source-locale-form">
+                        <input type="hidden" name="intent" value="correctPostSourceLocale" />
+                        <input type="hidden" name="postId" value={post.id} />
+                        <input type="hidden" name="expectedRevisionId" value={post.body.id} />
+                        <p>{t("sourceLocaleCurrent", { locale: post.body.sourceLocale })}</p>
+                        <label>
+                          {t("sourceLocaleCorrectionInput")}
+                          <input
+                            name="sourceLocale"
+                            required
+                            defaultValue={post.body.sourceLocale === "und" ? "" : post.body.sourceLocale}
+                            autoComplete="off"
+                          />
+                        </label>
+                        <button type="submit">{t("sourceLocaleCorrectionSubmit")}</button>
+                      </Form>
+                    )}
+
+                    {canManageSolution && topic.isSolved && topic.bestAnswerPostId !== post.id && (
+                      <Form method="post" className="solution-form">
+                        <input type="hidden" name="intent" value="selectBestAnswer" />
+                        <input type="hidden" name="postId" value={post.id} />
+                        <button type="submit">{t("selectBestAnswer")}</button>
+                      </Form>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
           </ol>
         )}
+
         {canReply && (
-          <Form method="post" className="forum-write-form">
+          <Form method="post" className="forum-write-form topic-reply-form">
             <h2>{t("replyHeading")}</h2>
             <label>{t("replyBodyLabel")}<textarea name="body" required rows={7} /></label>
             <button type="submit">{t("replySubmit")}</button>

@@ -285,14 +285,29 @@ Remaining discovery work:
 
 ### 4. Topics, messages and participation
 
-- Refine topic status/header, message cards, author metadata, anchors, best-answer treatment,
-  Markdown/code blocks and mixed-direction content.
-- Make create-topic and reply forms clear and responsive, with accessible labels, help/error/status
-  placement, pending behavior and touch-friendly actions.
-- Integrate translation status/original disclosure and source-locale correction without letting
-  secondary controls dominate reading.
-- Verify long titles, long localized strings, code overflow and content with different direction
-  from the surrounding UI.
+Topic-reading/message presentation in PR #161 passed owner visual acceptance in GitHub Pages
+on 2026-10-01:
+
+- the accepted shell/header is reused without changing data contracts;
+- the original question remains first, the selected best answer is promoted directly after it while
+  retaining its original permanent message number/anchor, and the remaining discussion stays linear
+  in repository order;
+- message cards use existing author/content data and preserve safe Markdown/code rendering,
+  translated-content provenance/original disclosure, generation status and protected solution/source-
+  locale actions;
+- representative solved LTR, unsolved LTR and translated RTL states were reviewed in Pages;
+- responsive/RTL-safe geometry is included without adding unavailable reply/quote, profile, unread,
+  draft or notification data.
+
+Remaining participation work:
+
+- redesign create-topic and reply forms with clear responsive fields, accessible labels,
+  help/error/status placement, pending behavior and touch-friendly actions;
+- reduce visual dominance of translation-generation status, source-locale correction and
+  solution-management controls without changing their permissions or server boundaries;
+- continue verifying long titles, long localized strings, code overflow and mixed-direction content;
+- permanent copy-link and future reply/quote relationships remain separate approved product work
+  rather than being invented inside this visual slice.
 
 ### 5. Auth, administration and system states
 

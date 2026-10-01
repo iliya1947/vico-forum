@@ -140,11 +140,11 @@ export function ForumShell({
 }: {
   locale: string;
   children: ReactNode;
-  variant?: "home" | "category" | "section";
+  variant?: "home" | "category" | "section" | "topic";
 }) {
   const { t } = useTranslation("common");
   const authUser = useHeaderAuthUser();
-  const useApprovedHeader = variant === "home" || variant === "category" || variant === "section";
+  const useApprovedHeader = variant === "home" || variant === "category" || variant === "section" || variant === "topic";
 
   return (
     <main className={
@@ -154,7 +154,9 @@ export function ForumShell({
           ? "forum-shell home-shell category-shell"
           : variant === "section"
             ? "forum-shell home-shell section-shell"
-            : "forum-shell"
+            : variant === "topic"
+              ? "forum-shell home-shell topic-shell"
+              : "forum-shell"
     }>
       <header className="site-header">
         <div className="site-header-top">

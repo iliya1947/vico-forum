@@ -347,6 +347,64 @@ describe("forum read states", () => {
     expect(screen.queryByRole("button", { name: "Select as best answer" })).not.toBeInTheDocument();
   });
 
+  it("promotes the selected best answer after the original question without renumbering anchors", async () => {
+    const seed = topic.posts[0]!;
+    const question = {
+      ...seed,
+      id: "question",
+      authorName: "Ada",
+      body: { id: "post-q", originalContent: "Question.", sourceLocale: "en" },
+    };
+    const reply = {
+      ...seed,
+      id: "reply",
+      authorName: "Lin",
+      body: { id: "post-r2", originalContent: "First reply.", sourceLocale: "en" },
+    };
+    const best = {
+      ...seed,
+      id: "best",
+      authorName: "Sam",
+      body: { id: "post-r3", originalContent: "Selected answer.", sourceLocale: "en" },
+    };
+    const later = {
+      ...seed,
+      id: "later",
+      authorName: "Maya",
+      body: { id: "post-r4", originalContent: "Later reply.", sourceLocale: "en" },
+    };
+    const solvedTopic = {
+      ...topic,
+      isSolved: true,
+      bestAnswerPostId: "best",
+      posts: [question, reply, best, later],
+    };
+
+    renderRoute(
+      TopicRoute,
+      topicRenderData(solvedTopic),
+      "/en/topics/typed-api",
+      "en",
+      "ltr",
+    );
+
+    expect(await screen.findByText("Best answer")).toBeInTheDocument();
+
+    const cards = Array.from(document.querySelectorAll(".topic-message"));
+    expect(cards.map((card) => card.id)).toEqual([
+      "post-question",
+      "post-best",
+      "post-reply",
+      "post-later",
+    ]);
+    expect(cards.map((card) => card.querySelector(".topic-message-anchor")?.textContent)).toEqual([
+      "Message #1",
+      "Message #3",
+      "Message #2",
+      "Message #4",
+    ]);
+  });
+
   it("keeps best-answer, body, and solution controls inside one post content region", async () => {
     const followup = {
       ...topic.posts[0]!,

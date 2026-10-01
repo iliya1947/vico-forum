@@ -140,6 +140,7 @@ export const canonicalEnglishCatalog = {
     ),
     startedBy: message("startedBy", "Started by {{author}}", "Name of the topic author.", ["author"]),
     postNumber: message("postNumber", "Message #{{number}}", "Sequential message number.", ["number"]),
+    originalQuestion: message("originalQuestion", "Original question", "Label for the first message in a topic."),
     forumNotFoundHeading: message("forumNotFoundHeading", "Forum page not found", "Forum not-found heading."),
     forumNotFoundBody: message("forumNotFoundBody", "The category, section, or topic does not exist.", "Forum not-found explanation."),
     forumErrorHeading: message("forumErrorHeading", "The forum could not be loaded", "Forum read error heading."),
