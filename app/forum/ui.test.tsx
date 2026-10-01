@@ -2,7 +2,7 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { I18nextProvider } from "react-i18next";
-import { MemoryRouter, useLocation } from "react-router";
+import { createMemoryRouter, MemoryRouter, RouterProvider, useLocation } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { canonicalEnglishCatalog } from "../localization/catalog";
 import { HeaderAuthProvider } from "../auth/auth-controls";
@@ -82,18 +82,23 @@ afterEach(() => {
 
 describe("ForumShell keyboard navigation", () => {
   it("puts a localized skip link first and targets the focusable forum content", async () => {
+    const router = createMemoryRouter([{
+      path: "*",
+      element: (
+        <HeaderAuthProvider initialUser={null}>
+          <ForumShell locale="en" variant="home">
+            <h1>Forum content</h1>
+          </ForumShell>
+        </HeaderAuthProvider>
+      ),
+    }], { initialEntries: ["/en"] });
+
     render(
       <I18nextProvider i18n={runtime()}>
         <LocaleNavigationProvider
           locales={[{ tag: "en", nativeName: "English", direction: "ltr" }]}
         >
-          <HeaderAuthProvider initialUser={null}>
-            <MemoryRouter initialEntries={["/en"]}>
-              <ForumShell locale="en" variant="home">
-                <h1>Forum content</h1>
-              </ForumShell>
-            </MemoryRouter>
-          </HeaderAuthProvider>
+          <RouterProvider router={router} />
         </LocaleNavigationProvider>
       </I18nextProvider>,
     );
