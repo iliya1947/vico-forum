@@ -31,6 +31,9 @@ translation/runtime behavior. Эти границы и финальная produc
 Preview-механизм должен оставаться минимальным, обратимым и переиспользовать ту же presentation
 реализацию, что и приложение. Он может показывать approved target UI states, но не должен
 становиться отдельной реализацией продукта или подменять отсутствующую backend/domain logic.
+Embedded iframe URL включает build-specific cache key, полученный из текущего hashed preview
+bundle, чтобы GitHub Pages не мог после deploy отдать iframe устаревший HTML со ссылкой на уже
+заменённый hashed asset.
 
 ## Source-of-truth boundaries
 
