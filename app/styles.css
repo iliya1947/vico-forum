@@ -4498,16 +4498,16 @@ p {
   }
 
   .home-shell .site-primary-nav .home-discovery-link {
-    width: 2.4rem;
-    min-width: 2.4rem;
-    height: 2.4rem;
-    min-height: 2.4rem;
+    width: 3.2rem;
+    min-width: 3.2rem;
+    height: 2.3rem;
+    min-height: 2.3rem;
     justify-content: center;
     padding: 0;
-    border: 1px solid var(--color-border-strong);
-    border-radius: 0.55rem;
-    color: var(--color-accent);
-    background: var(--color-surface);
+    border: 1px solid var(--color-accent);
+    border-radius: 999px;
+    color: var(--color-action-on-accent);
+    background: var(--color-accent);
   }
 
   .home-shell .site-primary-nav .home-discovery-link > span {
@@ -4521,14 +4521,15 @@ p {
   .home-shell .site-primary-nav .home-discovery-link:hover,
   .home-shell .site-primary-nav .home-discovery-link:focus-visible,
   .home-shell .site-primary-nav .home-discovery-link:active {
-    border-color: var(--color-accent);
-    color: var(--color-accent-hover);
-    background: var(--color-accent-soft);
+    border-color: var(--color-accent-hover);
+    color: var(--color-action-on-accent);
+    background: var(--color-accent-hover);
   }
 
   .home-shell .site-primary-nav .discovery-icon {
     width: 1.15rem;
     height: 1.15rem;
+    color: currentColor;
   }
 }
 
