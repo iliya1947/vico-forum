@@ -263,7 +263,8 @@ Category-page implementation in PR #159 passed owner visual acceptance in GitHub
   orange entry rail;
 - responsive, RTL and empty-category preview states are included.
 
-Section-page implementation is now isolated in the next bounded PR for review:
+Section-page implementation in PR #160 passed owner visual acceptance in GitHub Pages on
+2026-10-01:
 
 - it reuses the accepted homepage/category header and discovery navigation without changing data
   contracts;
@@ -277,7 +278,6 @@ Section-page implementation is now isolated in the next bounded PR for review:
 
 Remaining discovery work:
 
-- complete owner review of the section/topic hierarchy for scanning, counts and clear click targets;
 - continue improving page headings and breadcrumbs where later slices expose edge cases;
 - make remaining empty discovery states useful without implying unavailable product features;
 - preserve the classic forum hierarchy and existing query/data contracts unless acceptance reveals
