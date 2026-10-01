@@ -4486,6 +4486,44 @@ p {
 }
 
 
+/* The compact homepage layout starts at 30rem; below that threshold the section-enter
+   control still needs explicit geometry instead of falling back to the browser's intrinsic SVG. */
+@media (max-width: 29.99rem) {
+  .home-section-enter {
+    grid-column: 1;
+    grid-row: 5;
+    display: grid;
+    min-height: 2.35rem;
+    place-items: center;
+    margin: 0 -1px -1px;
+    border-end-start-radius: 0.5rem;
+    border-end-end-radius: 0.5rem;
+    color: var(--color-action-on-accent);
+    background: var(--color-accent);
+    text-decoration: none;
+  }
+
+  .home-section-enter:hover,
+  .home-section-enter:focus-visible {
+    color: var(--color-action-on-accent);
+    filter: brightness(0.94);
+  }
+
+  .home-section-enter svg {
+    width: 1.25rem;
+    height: 1.25rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 3;
+  }
+
+  :dir(rtl) .home-section-enter svg {
+    transform: rotate(180deg);
+  }
+}
+
 /* Shared shell hardening: keyboard focus, zoom/reflow and bidi-safe navigation. */
 .skip-link {
   position: fixed;
