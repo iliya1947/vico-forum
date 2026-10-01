@@ -509,20 +509,22 @@ export function SectionView({
           )}
 
           <div className="forum-write-fields">
-            <label className="forum-write-field">
-              <span>{t("topicTitleLabel")}</span>
+            <div className="forum-write-field">
+              <label htmlFor="create-topic-title">{t("topicTitleLabel")}</label>
               <input
+                id="create-topic-title"
                 name="title"
                 required
                 disabled={isCreateTopicSubmitting}
                 aria-describedby="create-topic-title-help"
               />
               <small id="create-topic-title-help">{t("topicTitleHelp")}</small>
-            </label>
+            </div>
 
-            <label className="forum-write-field">
-              <span>{t("initialPostLabel")}</span>
+            <div className="forum-write-field">
+              <label htmlFor="create-topic-body">{t("initialPostLabel")}</label>
               <textarea
+                id="create-topic-body"
                 name="body"
                 required
                 rows={8}
@@ -530,7 +532,7 @@ export function SectionView({
                 aria-describedby="create-topic-body-help"
               />
               <small id="create-topic-body-help">{t("messageBodyHelp")}</small>
-            </label>
+            </div>
           </div>
 
           <footer className="forum-write-actions">
@@ -761,9 +763,10 @@ export function TopicView({
             </header>
 
             <div className="forum-write-fields">
-              <label className="forum-write-field">
-                <span>{t("replyBodyLabel")}</span>
+              <div className="forum-write-field">
+                <label htmlFor="reply-body">{t("replyBodyLabel")}</label>
                 <textarea
+                  id="reply-body"
                   name="body"
                   required
                   rows={8}
@@ -771,7 +774,7 @@ export function TopicView({
                   aria-describedby="reply-body-help"
                 />
                 <small id="reply-body-help">{t("messageBodyHelp")}</small>
-              </label>
+              </div>
             </div>
 
             <footer className="forum-write-actions">
