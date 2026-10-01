@@ -1036,7 +1036,7 @@ p {
   padding: 0;
   border: 2px solid var(--color-surface);
   border-radius: 999px;
-  color: var(--color-on-accent);
+  color: var(--color-action-on-accent);
   background: var(--color-accent-hover);
   box-shadow: 0 0.15rem 0.5rem rgb(0 0 0 / 18%);
   font-size: 1.2rem;
@@ -1329,7 +1329,7 @@ p {
 
   .home-shell .brand {
     color: var(--color-text);
-    font-size: 1.65rem;
+    font-size: 2rem;
     line-height: 1;
   }
 
@@ -1384,7 +1384,7 @@ p {
     min-height: 2.1rem;
     padding: 0.42rem 0.82rem;
     border-radius: 0.42rem;
-    color: var(--color-on-accent);
+    color: var(--color-action-on-accent);
     background: var(--color-accent);
     font-size: 0.8rem;
     font-weight: 800;
@@ -1393,7 +1393,7 @@ p {
   }
 
   .home-shell .site-primary-nav a:hover {
-    color: var(--color-on-accent);
+    color: var(--color-action-on-accent);
     background: var(--color-accent-hover);
   }
 
@@ -1600,13 +1600,13 @@ p {
     margin: -1px -1px -1px 0;
     border-start-end-radius: 0.65rem;
     border-end-end-radius: 0.65rem;
-    color: #ffffff;
+    color: var(--color-action-on-accent);
     background: var(--color-accent);
     text-decoration: none;
   }
 
   .home-section-enter:hover {
-    color: #ffffff;
+    color: var(--color-action-on-accent);
     filter: brightness(0.94);
   }
 
@@ -1641,7 +1641,7 @@ p {
     padding: 0;
     border: 0.13rem solid var(--color-surface);
     border-radius: 999px;
-    color: var(--color-on-accent);
+    color: var(--color-action-on-accent);
     background: var(--color-accent);
     box-shadow: 0 0.12rem 0.35rem rgb(0 0 0 / 18%);
     transform: translate(-50%, 50%);
@@ -1737,9 +1737,15 @@ p {
   --color-accent-hover: #c24b12;
   --color-accent-soft: #fbf2ea;
   --color-on-accent: #ffffff;
+  --color-action-on-accent: #101416;
   --color-focus: #9a3800;
   --shadow-panel: 0 0.2rem 0.75rem rgb(37 30 24 / 7%);
   background: var(--color-canvas);
+}
+
+.home-shell .brand {
+  font-size: 1.6rem;
+  font-weight: 900;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -1756,6 +1762,7 @@ p {
     --color-accent-hover: #ff8a50;
     --color-accent-soft: #232120;
     --color-on-accent: #101416;
+    --color-action-on-accent: #ffffff;
     --color-focus: #ff9b67;
     --shadow-panel: 0 0.24rem 0.9rem rgb(0 0 0 / 24%);
   }
@@ -1774,6 +1781,7 @@ p {
   --color-accent-hover: #ff8a50;
   --color-accent-soft: #232120;
   --color-on-accent: #101416;
+  --color-action-on-accent: #ffffff;
   --color-focus: #ff9b67;
   --shadow-panel: 0 0.24rem 0.9rem rgb(0 0 0 / 24%);
 }
@@ -1832,7 +1840,7 @@ p {
 
   .home-shell .brand {
     color: var(--color-text);
-    font-size: 1.5rem;
+    font-size: 1.75rem;
     line-height: 1;
   }
 
@@ -1886,7 +1894,7 @@ p {
     min-height: 2rem;
     padding: 0.4rem 0.68rem;
     border-radius: 0.4rem;
-    color: var(--color-on-accent);
+    color: var(--color-action-on-accent);
     background: var(--color-accent);
     font-size: 0.76rem;
     font-weight: 800;
@@ -1895,7 +1903,7 @@ p {
   }
 
   .home-shell .site-primary-nav a:hover {
-    color: var(--color-on-accent);
+    color: var(--color-action-on-accent);
     background: var(--color-accent-hover);
   }
 
@@ -2082,13 +2090,13 @@ p {
     margin: 0 -1px -1px;
     border-end-start-radius: 0.6rem;
     border-end-end-radius: 0.6rem;
-    color: #ffffff;
+    color: var(--color-action-on-accent);
     background: var(--color-accent);
     text-decoration: none;
   }
 
   .home-section-enter:hover {
-    color: #ffffff;
+    color: var(--color-action-on-accent);
     filter: brightness(0.94);
   }
 
@@ -2121,7 +2129,7 @@ p {
     padding: 0;
     border: 0.12rem solid var(--color-surface);
     border-radius: 999px;
-    color: var(--color-on-accent);
+    color: var(--color-action-on-accent);
     background: var(--color-accent);
     transform: translate(-50%, 50%);
   }
