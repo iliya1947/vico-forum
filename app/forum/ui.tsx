@@ -213,7 +213,7 @@ export function ForumShell({
       <header className="site-header">
         <div className="site-header-top">
           <div className="brand-lockup">
-            <Link className="brand" to={forumIndexPath(locale)} aria-label={t("productName")}>
+            <Link className="brand" dir="ltr" to={forumIndexPath(locale)} aria-label={t("productName")}>
               {useApprovedHeader ? (
                 <>
                   <span className="brand-mark" aria-hidden="true">
