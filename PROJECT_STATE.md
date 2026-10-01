@@ -73,6 +73,15 @@ Vico Forum находится в ранней pre-release разработке.
   responsive/RTL-safe geometry и solved/unsolved/translated preview states. Repository CI и Pages
   для принятой реализации проходят. Full authoring-form redesign и secondary-control cleanup
   остаются отдельными следующими slices.
+- Reply/Create-topic authoring slice реализован отдельным presentation-only PR без backend/DB
+  изменений: существующие section/topic write boundaries сохранены, формы получили компактную
+  panel hierarchy, локализованную guidance/help copy, explicit required-field presentation,
+  touch-friendly actions и responsive/RTL geometry. Non-fetcher React Router `Form` submissions
+  используют `useNavigation` pending state: только отправляемая create-topic/reply form получает
+  `aria-busy`, disabled fields/action и локализованный pending label. Existing server validation,
+  permissions, origin protection и rate-limit semantics не менялись; полноценный editor,
+  drafts/autosave и reply/quote relationships остаются будущими bounded tasks. CI/Pages и owner
+  visual acceptance этого slice ещё не зафиксированы.
 - Target search, notifications и незавершённые footer/product entry points во время owner-only
   pre-release ведут на общую `Under development` page/checklist вместо fake behavior.
 - Для owner-only pre-release незавершённые approved target functions могут оставаться видимыми и
