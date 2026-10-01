@@ -42,6 +42,7 @@ export const scenarios: readonly Scenario[] = [
   { id: "section-ltr", label: "Section · LTR · user", locale: "en", direction: "ltr", identity: "user", path: "/en/sections/typescript", view: "section" },
   { id: "section-rtl", label: "Section · RTL · user", locale: "he", direction: "rtl", identity: "user", path: "/he/sections/typescript", view: "section" },
   { id: "topic-ltr", label: "Solved topic · LTR · user", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api", view: "topic" },
+  { id: "topic-unsolved-ltr", label: "Unsolved topic · LTR · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/topics/typed-api", view: "topic" },
   { id: "topic-rtl", label: "Translated topic · RTL · manager", locale: "he", direction: "rtl", identity: "manager", path: "/he/topics/typed-api", view: "topic" },
   { id: "admin-ltr", label: "Authorization · LTR · manager", locale: "en", direction: "ltr", identity: "manager", path: "/en/admin/authorization", view: "admin" },
   { id: "empty-ltr", label: "Empty section · LTR", locale: "en", direction: "ltr", identity: "guest", path: "/en/sections/empty", view: "empty" },
@@ -191,26 +192,26 @@ const topic = {
       },
     },
     {
-      id: "answer",
-      topicId,
-      authorId: "sam",
-      authorName: "Sam Chen",
-      createdAt: new Date("2026-09-27T11:00:00Z"),
-      body: {
-        id: "post-r2",
-        originalContent: "Separate the HTTP layer from domain types so each boundary can be tested independently.",
-        sourceLocale: "en",
-      },
-    },
-    {
       id: "followup",
       topicId,
       authorId: "maya",
       authorName: "Maya Cohen",
-      createdAt: new Date("2026-09-27T12:00:00Z"),
+      createdAt: new Date("2026-09-27T11:00:00Z"),
       body: {
         id: "post-r3",
         originalContent: "Also test overflow with a long identifier: this-is-a-very-long-unbroken-technical-identifier-that-must-not-break-the-layout",
+        sourceLocale: "en",
+      },
+    },
+    {
+      id: "answer",
+      topicId,
+      authorId: "sam",
+      authorName: "Sam Chen",
+      createdAt: new Date("2026-09-27T12:00:00Z"),
+      body: {
+        id: "post-r2",
+        originalContent: "Separate the HTTP layer from domain types so each boundary can be tested independently.",
         sourceLocale: "en",
       },
     },
@@ -457,7 +458,12 @@ function previewElement(scenario: Scenario) {
         />
       );
     case "topic": {
-      const data = topicData(scenario.locale, scenario.direction);
+      const data = topicData(
+        scenario.locale,
+        scenario.direction,
+        scenario.identity,
+        scenario.id !== "topic-unsolved-ltr",
+      );
       return <TopicView {...data} />;
     }
     case "admin": {
@@ -469,21 +475,31 @@ function previewElement(scenario: Scenario) {
   }
 }
 
-function topicData(locale: "en" | "he", direction: Direction) {
+function topicData(
+  locale: "en" | "he",
+  direction: Direction,
+  identity: PreviewIdentity,
+  solved: boolean,
+) {
   const rtl = direction === "rtl";
-  const translatedTopic = rtl ? {
+  const baseTopic = {
     ...topic,
+    isSolved: solved,
+    bestAnswerPostId: solved ? topic.bestAnswerPostId : null,
+  };
+  const translatedTopic = rtl ? {
+    ...baseTopic,
     authorName: "נועה לוי",
     section: {
-      ...topic.section,
+      ...baseTopic.section,
       name: "TypeScript וארכיטקטורה",
       category: { id: categoryId, name: "פיתוח" },
     },
-    posts: topic.posts.map((post, index) => ({
+    posts: baseTopic.posts.map((post, index) => ({
       ...post,
       authorName: ["נועה לוי", "יואב כהן", "מאיה כהן"][index]!,
     })),
-  } : topic;
+  } : baseTopic;
 
   return {
     locale,
@@ -491,7 +507,7 @@ function topicData(locale: "en" | "he", direction: Direction) {
     titlePresentation: topicTitlePresentation(rtl),
     postPresentations: postPresentations(rtl),
     generationUnits: [],
-    canReply: true,
+    canReply: identity !== "guest",
     canManageSolution: false,
     canCorrectTitleSourceLocale: false,
     correctablePostIds: [],
