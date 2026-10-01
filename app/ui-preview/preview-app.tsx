@@ -242,7 +242,7 @@ function homepageTopic(
   return { id, title, authorName, activityAt };
 }
 
-function homepageCategories(locale: "en" | "he"): HomepageCategoryOverview[] {
+function homepageCategories(locale: PreviewLocale): HomepageCategoryOverview[] {
   const rtl = locale === "he";
   const names = rtl
     ? [
@@ -413,7 +413,7 @@ function previewRouter(scenario: Scenario) {
   ], { initialEntries: [scenario.path] });
 }
 
-function PreviewUnderDevelopment({ locale }: { locale: "en" | "he" }) {
+function PreviewUnderDevelopment({ locale }: { locale: PreviewLocale }) {
   const [searchParams] = useSearchParams();
   return (
     <UnderDevelopmentView
@@ -497,7 +497,7 @@ function previewElement(scenario: Scenario) {
 }
 
 function topicData(
-  locale: "en" | "he",
+  locale: PreviewLocale,
   direction: Direction,
   identity: PreviewIdentity,
   solved: boolean,
@@ -541,7 +541,7 @@ function topicData(
 }
 
 function topicToolsGenerationUnits(
-  targetLocale: "en" | "he",
+  targetLocale: PreviewLocale,
 ): ContentGenerationUnitView[] {
   return [
     {
