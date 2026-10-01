@@ -347,13 +347,21 @@ Authentication header presentation in PR #164 passed owner visual acceptance in 
 - Better Auth client/session behavior, callback safety, locale/RTL handling, authorization and
   Stage 6 external OAuth configuration remain unchanged.
 
+Authorization management presentation is isolated in PR #165 for owner review:
+
+- the existing protected route and every mutation intent/field contract are preserved;
+- roles and users are grouped into compact management cards with clearer assignment, grant,
+  override and effective-permission hierarchy;
+- built-in/custom-role distinctions stay explicit and custom-role deletion is visually separated
+  as a destructive action;
+- representative Pages data includes a custom role/user plus saved/conflict feedback states;
+- dynamic DB-backed authorization, same-origin checks and lockout safeguards remain unchanged.
+
 Remaining work:
 
-- Reorganize authorization management into comprehensible role/user groups while preserving every
-  existing mutation and the dynamic permission model.
 - Unify empty, `401`, `403`, `404`, `409`, `429`, `503` and unexpected-error presentation where the
   current route contracts expose them; include safe recovery/navigation actions only.
-- Keep destructive actions visually distinct and preserve lockout safeguards.
+- Keep lockout safeguards intact while system-state presentation is polished.
 
 ### 6. Responsive, bidirectional and accessibility hardening
 
