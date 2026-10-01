@@ -83,6 +83,13 @@ Vico Forum находится в ранней pre-release разработке.
   менялись; полноценный editor, drafts/autosave и reply/quote relationships остаются будущими
   bounded tasks. Repository CI и Pages для принятой реализации проходят. Следующая bounded
   UI/UX подзадача — secondary translation/source-locale/solution control cleanup.
+- Secondary topic-controls slice реализован в PR #163 без backend/DB/permission изменений:
+  translation-generation feedback остаётся видимым, но получает compact secondary presentation;
+  source-locale correction и solution-management mutations перемещены под native `details`
+  progressive disclosure на уровне topic/message, тогда как `Go to solution` остаётся прямым
+  reading action. Existing mutation intents, same-origin/authz/validation и immutable revision
+  semantics сохранены; добавлены representative manager LTR/RTL preview states. CI/Pages и owner
+  visual acceptance этого slice ещё не зафиксированы.
 - Target search, notifications и незавершённые footer/product entry points во время owner-only
   pre-release ведут на общую `Under development` page/checklist вместо fake behavior.
 - Для owner-only pre-release незавершённые approved target functions могут оставаться видимыми и
