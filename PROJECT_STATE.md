@@ -99,10 +99,12 @@ Vico Forum находится в ранней pre-release разработке.
   feedback верхняя строка оставляет только language/theme controls, а notifications + account
   identity + auth action вынесены в правую часть второй строки рядом с discovery navigation.
   Owner review также выявил desktop truncation forum tagline; current branch снимает искусственный
-  max-width/ellipsis на desktop и оставляет wrapping для узких viewport.
+  max-width/ellipsis на desktop и оставляет wrapping для узких viewport. RTL review дополнительно
+  выявил, что brand identity наследовал page direction и визуально превращался в `ForumVico`;
+  brand link теперь явно изолирован как LTR, при этом весь остальной Hebrew UI остаётся RTL.
   Existing mutation intents, same-origin/authz/validation и immutable revision semantics сохранены.
-  Repository CI и Pages для tagline/header correction проходят; owner visual acceptance ещё не
-  зафиксирована.
+  Fresh CI/Pages для RTL brand correction ещё должны быть подтверждены; owner visual acceptance ещё
+  не зафиксирована.
 - Target search, notifications и незавершённые footer/product entry points во время owner-only
   pre-release ведут на общую `Under development` page/checklist вместо fake behavior.
 - Для owner-only pre-release незавершённые approved target functions могут оставаться видимыми и
