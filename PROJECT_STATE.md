@@ -91,20 +91,21 @@ Vico Forum находится в ранней pre-release разработке.
   полными code-owned manual UI packs для `ru` и `he`: оба содержат значения для всех 170
   текущих canonical `common` keys, используют отдельный fixed reviewed-fingerprint manifest и
   остаются обычными `LocalTranslationSource` overrides без изменения generic LocaleRegistry.
-  Pages preview теперь читает те же manual packs вместо отдельного partial Hebrew dictionary и
-  добавляет representative Russian states. Перед owner visual acceptance branch также получил
-  compact header language selector, который берёт варианты из active LocaleRegistry, сохраняет
-  текущий route remainder/query/hash при смене locale и в Pages preview позволяет переключать
-  текущую representative view между review-языками без отдельного State selection. По owner
-  feedback верхняя строка оставляет только language/theme controls, а notifications + account
-  identity + auth action вынесены в правую часть второй строки рядом с discovery navigation.
+  Pages preview теперь читает те же manual packs вместо отдельного partial Hebrew dictionary.
+  Перед owner visual acceptance branch также получил compact header language selector, который
+  берёт варианты из active LocaleRegistry и сохраняет текущий route remainder/query/hash при смене
+  locale. По owner feedback preview `State` больше не дублирует EN/RU/HE/RTL варианты: он
+  выбирает только representative scenario/identity, а язык меняется внутри самого форума и
+  сохраняется между сменой preview state/viewport в session storage. Верхняя строка оставляет
+  только language/theme controls, а notifications + account identity + auth action вынесены в
+  правую часть второй строки рядом с discovery navigation.
   Owner review также выявил desktop truncation forum tagline; current branch снимает искусственный
   max-width/ellipsis на desktop и оставляет wrapping для узких viewport. RTL review дополнительно
   выявил, что brand identity наследовал page direction и визуально превращался в `ForumVico`;
   brand link теперь явно изолирован как LTR, при этом весь остальной Hebrew UI остаётся RTL.
   Existing mutation intents, same-origin/authz/validation и immutable revision semantics сохранены.
-  Repository CI и Pages для RTL brand correction проходят; owner visual acceptance ещё не
-  зафиксирована.
+  Fresh CI/Pages для locale-independent preview State correction ещё должны быть подтверждены;
+  owner visual acceptance ещё не зафиксирована.
 - Target search, notifications и незавершённые footer/product entry points во время owner-only
   pre-release ведут на общую `Under development` page/checklist вместо fake behavior.
 - Для owner-only pre-release незавершённые approved target functions могут оставаться видимыми и
