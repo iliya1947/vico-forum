@@ -328,7 +328,7 @@ export function CategoryView({
   );
 
   return (
-    <ForumShell locale={locale} variant="discovery">
+    <ForumShell locale={locale} variant="category">
       <Breadcrumbs locale={locale} items={[{ label: category.name }]} />
 
       <section className="category-heading">
