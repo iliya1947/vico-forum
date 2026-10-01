@@ -42,11 +42,12 @@ Vico Forum находится в ранней pre-release разработке.
 - Owner visual review merged homepage frame не принял: Desktop Pages-preview заметно расходился
   с утверждённым mockup по композиции/геометрии category cards; последующие homepage corrections
   закрывают palette/zoom defects и текущие owner-approved navigation/card refinements. Вторая
-  header row теперь предназначена для orange-button discovery entries
-  `Unanswered · Tags · Popular` и authenticated-only `Unread` без дублирующего `Home`; homepage
-  brand lockup усилен относительно tagline, а foreground orange action controls переключается
-  dark-on-orange в Light и light-on-orange в Dark. Forum cards получают compact stats и отдельную
-  full-height orange entry rail. Пока redesigned
+  header row теперь предназначена для icon-led discovery navigation
+  `Unanswered · Tags · Popular` и authenticated-only `Unread` без дублирующего `Home`: без
+  filled button chrome, с neutral text/outline icons в покое и orange hover/focus/active emphasis.
+  Homepage brand lockup усилен относительно tagline, а foreground остальных orange action controls
+  переключается dark-on-orange в Light и light-on-orange в Dark. Forum cards получают compact stats
+  и отдельную full-height orange entry rail. Пока redesigned
   category/section discovery presentation не готова, rail ведёт на общий `Under development`
   path, а не в старый scaffold. `Popular` как реальная страница ещё не реализована и до следующей
   bounded подзадачи также остаётся на `Under development`. Owner visual acceptance homepage всё
