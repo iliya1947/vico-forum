@@ -254,11 +254,21 @@ slice only and does not replace the final real-runtime/browser acceptance matrix
 
 ### 3. Forum discovery beyond the homepage
 
-- Redesign the home/category/section hierarchy for scanning, meaningful counts and clear click
-  targets.
-- Improve page headings and breadcrumbs, including wrapping and RTL order.
-- Make empty sections/categories useful without implying unavailable product features.
-- Preserve the classic forum hierarchy and existing query/data contracts unless acceptance reveals
+Category-page implementation is now isolated in PR #159 for review:
+
+- it reuses the owner-accepted header/logo/discovery navigation without changing data contracts;
+- the category heading exposes only derived section/topic/message totals;
+- section destinations are compact full-card links with real topic/message counts and a dedicated
+  orange entry rail;
+- responsive, RTL and empty-category preview states are included;
+- Section-page implementation remains the next separate bounded subtask and is not included here.
+
+Remaining discovery work:
+
+- redesign the section/topic hierarchy for scanning, meaningful counts and clear click targets;
+- continue improving page headings and breadcrumbs, including wrapping and RTL order;
+- make empty sections useful without implying unavailable product features;
+- preserve the classic forum hierarchy and existing query/data contracts unless acceptance reveals
   a narrowly necessary presentation field.
 
 ### 4. Topics, messages and participation
