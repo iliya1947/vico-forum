@@ -44,7 +44,8 @@ Vico Forum находится в ранней pre-release разработке.
   закрывают palette/zoom defects и текущие owner-approved navigation/card refinements. Вторая
   header row теперь предназначена для icon-led discovery navigation
   `Unanswered · Tags · Popular` и authenticated-only `Unread` без дублирующего `Home`: без
-  filled button chrome, с orange labels, subdued outline icons и accent hover/focus/active emphasis.
+  filled button chrome, с orange labels и orange outline icons; `Popular` использует понятный
+  trending-up symbol, а hover/focus/active усиливает accent.
   Homepage brand lockup использует отдельные owner-provided Light/Dark logo marks с автоматическим
   переключением по активной теме; mark заметно увеличен относительно предыдущего варианта.
   `Vico` остаётся orange, `Forum` — neutral black/light по теме. Foreground остальных orange action controls переключается
