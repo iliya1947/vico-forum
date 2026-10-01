@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-09-30
+Последнее обновление: 2026-10-01
 
 ## Назначение
 
@@ -41,22 +41,16 @@ Vico Forum находится в ранней pre-release разработке.
   использует только существующие forum data для counts/latest topics; отсутствующие pinning и
   online-presence capability не имитируются real data. Это не означает финальную browser/real-runtime
   acceptance всего UI/UX pass.
-- Owner visual review merged homepage frame не принял: Desktop Pages-preview заметно расходился
-  с утверждённым mockup по композиции/геометрии category cards; последующие homepage corrections
-  закрывают palette/zoom defects и текущие owner-approved navigation/card refinements. Вторая
-  header row теперь предназначена для icon-led discovery navigation
-  `Unanswered · Tags · Popular` и authenticated-only `Unread` без дублирующего `Home`: без
-  filled button chrome, с orange labels и orange outline icons; `Popular` использует понятный
-  trending-up symbol, а hover/focus/active усиливает accent.
-  Homepage brand lockup использует отдельные owner-provided Light/Dark logo marks с автоматическим
-  переключением по активной теме; mark заметно увеличен относительно предыдущего варианта.
-  `Vico` остаётся orange, `Forum` — neutral black/light по теме. Foreground остальных orange action controls переключается
-  dark-on-orange в Light и light-on-orange в Dark. Forum cards получают compact stats и отдельную
-  full-height orange entry rail. Пока redesigned
-  category/section discovery presentation не готова, rail ведёт на общий `Under development`
-  path, а не в старый scaffold. `Popular` как реальная страница ещё не реализована и до следующей
-  bounded подзадачи также остаётся на `Under development`. Owner visual acceptance homepage всё
-  ещё открыта; следующие discovery/topic slices не продолжаются.
+- Homepage correction slice прошёл owner visual acceptance в GitHub Pages. Приняты текущая
+  композиция homepage, icon-led discovery navigation `Unanswered · Tags · Popular` и
+  authenticated-only `Unread` без дублирующего `Home`, orange labels/icons и понятный
+  trending-up symbol для `Popular`, theme-aware owner-provided Light/Dark logo marks,
+  `Vico` orange / `Forum` neutral по теме, compact stats и отдельная full-height orange entry
+  rail. Пока redesigned category/section discovery presentation не готова, rail ведёт на общий
+  `Under development` path, а не в старый scaffold. `Popular` как реальная страница ещё не
+  реализована и до отдельной bounded подзадачи также остаётся на `Under development`. Дальнейшая
+  косметическая полировка homepage сейчас не является приоритетом; следующий общий UI/UX шаг —
+  forum discovery beyond homepage.
 - Target search, notifications и незавершённые footer/product entry points во время owner-only
   pre-release ведут на общую `Under development` page/checklist вместо fake behavior.
 - Для owner-only pre-release незавершённые approved target functions могут оставаться видимыми и
@@ -437,16 +431,14 @@ runtime roles/Hyperdrive writes и другие schema-dependent runtime capabil
 Текущий активный маршрут — standalone UI/UX product pass по утверждённому target-product contract:
 
 1. Reproducible visual baseline + GitHub Pages progress preview завершён и merged.
-2. Foundations/homepage implementation технически merged, но owner visual acceptance ещё не
-   пройдена. Текущий correction pass включает approved palette/zoom fixes, discovery navigation
-   `Unanswered · Tags · Popular · Unread(auth only)`, compact stats и vertical orange entry rail
-   на forum cards. Ближайший gate — повторная owner Pages-проверка homepage.
-3. После отдельной команды владельца следующий bounded homepage subtask — реализовать `Popular`
-   как три одновременные activity-period колонки `24 hours / 7 days / 30 days`; до этого его
-   entry point остаётся на `Under development`.
-4. Следующий общий UI/UX шаг после acceptance homepage определяется из
-   `docs/UI_UX_PASS.md`: forum discovery beyond homepage и последующие topic/message/participation
-   improvements. Heavy approved subsystems из `Under development` остаются отдельными bounded tasks.
+2. Foundations/homepage correction slice прошёл owner visual acceptance в GitHub Pages.
+   Дальнейшая косметическая полировка homepage сейчас не является приоритетом.
+3. `Popular` как отдельная bounded homepage/discovery subtask остаётся на `Under development`
+   до отдельной команды владельца; approved destination по-прежнему — три одновременные
+   activity-period колонки `24 hours / 7 days / 30 days`.
+4. Следующий общий UI/UX шаг — forum discovery beyond homepage по `docs/UI_UX_PASS.md`,
+   начиная с category/section presentation; затем topic/message/participation improvements.
+   Heavy approved subsystems из `Under development` остаются отдельными bounded tasks.
 5. Уже существующие product capabilities подключаются к реальным данным/поведению; незавершённые
    approved entry points не имитируют работу и временно ведут на `Under development`.
 6. После каждого implementation slice выполнять targeted automated checks и browser review.
