@@ -454,8 +454,8 @@ describe("forum read states", () => {
     const followupTools = followupPost!.querySelector("details.message-secondary-tools");
     expect(followupTools).not.toBeNull();
     expect(followupTools).not.toHaveAttribute("open");
-    fireEvent.click(followupTools!.querySelector("summary")!);
-    expect(screen.getByRole("button", { name: "Select as best answer" })).toBeInTheDocument();
+    expect(followupTools!.querySelector("summary")).toHaveTextContent("Message tools");
+    expect(screen.getByRole("button", { name: "Select as best answer" }).closest("details")).toBe(followupTools);
   });
 
   it("shows solution controls only to the topic author behind progressive disclosure", async () => {
@@ -465,9 +465,7 @@ describe("forum read states", () => {
     const topicToolsDetails = topicTools.closest("details");
     expect(topicToolsDetails).not.toBeNull();
     expect(topicToolsDetails).not.toHaveAttribute("open");
-    expect(screen.queryByRole("button", { name: "Mark as solved" })).not.toBeInTheDocument();
-    fireEvent.click(topicTools);
-    expect(screen.getByRole("button", { name: "Mark as solved" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Mark as solved" }).closest("details")).toBe(topicToolsDetails);
     authorView.unmount();
 
     renderRoute(TopicRoute, { ...unsolved, canManageSolution: false }, "/en/topics/typed-api", "en", "ltr");
@@ -489,14 +487,17 @@ describe("forum read states", () => {
 
     const topicTools = await screen.findByText("Topic tools");
     const messageTools = screen.getByText("Message tools");
-    expect(topicTools.closest("details")).not.toHaveAttribute("open");
-    expect(messageTools.closest("details")).not.toHaveAttribute("open");
-    expect(screen.queryByRole("button", { name: "Correct language" })).not.toBeInTheDocument();
+    const topicToolsDetails = topicTools.closest("details");
+    const messageToolsDetails = messageTools.closest("details");
+    expect(topicToolsDetails).not.toHaveAttribute("open");
+    expect(messageToolsDetails).not.toHaveAttribute("open");
 
-    fireEvent.click(topicTools);
-    fireEvent.click(messageTools);
-
-    expect(screen.getAllByRole("button", { name: "Correct language" })).toHaveLength(2);
+    const correctionButtons = screen.getAllByRole("button", { name: "Correct language" });
+    expect(correctionButtons).toHaveLength(2);
+    expect(correctionButtons.map((button) => button.closest("details"))).toEqual([
+      topicToolsDetails,
+      messageToolsDetails,
+    ]);
     expect(screen.getAllByText("Source language: en")).toHaveLength(2);
     expect(document.querySelector('input[name="expectedRevisionId"][value="title-r1"]')).not.toBeNull();
     expect(document.querySelector('input[name="postId"][value="answer"]')).not.toBeNull();
