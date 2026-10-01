@@ -9,6 +9,7 @@ import {
   AuthorizationAdminView,
   type AuthorizationFailure,
 } from "../authorization/admin-view";
+import { ForumRouteError } from "../forum/ui";
 
 type Failure = AuthorizationFailure;
 async function manager(context: RouterContextProvider) {
@@ -72,6 +73,8 @@ export async function action({ request, context }: { request: Request; context: 
   }
 }
 function required(form: FormData, name: string) { const value = requiredFormText(form, name); if (!value) throw new InvalidAuthorizationInputError(); return value; }
+
+export const ErrorBoundary = ForumRouteError;
 
 export default function AuthorizationAdmin() {
   const data = useLoaderData<typeof loader>();

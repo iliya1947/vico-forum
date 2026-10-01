@@ -361,11 +361,22 @@ on 2026-10-01:
   separate later redesign; that future product work is not a defect or scope expansion of this
   accepted presentation slice.
 
+System/error-state presentation in PR #166 passed owner visual acceptance in GitHub Pages on
+2026-10-01:
+
+- route-level `401`, `403`, `404`, controlled `503` and unexpected failures share one compact
+  system-state presentation inside the accepted forum shell;
+- protected authorization-route failures use the same route boundary as forum read failures;
+- internal exception/response details are never shown; each state exposes localized safe copy plus
+  one recovery action back to the forum;
+- existing mutation-level `409`/rate-limit feedback remains in the already accepted form/admin
+  surfaces rather than being converted into fake route errors;
+- EN/RU/HE packs contain reviewed current copy for the accepted route states.
+
 Remaining work:
 
-- Unify empty, `401`, `403`, `404`, `409`, `429`, `503` and unexpected-error presentation where the
-  current route contracts expose them; include safe recovery/navigation actions only.
-- Keep lockout safeguards intact while system-state presentation is polished.
+- responsive/bidirectional/accessibility hardening and the final full browser acceptance matrix;
+- keep lockout and existing mutation safeguards intact during closeout.
 
 ### 6. Responsive, bidirectional and accessibility hardening
 
