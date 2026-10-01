@@ -2,11 +2,13 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { I18nextProvider } from "react-i18next";
+import { MemoryRouter, useLocation } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { canonicalEnglishCatalog } from "../localization/catalog";
+import { LocaleNavigationProvider } from "../localization/locale-navigation";
 import { createTranslationRuntime } from "../localization/runtime";
 import { THEME_BOOTSTRAP_SCRIPT } from "../theme";
-import { ThemeToggle } from "./ui";
+import { LanguageSwitcher, ThemeToggle } from "./ui";
 
 function canonicalCommonResources(): Record<string, string> {
   const resources: Record<string, string> = {};
@@ -37,6 +39,11 @@ function runtime() {
     bundleVersions: { en: { common: "test" } },
     staleKeys: {},
   });
+}
+
+function LocationProbe() {
+  const location = useLocation();
+  return <span data-testid="location">{location.pathname}{location.search}{location.hash}</span>;
 }
 
 function installMatchMedia(matches: boolean) {
@@ -70,6 +77,57 @@ afterEach(() => {
   window.localStorage.clear();
   delete document.documentElement.dataset.theme;
   vi.restoreAllMocks();
+});
+
+describe("LanguageSwitcher", () => {
+  it("switches the locale segment while preserving the current route, query and hash", async () => {
+    render(
+      <I18nextProvider i18n={runtime()}>
+        <LocaleNavigationProvider
+          locales={[
+            { tag: "en", nativeName: "English", direction: "ltr" },
+            { tag: "he", nativeName: "עברית", direction: "rtl" },
+            { tag: "ru", nativeName: "Русский", direction: "ltr" },
+          ]}
+        >
+          <MemoryRouter initialEntries={["/en/topics/42?view=latest#post-2"]}>
+            <LanguageSwitcher locale="en" />
+            <LocationProbe />
+          </MemoryRouter>
+        </LocaleNavigationProvider>
+      </I18nextProvider>,
+    );
+
+    await userEvent.selectOptions(screen.getByRole("combobox", { name: "English" }), "ru");
+
+    expect(screen.getByTestId("location")).toHaveTextContent("/ru/topics/42?view=latest#post-2");
+  });
+
+  it("uses the preview override instead of router navigation when one is provided", async () => {
+    const onLocaleChange = vi.fn();
+
+    render(
+      <I18nextProvider i18n={runtime()}>
+        <LocaleNavigationProvider
+          locales={[
+            { tag: "en", nativeName: "English", direction: "ltr" },
+            { tag: "he", nativeName: "עברית", direction: "rtl" },
+          ]}
+          onLocaleChange={onLocaleChange}
+        >
+          <MemoryRouter initialEntries={["/en"]}>
+            <LanguageSwitcher locale="en" />
+            <LocationProbe />
+          </MemoryRouter>
+        </LocaleNavigationProvider>
+      </I18nextProvider>,
+    );
+
+    await userEvent.selectOptions(screen.getByRole("combobox", { name: "English" }), "he");
+
+    expect(onLocaleChange).toHaveBeenCalledWith("he");
+    expect(screen.getByTestId("location")).toHaveTextContent("/en");
+  });
 });
 
 describe("ThemeToggle", () => {
