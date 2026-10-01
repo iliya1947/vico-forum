@@ -4363,3 +4363,124 @@ p {
     width: 100%;
   }
 }
+
+
+/* System/error states: consistent safe recovery inside the accepted forum shell. */
+.system-shell .forum-content {
+  background: var(--color-canvas);
+}
+
+.system-state {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 1rem;
+  align-items: center;
+  margin: 0;
+  padding: 1rem;
+  border-inline: 1px solid var(--color-border);
+  border-block-end: 1px solid var(--color-border);
+  background: var(--color-canvas);
+}
+
+.system-state-code {
+  display: grid;
+  width: 4.4rem;
+  height: 4.4rem;
+  place-items: center;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 0.7rem;
+  color: var(--color-accent-hover);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-panel);
+  font-size: 1.2rem;
+  font-weight: 900;
+  line-height: 1;
+  unicode-bidi: isolate;
+}
+
+.system-state[data-status="401"] .system-state-code,
+.system-state[data-status="403"] .system-state-code {
+  border-color: var(--color-accent);
+}
+
+.system-state[data-status="503"] .system-state-code,
+.system-state[data-status="500"] .system-state-code {
+  border-color: color-mix(in srgb, var(--color-danger) 55%, var(--color-border));
+  color: var(--color-danger);
+}
+
+.system-state-copy {
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.65rem;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-panel);
+}
+
+.system-state-copy .eyebrow {
+  margin: 0;
+  color: var(--color-accent);
+  font-size: 0.66rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.system-state-copy h1 {
+  margin: 0.18rem 0 0.35rem;
+  color: var(--color-text);
+  font-size: clamp(1.35rem, 3vw, 1.85rem);
+  line-height: 1.2;
+}
+
+.system-state-copy > p:not(.eyebrow) {
+  max-width: 42rem;
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.system-state-action {
+  display: inline-flex;
+  min-height: 2.2rem;
+  align-items: center;
+  justify-content: center;
+  margin-block-start: 0.85rem;
+  padding: 0.42rem 0.75rem;
+  border: 1px solid var(--color-accent);
+  border-radius: 0.45rem;
+  color: var(--color-action-on-accent);
+  background: var(--color-accent);
+  font-size: 0.75rem;
+  font-weight: 850;
+  text-decoration: none;
+}
+
+.system-state-action:hover,
+.system-state-action:focus-visible {
+  border-color: var(--color-accent-hover);
+  background: var(--color-accent-hover);
+}
+
+@media (max-width: 38rem) {
+  .system-state {
+    grid-template-columns: 1fr;
+    padding: 0.75rem;
+  }
+
+  .system-state-code {
+    width: 3.6rem;
+    height: 3.6rem;
+    font-size: 1rem;
+  }
+
+  .system-state-copy {
+    padding: 0.85rem;
+  }
+
+  .system-state-action {
+    width: 100%;
+  }
+}
