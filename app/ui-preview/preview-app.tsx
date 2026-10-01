@@ -41,7 +41,9 @@ export const scenarios: readonly Scenario[] = [
   { id: "category-empty-ltr", label: "Empty category · LTR", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/empty", view: "category" },
   { id: "section-ltr", label: "Section · LTR · user", locale: "en", direction: "ltr", identity: "user", path: "/en/sections/typescript", view: "section" },
   { id: "section-rtl", label: "Section · RTL · user", locale: "he", direction: "rtl", identity: "user", path: "/he/sections/typescript", view: "section" },
+  { id: "section-form-error-ltr", label: "Create topic error · LTR", locale: "en", direction: "ltr", identity: "user", path: "/en/sections/typescript", view: "section" },
   { id: "topic-ltr", label: "Solved topic · LTR · user", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api", view: "topic" },
+  { id: "topic-reply-error-ltr", label: "Reply error · LTR", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api", view: "topic" },
   { id: "topic-unsolved-ltr", label: "Unsolved topic · LTR · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/topics/typed-api", view: "topic" },
   { id: "topic-rtl", label: "Translated topic · RTL · manager", locale: "he", direction: "rtl", identity: "manager", path: "/he/topics/typed-api", view: "topic" },
   { id: "admin-ltr", label: "Authorization · LTR · manager", locale: "en", direction: "ltr", identity: "manager", path: "/en/admin/authorization", view: "admin" },
@@ -442,6 +444,7 @@ function previewElement(scenario: Scenario) {
           locale={scenario.locale}
           section={scenario.direction === "rtl" ? sectionRtl : section}
           canCreateTopic
+          actionData={scenario.id === "section-form-error-ltr" ? { error: "rateLimited" } : undefined}
         />
       );
     case "empty":
@@ -462,9 +465,14 @@ function previewElement(scenario: Scenario) {
         scenario.locale,
         scenario.direction,
         scenario.identity,
-        scenario.id !== "topic-unsolved-ltr",
+        scenario.id !== "topic-unsolved-ltr" && scenario.id !== "topic-reply-error-ltr",
       );
-      return <TopicView {...data} />;
+      return (
+        <TopicView
+          {...data}
+          actionData={scenario.id === "topic-reply-error-ltr" ? { error: "rateLimited" } : undefined}
+        />
+      );
     }
     case "admin": {
       const data = authorizationData(scenario.locale);
