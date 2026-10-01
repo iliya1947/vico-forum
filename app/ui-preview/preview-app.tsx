@@ -16,7 +16,7 @@ import {
 } from "../forum/views";
 import type { ContentTranslationPresentation } from "../localization/content-translation-presentation";
 import type { ContentGenerationUnitView } from "../localization/content-generation-view";
-import { previewTranslationRuntime } from "./preview-i18n";
+import { previewTranslationRuntime, type PreviewLocale } from "./preview-i18n";
 
 type Direction = "ltr" | "rtl";
 type PreviewIdentity = "guest" | "user" | "manager";
@@ -25,7 +25,7 @@ type PreviewView = "home" | "category" | "section" | "topic" | "admin" | "empty"
 interface Scenario {
   id: string;
   label: string;
-  locale: "en" | "he";
+  locale: PreviewLocale;
   direction: Direction;
   identity: PreviewIdentity;
   path: string;
@@ -33,24 +33,32 @@ interface Scenario {
 }
 
 export const scenarios: readonly Scenario[] = [
-  { id: "home-ltr", label: "Home · LTR · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en", view: "home" },
-  { id: "home-rtl", label: "Home · RTL · user", locale: "he", direction: "rtl", identity: "user", path: "/he", view: "home" },
-  { id: "under-development-ltr", label: "Under development · LTR", locale: "en", direction: "ltr", identity: "guest", path: "/en/under-development?feature=search", view: "under-development" },
-  { id: "under-development-rtl", label: "Under development · RTL", locale: "he", direction: "rtl", identity: "user", path: "/he/under-development?feature=notifications", view: "under-development" },
-  { id: "category-ltr", label: "Category · LTR · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/development", view: "category" },
-  { id: "category-rtl", label: "Category · RTL · user", locale: "he", direction: "rtl", identity: "user", path: "/he/categories/development", view: "category" },
-  { id: "category-empty-ltr", label: "Empty category · LTR", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/empty", view: "category" },
-  { id: "section-ltr", label: "Section · LTR · user", locale: "en", direction: "ltr", identity: "user", path: "/en/sections/typescript", view: "section" },
-  { id: "section-rtl", label: "Section · RTL · user", locale: "he", direction: "rtl", identity: "user", path: "/he/sections/typescript", view: "section" },
-  { id: "section-form-error-ltr", label: "Create topic error · LTR", locale: "en", direction: "ltr", identity: "user", path: "/en/sections/typescript", view: "section" },
-  { id: "topic-ltr", label: "Solved topic · LTR · user", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api", view: "topic" },
-  { id: "topic-reply-error-ltr", label: "Reply error · LTR", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api", view: "topic" },
-  { id: "topic-unsolved-ltr", label: "Unsolved topic · LTR · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/topics/typed-api", view: "topic" },
-  { id: "topic-tools-unsolved-ltr", label: "Topic tools · LTR · manager", locale: "en", direction: "ltr", identity: "manager", path: "/en/topics/typed-api", view: "topic" },
-  { id: "topic-rtl", label: "Translated topic · RTL · manager", locale: "he", direction: "rtl", identity: "manager", path: "/he/topics/typed-api", view: "topic" },
-  { id: "admin-ltr", label: "Authorization · LTR · manager", locale: "en", direction: "ltr", identity: "manager", path: "/en/admin/authorization", view: "admin" },
-  { id: "empty-ltr", label: "Empty section · LTR", locale: "en", direction: "ltr", identity: "guest", path: "/en/sections/empty", view: "empty" },
-  { id: "not-found-ltr", label: "404 state · LTR", locale: "en", direction: "ltr", identity: "guest", path: "/en/missing", view: "not-found" },
+  { id: "home-ltr", label: "Home · EN · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en", view: "home" },
+  { id: "home-ru", label: "Home · RU · guest", locale: "ru", direction: "ltr", identity: "guest", path: "/ru", view: "home" },
+  { id: "home-rtl", label: "Home · HE · RTL · user", locale: "he", direction: "rtl", identity: "user", path: "/he", view: "home" },
+  { id: "under-development-ltr", label: "Under development · EN", locale: "en", direction: "ltr", identity: "guest", path: "/en/under-development?feature=search", view: "under-development" },
+  { id: "under-development-ru", label: "Under development · RU", locale: "ru", direction: "ltr", identity: "guest", path: "/ru/under-development?feature=search", view: "under-development" },
+  { id: "under-development-rtl", label: "Under development · HE · RTL", locale: "he", direction: "rtl", identity: "user", path: "/he/under-development?feature=notifications", view: "under-development" },
+  { id: "category-ltr", label: "Category · EN · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/development", view: "category" },
+  { id: "category-ru", label: "Category · RU · guest", locale: "ru", direction: "ltr", identity: "guest", path: "/ru/categories/development", view: "category" },
+  { id: "category-rtl", label: "Category · HE · RTL · user", locale: "he", direction: "rtl", identity: "user", path: "/he/categories/development", view: "category" },
+  { id: "category-empty-ltr", label: "Empty category · EN", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/empty", view: "category" },
+  { id: "section-ltr", label: "Section · EN · user", locale: "en", direction: "ltr", identity: "user", path: "/en/sections/typescript", view: "section" },
+  { id: "section-ru", label: "Section · RU · user", locale: "ru", direction: "ltr", identity: "user", path: "/ru/sections/typescript", view: "section" },
+  { id: "section-rtl", label: "Section · HE · RTL · user", locale: "he", direction: "rtl", identity: "user", path: "/he/sections/typescript", view: "section" },
+  { id: "section-form-error-ltr", label: "Create topic error · EN", locale: "en", direction: "ltr", identity: "user", path: "/en/sections/typescript", view: "section" },
+  { id: "topic-ltr", label: "Solved topic · EN · user", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api", view: "topic" },
+  { id: "topic-reply-error-ltr", label: "Reply error · EN", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api", view: "topic" },
+  { id: "topic-unsolved-ltr", label: "Unsolved topic · EN · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/topics/typed-api", view: "topic" },
+  { id: "topic-tools-unsolved-ltr", label: "Topic tools · EN · manager", locale: "en", direction: "ltr", identity: "manager", path: "/en/topics/typed-api", view: "topic" },
+  { id: "topic-tools-ru", label: "Topic tools · RU · manager", locale: "ru", direction: "ltr", identity: "manager", path: "/ru/topics/typed-api", view: "topic" },
+  { id: "topic-rtl", label: "Translated topic · HE · RTL · manager", locale: "he", direction: "rtl", identity: "manager", path: "/he/topics/typed-api", view: "topic" },
+  { id: "admin-ltr", label: "Authorization · EN · manager", locale: "en", direction: "ltr", identity: "manager", path: "/en/admin/authorization", view: "admin" },
+  { id: "admin-ru", label: "Authorization · RU · manager", locale: "ru", direction: "ltr", identity: "manager", path: "/ru/admin/authorization", view: "admin" },
+  { id: "empty-ltr", label: "Empty section · EN", locale: "en", direction: "ltr", identity: "guest", path: "/en/sections/empty", view: "empty" },
+  { id: "empty-ru", label: "Empty section · RU", locale: "ru", direction: "ltr", identity: "guest", path: "/ru/sections/empty", view: "empty" },
+  { id: "not-found-ltr", label: "404 state · EN", locale: "en", direction: "ltr", identity: "guest", path: "/en/missing", view: "not-found" },
+  { id: "not-found-ru", label: "404 state · RU", locale: "ru", direction: "ltr", identity: "guest", path: "/ru/missing", view: "not-found" },
 ] as const;
 
 const categoryId = "development";
