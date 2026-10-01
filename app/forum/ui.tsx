@@ -92,6 +92,44 @@ function BellIcon() {
   );
 }
 
+function DiscoveryIcon({ kind }: {
+  kind: "unanswered" | "tags" | "popular" | "unread";
+}) {
+  if (kind === "unanswered") {
+    return (
+      <svg className="discovery-icon" aria-hidden="true" viewBox="0 0 24 24">
+        <path d="M4 5.5h16v11H9l-5 3z" />
+        <path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.9.4-1 1-1 1.7" />
+        <path d="M12 15.6h.01" />
+      </svg>
+    );
+  }
+
+  if (kind === "tags") {
+    return (
+      <svg className="discovery-icon" aria-hidden="true" viewBox="0 0 24 24">
+        <path d="M4.5 5.5h8.2l6.8 6.8-7.2 7.2-6.8-6.8z" />
+        <circle cx="9" cy="9" r="1.2" />
+      </svg>
+    );
+  }
+
+  if (kind === "popular") {
+    return (
+      <svg className="discovery-icon" aria-hidden="true" viewBox="0 0 24 24">
+        <path d="M13.5 3.5c.8 4-2 4.9-2.8 7.1-.6 1.5.2 2.7 1.5 3.5-.1-2 1.1-3.1 2.2-4 2.1 1.5 4.1 3.5 4.1 6.1a6.5 6.5 0 0 1-13 0c0-3.1 2-5.2 4.2-6.9-.1 2 .6 3.2 1.6 3.8-.2-3.9 2.9-5.6 2.2-9.6z" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg className="discovery-icon" aria-hidden="true" viewBox="0 0 24 24">
+      <rect x="3.5" y="5.5" width="17" height="13" rx="1.5" />
+      <path d="m4.5 7 7.5 6 7.5-6" />
+    </svg>
+  );
+}
+
 export function ForumShell({
   locale,
   children,
@@ -146,11 +184,23 @@ export function ForumShell({
         <nav className="site-primary-nav" aria-label={t("primaryNavigation")}>
           {variant === "home" ? (
             <>
-              <Link to={underDevelopmentPath(locale, "unanswered-filter")}>{t("unansweredNav")}</Link>
-              <Link to={underDevelopmentPath(locale, "technology-tags")}>{t("tagsNav")}</Link>
-              <Link to={underDevelopmentPath(locale, "popular")}>{t("popularNav")}</Link>
+              <Link className="home-discovery-link" to={underDevelopmentPath(locale, "unanswered-filter")}>
+                <DiscoveryIcon kind="unanswered" />
+                <span>{t("unansweredNav")}</span>
+              </Link>
+              <Link className="home-discovery-link" to={underDevelopmentPath(locale, "technology-tags")}>
+                <DiscoveryIcon kind="tags" />
+                <span>{t("tagsNav")}</span>
+              </Link>
+              <Link className="home-discovery-link" to={underDevelopmentPath(locale, "popular")}>
+                <DiscoveryIcon kind="popular" />
+                <span>{t("popularNav")}</span>
+              </Link>
               {authUser ? (
-                <Link to={underDevelopmentPath(locale, "unread")}>{t("unreadNav")}</Link>
+                <Link className="home-discovery-link" to={underDevelopmentPath(locale, "unread")}>
+                  <DiscoveryIcon kind="unread" />
+                  <span>{t("unreadNav")}</span>
+                </Link>
               ) : null}
             </>
           ) : (
