@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Form, Link } from "react-router";
+import { Form, Link, useNavigation } from "react-router";
 import { useTranslation } from "react-i18next";
 
 import type {
@@ -407,6 +407,10 @@ export function SectionView({
   actionData?: ForumMutationError;
 }) {
   const { t } = useTranslation("common");
+  const navigation = useNavigation();
+  const isCreateTopicSubmitting =
+    navigation.state === "submitting"
+    && navigation.formData?.get("intent") === "createTopic";
   const messageTotal = section.topics.reduce((sum, topic) => sum + topic.postCount, 0);
 
   return (
@@ -481,12 +485,60 @@ export function SectionView({
       )}
 
       {canCreateTopic && (
-        <Form id="create-topic" method="post" className="forum-write-form section-create-form">
-          <h2>{t("createTopicHeading")}</h2>
-          {actionData?.error && <p role="alert">{t(`forumWriteError_${actionData.error}`)}</p>}
-          <label>{t("topicTitleLabel")}<input name="title" required /></label>
-          <label>{t("initialPostLabel")}<textarea name="body" required rows={7} /></label>
-          <button type="submit">{t("createTopicSubmit")}</button>
+        <Form
+          id="create-topic"
+          method="post"
+          className="forum-write-form section-create-form"
+          aria-labelledby="create-topic-heading"
+          aria-busy={isCreateTopicSubmitting}
+        >
+          <input type="hidden" name="intent" value="createTopic" />
+
+          <header className="forum-write-header">
+            <div>
+              <p className="eyebrow">{t("authoringLabel")}</p>
+              <h2 id="create-topic-heading">{t("createTopicHeading")}</h2>
+            </div>
+            <p>{t("createTopicHelp")}</p>
+          </header>
+
+          {actionData?.error && (
+            <p className="forum-write-alert" role="alert">
+              {t(`forumWriteError_${actionData.error}`)}
+            </p>
+          )}
+
+          <div className="forum-write-fields">
+            <label className="forum-write-field">
+              <span>{t("topicTitleLabel")}</span>
+              <input
+                name="title"
+                required
+                disabled={isCreateTopicSubmitting}
+                aria-describedby="create-topic-title-help"
+              />
+              <small id="create-topic-title-help">{t("topicTitleHelp")}</small>
+            </label>
+
+            <label className="forum-write-field">
+              <span>{t("initialPostLabel")}</span>
+              <textarea
+                name="body"
+                required
+                rows={8}
+                disabled={isCreateTopicSubmitting}
+                aria-describedby="create-topic-body-help"
+              />
+              <small id="create-topic-body-help">{t("messageBodyHelp")}</small>
+            </label>
+          </div>
+
+          <footer className="forum-write-actions">
+            <p>{t("authoringRequiredHint")}</p>
+            <button type="submit" disabled={isCreateTopicSubmitting}>
+              {t(isCreateTopicSubmitting ? "createTopicSubmitting" : "createTopicSubmit")}
+            </button>
+          </footer>
         </Form>
       )}
     </ForumShell>
@@ -545,6 +597,10 @@ export function TopicView({
     : [];
   const messageNumberById = new Map(topic.posts.map((post, index) => [post.id, index + 1]));
   const { t } = useTranslation("common");
+  const navigation = useNavigation();
+  const isReplySubmitting =
+    navigation.state === "submitting"
+    && navigation.formData?.get("intent") === "reply";
 
   return (
     <ContentGenerationNavigationBoundary
@@ -688,10 +744,42 @@ export function TopicView({
         )}
 
         {canReply && (
-          <Form method="post" className="forum-write-form topic-reply-form">
-            <h2>{t("replyHeading")}</h2>
-            <label>{t("replyBodyLabel")}<textarea name="body" required rows={7} /></label>
-            <button type="submit">{t("replySubmit")}</button>
+          <Form
+            method="post"
+            className="forum-write-form topic-reply-form"
+            aria-labelledby="reply-heading"
+            aria-busy={isReplySubmitting}
+          >
+            <input type="hidden" name="intent" value="reply" />
+
+            <header className="forum-write-header">
+              <div>
+                <p className="eyebrow">{t("authoringLabel")}</p>
+                <h2 id="reply-heading">{t("replyHeading")}</h2>
+              </div>
+              <p>{t("replyHelp")}</p>
+            </header>
+
+            <div className="forum-write-fields">
+              <label className="forum-write-field">
+                <span>{t("replyBodyLabel")}</span>
+                <textarea
+                  name="body"
+                  required
+                  rows={8}
+                  disabled={isReplySubmitting}
+                  aria-describedby="reply-body-help"
+                />
+                <small id="reply-body-help">{t("messageBodyHelp")}</small>
+              </label>
+            </div>
+
+            <footer className="forum-write-actions">
+              <p>{t("authoringRequiredHint")}</p>
+              <button type="submit" disabled={isReplySubmitting}>
+                {t(isReplySubmitting ? "replySubmitting" : "replySubmit")}
+              </button>
+            </footer>
           </Form>
         )}
       </ForumShell>
