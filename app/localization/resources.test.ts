@@ -200,7 +200,7 @@ describe("UI translation resources", () => {
         topicTools: "כלי נושא",
         messageTools: "כלי הודעה",
         sourceLocale: "שפת המקור: en",
-        one: "הודעה 1",
+        one: "1 הודעה",
         two: "2 הודעות",
         many: "5 הודעות",
       },
