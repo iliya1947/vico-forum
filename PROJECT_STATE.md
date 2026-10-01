@@ -99,8 +99,8 @@ Vico Forum находится в ранней pre-release разработке.
   feedback верхняя строка оставляет только language/theme controls, а notifications + account
   identity + auth action вынесены в правую часть второй строки рядом с discovery navigation.
   Existing mutation intents, same-origin/authz/validation и immutable revision semantics сохранены.
-  Fresh CI/Pages для этой header-layout correction ещё должны быть подтверждены; owner visual
-  acceptance ещё не зафиксирована.
+  Repository CI и Pages для этой header-layout correction проходят; owner visual acceptance ещё
+  не зафиксирована.
 - Target search, notifications и незавершённые footer/product entry points во время owner-only
   pre-release ведут на общую `Under development` page/checklist вместо fake behavior.
 - Для owner-only pre-release незавершённые approved target functions могут оставаться видимыми и
