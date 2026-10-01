@@ -4489,6 +4489,11 @@ p {
 /* The compact homepage layout starts at 30rem; below that threshold the section-enter
    control still needs explicit geometry instead of falling back to the browser's intrinsic SVG. */
 @media (max-width: 29.99rem) {
+  .home-section-stats {
+    grid-column: 1;
+    grid-row: 4;
+  }
+
   .home-section-enter {
     grid-column: 1;
     grid-row: 5;
@@ -4521,6 +4526,15 @@ p {
 
   :dir(rtl) .home-section-enter svg {
     transform: rotate(180deg);
+  }
+
+  .home-section-expand,
+  :dir(rtl) .home-section-expand {
+    grid-column: 1;
+    grid-row: 3;
+    align-self: end;
+    justify-self: center;
+    transform: translate(0, 50%);
   }
 }
 
