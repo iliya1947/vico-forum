@@ -145,12 +145,12 @@ describe("authorization management presentation", () => {
 
   it("presents success and lockout/conflict feedback through safe localized messages", async () => {
     const saved = renderView({ ok: true });
-    expect(await screen.findByRole("status")).toHaveTextContent("Authorization updated.");
+    expect(await screen.findByRole("status")).toHaveTextContent("Authorization was updated.");
     saved.unmount();
 
     renderView({ error: "conflict" });
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "This change would lock out authorization management, or the role is still assigned.",
+      "This change would cause a lockout or the role is assigned.",
     );
   });
 });
