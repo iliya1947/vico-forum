@@ -40,6 +40,7 @@ export const scenarios: readonly Scenario[] = [
   { id: "category-rtl", label: "Category · RTL · user", locale: "he", direction: "rtl", identity: "user", path: "/he/categories/development", view: "category" },
   { id: "category-empty-ltr", label: "Empty category · LTR", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/empty", view: "category" },
   { id: "section-ltr", label: "Section · LTR · user", locale: "en", direction: "ltr", identity: "user", path: "/en/sections/typescript", view: "section" },
+  { id: "section-rtl", label: "Section · RTL · user", locale: "he", direction: "rtl", identity: "user", path: "/he/sections/typescript", view: "section" },
   { id: "topic-ltr", label: "Solved topic · LTR · user", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api", view: "topic" },
   { id: "topic-rtl", label: "Translated topic · RTL · manager", locale: "he", direction: "rtl", identity: "manager", path: "/he/topics/typed-api", view: "topic" },
   { id: "admin-ltr", label: "Authorization · LTR · manager", locale: "en", direction: "ltr", identity: "manager", path: "/en/admin/authorization", view: "admin" },
@@ -116,6 +117,47 @@ const section = {
         id: "title-r3",
         originalContent: "Worker auth: session boundary vs permissions",
         sourceLocale: "en",
+      },
+    },
+  ],
+};
+
+const sectionRtl = {
+  id: sectionId,
+  name: "TypeScript וארכיטקטורה",
+  category: { id: categoryId, name: "פיתוח" },
+  topics: [
+    {
+      id: topicId,
+      authorName: "אלכס ריברה",
+      postCount: 3,
+      createdAt: new Date("2026-09-27T10:00:00Z"),
+      title: {
+        id: "title-r1",
+        originalContent: "איך כדאי לבנות לקוח API עם טיפוסים?",
+        sourceLocale: "he",
+      },
+    },
+    {
+      id: "rtl-markdown",
+      authorName: "נועה לוי",
+      postCount: 4,
+      createdAt: new Date("2026-09-27T12:00:00Z"),
+      title: {
+        id: "title-r2",
+        originalContent: "תוכן RTL מעורב עם בלוקי קוד",
+        sourceLocale: "he",
+      },
+    },
+    {
+      id: "worker-auth",
+      authorName: "סם צ'ן",
+      postCount: 12,
+      createdAt: new Date("2026-09-28T08:00:00Z"),
+      title: {
+        id: "title-r3",
+        originalContent: "Worker auth: session boundary מול permissions",
+        sourceLocale: "he",
       },
     },
   ],
@@ -397,7 +439,7 @@ function previewElement(scenario: Scenario) {
       return (
         <SectionView
           locale={scenario.locale}
-          section={section}
+          section={scenario.direction === "rtl" ? sectionRtl : section}
           canCreateTopic
         />
       );
