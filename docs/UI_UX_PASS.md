@@ -380,12 +380,26 @@ Remaining work:
 
 ### 6. Responsive, bidirectional and accessibility hardening
 
-- Exercise phone, tablet and desktop widths, keyboard-only navigation, visible focus, zoom/reflow,
-  reduced motion, long labels and common contrast states.
-- Test full-page LTR and RTL, plus mixed-direction user content and LTR code inside RTL UI.
-- Remove physical-direction assumptions and horizontal overflow introduced by the new layouts.
-- Run automated semantic/accessibility checks where repository tooling supports them, but do not
-  treat automation as a replacement for browser review.
+Shared-shell hardening is isolated in PR #167 for owner review:
+
+- keyboard users get a localized skip link before the repeated forum header, targeting a focusable
+  content region;
+- the language selector regains an explicit visible focus treatment and shared-header overflow no
+  longer clips focus rings;
+- shared header children get bounded min/max-width behavior for zoom/reflow pressure without
+  changing the accepted shell composition;
+- a representative `Home · manager` state exercises the densest account/header combination while
+  existing logical properties and RTL arrow/brand behavior remain unchanged.
+
+Remaining work:
+
+- exercise content-heavy phone/tablet/desktop states, long labels, mixed-direction content and code
+  overflow;
+- verify reduced motion, target sizing, zoom/reflow and common contrast/focus states across the
+  representative matrix;
+- remove only confirmed physical-direction or overflow defects found by that exercise;
+- run automated semantic/accessibility checks where repository tooling supports them, without
+  treating automation as a replacement for browser review.
 
 ### 7. Product acceptance and closeout
 
