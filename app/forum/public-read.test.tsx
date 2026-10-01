@@ -480,17 +480,25 @@ describe("forum read states", () => {
     expect(document.querySelector('input[name="postId"][value="answer"]')).not.toBeNull();
   });
 
-  it("shows forum write forms only for an authenticated loader result", async () => {
+  it("shows accessible forum write forms only for an authenticated loader result", async () => {
     const guestView = renderRoute(SectionRoute, { locale: "en", section, canCreateTopic: false }, "/en/sections/typescript", "en", "ltr");
-    expect(screen.queryByRole("heading", { name: "Create a new topic" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("form", { name: "Create a new topic" })).not.toBeInTheDocument();
     guestView.unmount();
 
     const authenticatedView = renderRoute(SectionRoute, { locale: "en", section, canCreateTopic: true }, "/en/sections/typescript", "en", "ltr");
-    expect(await screen.findByRole("heading", { name: "Create a new topic" })).toBeInTheDocument();
+    const createTopicForm = await screen.findByRole("form", { name: "Create a new topic" });
+    expect(createTopicForm).toHaveClass("section-create-form");
+    expect(createTopicForm.querySelector('input[name="intent"]')).toHaveValue("createTopic");
+    expect(screen.getByLabelText("Topic title")).toHaveAttribute("aria-describedby", "create-topic-title-help");
+    expect(screen.getByText("Markdown and fenced code blocks are supported.")).toBeInTheDocument();
     authenticatedView.unmount();
 
     renderRoute(TopicRoute, topicRenderData(topic, { canReply: true }), "/en/topics/typed-api", "en", "ltr");
-    expect(await screen.findByRole("heading", { name: "Add a reply" })).toBeInTheDocument();
+    const replyForm = await screen.findByRole("form", { name: "Add a reply" });
+    expect(replyForm).toHaveClass("topic-reply-form");
+    expect(replyForm.querySelector('input[name="intent"]')).toHaveValue("reply");
+    expect(screen.getByLabelText("Reply")).toHaveAttribute("aria-describedby", "reply-body-help");
+    expect(screen.getByRole("button", { name: "Post reply" })).toBeEnabled();
   });
 
   it("returns route-level 404 responses for missing entities", async () => {
