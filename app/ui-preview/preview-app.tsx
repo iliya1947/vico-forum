@@ -24,6 +24,13 @@ type Direction = "ltr" | "rtl";
 type PreviewIdentity = "guest" | "user" | "manager";
 type PreviewView = "home" | "category" | "section" | "topic" | "admin" | "empty" | "under-development" | "not-found";
 
+type PreviewVariant =
+  | "empty-category"
+  | "section-form-error"
+  | "topic-reply-error"
+  | "topic-unsolved"
+  | "topic-tools";
+
 interface Scenario {
   id: string;
   label: string;
@@ -32,35 +39,27 @@ interface Scenario {
   identity: PreviewIdentity;
   path: string;
   view: PreviewView;
+  variant?: PreviewVariant;
 }
 
 export const scenarios: readonly Scenario[] = [
-  { id: "home-ltr", label: "Home · EN · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en", view: "home" },
-  { id: "home-ru", label: "Home · RU · guest", locale: "ru", direction: "ltr", identity: "guest", path: "/ru", view: "home" },
-  { id: "home-rtl", label: "Home · HE · RTL · user", locale: "he", direction: "rtl", identity: "user", path: "/he", view: "home" },
-  { id: "under-development-ltr", label: "Under development · EN", locale: "en", direction: "ltr", identity: "guest", path: "/en/under-development?feature=search", view: "under-development" },
-  { id: "under-development-ru", label: "Under development · RU", locale: "ru", direction: "ltr", identity: "guest", path: "/ru/under-development?feature=search", view: "under-development" },
-  { id: "under-development-rtl", label: "Under development · HE · RTL", locale: "he", direction: "rtl", identity: "user", path: "/he/under-development?feature=notifications", view: "under-development" },
-  { id: "category-ltr", label: "Category · EN · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/development", view: "category" },
-  { id: "category-ru", label: "Category · RU · guest", locale: "ru", direction: "ltr", identity: "guest", path: "/ru/categories/development", view: "category" },
-  { id: "category-rtl", label: "Category · HE · RTL · user", locale: "he", direction: "rtl", identity: "user", path: "/he/categories/development", view: "category" },
-  { id: "category-empty-ltr", label: "Empty category · EN", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/empty", view: "category" },
-  { id: "section-ltr", label: "Section · EN · user", locale: "en", direction: "ltr", identity: "user", path: "/en/sections/typescript", view: "section" },
-  { id: "section-ru", label: "Section · RU · user", locale: "ru", direction: "ltr", identity: "user", path: "/ru/sections/typescript", view: "section" },
-  { id: "section-rtl", label: "Section · HE · RTL · user", locale: "he", direction: "rtl", identity: "user", path: "/he/sections/typescript", view: "section" },
-  { id: "section-form-error-ltr", label: "Create topic error · EN", locale: "en", direction: "ltr", identity: "user", path: "/en/sections/typescript", view: "section" },
-  { id: "topic-ltr", label: "Solved topic · EN · user", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api", view: "topic" },
-  { id: "topic-reply-error-ltr", label: "Reply error · EN", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api", view: "topic" },
-  { id: "topic-unsolved-ltr", label: "Unsolved topic · EN · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/topics/typed-api", view: "topic" },
-  { id: "topic-tools-unsolved-ltr", label: "Topic tools · EN · manager", locale: "en", direction: "ltr", identity: "manager", path: "/en/topics/typed-api", view: "topic" },
-  { id: "topic-tools-ru", label: "Topic tools · RU · manager", locale: "ru", direction: "ltr", identity: "manager", path: "/ru/topics/typed-api", view: "topic" },
-  { id: "topic-rtl", label: "Translated topic · HE · RTL · manager", locale: "he", direction: "rtl", identity: "manager", path: "/he/topics/typed-api", view: "topic" },
-  { id: "admin-ltr", label: "Authorization · EN · manager", locale: "en", direction: "ltr", identity: "manager", path: "/en/admin/authorization", view: "admin" },
-  { id: "admin-ru", label: "Authorization · RU · manager", locale: "ru", direction: "ltr", identity: "manager", path: "/ru/admin/authorization", view: "admin" },
-  { id: "empty-ltr", label: "Empty section · EN", locale: "en", direction: "ltr", identity: "guest", path: "/en/sections/empty", view: "empty" },
-  { id: "empty-ru", label: "Empty section · RU", locale: "ru", direction: "ltr", identity: "guest", path: "/ru/sections/empty", view: "empty" },
-  { id: "not-found-ltr", label: "404 state · EN", locale: "en", direction: "ltr", identity: "guest", path: "/en/missing", view: "not-found" },
-  { id: "not-found-ru", label: "404 state · RU", locale: "ru", direction: "ltr", identity: "guest", path: "/ru/missing", view: "not-found" },
+  { id: "home-guest", label: "Home · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en", view: "home" },
+  { id: "home-user", label: "Home · user", locale: "en", direction: "ltr", identity: "user", path: "/en", view: "home" },
+  { id: "under-development-search", label: "Under development · search · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/under-development?feature=search", view: "under-development" },
+  { id: "under-development-notifications", label: "Under development · notifications · user", locale: "en", direction: "ltr", identity: "user", path: "/en/under-development?feature=notifications", view: "under-development" },
+  { id: "category-guest", label: "Category · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/development", view: "category" },
+  { id: "category-user", label: "Category · user", locale: "en", direction: "ltr", identity: "user", path: "/en/categories/development", view: "category" },
+  { id: "category-empty", label: "Empty category · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/empty", view: "category", variant: "empty-category" },
+  { id: "section-user", label: "Section · user", locale: "en", direction: "ltr", identity: "user", path: "/en/sections/typescript", view: "section" },
+  { id: "section-form-error", label: "Create topic error · user", locale: "en", direction: "ltr", identity: "user", path: "/en/sections/typescript", view: "section", variant: "section-form-error" },
+  { id: "topic-solved-user", label: "Solved topic · user", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api", view: "topic" },
+  { id: "topic-solved-manager", label: "Solved topic · manager", locale: "en", direction: "ltr", identity: "manager", path: "/en/topics/typed-api", view: "topic" },
+  { id: "topic-reply-error", label: "Reply error · user", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api", view: "topic", variant: "topic-reply-error" },
+  { id: "topic-unsolved", label: "Unsolved topic · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/topics/typed-api", view: "topic", variant: "topic-unsolved" },
+  { id: "topic-tools", label: "Topic tools · manager", locale: "en", direction: "ltr", identity: "manager", path: "/en/topics/typed-api", view: "topic", variant: "topic-tools" },
+  { id: "admin", label: "Authorization · manager", locale: "en", direction: "ltr", identity: "manager", path: "/en/admin/authorization", view: "admin" },
+  { id: "empty-section", label: "Empty section · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/sections/empty", view: "empty" },
+  { id: "not-found", label: "404 state · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/missing", view: "not-found" },
 ] as const;
 
 const categoryId = "development";
@@ -69,6 +68,18 @@ const topicId = "typed-api";
 
 const previewBuildKey =
   document.querySelector<HTMLScriptElement>('script[type="module"][src]')?.src ?? "dev";
+
+const PREVIEW_LOCALE_STORAGE_KEY = "vico-ui-preview-locale";
+
+function initialPreviewLocale(): PreviewLocale {
+  try {
+    const stored = window.sessionStorage.getItem(PREVIEW_LOCALE_STORAGE_KEY);
+    if (stored && isPreviewLocale(stored)) return stored;
+  } catch {
+    // Preview storage is optional; fall back to English when unavailable.
+  }
+  return "en";
+}
 
 const previewLocaleOptions = localeRegistry.activeLocales()
   .filter((locale) => isPreviewLocale(locale.tag))
@@ -408,7 +419,7 @@ export function PreviewController() {
 
 export function EmbeddedPreview({ scenarioId }: { scenarioId: string }) {
   const scenario = scenarios.find((candidate) => candidate.id === scenarioId) ?? scenarios[0]!;
-  const [previewLocale, setPreviewLocale] = useState<PreviewLocale>(scenario.locale);
+  const [previewLocale, setPreviewLocale] = useState<PreviewLocale>(initialPreviewLocale);
   const activeScenario = useMemo(
     () => scenarioForLocale(scenario, previewLocale),
     [scenario, previewLocale],
@@ -445,7 +456,13 @@ export function EmbeddedPreview({ scenarioId }: { scenarioId: string }) {
     <LocaleNavigationProvider
       locales={previewLocaleOptions}
       onLocaleChange={(locale) => {
-        if (isPreviewLocale(locale)) setPreviewLocale(locale);
+        if (!isPreviewLocale(locale)) return;
+        setPreviewLocale(locale);
+        try {
+          window.sessionStorage.setItem(PREVIEW_LOCALE_STORAGE_KEY, locale);
+        } catch {
+          // Preview storage is optional; the active iframe still switches immediately.
+        }
       }}
     >
       <HeaderAuthProvider initialUser={previewUser(activeScenario.identity)}>
@@ -507,7 +524,7 @@ function previewElement(scenario: Scenario) {
         <CategoryView
           locale={scenario.locale}
           category={
-            scenario.id === "category-empty-ltr"
+            scenario.variant === "empty-category"
               ? emptyCategory
               : scenario.locale === "ru"
                 ? categoryRu
@@ -523,7 +540,7 @@ function previewElement(scenario: Scenario) {
           locale={scenario.locale}
           section={scenario.locale === "ru" ? sectionRu : scenario.direction === "rtl" ? sectionRtl : section}
           canCreateTopic
-          actionData={scenario.id === "section-form-error-ltr" ? { error: "rateLimited" } : undefined}
+          actionData={scenario.variant === "section-form-error" ? { error: "rateLimited" } : undefined}
         />
       );
     case "empty":
@@ -532,10 +549,18 @@ function previewElement(scenario: Scenario) {
           locale={scenario.locale}
           section={{
             id: "empty",
-            name: scenario.locale === "ru" ? "Новый раздел сообщества" : "New community section",
+            name: scenario.locale === "ru"
+              ? "Новый раздел сообщества"
+              : scenario.locale === "he"
+                ? "מדור קהילה חדש"
+                : "New community section",
             category: {
               id: categoryId,
-              name: scenario.locale === "ru" ? "Разработка" : "Development",
+              name: scenario.locale === "ru"
+                ? "Разработка"
+                : scenario.locale === "he"
+                  ? "פיתוח"
+                  : "Development",
             },
             topics: [],
           }}
@@ -543,20 +568,20 @@ function previewElement(scenario: Scenario) {
         />
       );
     case "topic": {
+      const solved = scenario.variant !== "topic-unsolved"
+        && scenario.variant !== "topic-reply-error"
+        && scenario.variant !== "topic-tools";
       const data = topicData(
         scenario.locale,
         scenario.direction,
         scenario.identity,
-        scenario.id !== "topic-unsolved-ltr"
-          && scenario.id !== "topic-reply-error-ltr"
-          && scenario.id !== "topic-tools-unsolved-ltr"
-          && scenario.id !== "topic-tools-ru",
+        solved,
         scenario.identity === "manager",
       );
       return (
         <TopicView
           {...data}
-          actionData={scenario.id === "topic-reply-error-ltr" ? { error: "rateLimited" } : undefined}
+          actionData={scenario.variant === "topic-reply-error" ? { error: "rateLimited" } : undefined}
         />
       );
     }
