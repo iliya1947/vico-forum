@@ -361,16 +361,17 @@ on 2026-10-01:
   separate later redesign; that future product work is not a defect or scope expansion of this
   accepted presentation slice.
 
-System/error-state presentation is isolated in PR #166 for owner review:
+System/error-state presentation in PR #166 passed owner visual acceptance in GitHub Pages on
+2026-10-01:
 
 - route-level `401`, `403`, `404`, controlled `503` and unexpected failures share one compact
   system-state presentation inside the accepted forum shell;
-- protected authorization-route failures now use the same route boundary as forum read failures;
+- protected authorization-route failures use the same route boundary as forum read failures;
 - internal exception/response details are never shown; each state exposes localized safe copy plus
   one recovery action back to the forum;
 - existing mutation-level `409`/rate-limit feedback remains in the already accepted form/admin
   surfaces rather than being converted into fake route errors;
-- EN/RU/HE packs contain reviewed current copy for the new route states.
+- EN/RU/HE packs contain reviewed current copy for the accepted route states.
 
 Remaining work:
 
