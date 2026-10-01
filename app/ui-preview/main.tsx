@@ -15,7 +15,7 @@ document.body.classList.add(embedded ? "ui-preview-embedded" : "ui-preview-contr
 createRoot(root).render(
   <StrictMode>
     {embedded
-      ? <EmbeddedPreview scenarioId={params.get("scenario") ?? "home-ltr"} />
+      ? <EmbeddedPreview scenarioId={params.get("scenario") ?? "home-guest"} />
       : <PreviewController />}
   </StrictMode>,
 );
