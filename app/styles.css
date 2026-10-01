@@ -4484,3 +4484,55 @@ p {
     width: 100%;
   }
 }
+
+
+/* Shared shell hardening: keyboard focus, zoom/reflow and bidi-safe navigation. */
+.skip-link {
+  position: fixed;
+  z-index: 1000;
+  inset-block-start: 0.5rem;
+  inset-inline-start: 0.5rem;
+  min-height: 2.35rem;
+  padding: 0.5rem 0.75rem;
+  border: 2px solid var(--color-focus);
+  border-radius: 0.45rem;
+  color: var(--color-text);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-panel);
+  font-size: 0.78rem;
+  font-weight: 850;
+  text-decoration: none;
+  transform: translateY(-200%);
+}
+
+.skip-link:focus-visible {
+  transform: none;
+}
+
+.site-header {
+  overflow: visible;
+}
+
+.site-header-top > *,
+.site-header-lower > * {
+  min-width: 0;
+}
+
+.site-header-actions,
+.site-account-actions {
+  max-width: 100%;
+}
+
+.language-switcher:focus-within {
+  border-color: var(--color-focus);
+  outline: 0.18rem solid var(--color-focus);
+  outline-offset: 0.15rem;
+}
+
+.site-primary-nav {
+  scroll-padding-inline: 0.5rem;
+}
+
+.forum-content:focus {
+  outline: none;
+}
