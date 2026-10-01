@@ -374,60 +374,38 @@ select {
 }
 
 .auth-controls {
+  display: grid;
+  min-width: 0;
+  gap: 0.3rem;
+}
+
+.auth-controls-main {
   display: flex;
+  min-width: 0;
   align-items: center;
-  gap: 0.55rem;
+  justify-content: flex-end;
+  gap: 0.45rem;
 }
 
 .auth-controls a {
-  color: var(--color-accent-hover);
-  font-size: 0.9rem;
-  font-weight: 700;
+  font-size: 0.78rem;
+  font-weight: 750;
   text-decoration: none;
-}
-
-.auth-controls a:hover {
-  text-decoration: underline;
-}
-
-.auth-controls button {
-  min-height: 2.25rem;
-  padding: 0.4rem 0.7rem;
-  border: 1px solid var(--color-border-strong);
-  border-radius: 0.45rem;
-  color: var(--color-text);
-  background: var(--color-surface);
-  font: inherit;
-  font-size: 0.85rem;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.auth-controls button:hover:not(:disabled) {
-  border-color: var(--color-accent);
-  color: var(--color-accent-hover);
-}
-
-.auth-controls button:disabled {
-  cursor: wait;
-  opacity: 0.65;
-}
-
-.auth-controls [role="alert"] {
-  color: var(--color-danger);
-  font-size: 0.85rem;
 }
 
 .auth-user {
   display: inline-flex;
-  max-width: 13rem;
+  min-width: 0;
+  max-width: 12rem;
+  min-height: 2.1rem;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.42rem;
+  padding: 0.2rem 0.55rem 0.2rem 0.28rem;
   overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
   color: var(--color-text);
-  font-size: 0.9rem;
-  font-weight: 750;
-  text-decoration: none;
+  background: var(--color-surface);
   white-space: nowrap;
 }
 
@@ -436,21 +414,106 @@ select {
   text-overflow: ellipsis;
 }
 
-.auth-user:hover {
+.auth-user:hover,
+.auth-user:focus-visible {
+  border-color: var(--color-accent);
   color: var(--color-accent-hover);
+  background: var(--color-accent-soft);
 }
 
 .auth-avatar {
   display: inline-grid;
-  width: 1.8rem;
-  height: 1.8rem;
+  width: 1.65rem;
+  height: 1.65rem;
   flex: none;
   place-items: center;
   border-radius: 999px;
-  color: var(--color-on-accent);
-  background: var(--color-accent-hover);
-  font-size: 0.72rem;
+  color: var(--color-action-on-accent);
+  background: var(--color-accent);
+  font-size: 0.68rem;
   font-weight: 900;
+}
+
+.auth-admin-link {
+  display: inline-flex;
+  min-height: 2.1rem;
+  align-items: center;
+  padding-inline: 0.55rem;
+  border-radius: 999px;
+  color: var(--color-accent-hover);
+  background: var(--color-accent-soft);
+}
+
+.auth-admin-link:hover,
+.auth-admin-link:focus-visible {
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.auth-action {
+  display: inline-flex;
+  min-height: 2.1rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.42rem;
+  padding: 0.38rem 0.7rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 999px;
+  background: var(--color-surface);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.auth-sign-in {
+  border-color: var(--color-accent);
+  color: var(--color-action-on-accent);
+  background: var(--color-accent);
+}
+
+.auth-sign-in:hover:not(:disabled),
+.auth-sign-in:focus-visible:not(:disabled) {
+  border-color: var(--color-accent-hover);
+  background: var(--color-accent-hover);
+}
+
+.auth-sign-out {
+  color: var(--color-text-muted);
+}
+
+.auth-sign-out:hover:not(:disabled),
+.auth-sign-out:focus-visible:not(:disabled) {
+  border-color: var(--color-accent);
+  color: var(--color-accent-hover);
+  background: var(--color-surface);
+}
+
+.auth-action:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.auth-spinner {
+  width: 0.8rem;
+  height: 0.8rem;
+  flex: none;
+  border: 0.12rem solid currentColor;
+  border-inline-end-color: transparent;
+  border-radius: 50%;
+}
+
+.auth-feedback {
+  max-width: 24rem;
+  justify-self: end;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid color-mix(in srgb, var(--color-danger) 40%, var(--color-border));
+  border-radius: 0.4rem;
+  color: var(--color-danger);
+  background: var(--color-surface);
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1.3;
 }
 
 .forum-content {
@@ -843,8 +906,14 @@ p {
     justify-content: flex-start;
   }
 
-  .auth-controls {
+  .auth-controls-main {
+    width: 100%;
     flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+
+  .auth-feedback {
+    justify-self: start;
   }
 
   .site-primary-nav {
@@ -873,12 +942,23 @@ p {
   .language-switcher,
   .theme-toggle,
   .auth-controls button,
+  .auth-controls a,
   .site-primary-nav a,
   .forum-list-link {
     transition:
       color 120ms ease,
       background-color 120ms ease,
       border-color 120ms ease;
+  }
+
+  .auth-spinner {
+    animation: auth-spinner 700ms linear infinite;
+  }
+}
+
+@keyframes auth-spinner {
+  to {
+    transform: rotate(1turn);
   }
 }
 
