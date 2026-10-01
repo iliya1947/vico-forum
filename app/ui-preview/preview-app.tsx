@@ -49,6 +49,9 @@ const categoryId = "development";
 const sectionId = "typescript";
 const topicId = "typed-api";
 
+const previewBuildKey =
+  document.querySelector<HTMLScriptElement>('script[type="module"][src]')?.src ?? "dev";
+
 const category = {
   id: categoryId,
   name: "Development",
@@ -237,7 +240,7 @@ export function PreviewController() {
   const [scenarioId, setScenarioId] = useState(scenarios[0]!.id);
   const [viewport, setViewport] = useState<"desktop" | "mobile">("desktop");
   const selected = scenarios.find((scenario) => scenario.id === scenarioId) ?? scenarios[0]!;
-  const src = `?embed=1&scenario=${encodeURIComponent(selected.id)}`;
+  const src = `?embed=1&scenario=${encodeURIComponent(selected.id)}&build=${encodeURIComponent(previewBuildKey)}`;
 
   return (
     <main className="preview-controller">
