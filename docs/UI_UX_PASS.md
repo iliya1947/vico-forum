@@ -334,13 +334,16 @@ Remaining participation work:
 
 ### 5. Auth, administration and system states
 
-Authentication header presentation is isolated in PR #164 for owner review:
+Authentication header presentation in PR #164 passed owner visual acceptance in GitHub Pages on
+2026-10-01:
 
 - guest sign-in, signed-in identity and sign-out use the accepted compact header language;
 - pending and safe failed-auth presentation are explicit and accessible without exposing provider
   details;
 - deterministic Pages states cover pending and failed authentication while existing Home guest/user
   states cover normal identity presentation;
+- auth actions are intentionally blocked in the static Pages fixture, so this acceptance is visual
+  only and does not claim real Google OAuth behavior;
 - Better Auth client/session behavior, callback safety, locale/RTL handling, authorization and
   Stage 6 external OAuth configuration remain unchanged.
 
