@@ -1383,7 +1383,7 @@ p {
   }
 
   .home-shell .site-header-top {
-    grid-template-columns: minmax(12rem, 0.9fr) minmax(22rem, 1.65fr) auto;
+    grid-template-columns: minmax(19rem, 1fr) minmax(22rem, 1.65fr) auto;
     grid-template-rows: auto;
     gap: 1rem;
     min-height: 4.7rem;
@@ -1403,8 +1403,7 @@ p {
   }
 
   .home-shell .brand-mark {
-    width: 2.8rem;
-    height: 2.8rem;
+    width: 8.5rem;
   }
 
   .home-shell .brand-primary {
@@ -1818,11 +1817,21 @@ p {
 }
 
 .home-shell .brand-mark {
-  width: 2.45rem;
-  height: 2.45rem;
+  display: inline-grid;
+  width: 6.5rem;
   flex: none;
-  border-radius: 0.35rem;
-  object-fit: contain;
+  place-items: center;
+}
+
+.home-shell .brand-mark-image {
+  grid-area: 1 / 1;
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.home-shell .brand-mark-dark {
+  display: none;
 }
 
 .home-shell .brand-wordmark {
@@ -1839,6 +1848,14 @@ p {
 }
 
 @media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .home-shell .brand-mark-light {
+    display: none;
+  }
+
+  :root:not([data-theme]) .home-shell .brand-mark-dark {
+    display: block;
+  }
+
   :root:not([data-theme]) .home-shell {
     --color-canvas: #0f1417;
     --color-surface: #141b1e;
@@ -1857,6 +1874,14 @@ p {
     --color-focus: #ff9b67;
     --shadow-panel: 0 0.24rem 0.9rem rgb(0 0 0 / 24%);
   }
+}
+
+:root[data-theme="dark"] .home-shell .brand-mark-light {
+  display: none;
+}
+
+:root[data-theme="dark"] .home-shell .brand-mark-dark {
+  display: block;
 }
 
 :root[data-theme="dark"] .home-shell {
@@ -1937,8 +1962,7 @@ p {
   }
 
   .home-shell .brand-mark {
-    width: 2.55rem;
-    height: 2.55rem;
+    width: 7rem;
   }
 
   .home-shell .brand-primary {
