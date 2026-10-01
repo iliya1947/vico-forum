@@ -219,6 +219,10 @@ select {
   box-shadow: none;
 }
 
+.home-shell .site-primary-nav .home-discovery-link > span {
+  color: var(--color-accent);
+}
+
 .home-shell .site-primary-nav .home-discovery-link::after {
   position: absolute;
   inset-inline: 0.58rem;
@@ -235,6 +239,12 @@ select {
 .home-shell .site-primary-nav .home-discovery-link:active {
   color: var(--color-accent-hover);
   background: var(--color-accent-soft);
+}
+
+.home-shell .site-primary-nav .home-discovery-link:hover > span,
+.home-shell .site-primary-nav .home-discovery-link:focus-visible > span,
+.home-shell .site-primary-nav .home-discovery-link:active > span {
+  color: var(--color-accent-hover);
 }
 
 .home-shell .site-primary-nav .home-discovery-link:hover::after,
@@ -1392,12 +1402,17 @@ p {
     line-height: 1;
   }
 
+  .home-shell .brand-mark {
+    width: 2.8rem;
+    height: 2.8rem;
+  }
+
   .home-shell .brand-primary {
-    color: var(--color-text);
+    color: var(--color-accent);
   }
 
   .home-shell .brand-accent {
-    color: var(--color-accent);
+    color: var(--color-brand-secondary);
   }
 
   .home-shell .site-tagline {
@@ -1788,14 +1803,39 @@ p {
   --color-accent-soft: #fbf2ea;
   --color-on-accent: #ffffff;
   --color-action-on-accent: #101416;
+  --color-brand-secondary: #101416;
   --color-focus: #9a3800;
   --shadow-panel: 0 0.2rem 0.75rem rgb(37 30 24 / 7%);
   background: var(--color-canvas);
 }
 
 .home-shell .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
   font-size: 1.6rem;
   font-weight: 900;
+}
+
+.home-shell .brand-mark {
+  width: 2.45rem;
+  height: 2.45rem;
+  flex: none;
+  border-radius: 0.35rem;
+  object-fit: contain;
+}
+
+.home-shell .brand-wordmark {
+  display: inline-flex;
+  align-items: baseline;
+}
+
+.home-shell .brand-primary {
+  color: var(--color-accent);
+}
+
+.home-shell .brand-accent {
+  color: var(--color-brand-secondary);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -1813,6 +1853,7 @@ p {
     --color-accent-soft: #232120;
     --color-on-accent: #101416;
     --color-action-on-accent: #ffffff;
+    --color-brand-secondary: #f4f5f4;
     --color-focus: #ff9b67;
     --shadow-panel: 0 0.24rem 0.9rem rgb(0 0 0 / 24%);
   }
@@ -1832,6 +1873,7 @@ p {
   --color-accent-soft: #232120;
   --color-on-accent: #101416;
   --color-action-on-accent: #ffffff;
+  --color-brand-secondary: #f4f5f4;
   --color-focus: #ff9b67;
   --shadow-panel: 0 0.24rem 0.9rem rgb(0 0 0 / 24%);
 }
@@ -1894,12 +1936,17 @@ p {
     line-height: 1;
   }
 
+  .home-shell .brand-mark {
+    width: 2.55rem;
+    height: 2.55rem;
+  }
+
   .home-shell .brand-primary {
-    color: var(--color-text);
+    color: var(--color-accent);
   }
 
   .home-shell .brand-accent {
-    color: var(--color-accent);
+    color: var(--color-brand-secondary);
   }
 
   .home-shell .site-tagline {
