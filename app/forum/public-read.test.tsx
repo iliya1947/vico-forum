@@ -186,7 +186,9 @@ describe.each([
     homeView.unmount();
 
     const categoryView = renderRoute(CategoryRoute, categoryData, forumCategoryPath(locale, category.id), locale, direction);
-    expect(await screen.findByRole("link", { name: /TypeScript/ })).toHaveAttribute("href", `/${locale}/sections/typescript%2Fbasics`);
+    const categorySectionLink = await screen.findByRole("link", { name: /TypeScript/ });
+    expect(categorySectionLink).toHaveAttribute("href", `/${locale}/sections/typescript%2Fbasics`);
+    expect(categorySectionLink).toHaveClass("category-section-card");
     categoryView.unmount();
 
     const sectionView = renderRoute(SectionRoute, sectionData, forumSectionPath(locale, section.id), locale, direction);
