@@ -310,10 +310,19 @@ Pages on 2026-10-01:
 - this slice does not implement the future full editor, drafts/autosave, reply/quote relationships
   or new backend behavior.
 
+Secondary translation/source-locale/solution control presentation is now isolated in PR #163
+for review:
+
+- translation-generation feedback remains visible but uses a compact secondary treatment;
+- source-locale correction and solution-management mutations move behind native `details`
+  progressive disclosure at topic/message level;
+- `Go to solution` remains visible as a reading/navigation action;
+- existing permissions, mutation intents, same-origin/validation boundaries, revision semantics and
+  generation policy are unchanged;
+- representative manager LTR/RTL preview states expose both collapsed and expanded control groups.
+
 Remaining participation work:
 
-- reduce visual dominance of translation-generation status, source-locale correction and
-  solution-management controls without changing their permissions or server boundaries;
 - continue verifying long titles, long localized strings, code overflow and mixed-direction content;
 - permanent copy-link, full editor behavior and future reply/quote relationships remain separate
   approved product work rather than being invented inside this visual slice.
