@@ -161,6 +161,16 @@ function HomepageCategoryCard({
         </span>
       </div>
 
+      <Link
+        className="home-section-enter"
+        to={forumCategoryPath(locale, category.id)}
+        aria-label={t("enterForumSection", { section: category.name })}
+      >
+        <svg aria-hidden="true" viewBox="0 0 24 24">
+          <path d="m9 5 7 7-7 7" />
+        </svg>
+      </Link>
+
       <button
         className="home-section-expand"
         type="button"
