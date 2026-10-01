@@ -88,8 +88,8 @@ Vico Forum находится в ранней pre-release разработке.
   source-locale correction и solution-management mutations перемещены под native `details`
   progressive disclosure на уровне topic/message, тогда как `Go to solution` остаётся прямым
   reading action. Existing mutation intents, same-origin/authz/validation и immutable revision
-  semantics сохранены; добавлены representative manager LTR/RTL preview states. CI/Pages и owner
-  visual acceptance этого slice ещё не зафиксированы.
+  semantics сохранены; добавлены representative manager LTR/RTL preview states. Repository CI и
+  Pages для текущей реализации проходят; owner visual acceptance этого slice ещё не зафиксирована.
 - Target search, notifications и незавершённые footer/product entry points во время owner-only
   pre-release ведут на общую `Under development` page/checklist вместо fake behavior.
 - Для owner-only pre-release незавершённые approved target functions могут оставаться видимыми и
