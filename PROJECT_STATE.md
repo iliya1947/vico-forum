@@ -104,8 +104,10 @@ Vico Forum находится в ранней pre-release разработке.
   выявил, что brand identity наследовал page direction и визуально превращался в `ForumVico`;
   brand link теперь явно изолирован как LTR, при этом весь остальной Hebrew UI остаётся RTL.
   Existing mutation intents, same-origin/authz/validation и immutable revision semantics сохранены.
-  Repository CI и Pages для locale-independent preview State correction проходят; owner visual
-  acceptance ещё не зафиксирована.
+  Repository CI и Pages для locale-independent preview State correction проходят. Owner visual
+  acceptance PR #163 в GitHub Pages подтверждён 2026-10-01, включая RU/HE локализацию, header
+  language selector, LTR brand isolation внутри RTL UI, tagline/header corrections и
+  locale-independent preview State.
 - Target search, notifications и незавершённые footer/product entry points во время owner-only
   pre-release ведут на общую `Under development` page/checklist вместо fake behavior.
 - Для owner-only pre-release незавершённые approved target functions могут оставаться видимыми и
