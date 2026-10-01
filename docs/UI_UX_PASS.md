@@ -120,8 +120,10 @@ dependency requires a concrete need, official-version verification and separate 
 
 - Vico Orange is the primary brand accent over neutral technical surfaces.
 - The homepage brand lockup is deliberately more prominent than the tagline and secondary header
-  controls. It uses the owner-provided Vico mark beside the wordmark, with `Vico` in Vico Orange
-  and `Forum` in the theme-appropriate neutral foreground.
+  controls. It uses separate owner-provided Light/Dark Vico marks beside the wordmark and switches
+  them with the active theme. The mark is intentionally large enough to be a primary header
+  identity element; `Vico` stays Vico Orange and `Forum` uses the theme-appropriate neutral
+  foreground.
 - Orange action controls use a dark foreground in Light and a light foreground in Dark; non-action
   accent surfaces keep their own semantic foreground treatment.
 - The interface stays information-dense and forum-oriented, using compact horizontal rows rather
