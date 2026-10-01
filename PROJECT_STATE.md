@@ -87,9 +87,14 @@ Vico Forum находится в ранней pre-release разработке.
   translation-generation feedback остаётся видимым, но получает compact secondary presentation;
   source-locale correction и solution-management mutations перемещены под native `details`
   progressive disclosure на уровне topic/message, тогда как `Go to solution` остаётся прямым
-  reading action. Existing mutation intents, same-origin/authz/validation и immutable revision
-  semantics сохранены; добавлены representative manager LTR/RTL preview states. Repository CI и
-  Pages для текущей реализации проходят; owner visual acceptance этого slice ещё не зафиксирована.
+  reading action. По решению владельца перед visual acceptance этот же review branch дополнен
+  полными code-owned manual UI packs для `ru` и `he`: оба содержат значения для всех 170
+  текущих canonical `common` keys, используют отдельный fixed reviewed-fingerprint manifest и
+  остаются обычными `LocalTranslationSource` overrides без изменения generic LocaleRegistry.
+  Pages preview теперь читает те же manual packs вместо отдельного partial Hebrew dictionary и
+  добавляет representative Russian states. Existing mutation intents, same-origin/authz/validation
+  и immutable revision semantics сохранены. CI/Pages для расширенного текущего head и owner visual
+  acceptance ещё не зафиксированы.
 - Target search, notifications и незавершённые footer/product entry points во время owner-only
   pre-release ведут на общую `Under development` page/checklist вместо fake behavior.
 - Для owner-only pre-release незавершённые approved target functions могут оставаться видимыми и
