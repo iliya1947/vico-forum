@@ -7,7 +7,12 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { canonicalEnglishCatalog } from "../localization/catalog";
 import { createTranslationRuntime } from "../localization/runtime";
 import type { AuthClientActions } from "./auth-client";
-import { AuthControls, HeaderAuthProvider, safeForumReturnPath } from "./auth-controls";
+import {
+  AuthControls,
+  HeaderAuthProvider,
+  safeForumReturnPath,
+  type HeaderAuthPresentationState,
+} from "./auth-controls";
 
 afterEach(cleanup);
 
@@ -34,11 +39,24 @@ function i18n(direction: "ltr" | "rtl") {
   });
 }
 
-function renderControls(initialUser: { name: string } | null, actions: AuthClientActions, path = "/en/topics/one?from=list", direction: "ltr" | "rtl" = "ltr") {
+function renderControls(
+  initialUser: { name: string } | null,
+  actions: AuthClientActions,
+  path = "/en/topics/one?from=list",
+  direction: "ltr" | "rtl" = "ltr",
+  initialPresentationState: HeaderAuthPresentationState = "idle",
+) {
   const router = createMemoryRouter([{
     path: "*",
     loader: () => null,
-    Component: () => <HeaderAuthProvider initialUser={initialUser}><AuthControls locale={direction === "ltr" ? "en" : "he"} actions={actions} /></HeaderAuthProvider>,
+    Component: () => (
+      <HeaderAuthProvider
+        initialUser={initialUser}
+        initialPresentationState={initialPresentationState}
+      >
+        <AuthControls locale={direction === "ltr" ? "en" : "he"} actions={actions} />
+      </HeaderAuthProvider>
+    ),
   }], { initialEntries: [path] });
   return render(<div dir={direction}><I18nextProvider i18n={i18n(direction)}><RouterProvider router={router} /></I18nextProvider></div>);
 }
@@ -72,6 +90,31 @@ describe("forum header auth controls", () => {
     renderControls(null, actions(), direction === "ltr" ? "/en" : "/he", direction);
     expect(await screen.findByRole("button", { name: "Sign in with Google" })).toBeVisible();
     expect(document.querySelector(`[dir="${direction}"]`)).toBeInTheDocument();
+  });
+
+  it("exposes compact guest and signed-in presentation states", async () => {
+    const guest = renderControls(null, actions());
+    expect(await screen.findByRole("button", { name: "Sign in with Google" }))
+      .toHaveClass("auth-sign-in");
+    expect(document.querySelector(".auth-controls")).toHaveAttribute("data-state", "guest");
+    guest.unmount();
+
+    renderControls({ name: "Ada Lovelace" }, actions());
+    expect(await screen.findByRole("link", { name: "Ada Lovelace" })).toHaveClass("auth-user");
+    expect(screen.getByRole("button", { name: "Sign out" })).toHaveClass("auth-sign-out");
+    expect(document.querySelector(".auth-controls")).toHaveAttribute("data-state", "signed-in");
+  });
+
+  it("supports deterministic pending and failed presentation fixtures", async () => {
+    const pending = renderControls(null, actions(), "/en", "ltr", "pending");
+    expect(await screen.findByRole("button", { name: "Please wait…" })).toBeDisabled();
+    expect(document.querySelector(".auth-controls")).toHaveAttribute("data-state", "pending");
+    expect(document.querySelector(".auth-controls")).toHaveAttribute("aria-busy", "true");
+    pending.unmount();
+
+    renderControls(null, actions(), "/en", "ltr", "error");
+    expect(await screen.findByRole("alert")).toHaveTextContent("Authentication failed. Please try again.");
+    expect(document.querySelector(".auth-controls")).toHaveAttribute("data-state", "error");
   });
 
   it("uses Google social sign-in with a local locale-aware callback", async () => {
@@ -115,6 +158,8 @@ describe("forum header auth controls", () => {
     const button = await screen.findByRole("button", { name: "Sign in with Google" });
     await userEvent.click(button);
     expect(screen.getByRole("button", { name: "Please wait…" })).toBeDisabled();
+    expect(document.querySelector(".auth-controls")).toHaveAttribute("data-state", "pending");
+    expect(document.querySelector(".auth-controls")).toHaveAttribute("aria-busy", "true");
     await userEvent.click(screen.getByRole("button", { name: "Please wait…" }));
     expect(client.signInWithGoogle).toHaveBeenCalledTimes(1);
     reject();
