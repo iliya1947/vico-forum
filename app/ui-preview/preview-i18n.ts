@@ -3,7 +3,12 @@ import { manualTranslationPacks } from "../localization/manual-packs";
 import { createTranslationRuntime } from "../localization/runtime";
 import type { ResourceBundle } from "../localization/sources";
 
-export type PreviewLocale = "en" | "ru" | "he";
+export const PREVIEW_LOCALES = ["en", "ru", "he"] as const;
+export type PreviewLocale = (typeof PREVIEW_LOCALES)[number];
+
+export function isPreviewLocale(locale: string): locale is PreviewLocale {
+  return PREVIEW_LOCALES.some((candidate) => candidate === locale);
+}
 
 function canonicalCommonResources(): Record<string, string> {
   const resources: Record<string, string> = {};
