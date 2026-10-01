@@ -112,8 +112,8 @@ Vico Forum находится в ранней pre-release разработке.
   state и safe failed-auth feedback приведены к compact header presentation без изменения Better
   Auth/session/callback behavior. Pages fixture получил deterministic pending/failed auth states,
   а существующие Home guest/user states остаются representative normal identity states.
-  Backend/DB/permissions/OAuth configuration не меняются. Fresh CI/Pages и owner visual acceptance
-  для PR #164 ещё не зафиксированы.
+  Backend/DB/permissions/OAuth configuration не меняются. Repository CI и Pages для текущей
+  реализации проходят; owner visual acceptance PR #164 ещё не зафиксирована.
 - Target search, notifications и незавершённые footer/product entry points во время owner-only
   pre-release ведут на общую `Under development` page/checklist вместо fake behavior.
 - Для owner-only pre-release незавершённые approved target functions могут оставаться видимыми и
