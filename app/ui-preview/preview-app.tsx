@@ -35,7 +35,11 @@ type PreviewVariant =
   | "topic-unsolved"
   | "topic-tools"
   | "admin-success"
-  | "admin-conflict";
+  | "admin-conflict"
+  | "route-401"
+  | "route-403"
+  | "route-503"
+  | "route-500";
 
 interface Scenario {
   id: string;
@@ -70,7 +74,11 @@ export const scenarios: readonly Scenario[] = [
   { id: "admin-success", label: "Authorization · saved · manager", locale: "en", direction: "ltr", identity: "manager", path: "/en/admin/authorization", view: "admin", variant: "admin-success" },
   { id: "admin-conflict", label: "Authorization · conflict · manager", locale: "en", direction: "ltr", identity: "manager", path: "/en/admin/authorization", view: "admin", variant: "admin-conflict" },
   { id: "empty-section", label: "Empty section · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/sections/empty", view: "empty" },
-  { id: "not-found", label: "404 state · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/missing", view: "not-found" },
+  { id: "route-401", label: "System · 401 · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/admin/authorization", view: "not-found", variant: "route-401" },
+  { id: "route-403", label: "System · 403 · user", locale: "en", direction: "ltr", identity: "user", path: "/en/admin/authorization", view: "not-found", variant: "route-403" },
+  { id: "not-found", label: "System · 404 · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/missing", view: "not-found" },
+  { id: "route-503", label: "System · 503 · manager", locale: "en", direction: "ltr", identity: "manager", path: "/en/admin/authorization", view: "not-found", variant: "route-503" },
+  { id: "route-500", label: "System · unexpected · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/topics/typed-api", view: "not-found", variant: "route-500" },
 ] as const;
 
 const categoryId = "development";
@@ -493,6 +501,18 @@ function previewRouter(scenario: Scenario) {
     return createMemoryRouter([{
       path: "*",
       loader: () => {
+        if (scenario.variant === "route-401") {
+          throw new Response("Unauthenticated", { status: 401 });
+        }
+        if (scenario.variant === "route-403") {
+          throw new Response("Forbidden", { status: 403 });
+        }
+        if (scenario.variant === "route-503") {
+          throw new Response("Unavailable", { status: 503 });
+        }
+        if (scenario.variant === "route-500") {
+          throw new Error("Representative unexpected route failure");
+        }
         throw new Response("Not Found", { status: 404 });
       },
       ErrorBoundary: ForumRouteError,
