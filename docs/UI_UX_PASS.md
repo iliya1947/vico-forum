@@ -299,13 +299,14 @@ on 2026-10-01:
 - responsive/RTL-safe geometry is included without adding unavailable reply/quote, profile, unread,
   draft or notification data.
 
-Reply/Create-topic form presentation is now isolated in the next bounded PR for review:
+Reply/Create-topic form presentation in PR #162 passed owner visual acceptance in GitHub
+Pages on 2026-10-01:
 
 - existing section/topic write actions and server authorization/validation contracts are unchanged;
 - forms use accessible named regions, localized field guidance and required-field messaging;
 - submit actions are touch-friendly and use React Router non-fetcher `Form` pending state to disable
   only the active authoring form while showing a localized progress label;
-- responsive/RTL geometry and representative normal/error preview states are included;
+- responsive/RTL geometry and representative normal/error preview states were reviewed in Pages;
 - this slice does not implement the future full editor, drafts/autosave, reply/quote relationships
   or new backend behavior.
 
