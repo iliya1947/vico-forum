@@ -119,6 +119,11 @@ describe("locale boundary middleware", () => {
 
 function localeLoaderContext(authorizationError: Error) {
   const context = new RouterContextProvider();
+  context.set(registryLoaderContext, async () => ({
+    registry: localeRegistry,
+    semanticIdentity: "test-fixture",
+    health: { status: "healthy" },
+  }));
   context.set(localeContext, {
     translationLocale: "en", fallbackLocales: [], direction: "ltr",
     formatting: { locale: "en", timeZone: "UTC" }, nativeName: "English", presentationMetadata: {},
@@ -152,6 +157,11 @@ describe("locale boundary loader", () => {
 
     expect(snapshot.authUser).toEqual({ name: "Vico", canManageAuthorization: false });
     expect(snapshot.locale.translationLocale).toBe("en");
+    expect(snapshot.activeLocales).toEqual([
+      { tag: "en", nativeName: "English", direction: "ltr" },
+      { tag: "he", nativeName: "עברית", direction: "rtl" },
+      { tag: "ru", nativeName: "Русский", direction: "ltr" },
+    ]);
   });
 
   it("does not hide unexpected optional authorization errors", async () => {
