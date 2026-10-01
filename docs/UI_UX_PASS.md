@@ -392,7 +392,10 @@ Shared-shell hardening is isolated in PR #167 for owner review:
   existing logical properties and RTL arrow/brand behavior remain unchanged;
 - owner mobile review found two real sub-30rem homepage defects; the corrected card order is now
   `Pinned → Latest topics → expand → statistics → orange entry rail`, and that mobile correction
-  has been visually accepted.
+  has been visually accepted;
+- later owner mobile review found discovery-navigation overflow; narrow mobile now uses compact
+  icon-only discovery controls with localized accessible labels, while wider layouts retain the
+  accepted icon-plus-text navigation.
 
 Remaining work:
 
