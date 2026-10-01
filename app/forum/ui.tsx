@@ -219,6 +219,7 @@ export function ForumShell({
                   ? "forum-shell home-shell system-shell"
                   : "forum-shell"
     }>
+      <a className="skip-link" href="#forum-content">{t("skipToContent")}</a>
       <header className="site-header">
         <div className="site-header-top">
           <div className="brand-lockup">
@@ -295,7 +296,7 @@ export function ForumShell({
         </div>
       </header>
 
-      <div className="forum-content">
+      <div className="forum-content" id="forum-content" tabIndex={-1}>
         {children}
       </div>
 
