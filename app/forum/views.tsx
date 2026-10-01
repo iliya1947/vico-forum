@@ -420,9 +420,6 @@ export function SectionView({
         <div>
           <p className="eyebrow">{t("sectionLabel")}</p>
           <h1>{section.name}</h1>
-          <Link className="section-category-link" to={forumCategoryPath(locale, section.category.id)}>
-            {section.category.name}
-          </Link>
         </div>
 
         <div className="section-heading-side">
