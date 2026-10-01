@@ -200,6 +200,65 @@ select {
   background: var(--color-accent-soft);
 }
 
+.home-shell .site-primary-nav {
+  gap: 0.4rem;
+  overflow-x: auto;
+}
+
+.home-shell .site-primary-nav .home-discovery-link {
+  position: relative;
+  flex: none;
+  gap: 0.38rem;
+  min-height: 2.2rem;
+  padding: 0.42rem 0.58rem 0.38rem;
+  border-radius: 0.35rem;
+  color: var(--color-text-muted);
+  background: transparent;
+  font-size: 0.82rem;
+  font-weight: 750;
+  box-shadow: none;
+}
+
+.home-shell .site-primary-nav .home-discovery-link::after {
+  position: absolute;
+  inset-inline: 0.58rem;
+  inset-block-end: 0.08rem;
+  height: 0.14rem;
+  border-radius: 999px;
+  background: var(--color-accent);
+  content: "";
+  opacity: 0;
+}
+
+.home-shell .site-primary-nav .home-discovery-link:hover,
+.home-shell .site-primary-nav .home-discovery-link:focus-visible,
+.home-shell .site-primary-nav .home-discovery-link:active {
+  color: var(--color-accent-hover);
+  background: var(--color-accent-soft);
+}
+
+.home-shell .site-primary-nav .home-discovery-link:hover::after,
+.home-shell .site-primary-nav .home-discovery-link:focus-visible::after,
+.home-shell .site-primary-nav .home-discovery-link:active::after {
+  opacity: 1;
+}
+
+.home-shell .site-primary-nav .home-discovery-link:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+}
+
+.discovery-icon {
+  width: 1.05rem;
+  height: 1.05rem;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
 .theme-toggle {
   display: inline-flex;
   min-height: 2.25rem;
@@ -1378,23 +1437,14 @@ p {
     padding: 0.28rem 1rem;
   }
 
-  .home-shell .site-primary-nav a {
-    display: inline-flex;
-    align-items: center;
+  .home-shell .site-primary-nav .home-discovery-link {
     min-height: 2.1rem;
-    padding: 0.42rem 0.82rem;
-    border-radius: 0.42rem;
-    color: var(--color-action-on-accent);
-    background: var(--color-accent);
-    font-size: 0.8rem;
-    font-weight: 800;
-    text-decoration: none;
-    box-shadow: 0 0.1rem 0.28rem rgb(0 0 0 / 10%);
+    padding: 0.38rem 0.64rem 0.34rem;
+    font-size: 0.82rem;
   }
 
-  .home-shell .site-primary-nav a:hover {
-    color: var(--color-action-on-accent);
-    background: var(--color-accent-hover);
+  .home-shell .site-primary-nav .home-discovery-link::after {
+    inset-inline: 0.64rem;
   }
 
   .home-shell .forum-content {
@@ -1889,22 +1939,19 @@ p {
     overflow-x: auto;
   }
 
-  .home-shell .site-primary-nav a {
-    flex: none;
+  .home-shell .site-primary-nav .home-discovery-link {
     min-height: 2rem;
-    padding: 0.4rem 0.68rem;
-    border-radius: 0.4rem;
-    color: var(--color-action-on-accent);
-    background: var(--color-accent);
+    padding: 0.36rem 0.5rem 0.32rem;
     font-size: 0.76rem;
-    font-weight: 800;
-    text-decoration: none;
-    box-shadow: 0 0.1rem 0.25rem rgb(0 0 0 / 10%);
   }
 
-  .home-shell .site-primary-nav a:hover {
-    color: var(--color-action-on-accent);
-    background: var(--color-accent-hover);
+  .home-shell .site-primary-nav .home-discovery-link::after {
+    inset-inline: 0.5rem;
+  }
+
+  .home-shell .site-primary-nav .discovery-icon {
+    width: 0.95rem;
+    height: 0.95rem;
   }
 
   .home-shell .forum-content {
