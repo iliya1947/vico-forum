@@ -31,8 +31,10 @@ Vico Forum находится в ранней pre-release разработке.
   актуальный target-product contract, порядок реализации и обязательная browser acceptance matrix
   зафиксированы в `docs/UI_UX_PASS.md`.
 - Первый bounded UI/UX slice уже merged: deterministic representative baseline, client-safe
-  presentation boundaries и GitHub Pages visual-progress preview. Владелец подтвердил, что
-  исправленный live preview рендерится; это не заменяет будущую real-runtime acceptance.
+  presentation boundaries и GitHub Pages visual-progress preview. Текущий correction branch
+  дополнительно cache-bust-ит embedded iframe по hash текущего preview bundle, чтобы новый Pages
+  deploy не мог оставить iframe на stale HTML со ссылкой на удалённый hashed asset. Это не
+  заменяет будущую real-runtime acceptance.
 - В текущем UI/UX slice реализованы и repository-CI/Pages-проверены semantic visual tokens,
   Light/Dark с first-use `prefers-color-scheme` и persisted manual choice, two-zone shell/header,
   approved homepage frame и общая локализованная страница `Under development`. Runtime homepage
