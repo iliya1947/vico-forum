@@ -319,7 +319,14 @@ for review:
 - `Go to solution` remains visible as a reading/navigation action;
 - existing permissions, mutation intents, same-origin/validation boundaries, revision semantics and
   generation policy are unchanged;
-- representative manager LTR/RTL preview states expose both collapsed and expanded control groups.
+- representative manager LTR/RTL preview states expose both collapsed and expanded control groups;
+- before owner acceptance, the owner requested complete current UI copy for the three review
+  languages. Canonical English remains the only source catalog, while code-owned current manual
+  packs now provide Russian and Hebrew values for every current `common` key with fixed reviewed
+  source fingerprints;
+- Pages preview consumes those same manual packs rather than maintaining a separate partial Hebrew
+  dictionary and includes Russian review states. This is review coverage for `en`/`ru`/`he`,
+  not a fixed-locale product architecture: public locale identity remains generic and registry-owned.
 
 Remaining participation work:
 
