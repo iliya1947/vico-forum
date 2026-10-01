@@ -285,7 +285,8 @@ Remaining discovery work:
 
 ### 4. Topics, messages and participation
 
-Topic-reading/message presentation is isolated in PR #161 for review:
+Topic-reading/message presentation in PR #161 passed owner visual acceptance in GitHub Pages
+on 2026-10-01:
 
 - the accepted shell/header is reused without changing data contracts;
 - the original question remains first, the selected best answer is promoted directly after it while
@@ -294,7 +295,7 @@ Topic-reading/message presentation is isolated in PR #161 for review:
 - message cards use existing author/content data and preserve safe Markdown/code rendering,
   translated-content provenance/original disclosure, generation status and protected solution/source-
   locale actions;
-- representative solved LTR, unsolved LTR and translated RTL states are available in Pages;
+- representative solved LTR, unsolved LTR and translated RTL states were reviewed in Pages;
 - responsive/RTL-safe geometry is included without adding unavailable reply/quote, profile, unread,
   draft or notification data.
 
