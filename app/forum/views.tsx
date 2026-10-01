@@ -365,12 +365,16 @@ export function CategoryView({
                     <strong>{section.name}</strong>
                   </span>
 
-                  <span className="category-section-stats">
-                    <span>
+                  <span
+                    className="category-section-stats"
+                    role="group"
+                    aria-label={`${t("topicCount", { count: section.topicCount })} · ${t("messageCount", { count: section.postCount })}`}
+                  >
+                    <span aria-hidden="true">
                       <strong>{section.topicCount}</strong>
                       <small>{t("topicsHeading")}</small>
                     </span>
-                    <span>
+                    <span aria-hidden="true">
                       <strong>{section.postCount}</strong>
                       <small>{t("postsColumn")}</small>
                     </span>
