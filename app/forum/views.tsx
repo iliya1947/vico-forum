@@ -577,6 +577,7 @@ export function TopicView({
 }) {
   const correctablePosts = new Set(correctablePostIds);
   const generationByContentId = new Map(generationUnits.map((unit) => [unit.contentId, unit]));
+  const titleGenerationUnit = generationByContentId.get(topic.id);
   const presentedPosts = new Map(postPresentations.map((presentation) => [presentation.contentId, presentation]));
   const correctionError = actionData
     && "operation" in actionData
@@ -620,7 +621,11 @@ export function TopicView({
           <div className="topic-heading-main">
             <p className="eyebrow">{t("topicLabel")}</p>
             <TopicTitlePresentation presentation={titlePresentation} />
-            <ContentGenerationUnitStatus unit={generationByContentId.get(topic.id)} />
+            {titleGenerationUnit && (
+              <div className="topic-generation-status">
+                <ContentGenerationUnitStatus unit={titleGenerationUnit} />
+              </div>
+            )}
             <div className="topic-heading-meta">
               <span>{t("startedBy", { author: topic.authorName })}</span>
               {topic.isSolved && <strong className="solved-badge">{t("solved")}</strong>}
@@ -633,30 +638,38 @@ export function TopicView({
                 {t("goToSolution")}
               </a>
             )}
-            {canManageSolution && !topic.isSolved && (
-              <Form method="post">
-                <input type="hidden" name="intent" value="markSolved" />
-                <button type="submit">{t("markSolved")}</button>
-              </Form>
-            )}
           </div>
 
-          {canCorrectTitleSourceLocale && (
-            <Form method="post" className="source-locale-form topic-heading-secondary">
-              <input type="hidden" name="intent" value="correctTitleSourceLocale" />
-              <input type="hidden" name="expectedRevisionId" value={topic.title.id} />
-              <p>{t("sourceLocaleCurrent", { locale: topic.title.sourceLocale })}</p>
-              <label>
-                {t("sourceLocaleCorrectionInput")}
-                <input
-                  name="sourceLocale"
-                  required
-                  defaultValue={topic.title.sourceLocale === "und" ? "" : topic.title.sourceLocale}
-                  autoComplete="off"
-                />
-              </label>
-              <button type="submit">{t("sourceLocaleCorrectionSubmit")}</button>
-            </Form>
+          {(canCorrectTitleSourceLocale || (canManageSolution && !topic.isSolved)) && (
+            <details className="secondary-tools topic-heading-secondary">
+              <summary>{t("topicTools")}</summary>
+              <div className="secondary-tools-panel">
+                {canManageSolution && !topic.isSolved && (
+                  <Form method="post" className="solution-form secondary-tools-form">
+                    <input type="hidden" name="intent" value="markSolved" />
+                    <button type="submit">{t("markSolved")}</button>
+                  </Form>
+                )}
+
+                {canCorrectTitleSourceLocale && (
+                  <Form method="post" className="source-locale-form secondary-tools-form">
+                    <input type="hidden" name="intent" value="correctTitleSourceLocale" />
+                    <input type="hidden" name="expectedRevisionId" value={topic.title.id} />
+                    <p>{t("sourceLocaleCurrent", { locale: topic.title.sourceLocale })}</p>
+                    <label>
+                      {t("sourceLocaleCorrectionInput")}
+                      <input
+                        name="sourceLocale"
+                        required
+                        defaultValue={topic.title.sourceLocale === "und" ? "" : topic.title.sourceLocale}
+                        autoComplete="off"
+                      />
+                    </label>
+                    <button type="submit">{t("sourceLocaleCorrectionSubmit")}</button>
+                  </Form>
+                )}
+              </div>
+            </details>
           )}
         </section>
 
@@ -673,6 +686,11 @@ export function TopicView({
               const messageNumber = messageNumberById.get(post.id)!;
               const isOriginalQuestion = post.id === originalPost?.id;
               const isBestAnswer = topic.bestAnswerPostId === post.id;
+              const generationUnit = generationByContentId.get(post.id);
+              const canCorrectPostSourceLocale = correctablePosts.has(post.id);
+              const canSelectBestAnswer =
+                canManageSolution && topic.isSolved && topic.bestAnswerPostId !== post.id;
+              const hasMessageTools = canCorrectPostSourceLocale || canSelectBestAnswer;
 
               return (
                 <li
@@ -710,33 +728,45 @@ export function TopicView({
                     </div>
 
                     <PostBodyPresentation presentation={presentedPosts.get(post.id)!} />
-                    <ContentGenerationUnitStatus unit={generationByContentId.get(post.id)} />
 
-                    {correctablePosts.has(post.id) && (
-                      <Form method="post" className="source-locale-form">
-                        <input type="hidden" name="intent" value="correctPostSourceLocale" />
-                        <input type="hidden" name="postId" value={post.id} />
-                        <input type="hidden" name="expectedRevisionId" value={post.body.id} />
-                        <p>{t("sourceLocaleCurrent", { locale: post.body.sourceLocale })}</p>
-                        <label>
-                          {t("sourceLocaleCorrectionInput")}
-                          <input
-                            name="sourceLocale"
-                            required
-                            defaultValue={post.body.sourceLocale === "und" ? "" : post.body.sourceLocale}
-                            autoComplete="off"
-                          />
-                        </label>
-                        <button type="submit">{t("sourceLocaleCorrectionSubmit")}</button>
-                      </Form>
+                    {generationUnit && (
+                      <div className="message-generation-status">
+                        <ContentGenerationUnitStatus unit={generationUnit} />
+                      </div>
                     )}
 
-                    {canManageSolution && topic.isSolved && topic.bestAnswerPostId !== post.id && (
-                      <Form method="post" className="solution-form">
-                        <input type="hidden" name="intent" value="selectBestAnswer" />
-                        <input type="hidden" name="postId" value={post.id} />
-                        <button type="submit">{t("selectBestAnswer")}</button>
-                      </Form>
+                    {hasMessageTools && (
+                      <details className="secondary-tools message-secondary-tools">
+                        <summary>{t("messageTools")}</summary>
+                        <div className="secondary-tools-panel">
+                          {canCorrectPostSourceLocale && (
+                            <Form method="post" className="source-locale-form secondary-tools-form">
+                              <input type="hidden" name="intent" value="correctPostSourceLocale" />
+                              <input type="hidden" name="postId" value={post.id} />
+                              <input type="hidden" name="expectedRevisionId" value={post.body.id} />
+                              <p>{t("sourceLocaleCurrent", { locale: post.body.sourceLocale })}</p>
+                              <label>
+                                {t("sourceLocaleCorrectionInput")}
+                                <input
+                                  name="sourceLocale"
+                                  required
+                                  defaultValue={post.body.sourceLocale === "und" ? "" : post.body.sourceLocale}
+                                  autoComplete="off"
+                                />
+                              </label>
+                              <button type="submit">{t("sourceLocaleCorrectionSubmit")}</button>
+                            </Form>
+                          )}
+
+                          {canSelectBestAnswer && (
+                            <Form method="post" className="solution-form secondary-tools-form">
+                              <input type="hidden" name="intent" value="selectBestAnswer" />
+                              <input type="hidden" name="postId" value={post.id} />
+                              <button type="submit">{t("selectBestAnswer")}</button>
+                            </Form>
+                          )}
+                        </div>
+                      </details>
                     )}
                   </div>
                 </li>
