@@ -3290,3 +3290,205 @@ p {
     margin-inline: 0.75rem;
   }
 }
+
+
+/* Forum authoring forms: presentation-only refinement of the existing create-topic/reply flows. */
+.home-shell .forum-write-form {
+  display: grid;
+  gap: 0.9rem;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.6rem;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-panel);
+}
+
+.home-shell .forum-write-header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-block-end: 0.75rem;
+  border-block-end: 1px solid var(--color-border);
+}
+
+.home-shell .forum-write-header > div {
+  min-width: 0;
+}
+
+.home-shell .forum-write-header .eyebrow {
+  margin: 0;
+  color: var(--color-accent);
+  font-size: 0.66rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.home-shell .forum-write-header h2 {
+  margin: 0.12rem 0 0;
+  color: var(--color-text);
+  font-size: 1.08rem;
+  line-height: 1.2;
+}
+
+.home-shell .forum-write-header > p {
+  max-width: 24rem;
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.74rem;
+  line-height: 1.4;
+  text-align: end;
+}
+
+.home-shell .forum-write-fields {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.home-shell .forum-write-field {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  color: var(--color-text);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.home-shell .forum-write-field > span {
+  line-height: 1.25;
+}
+
+.home-shell .forum-write-field small {
+  color: var(--color-text-muted);
+  font-size: 0.68rem;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.home-shell .forum-write-field input,
+.home-shell .forum-write-field textarea {
+  width: 100%;
+  margin: 0;
+  padding: 0.72rem 0.8rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 0.45rem;
+  color: var(--color-text);
+  background: var(--color-surface-muted);
+  font: inherit;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.home-shell .forum-write-field textarea {
+  min-height: 9rem;
+  resize: vertical;
+}
+
+.home-shell .forum-write-field input:hover,
+.home-shell .forum-write-field textarea:hover {
+  border-color: var(--color-accent);
+}
+
+.home-shell .forum-write-field input:focus,
+.home-shell .forum-write-field textarea:focus {
+  border-color: var(--color-accent);
+  background: var(--color-surface);
+  outline: 0.15rem solid var(--color-accent-soft);
+  outline-offset: 0.08rem;
+}
+
+.home-shell .forum-write-field input:disabled,
+.home-shell .forum-write-field textarea:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.home-shell .forum-write-alert {
+  margin: 0;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--color-danger) 45%, var(--color-border));
+  border-inline-start: 0.24rem solid var(--color-danger);
+  border-radius: 0.45rem;
+  color: var(--color-danger);
+  background: var(--color-surface-muted);
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.home-shell .forum-write-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding-block-start: 0.2rem;
+}
+
+.home-shell .forum-write-actions p {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.68rem;
+}
+
+.home-shell .forum-write-actions button {
+  min-width: 8.5rem;
+  min-height: 2.45rem;
+  padding: 0.55rem 0.9rem;
+  border: 0;
+  border-radius: 0.45rem;
+  color: var(--color-action-on-accent);
+  background: var(--color-accent);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.home-shell .forum-write-actions button:hover:not(:disabled),
+.home-shell .forum-write-actions button:focus-visible:not(:disabled) {
+  background: var(--color-accent-hover);
+}
+
+.home-shell .forum-write-actions button:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.home-shell .forum-write-form[aria-busy="true"] {
+  border-color: var(--color-accent);
+}
+
+.section-create-form,
+.topic-reply-form {
+  scroll-margin-block-start: 1rem;
+}
+
+@media (max-width: 44rem) {
+  .home-shell .forum-write-header {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .home-shell .forum-write-header > p {
+    max-width: none;
+    text-align: start;
+  }
+}
+
+@media (max-width: 29.99rem) {
+  .home-shell .forum-write-form {
+    padding: 0.8rem;
+  }
+
+  .home-shell .forum-write-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .home-shell .forum-write-actions button {
+    width: 100%;
+    min-width: 0;
+  }
+}
