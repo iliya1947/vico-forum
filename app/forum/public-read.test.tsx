@@ -284,8 +284,8 @@ describe("category count presentation", () => {
 
     renderRoute(CategoryRoute, data, "/en/categories/development", "en", "ltr");
 
-    expect(await screen.findByText("1 topic · 2 messages")).toBeInTheDocument();
-    expect(screen.getByText("2 topics · 1 message")).toBeInTheDocument();
+    expect(await screen.findByRole("group", { name: "1 topic · 2 messages" })).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "2 topics · 1 message" })).toBeInTheDocument();
   });
 });
 
