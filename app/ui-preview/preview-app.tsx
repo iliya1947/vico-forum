@@ -15,6 +15,7 @@ import {
   TopicView,
 } from "../forum/views";
 import type { ContentTranslationPresentation } from "../localization/content-translation-presentation";
+import type { ContentGenerationUnitView } from "../localization/content-generation-view";
 import { previewTranslationRuntime } from "./preview-i18n";
 
 type Direction = "ltr" | "rtl";
@@ -45,6 +46,7 @@ export const scenarios: readonly Scenario[] = [
   { id: "topic-ltr", label: "Solved topic · LTR · user", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api", view: "topic" },
   { id: "topic-reply-error-ltr", label: "Reply error · LTR", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api", view: "topic" },
   { id: "topic-unsolved-ltr", label: "Unsolved topic · LTR · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/topics/typed-api", view: "topic" },
+  { id: "topic-tools-unsolved-ltr", label: "Topic tools · LTR · manager", locale: "en", direction: "ltr", identity: "manager", path: "/en/topics/typed-api", view: "topic" },
   { id: "topic-rtl", label: "Translated topic · RTL · manager", locale: "he", direction: "rtl", identity: "manager", path: "/he/topics/typed-api", view: "topic" },
   { id: "admin-ltr", label: "Authorization · LTR · manager", locale: "en", direction: "ltr", identity: "manager", path: "/en/admin/authorization", view: "admin" },
   { id: "empty-ltr", label: "Empty section · LTR", locale: "en", direction: "ltr", identity: "guest", path: "/en/sections/empty", view: "empty" },
@@ -465,7 +467,10 @@ function previewElement(scenario: Scenario) {
         scenario.locale,
         scenario.direction,
         scenario.identity,
-        scenario.id !== "topic-unsolved-ltr" && scenario.id !== "topic-reply-error-ltr",
+        scenario.id !== "topic-unsolved-ltr"
+          && scenario.id !== "topic-reply-error-ltr"
+          && scenario.id !== "topic-tools-unsolved-ltr",
+        scenario.identity === "manager",
       );
       return (
         <TopicView
@@ -488,6 +493,7 @@ function topicData(
   direction: Direction,
   identity: PreviewIdentity,
   solved: boolean,
+  showSecondaryControls: boolean,
 ) {
   const rtl = direction === "rtl";
   const baseTopic = {
@@ -514,12 +520,53 @@ function topicData(
     topic: translatedTopic,
     titlePresentation: topicTitlePresentation(rtl),
     postPresentations: postPresentations(rtl),
-    generationUnits: [],
+    generationUnits: showSecondaryControls && rtl
+      ? topicToolsGenerationUnits(locale)
+      : [],
     canReply: identity !== "guest",
-    canManageSolution: false,
-    canCorrectTitleSourceLocale: false,
-    correctablePostIds: [],
+    canManageSolution: showSecondaryControls,
+    canCorrectTitleSourceLocale: showSecondaryControls,
+    correctablePostIds: showSecondaryControls
+      ? translatedTopic.posts.map((post) => post.id)
+      : [],
   };
+}
+
+function topicToolsGenerationUnits(
+  targetLocale: "en" | "he",
+): ContentGenerationUnitView[] {
+  return [
+    {
+      key: JSON.stringify(["topic-title", topicId, "title-r1", targetLocale]),
+      contentType: "topic-title",
+      contentId: topicId,
+      revisionId: "title-r1",
+      targetLocale,
+      state: "current",
+      automatic: false,
+      explicitRequired: false,
+    },
+    {
+      key: JSON.stringify(["post-body", "answer", "post-r2", targetLocale]),
+      contentType: "post-body",
+      contentId: "answer",
+      revisionId: "post-r2",
+      targetLocale,
+      state: "current",
+      automatic: false,
+      explicitRequired: false,
+    },
+    {
+      key: JSON.stringify(["post-body", "followup", "post-r3", targetLocale]),
+      contentType: "post-body",
+      contentId: "followup",
+      revisionId: "post-r3",
+      targetLocale,
+      state: "failed",
+      automatic: false,
+      explicitRequired: false,
+    },
+  ];
 }
 
 function authorizationData(locale: string) {
