@@ -451,19 +451,31 @@ describe("forum read states", () => {
     expect(followupContent).toHaveClass("forum-post-content");
     expect(followupContent).toContainElement(followupPost!.querySelector(".post-body"));
     expect(followupContent).toContainElement(followupPost!.querySelector(".solution-form"));
+    const followupTools = followupPost!.querySelector("details.message-secondary-tools");
+    expect(followupTools).not.toBeNull();
+    expect(followupTools).not.toHaveAttribute("open");
+    fireEvent.click(followupTools!.querySelector("summary")!);
     expect(screen.getByRole("button", { name: "Select as best answer" })).toBeInTheDocument();
   });
 
-  it("shows solution controls only to the topic author", async () => {
+  it("shows solution controls only to the topic author behind progressive disclosure", async () => {
     const unsolved = topicRenderData(topic, { canReply: true, canManageSolution: true });
     const authorView = renderRoute(TopicRoute, unsolved, "/en/topics/typed-api", "en", "ltr");
-    expect(await screen.findByRole("button", { name: "Mark as solved" })).toBeInTheDocument();
+    const topicTools = await screen.findByText("Topic tools");
+    const topicToolsDetails = topicTools.closest("details");
+    expect(topicToolsDetails).not.toBeNull();
+    expect(topicToolsDetails).not.toHaveAttribute("open");
+    expect(screen.queryByRole("button", { name: "Mark as solved" })).not.toBeInTheDocument();
+    fireEvent.click(topicTools);
+    expect(screen.getByRole("button", { name: "Mark as solved" })).toBeInTheDocument();
     authorView.unmount();
+
     renderRoute(TopicRoute, { ...unsolved, canManageSolution: false }, "/en/topics/typed-api", "en", "ltr");
+    expect(screen.queryByText("Topic tools")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Mark as solved" })).not.toBeInTheDocument();
   });
 
-  it("renders explicit source-locale correction controls only for authorized resources", async () => {
+  it("renders source-locale correction only for authorized resources behind secondary disclosures", async () => {
     renderRoute(
       TopicRoute,
       topicRenderData(topic, {
@@ -474,7 +486,17 @@ describe("forum read states", () => {
       "en",
       "ltr",
     );
-    expect(await screen.findAllByRole("button", { name: "Correct language" })).toHaveLength(2);
+
+    const topicTools = await screen.findByText("Topic tools");
+    const messageTools = screen.getByText("Message tools");
+    expect(topicTools.closest("details")).not.toHaveAttribute("open");
+    expect(messageTools.closest("details")).not.toHaveAttribute("open");
+    expect(screen.queryByRole("button", { name: "Correct language" })).not.toBeInTheDocument();
+
+    fireEvent.click(topicTools);
+    fireEvent.click(messageTools);
+
+    expect(screen.getAllByRole("button", { name: "Correct language" })).toHaveLength(2);
     expect(screen.getAllByText("Source language: en")).toHaveLength(2);
     expect(document.querySelector('input[name="expectedRevisionId"][value="title-r1"]')).not.toBeNull();
     expect(document.querySelector('input[name="postId"][value="answer"]')).not.toBeNull();
