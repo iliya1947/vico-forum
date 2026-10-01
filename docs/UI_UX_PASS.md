@@ -120,7 +120,8 @@ dependency requires a concrete need, official-version verification and separate 
 
 - Vico Orange is the primary brand accent over neutral technical surfaces.
 - The homepage brand lockup is deliberately more prominent than the tagline and secondary header
-  controls.
+  controls. It uses the owner-provided Vico mark beside the wordmark, with `Vico` in Vico Orange
+  and `Forum` in the theme-appropriate neutral foreground.
 - Orange action controls use a dark foreground in Light and a light foreground in Dark; non-action
   accent surfaces keep their own semantic foreground treatment.
 - The interface stays information-dense and forum-oriented, using compact horizontal rows rather
@@ -146,8 +147,8 @@ composition:
 3. The brand already returns to the homepage, so the second header row does not duplicate a
    `Home` item. Its approved discovery navigation is `Unanswered · Tags · Popular`, plus
    `Unread` only for authenticated users. These entries use compact icon-led navigation without
-   filled button chrome: neutral text and outline icons at rest, with Vico Orange reserved for
-   hover/focus/active emphasis and a short underline.
+   filled button chrome: Vico Orange labels with subdued outline icons at rest; hover/focus/active
+   deepens the accent and adds a short underline.
    Until the corresponding heavy subsystem exists, these approved entry points follow the shared
    `Under development` pre-release behavior.
 4. `Popular` means topics with the highest activity inside a bounded period rather than an
