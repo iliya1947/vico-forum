@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Link, isRouteErrorResponse, useLocation, useNavigate, useRouteError } from "react-router";
+import { Link, isRouteErrorResponse, useLocation, useNavigate, useParams, useRouteError } from "react-router";
 import { useTranslation } from "react-i18next";
 import { forumIndexPath, underDevelopmentPath } from "./paths";
 import { AuthControls, useHeaderAuthUser } from "../auth/auth-controls";
@@ -192,11 +192,16 @@ export function ForumShell({
 }: {
   locale: string;
   children: ReactNode;
-  variant?: "home" | "category" | "section" | "topic" | "admin";
+  variant?: "home" | "category" | "section" | "topic" | "admin" | "system";
 }) {
   const { t } = useTranslation("common");
   const authUser = useHeaderAuthUser();
-  const useApprovedHeader = variant === "home" || variant === "category" || variant === "section" || variant === "topic" || variant === "admin";
+  const useApprovedHeader = variant === "home"
+    || variant === "category"
+    || variant === "section"
+    || variant === "topic"
+    || variant === "admin"
+    || variant === "system";
 
   return (
     <main className={
@@ -210,7 +215,9 @@ export function ForumShell({
               ? "forum-shell home-shell topic-shell"
               : variant === "admin"
                 ? "forum-shell home-shell admin-shell"
-                : "forum-shell"
+                : variant === "system"
+                  ? "forum-shell home-shell system-shell"
+                  : "forum-shell"
     }>
       <header className="site-header">
         <div className="site-header-top">
@@ -330,11 +337,34 @@ export function EmptyState({ children }: { children: ReactNode }) {
 export function ForumRouteError() {
   const error = useRouteError();
   const { t } = useTranslation("common");
-  const notFound = isRouteErrorResponse(error) && error.status === 404;
+  const params = useParams();
+  const location = useLocation();
+  const status = isRouteErrorResponse(error) ? error.status : 500;
+  const locale = params.locale ?? location.pathname.split("/").filter(Boolean)[0] ?? "en";
+
+  const copy = status === 401
+    ? { heading: t("routeUnauthenticatedHeading"), body: t("routeUnauthenticatedBody") }
+    : status === 403
+      ? { heading: t("routeForbiddenHeading"), body: t("routeForbiddenBody") }
+      : status === 404
+        ? { heading: t("forumNotFoundHeading"), body: t("forumNotFoundBody") }
+        : status === 503
+          ? { heading: t("routeUnavailableHeading"), body: t("routeUnavailableBody") }
+          : { heading: t("forumErrorHeading"), body: t("forumErrorBody") };
+
   return (
-    <section className="route-state" role="alert">
-      <h1>{notFound ? t("forumNotFoundHeading") : t("forumErrorHeading")}</h1>
-      <p>{notFound ? t("forumNotFoundBody") : t("forumErrorBody")}</p>
-    </section>
+    <ForumShell locale={locale} variant="system">
+      <section className="system-state" role="alert" data-status={status}>
+        <div className="system-state-code" aria-hidden="true">{status}</div>
+        <div className="system-state-copy">
+          <p className="eyebrow">{t("systemStateEyebrow")}</p>
+          <h1>{copy.heading}</h1>
+          <p>{copy.body}</p>
+          <Link className="system-state-action" to={forumIndexPath(locale)}>
+            {t("routeBackToForum")}
+          </Link>
+        </div>
+      </section>
+    </ForumShell>
   );
 }
