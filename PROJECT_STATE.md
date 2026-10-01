@@ -64,6 +64,14 @@ Vico Forum находится в ранней pre-release разработке.
   компактным in-page entry point, добавлены responsive/RTL/empty-section presentation states.
   Repository CI и Pages для принятой реализации проходят. Следующая bounded UI/UX подзадача после
   merge — Topics/messages/participation.
+- Topic-reading/messages slice реализован в PR #161 без backend/DB изменений: принятый shell/header
+  переиспользован; original question остаётся первой, selected best answer визуально переносится
+  сразу после неё без изменения исходного message number/permanent anchor, остальные сообщения
+  сохраняют линейный repository order. Message cards используют существующие author/content data,
+  safe Markdown/code rendering, translation provenance/original disclosure и текущие protected
+  controls; добавлены responsive/RTL-safe geometry и solved/unsolved/translated preview states.
+  Full authoring-form redesign и secondary-control cleanup остаются отдельными следующими slices.
+  CI/Pages и owner visual acceptance PR #161 ещё не зафиксированы.
 - Target search, notifications и незавершённые footer/product entry points во время owner-only
   pre-release ведут на общую `Under development` page/checklist вместо fake behavior.
 - Для owner-only pre-release незавершённые approved target functions могут оставаться видимыми и
