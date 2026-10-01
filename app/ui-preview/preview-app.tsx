@@ -33,7 +33,9 @@ type PreviewVariant =
   | "section-form-error"
   | "topic-reply-error"
   | "topic-unsolved"
-  | "topic-tools";
+  | "topic-tools"
+  | "admin-success"
+  | "admin-conflict";
 
 interface Scenario {
   id: string;
@@ -65,6 +67,8 @@ export const scenarios: readonly Scenario[] = [
   { id: "topic-unsolved", label: "Unsolved topic · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/topics/typed-api", view: "topic", variant: "topic-unsolved" },
   { id: "topic-tools", label: "Topic tools · manager", locale: "en", direction: "ltr", identity: "manager", path: "/en/topics/typed-api", view: "topic", variant: "topic-tools" },
   { id: "admin", label: "Authorization · manager", locale: "en", direction: "ltr", identity: "manager", path: "/en/admin/authorization", view: "admin" },
+  { id: "admin-success", label: "Authorization · saved · manager", locale: "en", direction: "ltr", identity: "manager", path: "/en/admin/authorization", view: "admin", variant: "admin-success" },
+  { id: "admin-conflict", label: "Authorization · conflict · manager", locale: "en", direction: "ltr", identity: "manager", path: "/en/admin/authorization", view: "admin", variant: "admin-conflict" },
   { id: "empty-section", label: "Empty section · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/sections/empty", view: "empty" },
   { id: "not-found", label: "404 state · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/missing", view: "not-found" },
 ] as const;
@@ -597,7 +601,12 @@ function previewElement(scenario: Scenario) {
     }
     case "admin": {
       const data = authorizationData(scenario.locale);
-      return <AuthorizationAdminView {...data} />;
+      const result = scenario.variant === "admin-success"
+        ? { ok: true as const }
+        : scenario.variant === "admin-conflict"
+          ? { error: "conflict" as const }
+          : undefined;
+      return <AuthorizationAdminView {...data} result={result} />;
     }
     case "not-found":
       throw new Error("not-found is handled by previewRouter");
@@ -712,6 +721,12 @@ function authorizationData(locale: string) {
     displayName: "Admin",
     isSystem: true,
   };
+  const roleReviewer = {
+    id: "role-reviewer",
+    slug: "reviewer",
+    displayName: "Reviewer",
+    isSystem: false,
+  };
   const userGrants: PermissionKey[] = ["forum.topic.create", "forum.reply.create"];
   const moderatorGrants: PermissionKey[] = [
     ...userGrants,
@@ -719,6 +734,10 @@ function authorizationData(locale: string) {
     "forum.sourceLocale.correctAny",
   ];
   const adminGrants: PermissionKey[] = [...PERMISSION_CATALOG];
+  const reviewerGrants: PermissionKey[] = [
+    "forum.reply.create",
+    "forum.translation.generate",
+  ];
   const userEffectivePermissions: PermissionKey[] = [
     ...userGrants,
     "forum.translation.generate",
@@ -731,6 +750,7 @@ function authorizationData(locale: string) {
       { ...roleUser, grants: userGrants },
       { ...roleModerator, grants: moderatorGrants },
       { ...roleAdmin, grants: adminGrants },
+      { ...roleReviewer, grants: reviewerGrants },
     ],
     users: [
       {
@@ -759,6 +779,20 @@ function authorizationData(locale: string) {
           grants: userGrants,
           overrides: { "forum.translation.generate": "allow" as const },
           effectivePermissions: userEffectivePermissions,
+        },
+      },
+      {
+        id: "noa",
+        name: "Noa Levi",
+        email: "noa@example.test",
+        role: roleReviewer,
+        explicitAssignment: true,
+        authorization: {
+          role: roleReviewer,
+          explicitAssignment: true,
+          grants: reviewerGrants,
+          overrides: { "forum.reply.create": "deny" as const },
+          effectivePermissions: ["forum.translation.generate"] as PermissionKey[],
         },
       },
     ],
