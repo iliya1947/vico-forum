@@ -139,31 +139,41 @@ composition:
    navigation. Topic creation belongs inside a concrete forum section. Rules and Help move to the
    footer; About Vico, Feedback and Privacy are footer-level destinations. Final language-switcher
    placement remains open.
-3. Keep global search as an approved target function. Authenticated UI keeps notifications and an
+3. The brand already returns to the homepage, so the second header row does not duplicate a
+   `Home` item. Its approved discovery navigation is `Unanswered · Tags · Popular`, plus
+   `Unread` only for authenticated users. Until the corresponding heavy subsystem exists, these
+   approved entry points follow the shared `Under development` pre-release behavior.
+4. `Popular` means topics with the highest activity inside a bounded period rather than an
+   all-time ranking. Its approved destination presents three simultaneous period columns:
+   `24 hours`, `7 days`, and `30 days`.
+5. Keep global search as an approved target function. Authenticated UI keeps notifications and an
    account/avatar entry point; the notification badge is shown only for unread notifications.
-4. The six approved primary forum destinations follow the owner’s labels and order:
+6. The six approved primary forum destinations follow the owner’s labels and order:
    `Помощь и решения`, `Vibe Coding и AI-инструменты`, `Разработка`,
    `Deploy и инфраструктура`, `Проекты и разборы`, `Сообщество`.
    Implementation still routes user-facing strings through the canonical English/i18n catalog;
    these approved product labels do not change the authoritative domain hierarchy
    `category → section → topic → messages`.
-5. Every homepage forum block uses the same four-part structure: icon/name/description,
-   `Pinned`, `Latest topics`, and section statistics.
-6. `Pinned` is mandatory in the target presentation, visually secondary to the section title but
+7. Every homepage forum block uses the same four-part structure: icon/name/description,
+   `Pinned`, `Latest topics`, and section statistics, plus a dedicated entry action at the far
+   edge of the card.
+8. `Pinned` is mandatory in the target presentation, visually secondary to the section title but
    clearly discoverable, with compact topics and orange markers.
-7. `Latest topics` shows topic title, author/avatar and relative activity time; the same area is
+9. `Latest topics` shows topic title, author/avatar and relative activity time; the same area is
    designed to carry approved topic states such as solved, unanswered, unread and new.
-8. Section statistics use real topic/message counts in the real application. Representative/mock
-   identities and numbers are allowed only in the Pages visual fixture.
-9. The circular orange expand control expands more pinned/latest content in the same block; it does
+10. Section statistics use real topic/message counts in the real application. Representative/mock
+   identities and numbers are allowed only in the Pages visual fixture. On desktop this statistics
+   area stays compact; a separate full-height orange action rail sits at the far card edge and uses
+   a bold white arrow to enter that forum destination.
+11. The circular orange expand control expands more pinned/latest content in the same block; it does
    not navigate. On desktop its horizontal center aligns exactly with the divider between
    `Pinned` and `Latest topics`, and its vertical center sits on the card bottom boundary so it
    straddles the edge. The coordinate is consistent across all cards and independent of text
    height. Mobile adapts the control to the single-column structure instead of forcing the desktop
    coordinate.
-10. The lower homepage zone keeps `Who's online` and `Forum statistics`, using only useful real
+12. The lower homepage zone keeps `Who's online` and `Forum statistics`, using only useful real
     metrics such as topics, messages, registered users and online count when available.
-11. Mobile preserves the same substantive content in one column:
+13. Mobile preserves the same substantive content in one column:
     description → pinned → latest topics → statistics.
 
 ### Topic, message and authoring target
