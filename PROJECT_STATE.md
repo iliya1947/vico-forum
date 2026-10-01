@@ -115,14 +115,16 @@ Vico Forum находится в ранней pre-release разработке.
   representative normal identity states. В Pages auth-клики намеренно блокируются и используются
   только для visual-state review; это не является real OAuth smoke. Backend/DB/permissions/OAuth
   configuration не менялись. Repository CI и Pages для принятой реализации проходят.
-- Authorization-management presentation вынесен в PR #165: существующий protected admin flow
-  переиспользует accepted forum shell/header, роли и пользователи организованы в compact
-  management cards, role grants/user assignment/per-user overrides/effective permissions
-  сгруппированы без изменения intent/field contracts. Custom-role deletion визуально отделён как
-  destructive action; Pages fixture дополнен custom Reviewer role/user и saved/conflict states.
-  Server-side permission checks, same-origin boundary, dynamic permission model и lockout
-  safeguards не меняются. Repository CI и Pages для текущей реализации проходят; owner visual
-  acceptance PR #165 ещё не зафиксирована.
+- Authorization-management presentation в PR #165 прошёл owner visual acceptance в GitHub Pages
+  2026-10-01: существующий protected admin flow переиспользует accepted forum shell/header, роли и
+  пользователи организованы в compact management cards, role grants/user assignment/per-user
+  overrides/effective permissions сгруппированы без изменения intent/field contracts. Custom-role
+  deletion визуально отделён как destructive action; Pages fixture включает custom Reviewer
+  role/user и saved/conflict states. Server-side permission checks, same-origin boundary, dynamic
+  permission model и lockout safeguards не менялись. Владелец отдельно отметил, что более глубокая
+  переработка самой модели/workflow управления ролями и permissions может потребоваться позже; это
+  не считается дефектом текущего visual slice и не меняет действующий authorization contract.
+  Repository CI и Pages для принятой реализации проходят.
 - Target search, notifications и незавершённые footer/product entry points во время owner-only
   pre-release ведут на общую `Under development` page/checklist вместо fake behavior.
 - Для owner-only pre-release незавершённые approved target functions могут оставаться видимыми и
