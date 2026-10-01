@@ -31,6 +31,9 @@ translation/runtime behavior. Эти границы и финальная produc
 Preview-механизм должен оставаться минимальным, обратимым и переиспользовать ту же presentation
 реализацию, что и приложение. Он может показывать approved target UI states, но не должен
 становиться отдельной реализацией продукта или подменять отсутствующую backend/domain logic.
+Embedded iframe URL включает build-specific cache key, полученный из текущего hashed preview
+bundle, чтобы GitHub Pages не мог после deploy отдать iframe устаревший HTML со ссылкой на уже
+заменённый hashed asset.
 
 ## Source-of-truth boundaries
 
@@ -119,6 +122,13 @@ dependency requires a concrete need, official-version verification and separate 
 ### Visual foundation and theme
 
 - Vico Orange is the primary brand accent over neutral technical surfaces.
+- The homepage brand lockup is deliberately more prominent than the tagline and secondary header
+  controls. It uses separate owner-provided Light/Dark Vico marks beside the wordmark and switches
+  them with the active theme. The mark is intentionally large enough to be a primary header
+  identity element; `Vico` stays Vico Orange and `Forum` uses the theme-appropriate neutral
+  foreground.
+- Orange action controls use a dark foreground in Light and a light foreground in Dark; non-action
+  accent surfaces keep their own semantic foreground treatment.
 - The interface stays information-dense and forum-oriented, using compact horizontal rows rather
   than oversized dashboard cards, with moderate radii and minimal shadow.
 - Light and Dark use identical geometry, components and layout. Theme-sensitive colors, surfaces,
@@ -139,31 +149,46 @@ composition:
    navigation. Topic creation belongs inside a concrete forum section. Rules and Help move to the
    footer; About Vico, Feedback and Privacy are footer-level destinations. Final language-switcher
    placement remains open.
-3. Keep global search as an approved target function. Authenticated UI keeps notifications and an
+3. The brand already returns to the homepage, so the second header row does not duplicate a
+   `Home` item. Its approved discovery navigation is `Unanswered · Tags · Popular`, plus
+   `Unread` only for authenticated users. These entries use compact icon-led navigation without
+   filled button chrome: Vico Orange labels and outline icons at rest; hover/focus/active deepens
+   the accent and adds a short underline. `Popular` uses an unambiguous trending-up icon.
+   Until the corresponding heavy subsystem exists, these approved entry points follow the shared
+   `Under development` pre-release behavior.
+4. `Popular` means topics with the highest activity inside a bounded period rather than an
+   all-time ranking. Its approved destination presents three simultaneous period columns:
+   `24 hours`, `7 days`, and `30 days`.
+5. Keep global search as an approved target function. Authenticated UI keeps notifications and an
    account/avatar entry point; the notification badge is shown only for unread notifications.
-4. The six approved primary forum destinations follow the owner’s labels and order:
+6. The six approved primary forum destinations follow the owner’s labels and order:
    `Помощь и решения`, `Vibe Coding и AI-инструменты`, `Разработка`,
    `Deploy и инфраструктура`, `Проекты и разборы`, `Сообщество`.
    Implementation still routes user-facing strings through the canonical English/i18n catalog;
    these approved product labels do not change the authoritative domain hierarchy
    `category → section → topic → messages`.
-5. Every homepage forum block uses the same four-part structure: icon/name/description,
-   `Pinned`, `Latest topics`, and section statistics.
-6. `Pinned` is mandatory in the target presentation, visually secondary to the section title but
+7. Every homepage forum block uses the same four-part structure: icon/name/description,
+   `Pinned`, `Latest topics`, and section statistics, plus a dedicated entry action at the far
+   edge of the card.
+8. `Pinned` is mandatory in the target presentation, visually secondary to the section title but
    clearly discoverable, with compact topics and orange markers.
-7. `Latest topics` shows topic title, author/avatar and relative activity time; the same area is
+9. `Latest topics` shows topic title, author/avatar and relative activity time; the same area is
    designed to carry approved topic states such as solved, unanswered, unread and new.
-8. Section statistics use real topic/message counts in the real application. Representative/mock
-   identities and numbers are allowed only in the Pages visual fixture.
-9. The circular orange expand control expands more pinned/latest content in the same block; it does
+10. Section statistics use real topic/message counts in the real application. Representative/mock
+   identities and numbers are allowed only in the Pages visual fixture. On desktop this statistics
+   area stays compact; a separate full-height orange action rail sits at the far card edge and uses
+   a bold white arrow. Until the redesigned forum category/section discovery presentation is ready,
+   that rail is an approved unfinished entry point and routes to the shared `Under development`
+   page instead of exposing the old scaffold through this action.
+11. The circular orange expand control expands more pinned/latest content in the same block; it does
    not navigate. On desktop its horizontal center aligns exactly with the divider between
    `Pinned` and `Latest topics`, and its vertical center sits on the card bottom boundary so it
    straddles the edge. The coordinate is consistent across all cards and independent of text
    height. Mobile adapts the control to the single-column structure instead of forcing the desktop
    coordinate.
-10. The lower homepage zone keeps `Who's online` and `Forum statistics`, using only useful real
+12. The lower homepage zone keeps `Who's online` and `Forum statistics`, using only useful real
     metrics such as topics, messages, registered users and online count when available.
-11. Mobile preserves the same substantive content in one column:
+13. Mobile preserves the same substantive content in one column:
     description → pinned → latest topics → statistics.
 
 ### Topic, message and authoring target
@@ -207,13 +232,13 @@ mobile-width previewing and representative LTR/RTL/identity/content states. The 
 deployed preview renders after the server/client boundary defect was fixed. This does not mark the
 full later browser acceptance matrix complete.
 
-### 2. Foundations, shell and approved homepage frame — repository implementation complete
+### 2. Foundations, shell and approved homepage frame — owner visual acceptance complete
 
-The bounded implementation now covers semantic tokens, persisted Light/Dark, the approved two-zone
+The bounded implementation covers semantic tokens, persisted Light/Dark, the approved two-zone
 shell/header/footer composition, homepage block geometry and the shared localized
-`Under development` page/checklist. Repository CI and the Pages preview pass for this
-implementation, while owner visual/browser acceptance remains required before this slice is treated
-as accepted.
+`Under development` page/checklist. Repository CI and GitHub Pages checks pass, and the owner
+accepted the corrected homepage visual result on 2026-10-01. This acceptance is for the homepage
+slice only and does not replace the final real-runtime/browser acceptance matrix for the full pass.
 
 - Real application homepage counts and latest-topic data continue to come from the existing forum
   reader; unavailable pinning and online-presence capabilities are not represented as fake runtime

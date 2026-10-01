@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-09-30
+Последнее обновление: 2026-10-01
 
 ## Назначение
 
@@ -31,14 +31,26 @@ Vico Forum находится в ранней pre-release разработке.
   актуальный target-product contract, порядок реализации и обязательная browser acceptance matrix
   зафиксированы в `docs/UI_UX_PASS.md`.
 - Первый bounded UI/UX slice уже merged: deterministic representative baseline, client-safe
-  presentation boundaries и GitHub Pages visual-progress preview. Владелец подтвердил, что
-  исправленный live preview рендерится; это не заменяет будущую real-runtime acceptance.
+  presentation boundaries и GitHub Pages visual-progress preview. Текущий correction branch
+  дополнительно cache-bust-ит embedded iframe по hash текущего preview bundle, чтобы новый Pages
+  deploy не мог оставить iframe на stale HTML со ссылкой на удалённый hashed asset. Это не
+  заменяет будущую real-runtime acceptance.
 - В текущем UI/UX slice реализованы и repository-CI/Pages-проверены semantic visual tokens,
   Light/Dark с first-use `prefers-color-scheme` и persisted manual choice, two-zone shell/header,
   approved homepage frame и общая локализованная страница `Under development`. Runtime homepage
   использует только существующие forum data для counts/latest topics; отсутствующие pinning и
   online-presence capability не имитируются real data. Это не означает финальную browser/real-runtime
   acceptance всего UI/UX pass.
+- Homepage correction slice прошёл owner visual acceptance в GitHub Pages. Приняты текущая
+  композиция homepage, icon-led discovery navigation `Unanswered · Tags · Popular` и
+  authenticated-only `Unread` без дублирующего `Home`, orange labels/icons и понятный
+  trending-up symbol для `Popular`, theme-aware owner-provided Light/Dark logo marks,
+  `Vico` orange / `Forum` neutral по теме, compact stats и отдельная full-height orange entry
+  rail. Пока redesigned category/section discovery presentation не готова, rail ведёт на общий
+  `Under development` path, а не в старый scaffold. `Popular` как реальная страница ещё не
+  реализована и до отдельной bounded подзадачи также остаётся на `Under development`. Дальнейшая
+  косметическая полировка homepage сейчас не является приоритетом; следующий общий UI/UX шаг —
+  forum discovery beyond homepage.
 - Target search, notifications и незавершённые footer/product entry points во время owner-only
   pre-release ведут на общую `Under development` page/checklist вместо fake behavior.
 - Для owner-only pre-release незавершённые approved target functions могут оставаться видимыми и
@@ -419,19 +431,20 @@ runtime roles/Hyperdrive writes и другие schema-dependent runtime capabil
 Текущий активный маршрут — standalone UI/UX product pass по утверждённому target-product contract:
 
 1. Reproducible visual baseline + GitHub Pages progress preview завершён и merged.
-2. Foundations/homepage implementation теперь покрывает semantic tokens, persisted Light/Dark,
-   two-zone shell/header/footer, approved homepage block geometry, lower information zone и общую
-   локализованную `Under development` page/checklist; repository CI/Pages для implementation
-   пройдены. Owner visual/browser acceptance этого slice ещё не считается завершённой.
-3. Следующий bounded UI/UX шаг после acceptance текущего homepage slice определяется из
-   `docs/UI_UX_PASS.md`: forum discovery beyond homepage и последующие topic/message/participation
-   improvements. Heavy approved subsystems из `Under development` остаются отдельными bounded tasks.
-4. Уже существующие product capabilities подключаются к реальным данным/поведению; незавершённые
+2. Foundations/homepage correction slice прошёл owner visual acceptance в GitHub Pages.
+   Дальнейшая косметическая полировка homepage сейчас не является приоритетом.
+3. `Popular` как отдельная bounded homepage/discovery subtask остаётся на `Under development`
+   до отдельной команды владельца; approved destination по-прежнему — три одновременные
+   activity-period колонки `24 hours / 7 days / 30 days`.
+4. Следующий общий UI/UX шаг — forum discovery beyond homepage по `docs/UI_UX_PASS.md`,
+   начиная с category/section presentation; затем topic/message/participation improvements.
+   Heavy approved subsystems из `Under development` остаются отдельными bounded tasks.
+5. Уже существующие product capabilities подключаются к реальным данным/поведению; незавершённые
    approved entry points не имитируют работу и временно ведут на `Under development`.
-5. После каждого implementation slice выполнять targeted automated checks и browser review.
-6. Завершить UI/UX pass только после полного CI и обязательной real-runtime visual/product
+6. После каждого implementation slice выполнять targeted automated checks и browser review.
+7. Завершить UI/UX pass только после полного CI и обязательной real-runtime visual/product
    acceptance из `docs/UI_UX_PASS.md`; GitHub Pages не заменяет эту проверку.
-7. Stage 6 infrastructure gates остаются на паузе до отдельного указания владельца.
+8. Stage 6 infrastructure gates остаются на паузе до отдельного указания владельца.
 
 Ранее подготовленный защищённый manual rollout mechanism остаётся в repository. При явном
 возобновлении Stage 6 актуальная последовательность остаётся следующей:

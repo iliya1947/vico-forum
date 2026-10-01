@@ -16,7 +16,8 @@ import type {
 } from "./mutations.server";
 import { forumCategoryPath, forumSectionPath, forumTopicPath, underDevelopmentPath } from "./paths";
 import {
-  HOMEPAGE_COMPACT_TOPIC_LIMIT,
+  HOMEPAGE_COMPACT_LATEST_LIMIT,
+  HOMEPAGE_COMPACT_PINNED_LIMIT,
   type HomepageCategoryOverview,
   type HomepageTopicSummary,
 } from "./homepage";
@@ -47,9 +48,11 @@ export function HomeView({
   );
 
   return (
-    <ForumShell locale={locale}>
+    <ForumShell locale={locale} variant="home">
       {categories.length === 0 ? <EmptyState>{t("categoriesEmpty")}</EmptyState> : (
-        <section className="home-forum-sections" aria-label={t("categoriesHeading")}>
+        <>
+          <h1 className="home-sections-heading">{t("homeForumSectionsHeading")}</h1>
+          <section className="home-forum-sections" aria-label={t("homeForumSectionsHeading")}>
           {categories.map((category) => (
             <HomepageCategoryCard
               key={category.id}
@@ -58,24 +61,19 @@ export function HomeView({
               referenceTime={referenceTime}
             />
           ))}
-        </section>
+          </section>
+        </>
       )}
 
       <section className="home-information" aria-label={t("forumStatisticsHeading")}>
-        <article className="home-information-card">
-          <p className="eyebrow">{t("whosOnlineHeading")}</p>
+        <article className="home-information-card home-online-card">
           <h2>{t("whosOnlineHeading")}</h2>
           <p>{t("onlinePresencePending")}</p>
           <Link to={underDevelopmentPath(locale, "online-presence")}>{t("viewDevelopmentStatus")}</Link>
         </article>
-        <article className="home-information-card">
-          <p className="eyebrow">{t("forumStatisticsHeading")}</p>
+        <article className="home-information-card home-statistics-card">
           <h2>{t("forumStatisticsHeading")}</h2>
           <dl className="forum-statistics">
-            <div>
-              <dt>{t("categoriesHeading")}</dt>
-              <dd>{categories.length}</dd>
-            </div>
             <div>
               <dt>{t("sectionLabel")}</dt>
               <dd>{totals.sections}</dd>
@@ -108,26 +106,23 @@ function HomepageCategoryCard({
   const [expanded, setExpanded] = useState(false);
   const pinned = expanded
     ? category.pinnedTopics
-    : category.pinnedTopics.slice(0, HOMEPAGE_COMPACT_TOPIC_LIMIT);
+    : category.pinnedTopics.slice(0, HOMEPAGE_COMPACT_PINNED_LIMIT);
   const latest = expanded
     ? category.latestTopics
-    : category.latestTopics.slice(0, HOMEPAGE_COMPACT_TOPIC_LIMIT);
-  const hasMore = category.pinnedTopics.length > HOMEPAGE_COMPACT_TOPIC_LIMIT
-    || category.latestTopics.length > HOMEPAGE_COMPACT_TOPIC_LIMIT;
+    : category.latestTopics.slice(0, HOMEPAGE_COMPACT_LATEST_LIMIT);
+  const hasMore = category.pinnedTopics.length > HOMEPAGE_COMPACT_PINNED_LIMIT
+    || category.latestTopics.length > HOMEPAGE_COMPACT_LATEST_LIMIT;
   const detailsId = `home-category-${category.id.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
 
   return (
     <article className="home-section-card">
       <div className="home-section-identity">
-        <div className="home-section-icon" aria-hidden="true">
-          {category.icon ?? category.name.trim().slice(0, 1).toUpperCase()}
-        </div>
+        <HomepageCategoryIcon icon={category.icon} name={category.name} />
         <div>
           <h2>
             <Link to={forumCategoryPath(locale, category.id)}>{category.name}</Link>
           </h2>
           <p>{category.description ?? t("homepageSectionFallbackDescription")}</p>
-          <span className="home-section-meta">{t("sectionCount", { count: category.sectionCount })}</span>
         </div>
       </div>
 
@@ -166,6 +161,16 @@ function HomepageCategoryCard({
         </span>
       </div>
 
+      <Link
+        className="home-section-enter"
+        to={underDevelopmentPath(locale, "forum-discovery")}
+        aria-label={t("forumDiscoveryDevelopmentStatus", { section: category.name })}
+      >
+        <svg aria-hidden="true" viewBox="0 0 24 24">
+          <path d="m9 5 7 7-7 7" />
+        </svg>
+      </Link>
+
       <button
         className="home-section-expand"
         type="button"
@@ -175,9 +180,38 @@ function HomepageCategoryCard({
         aria-label={t(expanded ? "homepageCollapse" : "homepageExpand")}
         onClick={() => setExpanded((value) => !value)}
       >
-        <span aria-hidden="true">{expanded ? "−" : "+"}</span>
+        <svg aria-hidden="true" viewBox="0 0 20 20">
+          <path d={expanded ? "m5 12 5-5 5 5" : "m5 8 5 5 5-5"} />
+        </svg>
       </button>
     </article>
+  );
+}
+
+function HomepageCategoryIcon({ icon, name }: { icon?: string; name: string }) {
+  const path = (() => {
+    switch (icon) {
+      case "help":
+        return <><path d="M4 5.5h16v10H9l-5 4z" /><path d="M8 9.5h8M8 12.5h5" /></>;
+      case "ai":
+        return <><path d="M7 5.5h10l2 4v7H5v-7z" /><path d="M8.5 10.5h.01M15.5 10.5h.01M9 14h6" /><path d="M12 3v2.5" /></>;
+      case "code":
+        return <><path d="m8 7-4 5 4 5M16 7l4 5-4 5M14 4l-4 16" /></>;
+      case "deploy":
+        return <><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5" /><path d="M5 14v5h14v-5" /></>;
+      case "projects":
+        return <><path d="M4 7h7l2 2h7v10H4z" /><path d="M7 4h6l2 3" /></>;
+      case "community":
+        return <><circle cx="9" cy="9" r="3" /><circle cx="17" cy="10" r="2.5" /><path d="M3.5 19c.6-3.2 2.5-5 5.5-5s5 1.8 5.5 5M14 15c2.9-.3 4.8 1 5.5 4" /></>;
+      default:
+        return null;
+    }
+  })();
+
+  return (
+    <div className="home-section-icon" aria-hidden="true">
+      {path ? <svg viewBox="0 0 24 24">{path}</svg> : name.trim().slice(0, 1).toUpperCase()}
+    </div>
   );
 }
 
@@ -209,23 +243,27 @@ function HomepageTopicList({
   return (
     <ul className="home-topic-list">
       {topics.map((topic) => (
-        <li key={topic.id}>
-          <span className="home-topic-title">
-            {pinned ? <span className="home-pinned-marker" aria-hidden="true" /> : null}
-            <Link to={forumTopicPath(locale, topic.id)}>{topic.title}</Link>
-          </span>
+        <li key={topic.id} className={showActivity ? "home-latest-topic" : undefined}>
           {showActivity ? (
-            <span className="home-topic-meta">
-              <span className="home-topic-avatar" aria-hidden="true">
-                {topic.authorName.trim().slice(0, 1).toUpperCase()}
-              </span>
-              <span>{topic.authorName}</span>
-              <span aria-hidden="true">·</span>
-              <time dateTime={topic.activityAt}>
-                {formatRelativeActivity(topic.activityAt, referenceTime, locale)}
-              </time>
+            <span className="home-topic-avatar" aria-hidden="true">
+              {topic.authorName.trim().slice(0, 1).toUpperCase()}
             </span>
           ) : null}
+          <span className="home-topic-copy">
+            <span className="home-topic-title">
+              {pinned ? <span className="home-pinned-marker" aria-hidden="true" /> : null}
+              <Link to={forumTopicPath(locale, topic.id)}>{topic.title}</Link>
+            </span>
+            {showActivity ? (
+              <span className="home-topic-meta">
+                <span>{topic.authorName}</span>
+                <span aria-hidden="true">·</span>
+                <time dateTime={topic.activityAt}>
+                  {formatRelativeActivity(topic.activityAt, referenceTime, locale)}
+                </time>
+              </span>
+            ) : null}
+          </span>
         </li>
       ))}
     </ul>

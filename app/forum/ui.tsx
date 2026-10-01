@@ -4,6 +4,8 @@ import { useTranslation } from "react-i18next";
 import { forumIndexPath, underDevelopmentPath } from "./paths";
 import { AuthControls, useHeaderAuthUser } from "../auth/auth-controls";
 import { DARK_THEME_QUERY, THEME_STORAGE_KEY, type Theme } from "../theme";
+import vicoForumLogoLight from "../assets/vico-forum-logo-light.webp";
+import vicoForumLogoDark from "../assets/vico-forum-logo-dark.webp";
 
 function readStoredTheme(): Theme | null {
   try {
@@ -92,16 +94,76 @@ function BellIcon() {
   );
 }
 
-export function ForumShell({ locale, children }: { locale: string; children: ReactNode }) {
+function DiscoveryIcon({ kind }: {
+  kind: "unanswered" | "tags" | "popular" | "unread";
+}) {
+  if (kind === "unanswered") {
+    return (
+      <svg className="discovery-icon" aria-hidden="true" viewBox="0 0 24 24">
+        <path d="M4 5.5h16v11H9l-5 3z" />
+        <path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.9.4-1 1-1 1.7" />
+        <path d="M12 15.6h.01" />
+      </svg>
+    );
+  }
+
+  if (kind === "tags") {
+    return (
+      <svg className="discovery-icon" aria-hidden="true" viewBox="0 0 24 24">
+        <path d="M4.5 5.5h8.2l6.8 6.8-7.2 7.2-6.8-6.8z" />
+        <circle cx="9" cy="9" r="1.2" />
+      </svg>
+    );
+  }
+
+  if (kind === "popular") {
+    return (
+      <svg className="discovery-icon" aria-hidden="true" viewBox="0 0 24 24">
+        <path d="m4 16 5-5 4 4 7-8" />
+        <path d="M15 7h5v5" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg className="discovery-icon" aria-hidden="true" viewBox="0 0 24 24">
+      <rect x="3.5" y="5.5" width="17" height="13" rx="1.5" />
+      <path d="m4.5 7 7.5 6 7.5-6" />
+    </svg>
+  );
+}
+
+export function ForumShell({
+  locale,
+  children,
+  variant,
+}: {
+  locale: string;
+  children: ReactNode;
+  variant?: "home";
+}) {
   const { t } = useTranslation("common");
   const authUser = useHeaderAuthUser();
 
   return (
-    <main className="forum-shell">
+    <main className={variant === "home" ? "forum-shell home-shell" : "forum-shell"}>
       <header className="site-header">
         <div className="site-header-top">
           <div className="brand-lockup">
-            <Link className="brand" to={forumIndexPath(locale)}>{t("productName")}</Link>
+            <Link className="brand" to={forumIndexPath(locale)} aria-label={t("productName")}>
+              {variant === "home" ? (
+                <>
+                  <span className="brand-mark" aria-hidden="true">
+                    <img className="brand-mark-image brand-mark-light" src={vicoForumLogoLight} alt="" />
+                    <img className="brand-mark-image brand-mark-dark" src={vicoForumLogoDark} alt="" />
+                  </span>
+                  <span className="brand-wordmark">
+                    <span className="brand-primary">Vico</span>
+                    <span className="brand-accent"> Forum</span>
+                  </span>
+                </>
+              ) : t("productName")}
+            </Link>
             <span className="site-tagline">{t("forumTagline")}</span>
           </div>
 
@@ -129,7 +191,30 @@ export function ForumShell({ locale, children }: { locale: string; children: Rea
           </div>
         </div>
         <nav className="site-primary-nav" aria-label={t("primaryNavigation")}>
-          <Link to={forumIndexPath(locale)}>{t("forumHomeNav")}</Link>
+          {variant === "home" ? (
+            <>
+              <Link className="home-discovery-link" to={underDevelopmentPath(locale, "unanswered-filter")}>
+                <DiscoveryIcon kind="unanswered" />
+                <span>{t("unansweredNav")}</span>
+              </Link>
+              <Link className="home-discovery-link" to={underDevelopmentPath(locale, "technology-tags")}>
+                <DiscoveryIcon kind="tags" />
+                <span>{t("tagsNav")}</span>
+              </Link>
+              <Link className="home-discovery-link" to={underDevelopmentPath(locale, "popular")}>
+                <DiscoveryIcon kind="popular" />
+                <span>{t("popularNav")}</span>
+              </Link>
+              {authUser ? (
+                <Link className="home-discovery-link" to={underDevelopmentPath(locale, "unread")}>
+                  <DiscoveryIcon kind="unread" />
+                  <span>{t("unreadNav")}</span>
+                </Link>
+              ) : null}
+            </>
+          ) : (
+            <Link to={forumIndexPath(locale)}>{t("forumHomeNav")}</Link>
+          )}
         </nav>
       </header>
 
