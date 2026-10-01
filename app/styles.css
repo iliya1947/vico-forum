@@ -2644,18 +2644,6 @@ p {
   line-height: 1.15;
 }
 
-.section-category-link {
-  display: inline-block;
-  margin-block-start: 0.35rem;
-  color: var(--color-text-muted);
-  font-size: 0.78rem;
-  text-decoration: none;
-}
-
-.section-category-link:hover {
-  color: var(--color-accent-hover);
-}
-
 .section-heading-side {
   display: grid;
   justify-items: end;
