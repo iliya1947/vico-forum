@@ -347,7 +347,8 @@ Authentication header presentation in PR #164 passed owner visual acceptance in 
 - Better Auth client/session behavior, callback safety, locale/RTL handling, authorization and
   Stage 6 external OAuth configuration remain unchanged.
 
-Authorization management presentation is isolated in PR #165 for owner review:
+Authorization management presentation in PR #165 passed owner visual acceptance in GitHub Pages
+on 2026-10-01:
 
 - the existing protected route and every mutation intent/field contract are preserved;
 - roles and users are grouped into compact management cards with clearer assignment, grant,
@@ -355,7 +356,10 @@ Authorization management presentation is isolated in PR #165 for owner review:
 - built-in/custom-role distinctions stay explicit and custom-role deletion is visually separated
   as a destructive action;
 - representative Pages data includes a custom role/user plus saved/conflict feedback states;
-- dynamic DB-backed authorization, same-origin checks and lockout safeguards remain unchanged.
+- dynamic DB-backed authorization, same-origin checks and lockout safeguards remain unchanged;
+- the owner noted that the underlying role/permission-management product workflow may warrant a
+  separate later redesign; that future product work is not a defect or scope expansion of this
+  accepted presentation slice.
 
 Remaining work:
 
