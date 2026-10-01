@@ -144,7 +144,18 @@ export function ForumShell({
           </div>
         </div>
         <nav className="site-primary-nav" aria-label={t("primaryNavigation")}>
-          <Link to={forumIndexPath(locale)}>{t("forumHomeNav")}</Link>
+          {variant === "home" ? (
+            <>
+              <Link to={underDevelopmentPath(locale, "unanswered-filter")}>{t("unansweredNav")}</Link>
+              <Link to={underDevelopmentPath(locale, "technology-tags")}>{t("tagsNav")}</Link>
+              <Link to={underDevelopmentPath(locale, "popular")}>{t("popularNav")}</Link>
+              {authUser ? (
+                <Link to={underDevelopmentPath(locale, "unread")}>{t("unreadNav")}</Link>
+              ) : null}
+            </>
+          ) : (
+            <Link to={forumIndexPath(locale)}>{t("forumHomeNav")}</Link>
+          )}
         </nav>
       </header>
 
