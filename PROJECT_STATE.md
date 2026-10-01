@@ -136,8 +136,11 @@ Vico Forum находится в ранней pre-release разработке.
   localized keyboard skip link к focusable forum content region, visible `focus-within` treatment
   для language selector, unclipped header focus rings и min/max-width guards для zoom/reflow
   pressure. Preview дополнен `Home · manager` для плотного account/header состояния; существующая
-  logical-direction/RTL geometry сохранена. Repository CI и Pages для текущей реализации проходят;
-  owner keyboard/visual acceptance PR #167 ещё не зафиксирована.
+  logical-direction/RTL geometry сохранена. Owner review выявил реальный mobile-only дефект ниже
+  `30rem`: section-enter SVG выпадал из compact styling и рендерился как большой browser-default
+  filled triangle. Дефект исправлен отдельной explicit mobile geometry/SVG style с RTL rotation.
+  Fresh CI/Pages для исправленного head и owner keyboard/visual acceptance PR #167 ещё не
+  зафиксированы.
 - Target search, notifications и незавершённые footer/product entry points во время owner-only
   pre-release ведут на общую `Under development` page/checklist вместо fake behavior.
 - Для owner-only pre-release незавершённые approved target functions могут оставаться видимыми и
