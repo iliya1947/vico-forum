@@ -6,6 +6,7 @@ import { createMemoryRouter, RouterProvider } from "react-router";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { canonicalEnglishCatalog } from "../localization/catalog";
+import { HeaderAuthProvider } from "../auth/auth-controls";
 import { createTranslationRuntime } from "../localization/runtime";
 import { UnderDevelopmentView } from "./under-development-view";
 import { HomeView } from "./views";
@@ -83,6 +84,8 @@ describe("homepage target presentation", () => {
     expect(await screen.findByRole("heading", { name: "Development" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "Pinned" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "Latest topics" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Open Development" }))
+      .toHaveAttribute("href", "/en/categories/development");
     expect(screen.getAllByText("12").length).toBeGreaterThan(0);
     expect(screen.getAllByText("48").length).toBeGreaterThan(0);
     expect(screen.getByRole("link", { name: "Pinned three" })).toBeVisible();
@@ -105,8 +108,30 @@ describe("homepage target presentation", () => {
 
     expect(await screen.findByRole("link", { name: "Search the forum" }))
       .toHaveAttribute("href", "/en/under-development?feature=search");
+    expect(screen.getByRole("link", { name: "Unanswered" }))
+      .toHaveAttribute("href", "/en/under-development?feature=unanswered-filter");
+    expect(screen.getByRole("link", { name: "Tags" }))
+      .toHaveAttribute("href", "/en/under-development?feature=technology-tags");
+    expect(screen.getByRole("link", { name: "Popular" }))
+      .toHaveAttribute("href", "/en/under-development?feature=popular");
+    expect(screen.queryByRole("link", { name: "Unread" })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Rules" }))
       .toHaveAttribute("href", "/en/under-development?feature=rules");
+  });
+
+  it("shows Unread in homepage navigation only for an authenticated user", async () => {
+    renderView(
+      <HeaderAuthProvider initialUser={{ name: "Ada Lovelace" }}>
+        <HomeView
+          locale="en"
+          referenceTime="2026-09-30T16:00:00.000Z"
+          categories={[]}
+        />
+      </HeaderAuthProvider>,
+    );
+
+    expect(await screen.findByRole("link", { name: "Unread" }))
+      .toHaveAttribute("href", "/en/under-development?feature=unread");
   });
 
   it("does not pretend pinned-topic data exists when runtime pinning is unavailable", async () => {
