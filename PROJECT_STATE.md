@@ -55,8 +55,8 @@ Vico Forum находится в ранней pre-release разработке.
   owner-approved header/logo/discovery nav переиспользованы без backend/DB изменений; category
   heading показывает только derived section/topic/message totals, section rows стали compact
   clickable cards с реальными counts и orange entry rail, добавлены responsive/RTL-safe geometry
-  и representative LTR/RTL/empty-category Pages states. CI/Pages и owner visual acceptance этого
-  slice ещё не зафиксированы.
+  и representative LTR/RTL/empty-category Pages states. Repository CI и Pages для текущей
+  реализации проходят; owner visual acceptance этого slice ещё не зафиксирована.
 - Target search, notifications и незавершённые footer/product entry points во время owner-only
   pre-release ведут на общую `Under development` page/checklist вместо fake behavior.
 - Для owner-only pre-release незавершённые approved target functions могут оставаться видимыми и
