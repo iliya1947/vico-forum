@@ -40,11 +40,13 @@ Vico Forum находится в ранней pre-release разработке.
   online-presence capability не имитируются real data. Это не означает финальную browser/real-runtime
   acceptance всего UI/UX pass.
 - Owner visual review merged homepage frame не принял: Desktop Pages-preview заметно расходился
-  с утверждённым mockup по композиции/геометрии category cards; после первого correction pass
-  владелец отдельно подтвердил неверный Light/Dark orange treatment и поломку homepage reflow при
-  browser zoom 150%+. Текущий bounded correction остаётся ограничен homepage visual acceptance:
-  palette и zoom/reflow исправляются до следующей owner Pages-проверки; следующие UI/UX slices
-  не продолжаются.
+  с утверждённым mockup по композиции/геометрии category cards; последующие homepage corrections
+  закрывают palette/zoom defects и текущие owner-approved navigation/card refinements. Вторая
+  header row теперь предназначена для discovery links `Unanswered · Tags · Popular` и
+  authenticated-only `Unread` без дублирующего `Home`; forum cards получают compact stats и
+  отдельную full-height orange entry rail. `Popular` как реальная страница ещё не реализована и
+  до следующей bounded подзадачи остаётся на общем `Under development` path. Owner visual
+  acceptance homepage всё ещё открыта; следующие discovery/topic slices не продолжаются.
 - Target search, notifications и незавершённые footer/product entry points во время owner-only
   pre-release ведут на общую `Under development` page/checklist вместо fake behavior.
 - Для owner-only pre-release незавершённые approved target functions могут оставаться видимыми и
@@ -425,21 +427,22 @@ runtime roles/Hyperdrive writes и другие schema-dependent runtime capabil
 Текущий активный маршрут — standalone UI/UX product pass по утверждённому target-product contract:
 
 1. Reproducible visual baseline + GitHub Pages progress preview завершён и merged.
-2. Foundations/homepage implementation технически merged и repository-CI/Pages-проверена, но
-   owner visual acceptance ещё не пройдена. После геометрического correction владелец подтвердил
-   ещё два текущих homepage defect: Light/Dark palette не совпадает с approved mockup и zoom 150%+
-   проваливается в старую oversized reflow-разметку. Текущий ближайший шаг — завершить этот bounded
-   homepage correction и повторить owner Pages-проверку; следующие discovery/topic slices не
-   продолжаются.
-3. Следующий bounded UI/UX шаг после acceptance текущего homepage slice определяется из
+2. Foundations/homepage implementation технически merged, но owner visual acceptance ещё не
+   пройдена. Текущий correction pass включает approved palette/zoom fixes, discovery navigation
+   `Unanswered · Tags · Popular · Unread(auth only)`, compact stats и vertical orange entry rail
+   на forum cards. Ближайший gate — повторная owner Pages-проверка homepage.
+3. После отдельной команды владельца следующий bounded homepage subtask — реализовать `Popular`
+   как три одновременные activity-period колонки `24 hours / 7 days / 30 days`; до этого его
+   entry point остаётся на `Under development`.
+4. Следующий общий UI/UX шаг после acceptance homepage определяется из
    `docs/UI_UX_PASS.md`: forum discovery beyond homepage и последующие topic/message/participation
    improvements. Heavy approved subsystems из `Under development` остаются отдельными bounded tasks.
-4. Уже существующие product capabilities подключаются к реальным данным/поведению; незавершённые
+5. Уже существующие product capabilities подключаются к реальным данным/поведению; незавершённые
    approved entry points не имитируют работу и временно ведут на `Under development`.
-5. После каждого implementation slice выполнять targeted automated checks и browser review.
-6. Завершить UI/UX pass только после полного CI и обязательной real-runtime visual/product
+6. После каждого implementation slice выполнять targeted automated checks и browser review.
+7. Завершить UI/UX pass только после полного CI и обязательной real-runtime visual/product
    acceptance из `docs/UI_UX_PASS.md`; GitHub Pages не заменяет эту проверку.
-7. Stage 6 infrastructure gates остаются на паузе до отдельного указания владельца.
+8. Stage 6 infrastructure gates остаются на паузе до отдельного указания владельца.
 
 Ранее подготовленный защищённый manual rollout mechanism остаётся в repository. При явном
 возобновлении Stage 6 актуальная последовательность остаётся следующей:
