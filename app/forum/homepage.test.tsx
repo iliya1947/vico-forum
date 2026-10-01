@@ -84,8 +84,8 @@ describe("homepage target presentation", () => {
     expect(await screen.findByRole("heading", { name: "Development" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "Pinned" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "Latest topics" })).toBeVisible();
-    expect(screen.getByRole("link", { name: "Open Development" }))
-      .toHaveAttribute("href", "/en/categories/development");
+    expect(screen.getByRole("link", { name: "Development: development status" }))
+      .toHaveAttribute("href", "/en/under-development?feature=forum-discovery");
     expect(screen.getAllByText("12").length).toBeGreaterThan(0);
     expect(screen.getAllByText("48").length).toBeGreaterThan(0);
     expect(screen.getByRole("link", { name: "Pinned three" })).toBeVisible();
