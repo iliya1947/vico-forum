@@ -258,20 +258,40 @@ export function ForumShell({
           <nav className="site-primary-nav" aria-label={t("primaryNavigation")}>
             {useApprovedHeader ? (
               <>
-                <Link className="home-discovery-link" to={underDevelopmentPath(locale, "unanswered-filter")}>
+                <Link
+                  className="home-discovery-link"
+                  to={underDevelopmentPath(locale, "unanswered-filter")}
+                  aria-label={t("unansweredNav")}
+                  title={t("unansweredNav")}
+                >
                   <DiscoveryIcon kind="unanswered" />
                   <span>{t("unansweredNav")}</span>
                 </Link>
-                <Link className="home-discovery-link" to={underDevelopmentPath(locale, "technology-tags")}>
+                <Link
+                  className="home-discovery-link"
+                  to={underDevelopmentPath(locale, "technology-tags")}
+                  aria-label={t("tagsNav")}
+                  title={t("tagsNav")}
+                >
                   <DiscoveryIcon kind="tags" />
                   <span>{t("tagsNav")}</span>
                 </Link>
-                <Link className="home-discovery-link" to={underDevelopmentPath(locale, "popular")}>
+                <Link
+                  className="home-discovery-link"
+                  to={underDevelopmentPath(locale, "popular")}
+                  aria-label={t("popularNav")}
+                  title={t("popularNav")}
+                >
                   <DiscoveryIcon kind="popular" />
                   <span>{t("popularNav")}</span>
                 </Link>
                 {authUser ? (
-                  <Link className="home-discovery-link" to={underDevelopmentPath(locale, "unread")}>
+                  <Link
+                    className="home-discovery-link"
+                    to={underDevelopmentPath(locale, "unread")}
+                    aria-label={t("unreadNav")}
+                    title={t("unreadNav")}
+                  >
                     <DiscoveryIcon kind="unread" />
                     <span>{t("unreadNav")}</span>
                   </Link>
