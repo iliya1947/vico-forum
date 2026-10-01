@@ -3355,7 +3355,7 @@ p {
   font-weight: 800;
 }
 
-.home-shell .forum-write-field > span {
+.home-shell .forum-write-field > label {
   line-height: 1.25;
 }
 
