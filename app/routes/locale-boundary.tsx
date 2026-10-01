@@ -18,6 +18,7 @@ import {
 import { CanonicalEnglishSource, LocalTranslationSource } from "../localization/sources";
 import { authSessionForRequest } from "../auth/request-context";
 import { HeaderAuthProvider } from "../auth/auth-controls";
+import { LocaleNavigationProvider } from "../localization/locale-navigation";
 import { authorizationForRequest } from "../authorization/request-context";
 import { AuthorizationUnavailableError } from "../../db/authorization-service";
 
@@ -68,6 +69,11 @@ export async function loader(args: LocaleBoundaryArgs) {
     locale = await guardLocale(args);
   }
 
+  const loadedRegistry = await registryForRequest(args.context);
+  const activeLocales = loadedRegistry.registry.activeLocales()
+    .map(({ tag, nativeName, direction }) => ({ tag, nativeName, direction }))
+    .sort((left, right) => left.tag < right.tag ? -1 : left.tag > right.tag ? 1 : 0);
+
   const store = uiTranslationStoreForRequest(args.context);
   const resourceLoader = new TranslationResourceLoader([
     localSource,
@@ -87,7 +93,11 @@ export async function loader(args: LocaleBoundaryArgs) {
       // The header link is presentation-only; the protected admin route checks permission independently.
     }
   }
-  return { ...snapshot, authUser: session ? { name: session.user.name, canManageAuthorization } : null };
+  return {
+    ...snapshot,
+    activeLocales,
+    authUser: session ? { name: session.user.name, canManageAuthorization } : null,
+  };
 }
 
 export default function LocaleBoundary() {
@@ -95,7 +105,9 @@ export default function LocaleBoundary() {
   const i18n = useMemo(() => createTranslationRuntime(snapshot), [snapshot]);
   return (
     <I18nextProvider i18n={i18n} defaultNS="common">
-      <HeaderAuthProvider initialUser={snapshot.authUser}><Outlet /></HeaderAuthProvider>
+      <LocaleNavigationProvider locales={snapshot.activeLocales}>
+        <HeaderAuthProvider initialUser={snapshot.authUser}><Outlet /></HeaderAuthProvider>
+      </LocaleNavigationProvider>
     </I18nextProvider>
   );
 }
