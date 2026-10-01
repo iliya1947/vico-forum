@@ -108,12 +108,13 @@ Vico Forum находится в ранней pre-release разработке.
   acceptance PR #163 в GitHub Pages подтверждён 2026-10-01, включая RU/HE локализацию, header
   language selector, LTR brand isolation внутри RTL UI, tagline/header corrections и
   locale-independent preview State.
-- Auth presentation slice открыт в PR #164: guest sign-in, signed-in identity/sign-out, pending
-  state и safe failed-auth feedback приведены к compact header presentation без изменения Better
-  Auth/session/callback behavior. Pages fixture получил deterministic pending/failed auth states,
-  а существующие Home guest/user states остаются representative normal identity states.
-  Backend/DB/permissions/OAuth configuration не меняются. Repository CI и Pages для текущей
-  реализации проходят; owner visual acceptance PR #164 ещё не зафиксирована.
+- Auth presentation slice в PR #164 прошёл owner visual acceptance в GitHub Pages 2026-10-01:
+  guest sign-in, signed-in identity/sign-out, pending state и safe failed-auth feedback приведены
+  к compact header presentation без изменения Better Auth/session/callback behavior. Pages fixture
+  содержит deterministic pending/failed auth states, а существующие Home guest/user states остаются
+  representative normal identity states. В Pages auth-клики намеренно блокируются и используются
+  только для visual-state review; это не является real OAuth smoke. Backend/DB/permissions/OAuth
+  configuration не менялись. Repository CI и Pages для принятой реализации проходят.
 - Target search, notifications и незавершённые footer/product entry points во время owner-only
   pre-release ведут на общую `Under development` page/checklist вместо fake behavior.
 - Для owner-only pre-release незавершённые approved target functions могут оставаться видимыми и
