@@ -633,7 +633,6 @@ export function TopicView({
                     </span>
                     <span className="topic-message-author-copy">
                       <strong>{post.authorName}</strong>
-                      {isOriginalQuestion && <small>{t("originalQuestion")}</small>}
                     </span>
                   </header>
 
