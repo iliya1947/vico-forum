@@ -16,7 +16,9 @@ import {
 } from "../forum/views";
 import type { ContentTranslationPresentation } from "../localization/content-translation-presentation";
 import type { ContentGenerationUnitView } from "../localization/content-generation-view";
-import { previewTranslationRuntime, type PreviewLocale } from "./preview-i18n";
+import { isPreviewLocale, previewTranslationRuntime, type PreviewLocale } from "./preview-i18n";
+import { LocaleNavigationProvider } from "../localization/locale-navigation";
+import { localeRegistry } from "../localization/registry";
 
 type Direction = "ltr" | "rtl";
 type PreviewIdentity = "guest" | "user" | "manager";
@@ -67,6 +69,23 @@ const topicId = "typed-api";
 
 const previewBuildKey =
   document.querySelector<HTMLScriptElement>('script[type="module"][src]')?.src ?? "dev";
+
+const previewLocaleOptions = localeRegistry.activeLocales()
+  .filter((locale) => isPreviewLocale(locale.tag))
+  .map(({ tag, nativeName, direction }) => ({ tag, nativeName, direction }))
+  .sort((left, right) => left.tag < right.tag ? -1 : left.tag > right.tag ? 1 : 0);
+
+function scenarioForLocale(scenario: Scenario, locale: PreviewLocale): Scenario {
+  const definition = localeRegistry.find(locale)?.locale;
+  if (!definition) return scenario;
+
+  return {
+    ...scenario,
+    locale,
+    direction: definition.direction,
+    path: scenario.path.replace(/^\/[^/?#]+/, `/${locale}`),
+  };
+}
 
 const category = {
   id: categoryId,
@@ -389,15 +408,20 @@ export function PreviewController() {
 
 export function EmbeddedPreview({ scenarioId }: { scenarioId: string }) {
   const scenario = scenarios.find((candidate) => candidate.id === scenarioId) ?? scenarios[0]!;
-  const runtime = useMemo(
-    () => previewTranslationRuntime(scenario.locale, scenario.direction),
-    [scenario.locale, scenario.direction],
+  const [previewLocale, setPreviewLocale] = useState<PreviewLocale>(scenario.locale);
+  const activeScenario = useMemo(
+    () => scenarioForLocale(scenario, previewLocale),
+    [scenario, previewLocale],
   );
-  const router = useMemo(() => previewRouter(scenario), [scenario]);
+  const runtime = useMemo(
+    () => previewTranslationRuntime(activeScenario.locale, activeScenario.direction),
+    [activeScenario.locale, activeScenario.direction],
+  );
+  const router = useMemo(() => previewRouter(activeScenario), [activeScenario]);
 
   useEffect(() => {
-    document.documentElement.lang = scenario.locale;
-    document.documentElement.dir = scenario.direction;
+    document.documentElement.lang = activeScenario.locale;
+    document.documentElement.dir = activeScenario.direction;
 
     const stopMutation = (event: Event) => {
       event.preventDefault();
@@ -415,14 +439,21 @@ export function EmbeddedPreview({ scenarioId }: { scenarioId: string }) {
       document.removeEventListener("submit", stopMutation, true);
       document.removeEventListener("click", stopAuth, true);
     };
-  }, [scenario.locale, scenario.direction]);
+  }, [activeScenario.locale, activeScenario.direction]);
 
   return (
-    <HeaderAuthProvider initialUser={previewUser(scenario.identity)}>
-      <I18nextProvider i18n={runtime}>
-        <RouterProvider router={router} />
-      </I18nextProvider>
-    </HeaderAuthProvider>
+    <LocaleNavigationProvider
+      locales={previewLocaleOptions}
+      onLocaleChange={(locale) => {
+        if (isPreviewLocale(locale)) setPreviewLocale(locale);
+      }}
+    >
+      <HeaderAuthProvider initialUser={previewUser(activeScenario.identity)}>
+        <I18nextProvider i18n={runtime}>
+          <RouterProvider router={router} />
+        </I18nextProvider>
+      </HeaderAuthProvider>
+    </LocaleNavigationProvider>
   );
 }
 
