@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { forumIndexPath, underDevelopmentPath } from "./paths";
 import { AuthControls, useHeaderAuthUser } from "../auth/auth-controls";
 import { DARK_THEME_QUERY, THEME_STORAGE_KEY, type Theme } from "../theme";
+import vicoForumLogo from "../assets/vico-forum-logo.png";
 
 function readStoredTheme(): Theme | null {
   try {
@@ -150,8 +151,11 @@ export function ForumShell({
             <Link className="brand" to={forumIndexPath(locale)} aria-label={t("productName")}>
               {variant === "home" ? (
                 <>
-                  <span className="brand-primary">Vico</span>
-                  <span className="brand-accent"> Forum</span>
+                  <img className="brand-mark" src={vicoForumLogo} alt="" />
+                  <span className="brand-wordmark">
+                    <span className="brand-primary">Vico</span>
+                    <span className="brand-accent"> Forum</span>
+                  </span>
                 </>
               ) : t("productName")}
             </Link>
