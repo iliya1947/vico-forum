@@ -145,7 +145,9 @@ composition:
    placement remains open.
 3. The brand already returns to the homepage, so the second header row does not duplicate a
    `Home` item. Its approved discovery navigation is `Unanswered · Tags · Popular`, plus
-   `Unread` only for authenticated users. These entries use compact orange button treatment.
+   `Unread` only for authenticated users. These entries use compact icon-led navigation without
+   filled button chrome: neutral text and outline icons at rest, with Vico Orange reserved for
+   hover/focus/active emphasis and a short underline.
    Until the corresponding heavy subsystem exists, these approved entry points follow the shared
    `Under development` pre-release behavior.
 4. `Popular` means topics with the highest activity inside a bounded period rather than an
