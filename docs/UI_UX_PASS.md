@@ -232,13 +232,13 @@ mobile-width previewing and representative LTR/RTL/identity/content states. The 
 deployed preview renders after the server/client boundary defect was fixed. This does not mark the
 full later browser acceptance matrix complete.
 
-### 2. Foundations, shell and approved homepage frame — repository implementation complete
+### 2. Foundations, shell and approved homepage frame — owner visual acceptance complete
 
-The bounded implementation now covers semantic tokens, persisted Light/Dark, the approved two-zone
+The bounded implementation covers semantic tokens, persisted Light/Dark, the approved two-zone
 shell/header/footer composition, homepage block geometry and the shared localized
-`Under development` page/checklist. Repository CI and the Pages preview pass for this
-implementation, while owner visual/browser acceptance remains required before this slice is treated
-as accepted.
+`Under development` page/checklist. Repository CI and GitHub Pages checks pass, and the owner
+accepted the corrected homepage visual result on 2026-10-01. This acceptance is for the homepage
+slice only and does not replace the final real-runtime/browser acceptance matrix for the full pass.
 
 - Real application homepage counts and latest-topic data continue to come from the existing forum
   reader; unavailable pinning and online-presence capabilities are not represented as fake runtime
