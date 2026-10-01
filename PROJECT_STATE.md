@@ -81,7 +81,8 @@ Vico Forum находится в ранней pre-release разработке.
   `aria-busy`, disabled fields/action и локализованный pending label. Existing server validation,
   permissions, origin protection и rate-limit semantics не менялись; полноценный editor,
   drafts/autosave и reply/quote relationships остаются будущими bounded tasks. CI/Pages и owner
-  visual acceptance этого slice ещё не зафиксированы.
+  Repository CI и Pages для текущей реализации проходят; owner visual acceptance этого slice ещё
+  не зафиксирована.
 - Target search, notifications и незавершённые footer/product entry points во время owner-only
   pre-release ведут на общую `Under development` page/checklist вместо fake behavior.
 - Для owner-only pre-release незавершённые approved target functions могут оставаться видимыми и
