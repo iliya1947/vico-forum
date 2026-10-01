@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Link, isRouteErrorResponse, useRouteError } from "react-router";
+import { Link, isRouteErrorResponse, useLocation, useNavigate, useRouteError } from "react-router";
 import { useTranslation } from "react-i18next";
 import { forumIndexPath, underDevelopmentPath } from "./paths";
 import { AuthControls, useHeaderAuthUser } from "../auth/auth-controls";
 import { DARK_THEME_QUERY, THEME_STORAGE_KEY, type Theme } from "../theme";
+import { useLocaleNavigation } from "../localization/locale-navigation";
 import vicoForumLogoLight from "../assets/vico-forum-logo-light.webp";
 import vicoForumLogoDark from "../assets/vico-forum-logo-dark.webp";
 
@@ -73,6 +74,57 @@ export function ThemeToggle() {
       <span className="theme-toggle-mark" aria-hidden="true">{theme === "dark" ? "☀" : "◐"}</span>
       <span>{theme === "dark" ? t("lightTheme") : theme === "light" ? t("darkTheme") : t("themeLabel")}</span>
     </button>
+  );
+}
+
+
+function GlobeIcon() {
+  return (
+    <svg className="ui-icon" aria-hidden="true" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M3.8 12h16.4" />
+      <path d="M12 3.5c2.4 2.2 3.8 5.2 3.8 8.5S14.4 18.3 12 20.5" />
+      <path d="M12 3.5C9.6 5.7 8.2 8.7 8.2 12s1.4 6.3 3.8 8.5" />
+    </svg>
+  );
+}
+
+export function LanguageSwitcher({ locale }: { locale: string }) {
+  const { locales, onLocaleChange } = useLocaleNavigation();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const current = locales.find((candidate) => candidate.tag === locale);
+
+  if (locales.length < 2) return null;
+
+  const changeLocale = (targetLocale: string) => {
+    if (targetLocale === locale || !locales.some((candidate) => candidate.tag === targetLocale)) return;
+    if (onLocaleChange) {
+      onLocaleChange(targetLocale);
+      return;
+    }
+
+    const segments = location.pathname.split("/");
+    if (segments.length < 2) return;
+    segments[1] = targetLocale;
+    navigate(`${segments.join("/")}${location.search}${location.hash}`);
+  };
+
+  return (
+    <label className="language-switcher">
+      <GlobeIcon />
+      <select
+        value={locale}
+        aria-label={current?.nativeName ?? locale}
+        onChange={(event) => changeLocale(event.currentTarget.value)}
+      >
+        {locales.map((candidate) => (
+          <option key={candidate.tag} value={candidate.tag} dir={candidate.direction}>
+            {candidate.nativeName}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }
 
@@ -197,6 +249,7 @@ export function ForumShell({
                 <BellIcon />
               </Link>
             ) : null}
+            <LanguageSwitcher locale={locale} />
             <ThemeToggle />
             <AuthControls locale={locale} />
           </div>
