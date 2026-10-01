@@ -119,6 +119,10 @@ dependency requires a concrete need, official-version verification and separate 
 ### Visual foundation and theme
 
 - Vico Orange is the primary brand accent over neutral technical surfaces.
+- The homepage brand lockup is deliberately more prominent than the tagline and secondary header
+  controls.
+- Orange action controls use a dark foreground in Light and a light foreground in Dark; non-action
+  accent surfaces keep their own semantic foreground treatment.
 - The interface stays information-dense and forum-oriented, using compact horizontal rows rather
   than oversized dashboard cards, with moderate radii and minimal shadow.
 - Light and Dark use identical geometry, components and layout. Theme-sensitive colors, surfaces,
