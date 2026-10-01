@@ -141,8 +141,9 @@ composition:
    placement remains open.
 3. The brand already returns to the homepage, so the second header row does not duplicate a
    `Home` item. Its approved discovery navigation is `Unanswered · Tags · Popular`, plus
-   `Unread` only for authenticated users. Until the corresponding heavy subsystem exists, these
-   approved entry points follow the shared `Under development` pre-release behavior.
+   `Unread` only for authenticated users. These entries use compact orange button treatment.
+   Until the corresponding heavy subsystem exists, these approved entry points follow the shared
+   `Under development` pre-release behavior.
 4. `Popular` means topics with the highest activity inside a bounded period rather than an
    all-time ranking. Its approved destination presents three simultaneous period columns:
    `24 hours`, `7 days`, and `30 days`.
@@ -164,7 +165,9 @@ composition:
 10. Section statistics use real topic/message counts in the real application. Representative/mock
    identities and numbers are allowed only in the Pages visual fixture. On desktop this statistics
    area stays compact; a separate full-height orange action rail sits at the far card edge and uses
-   a bold white arrow to enter that forum destination.
+   a bold white arrow. Until the redesigned forum category/section discovery presentation is ready,
+   that rail is an approved unfinished entry point and routes to the shared `Under development`
+   page instead of exposing the old scaffold through this action.
 11. The circular orange expand control expands more pinned/latest content in the same block; it does
    not navigate. On desktop its horizontal center aligns exactly with the divider between
    `Pinned` and `Latest topics`, and its vertical center sits on the card bottom boundary so it
