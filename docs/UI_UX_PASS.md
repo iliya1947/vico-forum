@@ -261,14 +261,25 @@ Category-page implementation in PR #159 passed owner visual acceptance in GitHub
 - the category heading exposes only derived section/topic/message totals;
 - section destinations are compact full-card links with real topic/message counts and a dedicated
   orange entry rail;
-- responsive, RTL and empty-category preview states are included;
-- Section-page implementation remains the next separate bounded subtask after this PR is merged.
+- responsive, RTL and empty-category preview states are included.
+
+Section-page implementation in PR #160 passed owner visual acceptance in GitHub Pages on
+2026-10-01:
+
+- it reuses the accepted homepage/category header and discovery navigation without changing data
+  contracts;
+- the section heading exposes only derived topic/message totals and keeps topic creation inside the
+  concrete section through the existing write flow;
+- topic destinations are compact full-card links with real author/message data and a dedicated
+  orange entry rail;
+- responsive, RTL and empty-section presentation states are included;
+- full create-topic form/editor redesign remains part of the later Topics/messages/participation
+  slice rather than expanding this discovery task.
 
 Remaining discovery work:
 
-- redesign the section/topic hierarchy for scanning, meaningful counts and clear click targets;
-- continue improving page headings and breadcrumbs, including wrapping and RTL order;
-- make empty sections useful without implying unavailable product features;
+- continue improving page headings and breadcrumbs where later slices expose edge cases;
+- make remaining empty discovery states useful without implying unavailable product features;
 - preserve the classic forum hierarchy and existing query/data contracts unless acceptance reveals
   a narrowly necessary presentation field.
 

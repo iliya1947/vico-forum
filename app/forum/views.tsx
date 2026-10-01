@@ -407,35 +407,81 @@ export function SectionView({
   actionData?: ForumMutationError;
 }) {
   const { t } = useTranslation("common");
+  const messageTotal = section.topics.reduce((sum, topic) => sum + topic.postCount, 0);
+
   return (
-    <ForumShell locale={locale}>
+    <ForumShell locale={locale} variant="section">
       <Breadcrumbs locale={locale} items={[
         { label: section.category.name, to: forumCategoryPath(locale, section.category.id) },
         { label: section.name },
       ]} />
-      <section className="page-heading">
-        <p className="eyebrow">{t("sectionLabel")}</p>
-        <h1>{section.name}</h1>
-      </section>
-      {section.topics.length === 0 ? <EmptyState>{t("topicsEmpty")}</EmptyState> : (
-        <div className="topic-table" role="table" aria-label={t("topicsHeading")}>
-          <div className="topic-row topic-table-header" role="row">
-            <span role="columnheader">{t("topicColumn")}</span>
-            <span role="columnheader">{t("postsColumn")}</span>
-          </div>
-          {section.topics.map((topic) => (
-            <div className="topic-row" role="row" key={topic.id}>
-              <span role="cell">
-                <Link to={forumTopicPath(locale, topic.id)}>{topic.title.originalContent}</Link>
-                <small>{t("startedBy", { author: topic.authorName })}</small>
-              </span>
-              <span role="cell" className="count-cell">{topic.postCount}</span>
-            </div>
-          ))}
+
+      <section className="section-heading">
+        <div>
+          <p className="eyebrow">{t("sectionLabel")}</p>
+          <h1>{section.name}</h1>
         </div>
+
+        <div className="section-heading-side">
+          <div className="section-heading-stats" aria-label={section.name}>
+            <span>{t("topicCount", { count: section.topics.length })}</span>
+            <span aria-hidden="true">·</span>
+            <span>{t("messageCount", { count: messageTotal })}</span>
+          </div>
+          {canCreateTopic ? (
+            <a className="section-create-topic-link" href="#create-topic">
+              {t("createTopicHeading")}
+            </a>
+          ) : null}
+        </div>
+      </section>
+
+      {section.topics.length === 0 ? (
+        <div className="section-empty">
+          <EmptyState>{t("topicsEmpty")}</EmptyState>
+        </div>
+      ) : (
+        <section className="section-topics" aria-label={t("topicsHeading")}>
+          <ul className="section-topic-list">
+            {section.topics.map((topic) => (
+              <li key={topic.id}>
+                <Link className="section-topic-card" to={forumTopicPath(locale, topic.id)}>
+                  <span className="section-topic-main">
+                    <span className="section-topic-icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24">
+                        <path d="M4 5.5h16v11H9l-5 3z" />
+                        <path d="M8 10h8M8 13h5" />
+                      </svg>
+                    </span>
+                    <span className="section-topic-copy">
+                      <strong>{topic.title.originalContent}</strong>
+                      <small>{t("startedBy", { author: topic.authorName })}</small>
+                    </span>
+                  </span>
+
+                  <span
+                    className="section-topic-count"
+                    role="group"
+                    aria-label={t("messageCount", { count: topic.postCount })}
+                  >
+                    <strong aria-hidden="true">{topic.postCount}</strong>
+                    <small aria-hidden="true">{t("postsColumn")}</small>
+                  </span>
+
+                  <span className="section-topic-enter" aria-hidden="true">
+                    <svg viewBox="0 0 24 24">
+                      <path d="m9 5 7 7-7 7" />
+                    </svg>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
+
       {canCreateTopic && (
-        <Form method="post" className="forum-write-form">
+        <Form id="create-topic" method="post" className="forum-write-form section-create-form">
           <h2>{t("createTopicHeading")}</h2>
           {actionData?.error && <p role="alert">{t(`forumWriteError_${actionData.error}`)}</p>}
           <label>{t("topicTitleLabel")}<input name="title" required /></label>

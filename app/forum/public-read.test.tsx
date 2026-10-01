@@ -193,7 +193,9 @@ describe.each([
 
     const sectionView = renderRoute(SectionRoute, sectionData, forumSectionPath(locale, section.id), locale, direction);
     expect(await screen.findByRole("link", { name: "Development" })).toHaveAttribute("href", `/${locale}/categories/development%2Fcore`);
-    expect(await screen.findByRole("link", { name: "How do I type an API?" })).toHaveAttribute("href", `/${locale}/topics/typed%2Fapi`);
+    const sectionTopicLink = await screen.findByRole("link", { name: /How do I type an API\?/ });
+    expect(sectionTopicLink).toHaveAttribute("href", `/${locale}/topics/typed%2Fapi`);
+    expect(sectionTopicLink).toHaveClass("section-topic-card");
     sectionView.unmount();
 
     renderRoute(TopicRoute, topicData, forumTopicPath(locale, topic.id), locale, direction);
@@ -266,6 +268,41 @@ describe("content translation presentation", () => {
     expect(document.querySelector("script")).toBeNull();
     expect(screen.getByRole("link", { name: "Example" })).toHaveAttribute("rel", "nofollow noopener noreferrer ugc");
     expect(screen.getByRole("link", { name: "Example" })).toHaveAttribute("target", "_blank");
+  });
+});
+
+describe("section topic count presentation", () => {
+  it("keeps localized message count semantics inside compact topic rows", async () => {
+    const data = {
+      locale: "en",
+      section: {
+        id: "typescript",
+        name: "TypeScript",
+        category: { id: "development", name: "Development" },
+        topics: [
+          {
+            id: "one",
+            authorName: "Alex",
+            postCount: 1,
+            createdAt: new Date("2026-09-27T10:00:00Z"),
+            title: { id: "title-one", originalContent: "One message topic", sourceLocale: "en" },
+          },
+          {
+            id: "two",
+            authorName: "Sam",
+            postCount: 2,
+            createdAt: new Date("2026-09-27T11:00:00Z"),
+            title: { id: "title-two", originalContent: "Two message topic", sourceLocale: "en" },
+          },
+        ],
+      },
+      canCreateTopic: false,
+    };
+
+    renderRoute(SectionRoute, data, "/en/sections/typescript", "en", "ltr");
+
+    expect(await screen.findByRole("group", { name: "1 message" })).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "2 messages" })).toBeInTheDocument();
   });
 });
 
