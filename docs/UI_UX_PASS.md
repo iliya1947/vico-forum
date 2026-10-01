@@ -254,14 +254,15 @@ slice only and does not replace the final real-runtime/browser acceptance matrix
 
 ### 3. Forum discovery beyond the homepage
 
-Category-page implementation is now isolated in PR #159 for review:
+Category-page implementation in PR #159 passed owner visual acceptance in GitHub Pages on
+2026-10-01:
 
 - it reuses the owner-accepted header/logo/discovery navigation without changing data contracts;
 - the category heading exposes only derived section/topic/message totals;
 - section destinations are compact full-card links with real topic/message counts and a dedicated
   orange entry rail;
 - responsive, RTL and empty-category preview states are included;
-- Section-page implementation remains the next separate bounded subtask and is not included here.
+- Section-page implementation remains the next separate bounded subtask after this PR is merged.
 
 Remaining discovery work:
 
