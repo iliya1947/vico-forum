@@ -310,8 +310,8 @@ Pages on 2026-10-01:
 - this slice does not implement the future full editor, drafts/autosave, reply/quote relationships
   or new backend behavior.
 
-Secondary translation/source-locale/solution control presentation is now isolated in PR #163
-for review:
+Secondary translation/source-locale/solution control presentation in PR #163 passed owner
+visual acceptance in GitHub Pages on 2026-10-01:
 
 - translation-generation feedback remains visible but uses a compact secondary treatment;
 - source-locale correction and solution-management mutations move behind native `details`
@@ -319,14 +319,12 @@ for review:
 - `Go to solution` remains visible as a reading/navigation action;
 - existing permissions, mutation intents, same-origin/validation boundaries, revision semantics and
   generation policy are unchanged;
-- representative manager LTR/RTL preview states expose both collapsed and expanded control groups;
-- before owner acceptance, the owner requested complete current UI copy for the three review
-  languages. Canonical English remains the only source catalog, while code-owned current manual
-  packs now provide Russian and Hebrew values for every current `common` key with fixed reviewed
-  source fingerprints;
-- Pages preview consumes those same manual packs rather than maintaining a separate partial Hebrew
-  dictionary and includes Russian review states. This is review coverage for `en`/`ru`/`he`,
-  not a fixed-locale product architecture: public locale identity remains generic and registry-owned.
+- complete current Russian and Hebrew manual UI packs cover every canonical `common` key while
+  canonical English remains the only source catalog and public locale identity remains generic and
+  registry-owned;
+- the accepted header includes the registry-driven language selector, locale-independent preview
+  State control, full desktop tagline, lower-row account controls and LTR VicoForum brand isolation
+  inside RTL UI.
 
 Remaining participation work:
 
@@ -336,7 +334,23 @@ Remaining participation work:
 
 ### 5. Auth, administration and system states
 
-- Polish guest, signed-in, pending and failed auth presentation.
+Authentication header presentation is isolated in PR #164 for owner review:
+
+- guest sign-in, signed-in identity and sign-out use the accepted compact header language;
+- pending and safe failed-auth presentation are explicit and accessible without exposing provider
+  details;
+- deterministic Pages states cover pending and failed authentication while existing Home guest/user
+  states cover normal identity presentation;
+- Better Auth client/session behavior, callback safety, locale/RTL handling, authorization and
+  Stage 6 external OAuth configuration remain unchanged.
+
+Remaining work:
+
+- Reorganize authorization management into comprehensible role/user groups while preserving every
+  existing mutation and the dynamic permission model.
+- Unify empty, `401`, `403`, `404`, `409`, `429`, `503` and unexpected-error presentation where the
+  current route contracts expose them; include safe recovery/navigation actions only.
+- Keep destructive actions visually distinct and preserve lockout safeguards.
 - Reorganize authorization management into comprehensible role/user groups while preserving every
   existing mutation and the dynamic permission model.
 - Unify empty, `401`, `403`, `404`, `409`, `429`, `503` and unexpected-error presentation where the
