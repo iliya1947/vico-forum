@@ -37,6 +37,8 @@ export const scenarios: readonly Scenario[] = [
   { id: "under-development-ltr", label: "Under development · LTR", locale: "en", direction: "ltr", identity: "guest", path: "/en/under-development?feature=search", view: "under-development" },
   { id: "under-development-rtl", label: "Under development · RTL", locale: "he", direction: "rtl", identity: "user", path: "/he/under-development?feature=notifications", view: "under-development" },
   { id: "category-ltr", label: "Category · LTR · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/development", view: "category" },
+  { id: "category-rtl", label: "Category · RTL · user", locale: "he", direction: "rtl", identity: "user", path: "/he/categories/development", view: "category" },
+  { id: "category-empty-ltr", label: "Empty category · LTR", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/empty", view: "category" },
   { id: "section-ltr", label: "Section · LTR · user", locale: "en", direction: "ltr", identity: "user", path: "/en/sections/typescript", view: "section" },
   { id: "topic-ltr", label: "Solved topic · LTR · user", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api", view: "topic" },
   { id: "topic-rtl", label: "Translated topic · RTL · manager", locale: "he", direction: "rtl", identity: "manager", path: "/he/topics/typed-api", view: "topic" },
@@ -60,6 +62,22 @@ const category = {
     { id: "cloud", name: "Cloud & deployment", topicCount: 5, postCount: 41 },
     { id: "databases", name: "Databases", topicCount: 2, postCount: 12 },
   ],
+};
+
+const categoryRtl = {
+  id: categoryId,
+  name: "פיתוח",
+  sections: [
+    { id: sectionId, name: "TypeScript וארכיטקטורה", topicCount: 3, postCount: 23 },
+    { id: "cloud", name: "ענן ופריסה", topicCount: 5, postCount: 41 },
+    { id: "databases", name: "מסדי נתונים", topicCount: 2, postCount: 12 },
+  ],
+};
+
+const emptyCategory = {
+  id: "empty",
+  name: "New category",
+  sections: [],
 };
 
 const section = {
@@ -363,7 +381,18 @@ function previewElement(scenario: Scenario) {
     case "under-development":
       return <PreviewUnderDevelopment locale={scenario.locale} />;
     case "category":
-      return <CategoryView locale={scenario.locale} category={category} />;
+      return (
+        <CategoryView
+          locale={scenario.locale}
+          category={
+            scenario.id === "category-empty-ltr"
+              ? emptyCategory
+              : scenario.direction === "rtl"
+                ? categoryRtl
+                : category
+          }
+        />
+      );
     case "section":
       return (
         <SectionView
