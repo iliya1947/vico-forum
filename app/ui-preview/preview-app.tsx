@@ -78,6 +78,16 @@ const category = {
   ],
 };
 
+const categoryRu = {
+  id: categoryId,
+  name: "Разработка",
+  sections: [
+    { id: sectionId, name: "TypeScript и архитектура", topicCount: 3, postCount: 23 },
+    { id: "cloud", name: "Облако и deploy", topicCount: 5, postCount: 41 },
+    { id: "databases", name: "Базы данных", topicCount: 2, postCount: 12 },
+  ],
+};
+
 const categoryRtl = {
   id: categoryId,
   name: "פיתוח",
@@ -133,6 +143,13 @@ const section = {
       },
     },
   ],
+};
+
+const sectionRu = {
+  id: sectionId,
+  name: "TypeScript и архитектура",
+  category: { id: categoryId, name: "Разработка" },
+  topics: section.topics,
 };
 
 const sectionRtl = {
@@ -244,6 +261,7 @@ function homepageTopic(
 
 function homepageCategories(locale: PreviewLocale): HomepageCategoryOverview[] {
   const rtl = locale === "he";
+  const russian = locale === "ru";
   const names = rtl
     ? [
         "עזרה ופתרונות",
@@ -253,14 +271,23 @@ function homepageCategories(locale: PreviewLocale): HomepageCategoryOverview[] {
         "פרויקטים וביקורות",
         "קהילה",
       ]
-    : [
-        "Help & solutions",
-        "Vibe Coding & AI tools",
-        "Development",
-        "Deploy & infrastructure",
-        "Projects & reviews",
-        "Community",
-      ];
+    : russian
+      ? [
+          "Помощь и решения",
+          "Vibe Coding и AI-инструменты",
+          "Разработка",
+          "Deploy и инфраструктура",
+          "Проекты и разборы",
+          "Сообщество",
+        ]
+      : [
+          "Help & solutions",
+          "Vibe Coding & AI tools",
+          "Development",
+          "Deploy & infrastructure",
+          "Projects & reviews",
+          "Community",
+        ];
   const descriptions = rtl
     ? [
         "שאלות, תקלות ופתרונות טכניים בדוקים.",
@@ -270,14 +297,23 @@ function homepageCategories(locale: PreviewLocale): HomepageCategoryOverview[] {
         "הצגת פרויקטים, ביקורות ודיון בהחלטות מימוש.",
         "דיונים כלליים וחיי הקהילה.",
       ]
-    : [
-        "Questions, troubleshooting, and verified technical solutions.",
-        "AI coding workflows, agents, models, and tools.",
-        "Frontend, backend, architecture, languages, and testing.",
-        "Hosting, databases, CI/CD, cloud, and operations.",
-        "Show projects, request reviews, and discuss implementation choices.",
-        "General discussion and community topics.",
-      ];
+    : russian
+      ? [
+          "Вопросы, диагностика и проверенные технические решения.",
+          "AI-процессы разработки, агенты, модели и инструменты.",
+          "Frontend, backend, архитектура, языки и тестирование.",
+          "Hosting, базы данных, CI/CD, облако и эксплуатация.",
+          "Показывайте проекты, просите разбор и обсуждайте решения.",
+          "Общие обсуждения и жизнь сообщества.",
+        ]
+      : [
+          "Questions, troubleshooting, and verified technical solutions.",
+          "AI coding workflows, agents, models, and tools.",
+          "Frontend, backend, architecture, languages, and testing.",
+          "Hosting, databases, CI/CD, cloud, and operations.",
+          "Show projects, request reviews, and discuss implementation choices.",
+          "General discussion and community topics.",
+        ];
   const icons = ["help", "ai", "code", "deploy", "projects", "community"];
   const ids = ["help-solutions", "vibe-ai-tools", "development", "deploy-infrastructure", "projects-reviews", "community"];
 
@@ -290,15 +326,15 @@ function homepageCategories(locale: PreviewLocale): HomepageCategoryOverview[] {
     topicCount: [38, 64, 91, 43, 27, 31][index]!,
     messageCount: [214, 387, 624, 296, 148, 203][index]!,
     pinnedTopics: [
-      homepageTopic(`${id}-pinned-1`, rtl ? "כללי המדור ומשאבים שימושיים" : "Section guide and useful resources", "Vico Team", "2026-09-29T09:30:00.000Z"),
-      homepageTopic(`${id}-pinned-2`, rtl ? "לפני שפותחים נושא חדש" : "Before you open a new topic", "Maya Cohen", "2026-09-28T14:00:00.000Z"),
-      homepageTopic(`${id}-pinned-3`, rtl ? "אוסף קישורים מומלץ" : "Recommended reference collection", "Sam Chen", "2026-09-27T18:00:00.000Z"),
+      homepageTopic(`${id}-pinned-1`, rtl ? "כללי המדור ומשאבים שימושיים" : russian ? "Правила раздела и полезные материалы" : "Section guide and useful resources", "Vico Team", "2026-09-29T09:30:00.000Z"),
+      homepageTopic(`${id}-pinned-2`, rtl ? "לפני שפותחים נושא חדש" : russian ? "Перед созданием новой темы" : "Before you open a new topic", "Maya Cohen", "2026-09-28T14:00:00.000Z"),
+      homepageTopic(`${id}-pinned-3`, rtl ? "אוסף קישורים מומלץ" : russian ? "Рекомендуемая подборка материалов" : "Recommended reference collection", "Sam Chen", "2026-09-27T18:00:00.000Z"),
     ],
     latestTopics: [
-      homepageTopic(`${id}-latest-1`, rtl ? "איך לבחור את הגבול הנכון לפתרון?" : "How do I choose the right boundary for this?", "Alex Rivera", "2026-09-30T15:42:00.000Z"),
-      homepageTopic(`${id}-latest-2`, rtl ? "מה הדרך הפשוטה לבדוק את זה?" : "What is the simplest way to test this?", "Noa Levi", "2026-09-30T13:15:00.000Z"),
-      homepageTopic(`${id}-latest-3`, rtl ? "דוגמה מעשית מפרויקט אמיתי" : "A practical example from a real project", "Sam Chen", "2026-09-29T17:30:00.000Z"),
-      homepageTopic(`${id}-latest-4`, rtl ? "האם כדאי לפשט את המבנה?" : "Should this structure be simplified?", "Maya Cohen", "2026-09-28T11:00:00.000Z"),
+      homepageTopic(`${id}-latest-1`, rtl ? "איך לבחור את הגבול הנכון לפתרון?" : russian ? "Как выбрать правильную границу решения?" : "How do I choose the right boundary for this?", "Alex Rivera", "2026-09-30T15:42:00.000Z"),
+      homepageTopic(`${id}-latest-2`, rtl ? "מה הדרך הפשוטה לבדוק את זה?" : russian ? "Как проще всего это проверить?" : "What is the simplest way to test this?", "Noa Levi", "2026-09-30T13:15:00.000Z"),
+      homepageTopic(`${id}-latest-3`, rtl ? "דוגמה מעשית מפרויקט אמיתי" : russian ? "Практический пример из реального проекта" : "A practical example from a real project", "Sam Chen", "2026-09-29T17:30:00.000Z"),
+      homepageTopic(`${id}-latest-4`, rtl ? "האם כדאי לפשט את המבנה?" : russian ? "Стоит ли упростить эту структуру?" : "Should this structure be simplified?", "Maya Cohen", "2026-09-28T11:00:00.000Z"),
     ],
   }));
 }
@@ -442,9 +478,11 @@ function previewElement(scenario: Scenario) {
           category={
             scenario.id === "category-empty-ltr"
               ? emptyCategory
-              : scenario.direction === "rtl"
-                ? categoryRtl
-                : category
+              : scenario.locale === "ru"
+                ? categoryRu
+                : scenario.direction === "rtl"
+                  ? categoryRtl
+                  : category
           }
         />
       );
@@ -452,7 +490,7 @@ function previewElement(scenario: Scenario) {
       return (
         <SectionView
           locale={scenario.locale}
-          section={scenario.direction === "rtl" ? sectionRtl : section}
+          section={scenario.locale === "ru" ? sectionRu : scenario.direction === "rtl" ? sectionRtl : section}
           canCreateTopic
           actionData={scenario.id === "section-form-error-ltr" ? { error: "rateLimited" } : undefined}
         />
@@ -463,8 +501,11 @@ function previewElement(scenario: Scenario) {
           locale={scenario.locale}
           section={{
             id: "empty",
-            name: "New community section",
-            category: { id: categoryId, name: "Development" },
+            name: scenario.locale === "ru" ? "Новый раздел сообщества" : "New community section",
+            category: {
+              id: categoryId,
+              name: scenario.locale === "ru" ? "Разработка" : "Development",
+            },
             topics: [],
           }}
           canCreateTopic={false}
@@ -477,7 +518,8 @@ function previewElement(scenario: Scenario) {
         scenario.identity,
         scenario.id !== "topic-unsolved-ltr"
           && scenario.id !== "topic-reply-error-ltr"
-          && scenario.id !== "topic-tools-unsolved-ltr",
+          && scenario.id !== "topic-tools-unsolved-ltr"
+          && scenario.id !== "topic-tools-ru",
         scenario.identity === "manager",
       );
       return (
@@ -504,6 +546,7 @@ function topicData(
   showSecondaryControls: boolean,
 ) {
   const rtl = direction === "rtl";
+  const russian = locale === "ru";
   const baseTopic = {
     ...topic,
     isSolved: solved,
@@ -521,6 +564,13 @@ function topicData(
       ...post,
       authorName: ["נועה לוי", "יואב כהן", "מאיה כהן"][index]!,
     })),
+  } : russian ? {
+    ...baseTopic,
+    section: {
+      ...baseTopic.section,
+      name: "TypeScript и архитектура",
+      category: { id: categoryId, name: "Разработка" },
+    },
   } : baseTopic;
 
   return {
@@ -528,7 +578,7 @@ function topicData(
     topic: translatedTopic,
     titlePresentation: topicTitlePresentation(rtl),
     postPresentations: postPresentations(rtl),
-    generationUnits: showSecondaryControls && rtl
+    generationUnits: showSecondaryControls && locale !== "en"
       ? topicToolsGenerationUnits(locale)
       : [],
     canReply: identity !== "guest",
