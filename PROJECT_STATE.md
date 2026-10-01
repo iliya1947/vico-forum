@@ -121,7 +121,8 @@ Vico Forum находится в ранней pre-release разработке.
   сгруппированы без изменения intent/field contracts. Custom-role deletion визуально отделён как
   destructive action; Pages fixture дополнен custom Reviewer role/user и saved/conflict states.
   Server-side permission checks, same-origin boundary, dynamic permission model и lockout
-  safeguards не меняются. Fresh CI/Pages и owner visual acceptance PR #165 ещё не зафиксированы.
+  safeguards не меняются. Repository CI и Pages для текущей реализации проходят; owner visual
+  acceptance PR #165 ещё не зафиксирована.
 - Target search, notifications и незавершённые footer/product entry points во время owner-only
   pre-release ведут на общую `Under development` page/checklist вместо fake behavior.
 - Для owner-only pre-release незавершённые approved target functions могут оставаться видимыми и
