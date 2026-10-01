@@ -125,6 +125,12 @@ Vico Forum находится в ранней pre-release разработке.
   переработка самой модели/workflow управления ролями и permissions может потребоваться позже; это
   не считается дефектом текущего visual slice и не меняет действующий authorization contract.
   Repository CI и Pages для принятой реализации проходят.
+- System/error-state presentation вынесен в PR #166: route-level `401`, `403`, `404`, controlled
+  `503` и unexpected failures используют единый accepted forum shell и safe localized recovery
+  action без показа internal error details. Protected authorization route теперь использует общий
+  `ForumRouteError`; existing mutation-level `409`/`429` feedback contracts не меняются.
+  Pages fixture содержит locale-independent representative states для каждого route failure.
+  Fresh CI/Pages и owner visual acceptance PR #166 ещё не зафиксированы.
 - Target search, notifications и незавершённые footer/product entry points во время owner-only
   pre-release ведут на общую `Under development` page/checklist вместо fake behavior.
 - Для owner-only pre-release незавершённые approved target functions могут оставаться видимыми и
