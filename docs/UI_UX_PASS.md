@@ -351,11 +351,6 @@ Remaining work:
 - Unify empty, `401`, `403`, `404`, `409`, `429`, `503` and unexpected-error presentation where the
   current route contracts expose them; include safe recovery/navigation actions only.
 - Keep destructive actions visually distinct and preserve lockout safeguards.
-- Reorganize authorization management into comprehensible role/user groups while preserving every
-  existing mutation and the dynamic permission model.
-- Unify empty, `401`, `403`, `404`, `409`, `429`, `503` and unexpected-error presentation where the
-  current route contracts expose them; include safe recovery/navigation actions only.
-- Keep destructive actions visually distinct and preserve lockout safeguards.
 
 ### 6. Responsive, bidirectional and accessibility hardening
 
