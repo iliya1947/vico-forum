@@ -1,6 +1,6 @@
 import "@testing-library/jest-dom/vitest";
 import type { ComponentType } from "react";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { I18nextProvider } from "react-i18next";
 import { RouterContextProvider, RouterProvider, createMemoryRouter, matchRoutes } from "react-router";
 import { afterEach, describe, expect, it } from "vitest";
@@ -499,6 +499,74 @@ describe("forum read states", () => {
     expect(replyForm.querySelector('input[name="intent"]')).toHaveValue("reply");
     expect(screen.getByLabelText("Reply")).toHaveAttribute("aria-describedby", "reply-body-help");
     expect(screen.getByRole("button", { name: "Post reply" })).toBeEnabled();
+  });
+
+  it("shows a pending state while create-topic submission is in flight", async () => {
+    let resolveAction!: () => void;
+    const actionPromise = new Promise<null>((resolve) => {
+      resolveAction = () => resolve(null);
+    });
+    const router = createMemoryRouter([{
+      id: "page",
+      path: "*",
+      Component: SectionRoute,
+      loader: () => ({ locale: "en", section, canCreateTopic: true }),
+      action: () => actionPromise,
+    }], { initialEntries: ["/en/sections/typescript"] });
+
+    render(
+      <div lang="en" dir="ltr">
+        <I18nextProvider i18n={runtime("en", "ltr")}>
+          <RouterProvider router={router} />
+        </I18nextProvider>
+      </div>,
+    );
+
+    const form = await screen.findByRole("form", { name: "Create a new topic" });
+    fireEvent.submit(form);
+
+    expect(await screen.findByRole("button", { name: "Creating topic…" })).toBeDisabled();
+    expect(screen.getByLabelText("Topic title")).toBeDisabled();
+    expect(form).toHaveAttribute("aria-busy", "true");
+
+    resolveAction();
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Create topic" })).toBeEnabled();
+    });
+  });
+
+  it("shows a pending state only for the reply submission", async () => {
+    let resolveAction!: () => void;
+    const actionPromise = new Promise<null>((resolve) => {
+      resolveAction = () => resolve(null);
+    });
+    const router = createMemoryRouter([{
+      id: "page",
+      path: "*",
+      Component: TopicRoute,
+      loader: () => topicRenderData(topic, { canReply: true }),
+      action: () => actionPromise,
+    }], { initialEntries: ["/en/topics/typed-api"] });
+
+    render(
+      <div lang="en" dir="ltr">
+        <I18nextProvider i18n={runtime("en", "ltr")}>
+          <RouterProvider router={router} />
+        </I18nextProvider>
+      </div>,
+    );
+
+    const form = await screen.findByRole("form", { name: "Add a reply" });
+    fireEvent.submit(form);
+
+    expect(await screen.findByRole("button", { name: "Posting reply…" })).toBeDisabled();
+    expect(screen.getByLabelText("Reply")).toBeDisabled();
+    expect(form).toHaveAttribute("aria-busy", "true");
+
+    resolveAction();
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Post reply" })).toBeEnabled();
+    });
   });
 
   it("returns route-level 404 responses for missing entities", async () => {
