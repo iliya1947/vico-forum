@@ -119,7 +119,8 @@ function DiscoveryIcon({ kind }: {
   if (kind === "popular") {
     return (
       <svg className="discovery-icon" aria-hidden="true" viewBox="0 0 24 24">
-        <path d="M13.5 3.5c.8 4-2 4.9-2.8 7.1-.6 1.5.2 2.7 1.5 3.5-.1-2 1.1-3.1 2.2-4 2.1 1.5 4.1 3.5 4.1 6.1a6.5 6.5 0 0 1-13 0c0-3.1 2-5.2 4.2-6.9-.1 2 .6 3.2 1.6 3.8-.2-3.9 2.9-5.6 2.2-9.6z" />
+        <path d="m4 16 5-5 4 4 7-8" />
+        <path d="M15 7h5v5" />
       </svg>
     );
   }
