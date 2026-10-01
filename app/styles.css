@@ -4489,6 +4489,21 @@ p {
 /* The compact homepage layout starts at 30rem; below that threshold the section-enter
    control still needs explicit geometry instead of falling back to the browser's intrinsic SVG. */
 @media (max-width: 29.99rem) {
+  .home-section-identity {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .home-section-pinned {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .home-section-latest {
+    grid-column: 1;
+    grid-row: 3;
+  }
+
   .home-section-stats {
     grid-column: 1;
     grid-row: 4;
