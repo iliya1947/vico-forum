@@ -240,6 +240,38 @@ export function ForumShell({
           </Link>
 
           <div className="site-header-actions">
+            <LanguageSwitcher locale={locale} />
+            <ThemeToggle />
+          </div>
+        </div>
+        <div className="site-header-lower">
+          <nav className="site-primary-nav" aria-label={t("primaryNavigation")}>
+            {useApprovedHeader ? (
+              <>
+                <Link className="home-discovery-link" to={underDevelopmentPath(locale, "unanswered-filter")}>
+                  <DiscoveryIcon kind="unanswered" />
+                  <span>{t("unansweredNav")}</span>
+                </Link>
+                <Link className="home-discovery-link" to={underDevelopmentPath(locale, "technology-tags")}>
+                  <DiscoveryIcon kind="tags" />
+                  <span>{t("tagsNav")}</span>
+                </Link>
+                <Link className="home-discovery-link" to={underDevelopmentPath(locale, "popular")}>
+                  <DiscoveryIcon kind="popular" />
+                  <span>{t("popularNav")}</span>
+                </Link>
+                {authUser ? (
+                  <Link className="home-discovery-link" to={underDevelopmentPath(locale, "unread")}>
+                    <DiscoveryIcon kind="unread" />
+                    <span>{t("unreadNav")}</span>
+                  </Link>
+                ) : null}
+              </>
+            ) : (
+              <Link to={forumIndexPath(locale)}>{t("forumHomeNav")}</Link>
+            )}
+          </nav>
+          <div className="site-account-actions">
             {authUser ? (
               <Link
                 className="header-icon-link"
@@ -249,37 +281,9 @@ export function ForumShell({
                 <BellIcon />
               </Link>
             ) : null}
-            <LanguageSwitcher locale={locale} />
-            <ThemeToggle />
             <AuthControls locale={locale} />
           </div>
         </div>
-        <nav className="site-primary-nav" aria-label={t("primaryNavigation")}>
-          {useApprovedHeader ? (
-            <>
-              <Link className="home-discovery-link" to={underDevelopmentPath(locale, "unanswered-filter")}>
-                <DiscoveryIcon kind="unanswered" />
-                <span>{t("unansweredNav")}</span>
-              </Link>
-              <Link className="home-discovery-link" to={underDevelopmentPath(locale, "technology-tags")}>
-                <DiscoveryIcon kind="tags" />
-                <span>{t("tagsNav")}</span>
-              </Link>
-              <Link className="home-discovery-link" to={underDevelopmentPath(locale, "popular")}>
-                <DiscoveryIcon kind="popular" />
-                <span>{t("popularNav")}</span>
-              </Link>
-              {authUser ? (
-                <Link className="home-discovery-link" to={underDevelopmentPath(locale, "unread")}>
-                  <DiscoveryIcon kind="unread" />
-                  <span>{t("unreadNav")}</span>
-                </Link>
-              ) : null}
-            </>
-          ) : (
-            <Link to={forumIndexPath(locale)}>{t("forumHomeNav")}</Link>
-          )}
-        </nav>
       </header>
 
       <div className="forum-content">
