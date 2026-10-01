@@ -13,6 +13,7 @@ export const reviewedCommonFingerprints = {
   stageSummary: "3a4657529e195ce9e1456e8822fa7ee633a4cf07cbdd15a7a7a549da02d17dc5",
   forumTagline: "648cc738956c02297536f519a096c6dd5cfd8dfdd57def97134fef2005b0554a",
   primaryNavigation: "47d21dc097dc266b06f5eeeda97dfbddf02a90ec089022613a471ebd2e482ece",
+  skipToContent: "0c689376c977f514209594696fe9c08333824a6b0e12ac5db2bebf61f41cfdef",
   themeLabel: "eabc1f7c3642d27883c30a8cae75c80ce8ab46dfe91cd734fbe7ab6b4ff37827",
   lightTheme: "9d7631a621509558cfea4d4bbddda26a8bd69b3307b9547ce8c82dc0bb54dd12",
   darkTheme: "e10bd565214efb68273a948cb1ac4d19cd5d226a363295c2ab94c634cd1003cf",
