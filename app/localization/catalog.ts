@@ -165,6 +165,8 @@ export const canonicalEnglishCatalog = {
     bestAnswer: message("bestAnswer", "Best answer", "Label on the selected best answer."),
     selectBestAnswer: message("selectBestAnswer", "Select as best answer", "Action for the topic author to select a post."),
     goToSolution: message("goToSolution", "Go to solution", "Link from the topic heading to the best answer."),
+    topicTools: message("topicTools", "Topic tools", "Progressive-disclosure label for secondary topic management controls."),
+    messageTools: message("messageTools", "Message tools", "Progressive-disclosure label for secondary message management controls."),
     automaticTranslation: message("automaticTranslation", "Automatic translation", "Marker for a machine-translated forum content unit."),
     manualTranslation: message("manualTranslation", "Manual translation", "Marker for a persisted manual forum content translation."),
     showOriginal: message("showOriginal", "Show original", "Control that reveals the original forum content beside a translation."),
