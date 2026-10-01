@@ -139,8 +139,11 @@ Vico Forum находится в ранней pre-release разработке.
   logical-direction/RTL geometry сохранена. Owner review выявил и подтвердил исправление mobile-only
   homepage defects ниже `30rem`: browser-default section-enter SVG, затем неверный порядок footer
   block. Итоговый порядок карточки принят как `Pinned → Latest topics → expand → stats → orange
-  entry rail`. Repository CI и Pages для текущей реализации проходят. Полная owner
-  keyboard/RTL acceptance PR #167 ещё не зафиксирована.
+  entry rail`. Следующий owner mobile review выявил переполнение discovery navigation; на narrow
+  mobile эти destinations теперь переключаются на icon-only controls с локализованными
+  accessible labels, сохраняя text labels на wider layouts. Fresh CI/Pages и owner acceptance
+  этого mobile-nav correction ещё не зафиксированы; полная keyboard/RTL acceptance PR #167 также
+  остаётся открытой.
 - Target search, notifications и незавершённые footer/product entry points во время owner-only
   pre-release ведут на общую `Under development` page/checklist вместо fake behavior.
 - Для owner-only pre-release незавершённые approved target functions могут оставаться видимыми и
