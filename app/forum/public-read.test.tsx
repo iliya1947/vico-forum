@@ -186,7 +186,9 @@ describe.each([
     homeView.unmount();
 
     const categoryView = renderRoute(CategoryRoute, categoryData, forumCategoryPath(locale, category.id), locale, direction);
-    expect(await screen.findByRole("link", { name: /TypeScript/ })).toHaveAttribute("href", `/${locale}/sections/typescript%2Fbasics`);
+    const categorySectionLink = await screen.findByRole("link", { name: /TypeScript/ });
+    expect(categorySectionLink).toHaveAttribute("href", `/${locale}/sections/typescript%2Fbasics`);
+    expect(categorySectionLink).toHaveClass("category-section-card");
     categoryView.unmount();
 
     const sectionView = renderRoute(SectionRoute, sectionData, forumSectionPath(locale, section.id), locale, direction);
@@ -282,8 +284,8 @@ describe("category count presentation", () => {
 
     renderRoute(CategoryRoute, data, "/en/categories/development", "en", "ltr");
 
-    expect(await screen.findByText("1 topic · 2 messages")).toBeInTheDocument();
-    expect(screen.getByText("2 topics · 1 message")).toBeInTheDocument();
+    expect(await screen.findByRole("group", { name: "1 topic · 2 messages" })).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "2 topics · 1 message" })).toBeInTheDocument();
   });
 });
 

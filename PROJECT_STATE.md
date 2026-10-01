@@ -51,6 +51,12 @@ Vico Forum находится в ранней pre-release разработке.
   реализована и до отдельной bounded подзадачи также остаётся на `Under development`. Дальнейшая
   косметическая полировка homepage сейчас не является приоритетом; следующий общий UI/UX шаг —
   forum discovery beyond homepage.
+- Category-page discovery slice в PR #159 прошёл owner visual acceptance в GitHub Pages:
+  owner-approved header/logo/discovery nav переиспользованы без backend/DB изменений; category
+  heading показывает только derived section/topic/message totals, section rows стали compact
+  clickable cards с реальными counts и orange entry rail, добавлены responsive/RTL-safe geometry
+  и representative LTR/RTL/empty-category Pages states. Repository CI и Pages для принятой
+  реализации проходят. Следующая bounded UI/UX подзадача после merge — Section page.
 - Target search, notifications и незавершённые footer/product entry points во время owner-only
   pre-release ведут на общую `Under development` page/checklist вместо fake behavior.
 - Для owner-only pre-release незавершённые approved target functions могут оставаться видимыми и

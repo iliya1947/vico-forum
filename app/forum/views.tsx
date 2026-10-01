@@ -319,26 +319,77 @@ export function CategoryView({
   category: ForumCategoryPage;
 }) {
   const { t } = useTranslation("common");
+  const totals = category.sections.reduce(
+    (sum, section) => ({
+      topics: sum.topics + section.topicCount,
+      messages: sum.messages + section.postCount,
+    }),
+    { topics: 0, messages: 0 },
+  );
+
   return (
-    <ForumShell locale={locale}>
+    <ForumShell locale={locale} variant="category">
       <Breadcrumbs locale={locale} items={[{ label: category.name }]} />
-      <section className="page-heading">
-        <p className="eyebrow">{t("categoryLabel")}</p>
-        <h1>{category.name}</h1>
+
+      <section className="category-heading">
+        <div>
+          <p className="eyebrow">{t("categoryLabel")}</p>
+          <h1>{category.name}</h1>
+        </div>
+        <div className="category-heading-stats" aria-label={category.name}>
+          <span>{t("sectionCount", { count: category.sections.length })}</span>
+          <span aria-hidden="true">·</span>
+          <span>{t("topicCount", { count: totals.topics })}</span>
+          <span aria-hidden="true">·</span>
+          <span>{t("messageCount", { count: totals.messages })}</span>
+        </div>
       </section>
-      {category.sections.length === 0 ? <EmptyState>{t("sectionsEmpty")}</EmptyState> : (
-        <ul className="forum-list">
-          {category.sections.map((section) => (
-            <li key={section.id}>
-              <Link className="forum-list-link" to={forumSectionPath(locale, section.id)}>
-                <strong>{section.name}</strong>
-                <span>
-                  {t("topicCount", { count: section.topicCount })} · {t("messageCount", { count: section.postCount })}
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
+
+      {category.sections.length === 0 ? (
+        <div className="category-empty">
+          <EmptyState>{t("sectionsEmpty")}</EmptyState>
+        </div>
+      ) : (
+        <section className="category-sections" aria-label={t("sectionCount", { count: category.sections.length })}>
+          <ul className="category-section-list">
+            {category.sections.map((section) => (
+              <li key={section.id}>
+                <Link className="category-section-card" to={forumSectionPath(locale, section.id)}>
+                  <span className="category-section-main">
+                    <span className="category-section-icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24">
+                        <path d="M4 6.5h6l2 2h8v9H4z" />
+                        <path d="M7 12h10M7 15h7" />
+                      </svg>
+                    </span>
+                    <strong>{section.name}</strong>
+                  </span>
+
+                  <span
+                    className="category-section-stats"
+                    role="group"
+                    aria-label={`${t("topicCount", { count: section.topicCount })} · ${t("messageCount", { count: section.postCount })}`}
+                  >
+                    <span aria-hidden="true">
+                      <strong>{section.topicCount}</strong>
+                      <small>{t("topicsHeading")}</small>
+                    </span>
+                    <span aria-hidden="true">
+                      <strong>{section.postCount}</strong>
+                      <small>{t("postsColumn")}</small>
+                    </span>
+                  </span>
+
+                  <span className="category-section-enter" aria-hidden="true">
+                    <svg viewBox="0 0 24 24">
+                      <path d="m9 5 7 7-7 7" />
+                    </svg>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
     </ForumShell>
   );

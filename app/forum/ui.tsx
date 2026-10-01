@@ -140,18 +140,25 @@ export function ForumShell({
 }: {
   locale: string;
   children: ReactNode;
-  variant?: "home";
+  variant?: "home" | "category";
 }) {
   const { t } = useTranslation("common");
   const authUser = useHeaderAuthUser();
+  const useApprovedHeader = variant === "home" || variant === "category";
 
   return (
-    <main className={variant === "home" ? "forum-shell home-shell" : "forum-shell"}>
+    <main className={
+      variant === "home"
+        ? "forum-shell home-shell"
+        : variant === "category"
+          ? "forum-shell home-shell category-shell"
+          : "forum-shell"
+    }>
       <header className="site-header">
         <div className="site-header-top">
           <div className="brand-lockup">
             <Link className="brand" to={forumIndexPath(locale)} aria-label={t("productName")}>
-              {variant === "home" ? (
+              {useApprovedHeader ? (
                 <>
                   <span className="brand-mark" aria-hidden="true">
                     <img className="brand-mark-image brand-mark-light" src={vicoForumLogoLight} alt="" />
@@ -191,7 +198,7 @@ export function ForumShell({
           </div>
         </div>
         <nav className="site-primary-nav" aria-label={t("primaryNavigation")}>
-          {variant === "home" ? (
+          {useApprovedHeader ? (
             <>
               <Link className="home-discovery-link" to={underDevelopmentPath(locale, "unanswered-filter")}>
                 <DiscoveryIcon kind="unanswered" />
