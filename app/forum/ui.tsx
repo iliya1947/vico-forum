@@ -140,17 +140,17 @@ export function ForumShell({
 }: {
   locale: string;
   children: ReactNode;
-  variant?: "home" | "discovery";
+  variant?: "home" | "category";
 }) {
   const { t } = useTranslation("common");
   const authUser = useHeaderAuthUser();
-  const useApprovedHeader = variant === "home" || variant === "discovery";
+  const useApprovedHeader = variant === "home" || variant === "category";
 
   return (
     <main className={
       variant === "home"
         ? "forum-shell home-shell"
-        : variant === "discovery"
+        : variant === "category"
           ? "forum-shell home-shell category-shell"
           : "forum-shell"
     }>
