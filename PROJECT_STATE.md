@@ -132,6 +132,12 @@ Vico Forum находится в ранней pre-release разработке.
   `409`/`429` feedback contracts не меняются. Pages fixture содержит locale-independent
   representative states для каждого route failure. Repository CI и Pages для принятой реализации
   проходят.
+- Первый responsive/RTL/accessibility hardening slice открыт в PR #167: shared shell получил
+  localized keyboard skip link к focusable forum content region, visible `focus-within` treatment
+  для language selector, unclipped header focus rings и min/max-width guards для zoom/reflow
+  pressure. Preview дополнен `Home · manager` для плотного account/header состояния; существующая
+  logical-direction/RTL geometry сохранена. Fresh CI/Pages и owner keyboard/visual acceptance
+  PR #167 ещё не зафиксированы.
 - Target search, notifications и незавершённые footer/product entry points во время owner-only
   pre-release ведут на общую `Under development` page/checklist вместо fake behavior.
 - Для owner-only pre-release незавершённые approved target functions могут оставаться видимыми и
