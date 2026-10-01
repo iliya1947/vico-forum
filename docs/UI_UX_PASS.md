@@ -389,7 +389,10 @@ Shared-shell hardening is isolated in PR #167 for owner review:
 - shared header children get bounded min/max-width behavior for zoom/reflow pressure without
   changing the accepted shell composition;
 - a representative `Home · manager` state exercises the densest account/header combination while
-  existing logical properties and RTL arrow/brand behavior remain unchanged.
+  existing logical properties and RTL arrow/brand behavior remain unchanged;
+- owner mobile review found two real sub-30rem homepage defects; the corrected card order is now
+  `Pinned → Latest topics → expand → statistics → orange entry rail`, and that mobile correction
+  has been visually accepted.
 
 Remaining work:
 
