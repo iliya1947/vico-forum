@@ -93,8 +93,8 @@ Vico Forum находится в ранней pre-release разработке.
   остаются обычными `LocalTranslationSource` overrides без изменения generic LocaleRegistry.
   Pages preview теперь читает те же manual packs вместо отдельного partial Hebrew dictionary и
   добавляет representative Russian states. Existing mutation intents, same-origin/authz/validation
-  и immutable revision semantics сохранены. CI/Pages для расширенного текущего head и owner visual
-  acceptance ещё не зафиксированы.
+  и immutable revision semantics сохранены. Repository CI и Pages для расширенной реализации
+  проходят; owner visual acceptance ещё не зафиксирована.
 - Target search, notifications и незавершённые footer/product entry points во время owner-only
   pre-release ведут на общую `Under development` page/checklist вместо fake behavior.
 - Для owner-only pre-release незавершённые approved target functions могут оставаться видимыми и
