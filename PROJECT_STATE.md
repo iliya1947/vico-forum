@@ -108,6 +108,13 @@ Vico Forum находится в ранней pre-release разработке.
   acceptance PR #163 в GitHub Pages подтверждён 2026-10-01, включая RU/HE локализацию, header
   language selector, LTR brand isolation внутри RTL UI, tagline/header corrections и
   locale-independent preview State.
+- Auth presentation slice в PR #164 прошёл owner visual acceptance в GitHub Pages 2026-10-01:
+  guest sign-in, signed-in identity/sign-out, pending state и safe failed-auth feedback приведены
+  к compact header presentation без изменения Better Auth/session/callback behavior. Pages fixture
+  содержит deterministic pending/failed auth states, а существующие Home guest/user states остаются
+  representative normal identity states. В Pages auth-клики намеренно блокируются и используются
+  только для visual-state review; это не является real OAuth smoke. Backend/DB/permissions/OAuth
+  configuration не менялись. Repository CI и Pages для принятой реализации проходят.
 - Target search, notifications и незавершённые footer/product entry points во время owner-only
   pre-release ведут на общую `Under development` page/checklist вместо fake behavior.
 - Для owner-only pre-release незавершённые approved target functions могут оставаться видимыми и
@@ -493,8 +500,9 @@ runtime roles/Hyperdrive writes и другие schema-dependent runtime capabil
 3. `Popular` как отдельная bounded homepage/discovery subtask остаётся на `Under development`
    до отдельной команды владельца; approved destination по-прежнему — три одновременные
    activity-period колонки `24 hours / 7 days / 30 days`.
-4. Следующий общий UI/UX шаг — forum discovery beyond homepage по `docs/UI_UX_PASS.md`,
-   начиная с category/section presentation; затем topic/message/participation improvements.
+4. Discovery/topic/participation slices через PR #163 прошли owner visual acceptance.
+   Текущий bounded UI/UX шаг — auth presentation PR #164; после него — authorization management,
+   затем system/error states по `docs/UI_UX_PASS.md`.
    Heavy approved subsystems из `Under development` остаются отдельными bounded tasks.
 5. Уже существующие product capabilities подключаются к реальным данным/поведению; незавершённые
    approved entry points не имитируют работу и временно ведут на `Under development`.

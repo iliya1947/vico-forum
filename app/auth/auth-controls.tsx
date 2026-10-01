@@ -5,25 +5,32 @@ import { underDevelopmentPath } from "../forum/paths";
 import { authClientActions, type AuthClientActions } from "./auth-client";
 
 export interface HeaderAuthUser { readonly name: string; readonly canManageAuthorization?: boolean }
+export type HeaderAuthPresentationState = "idle" | "pending" | "error";
 
 const HeaderAuthContext = createContext<{
   user: HeaderAuthUser | null;
   setUser(user: HeaderAuthUser | null): void;
+  initialPresentationState: HeaderAuthPresentationState;
 } | null>(null);
 
 export function useHeaderAuthUser(): HeaderAuthUser | null {
   return useContext(HeaderAuthContext)?.user ?? null;
 }
 
-export function HeaderAuthProvider({ initialUser, children }: {
+export function HeaderAuthProvider({ initialUser, initialPresentationState = "idle", children }: {
   initialUser: HeaderAuthUser | null;
+  initialPresentationState?: HeaderAuthPresentationState;
   children: ReactNode;
 }) {
   const [user, setUser] = useState(initialUser);
   useEffect(() => {
     setUser(initialUser);
   }, [initialUser]);
-  return <HeaderAuthContext value={{ user, setUser }}>{children}</HeaderAuthContext>;
+  return (
+    <HeaderAuthContext value={{ user, setUser, initialPresentationState }}>
+      {children}
+    </HeaderAuthContext>
+  );
 }
 
 export function safeForumReturnPath(locale: string, pathname: string, search = ""): string {
@@ -41,8 +48,8 @@ export function AuthControls({ locale, actions = authClientActions }: {
   const location = useLocation();
   const revalidator = useRevalidator();
   const { t } = useTranslation("common");
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState(false);
+  const [pending, setPending] = useState(auth?.initialPresentationState === "pending");
+  const [error, setError] = useState(auth?.initialPresentationState === "error");
   const user = auth?.user ?? null;
 
   const run = async (operation: (handlers: { onSuccess(): void; onError(): void }) => Promise<unknown>) => {
@@ -80,19 +87,33 @@ export function AuthControls({ locale, actions = authClientActions }: {
     }
   };
 
+  const presentationState = pending ? "pending" : error ? "error" : user ? "signed-in" : "guest";
+
   return (
-    <div className="auth-controls">
-      {user ? (
-        <Link className="auth-user" to={underDevelopmentPath(locale, "profiles")}>
-          <span className="auth-avatar" aria-hidden="true">{user.name.trim().slice(0, 1).toUpperCase()}</span>
-          <span>{user.name}</span>
-        </Link>
-      ) : null}
-      {user?.canManageAuthorization ? <Link to={`/${encodeURIComponent(locale)}/admin/authorization`}>{t("authorizationNav")}</Link> : null}
-      <button type="button" disabled={pending} onClick={user ? signOut : signIn}>
-        {pending ? t("authPending") : user ? t("signOut") : t("signInGoogle")}
-      </button>
-      {error ? <span role="alert">{t("authError")}</span> : null}
+    <div className="auth-controls" data-state={presentationState} aria-busy={pending || undefined}>
+      <div className="auth-controls-main">
+        {user ? (
+          <Link className="auth-user" to={underDevelopmentPath(locale, "profiles")}>
+            <span className="auth-avatar" aria-hidden="true">{user.name.trim().slice(0, 1).toUpperCase()}</span>
+            <span>{user.name}</span>
+          </Link>
+        ) : null}
+        {user?.canManageAuthorization ? (
+          <Link className="auth-admin-link" to={`/${encodeURIComponent(locale)}/admin/authorization`}>
+            {t("authorizationNav")}
+          </Link>
+        ) : null}
+        <button
+          className={user ? "auth-action auth-sign-out" : "auth-action auth-sign-in"}
+          type="button"
+          disabled={pending}
+          onClick={user ? signOut : signIn}
+        >
+          {pending ? <span className="auth-spinner" aria-hidden="true" /> : null}
+          <span>{pending ? t("authPending") : user ? t("signOut") : t("signInGoogle")}</span>
+        </button>
+      </div>
+      {error ? <span className="auth-feedback" role="alert">{t("authError")}</span> : null}
     </div>
   );
 }

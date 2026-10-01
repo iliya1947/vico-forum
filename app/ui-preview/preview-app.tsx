@@ -2,7 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import { I18nextProvider } from "react-i18next";
 import { RouterProvider, createMemoryRouter, useSearchParams } from "react-router";
 
-import { HeaderAuthProvider, type HeaderAuthUser } from "../auth/auth-controls";
+import {
+  HeaderAuthProvider,
+  type HeaderAuthPresentationState,
+  type HeaderAuthUser,
+} from "../auth/auth-controls";
 import { PERMISSION_CATALOG, type PermissionKey } from "../authorization/catalog";
 import { AuthorizationAdminView } from "../authorization/admin-view";
 import type { HomepageCategoryOverview } from "../forum/homepage";
@@ -40,11 +44,14 @@ interface Scenario {
   path: string;
   view: PreviewView;
   variant?: PreviewVariant;
+  authPresentationState?: HeaderAuthPresentationState;
 }
 
 export const scenarios: readonly Scenario[] = [
   { id: "home-guest", label: "Home · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en", view: "home" },
   { id: "home-user", label: "Home · user", locale: "en", direction: "ltr", identity: "user", path: "/en", view: "home" },
+  { id: "auth-pending", label: "Authentication · pending · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en", view: "home", authPresentationState: "pending" },
+  { id: "auth-error", label: "Authentication · failed · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en", view: "home", authPresentationState: "error" },
   { id: "under-development-search", label: "Under development · search · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/under-development?feature=search", view: "under-development" },
   { id: "under-development-notifications", label: "Under development · notifications · user", locale: "en", direction: "ltr", identity: "user", path: "/en/under-development?feature=notifications", view: "under-development" },
   { id: "category-guest", label: "Category · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/development", view: "category" },
@@ -465,7 +472,10 @@ export function EmbeddedPreview({ scenarioId }: { scenarioId: string }) {
         }
       }}
     >
-      <HeaderAuthProvider initialUser={previewUser(activeScenario.identity)}>
+      <HeaderAuthProvider
+        initialUser={previewUser(activeScenario.identity)}
+        initialPresentationState={activeScenario.authPresentationState}
+      >
         <I18nextProvider i18n={runtime}>
           <RouterProvider router={router} />
         </I18nextProvider>
