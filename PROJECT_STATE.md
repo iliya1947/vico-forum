@@ -62,7 +62,8 @@ Vico Forum находится в ранней pre-release разработке.
   heading показывает только derived topic/message totals, topic rows стали full-card links с
   реальными author/message данными и orange entry rail, create-topic остаётся существующим
   section-local write flow с компактным in-page entry point, добавлены responsive/RTL/empty-section
-  presentation states. CI/Pages и owner visual acceptance этого slice ещё не зафиксированы.
+  presentation states. Repository CI и Pages для текущей реализации проходят; owner visual
+  acceptance этого slice ещё не зафиксирована.
 - Target search, notifications и незавершённые footer/product entry points во время owner-only
   pre-release ведут на общую `Under development` page/checklist вместо fake behavior.
 - Для owner-only pre-release незавершённые approved target functions могут оставаться видимыми и
