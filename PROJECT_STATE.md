@@ -45,8 +45,9 @@ Vico Forum находится в ранней pre-release разработке.
   header row теперь предназначена для icon-led discovery navigation
   `Unanswered · Tags · Popular` и authenticated-only `Unread` без дублирующего `Home`: без
   filled button chrome, с orange labels, subdued outline icons и accent hover/focus/active emphasis.
-  Homepage brand lockup использует owner-provided logo mark рядом с wordmark: `Vico` orange,
-  `Forum` neutral black/light по теме. Foreground остальных orange action controls переключается
+  Homepage brand lockup использует отдельные owner-provided Light/Dark logo marks с автоматическим
+  переключением по активной теме; mark заметно увеличен относительно предыдущего варианта.
+  `Vico` остаётся orange, `Forum` — neutral black/light по теме. Foreground остальных orange action controls переключается
   dark-on-orange в Light и light-on-orange в Dark. Forum cards получают compact stats и отдельную
   full-height orange entry rail. Пока redesigned
   category/section discovery presentation не готова, rail ведёт на общий `Under development`
