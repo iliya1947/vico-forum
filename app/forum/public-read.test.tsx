@@ -507,23 +507,40 @@ describe("forum path encoding", () => {
 });
 
 describe("forum read states", () => {
-  it("copies a clean permanent locale-aware message link and reports clipboard failure", async () => {
+  it("copies a clean permanent locale-aware message link, keeps one active status, and reports clipboard failure", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText } });
 
-    renderRoute(TopicRoute, topicRenderData(topic), "/en/topics/typed-api?temporary=1", "en", "ltr");
+    const secondPost = {
+      ...topic.posts[0]!,
+      id: "follow-up",
+      authorName: "Maya",
+      body: { id: "post-r2", originalContent: "Follow-up.", sourceLocale: "en" },
+    };
+    const multiPostTopic = { ...topic, posts: [topic.posts[0]!, secondPost] };
 
-    const copyButton = await screen.findByRole("button", { name: "Copy link to Message #1" });
-    fireEvent.click(copyButton);
+    renderRoute(TopicRoute, topicRenderData(multiPostTopic), "/en/topics/typed-api?temporary=1", "en", "ltr");
+
+    const firstCopyButton = await screen.findByRole("button", { name: "Copy link to Message #1" });
+    fireEvent.click(firstCopyButton);
 
     await waitFor(() => {
       expect(writeText).toHaveBeenCalledWith(expect.stringMatching(/\/en\/topics\/typed%2Fapi#post-answer$/));
     });
-    expect(screen.getByText("Copied")).toBeInTheDocument();
+    expect(screen.getAllByText("Copied")).toHaveLength(1);
+
+    const secondCopyButton = screen.getByRole("button", { name: "Copy link to Message #2" });
+    fireEvent.click(secondCopyButton);
+
+    await waitFor(() => {
+      expect(writeText).toHaveBeenCalledWith(expect.stringMatching(/\/en\/topics\/typed%2Fapi#post-follow-up$/));
+      expect(screen.getAllByText("Copied")).toHaveLength(1);
+    });
 
     writeText.mockRejectedValueOnce(new Error("denied"));
-    fireEvent.click(copyButton);
+    fireEvent.click(firstCopyButton);
     expect(await screen.findByText("Could not copy link.")).toBeInTheDocument();
+    expect(screen.queryByText("Copied")).not.toBeInTheDocument();
   });
 
   it("shows public solved state, highlights the answer, and links to its stable post anchor", async () => {
