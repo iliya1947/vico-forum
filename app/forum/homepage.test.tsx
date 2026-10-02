@@ -169,7 +169,7 @@ describe("homepage target presentation", () => {
     );
 
     expect(await screen.findByRole("link", { name: "Search the forum" }))
-      .toHaveAttribute("href", "/en/under-development?feature=search");
+      .toHaveAttribute("href", "/en/search");
     expect(screen.getByRole("link", { name: "Unanswered" }))
       .toHaveAttribute("href", "/en/unanswered");
     expect(screen.getByRole("link", { name: "Tags" }))
@@ -220,11 +220,11 @@ describe("homepage target presentation", () => {
 
 describe("under development page", () => {
   it("identifies the requested unfinished function and lists remaining approved work", async () => {
-    renderView(<UnderDevelopmentView locale="en" requestedFeature="search" />, "/en/under-development?feature=search");
+    renderView(<UnderDevelopmentView locale="en" requestedFeature="notifications" />, "/en/under-development?feature=notifications");
 
     expect(await screen.findByRole("heading", { level: 1, name: "Under development" })).toBeVisible();
-    expect(screen.getByText("Global forum search is not finished yet.")).toBeVisible();
-    expect(screen.getAllByText("Global forum search").length).toBeGreaterThan(0);
+    expect(screen.getByText("Notifications is not finished yet.")).toBeVisible();
+    expect(screen.getAllByText("Notifications").length).toBeGreaterThan(0);
     expect(screen.getByText("Drafts and autosave")).toBeVisible();
     expect(screen.getByRole("link", { name: "Back to the forum" })).toHaveAttribute("href", "/en");
   });
