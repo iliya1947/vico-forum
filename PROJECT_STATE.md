@@ -137,11 +137,15 @@ Vico Forum находится в ранней pre-release разработке.
   для language selector, unclipped header focus rings и min/max-width guards для zoom/reflow
   pressure. Preview дополнен `Home · manager` для плотного account/header состояния; существующая
   logical-direction/RTL geometry сохранена. Owner review выявил и подтвердил исправление mobile-only
-  homepage defects ниже `30rem`: browser-default section-enter SVG, затем неверный порядок footer
-  block. Итоговый порядок карточки принят как `Pinned → Latest topics → expand → stats → orange
-  entry rail`. Следующий owner mobile review выявил переполнение discovery navigation; на narrow
-  mobile эти destinations теперь переключаются на centered orange pill icon-only controls с
-  enlarged icons и локализованными accessible labels, сохраняя text labels на wider layouts.
+  homepage defects ниже `30rem`: browser-default section-enter SVG и первоначальный порядок
+  secondary content/footer action. Последний owner feedback заменяет прежнюю mobile-card
+  композицию более компактной: identity/description остаются видимыми, `Pinned` + `Latest topics`
+  + statistics по умолчанию скрыты за circular expand control, а orange section-entry action
+  перенесён из full-width footer в компактный inline-end rail рядом с identity. Эта latest
+  mobile-card correction реализована в текущей ветке и ещё требует automated/Pages verification
+  и owner visual acceptance. Предыдущий owner mobile review также выявил переполнение discovery
+  navigation; на narrow mobile эти destinations переключаются на centered orange pill icon-only
+  controls с enlarged icons и локализованными accessible labels, сохраняя text labels на wider layouts.
   Owner visual acceptance этого mobile-nav correction подтверждена 2026-10-02. Следующий owner
   review того же narrow-mobile header потребовал compact theme/locale controls: language показывает
   current primary locale code (`EN/RU/HE` для review locales), theme — moon/sun target icon;
