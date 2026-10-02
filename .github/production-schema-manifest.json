@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema": "public",
-  "targetMigration": "0020_translation_generation_permission",
+  "targetMigration": "0021_forum_tags",
   "tables": {
     "account": {
       "columns": [
@@ -3130,6 +3130,126 @@
           "columns": [
             {
               "name": "identifier",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ]
+        }
+      ]
+    },
+    "forum_tags": {
+      "columns": [
+        {
+          "name": "key",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "defaultSha256": "PENDING"
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "forum_tags_pkey",
+          "columns": [
+            "key"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [],
+      "checks": [
+        {
+          "name": "forum_tags_key_check",
+          "columns": [
+            "key"
+          ],
+          "definitionSha256": "PENDING"
+        },
+        {
+          "name": "forum_tags_name_check",
+          "columns": [
+            "name"
+          ],
+          "definitionSha256": "PENDING"
+        }
+      ],
+      "indexes": []
+    },
+    "forum_topic_tags": {
+      "columns": [
+        {
+          "name": "topic_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "tag_key",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "forum_topic_tags_pk",
+          "columns": [
+            "topic_id",
+            "tag_key"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [
+        {
+          "name": "forum_topic_tags_tag_key_forum_tags_key_fk",
+          "columns": [
+            "tag_key"
+          ],
+          "referencedTable": "forum_tags",
+          "referencedColumns": [
+            "key"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        },
+        {
+          "name": "forum_topic_tags_topic_id_forum_topics_id_fk",
+          "columns": [
+            "topic_id"
+          ],
+          "referencedTable": "forum_topics",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        }
+      ],
+      "checks": [],
+      "indexes": [
+        {
+          "name": "forum_topic_tags_tag_key_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "tag_key",
               "order": "asc",
               "nulls": "last"
             }
