@@ -482,6 +482,21 @@ select {
   background: var(--color-accent-hover);
 }
 
+.auth-sign-up {
+  border-color: var(--color-accent);
+  color: var(--color-accent-hover);
+  background: var(--color-surface);
+  text-decoration: none;
+}
+
+.auth-sign-up:hover,
+.auth-sign-up:focus-visible {
+  border-color: var(--color-accent);
+  color: var(--color-text);
+  background: var(--color-accent-soft);
+  text-decoration: none;
+}
+
 .auth-sign-out {
   color: var(--color-text-muted);
 }
