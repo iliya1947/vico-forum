@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, isRouteErrorResponse, useLocation, useNavigate, useParams, useRouteError } from "react-router";
 import { useTranslation } from "react-i18next";
-import { forumIndexPath, forumPopularPath, underDevelopmentPath } from "./paths";
+import { forumIndexPath, forumPopularPath, forumUnansweredPath, underDevelopmentPath } from "./paths";
 import { AuthControls, useHeaderAuthUser } from "../auth/auth-controls";
 import { DARK_THEME_QUERY, THEME_STORAGE_KEY, type Theme } from "../theme";
 import { useLocaleNavigation } from "../localization/locale-navigation";
@@ -195,12 +195,13 @@ export function ForumShell({
 }: {
   locale: string;
   children: ReactNode;
-  variant?: "home" | "popular" | "category" | "section" | "topic" | "admin" | "system";
+  variant?: "home" | "popular" | "unanswered" | "category" | "section" | "topic" | "admin" | "system";
 }) {
   const { t } = useTranslation("common");
   const authUser = useHeaderAuthUser();
   const useApprovedHeader = variant === "home"
     || variant === "popular"
+    || variant === "unanswered"
     || variant === "category"
     || variant === "section"
     || variant === "topic"
@@ -213,7 +214,9 @@ export function ForumShell({
         ? "forum-shell home-shell"
         : variant === "popular"
           ? "forum-shell home-shell popular-shell"
-          : variant === "category"
+          : variant === "unanswered"
+            ? "forum-shell home-shell unanswered-shell"
+            : variant === "category"
           ? "forum-shell home-shell category-shell"
           : variant === "section"
             ? "forum-shell home-shell section-shell"
@@ -266,7 +269,7 @@ export function ForumShell({
               <>
                 <Link
                   className="home-discovery-link"
-                  to={underDevelopmentPath(locale, "unanswered-filter")}
+                  to={forumUnansweredPath(locale)}
                   aria-label={t("unansweredNav")}
                   title={t("unansweredNav")}
                 >
