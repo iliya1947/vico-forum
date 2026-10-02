@@ -4,8 +4,8 @@ import { useTranslation } from "react-i18next";
 
 import type {
   ForumCategoryPage,
-  type ForumPopularPeriod,
-  type ForumPopularTopicSummary,
+  ForumPopularPeriod,
+  ForumPopularTopicSummary,
   ForumSectionPage,
   ForumTopicPage,
 } from "../../db/forum-repository";
