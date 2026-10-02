@@ -51,12 +51,12 @@ Vico Forum находится в ранней pre-release разработке.
   PR #168: locale-aware public route показывает три одновременных activity-period колонки
   `24 hours / 7 days / 30 days`, ранжируя темы по числу существующих forum messages внутри
   периода с latest-activity tie-break; targeted repository CI/Pages прошли, owner visual acceptance
-  подтверждён 2026-10-02. Следующая bounded discovery-функция `Unanswered` реализуется в PR #169:
+  подтверждён 2026-10-02. Следующая bounded discovery-функция `Unanswered` реализован в PR #169:
   forum-wide public route выбирает только unsolved темы с ровно одним persisted post (initial post),
   то есть без единого ответа; список показывает author и category/section context, сортируется по
   новым темам первым и удаляет `Unanswered` из unfinished checklist. Migration/dependency/auth/
-  permission/Stage 6 изменений нет; targeted repository CI для implementation head проходит,
-  Pages/owner visual acceptance остаются отдельным следующим gate. Дальнейшая косметическая полировка homepage
+  permission/Stage 6 изменений нет; targeted repository CI и GitHub Pages preview проходят,
+  owner visual acceptance подтверждён 2026-10-02. Дальнейшая косметическая полировка homepage
   сейчас не является приоритетом.
 - Category-page discovery slice в PR #159 прошёл owner visual acceptance в GitHub Pages:
   owner-approved header/logo/discovery nav переиспользованы без backend/DB изменений; category
@@ -584,11 +584,10 @@ runtime roles/Hyperdrive writes и другие schema-dependent runtime capabil
    Дальнейшая косметическая полировка homepage сейчас не является приоритетом.
 3. `Popular` merged через PR #168 после green repository CI/Pages и owner visual
    acceptance 2026-10-02.
-4. `Unanswered` выполняется как следующая bounded discovery subtask в PR #169: реальный
-   locale-aware public route использует существующие topic/post данные и семантику
-   `isSolved = false` + ровно один persisted post; implementation не требует schema/dependency
-   изменений. Targeted repository CI для implementation head проходит; следующий отдельный
-   gate — Pages/owner visual acceptance.
+4. `Unanswered` реализован в PR #169: реальный locale-aware public route использует существующие
+   topic/post данные и семантику `isSolved = false` + ровно один persisted post; implementation
+   не требует schema/dependency изменений. Targeted repository CI и GitHub Pages preview проходят,
+   owner visual acceptance подтверждён 2026-10-02. Следующий шаг — merge владельцем.
 5. Presentation slices через PR #167 уже прошли owner review/merge в пределах Pages-preview.
    Heavy approved subsystems, которые всё ещё перечислены в `Under development`, остаются
    отдельными bounded tasks.
