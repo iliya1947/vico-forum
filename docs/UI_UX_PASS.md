@@ -332,8 +332,12 @@ visual acceptance in GitHub Pages on 2026-10-01:
 Remaining participation work:
 
 - continue verifying long titles, long localized strings, code overflow and mixed-direction content;
-- permanent copy-link, full editor behavior and future reply/quote relationships remain separate
-  approved product work rather than being invented inside this visual slice.
+- permanent copy-link was implemented and owner-accepted through PR #172;
+- the current Reply/Quote slice adds a persisted direct-parent relationship while keeping the
+  discussion linear: concrete-message replies expose parent/direct-reply anchors, and Quote inserts
+  only text the user actually selected as a Markdown blockquote; repository/Pages/owner acceptance
+  for this slice is still pending;
+- full editor behavior remains separate approved future work.
 
 ### 5. Auth, administration and system states
 
