@@ -179,10 +179,13 @@ describe("Stage 4 connected forum authorization flow", () => {
       { key: "typescript", name: "TypeScript" },
     ]);
 
+    const initialPostId = (await forum.readTopicPage(topicId))?.posts[0]?.id;
+    if (!initialPostId) throw new Error("initial post was not persisted");
+
     const replyState = await userContext("e2e-replier", "Replier");
     try {
       const replyResponse = await topicAction({
-        request: formRequest(`/en/topics/${topicId}`, { body: "Connected reply" }),
+        request: formRequest(`/en/topics/${topicId}`, { body: "Connected reply", parentPostId: initialPostId }),
         params: { locale: "en", topicId },
         context: replyState.context,
       });
@@ -194,6 +197,7 @@ describe("Stage 4 connected forum authorization flow", () => {
     const withReply = await forum.readTopicPage(topicId);
     const reply = withReply?.posts.find((post) => post.authorId === "e2e-replier");
     if (!reply) throw new Error("reply was not persisted");
+    expect(reply.parentPostId).toBe(initialPostId);
 
     expect(responseStatus(await markSolved("e2e-author", "Author", topicId))).toBe(302);
     const bestState = await userContext("e2e-author", "Author");
