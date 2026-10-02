@@ -159,7 +159,7 @@ describe("homepage target presentation", () => {
       .toHaveAttribute("d", "m5 8 5 5 5-5");
   });
 
-  it("routes unfinished shell destinations to development and Popular to its real page", async () => {
+  it("routes unfinished shell destinations to development and implemented discovery destinations to real pages", async () => {
     renderView(
       <HomeView
         locale="en"
@@ -171,7 +171,7 @@ describe("homepage target presentation", () => {
     expect(await screen.findByRole("link", { name: "Search the forum" }))
       .toHaveAttribute("href", "/en/under-development?feature=search");
     expect(screen.getByRole("link", { name: "Unanswered" }))
-      .toHaveAttribute("href", "/en/under-development?feature=unanswered-filter");
+      .toHaveAttribute("href", "/en/unanswered");
     expect(screen.getByRole("link", { name: "Tags" }))
       .toHaveAttribute("href", "/en/under-development?feature=technology-tags");
     expect(screen.getByRole("link", { name: "Popular" }))

@@ -2734,6 +2734,244 @@ p {
 }
 
 
+/* Unanswered discovery page: a forum-wide list of unsolved topics that still
+   contain only their initial post. */
+.unanswered-shell .breadcrumbs {
+  margin: 0.75rem 1rem 0;
+  padding: 0.5rem 0.2rem;
+  border: 0;
+  background: transparent;
+  font-size: 0.78rem;
+}
+
+.unanswered-shell .breadcrumbs a {
+  color: var(--color-text-muted);
+  text-decoration: none;
+}
+
+.unanswered-shell .breadcrumbs a:hover {
+  color: var(--color-accent-hover);
+}
+
+.unanswered-heading {
+  margin: 0 1rem 0.7rem;
+  padding: 0.95rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.6rem;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-panel);
+}
+
+.unanswered-heading .eyebrow {
+  margin: 0;
+  color: var(--color-accent);
+  font-size: 0.68rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.unanswered-heading h1 {
+  margin: 0.15rem 0 0;
+  color: var(--color-text);
+  font-size: clamp(1.35rem, 3vw, 1.8rem);
+  line-height: 1.15;
+}
+
+.unanswered-heading > p:last-child {
+  margin: 0.35rem 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+}
+
+.unanswered-topics,
+.unanswered-empty {
+  margin: 0 1rem 1rem;
+}
+
+.unanswered-empty .empty-state {
+  margin: 0;
+}
+
+.unanswered-topic-list {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.unanswered-topic-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(10rem, auto) auto 2.9rem;
+  align-items: stretch;
+  min-height: 4.35rem;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 0.6rem;
+  color: inherit;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-panel);
+  text-decoration: none;
+}
+
+.unanswered-topic-card:hover {
+  background: var(--color-surface-muted);
+}
+
+.unanswered-topic-card:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.unanswered-topic-main {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.7rem 0.85rem;
+}
+
+.unanswered-topic-icon {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid var(--color-accent);
+  border-radius: 0.5rem;
+  color: var(--color-accent);
+}
+
+.unanswered-topic-icon svg,
+.unanswered-topic-enter svg {
+  width: 1.2rem;
+  height: 1.2rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.unanswered-topic-copy {
+  display: grid;
+  min-width: 0;
+  gap: 0.2rem;
+}
+
+.unanswered-topic-copy strong {
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: 0.86rem;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.unanswered-topic-copy small,
+.unanswered-topic-location,
+.unanswered-topic-status {
+  color: var(--color-text-muted);
+  font-size: 0.68rem;
+}
+
+.unanswered-topic-location,
+.unanswered-topic-status {
+  display: flex;
+  align-items: center;
+  align-self: stretch;
+  padding: 0.7rem 0.85rem;
+  border-inline-start: 1px solid var(--color-border);
+}
+
+.unanswered-topic-location {
+  gap: 0.25rem;
+}
+
+.unanswered-topic-status {
+  color: var(--color-accent-hover);
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.unanswered-topic-enter {
+  display: grid;
+  min-width: 2.9rem;
+  place-items: center;
+  color: var(--color-action-on-accent);
+  background: var(--color-accent);
+}
+
+.unanswered-topic-enter svg {
+  width: 1.3rem;
+  height: 1.3rem;
+  stroke-width: 3;
+}
+
+:dir(rtl) .unanswered-topic-enter svg {
+  transform: rotate(180deg);
+}
+
+@media (max-width: 52rem) {
+  .unanswered-topic-card {
+    grid-template-columns: minmax(0, 1fr) 2.9rem;
+  }
+
+  .unanswered-topic-main {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .unanswered-topic-location {
+    grid-column: 1;
+    grid-row: 2;
+    padding-block: 0.45rem;
+    border-inline-start: 0;
+    border-block-start: 1px solid var(--color-border);
+  }
+
+  .unanswered-topic-status {
+    grid-column: 1;
+    grid-row: 3;
+    padding-block: 0.45rem;
+    border-inline-start: 0;
+    border-block-start: 1px solid var(--color-border);
+  }
+
+  .unanswered-topic-enter {
+    grid-column: 2;
+    grid-row: 1 / 4;
+  }
+
+  .unanswered-topic-copy strong {
+    white-space: normal;
+  }
+}
+
+@media (max-width: 29.99rem) {
+  .unanswered-shell .breadcrumbs,
+  .unanswered-heading,
+  .unanswered-topics,
+  .unanswered-empty {
+    margin-inline: 0.75rem;
+  }
+
+  .unanswered-heading {
+    padding: 0.75rem;
+  }
+
+  .unanswered-topic-main {
+    padding: 0.65rem 0.7rem;
+  }
+
+  .unanswered-topic-location,
+  .unanswered-topic-status {
+    padding-inline: 0.7rem;
+  }
+}
+
+
 /* Category discovery page: reuses the accepted homepage shell while keeping
    category-specific content geometry isolated from homepage cards. */
 .category-shell .breadcrumbs {

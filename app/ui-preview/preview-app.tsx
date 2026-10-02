@@ -18,6 +18,7 @@ import {
   HomeView,
   PopularView,
   SectionView,
+  UnansweredView,
   TopicView,
 } from "../forum/views";
 import type { ContentTranslationPresentation } from "../localization/content-translation-presentation";
@@ -28,7 +29,7 @@ import { localeRegistry } from "../localization/registry";
 
 type Direction = "ltr" | "rtl";
 type PreviewIdentity = "guest" | "user" | "manager";
-type PreviewView = "home" | "popular" | "category" | "section" | "topic" | "admin" | "empty" | "under-development" | "not-found";
+type PreviewView = "home" | "popular" | "unanswered" | "category" | "section" | "topic" | "admin" | "empty" | "under-development" | "not-found";
 
 type PreviewVariant =
   | "empty-category"
@@ -64,6 +65,7 @@ export const scenarios: readonly Scenario[] = [
   { id: "under-development-search", label: "Under development · search · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/under-development?feature=search", view: "under-development" },
   { id: "under-development-notifications", label: "Under development · notifications · user", locale: "en", direction: "ltr", identity: "user", path: "/en/under-development?feature=notifications", view: "under-development" },
   { id: "popular-guest", label: "Popular · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/popular", view: "popular" },
+  { id: "unanswered-guest", label: "Unanswered · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/unanswered", view: "unanswered" },
   { id: "category-guest", label: "Category · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/development", view: "category" },
   { id: "category-user", label: "Category · user", locale: "en", direction: "ltr", identity: "user", path: "/en/categories/development", view: "category" },
   { id: "category-empty", label: "Empty category · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/empty", view: "category", variant: "empty-category" },
@@ -445,6 +447,37 @@ function popularPeriods(locale: PreviewLocale): ForumPopularPage {
   };
 }
 
+function unansweredTopics(locale: PreviewLocale) {
+  const rtl = locale === "he";
+  const russian = locale === "ru";
+  const categoryName = rtl ? "פיתוח" : russian ? "Разработка" : "Development";
+  const aiCategoryName = rtl ? "Vibe Coding וכלי AI" : russian ? "Vibe Coding и AI-инструменты" : "Vibe Coding & AI tools";
+
+  return [
+    {
+      id: "worker-auth",
+      title: rtl ? "איך להפריד session מ-permissions ב-Worker?" : russian ? "Как разделить session и permissions в Worker?" : "How should session and permissions be separated in a Worker?",
+      authorName: rtl ? "סם צ'ן" : "Sam Chen",
+      category: { id: "development", name: categoryName },
+      section: { id: "backend", name: rtl ? "Backend ו-API" : russian ? "Backend и API" : "Backend & API" },
+    },
+    {
+      id: "agent-context",
+      title: rtl ? "איך להעביר הקשר בין כמה סוכני AI?" : russian ? "Как передавать контекст между несколькими AI-агентами?" : "How should context be passed between several AI agents?",
+      authorName: rtl ? "נועה לוי" : "Noa Levi",
+      category: { id: "vibe-ai", name: aiCategoryName },
+      section: { id: "agents", name: rtl ? "סוכנים ואוטומציה" : russian ? "Агенты и автоматизация" : "Agents & automation" },
+    },
+    {
+      id: "database-timeouts",
+      title: rtl ? "איזה timeout לבחור לשאילתות PostgreSQL?" : russian ? "Какой timeout выбрать для запросов PostgreSQL?" : "What timeout should I use for PostgreSQL queries?",
+      authorName: "Maya Cohen",
+      category: { id: "development", name: categoryName },
+      section: { id: "databases", name: rtl ? "מסדי נתונים" : russian ? "Базы данных" : "Databases" },
+    },
+  ];
+}
+
 function previewUser(identity: PreviewIdentity): HeaderAuthUser | null {
   if (identity === "guest") return null;
   if (identity === "manager") return { name: "Maya Cohen", canManageAuthorization: true };
@@ -586,6 +619,10 @@ function previewRouter(scenario: Scenario) {
       element: <PopularView locale={scenario.locale} periods={popularPeriods(scenario.locale)} />,
     },
     {
+      path: "/:locale/unanswered",
+      element: <UnansweredView locale={scenario.locale} topics={unansweredTopics(scenario.locale)} />,
+    },
+    {
       path: "*",
       element: previewElement(scenario),
     },
@@ -614,6 +651,8 @@ function previewElement(scenario: Scenario) {
       );
     case "popular":
       return <PopularView locale={scenario.locale} periods={popularPeriods(scenario.locale)} />;
+    case "unanswered":
+      return <UnansweredView locale={scenario.locale} topics={unansweredTopics(scenario.locale)} />;
     case "under-development":
       return <PreviewUnderDevelopment locale={scenario.locale} />;
     case "category":

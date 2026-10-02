@@ -18,10 +18,11 @@ import {
 import CategoryRoute, { loader as categoryLoader } from "../routes/category";
 import Home, { loader as homeLoader } from "../routes/home";
 import PopularRoute, { loader as popularLoader } from "../routes/popular";
+import UnansweredRoute, { loader as unansweredLoader } from "../routes/unanswered";
 import { ErrorBoundary as NotFoundErrorBoundary, loader as notFoundLoader } from "../routes/not-found";
 import SectionRoute, { loader as sectionLoader } from "../routes/section";
 import TopicRoute, { loader as topicLoader } from "../routes/topic";
-import { forumCategoryPath, forumPopularPath, forumSectionPath, forumTopicPath } from "./paths";
+import { forumCategoryPath, forumPopularPath, forumSectionPath, forumTopicPath, forumUnansweredPath } from "./paths";
 import { forumReaderContext } from "./request-context";
 
 const category = { id: "development/core", name: "Development", sections: [{ id: "typescript/basics", name: "TypeScript", topicCount: 1, postCount: 1 }] };
@@ -81,6 +82,14 @@ const reader: ForumReader = {
       latestActivityAt: topic.posts[0]!.createdAt,
     }],
   }),
+  readUnanswered: async () => [{
+    id: topic.id,
+    title: topic.title.originalContent,
+    authorName: topic.authorName,
+    createdAt: topic.createdAt,
+    section: topic.section,
+    category: topic.section.category,
+  }],
   readCategory: async (id) => id === category.id ? category : undefined,
   readSection: async (id) => id === section.id ? section : undefined,
   readTopicPage: async (id) => id === topic.id ? topic : undefined,
@@ -255,6 +264,32 @@ describe("Popular topics", () => {
     expect(screen.getByText("3 messages")).toBeInTheDocument();
     expect(screen.getByText("5 messages")).toBeInTheDocument();
     expect(screen.getByText("8 messages")).toBeInTheDocument();
+  });
+});
+
+describe("Unanswered topics", () => {
+  it("loads unanswered topics and keeps topic links locale-aware", async () => {
+    const data = await unansweredLoader({
+      params: { locale: "en" },
+      context: context("en", "ltr"),
+    });
+
+    expect(data.topics).toEqual([{
+      id: topic.id,
+      title: topic.title.originalContent,
+      authorName: topic.authorName,
+      section: topic.section,
+      category: topic.section.category,
+    }]);
+
+    renderRoute(UnansweredRoute, data, forumUnansweredPath("en"), "en", "ltr");
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Unanswered topics" })).toBeInTheDocument();
+    expect(screen.getByText("No replies yet")).toBeInTheDocument();
+    expect(screen.getByText("Development")).toBeInTheDocument();
+    expect(screen.getByText("TypeScript")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /How do I type an API\?/ }))
+      .toHaveAttribute("href", forumTopicPath("en", topic.id));
   });
 });
 

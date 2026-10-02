@@ -249,6 +249,15 @@ describe("Stage 4 connected forum authorization flow", () => {
       { id: newerTopicId, activityCount: 1 },
     ]);
 
+    const unanswered = await forum.readUnanswered();
+    expect(unanswered).toMatchObject([{
+      id: newerTopicId,
+      title: "Newer but inactive topic",
+      authorName: "Author",
+      section: { id: "e2e-section", name: "E2E Section" },
+      category: { id: "e2e-category", name: "E2E Category" },
+    }]);
+
     const managementPool = scopedPool();
     const authorization = new AuthorizationService(new PostgresAuthorizationRepository(managementPool));
     try {

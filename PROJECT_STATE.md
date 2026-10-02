@@ -47,13 +47,17 @@ Vico Forum находится в ранней pre-release разработке.
   trending-up symbol для `Popular`, theme-aware owner-provided Light/Dark logo marks,
   `Vico` orange / `Forum` neutral по теме, compact stats и отдельная full-height orange entry
   rail. Пока redesigned category/section discovery presentation не готова, rail ведёт на общий
-  `Under development` path, а не в старый scaffold. Отдельная bounded реализация `Popular`
-  открыта в PR #168: locale-aware public route показывает три одновременных activity-period
-  колонки `24 hours / 7 days / 30 days`, ранжируя темы по числу существующих forum messages
-  внутри периода с latest-activity tie-break; `Popular` удалён из unfinished checklist.
-  Реализация не добавляет migration/dependency/auth/Stage 6 изменений. Targeted repository CI
-  и GitHub Pages preview проходят; owner visual acceptance Popular подтверждён 2026-10-02.
-  Дальнейшая косметическая полировка homepage сейчас не является приоритетом.
+  `Under development` path, а не в старый scaffold. Bounded реализация `Popular` merged через
+  PR #168: locale-aware public route показывает три одновременных activity-period колонки
+  `24 hours / 7 days / 30 days`, ранжируя темы по числу существующих forum messages внутри
+  периода с latest-activity tie-break; targeted repository CI/Pages прошли, owner visual acceptance
+  подтверждён 2026-10-02. Следующая bounded discovery-функция `Unanswered` реализован в PR #169:
+  forum-wide public route выбирает только unsolved темы с ровно одним persisted post (initial post),
+  то есть без единого ответа; список показывает author и category/section context, сортируется по
+  новым темам первым и удаляет `Unanswered` из unfinished checklist. Migration/dependency/auth/
+  permission/Stage 6 изменений нет; targeted repository CI и GitHub Pages preview проходят,
+  owner visual acceptance подтверждён 2026-10-02. Дальнейшая косметическая полировка homepage
+  сейчас не является приоритетом.
 - Category-page discovery slice в PR #159 прошёл owner visual acceptance в GitHub Pages:
   owner-approved header/logo/discovery nav переиспользованы без backend/DB изменений; category
   heading показывает только derived section/topic/message totals, section rows стали compact
@@ -578,20 +582,21 @@ runtime roles/Hyperdrive writes и другие schema-dependent runtime capabil
 1. Reproducible visual baseline + GitHub Pages progress preview завершён и merged.
 2. Foundations/homepage correction slice прошёл owner visual acceptance в GitHub Pages.
    Дальнейшая косметическая полировка homepage сейчас не является приоритетом.
-3. `Popular` выполняется как отдельная bounded homepage/discovery subtask в PR #168:
-   реальный public route и три одновременные activity-period колонки
-   `24 hours / 7 days / 30 days` реализованы без schema/dependency изменений; targeted
-   repository CI и GitHub Pages preview проходят, owner visual acceptance подтверждён
-   2026-10-02. Следующий шаг после финальных checks — merge владельцем.
-4. Presentation slices через PR #167 уже прошли owner review/merge в пределах Pages-preview.
+3. `Popular` merged через PR #168 после green repository CI/Pages и owner visual
+   acceptance 2026-10-02.
+4. `Unanswered` реализован в PR #169: реальный locale-aware public route использует существующие
+   topic/post данные и семантику `isSolved = false` + ровно один persisted post; implementation
+   не требует schema/dependency изменений. Targeted repository CI и GitHub Pages preview проходят,
+   owner visual acceptance подтверждён 2026-10-02. Следующий шаг — merge владельцем.
+5. Presentation slices через PR #167 уже прошли owner review/merge в пределах Pages-preview.
    Heavy approved subsystems, которые всё ещё перечислены в `Under development`, остаются
    отдельными bounded tasks.
-5. Уже существующие product capabilities подключаются к реальным данным/поведению; незавершённые
+6. Уже существующие product capabilities подключаются к реальным данным/поведению; незавершённые
    approved entry points не имитируют работу и временно ведут на `Under development`.
-6. После каждого implementation slice выполнять targeted automated checks и browser review.
-7. Завершить UI/UX pass только после полного CI и обязательной real-runtime visual/product
+7. После каждого implementation slice выполнять targeted automated checks и browser review.
+8. Завершить UI/UX pass только после полного CI и обязательной real-runtime visual/product
    acceptance из `docs/UI_UX_PASS.md`; GitHub Pages не заменяет эту проверку.
-8. Stage 6 infrastructure gates остаются на паузе до отдельного указания владельца.
+9. Stage 6 infrastructure gates остаются на паузе до отдельного указания владельца.
 
 Ранее подготовленный защищённый manual rollout mechanism остаётся в repository. При явном
 возобновлении Stage 6 актуальная последовательность остаётся следующей:
