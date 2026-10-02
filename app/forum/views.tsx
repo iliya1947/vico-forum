@@ -213,7 +213,7 @@ function HomepageCategoryCard({
         onClick={toggleDetails}
       >
         <svg aria-hidden="true" viewBox="0 0 20 20">
-          <path d={expanded ? "m5 12 5-5 5 5" : "m5 8 5 5 5-5"} />
+          <path d={controlExpanded ? "m5 12 5-5 5 5" : "m5 8 5 5 5-5"} />
         </svg>
       </button>
     </article>
