@@ -1,10 +1,12 @@
-import { and, asc, desc, eq, gte, lte, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, lte, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import {
   forumCategories,
   forumPostRevisions,
   forumPosts,
   forumSections,
+  forumTags,
+  forumTopicTags,
   forumTopicTitleRevisions,
   forumTopics,
   user,
@@ -54,6 +56,31 @@ export interface ForumUnansweredTopicSummary {
   category: { id: string; name: string };
 }
 
+export interface ForumTag {
+  key: string;
+  name: string;
+}
+
+export interface ForumTagSummary extends ForumTag {
+  topicCount: number;
+}
+
+export interface ForumTaggedTopicSummary {
+  id: string;
+  title: string;
+  authorName: string;
+  postCount: number;
+  createdAt: Date;
+  section: { id: string; name: string };
+  category: { id: string; name: string };
+  tags: ForumTag[];
+}
+
+export interface ForumTagPage {
+  tag: ForumTag;
+  topics: ForumTaggedTopicSummary[];
+}
+
 export interface ForumSectionSummary {
   id: string;
   name: string;
@@ -73,6 +100,7 @@ export interface ForumTopicSummary {
   authorName: string;
   postCount: number;
   createdAt: Date;
+  tags: ForumTag[];
 }
 
 export interface ForumSectionPage {
@@ -91,6 +119,7 @@ export interface ForumTopicPage extends ForumTopic {
   createdAt: Date;
   authorName: string;
   section: { id: string; name: string; category: { id: string; name: string } };
+  tags: ForumTag[];
   posts: ForumThreadPost[];
 }
 
@@ -99,6 +128,8 @@ export interface ForumReader {
   readHomepage(latestTopicsPerCategory?: number): Promise<ForumHomepageCategorySummary[]>;
   readPopular(referenceTime?: Date, limitPerPeriod?: number): Promise<ForumPopularPage>;
   readUnanswered(): Promise<ForumUnansweredTopicSummary[]>;
+  readTags(): Promise<ForumTagSummary[]>;
+  readTag(key: string): Promise<ForumTagPage | undefined>;
   readCategory(id: string): Promise<ForumCategoryPage | undefined>;
   readSection(id: string): Promise<ForumSectionPage | undefined>;
   readTopicPage(id: string): Promise<ForumTopicPage | undefined>;
@@ -141,6 +172,7 @@ export interface CreateTopicInput {
   sectionId: string;
   authorId: string;
   titleRevision: ForumRevisionContent;
+  tags?: readonly ForumTag[];
 }
 
 export interface CreatePostInput {
@@ -189,6 +221,13 @@ export class DrizzleForumRepository {
         topicId: input.id,
         authorId: input.authorId,
       });
+      if (input.tags?.length) {
+        await tx.insert(forumTags).values(input.tags).onConflictDoNothing();
+        await tx.insert(forumTopicTags).values(input.tags.map((tag) => ({
+          topicId: input.id,
+          tagKey: tag.key,
+        })));
+      }
       return { id: input.id, sectionId: input.sectionId, authorId: input.authorId, title: input.titleRevision, isSolved: false, bestAnswerPostId: null };
     });
   }
@@ -223,6 +262,13 @@ export class DrizzleForumRepository {
         postId: input.initialPost.id,
         authorId: input.authorId,
       });
+      if (input.tags?.length) {
+        await tx.insert(forumTags).values(input.tags).onConflictDoNothing();
+        await tx.insert(forumTopicTags).values(input.tags.map((tag) => ({
+          topicId: input.id,
+          tagKey: tag.key,
+        })));
+      }
       return {
         topic: { id: input.id, sectionId: input.sectionId, authorId: input.authorId, title: input.titleRevision, isSolved: false, bestAnswerPostId: null },
         post: { id: input.initialPost.id, topicId: input.id, authorId: input.authorId, body: input.initialPost.bodyRevision },
@@ -462,6 +508,76 @@ export class DrizzleForumRepository {
     }));
   }
 
+  async readTags(): Promise<ForumTagSummary[]> {
+    return this.database
+      .select({
+        key: forumTags.key,
+        name: forumTags.name,
+        topicCount: sql<number>`count(distinct ${forumTopicTags.topicId})::int`,
+      })
+      .from(forumTags)
+      .leftJoin(forumTopicTags, eq(forumTopicTags.tagKey, forumTags.key))
+      .groupBy(forumTags.key, forumTags.name, forumTags.createdAt)
+      .orderBy(asc(forumTags.name), asc(forumTags.key));
+  }
+
+  async readTag(key: string): Promise<ForumTagPage | undefined> {
+    const [tag] = await this.database
+      .select({ key: forumTags.key, name: forumTags.name })
+      .from(forumTags)
+      .where(eq(forumTags.key, key));
+    if (!tag) return undefined;
+
+    const topics = await this.database
+      .select({
+        id: forumTopics.id,
+        title: forumTopicTitleRevisions.originalContent,
+        authorName: user.name,
+        postCount: sql<number>`count(distinct ${forumPosts.id})::int`,
+        createdAt: forumTopics.createdAt,
+        sectionId: forumSections.id,
+        sectionName: forumSections.name,
+        categoryId: forumCategories.id,
+        categoryName: forumCategories.name,
+      })
+      .from(forumTopicTags)
+      .innerJoin(forumTopics, eq(forumTopics.id, forumTopicTags.topicId))
+      .innerJoin(forumTopicTitleRevisions, and(
+        eq(forumTopicTitleRevisions.topicId, forumTopics.id),
+        eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId),
+      ))
+      .innerJoin(user, eq(user.id, forumTopics.authorId))
+      .innerJoin(forumSections, eq(forumSections.id, forumTopics.sectionId))
+      .innerJoin(forumCategories, eq(forumCategories.id, forumSections.categoryId))
+      .leftJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
+      .where(eq(forumTopicTags.tagKey, key))
+      .groupBy(
+        forumTopics.id,
+        forumTopicTitleRevisions.id,
+        user.name,
+        forumSections.id,
+        forumSections.name,
+        forumCategories.id,
+        forumCategories.name,
+      )
+      .orderBy(desc(forumTopics.createdAt), desc(forumTopics.id));
+
+    const tagsByTopic = await this.readTagsForTopics(topics.map((topic) => topic.id));
+    return {
+      tag,
+      topics: topics.map((topic) => ({
+        id: topic.id,
+        title: topic.title,
+        authorName: topic.authorName,
+        postCount: topic.postCount,
+        createdAt: topic.createdAt,
+        section: { id: topic.sectionId, name: topic.sectionName },
+        category: { id: topic.categoryId, name: topic.categoryName },
+        tags: tagsByTopic.get(topic.id) ?? [],
+      })),
+    };
+  }
+
   async readCategory(id: string): Promise<ForumCategoryPage | undefined> {
     const rows = await this.database
       .select({
@@ -518,6 +634,7 @@ export class DrizzleForumRepository {
       .where(eq(forumTopics.sectionId, id))
       .groupBy(forumTopics.id, forumTopicTitleRevisions.id, user.name)
       .orderBy(asc(forumTopics.createdAt), asc(forumTopics.id));
+    const tagsByTopic = await this.readTagsForTopics(topics.map((topic) => topic.id));
     return {
       id: section.id,
       name: section.name,
@@ -528,6 +645,7 @@ export class DrizzleForumRepository {
         authorName: topic.authorName,
         postCount: topic.postCount,
         createdAt: topic.createdAt,
+        tags: tagsByTopic.get(topic.id) ?? [],
       })),
     };
   }
@@ -551,6 +669,7 @@ export class DrizzleForumRepository {
       ))
       .where(eq(forumTopics.id, id));
     if (!topic) return undefined;
+    const tags = await this.readTagsForTopics([id]);
     const posts = await this.database
       .select({
         id: forumPosts.id, topicId: forumPosts.topicId, authorId: forumPosts.authorId,
@@ -571,12 +690,34 @@ export class DrizzleForumRepository {
       createdAt: topic.createdAt,
       title: { id: topic.revisionId, originalContent: topic.originalContent, sourceLocale: topic.sourceLocale },
       section: { id: topic.sectionId, name: topic.sectionName, category: { id: topic.categoryId, name: topic.categoryName } },
+      tags: tags.get(id) ?? [],
       posts: posts.map((post) => ({
         id: post.id, topicId: post.topicId, authorId: post.authorId, authorName: post.authorName,
         createdAt: post.createdAt,
         body: { id: post.revisionId, originalContent: post.originalContent, sourceLocale: post.sourceLocale },
       })),
     };
+  }
+
+  private async readTagsForTopics(topicIds: readonly string[]): Promise<Map<string, ForumTag[]>> {
+    if (topicIds.length === 0) return new Map();
+    const rows = await this.database
+      .select({
+        topicId: forumTopicTags.topicId,
+        key: forumTags.key,
+        name: forumTags.name,
+      })
+      .from(forumTopicTags)
+      .innerJoin(forumTags, eq(forumTags.key, forumTopicTags.tagKey))
+      .where(inArray(forumTopicTags.topicId, [...topicIds]))
+      .orderBy(asc(forumTags.name), asc(forumTags.key));
+    const byTopic = new Map<string, ForumTag[]>();
+    for (const row of rows) {
+      const list = byTopic.get(row.topicId) ?? [];
+      list.push({ key: row.key, name: row.name });
+      byTopic.set(row.topicId, list);
+    }
+    return byTopic;
   }
 
   async readTopic(id: string): Promise<ForumTopic | undefined> {
