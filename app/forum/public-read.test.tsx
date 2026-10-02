@@ -1,6 +1,6 @@
 import "@testing-library/jest-dom/vitest";
 import type { ComponentType } from "react";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { I18nextProvider } from "react-i18next";
 import { RouterContextProvider, RouterProvider, createMemoryRouter, matchRoutes } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -507,6 +507,71 @@ describe("forum path encoding", () => {
 });
 
 describe("forum read states", () => {
+  it("targets direct replies, exposes parent/child anchors, and quotes only selected message text", async () => {
+    const seed = topic.posts[0]!;
+    const question = {
+      ...seed,
+      id: "question",
+      authorName: "Ada",
+      parentPostId: null,
+      body: { id: "post-q", originalContent: "Selected words from the question.", sourceLocale: "en" },
+    };
+    const reply = {
+      ...seed,
+      id: "reply",
+      authorName: "Lin",
+      parentPostId: "question",
+      body: { id: "post-r", originalContent: "Direct reply.", sourceLocale: "en" },
+    };
+    const replyTopic = { ...topic, posts: [question, reply] };
+
+    renderRoute(
+      TopicRoute,
+      topicRenderData(replyTopic, { canReply: true }),
+      "/en/topics/typed-api",
+      "en",
+      "ltr",
+    );
+
+    const questionCard = document.querySelector("#post-question");
+    const replyCard = document.querySelector("#post-reply");
+    expect(questionCard).not.toBeNull();
+    expect(replyCard).not.toBeNull();
+
+    expect(within(replyCard as HTMLElement).getByRole("link", { name: "Reply to Message #1" }))
+      .toHaveAttribute("href", "#post-question");
+    expect(within(questionCard as HTMLElement).getByRole("navigation", { name: "Direct replies" })
+      .querySelector('a[href="#post-reply"]')).not.toBeNull();
+
+    fireEvent.click(within(questionCard as HTMLElement).getByRole("button", { name: "Reply" }));
+    const replyForm = screen.getByRole("form", { name: "Add a reply" });
+    expect(replyForm.querySelector('input[name="parentPostId"]')).toHaveValue("question");
+    expect(screen.getByText("Replying to Message #1")).toBeInTheDocument();
+
+    const bodyElement = questionCard!.querySelector("[data-message-body]");
+    if (!bodyElement) throw new Error("message body selection target missing");
+    vi.spyOn(window, "getSelection").mockReturnValue({
+      rangeCount: 1,
+      isCollapsed: false,
+      toString: () => "Selected words",
+      getRangeAt: () => ({
+        startContainer: bodyElement,
+        endContainer: bodyElement,
+      }),
+    } as unknown as Selection);
+
+    fireEvent.click(within(questionCard as HTMLElement).getByRole("button", { name: "Quote" }));
+    expect(screen.getByLabelText("Reply")).toHaveValue("> Selected words\n\n");
+
+    vi.spyOn(window, "getSelection").mockReturnValue({
+      rangeCount: 0,
+      isCollapsed: true,
+      toString: () => "",
+    } as unknown as Selection);
+    fireEvent.click(within(replyCard as HTMLElement).getByRole("button", { name: "Quote" }));
+    expect(screen.getByText("Select text in this message to quote it.")).toBeInTheDocument();
+  });
+
   it("copies a clean permanent locale-aware message link, keeps one active status, and reports clipboard failure", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText } });
