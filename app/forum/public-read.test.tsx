@@ -533,6 +533,7 @@ describe("forum read states", () => {
       "ltr",
     );
 
+    await screen.findByText("Selected words from the question.");
     const questionCard = document.querySelector("#post-question");
     const replyCard = document.querySelector("#post-reply");
     expect(questionCard).not.toBeNull();
@@ -545,8 +546,8 @@ describe("forum read states", () => {
 
     fireEvent.click(within(questionCard as HTMLElement).getByRole("button", { name: "Reply" }));
     const replyForm = screen.getByRole("form", { name: "Add a reply" });
+    expect(await screen.findByText("Replying to Message #1")).toBeInTheDocument();
     expect(replyForm.querySelector('input[name="parentPostId"]')).toHaveValue("question");
-    expect(screen.getByText("Replying to Message #1")).toBeInTheDocument();
 
     const bodyElement = questionCard!.querySelector("[data-message-body]");
     if (!bodyElement) throw new Error("message body selection target missing");
