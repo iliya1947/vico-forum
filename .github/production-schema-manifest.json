@@ -1351,7 +1351,7 @@
             "id",
             "parent_post_id"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "1ea94bed08bf646f8c5101aaa5a9edf9fc8b86ce49bc2e07e18173c24ff39164"
         }
       ],
       "indexes": [
