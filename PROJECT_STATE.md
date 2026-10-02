@@ -178,8 +178,12 @@ Vico Forum находится в ранней pre-release разработке.
   сокращена до `Sign in`, а рядом добавлен `Sign up` как approved future registration entry
   point на shared `Under development` page; реальная registration/auth backend semantics не
   меняются. Wider layouts сохраняют текущую presentation. Repository CI и Pages для этого
-  lower-header/auth correction проходят; owner visual acceptance и полная keyboard/RTL acceptance
-  PR #167 остаются открытыми.
+  lower-header/auth correction проходят; owner visual acceptance narrow-mobile shell и итоговых
+  Light/Dark action colors подтверждён 2026-10-02. Source/automated keyboard/RTL review текущего
+  PR также завершён без подтверждённых code-level defects: skip link остаётся первым keyboard
+  target, language selector получает visible wrapper focus, новые CSS additions не вводят
+  physical left/right assumptions, а directional entry arrows сохраняют RTL reversal. Полная
+  browser keyboard/RTL acceptance PR #167 остаётся открытой и не подменяется CI/Pages.
 - Target search, notifications и незавершённые footer/product entry points во время owner-only
   pre-release ведут на общую `Under development` page/checklist вместо fake behavior.
 - Для owner-only pre-release незавершённые approved target functions могут оставаться видимыми и
