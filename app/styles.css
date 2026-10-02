@@ -5466,3 +5466,144 @@ a.topic-tag:focus-visible {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* Forum search */
+.search-shell .breadcrumbs {
+  margin: 0.75rem 1rem 0;
+  padding: 0.5rem 0.2rem;
+  border: 0;
+  background: transparent;
+  font-size: 0.78rem;
+}
+
+.search-heading,
+.forum-search-form,
+.search-results,
+.search-empty {
+  margin-inline: 1rem;
+}
+
+.search-heading {
+  margin-block: 0 0.7rem;
+  padding: 0.95rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.6rem;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-panel);
+}
+
+.search-heading .eyebrow {
+  margin: 0;
+  color: var(--color-accent);
+  font-size: 0.68rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.search-heading h1 {
+  margin: 0.15rem 0 0;
+  font-size: clamp(1.35rem, 3vw, 1.8rem);
+}
+
+.search-heading > p:last-child {
+  margin: 0.35rem 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+}
+
+.forum-search-form {
+  display: grid;
+  gap: 0.4rem;
+  margin-block-end: 0.7rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.6rem;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-panel);
+}
+
+.forum-search-form > label {
+  font-size: 0.76rem;
+  font-weight: 750;
+}
+
+.forum-search-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.5rem;
+}
+
+.forum-search-row input {
+  min-width: 0;
+}
+
+.forum-search-row button {
+  min-height: 2.55rem;
+  padding-inline: 1rem;
+  white-space: nowrap;
+}
+
+.search-results {
+  margin-block-end: 1rem;
+}
+
+.search-results-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-block-end: 0.5rem;
+}
+
+.search-results-heading h2 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.search-results-heading span {
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+}
+
+.search-result-icon svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.search-empty {
+  margin-block-end: 1rem;
+}
+
+@media (max-width: 29.99rem) {
+  .search-shell .breadcrumbs,
+  .search-heading,
+  .forum-search-form,
+  .search-results,
+  .search-empty {
+    margin-inline: 0.75rem;
+  }
+
+  .search-heading,
+  .forum-search-form {
+    padding: 0.75rem;
+  }
+
+  .forum-search-row {
+    grid-template-columns: 1fr;
+  }
+
+  .forum-search-row button {
+    width: 100%;
+  }
+
+  .search-results-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+}
