@@ -25,6 +25,14 @@ export function forumUnansweredPath(locale: string) {
   return generatePath("/:locale/unanswered", { locale });
 }
 
+export function forumTagsPath(locale: string) {
+  return generatePath("/:locale/tags", { locale });
+}
+
+export function forumTagPath(locale: string, tagKey: string) {
+  return `/${encodeURIComponent(locale)}/tags/${encodeURIComponent(tagKey)}`;
+}
+
 
 export function underDevelopmentPath(locale: string, feature?: UnderDevelopmentFeatureId) {
   const path = generatePath("/:locale/under-development", { locale });
