@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, isRouteErrorResponse, useLocation, useNavigate, useParams, useRouteError } from "react-router";
 import { useTranslation } from "react-i18next";
-import { forumIndexPath, forumPopularPath, forumTagsPath, forumUnansweredPath, underDevelopmentPath } from "./paths";
+import { forumIndexPath, forumPopularPath, forumSearchPath, forumTagsPath, forumUnansweredPath, underDevelopmentPath } from "./paths";
 import { AuthControls, useHeaderAuthUser } from "../auth/auth-controls";
 import { DARK_THEME_QUERY, THEME_STORAGE_KEY, type Theme } from "../theme";
 import { useLocaleNavigation } from "../localization/locale-navigation";
@@ -195,11 +195,12 @@ export function ForumShell({
 }: {
   locale: string;
   children: ReactNode;
-  variant?: "home" | "popular" | "unanswered" | "tags" | "category" | "section" | "topic" | "admin" | "system";
+  variant?: "home" | "search" | "popular" | "unanswered" | "tags" | "category" | "section" | "topic" | "admin" | "system";
 }) {
   const { t } = useTranslation("common");
   const authUser = useHeaderAuthUser();
   const useApprovedHeader = variant === "home"
+    || variant === "search"
     || variant === "popular"
     || variant === "unanswered"
     || variant === "tags"
@@ -213,6 +214,8 @@ export function ForumShell({
     <main className={
       variant === "home"
         ? "forum-shell home-shell"
+        : variant === "search"
+          ? "forum-shell home-shell search-shell"
         : variant === "popular"
           ? "forum-shell home-shell popular-shell"
           : variant === "unanswered"
@@ -254,7 +257,7 @@ export function ForumShell({
 
           <Link
             className="site-search"
-            to={underDevelopmentPath(locale, "search")}
+            to={forumSearchPath(locale)}
             aria-label={t("searchForum")}
           >
             <SearchIcon />
