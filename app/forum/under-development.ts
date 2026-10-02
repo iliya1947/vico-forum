@@ -6,7 +6,6 @@ export const UNDER_DEVELOPMENT_FEATURES = [
   { id: "unread", labelKey: "underDevelopmentFeatureUnread" },
   { id: "drafts", labelKey: "underDevelopmentFeatureDrafts" },
   { id: "profiles", labelKey: "underDevelopmentFeatureProfiles" },
-  { id: "technology-tags", labelKey: "underDevelopmentFeatureTechnologyTags" },
   { id: "forum-discovery", labelKey: "underDevelopmentFeatureForumDiscovery" },
   { id: "message-links", labelKey: "underDevelopmentFeatureMessageLinks" },
   { id: "reply-quote", labelKey: "underDevelopmentFeatureReplyQuote" },
