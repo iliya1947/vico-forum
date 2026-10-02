@@ -132,7 +132,7 @@ export const reviewedCommonFingerprints = {
   messageLinkCopied: "52386a303423c325269465ed55c9de5e8233e81e439c6923134fff3c57fe1c8d",
   messageLinkCopyFailed: "a5e3dc3a4436c499660b9b901ee3852bc0d7747a3b510bfcf9af70f7cca3eddc",
   replyToMessage: "11892acc5142b03c588c03c2987f0ef469880cc254b13209023d245474c0c318",
-  quoteSelectedText: "9245d594ffd3bd98ce3d94080cb840a5c109187b420d4ec98b832cca950aaa24",
+  quoteSelectedText: "88244e284d9a250e0024f8d2eba0d18a77a8717c5dd4545483d3cea41c472f8f",
   replyToMessageNumber: "4e0977f5191e7abdceaf522645252e685ebfbebc68d8b4680c496d4da14d4ee2",
   directReplies: "b1e95e31abec048e68ef9161f4111dfd91f4b3854d1fb298e0ccc9a64de09d7e",
   replyingToMessage: "3c7cc8616f9a6f326740f4576d01a7afad00d597bfeb3cf41efa32e3d9131155",
