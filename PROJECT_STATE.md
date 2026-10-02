@@ -47,10 +47,13 @@ Vico Forum находится в ранней pre-release разработке.
   trending-up symbol для `Popular`, theme-aware owner-provided Light/Dark logo marks,
   `Vico` orange / `Forum` neutral по теме, compact stats и отдельная full-height orange entry
   rail. Пока redesigned category/section discovery presentation не готова, rail ведёт на общий
-  `Under development` path, а не в старый scaffold. `Popular` как реальная страница ещё не
-  реализована и до отдельной bounded подзадачи также остаётся на `Under development`. Дальнейшая
-  косметическая полировка homepage сейчас не является приоритетом; следующий общий UI/UX шаг —
-  forum discovery beyond homepage.
+  `Under development` path, а не в старый scaffold. Отдельная bounded реализация `Popular`
+  открыта в PR #168: locale-aware public route показывает три одновременных activity-period
+  колонки `24 hours / 7 days / 30 days`, ранжируя темы по числу существующих forum messages
+  внутри периода с latest-activity tie-break; `Popular` удалён из unfinished checklist.
+  Реализация не добавляет migration/dependency/auth/Stage 6 изменений и пока ожидает отдельной
+  repository/Pages verification и owner acceptance. Дальнейшая косметическая полировка homepage
+  сейчас не является приоритетом.
 - Category-page discovery slice в PR #159 прошёл owner visual acceptance в GitHub Pages:
   owner-approved header/logo/discovery nav переиспользованы без backend/DB изменений; category
   heading показывает только derived section/topic/message totals, section rows стали compact
@@ -575,13 +578,13 @@ runtime roles/Hyperdrive writes и другие schema-dependent runtime capabil
 1. Reproducible visual baseline + GitHub Pages progress preview завершён и merged.
 2. Foundations/homepage correction slice прошёл owner visual acceptance в GitHub Pages.
    Дальнейшая косметическая полировка homepage сейчас не является приоритетом.
-3. `Popular` как отдельная bounded homepage/discovery subtask остаётся на `Under development`
-   до отдельной команды владельца; approved destination по-прежнему — три одновременные
-   activity-period колонки `24 hours / 7 days / 30 days`.
-4. Discovery/topic/participation slices через PR #163 прошли owner visual acceptance.
-   Текущий bounded UI/UX шаг — auth presentation PR #164; после него — authorization management,
-   затем system/error states по `docs/UI_UX_PASS.md`.
-   Heavy approved subsystems из `Under development` остаются отдельными bounded tasks.
+3. `Popular` выполняется как отдельная bounded homepage/discovery subtask в PR #168:
+   реальный public route и три одновременные activity-period колонки
+   `24 hours / 7 days / 30 days` реализованы без schema/dependency изменений; следующий gate —
+   targeted repository/Pages verification и owner visual acceptance.
+4. Presentation slices через PR #167 уже прошли owner review/merge в пределах Pages-preview.
+   Heavy approved subsystems, которые всё ещё перечислены в `Under development`, остаются
+   отдельными bounded tasks.
 5. Уже существующие product capabilities подключаются к реальным данным/поведению; незавершённые
    approved entry points не имитируют работу и временно ведут на `Under development`.
 6. После каждого implementation slice выполнять targeted automated checks и browser review.
