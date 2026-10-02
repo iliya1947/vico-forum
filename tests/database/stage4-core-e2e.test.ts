@@ -234,6 +234,21 @@ describe("Stage 4 connected forum authorization flow", () => {
       activityAt: new Date("2026-09-10T00:00:00.000Z"),
     });
 
+    const popular = await forum.readPopular(new Date("2026-09-11T00:00:00.000Z"), 10);
+    expect(popular["24h"]).toMatchObject([{
+      id: topicId,
+      activityCount: 1,
+      latestActivityAt: new Date("2026-09-10T00:00:00.000Z"),
+    }]);
+    expect(popular["7d"].map((entry) => ({ id: entry.id, activityCount: entry.activityCount }))).toEqual([
+      { id: topicId, activityCount: 1 },
+      { id: newerTopicId, activityCount: 1 },
+    ]);
+    expect(popular["30d"].map((entry) => ({ id: entry.id, activityCount: entry.activityCount }))).toEqual([
+      { id: topicId, activityCount: 2 },
+      { id: newerTopicId, activityCount: 1 },
+    ]);
+
     const managementPool = scopedPool();
     const authorization = new AuthorizationService(new PostgresAuthorizationRepository(managementPool));
     try {
