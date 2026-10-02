@@ -767,8 +767,6 @@ export function SectionView({
   actionData?: ForumMutationError;
 }) {
   const { t } = useTranslation("common");
-  const [messageLinkFeedback, setMessageLinkFeedback] = useState<MessageLinkFeedback>(null);
-  const messageLinkRequestId = useRef(0);
   const navigation = useNavigation();
   const isCreateTopicSubmitting =
     navigation.state === "submitting"
@@ -1022,6 +1020,8 @@ export function TopicView({
     : [];
   const messageNumberById = new Map(topic.posts.map((post, index) => [post.id, index + 1]));
   const { t } = useTranslation("common");
+  const [messageLinkFeedback, setMessageLinkFeedback] = useState<MessageLinkFeedback>(null);
+  const messageLinkRequestId = useRef(0);
   const navigation = useNavigation();
   const isReplySubmitting =
     navigation.state === "submitting"
