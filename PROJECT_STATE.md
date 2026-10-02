@@ -153,8 +153,8 @@ Vico Forum находится в ранней pre-release разработке.
   circular expand control остаётся более светлым. Следующий owner visual review отклонил этот
   вариант как слишком резкий для Light theme и запросил одновременное сравнение трёх более мягких
   оттенков на одном mobile экране: `Sign in` — `#E8873A`, discovery pills — `#E27A32`,
-  section-entry rail — `#E9964A`. Эта comparison correction внесена в текущую ветку и требует
-  повторной CI/Pages и owner visual проверки. Предыдущий owner mobile review также выявил
+  section-entry rail — `#E9964A`. Repository CI и Pages для этой comparison correction проходят;
+  owner visual acceptance остаётся открытым. Предыдущий owner mobile review также выявил
   переполнение discovery navigation; на narrow mobile эти destinations переключаются на centered
   orange pill icon-only controls с enlarged icons и локализованными accessible labels, сохраняя
   text labels на wider layouts.
