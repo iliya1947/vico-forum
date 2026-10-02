@@ -7,6 +7,8 @@ import type {
   ForumPopularPeriod,
   ForumPopularTopicSummary,
   ForumSectionPage,
+  ForumTagPage,
+  ForumTagSummary,
   ForumTopicPage,
   ForumUnansweredTopicSummary,
 } from "../../db/forum-repository";
@@ -17,7 +19,7 @@ import type {
   ForumMutationError,
   SourceLocaleCorrectionMutationError,
 } from "./mutations.server";
-import { forumCategoryPath, forumSectionPath, forumTopicPath, underDevelopmentPath } from "./paths";
+import { forumCategoryPath, forumSectionPath, forumTagPath, forumTagsPath, forumTopicPath, underDevelopmentPath } from "./paths";
 import {
   HOMEPAGE_COMPACT_LATEST_LIMIT,
   HOMEPAGE_COMPACT_PINNED_LIMIT,
@@ -217,6 +219,102 @@ export function UnansweredView({
                     <svg viewBox="0 0 24 24">
                       <path d="m9 5 7 7-7 7" />
                     </svg>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+    </ForumShell>
+  );
+}
+
+export function TagsView({
+  locale,
+  tags,
+}: {
+  locale: string;
+  tags: readonly ForumTagSummary[];
+}) {
+  const { t } = useTranslation("common");
+  return (
+    <ForumShell locale={locale} variant="tags">
+      <Breadcrumbs locale={locale} items={[{ label: t("tagsNav") }]} />
+      <header className="tags-heading">
+        <p className="eyebrow">{t("tagsEyebrow")}</p>
+        <h1>{t("tagsHeading")}</h1>
+        <p>{t("tagsIntro")}</p>
+      </header>
+      {tags.length === 0 ? (
+        <div className="tags-empty"><EmptyState>{t("tagsEmpty")}</EmptyState></div>
+      ) : (
+        <section className="tags-grid" aria-label={t("tagsHeading")}>
+          {tags.map((tag) => (
+            <Link className="tag-card" key={tag.key} to={forumTagPath(locale, tag.key)}>
+              <strong>#{tag.name}</strong>
+              <span>{t("tagTopicCount", { count: tag.topicCount })}</span>
+            </Link>
+          ))}
+        </section>
+      )}
+    </ForumShell>
+  );
+}
+
+export function TagView({
+  locale,
+  page,
+}: {
+  locale: string;
+  page: ForumTagPage;
+}) {
+  const { t } = useTranslation("common");
+  return (
+    <ForumShell locale={locale} variant="tags">
+      <Breadcrumbs locale={locale} items={[
+        { label: t("tagsNav"), to: forumTagsPath(locale) },
+        { label: page.tag.name },
+      ]} />
+      <header className="tags-heading">
+        <p className="eyebrow">{t("tagsEyebrow")}</p>
+        <h1>#{page.tag.name}</h1>
+        <p>{t("tagTopicsIntro")}</p>
+      </header>
+      {page.topics.length === 0 ? (
+        <div className="tags-empty"><EmptyState>{t("tagTopicsEmpty")}</EmptyState></div>
+      ) : (
+        <section className="section-topics tag-topics" aria-label={t("tagTopicsHeading", { tag: page.tag.name })}>
+          <ul className="section-topic-list">
+            {page.topics.map((topic) => (
+              <li key={topic.id}>
+                <Link className="section-topic-card" to={forumTopicPath(locale, topic.id)}>
+                  <span className="section-topic-main">
+                    <span className="section-topic-icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24">
+                        <path d="M4.5 5.5h8.2l6.8 6.8-7.2 7.2-6.8-6.8z" />
+                        <circle cx="9" cy="9" r="1.2" />
+                      </svg>
+                    </span>
+                    <span className="section-topic-copy">
+                      <strong>{topic.title}</strong>
+                      <small>{t("startedBy", { author: topic.authorName })}</small>
+                      <span className="topic-tag-list" aria-label={t("topicTagsLabel")}>
+                        {topic.tags.map((tag) => <span className="topic-tag" key={tag.key}>#{tag.name}</span>)}
+                      </span>
+                    </span>
+                  </span>
+                  <span className="tag-topic-location">
+                    <span>{topic.category.name}</span>
+                    <span aria-hidden="true"> / </span>
+                    <span>{topic.section.name}</span>
+                  </span>
+                  <span className="section-topic-count" aria-label={t("messageCount", { count: topic.postCount })}>
+                    <strong aria-hidden="true">{topic.postCount}</strong>
+                    <small aria-hidden="true">{t("postsColumn")}</small>
+                  </span>
+                  <span className="section-topic-enter" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="m9 5 7 7-7 7" /></svg>
                   </span>
                 </Link>
               </li>
@@ -627,6 +725,11 @@ export function SectionView({
                     <span className="section-topic-copy">
                       <strong>{topic.title.originalContent}</strong>
                       <small>{t("startedBy", { author: topic.authorName })}</small>
+                      {topic.tags.length > 0 ? (
+                        <span className="topic-tag-list" aria-label={t("topicTagsLabel")}>
+                          {topic.tags.map((tag) => <span className="topic-tag" key={tag.key}>#{tag.name}</span>)}
+                        </span>
+                      ) : null}
                     </span>
                   </span>
 
@@ -686,6 +789,17 @@ export function SectionView({
                 aria-describedby="create-topic-title-help"
               />
               <small id="create-topic-title-help">{t("topicTitleHelp")}</small>
+            </div>
+
+            <div className="forum-write-field">
+              <label htmlFor="create-topic-tags">{t("topicTagsInputLabel")}</label>
+              <input
+                id="create-topic-tags"
+                name="tags"
+                disabled={isCreateTopicSubmitting}
+                aria-describedby="create-topic-tags-help"
+              />
+              <small id="create-topic-tags-help">{t("topicTagsInputHelp")}</small>
             </div>
 
             <div className="forum-write-field">
@@ -797,6 +911,13 @@ export function TopicView({
               <span>{t("startedBy", { author: topic.authorName })}</span>
               {topic.isSolved && <strong className="solved-badge">{t("solved")}</strong>}
             </div>
+            {topic.tags.length > 0 ? (
+              <nav className="topic-tag-list topic-heading-tags" aria-label={t("topicTagsLabel")}>
+                {topic.tags.map((tag) => (
+                  <Link className="topic-tag" key={tag.key} to={forumTagPath(locale, tag.key)}>#{tag.name}</Link>
+                ))}
+              </nav>
+            ) : null}
           </div>
 
           <div className="topic-heading-actions">
