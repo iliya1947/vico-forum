@@ -6,6 +6,7 @@ import type {
   ForumCategoryPage,
   ForumPopularPeriod,
   ForumPopularTopicSummary,
+  ForumSearchResult,
   ForumSectionPage,
   ForumTagPage,
   ForumTagSummary,
@@ -19,7 +20,7 @@ import type {
   ForumMutationError,
   SourceLocaleCorrectionMutationError,
 } from "./mutations.server";
-import { forumCategoryPath, forumSectionPath, forumTagPath, forumTagsPath, forumTopicPath, underDevelopmentPath } from "./paths";
+import { forumCategoryPath, forumSearchPath, forumSectionPath, forumTagPath, forumTagsPath, forumTopicPath, underDevelopmentPath } from "./paths";
 import {
   HOMEPAGE_COMPACT_LATEST_LIMIT,
   HOMEPAGE_COMPACT_PINNED_LIMIT,
@@ -202,7 +203,7 @@ export function UnansweredView({
                       </svg>
                     </span>
                     <span className="unanswered-topic-copy">
-                      <strong>{topic.title}</strong>
+                      <strong dir="auto">{topic.title}</strong>
                       <small>{t("startedBy", { author: topic.authorName })}</small>
                     </span>
                   </span>
@@ -219,6 +220,100 @@ export function UnansweredView({
                     <svg viewBox="0 0 24 24">
                       <path d="m9 5 7 7-7 7" />
                     </svg>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+    </ForumShell>
+  );
+}
+
+export function SearchView({
+  locale,
+  query,
+  results,
+  queryTooLong = false,
+}: {
+  locale: string;
+  query: string;
+  results: readonly ForumSearchResult[];
+  queryTooLong?: boolean;
+}) {
+  const { t } = useTranslation("common");
+
+  return (
+    <ForumShell locale={locale} variant="search">
+      <Breadcrumbs locale={locale} items={[{ label: t("searchHeading") }]} />
+      <header className="search-heading">
+        <p className="eyebrow">{t("searchEyebrow")}</p>
+        <h1>{t("searchHeading")}</h1>
+        <p>{t("searchIntro")}</p>
+      </header>
+
+      <Form className="forum-search-form" method="get" action={forumSearchPath(locale)} role="search">
+        <label htmlFor="forum-search-query">{t("searchInputLabel")}</label>
+        <div className="forum-search-row">
+          <input
+            id="forum-search-query"
+            name="q"
+            type="search"
+            defaultValue={query}
+            maxLength={200}
+            autoComplete="off"
+            dir="auto"
+            placeholder={t("searchInputPlaceholder")}
+          />
+          <button type="submit">{t("searchSubmit")}</button>
+        </div>
+      </Form>
+
+      {queryTooLong ? (
+        <div className="search-empty"><EmptyState>{t("searchTooLong")}</EmptyState></div>
+      ) : !query ? (
+        <div className="search-empty"><EmptyState>{t("searchPrompt")}</EmptyState></div>
+      ) : results.length === 0 ? (
+        <div className="search-empty"><EmptyState>{t("searchNoResults", { query })}</EmptyState></div>
+      ) : (
+        <section className="search-results" aria-label={t("searchResultsHeading", { query })}>
+          <header className="search-results-heading">
+            <h2>{t("searchResultsHeading", { query })}</h2>
+            <span>{t("searchResultCount", { count: results.length })}</span>
+          </header>
+          <ul className="section-topic-list">
+            {results.map((topic) => (
+              <li key={topic.id}>
+                <Link className="section-topic-card search-result-card" to={forumTopicPath(locale, topic.id)}>
+                  <span className="section-topic-main">
+                    <span className="section-topic-icon search-result-icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24">
+                        <circle cx="10.5" cy="10.5" r="5.5" />
+                        <path d="m15 15 4.5 4.5" />
+                      </svg>
+                    </span>
+                    <span className="section-topic-copy">
+                      <strong>{topic.title}</strong>
+                      <small>{t("startedBy", { author: topic.authorName })}</small>
+                      {topic.tags.length > 0 ? (
+                        <span className="topic-tag-list" aria-label={t("topicTagsLabel")}>
+                          {topic.tags.map((tag) => <span className="topic-tag" key={tag.key}>#{tag.name}</span>)}
+                        </span>
+                      ) : null}
+                    </span>
+                  </span>
+                  <span className="tag-topic-location">
+                    <span>{topic.category.name}</span>
+                    <span aria-hidden="true"> / </span>
+                    <span>{topic.section.name}</span>
+                  </span>
+                  <span className="section-topic-count" aria-label={t("messageCount", { count: topic.postCount })}>
+                    <strong aria-hidden="true">{topic.postCount}</strong>
+                    <small aria-hidden="true">{t("postsColumn")}</small>
+                  </span>
+                  <span className="section-topic-enter" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="m9 5 7 7-7 7" /></svg>
                   </span>
                 </Link>
               </li>

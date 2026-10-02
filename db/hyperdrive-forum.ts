@@ -58,6 +58,7 @@ export function createHyperdriveForumReader(
     readUnanswered: () => read((repository) => repository.readUnanswered()),
     readTags: () => read((repository) => repository.readTags()),
     readTag: (key) => read((repository) => repository.readTag(key)),
+    search: (query, limit) => read((repository) => repository.search(query, limit)),
     readCategory: (id) => read((repository) => repository.readCategory(id)),
     readSection: (id) => read((repository) => repository.readSection(id)),
     readTopicPage: (id) => read((repository) => repository.readTopicPage(id)),

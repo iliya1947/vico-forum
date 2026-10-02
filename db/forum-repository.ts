@@ -81,6 +81,17 @@ export interface ForumTagPage {
   topics: ForumTaggedTopicSummary[];
 }
 
+export interface ForumSearchResult {
+  id: string;
+  title: string;
+  authorName: string;
+  postCount: number;
+  activityAt: Date;
+  section: { id: string; name: string };
+  category: { id: string; name: string };
+  tags: ForumTag[];
+}
+
 export interface ForumSectionSummary {
   id: string;
   name: string;
@@ -130,6 +141,7 @@ export interface ForumReader {
   readUnanswered(): Promise<ForumUnansweredTopicSummary[]>;
   readTags(): Promise<ForumTagSummary[]>;
   readTag(key: string): Promise<ForumTagPage | undefined>;
+  search(query: string, limit?: number): Promise<ForumSearchResult[]>;
   readCategory(id: string): Promise<ForumCategoryPage | undefined>;
   readSection(id: string): Promise<ForumSectionPage | undefined>;
   readTopicPage(id: string): Promise<ForumTopicPage | undefined>;
@@ -578,6 +590,85 @@ export class DrizzleForumRepository {
     };
   }
 
+  async search(query: string, limit = 50): Promise<ForumSearchResult[]> {
+    const normalizedQuery = query.normalize("NFKC").trim().replace(/\s+/gu, " ");
+    if (!normalizedQuery) return [];
+    if (normalizedQuery.length > 200) {
+      throw new RangeError("search query must be at most 200 characters");
+    }
+    if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
+      throw new RangeError("search limit must be an integer between 1 and 100");
+    }
+
+    const pattern = `%${escapeSearchPattern(normalizedQuery)}%`;
+    const titleMatch = sql<boolean>`${forumTopicTitleRevisions.originalContent} ilike ${pattern} escape '!'`;
+    const tagMatch = sql<boolean>`coalesce(${forumTags.name} ilike ${pattern} escape '!', false)
+      or coalesce(${forumTags.key} ilike ${pattern} escape '!', false)`;
+    const postMatch = sql<boolean>`coalesce(${forumPostRevisions.originalContent} ilike ${pattern} escape '!', false)`;
+    const matchRank = sql<number>`case
+      when ${titleMatch} then 3
+      when bool_or(${tagMatch}) then 2
+      else 1
+    end::int`;
+    const activityAt = sql`greatest(
+      ${forumTopics.createdAt},
+      coalesce(max(${forumPosts.createdAt}), ${forumTopics.createdAt})
+    )`.mapWith(forumTopics.createdAt);
+
+    const rows = await this.database
+      .select({
+        id: forumTopics.id,
+        title: forumTopicTitleRevisions.originalContent,
+        authorName: user.name,
+        postCount: sql<number>`count(distinct ${forumPosts.id})::int`,
+        activityAt,
+        sectionId: forumSections.id,
+        sectionName: forumSections.name,
+        categoryId: forumCategories.id,
+        categoryName: forumCategories.name,
+        matchRank,
+      })
+      .from(forumTopics)
+      .innerJoin(forumTopicTitleRevisions, and(
+        eq(forumTopicTitleRevisions.topicId, forumTopics.id),
+        eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId),
+      ))
+      .innerJoin(user, eq(user.id, forumTopics.authorId))
+      .innerJoin(forumSections, eq(forumSections.id, forumTopics.sectionId))
+      .innerJoin(forumCategories, eq(forumCategories.id, forumSections.categoryId))
+      .leftJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
+      .leftJoin(forumPostRevisions, and(
+        eq(forumPostRevisions.postId, forumPosts.id),
+        eq(forumPostRevisions.id, forumPosts.currentRevisionId),
+      ))
+      .leftJoin(forumTopicTags, eq(forumTopicTags.topicId, forumTopics.id))
+      .leftJoin(forumTags, eq(forumTags.key, forumTopicTags.tagKey))
+      .groupBy(
+        forumTopics.id,
+        forumTopicTitleRevisions.id,
+        user.name,
+        forumSections.id,
+        forumSections.name,
+        forumCategories.id,
+        forumCategories.name,
+      )
+      .having(sql`bool_or(${titleMatch}) or bool_or(${tagMatch}) or bool_or(${postMatch})`)
+      .orderBy(desc(matchRank), desc(activityAt), desc(forumTopics.id))
+      .limit(limit);
+
+    const tagsByTopic = await this.readTagsForTopics(rows.map((row) => row.id));
+    return rows.map((row) => ({
+      id: row.id,
+      title: row.title,
+      authorName: row.authorName,
+      postCount: row.postCount,
+      activityAt: row.activityAt,
+      section: { id: row.sectionId, name: row.sectionName },
+      category: { id: row.categoryId, name: row.categoryName },
+      tags: tagsByTopic.get(row.id) ?? [],
+    }));
+  }
+
   async readCategory(id: string): Promise<ForumCategoryPage | undefined> {
     const rows = await this.database
       .select({
@@ -857,6 +948,10 @@ export class DrizzleForumRepository {
     const [posts] = await this.database.select({ count: sql<number>`count(*)::int` }).from(forumPostRevisions);
     return { topicTitles: titles?.count ?? 0, postBodies: posts?.count ?? 0 };
   }
+}
+
+function escapeSearchPattern(value: string): string {
+  return value.replace(/!/gu, "!!").replace(/%/gu, "!%").replace(/_/gu, "!_");
 }
 
 type ForumTransaction = Parameters<Parameters<NodePgDatabase["transaction"]>[0]>[0];

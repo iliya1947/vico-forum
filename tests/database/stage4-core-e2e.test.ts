@@ -274,6 +274,28 @@ describe("Stage 4 connected forum authorization flow", () => {
       category: { id: "e2e-category", name: "E2E Category" },
     }]);
 
+    const searchByTitle = await forum.search("core");
+    expect(searchByTitle).toMatchObject([{
+      id: topicId,
+      title: "Core E2E topic",
+      authorName: "Author",
+      postCount: 2,
+      section: { id: "e2e-section", name: "E2E Section" },
+      category: { id: "e2e-category", name: "E2E Category" },
+    }]);
+
+    const searchByTag = await forum.search("cloudflare");
+    expect(searchByTag).toHaveLength(1);
+    expect(searchByTag[0]).toMatchObject({
+      id: topicId,
+      tags: [{ key: "cloudflare", name: "Cloudflare" }, { key: "typescript", name: "TypeScript" }],
+    });
+
+    const searchByMessage = await forum.search("connected reply");
+    expect(searchByMessage.map((entry) => entry.id)).toEqual([topicId]);
+    await expect(forum.search("%")).resolves.toEqual([]);
+    await expect(forum.search("_")).resolves.toEqual([]);
+
     const managementPool = scopedPool();
     const authorization = new AuthorizationService(new PostgresAuthorizationRepository(managementPool));
     try {

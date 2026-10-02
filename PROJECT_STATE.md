@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-10-02
+Последнее обновление: 2026-10-03
 
 ## Назначение
 
@@ -56,13 +56,15 @@ Vico Forum находится в ранней pre-release разработке.
   то есть без единого ответа; список показывает author и category/section context, сортируется по
   новым темам первым и удаляет `Unanswered` из unfinished checklist. Migration/dependency/auth/
   permission/Stage 6 изменений нет; targeted repository CI и GitHub Pages preview проходят,
-  owner visual acceptance подтверждён 2026-10-02. Следующая approved discovery-функция Tags
-  реализуется отдельным bounded slice: свободные topic-level technology tags нормализуются и
-  переиспользуются, создаются атомарно вместе с темой, доступны через public locale-aware
-  `/:locale/tags` и `/:locale/tags/:tagKey`, показываются в section/topic/tag presentation и
-  удаляют `Technology tags` из unfinished checklist. Для этого добавляется forward migration
-  `0021_forum_tags` и минимально расширяется существующая web runtime relation capability;
-  search/recommendations/trending/moderation и Stage 6 rollout в scope не входят. Repository CI и GitHub Pages preview проходят; owner visual acceptance подтверждён 2026-10-02. Дальнейшая косметическая полировка homepage
+  owner visual acceptance подтверждён 2026-10-02. Tags реализован и merged через PR #170:
+  свободные topic-level technology tags нормализуются и переиспользуются, создаются атомарно
+  вместе с темой, доступны через public locale-aware `/:locale/tags` и
+  `/:locale/tags/:tagKey`, показываются в section/topic/tag presentation; forward migration
+  `0021_forum_tags` добавлена без Stage 6 rollout. Repository CI и GitHub Pages preview прошли,
+  owner visual acceptance подтверждён 2026-10-02. По выбору владельца следующая bounded
+  product-функция — global Search: текущая implementation-ветка добавляет public
+  `/:locale/search?q=...` поверх current topic-title/post revisions и topic tags без новой
+  migration/search-index subsystem. Repository CI и GitHub Pages preview проходят; owner visual acceptance подтверждён 2026-10-03. Дальнейшая косметическая полировка homepage
   сейчас не является приоритетом.
 - Category-page discovery slice в PR #159 прошёл owner visual acceptance в GitHub Pages:
   owner-approved header/logo/discovery nav переиспользованы без backend/DB изменений; category
@@ -593,18 +595,23 @@ runtime roles/Hyperdrive writes и другие schema-dependent runtime capabil
 4. `Unanswered` реализован и merged через PR #169: реальный locale-aware public route использует
    существующие topic/post данные и семантику `isSolved = false` + ровно один persisted post;
    owner visual acceptance подтверждён 2026-10-02.
-5. `Tags` выполняется как следующая bounded discovery subtask: free-form topic tags, canonical
+5. `Tags` реализован и merged через PR #170: free-form topic tags, canonical
    normalization/reuse, migration `0021_forum_tags`, public tag index/filter routes, topic creation
-   и presentation integration. Repository CI и GitHub Pages preview проходят; owner visual acceptance подтверждён 2026-10-02.
-6. Presentation slices через PR #167 уже прошли owner review/merge в пределах Pages-preview.
+   и presentation integration; owner visual acceptance подтверждён 2026-10-02.
+6. По выбору владельца следующая bounded product subtask — global Search. Текущая
+   implementation-ветка использует existing current topic-title/post revisions и tags, без новой
+   migration или отдельного search-index subsystem. Repository CI и GitHub Pages preview проходят;
+   owner visual acceptance подтверждён 2026-10-03.
+7. Presentation slices через PR #167 уже прошли owner review/merge в пределах Pages-preview.
    Heavy approved subsystems, которые всё ещё перечислены в `Under development`, остаются
    отдельными bounded tasks.
-7. Уже существующие product capabilities подключаются к реальным данным/поведению; незавершённые
+8. Уже существующие product capabilities подключаются к реальным данным/поведению; незавершённые
    approved entry points не имитируют работу и временно ведут на `Under development`.
-8. После каждого implementation slice выполнять targeted automated checks и browser review.
-9. Завершить UI/UX pass только после полного CI и обязательной real-runtime visual/product
+9. После каждого implementation slice выполнять targeted automated checks и browser review.
+10. Завершить UI/UX pass только после полного CI и обязательной real-runtime visual/product
    acceptance из `docs/UI_UX_PASS.md`; GitHub Pages не заменяет эту проверку.
-10. Stage 6 infrastructure gates остаются на паузе до отдельного указания владельца.
+11. Owner mobile review 2026-10-03 унифицировал compact destination cards на Category/Section/Tags/Search: entry action остаётся отдельной vertical orange rail справа по всей высоте карточки; нижний orange footer для этих карточек не используется.
+12. Stage 6 infrastructure gates остаются на паузе до отдельного указания владельца.
 
 Ранее подготовленный защищённый manual rollout mechanism остаётся в repository. При явном
 возобновлении Stage 6 актуальная последовательность остаётся следующей:

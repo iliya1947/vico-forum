@@ -17,6 +17,10 @@ export function forumTopicPath(locale: string, topicId: string) {
   return generatePath("/:locale/topics/:topicId", { locale, topicId });
 }
 
+export function forumSearchPath(locale: string) {
+  return generatePath("/:locale/search", { locale });
+}
+
 export function forumPopularPath(locale: string) {
   return generatePath("/:locale/popular", { locale });
 }
