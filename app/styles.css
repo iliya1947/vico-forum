@@ -4705,6 +4705,25 @@ p {
     grid-template-columns: minmax(0, 1fr) 2.9rem;
   }
 
+  .home-section-icon {
+    color: var(--color-accent);
+  }
+
+  .home-section-icon svg {
+    fill: none;
+    stroke: var(--color-accent);
+  }
+
+  .home-section-expand,
+  :dir(rtl) .home-section-expand {
+    background: color-mix(in srgb, var(--color-accent) 72%, var(--color-surface));
+  }
+
+  .home-section-expand:hover:not(:disabled),
+  .home-section-expand:focus-visible {
+    background: color-mix(in srgb, var(--color-accent) 84%, var(--color-surface));
+  }
+
   .home-section-identity {
     grid-column: 1;
     grid-row: 1;
