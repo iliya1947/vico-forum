@@ -64,7 +64,7 @@ Vico Forum находится в ранней pre-release разработке.
   owner visual acceptance подтверждён 2026-10-02. По выбору владельца следующая bounded
   product-функция — global Search: текущая implementation-ветка добавляет public
   `/:locale/search?q=...` поверх current topic-title/post revisions и topic tags без новой
-  migration/search-index subsystem. Repository CI и GitHub Pages preview проходят; owner visual acceptance подтверждён 2026-10-03. Дальнейшая косметическая полировка homepage
+  migration/search-index subsystem. Repository CI и GitHub Pages preview прошли; owner visual acceptance подтверждён 2026-10-03. Search merged через PR #171. Следующая bounded product-функция — Message links: current implementation добавляет public permanent post anchors + copy-link UI без DB/backend изменений; repository/Pages/owner acceptance ещё не зафиксированы. Дальнейшая косметическая полировка homepage
   сейчас не является приоритетом.
 - Category-page discovery slice в PR #159 прошёл owner visual acceptance в GitHub Pages:
   owner-approved header/logo/discovery nav переиспользованы без backend/DB изменений; category
@@ -611,7 +611,8 @@ runtime roles/Hyperdrive writes и другие schema-dependent runtime capabil
 10. Завершить UI/UX pass только после полного CI и обязательной real-runtime visual/product
    acceptance из `docs/UI_UX_PASS.md`; GitHub Pages не заменяет эту проверку.
 11. Owner mobile review 2026-10-03 унифицировал compact destination cards на Category/Section/Tags/Search: entry action остаётся отдельной vertical orange rail справа по всей высоте карточки; нижний orange footer для этих карточек не используется.
-12. Stage 6 infrastructure gates остаются на паузе до отдельного указания владельца.
+12. Следующая bounded participation subtask — Message links: permanent message anchor уже существует; current implementation добавляет public Copy link + localized success/failure feedback и удаляет Message links из unfinished checklist. DB/backend/permission изменения не требуются; GitHub Pages preview пройден, owner visual acceptance подтверждён 2026-10-03.
+13. Stage 6 infrastructure gates остаются на паузе до отдельного указания владельца.
 
 Ранее подготовленный защищённый manual rollout mechanism остаётся в repository. При явном
 возобновлении Stage 6 актуальная последовательность остаётся следующей:

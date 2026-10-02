@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Form, Link, useNavigation } from "react-router";
 import { useTranslation } from "react-i18next";
 
@@ -928,6 +928,50 @@ export type TopicViewActionData =
   | SourceLocaleCorrectionMutationError
   | ContentGenerationActionResponse;
 
+type MessageLinkState = "copied" | "error";
+type MessageLinkFeedback = { postId: string; state: MessageLinkState } | null;
+
+function MessagePermalinkControl({
+  postId,
+  messageNumber,
+  feedback,
+  onCopy,
+}: {
+  postId: string;
+  messageNumber: number;
+  feedback: MessageLinkFeedback;
+  onCopy: (postId: string) => Promise<void>;
+}) {
+  const { t } = useTranslation("common");
+  const messageLabel = t("postNumber", { number: messageNumber });
+  const state = feedback?.postId === postId ? feedback.state : null;
+
+  return (
+    <span className="topic-message-permalink">
+      <a className="topic-message-anchor" href={`#post-${encodeURIComponent(postId)}`}>
+        {messageLabel}
+      </a>
+      <button
+        type="button"
+        className="topic-message-copy-link"
+        onClick={() => void onCopy(postId)}
+        aria-label={t("copyMessageLinkFor", { message: messageLabel })}
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M10 13a5 5 0 0 0 7.1.1l2-2a5 5 0 0 0-7.1-7.1l-1.1 1.1" />
+          <path d="M14 11a5 5 0 0 0-7.1-.1l-2 2A5 5 0 0 0 12 20l1.1-1.1" />
+        </svg>
+        <span>{t("copyMessageLink")}</span>
+      </button>
+      {state && (
+        <span className={state === "error" ? "message-link-status is-error" : "message-link-status"} role="status" aria-live="polite">
+          {t(state === "copied" ? "messageLinkCopied" : "messageLinkCopyFailed")}
+        </span>
+      )}
+    </span>
+  );
+}
+
 export function TopicView({
   locale,
   topic,
@@ -976,10 +1020,31 @@ export function TopicView({
     : [];
   const messageNumberById = new Map(topic.posts.map((post, index) => [post.id, index + 1]));
   const { t } = useTranslation("common");
+  const [messageLinkFeedback, setMessageLinkFeedback] = useState<MessageLinkFeedback>(null);
+  const messageLinkRequestId = useRef(0);
   const navigation = useNavigation();
   const isReplySubmitting =
     navigation.state === "submitting"
     && navigation.formData?.get("intent") === "reply";
+
+  async function copyMessageLink(postId: string) {
+    const requestId = ++messageLinkRequestId.current;
+    setMessageLinkFeedback(null);
+
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error("Clipboard API unavailable");
+      const topicUrl = new URL(forumTopicPath(locale, topic.id), window.location.origin);
+      const permanentUrl = `${topicUrl.origin}${topicUrl.pathname}#post-${encodeURIComponent(postId)}`;
+      await navigator.clipboard.writeText(permanentUrl);
+      if (requestId === messageLinkRequestId.current) {
+        setMessageLinkFeedback({ postId, state: "copied" });
+      }
+    } catch {
+      if (requestId === messageLinkRequestId.current) {
+        setMessageLinkFeedback({ postId, state: "error" });
+      }
+    }
+  }
 
   return (
     <ContentGenerationNavigationBoundary
@@ -1105,9 +1170,12 @@ export function TopicView({
                           <strong className="best-answer-label">{t("bestAnswer")}</strong>
                         )}
                       </span>
-                      <a className="topic-message-anchor" href={`#post-${encodeURIComponent(post.id)}`}>
-                        {t("postNumber", { number: messageNumber })}
-                      </a>
+                      <MessagePermalinkControl
+                        postId={post.id}
+                        messageNumber={messageNumber}
+                        feedback={messageLinkFeedback}
+                        onCopy={copyMessageLink}
+                      />
                     </div>
 
                     <PostBodyPresentation presentation={presentedPosts.get(post.id)!} />
