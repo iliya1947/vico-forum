@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-10-01
+Последнее обновление: 2026-10-02
 
 ## Назначение
 
@@ -142,9 +142,8 @@ Vico Forum находится в ранней pre-release разработке.
   entry rail`. Следующий owner mobile review выявил переполнение discovery navigation; на narrow
   mobile эти destinations теперь переключаются на centered orange pill icon-only controls с
   enlarged icons и локализованными accessible labels, сохраняя text labels на wider layouts.
-  Fresh CI/Pages и owner acceptance
-  этого mobile-nav correction ещё не зафиксированы; полная keyboard/RTL acceptance PR #167 также
-  остаётся открытой.
+  Owner visual acceptance этого mobile-nav correction подтверждена 2026-10-02. Полная
+  keyboard/RTL acceptance PR #167 остаётся открытой.
 - Target search, notifications и незавершённые footer/product entry points во время owner-only
   pre-release ведут на общую `Under development` page/checklist вместо fake behavior.
 - Для owner-only pre-release незавершённые approved target functions могут оставаться видимыми и
