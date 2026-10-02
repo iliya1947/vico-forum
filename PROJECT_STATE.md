@@ -55,8 +55,8 @@ Vico Forum находится в ранней pre-release разработке.
   forum-wide public route выбирает только unsolved темы с ровно одним persisted post (initial post),
   то есть без единого ответа; список показывает author и category/section context, сортируется по
   новым темам первым и удаляет `Unanswered` из unfinished checklist. Migration/dependency/auth/
-  permission/Stage 6 изменений нет; targeted repository verification ещё выполняется, Pages/owner
-  visual acceptance остаются отдельным следующим gate. Дальнейшая косметическая полировка homepage
+  permission/Stage 6 изменений нет; targeted repository CI для implementation head проходит,
+  Pages/owner visual acceptance остаются отдельным следующим gate. Дальнейшая косметическая полировка homepage
   сейчас не является приоритетом.
 - Category-page discovery slice в PR #159 прошёл owner visual acceptance в GitHub Pages:
   owner-approved header/logo/discovery nav переиспользованы без backend/DB изменений; category
@@ -587,8 +587,8 @@ runtime roles/Hyperdrive writes и другие schema-dependent runtime capabil
 4. `Unanswered` выполняется как следующая bounded discovery subtask в PR #169: реальный
    locale-aware public route использует существующие topic/post данные и семантику
    `isSolved = false` + ровно один persisted post; implementation не требует schema/dependency
-   изменений. Следующий gate — targeted repository verification, затем отдельные Pages/owner
-   visual acceptance.
+   изменений. Targeted repository CI для implementation head проходит; следующий отдельный
+   gate — Pages/owner visual acceptance.
 5. Presentation slices через PR #167 уже прошли owner review/merge в пределах Pages-preview.
    Heavy approved subsystems, которые всё ещё перечислены в `Under development`, остаются
    отдельными bounded tasks.
