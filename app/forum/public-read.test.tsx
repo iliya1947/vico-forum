@@ -406,6 +406,7 @@ describe("section topic count presentation", () => {
             authorName: "Alex",
             postCount: 1,
             createdAt: new Date("2026-09-27T10:00:00Z"),
+            tags: [],
             title: { id: "title-one", originalContent: "One message topic", sourceLocale: "en" },
           },
           {
@@ -413,6 +414,7 @@ describe("section topic count presentation", () => {
             authorName: "Sam",
             postCount: 2,
             createdAt: new Date("2026-09-27T11:00:00Z"),
+            tags: [],
             title: { id: "title-two", originalContent: "Two message topic", sourceLocale: "en" },
           },
         ],
