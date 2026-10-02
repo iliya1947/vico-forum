@@ -15,7 +15,7 @@ import { forumWritePolicy, type ForumWritePolicy } from "./forum-write-policy";
 
 export interface ForumWriter {
   createTopic(input: { sectionId: string; authorId: string; title: string; body: string; tags?: string[] }): Promise<{ topicId: string }>;
-  createReply(input: { topicId: string; authorId: string; body: string }): Promise<{ postId: string }>;
+  createReply(input: { topicId: string; authorId: string; body: string; parentPostId?: string | null }): Promise<{ postId: string }>;
   markTopicSolved(input: { topicId: string; actorId: string; scope: SolutionManagementScope }): Promise<void>;
   selectBestAnswer(input: { topicId: string; postId: string; actorId: string; scope: SolutionManagementScope }): Promise<void>;
   correctTopicTitleSourceLocale(input: { topicId: string; expectedRevisionId: string; sourceLocale: string; actorId: string; scope: SourceLocaleCorrectionScope }): Promise<void>;
@@ -110,10 +110,10 @@ export function createHyperdriveForumWriter(
       });
       return { topicId };
     }),
-    createReply: ({ topicId, authorId, body }) => write(async (forum) => {
+    createReply: ({ topicId, authorId, body, parentPostId = null }) => write(async (forum) => {
       const postId = crypto.randomUUID();
       await forum.createPost({
-        id: postId, topicId, authorId,
+        id: postId, topicId, authorId, parentPostId,
         bodyRevision: { id: crypto.randomUUID(), originalContent: body, sourceLocale: "und" },
       });
       return { postId };
