@@ -2081,8 +2081,8 @@ p {
     --color-on-accent: #101416;
     --color-action-on-accent: #ffffff;
     --color-mobile-auth-action: #c56538;
-    --color-mobile-discovery-action: #c76032;
-    --color-mobile-section-action: #c35f31;
+    --color-mobile-discovery-action: #c56538;
+    --color-mobile-section-action: #c56538;
     --color-brand-secondary: #f4f5f4;
     --color-focus: #ff9b67;
     --shadow-panel: 0 0.24rem 0.9rem rgb(0 0 0 / 24%);
@@ -2112,8 +2112,8 @@ p {
   --color-on-accent: #101416;
   --color-action-on-accent: #ffffff;
   --color-mobile-auth-action: #c56538;
-  --color-mobile-discovery-action: #c76032;
-  --color-mobile-section-action: #c35f31;
+  --color-mobile-discovery-action: #c56538;
+  --color-mobile-section-action: #c56538;
   --color-brand-secondary: #f4f5f4;
   --color-focus: #ff9b67;
   --shadow-panel: 0 0.24rem 0.9rem rgb(0 0 0 / 24%);
