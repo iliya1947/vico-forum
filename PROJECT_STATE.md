@@ -157,10 +157,12 @@ Vico Forum находится в ранней pre-release разработке.
   `#D97838` для всех трёх групп: `Sign in`, narrow-mobile discovery pills и section-entry rail;
   circular expand control остаётся без изменений. Следующий owner visual review предпочёл более
   мягкий `#E9964A`; owner visual review принял этот оттенок для Light theme, но выявил, что
-  hard-coded mobile color также попал в Dark theme. Текущая ветка разделяет theme-sensitive action
-  color: Light — `#E9964A`, Dark — `#D25E28` для `Sign in`, narrow-mobile discovery pills и
-  section-entry rail; circular expand control остаётся без изменений. Repository CI и Pages для
-  этой latest theme correction проходят; owner visual проверка Dark theme остаётся открытой. Предыдущий owner mobile review также выявил
+  hard-coded mobile color также попал в Dark theme. После отдельного Dark review владелец отклонил
+  `#D25E28` как слишком резкий и запросил comparison трёх более мягких оттенков на одном экране:
+  `Sign in` — `#C9784E`, narrow-mobile discovery pills — `#D18455`, section-entry rail —
+  `#BF704A`. Light theme сохраняет принятый `#E9964A` для всех трёх групп, circular expand
+  control остаётся без изменений. Эта Dark comparison correction внесена в текущую ветку и требует
+  повторной CI/Pages и owner visual проверки. Предыдущий owner mobile review также выявил
   переполнение discovery navigation; на narrow mobile эти destinations переключаются на centered
   orange pill icon-only controls с enlarged icons и локализованными accessible labels, сохраняя
   text labels на wider layouts.
