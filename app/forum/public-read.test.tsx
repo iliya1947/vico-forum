@@ -44,7 +44,7 @@ const topic = {
   section: { id: "typescript/basics", name: "TypeScript", category: { id: "development/core", name: "Development" } },
   tags: [{ key: "typescript", name: "TypeScript" }],
   posts: [{
-    id: "answer", topicId: "typed/api", authorId: "lin", authorName: "Lin", createdAt: new Date("2026-01-02"),
+    id: "answer", topicId: "typed/api", authorId: "lin", authorName: "Lin", parentPostId: null, createdAt: new Date("2026-01-02"),
     body: { id: "post-r1", originalContent: "Start with an explicit response type.", sourceLocale: "en" },
   }],
 };
