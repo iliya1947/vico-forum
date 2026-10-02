@@ -14,7 +14,7 @@ import { ForumService, type SourceLocaleCorrectionScope } from "./forum-service"
 import { forumWritePolicy, type ForumWritePolicy } from "./forum-write-policy";
 
 export interface ForumWriter {
-  createTopic(input: { sectionId: string; authorId: string; title: string; body: string }): Promise<{ topicId: string }>;
+  createTopic(input: { sectionId: string; authorId: string; title: string; body: string; tags: string[] }): Promise<{ topicId: string }>;
   createReply(input: { topicId: string; authorId: string; body: string }): Promise<{ postId: string }>;
   markTopicSolved(input: { topicId: string; actorId: string; scope: SolutionManagementScope }): Promise<void>;
   selectBestAnswer(input: { topicId: string; postId: string; actorId: string; scope: SolutionManagementScope }): Promise<void>;
@@ -56,6 +56,8 @@ export function createHyperdriveForumReader(
     readHomepage: (latestTopicsPerCategory) => read((repository) => repository.readHomepage(latestTopicsPerCategory)),
     readPopular: (referenceTime, limitPerPeriod) => read((repository) => repository.readPopular(referenceTime, limitPerPeriod)),
     readUnanswered: () => read((repository) => repository.readUnanswered()),
+    readTags: () => read((repository) => repository.readTags()),
+    readTag: (key) => read((repository) => repository.readTag(key)),
     readCategory: (id) => read((repository) => repository.readCategory(id)),
     readSection: (id) => read((repository) => repository.readSection(id)),
     readTopicPage: (id) => read((repository) => repository.readTopicPage(id)),
@@ -92,13 +94,14 @@ export function createHyperdriveForumWriter(
   }
 
   return {
-    createTopic: ({ sectionId, authorId, title, body }) => write(async (forum) => {
+    createTopic: ({ sectionId, authorId, title, body, tags }) => write(async (forum) => {
       const topicId = crypto.randomUUID();
       await forum.createTopicWithInitialPost({
         id: topicId,
         sectionId,
         authorId,
         titleRevision: { id: crypto.randomUUID(), originalContent: title, sourceLocale: "und" },
+        tags: tags.map((name) => ({ key: name, name })),
         initialPost: {
           id: crypto.randomUUID(), topicId, authorId,
           bodyRevision: { id: crypto.randomUUID(), originalContent: body, sourceLocale: "und" },
