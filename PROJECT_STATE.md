@@ -146,9 +146,11 @@ Vico Forum находится в ранней pre-release разработке.
   review того же narrow-mobile header потребовал compact theme/locale controls: language показывает
   current primary locale code (`EN/RU/HE` для review locales), theme — moon/sun target icon;
   оба controls перенесены в компактную колонку напротив brand, с theme сверху и locale под ней,
-  а search остаётся отдельной строкой.
-  Wider layouts сохраняют текущую presentation. Fresh CI/Pages и owner acceptance этого header
-  correction ещё не зафиксированы; полная keyboard/RTL acceptance PR #167 остаётся открытой.
+  а search остаётся отдельной строкой. Следующий owner review потребовал поменять порядок lower
+  mobile header: account/notification controls должны идти одной compact строкой выше discovery
+  pills; discovery pills — ниже. Wider layouts сохраняют текущую presentation. Fresh CI/Pages и
+  owner acceptance этого lower-header correction ещё не зафиксированы; полная keyboard/RTL
+  acceptance PR #167 остаётся открытой.
 - Target search, notifications и незавершённые footer/product entry points во время owner-only
   pre-release ведут на общую `Under development` page/checklist вместо fake behavior.
 - Для owner-only pre-release незавершённые approved target functions могут оставаться видимыми и
