@@ -140,18 +140,23 @@ describe("homepage target presentation", () => {
 
     const toggle = screen.getByRole("button", { name: "Show more topics" });
     await waitFor(() => expect(toggle).toBeEnabled());
+    expect(toggle.querySelector("path")).toHaveAttribute("d", "m5 8 5 5 5-5");
 
     await userEvent.click(toggle);
 
     expect(card).toHaveAttribute("data-mobile-details", "open");
     expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(toggle.querySelector("path")).toHaveAttribute("d", "m5 12 5-5 5 5");
     expect(toggle).toHaveAttribute(
       "aria-controls",
       "home-category-development-pinned home-category-development-latest home-category-development-stats",
     );
 
-    await userEvent.click(screen.getByRole("button", { name: "Show fewer topics" }));
+    const collapseToggle = screen.getByRole("button", { name: "Show fewer topics" });
+    await userEvent.click(collapseToggle);
     expect(card).toHaveAttribute("data-mobile-details", "closed");
+    expect(screen.getByRole("button", { name: "Show more topics" }).querySelector("path"))
+      .toHaveAttribute("d", "m5 8 5 5 5-5");
   });
 
   it("routes unfinished shell destinations to the shared development page", async () => {
