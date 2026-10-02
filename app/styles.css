@@ -3217,25 +3217,6 @@ p {
     padding-inline: 0.75rem;
   }
 
-  .category-section-card {
-    grid-template-columns: 1fr;
-  }
-
-  .category-section-main {
-    grid-column: 1;
-    grid-row: 1;
-  }
-
-  .category-section-stats {
-    grid-column: 1;
-    grid-row: 2;
-  }
-
-  .category-section-enter {
-    grid-column: 1;
-    grid-row: 3;
-    min-height: 2.35rem;
-  }
 }
 
 
@@ -3529,25 +3510,6 @@ p {
     padding-inline: 0.75rem;
   }
 
-  .section-topic-card {
-    grid-template-columns: 1fr;
-  }
-
-  .section-topic-main {
-    grid-column: 1;
-    grid-row: 1;
-  }
-
-  .section-topic-count {
-    grid-column: 1;
-    grid-row: 2;
-  }
-
-  .section-topic-enter {
-    grid-column: 1;
-    grid-row: 3;
-    min-height: 2.35rem;
-  }
 
   .section-create-form {
     margin-inline: 0.75rem;
