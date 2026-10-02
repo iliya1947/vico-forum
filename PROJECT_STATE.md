@@ -179,11 +179,15 @@ Vico Forum находится в ранней pre-release разработке.
   point на shared `Under development` page; реальная registration/auth backend semantics не
   меняются. Wider layouts сохраняют текущую presentation. Repository CI и Pages для этого
   lower-header/auth correction проходят; owner visual acceptance narrow-mobile shell и итоговых
-  Light/Dark action colors подтверждён 2026-10-02. Source/automated keyboard/RTL review текущего
-  PR также завершён без подтверждённых code-level defects: skip link остаётся первым keyboard
-  target, language selector получает visible wrapper focus, новые CSS additions не вводят
-  physical left/right assumptions, а directional entry arrows сохраняют RTL reversal. Полная
-  browser keyboard/RTL acceptance PR #167 остаётся открытой и не подменяется CI/Pages.
+  Light/Dark action colors подтверждён 2026-10-02. Во время следующей browser-проверки владелец
+  выявил mobile disclosure defect: карточка раскрывалась через `mobileDetailsOpen`, но chevron
+  оставался привязан к desktop `expanded` и поэтому продолжал смотреть вниз. Текущая ветка
+  привязывает chevron к общему `controlExpanded` и добавляет regression coverage для open/close
+  direction. Source/automated keyboard/RTL review при этом подтверждает skip link первым keyboard
+  target, visible wrapper focus для language selector, отсутствие новых physical left/right
+  assumptions и RTL reversal directional entry arrows. Эта latest correction требует повторной
+  CI/Pages; полная browser keyboard/RTL acceptance PR #167 остаётся открытой и не подменяется
+  CI/Pages.
 - Target search, notifications и незавершённые footer/product entry points во время owner-only
   pre-release ведут на общую `Under development` page/checklist вместо fake behavior.
 - Для owner-only pre-release незавершённые approved target functions могут оставаться видимыми и
