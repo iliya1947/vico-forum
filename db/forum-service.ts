@@ -9,6 +9,7 @@ import {
   type CreateTopicWithInitialPostInput,
   type DrizzleForumRepository,
   type ForumRevisionContent,
+  type ForumTag,
   type SolutionManagementScope,
 } from "./forum-repository";
 
@@ -36,7 +37,7 @@ export class ForumService {
     validateEntity(input.id, input.authorId);
     requireText(input.sectionId, "section id");
     const titleRevision = normalizeRevision(input.titleRevision);
-    return this.repository.createTopic({ ...input, titleRevision });
+    return this.repository.createTopic({ ...input, titleRevision, tags: normalizeTags(input.tags ?? []) });
   }
 
   createPost(input: CreatePostInput) {
@@ -56,6 +57,7 @@ export class ForumService {
     return this.repository.createTopicWithInitialPost({
       ...input,
       titleRevision: normalizeRevision(input.titleRevision),
+      tags: normalizeTags(input.tags ?? []),
       initialPost: { ...input.initialPost, bodyRevision: normalizeRevision(input.initialPost.bodyRevision) },
     });
   }
@@ -156,6 +158,24 @@ export class ForumService {
     validateSolutionScope(scope);
     return this.repository.selectBestAnswer(topicId, postId, actorId, scope);
   }
+}
+
+export function normalizeForumTags(values: readonly string[]): ForumTag[] {
+  const byKey = new Map<string, ForumTag>();
+  for (const value of values) {
+    const name = value.normalize("NFKC").trim().replace(/\s+/gu, " ");
+    if (!name) continue;
+    if (name.length > 64 || name.includes("/")) {
+      throw new InvalidForumContentError("tag must be at most 64 characters and must not contain '/'");
+    }
+    const key = name.toLocaleLowerCase("en-US");
+    if (!byKey.has(key)) byKey.set(key, { key, name });
+  }
+  return [...byKey.values()];
+}
+
+function normalizeTags(tags: readonly ForumTag[]): ForumTag[] {
+  return normalizeForumTags(tags.map((tag) => tag.name));
 }
 
 function validateSolutionScope(scope: SolutionManagementScope) {
