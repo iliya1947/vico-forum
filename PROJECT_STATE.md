@@ -164,7 +164,7 @@ Vico Forum находится в ранней pre-release разработке.
   `#C35F31`. После comparison владелец выбрал единый Dark оттенок `#C56538` для всех трёх
   групп. Light theme сохраняет принятый `#E9964A`, circular expand control остаётся без изменений.
   Repository CI и Pages для этой latest Dark color correction проходят; owner visual acceptance
-  остаётся открытым. Предыдущий owner mobile review также выявил
+  подтверждён 2026-10-02. Предыдущий owner mobile review также выявил
   переполнение discovery navigation; на narrow mobile эти destinations переключаются на centered
   orange pill icon-only controls с enlarged icons и локализованными accessible labels, сохраняя
   text labels на wider layouts.
