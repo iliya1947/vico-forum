@@ -611,7 +611,7 @@ runtime roles/Hyperdrive writes и другие schema-dependent runtime capabil
 10. Завершить UI/UX pass только после полного CI и обязательной real-runtime visual/product
    acceptance из `docs/UI_UX_PASS.md`; GitHub Pages не заменяет эту проверку.
 11. Owner mobile review 2026-10-03 унифицировал compact destination cards на Category/Section/Tags/Search: entry action остаётся отдельной vertical orange rail справа по всей высоте карточки; нижний orange footer для этих карточек не используется.
-12. Следующая bounded participation subtask — Message links: permanent message anchor уже существует; current implementation добавляет public Copy link + localized success/failure feedback и удаляет Message links из unfinished checklist. DB/backend/permission изменения не требуются; repository/Pages/owner acceptance ещё не зафиксированы.
+12. Следующая bounded participation subtask — Message links: permanent message anchor уже существует; current implementation добавляет public Copy link + localized success/failure feedback и удаляет Message links из unfinished checklist. DB/backend/permission изменения не требуются; GitHub Pages preview пройден, owner visual acceptance подтверждён 2026-10-03.
 13. Stage 6 infrastructure gates остаются на паузе до отдельного указания владельца.
 
 Ранее подготовленный защищённый manual rollout mechanism остаётся в repository. При явном
