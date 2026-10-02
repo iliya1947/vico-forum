@@ -142,8 +142,8 @@ Vico Forum находится в ранней pre-release разработке.
   композицию более компактной: identity/description остаются видимыми, `Pinned` + `Latest topics`
   + statistics по умолчанию скрыты за circular expand control, а orange section-entry action
   перенесён из full-width footer в компактный inline-end rail рядом с identity. Эта latest
-  mobile-card correction реализована в текущей ветке и ещё требует automated/Pages verification
-  и owner visual acceptance. Предыдущий owner mobile review также выявил переполнение discovery
+  mobile-card correction реализована в текущей ветке; repository CI и Pages для неё проходят,
+  owner visual acceptance остаётся открытым. Предыдущий owner mobile review также выявил переполнение discovery
   navigation; на narrow mobile эти destinations переключаются на centered orange pill icon-only
   controls с enlarged icons и локализованными accessible labels, сохраняя text labels на wider layouts.
   Owner visual acceptance этого mobile-nav correction подтверждена 2026-10-02. Следующий owner
