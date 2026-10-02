@@ -64,8 +64,7 @@ Vico Forum находится в ранней pre-release разработке.
   owner visual acceptance подтверждён 2026-10-02. По выбору владельца следующая bounded
   product-функция — global Search: текущая implementation-ветка добавляет public
   `/:locale/search?q=...` поверх current topic-title/post revisions и topic tags без новой
-  migration/search-index subsystem. Repository CI для implementation head проходит;
-  Pages/owner visual acceptance ещё не зафиксированы. Дальнейшая косметическая полировка homepage
+  migration/search-index subsystem. Repository CI и GitHub Pages preview проходят; owner visual acceptance подтверждён 2026-10-03. Дальнейшая косметическая полировка homepage
   сейчас не является приоритетом.
 - Category-page discovery slice в PR #159 прошёл owner visual acceptance в GitHub Pages:
   owner-approved header/logo/discovery nav переиспользованы без backend/DB изменений; category
@@ -601,8 +600,8 @@ runtime roles/Hyperdrive writes и другие schema-dependent runtime capabil
    и presentation integration; owner visual acceptance подтверждён 2026-10-02.
 6. По выбору владельца следующая bounded product subtask — global Search. Текущая
    implementation-ветка использует existing current topic-title/post revisions и tags, без новой
-   migration или отдельного search-index subsystem. Repository CI для implementation head проходит;
-   Pages/owner visual acceptance ещё не зафиксированы.
+   migration или отдельного search-index subsystem. Repository CI и GitHub Pages preview проходят;
+   owner visual acceptance подтверждён 2026-10-03.
 7. Presentation slices через PR #167 уже прошли owner review/merge в пределах Pages-preview.
    Heavy approved subsystems, которые всё ещё перечислены в `Under development`, остаются
    отдельными bounded tasks.
@@ -611,7 +610,8 @@ runtime roles/Hyperdrive writes и другие schema-dependent runtime capabil
 9. После каждого implementation slice выполнять targeted automated checks и browser review.
 10. Завершить UI/UX pass только после полного CI и обязательной real-runtime visual/product
    acceptance из `docs/UI_UX_PASS.md`; GitHub Pages не заменяет эту проверку.
-11. Stage 6 infrastructure gates остаются на паузе до отдельного указания владельца.
+11. Owner mobile review 2026-10-03 унифицировал compact destination cards на Category/Section/Tags/Search: entry action остаётся отдельной vertical orange rail справа по всей высоте карточки; нижний orange footer для этих карточек не используется.
+12. Stage 6 infrastructure gates остаются на паузе до отдельного указания владельца.
 
 Ранее подготовленный защищённый manual rollout mechanism остаётся в repository. При явном
 возобновлении Stage 6 актуальная последовательность остаётся следующей:
