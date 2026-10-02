@@ -17,6 +17,7 @@ import {
   CategoryView,
   HomeView,
   PopularView,
+  SearchView,
   SectionView,
   TagsView,
   TagView,
@@ -31,7 +32,7 @@ import { localeRegistry } from "../localization/registry";
 
 type Direction = "ltr" | "rtl";
 type PreviewIdentity = "guest" | "user" | "manager";
-type PreviewView = "home" | "popular" | "unanswered" | "tags" | "tag" | "category" | "section" | "topic" | "admin" | "empty" | "under-development" | "not-found";
+type PreviewView = "home" | "search" | "popular" | "unanswered" | "tags" | "tag" | "category" | "section" | "topic" | "admin" | "empty" | "under-development" | "not-found";
 
 type PreviewVariant =
   | "empty-category"
@@ -44,7 +45,8 @@ type PreviewVariant =
   | "route-401"
   | "route-403"
   | "route-503"
-  | "route-500";
+  | "route-500"
+  | "search-no-results";
 
 interface Scenario {
   id: string;
@@ -66,6 +68,8 @@ export const scenarios: readonly Scenario[] = [
   { id: "auth-error", label: "Authentication · failed · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en", view: "home", authPresentationState: "error" },
   { id: "under-development-search", label: "Under development · search · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/under-development?feature=search", view: "under-development" },
   { id: "under-development-notifications", label: "Under development · notifications · user", locale: "en", direction: "ltr", identity: "user", path: "/en/under-development?feature=notifications", view: "under-development" },
+  { id: "search-results-guest", label: "Search · results · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/search?q=TypeScript", view: "search" },
+  { id: "search-no-results-guest", label: "Search · no results · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/search?q=WebAssembly", view: "search", variant: "search-no-results" },
   { id: "popular-guest", label: "Popular · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/popular", view: "popular" },
   { id: "unanswered-guest", label: "Unanswered · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/unanswered", view: "unanswered" },
   { id: "tags-guest", label: "Tags · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/tags", view: "tags" },
@@ -489,6 +493,33 @@ function unansweredTopics(locale: PreviewLocale) {
   ];
 }
 
+function previewSearchResults(locale: PreviewLocale) {
+  const rtl = locale === "he";
+  const russian = locale === "ru";
+  return [
+    {
+      id: "typed-api",
+      title: rtl ? "איך כדאי לבנות לקוח API עם טיפוסים?" : russian ? "Как лучше построить типизированный API-клиент?" : "How should I structure a typed API client?",
+      authorName: rtl ? "אלכס ריברה" : "Alex Rivera",
+      postCount: 3,
+      activityAt: new Date("2026-09-30T15:42:00.000Z"),
+      category: { id: "development", name: rtl ? "פיתוח" : russian ? "Разработка" : "Development" },
+      section: { id: "typescript", name: rtl ? "TypeScript וארכיטקטורה" : russian ? "TypeScript и архитектура" : "TypeScript & architecture" },
+      tags: [{ key: "typescript", name: "TypeScript" }, { key: "api", name: "API" }],
+    },
+    {
+      id: "rtl-markdown",
+      title: rtl ? "תוכן RTL מעורב עם בלוקי קוד" : russian ? "Смешанный RTL-контент с блоками кода" : "Mixed RTL content with code blocks",
+      authorName: rtl ? "נועה לוי" : "Noa Levi",
+      postCount: 4,
+      activityAt: new Date("2026-09-30T12:05:00.000Z"),
+      category: { id: "development", name: rtl ? "פיתוח" : russian ? "Разработка" : "Development" },
+      section: { id: "typescript", name: rtl ? "TypeScript וארכיטקטורה" : russian ? "TypeScript и архитектура" : "TypeScript & architecture" },
+      tags: [{ key: "typescript", name: "TypeScript" }, { key: "rtl", name: "RTL" }],
+    },
+  ];
+}
+
 function previewTags() {
   return [
     { key: "typescript", name: "TypeScript", topicCount: 2 },
@@ -665,6 +696,16 @@ function previewRouter(scenario: Scenario) {
       element: <PreviewUnderDevelopment locale={scenario.locale} />,
     },
     {
+      path: "/:locale/search",
+      element: (
+        <SearchView
+          locale={scenario.locale}
+          query={scenario.variant === "search-no-results" ? "WebAssembly" : "TypeScript"}
+          results={scenario.variant === "search-no-results" ? [] : previewSearchResults(scenario.locale)}
+        />
+      ),
+    },
+    {
       path: "/:locale/popular",
       element: <PopularView locale={scenario.locale} periods={popularPeriods(scenario.locale)} />,
     },
@@ -705,6 +746,14 @@ function previewElement(scenario: Scenario) {
           locale={scenario.locale}
           categories={homepageCategories(scenario.locale)}
           referenceTime={previewReferenceTime}
+        />
+      );
+    case "search":
+      return (
+        <SearchView
+          locale={scenario.locale}
+          query={scenario.variant === "search-no-results" ? "WebAssembly" : "TypeScript"}
+          results={scenario.variant === "search-no-results" ? [] : previewSearchResults(scenario.locale)}
         />
       );
     case "popular":
