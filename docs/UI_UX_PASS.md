@@ -402,7 +402,10 @@ Shared-shell hardening is isolated in PR #167 for owner review:
   exposes a short current-language code while preserving the existing select behavior; wider
   layouts remain unchanged;
 - the next narrow-mobile review places the account/notification row on one compact line directly
-  below the brand, moves search below that row, and keeps the centered discovery pills below search.
+  below the brand, moves search below that row, and keeps the centered discovery pills below search;
+- guest auth copy is shortened to `Sign in`, with a neighboring `Sign up` entry point for the
+  approved future registration system; until that system exists, `Sign up` follows the shared
+  localized `Under development` behavior rather than pretending registration is implemented.
 
 Remaining work:
 
