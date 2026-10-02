@@ -643,6 +643,35 @@ export const forumTopics = pgTable(
   ],
 );
 
+export const forumTags = pgTable(
+  "forum_tags",
+  {
+    key: text("key").primaryKey(),
+    name: text("name").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    check("forum_tags_key_check", sql`${table.key} = btrim(${table.key}) and btrim(${table.key}) <> ''`),
+    check("forum_tags_name_check", sql`btrim(${table.name}) <> ''`),
+  ],
+);
+
+export const forumTopicTags = pgTable(
+  "forum_topic_tags",
+  {
+    topicId: text("topic_id")
+      .notNull()
+      .references(() => forumTopics.id, { onDelete: "cascade" }),
+    tagKey: text("tag_key")
+      .notNull()
+      .references(() => forumTags.key, { onDelete: "cascade" }),
+  },
+  (table) => [
+    primaryKey({ name: "forum_topic_tags_pk", columns: [table.topicId, table.tagKey] }),
+    index("forum_topic_tags_tag_key_idx").on(table.tagKey),
+  ],
+);
+
 export const forumTopicTitleRevisions = pgTable(
   "forum_topic_title_revisions",
   {
