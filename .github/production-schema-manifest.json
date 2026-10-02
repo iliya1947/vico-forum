@@ -3155,7 +3155,7 @@
           "name": "created_at",
           "type": "timestamp with time zone",
           "nullable": false,
-          "defaultSha256": "PENDING"
+          "defaultSha256": "28a4dae0461e17af56e979c2095abfbe0bfc45fe9ca8abf3144338a518a1bb8f"
         }
       ],
       "primaryKeys": [
@@ -3174,14 +3174,14 @@
           "columns": [
             "key"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "9e16a783cd7601c149674bcccca3352f4db545796b4b28748208cc948c56014b"
         },
         {
           "name": "forum_tags_name_check",
           "columns": [
             "name"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "33767a1bd55858c73d48eb7c3ed60d929c2237cacbfd58532f8ba93663b19b32"
         }
       ],
       "indexes": []
