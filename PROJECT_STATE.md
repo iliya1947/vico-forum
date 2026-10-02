@@ -151,9 +151,9 @@ Vico Forum находится в ранней pre-release разработке.
   search — следующей строкой, discovery pills — ниже поиска. Guest auth presentation дополнительно
   сокращена до `Sign in`, а рядом добавлен `Sign up` как approved future registration entry
   point на shared `Under development` page; реальная registration/auth backend semantics не
-  меняются. Wider layouts сохраняют текущую presentation. Fresh CI/Pages и owner acceptance этого
-  lower-header/auth correction ещё не зафиксированы; полная keyboard/RTL acceptance PR #167
-  остаётся открытой.
+  меняются. Wider layouts сохраняют текущую presentation. Repository CI и Pages для этого
+  lower-header/auth correction проходят; owner visual acceptance и полная keyboard/RTL acceptance
+  PR #167 остаются открытыми.
 - Target search, notifications и незавершённые footer/product entry points во время owner-only
   pre-release ведут на общую `Under development` page/checklist вместо fake behavior.
 - Для owner-only pre-release незавершённые approved target functions могут оставаться видимыми и
