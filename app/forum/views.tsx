@@ -8,6 +8,7 @@ import type {
   ForumPopularTopicSummary,
   ForumSectionPage,
   ForumTopicPage,
+  ForumUnansweredTopicSummary,
 } from "../../db/forum-repository";
 import type { ContentTranslationPresentation } from "../localization/content-translation-presentation";
 import type { ContentGenerationUnitView } from "../localization/content-generation-view";
@@ -152,6 +153,77 @@ export function PopularView({
           </article>
         ))}
       </section>
+    </ForumShell>
+  );
+}
+
+type UnansweredTopicPresentation = Pick<
+  ForumUnansweredTopicSummary,
+  "id" | "title" | "authorName" | "section" | "category"
+>;
+
+export function UnansweredView({
+  locale,
+  topics,
+}: {
+  locale: string;
+  topics: readonly UnansweredTopicPresentation[];
+}) {
+  const { t } = useTranslation("common");
+
+  return (
+    <ForumShell locale={locale} variant="unanswered">
+      <Breadcrumbs locale={locale} items={[{ label: t("unansweredNav") }]} />
+
+      <header className="unanswered-heading">
+        <p className="eyebrow">{t("unansweredEyebrow")}</p>
+        <h1>{t("unansweredHeading")}</h1>
+        <p>{t("unansweredIntro")}</p>
+      </header>
+
+      {topics.length === 0 ? (
+        <div className="unanswered-empty">
+          <EmptyState>{t("unansweredEmpty")}</EmptyState>
+        </div>
+      ) : (
+        <section className="unanswered-topics" aria-label={t("unansweredHeading")}>
+          <ul className="unanswered-topic-list">
+            {topics.map((topic) => (
+              <li key={topic.id}>
+                <Link className="unanswered-topic-card" to={forumTopicPath(locale, topic.id)}>
+                  <span className="unanswered-topic-main">
+                    <span className="unanswered-topic-icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24">
+                        <path d="M4 5.5h16v11H9l-5 3z" />
+                        <path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.9.4-1 1-1 1.7" />
+                        <path d="M12 15.6h.01" />
+                      </svg>
+                    </span>
+                    <span className="unanswered-topic-copy">
+                      <strong>{topic.title}</strong>
+                      <small>{t("startedBy", { author: topic.authorName })}</small>
+                    </span>
+                  </span>
+
+                  <span className="unanswered-topic-location">
+                    <span>{topic.category.name}</span>
+                    <span aria-hidden="true"> / </span>
+                    <span>{topic.section.name}</span>
+                  </span>
+
+                  <span className="unanswered-topic-status">{t("unansweredNoReplies")}</span>
+
+                  <span className="unanswered-topic-enter" aria-hidden="true">
+                    <svg viewBox="0 0 24 24">
+                      <path d="m9 5 7 7-7 7" />
+                    </svg>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </ForumShell>
   );
 }
