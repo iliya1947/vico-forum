@@ -180,16 +180,19 @@ composition:
    a bold white arrow. Until the redesigned forum category/section discovery presentation is ready,
    that rail is an approved unfinished entry point and routes to the shared `Under development`
    page instead of exposing the old scaffold through this action.
-11. The circular orange expand control expands more pinned/latest content in the same block; it does
-   not navigate. On desktop its horizontal center aligns exactly with the divider between
+11. The circular orange expand control never navigates. On desktop it expands more pinned/latest
+   content in the same block; its horizontal center aligns exactly with the divider between
    `Pinned` and `Latest topics`, and its vertical center sits on the card bottom boundary so it
    straddles the edge. The coordinate is consistent across all cards and independent of text
-   height. Mobile adapts the control to the single-column structure instead of forcing the desktop
-   coordinate.
+   height. On narrow mobile the same control instead discloses/collapses the whole secondary
+   details group (`Pinned`, `Latest topics`, and section statistics) in place.
 12. The lower homepage zone keeps `Who's online` and `Forum statistics`, using only useful real
     metrics such as topics, messages, registered users and online count when available.
-13. Mobile preserves the same substantive content in one column:
-    description → pinned → latest topics → statistics.
+13. Narrow mobile keeps the section identity/description visible and collapses `Pinned`,
+    `Latest topics`, and section statistics by default behind the circular expand control. Opening
+    it restores that secondary content in place. The orange section-entry action moves from the
+    full-width card footer to a compact inline-end rail beside the section identity, so collapsed
+    cards remain short without removing any substantive content.
 
 ### Topic, message and authoring target
 
@@ -390,9 +393,11 @@ Shared-shell hardening is isolated in PR #167 for owner review:
   changing the accepted shell composition;
 - a representative `Home · manager` state exercises the densest account/header combination while
   existing logical properties and RTL arrow/brand behavior remain unchanged;
-- owner mobile review found two real sub-30rem homepage defects; the corrected card order is now
-  `Pinned → Latest topics → expand → statistics → orange entry rail`, and that mobile correction
-  has been visually accepted;
+- owner mobile review first corrected sub-30rem ordering, then later superseded that layout with a
+  more compact card contract: section identity stays visible, `Pinned` + `Latest topics` +
+  statistics are collapsed by default behind the circular control, and the orange section-entry
+  action moves from the card footer to the inline-end edge of the identity row; this latest card
+  correction still requires owner visual acceptance;
 - later owner mobile review found discovery-navigation overflow; narrow mobile now uses centered
   orange pill icon-only discovery controls with larger icons and localized accessible labels,
   while wider layouts retain the accepted icon-plus-text navigation; the owner visually accepted
