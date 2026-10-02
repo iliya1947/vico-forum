@@ -2538,6 +2538,202 @@ p {
 }
 
 
+/* Popular discovery page: three activity periods stay visible together on wide
+   screens and stack without changing their ranking semantics on narrow screens. */
+.popular-shell .breadcrumbs {
+  margin: 0.75rem 1rem 0;
+  padding: 0.5rem 0.2rem;
+  border: 0;
+  background: transparent;
+  font-size: 0.78rem;
+}
+
+.popular-shell .breadcrumbs a {
+  color: var(--color-text-muted);
+  text-decoration: none;
+}
+
+.popular-shell .breadcrumbs a:hover {
+  color: var(--color-accent-hover);
+}
+
+.popular-heading {
+  margin: 0 1rem 0.7rem;
+  padding: 0.95rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.6rem;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-panel);
+}
+
+.popular-heading .eyebrow {
+  margin: 0;
+  color: var(--color-accent);
+  font-size: 0.68rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.popular-heading h1 {
+  margin: 0.15rem 0 0;
+  color: var(--color-text);
+  font-size: clamp(1.35rem, 3vw, 1.8rem);
+  line-height: 1.15;
+}
+
+.popular-heading > p:last-child {
+  margin: 0.35rem 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+}
+
+.popular-columns {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
+  padding: 0 1rem 1rem;
+}
+
+.popular-period {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 0.6rem;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-panel);
+}
+
+.popular-period-heading {
+  padding: 0.7rem 0.85rem;
+  border-block-end: 1px solid var(--color-border);
+  background: var(--color-surface-subtle);
+}
+
+.popular-period-heading h2 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 0.95rem;
+}
+
+.popular-period .empty-state {
+  border: 0;
+  padding: 1rem 0.85rem;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.popular-topic-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.popular-topic-list li + li {
+  border-block-start: 1px solid var(--color-border);
+}
+
+.popular-topic-card {
+  display: grid;
+  grid-template-columns: 1.8rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.65rem;
+  min-height: 4rem;
+  padding: 0.7rem 0.8rem;
+  color: inherit;
+  text-decoration: none;
+}
+
+.popular-topic-card:hover {
+  background: var(--color-surface-muted);
+}
+
+.popular-topic-card:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: -2px;
+}
+
+.popular-topic-rank {
+  display: grid;
+  width: 1.8rem;
+  height: 1.8rem;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--color-accent-hover);
+  background: var(--color-accent-soft);
+  font-size: 0.72rem;
+  font-weight: 850;
+}
+
+.popular-topic-copy {
+  display: grid;
+  min-width: 0;
+  gap: 0.22rem;
+}
+
+.popular-topic-copy strong {
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: 0.84rem;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.popular-topic-card:hover .popular-topic-copy strong {
+  color: var(--color-accent-hover);
+}
+
+.popular-topic-copy small,
+.popular-topic-activity {
+  color: var(--color-text-muted);
+  font-size: 0.68rem;
+}
+
+.popular-topic-copy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.popular-topic-activity {
+  white-space: nowrap;
+}
+
+@media (max-width: 52rem) {
+  .popular-columns {
+    grid-template-columns: 1fr;
+  }
+
+  .popular-topic-copy strong {
+    white-space: normal;
+  }
+}
+
+@media (max-width: 29.99rem) {
+  .popular-shell .breadcrumbs,
+  .popular-heading {
+    margin-inline: 0.75rem;
+  }
+
+  .popular-heading {
+    padding: 0.75rem;
+  }
+
+  .popular-columns {
+    padding-inline: 0.75rem;
+  }
+
+  .popular-topic-card {
+    grid-template-columns: 1.8rem minmax(0, 1fr);
+  }
+
+  .popular-topic-activity {
+    grid-column: 2;
+  }
+}
+
+
 /* Category discovery page: reuses the accepted homepage shell while keeping
    category-specific content geometry isolated from homepage cards. */
 .category-shell .breadcrumbs {

@@ -9,12 +9,14 @@ import {
 } from "../auth/auth-controls";
 import { PERMISSION_CATALOG, type PermissionKey } from "../authorization/catalog";
 import { AuthorizationAdminView } from "../authorization/admin-view";
+import type { ForumPopularPage } from "../../db/forum-repository";
 import type { HomepageCategoryOverview } from "../forum/homepage";
 import { UnderDevelopmentView } from "../forum/under-development-view";
 import { ForumRouteError } from "../forum/ui";
 import {
   CategoryView,
   HomeView,
+  PopularView,
   SectionView,
   TopicView,
 } from "../forum/views";
@@ -26,7 +28,7 @@ import { localeRegistry } from "../localization/registry";
 
 type Direction = "ltr" | "rtl";
 type PreviewIdentity = "guest" | "user" | "manager";
-type PreviewView = "home" | "category" | "section" | "topic" | "admin" | "empty" | "under-development" | "not-found";
+type PreviewView = "home" | "popular" | "category" | "section" | "topic" | "admin" | "empty" | "under-development" | "not-found";
 
 type PreviewVariant =
   | "empty-category"
@@ -61,6 +63,7 @@ export const scenarios: readonly Scenario[] = [
   { id: "auth-error", label: "Authentication · failed · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en", view: "home", authPresentationState: "error" },
   { id: "under-development-search", label: "Under development · search · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/under-development?feature=search", view: "under-development" },
   { id: "under-development-notifications", label: "Under development · notifications · user", locale: "en", direction: "ltr", identity: "user", path: "/en/under-development?feature=notifications", view: "under-development" },
+  { id: "popular-guest", label: "Popular · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/popular", view: "popular" },
   { id: "category-guest", label: "Category · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/development", view: "category" },
   { id: "category-user", label: "Category · user", locale: "en", direction: "ltr", identity: "user", path: "/en/categories/development", view: "category" },
   { id: "category-empty", label: "Empty category · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/empty", view: "category", variant: "empty-category" },
@@ -389,6 +392,59 @@ function homepageCategories(locale: PreviewLocale): HomepageCategoryOverview[] {
   }));
 }
 
+function popularPeriods(locale: PreviewLocale): ForumPopularPage {
+  const rtl = locale === "he";
+  const russian = locale === "ru";
+  const topics = [
+    {
+      id: "typed-api",
+      title: rtl ? "איך כדאי לבנות לקוח API עם טיפוסים?" : russian ? "Как лучше построить типизированный API-клиент?" : "How should I structure a typed API client?",
+      authorName: rtl ? "אלכס ריברה" : "Alex Rivera",
+    },
+    {
+      id: "worker-auth",
+      title: rtl ? "Worker auth: גבול session מול permissions" : russian ? "Worker auth: граница session и permissions" : "Worker auth: session boundary vs permissions",
+      authorName: rtl ? "סם צ'ן" : "Sam Chen",
+    },
+    {
+      id: "rtl-markdown",
+      title: rtl ? "תוכן RTL מעורב עם בלוקי קוד" : russian ? "Смешанный RTL-контент с блоками кода" : "Mixed RTL content with code blocks",
+      authorName: rtl ? "נועה לוי" : "Noa Levi",
+    },
+    {
+      id: "database-queues",
+      title: rtl ? "איך לתכנן תור עבודות בלי להסתבך?" : russian ? "Как спроектировать очередь задач без лишней сложности?" : "How do I design a job queue without overcomplicating it?",
+      authorName: "Maya Cohen",
+    },
+  ];
+
+  const item = (index: number, activityCount: number, latestActivityAt: string) => ({
+    ...topics[index]!,
+    activityCount,
+    latestActivityAt: new Date(latestActivityAt),
+  });
+
+  return {
+    "24h": [
+      item(0, 18, "2026-09-30T15:42:00.000Z"),
+      item(1, 12, "2026-09-30T14:12:00.000Z"),
+      item(2, 7, "2026-09-30T12:05:00.000Z"),
+    ],
+    "7d": [
+      item(1, 49, "2026-09-30T14:12:00.000Z"),
+      item(0, 41, "2026-09-30T15:42:00.000Z"),
+      item(3, 28, "2026-09-29T18:20:00.000Z"),
+      item(2, 22, "2026-09-30T12:05:00.000Z"),
+    ],
+    "30d": [
+      item(3, 133, "2026-09-29T18:20:00.000Z"),
+      item(1, 112, "2026-09-30T14:12:00.000Z"),
+      item(0, 96, "2026-09-30T15:42:00.000Z"),
+      item(2, 61, "2026-09-30T12:05:00.000Z"),
+    ],
+  };
+}
+
 function previewUser(identity: PreviewIdentity): HeaderAuthUser | null {
   if (identity === "guest") return null;
   if (identity === "manager") return { name: "Maya Cohen", canManageAuthorization: true };
@@ -526,6 +582,10 @@ function previewRouter(scenario: Scenario) {
       element: <PreviewUnderDevelopment locale={scenario.locale} />,
     },
     {
+      path: "/:locale/popular",
+      element: <PopularView locale={scenario.locale} periods={popularPeriods(scenario.locale)} />,
+    },
+    {
       path: "*",
       element: previewElement(scenario),
     },
@@ -552,6 +612,8 @@ function previewElement(scenario: Scenario) {
           referenceTime={previewReferenceTime}
         />
       );
+    case "popular":
+      return <PopularView locale={scenario.locale} periods={popularPeriods(scenario.locale)} />;
     case "under-development":
       return <PreviewUnderDevelopment locale={scenario.locale} />;
     case "category":

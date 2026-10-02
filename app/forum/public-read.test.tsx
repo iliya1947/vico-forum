@@ -17,10 +17,11 @@ import {
 } from "../localization/request-context";
 import CategoryRoute, { loader as categoryLoader } from "../routes/category";
 import Home, { loader as homeLoader } from "../routes/home";
+import PopularRoute, { loader as popularLoader } from "../routes/popular";
 import { ErrorBoundary as NotFoundErrorBoundary, loader as notFoundLoader } from "../routes/not-found";
 import SectionRoute, { loader as sectionLoader } from "../routes/section";
 import TopicRoute, { loader as topicLoader } from "../routes/topic";
-import { forumCategoryPath, forumSectionPath, forumTopicPath } from "./paths";
+import { forumCategoryPath, forumPopularPath, forumSectionPath, forumTopicPath } from "./paths";
 import { forumReaderContext } from "./request-context";
 
 const category = { id: "development/core", name: "Development", sections: [{ id: "typescript/basics", name: "TypeScript", topicCount: 1, postCount: 1 }] };
@@ -57,6 +58,29 @@ const reader: ForumReader = {
       activityAt: topic.posts[0]!.createdAt,
     }],
   }],
+  readPopular: async () => ({
+    "24h": [{
+      id: topic.id,
+      title: topic.title.originalContent,
+      authorName: topic.authorName,
+      activityCount: 3,
+      latestActivityAt: topic.posts[0]!.createdAt,
+    }],
+    "7d": [{
+      id: topic.id,
+      title: topic.title.originalContent,
+      authorName: topic.authorName,
+      activityCount: 5,
+      latestActivityAt: topic.posts[0]!.createdAt,
+    }],
+    "30d": [{
+      id: topic.id,
+      title: topic.title.originalContent,
+      authorName: topic.authorName,
+      activityCount: 8,
+      latestActivityAt: topic.posts[0]!.createdAt,
+    }],
+  }),
   readCategory: async (id) => id === category.id ? category : undefined,
   readSection: async (id) => id === section.id ? section : undefined,
   readTopicPage: async (id) => id === topic.id ? topic : undefined,
@@ -202,6 +226,35 @@ describe.each([
     expect(await screen.findByRole("link", { name: "Development" })).toHaveAttribute("href", `/${locale}/categories/development%2Fcore`);
     expect(await screen.findByRole("link", { name: "TypeScript" })).toHaveAttribute("href", `/${locale}/sections/typescript%2Fbasics`);
     expect(await screen.findByText("Start with an explicit response type.")).toBeInTheDocument();
+  });
+});
+
+describe("Popular topics", () => {
+  it("loads all three activity periods and keeps topic links locale-aware", async () => {
+    const data = await popularLoader({
+      params: { locale: "en" },
+      context: context("en", "ltr"),
+    });
+
+    expect(data.periods["24h"][0]).toMatchObject({ id: topic.id, activityCount: 3 });
+    expect(data.periods["7d"][0]).toMatchObject({ id: topic.id, activityCount: 5 });
+    expect(data.periods["30d"][0]).toMatchObject({ id: topic.id, activityCount: 8 });
+
+    renderRoute(PopularRoute, data, forumPopularPath("en"), "en", "ltr");
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Popular topics" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "24 hours" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "7 days" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "30 days" })).toBeInTheDocument();
+
+    const links = screen.getAllByRole("link", { name: /How do I type an API\?/ });
+    expect(links).toHaveLength(3);
+    for (const link of links) {
+      expect(link).toHaveAttribute("href", forumTopicPath("en", topic.id));
+    }
+    expect(screen.getByText("3 messages")).toBeInTheDocument();
+    expect(screen.getByText("5 messages")).toBeInTheDocument();
+    expect(screen.getByText("8 messages")).toBeInTheDocument();
   });
 });
 

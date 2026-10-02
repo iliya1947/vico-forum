@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, isRouteErrorResponse, useLocation, useNavigate, useParams, useRouteError } from "react-router";
 import { useTranslation } from "react-i18next";
-import { forumIndexPath, underDevelopmentPath } from "./paths";
+import { forumIndexPath, forumPopularPath, underDevelopmentPath } from "./paths";
 import { AuthControls, useHeaderAuthUser } from "../auth/auth-controls";
 import { DARK_THEME_QUERY, THEME_STORAGE_KEY, type Theme } from "../theme";
 import { useLocaleNavigation } from "../localization/locale-navigation";
@@ -195,11 +195,12 @@ export function ForumShell({
 }: {
   locale: string;
   children: ReactNode;
-  variant?: "home" | "category" | "section" | "topic" | "admin" | "system";
+  variant?: "home" | "popular" | "category" | "section" | "topic" | "admin" | "system";
 }) {
   const { t } = useTranslation("common");
   const authUser = useHeaderAuthUser();
   const useApprovedHeader = variant === "home"
+    || variant === "popular"
     || variant === "category"
     || variant === "section"
     || variant === "topic"
@@ -210,7 +211,9 @@ export function ForumShell({
     <main className={
       variant === "home"
         ? "forum-shell home-shell"
-        : variant === "category"
+        : variant === "popular"
+          ? "forum-shell home-shell popular-shell"
+          : variant === "category"
           ? "forum-shell home-shell category-shell"
           : variant === "section"
             ? "forum-shell home-shell section-shell"
@@ -281,7 +284,7 @@ export function ForumShell({
                 </Link>
                 <Link
                   className="home-discovery-link"
-                  to={underDevelopmentPath(locale, "popular")}
+                  to={forumPopularPath(locale)}
                   aria-label={t("popularNav")}
                   title={t("popularNav")}
                 >

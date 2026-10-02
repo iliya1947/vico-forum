@@ -8,7 +8,6 @@ export const UNDER_DEVELOPMENT_FEATURES = [
   { id: "profiles", labelKey: "underDevelopmentFeatureProfiles" },
   { id: "technology-tags", labelKey: "underDevelopmentFeatureTechnologyTags" },
   { id: "unanswered-filter", labelKey: "underDevelopmentFeatureUnansweredFilter" },
-  { id: "popular", labelKey: "underDevelopmentFeaturePopular" },
   { id: "forum-discovery", labelKey: "underDevelopmentFeatureForumDiscovery" },
   { id: "message-links", labelKey: "underDevelopmentFeatureMessageLinks" },
   { id: "reply-quote", labelKey: "underDevelopmentFeatureReplyQuote" },

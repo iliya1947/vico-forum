@@ -67,6 +67,7 @@ const reader: ForumReader = {
       activityAt: topic.posts[0]!.createdAt,
     }],
   }],
+  readPopular: async () => ({ "24h": [], "7d": [], "30d": [] }),
   readCategory: async () => undefined,
   readSection: async (id) => id === section.id ? section : undefined,
   readTopicPage: async (id) => id === topic.id ? topic : undefined,
