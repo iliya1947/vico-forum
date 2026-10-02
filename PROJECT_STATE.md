@@ -56,7 +56,14 @@ Vico Forum находится в ранней pre-release разработке.
   то есть без единого ответа; список показывает author и category/section context, сортируется по
   новым темам первым и удаляет `Unanswered` из unfinished checklist. Migration/dependency/auth/
   permission/Stage 6 изменений нет; targeted repository CI и GitHub Pages preview проходят,
-  owner visual acceptance подтверждён 2026-10-02. Дальнейшая косметическая полировка homepage
+  owner visual acceptance подтверждён 2026-10-02. Следующая approved discovery-функция Tags
+  реализуется отдельным bounded slice: свободные topic-level technology tags нормализуются и
+  переиспользуются, создаются атомарно вместе с темой, доступны через public locale-aware
+  `/:locale/tags` и `/:locale/tags/:tagKey`, показываются в section/topic/tag presentation и
+  удаляют `Technology tags` из unfinished checklist. Для этого добавляется forward migration
+  `0021_forum_tags` и минимально расширяется существующая web runtime relation capability;
+  search/recommendations/trending/moderation и Stage 6 rollout в scope не входят. Реализация ещё
+  проходит repository verification и owner Pages acceptance. Дальнейшая косметическая полировка homepage
   сейчас не является приоритетом.
 - Category-page discovery slice в PR #159 прошёл owner visual acceptance в GitHub Pages:
   owner-approved header/logo/discovery nav переиспользованы без backend/DB изменений; category
@@ -584,19 +591,22 @@ runtime roles/Hyperdrive writes и другие schema-dependent runtime capabil
    Дальнейшая косметическая полировка homepage сейчас не является приоритетом.
 3. `Popular` merged через PR #168 после green repository CI/Pages и owner visual
    acceptance 2026-10-02.
-4. `Unanswered` реализован в PR #169: реальный locale-aware public route использует существующие
-   topic/post данные и семантику `isSolved = false` + ровно один persisted post; implementation
-   не требует schema/dependency изменений. Targeted repository CI и GitHub Pages preview проходят,
-   owner visual acceptance подтверждён 2026-10-02. Следующий шаг — merge владельцем.
-5. Presentation slices через PR #167 уже прошли owner review/merge в пределах Pages-preview.
+4. `Unanswered` реализован и merged через PR #169: реальный locale-aware public route использует
+   существующие topic/post данные и семантику `isSolved = false` + ровно один persisted post;
+   owner visual acceptance подтверждён 2026-10-02.
+5. `Tags` выполняется как следующая bounded discovery subtask: free-form topic tags, canonical
+   normalization/reuse, migration `0021_forum_tags`, public tag index/filter routes, topic creation
+   и presentation integration. Repository verification и Pages/owner visual acceptance ещё не
+   завершены.
+6. Presentation slices через PR #167 уже прошли owner review/merge в пределах Pages-preview.
    Heavy approved subsystems, которые всё ещё перечислены в `Under development`, остаются
    отдельными bounded tasks.
-6. Уже существующие product capabilities подключаются к реальным данным/поведению; незавершённые
+7. Уже существующие product capabilities подключаются к реальным данным/поведению; незавершённые
    approved entry points не имитируют работу и временно ведут на `Under development`.
-7. После каждого implementation slice выполнять targeted automated checks и browser review.
-8. Завершить UI/UX pass только после полного CI и обязательной real-runtime visual/product
+8. После каждого implementation slice выполнять targeted automated checks и browser review.
+9. Завершить UI/UX pass только после полного CI и обязательной real-runtime visual/product
    acceptance из `docs/UI_UX_PASS.md`; GitHub Pages не заменяет эту проверку.
-9. Stage 6 infrastructure gates остаются на паузе до отдельного указания владельца.
+10. Stage 6 infrastructure gates остаются на паузе до отдельного указания владельца.
 
 Ранее подготовленный защищённый manual rollout mechanism остаётся в repository. При явном
 возобновлении Stage 6 актуальная последовательность остаётся следующей:
