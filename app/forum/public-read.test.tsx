@@ -3,7 +3,7 @@ import type { ComponentType } from "react";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { I18nextProvider } from "react-i18next";
 import { RouterContextProvider, RouterProvider, createMemoryRouter, matchRoutes } from "react-router";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ForumReader, ForumTopicPage } from "../../db/forum-repository";
 import { canonicalEnglishCatalog } from "../localization/catalog";
 import { createTranslationRuntime } from "../localization/runtime";
@@ -124,7 +124,10 @@ const reader: ForumReader = {
   readTopicPage: async (id) => id === topic.id ? topic : undefined,
 };
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
 
 function context(
   locale = "en",
@@ -504,6 +507,25 @@ describe("forum path encoding", () => {
 });
 
 describe("forum read states", () => {
+  it("copies a clean permanent locale-aware message link and reports clipboard failure", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText } });
+
+    renderRoute(TopicRoute, topicRenderData(topic), "/en/topics/typed-api?temporary=1", "en", "ltr");
+
+    const copyButton = await screen.findByRole("button", { name: "Copy link to Message #1" });
+    fireEvent.click(copyButton);
+
+    await waitFor(() => {
+      expect(writeText).toHaveBeenCalledWith(expect.stringMatching(/\/en\/topics\/typed%2Fapi#post-answer$/));
+    });
+    expect(screen.getByText("Copied")).toBeInTheDocument();
+
+    writeText.mockRejectedValueOnce(new Error("denied"));
+    fireEvent.click(copyButton);
+    expect(await screen.findByText("Could not copy link.")).toBeInTheDocument();
+  });
+
   it("shows public solved state, highlights the answer, and links to its stable post anchor", async () => {
     const solvedTopic = { ...topic, isSolved: true, bestAnswerPostId: "answer" };
     renderRoute(TopicRoute, topicRenderData(solvedTopic), "/en/topics/typed-api", "en", "ltr");
