@@ -4651,6 +4651,18 @@ p {
     font-size: 0.68rem;
   }
 
+  .home-shell .site-account-actions .auth-sign-in {
+    border-color: #d25e28;
+    background: #d25e28;
+  }
+
+  .home-shell .site-account-actions .auth-sign-in:hover:not(:disabled),
+  .home-shell .site-account-actions .auth-sign-in:focus-visible:not(:disabled) {
+    border-color: #d25e28;
+    background: #d25e28;
+    filter: brightness(0.92);
+  }
+
   .home-shell .site-primary-nav {
     grid-column: 1 / -1;
     grid-row: 4;
@@ -4671,10 +4683,10 @@ p {
     min-height: 2.35rem;
     justify-content: center;
     padding: 0;
-    border: 1px solid var(--color-accent);
+    border: 1px solid #d25e28;
     border-radius: 999px;
     color: var(--color-action-on-accent);
-    background: color-mix(in srgb, var(--color-accent) 82%, var(--color-surface));
+    background: #d25e28;
   }
 
   .home-shell .site-primary-nav .home-discovery-link > span {
@@ -4688,9 +4700,10 @@ p {
   .home-shell .site-primary-nav .home-discovery-link:hover,
   .home-shell .site-primary-nav .home-discovery-link:focus-visible,
   .home-shell .site-primary-nav .home-discovery-link:active {
-    border-color: var(--color-accent);
+    border-color: #d25e28;
     color: var(--color-action-on-accent);
-    background: color-mix(in srgb, var(--color-accent) 90%, var(--color-surface));
+    background: #d25e28;
+    filter: brightness(0.92);
   }
 
   .home-shell .site-primary-nav .discovery-icon {
@@ -4764,7 +4777,7 @@ p {
     margin-inline-end: -1px;
     border-start-end-radius: 0.5rem;
     color: var(--color-action-on-accent);
-    background: color-mix(in srgb, var(--color-accent) 82%, var(--color-surface));
+    background: #d25e28;
     text-decoration: none;
   }
 
@@ -4776,8 +4789,8 @@ p {
   .home-section-enter:hover,
   .home-section-enter:focus-visible {
     color: var(--color-action-on-accent);
-    background: color-mix(in srgb, var(--color-accent) 90%, var(--color-surface));
-    filter: none;
+    background: #d25e28;
+    filter: brightness(0.92);
   }
 
   .home-section-enter svg {
