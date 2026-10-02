@@ -189,7 +189,10 @@ Vico Forum находится в ранней pre-release разработке.
   correction проходят; owner visual re-test disclosure chevron подтверждён 2026-10-02.
   Keyboard browser acceptance для Desktop и Mobile подтверждён владельцем 2026-10-02: skip link,
   Enter-to-content, forward/backward Tab traversal и visible unclipped focus прошли визуальную
-  проверку. Browser RTL acceptance PR #167 остаётся открытой и не подменяется CI/Pages.
+  проверку. Владелец также подтвердил текущий visual/RTL state как нормальный 2026-10-02 и попросил
+  не блокировать дальнейшую работу дополнительной полировкой этого slice; PR #167 считается
+  принятым по owner browser review в рамках Pages-preview, не подменяя будущую full real-runtime
+  acceptance matrix.
 - Target search, notifications и незавершённые footer/product entry points во время owner-only
   pre-release ведут на общую `Under development` page/checklist вместо fake behavior.
 - Для owner-only pre-release незавершённые approved target functions могут оставаться видимыми и
