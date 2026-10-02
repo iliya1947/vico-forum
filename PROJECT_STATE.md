@@ -144,10 +144,14 @@ Vico Forum находится в ранней pre-release разработке.
   перенесён из full-width footer в компактный inline-end rail рядом с identity. Эта latest
   mobile-card correction реализована в текущей ветке; repository CI и Pages для неё проходят.
   Следующий owner feedback по этой же карточке потребовал сделать section icons явно Vico Orange и
-  смягчить слишком тёмный circular expand control; visual color correction внесён в текущую
-  ветку, repository CI и Pages проходят, owner visual acceptance остаётся открытым. Предыдущий owner mobile review также выявил переполнение discovery
-  navigation; на narrow mobile эти destinations переключаются на centered orange pill icon-only
-  controls с enlarged icons и локализованными accessible labels, сохраняя text labels на wider layouts.
+  смягчить слишком тёмный circular expand control; эта correction прошла repository CI/Pages и
+  получила owner visual acceptance 2026-10-02. После acceptance владелец попросил тем же способом
+  смягчить narrow-mobile discovery pills и orange section-entry rail, но оставить их оттенок немного
+  насыщеннее circular expand control; эта новая color correction внесена в текущую ветку и ещё
+  требует повторной CI/Pages и owner visual проверки. Предыдущий owner mobile review также выявил
+  переполнение discovery navigation; на narrow mobile эти destinations переключаются на centered
+  orange pill icon-only controls с enlarged icons и локализованными accessible labels, сохраняя
+  text labels на wider layouts.
   Owner visual acceptance этого mobile-nav correction подтверждена 2026-10-02. Следующий owner
   review того же narrow-mobile header потребовал compact theme/locale controls: language показывает
   current primary locale code (`EN/RU/HE` для review locales), theme — moon/sun target icon;
