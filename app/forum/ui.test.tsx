@@ -131,6 +131,8 @@ describe("LanguageSwitcher", () => {
       </I18nextProvider>,
     );
 
+    expect(screen.getByText("EN")).toBeInTheDocument();
+
     await userEvent.selectOptions(screen.getByRole("combobox", { name: "English" }), "ru");
 
     expect(screen.getByTestId("location")).toHaveTextContent("/ru/topics/42?view=latest#post-2");
