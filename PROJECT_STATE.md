@@ -148,9 +148,12 @@ Vico Forum находится в ранней pre-release разработке.
   оба controls перенесены в компактную колонку напротив brand, с theme сверху и locale под ней,
   а search остаётся отдельной строкой. Следующий owner review потребовал поменять порядок lower
   mobile header: account/notification controls должны идти одной compact строкой сразу под brand,
-  search — следующей строкой, discovery pills — ниже поиска. Wider layouts сохраняют текущую
-  presentation. Fresh CI/Pages и owner acceptance этого lower-header correction ещё не
-  зафиксированы; полная keyboard/RTL acceptance PR #167 остаётся открытой.
+  search — следующей строкой, discovery pills — ниже поиска. Guest auth presentation дополнительно
+  сокращена до `Sign in`, а рядом добавлен `Sign up` как approved future registration entry
+  point на shared `Under development` page; реальная registration/auth backend semantics не
+  меняются. Wider layouts сохраняют текущую presentation. Fresh CI/Pages и owner acceptance этого
+  lower-header/auth correction ещё не зафиксированы; полная keyboard/RTL acceptance PR #167
+  остаётся открытой.
 - Target search, notifications и незавершённые footer/product entry points во время owner-only
   pre-release ведут на общую `Under development` page/checklist вместо fake behavior.
 - Для owner-only pre-release незавершённые approved target functions могут оставаться видимыми и
