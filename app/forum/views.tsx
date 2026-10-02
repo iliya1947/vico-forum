@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Form, Link, useNavigation } from "react-router";
 import { useTranslation } from "react-i18next";
 
@@ -93,6 +93,24 @@ export function HomeView({
   );
 }
 
+const HOMEPAGE_MOBILE_CARD_QUERY = "(max-width: 29.99rem)";
+
+function useHomepageMobileCardLayout(): boolean {
+  const [mobile, setMobile] = useState(false);
+
+  useEffect(() => {
+    const media = window.matchMedia?.(HOMEPAGE_MOBILE_CARD_QUERY);
+    if (!media) return undefined;
+
+    const sync = () => setMobile(media.matches);
+    sync();
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
+  }, []);
+
+  return mobile;
+}
+
 function HomepageCategoryCard({
   locale,
   category,
@@ -103,19 +121,33 @@ function HomepageCategoryCard({
   referenceTime: string;
 }) {
   const { t } = useTranslation("common");
+  const mobileLayout = useHomepageMobileCardLayout();
   const [expanded, setExpanded] = useState(false);
-  const pinned = expanded
+  const [mobileDetailsOpen, setMobileDetailsOpen] = useState(false);
+  const pinned = expanded && !mobileLayout
     ? category.pinnedTopics
     : category.pinnedTopics.slice(0, HOMEPAGE_COMPACT_PINNED_LIMIT);
-  const latest = expanded
+  const latest = expanded && !mobileLayout
     ? category.latestTopics
     : category.latestTopics.slice(0, HOMEPAGE_COMPACT_LATEST_LIMIT);
   const hasMore = category.pinnedTopics.length > HOMEPAGE_COMPACT_PINNED_LIMIT
     || category.latestTopics.length > HOMEPAGE_COMPACT_LATEST_LIMIT;
+  const controlExpanded = mobileLayout ? mobileDetailsOpen : expanded;
   const detailsId = `home-category-${category.id.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
 
+  const toggleDetails = () => {
+    if (mobileLayout) {
+      setMobileDetailsOpen((value) => !value);
+      return;
+    }
+    setExpanded((value) => !value);
+  };
+
   return (
-    <article className="home-section-card">
+    <article
+      className="home-section-card"
+      data-mobile-details={mobileDetailsOpen ? "open" : "closed"}
+    >
       <div className="home-section-identity">
         <HomepageCategoryIcon icon={category.icon} name={category.name} />
         <div>
@@ -150,7 +182,7 @@ function HomepageCategoryCard({
         />
       </div>
 
-      <div className="home-section-stats">
+      <div className="home-section-stats" id={`${detailsId}-stats`}>
         <span>
           <strong>{category.topicCount}</strong>
           {t("topicsHeading")}
@@ -174,11 +206,11 @@ function HomepageCategoryCard({
       <button
         className="home-section-expand"
         type="button"
-        disabled={!hasMore}
-        aria-expanded={expanded}
-        aria-controls={`${detailsId}-pinned ${detailsId}-latest`}
-        aria-label={t(expanded ? "homepageCollapse" : "homepageExpand")}
-        onClick={() => setExpanded((value) => !value)}
+        disabled={!mobileLayout && !hasMore}
+        aria-expanded={controlExpanded}
+        aria-controls={`${detailsId}-pinned ${detailsId}-latest ${detailsId}-stats`}
+        aria-label={t(controlExpanded ? "homepageCollapse" : "homepageExpand")}
+        onClick={toggleDetails}
       >
         <svg aria-hidden="true" viewBox="0 0 20 20">
           <path d={expanded ? "m5 12 5-5 5 5" : "m5 8 5 5 5-5"} />
