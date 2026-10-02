@@ -329,38 +329,6 @@ describe("Forum search", () => {
   });
 });
 
-describe("Forum search", () => {
-  it("loads a query through the public reader and keeps result links locale-aware", async () => {
-    const data = await searchLoader({
-      request: new Request("https://forum.example/en/search?q=TypeScript"),
-      params: { locale: "en" },
-      context: context("en", "ltr"),
-    });
-
-    expect(data.query).toBe("TypeScript");
-    expect(data.results).toHaveLength(1);
-
-    renderRoute(SearchRoute, data, forumSearchPath("en") + "?q=TypeScript", "en", "ltr");
-
-    expect(await screen.findByRole("heading", { level: 1, name: "Search" })).toBeInTheDocument();
-    expect(screen.getByRole("searchbox", { name: "Search query" })).toHaveValue("TypeScript");
-    expect(screen.getByRole("link", { name: /How do I type an API\?/ }))
-      .toHaveAttribute("href", forumTopicPath("en", topic.id));
-    expect(screen.getByText("#TypeScript")).toBeInTheDocument();
-  });
-
-  it("renders a truthful no-results state", async () => {
-    const data = await searchLoader({
-      request: new Request("https://forum.example/en/search?q=WebAssembly"),
-      params: { locale: "en" },
-      context: context("en", "ltr"),
-    });
-
-    renderRoute(SearchRoute, data, forumSearchPath("en") + "?q=WebAssembly", "en", "ltr");
-    expect(await screen.findByText("No topics found for “WebAssembly”.")).toBeInTheDocument();
-  });
-});
-
 describe("Technology tags", () => {
   it("loads the tag index and a filtered tag page with locale-aware topic links", async () => {
     const indexData = await tagsLoader({ params: { locale: "en" }, context: context("en", "ltr") });
