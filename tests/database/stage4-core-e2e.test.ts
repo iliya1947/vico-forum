@@ -39,6 +39,7 @@ const migrationFiles = [
   "0018_source_locale_correction_permissions.sql",
   "0020_translation_generation_permission.sql",
   "0021_forum_tags.sql",
+  "0022_forum_reply_relationships.sql",
 ] as const;
 
 const client = new Client({ connectionString: databaseUrl, options: `-c search_path=${schemaName}` });
