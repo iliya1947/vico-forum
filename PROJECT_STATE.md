@@ -148,10 +148,10 @@ Vico Forum находится в ранней pre-release разработке.
   получила owner visual acceptance 2026-10-02. После acceptance владелец попросил тем же способом
   смягчить narrow-mobile discovery pills и orange section-entry rail, но оставить их оттенок немного
   насыщеннее circular expand control; после следующего visual review владелец отклонил этот оттенок
-  и дал отдельный reference-orange `#D25E28`. Текущая ветка применяет этот reference color к
-  narrow-mobile discovery pills, section-entry rail и `Sign in`; circular expand control остаётся
-  более светлым. Repository CI и Pages для latest color correction проходят; owner visual acceptance
-  остаётся открытым. Предыдущий owner mobile review также выявил
+  и дал отдельный reference-orange. После следующего visual review владелец попросил попробовать
+  yellow-orange `#ED760E` для narrow-mobile discovery pills, section-entry rail и `Sign in`;
+  circular expand control остаётся более светлым. Эта latest color correction внесена в текущую
+  ветку и требует повторной CI/Pages и owner visual проверки. Предыдущий owner mobile review также выявил
   переполнение discovery navigation; на narrow mobile эти destinations переключаются на centered
   orange pill icon-only controls с enlarged icons и локализованными accessible labels, сохраняя
   text labels на wider layouts.
