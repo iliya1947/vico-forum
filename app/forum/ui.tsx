@@ -71,7 +71,7 @@ export function ThemeToggle() {
         ? t(targetTheme === "dark" ? "switchToDarkTheme" : "switchToLightTheme")
         : t("themeLabel")}
     >
-      <span className="theme-toggle-mark" aria-hidden="true">{theme === "dark" ? "☀" : "◐"}</span>
+      <span className="theme-toggle-mark" aria-hidden="true">{theme === "dark" ? "☀" : "☾"}</span>
       <span>{theme === "dark" ? t("lightTheme") : theme === "light" ? t("darkTheme") : t("themeLabel")}</span>
     </button>
   );
@@ -110,9 +110,12 @@ export function LanguageSwitcher({ locale }: { locale: string }) {
     navigate(`${segments.join("/")}${location.search}${location.hash}`);
   };
 
+  const compactCode = (current?.tag ?? locale).split("-")[0].toUpperCase();
+
   return (
     <label className="language-switcher">
       <GlobeIcon />
+      <span className="language-switcher-code" aria-hidden="true">{compactCode}</span>
       <select
         value={locale}
         aria-label={current?.nativeName ?? locale}
