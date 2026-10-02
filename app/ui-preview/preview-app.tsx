@@ -272,6 +272,7 @@ const topic = {
     name: "TypeScript & architecture",
     category: { id: categoryId, name: "Development" },
   },
+  tags: [{ key: "typescript", name: "TypeScript" }, { key: "api", name: "API" }],
   posts: [
     {
       id: "question",
