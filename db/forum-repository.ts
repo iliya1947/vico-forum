@@ -45,6 +45,15 @@ export interface ForumPopularTopicSummary {
 
 export type ForumPopularPage = Record<ForumPopularPeriod, ForumPopularTopicSummary[]>;
 
+export interface ForumUnansweredTopicSummary {
+  id: string;
+  title: string;
+  authorName: string;
+  createdAt: Date;
+  section: { id: string; name: string };
+  category: { id: string; name: string };
+}
+
 export interface ForumSectionSummary {
   id: string;
   name: string;
@@ -89,6 +98,7 @@ export interface ForumReader {
   listCategories(): Promise<ForumCategorySummary[]>;
   readHomepage(latestTopicsPerCategory?: number): Promise<ForumHomepageCategorySummary[]>;
   readPopular(referenceTime?: Date, limitPerPeriod?: number): Promise<ForumPopularPage>;
+  readUnanswered(): Promise<ForumUnansweredTopicSummary[]>;
   readCategory(id: string): Promise<ForumCategoryPage | undefined>;
   readSection(id: string): Promise<ForumSectionPage | undefined>;
   readTopicPage(id: string): Promise<ForumTopicPage | undefined>;
@@ -406,6 +416,49 @@ export class DrizzleForumRepository {
       "7d": rank("activity7d", "latest7d"),
       "30d": rank("activity30d", "latest30d"),
     };
+  }
+
+  async readUnanswered(): Promise<ForumUnansweredTopicSummary[]> {
+    return this.database
+      .select({
+        id: forumTopics.id,
+        title: forumTopicTitleRevisions.originalContent,
+        authorName: user.name,
+        createdAt: forumTopics.createdAt,
+        sectionId: forumSections.id,
+        sectionName: forumSections.name,
+        categoryId: forumCategories.id,
+        categoryName: forumCategories.name,
+      })
+      .from(forumTopics)
+      .innerJoin(forumSections, eq(forumSections.id, forumTopics.sectionId))
+      .innerJoin(forumCategories, eq(forumCategories.id, forumSections.categoryId))
+      .innerJoin(forumTopicTitleRevisions, and(
+        eq(forumTopicTitleRevisions.topicId, forumTopics.id),
+        eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId),
+      ))
+      .innerJoin(user, eq(user.id, forumTopics.authorId))
+      .innerJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
+      .where(eq(forumTopics.isSolved, false))
+      .groupBy(
+        forumTopics.id,
+        forumTopicTitleRevisions.id,
+        user.name,
+        forumSections.id,
+        forumSections.name,
+        forumCategories.id,
+        forumCategories.name,
+      )
+      .having(sql`count(${forumPosts.id}) = 1`)
+      .orderBy(desc(forumTopics.createdAt), desc(forumTopics.id))
+      .then((rows) => rows.map((row) => ({
+        id: row.id,
+        title: row.title,
+        authorName: row.authorName,
+        createdAt: row.createdAt,
+        section: { id: row.sectionId, name: row.sectionName },
+        category: { id: row.categoryId, name: row.categoryName },
+      })));
   }
 
   async readCategory(id: string): Promise<ForumCategoryPage | undefined> {
