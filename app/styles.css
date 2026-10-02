@@ -4578,7 +4578,51 @@ p {
     line-height: 1;
   }
 
+  .home-shell .site-account-actions {
+    order: 1;
+    width: 100%;
+    flex-wrap: nowrap;
+    justify-content: center;
+    gap: 0.3rem;
+  }
+
+  .home-shell .site-account-actions .header-icon-link {
+    width: 2.15rem;
+    min-width: 2.15rem;
+    height: 2.15rem;
+  }
+
+  .home-shell .site-account-actions .auth-controls {
+    width: auto;
+    min-width: 0;
+  }
+
+  .home-shell .site-account-actions .auth-controls-main {
+    width: auto;
+    flex-wrap: nowrap;
+    gap: 0.3rem;
+  }
+
+  .home-shell .site-account-actions .auth-user {
+    max-width: 6.9rem;
+    min-height: 2.15rem;
+    padding-inline: 0.24rem 0.45rem;
+  }
+
+  .home-shell .site-account-actions .auth-admin-link,
+  .home-shell .site-account-actions .auth-action {
+    min-height: 2.15rem;
+    padding-inline: 0.48rem;
+    font-size: 0.68rem;
+    white-space: nowrap;
+  }
+
+  .home-shell .site-account-actions .auth-controls a {
+    font-size: 0.68rem;
+  }
+
   .home-shell .site-primary-nav {
+    order: 2;
     min-height: 0;
     justify-content: center;
     gap: 0.45rem;
