@@ -167,11 +167,12 @@ describe("forum write route actions", () => {
   it("creates a topic as the session user and redirects to its canonical locale path", async () => {
     const forumWriter = writer();
     const response = await sectionAction({
-      request: request("/he/sections/typescript", { title: " A title ", body: " First post ", authorId: "attacker" }),
+      request: request("/he/sections/typescript", { title: " A title ", body: " First post ", tags: " TypeScript, Cloudflare, typescript ", authorId: "attacker" }),
       params: { locale: "he", sectionId: "typescript" }, context: context(forumWriter),
     });
     expect(forumWriter.createTopic).toHaveBeenCalledWith({
       sectionId: "typescript", authorId: "session-user", title: "A title", body: "First post",
+      tags: ["TypeScript", "Cloudflare", "typescript"],
     });
     if (!(response instanceof Response)) throw new Error("expected redirect response");
     expect(response).toMatchObject({ status: 302 });
