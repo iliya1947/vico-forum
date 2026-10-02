@@ -1058,10 +1058,11 @@ export function TopicView({
 
 
   function focusReplyForm() {
-    requestAnimationFrame(() => {
-      replyTextareaRef.current?.focus();
-      document.getElementById("reply-heading")?.scrollIntoView({ block: "center", behavior: "smooth" });
-    });
+    replyTextareaRef.current?.focus();
+    const heading = document.getElementById("reply-heading");
+    if (typeof heading?.scrollIntoView === "function") {
+      heading.scrollIntoView({ block: "center", behavior: "smooth" });
+    }
   }
 
   function targetReply(postId: string) {
@@ -1096,15 +1097,16 @@ export function TopicView({
       .map((line) => `> ${line}`)
       .join("\n") + "\n\n";
 
-    requestAnimationFrame(() => {
-      const textarea = replyTextareaRef.current;
-      if (!textarea) return;
-      const start = textarea.selectionStart ?? textarea.value.length;
-      const end = textarea.selectionEnd ?? start;
-      textarea.setRangeText(quote, start, end, "end");
-      textarea.focus();
-      document.getElementById("reply-heading")?.scrollIntoView({ block: "center", behavior: "smooth" });
-    });
+    const textarea = replyTextareaRef.current;
+    if (!textarea) return;
+    const start = textarea.selectionStart ?? textarea.value.length;
+    const end = textarea.selectionEnd ?? start;
+    textarea.setRangeText(quote, start, end, "end");
+    textarea.focus();
+    const heading = document.getElementById("reply-heading");
+    if (typeof heading?.scrollIntoView === "function") {
+      heading.scrollIntoView({ block: "center", behavior: "smooth" });
+    }
   }
   return (
     <ContentGenerationNavigationBoundary
