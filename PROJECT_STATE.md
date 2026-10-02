@@ -62,7 +62,7 @@ Vico Forum находится в ранней pre-release разработке.
   `/:locale/tags` и `/:locale/tags/:tagKey`, показываются в section/topic/tag presentation и
   удаляют `Technology tags` из unfinished checklist. Для этого добавляется forward migration
   `0021_forum_tags` и минимально расширяется существующая web runtime relation capability;
-  search/recommendations/trending/moderation и Stage 6 rollout в scope не входят. Repository CI для implementation head проходит; Pages/owner visual acceptance остаётся следующим gate. Дальнейшая косметическая полировка homepage
+  search/recommendations/trending/moderation и Stage 6 rollout в scope не входят. Repository CI и GitHub Pages preview проходят; owner visual acceptance подтверждён 2026-10-02. Дальнейшая косметическая полировка homepage
   сейчас не является приоритетом.
 - Category-page discovery slice в PR #159 прошёл owner visual acceptance в GitHub Pages:
   owner-approved header/logo/discovery nav переиспользованы без backend/DB изменений; category
@@ -595,7 +595,7 @@ runtime roles/Hyperdrive writes и другие schema-dependent runtime capabil
    owner visual acceptance подтверждён 2026-10-02.
 5. `Tags` выполняется как следующая bounded discovery subtask: free-form topic tags, canonical
    normalization/reuse, migration `0021_forum_tags`, public tag index/filter routes, topic creation
-   и presentation integration. Repository CI для implementation head проходит; следующий gate — Pages/owner visual acceptance.
+   и presentation integration. Repository CI и GitHub Pages preview проходят; owner visual acceptance подтверждён 2026-10-02.
 6. Presentation slices через PR #167 уже прошли owner review/merge в пределах Pages-preview.
    Heavy approved subsystems, которые всё ещё перечислены в `Under development`, остаются
    отдельными bounded tasks.
