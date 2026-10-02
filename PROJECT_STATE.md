@@ -144,8 +144,8 @@ Vico Forum находится в ранней pre-release разработке.
   перенесён из full-width footer в компактный inline-end rail рядом с identity. Эта latest
   mobile-card correction реализована в текущей ветке; repository CI и Pages для неё проходят.
   Следующий owner feedback по этой же карточке потребовал сделать section icons явно Vico Orange и
-  смягчить слишком тёмный circular expand control; visual color correction также внесён в текущую
-  ветку и требует повторной Pages/owner проверки. Предыдущий owner mobile review также выявил переполнение discovery
+  смягчить слишком тёмный circular expand control; visual color correction внесён в текущую
+  ветку, repository CI и Pages проходят, owner visual acceptance остаётся открытым. Предыдущий owner mobile review также выявил переполнение discovery
   navigation; на narrow mobile эти destinations переключаются на centered orange pill icon-only
   controls с enlarged icons и локализованными accessible labels, сохраняя text labels на wider layouts.
   Owner visual acceptance этого mobile-nav correction подтверждена 2026-10-02. Следующий owner
