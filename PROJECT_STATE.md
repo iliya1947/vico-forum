@@ -52,9 +52,8 @@ Vico Forum находится в ранней pre-release разработке.
   колонки `24 hours / 7 days / 30 days`, ранжируя темы по числу существующих forum messages
   внутри периода с latest-activity tie-break; `Popular` удалён из unfinished checklist.
   Реализация не добавляет migration/dependency/auth/Stage 6 изменений. Targeted repository CI
-  и GitHub Pages preview для implementation head проходят; owner visual acceptance ещё не
-  подтверждён. Дальнейшая косметическая полировка homepage
-  сейчас не является приоритетом.
+  и GitHub Pages preview проходят; owner visual acceptance Popular подтверждён 2026-10-02.
+  Дальнейшая косметическая полировка homepage сейчас не является приоритетом.
 - Category-page discovery slice в PR #159 прошёл owner visual acceptance в GitHub Pages:
   owner-approved header/logo/discovery nav переиспользованы без backend/DB изменений; category
   heading показывает только derived section/topic/message totals, section rows стали compact
@@ -582,7 +581,8 @@ runtime roles/Hyperdrive writes и другие schema-dependent runtime capabil
 3. `Popular` выполняется как отдельная bounded homepage/discovery subtask в PR #168:
    реальный public route и три одновременные activity-period колонки
    `24 hours / 7 days / 30 days` реализованы без schema/dependency изменений; targeted
-   repository CI и GitHub Pages preview проходят, следующий gate — owner visual acceptance.
+   repository CI и GitHub Pages preview проходят, owner visual acceptance подтверждён
+   2026-10-02. Следующий шаг после финальных checks — merge владельцем.
 4. Presentation slices через PR #167 уже прошли owner review/merge в пределах Pages-preview.
    Heavy approved subsystems, которые всё ещё перечислены в `Under development`, остаются
    отдельными bounded tasks.
