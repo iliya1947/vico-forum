@@ -192,7 +192,7 @@ export const canonicalEnglishCatalog = {
     messageLinkCopied: message("messageLinkCopied", "Copied", "Confirmation after a permanent forum message link is copied."),
     messageLinkCopyFailed: message("messageLinkCopyFailed", "Could not copy link.", "Failure feedback when a permanent forum message link cannot be copied."),
     replyToMessage: message("replyToMessage", "Reply", "Action that targets a reply at one forum message."),
-    quoteSelectedText: message("quoteSelectedText", "Quote", "Action that inserts selected message text into the reply editor as a Markdown blockquote.", [], ["Markdown"]),
+    quoteSelectedText: message("quoteSelectedText", "Quote", "Action that inserts selected message text into the reply editor as a Markdown blockquote."),
     replyToMessageNumber: message("replyToMessageNumber", "Reply to Message #{{number}}", "Link from a direct reply to its parent message.", ["number"]),
     directReplies: message("directReplies", "Direct replies", "Label for links to messages that directly reply to this message."),
     replyingToMessage: message("replyingToMessage", "Replying to Message #{{number}}", "Reply editor banner showing the currently targeted parent message.", ["number"]),
