@@ -43,8 +43,14 @@ export class ForumService {
   createPost(input: CreatePostInput) {
     validateEntity(input.id, input.authorId);
     requireText(input.topicId, "topic id");
+    if (input.parentPostId) {
+      requireText(input.parentPostId, "parent post id");
+      if (input.parentPostId === input.id) {
+        throw new InvalidForumContentError("post cannot reply to itself");
+      }
+    }
     const bodyRevision = normalizeRevision(input.bodyRevision);
-    return this.repository.createPost({ ...input, bodyRevision });
+    return this.repository.createPost({ ...input, parentPostId: input.parentPostId ?? null, bodyRevision });
   }
 
   createTopicWithInitialPost(input: CreateTopicWithInitialPostInput) {
