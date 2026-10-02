@@ -28,6 +28,7 @@ const section = {
     authorName: "Ada",
     postCount: 1,
     createdAt: new Date("2026-01-01"),
+    tags: [],
     title: { id: "title-r1", originalContent: "Public topic", sourceLocale: "en" },
   }],
 };
@@ -42,6 +43,7 @@ const topic = {
   bestAnswerPostId: null,
   title: section.topics[0]!.title,
   section: { id: "section-1", name: "Section", category: { id: "category-1", name: "Category" } },
+  tags: [],
   posts: [{
     id: "post-1",
     topicId: "topic-1",
@@ -69,6 +71,8 @@ const reader: ForumReader = {
   }],
   readPopular: async () => ({ "24h": [], "7d": [], "30d": [] }),
   readUnanswered: async () => [],
+  readTags: async () => [],
+  readTag: async () => undefined,
   readCategory: async () => undefined,
   readSection: async (id) => id === section.id ? section : undefined,
   readTopicPage: async (id) => id === topic.id ? topic : undefined,
