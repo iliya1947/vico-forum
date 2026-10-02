@@ -155,8 +155,8 @@ Vico Forum находится в ранней pre-release разработке.
   оттенков на одном mobile экране: `Sign in` — `#E8873A`, discovery pills — `#E27A32`,
   section-entry rail — `#E9964A`. После comparison владелец выбрал единый muted-orange
   `#D97838` для всех трёх групп: `Sign in`, narrow-mobile discovery pills и section-entry rail;
-  circular expand control остаётся без изменений. Эта latest color correction внесена в текущую
-  ветку и требует повторной CI/Pages и owner visual проверки. Предыдущий owner mobile review также выявил
+  circular expand control остаётся без изменений. Repository CI и Pages для этой latest color
+  correction проходят; owner visual acceptance остаётся открытым. Предыдущий owner mobile review также выявил
   переполнение discovery navigation; на narrow mobile эти destinations переключаются на centered
   orange pill icon-only controls с enlarged icons и локализованными accessible labels, сохраняя
   text labels на wider layouts.
