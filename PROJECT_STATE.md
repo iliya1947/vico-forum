@@ -162,8 +162,8 @@ Vico Forum находится в ранней pre-release разработке.
   Первый comparison также не прошёл visual acceptance; следующий промежуточный comparison использует:
   `Sign in` — `#C56538`, narrow-mobile discovery pills — `#C76032`, section-entry rail —
   `#C35F31`. Light theme сохраняет принятый `#E9964A` для всех трёх групп, circular expand
-  control остаётся без изменений. Эта latest Dark comparison correction внесена в текущую ветку
-  и требует повторной CI/Pages и owner visual проверки. Предыдущий owner mobile review также выявил
+  control остаётся без изменений. Repository CI и Pages для этой latest Dark comparison correction
+  проходят; owner visual acceptance остаётся открытым. Предыдущий owner mobile review также выявил
   переполнение discovery navigation; на narrow mobile эти destinations переключаются на centered
   orange pill icon-only controls с enlarged icons и локализованными accessible labels, сохраняя
   text labels на wider layouts.
