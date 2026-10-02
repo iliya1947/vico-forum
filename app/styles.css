@@ -4516,6 +4516,14 @@ p {
     gap: 0.35rem;
   }
 
+  .home-shell .site-header-actions .theme-toggle {
+    order: 1;
+  }
+
+  .home-shell .site-header-actions .language-switcher {
+    order: 2;
+  }
+
   .home-shell .site-search {
     grid-column: 1 / -1;
     grid-row: 2;
