@@ -9,6 +9,7 @@ export default [
     route("categories/:categoryId", "routes/category.tsx"),
     route("sections/:sectionId", "routes/section.tsx"),
     route("topics/:topicId", "routes/topic.tsx"),
+    route("search", "routes/search.tsx"),
     route("popular", "routes/popular.tsx"),
     route("unanswered", "routes/unanswered.tsx"),
     route("tags", "routes/tags.tsx"),
