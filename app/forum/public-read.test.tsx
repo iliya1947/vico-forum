@@ -19,7 +19,6 @@ import CategoryRoute, { loader as categoryLoader } from "../routes/category";
 import Home, { loader as homeLoader } from "../routes/home";
 import PopularRoute, { loader as popularLoader } from "../routes/popular";
 import SearchRoute, { loader as searchLoader } from "../routes/search";
-import SearchRoute, { loader as searchLoader } from "../routes/search";
 import TagsRoute, { loader as tagsLoader } from "../routes/tags";
 import TagRoute, { loader as tagLoader } from "../routes/tag";
 import UnansweredRoute, { loader as unansweredLoader } from "../routes/unanswered";
