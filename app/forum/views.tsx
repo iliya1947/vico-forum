@@ -203,7 +203,7 @@ export function UnansweredView({
                       </svg>
                     </span>
                     <span className="unanswered-topic-copy">
-                      <strong>{topic.title}</strong>
+                      <strong dir="auto">{topic.title}</strong>
                       <small>{t("startedBy", { author: topic.authorName })}</small>
                     </span>
                   </span>
@@ -263,6 +263,7 @@ export function SearchView({
             defaultValue={query}
             maxLength={200}
             autoComplete="off"
+            dir="auto"
             placeholder={t("searchInputPlaceholder")}
           />
           <button type="submit">{t("searchSubmit")}</button>
