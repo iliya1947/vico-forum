@@ -401,8 +401,8 @@ Shared-shell hardening is isolated in PR #167 for owner review:
   the theme control sits above the locale control and uses moon/sun target icons; the locale control
   exposes a short current-language code while preserving the existing select behavior; wider
   layouts remain unchanged;
-- the next narrow-mobile review moved the account/notification row above discovery navigation and
-  requires that account row to stay on one compact line; discovery pills remain centered below it.
+- the next narrow-mobile review places the account/notification row on one compact line directly
+  below the brand, moves search below that row, and keeps the centered discovery pills below search.
 
 Remaining work:
 
