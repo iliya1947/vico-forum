@@ -2,13 +2,14 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { I18nextProvider } from "react-i18next";
-import { MemoryRouter, useLocation } from "react-router";
+import { createMemoryRouter, MemoryRouter, RouterProvider, useLocation } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { canonicalEnglishCatalog } from "../localization/catalog";
+import { HeaderAuthProvider } from "../auth/auth-controls";
 import { LocaleNavigationProvider } from "../localization/locale-navigation";
 import { createTranslationRuntime } from "../localization/runtime";
 import { THEME_BOOTSTRAP_SCRIPT } from "../theme";
-import { LanguageSwitcher, ThemeToggle } from "./ui";
+import { ForumShell, LanguageSwitcher, ThemeToggle } from "./ui";
 
 function canonicalCommonResources(): Record<string, string> {
   const resources: Record<string, string> = {};
@@ -79,6 +80,38 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+describe("ForumShell keyboard navigation", () => {
+  it("puts a localized skip link first and targets the focusable forum content", async () => {
+    const router = createMemoryRouter([{
+      path: "*",
+      element: (
+        <HeaderAuthProvider initialUser={null}>
+          <ForumShell locale="en" variant="home">
+            <h1>Forum content</h1>
+          </ForumShell>
+        </HeaderAuthProvider>
+      ),
+    }], { initialEntries: ["/en"] });
+
+    render(
+      <I18nextProvider i18n={runtime()}>
+        <LocaleNavigationProvider
+          locales={[{ tag: "en", nativeName: "English", direction: "ltr" }]}
+        >
+          <RouterProvider router={router} />
+        </LocaleNavigationProvider>
+      </I18nextProvider>,
+    );
+
+    const skip = screen.getByRole("link", { name: "Skip to content" });
+    await userEvent.tab();
+
+    expect(skip).toHaveFocus();
+    expect(skip).toHaveAttribute("href", "#forum-content");
+    expect(document.getElementById("forum-content")).toHaveAttribute("tabindex", "-1");
+  });
+});
+
 describe("LanguageSwitcher", () => {
   it("switches the locale segment while preserving the current route, query and hash", async () => {
     render(
@@ -97,6 +130,8 @@ describe("LanguageSwitcher", () => {
         </LocaleNavigationProvider>
       </I18nextProvider>,
     );
+
+    expect(screen.getByText("EN")).toBeInTheDocument();
 
     await userEvent.selectOptions(screen.getByRole("combobox", { name: "English" }), "ru");
 

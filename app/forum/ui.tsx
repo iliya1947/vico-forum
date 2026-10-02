@@ -71,7 +71,7 @@ export function ThemeToggle() {
         ? t(targetTheme === "dark" ? "switchToDarkTheme" : "switchToLightTheme")
         : t("themeLabel")}
     >
-      <span className="theme-toggle-mark" aria-hidden="true">{theme === "dark" ? "☀" : "◐"}</span>
+      <span className="theme-toggle-mark" aria-hidden="true">{theme === "dark" ? "☀" : "☾"}</span>
       <span>{theme === "dark" ? t("lightTheme") : theme === "light" ? t("darkTheme") : t("themeLabel")}</span>
     </button>
   );
@@ -110,9 +110,12 @@ export function LanguageSwitcher({ locale }: { locale: string }) {
     navigate(`${segments.join("/")}${location.search}${location.hash}`);
   };
 
+  const compactCode = (current?.tag ?? locale).split("-")[0].toUpperCase();
+
   return (
     <label className="language-switcher">
       <GlobeIcon />
+      <span className="language-switcher-code" aria-hidden="true">{compactCode}</span>
       <select
         value={locale}
         aria-label={current?.nativeName ?? locale}
@@ -219,6 +222,7 @@ export function ForumShell({
                   ? "forum-shell home-shell system-shell"
                   : "forum-shell"
     }>
+      <a className="skip-link" href="#forum-content">{t("skipToContent")}</a>
       <header className="site-header">
         <div className="site-header-top">
           <div className="brand-lockup">
@@ -257,20 +261,40 @@ export function ForumShell({
           <nav className="site-primary-nav" aria-label={t("primaryNavigation")}>
             {useApprovedHeader ? (
               <>
-                <Link className="home-discovery-link" to={underDevelopmentPath(locale, "unanswered-filter")}>
+                <Link
+                  className="home-discovery-link"
+                  to={underDevelopmentPath(locale, "unanswered-filter")}
+                  aria-label={t("unansweredNav")}
+                  title={t("unansweredNav")}
+                >
                   <DiscoveryIcon kind="unanswered" />
                   <span>{t("unansweredNav")}</span>
                 </Link>
-                <Link className="home-discovery-link" to={underDevelopmentPath(locale, "technology-tags")}>
+                <Link
+                  className="home-discovery-link"
+                  to={underDevelopmentPath(locale, "technology-tags")}
+                  aria-label={t("tagsNav")}
+                  title={t("tagsNav")}
+                >
                   <DiscoveryIcon kind="tags" />
                   <span>{t("tagsNav")}</span>
                 </Link>
-                <Link className="home-discovery-link" to={underDevelopmentPath(locale, "popular")}>
+                <Link
+                  className="home-discovery-link"
+                  to={underDevelopmentPath(locale, "popular")}
+                  aria-label={t("popularNav")}
+                  title={t("popularNav")}
+                >
                   <DiscoveryIcon kind="popular" />
                   <span>{t("popularNav")}</span>
                 </Link>
                 {authUser ? (
-                  <Link className="home-discovery-link" to={underDevelopmentPath(locale, "unread")}>
+                  <Link
+                    className="home-discovery-link"
+                    to={underDevelopmentPath(locale, "unread")}
+                    aria-label={t("unreadNav")}
+                    title={t("unreadNav")}
+                  >
                     <DiscoveryIcon kind="unread" />
                     <span>{t("unreadNav")}</span>
                   </Link>
@@ -295,7 +319,7 @@ export function ForumShell({
         </div>
       </header>
 
-      <div className="forum-content">
+      <div className="forum-content" id="forum-content" tabIndex={-1}>
         {children}
       </div>
 

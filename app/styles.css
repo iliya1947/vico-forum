@@ -341,6 +341,10 @@ select {
   background: var(--color-surface);
 }
 
+.language-switcher-code {
+  display: none;
+}
+
 .theme-toggle {
   display: inline-flex;
   min-height: 2.25rem;
@@ -476,6 +480,21 @@ select {
 .auth-sign-in:focus-visible:not(:disabled) {
   border-color: var(--color-accent-hover);
   background: var(--color-accent-hover);
+}
+
+.auth-sign-up {
+  border-color: var(--color-accent);
+  color: var(--color-accent-hover);
+  background: var(--color-surface);
+  text-decoration: none;
+}
+
+.auth-sign-up:hover,
+.auth-sign-up:focus-visible {
+  border-color: var(--color-accent);
+  color: var(--color-text);
+  background: var(--color-accent-soft);
+  text-decoration: none;
 }
 
 .auth-sign-out {
@@ -1990,6 +2009,9 @@ p {
   --color-accent-soft: #fbf2ea;
   --color-on-accent: #ffffff;
   --color-action-on-accent: #101416;
+  --color-mobile-auth-action: #e9964a;
+  --color-mobile-discovery-action: #e9964a;
+  --color-mobile-section-action: #e9964a;
   --color-brand-secondary: #101416;
   --color-focus: #9a3800;
   --shadow-panel: 0 0.2rem 0.75rem rgb(37 30 24 / 7%);
@@ -2058,6 +2080,9 @@ p {
     --color-accent-soft: #232120;
     --color-on-accent: #101416;
     --color-action-on-accent: #ffffff;
+    --color-mobile-auth-action: #c56538;
+    --color-mobile-discovery-action: #c56538;
+    --color-mobile-section-action: #c56538;
     --color-brand-secondary: #f4f5f4;
     --color-focus: #ff9b67;
     --shadow-panel: 0 0.24rem 0.9rem rgb(0 0 0 / 24%);
@@ -2086,6 +2111,9 @@ p {
   --color-accent-soft: #232120;
   --color-on-accent: #101416;
   --color-action-on-accent: #ffffff;
+  --color-mobile-auth-action: #c56538;
+  --color-mobile-discovery-action: #c56538;
+  --color-mobile-section-action: #c56538;
   --color-brand-secondary: #f4f5f4;
   --color-focus: #ff9b67;
   --shadow-panel: 0 0.24rem 0.9rem rgb(0 0 0 / 24%);
@@ -4483,4 +4511,376 @@ p {
   .system-state-action {
     width: 100%;
   }
+}
+
+
+/* Narrow mobile keeps each homepage section compact: identity + entry action stay visible,
+   while pinned/latest/statistics are disclosed in place by the circular section toggle. */
+@media (max-width: 29.99rem) {
+  .home-shell .site-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    background: var(--color-surface);
+  }
+
+  .home-shell .site-header-top,
+  .home-shell .site-header-lower {
+    display: contents;
+  }
+
+  .home-shell .brand-lockup {
+    grid-column: 1;
+    grid-row: 1;
+    padding-block: 0.75rem 0.65rem;
+    padding-inline-start: 0.75rem;
+  }
+
+  .home-shell .site-header-actions {
+    grid-column: 2;
+    grid-row: 1;
+    display: flex;
+    width: auto;
+    flex-direction: column;
+    align-self: start;
+    justify-self: end;
+    align-items: center;
+    gap: 0.35rem;
+    padding-block: 0.65rem;
+    padding-inline-end: 0.75rem;
+  }
+
+  .home-shell .site-header-actions .theme-toggle {
+    order: 1;
+  }
+
+  .home-shell .site-header-actions .language-switcher {
+    order: 2;
+  }
+
+  .home-shell .site-search {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    margin: 0.45rem 0.65rem;
+  }
+
+  .home-shell .language-switcher,
+  .home-shell .theme-toggle {
+    width: 2.45rem;
+    min-width: 2.45rem;
+    height: 2.45rem;
+    min-height: 2.45rem;
+    justify-content: center;
+    padding: 0;
+    border-radius: 999px;
+  }
+
+  .home-shell .language-switcher {
+    position: relative;
+  }
+
+  .home-shell .language-switcher .ui-icon {
+    display: none;
+  }
+
+  .home-shell .language-switcher-code {
+    display: inline;
+    color: var(--color-text);
+    font-size: 0.72rem;
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: 0.02em;
+    direction: ltr;
+    unicode-bidi: isolate;
+  }
+
+  .home-shell .language-switcher select {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .home-shell .theme-toggle > span:last-child {
+    display: none;
+  }
+
+  .home-shell .theme-toggle-mark {
+    font-size: 1.25rem;
+    line-height: 1;
+  }
+
+  .home-shell .site-account-actions {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    width: 100%;
+    flex-wrap: nowrap;
+    justify-content: center;
+    gap: 0.3rem;
+    margin-inline-start: 0;
+    padding: 0.4rem 0.65rem;
+    border-block-start: 1px solid var(--color-border);
+    background: var(--color-surface-muted);
+  }
+
+  .home-shell .site-account-actions .header-icon-link {
+    width: 2.15rem;
+    min-width: 2.15rem;
+    height: 2.15rem;
+  }
+
+  .home-shell .site-account-actions .auth-controls {
+    width: auto;
+    min-width: 0;
+  }
+
+  .home-shell .site-account-actions .auth-controls-main {
+    width: auto;
+    flex-wrap: nowrap;
+    gap: 0.3rem;
+  }
+
+  .home-shell .site-account-actions .auth-user {
+    max-width: 6.9rem;
+    min-height: 2.15rem;
+    padding-inline: 0.24rem 0.45rem;
+  }
+
+  .home-shell .site-account-actions .auth-admin-link,
+  .home-shell .site-account-actions .auth-action {
+    min-height: 2.15rem;
+    padding-inline: 0.48rem;
+    font-size: 0.68rem;
+    white-space: nowrap;
+  }
+
+  .home-shell .site-account-actions .auth-controls a {
+    font-size: 0.68rem;
+  }
+
+  .home-shell .site-account-actions .auth-sign-in {
+    border-color: var(--color-mobile-auth-action);
+    background: var(--color-mobile-auth-action);
+  }
+
+  .home-shell .site-account-actions .auth-sign-in:hover:not(:disabled),
+  .home-shell .site-account-actions .auth-sign-in:focus-visible:not(:disabled) {
+    border-color: var(--color-mobile-auth-action);
+    background: var(--color-mobile-auth-action);
+    filter: brightness(0.92);
+  }
+
+  .home-shell .site-primary-nav {
+    grid-column: 1 / -1;
+    grid-row: 4;
+    width: 100%;
+    min-height: 0;
+    justify-content: center;
+    gap: 0.45rem;
+    padding: 0.35rem 0.65rem 0.5rem;
+    overflow-x: visible;
+    border-block-start: 1px solid var(--color-border);
+    background: var(--color-surface-muted);
+  }
+
+  .home-shell .site-primary-nav .home-discovery-link {
+    width: 3.6rem;
+    min-width: 3.6rem;
+    height: 2.35rem;
+    min-height: 2.35rem;
+    justify-content: center;
+    padding: 0;
+    border: 1px solid var(--color-mobile-discovery-action);
+    border-radius: 999px;
+    color: var(--color-action-on-accent);
+    background: var(--color-mobile-discovery-action);
+  }
+
+  .home-shell .site-primary-nav .home-discovery-link > span {
+    display: none;
+  }
+
+  .home-shell .site-primary-nav .home-discovery-link::after {
+    display: none;
+  }
+
+  .home-shell .site-primary-nav .home-discovery-link:hover,
+  .home-shell .site-primary-nav .home-discovery-link:focus-visible,
+  .home-shell .site-primary-nav .home-discovery-link:active {
+    border-color: var(--color-mobile-discovery-action);
+    color: var(--color-action-on-accent);
+    background: var(--color-mobile-discovery-action);
+    filter: brightness(0.92);
+  }
+
+  .home-shell .site-primary-nav .discovery-icon {
+    width: 1.35rem;
+    height: 1.35rem;
+    color: currentColor;
+  }
+}
+
+@media (max-width: 29.99rem) {
+  .home-section-card {
+    grid-template-columns: minmax(0, 1fr) 2.9rem;
+  }
+
+  .home-section-icon {
+    color: var(--color-accent);
+  }
+
+  .home-section-icon svg {
+    fill: none;
+    stroke: var(--color-accent);
+  }
+
+  .home-section-expand,
+  :dir(rtl) .home-section-expand {
+    background: color-mix(in srgb, var(--color-accent) 72%, var(--color-surface));
+  }
+
+  .home-section-expand:hover:not(:disabled),
+  .home-section-expand:focus-visible {
+    background: color-mix(in srgb, var(--color-accent) 84%, var(--color-surface));
+  }
+
+  .home-section-identity {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .home-section-pinned,
+  .home-section-latest,
+  .home-section-stats {
+    grid-column: 1 / -1;
+  }
+
+  .home-section-pinned {
+    grid-row: 2;
+  }
+
+  .home-section-latest {
+    grid-row: 3;
+  }
+
+  .home-section-stats {
+    grid-row: 4;
+  }
+
+  .home-section-card[data-mobile-details="closed"] .home-section-pinned,
+  .home-section-card[data-mobile-details="closed"] .home-section-latest,
+  .home-section-card[data-mobile-details="closed"] .home-section-stats {
+    display: none;
+  }
+
+  .home-section-enter {
+    grid-column: 2;
+    grid-row: 1;
+    display: grid;
+    min-width: 2.9rem;
+    min-height: 0;
+    place-items: center;
+    margin-block-start: -1px;
+    margin-inline-end: -1px;
+    border-start-end-radius: 0.5rem;
+    color: var(--color-action-on-accent);
+    background: var(--color-mobile-section-action);
+    text-decoration: none;
+  }
+
+  .home-section-card[data-mobile-details="closed"] .home-section-enter {
+    margin-block-end: -1px;
+    border-end-end-radius: 0.5rem;
+  }
+
+  .home-section-enter:hover,
+  .home-section-enter:focus-visible {
+    color: var(--color-action-on-accent);
+    background: var(--color-mobile-section-action);
+    filter: brightness(0.92);
+  }
+
+  .home-section-enter svg {
+    width: 1.25rem;
+    height: 1.25rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 3;
+  }
+
+  :dir(rtl) .home-section-enter svg {
+    transform: rotate(180deg);
+  }
+
+  .home-section-expand,
+  :dir(rtl) .home-section-expand {
+    position: absolute;
+    z-index: 3;
+    inset-inline-start: 50%;
+    bottom: 0;
+    grid-column: auto;
+    grid-row: auto;
+    align-self: auto;
+    justify-self: auto;
+    transform: translate(-50%, 50%);
+  }
+
+  :dir(rtl) .home-section-expand {
+    transform: translate(50%, 50%);
+  }
+}
+
+/* Shared shell hardening: keyboard focus, zoom/reflow and bidi-safe navigation. */
+.skip-link {
+  position: fixed;
+  z-index: 1000;
+  inset-block-start: 0.5rem;
+  inset-inline-start: 0.5rem;
+  min-height: 2.35rem;
+  padding: 0.5rem 0.75rem;
+  border: 2px solid var(--color-focus);
+  border-radius: 0.45rem;
+  color: var(--color-text);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-panel);
+  font-size: 0.78rem;
+  font-weight: 850;
+  text-decoration: none;
+  transform: translateY(-200%);
+}
+
+.skip-link:focus-visible {
+  transform: none;
+}
+
+.site-header {
+  overflow: visible;
+}
+
+.site-header-top > *,
+.site-header-lower > * {
+  min-width: 0;
+}
+
+.site-header-actions,
+.site-account-actions {
+  max-width: 100%;
+}
+
+.language-switcher:focus-within {
+  border-color: var(--color-focus);
+  outline: 0.18rem solid var(--color-focus);
+  outline-offset: 0.15rem;
+}
+
+.site-primary-nav {
+  scroll-padding-inline: 0.5rem;
+}
+
+.forum-content:focus {
+  outline: none;
 }

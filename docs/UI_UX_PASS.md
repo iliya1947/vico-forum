@@ -180,16 +180,19 @@ composition:
    a bold white arrow. Until the redesigned forum category/section discovery presentation is ready,
    that rail is an approved unfinished entry point and routes to the shared `Under development`
    page instead of exposing the old scaffold through this action.
-11. The circular orange expand control expands more pinned/latest content in the same block; it does
-   not navigate. On desktop its horizontal center aligns exactly with the divider between
+11. The circular orange expand control never navigates. On desktop it expands more pinned/latest
+   content in the same block; its horizontal center aligns exactly with the divider between
    `Pinned` and `Latest topics`, and its vertical center sits on the card bottom boundary so it
    straddles the edge. The coordinate is consistent across all cards and independent of text
-   height. Mobile adapts the control to the single-column structure instead of forcing the desktop
-   coordinate.
+   height. On narrow mobile the same control instead discloses/collapses the whole secondary
+   details group (`Pinned`, `Latest topics`, and section statistics) in place.
 12. The lower homepage zone keeps `Who's online` and `Forum statistics`, using only useful real
     metrics such as topics, messages, registered users and online count when available.
-13. Mobile preserves the same substantive content in one column:
-    description → pinned → latest topics → statistics.
+13. Narrow mobile keeps the section identity/description visible and collapses `Pinned`,
+    `Latest topics`, and section statistics by default behind the circular expand control. Opening
+    it restores that secondary content in place. The orange section-entry action moves from the
+    full-width card footer to a compact inline-end rail beside the section identity, so collapsed
+    cards remain short without removing any substantive content.
 
 ### Topic, message and authoring target
 
@@ -380,12 +383,44 @@ Remaining work:
 
 ### 6. Responsive, bidirectional and accessibility hardening
 
-- Exercise phone, tablet and desktop widths, keyboard-only navigation, visible focus, zoom/reflow,
-  reduced motion, long labels and common contrast states.
-- Test full-page LTR and RTL, plus mixed-direction user content and LTR code inside RTL UI.
-- Remove physical-direction assumptions and horizontal overflow introduced by the new layouts.
-- Run automated semantic/accessibility checks where repository tooling supports them, but do not
-  treat automation as a replacement for browser review.
+Shared-shell hardening is isolated in PR #167 for owner review:
+
+- keyboard users get a localized skip link before the repeated forum header, targeting a focusable
+  content region;
+- the language selector regains an explicit visible focus treatment and shared-header overflow no
+  longer clips focus rings;
+- shared header children get bounded min/max-width behavior for zoom/reflow pressure without
+  changing the accepted shell composition;
+- a representative `Home · manager` state exercises the densest account/header combination while
+  existing logical properties and RTL arrow/brand behavior remain unchanged;
+- owner mobile review first corrected sub-30rem ordering, then later superseded that layout with a
+  more compact card contract: section identity stays visible, `Pinned` + `Latest topics` +
+  statistics are collapsed by default behind the circular control, and the orange section-entry
+  action moves from the card footer to the inline-end edge of the identity row; this latest card
+  correction still requires owner visual acceptance;
+- later owner mobile review found discovery-navigation overflow; narrow mobile now uses centered
+  orange pill icon-only discovery controls with larger icons and localized accessible labels,
+  while wider layouts retain the accepted icon-plus-text navigation; the owner visually accepted
+  this mobile-nav correction on 2026-10-02;
+- a subsequent owner review requested compact narrow-mobile theme/locale controls beside the brand:
+  the theme control sits above the locale control and uses moon/sun target icons; the locale control
+  exposes a short current-language code while preserving the existing select behavior; wider
+  layouts remain unchanged;
+- the next narrow-mobile review places the account/notification row on one compact line directly
+  below the brand, moves search below that row, and keeps the centered discovery pills below search;
+- guest auth copy is shortened to `Sign in`, with a neighboring `Sign up` entry point for the
+  approved future registration system; until that system exists, `Sign up` follows the shared
+  localized `Under development` behavior rather than pretending registration is implemented.
+
+Remaining work:
+
+- exercise content-heavy phone/tablet/desktop states, long labels, mixed-direction content and code
+  overflow;
+- verify reduced motion, target sizing, zoom/reflow and common contrast/focus states across the
+  representative matrix;
+- remove only confirmed physical-direction or overflow defects found by that exercise;
+- run automated semantic/accessibility checks where repository tooling supports them, without
+  treating automation as a replacement for browser review.
 
 ### 7. Product acceptance and closeout
 

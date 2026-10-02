@@ -56,6 +56,7 @@ interface Scenario {
 export const scenarios: readonly Scenario[] = [
   { id: "home-guest", label: "Home · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en", view: "home" },
   { id: "home-user", label: "Home · user", locale: "en", direction: "ltr", identity: "user", path: "/en", view: "home" },
+  { id: "home-manager", label: "Home · manager", locale: "en", direction: "ltr", identity: "manager", path: "/en", view: "home" },
   { id: "auth-pending", label: "Authentication · pending · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en", view: "home", authPresentationState: "pending" },
   { id: "auth-error", label: "Authentication · failed · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en", view: "home", authPresentationState: "error" },
   { id: "under-development-search", label: "Under development · search · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/under-development?feature=search", view: "under-development" },

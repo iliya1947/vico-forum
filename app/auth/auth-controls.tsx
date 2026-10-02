@@ -112,6 +112,11 @@ export function AuthControls({ locale, actions = authClientActions }: {
           {pending ? <span className="auth-spinner" aria-hidden="true" /> : null}
           <span>{pending ? t("authPending") : user ? t("signOut") : t("signInGoogle")}</span>
         </button>
+        {!user ? (
+          <Link className="auth-action auth-sign-up" to={underDevelopmentPath(locale, "registration")}>
+            {t("signUp")}
+          </Link>
+        ) : null}
       </div>
       {error ? <span className="auth-feedback" role="alert">{t("authError")}</span> : null}
     </div>

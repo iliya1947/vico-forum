@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-10-01
+Последнее обновление: 2026-10-02
 
 ## Назначение
 
@@ -132,6 +132,67 @@ Vico Forum находится в ранней pre-release разработке.
   `409`/`429` feedback contracts не меняются. Pages fixture содержит locale-independent
   representative states для каждого route failure. Repository CI и Pages для принятой реализации
   проходят.
+- Первый responsive/RTL/accessibility hardening slice открыт в PR #167: shared shell получил
+  localized keyboard skip link к focusable forum content region, visible `focus-within` treatment
+  для language selector, unclipped header focus rings и min/max-width guards для zoom/reflow
+  pressure. Preview дополнен `Home · manager` для плотного account/header состояния; существующая
+  logical-direction/RTL geometry сохранена. Owner review выявил и подтвердил исправление mobile-only
+  homepage defects ниже `30rem`: browser-default section-enter SVG и первоначальный порядок
+  secondary content/footer action. Последний owner feedback заменяет прежнюю mobile-card
+  композицию более компактной: identity/description остаются видимыми, `Pinned` + `Latest topics`
+  + statistics по умолчанию скрыты за circular expand control, а orange section-entry action
+  перенесён из full-width footer в компактный inline-end rail рядом с identity. Эта latest
+  mobile-card correction реализована в текущей ветке; repository CI и Pages для неё проходят.
+  Следующий owner feedback по этой же карточке потребовал сделать section icons явно Vico Orange и
+  смягчить слишком тёмный circular expand control; эта correction прошла repository CI/Pages и
+  получила owner visual acceptance 2026-10-02. После acceptance владелец попросил тем же способом
+  смягчить narrow-mobile discovery pills и orange section-entry rail, но оставить их оттенок немного
+  насыщеннее circular expand control; после следующего visual review владелец отклонил этот оттенок
+  и дал отдельный reference-orange. После следующего visual review владелец попросил попробовать
+  yellow-orange `#ED760E` для narrow-mobile discovery pills, section-entry rail и `Sign in`;
+  circular expand control остаётся более светлым. Следующий owner visual review отклонил этот
+  вариант как слишком резкий для Light theme и запросил одновременное сравнение трёх более мягких
+  оттенков на одном mobile экране: `Sign in` — `#E8873A`, discovery pills — `#E27A32`,
+  section-entry rail — `#E9964A`. После comparison владелец выбрал единый muted-orange
+  `#D97838` для всех трёх групп: `Sign in`, narrow-mobile discovery pills и section-entry rail;
+  circular expand control остаётся без изменений. Следующий owner visual review предпочёл более
+  мягкий `#E9964A`; owner visual review принял этот оттенок для Light theme, но выявил, что
+  hard-coded mobile color также попал в Dark theme. После отдельного Dark review владелец отклонил
+  `#D25E28` как слишком резкий и запросил comparison трёх более мягких оттенков на одном экране.
+  Первый comparison также не прошёл visual acceptance; следующий промежуточный comparison использует:
+  `Sign in` — `#C56538`, narrow-mobile discovery pills — `#C76032`, section-entry rail —
+  `#C35F31`. После comparison владелец выбрал единый Dark оттенок `#C56538` для всех трёх
+  групп. Light theme сохраняет принятый `#E9964A`, circular expand control остаётся без изменений.
+  Repository CI и Pages для этой latest Dark color correction проходят; owner visual acceptance
+  подтверждён 2026-10-02. Предыдущий owner mobile review также выявил
+  переполнение discovery navigation; на narrow mobile эти destinations переключаются на centered
+  orange pill icon-only controls с enlarged icons и локализованными accessible labels, сохраняя
+  text labels на wider layouts.
+  Owner visual acceptance этого mobile-nav correction подтверждена 2026-10-02. Следующий owner
+  review того же narrow-mobile header потребовал compact theme/locale controls: language показывает
+  current primary locale code (`EN/RU/HE` для review locales), theme — moon/sun target icon;
+  оба controls перенесены в компактную колонку напротив brand, с theme сверху и locale под ней,
+  а search остаётся отдельной строкой. Следующий owner review потребовал поменять порядок lower
+  mobile header: account/notification controls должны идти одной compact строкой сразу под brand,
+  search — следующей строкой, discovery pills — ниже поиска. Guest auth presentation дополнительно
+  сокращена до `Sign in`, а рядом добавлен `Sign up` как approved future registration entry
+  point на shared `Under development` page; реальная registration/auth backend semantics не
+  меняются. Wider layouts сохраняют текущую presentation. Repository CI и Pages для этого
+  lower-header/auth correction проходят; owner visual acceptance narrow-mobile shell и итоговых
+  Light/Dark action colors подтверждён 2026-10-02. Во время следующей browser-проверки владелец
+  выявил mobile disclosure defect: карточка раскрывалась через `mobileDetailsOpen`, но chevron
+  оставался привязан к desktop `expanded` и поэтому продолжал смотреть вниз. Текущая ветка
+  привязывает chevron к общему `controlExpanded` и добавляет regression coverage для open/close
+  direction. Source/automated keyboard/RTL review при этом подтверждает skip link первым keyboard
+  target, visible wrapper focus для language selector, отсутствие новых physical left/right
+  assumptions и RTL reversal directional entry arrows. Repository CI и Pages для этой latest
+  correction проходят; owner visual re-test disclosure chevron подтверждён 2026-10-02.
+  Keyboard browser acceptance для Desktop и Mobile подтверждён владельцем 2026-10-02: skip link,
+  Enter-to-content, forward/backward Tab traversal и visible unclipped focus прошли визуальную
+  проверку. Владелец также подтвердил текущий visual/RTL state как нормальный 2026-10-02 и попросил
+  не блокировать дальнейшую работу дополнительной полировкой этого slice; PR #167 считается
+  принятым по owner browser review в рамках Pages-preview, не подменяя будущую full real-runtime
+  acceptance matrix.
 - Target search, notifications и незавершённые footer/product entry points во время owner-only
   pre-release ведут на общую `Under development` page/checklist вместо fake behavior.
 - Для owner-only pre-release незавершённые approved target functions могут оставаться видимыми и
