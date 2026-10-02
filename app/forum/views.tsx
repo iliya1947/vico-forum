@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 
 import type {
   ForumCategoryPage,
+  ForumPopularPage,
   ForumSectionPage,
   ForumTopicPage,
 } from "../../db/forum-repository";
@@ -88,6 +89,62 @@ export function HomeView({
             </div>
           </dl>
         </article>
+      </section>
+    </ForumShell>
+  );
+}
+
+export function PopularView({
+  locale,
+  periods,
+}: {
+  locale: string;
+  periods: ForumPopularPage;
+}) {
+  const { t } = useTranslation("common");
+  const columns = [
+    { key: "24h" as const, label: t("popularPeriod24h") },
+    { key: "7d" as const, label: t("popularPeriod7d") },
+    { key: "30d" as const, label: t("popularPeriod30d") },
+  ];
+
+  return (
+    <ForumShell locale={locale} variant="popular">
+      <Breadcrumbs locale={locale} items={[{ label: t("popularNav") }]} />
+      <header className="popular-heading">
+        <p className="eyebrow">{t("popularEyebrow")}</p>
+        <h1>{t("popularHeading")}</h1>
+        <p>{t("popularIntro")}</p>
+      </header>
+
+      <section className="popular-columns" aria-label={t("popularHeading")}>
+        {columns.map(({ key, label }) => (
+          <article className="popular-period" key={key}>
+            <header className="popular-period-heading">
+              <h2>{label}</h2>
+            </header>
+            {periods[key].length === 0 ? (
+              <EmptyState>{t("popularEmpty")}</EmptyState>
+            ) : (
+              <ol className="popular-topic-list">
+                {periods[key].map((topic, index) => (
+                  <li key={topic.id}>
+                    <Link className="popular-topic-card" to={forumTopicPath(locale, topic.id)}>
+                      <span className="popular-topic-rank" aria-hidden="true">{index + 1}</span>
+                      <span className="popular-topic-copy">
+                        <strong>{topic.title}</strong>
+                        <small>{t("startedBy", { author: topic.authorName })}</small>
+                      </span>
+                      <span className="popular-topic-activity">
+                        {t("messageCount", { count: topic.activityCount })}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </article>
+        ))}
       </section>
     </ForumShell>
   );
