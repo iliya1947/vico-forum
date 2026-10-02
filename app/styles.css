@@ -4493,15 +4493,22 @@ p {
 /* The compact homepage layout starts at 30rem; below that threshold the section-enter
    control still needs explicit geometry instead of falling back to the browser's intrinsic SVG. */
 @media (max-width: 29.99rem) {
-  .home-shell .site-header-top {
+  .home-shell .site-header {
+    display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-rows: auto auto;
-    gap: 0.55rem 0.7rem;
+    background: var(--color-surface);
+  }
+
+  .home-shell .site-header-top,
+  .home-shell .site-header-lower {
+    display: contents;
   }
 
   .home-shell .brand-lockup {
     grid-column: 1;
     grid-row: 1;
+    padding-block: 0.75rem 0.65rem;
+    padding-inline-start: 0.75rem;
   }
 
   .home-shell .site-header-actions {
@@ -4514,6 +4521,8 @@ p {
     justify-self: end;
     align-items: center;
     gap: 0.35rem;
+    padding-block: 0.65rem;
+    padding-inline-end: 0.75rem;
   }
 
   .home-shell .site-header-actions .theme-toggle {
@@ -4526,7 +4535,8 @@ p {
 
   .home-shell .site-search {
     grid-column: 1 / -1;
-    grid-row: 2;
+    grid-row: 3;
+    margin: 0.45rem 0.65rem;
   }
 
   .home-shell .language-switcher,
@@ -4579,11 +4589,16 @@ p {
   }
 
   .home-shell .site-account-actions {
-    order: 1;
+    grid-column: 1 / -1;
+    grid-row: 2;
     width: 100%;
     flex-wrap: nowrap;
     justify-content: center;
     gap: 0.3rem;
+    margin-inline-start: 0;
+    padding: 0.4rem 0.65rem;
+    border-block-start: 1px solid var(--color-border);
+    background: var(--color-surface-muted);
   }
 
   .home-shell .site-account-actions .header-icon-link {
@@ -4622,12 +4637,16 @@ p {
   }
 
   .home-shell .site-primary-nav {
-    order: 2;
+    grid-column: 1 / -1;
+    grid-row: 4;
+    width: 100%;
     min-height: 0;
     justify-content: center;
     gap: 0.45rem;
-    padding: 0.35rem 0.65rem;
+    padding: 0.35rem 0.65rem 0.5rem;
     overflow-x: visible;
+    border-block-start: 1px solid var(--color-border);
+    background: var(--color-surface-muted);
   }
 
   .home-shell .site-primary-nav .home-discovery-link {
