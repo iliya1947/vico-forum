@@ -1,9 +1,9 @@
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { I18nextProvider } from "react-i18next";
 import { createMemoryRouter, RouterProvider } from "react-router";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { canonicalEnglishCatalog } from "../localization/catalog";
 import { HeaderAuthProvider } from "../auth/auth-controls";
@@ -11,7 +11,10 @@ import { createTranslationRuntime } from "../localization/runtime";
 import { UnderDevelopmentView } from "./under-development-view";
 import { HomeView } from "./views";
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
 
 function canonicalCommonResources(): Record<string, string> {
   const resources: Record<string, string> = {};
@@ -95,6 +98,60 @@ describe("homepage target presentation", () => {
 
     expect(screen.getByRole("link", { name: "Latest three" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Show fewer topics" })).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("uses the section toggle to disclose compact details on narrow mobile", async () => {
+    vi.stubGlobal("matchMedia", () => ({
+      matches: true,
+      media: "(max-width: 29.99rem)",
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+
+    renderView(
+      <HomeView
+        locale="en"
+        referenceTime="2026-09-30T16:00:00.000Z"
+        categories={[{
+          id: "development",
+          name: "Development",
+          description: "Frontend, backend, architecture, languages, and testing.",
+          icon: "</>",
+          sectionCount: 3,
+          topicCount: 12,
+          messageCount: 48,
+          pinnedTopics: [
+            { id: "p1", title: "Pinned one", authorName: "Ada", activityAt: "2026-09-30T12:00:00.000Z" },
+          ],
+          latestTopics: [
+            { id: "l1", title: "Latest one", authorName: "Ada", activityAt: "2026-09-30T15:42:00.000Z" },
+          ],
+        }]}
+      />,
+    );
+
+    const heading = await screen.findByRole("heading", { name: "Development" });
+    const card = heading.closest("article");
+    expect(card).toHaveAttribute("data-mobile-details", "closed");
+
+    const toggle = screen.getByRole("button", { name: "Show more topics" });
+    await waitFor(() => expect(toggle).toBeEnabled());
+
+    await userEvent.click(toggle);
+
+    expect(card).toHaveAttribute("data-mobile-details", "open");
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(toggle).toHaveAttribute(
+      "aria-controls",
+      "home-category-development-pinned home-category-development-latest home-category-development-stats",
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: "Show fewer topics" }));
+    expect(card).toHaveAttribute("data-mobile-details", "closed");
   });
 
   it("routes unfinished shell destinations to the shared development page", async () => {
