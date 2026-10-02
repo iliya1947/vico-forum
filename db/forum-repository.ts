@@ -222,7 +222,7 @@ export class DrizzleForumRepository {
         authorId: input.authorId,
       });
       if (input.tags?.length) {
-        await tx.insert(forumTags).values(input.tags).onConflictDoNothing();
+        await tx.insert(forumTags).values([...input.tags]).onConflictDoNothing();
         await tx.insert(forumTopicTags).values(input.tags.map((tag) => ({
           topicId: input.id,
           tagKey: tag.key,
