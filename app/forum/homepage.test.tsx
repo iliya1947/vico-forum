@@ -173,7 +173,7 @@ describe("homepage target presentation", () => {
     expect(screen.getByRole("link", { name: "Unanswered" }))
       .toHaveAttribute("href", "/en/unanswered");
     expect(screen.getByRole("link", { name: "Tags" }))
-      .toHaveAttribute("href", "/en/under-development?feature=technology-tags");
+      .toHaveAttribute("href", "/en/tags");
     expect(screen.getByRole("link", { name: "Popular" }))
       .toHaveAttribute("href", "/en/popular");
     expect(screen.queryByRole("link", { name: "Unread" })).not.toBeInTheDocument();
