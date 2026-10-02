@@ -60,6 +60,9 @@ export class ForumService {
     if (input.initialPost.topicId !== input.id || input.initialPost.authorId !== input.authorId) {
       throw new InvalidForumContentError("initial post must belong to the new topic and author");
     }
+    if (input.initialPost.parentPostId) {
+      throw new InvalidForumContentError("initial post cannot reply to another post");
+    }
     return this.repository.createTopicWithInitialPost({
       ...input,
       titleRevision: normalizeRevision(input.titleRevision),
