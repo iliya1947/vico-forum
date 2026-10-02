@@ -12,10 +12,21 @@ export async function loader({ params, context }: {
   params: { locale?: string };
   context: RouterContextProvider;
 }) {
-  const periods = await forumReaderForRequest(context).readPopular();
+  const popular = await forumReaderForRequest(context).readPopular();
+  const present = (topics: typeof popular["24h"]) => topics.map(({
+    id,
+    title,
+    authorName,
+    activityCount,
+  }) => ({ id, title, authorName, activityCount }));
+
   return {
     locale: params.locale ?? "en",
-    periods,
+    periods: {
+      "24h": present(popular["24h"]),
+      "7d": present(popular["7d"]),
+      "30d": present(popular["30d"]),
+    },
   };
 }
 
