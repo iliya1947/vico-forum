@@ -4,7 +4,8 @@ import { useTranslation } from "react-i18next";
 
 import type {
   ForumCategoryPage,
-  ForumPopularPage,
+  type ForumPopularPeriod,
+  type ForumPopularTopicSummary,
   ForumSectionPage,
   ForumTopicPage,
 } from "../../db/forum-repository";
@@ -94,12 +95,17 @@ export function HomeView({
   );
 }
 
+type PopularPeriodPresentation = Record<
+  ForumPopularPeriod,
+  readonly Pick<ForumPopularTopicSummary, "id" | "title" | "authorName" | "activityCount">[]
+>;
+
 export function PopularView({
   locale,
   periods,
 }: {
   locale: string;
-  periods: ForumPopularPage;
+  periods: PopularPeriodPresentation;
 }) {
   const { t } = useTranslation("common");
   const columns = [
