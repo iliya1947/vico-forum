@@ -928,6 +928,61 @@ export type TopicViewActionData =
   | SourceLocaleCorrectionMutationError
   | ContentGenerationActionResponse;
 
+type MessageLinkState = "idle" | "copied" | "error";
+
+function MessagePermalinkControl({
+  locale,
+  topicId,
+  postId,
+  messageNumber,
+}: {
+  locale: string;
+  topicId: string;
+  postId: string;
+  messageNumber: number;
+}) {
+  const { t } = useTranslation("common");
+  const [state, setState] = useState<MessageLinkState>("idle");
+  const messageLabel = t("postNumber", { number: messageNumber });
+
+  async function copyLink() {
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error("Clipboard API unavailable");
+      const topicUrl = new URL(forumTopicPath(locale, topicId), window.location.origin);
+      const permanentUrl = `${topicUrl.origin}${topicUrl.pathname}#post-${encodeURIComponent(postId)}`;
+      await navigator.clipboard.writeText(permanentUrl);
+      setState("copied");
+    } catch {
+      setState("error");
+    }
+  }
+
+  return (
+    <span className="topic-message-permalink">
+      <a className="topic-message-anchor" href={`#post-${encodeURIComponent(postId)}`}>
+        {messageLabel}
+      </a>
+      <button
+        type="button"
+        className="topic-message-copy-link"
+        onClick={copyLink}
+        aria-label={t("copyMessageLinkFor", { message: messageLabel })}
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M10 13a5 5 0 0 0 7.1.1l2-2a5 5 0 0 0-7.1-7.1l-1.1 1.1" />
+          <path d="M14 11a5 5 0 0 0-7.1-.1l-2 2A5 5 0 0 0 12 20l1.1-1.1" />
+        </svg>
+        <span>{t("copyMessageLink")}</span>
+      </button>
+      {state !== "idle" && (
+        <span className={state === "error" ? "message-link-status is-error" : "message-link-status"} role="status" aria-live="polite">
+          {t(state === "copied" ? "messageLinkCopied" : "messageLinkCopyFailed")}
+        </span>
+      )}
+    </span>
+  );
+}
+
 export function TopicView({
   locale,
   topic,
@@ -1105,9 +1160,12 @@ export function TopicView({
                           <strong className="best-answer-label">{t("bestAnswer")}</strong>
                         )}
                       </span>
-                      <a className="topic-message-anchor" href={`#post-${encodeURIComponent(post.id)}`}>
-                        {t("postNumber", { number: messageNumber })}
-                      </a>
+                      <MessagePermalinkControl
+                        locale={locale}
+                        topicId={topic.id}
+                        postId={post.id}
+                        messageNumber={messageNumber}
+                      />
                     </div>
 
                     <PostBodyPresentation presentation={presentedPosts.get(post.id)!} />
