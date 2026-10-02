@@ -396,7 +396,10 @@ Shared-shell hardening is isolated in PR #167 for owner review:
 - later owner mobile review found discovery-navigation overflow; narrow mobile now uses centered
   orange pill icon-only discovery controls with larger icons and localized accessible labels,
   while wider layouts retain the accepted icon-plus-text navigation; the owner visually accepted
-  this mobile-nav correction on 2026-10-02.
+  this mobile-nav correction on 2026-10-02;
+- a subsequent owner review requested compact narrow-mobile theme/locale controls beside the brand:
+  the locale control exposes a short current-language code while preserving the existing select
+  behavior, and the theme control uses moon/sun target icons; wider layouts remain unchanged.
 
 Remaining work:
 
