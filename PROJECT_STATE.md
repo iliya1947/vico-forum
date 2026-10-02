@@ -186,8 +186,8 @@ Vico Forum находится в ранней pre-release разработке.
   direction. Source/automated keyboard/RTL review при этом подтверждает skip link первым keyboard
   target, visible wrapper focus для language selector, отсутствие новых physical left/right
   assumptions и RTL reversal directional entry arrows. Repository CI и Pages для этой latest
-  correction проходят; полная browser keyboard/RTL acceptance PR #167 остаётся открытой и не
-  подменяется CI/Pages.
+  correction проходят; owner visual re-test disclosure chevron подтверждён 2026-10-02. Полная
+  browser keyboard/RTL acceptance PR #167 остаётся открытой и не подменяется CI/Pages.
 - Target search, notifications и незавершённые footer/product entry points во время owner-only
   pre-release ведут на общую `Under development` page/checklist вместо fake behavior.
 - Для owner-only pre-release незавершённые approved target functions могут оставаться видимыми и
