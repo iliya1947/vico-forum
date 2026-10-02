@@ -18,11 +18,13 @@ import {
 import CategoryRoute, { loader as categoryLoader } from "../routes/category";
 import Home, { loader as homeLoader } from "../routes/home";
 import PopularRoute, { loader as popularLoader } from "../routes/popular";
+import TagsRoute, { loader as tagsLoader } from "../routes/tags";
+import TagRoute, { loader as tagLoader } from "../routes/tag";
 import UnansweredRoute, { loader as unansweredLoader } from "../routes/unanswered";
 import { ErrorBoundary as NotFoundErrorBoundary, loader as notFoundLoader } from "../routes/not-found";
 import SectionRoute, { loader as sectionLoader } from "../routes/section";
 import TopicRoute, { loader as topicLoader } from "../routes/topic";
-import { forumCategoryPath, forumPopularPath, forumSectionPath, forumTopicPath, forumUnansweredPath } from "./paths";
+import { forumCategoryPath, forumPopularPath, forumSectionPath, forumTagPath, forumTagsPath, forumTopicPath, forumUnansweredPath } from "./paths";
 import { forumReaderContext } from "./request-context";
 
 const category = { id: "development/core", name: "Development", sections: [{ id: "typescript/basics", name: "TypeScript", topicCount: 1, postCount: 1 }] };
@@ -30,6 +32,7 @@ const section = {
   id: "typescript/basics", name: "TypeScript", category: { id: "development/core", name: "Development" },
   topics: [{
     id: "typed/api", authorName: "Ada", postCount: 1, createdAt: new Date("2026-01-01"),
+    tags: [{ key: "typescript", name: "TypeScript" }],
     title: { id: "title-r1", originalContent: "How do I type an API?", sourceLocale: "en" },
   }],
 };
@@ -38,6 +41,7 @@ const topic = {
   isSolved: false, bestAnswerPostId: null,
   title: section.topics[0]!.title,
   section: { id: "typescript/basics", name: "TypeScript", category: { id: "development/core", name: "Development" } },
+  tags: [{ key: "typescript", name: "TypeScript" }],
   posts: [{
     id: "answer", topicId: "typed/api", authorId: "lin", authorName: "Lin", createdAt: new Date("2026-01-02"),
     body: { id: "post-r1", originalContent: "Start with an explicit response type.", sourceLocale: "en" },
@@ -90,6 +94,20 @@ const reader: ForumReader = {
     section: topic.section,
     category: topic.section.category,
   }],
+  readTags: async () => [{ key: "typescript", name: "TypeScript", topicCount: 1 }],
+  readTag: async (key) => key === "typescript" ? {
+    tag: { key: "typescript", name: "TypeScript" },
+    topics: [{
+      id: topic.id,
+      title: topic.title.originalContent,
+      authorName: topic.authorName,
+      postCount: topic.posts.length,
+      createdAt: topic.createdAt,
+      section: { id: topic.section.id, name: topic.section.name },
+      category: topic.section.category,
+      tags: topic.tags,
+    }],
+  } : undefined,
   readCategory: async (id) => id === category.id ? category : undefined,
   readSection: async (id) => id === section.id ? section : undefined,
   readTopicPage: async (id) => id === topic.id ? topic : undefined,
@@ -267,6 +285,21 @@ describe("Popular topics", () => {
   });
 });
 
+describe("Technology tags", () => {
+  it("loads the tag index and a filtered tag page with locale-aware topic links", async () => {
+    const indexData = await tagsLoader({ params: { locale: "en" }, context: context("en", "ltr") });
+    renderRoute(TagsRoute, indexData, forumTagsPath("en"), "en", "ltr");
+    expect(await screen.findByRole("heading", { level: 1, name: "Technology tags" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /#TypeScript/ })).toHaveAttribute("href", forumTagPath("en", "typescript"));
+
+    cleanup();
+    const pageData = await tagLoader({ params: { locale: "en", tagKey: "typescript" }, context: context("en", "ltr") });
+    renderRoute(TagRoute, pageData, forumTagPath("en", "typescript"), "en", "ltr");
+    expect(await screen.findByRole("heading", { level: 1, name: "#TypeScript" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /How do I type an API\?/ })).toHaveAttribute("href", forumTopicPath("en", topic.id));
+  });
+});
+
 describe("Unanswered topics", () => {
   it("loads unanswered topics and keeps topic links locale-aware", async () => {
     const data = await unansweredLoader({
@@ -373,6 +406,7 @@ describe("section topic count presentation", () => {
             authorName: "Alex",
             postCount: 1,
             createdAt: new Date("2026-09-27T10:00:00Z"),
+            tags: [],
             title: { id: "title-one", originalContent: "One message topic", sourceLocale: "en" },
           },
           {
@@ -380,6 +414,7 @@ describe("section topic count presentation", () => {
             authorName: "Sam",
             postCount: 2,
             createdAt: new Date("2026-09-27T11:00:00Z"),
+            tags: [],
             title: { id: "title-two", originalContent: "Two message topic", sourceLocale: "en" },
           },
         ],

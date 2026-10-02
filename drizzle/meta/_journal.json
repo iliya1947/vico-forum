@@ -148,6 +148,13 @@
       "when": 1790344500000,
       "tag": "0020_translation_generation_permission",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1790973000000,
+      "tag": "0021_forum_tags",
+      "breakpoints": true
     }
   ]
 }

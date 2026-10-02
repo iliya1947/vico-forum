@@ -5318,3 +5318,151 @@ p {
 .forum-content:focus {
   outline: none;
 }
+
+
+/* Forum technology tags */
+.tags-shell .breadcrumbs {
+  margin: 0.75rem 1rem 0;
+  padding: 0.5rem 0.2rem;
+  border: 0;
+  background: transparent;
+  font-size: 0.78rem;
+}
+
+.tags-heading {
+  margin: 0 1rem 0.7rem;
+  padding: 0.95rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.6rem;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-panel);
+}
+
+.tags-heading .eyebrow {
+  margin: 0;
+  color: var(--color-accent);
+  font-size: 0.68rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tags-heading h1 {
+  margin: 0.15rem 0 0;
+  font-size: clamp(1.35rem, 3vw, 1.8rem);
+}
+
+.tags-heading > p:last-child {
+  margin: 0.35rem 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+}
+
+.tags-grid,
+.tags-empty,
+.tag-topics {
+  margin: 0 1rem 1rem;
+}
+
+.tags-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 0.6rem;
+}
+
+.tag-card {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.6rem;
+  color: inherit;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-panel);
+  text-decoration: none;
+}
+
+.tag-card:hover,
+.tag-card:focus-visible {
+  background: var(--color-surface-muted);
+}
+
+.tag-card strong {
+  color: var(--color-accent-hover);
+  font-size: 0.9rem;
+}
+
+.tag-card span {
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+}
+
+.topic-tag-list {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.25rem;
+}
+
+.topic-tag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.45rem;
+  padding: 0.08rem 0.42rem;
+  border: 1px solid color-mix(in srgb, var(--color-accent) 45%, var(--color-border));
+  border-radius: 999px;
+  color: var(--color-accent-hover);
+  background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+  font-size: 0.66rem;
+  font-weight: 700;
+  line-height: 1.2;
+  text-decoration: none;
+}
+
+a.topic-tag:hover,
+a.topic-tag:focus-visible {
+  background: color-mix(in srgb, var(--color-accent) 16%, transparent);
+}
+
+.topic-heading-tags {
+  margin-top: 0.55rem;
+}
+
+.tag-topic-location {
+  display: flex;
+  align-items: center;
+  align-self: stretch;
+  gap: 0.25rem;
+  padding: 0.7rem 0.85rem;
+  border-inline-start: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-size: 0.68rem;
+}
+
+@media (max-width: 52rem) {
+  .tag-topic-location {
+    grid-column: 1;
+    padding-block: 0.45rem;
+    border-inline-start: 0;
+    border-block-start: 1px solid var(--color-border);
+  }
+}
+
+@media (max-width: 29.99rem) {
+  .tags-shell .breadcrumbs,
+  .tags-heading,
+  .tags-grid,
+  .tags-empty,
+  .tag-topics {
+    margin-inline: 0.75rem;
+  }
+
+  .tags-heading {
+    padding: 0.75rem;
+  }
+
+  .tags-grid {
+    grid-template-columns: 1fr;
+  }
+}

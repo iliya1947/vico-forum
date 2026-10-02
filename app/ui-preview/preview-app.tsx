@@ -18,6 +18,8 @@ import {
   HomeView,
   PopularView,
   SectionView,
+  TagsView,
+  TagView,
   UnansweredView,
   TopicView,
 } from "../forum/views";
@@ -29,7 +31,7 @@ import { localeRegistry } from "../localization/registry";
 
 type Direction = "ltr" | "rtl";
 type PreviewIdentity = "guest" | "user" | "manager";
-type PreviewView = "home" | "popular" | "unanswered" | "category" | "section" | "topic" | "admin" | "empty" | "under-development" | "not-found";
+type PreviewView = "home" | "popular" | "unanswered" | "tags" | "tag" | "category" | "section" | "topic" | "admin" | "empty" | "under-development" | "not-found";
 
 type PreviewVariant =
   | "empty-category"
@@ -66,6 +68,8 @@ export const scenarios: readonly Scenario[] = [
   { id: "under-development-notifications", label: "Under development · notifications · user", locale: "en", direction: "ltr", identity: "user", path: "/en/under-development?feature=notifications", view: "under-development" },
   { id: "popular-guest", label: "Popular · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/popular", view: "popular" },
   { id: "unanswered-guest", label: "Unanswered · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/unanswered", view: "unanswered" },
+  { id: "tags-guest", label: "Tags · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/tags", view: "tags" },
+  { id: "tag-typescript-guest", label: "Tag · TypeScript · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/tags/typescript", view: "tag" },
   { id: "category-guest", label: "Category · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/development", view: "category" },
   { id: "category-user", label: "Category · user", locale: "en", direction: "ltr", identity: "user", path: "/en/categories/development", view: "category" },
   { id: "category-empty", label: "Empty category · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/empty", view: "category", variant: "empty-category" },
@@ -169,6 +173,7 @@ const section = {
       authorName: "Alex Rivera",
       postCount: 3,
       createdAt: new Date("2026-09-27T10:00:00Z"),
+      tags: [{ key: "typescript", name: "TypeScript" }, { key: "api", name: "API" }],
       title: {
         id: "title-r1",
         originalContent: "How should I structure a typed API client?",
@@ -180,6 +185,7 @@ const section = {
       authorName: "Noa Levi",
       postCount: 4,
       createdAt: new Date("2026-09-27T12:00:00Z"),
+      tags: [{ key: "typescript", name: "TypeScript" }, { key: "rtl", name: "RTL" }],
       title: {
         id: "title-r2",
         originalContent: "Mixed RTL content with code blocks",
@@ -191,6 +197,7 @@ const section = {
       authorName: "Sam Chen",
       postCount: 12,
       createdAt: new Date("2026-09-28T08:00:00Z"),
+      tags: [{ key: "cloudflare", name: "Cloudflare" }, { key: "auth", name: "Auth" }],
       title: {
         id: "title-r3",
         originalContent: "Worker auth: session boundary vs permissions",
@@ -217,6 +224,7 @@ const sectionRtl = {
       authorName: "אלכס ריברה",
       postCount: 3,
       createdAt: new Date("2026-09-27T10:00:00Z"),
+      tags: [{ key: "typescript", name: "TypeScript" }, { key: "api", name: "API" }],
       title: {
         id: "title-r1",
         originalContent: "איך כדאי לבנות לקוח API עם טיפוסים?",
@@ -228,6 +236,7 @@ const sectionRtl = {
       authorName: "נועה לוי",
       postCount: 4,
       createdAt: new Date("2026-09-27T12:00:00Z"),
+      tags: [{ key: "typescript", name: "TypeScript" }, { key: "rtl", name: "RTL" }],
       title: {
         id: "title-r2",
         originalContent: "תוכן RTL מעורב עם בלוקי קוד",
@@ -239,6 +248,7 @@ const sectionRtl = {
       authorName: "סם צ'ן",
       postCount: 12,
       createdAt: new Date("2026-09-28T08:00:00Z"),
+      tags: [{ key: "cloudflare", name: "Cloudflare" }, { key: "auth", name: "Auth" }],
       title: {
         id: "title-r3",
         originalContent: "Worker auth: session boundary מול permissions",
@@ -262,6 +272,7 @@ const topic = {
     name: "TypeScript & architecture",
     category: { id: categoryId, name: "Development" },
   },
+  tags: [{ key: "typescript", name: "TypeScript" }, { key: "api", name: "API" }],
   posts: [
     {
       id: "question",
@@ -478,6 +489,45 @@ function unansweredTopics(locale: PreviewLocale) {
   ];
 }
 
+function previewTags() {
+  return [
+    { key: "typescript", name: "TypeScript", topicCount: 2 },
+    { key: "cloudflare", name: "Cloudflare", topicCount: 1 },
+    { key: "postgresql", name: "PostgreSQL", topicCount: 1 },
+    { key: "rtl", name: "RTL", topicCount: 1 },
+  ];
+}
+
+function previewTagPage(locale: PreviewLocale) {
+  const rtl = locale === "he";
+  const russian = locale === "ru";
+  return {
+    tag: { key: "typescript", name: "TypeScript" },
+    topics: [
+      {
+        id: "typed-api",
+        title: rtl ? "איך כדאי לבנות לקוח API עם טיפוסים?" : russian ? "Как лучше построить типизированный API-клиент?" : "How should I structure a typed API client?",
+        authorName: rtl ? "אלכס ריברה" : "Alex Rivera",
+        postCount: 3,
+        createdAt: new Date("2026-09-27T10:00:00Z"),
+        category: { id: "development", name: rtl ? "פיתוח" : russian ? "Разработка" : "Development" },
+        section: { id: "typescript", name: rtl ? "TypeScript וארכיטקטורה" : russian ? "TypeScript и архитектура" : "TypeScript & architecture" },
+        tags: [{ key: "typescript", name: "TypeScript" }, { key: "api", name: "API" }],
+      },
+      {
+        id: "rtl-markdown",
+        title: rtl ? "תוכן RTL מעורב עם בלוקי קוד" : russian ? "Смешанный RTL-контент с блоками кода" : "Mixed RTL content with code blocks",
+        authorName: rtl ? "נועה לוי" : "Noa Levi",
+        postCount: 4,
+        createdAt: new Date("2026-09-27T12:00:00Z"),
+        category: { id: "development", name: rtl ? "פיתוח" : russian ? "Разработка" : "Development" },
+        section: { id: "typescript", name: rtl ? "TypeScript וארכיטקטורה" : russian ? "TypeScript и архитектура" : "TypeScript & architecture" },
+        tags: [{ key: "typescript", name: "TypeScript" }, { key: "rtl", name: "RTL" }],
+      },
+    ],
+  };
+}
+
 function previewUser(identity: PreviewIdentity): HeaderAuthUser | null {
   if (identity === "guest") return null;
   if (identity === "manager") return { name: "Maya Cohen", canManageAuthorization: true };
@@ -623,6 +673,14 @@ function previewRouter(scenario: Scenario) {
       element: <UnansweredView locale={scenario.locale} topics={unansweredTopics(scenario.locale)} />,
     },
     {
+      path: "/:locale/tags",
+      element: <TagsView locale={scenario.locale} tags={previewTags()} />,
+    },
+    {
+      path: "/:locale/tags/:tagKey",
+      element: <TagView locale={scenario.locale} page={previewTagPage(scenario.locale)} />,
+    },
+    {
       path: "*",
       element: previewElement(scenario),
     },
@@ -653,6 +711,10 @@ function previewElement(scenario: Scenario) {
       return <PopularView locale={scenario.locale} periods={popularPeriods(scenario.locale)} />;
     case "unanswered":
       return <UnansweredView locale={scenario.locale} topics={unansweredTopics(scenario.locale)} />;
+    case "tags":
+      return <TagsView locale={scenario.locale} tags={previewTags()} />;
+    case "tag":
+      return <TagView locale={scenario.locale} page={previewTagPage(scenario.locale)} />;
     case "under-development":
       return <PreviewUnderDevelopment locale={scenario.locale} />;
     case "category":

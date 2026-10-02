@@ -38,6 +38,7 @@ const migrationFiles = [
   "0006_loving_sentinels.sql",
   "0018_source_locale_correction_permissions.sql",
   "0020_translation_generation_permission.sql",
+  "0021_forum_tags.sql",
 ] as const;
 
 const client = new Client({ connectionString: databaseUrl, options: `-c search_path=${schemaName}` });
@@ -114,11 +115,11 @@ async function userContext(userId: string, name: string) {
   return { context, close: () => pool.end() };
 }
 
-async function createTopic(userId: string, name: string, title: string) {
+async function createTopic(userId: string, name: string, title: string, tags = "") {
   const state = await userContext(userId, name);
   try {
     const response = await sectionAction({
-      request: formRequest("/en/sections/e2e-section", { title, body: `${title} initial post` }),
+      request: formRequest("/en/sections/e2e-section", { title, body: `${title} initial post`, tags }),
       params: { locale: "en", sectionId: "e2e-section" },
       context: state.context,
     });
@@ -161,7 +162,22 @@ describe("Stage 4 connected forum authorization flow", () => {
 
     await expect(forum.readSection("e2e-section")).resolves.toMatchObject({ id: "e2e-section", topics: [] });
 
-    const topicId = await createTopic("e2e-author", "Author", "Core E2E topic");
+    const topicId = await createTopic("e2e-author", "Author", "Core E2E topic", " TypeScript, Cloudflare, typescript ");
+
+    const tagIndex = await forum.readTags();
+    expect(tagIndex).toEqual([
+      { key: "cloudflare", name: "Cloudflare", topicCount: 1 },
+      { key: "typescript", name: "TypeScript", topicCount: 1 },
+    ]);
+    const typeScriptTag = await forum.readTag("typescript");
+    expect(typeScriptTag).toMatchObject({
+      tag: { key: "typescript", name: "TypeScript" },
+      topics: [{ id: topicId, tags: [{ key: "cloudflare", name: "Cloudflare" }, { key: "typescript", name: "TypeScript" }] }],
+    });
+    expect((await forum.readTopicPage(topicId))?.tags).toEqual([
+      { key: "cloudflare", name: "Cloudflare" },
+      { key: "typescript", name: "TypeScript" },
+    ]);
 
     const replyState = await userContext("e2e-replier", "Replier");
     try {
