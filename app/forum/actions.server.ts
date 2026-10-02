@@ -41,8 +41,12 @@ export async function sectionAction({ request, params, context }: {
   const title = requiredFormText(formData, "title");
   const body = requiredFormText(formData, "body");
   if (!title || !body) return mutationFailure("invalid", 400);
+  const rawTags = formData.get("tags");
+  const tags = typeof rawTags === "string"
+    ? rawTags.split(",").map((tag) => tag.trim()).filter(Boolean)
+    : [];
   return runForumMutation(request, context, async (writer, authorId) => {
-    const created = await writer.createTopic({ sectionId, authorId, title, body });
+    const created = await writer.createTopic({ sectionId, authorId, title, body, tags });
     return redirect(forumTopicPath(locale, created.topicId));
   });
 }
