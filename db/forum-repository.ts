@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, lte, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, lte, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import {
   forumCategories,
@@ -32,6 +32,18 @@ export interface ForumHomepageCategorySummary {
   messageCount: number;
   latestTopics: ForumHomepageTopicSummary[];
 }
+
+export type ForumPopularPeriod = "24h" | "7d" | "30d";
+
+export interface ForumPopularTopicSummary {
+  id: string;
+  title: string;
+  authorName: string;
+  activityCount: number;
+  latestActivityAt: Date;
+}
+
+export type ForumPopularPage = Record<ForumPopularPeriod, ForumPopularTopicSummary[]>;
 
 export interface ForumSectionSummary {
   id: string;
@@ -76,6 +88,7 @@ export interface ForumTopicPage extends ForumTopic {
 export interface ForumReader {
   listCategories(): Promise<ForumCategorySummary[]>;
   readHomepage(latestTopicsPerCategory?: number): Promise<ForumHomepageCategorySummary[]>;
+  readPopular(referenceTime?: Date, limitPerPeriod?: number): Promise<ForumPopularPage>;
   readCategory(id: string): Promise<ForumCategoryPage | undefined>;
   readSection(id: string): Promise<ForumSectionPage | undefined>;
   readTopicPage(id: string): Promise<ForumTopicPage | undefined>;
@@ -327,6 +340,72 @@ export class DrizzleForumRepository {
       ...category,
       latestTopics: latestByCategory.get(category.id) ?? [],
     }));
+  }
+
+  async readPopular(referenceTime = new Date(), limitPerPeriod = 10): Promise<ForumPopularPage> {
+    if (!Number.isFinite(referenceTime.getTime())) {
+      throw new RangeError("referenceTime must be a valid Date");
+    }
+    if (!Number.isInteger(limitPerPeriod) || limitPerPeriod < 1 || limitPerPeriod > 20) {
+      throw new RangeError("limitPerPeriod must be an integer between 1 and 20");
+    }
+
+    const dayMs = 24 * 60 * 60 * 1000;
+    const cutoff24h = new Date(referenceTime.getTime() - dayMs);
+    const cutoff7d = new Date(referenceTime.getTime() - 7 * dayMs);
+    const cutoff30d = new Date(referenceTime.getTime() - 30 * dayMs);
+
+    const rows = await this.database
+      .select({
+        id: forumTopics.id,
+        title: forumTopicTitleRevisions.originalContent,
+        authorName: user.name,
+        activity24h: sql<number>`count(${forumPosts.id}) filter (where ${forumPosts.createdAt} >= ${cutoff24h})::int`,
+        activity7d: sql<number>`count(${forumPosts.id}) filter (where ${forumPosts.createdAt} >= ${cutoff7d})::int`,
+        activity30d: sql<number>`count(${forumPosts.id})::int`,
+        latest24h: sql<Date | null>`max(${forumPosts.createdAt}) filter (where ${forumPosts.createdAt} >= ${cutoff24h})`.mapWith(forumPosts.createdAt),
+        latest7d: sql<Date | null>`max(${forumPosts.createdAt}) filter (where ${forumPosts.createdAt} >= ${cutoff7d})`.mapWith(forumPosts.createdAt),
+        latest30d: sql<Date | null>`max(${forumPosts.createdAt})`.mapWith(forumPosts.createdAt),
+      })
+      .from(forumTopics)
+      .innerJoin(forumTopicTitleRevisions, and(
+        eq(forumTopicTitleRevisions.topicId, forumTopics.id),
+        eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId),
+      ))
+      .innerJoin(user, eq(user.id, forumTopics.authorId))
+      .innerJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
+      .where(gte(forumPosts.createdAt, cutoff30d))
+      .groupBy(forumTopics.id, forumTopicTitleRevisions.id, user.name);
+
+    const rank = (
+      countKey: "activity24h" | "activity7d" | "activity30d",
+      latestKey: "latest24h" | "latest7d" | "latest30d",
+    ): ForumPopularTopicSummary[] => rows
+      .flatMap((row) => {
+        const activityCount = row[countKey];
+        const latestActivityAt = row[latestKey];
+        return activityCount > 0 && latestActivityAt
+          ? [{
+              id: row.id,
+              title: row.title,
+              authorName: row.authorName,
+              activityCount,
+              latestActivityAt,
+            }]
+          : [];
+      })
+      .sort((left, right) =>
+        right.activityCount - left.activityCount
+        || right.latestActivityAt.getTime() - left.latestActivityAt.getTime()
+        || (right.id < left.id ? -1 : right.id > left.id ? 1 : 0)
+      )
+      .slice(0, limitPerPeriod);
+
+    return {
+      "24h": rank("activity24h", "latest24h"),
+      "7d": rank("activity7d", "latest7d"),
+      "30d": rank("activity30d", "latest30d"),
+    };
   }
 
   async readCategory(id: string): Promise<ForumCategoryPage | undefined> {
