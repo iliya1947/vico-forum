@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema": "public",
-  "targetMigration": "0021_forum_tags",
+  "targetMigration": "0022_forum_reply_relationships",
   "tables": {
     "account": {
       "columns": [
@@ -1252,6 +1252,12 @@
           "defaultSha256": null
         },
         {
+          "name": "parent_post_id",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
           "name": "created_at",
           "type": "timestamp with time zone",
           "nullable": false,
@@ -1308,6 +1314,22 @@
           "initiallyDeferred": true
         },
         {
+          "name": "forum_posts_parent_topic_fk",
+          "columns": [
+            "topic_id",
+            "parent_post_id"
+          ],
+          "referencedTable": "forum_posts",
+          "referencedColumns": [
+            "topic_id",
+            "id"
+          ],
+          "onDelete": "NO ACTION",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        },
+        {
           "name": "forum_posts_topic_id_forum_topics_id_fk",
           "columns": [
             "topic_id"
@@ -1322,7 +1344,16 @@
           "initiallyDeferred": false
         }
       ],
-      "checks": [],
+      "checks": [
+        {
+          "name": "forum_posts_parent_not_self_check",
+          "columns": [
+            "id",
+            "parent_post_id"
+          ],
+          "definitionSha256": "PENDING"
+        }
+      ],
       "indexes": [
         {
           "name": "forum_posts_author_id_idx",
@@ -1331,6 +1362,18 @@
           "columns": [
             {
               "name": "author_id",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ]
+        },
+        {
+          "name": "forum_posts_parent_post_id_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "parent_post_id",
               "order": "asc",
               "nulls": "last"
             }
