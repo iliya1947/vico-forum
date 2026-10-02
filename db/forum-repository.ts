@@ -419,7 +419,7 @@ export class DrizzleForumRepository {
   }
 
   async readUnanswered(): Promise<ForumUnansweredTopicSummary[]> {
-    return this.database
+    const rows = await this.database
       .select({
         id: forumTopics.id,
         title: forumTopicTitleRevisions.originalContent,
@@ -450,15 +450,16 @@ export class DrizzleForumRepository {
         forumCategories.name,
       )
       .having(sql`count(${forumPosts.id}) = 1`)
-      .orderBy(desc(forumTopics.createdAt), desc(forumTopics.id))
-      .then((rows) => rows.map((row) => ({
-        id: row.id,
-        title: row.title,
-        authorName: row.authorName,
-        createdAt: row.createdAt,
-        section: { id: row.sectionId, name: row.sectionName },
-        category: { id: row.categoryId, name: row.categoryName },
-      })));
+      .orderBy(desc(forumTopics.createdAt), desc(forumTopics.id));
+
+    return rows.map((row) => ({
+      id: row.id,
+      title: row.title,
+      authorName: row.authorName,
+      createdAt: row.createdAt,
+      section: { id: row.sectionId, name: row.sectionName },
+      category: { id: row.categoryId, name: row.categoryName },
+    }));
   }
 
   async readCategory(id: string): Promise<ForumCategoryPage | undefined> {
