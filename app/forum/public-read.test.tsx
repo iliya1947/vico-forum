@@ -19,6 +19,7 @@ import CategoryRoute, { loader as categoryLoader } from "../routes/category";
 import Home, { loader as homeLoader } from "../routes/home";
 import PopularRoute, { loader as popularLoader } from "../routes/popular";
 import SearchRoute, { loader as searchLoader } from "../routes/search";
+import SearchRoute, { loader as searchLoader } from "../routes/search";
 import TagsRoute, { loader as tagsLoader } from "../routes/tags";
 import TagRoute, { loader as tagLoader } from "../routes/tag";
 import UnansweredRoute, { loader as unansweredLoader } from "../routes/unanswered";
@@ -301,6 +302,38 @@ describe("Forum search", () => {
     const request = new Request("https://forum.example/en/search?q=TypeScript");
     const data = await searchLoader({
       request,
+      params: { locale: "en" },
+      context: context("en", "ltr"),
+    });
+
+    expect(data.query).toBe("TypeScript");
+    expect(data.results).toHaveLength(1);
+
+    renderRoute(SearchRoute, data, forumSearchPath("en") + "?q=TypeScript", "en", "ltr");
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Search" })).toBeInTheDocument();
+    expect(screen.getByRole("searchbox", { name: "Search query" })).toHaveValue("TypeScript");
+    expect(screen.getByRole("link", { name: /How do I type an API\?/ }))
+      .toHaveAttribute("href", forumTopicPath("en", topic.id));
+    expect(screen.getByText("#TypeScript")).toBeInTheDocument();
+  });
+
+  it("renders a truthful no-results state", async () => {
+    const data = await searchLoader({
+      request: new Request("https://forum.example/en/search?q=WebAssembly"),
+      params: { locale: "en" },
+      context: context("en", "ltr"),
+    });
+
+    renderRoute(SearchRoute, data, forumSearchPath("en") + "?q=WebAssembly", "en", "ltr");
+    expect(await screen.findByText("No topics found for “WebAssembly”.")).toBeInTheDocument();
+  });
+});
+
+describe("Forum search", () => {
+  it("loads a query through the public reader and keeps result links locale-aware", async () => {
+    const data = await searchLoader({
+      request: new Request("https://forum.example/en/search?q=TypeScript"),
       params: { locale: "en" },
       context: context("en", "ltr"),
     });
