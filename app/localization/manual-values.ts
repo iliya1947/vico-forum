@@ -270,7 +270,7 @@ export const hebrewCommonValues = {
   searchNoResults: "לא נמצאו נושאים עבור „{{query}}“.",
   searchResultsHeading: "תוצאות עבור „{{query}}“",
   searchResultCount: {
-    one: "תוצאה אחת",
+    one: "{{count}} תוצאה",
     two: "{{count}} תוצאות",
     other: "{{count}} תוצאות",
   },
