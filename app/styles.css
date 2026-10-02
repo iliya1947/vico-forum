@@ -2009,6 +2009,7 @@ p {
   --color-accent-soft: #fbf2ea;
   --color-on-accent: #ffffff;
   --color-action-on-accent: #101416;
+  --color-mobile-primary-action: #e9964a;
   --color-brand-secondary: #101416;
   --color-focus: #9a3800;
   --shadow-panel: 0 0.2rem 0.75rem rgb(37 30 24 / 7%);
@@ -2077,6 +2078,7 @@ p {
     --color-accent-soft: #232120;
     --color-on-accent: #101416;
     --color-action-on-accent: #ffffff;
+    --color-mobile-primary-action: #d25e28;
     --color-brand-secondary: #f4f5f4;
     --color-focus: #ff9b67;
     --shadow-panel: 0 0.24rem 0.9rem rgb(0 0 0 / 24%);
@@ -2105,6 +2107,7 @@ p {
   --color-accent-soft: #232120;
   --color-on-accent: #101416;
   --color-action-on-accent: #ffffff;
+  --color-mobile-primary-action: #d25e28;
   --color-brand-secondary: #f4f5f4;
   --color-focus: #ff9b67;
   --shadow-panel: 0 0.24rem 0.9rem rgb(0 0 0 / 24%);
@@ -4652,14 +4655,14 @@ p {
   }
 
   .home-shell .site-account-actions .auth-sign-in {
-    border-color: #e9964a;
-    background: #e9964a;
+    border-color: var(--color-mobile-primary-action);
+    background: var(--color-mobile-primary-action);
   }
 
   .home-shell .site-account-actions .auth-sign-in:hover:not(:disabled),
   .home-shell .site-account-actions .auth-sign-in:focus-visible:not(:disabled) {
-    border-color: #e9964a;
-    background: #e9964a;
+    border-color: var(--color-mobile-primary-action);
+    background: var(--color-mobile-primary-action);
     filter: brightness(0.92);
   }
 
@@ -4683,10 +4686,10 @@ p {
     min-height: 2.35rem;
     justify-content: center;
     padding: 0;
-    border: 1px solid #e9964a;
+    border: 1px solid var(--color-mobile-primary-action);
     border-radius: 999px;
     color: var(--color-action-on-accent);
-    background: #e9964a;
+    background: var(--color-mobile-primary-action);
   }
 
   .home-shell .site-primary-nav .home-discovery-link > span {
@@ -4700,9 +4703,9 @@ p {
   .home-shell .site-primary-nav .home-discovery-link:hover,
   .home-shell .site-primary-nav .home-discovery-link:focus-visible,
   .home-shell .site-primary-nav .home-discovery-link:active {
-    border-color: #e9964a;
+    border-color: var(--color-mobile-primary-action);
     color: var(--color-action-on-accent);
-    background: #e9964a;
+    background: var(--color-mobile-primary-action);
     filter: brightness(0.92);
   }
 
@@ -4777,7 +4780,7 @@ p {
     margin-inline-end: -1px;
     border-start-end-radius: 0.5rem;
     color: var(--color-action-on-accent);
-    background: #e9964a;
+    background: var(--color-mobile-primary-action);
     text-decoration: none;
   }
 
@@ -4789,7 +4792,7 @@ p {
   .home-section-enter:hover,
   .home-section-enter:focus-visible {
     color: var(--color-action-on-accent);
-    background: #e9964a;
+    background: var(--color-mobile-primary-action);
     filter: brightness(0.92);
   }
 
