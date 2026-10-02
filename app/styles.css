@@ -4505,8 +4505,8 @@ p {
 }
 
 
-/* The compact homepage layout starts at 30rem; below that threshold the section-enter
-   control still needs explicit geometry instead of falling back to the browser's intrinsic SVG. */
+/* Narrow mobile keeps each homepage section compact: identity + entry action stay visible,
+   while pinned/latest/statistics are disclosed in place by the circular section toggle. */
 @media (max-width: 29.99rem) {
   .home-shell .site-header {
     display: grid;
@@ -4701,38 +4701,57 @@ p {
 }
 
 @media (max-width: 29.99rem) {
+  .home-section-card {
+    grid-template-columns: minmax(0, 1fr) 2.9rem;
+  }
+
   .home-section-identity {
     grid-column: 1;
     grid-row: 1;
   }
 
+  .home-section-pinned,
+  .home-section-latest,
+  .home-section-stats {
+    grid-column: 1 / -1;
+  }
+
   .home-section-pinned {
-    grid-column: 1;
     grid-row: 2;
   }
 
   .home-section-latest {
-    grid-column: 1;
     grid-row: 3;
   }
 
   .home-section-stats {
-    grid-column: 1;
     grid-row: 4;
   }
 
+  .home-section-card[data-mobile-details="closed"] .home-section-pinned,
+  .home-section-card[data-mobile-details="closed"] .home-section-latest,
+  .home-section-card[data-mobile-details="closed"] .home-section-stats {
+    display: none;
+  }
+
   .home-section-enter {
-    grid-column: 1;
-    grid-row: 5;
+    grid-column: 2;
+    grid-row: 1;
     display: grid;
-    min-height: 2.35rem;
+    min-width: 2.9rem;
+    min-height: 0;
     place-items: center;
-    margin: 0 -1px -1px;
-    border-end-start-radius: 0.5rem;
-    border-end-end-radius: 0.5rem;
+    margin-block-start: -1px;
+    margin-inline-end: -1px;
+    border-start-end-radius: 0.5rem;
     color: var(--color-action-on-accent);
     background: var(--color-accent);
     text-decoration: none;
+  }
+
+  .home-section-card[data-mobile-details="closed"] .home-section-enter {
+    margin-block-end: -1px;
+    border-end-end-radius: 0.5rem;
   }
 
   .home-section-enter:hover,
@@ -4757,11 +4776,19 @@ p {
 
   .home-section-expand,
   :dir(rtl) .home-section-expand {
-    grid-column: 1;
-    grid-row: 3;
-    align-self: end;
-    justify-self: center;
-    transform: translate(0, 50%);
+    position: absolute;
+    z-index: 3;
+    inset-inline-start: 50%;
+    bottom: 0;
+    grid-column: auto;
+    grid-row: auto;
+    align-self: auto;
+    justify-self: auto;
+    transform: translate(-50%, 50%);
+  }
+
+  :dir(rtl) .home-section-expand {
+    transform: translate(50%, 50%);
   }
 }
 
