@@ -1019,9 +1019,19 @@ export function TopicView({
       ]
     : [];
   const messageNumberById = new Map(topic.posts.map((post, index) => [post.id, index + 1]));
+  const directRepliesByParent = new Map<string, string[]>();
+  for (const post of topic.posts) {
+    if (!post.parentPostId) continue;
+    const replies = directRepliesByParent.get(post.parentPostId) ?? [];
+    replies.push(post.id);
+    directRepliesByParent.set(post.parentPostId, replies);
+  }
   const { t } = useTranslation("common");
   const [messageLinkFeedback, setMessageLinkFeedback] = useState<MessageLinkFeedback>(null);
+  const [replyTargetPostId, setReplyTargetPostId] = useState<string | null>(null);
+  const [quoteSelectionErrorPostId, setQuoteSelectionErrorPostId] = useState<string | null>(null);
   const messageLinkRequestId = useRef(0);
+  const replyTextareaRef = useRef<HTMLTextAreaElement>(null);
   const navigation = useNavigation();
   const isReplySubmitting =
     navigation.state === "submitting"
@@ -1046,6 +1056,56 @@ export function TopicView({
     }
   }
 
+
+  function focusReplyForm() {
+    requestAnimationFrame(() => {
+      replyTextareaRef.current?.focus();
+      document.getElementById("reply-heading")?.scrollIntoView({ block: "center", behavior: "smooth" });
+    });
+  }
+
+  function targetReply(postId: string) {
+    setReplyTargetPostId(postId);
+    setQuoteSelectionErrorPostId(null);
+    focusReplyForm();
+  }
+
+  function quoteSelectedText(postId: string) {
+    const postElement = document.getElementById(`post-${postId}`);
+    const bodyElement = postElement?.querySelector<HTMLElement>("[data-message-body]");
+    const selection = window.getSelection();
+    const range = selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
+    const selectedText = selection?.toString().trim() ?? "";
+
+    if (
+      !bodyElement
+      || !range
+      || selection?.isCollapsed
+      || !selectedText
+      || !bodyElement.contains(range.startContainer)
+      || !bodyElement.contains(range.endContainer)
+    ) {
+      setQuoteSelectionErrorPostId(postId);
+      return;
+    }
+
+    setReplyTargetPostId(postId);
+    setQuoteSelectionErrorPostId(null);
+    const quote = selectedText
+      .split(/\r?\n/u)
+      .map((line) => `> ${line}`)
+      .join("\n") + "\n\n";
+
+    requestAnimationFrame(() => {
+      const textarea = replyTextareaRef.current;
+      if (!textarea) return;
+      const start = textarea.selectionStart ?? textarea.value.length;
+      const end = textarea.selectionEnd ?? start;
+      textarea.setRangeText(quote, start, end, "end");
+      textarea.focus();
+      document.getElementById("reply-heading")?.scrollIntoView({ block: "center", behavior: "smooth" });
+    });
+  }
   return (
     <ContentGenerationNavigationBoundary
       pageIdentity={JSON.stringify([locale, topic.id])}
@@ -1178,12 +1238,49 @@ export function TopicView({
                       />
                     </div>
 
-                    <PostBodyPresentation presentation={presentedPosts.get(post.id)!} />
+                    {post.parentPostId && messageNumberById.has(post.parentPostId) && (
+                      <a className="topic-message-parent-link" href={`#post-${encodeURIComponent(post.parentPostId)}`}>
+                        {t("replyToMessageNumber", { number: messageNumberById.get(post.parentPostId)! })}
+                      </a>
+                    )}
+
+                    <div data-message-body>
+                      <PostBodyPresentation presentation={presentedPosts.get(post.id)!} />
+                    </div>
 
                     {generationUnit && (
                       <div className="message-generation-status">
                         <ContentGenerationUnitStatus unit={generationUnit} />
                       </div>
+                    )}
+
+                    {canReply && (
+                      <div className="topic-message-participation">
+                        <div className="topic-message-participation-actions">
+                          <button type="button" onClick={() => targetReply(post.id)}>
+                            {t("replyToMessage")}
+                          </button>
+                          <button type="button" onClick={() => quoteSelectedText(post.id)}>
+                            {t("quoteSelectedText")}
+                          </button>
+                        </div>
+                        {quoteSelectionErrorPostId === post.id && (
+                          <span className="topic-message-quote-feedback" role="status" aria-live="polite">
+                            {t("quoteSelectionRequired")}
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    {(directRepliesByParent.get(post.id)?.length ?? 0) > 0 && (
+                      <nav className="topic-message-direct-replies" aria-label={t("directReplies")}>
+                        <span>{t("directReplies")}:</span>
+                        {directRepliesByParent.get(post.id)!.map((replyId) => (
+                          <a key={replyId} href={`#post-${encodeURIComponent(replyId)}`}>
+                            #{messageNumberById.get(replyId)}
+                          </a>
+                        ))}
+                      </nav>
                     )}
 
                     {hasMessageTools && (
@@ -1234,6 +1331,7 @@ export function TopicView({
             aria-busy={isReplySubmitting}
           >
             <input type="hidden" name="intent" value="reply" />
+            {replyTargetPostId && <input type="hidden" name="parentPostId" value={replyTargetPostId} />}
 
             <header className="forum-write-header">
               <div>
@@ -1243,10 +1341,27 @@ export function TopicView({
               <p>{t("replyHelp")}</p>
             </header>
 
+            {replyTargetPostId && messageNumberById.has(replyTargetPostId) && (
+              <div className="reply-target-banner">
+                <span>{t("replyingToMessage", { number: messageNumberById.get(replyTargetPostId)! })}</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setReplyTargetPostId(null);
+                    setQuoteSelectionErrorPostId(null);
+                    replyTextareaRef.current?.focus();
+                  }}
+                >
+                  {t("clearReplyTarget")}
+                </button>
+              </div>
+            )}
+
             <div className="forum-write-fields">
               <div className="forum-write-field">
                 <label htmlFor="reply-body">{t("replyBodyLabel")}</label>
                 <textarea
+                  ref={replyTextareaRef}
                   id="reply-body"
                   name="body"
                   required
