@@ -17,6 +17,10 @@ export function forumTopicPath(locale: string, topicId: string) {
   return generatePath("/:locale/topics/:topicId", { locale, topicId });
 }
 
+export function forumPopularPath(locale: string) {
+  return generatePath("/:locale/popular", { locale });
+}
+
 
 export function underDevelopmentPath(locale: string, feature?: UnderDevelopmentFeatureId) {
   const path = generatePath("/:locale/under-development", { locale });
