@@ -852,17 +852,6 @@ function previewElement(scenario: Scenario) {
   }
 }
 
-function DemoCopyButton() {
-  return (
-    <button type="button" className="message-layout-demo-copy" aria-label="Copy link">
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M10 13a5 5 0 0 0 7.1.1l2-2a5 5 0 0 0-7.1-7.1l-1.1 1.1" />
-        <path d="M14 11a5 5 0 0 0-7.1-.1l-2 2A5 5 0 0 0 12 20l1.1-1.1" />
-      </svg>
-    </button>
-  );
-}
-
 function DemoMessageBody() {
   return (
     <>
