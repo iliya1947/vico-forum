@@ -243,15 +243,17 @@ shell/header/footer composition, homepage block geometry and the shared localize
 accepted the corrected homepage visual result on 2026-10-01. This acceptance is for the homepage
 slice only and does not replace the final real-runtime/browser acceptance matrix for the full pass.
 
-- Real application homepage counts and latest-topic data continue to come from the existing forum
-  reader; unavailable pinning and online-presence capabilities are not represented as fake runtime
-  data.
-- The Pages fixture carries representative target-only data, including the approved six-destination
-  order and pinned-topic presentation, so visual work can be reviewed without inventing production
-  persistence.
-- Search, notifications, unread state, drafts/autosave, profiles and other heavier missing
-  subsystems are still separate bounded work. Their approved pre-release entry points route to
-  `Under development` instead of pretending to work.
+- Real application homepage counts, latest-topic data and persisted pinned topics come from the
+  forum reader. Online-presence remains unavailable and is not represented as fake runtime data.
+- The persisted Pinned topics slice in PR #181 adds one active pin per topic, a server-authorized
+  `forum.topic.pin` capability, idempotent Pin/Unpin topic tools, bounded DB-ranked homepage pins
+  per category, and independent pinned indicators on section/topic presentation. Pin state does not
+  change chronological discussion order or solved/unread/new semantics.
+- The Pages fixture carries representative target-only identities/content for visual review, including
+  multiple pins, a category with no pins, and manager/user permission presentation; it does not
+  pretend to persist preview interactions.
+- Drafts/autosave, profiles and other heavier missing subsystems remain separate bounded work. Their
+  approved pre-release entry points continue to route to `Under development` until implemented.
 - `<html lang>`/`dir`, SSR/hydration, canonical locale-aware links and existing protected server
   boundaries remain unchanged.
 
