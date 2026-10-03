@@ -119,9 +119,12 @@ select {
 }
 
 .forum-shell {
+  display: flex;
   width: min(100%, 76rem);
+  min-height: 100vh;
   margin-inline: auto;
   padding: clamp(0.75rem, 2vw, 1.5rem);
+  flex-direction: column;
 }
 
 .site-header {
@@ -536,6 +539,7 @@ select {
 }
 
 .forum-content {
+  flex: 1 0 auto;
   background: var(--color-surface);
 }
 
