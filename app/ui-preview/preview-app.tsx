@@ -699,6 +699,10 @@ function previewRouter(scenario: Scenario) {
       element: <PreviewCategoryRoute locale={scenario.locale} />,
     },
     {
+      path: "/:locale/sections/:sectionId",
+      element: <PreviewSectionRoute locale={scenario.locale} identity={scenario.identity} />,
+    },
+    {
       path: "/:locale/under-development",
       element: <PreviewUnderDevelopment locale={scenario.locale} />,
     },
@@ -735,18 +739,16 @@ function previewRouter(scenario: Scenario) {
   ], { initialEntries: [scenario.path] });
 }
 
-function PreviewCategoryRoute({ locale }: { locale: PreviewLocale }) {
-  const { categoryId: routeCategoryId } = useParams();
+function previewCategory(locale: PreviewLocale, routeCategoryId: string | undefined) {
   const localizedCategory = locale === "ru"
     ? categoryRu
     : locale === "he"
       ? categoryRtl
       : category;
-  const overview = homepageCategories(locale).find((item) => item.id === routeCategoryId);
+  if (!routeCategoryId || routeCategoryId === categoryId) return localizedCategory;
 
-  if (!overview || routeCategoryId === categoryId) {
-    return <CategoryView locale={locale} category={localizedCategory} />;
-  }
+  const overview = homepageCategories(locale).find((item) => item.id === routeCategoryId);
+  if (!overview) return localizedCategory;
 
   const sectionNames = locale === "ru"
     ? ["Основное", "Вопросы", "Практика"]
@@ -755,19 +757,90 @@ function PreviewCategoryRoute({ locale }: { locale: PreviewLocale }) {
       : ["General", "Questions", "Practice"];
   const visibleSectionCount = Math.min(overview.sectionCount, sectionNames.length);
 
+  return {
+    id: overview.id,
+    name: overview.name,
+    sections: Array.from({ length: visibleSectionCount }, (_, index) => ({
+      id: `${overview.id}-preview-${index + 1}`,
+      name: sectionNames[index]!,
+      topicCount: Math.max(1, Math.round(overview.topicCount / visibleSectionCount)),
+      postCount: Math.max(1, Math.round(overview.messageCount / visibleSectionCount)),
+    })),
+  };
+}
+
+function PreviewCategoryRoute({ locale }: { locale: PreviewLocale }) {
+  const { categoryId: routeCategoryId } = useParams();
+  return <CategoryView locale={locale} category={previewCategory(locale, routeCategoryId)} />;
+}
+
+function PreviewSectionRoute({
+  locale,
+  identity,
+}: {
+  locale: PreviewLocale;
+  identity: PreviewIdentity;
+}) {
+  const { sectionId: routeSectionId } = useParams();
+  const localizedSection = locale === "ru" ? sectionRu : locale === "he" ? sectionRtl : section;
+
+  if (!routeSectionId || routeSectionId === sectionId) {
+    return (
+      <SectionView
+        locale={locale}
+        section={localizedSection}
+        canCreateTopic={identity !== "guest"}
+      />
+    );
+  }
+
+  const matched = homepageCategories(locale)
+    .map((overview) => previewCategory(locale, overview.id))
+    .flatMap((candidateCategory) =>
+      candidateCategory.sections.map((candidateSection) => ({
+        category: candidateCategory,
+        section: candidateSection,
+      }))
+    )
+    .find(({ section: candidateSection }) => candidateSection.id === routeSectionId);
+
+  if (!matched) {
+    return (
+      <SectionView
+        locale={locale}
+        section={localizedSection}
+        canCreateTopic={identity !== "guest"}
+      />
+    );
+  }
+
+  const topicTitles = locale === "ru"
+    ? ["Первый вопрос раздела", "Практический пример", "Полезное обсуждение"]
+    : locale === "he"
+      ? ["השאלה הראשונה במדור", "דוגמה מעשית", "דיון שימושי"]
+      : ["First section question", "Practical example", "Useful discussion"];
+
   return (
-    <CategoryView
+    <SectionView
       locale={locale}
-      category={{
-        id: overview.id,
-        name: overview.name,
-        sections: Array.from({ length: visibleSectionCount }, (_, index) => ({
-          id: `${overview.id}-preview-${index + 1}`,
-          name: sectionNames[index]!,
-          topicCount: Math.max(1, Math.round(overview.topicCount / visibleSectionCount)),
-          postCount: Math.max(1, Math.round(overview.messageCount / visibleSectionCount)),
+      section={{
+        id: matched.section.id,
+        name: matched.section.name,
+        category: { id: matched.category.id, name: matched.category.name },
+        topics: topicTitles.map((title, index) => ({
+          id: `${matched.section.id}-topic-${index + 1}`,
+          authorName: ["Alex Rivera", "Maya Cohen", "Sam Chen"][index]!,
+          postCount: [3, 5, 8][index]!,
+          createdAt: new Date(`2026-09-${27 + index}T10:00:00Z`),
+          tags: [],
+          title: {
+            id: `${matched.section.id}-title-${index + 1}`,
+            originalContent: title,
+            sourceLocale: locale,
+          },
         })),
       }}
+      canCreateTopic={identity !== "guest"}
     />
   );
 }
