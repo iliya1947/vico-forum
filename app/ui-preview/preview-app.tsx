@@ -49,7 +49,8 @@ type PreviewVariant =
   | "route-503"
   | "route-500"
   | "search-no-results"
-  | "notifications-empty";
+  | "notifications-empty"
+  | "home-no-pins";
 
 interface Scenario {
   id: string;
@@ -67,6 +68,7 @@ export const scenarios: readonly Scenario[] = [
   { id: "home-guest", label: "Home · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en", view: "home" },
   { id: "home-user", label: "Home · user", locale: "en", direction: "ltr", identity: "user", path: "/en", view: "home" },
   { id: "home-manager", label: "Home · manager", locale: "en", direction: "ltr", identity: "manager", path: "/en", view: "home" },
+  { id: "home-no-pins", label: "Home · no pins · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en", view: "home", variant: "home-no-pins" },
   { id: "auth-pending", label: "Authentication · pending · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en", view: "home", authPresentationState: "pending" },
   { id: "auth-error", label: "Authentication · failed · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en", view: "home", authPresentationState: "error" },
   { id: "under-development-search", label: "Under development · search · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/under-development?feature=search", view: "under-development" },
@@ -182,6 +184,7 @@ const section = {
       authorName: "Alex Rivera",
       postCount: 3,
       createdAt: new Date("2026-09-27T10:00:00Z"),
+      isPinned: true,
       tags: [{ key: "typescript", name: "TypeScript" }, { key: "api", name: "API" }],
       title: {
         id: "title-r1",
@@ -194,6 +197,7 @@ const section = {
       authorName: "Noa Levi",
       postCount: 4,
       createdAt: new Date("2026-09-27T12:00:00Z"),
+      isPinned: false,
       tags: [{ key: "typescript", name: "TypeScript" }, { key: "rtl", name: "RTL" }],
       title: {
         id: "title-r2",
@@ -206,6 +210,7 @@ const section = {
       authorName: "Sam Chen",
       postCount: 12,
       createdAt: new Date("2026-09-28T08:00:00Z"),
+      isPinned: true,
       tags: [{ key: "cloudflare", name: "Cloudflare" }, { key: "auth", name: "Auth" }],
       title: {
         id: "title-r3",
@@ -273,6 +278,7 @@ const topic = {
   authorId: "alex",
   authorName: "Alex Rivera",
   createdAt: new Date("2026-09-27T10:00:00Z"),
+  isPinned: true,
   isSolved: true,
   bestAnswerPostId: "answer",
   title: section.topics[0]!.title,
@@ -914,6 +920,7 @@ function previewSection(locale: PreviewLocale, routeSectionId: string | undefine
       authorName: ["Alex Rivera", "Maya Cohen", "Sam Chen"][index]!,
       postCount: [3, 5, 8][index]!,
       createdAt: new Date(`2026-09-${27 + index}T10:00:00Z`),
+      isPinned: index === 0,
       tags: [],
       title: {
         id: `${matched.section.id}-title-${index + 1}`,
@@ -1033,6 +1040,7 @@ function PreviewTopicRoute({ scenario }: { scenario: Scenario }) {
     authorId: "alex",
     authorName: matched.topic.authorName,
     createdAt: matched.topic.createdAt,
+    isPinned: matched.topic.isPinned,
     isSolved: false,
     bestAnswerPostId: null,
     title: matched.topic.title,
@@ -1071,6 +1079,7 @@ function PreviewTopicRoute({ scenario }: { scenario: Scenario }) {
       canReply={scenario.identity !== "guest"}
       canManageSolution={false}
       canCorrectTitleSourceLocale={false}
+      canManagePin={scenario.identity === "manager"}
       correctablePostIds={[]}
       topicReadState={null}
     />
@@ -1093,7 +1102,11 @@ function previewElement(scenario: Scenario) {
       return (
         <HomeView
           locale={scenario.locale}
-          categories={homepageCategories(scenario.locale)}
+          categories={homepageCategories(scenario.locale).map((category, index) =>
+            scenario.variant === "home-no-pins" && index === 0
+              ? { ...category, pinnedTopics: [] }
+              : category
+          )}
           referenceTime={previewReferenceTime}
         />
       );
@@ -1257,6 +1270,7 @@ function topicData(
     canReply: identity !== "guest",
     canManageSolution: showSecondaryControls,
     canCorrectTitleSourceLocale: showSecondaryControls,
+    canManagePin: identity === "manager",
     correctablePostIds: showSecondaryControls
       ? translatedTopic.posts.map((post) => post.id)
       : [],
@@ -1329,6 +1343,7 @@ function authorizationData(locale: string) {
   const userGrants: PermissionKey[] = ["forum.topic.create", "forum.reply.create"];
   const moderatorGrants: PermissionKey[] = [
     ...userGrants,
+    "forum.topic.pin",
     "forum.solution.manageAny",
     "forum.sourceLocale.correctAny",
   ];
