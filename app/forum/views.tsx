@@ -1220,6 +1220,14 @@ export function TopicView({
                     <span className="topic-message-author-copy">
                       <strong>{post.authorName}</strong>
                     </span>
+                    <span className="topic-message-labels topic-message-labels-mobile">
+                      {isOriginalQuestion && (
+                        <strong className="original-question-label">{t("originalQuestion")}</strong>
+                      )}
+                      {isBestAnswer && (
+                        <strong className="best-answer-label">{t("bestAnswer")}</strong>
+                      )}
+                    </span>
                   </header>
 
                   <div className="forum-post-content">
@@ -1256,34 +1264,36 @@ export function TopicView({
                       </div>
                     )}
 
-                    {(directRepliesByParent.get(post.id)?.length ?? 0) > 0 && (
-                      <nav className="topic-message-direct-replies" aria-label={t("directReplies")}>
-                        <span>{t("directReplies")}:</span>
-                        {directRepliesByParent.get(post.id)!.map((replyId) => (
-                          <a key={replyId} href={`#post-${encodeURIComponent(replyId)}`}>
-                            #{messageNumberById.get(replyId)}
-                          </a>
-                        ))}
-                      </nav>
-                    )}
+                    <div className="topic-message-footer">
+                      {(directRepliesByParent.get(post.id)?.length ?? 0) > 0 && (
+                        <nav className="topic-message-direct-replies" aria-label={t("directReplies")}>
+                          <span>{t("directReplies")}:</span>
+                          {directRepliesByParent.get(post.id)!.map((replyId) => (
+                            <a key={replyId} href={`#post-${encodeURIComponent(replyId)}`}>
+                              #{messageNumberById.get(replyId)}
+                            </a>
+                          ))}
+                        </nav>
+                      )}
 
-                    {canReply && (
-                      <div className="topic-message-participation">
-                        <div className="topic-message-participation-actions">
-                          <button type="button" onClick={() => targetReply(post.id)}>
-                            {t("replyToMessage")}
-                          </button>
-                          <button type="button" onClick={() => quoteSelectedText(post.id)}>
-                            {t("quoteSelectedText")}
-                          </button>
+                      {canReply && (
+                        <div className="topic-message-participation">
+                          <div className="topic-message-participation-actions">
+                            <button type="button" onClick={() => targetReply(post.id)}>
+                              {t("replyToMessage")}
+                            </button>
+                            <button type="button" onClick={() => quoteSelectedText(post.id)}>
+                              {t("quoteSelectedText")}
+                            </button>
+                          </div>
+                          {quoteSelectionErrorPostId === post.id && (
+                            <span className="topic-message-quote-feedback" role="status" aria-live="polite">
+                              {t("quoteSelectionRequired")}
+                            </span>
+                          )}
                         </div>
-                        {quoteSelectionErrorPostId === post.id && (
-                          <span className="topic-message-quote-feedback" role="status" aria-live="polite">
-                            {t("quoteSelectionRequired")}
-                          </span>
-                        )}
-                      </div>
-                    )}
+                      )}
+                    </div>
 
                     {hasMessageTools && (
                       <details className="secondary-tools message-secondary-tools">
