@@ -5,6 +5,7 @@ import {
   forumCategories,
   forumPostRevisions,
   forumPosts,
+  forumReplyNotifications,
   forumSections,
   forumTags,
   forumTopicReadStates,
@@ -320,14 +321,16 @@ export class DrizzleForumRepository {
   async createPost(input: CreatePostInput): Promise<ForumPost> {
     return this.database.transaction(async (tx) => {
       const createdAt = await enforceForumWriteCooldown(tx, input.authorId, this.writePolicy);
-      const [topic] = await tx.select({ id: forumTopics.id }).from(forumTopics)
+      const [topic] = await tx.select({ id: forumTopics.id, authorId: forumTopics.authorId }).from(forumTopics)
         .where(eq(forumTopics.id, input.topicId));
       if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
       const parentPostId = input.parentPostId ?? null;
+      let parentAuthorId: string | null = null;
       if (parentPostId) {
-        const [parent] = await tx.select({ id: forumPosts.id }).from(forumPosts)
+        const [parent] = await tx.select({ id: forumPosts.id, authorId: forumPosts.authorId }).from(forumPosts)
           .where(and(eq(forumPosts.id, parentPostId), eq(forumPosts.topicId, input.topicId)));
         if (!parent) throw new ForumEntityNotFoundError("parent post does not exist in topic");
+        parentAuthorId = parent.authorId;
       }
       await tx.insert(forumPosts).values({
         id: input.id,
@@ -342,6 +345,25 @@ export class DrizzleForumRepository {
         postId: input.id,
         authorId: input.authorId,
       });
+
+      const recipients = new Set<string>();
+      if (topic.authorId !== input.authorId) recipients.add(topic.authorId);
+      if (parentAuthorId && parentAuthorId !== input.authorId) recipients.add(parentAuthorId);
+      if (recipients.size > 0) {
+        await tx.insert(forumReplyNotifications).values(
+          [...recipients].map((recipientUserId) => ({
+            id: crypto.randomUUID(),
+            recipientUserId,
+            actorUserId: input.authorId,
+            topicId: input.topicId,
+            postId: input.id,
+            createdAt,
+          })),
+        ).onConflictDoNothing({
+          target: [forumReplyNotifications.recipientUserId, forumReplyNotifications.postId],
+        });
+      }
+
       return { id: input.id, topicId: input.topicId, authorId: input.authorId, parentPostId, body: input.bodyRevision };
     });
   }
