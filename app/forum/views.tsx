@@ -1305,12 +1305,6 @@ export function TopicView({
                         )}
                       </div>
                     </div>
-                    {parentMessageNumber !== undefined && (
-                      <a className="topic-message-parent-link" href={`#post-${encodeURIComponent(post.parentPostId!)}`}>
-                        {t("replyToMessageNumber", { number: parentMessageNumber })}
-                      </a>
-                    )}
-
                     <div
                       data-message-body
                       className={postPresentation.selected === "translation"
@@ -1327,54 +1321,62 @@ export function TopicView({
                     )}
 
                     <div className="topic-message-footer">
-                      <div className="topic-message-secondary">
-                        <PostBodyTranslationControls presentation={postPresentation} />
-                        <div className="topic-message-mobile-relations">
+                      <div className="topic-message-relations">
+                        {parentMessageNumber !== undefined && (
                           <a
-                            className="topic-message-mobile-number"
-                            href={`#post-${encodeURIComponent(post.id)}`}
-                            aria-label={t("postNumber", { number: messageNumber })}
+                            className="topic-message-parent-link"
+                            href={`#post-${encodeURIComponent(post.parentPostId!)}`}
                           >
-                            #{messageNumber}
+                            {t("replyToMessageNumber", { number: parentMessageNumber })}
                           </a>
-                          {directReplyIds.length > 0 && (
-                            <nav className="topic-message-direct-replies" aria-label={t("directReplies")}>
-                              <span className="topic-message-direct-replies-label-desktop">{t("directReplies")}:</span>
-                              <span className="topic-message-direct-replies-label-mobile">{t("directRepliesCompact")}</span>
-                              {directReplyIds.map((replyId) => (
-                                <a key={replyId} href={`#post-${encodeURIComponent(replyId)}`}>
-                                  #{messageNumberById.get(replyId)}
-                                </a>
-                              ))}
-                            </nav>
-                          )}
-                        </div>
+                        )}
+                        <a
+                          className="topic-message-mobile-number"
+                          href={`#post-${encodeURIComponent(post.id)}`}
+                          aria-label={t("postNumber", { number: messageNumber })}
+                        >
+                          #{messageNumber}
+                        </a>
+                        {directReplyIds.length > 0 && (
+                          <nav className="topic-message-direct-replies" aria-label={t("directReplies")}>
+                            <span className="topic-message-direct-replies-label-desktop">{t("directReplies")}:</span>
+                            <span className="topic-message-direct-replies-label-mobile">{t("directRepliesCompact")}</span>
+                            {directReplyIds.map((replyId) => (
+                              <a key={replyId} href={`#post-${encodeURIComponent(replyId)}`}>
+                                #{messageNumberById.get(replyId)}
+                              </a>
+                            ))}
+                          </nav>
+                        )}
                       </div>
 
-                      <div className="topic-message-desktop-actions">
-                        {canReply && (
-                          <div className="topic-message-participation">
-                            <div className="topic-message-participation-actions">
-                              <button type="button" onClick={() => targetReply(post.id)}>
-                                {t("replyToMessage")}
-                              </button>
-                              <button type="button" onClick={() => quoteSelectedText(post.id)}>
-                                {t("quoteSelectedText")}
-                              </button>
+                      <div className="topic-message-footer-end">
+                        <PostBodyTranslationControls presentation={postPresentation} />
+                        <div className="topic-message-desktop-actions">
+                          {canReply && (
+                            <div className="topic-message-participation">
+                              <div className="topic-message-participation-actions">
+                                <button type="button" onClick={() => targetReply(post.id)}>
+                                  {t("replyToMessage")}
+                                </button>
+                                <button type="button" onClick={() => quoteSelectedText(post.id)}>
+                                  {t("quoteSelectedText")}
+                                </button>
+                              </div>
+                              {quoteSelectionErrorPostId === post.id && (
+                                <span className="topic-message-quote-feedback" role="status" aria-live="polite">
+                                  {t("quoteSelectionRequired")}
+                                </span>
+                              )}
                             </div>
-                            {quoteSelectionErrorPostId === post.id && (
-                              <span className="topic-message-quote-feedback" role="status" aria-live="polite">
-                                {t("quoteSelectionRequired")}
-                              </span>
-                            )}
-                          </div>
-                        )}
-                        <MessagePermalinkControl
-                          postId={post.id}
-                          messageNumber={messageNumber}
-                          feedback={messageLinkFeedback}
-                          onCopy={copyMessageLink}
-                        />
+                          )}
+                          <MessagePermalinkControl
+                            postId={post.id}
+                            messageNumber={messageNumber}
+                            feedback={messageLinkFeedback}
+                            onCopy={copyMessageLink}
+                          />
+                        </div>
                       </div>
                     </div>
 
