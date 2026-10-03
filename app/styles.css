@@ -2736,7 +2736,8 @@ p {
 
 /* Unanswered discovery page: a forum-wide list of unsolved topics that still
    contain only their initial post. */
-.unanswered-shell .breadcrumbs {
+.unanswered-shell .breadcrumbs,
+.unread-shell .breadcrumbs {
   margin: 0.75rem 1rem 0;
   padding: 0.5rem 0.2rem;
   border: 0;
@@ -2744,12 +2745,14 @@ p {
   font-size: 0.78rem;
 }
 
-.unanswered-shell .breadcrumbs a {
+.unanswered-shell .breadcrumbs a,
+.unread-shell .breadcrumbs a {
   color: var(--color-text-muted);
   text-decoration: none;
 }
 
-.unanswered-shell .breadcrumbs a:hover {
+.unanswered-shell .breadcrumbs a:hover,
+.unread-shell .breadcrumbs a:hover {
   color: var(--color-accent-hover);
 }
 
@@ -2803,7 +2806,7 @@ p {
 
 .unanswered-topic-card {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(10rem, auto) auto 2.9rem;
+  grid-template-columns: minmax(0, 1fr) minmax(17rem, 24rem) 14rem 2.9rem;
   align-items: stretch;
   min-height: 4.35rem;
   overflow: hidden;
@@ -2951,6 +2954,7 @@ p {
 
 @media (max-width: 29.99rem) {
   .unanswered-shell .breadcrumbs,
+  .unread-shell .breadcrumbs,
   .unanswered-heading,
   .unanswered-topics,
   .unanswered-empty {
