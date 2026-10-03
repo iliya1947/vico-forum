@@ -3551,9 +3551,28 @@ p {
 
 .topic-heading-side {
   grid-column: 1;
+  display: grid;
   min-width: 0;
+  align-content: start;
+  gap: 0.55rem;
   padding: 0.95rem 0.8rem;
   border-inline-end: 1px solid var(--color-border);
+}
+
+.topic-heading-author {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 2.35rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.topic-heading-side .topic-message-author-copy {
+  min-width: 0;
+}
+
+.topic-heading-side .solved-badge {
+  justify-self: start;
 }
 
 .topic-heading-content {
@@ -3880,6 +3899,17 @@ p {
     padding: 0.75rem 0.8rem 0.55rem;
     border-inline-end: 0;
     border-block-end: 1px solid var(--color-border);
+  }
+
+  .topic-heading-author {
+    grid-template-columns: 2rem minmax(0, 1fr);
+    gap: 0.45rem;
+  }
+
+  .topic-heading-side .topic-message-avatar {
+    width: 2rem;
+    height: 2rem;
+    font-size: 0.74rem;
   }
 
   .topic-heading-content {
