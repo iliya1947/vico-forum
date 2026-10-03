@@ -22,6 +22,8 @@ import type {
 import type { ContentGenerationActionResponse } from "../localization/content-generation-response";
 import { ForumRouteError } from "../forum/ui";
 import { TopicView } from "../forum/views";
+import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
+import type { ForumTopicReadState } from "../../db/forum-repository";
 
 export { topicAction as action } from "../forum/actions.server";
 
@@ -63,7 +65,14 @@ export async function loader({ params, context }: {
   let canReply = false, canManageSolution = false, canCorrectTitleSourceLocale = false;
   let canGenerateTranslations = false;
   let correctablePostIds: string[] = [];
+  let topicReadState: ForumTopicReadState | null = null;
   if (session) {
+    try {
+      topicReadState = await forumReaderForRequest(context).readTopicReadState(session.user.id, topic.id) ?? null;
+    } catch (error) {
+      if (!(error instanceof ForumStorageUnavailableError)) throw error;
+    }
+
     try {
       const resolver = authorizationForRequest(context).forUser(session.user.id);
       const [reply, solutionAny, solutionOwn, sourceAny, sourceOwn, generate] = await Promise.all([
@@ -121,6 +130,7 @@ export async function loader({ params, context }: {
     canManageSolution,
     canCorrectTitleSourceLocale,
     correctablePostIds,
+    topicReadState,
   };
 }
 
