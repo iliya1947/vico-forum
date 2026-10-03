@@ -57,7 +57,7 @@ export function createHyperdriveForumReader(
     readHomepage: (latestTopicsPerCategory) => read((repository) => repository.readHomepage(latestTopicsPerCategory)),
     readPopular: (referenceTime, limitPerPeriod) => read((repository) => repository.readPopular(referenceTime, limitPerPeriod)),
     readUnanswered: () => read((repository) => repository.readUnanswered()),
-    readUnreadTopics: (userId) => read((repository) => repository.readUnreadTopics(userId)),
+    readUnreadTopics: (userId, limit) => read((repository) => repository.readUnreadTopics(userId, limit)),
     readTopicReadState: (userId, topicId) => read((repository) => repository.readTopicReadState(userId, topicId)),
     readTags: () => read((repository) => repository.readTags()),
     readTag: (key) => read((repository) => repository.readTag(key)),
