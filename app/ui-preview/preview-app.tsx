@@ -32,7 +32,7 @@ import { localeRegistry } from "../localization/registry";
 
 type Direction = "ltr" | "rtl";
 type PreviewIdentity = "guest" | "user" | "manager";
-type PreviewView = "home" | "search" | "popular" | "unanswered" | "tags" | "tag" | "category" | "section" | "topic" | "message-layout-demo" | "admin" | "empty" | "under-development" | "not-found";
+type PreviewView = "home" | "search" | "popular" | "unanswered" | "tags" | "tag" | "category" | "section" | "topic" | "admin" | "empty" | "under-development" | "not-found";
 
 type PreviewVariant =
   | "empty-category"
@@ -84,7 +84,6 @@ export const scenarios: readonly Scenario[] = [
   { id: "topic-reply-error", label: "Reply error · user", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api", view: "topic", variant: "topic-reply-error" },
   { id: "topic-unsolved", label: "Unsolved topic · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/topics/typed-api", view: "topic", variant: "topic-unsolved" },
   { id: "topic-tools", label: "Topic tools · manager", locale: "en", direction: "ltr", identity: "manager", path: "/en/topics/typed-api", view: "topic", variant: "topic-tools" },
-  { id: "message-layout-demo", label: "Message card layout demo", locale: "en", direction: "ltr", identity: "user", path: "/en/preview/message-layout-demo", view: "message-layout-demo" },
   { id: "admin", label: "Authorization · manager", locale: "en", direction: "ltr", identity: "manager", path: "/en/admin/authorization", view: "admin" },
   { id: "admin-success", label: "Authorization · saved · manager", locale: "en", direction: "ltr", identity: "manager", path: "/en/admin/authorization", view: "admin", variant: "admin-success" },
   { id: "admin-conflict", label: "Authorization · conflict · manager", locale: "en", direction: "ltr", identity: "manager", path: "/en/admin/authorization", view: "admin", variant: "admin-conflict" },
@@ -836,8 +835,6 @@ function previewElement(scenario: Scenario) {
         />
       );
     }
-    case "message-layout-demo":
-      return <MessageCardLayoutDemo />;
     case "admin": {
       const data = authorizationData(scenario.locale);
       const result = scenario.variant === "admin-success"
@@ -850,116 +847,6 @@ function previewElement(scenario: Scenario) {
     case "not-found":
       throw new Error("not-found is handled by previewRouter");
   }
-}
-
-function DemoMessageBody() {
-  return (
-    <>
-      <p>Separate the HTTP layer from domain types so each boundary can be tested independently.</p>
-      <pre><code>{"type ApiResult<T> = { data: T; status: number };"}</code></pre>
-    </>
-  );
-}
-
-function MessageCardLayoutDemo() {
-  const [hybridOpen, setHybridOpen] = useState(false);
-  const [footerOpen, setFooterOpen] = useState(false);
-
-  return (
-    <main className="message-layout-demo">
-      <header className="message-layout-demo-heading">
-        <p>Preview only · the accepted author/body/replies placement stays the same</p>
-        <h1>Action area variants</h1>
-      </header>
-
-      <section className="message-layout-option">
-        <h2><span>1</span> Reply + more</h2>
-        <article className="message-layout-card message-layout-card-flat message-action-demo-card">
-          <header className="message-layout-flat-header">
-            <span className="message-layout-demo-avatar">S</span>
-            <span className="message-action-demo-author-copy">
-              <strong>Sam Chen</strong>
-              <small>Best answer</small>
-            </span>
-            <a className="message-action-parent-link" href="#demo-hybrid-parent">↳ Reply to #1</a>
-            <div className="message-action-header-control">
-              <button
-                type="button"
-                className="message-action-more"
-                aria-expanded={hybridOpen}
-                aria-label="More message actions"
-                onClick={() => setHybridOpen((open) => !open)}
-              >
-                ⋯
-              </button>
-              {hybridOpen && (
-                <div className="message-action-header-menu">
-                  <button type="button">Quote</button>
-                  <button type="button">Copy link</button>
-                </div>
-              )}
-            </div>
-          </header>
-          <div className="message-layout-demo-body">
-            <DemoMessageBody />
-          </div>
-          <footer className="message-action-hybrid-footer">
-            <nav aria-label="Direct replies">
-              <span className="message-current-number">#3</span>
-              <span>Replies</span>
-              <a href="#demo-hybrid-r4">#4</a>
-              <a href="#demo-hybrid-r5">#5</a>
-            </nav>
-            <button type="button" className="message-action-reply">Reply</button>
-          </footer>
-        </article>
-      </section>
-
-      <section className="message-layout-option">
-        <h2><span>2</span> Actions menu</h2>
-        <article className="message-layout-card message-layout-card-flat message-action-demo-card">
-          <header className="message-layout-flat-header">
-            <span className="message-layout-demo-avatar">S</span>
-            <span className="message-action-demo-author-copy">
-              <strong>Sam Chen</strong>
-              <small>Best answer</small>
-            </span>
-            <a className="message-action-parent-link" href="#demo-collapsible-parent">Reply to #1</a>
-            <div className="message-action-header-control">
-              <button
-                type="button"
-                className="message-action-expand"
-                aria-expanded={footerOpen}
-                aria-label={footerOpen ? "Hide message actions" : "Show message actions"}
-                onClick={() => setFooterOpen((open) => !open)}
-              >
-                <span>Actions</span>
-                <span aria-hidden="true">{footerOpen ? "⌃" : "⌄"}</span>
-              </button>
-              {footerOpen && (
-                <div className="message-action-header-menu message-action-header-menu-wide">
-                  <button type="button">Reply</button>
-                  <button type="button">Quote</button>
-                  <button type="button">Copy link</button>
-                </div>
-              )}
-            </div>
-          </header>
-          <div className="message-layout-demo-body">
-            <DemoMessageBody />
-          </div>
-          <footer className="message-action-collapsible-footer">
-            <nav aria-label="Direct replies">
-              <span className="message-current-number">#3</span>
-              <span>Replies</span>
-              <a href="#demo-collapsible-r4">#4</a>
-              <a href="#demo-collapsible-r5">#5</a>
-            </nav>
-          </footer>
-        </article>
-      </section>
-    </main>
-  );
 }
 
 function topicData(
