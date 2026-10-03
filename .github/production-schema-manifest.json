@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema": "public",
-  "targetMigration": "0023_forum_topic_read_states",
+  "targetMigration": "0024_forum_reply_notifications",
   "tables": {
     "account": {
       "columns": [
@@ -3385,6 +3385,172 @@
       ],
       "checks": [],
       "indexes": []
+    },
+    "forum_reply_notifications": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "recipient_user_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "actor_user_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "topic_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "post_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "defaultSha256": "28a4dae0461e17af56e979c2095abfbe0bfc45fe9ca8abf3144338a518a1bb8f"
+        },
+        {
+          "name": "read_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "defaultSha256": null
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "forum_reply_notifications_pkey",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [
+        {
+          "name": "forum_reply_notifications_recipient_post_unique",
+          "columns": [
+            "recipient_user_id",
+            "post_id"
+          ],
+          "nullsNotDistinct": false
+        }
+      ],
+      "foreignKeys": [
+        {
+          "name": "forum_reply_notifications_actor_user_id_user_id_fk",
+          "columns": [
+            "actor_user_id"
+          ],
+          "referencedTable": "user",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        },
+        {
+          "name": "forum_reply_notifications_post_topic_fk",
+          "columns": [
+            "topic_id",
+            "post_id"
+          ],
+          "referencedTable": "forum_posts",
+          "referencedColumns": [
+            "topic_id",
+            "id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        },
+        {
+          "name": "forum_reply_notifications_recipient_user_id_user_id_fk",
+          "columns": [
+            "recipient_user_id"
+          ],
+          "referencedTable": "user",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        },
+        {
+          "name": "forum_reply_notifications_topic_id_forum_topics_id_fk",
+          "columns": [
+            "topic_id"
+          ],
+          "referencedTable": "forum_topics",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        }
+      ],
+      "checks": [],
+      "indexes": [
+        {
+          "name": "forum_reply_notifications_recipient_created_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "recipient_user_id",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "created_at",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "id",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ]
+        },
+        {
+          "name": "forum_reply_notifications_recipient_read_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "recipient_user_id",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "read_at",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ]
+        }
+      ]
     }
   },
   "triggerFunctions": [
