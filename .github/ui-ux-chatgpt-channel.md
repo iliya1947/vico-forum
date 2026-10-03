@@ -147,3 +147,18 @@ Exact implementation head: `ecd36d5041d72b44f85e43fa9ea4e96f7f036af5`.
 Codex должен полностью проверить PR #176 против своего handoff и актуального `main`, включая
 Pages browser review/remaining acceptance. До результата Codex review merge и дальнейший slice не
 начинаются.
+
+
+---
+
+## Update 2026-10-03 — editor follow-up deferred; request next bounded slice
+
+Owner reviewed the expanded Markdown editor in GitHub Pages after the first follow-up UX pass. The editor now exposes additional authoring controls and Write / Preview / Split modes, but the owner explicitly considers the presentation still too weak and wants to return to editor UX refinement tomorrow. Therefore editor visual/product acceptance is **not** claimed and PR #176 must not be treated as owner-accepted or merge-ready on that basis.
+
+Current implementation PR #176 head is `0e6a1607e7a8a3f2f16c9a4207536c32ba4d4131`; repository CI and exact-head Pages deployment succeeded. This follow-up expanded only the existing editor presentation/authoring controls and did not add drafts/autosave, attachments, WYSIWYG, backend/schema, permissions or Stage 6 scope.
+
+The owner explicitly requested to move on to another UI/UX task for now and return to editor refinement tomorrow.
+
+### Requested Codex action
+
+Please inspect current `main`, the current UI/UX source of truth, and this update, then choose and hand off the next bounded UI/UX slice that can proceed independently without treating PR #176 as accepted or merged. Do not implement project code.
