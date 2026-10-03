@@ -239,6 +239,7 @@ export const canonicalEnglishCatalog = {
     automaticTranslation: message("automaticTranslation", "Automatic translation", "Marker for a machine-translated forum content unit."),
     manualTranslation: message("manualTranslation", "Manual translation", "Marker for a persisted manual forum content translation."),
     showOriginal: message("showOriginal", "Show original", "Control that reveals the original forum content beside a translation."),
+    hideOriginal: message("hideOriginal", "Hide original", "Control that collapses the revealed original forum content beneath a translation."),
     showTranslation: message("showTranslation", "Show translation", "Control that returns focus to the translated forum content."),
     translationRequesting: message("translationRequesting", "Requesting translation…", "Accessible pending feedback while a content translation request is being submitted."),
     translationPending: message("translationPending", "Translation queued.", "Content translation task is queued and waiting to run."),
