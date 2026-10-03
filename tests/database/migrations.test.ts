@@ -525,6 +525,26 @@ describe("PostgreSQL 17 locale migrations", () => {
       );
       expect(ownerReplyRecipients.rows).toEqual([{ recipient_user_id: "notify-parent" }]);
 
+      const ownerInbox = await repository.readReplyNotifications("notify-owner");
+      expect(ownerInbox).toHaveLength(2);
+      expect(ownerInbox[0]).toMatchObject({
+        actorName: "notify-actor",
+        topicId: "notify-topic",
+        topicTitle: "Notification topic",
+        postId: "notify-child-post",
+        readAt: null,
+      });
+      expect(await repository.countUnreadReplyNotifications("notify-owner")).toBe(2);
+
+      const opened = await repository.markReplyNotificationRead("notify-owner", ownerInbox[0]!.id);
+      expect(opened).toEqual({ topicId: "notify-topic", postId: "notify-child-post" });
+      expect(await repository.countUnreadReplyNotifications("notify-owner")).toBe(1);
+      await repository.markReplyNotificationRead("notify-owner", ownerInbox[0]!.id);
+      expect(await repository.countUnreadReplyNotifications("notify-owner")).toBe(1);
+      await expect(
+        repository.markReplyNotificationRead("notify-parent", ownerInbox[0]!.id),
+      ).rejects.toBeInstanceOf(ForumEntityNotFoundError);
+
       await expectDatabaseCode(
         client.query(
           `insert into forum_reply_notifications
