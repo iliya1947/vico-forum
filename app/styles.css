@@ -2918,24 +2918,8 @@ p {
   font-weight: 750;
 }
 
-.unread-topic-count-number {
-  font-size: 1.35rem;
-  line-height: 1;
-}
-
-.unread-topic-count-label {
-  display: grid;
-  gap: 0.05rem;
-  line-height: 1.15;
-}
-
-.unread-topic-count-label > span {
-  display: block;
-}
-
-.unread-topic-new-label {
-  grid-column: 1 / -1;
-  white-space: nowrap;
+.unread-topic-card {
+  grid-template-columns: minmax(0, 1fr) 17rem 6.5rem;
 }
 
 .unanswered-topic-enter {
@@ -2952,6 +2936,24 @@ p {
   stroke-width: 3;
 }
 
+.unread-topic-enter {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.6rem;
+  min-width: 6.5rem;
+  padding-inline: 0.9rem 0.65rem;
+}
+
+.unread-topic-enter-count {
+  justify-self: center;
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.unread-topic-enter svg {
+  justify-self: end;
+}
+
 :dir(rtl) .unanswered-topic-enter svg {
   transform: rotate(180deg);
 }
@@ -2959,6 +2961,10 @@ p {
 @media (max-width: 52rem) {
   .unanswered-topic-card {
     grid-template-columns: minmax(0, 1fr) 2.9rem;
+  }
+
+  .unread-topic-card {
+    grid-template-columns: minmax(0, 1fr) 5.75rem;
   }
 
   .unanswered-topic-main {
@@ -2985,6 +2991,11 @@ p {
   .unanswered-topic-enter {
     grid-column: 2;
     grid-row: 1 / 4;
+  }
+
+  .unread-topic-enter {
+    min-width: 5.75rem;
+    padding-inline: 0.7rem 0.55rem;
   }
 
   .unanswered-topic-copy strong {
