@@ -32,7 +32,7 @@ import { localeRegistry } from "../localization/registry";
 
 type Direction = "ltr" | "rtl";
 type PreviewIdentity = "guest" | "user" | "manager";
-type PreviewView = "home" | "search" | "popular" | "unanswered" | "tags" | "tag" | "category" | "section" | "topic" | "admin" | "empty" | "under-development" | "not-found";
+type PreviewView = "home" | "search" | "popular" | "unanswered" | "tags" | "tag" | "category" | "section" | "topic" | "message-layout-demo" | "admin" | "empty" | "under-development" | "not-found";
 
 type PreviewVariant =
   | "empty-category"
@@ -84,6 +84,7 @@ export const scenarios: readonly Scenario[] = [
   { id: "topic-reply-error", label: "Reply error · user", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api", view: "topic", variant: "topic-reply-error" },
   { id: "topic-unsolved", label: "Unsolved topic · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/topics/typed-api", view: "topic", variant: "topic-unsolved" },
   { id: "topic-tools", label: "Topic tools · manager", locale: "en", direction: "ltr", identity: "manager", path: "/en/topics/typed-api", view: "topic", variant: "topic-tools" },
+  { id: "message-layout-demo", label: "Message card layout demo", locale: "en", direction: "ltr", identity: "user", path: "/en/preview/message-layout-demo", view: "message-layout-demo" },
   { id: "admin", label: "Authorization · manager", locale: "en", direction: "ltr", identity: "manager", path: "/en/admin/authorization", view: "admin" },
   { id: "admin-success", label: "Authorization · saved · manager", locale: "en", direction: "ltr", identity: "manager", path: "/en/admin/authorization", view: "admin", variant: "admin-success" },
   { id: "admin-conflict", label: "Authorization · conflict · manager", locale: "en", direction: "ltr", identity: "manager", path: "/en/admin/authorization", view: "admin", variant: "admin-conflict" },
@@ -835,6 +836,8 @@ function previewElement(scenario: Scenario) {
         />
       );
     }
+    case "message-layout-demo":
+      return <MessageCardLayoutDemo />;
     case "admin": {
       const data = authorizationData(scenario.locale);
       const result = scenario.variant === "admin-success"
@@ -847,6 +850,131 @@ function previewElement(scenario: Scenario) {
     case "not-found":
       throw new Error("not-found is handled by previewRouter");
   }
+}
+
+function DemoCopyButton() {
+  return (
+    <button type="button" className="message-layout-demo-copy" aria-label="Copy link">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M10 13a5 5 0 0 0 7.1.1l2-2a5 5 0 0 0-7.1-7.1l-1.1 1.1" />
+        <path d="M14 11a5 5 0 0 0-7.1-.1l-2 2A5 5 0 0 0 12 20l1.1-1.1" />
+      </svg>
+    </button>
+  );
+}
+
+function DemoMessageBody() {
+  return (
+    <>
+      <p>Separate the HTTP layer from domain types so each boundary can be tested independently.</p>
+      <pre><code>{"type ApiResult<T> = { data: T; status: number };"}</code></pre>
+    </>
+  );
+}
+
+function MessageCardLayoutDemo() {
+  return (
+    <main className="message-layout-demo">
+      <header className="message-layout-demo-heading">
+        <p>Preview only · same content in every option</p>
+        <h1>Mobile message card layouts</h1>
+      </header>
+
+      <section className="message-layout-option">
+        <h2><span>1</span> Compact forum card</h2>
+        <article className="message-layout-card message-layout-card-compact">
+          <header className="message-layout-compact-header">
+            <div className="message-layout-demo-author">
+              <span className="message-layout-demo-avatar">S</span>
+              <span>
+                <strong>Sam Chen</strong>
+                <small>Best answer</small>
+              </span>
+            </div>
+            <div className="message-layout-demo-meta">
+              <strong>Message #3</strong>
+              <DemoCopyButton />
+            </div>
+          </header>
+          <div className="message-layout-demo-body">
+            <a href="#demo-parent">Reply to Message #1</a>
+            <DemoMessageBody />
+          </div>
+          <footer className="message-layout-demo-footer">
+            <nav aria-label="Direct replies">
+              <span>Replies:</span>
+              <a href="#demo-r4">#4</a>
+              <a href="#demo-r5">#5</a>
+            </nav>
+            <div className="message-layout-demo-actions">
+              <button type="button">Reply</button>
+              <button type="button">Quote</button>
+            </div>
+          </footer>
+        </article>
+      </section>
+
+      <section className="message-layout-option">
+        <h2><span>2</span> Flat card</h2>
+        <article className="message-layout-card message-layout-card-flat">
+          <header className="message-layout-flat-header">
+            <span className="message-layout-demo-avatar">S</span>
+            <strong>Sam Chen</strong>
+            <small>Best answer</small>
+            <span className="message-layout-flat-number">#3</span>
+            <DemoCopyButton />
+          </header>
+          <div className="message-layout-demo-body">
+            <a href="#demo-parent-flat">↳ Reply to #1</a>
+            <DemoMessageBody />
+          </div>
+          <footer className="message-layout-flat-footer">
+            <nav aria-label="Direct replies">
+              <span>Replies</span>
+              <a href="#demo-flat-r4">#4</a>
+              <a href="#demo-flat-r5">#5</a>
+            </nav>
+            <div className="message-layout-demo-actions">
+              <button type="button">Reply</button>
+              <button type="button">Quote</button>
+            </div>
+          </footer>
+        </article>
+      </section>
+
+      <section className="message-layout-option">
+        <h2><span>3</span> Mini author column</h2>
+        <article className="message-layout-card message-layout-card-author-rail">
+          <aside className="message-layout-author-rail">
+            <span className="message-layout-demo-avatar">S</span>
+            <strong>Sam Chen</strong>
+          </aside>
+          <div className="message-layout-author-main">
+            <header className="message-layout-author-main-header">
+              <small>Best answer</small>
+              <span className="message-layout-author-number">Message #3</span>
+              <DemoCopyButton />
+            </header>
+            <div className="message-layout-demo-body">
+              <a href="#demo-parent-rail">Reply to Message #1</a>
+              <DemoMessageBody />
+            </div>
+            <footer className="message-layout-demo-footer">
+              <nav aria-label="Direct replies">
+                <span>Replies:</span>
+                <a href="#demo-rail-r4">#4</a>
+                <a href="#demo-rail-r5">#5</a>
+              </nav>
+              <div className="message-layout-demo-actions">
+                <button type="button">Reply</button>
+                <button type="button">Quote</button>
+              </div>
+            </footer>
+          </div>
+        </article>
+      </section>
+    </main>
+  );
 }
 
 function topicData(
