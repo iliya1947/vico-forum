@@ -69,6 +69,9 @@ forum_topic_title_revisions, forum_post_revisions
 forum_topic_title_translations, forum_post_body_translations
   SELECT
 
+forum_topic_read_states
+  SELECT, INSERT, UPDATE
+
 authz_roles
   SELECT, INSERT, UPDATE, DELETE
 
@@ -86,6 +89,9 @@ authz_mutation_lock
 ```
 
 `user.UPDATE` также нужен существующему forum cooldown mutex через `SELECT ... FOR UPDATE`.
+`forum_topic_read_states` — repository-required extension для development migration `0023`;
+она ещё не provisioned/accepted во внешней production DB и будет применена только через отдельный
+Stage 6 schema + privilege gate.
 При текущем Worker composition content generation остаётся disabled, поэтому web capability
 намеренно **не** получает direct grants на `authz_permissions`, translation task/generation-head
 tables, request-budget counters либо UI localization tables.
