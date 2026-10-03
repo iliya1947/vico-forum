@@ -21,7 +21,7 @@ import { HeaderAuthProvider } from "../auth/auth-controls";
 import { LocaleNavigationProvider } from "../localization/locale-navigation";
 import { authorizationForRequest } from "../authorization/request-context";
 import { AuthorizationUnavailableError } from "../../db/authorization-service";
-import { forumReaderForRequest } from "../forum/request-context";
+import { forumReaderForRequest, ForumReaderConfigurationError } from "../forum/request-context";
 import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
 
 interface LocaleBoundaryArgs {
@@ -100,7 +100,10 @@ export async function loader(args: LocaleBoundaryArgs) {
       unreadNotificationCount = await forumReaderForRequest(args.context)
         .countUnreadReplyNotifications(session.user.id);
     } catch (error) {
-      if (!(error instanceof ForumStorageUnavailableError)) throw error;
+      if (
+        !(error instanceof ForumStorageUnavailableError)
+        && !(error instanceof ForumReaderConfigurationError)
+      ) throw error;
       // Header notification count is presentation-only; the protected inbox route handles outage separately.
     }
   }
@@ -108,7 +111,11 @@ export async function loader(args: LocaleBoundaryArgs) {
     ...snapshot,
     activeLocales,
     authUser: session
-      ? { name: session.user.name, canManageAuthorization, unreadNotificationCount }
+      ? {
+          name: session.user.name,
+          canManageAuthorization,
+          ...(unreadNotificationCount === undefined ? {} : { unreadNotificationCount }),
+        }
       : null,
   };
 }
