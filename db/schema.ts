@@ -751,6 +751,43 @@ export const forumTopicReadStates = pgTable(
   ],
 );
 
+export const forumReplyNotifications = pgTable(
+  "forum_reply_notifications",
+  {
+    id: text("id").primaryKey(),
+    recipientUserId: text("recipient_user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    actorUserId: text("actor_user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "restrict" }),
+    topicId: text("topic_id")
+      .notNull()
+      .references(() => forumTopics.id, { onDelete: "cascade" }),
+    postId: text("post_id").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    readAt: timestamp("read_at", { withTimezone: true }),
+  },
+  (table) => [
+    unique("forum_reply_notifications_recipient_post_unique").on(table.recipientUserId, table.postId),
+    index("forum_reply_notifications_recipient_created_idx").on(
+      table.recipientUserId,
+      table.createdAt,
+      table.id,
+    ),
+    index("forum_reply_notifications_recipient_read_idx").on(table.recipientUserId, table.readAt),
+    foreignKey({
+      name: "forum_reply_notifications_post_topic_fk",
+      columns: [table.topicId, table.postId],
+      foreignColumns: [forumPosts.topicId, forumPosts.id],
+    }).onDelete("cascade"),
+    check(
+      "forum_reply_notifications_recipient_not_actor_check",
+      sql`${table.recipientUserId} <> ${table.actorUserId}`,
+    ),
+  ],
+);
+
 export const forumPostRevisions = pgTable(
   "forum_post_revisions",
   {
