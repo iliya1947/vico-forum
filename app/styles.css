@@ -85,6 +85,11 @@
   --color-accent-soft: #3a2418;
   --color-on-accent: #1a100a;
   --color-danger: #ff9191;
+  --color-code-keyword: #ff93c9;
+  --color-code-string: #9fe0a8;
+  --color-code-number: #ffc078;
+  --color-code-literal: #8fc7ff;
+  --color-code-comment: #a9b0b7;
   --color-focus: #ff9b66;
   --shadow-panel: 0 0.25rem 1rem rgb(0 0 0 / 28%);
 
