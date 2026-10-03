@@ -527,8 +527,8 @@ function HomepageCategoryCard({
 
       <Link
         className="home-section-enter"
-        to={underDevelopmentPath(locale, "forum-discovery")}
-        aria-label={t("forumDiscoveryDevelopmentStatus", { section: category.name })}
+        to={forumCategoryPath(locale, category.id)}
+        aria-label={t("enterForumSection", { section: category.name })}
       >
         <svg aria-hidden="true" viewBox="0 0 24 24">
           <path d="m9 5 7 7-7 7" />

@@ -5,7 +5,6 @@ export const UNDER_DEVELOPMENT_FEATURES = [
   { id: "unread", labelKey: "underDevelopmentFeatureUnread" },
   { id: "drafts", labelKey: "underDevelopmentFeatureDrafts" },
   { id: "profiles", labelKey: "underDevelopmentFeatureProfiles" },
-  { id: "forum-discovery", labelKey: "underDevelopmentFeatureForumDiscovery" },
   { id: "editor", labelKey: "underDevelopmentFeatureEditor" },
   { id: "online-presence", labelKey: "underDevelopmentFeatureOnlinePresence" },
   { id: "rules", labelKey: "underDevelopmentFeatureRules" },

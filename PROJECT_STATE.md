@@ -46,8 +46,8 @@ Vico Forum находится в ранней pre-release разработке.
   authenticated-only `Unread` без дублирующего `Home`, orange labels/icons и понятный
   trending-up symbol для `Popular`, theme-aware owner-provided Light/Dark logo marks,
   `Vico` orange / `Forum` neutral по теме, compact stats и отдельная full-height orange entry
-  rail. Пока redesigned category/section discovery presentation не готова, rail ведёт на общий
-  `Under development` path, а не в старый scaffold. Bounded реализация `Popular` merged через
+  rail. После принятого redesign Category/Section homepage rail ведёт напрямую в реальную
+  locale-aware category page; временный `forum-discovery` entry удалён из `Under development`. Bounded реализация `Popular` merged через
   PR #168: locale-aware public route показывает три одновременных activity-period колонки
   `24 hours / 7 days / 30 days`, ранжируя темы по числу существующих forum messages внутри
   периода с latest-activity tie-break; targeted repository CI/Pages прошли, owner visual acceptance
@@ -64,7 +64,7 @@ Vico Forum находится в ранней pre-release разработке.
   owner visual acceptance подтверждён 2026-10-02. По выбору владельца следующая bounded
   product-функция — global Search: текущая implementation-ветка добавляет public
   `/:locale/search?q=...` поверх current topic-title/post revisions и topic tags без новой
-  migration/search-index subsystem. Repository CI и GitHub Pages preview прошли; owner visual acceptance подтверждён 2026-10-03. Search merged через PR #171. Message links реализован и merged через PR #172: public permanent post anchors + copy-link UI работают без DB/backend изменений; GitHub Pages preview пройден, owner visual acceptance подтверждён 2026-10-03. Reply/Quote реализован в PR #173: migration `0022_forum_reply_relationships` добавляет nullable same-topic parent relation для forum posts; обсуждение остаётся линейным, Reply привязывает новый post к конкретному parent, Quote вставляет только выделенный текст как Markdown blockquote, а parent/child сообщения связываются стабильными anchors. Existing permissions/rate-limit semantics не меняются; repository CI и GitHub Pages preview проходят, owner visual acceptance подтверждён 2026-10-03; PR ожидает owner merge. Дальнейшая косметическая полировка homepage
+  migration/search-index subsystem. Repository CI и GitHub Pages preview прошли; owner visual acceptance подтверждён 2026-10-03. Search merged через PR #171. Message links реализован и merged через PR #172: public permanent post anchors + copy-link UI работают без DB/backend изменений; GitHub Pages preview пройден, owner visual acceptance подтверждён 2026-10-03. Reply/Quote реализован: migration `0022_forum_reply_relationships` добавляет nullable same-topic parent relation для forum posts; обсуждение остаётся линейным, Reply привязывает новый post к конкретному parent, Quote вставляет только выделенный текст как Markdown blockquote, а parent/child сообщения связываются стабильными anchors. Existing permissions/rate-limit semantics не меняются; repository CI и GitHub Pages preview проходят, owner visual acceptance подтверждён 2026-10-03. Дальнейшая косметическая полировка homepage
   сейчас не является приоритетом.
 - Category-page discovery slice в PR #159 прошёл owner visual acceptance в GitHub Pages:
   owner-approved header/logo/discovery nav переиспользованы без backend/DB изменений; category
@@ -612,7 +612,7 @@ runtime roles/Hyperdrive writes и другие schema-dependent runtime capabil
    acceptance из `docs/UI_UX_PASS.md`; GitHub Pages не заменяет эту проверку.
 11. Owner mobile review 2026-10-03 унифицировал compact destination cards на Category/Section/Tags/Search: entry action остаётся отдельной vertical orange rail справа по всей высоте карточки; нижний orange footer для этих карточек не используется.
 12. Message links реализован и merged через PR #172: permanent message anchor + public Copy link + localized success/failure feedback; owner visual acceptance подтверждён 2026-10-03.
-13. Reply/Quote реализован в PR #173: migration `0022_forum_reply_relationships` добавляет nullable same-topic direct-parent relation; discussion остаётся линейным, Reply таргетирует concrete parent, child показывает parent anchor, parent — direct-reply anchors, Quote вставляет только реально выделенный текст как Markdown blockquote. Existing permissions/rate-limit semantics сохраняются; repository CI и GitHub Pages preview проходят, owner visual acceptance подтверждён 2026-10-03; PR ожидает owner merge.
+13. Reply/Quote реализован: migration `0022_forum_reply_relationships` добавляет nullable same-topic direct-parent relation; discussion остаётся линейным, Reply таргетирует concrete parent, child показывает parent anchor, parent — direct-reply anchors, Quote вставляет только реально выделенный текст как Markdown blockquote. Existing permissions/rate-limit semantics сохраняются; repository CI и GitHub Pages preview проходят, owner visual acceptance подтверждён 2026-10-03.
 14. Stage 6 infrastructure gates остаются на паузе до отдельного указания владельца.
 
 Ранее подготовленный защищённый manual rollout mechanism остаётся в repository. При явном

@@ -177,9 +177,9 @@ composition:
 10. Section statistics use real topic/message counts in the real application. Representative/mock
    identities and numbers are allowed only in the Pages visual fixture. On desktop this statistics
    area stays compact; a separate full-height orange action rail sits at the far card edge and uses
-   a bold white arrow. Until the redesigned forum category/section discovery presentation is ready,
-   that rail is an approved unfinished entry point and routes to the shared `Under development`
-   page instead of exposing the old scaffold through this action.
+   a bold white arrow. With the accepted category/section discovery presentation now implemented,
+   that rail routes to the real locale-aware category page instead of the temporary
+   `Under development` destination.
 11. The circular orange expand control never navigates. On desktop it expands more pinned/latest
    content in the same block; its horizontal center aligns exactly with the divider between
    `Pinned` and `Latest topics`, and its vertical center sits on the card bottom boundary so it

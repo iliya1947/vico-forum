@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { I18nextProvider } from "react-i18next";
-import { RouterProvider, createMemoryRouter, useSearchParams } from "react-router";
+import { RouterProvider, createMemoryRouter, useParams, useSearchParams } from "react-router";
 
 import {
   HeaderAuthProvider,
@@ -695,6 +695,18 @@ function previewRouter(scenario: Scenario) {
 
   return createMemoryRouter([
     {
+      path: "/:locale/categories/:categoryId",
+      element: <PreviewCategoryRoute scenario={scenario} />,
+    },
+    {
+      path: "/:locale/sections/:sectionId",
+      element: <PreviewSectionRoute scenario={scenario} />,
+    },
+    {
+      path: "/:locale/topics/:topicId",
+      element: <PreviewTopicRoute scenario={scenario} />,
+    },
+    {
       path: "/:locale/under-development",
       element: <PreviewUnderDevelopment locale={scenario.locale} />,
     },
@@ -729,6 +741,254 @@ function previewRouter(scenario: Scenario) {
       element: previewElement(scenario),
     },
   ], { initialEntries: [scenario.path] });
+}
+
+function previewCategory(locale: PreviewLocale, routeCategoryId: string | undefined) {
+  const localizedCategory = locale === "ru"
+    ? categoryRu
+    : locale === "he"
+      ? categoryRtl
+      : category;
+  if (!routeCategoryId || routeCategoryId === categoryId) return localizedCategory;
+
+  const overview = homepageCategories(locale).find((item) => item.id === routeCategoryId);
+  if (!overview) return localizedCategory;
+
+  const sectionNames = locale === "ru"
+    ? ["Основное", "Вопросы", "Практика"]
+    : locale === "he"
+      ? ["כללי", "שאלות", "פרקטיקה"]
+      : ["General", "Questions", "Practice"];
+  const visibleSectionCount = Math.min(overview.sectionCount, sectionNames.length);
+
+  return {
+    id: overview.id,
+    name: overview.name,
+    sections: Array.from({ length: visibleSectionCount }, (_, index) => ({
+      id: `${overview.id}-preview-${index + 1}`,
+      name: sectionNames[index]!,
+      topicCount: Math.max(1, Math.round(overview.topicCount / visibleSectionCount)),
+      postCount: Math.max(1, Math.round(overview.messageCount / visibleSectionCount)),
+    })),
+  };
+}
+
+function PreviewCategoryRoute({ scenario }: { scenario: Scenario }) {
+  const { categoryId: routeCategoryId } = useParams();
+  const categoryPage = scenario.view === "category"
+    && scenario.variant === "empty-category"
+    && routeCategoryId === "empty"
+    ? emptyCategory
+    : previewCategory(scenario.locale, routeCategoryId);
+
+  return <CategoryView locale={scenario.locale} category={categoryPage} />;
+}
+
+function previewSection(locale: PreviewLocale, routeSectionId: string | undefined) {
+  const localizedSection = locale === "ru" ? sectionRu : locale === "he" ? sectionRtl : section;
+  if (!routeSectionId || routeSectionId === sectionId) return localizedSection;
+
+  if (routeSectionId === "empty") {
+    return {
+      id: "empty",
+      name: locale === "ru"
+        ? "Новый раздел сообщества"
+        : locale === "he"
+          ? "מדור קהילה חדש"
+          : "New community section",
+      category: {
+        id: categoryId,
+        name: locale === "ru"
+          ? "Разработка"
+          : locale === "he"
+            ? "פיתוח"
+            : "Development",
+      },
+      topics: [],
+    };
+  }
+
+  const matched = homepageCategories(locale)
+    .map((overview) => previewCategory(locale, overview.id))
+    .flatMap((candidateCategory) =>
+      candidateCategory.sections.map((candidateSection) => ({
+        category: candidateCategory,
+        section: candidateSection,
+      }))
+    )
+    .find(({ section: candidateSection }) => candidateSection.id === routeSectionId);
+
+  if (!matched) return localizedSection;
+
+  const topicTitles = locale === "ru"
+    ? ["Первый вопрос раздела", "Практический пример", "Полезное обсуждение"]
+    : locale === "he"
+      ? ["השאלה הראשונה במדור", "דוגמה מעשית", "דיון שימושי"]
+      : ["First section question", "Practical example", "Useful discussion"];
+
+  return {
+    id: matched.section.id,
+    name: matched.section.name,
+    category: { id: matched.category.id, name: matched.category.name },
+    topics: topicTitles.map((title, index) => ({
+      id: `${matched.section.id}-topic-${index + 1}`,
+      authorName: ["Alex Rivera", "Maya Cohen", "Sam Chen"][index]!,
+      postCount: [3, 5, 8][index]!,
+      createdAt: new Date(`2026-09-${27 + index}T10:00:00Z`),
+      tags: [],
+      title: {
+        id: `${matched.section.id}-title-${index + 1}`,
+        originalContent: title,
+        sourceLocale: locale,
+      },
+    })),
+  };
+}
+
+function PreviewSectionRoute({ scenario }: { scenario: Scenario }) {
+  const { sectionId: routeSectionId } = useParams();
+  return (
+    <SectionView
+      locale={scenario.locale}
+      section={previewSection(scenario.locale, routeSectionId)}
+      canCreateTopic={scenario.identity !== "guest"}
+      actionData={scenario.view === "section" && scenario.variant === "section-form-error"
+        ? { error: "rateLimited" }
+        : undefined}
+    />
+  );
+}
+
+function PreviewTopicRoute({ scenario }: { scenario: Scenario }) {
+  const { topicId: routeTopicId } = useParams();
+
+  if (!routeTopicId || routeTopicId === topicId) {
+    const solved = scenario.view === "topic"
+      ? scenario.variant !== "topic-unsolved"
+        && scenario.variant !== "topic-reply-error"
+        && scenario.variant !== "topic-tools"
+      : true;
+    const data = topicData(
+      scenario.locale,
+      scenario.direction,
+      scenario.identity,
+      solved,
+      scenario.view === "topic" && scenario.identity === "manager",
+    );
+    return (
+      <TopicView
+        {...data}
+        actionData={scenario.view === "topic" && scenario.variant === "topic-reply-error"
+          ? { error: "rateLimited" }
+          : undefined}
+      />
+    );
+  }
+
+  const candidateSections = homepageCategories(scenario.locale)
+    .flatMap((overview) =>
+      previewCategory(scenario.locale, overview.id).sections.map((candidateSection) =>
+        previewSection(scenario.locale, candidateSection.id)
+      )
+    );
+  const matched = candidateSections
+    .flatMap((candidateSection) =>
+      candidateSection.topics.map((candidateTopic) => ({
+        section: candidateSection,
+        topic: candidateTopic,
+      }))
+    )
+    .find(({ topic: candidateTopic }) => candidateTopic.id === routeTopicId);
+
+  if (!matched) {
+    return (
+      <TopicView
+        {...topicData(
+          scenario.locale,
+          scenario.direction,
+          scenario.identity,
+          true,
+          false,
+        )}
+      />
+    );
+  }
+
+  const replyAuthors = ["Maya Cohen", "Sam Chen", "Noa Levi"];
+  const messageCount = Math.max(1, matched.topic.postCount);
+  const posts = Array.from({ length: messageCount }, (_, index) => ({
+    id: `${matched.topic.id}-post-${index + 1}`,
+    topicId: matched.topic.id,
+    authorId: index === 0 ? "alex" : `preview-reply-${index}`,
+    authorName: index === 0
+      ? matched.topic.authorName
+      : replyAuthors[(index - 1) % replyAuthors.length]!,
+    parentPostId: index === 0 ? null : `${matched.topic.id}-post-1`,
+    createdAt: new Date(`2026-09-${27 + Math.min(index, 3)}T${10 + (index % 8)}:00:00Z`),
+    body: {
+      id: `${matched.topic.id}-body-${index + 1}`,
+      originalContent: index === 0
+        ? scenario.locale === "ru"
+          ? "Представительный вопрос для проверки страницы темы в Pages-preview."
+          : scenario.locale === "he"
+            ? "שאלה מייצגת לבדיקת עמוד הנושא בתצוגה המקדימה."
+            : "Representative question for checking the topic page in Pages preview."
+        : scenario.locale === "ru"
+          ? `Представительный ответ №${index}.`
+          : scenario.locale === "he"
+            ? `תגובה מייצגת מספר ${index}.`
+            : `Representative reply #${index}.`,
+      sourceLocale: scenario.locale,
+    },
+  }));
+
+  const previewTopic = {
+    id: matched.topic.id,
+    sectionId: matched.section.id,
+    authorId: "alex",
+    authorName: matched.topic.authorName,
+    createdAt: matched.topic.createdAt,
+    isSolved: false,
+    bestAnswerPostId: null,
+    title: matched.topic.title,
+    section: {
+      id: matched.section.id,
+      name: matched.section.name,
+      category: matched.section.category,
+    },
+    tags: matched.topic.tags,
+    posts,
+  };
+
+  return (
+    <TopicView
+      locale={scenario.locale}
+      topic={previewTopic}
+      titlePresentation={originalPresentation(
+        "topic-title",
+        previewTopic.id,
+        previewTopic.title.id,
+        previewTopic.title.originalContent,
+        scenario.locale,
+        scenario.direction,
+      )}
+      postPresentations={posts.map((post) =>
+        originalPresentation(
+          "post-body",
+          post.id,
+          post.body.id,
+          post.body.originalContent,
+          scenario.locale,
+          scenario.direction,
+        )
+      )}
+      generationUnits={[]}
+      canReply={scenario.identity !== "guest"}
+      canManageSolution={false}
+      canCorrectTitleSourceLocale={false}
+      correctablePostIds={[]}
+    />
+  );
 }
 
 function PreviewUnderDevelopment({ locale }: { locale: PreviewLocale }) {
