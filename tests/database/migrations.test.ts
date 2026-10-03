@@ -58,7 +58,7 @@ describe("PostgreSQL 17 locale migrations", () => {
     const applied = await client.query<{ count: string }>(
       'select count(*)::text as count from drizzle."__drizzle_migrations"',
     );
-    expect(applied.rows[0]?.count).toBe("23");
+    expect(applied.rows[0]?.count).toBe("24");
   });
 
   it("rejects trimmed canonical English in persistent UI translation storage", async () => {
@@ -265,6 +265,171 @@ describe("PostgreSQL 17 locale migrations", () => {
       posts: [{ id: "post-1", authorName: "Forum Author", body: { originalContent: "Нужен пример." } }],
     });
     expect(await repository.readCategory("missing")).toBeUndefined();
+  });
+
+  it("persists per-user topic read state with stable first-unread and monotonic advancement", async () => {
+    await insertForumAuthor("read-author", "read-author@example.test", null);
+    await insertForumAuthor("reader-a", "reader-a@example.test", null);
+    await insertForumAuthor("reader-b", "reader-b@example.test", null);
+    await insertForumAuthor("reader-c", "reader-c@example.test", null);
+
+    let now = Date.parse("2026-10-03T12:00:00.000Z");
+    const repository = new DrizzleForumRepository(drizzle(client), {
+      cooldownMs: FORUM_WRITE_COOLDOWN_MS,
+      now: () => new Date(now += FORUM_WRITE_COOLDOWN_MS),
+    });
+    const forum = new ForumService(repository);
+
+    try {
+      await forum.createTopic({
+        id: "read-topic",
+        sectionId: "typescript",
+        authorId: "read-author",
+        titleRevision: {
+          id: "read-topic-title",
+          originalContent: "Unread semantics",
+          sourceLocale: "en",
+        },
+      });
+      await forum.createPost({
+        id: "read-post-a",
+        topicId: "read-topic",
+        authorId: "read-author",
+        bodyRevision: { id: "read-body-a", originalContent: "A", sourceLocale: "en" },
+      });
+      await forum.createPost({
+        id: "read-post-b",
+        topicId: "read-topic",
+        authorId: "read-author",
+        bodyRevision: { id: "read-body-b", originalContent: "B", sourceLocale: "en" },
+      });
+      await forum.createPost({
+        id: "read-post-c",
+        topicId: "read-topic",
+        authorId: "read-author",
+        bodyRevision: { id: "read-body-c", originalContent: "C", sourceLocale: "en" },
+      });
+
+      const equalActivityAt = new Date("2026-10-03T14:00:00.000Z");
+      await client.query(
+        "update forum_posts set created_at = $1 where id = any($2::text[])",
+        [equalActivityAt, ["read-post-b", "read-post-c"]],
+      );
+
+      expect(await forum.readTopicReadState("reader-a", "read-topic")).toEqual({
+        topicId: "read-topic",
+        status: "new",
+        lastReadPostId: null,
+        firstUnreadPostId: "read-post-a",
+        latestPostId: "read-post-c",
+      });
+
+      const newRow = (await forum.readUnreadTopics("reader-a")).find(({ id }) => id === "read-topic");
+      expect(newRow).toMatchObject({
+        status: "new",
+        firstUnreadPostId: "read-post-a",
+        postCount: 3,
+        section: { id: "typescript" },
+        category: { id: "development" },
+      });
+
+      expect(await forum.markTopicReadThrough("reader-a", "read-topic", "read-post-a"))
+        .toBe("read-post-a");
+      expect(await forum.readTopicReadState("reader-a", "read-topic")).toMatchObject({
+        status: "unread",
+        lastReadPostId: "read-post-a",
+        firstUnreadPostId: "read-post-b",
+        latestPostId: "read-post-c",
+      });
+
+      await forum.markTopicSolved("read-topic", "read-author");
+      await forum.selectBestAnswer("read-topic", "read-post-c", "read-author");
+      expect(await forum.readTopicReadState("reader-a", "read-topic")).toMatchObject({
+        status: "unread",
+        firstUnreadPostId: "read-post-b",
+      });
+
+      expect(await forum.markTopicReadThrough("reader-a", "read-topic", "read-post-c"))
+        .toBe("read-post-c");
+      expect(await forum.readTopicReadState("reader-a", "read-topic")).toMatchObject({
+        status: "read",
+        lastReadPostId: "read-post-c",
+        firstUnreadPostId: null,
+      });
+      expect((await forum.readUnreadTopics("reader-a")).some(({ id }) => id === "read-topic"))
+        .toBe(false);
+
+      expect(await forum.markTopicReadThrough("reader-a", "read-topic", "read-post-b"))
+        .toBe("read-post-c");
+      expect(await forum.readTopicReadState("reader-a", "read-topic")).toMatchObject({
+        status: "read",
+        lastReadPostId: "read-post-c",
+      });
+
+      const firstWriter = createHyperdriveForumWriter(databaseUrl);
+      const secondWriter = createHyperdriveForumWriter(databaseUrl);
+      await Promise.all([
+        firstWriter.markTopicReadThrough({
+          userId: "reader-b",
+          topicId: "read-topic",
+          postId: "read-post-c",
+        }),
+        secondWriter.markTopicReadThrough({
+          userId: "reader-b",
+          topicId: "read-topic",
+          postId: "read-post-b",
+        }),
+      ]);
+      expect(await forum.readTopicReadState("reader-b", "read-topic")).toMatchObject({
+        status: "read",
+        lastReadPostId: "read-post-c",
+      });
+
+      await forum.createPost({
+        id: "read-post-d",
+        topicId: "read-topic",
+        authorId: "read-author",
+        bodyRevision: { id: "read-body-d", originalContent: "D", sourceLocale: "en" },
+      });
+      expect(await forum.readTopicReadState("reader-a", "read-topic")).toMatchObject({
+        status: "unread",
+        lastReadPostId: "read-post-c",
+        firstUnreadPostId: "read-post-d",
+        latestPostId: "read-post-d",
+      });
+      expect(await forum.readTopicReadState("reader-c", "read-topic")).toMatchObject({
+        status: "new",
+        lastReadPostId: null,
+        firstUnreadPostId: "read-post-a",
+      });
+
+      await expectDatabaseCode(
+        client.query(
+          `insert into forum_topic_read_states (user_id, topic_id, last_read_post_id)
+           values ('reader-c', 'read-topic', 'post-1')
+           on conflict (user_id, topic_id) do update
+             set last_read_post_id = excluded.last_read_post_id`,
+        ),
+        "23503",
+      );
+
+      await forum.markTopicReadThrough("reader-a", "read-topic", "read-post-d");
+      await client.query("delete from forum_posts where id = 'read-post-d'");
+      expect(await forum.readTopicReadState("reader-a", "read-topic")).toMatchObject({
+        status: "new",
+        lastReadPostId: null,
+        firstUnreadPostId: "read-post-a",
+      });
+
+      await expect(forum.markTopicReadThrough("reader-a", "read-topic", "post-1"))
+        .rejects.toBeInstanceOf(ForumEntityNotFoundError);
+    } finally {
+      await client.query("delete from forum_topics where id = 'read-topic'");
+      await client.query(
+        'delete from "user" where id = any($1::text[])',
+        [["read-author", "reader-a", "reader-b", "reader-c"]],
+      );
+    }
   });
 
   it("persists browser write capability topics/replies with und revisions and rolls back an incomplete topic", async () => {

@@ -162,6 +162,13 @@
       "when": 1791059400000,
       "tag": "0022_forum_reply_relationships",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1791063000000,
+      "tag": "0023_forum_topic_read_states",
+      "breakpoints": true
     }
   ]
 }

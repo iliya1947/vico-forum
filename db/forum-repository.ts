@@ -6,6 +6,7 @@ import {
   forumPosts,
   forumSections,
   forumTags,
+  forumTopicReadStates,
   forumTopicTags,
   forumTopicTitleRevisions,
   forumTopics,
@@ -46,6 +47,28 @@ export interface ForumPopularTopicSummary {
 }
 
 export type ForumPopularPage = Record<ForumPopularPeriod, ForumPopularTopicSummary[]>;
+
+export type ForumTopicReadStatus = "new" | "unread" | "read";
+
+export interface ForumTopicReadState {
+  topicId: string;
+  status: ForumTopicReadStatus;
+  lastReadPostId: string | null;
+  firstUnreadPostId: string | null;
+  latestPostId: string | null;
+}
+
+export interface ForumUnreadTopicSummary {
+  id: string;
+  title: string;
+  authorName: string;
+  postCount: number;
+  latestActivityAt: Date;
+  status: "new" | "unread";
+  firstUnreadPostId: string;
+  section: { id: string; name: string };
+  category: { id: string; name: string };
+}
 
 export interface ForumUnansweredTopicSummary {
   id: string;
@@ -139,6 +162,8 @@ export interface ForumReader {
   readHomepage(latestTopicsPerCategory?: number): Promise<ForumHomepageCategorySummary[]>;
   readPopular(referenceTime?: Date, limitPerPeriod?: number): Promise<ForumPopularPage>;
   readUnanswered(): Promise<ForumUnansweredTopicSummary[]>;
+  readUnreadTopics(userId: string): Promise<ForumUnreadTopicSummary[]>;
+  readTopicReadState(userId: string, topicId: string): Promise<ForumTopicReadState | undefined>;
   readTags(): Promise<ForumTagSummary[]>;
   readTag(key: string): Promise<ForumTagPage | undefined>;
   search(query: string, limit?: number): Promise<ForumSearchResult[]>;
@@ -483,6 +508,188 @@ export class DrizzleForumRepository {
       "7d": rank("activity7d", "latest7d"),
       "30d": rank("activity30d", "latest30d"),
     };
+  }
+
+  async readUnreadTopics(userId: string): Promise<ForumUnreadTopicSummary[]> {
+    const result = await this.database.execute<{
+      id: string;
+      title: string;
+      author_name: string;
+      post_count: number;
+      latest_activity_at: Date;
+      read_status: "new" | "unread";
+      first_unread_post_id: string;
+      section_id: string;
+      section_name: string;
+      category_id: string;
+      category_name: string;
+    }>(sql`
+      select
+        t.id,
+        title_revision.original_content as title,
+        author.name as author_name,
+        latest.post_count,
+        latest.created_at as latest_activity_at,
+        case when read_state.user_id is null then 'new' else 'unread' end as read_status,
+        first_unread.id as first_unread_post_id,
+        section.id as section_id,
+        section.name as section_name,
+        category.id as category_id,
+        category.name as category_name
+      from forum_topics t
+      inner join forum_topic_title_revisions title_revision
+        on title_revision.topic_id = t.id
+       and title_revision.id = t.current_title_revision_id
+      inner join "user" author on author.id = t.author_id
+      inner join forum_sections section on section.id = t.section_id
+      inner join forum_categories category on category.id = section.category_id
+      left join forum_topic_read_states read_state
+        on read_state.user_id = ${userId}
+       and read_state.topic_id = t.id
+      left join forum_posts marker
+        on marker.topic_id = t.id
+       and marker.id = read_state.last_read_post_id
+      inner join lateral (
+        select p.id
+        from forum_posts p
+        where p.topic_id = t.id
+          and (
+            read_state.user_id is null
+            or (p.created_at, p.id) > (marker.created_at, marker.id)
+          )
+        order by p.created_at asc, p.id asc
+        limit 1
+      ) first_unread on true
+      inner join lateral (
+        select
+          p.id,
+          p.created_at,
+          count(*) over ()::int as post_count
+        from forum_posts p
+        where p.topic_id = t.id
+        order by p.created_at desc, p.id desc
+        limit 1
+      ) latest on true
+      order by latest.created_at desc, latest.id desc, t.id desc
+    `);
+
+    return result.rows.map((row) => ({
+      id: row.id,
+      title: row.title,
+      authorName: row.author_name,
+      postCount: row.post_count,
+      latestActivityAt: row.latest_activity_at,
+      status: row.read_status,
+      firstUnreadPostId: row.first_unread_post_id,
+      section: { id: row.section_id, name: row.section_name },
+      category: { id: row.category_id, name: row.category_name },
+    }));
+  }
+
+  async readTopicReadState(userId: string, topicId: string): Promise<ForumTopicReadState | undefined> {
+    const result = await this.database.execute<{
+      topic_id: string;
+      last_read_post_id: string | null;
+      first_unread_post_id: string | null;
+      latest_post_id: string | null;
+      read_status: ForumTopicReadStatus;
+    }>(sql`
+      select
+        t.id as topic_id,
+        read_state.last_read_post_id,
+        first_unread.id as first_unread_post_id,
+        latest.id as latest_post_id,
+        case
+          when read_state.user_id is null then 'new'
+          when first_unread.id is not null then 'unread'
+          else 'read'
+        end as read_status
+      from forum_topics t
+      left join forum_topic_read_states read_state
+        on read_state.user_id = ${userId}
+       and read_state.topic_id = t.id
+      left join forum_posts marker
+        on marker.topic_id = t.id
+       and marker.id = read_state.last_read_post_id
+      left join lateral (
+        select p.id
+        from forum_posts p
+        where p.topic_id = t.id
+          and (
+            read_state.user_id is null
+            or (p.created_at, p.id) > (marker.created_at, marker.id)
+          )
+        order by p.created_at asc, p.id asc
+        limit 1
+      ) first_unread on true
+      left join lateral (
+        select p.id
+        from forum_posts p
+        where p.topic_id = t.id
+        order by p.created_at desc, p.id desc
+        limit 1
+      ) latest on true
+      where t.id = ${topicId}
+    `);
+
+    const row = result.rows[0];
+    return row && {
+      topicId: row.topic_id,
+      status: row.read_status,
+      lastReadPostId: row.last_read_post_id,
+      firstUnreadPostId: row.first_unread_post_id,
+      latestPostId: row.latest_post_id,
+    };
+  }
+
+  async markTopicReadThrough(userId: string, topicId: string, postId: string): Promise<string> {
+    const result = await this.database.execute<{
+      target_exists: boolean;
+      last_read_post_id: string | null;
+    }>(sql`
+      with target as (
+        select id, topic_id
+        from forum_posts
+        where topic_id = ${topicId}
+          and id = ${postId}
+      ),
+      upsert as (
+        insert into forum_topic_read_states (user_id, topic_id, last_read_post_id)
+        select ${userId}, target.topic_id, target.id
+        from target
+        on conflict (user_id, topic_id) do update
+          set last_read_post_id = excluded.last_read_post_id
+          where exists (
+            select 1
+            from forum_posts current_post
+            inner join forum_posts candidate_post
+              on candidate_post.topic_id = excluded.topic_id
+             and candidate_post.id = excluded.last_read_post_id
+            where current_post.topic_id = forum_topic_read_states.topic_id
+              and current_post.id = forum_topic_read_states.last_read_post_id
+              and (candidate_post.created_at, candidate_post.id)
+                  > (current_post.created_at, current_post.id)
+          )
+        returning last_read_post_id
+      )
+      select
+        exists(select 1 from target) as target_exists,
+        (
+          select state.last_read_post_id
+          from forum_topic_read_states state
+          where state.user_id = ${userId}
+            and state.topic_id = ${topicId}
+        ) as last_read_post_id
+    `);
+
+    const row = result.rows[0];
+    if (!row?.target_exists) {
+      throw new ForumEntityNotFoundError("post does not exist in topic");
+    }
+    if (!row.last_read_post_id) {
+      throw new ForumStateConflictError("read marker was not persisted");
+    }
+    return row.last_read_post_id;
   }
 
   async readUnanswered(): Promise<ForumUnansweredTopicSummary[]> {

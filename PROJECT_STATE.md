@@ -66,6 +66,13 @@ Vico Forum находится в ранней pre-release разработке.
   `/:locale/search?q=...` поверх current topic-title/post revisions и topic tags без новой
   migration/search-index subsystem. Repository CI и GitHub Pages preview прошли; owner visual acceptance подтверждён 2026-10-03. Search merged через PR #171. Message links реализован и merged через PR #172: public permanent post anchors + copy-link UI работают без DB/backend изменений; GitHub Pages preview пройден, owner visual acceptance подтверждён 2026-10-03. Reply/Quote реализован: migration `0022_forum_reply_relationships` добавляет nullable same-topic parent relation для forum posts; обсуждение остаётся линейным, Reply привязывает новый post к конкретному parent, Quote вставляет только выделенный текст как Markdown blockquote, а parent/child сообщения связываются стабильными anchors. Existing permissions/rate-limit semantics не меняются; repository CI и GitHub Pages preview проходят, owner visual acceptance подтверждён 2026-10-03. Дальнейшая косметическая полировка homepage
   сейчас не является приоритетом.
+- Для следующего authenticated `Unread/new` flow текущий implementation slice добавляет
+  минимальный persisted read-state foundation: одна marker-запись на `user + topic` хранит
+  последний фактически прочитанный post, same-topic FK не допускает cross-topic cursor,
+  repository/service boundary вычисляет `new / unread / read` и первый непрочитанный post по
+  authoritative линейному порядку `createdAt + id`, а mark-through mutation продвигает cursor
+  только монотонно. Guest persistence, UI route/indicators, automatic mark-after-render и Pages
+  presentation в этот foundation slice ещё не входят.
 - Category-page discovery slice в PR #159 прошёл owner visual acceptance в GitHub Pages:
   owner-approved header/logo/discovery nav переиспользованы без backend/DB изменений; category
   heading показывает только derived section/topic/message totals, section rows стали compact
@@ -260,7 +267,7 @@ Vico Forum находится в ранней pre-release разработке.
 - generic `/:locale/*`, runtime `LocaleRegistry`, BCP-47 resolution, LTR/RTL и request-scoped
   `i18next`;
 - persistent locale registry, persistent UI translation storage и compiled bundle storage;
-- текущая migration history — `0000`–`0020`.
+- текущая development migration history — `0000`–`0023`; external migration evidence по-прежнему покрывает только принятый production gate через `0020`.
 
 ## Forum core — Stage 4
 
@@ -613,7 +620,8 @@ runtime roles/Hyperdrive writes и другие schema-dependent runtime capabil
 11. Owner mobile review 2026-10-03 унифицировал compact destination cards на Category/Section/Tags/Search: entry action остаётся отдельной vertical orange rail справа по всей высоте карточки; нижний orange footer для этих карточек не используется.
 12. Message links реализован и merged через PR #172: permanent message anchor + public Copy link + localized success/failure feedback; owner visual acceptance подтверждён 2026-10-03.
 13. Reply/Quote реализован: migration `0022_forum_reply_relationships` добавляет nullable same-topic direct-parent relation; discussion остаётся линейным, Reply таргетирует concrete parent, child показывает parent anchor, parent — direct-reply anchors, Quote вставляет только реально выделенный текст как Markdown blockquote. Existing permissions/rate-limit semantics сохраняются; repository CI и GitHub Pages preview проходят, owner visual acceptance подтверждён 2026-10-03.
-14. Stage 6 infrastructure gates остаются на паузе до отдельного указания владельца.
+14. `Unread/new` foundation добавляет migration `0023_forum_topic_read_states` и server-side read-state semantics: per-user/topic marker, stable first-unread resolution и monotonic mark-through-post. Реальный `/:locale/unread` route, topic/section indicators и mark-after-render interaction остаются следующей частью той же bounded product-задачи.
+15. Stage 6 infrastructure gates остаются на паузе до отдельного указания владельца.
 
 Ранее подготовленный защищённый manual rollout mechanism остаётся в repository. При явном
 возобновлении Stage 6 актуальная последовательность остаётся следующей:

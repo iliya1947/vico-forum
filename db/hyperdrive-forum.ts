@@ -20,6 +20,7 @@ export interface ForumWriter {
   selectBestAnswer(input: { topicId: string; postId: string; actorId: string; scope: SolutionManagementScope }): Promise<void>;
   correctTopicTitleSourceLocale(input: { topicId: string; expectedRevisionId: string; sourceLocale: string; actorId: string; scope: SourceLocaleCorrectionScope }): Promise<void>;
   correctPostBodySourceLocale(input: { topicId: string; postId: string; expectedRevisionId: string; sourceLocale: string; actorId: string; scope: SourceLocaleCorrectionScope }): Promise<void>;
+  markTopicReadThrough(input: { userId: string; topicId: string; postId: string }): Promise<{ lastReadPostId: string }>;
 }
 
 export class ForumStorageUnavailableError extends Error {
@@ -56,6 +57,8 @@ export function createHyperdriveForumReader(
     readHomepage: (latestTopicsPerCategory) => read((repository) => repository.readHomepage(latestTopicsPerCategory)),
     readPopular: (referenceTime, limitPerPeriod) => read((repository) => repository.readPopular(referenceTime, limitPerPeriod)),
     readUnanswered: () => read((repository) => repository.readUnanswered()),
+    readUnreadTopics: (userId) => read((repository) => repository.readUnreadTopics(userId)),
+    readTopicReadState: (userId, topicId) => read((repository) => repository.readTopicReadState(userId, topicId)),
     readTags: () => read((repository) => repository.readTags()),
     readTag: (key) => read((repository) => repository.readTag(key)),
     search: (query, limit) => read((repository) => repository.search(query, limit)),
@@ -122,6 +125,9 @@ export function createHyperdriveForumWriter(
     selectBestAnswer: ({ topicId, postId, actorId, scope }) => write((forum) => forum.selectBestAnswer(topicId, postId, actorId, scope)),
     correctTopicTitleSourceLocale: (input) => writeCorrection(async (forum) => { await forum.correctTopicTitleSourceLocale(input); }),
     correctPostBodySourceLocale: (input) => writeCorrection(async (forum) => { await forum.correctPostBodySourceLocale(input); }),
+    markTopicReadThrough: (input) => writeCorrection(async (forum) => ({
+      lastReadPostId: await forum.markTopicReadThrough(input.userId, input.topicId, input.postId),
+    })),
   };
 }
 
