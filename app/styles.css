@@ -6031,11 +6031,6 @@ a.topic-tag:focus-visible {
   }
 }
 
-
-.topic-message-labels-mobile {
-  display: none;
-}
-
 .topic-message-footer {
   display: contents;
 }
@@ -6051,14 +6046,11 @@ a.topic-tag:focus-visible {
   .topic-message-author {
     grid-column: 1;
     grid-row: 1;
-    display: grid;
-    grid-template-columns: 2rem minmax(0, 1fr);
-    grid-template-areas:
-      "avatar author"
-      "avatar labels";
+    display: flex;
+    min-width: 0;
     min-height: 3.35rem;
     align-items: center;
-    gap: 0.1rem 0.5rem;
+    gap: 0.5rem;
     padding: 0.45rem 0.25rem 0.45rem 0.65rem;
     border: 0;
     border-block-end: 1px solid var(--color-border);
@@ -6069,38 +6061,8 @@ a.topic-tag:focus-visible {
     background: var(--color-accent-soft);
   }
 
-  .topic-message-avatar {
-    grid-area: avatar;
-  }
-
   .topic-message-author-copy {
-    grid-area: author;
-    align-self: end;
-  }
-
-  .topic-message-labels-mobile {
-    grid-area: labels;
-    display: flex;
-    align-self: start;
-    gap: 0.25rem;
-  }
-
-  .topic-message-labels-mobile .original-question-label,
-  .topic-message-labels-mobile .best-answer-label {
-    min-height: 0;
-    padding: 0;
-    border: 0;
-    background: transparent;
-    font-size: 0.58rem;
-    line-height: 1.15;
-  }
-
-  .topic-message-labels-mobile .original-question-label {
-    color: var(--color-text-muted);
-  }
-
-  .topic-message-labels-mobile .best-answer-label {
-    color: var(--color-accent-hover);
+    min-width: 0;
   }
 
   .topic-shell .forum-post-content {
@@ -6111,11 +6073,15 @@ a.topic-tag:focus-visible {
     grid-column: 2;
     grid-row: 1;
     display: flex;
+    min-width: 0;
     min-height: 3.35rem;
+    flex-wrap: wrap;
+    align-content: center;
     align-items: center;
     justify-content: flex-end;
+    gap: 0.18rem 0.35rem;
     margin: 0;
-    padding: 0.35rem 0.55rem 0.35rem 0.2rem;
+    padding: 0.3rem 0.55rem 0.3rem 0.2rem;
     border: 0;
     border-block-end: 1px solid var(--color-border);
     background: var(--color-surface-muted);
@@ -6126,7 +6092,15 @@ a.topic-tag:focus-visible {
   }
 
   .topic-message-toolbar > .topic-message-labels {
-    display: none;
+    justify-content: flex-end;
+    gap: 0.25rem;
+  }
+
+  .topic-message-toolbar .original-question-label,
+  .topic-message-toolbar .best-answer-label {
+    min-height: 1.35rem;
+    padding: 0.1rem 0.35rem;
+    font-size: 0.58rem;
   }
 
   .topic-message-permalink {
