@@ -11,6 +11,7 @@ import type {
   ForumTagPage,
   ForumTagSummary,
   ForumTopicPage,
+  ForumTopicReadKind,
   ForumTopicReadState,
   ForumUnansweredTopicSummary,
   ForumUnreadTopicSummary,
@@ -380,6 +381,15 @@ export function SearchView({
                     <span className="section-topic-copy">
                       <strong>{topic.title}</strong>
                       <small>{t("startedBy", { author: topic.authorName })}</small>
+                      {topicReadStates?.[topic.id] ? (
+                        <small className={`section-topic-read-state is-${topicReadStates[topic.id]}`}>
+                          {topicReadStates[topic.id] === "new"
+                            ? t("unreadNew")
+                            : topicReadStates[topic.id] === "unread"
+                              ? t("unreadNav")
+                              : t("readStateRead")}
+                        </small>
+                      ) : null}
                       {topic.tags.length > 0 ? (
                         <span className="topic-tag-list" aria-label={t("topicTagsLabel")}>
                           {topic.tags.map((tag) => <span className="topic-tag" key={tag.key}>#{tag.name}</span>)}
@@ -843,11 +853,13 @@ export function SectionView({
   locale,
   section,
   canCreateTopic,
+  topicReadStates,
   actionData,
 }: {
   locale: string;
   section: ForumSectionPage;
   canCreateTopic: boolean;
+  topicReadStates: Readonly<Record<string, ForumTopicReadKind>> | null;
   actionData?: ForumMutationError;
 }) {
   const { t } = useTranslation("common");
