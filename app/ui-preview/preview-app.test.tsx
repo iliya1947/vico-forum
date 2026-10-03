@@ -48,16 +48,16 @@ describe("editor preview states", () => {
 
     expect(await screen.findByRole("toolbar", { name: "Markdown formatting" })).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Markdown preview" })).toBeInTheDocument();
-    expect(screen.getByText("ts")).toBeInTheDocument();
+    expect(document.querySelector(".forum-code-language")).toHaveTextContent("ts");
     expect(screen.getByRole("button", { name: "Copy code" })).toBeInTheDocument();
-    expect(screen.getByLabelText("First message")).toHaveValue(expect.stringContaining("```ts"));
+    expect((screen.getByLabelText("First message") as HTMLTextAreaElement).value).toContain("```ts");
   });
 
   it("shows a targeted reply with an inserted Markdown quote and preview", async () => {
     render(<EmbeddedPreview scenarioId="topic-editor" />);
 
     expect(await screen.findByText("Replying to Message #1")).toBeInTheDocument();
-    expect(screen.getByLabelText("Reply")).toHaveValue(expect.stringContaining("> I want strong typing"));
+    expect((screen.getByLabelText("Reply") as HTMLTextAreaElement).value).toContain("> I want strong typing");
     expect(screen.getByRole("region", { name: "Markdown preview" })).toBeInTheDocument();
   });
 });
