@@ -1359,33 +1359,31 @@ export function TopicView({
                         )}
                       </div>
 
-                      <div className="topic-message-footer-end">
-                        <PostBodyTranslationControls presentation={postPresentation} />
-                        <div className="topic-message-desktop-actions">
-                          <MessagePermalinkControl
-                            postId={post.id}
-                            messageNumber={messageNumber}
-                            feedback={messageLinkFeedback}
-                            onCopy={copyMessageLink}
-                          />
-                          {canReply && (
-                            <div className="topic-message-participation">
-                              <div className="topic-message-participation-actions">
-                                <button type="button" onClick={() => quoteSelectedText(post.id)}>
-                                  {t("quoteSelectedText")}
-                                </button>
-                                <button type="button" onClick={() => targetReply(post.id)}>
-                                  {t("replyToMessage")}
-                                </button>
-                              </div>
-                              {quoteSelectionErrorPostId === post.id && (
-                                <span className="topic-message-quote-feedback" role="status" aria-live="polite">
-                                  {t("quoteSelectionRequired")}
-                                </span>
-                              )}
+                      <PostBodyTranslationControls presentation={postPresentation} />
+                      <div className="topic-message-desktop-actions">
+                        <MessagePermalinkControl
+                          postId={post.id}
+                          messageNumber={messageNumber}
+                          feedback={messageLinkFeedback}
+                          onCopy={copyMessageLink}
+                        />
+                        {canReply && (
+                          <div className="topic-message-participation">
+                            <div className="topic-message-participation-actions">
+                              <button type="button" onClick={() => quoteSelectedText(post.id)}>
+                                {t("quoteSelectedText")}
+                              </button>
+                              <button type="button" onClick={() => targetReply(post.id)}>
+                                {t("replyToMessage")}
+                              </button>
                             </div>
-                          )}
-                        </div>
+                            {quoteSelectionErrorPostId === post.id && (
+                              <span className="topic-message-quote-feedback" role="status" aria-live="polite">
+                                {t("quoteSelectionRequired")}
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
 
