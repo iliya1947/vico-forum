@@ -1159,7 +1159,6 @@ function translatedPresentation(
       origin: "machine",
       provider: "preview",
       model: "representative",
-      attribution: "Representative preview data",
     },
   };
 }
