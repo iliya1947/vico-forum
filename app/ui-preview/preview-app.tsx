@@ -873,104 +873,96 @@ function DemoMessageBody() {
 }
 
 function MessageCardLayoutDemo() {
+  const [hybridOpen, setHybridOpen] = useState(false);
+  const [footerOpen, setFooterOpen] = useState(false);
+
   return (
     <main className="message-layout-demo">
       <header className="message-layout-demo-heading">
-        <p>Preview only · same content in every option</p>
-        <h1>Mobile message card layouts</h1>
+        <p>Preview only · the accepted author/body/replies placement stays the same</p>
+        <h1>Action area variants</h1>
       </header>
 
       <section className="message-layout-option">
-        <h2><span>1</span> Compact forum card</h2>
-        <article className="message-layout-card message-layout-card-compact">
-          <header className="message-layout-compact-header">
-            <div className="message-layout-demo-author">
-              <span className="message-layout-demo-avatar">S</span>
-              <span>
-                <strong>Sam Chen</strong>
-                <small>Best answer</small>
-              </span>
-            </div>
-            <div className="message-layout-demo-meta">
-              <strong>Message #3</strong>
-              <DemoCopyButton />
-            </div>
-          </header>
-          <div className="message-layout-demo-body">
-            <a href="#demo-parent">Reply to Message #1</a>
-            <DemoMessageBody />
-          </div>
-          <footer className="message-layout-demo-footer">
-            <nav aria-label="Direct replies">
-              <span>Replies:</span>
-              <a href="#demo-r4">#4</a>
-              <a href="#demo-r5">#5</a>
-            </nav>
-            <div className="message-layout-demo-actions">
-              <button type="button">Reply</button>
-              <button type="button">Quote</button>
-            </div>
-          </footer>
-        </article>
-      </section>
-
-      <section className="message-layout-option">
-        <h2><span>2</span> Flat card</h2>
-        <article className="message-layout-card message-layout-card-flat">
+        <h2><span>1</span> Reply + more</h2>
+        <article className="message-layout-card message-layout-card-flat message-action-demo-card">
           <header className="message-layout-flat-header">
             <span className="message-layout-demo-avatar">S</span>
             <strong>Sam Chen</strong>
             <small>Best answer</small>
             <span className="message-layout-flat-number">#3</span>
-            <DemoCopyButton />
           </header>
           <div className="message-layout-demo-body">
-            <a href="#demo-parent-flat">↳ Reply to #1</a>
+            <a href="#demo-hybrid-parent">↳ Reply to #1</a>
             <DemoMessageBody />
           </div>
-          <footer className="message-layout-flat-footer">
+          <footer className="message-action-hybrid-footer">
             <nav aria-label="Direct replies">
               <span>Replies</span>
-              <a href="#demo-flat-r4">#4</a>
-              <a href="#demo-flat-r5">#5</a>
+              <a href="#demo-hybrid-r4">#4</a>
+              <a href="#demo-hybrid-r5">#5</a>
             </nav>
-            <div className="message-layout-demo-actions">
-              <button type="button">Reply</button>
-              <button type="button">Quote</button>
+            <div className="message-action-primary">
+              <button type="button" className="message-action-reply">Reply</button>
+              <button
+                type="button"
+                className="message-action-more"
+                aria-expanded={hybridOpen}
+                aria-label="More message actions"
+                onClick={() => setHybridOpen((open) => !open)}
+              >
+                ⋯
+              </button>
             </div>
+            {hybridOpen && (
+              <div className="message-action-overflow">
+                <button type="button">Quote</button>
+                <button type="button">Copy link</button>
+              </div>
+            )}
           </footer>
         </article>
       </section>
 
       <section className="message-layout-option">
-        <h2><span>3</span> Mini author column</h2>
-        <article className="message-layout-card message-layout-card-author-rail">
-          <aside className="message-layout-author-rail">
+        <h2><span>2</span> Collapsible actions footer</h2>
+        <article className="message-layout-card message-layout-card-flat message-action-demo-card">
+          <header className="message-layout-flat-header">
             <span className="message-layout-demo-avatar">S</span>
             <strong>Sam Chen</strong>
-          </aside>
-          <div className="message-layout-author-main">
-            <header className="message-layout-author-main-header">
-              <small>Best answer</small>
-              <span className="message-layout-author-number">Message #3</span>
-              <DemoCopyButton />
-            </header>
-            <div className="message-layout-demo-body">
-              <a href="#demo-parent-rail">Reply to Message #1</a>
-              <DemoMessageBody />
-            </div>
-            <footer className="message-layout-demo-footer">
+            <small>Best answer</small>
+            <span className="message-layout-flat-number">#3</span>
+          </header>
+          <div className="message-layout-demo-body">
+            <a href="#demo-collapsible-parent">↳ Reply to #1</a>
+            <DemoMessageBody />
+          </div>
+          <footer className="message-action-collapsible-footer">
+            <div className="message-action-collapsible-summary">
               <nav aria-label="Direct replies">
-                <span>Replies:</span>
-                <a href="#demo-rail-r4">#4</a>
-                <a href="#demo-rail-r5">#5</a>
+                <span>Replies</span>
+                <a href="#demo-collapsible-r4">#4</a>
+                <a href="#demo-collapsible-r5">#5</a>
               </nav>
-              <div className="message-layout-demo-actions">
+              <button
+                type="button"
+                className="message-action-expand"
+                aria-expanded={footerOpen}
+                aria-label={footerOpen ? "Hide message actions" : "Show message actions"}
+                onClick={() => setFooterOpen((open) => !open)}
+              >
+                <span>Actions</span>
+                <span aria-hidden="true">{footerOpen ? "⌃" : "⌄"}</span>
+              </button>
+            </div>
+            {footerOpen && (
+              <div className="message-action-expanded">
                 <button type="button">Reply</button>
                 <button type="button">Quote</button>
+                <button type="button">Copy link</button>
               </div>
-            </footer>
-          </div>
+            )}
+          </footer>
         </article>
       </section>
     </main>
