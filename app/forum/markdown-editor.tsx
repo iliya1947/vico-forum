@@ -34,6 +34,29 @@ function normalizedCodeLanguage(value: string): string {
   return value.trim().replace(/[^a-z0-9_+.-]/giu, "").slice(0, 32);
 }
 
+function longestBacktickRun(value: string): number {
+  let longest = 0;
+  for (const match of value.matchAll(/`+/gu)) {
+    longest = Math.max(longest, match[0].length);
+  }
+  return longest;
+}
+
+function inlineCodeAffixes(value: string): { prefix: string; suffix: string } {
+  const delimiter = "`".repeat(longestBacktickRun(value) + 1);
+  const isOnlySpaces = /^ +$/u.test(value);
+  const needsPadding = value.length > 0 && (
+    value.startsWith("`")
+    || value.endsWith("`")
+    || (!isOnlySpaces && value.startsWith(" ") && value.endsWith(" "))
+  );
+  const padding = needsPadding ? " " : "";
+  return {
+    prefix: delimiter + padding,
+    suffix: padding + delimiter,
+  };
+}
+
 export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorProps>(
   function MarkdownEditor(
     {
@@ -102,8 +125,9 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       const needsTrailingBreak = end < value.length && value[end] !== "\n";
       const leading = needsLeadingBreak ? "\n\n" : "";
       const trailing = needsTrailingBreak ? "\n\n" : "";
-      const fenceStart = leading + "```" + language + "\n";
-      const fenceEnd = "\n```" + trailing;
+      const fence = "`".repeat(Math.max(3, longestBacktickRun(selected) + 1));
+      const fenceStart = leading + fence + language + "\n";
+      const fenceEnd = "\n" + fence + trailing;
       const nextValue = value.slice(0, start) + fenceStart + selected + fenceEnd + value.slice(end);
 
       if (selected) {
@@ -167,8 +191,8 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
                   textarea.selectionStart ?? value.length,
                   textarea.selectionEnd ?? textarea.selectionStart ?? value.length,
                 );
-                const marker = selected.includes("`") ? "``" : "`";
-                replaceSelection(marker, marker, marker.length);
+                const { prefix, suffix } = inlineCodeAffixes(selected);
+                replaceSelection(prefix, suffix, prefix.length);
               }}
             >
               {t("editorInlineCode")}
