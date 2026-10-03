@@ -90,8 +90,9 @@ const fenced = fooBar();
     const restored = document.restore(translateIdentity(document.segments));
     const { container } = render(<ForumMarkdown>{restored}</ForumMarkdown>);
     expect(screen.getByText("inlineCode()").tagName).toBe("CODE");
-    expect(screen.getByText(/const indented/).closest("pre")).not.toBeNull();
-    expect(screen.getByText(/const fenced/).closest("pre")).not.toBeNull();
+    const renderedCode = [...container.querySelectorAll("pre")].map((element) => element.textContent ?? "");
+    expect(renderedCode.some((value) => value.includes("const indented"))).toBe(true);
+    expect(renderedCode.some((value) => value.includes("const fenced"))).toBe(true);
     expect(screen.getByRole("link", { name: "https://example.com/raw" }).getAttribute("href"))
       .toBe("https://example.com/raw");
     expect(container.querySelector("img")).toBeNull();
