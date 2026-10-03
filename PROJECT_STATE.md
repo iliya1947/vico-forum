@@ -66,6 +66,15 @@ Vico Forum находится в ранней pre-release разработке.
   `/:locale/search?q=...` поверх current topic-title/post revisions и topic tags без новой
   migration/search-index subsystem. Repository CI и GitHub Pages preview прошли; owner visual acceptance подтверждён 2026-10-03. Search merged через PR #171. Message links реализован и merged через PR #172: public permanent post anchors + copy-link UI работают без DB/backend изменений; GitHub Pages preview пройден, owner visual acceptance подтверждён 2026-10-03. Reply/Quote реализован: migration `0022_forum_reply_relationships` добавляет nullable same-topic parent relation для forum posts; обсуждение остаётся линейным, Reply привязывает новый post к конкретному parent, Quote вставляет только выделенный текст как Markdown blockquote, а parent/child сообщения связываются стабильными anchors. Existing permissions/rate-limit semantics не меняются; repository CI и GitHub Pages preview проходят, owner visual acceptance подтверждён 2026-10-03. Дальнейшая косметическая полировка homepage
   сейчас не является приоритетом.
+- Текущий Unread/new slice получил repository/database foundation без UI wiring:
+  forward migration `0023_forum_topic_read_states` хранит один last-read cursor на пару
+  authenticated user + topic и same-topic FK не позволяет ссылаться на post другой темы.
+  Repository semantics выводят `new / unread / read`, deterministic first-unread по authoritative
+  `createdAt + id` order, forum-wide set-based unread listing и monotonic cursor advancement:
+  stale/concurrent marker не может сдвинуть cursor назад, а reply после rendered snapshot остаётся
+  unread. Реальный `/:locale/unread` route, section indicators, jump UI и authenticated mark-read
+  request wiring относятся к следующему этапу этого же bounded slice. External migration/rollout
+  для `0023` не выполнялся.
 - Category-page discovery slice в PR #159 прошёл owner visual acceptance в GitHub Pages:
   owner-approved header/logo/discovery nav переиспользованы без backend/DB изменений; category
   heading показывает только derived section/topic/message totals, section rows стали compact
