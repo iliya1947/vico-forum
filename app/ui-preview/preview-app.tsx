@@ -283,6 +283,7 @@ const topic = {
       topicId,
       authorId: "alex",
       authorName: "Alex Rivera",
+      parentPostId: null,
       createdAt: new Date("2026-09-27T10:00:00Z"),
       body: {
         id: "post-r1",
@@ -295,6 +296,7 @@ const topic = {
       topicId,
       authorId: "maya",
       authorName: "Maya Cohen",
+      parentPostId: "question",
       createdAt: new Date("2026-09-27T11:00:00Z"),
       body: {
         id: "post-r3",
@@ -307,6 +309,7 @@ const topic = {
       topicId,
       authorId: "sam",
       authorName: "Sam Chen",
+      parentPostId: "followup",
       createdAt: new Date("2026-09-27T12:00:00Z"),
       body: {
         id: "post-r2",
@@ -1049,7 +1052,6 @@ function topicTitlePresentation(rtl: boolean): ContentTranslationPresentation {
         origin: "machine",
         provider: "preview",
         model: "representative",
-        attribution: "Representative preview data",
       },
     };
   }
@@ -1157,7 +1159,6 @@ function translatedPresentation(
       origin: "machine",
       provider: "preview",
       model: "representative",
-      attribution: "Representative preview data",
     },
   };
 }

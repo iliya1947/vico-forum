@@ -27,7 +27,11 @@ import {
   type HomepageCategoryOverview,
   type HomepageTopicSummary,
 } from "./homepage";
-import { PostBodyPresentation, TopicTitlePresentation } from "./content-translation-view";
+import {
+  PostBodyContent,
+  PostBodyTranslationControls,
+  TopicTitlePresentation,
+} from "./content-translation-view";
 import {
   ContentGenerationNavigationBoundary,
   ContentGenerationUnitStatus,
@@ -948,9 +952,6 @@ function MessagePermalinkControl({
 
   return (
     <span className="topic-message-permalink">
-      <a className="topic-message-anchor" href={`#post-${encodeURIComponent(postId)}`}>
-        {messageLabel}
-      </a>
       <button
         type="button"
         className="topic-message-copy-link"
@@ -1019,9 +1020,20 @@ export function TopicView({
       ]
     : [];
   const messageNumberById = new Map(topic.posts.map((post, index) => [post.id, index + 1]));
+  const directRepliesByParent = new Map<string, string[]>();
+  for (const post of topic.posts) {
+    if (!post.parentPostId) continue;
+    const replies = directRepliesByParent.get(post.parentPostId) ?? [];
+    replies.push(post.id);
+    directRepliesByParent.set(post.parentPostId, replies);
+  }
   const { t } = useTranslation("common");
   const [messageLinkFeedback, setMessageLinkFeedback] = useState<MessageLinkFeedback>(null);
+  const [replyTargetPostId, setReplyTargetPostId] = useState<string | null>(null);
+  const [quoteSelectionErrorPostId, setQuoteSelectionErrorPostId] = useState<string | null>(null);
+  const [openMessageActionsPostId, setOpenMessageActionsPostId] = useState<string | null>(null);
   const messageLinkRequestId = useRef(0);
+  const replyTextareaRef = useRef<HTMLTextAreaElement>(null);
   const navigation = useNavigation();
   const isReplySubmitting =
     navigation.state === "submitting"
@@ -1046,6 +1058,58 @@ export function TopicView({
     }
   }
 
+
+  function focusReplyForm() {
+    replyTextareaRef.current?.focus();
+    const heading = document.getElementById("reply-heading");
+    if (typeof heading?.scrollIntoView === "function") {
+      heading.scrollIntoView({ block: "center", behavior: "smooth" });
+    }
+  }
+
+  function targetReply(postId: string) {
+    setReplyTargetPostId(postId);
+    setQuoteSelectionErrorPostId(null);
+    focusReplyForm();
+  }
+
+  function quoteSelectedText(postId: string) {
+    const postElement = document.getElementById(`post-${postId}`);
+    const bodyElement = postElement?.querySelector<HTMLElement>("[data-message-body]");
+    const selection = window.getSelection();
+    const range = selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
+    const selectedText = selection?.toString().trim() ?? "";
+
+    if (
+      !bodyElement
+      || !range
+      || selection?.isCollapsed
+      || !selectedText
+      || !bodyElement.contains(range.startContainer)
+      || !bodyElement.contains(range.endContainer)
+    ) {
+      setQuoteSelectionErrorPostId(postId);
+      return;
+    }
+
+    setReplyTargetPostId(postId);
+    setQuoteSelectionErrorPostId(null);
+    const quote = selectedText
+      .split(/\r?\n/u)
+      .map((line) => `> ${line}`)
+      .join("\n") + "\n\n";
+
+    const textarea = replyTextareaRef.current;
+    if (!textarea) return;
+    const start = textarea.selectionStart ?? textarea.value.length;
+    const end = textarea.selectionEnd ?? start;
+    textarea.setRangeText(quote, start, end, "end");
+    textarea.focus();
+    const heading = document.getElementById("reply-heading");
+    if (typeof heading?.scrollIntoView === "function") {
+      heading.scrollIntoView({ block: "center", behavior: "smooth" });
+    }
+  }
   return (
     <ContentGenerationNavigationBoundary
       pageIdentity={JSON.stringify([locale, topic.id])}
@@ -1059,33 +1123,42 @@ export function TopicView({
         ]} />
 
         <section className="topic-heading">
-          <div className="topic-heading-main">
-            <p className="eyebrow">{t("topicLabel")}</p>
-            <TopicTitlePresentation presentation={titlePresentation} />
-            {titleGenerationUnit && (
-              <div className="topic-generation-status">
-                <ContentGenerationUnitStatus unit={titleGenerationUnit} />
-              </div>
-            )}
-            <div className="topic-heading-meta">
-              <span>{t("startedBy", { author: topic.authorName })}</span>
-              {topic.isSolved && <strong className="solved-badge">{t("solved")}</strong>}
+          <div className="topic-heading-side">
+            <div className="topic-heading-author">
+              <span className="topic-message-avatar" aria-hidden="true">
+                {topic.authorName.trim().slice(0, 1).toUpperCase()}
+              </span>
+              <span className="topic-message-author-copy">
+                <strong>{topic.authorName}</strong>
+              </span>
             </div>
-            {topic.tags.length > 0 ? (
-              <nav className="topic-tag-list topic-heading-tags" aria-label={t("topicTagsLabel")}>
-                {topic.tags.map((tag) => (
-                  <Link className="topic-tag" key={tag.key} to={forumTagPath(locale, tag.key)}>#{tag.name}</Link>
-                ))}
-              </nav>
-            ) : null}
+            {topic.isSolved && <strong className="solved-badge">{t("solved")}</strong>}
           </div>
 
-          <div className="topic-heading-actions">
-            {topic.bestAnswerPostId && (
-              <a className="topic-solution-link" href={`#post-${encodeURIComponent(topic.bestAnswerPostId)}`}>
-                {t("goToSolution")}
-              </a>
-            )}
+          <div className="topic-heading-content">
+            <div className="topic-heading-main">
+              <TopicTitlePresentation presentation={titlePresentation} />
+              {titleGenerationUnit && (
+                <div className="topic-generation-status">
+                  <ContentGenerationUnitStatus unit={titleGenerationUnit} />
+                </div>
+              )}
+              {topic.tags.length > 0 ? (
+                <nav className="topic-tag-list topic-heading-tags" aria-label={t("topicTagsLabel")}>
+                  {topic.tags.map((tag) => (
+                    <Link className="topic-tag" key={tag.key} to={forumTagPath(locale, tag.key)}>#{tag.name}</Link>
+                  ))}
+                </nav>
+              ) : null}
+            </div>
+
+            <div className="topic-heading-actions">
+              {topic.bestAnswerPostId && (
+                <a className="topic-solution-link" href={`#post-${encodeURIComponent(topic.bestAnswerPostId)}`}>
+                  {t("goToSolution")}
+                </a>
+              )}
+            </div>
           </div>
 
           {(canCorrectTitleSourceLocale || (canManageSolution && !topic.isSolved)) && (
@@ -1139,6 +1212,12 @@ export function TopicView({
               const canSelectBestAnswer =
                 canManageSolution && topic.isSolved && topic.bestAnswerPostId !== post.id;
               const hasMessageTools = canCorrectPostSourceLocale || canSelectBestAnswer;
+              const messageLinkState =
+                messageLinkFeedback?.postId === post.id ? messageLinkFeedback.state : null;
+              const parentMessageNumber =
+                post.parentPostId ? messageNumberById.get(post.parentPostId) : undefined;
+              const directReplyIds = directRepliesByParent.get(post.id) ?? [];
+              const postPresentation = presentedPosts.get(post.id)!;
 
               return (
                 <li
@@ -1158,33 +1237,155 @@ export function TopicView({
                     <span className="topic-message-author-copy">
                       <strong>{post.authorName}</strong>
                     </span>
+                    <span className="topic-message-author-statuses">
+                      {isOriginalQuestion && (
+                        <strong className="original-question-label">{t("originalQuestion")}</strong>
+                      )}
+                      {isBestAnswer && (
+                        <strong className="best-answer-label">{t("bestAnswer")}</strong>
+                      )}
+                    </span>
+                    <a
+                      className="topic-message-anchor topic-message-author-number"
+                      href={`#post-${encodeURIComponent(post.id)}`}
+                    >
+                      {t("postNumber", { number: messageNumber })}
+                    </a>
                   </header>
 
                   <div className="forum-post-content">
-                    <div className="topic-message-toolbar">
-                      <span className="topic-message-labels">
-                        {isOriginalQuestion && (
-                          <strong className="original-question-label">{t("originalQuestion")}</strong>
+                    <div className="topic-message-mobile-head">
+                      {parentMessageNumber !== undefined && (
+                        <a
+                          className="topic-message-mobile-parent-link"
+                          href={`#post-${encodeURIComponent(post.parentPostId!)}`}
+                        >
+                          {t("replyToMessageNumberCompact", { number: parentMessageNumber })}
+                        </a>
+                      )}
+                      <div className="topic-message-mobile-actions">
+                        <button
+                          type="button"
+                          className="topic-message-mobile-actions-toggle"
+                          aria-expanded={openMessageActionsPostId === post.id}
+                          aria-controls={`message-actions-${post.id}`}
+                          onClick={() => {
+                            setOpenMessageActionsPostId((current) => current === post.id ? null : post.id);
+                          }}
+                        >
+                          <span>{t("messageActions")}</span>
+                          <span aria-hidden="true">{openMessageActionsPostId === post.id ? "⌃" : "⌄"}</span>
+                        </button>
+                        {openMessageActionsPostId === post.id && (
+                          <div
+                            id={`message-actions-${post.id}`}
+                            className="topic-message-mobile-actions-menu"
+                          >
+                            {canReply && (
+                              <button type="button" onClick={() => targetReply(post.id)}>
+                                {t("replyToMessage")}
+                              </button>
+                            )}
+                            {canReply && (
+                              <button type="button" onClick={() => quoteSelectedText(post.id)}>
+                                {t("quoteSelectedText")}
+                              </button>
+                            )}
+                            <button type="button" onClick={() => void copyMessageLink(post.id)}>
+                              {t("copyMessageLink")}
+                            </button>
+                            {quoteSelectionErrorPostId === post.id && (
+                              <span className="topic-message-mobile-action-feedback" role="status" aria-live="polite">
+                                {t("quoteSelectionRequired")}
+                              </span>
+                            )}
+                            {messageLinkState && (
+                              <span
+                                className={messageLinkState === "error"
+                                  ? "topic-message-mobile-action-feedback is-error"
+                                  : "topic-message-mobile-action-feedback"}
+                                role="status"
+                                aria-live="polite"
+                              >
+                                {t(messageLinkState === "copied" ? "messageLinkCopied" : "messageLinkCopyFailed")}
+                              </span>
+                            )}
+                          </div>
                         )}
-                        {isBestAnswer && (
-                          <strong className="best-answer-label">{t("bestAnswer")}</strong>
-                        )}
-                      </span>
-                      <MessagePermalinkControl
-                        postId={post.id}
-                        messageNumber={messageNumber}
-                        feedback={messageLinkFeedback}
-                        onCopy={copyMessageLink}
-                      />
+                      </div>
                     </div>
-
-                    <PostBodyPresentation presentation={presentedPosts.get(post.id)!} />
+                    <div
+                      data-message-body
+                      className={postPresentation.selected === "translation"
+                        ? "topic-message-body has-translation"
+                        : "topic-message-body"}
+                    >
+                      <PostBodyContent presentation={postPresentation} />
+                    </div>
 
                     {generationUnit && (
                       <div className="message-generation-status">
                         <ContentGenerationUnitStatus unit={generationUnit} />
                       </div>
                     )}
+
+                    <div className="topic-message-footer">
+                      <div className="topic-message-relations">
+                        {parentMessageNumber !== undefined && (
+                          <a
+                            className="topic-message-parent-link"
+                            href={`#post-${encodeURIComponent(post.parentPostId!)}`}
+                          >
+                            {t("replyToMessageNumberCompact", { number: parentMessageNumber })}
+                          </a>
+                        )}
+                        <a
+                          className="topic-message-mobile-number"
+                          href={`#post-${encodeURIComponent(post.id)}`}
+                          aria-label={t("postNumber", { number: messageNumber })}
+                        >
+                          #{messageNumber}
+                        </a>
+                        {directReplyIds.length > 0 && (
+                          <nav className="topic-message-direct-replies" aria-label={t("directReplies")}>
+                            <span className="topic-message-direct-replies-label-desktop">{t("directReplies")}:</span>
+                            <span className="topic-message-direct-replies-label-mobile">{t("directRepliesCompact")}</span>
+                            {directReplyIds.map((replyId) => (
+                              <a key={replyId} href={`#post-${encodeURIComponent(replyId)}`}>
+                                #{messageNumberById.get(replyId)}
+                              </a>
+                            ))}
+                          </nav>
+                        )}
+                      </div>
+
+                      <PostBodyTranslationControls presentation={postPresentation} />
+                      <div className="topic-message-desktop-actions">
+                        <MessagePermalinkControl
+                          postId={post.id}
+                          messageNumber={messageNumber}
+                          feedback={messageLinkFeedback}
+                          onCopy={copyMessageLink}
+                        />
+                        {canReply && (
+                          <div className="topic-message-participation">
+                            <div className="topic-message-participation-actions">
+                              <button type="button" onClick={() => quoteSelectedText(post.id)}>
+                                {t("quoteSelectedText")}
+                              </button>
+                              <button type="button" onClick={() => targetReply(post.id)}>
+                                {t("replyToMessage")}
+                              </button>
+                            </div>
+                            {quoteSelectionErrorPostId === post.id && (
+                              <span className="topic-message-quote-feedback" role="status" aria-live="polite">
+                                {t("quoteSelectionRequired")}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
 
                     {hasMessageTools && (
                       <details className="secondary-tools message-secondary-tools">
@@ -1234,6 +1435,7 @@ export function TopicView({
             aria-busy={isReplySubmitting}
           >
             <input type="hidden" name="intent" value="reply" />
+            {replyTargetPostId && <input type="hidden" name="parentPostId" value={replyTargetPostId} />}
 
             <header className="forum-write-header">
               <div>
@@ -1243,10 +1445,27 @@ export function TopicView({
               <p>{t("replyHelp")}</p>
             </header>
 
+            {replyTargetPostId && messageNumberById.has(replyTargetPostId) && (
+              <div className="reply-target-banner">
+                <span>{t("replyingToMessage", { number: messageNumberById.get(replyTargetPostId)! })}</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setReplyTargetPostId(null);
+                    setQuoteSelectionErrorPostId(null);
+                    replyTextareaRef.current?.focus();
+                  }}
+                >
+                  {t("clearReplyTarget")}
+                </button>
+              </div>
+            )}
+
             <div className="forum-write-fields">
               <div className="forum-write-field">
                 <label htmlFor="reply-body">{t("replyBodyLabel")}</label>
                 <textarea
+                  ref={replyTextareaRef}
                   id="reply-body"
                   name="body"
                   required

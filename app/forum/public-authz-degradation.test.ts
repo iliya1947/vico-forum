@@ -49,6 +49,7 @@ const topic = {
     topicId: "topic-1",
     authorId: "reply-author",
     authorName: "Lin",
+    parentPostId: null,
     createdAt: new Date("2026-01-02"),
     body: { id: "post-r1", originalContent: "Public reply", sourceLocale: "en" },
   }],

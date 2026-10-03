@@ -191,9 +191,13 @@ export async function topicAction({ request, params, context }: {
   if (forbidden) return forbidden;
   const body = requiredFormText(formData, "body");
   if (!body) return mutationFailure("invalid", 400);
+  const rawParentPostId = formData.get("parentPostId");
+  const parentPostId = typeof rawParentPostId === "string" && rawParentPostId.trim()
+    ? rawParentPostId.trim()
+    : null;
   return runForumMutation(request, context, async (writer, authorId) => {
-    await writer.createReply({ topicId, authorId, body });
-    return redirect(forumTopicPath(locale, topicId));
+    const created = await writer.createReply({ topicId, authorId, body, parentPostId });
+    return redirect(forumTopicPath(locale, topicId) + "#post-" + encodeURIComponent(created.postId));
   });
 }
 

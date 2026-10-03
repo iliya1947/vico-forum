@@ -155,6 +155,13 @@
       "when": 1790973000000,
       "tag": "0021_forum_tags",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1791059400000,
+      "tag": "0022_forum_reply_relationships",
+      "breakpoints": true
     }
   ]
 }

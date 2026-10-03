@@ -43,8 +43,14 @@ export class ForumService {
   createPost(input: CreatePostInput) {
     validateEntity(input.id, input.authorId);
     requireText(input.topicId, "topic id");
+    if (input.parentPostId) {
+      requireText(input.parentPostId, "parent post id");
+      if (input.parentPostId === input.id) {
+        throw new InvalidForumContentError("post cannot reply to itself");
+      }
+    }
     const bodyRevision = normalizeRevision(input.bodyRevision);
-    return this.repository.createPost({ ...input, bodyRevision });
+    return this.repository.createPost({ ...input, parentPostId: input.parentPostId ?? null, bodyRevision });
   }
 
   createTopicWithInitialPost(input: CreateTopicWithInitialPostInput) {
@@ -53,6 +59,9 @@ export class ForumService {
     validateEntity(input.initialPost.id, input.initialPost.authorId);
     if (input.initialPost.topicId !== input.id || input.initialPost.authorId !== input.authorId) {
       throw new InvalidForumContentError("initial post must belong to the new topic and author");
+    }
+    if (input.initialPost.parentPostId) {
+      throw new InvalidForumContentError("initial post cannot reply to another post");
     }
     return this.repository.createTopicWithInitialPost({
       ...input,

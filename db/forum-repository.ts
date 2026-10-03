@@ -166,6 +166,7 @@ export interface ForumPost {
   id: string;
   topicId: string;
   authorId: string;
+  parentPostId: string | null;
   body: ForumRevisionContent;
 }
 
@@ -191,6 +192,7 @@ export interface CreatePostInput {
   id: string;
   topicId: string;
   authorId: string;
+  parentPostId?: string | null;
   bodyRevision: ForumRevisionContent;
 }
 
@@ -283,7 +285,7 @@ export class DrizzleForumRepository {
       }
       return {
         topic: { id: input.id, sectionId: input.sectionId, authorId: input.authorId, title: input.titleRevision, isSolved: false, bestAnswerPostId: null },
-        post: { id: input.initialPost.id, topicId: input.id, authorId: input.authorId, body: input.initialPost.bodyRevision },
+        post: { id: input.initialPost.id, topicId: input.id, authorId: input.authorId, parentPostId: null, body: input.initialPost.bodyRevision },
       };
     });
   }
@@ -294,11 +296,18 @@ export class DrizzleForumRepository {
       const [topic] = await tx.select({ id: forumTopics.id }).from(forumTopics)
         .where(eq(forumTopics.id, input.topicId));
       if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
+      const parentPostId = input.parentPostId ?? null;
+      if (parentPostId) {
+        const [parent] = await tx.select({ id: forumPosts.id }).from(forumPosts)
+          .where(and(eq(forumPosts.id, parentPostId), eq(forumPosts.topicId, input.topicId)));
+        if (!parent) throw new ForumEntityNotFoundError("parent post does not exist in topic");
+      }
       await tx.insert(forumPosts).values({
         id: input.id,
         topicId: input.topicId,
         authorId: input.authorId,
         currentRevisionId: input.bodyRevision.id,
+        parentPostId,
         createdAt,
       });
       await tx.insert(forumPostRevisions).values({
@@ -306,7 +315,7 @@ export class DrizzleForumRepository {
         postId: input.id,
         authorId: input.authorId,
       });
-      return { id: input.id, topicId: input.topicId, authorId: input.authorId, body: input.bodyRevision };
+      return { id: input.id, topicId: input.topicId, authorId: input.authorId, parentPostId, body: input.bodyRevision };
     });
   }
 
@@ -764,6 +773,7 @@ export class DrizzleForumRepository {
     const posts = await this.database
       .select({
         id: forumPosts.id, topicId: forumPosts.topicId, authorId: forumPosts.authorId,
+        parentPostId: forumPosts.parentPostId,
         authorName: user.name, createdAt: forumPosts.createdAt, revisionId: forumPostRevisions.id,
         originalContent: forumPostRevisions.originalContent, sourceLocale: forumPostRevisions.sourceLocale,
       })
@@ -783,8 +793,8 @@ export class DrizzleForumRepository {
       section: { id: topic.sectionId, name: topic.sectionName, category: { id: topic.categoryId, name: topic.categoryName } },
       tags: tags.get(id) ?? [],
       posts: posts.map((post) => ({
-        id: post.id, topicId: post.topicId, authorId: post.authorId, authorName: post.authorName,
-        createdAt: post.createdAt,
+        id: post.id, topicId: post.topicId, authorId: post.authorId, parentPostId: post.parentPostId,
+        authorName: post.authorName, createdAt: post.createdAt,
         body: { id: post.revisionId, originalContent: post.originalContent, sourceLocale: post.sourceLocale },
       })),
     };
@@ -873,6 +883,7 @@ export class DrizzleForumRepository {
         id: forumPosts.id,
         topicId: forumPosts.topicId,
         authorId: forumPosts.authorId,
+        parentPostId: forumPosts.parentPostId,
         revisionId: forumPostRevisions.id,
         originalContent: forumPostRevisions.originalContent,
         sourceLocale: forumPostRevisions.sourceLocale,
@@ -887,6 +898,7 @@ export class DrizzleForumRepository {
       id: row.id,
       topicId: row.topicId,
       authorId: row.authorId,
+      parentPostId: row.parentPostId,
       body: { id: row.revisionId, originalContent: row.originalContent, sourceLocale: row.sourceLocale },
     };
   }

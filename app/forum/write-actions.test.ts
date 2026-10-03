@@ -179,15 +179,20 @@ describe("forum write route actions", () => {
     expect(response.headers.get("Location")).toBe("/he/topics/server-topic");
   });
 
-  it("creates a reply as the session user and redirects to the canonical topic", async () => {
+  it("creates a direct reply as the session user and redirects to the new message anchor", async () => {
     const forumWriter = writer();
     const response = await topicAction({
-      request: request("/en/topics/topic-1", { body: " A reply " }),
+      request: request("/en/topics/topic-1", { body: " A reply ", parentPostId: "post-1" }),
       params: { locale: "en", topicId: "topic-1" }, context: context(forumWriter),
     });
-    expect(forumWriter.createReply).toHaveBeenCalledWith({ topicId: "topic-1", authorId: "session-user", body: "A reply" });
+    expect(forumWriter.createReply).toHaveBeenCalledWith({
+      topicId: "topic-1",
+      authorId: "session-user",
+      body: "A reply",
+      parentPostId: "post-1",
+    });
     if (!(response instanceof Response)) throw new Error("expected redirect response");
-    expect(response.headers.get("Location")).toBe("/en/topics/topic-1");
+    expect(response.headers.get("Location")).toBe("/en/topics/topic-1#post-server-post");
   });
 
   it("rejects authenticated users without topic/reply permissions before writing", async () => {

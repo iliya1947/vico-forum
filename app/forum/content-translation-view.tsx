@@ -77,6 +77,67 @@ export function TopicTitlePresentation({
   );
 }
 
+export function PostBodyContent({
+  presentation,
+}: {
+  presentation: ContentTranslationPresentation;
+}) {
+  return (
+    <div
+      className="content-translation-body"
+      lang={presentation.contentLocale}
+      dir={presentation.contentDirection}
+    >
+      <ForumMarkdown>{presentation.content}</ForumMarkdown>
+    </div>
+  );
+}
+
+export function PostBodyTranslationControls({
+  presentation,
+}: {
+  presentation: ContentTranslationPresentation;
+}) {
+  const { t } = useTranslation("common");
+  if (presentation.selected !== "translation") return null;
+
+  return (
+    <details className="topic-message-translation-controls">
+      <summary className="topic-message-translation-summary">
+        <span className="topic-message-translation-summary-copy">
+          {presentation.provenance && (
+            <span className="translation-provenance">
+              <span>
+                {t(
+                  presentation.provenance.origin === "machine"
+                    ? "automaticTranslation"
+                    : "manualTranslation",
+                )}
+              </span>
+              {presentation.provenance.attribution && (
+                <span className="translation-attribution">
+                  {presentation.provenance.attribution}
+                </span>
+              )}
+            </span>
+          )}
+          <span className="topic-message-translation-toggle">
+            <span className="translation-show-original">{t("showOriginal")}</span>
+            <span className="translation-hide-original">{t("hideOriginal")}</span>
+          </span>
+        </span>
+      </summary>
+      <div
+        lang={presentation.originalLocale}
+        dir={presentation.originalDirection}
+        className="topic-message-translation-original-content"
+      >
+        <ForumMarkdown>{presentation.originalContent}</ForumMarkdown>
+      </div>
+    </details>
+  );
+}
+
 export function PostBodyPresentation({
   presentation,
 }: {
@@ -84,14 +145,8 @@ export function PostBodyPresentation({
 }) {
   return (
     <div className="content-translation-presentation">
-      <div
-        lang={presentation.contentLocale}
-        dir={presentation.contentDirection}
-      >
-        <ForumMarkdown>{presentation.content}</ForumMarkdown>
-      </div>
-      <TranslationProvenance presentation={presentation} />
-      <OriginalDisclosure presentation={presentation} markdown />
+      <PostBodyContent presentation={presentation} />
+      <PostBodyTranslationControls presentation={presentation} />
     </div>
   );
 }

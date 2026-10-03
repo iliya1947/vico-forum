@@ -1,6 +1,6 @@
 import "@testing-library/jest-dom/vitest";
 import type { ComponentType } from "react";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { I18nextProvider } from "react-i18next";
 import { RouterContextProvider, RouterProvider, createMemoryRouter, matchRoutes } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -44,7 +44,7 @@ const topic = {
   section: { id: "typescript/basics", name: "TypeScript", category: { id: "development/core", name: "Development" } },
   tags: [{ key: "typescript", name: "TypeScript" }],
   posts: [{
-    id: "answer", topicId: "typed/api", authorId: "lin", authorName: "Lin", createdAt: new Date("2026-01-02"),
+    id: "answer", topicId: "typed/api", authorId: "lin", authorName: "Lin", parentPostId: null, createdAt: new Date("2026-01-02"),
     body: { id: "post-r1", originalContent: "Start with an explicit response type.", sourceLocale: "en" },
   }],
 };
@@ -427,10 +427,17 @@ describe("content translation presentation", () => {
     const heading = await screen.findByRole("heading", { level: 1, name: "כותרת מתורגמת" });
     expect(heading).toHaveAttribute("lang", "he");
     expect(heading).toHaveAttribute("dir", "rtl");
-    expect(screen.getAllByText("Automatic translation")).toHaveLength(2);
+    const topicHeading = document.querySelector(".topic-heading");
+    const translatedPost = document.querySelector("#post-answer");
+    expect(topicHeading).not.toBeNull();
+    expect(translatedPost).not.toBeNull();
+    expect(within(topicHeading as HTMLElement).getByText("Automatic translation")).toBeInTheDocument();
+    expect(within(translatedPost as HTMLElement).getByText("Automatic translation")).toBeInTheDocument();
     expect(screen.getByText("Provider attribution")).toBeInTheDocument();
-    expect(screen.getAllByText("Show original")).toHaveLength(2);
-    expect(screen.getAllByText("Show translation")).toHaveLength(2);
+    expect(within(topicHeading as HTMLElement).getByText("Show original")).toBeInTheDocument();
+    expect(within(topicHeading as HTMLElement).getByText("Show translation")).toBeInTheDocument();
+    expect(within(translatedPost as HTMLElement).getByText("Show original")).toBeInTheDocument();
+    expect(within(translatedPost as HTMLElement).getByText("Hide original")).toBeInTheDocument();
     expect(screen.getByText("How do I type an API?").closest("[lang]")).toHaveAttribute("lang", "en");
     expect(screen.getByText("How do I type an API?").closest("[dir]")).toHaveAttribute("dir", "ltr");
     expect(document.querySelector("script")).toBeNull();
@@ -507,6 +514,75 @@ describe("forum path encoding", () => {
 });
 
 describe("forum read states", () => {
+  it("targets direct replies, exposes parent/child anchors, and quotes only selected message text", async () => {
+    const seed = topic.posts[0]!;
+    const question = {
+      ...seed,
+      id: "question",
+      authorName: "Ada",
+      parentPostId: null,
+      body: { id: "post-q", originalContent: "Selected words from the question.", sourceLocale: "en" },
+    };
+    const reply = {
+      ...seed,
+      id: "reply",
+      authorName: "Lin",
+      parentPostId: "question",
+      body: { id: "post-r", originalContent: "Direct reply.", sourceLocale: "en" },
+    };
+    const replyTopic = { ...topic, posts: [question, reply] };
+
+    renderRoute(
+      TopicRoute,
+      topicRenderData(replyTopic, { canReply: true }),
+      "/en/topics/typed-api",
+      "en",
+      "ltr",
+    );
+
+    await screen.findByText("Selected words from the question.");
+    const questionCard = document.querySelector("#post-question");
+    const replyCard = document.querySelector("#post-reply");
+    expect(questionCard).not.toBeNull();
+    expect(replyCard).not.toBeNull();
+
+    const parentLinks = within(replyCard as HTMLElement).getAllByRole("link", { name: "Reply to #1" });
+    expect(parentLinks).toHaveLength(2);
+    for (const parentLink of parentLinks) {
+      expect(parentLink).toHaveAttribute("href", "#post-question");
+    }
+    expect(within(questionCard as HTMLElement).getByRole("navigation", { name: "Direct replies" })
+      .querySelector('a[href="#post-reply"]')).not.toBeNull();
+
+    fireEvent.click(within(questionCard as HTMLElement).getByRole("button", { name: "Reply" }));
+    const replyForm = screen.getByRole("form", { name: "Add a reply" });
+    expect(await screen.findByText("Replying to Message #1")).toBeInTheDocument();
+    expect(replyForm.querySelector('input[name="parentPostId"]')).toHaveValue("question");
+
+    const bodyElement = questionCard!.querySelector("[data-message-body]");
+    if (!bodyElement) throw new Error("message body selection target missing");
+    vi.spyOn(window, "getSelection").mockReturnValue({
+      rangeCount: 1,
+      isCollapsed: false,
+      toString: () => "Selected words",
+      getRangeAt: () => ({
+        startContainer: bodyElement,
+        endContainer: bodyElement,
+      }),
+    } as unknown as Selection);
+
+    fireEvent.click(within(questionCard as HTMLElement).getByRole("button", { name: "Quote" }));
+    expect(screen.getByLabelText("Reply")).toHaveValue("> Selected words\n\n");
+
+    vi.spyOn(window, "getSelection").mockReturnValue({
+      rangeCount: 0,
+      isCollapsed: true,
+      toString: () => "",
+    } as unknown as Selection);
+    fireEvent.click(within(replyCard as HTMLElement).getByRole("button", { name: "Quote" }));
+    expect(screen.getByText("Select text in this message to quote it.")).toBeInTheDocument();
+  });
+
   it("copies a clean permanent locale-aware message link, keeps one active status, and reports clipboard failure", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText } });
@@ -611,7 +687,7 @@ describe("forum read states", () => {
     ]);
   });
 
-  it("keeps best-answer, body, and solution controls inside one post content region", async () => {
+  it("keeps message metadata in the author column while body and solution controls stay in post content", async () => {
     const followup = {
       ...topic.posts[0]!,
       id: "followup",
@@ -646,7 +722,8 @@ describe("forum read states", () => {
     expect(bestPost!.children).toHaveLength(2);
     expect(bestHeader?.tagName).toBe("HEADER");
     expect(bestContent).toHaveClass("forum-post-content");
-    expect(bestContent).toContainElement(bestPost!.querySelector(".best-answer-label"));
+    expect(bestHeader).toContainElement(bestPost!.querySelector(".best-answer-label"));
+    expect(bestHeader).toContainElement(bestPost!.querySelector(".topic-message-anchor"));
     expect(bestContent).toContainElement(bestPost!.querySelector(".post-body"));
     expect(bestHeader).not.toContainElement(bestContent as HTMLElement);
 
@@ -655,6 +732,7 @@ describe("forum read states", () => {
     expect(followupPost!.children).toHaveLength(2);
     expect(followupHeader?.tagName).toBe("HEADER");
     expect(followupContent).toHaveClass("forum-post-content");
+    expect(followupHeader).toContainElement(followupPost!.querySelector(".topic-message-anchor"));
     expect(followupContent).toContainElement(followupPost!.querySelector(".post-body"));
     expect(followupContent).toContainElement(followupPost!.querySelector(".solution-form"));
     const followupTools = followupPost!.querySelector("details.message-secondary-tools");

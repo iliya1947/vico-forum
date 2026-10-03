@@ -709,12 +709,20 @@ export const forumPosts = pgTable(
       .references(() => user.id, { onDelete: "restrict" }),
     // The migration adds a deferred owner-matching FK to (post_id, revision_id).
     currentRevisionId: text("current_revision_id").notNull(),
+    parentPostId: text("parent_post_id"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
     index("forum_posts_topic_id_idx").on(table.topicId),
     index("forum_posts_author_id_idx").on(table.authorId),
+    index("forum_posts_parent_post_id_idx").on(table.parentPostId),
     unique("forum_posts_topic_id_id_unique").on(table.topicId, table.id),
+    foreignKey({
+      name: "forum_posts_parent_topic_fk",
+      columns: [table.topicId, table.parentPostId],
+      foreignColumns: [table.topicId, table.id],
+    }),
+    check("forum_posts_parent_not_self_check", sql`${table.parentPostId} is null or ${table.parentPostId} <> ${table.id}`),
   ],
 );
 
