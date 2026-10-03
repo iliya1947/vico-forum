@@ -102,8 +102,8 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       const needsTrailingBreak = end < value.length && value[end] !== "\n";
       const leading = needsLeadingBreak ? "\n\n" : "";
       const trailing = needsTrailingBreak ? "\n\n" : "";
-      const fenceStart = `\${leading}\`\`\`\${language}\n`;
-      const fenceEnd = `\n\`\`\`\${trailing}`;
+      const fenceStart = leading + "```" + language + "\n";
+      const fenceEnd = "\n```" + trailing;
       const nextValue = value.slice(0, start) + fenceStart + selected + fenceEnd + value.slice(end);
 
       if (selected) {
@@ -167,7 +167,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
                   textarea.selectionStart ?? value.length,
                   textarea.selectionEnd ?? textarea.selectionStart ?? value.length,
                 );
-                const marker = selected.includes("\`") ? "\`\`" : "\`";
+                const marker = selected.includes("`") ? "``" : "`";
                 replaceSelection(marker, marker, marker.length);
               }}
             >
@@ -198,7 +198,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
             className="markdown-editor-preview-toggle"
             disabled={disabled}
             aria-expanded={previewOpen}
-            aria-controls={`\${id}-preview`}
+            aria-controls={id + "-preview"}
             onClick={() => setPreviewOpen((current) => !current)}
           >
             {t(previewOpen ? "editorPreviewHide" : "editorPreviewShow")}
@@ -219,7 +219,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
 
         {previewOpen && (
           <section
-            id={`\${id}-preview`}
+            id={id + "-preview"}
             className="markdown-editor-preview"
             aria-label={t("editorPreviewHeading")}
           >
