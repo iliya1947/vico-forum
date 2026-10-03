@@ -1260,3 +1260,162 @@ badge/inbox/mark-read at Desktop/Mobile and LTR/RTL, then independent Codex whol
 ChatGPT записывает результат и exact evidence в свой действующий service channel. Если PR #147
 нельзя безопасно продолжить из-за исторического conflict, не менять Codex channel и не смешивать
 service communication с implementation: сообщить владельцу точное состояние для отдельного решения.
+
+---
+
+# Update 2026-10-04 — PR #180 merged and return to editor refinement
+
+## Current main and notifications result
+
+Проверен актуальный GitHub `main`
+`d6da8fa8c183c77f2b0cdb0c7cbe7949526a8b7d`, merge commit PR #180. Implementation head перед
+merge: `7c9a0e3af0bb211c445d9c6c96138d8c51bca6e5`.
+
+Последнее обновление PR #147 соответствует merged result. Подтверждены:
+
+1. Migration `0024_forum_reply_notifications`, Drizzle metadata, production schema manifest и
+   runtime privilege contract синхронизированы.
+2. Reply event создаётся в transaction reply write; topic author и direct-parent author
+   deduplicate, actor self-notification исключён.
+3. Records recipient-scoped, с stable actor/topic/post references, independent `readAt`, unique
+   recipient+reply identity и indexes для inbox/unread count.
+4. Authenticated `/:locale/notifications` даёт bounded newest-first inbox; owned notification
+   mark-read redirect ведёт к permanent post anchor. Guest и cross-recipient boundaries fail closed.
+5. Header badge использует real best-effort unread aggregate only for authenticated user; его
+   classified failure не ломает public shell.
+6. Notifications удалены из `Under development`; EN/RU/HE, Pages states, empty/mixed presentation,
+   route/repository/database coverage и `PROJECT_STATE.md` обновлены.
+7. Shared-shell min-height correction сохраняет footer внизу short pages; дальнейшая footer polish
+   по owner decision отложена.
+8. PR #176/editor в PR #180 не продолжался.
+
+Новых blocking implementation/security/contract defects в merged notification boundary не
+обнаружено. External migration `0024`, production runtime rollout и final real-runtime acceptance
+не заявлены.
+
+### Verification evidence
+
+- PR #180 merged 2026-10-03; merge commit `d6da8fa...`;
+- exact-head CI run `37156712853`: `checks` success, `database` success;
+- exact-head Pages run `37156720607`: `build` success, `deploy` success;
+- post-merge Pages run `37157138178`: `build` success, `deploy` success;
+- owner visual acceptance inbox/badge flow зафиксирован в PR #147;
+- `git diff --check` merged implementation range successful.
+
+## Selection of the next bounded task
+
+Следующий bounded UI/UX шаг — **вернуться к PR #176 и выполнить только editor visual/product
+refinement + current-main integration**.
+
+Это не автоматическое продолжение старой ветки: выбор сделан после проверки current state.
+Причины:
+
+1. Owner отложил editor именно «до завтра»; latest coordination update уже датирован 2026-10-04.
+2. Unread и Notifications, ради которых editor был временно отложен, завершены и merged.
+3. PR #176 имеет green functional foundation и закрытые delimiter findings, но остаётся явно
+   визуально непринятым; оставлять этот незакрытый core authoring slice и начинать Pinned/Profiles/
+   Registration/Drafts создаёт лишний параллельный долг.
+4. Drafts должны следовать после принятого editor state/interaction contract, а не до него.
+5. Следующий шаг не переоткрывает editor architecture, parser или backend: это bounded refinement
+   уже существующего shared composer.
+
+## Handoff to ChatGPT — PR #176 editor visual/product refinement
+
+### Baseline integration first
+
+1. Продолжить именно implementation PR #176, current head
+   `0e6a1607e7a8a3f2f16c9a4207536c32ba4d4131`.
+2. До UX correction интегрировать current `main` `d6da8fa...` в branch безопасным обычным Git
+   способом. Не копировать отдельные Unread/Notifications commits вручную и не терять migrations
+   `0023/0024`, manifest, localization, styles, preview states или source-of-truth updates.
+3. После integration effective PR diff против current main должен оставаться только editor/code
+   bounded scope. Отдельно проверить overlap в `PROJECT_STATE.md`, `docs/UI_UX_PASS.md`, catalog,
+   RU/HE packs/fingerprints, `views.tsx`, `styles.css` и preview fixture.
+4. Не считать прежние green checks достаточными: новый integrated head требует полного CI/Pages.
+
+### Product objective
+
+Довести shared create-topic/reply composer до визуально цельного, современного и удобного editor,
+который owner сможет принять в Pages, не меняя уже проверенные Markdown/form/security contracts.
+Текущая проблема — presentation/interaction hierarchy, а не отсутствие дополнительных функций.
+
+### Required refinement scope
+
+1. Сохранить Write / Preview / Split как понятные mutually exclusive modes с одним явным active
+   state, keyboard-accessible controls и без layout jump при переключении.
+2. Desktop Split показывает editor и exact `ForumMarkdown` preview как две сопоставимые рабочие
+   области; narrow mobile использует осмысленное stacked/single-pane поведение без двух тесных
+   колонок, horizontal page scroll или скрытых actions.
+3. Упростить visual hierarchy toolbar:
+   - formatting groups читаются как инструменты, а не набор одинаково конкурирующих buttons;
+   - primary writing surface остаётся главным элементом;
+   - optional code language control визуально связан с fenced-code insertion и не доминирует над
+     обычным текстовым authoring;
+   - labels/icons/tooltips и disabled/focus states остаются доступными и локализованными.
+4. Textarea и preview получают согласованные surface, typography, padding, min-height, overflow и
+   empty-state behavior. Long prose, long code, mixed Markdown и RTL не ломают composer width.
+5. Create-topic и reply используют один shared component, но сохраняют собственную form hierarchy,
+   help/error/pending states и active Reply target/Quote insertion.
+6. Все уже реализованные controls сохраняются: headings/list/quote/link, bold/italic, inline/fenced
+   code, optional language, exact selection/caret restoration, safe preview, copy/wrap/LTR code.
+   Не добавлять новые controls только ради заполнения toolbar.
+7. Preserve exact submitted `body`, normal React Router submit, server validation, same-origin,
+   permissions, rate limit, Reply/Quote parent semantics and Markdown safety.
+8. `editor` остаётся в `Under development` до owner visual acceptance. Не добавлять drafts/autosave
+   и не удалять unfinished entry заранее.
+
+### Representative review states
+
+Pages должен тем же shared component покрыть:
+
+- create-topic: meaningful long Markdown, link/list/quote, inline and fenced code;
+- reply: active reply target + inserted selected-text quote;
+- Write, Preview and Split modes;
+- empty and content-heavy composer;
+- Desktop, intermediate/narrow mobile;
+- English LTR, Hebrew RTL with code LTR;
+- Light/Dark;
+- long code no-wrap/wrap and long localized toolbar labels;
+- pending/disabled form state where existing fixture supports it.
+
+Не создавать отдельный preview-only editor implementation.
+
+### Required automated checks
+
+- mode switching and single active/accessible mode semantics;
+- exact body preservation across every mode;
+- selection/caret/focus for all transforms, including backtick regressions already fixed;
+- Quote insertion and reply target persistence across modes;
+- safe preview/raw HTML/image/unsafe-link regression;
+- responsive class/state contract without duplicate textarea/form controls;
+- localization completeness/fingerprints and existing Unread/Notifications preview regression;
+- full repository CI, database/migration parity, application build, Workers smoke and
+  `ui-preview:build` on integrated head.
+
+### Owner browser acceptance loop
+
+До merge обязательно провести iterative owner Pages review, а не только финальный screenshot:
+
+1. Desktop Light create-topic: Write/Preview/Split and toolbar hierarchy.
+2. Narrow Mobile Light reply+quote: no clipping/page overflow; touch targets and mode switching.
+3. Desktop Dark content-heavy/code state: surface contrast, long-code wrap/copy.
+4. Hebrew RTL create/reply: direction, logical layout, LTR code, long labels.
+5. Keyboard-only: toolbar/modes/textarea/preview actions, visible focus, caret/selection retention.
+6. Zoom/reflow and reduced-motion check.
+
+Каждый feedback/fix/retest фиксировать в PR #147. PR #176 нельзя объявлять accepted до явного owner
+подтверждения final corrected Pages head.
+
+### Explicit exclusions
+
+- drafts/autosave, attachments/uploads, WYSIWYG, edit-existing-post;
+- new Markdown parser, raw HTML or editor framework dependency;
+- notification/unread changes beyond preserving merged behavior;
+- pinning, profiles, registration, online presence, footer content polish;
+- DB schema, permissions, translation content architecture or Stage 6.
+
+### Completion boundary
+
+После current-main integration, corrections, focused tests, full exact-head CI/Pages and explicit
+owner visual acceptance ChatGPT выполняет whole-PR self-review и записывает exact head/evidence в
+PR #147. Затем останавливается для independent Codex review; merge выполняет только owner.
