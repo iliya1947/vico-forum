@@ -196,7 +196,7 @@ describe("homepage target presentation", () => {
       .toHaveAttribute("href", "/en/unread");
   });
 
-  it("does not pretend pinned-topic data exists when runtime pinning is unavailable", async () => {
+  it("shows a truthful non-link empty state when a category has no persisted pins", async () => {
     renderView(
       <HomeView
         locale="en"
@@ -213,21 +213,21 @@ describe("homepage target presentation", () => {
       />,
     );
 
-    expect(await screen.findByRole("link", { name: "Pinned topics are under development." }))
-      .toHaveAttribute("href", "/en/under-development?feature=pinned-topics");
+    expect(await screen.findByText("No pinned topics yet.")).toBeVisible();
+    expect(screen.queryByRole("link", { name: "No pinned topics yet." })).not.toBeInTheDocument();
   });
 });
 
 describe("under development page", () => {
   it("identifies the requested unfinished function and lists remaining approved work", async () => {
     renderView(
-      <UnderDevelopmentView locale="en" requestedFeature="pinned-topics" />,
-      "/en/under-development?feature=pinned-topics",
+      <UnderDevelopmentView locale="en" requestedFeature="drafts" />,
+      "/en/under-development?feature=drafts",
     );
 
     expect(await screen.findByRole("heading", { level: 1, name: "Under development" })).toBeVisible();
-    expect(screen.getByText("Pinned-topic management is not finished yet.")).toBeVisible();
-    expect(screen.getAllByText("Pinned-topic management").length).toBeGreaterThan(0);
+    expect(screen.getByText("Drafts and autosave is not finished yet.")).toBeVisible();
+    expect(screen.queryByText("Pinned-topic management")).not.toBeInTheDocument();
     expect(screen.queryByText("Notifications")).not.toBeInTheDocument();
     expect(screen.getByText("Drafts and autosave")).toBeVisible();
     expect(screen.getByRole("link", { name: "Back to the forum" })).toHaveAttribute("href", "/en");
