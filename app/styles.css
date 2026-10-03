@@ -3915,6 +3915,9 @@ p {
     grid-column: 2;
     grid-row: 1;
     justify-self: end;
+    min-height: 2.5rem;
+    padding: 0.4rem 0.95rem;
+    font-size: 0.82rem;
   }
 
   .topic-heading-side .topic-message-avatar {
