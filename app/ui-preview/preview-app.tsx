@@ -881,20 +881,7 @@ function MessageCardLayoutDemo() {
               <strong>Sam Chen</strong>
               <small>Best answer</small>
             </span>
-            <span className="message-layout-flat-number">#3</span>
-          </header>
-          <div className="message-layout-demo-body">
-            <a href="#demo-hybrid-parent">↳ Reply to #1</a>
-            <DemoMessageBody />
-          </div>
-          <footer className="message-action-hybrid-footer">
-            <nav aria-label="Direct replies">
-              <span>Replies</span>
-              <a href="#demo-hybrid-r4">#4</a>
-              <a href="#demo-hybrid-r5">#5</a>
-            </nav>
-            <div className="message-action-primary">
-              <button type="button" className="message-action-reply">Reply</button>
+            <div className="message-action-header-control">
               <button
                 type="button"
                 className="message-action-more"
@@ -904,19 +891,32 @@ function MessageCardLayoutDemo() {
               >
                 ⋯
               </button>
+              {hybridOpen && (
+                <div className="message-action-header-menu">
+                  <button type="button">Quote</button>
+                  <button type="button">Copy link</button>
+                </div>
+              )}
             </div>
-            {hybridOpen && (
-              <div className="message-action-overflow">
-                <button type="button">Quote</button>
-                <button type="button">Copy link</button>
-              </div>
-            )}
+          </header>
+          <div className="message-layout-demo-body">
+            <a href="#demo-hybrid-parent">↳ Reply to #1</a>
+            <DemoMessageBody />
+          </div>
+          <footer className="message-action-hybrid-footer">
+            <nav aria-label="Direct replies">
+              <span>Replies</span>
+              <span className="message-current-number">#3</span>
+              <a href="#demo-hybrid-r4">#4</a>
+              <a href="#demo-hybrid-r5">#5</a>
+            </nav>
+            <button type="button" className="message-action-reply">Reply</button>
           </footer>
         </article>
       </section>
 
       <section className="message-layout-option">
-        <h2><span>2</span> Collapsible actions footer</h2>
+        <h2><span>2</span> Actions menu</h2>
         <article className="message-layout-card message-layout-card-flat message-action-demo-card">
           <header className="message-layout-flat-header">
             <span className="message-layout-demo-avatar">S</span>
@@ -924,19 +924,7 @@ function MessageCardLayoutDemo() {
               <strong>Sam Chen</strong>
               <small>Best answer</small>
             </span>
-            <span className="message-layout-flat-number">#3</span>
-          </header>
-          <div className="message-layout-demo-body">
-            <a href="#demo-collapsible-parent">↳ Reply to #1</a>
-            <DemoMessageBody />
-          </div>
-          <footer className="message-action-collapsible-footer">
-            <div className="message-action-collapsible-summary">
-              <nav aria-label="Direct replies">
-                <span>Replies</span>
-                <a href="#demo-collapsible-r4">#4</a>
-                <a href="#demo-collapsible-r5">#5</a>
-              </nav>
+            <div className="message-action-header-control">
               <button
                 type="button"
                 className="message-action-expand"
@@ -947,14 +935,26 @@ function MessageCardLayoutDemo() {
                 <span>Actions</span>
                 <span aria-hidden="true">{footerOpen ? "⌃" : "⌄"}</span>
               </button>
+              {footerOpen && (
+                <div className="message-action-header-menu message-action-header-menu-wide">
+                  <button type="button">Reply</button>
+                  <button type="button">Quote</button>
+                  <button type="button">Copy link</button>
+                </div>
+              )}
             </div>
-            {footerOpen && (
-              <div className="message-action-expanded">
-                <button type="button">Reply</button>
-                <button type="button">Quote</button>
-                <button type="button">Copy link</button>
-              </div>
-            )}
+          </header>
+          <div className="message-layout-demo-body">
+            <a href="#demo-collapsible-parent">↳ Reply to #1</a>
+            <DemoMessageBody />
+          </div>
+          <footer className="message-action-collapsible-footer">
+            <nav aria-label="Direct replies">
+              <span>Replies</span>
+              <span className="message-current-number">#3</span>
+              <a href="#demo-collapsible-r4">#4</a>
+              <a href="#demo-collapsible-r5">#5</a>
+            </nav>
           </footer>
         </article>
       </section>
