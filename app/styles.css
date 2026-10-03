@@ -5928,20 +5928,22 @@ a.topic-tag:focus-visible {
 }
 
 .topic-message-footer {
-  display: flex;
+  display: grid;
   min-width: 0;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 0.55rem 0.8rem;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-areas:
+    "original original original"
+    "relations translation actions";
+  align-items: end;
+  gap: 0.55rem 0.65rem;
   margin-top: auto;
   padding-top: 0.65rem;
 }
 
 .topic-message-relations {
+  grid-area: relations;
   display: flex;
   min-width: 0;
-  flex: 1 1 auto;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.3rem 0.55rem;
@@ -5952,32 +5954,65 @@ a.topic-tag:focus-visible {
   margin: 0;
 }
 
-.topic-message-footer-end {
-  display: flex;
-  flex: none;
-  align-items: flex-end;
-  justify-content: flex-end;
-  gap: 0.65rem;
-  margin-inline-start: auto;
-}
-
 .topic-message-translation-controls {
+  display: contents;
+}
+
+.topic-message-translation-summary {
+  grid-area: translation;
+  align-self: end;
+  width: fit-content;
+  color: var(--color-accent-hover);
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.topic-message-translation-summary-copy {
   display: grid;
-  min-width: 0;
-  align-self: flex-end;
-  gap: 0.18rem;
+  gap: 0.16rem;
 }
 
-.topic-message-translation-controls .translation-provenance,
-.topic-message-translation-controls .translation-original {
+.topic-message-translation-summary .translation-provenance {
   margin: 0;
+  gap: 0.35rem;
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+  font-weight: 400;
 }
 
-.topic-message-translation-controls .translation-provenance {
-  gap: 0.35rem;
+.topic-message-translation-toggle {
+  display: inline;
+}
+
+.topic-message-translation-controls[open] .translation-show-original {
+  display: none;
+}
+
+.topic-message-translation-controls[open] .translation-show-translation {
+  display: inline;
+}
+
+.topic-message-translation-original-content {
+  grid-area: original;
+  min-width: 0;
+  margin: 0;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.45rem;
+  background: var(--color-surface-muted);
+}
+
+.topic-message-translation-original-content > :first-child {
+  margin-block-start: 0;
+}
+
+.topic-message-translation-original-content > :last-child {
+  margin-block-end: 0;
 }
 
 .topic-message-desktop-actions {
+  grid-area: actions;
   display: flex;
   flex: none;
   flex-wrap: wrap;
@@ -6215,22 +6250,19 @@ a.topic-tag:focus-visible {
     background: transparent;
   }
 
-  .topic-message-footer-end {
-    order: 1;
-    width: 100%;
-    margin: 0;
-  }
-
   .topic-message-translation-controls {
-    display: grid;
+    order: 1;
+    display: block;
     width: 100%;
-    gap: 0.35rem;
     padding: 0 1rem 0.75rem;
   }
 
-  .topic-message-translation-controls .translation-provenance,
-  .topic-message-translation-controls .translation-original {
-    margin: 0;
+  .topic-message-translation-summary {
+    width: fit-content;
+  }
+
+  .topic-message-translation-original-content {
+    margin-block-start: 0.5rem;
   }
 
   .topic-message-body.has-translation {
