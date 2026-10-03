@@ -698,7 +698,6 @@ export class DrizzleForumRepository {
         authorName: user.name,
         postCount: sql<number>`count(distinct ${forumPosts.id})::int`,
         createdAt: forumTopics.createdAt,
-        isPinned: sql<boolean>`${forumTopicPins.topicId} is not null`,
         sectionId: forumSections.id,
         sectionName: forumSections.name,
         categoryId: forumCategories.id,
