@@ -1,6 +1,5 @@
 export const UNDER_DEVELOPMENT_FEATURES = [
   { id: "registration", labelKey: "underDevelopmentFeatureRegistration" },
-  { id: "pinned-topics", labelKey: "underDevelopmentFeaturePinnedTopics" },
   { id: "drafts", labelKey: "underDevelopmentFeatureDrafts" },
   { id: "profiles", labelKey: "underDevelopmentFeatureProfiles" },
   { id: "editor", labelKey: "underDevelopmentFeatureEditor" },
