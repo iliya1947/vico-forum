@@ -85,11 +85,13 @@ function syntaxTokenPattern(language: string): RegExp {
     : language === "sql"
       ? String.raw`--[^\n]*`
       : String.raw`\/\*[\s\S]*?\*\/|\/\/[^\n]*`;
+  const backtick = String.fromCharCode(96);
+  const templateString = backtick + String.raw`(?:\\.|[^` + backtick + String.raw`\\])*` + backtick;
 
   return new RegExp(
     `(${comments}|"(?:\\\\.|[^"\\\\])*"|'(?:\\\\.|[^'\\\\])*'|`
-      + String.raw`@(backtick)(?:\\.|[^@backtick@\\])*@backtick@|\b\d+(?:\.\d+)?\b|\b[A-Za-z_$][\w$]*\b)`
-        .replaceAll("@backtick@", String.fromCharCode(96)),
+      + templateString
+      + String.raw`|\b\d+(?:\.\d+)?\b|\b[A-Za-z_$][\w$]*\b)`,
     "gu",
   );
 }
