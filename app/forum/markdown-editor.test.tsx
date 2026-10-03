@@ -53,10 +53,10 @@ afterEach(() => {
 describe("MarkdownEditor", () => {
   it("wraps the selected text and restores selection/focus", async () => {
     renderEditor(
-      <label>
-        Body
+      <>
+        <label htmlFor="body">Body</label>
         <MarkdownEditor id="body" name="body" defaultValue="alpha beta" />
-      </label>,
+      </>,
     );
 
     const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
@@ -73,10 +73,10 @@ describe("MarkdownEditor", () => {
 
   it("inserts inline and fenced code with the selected language at the caret", async () => {
     renderEditor(
-      <label>
-        Body
+      <>
+        <label htmlFor="body">Body</label>
         <MarkdownEditor id="body" name="body" defaultValue="request(value)" />
-      </label>,
+      </>,
     );
 
     const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
@@ -98,10 +98,10 @@ describe("MarkdownEditor", () => {
   it("inserts imperative quote text at the current selection and keeps the field focused", () => {
     const editorRef = createRef<MarkdownEditorHandle>();
     renderEditor(
-      <label>
-        Body
+      <>
+        <label htmlFor="body">Body</label>
         <MarkdownEditor ref={editorRef} id="body" name="body" defaultValue="before after" />
-      </label>,
+      </>,
     );
 
     const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
@@ -124,10 +124,8 @@ describe("MarkdownEditor", () => {
           submitted(new FormData(event.currentTarget).get("body"));
         }}
       >
-        <label>
-          Body
-          <MarkdownEditor id="body" name="body" required />
-        </label>
+        <label htmlFor="body">Body</label>
+        <MarkdownEditor id="body" name="body" required />
         <button type="submit">Submit</button>
       </form>,
     );
@@ -160,10 +158,10 @@ describe("MarkdownEditor", () => {
 
   it("toggles the preview without changing the textarea value", async () => {
     renderEditor(
-      <label>
-        Body
+      <>
+        <label htmlFor="body">Body</label>
         <MarkdownEditor id="body" name="body" defaultValue="**preview me**" />
-      </label>,
+      </>,
     );
 
     const textarea = screen.getByLabelText("Body");
