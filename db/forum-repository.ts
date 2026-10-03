@@ -6,7 +6,6 @@ import {
   forumPosts,
   forumSections,
   forumTags,
-  forumTopicReadStates,
   forumTopicTags,
   forumTopicTitleRevisions,
   forumTopics,
