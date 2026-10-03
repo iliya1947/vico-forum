@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { I18nextProvider } from "react-i18next";
-import { RouterProvider, createMemoryRouter, useSearchParams } from "react-router";
+import { RouterProvider, createMemoryRouter, useParams, useSearchParams } from "react-router";
 
 import {
   HeaderAuthProvider,
@@ -695,6 +695,10 @@ function previewRouter(scenario: Scenario) {
 
   return createMemoryRouter([
     {
+      path: "/:locale/categories/:categoryId",
+      element: <PreviewCategoryRoute locale={scenario.locale} />,
+    },
+    {
       path: "/:locale/under-development",
       element: <PreviewUnderDevelopment locale={scenario.locale} />,
     },
@@ -729,6 +733,43 @@ function previewRouter(scenario: Scenario) {
       element: previewElement(scenario),
     },
   ], { initialEntries: [scenario.path] });
+}
+
+function PreviewCategoryRoute({ locale }: { locale: PreviewLocale }) {
+  const { categoryId: routeCategoryId } = useParams();
+  const localizedCategory = locale === "ru"
+    ? categoryRu
+    : locale === "he"
+      ? categoryRtl
+      : category;
+  const overview = homepageCategories(locale).find((item) => item.id === routeCategoryId);
+
+  if (!overview || routeCategoryId === categoryId) {
+    return <CategoryView locale={locale} category={localizedCategory} />;
+  }
+
+  const sectionNames = locale === "ru"
+    ? ["Основное", "Вопросы", "Практика"]
+    : locale === "he"
+      ? ["כללי", "שאלות", "פרקטיקה"]
+      : ["General", "Questions", "Practice"];
+  const visibleSectionCount = Math.min(overview.sectionCount, sectionNames.length);
+
+  return (
+    <CategoryView
+      locale={locale}
+      category={{
+        id: overview.id,
+        name: overview.name,
+        sections: Array.from({ length: visibleSectionCount }, (_, index) => ({
+          id: `${overview.id}-preview-${index + 1}`,
+          name: sectionNames[index]!,
+          topicCount: Math.max(1, Math.round(overview.topicCount / visibleSectionCount)),
+          postCount: Math.max(1, Math.round(overview.messageCount / visibleSectionCount)),
+        })),
+      }}
+    />
+  );
 }
 
 function PreviewUnderDevelopment({ locale }: { locale: PreviewLocale }) {
