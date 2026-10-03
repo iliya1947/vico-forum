@@ -33,13 +33,14 @@ const section = {
   id: "typescript/basics", name: "TypeScript", category: { id: "development/core", name: "Development" },
   topics: [{
     id: "typed/api", authorName: "Ada", postCount: 1, createdAt: new Date("2026-01-01"),
+    isPinned: false,
     tags: [{ key: "typescript", name: "TypeScript" }],
     title: { id: "title-r1", originalContent: "How do I type an API?", sourceLocale: "en" },
   }],
 };
 const topic = {
   id: "typed/api", sectionId: "typescript/basics", authorId: "ada", authorName: "Ada", createdAt: new Date("2026-01-01"),
-  isSolved: false, bestAnswerPostId: null,
+  isPinned: false, isSolved: false, bestAnswerPostId: null,
   title: section.topics[0]!.title,
   section: { id: "typescript/basics", name: "TypeScript", category: { id: "development/core", name: "Development" } },
   tags: [{ key: "typescript", name: "TypeScript" }],
@@ -57,6 +58,7 @@ const reader: ForumReader = {
     sectionCount: 1,
     topicCount: 1,
     messageCount: 1,
+    pinnedTopics: [],
     latestTopics: [{
       id: topic.id,
       title: topic.title.originalContent,
@@ -130,6 +132,7 @@ const reader: ForumReader = {
   } : undefined,
   readReplyNotifications: async () => [],
   countUnreadReplyNotifications: async () => 0,
+  readTopicPinState: async () => false,
   search: async (query) => query.toLowerCase().includes("type") ? [{
     id: topic.id,
     title: topic.title.originalContent,
@@ -215,6 +218,7 @@ function topicRenderData(
     canReply: false,
     canManageSolution: false,
     canCorrectTitleSourceLocale: false,
+    canManagePin: false,
     correctablePostIds: [],
     topicReadState: null,
     ...overrides,
