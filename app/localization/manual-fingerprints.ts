@@ -65,6 +65,7 @@ export const reviewedCommonFingerprints = {
   unreadIntro: "798eb16ff366ca35443f0d86154b65a041dc9d501f768617f0bc25fea10f0520",
   unreadEmpty: "ae21f565cc361373847d6c5a133c06abf68d4efe0cad46c5e4d8fe7d8e9581b1",
   unreadNew: "5ba090d2e41564db5b507404ca85561333af066c79a2560adc955d03dc4fe35f",
+  readStateRead: "9245ec2db77f1cce878716ad0600960323c7da4b4bfb1c608da80b2b89da118f",
   unreadCount: "2f787a77316312acb5cd992cc9b572d622d73a8e6cf6f443ddca98fb6ab1f23c",
   enterForumSection: "66417cb0b92e3ca59565aeb2efd6a269a4be0f8013801a01d5df311111ff95c0",
   forumDiscoveryDevelopmentStatus: "55303ded3966576488f7eff27a22b06d64ab5138a60bdeaf5ce42d3120bbf556",
