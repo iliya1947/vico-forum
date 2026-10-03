@@ -333,11 +333,16 @@ Remaining participation work:
 
 - continue verifying long titles, long localized strings, code overflow and mixed-direction content;
 - permanent copy-link was implemented and owner-accepted through PR #172;
-- the current Reply/Quote slice adds a persisted direct-parent relationship while keeping the
-  discussion linear: concrete-message replies expose parent/direct-reply anchors, and Quote inserts
-  only text the user actually selected as a Markdown blockquote; repository/Pages/owner acceptance
-  for this slice is still pending;
-- full editor behavior remains separate approved future work.
+- Reply/Quote adds a persisted direct-parent relationship while keeping the discussion linear:
+  concrete-message replies expose parent/direct-reply anchors, and Quote inserts only text the user
+  actually selected as a Markdown blockquote;
+- the current Markdown editor/code presentation slice reuses the exact create-topic/reply form
+  contracts and adds one shared client-safe editor with `Write / Preview / Split` views plus
+  selection-aware heading/bold/italic/quote/link/list/inline/fenced-code controls, optional
+  fenced-code language identifier and preview through the existing safe `ForumMarkdown` renderer.
+  Rendered fenced code has a language label, copy feedback, wrap/no-wrap,
+  LTR isolation inside RTL UI and dependency-free syntax-token presentation. Drafts/autosave,
+  attachments/images, WYSIWYG and edit-existing-post flows remain separate future work.
 
 ### 5. Auth, administration and system states
 

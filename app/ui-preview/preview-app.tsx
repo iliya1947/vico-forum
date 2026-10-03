@@ -37,7 +37,9 @@ type PreviewView = "home" | "search" | "popular" | "unanswered" | "tags" | "tag"
 type PreviewVariant =
   | "empty-category"
   | "section-form-error"
+  | "section-editor"
   | "topic-reply-error"
+  | "topic-editor"
   | "topic-unsolved"
   | "topic-tools"
   | "admin-success"
@@ -79,7 +81,9 @@ export const scenarios: readonly Scenario[] = [
   { id: "category-empty", label: "Empty category · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/empty", view: "category", variant: "empty-category" },
   { id: "section-user", label: "Section · user", locale: "en", direction: "ltr", identity: "user", path: "/en/sections/typescript", view: "section" },
   { id: "section-form-error", label: "Create topic error · user", locale: "en", direction: "ltr", identity: "user", path: "/en/sections/typescript", view: "section", variant: "section-form-error" },
+  { id: "section-editor", label: "Markdown editor · create topic · user", locale: "en", direction: "ltr", identity: "user", path: "/en/sections/typescript", view: "section", variant: "section-editor" },
   { id: "topic-solved-user", label: "Solved topic · user", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api", view: "topic" },
+  { id: "topic-editor", label: "Markdown editor · reply + quote · user", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api", view: "topic", variant: "topic-editor" },
   { id: "topic-solved-manager", label: "Solved topic · manager", locale: "en", direction: "ltr", identity: "manager", path: "/en/topics/typed-api", view: "topic" },
   { id: "topic-reply-error", label: "Reply error · user", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api", view: "topic", variant: "topic-reply-error" },
   { id: "topic-unsolved", label: "Unsolved topic · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/topics/typed-api", view: "topic", variant: "topic-unsolved" },
@@ -855,6 +859,21 @@ function PreviewSectionRoute({ scenario }: { scenario: Scenario }) {
       actionData={scenario.view === "section" && scenario.variant === "section-form-error"
         ? { error: "rateLimited" }
         : undefined}
+      createTopicBodyDefaultValue={scenario.variant === "section-editor"
+        ? `A typed client can keep **domain types** separate from transport details.
+
+Use \`request<T>()\` for the boundary:
+
+\`\`\`ts
+export async function request<T>(path: string): Promise<T> {
+  const response = await fetch(path);
+  return response.json() as Promise<T>;
+}
+\`\`\`
+
+Long line for wrap review: const veryLongIdentifier = "this-is-a-deliberately-long-code-line-for-horizontal-overflow-and-wrap-review";`
+        : ""}
+      createTopicPreviewOpen={scenario.variant === "section-editor"}
     />
   );
 }
@@ -881,6 +900,13 @@ function PreviewTopicRoute({ scenario }: { scenario: Scenario }) {
         actionData={scenario.view === "topic" && scenario.variant === "topic-reply-error"
           ? { error: "rateLimited" }
           : undefined}
+        initialReplyTargetPostId={scenario.variant === "topic-editor" ? "question" : null}
+        replyBodyDefaultValue={scenario.variant === "topic-editor"
+          ? `> I want strong typing without coupling the whole app to one HTTP library.
+
+I would keep the transport adapter small and expose an \`ApiResult<T>\` to the domain.`
+          : ""}
+        replyPreviewOpen={scenario.variant === "topic-editor"}
       />
     );
   }
@@ -1051,6 +1077,21 @@ function previewElement(scenario: Scenario) {
           section={scenario.locale === "ru" ? sectionRu : scenario.direction === "rtl" ? sectionRtl : section}
           canCreateTopic
           actionData={scenario.variant === "section-form-error" ? { error: "rateLimited" } : undefined}
+          createTopicBodyDefaultValue={scenario.variant === "section-editor"
+            ? `A typed client can keep **domain types** separate from transport details.
+
+Use \`request<T>()\` for the boundary:
+
+\`\`\`ts
+export async function request<T>(path: string): Promise<T> {
+  const response = await fetch(path);
+  return response.json() as Promise<T>;
+}
+\`\`\`
+
+Long line for wrap review: const veryLongIdentifier = "this-is-a-deliberately-long-code-line-for-horizontal-overflow-and-wrap-review";`
+            : ""}
+          createTopicPreviewOpen={scenario.variant === "section-editor"}
         />
       );
     case "empty":
@@ -1092,6 +1133,13 @@ function previewElement(scenario: Scenario) {
         <TopicView
           {...data}
           actionData={scenario.variant === "topic-reply-error" ? { error: "rateLimited" } : undefined}
+          initialReplyTargetPostId={scenario.variant === "topic-editor" ? "question" : null}
+          replyBodyDefaultValue={scenario.variant === "topic-editor"
+            ? `> I want strong typing without coupling the whole app to one HTTP library.
+
+I would keep the transport adapter small and expose an \`ApiResult<T>\` to the domain.`
+            : ""}
+          replyPreviewOpen={scenario.variant === "topic-editor"}
         />
       );
     }

@@ -95,8 +95,12 @@ Vico Forum находится в ранней pre-release разработке.
   `Form` submissions используют `useNavigation` pending state: только отправляемая
   create-topic/reply form получает `aria-busy`, disabled fields/action и локализованный pending
   label. Existing server validation, permissions, origin protection и rate-limit semantics не
-  менялись; полноценный editor, drafts/autosave и reply/quote relationships остаются будущими
-  bounded tasks. Repository CI и Pages для принятой реализации проходят. Следующая bounded
+  менялись. Shared Markdown editor/code presentation теперь использует те же create-topic/reply
+  write contracts: `Write / Preview / Split` views, selection-aware heading/bold/italic/quote/
+  link/list/inline-code/fenced-code controls, optional code language и safe preview через существующий
+  ForumMarkdown renderer; rendered code сохраняет copy/wrap/LTR presentation;
+  drafts/autosave остаются отдельной будущей bounded task. Reply/Quote relationships реализованы
+  отдельным bounded slice. Repository CI и Pages для ранее принятой form presentation проходят. Следующая bounded
   UI/UX подзадача — secondary translation/source-locale/solution control cleanup.
 - Secondary topic-controls slice реализован в PR #163 без backend/DB/permission изменений:
   translation-generation feedback остаётся видимым, но получает compact secondary presentation;
@@ -613,7 +617,8 @@ runtime roles/Hyperdrive writes и другие schema-dependent runtime capabil
 11. Owner mobile review 2026-10-03 унифицировал compact destination cards на Category/Section/Tags/Search: entry action остаётся отдельной vertical orange rail справа по всей высоте карточки; нижний orange footer для этих карточек не используется.
 12. Message links реализован и merged через PR #172: permanent message anchor + public Copy link + localized success/failure feedback; owner visual acceptance подтверждён 2026-10-03.
 13. Reply/Quote реализован: migration `0022_forum_reply_relationships` добавляет nullable same-topic direct-parent relation; discussion остаётся линейным, Reply таргетирует concrete parent, child показывает parent anchor, parent — direct-reply anchors, Quote вставляет только реально выделенный текст как Markdown blockquote. Existing permissions/rate-limit semantics сохраняются; repository CI и GitHub Pages preview проходят, owner visual acceptance подтверждён 2026-10-03.
-14. Stage 6 infrastructure gates остаются на паузе до отдельного указания владельца.
+14. Markdown editor/code presentation реализован поверх существующих create-topic/reply contracts: shared client-safe editor сохраняет exact submitted Markdown body, поддерживает `Write / Preview / Split` views и selection-aware heading/bold/italic/quote/link/list/inline/fenced-code actions с optional language identifier. Preview использует тот же safe ForumMarkdown renderer; rendered fenced code остаётся LTR внутри RTL UI и получает language label, copy feedback, wrap/no-wrap и dependency-free syntax token presentation. Drafts/autosave, attachments и WYSIWYG в эту bounded task не входят.
+15. Stage 6 infrastructure gates остаются на паузе до отдельного указания владельца.
 
 Ранее подготовленный защищённый manual rollout mechanism остаётся в repository. При явном
 возобновлении Stage 6 актуальная последовательность остаётся следующей:
