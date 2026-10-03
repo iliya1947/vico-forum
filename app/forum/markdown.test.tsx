@@ -101,7 +101,7 @@ const longValue = "code";
     const writeText = vi.fn().mockResolvedValue(undefined);
     vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText } });
 
-    const { container } = renderMarkdown("```ts\\nconst answer = true;\\n```");
+    const { container } = renderMarkdown("```ts\nconst answer = true;\n```");
     const codeBlock = container.querySelector(".forum-code-block");
     expect(codeBlock).toHaveAttribute("dir", "ltr");
     expect(codeBlock).toHaveAttribute("data-wrap", "false");
@@ -118,7 +118,7 @@ const longValue = "code";
   it("reports clipboard failure without changing the code", async () => {
     vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText: vi.fn().mockRejectedValue(new Error("denied")) } });
 
-    const { container } = renderMarkdown("```js\\nlet value = 1;\\n```");
+    const { container } = renderMarkdown("```js\nlet value = 1;\n```");
     await userEvent.click(screen.getByRole("button", { name: "Copy code" }));
 
     expect(screen.getByText("Could not copy code.")).toBeInTheDocument();
@@ -127,7 +127,7 @@ const longValue = "code";
 
   it("keeps rendered code LTR inside an RTL page context", () => {
     const { container } = renderMarkdown(
-      "فقرة **مهمة**\\n\\n```ts\\nconst x = 1;\\n```",
+      "فقرة **مهمة**\n\n```ts\nconst x = 1;\n```",
       "rtl",
     );
 
