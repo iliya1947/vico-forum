@@ -160,6 +160,7 @@ function writer() {
     selectBestAnswer: vi.fn(async () => undefined),
     correctTopicTitleSourceLocale: vi.fn(async () => undefined),
     correctPostBodySourceLocale: vi.fn(async () => undefined),
+    markTopicReadThrough: vi.fn(async ({ postId }: { postId: string }) => ({ lastReadPostId: postId })),
   } satisfies ForumWriter;
 }
 
