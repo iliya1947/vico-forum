@@ -98,13 +98,43 @@ export function PostBodyTranslationControls({
 }: {
   presentation: ContentTranslationPresentation;
 }) {
+  const { t } = useTranslation("common");
   if (presentation.selected !== "translation") return null;
 
   return (
-    <div className="topic-message-translation-controls">
-      <TranslationProvenance presentation={presentation} />
-      <OriginalDisclosure presentation={presentation} markdown />
-    </div>
+    <details className="topic-message-translation-controls">
+      <summary className="topic-message-translation-summary">
+        <span className="topic-message-translation-summary-copy">
+          {presentation.provenance && (
+            <span className="translation-provenance">
+              <span>
+                {t(
+                  presentation.provenance.origin === "machine"
+                    ? "automaticTranslation"
+                    : "manualTranslation",
+                )}
+              </span>
+              {presentation.provenance.attribution && (
+                <span className="translation-attribution">
+                  {presentation.provenance.attribution}
+                </span>
+              )}
+            </span>
+          )}
+          <span className="topic-message-translation-toggle">
+            <span className="translation-show-original">{t("showOriginal")}</span>
+            <span className="translation-show-translation">{t("showTranslation")}</span>
+          </span>
+        </span>
+      </summary>
+      <div
+        lang={presentation.originalLocale}
+        dir={presentation.originalDirection}
+        className="topic-message-translation-original-content"
+      >
+        <ForumMarkdown>{presentation.originalContent}</ForumMarkdown>
+      </div>
+    </details>
   );
 }
 
