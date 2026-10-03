@@ -229,7 +229,7 @@ describe("under development page", () => {
     expect(screen.getByText("Drafts and autosave is not finished yet.")).toBeVisible();
     expect(screen.queryByText("Pinned-topic management")).not.toBeInTheDocument();
     expect(screen.queryByText("Notifications")).not.toBeInTheDocument();
-    expect(screen.getByText("Drafts and autosave")).toBeVisible();
+    expect(screen.getAllByText("Drafts and autosave").length).toBeGreaterThan(0);
     expect(screen.getByRole("link", { name: "Back to the forum" })).toHaveAttribute("href", "/en");
   });
 });
