@@ -85,7 +85,7 @@ Workflow использует две разные fail-closed verification phase
    `0000`–`0003` schema/data invariants и существующий localization least-privilege contract.
 2. **post-migration**: ledger обязан точно совпасть с complete checked-in migration history по
    `created_at + Drizzle SHA-256 hash`, а target schema —
-   с repository-owned full structural manifest `0000`–`0020`. Manifest покрывает 27 public
+   с repository-owned full structural manifest `0000`–`0023`. Manifest покрывает 30 public
    application tables, columns/types/nullability/defaults, PK/unique/FK/check/index contract,
    manual deferrable forum foreign keys, а также correctness-critical trigger/function definitions
    и trigger enablement; ownership/ACL invariants проверяются уже на полном наборе application tables.
@@ -146,7 +146,7 @@ Target-environment verifier проверяет стабильные invariants, 
 
 - PostgreSQL 17 и UTF-8;
 - phase-aware migration ledger contract: exact `created_at + Drizzle SHA-256 hash` known-applied prefix до write и exact complete history после write;
-- repository-owned full target structural manifest для `0000`–`0020`, включая column defaults и correctness-critical triggers/functions, проверяемый CI против clean PostgreSQL 17;
+- repository-owned full target structural manifest для текущей checked-in history `0000`–`0023`, включая column defaults и correctness-critical triggers/functions, проверяемый CI против clean PostgreSQL 17; accepted external migration evidence при этом остаётся на `0020` до отдельного authorized rollout;
 - отсутствие persistent bootstrap/reserved locale rows (`en`, `api`, `assets`);
 - отсутствие persistent canonical-English UI translation rows;
 - current connection role, application owner и configured runtime role attributes/memberships;
