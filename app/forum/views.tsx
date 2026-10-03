@@ -1123,33 +1123,38 @@ export function TopicView({
         ]} />
 
         <section className="topic-heading">
-          <div className="topic-heading-main">
+          <div className="topic-heading-side">
             <p className="eyebrow">{t("topicLabel")}</p>
-            <TopicTitlePresentation presentation={titlePresentation} />
-            {titleGenerationUnit && (
-              <div className="topic-generation-status">
-                <ContentGenerationUnitStatus unit={titleGenerationUnit} />
-              </div>
-            )}
             <div className="topic-heading-meta">
               <span>{t("startedBy", { author: topic.authorName })}</span>
             </div>
-            {topic.tags.length > 0 ? (
-              <nav className="topic-tag-list topic-heading-tags" aria-label={t("topicTagsLabel")}>
-                {topic.tags.map((tag) => (
-                  <Link className="topic-tag" key={tag.key} to={forumTagPath(locale, tag.key)}>#{tag.name}</Link>
-                ))}
-              </nav>
-            ) : null}
           </div>
 
-          <div className="topic-heading-actions">
-            {topic.isSolved && <strong className="solved-badge">{t("solved")}</strong>}
-            {topic.bestAnswerPostId && (
-              <a className="topic-solution-link" href={`#post-${encodeURIComponent(topic.bestAnswerPostId)}`}>
-                {t("goToSolution")}
-              </a>
-            )}
+          <div className="topic-heading-content">
+            <div className="topic-heading-main">
+              <TopicTitlePresentation presentation={titlePresentation} />
+              {titleGenerationUnit && (
+                <div className="topic-generation-status">
+                  <ContentGenerationUnitStatus unit={titleGenerationUnit} />
+                </div>
+              )}
+              {topic.tags.length > 0 ? (
+                <nav className="topic-tag-list topic-heading-tags" aria-label={t("topicTagsLabel")}>
+                  {topic.tags.map((tag) => (
+                    <Link className="topic-tag" key={tag.key} to={forumTagPath(locale, tag.key)}>#{tag.name}</Link>
+                  ))}
+                </nav>
+              ) : null}
+            </div>
+
+            <div className="topic-heading-actions">
+              {topic.isSolved && <strong className="solved-badge">{t("solved")}</strong>}
+              {topic.bestAnswerPostId && (
+                <a className="topic-solution-link" href={`#post-${encodeURIComponent(topic.bestAnswerPostId)}`}>
+                  {t("goToSolution")}
+                </a>
+              )}
+            </div>
           </div>
 
           {(canCorrectTitleSourceLocale || (canManageSolution && !topic.isSolved)) && (
@@ -1353,14 +1358,20 @@ export function TopicView({
                       <div className="topic-message-footer-end">
                         <PostBodyTranslationControls presentation={postPresentation} />
                         <div className="topic-message-desktop-actions">
+                          <MessagePermalinkControl
+                            postId={post.id}
+                            messageNumber={messageNumber}
+                            feedback={messageLinkFeedback}
+                            onCopy={copyMessageLink}
+                          />
                           {canReply && (
                             <div className="topic-message-participation">
                               <div className="topic-message-participation-actions">
-                                <button type="button" onClick={() => targetReply(post.id)}>
-                                  {t("replyToMessage")}
-                                </button>
                                 <button type="button" onClick={() => quoteSelectedText(post.id)}>
                                   {t("quoteSelectedText")}
+                                </button>
+                                <button type="button" onClick={() => targetReply(post.id)}>
+                                  {t("replyToMessage")}
                                 </button>
                               </div>
                               {quoteSelectionErrorPostId === post.id && (
@@ -1370,12 +1381,6 @@ export function TopicView({
                               )}
                             </div>
                           )}
-                          <MessagePermalinkControl
-                            postId={post.id}
-                            messageNumber={messageNumber}
-                            feedback={messageLinkFeedback}
-                            onCopy={copyMessageLink}
-                          />
                         </div>
                       </div>
                     </div>
