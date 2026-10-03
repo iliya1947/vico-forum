@@ -180,6 +180,64 @@ export function UnansweredView({
   topics: readonly UnansweredTopicPresentation[];
 }) {
   const { t } = useTranslation("common");
+  const unreadTopics = topics.filter((topic) => topic.state === "unread");
+  const newTopics = topics.filter((topic) => topic.state === "new");
+
+  const topicList = (items: readonly UnreadTopicPresentation[]) => (
+    <ul className="unanswered-topic-list">
+      {items.map((topic) => (
+        <li key={topic.id}>
+          <Link
+            className="unanswered-topic-card"
+            to={`${forumTopicPath(locale, topic.id)}#post-${encodeURIComponent(topic.firstUnreadPostId)}`}
+          >
+            <span className="unanswered-topic-main">
+              <span className="unanswered-topic-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <rect x="3.5" y="5.5" width="17" height="13" rx="1.5" />
+                  <path d="m4.5 7 7.5 6 7.5-6" />
+                </svg>
+              </span>
+              <span className="unanswered-topic-copy">
+                <strong dir="auto">{topic.title}</strong>
+                <small>{t("startedBy", { author: topic.authorName })}</small>
+              </span>
+            </span>
+
+            <span className="unanswered-topic-location">
+              <span>{topic.category.name}</span>
+              <span>{topic.section.name}</span>
+            </span>
+
+            <span className="unanswered-topic-status">
+              {topic.state === "new" ? (
+                <span className="unread-topic-new-label">{t("unreadNew")}</span>
+              ) : (() => {
+                const [firstLine, secondLine] = splitUnreadCountLabel(
+                  t("unreadCount", { count: topic.unreadCount }),
+                );
+                return (
+                  <>
+                    <strong className="unread-topic-count-number">{topic.unreadCount}</strong>
+                    <span className="unread-topic-count-label">
+                      <span>{firstLine}</span>
+                      {secondLine ? <span>{secondLine}</span> : null}
+                    </span>
+                  </>
+                );
+              })()}
+            </span>
+
+            <span className="unanswered-topic-enter" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="m9 5 7 7-7 7" />
+              </svg>
+            </span>
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
 
   return (
     <ForumShell locale={locale} variant="unanswered">
@@ -265,7 +323,6 @@ export function UnreadView({
       <Breadcrumbs locale={locale} items={[{ label: t("unreadNav") }]} />
 
       <header className="unanswered-heading">
-        <p className="eyebrow">{t("unreadEyebrow")}</p>
         <h1>{t("unreadHeading")}</h1>
         <p>{t("unreadIntro")}</p>
       </header>
@@ -275,61 +332,25 @@ export function UnreadView({
           <EmptyState>{t("unreadEmpty")}</EmptyState>
         </div>
       ) : (
-        <section className="unanswered-topics" aria-label={t("unreadHeading")}>
-          <ul className="unanswered-topic-list">
-            {topics.map((topic) => (
-              <li key={topic.id}>
-                <Link
-                  className="unanswered-topic-card"
-                  to={`${forumTopicPath(locale, topic.id)}#post-${encodeURIComponent(topic.firstUnreadPostId)}`}
-                >
-                  <span className="unanswered-topic-main">
-                    <span className="unanswered-topic-icon" aria-hidden="true">
-                      <svg viewBox="0 0 24 24">
-                        <rect x="3.5" y="5.5" width="17" height="13" rx="1.5" />
-                        <path d="m4.5 7 7.5 6 7.5-6" />
-                      </svg>
-                    </span>
-                    <span className="unanswered-topic-copy">
-                      <strong dir="auto">{topic.title}</strong>
-                      <small>{t("startedBy", { author: topic.authorName })}</small>
-                    </span>
-                  </span>
+        <div className="unread-topic-groups">
+          {unreadTopics.length > 0 ? (
+            <section className="unanswered-topics unread-topic-group" aria-labelledby="unread-existing-heading">
+              <h2 id="unread-existing-heading" className="unread-topic-group-heading">
+                {t("unreadExistingHeading")}
+              </h2>
+              {topicList(unreadTopics)}
+            </section>
+          ) : null}
 
-                  <span className="unanswered-topic-location">
-                    <span>{topic.category.name}</span>
-                    <span>{topic.section.name}</span>
-                  </span>
-
-                  <span className="unanswered-topic-status">
-                    {topic.state === "new" ? (
-                      <span className="unread-topic-new-label">{t("unreadNew")}</span>
-                    ) : (() => {
-                      const [firstLine, secondLine] = splitUnreadCountLabel(
-                        t("unreadCount", { count: topic.unreadCount }),
-                      );
-                      return (
-                        <>
-                          <strong className="unread-topic-count-number">{topic.unreadCount}</strong>
-                          <span className="unread-topic-count-label">
-                            <span>{firstLine}</span>
-                            {secondLine ? <span>{secondLine}</span> : null}
-                          </span>
-                        </>
-                      );
-                    })()}
-                  </span>
-
-                  <span className="unanswered-topic-enter" aria-hidden="true">
-                    <svg viewBox="0 0 24 24">
-                      <path d="m9 5 7 7-7 7" />
-                    </svg>
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
+          {newTopics.length > 0 ? (
+            <section className="unanswered-topics unread-topic-group" aria-labelledby="unread-new-heading">
+              <h2 id="unread-new-heading" className="unread-topic-group-heading">
+                {t("unreadNewHeading")}
+              </h2>
+              {topicList(newTopics)}
+            </section>
+          ) : null}
+        </div>
       )}
     </ForumShell>
   );
