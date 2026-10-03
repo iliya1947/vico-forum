@@ -116,6 +116,10 @@ describe("PostgreSQL 17 locale migrations", () => {
     expect(Object.fromEntries(roles.rows.map((row) => [row.slug, row.grants]))).toEqual(
       Object.fromEntries(Object.entries(INITIAL_ROLE_GRANTS).map(([slug, grants]) => [slug, [...grants].sort()])),
     );
+    const builtIn = Object.fromEntries(roles.rows.map((row) => [row.slug, row.grants]));
+    expect(builtIn.user).not.toContain("forum.topic.pin");
+    expect(builtIn.moderator).toContain("forum.topic.pin");
+    expect(builtIn.admin).toContain("forum.topic.pin");
     await expectDatabaseCode(client.query("insert into authz_permissions (key) values ('made.up.permission')"), "23514");
     await expectDatabaseCode(client.query("delete from authz_roles where slug = 'user'"), "23514");
   });
@@ -156,6 +160,11 @@ describe("PostgreSQL 17 locale migrations", () => {
       expect((await service.resolveUser("authz-user")).effectivePermissions).not.toContain("forum.solution.manageAny");
       await service.setUserOverride("authz-admin", "authz-user", "forum.solution.manageAny", null);
       expect((await service.resolveUser("authz-user")).effectivePermissions).toContain("forum.solution.manageAny");
+      await service.setUserOverride("authz-admin", "authz-user", "forum.topic.pin", "allow");
+      expect((await service.resolveUser("authz-user")).effectivePermissions).toContain("forum.topic.pin");
+      await service.setUserOverride("authz-admin", "authz-user", "forum.topic.pin", "deny");
+      expect((await service.resolveUser("authz-user")).effectivePermissions).not.toContain("forum.topic.pin");
+      await service.setUserOverride("authz-admin", "authz-user", "forum.topic.pin", null);
       expect(() => service.replaceRoleGrants("authz-admin", custom.id, ["unknown"]))
         .toThrow(InvalidAuthorizationInputError);
 
@@ -265,6 +274,123 @@ describe("PostgreSQL 17 locale migrations", () => {
       posts: [{ id: "post-1", authorName: "Forum Author", body: { originalContent: "Нужен пример." } }],
     });
     expect(await repository.readCategory("missing")).toBeUndefined();
+  });
+
+  it("persists idempotent topic pins and returns bounded deterministic homepage pins", async () => {
+    await insertForumAuthor("pin-actor", "pin-actor@example.test", null);
+
+    const repository = new DrizzleForumRepository(drizzle(client));
+    const forum = new ForumService(repository);
+
+    await forum.createTopicWithInitialPost({
+      id: "pin-topic-a",
+      sectionId: "typescript",
+      authorId: "forum-author",
+      titleRevision: {
+        id: "pin-topic-a-title",
+        originalContent: "Pinned A",
+        sourceLocale: "en",
+      },
+      initialPost: {
+        id: "pin-topic-a-post",
+        topicId: "pin-topic-a",
+        authorId: "forum-author",
+        bodyRevision: {
+          id: "pin-topic-a-body",
+          originalContent: "Pinned A body",
+          sourceLocale: "en",
+        },
+      },
+    });
+    await forum.createTopicWithInitialPost({
+      id: "pin-topic-b",
+      sectionId: "typescript",
+      authorId: "forum-author",
+      titleRevision: {
+        id: "pin-topic-b-title",
+        originalContent: "Pinned B",
+        sourceLocale: "en",
+      },
+      initialPost: {
+        id: "pin-topic-b-post",
+        topicId: "pin-topic-b",
+        authorId: "forum-author",
+        bodyRevision: {
+          id: "pin-topic-b-body",
+          originalContent: "Pinned B body",
+          sourceLocale: "en",
+        },
+      },
+    });
+
+    const firstPool = new Pool({ connectionString: databaseUrl });
+    const secondPool = new Pool({ connectionString: databaseUrl });
+    try {
+      const firstForum = new ForumService(new DrizzleForumRepository(drizzle(firstPool)));
+      const secondForum = new ForumService(new DrizzleForumRepository(drizzle(secondPool)));
+      await Promise.all([
+        firstForum.pinTopic("topic-1", "pin-actor"),
+        secondForum.pinTopic("topic-1", "pin-actor"),
+      ]);
+
+      const duplicateCheck = await client.query<{ count: number }>(
+        "select count(*)::int as count from forum_topic_pins where topic_id = 'topic-1'",
+      );
+      expect(duplicateCheck.rows[0]?.count).toBe(1);
+      expect(await repository.readTopicPinState("topic-1")).toBe(true);
+
+      await client.query(
+        `insert into forum_topic_pins (topic_id, pinned_by_user_id, pinned_at)
+         values
+           ('pin-topic-a', 'pin-actor', '2026-10-04T10:00:00Z'),
+           ('pin-topic-b', 'pin-actor', '2026-10-04T10:00:00Z')
+         on conflict (topic_id) do update
+           set pinned_by_user_id = excluded.pinned_by_user_id,
+               pinned_at = excluded.pinned_at`,
+      );
+      await client.query(
+        "update forum_topic_pins set pinned_at = '2026-10-04T09:00:00Z' where topic_id = 'topic-1'",
+      );
+
+      const homepage = await repository.readHomepage(6, 2);
+      const development = homepage.find(({ id }) => id === "development");
+      expect(development?.pinnedTopics.map(({ id }) => id)).toEqual([
+        "pin-topic-b",
+        "pin-topic-a",
+      ]);
+      expect(development?.pinnedTopics[0]).toMatchObject({
+        title: "Pinned B",
+        authorName: "Forum Author",
+      });
+
+      expect((await repository.readSection("typescript"))?.topics)
+        .toEqual(expect.arrayContaining([
+          expect.objectContaining({ id: "topic-1", isPinned: true }),
+          expect.objectContaining({ id: "pin-topic-a", isPinned: true }),
+        ]));
+      expect(await repository.readTopicPage("topic-1")).toMatchObject({ isPinned: true });
+
+      await forum.unpinTopic("topic-1", "pin-actor");
+      await forum.unpinTopic("topic-1", "pin-actor");
+      expect(await repository.readTopicPinState("topic-1")).toBe(false);
+
+      await client.query("delete from forum_topics where id = 'pin-topic-b'");
+      const topicCascade = await client.query<{ count: number }>(
+        "select count(*)::int as count from forum_topic_pins where topic_id = 'pin-topic-b'",
+      );
+      expect(topicCascade.rows[0]?.count).toBe(0);
+
+      await client.query('delete from "user" where id = \'pin-actor\'');
+      const actorCascade = await client.query<{ count: number }>(
+        "select count(*)::int as count from forum_topic_pins where topic_id = 'pin-topic-a'",
+      );
+      expect(actorCascade.rows[0]?.count).toBe(0);
+    } finally {
+      await firstPool.end();
+      await secondPool.end();
+      await client.query("delete from forum_topics where id in ('pin-topic-a', 'pin-topic-b')");
+      await client.query('delete from "user" where id = \'pin-actor\'');
+    }
   });
 
   it("persists monotonic per-user topic read state and derives new/unread/first-unread deterministically", async () => {
