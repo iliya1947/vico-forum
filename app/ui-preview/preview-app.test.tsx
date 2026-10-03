@@ -25,6 +25,12 @@ describe("embedded preview routing", () => {
     await userEvent.click(await screen.findByRole("link", { name: "Open Development" }));
 
     expect(await screen.findByRole("heading", { level: 1, name: "Development" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /TypeScript & architecture/ })).toBeInTheDocument();
+    const sectionLink = screen.getByRole("link", { name: /TypeScript & architecture/ });
+    expect(sectionLink).toBeInTheDocument();
+
+    await userEvent.click(sectionLink);
+
+    expect(await screen.findByRole("heading", { level: 1, name: "TypeScript & architecture" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /How should I structure a typed API client\?/ })).toBeInTheDocument();
   });
 });
