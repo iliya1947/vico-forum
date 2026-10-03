@@ -104,6 +104,8 @@ export const canonicalEnglishCatalog = {
     unreadNav: message("unreadNav", "Unread", "Authenticated-only homepage navigation entry for unread topics."),
     unreadEyebrow: message("unreadEyebrow", "Discovery", "Eyebrow above the authenticated Unread topics page heading."),
     unreadHeading: message("unreadHeading", "Unread topics", "Heading of the authenticated Unread topics page."),
+    unreadExistingHeading: message("unreadExistingHeading", "Unread", "Heading above topics with unread messages on the authenticated Unread page."),
+    unreadNewHeading: message("unreadNewHeading", "New", "Heading above topics the current user has never opened on the authenticated Unread page."),
     unreadIntro: message("unreadIntro", "New topics and topics with messages you have not read yet.", "Short explanation of the authenticated Unread topics page."),
     unreadEmpty: message("unreadEmpty", "You have no unread topics.", "Empty-state message for the authenticated Unread topics page."),
     unreadNew: message("unreadNew", "New", "Status label for a topic the current user has never opened."),
