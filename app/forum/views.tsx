@@ -260,7 +260,7 @@ export function UnreadView({
       {items.map((topic) => (
         <li key={topic.id}>
           <Link
-            className="unanswered-topic-card"
+            className="unanswered-topic-card unread-topic-card"
             to={`${forumTopicPath(locale, topic.id)}#post-${encodeURIComponent(topic.firstUnreadPostId)}`}
           >
             <span className="unanswered-topic-main">
