@@ -62,6 +62,8 @@ export const reviewedCommonFingerprints = {
   unreadNav: "54c89e571b3d3216e710d6e44f829d9fd218d4efad820ea3fdf47d313fb6400a",
   unreadEyebrow: "eb34da301116e90c28720fd6c9f8ed8dfe550c43b6090a31e0b1100fa39c4991",
   unreadHeading: "9c5023b8f82f979986e5cb383ba78b4fabbb880ab6db2f771e2f23bd8846188c",
+  unreadExistingHeading: "dcce7c976762d6f6a4821738bfe99acaa3ca9e7cab0615e80b25846856009d2e",
+  unreadNewHeading: "984bfee3742892cd3d647c4bbb52bccac0797d4b8deef811dae7a1807fe4bf5f",
   unreadIntro: "798eb16ff366ca35443f0d86154b65a041dc9d501f768617f0bc25fea10f0520",
   unreadEmpty: "ae21f565cc361373847d6c5a133c06abf68d4efe0cad46c5e4d8fe7d8e9581b1",
   unreadNew: "5ba090d2e41564db5b507404ca85561333af066c79a2560adc955d03dc4fe35f",
