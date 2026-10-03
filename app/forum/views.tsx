@@ -1256,6 +1256,17 @@ export function TopicView({
                       </div>
                     )}
 
+                    {(directRepliesByParent.get(post.id)?.length ?? 0) > 0 && (
+                      <nav className="topic-message-direct-replies" aria-label={t("directReplies")}>
+                        <span>{t("directReplies")}:</span>
+                        {directRepliesByParent.get(post.id)!.map((replyId) => (
+                          <a key={replyId} href={`#post-${encodeURIComponent(replyId)}`}>
+                            #{messageNumberById.get(replyId)}
+                          </a>
+                        ))}
+                      </nav>
+                    )}
+
                     {canReply && (
                       <div className="topic-message-participation">
                         <div className="topic-message-participation-actions">
@@ -1272,17 +1283,6 @@ export function TopicView({
                           </span>
                         )}
                       </div>
-                    )}
-
-                    {(directRepliesByParent.get(post.id)?.length ?? 0) > 0 && (
-                      <nav className="topic-message-direct-replies" aria-label={t("directReplies")}>
-                        <span>{t("directReplies")}:</span>
-                        {directRepliesByParent.get(post.id)!.map((replyId) => (
-                          <a key={replyId} href={`#post-${encodeURIComponent(replyId)}`}>
-                            #{messageNumberById.get(replyId)}
-                          </a>
-                        ))}
-                      </nav>
                     )}
 
                     {hasMessageTools && (
