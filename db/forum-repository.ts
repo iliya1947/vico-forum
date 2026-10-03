@@ -673,11 +673,14 @@ export class DrizzleForumRepository {
       )
       select
         exists(select 1 from target) as target_exists,
-        (
-          select state.last_read_post_id
-          from forum_topic_read_states state
-          where state.user_id = ${userId}
-            and state.topic_id = ${topicId}
+        coalesce(
+          (select last_read_post_id from upsert),
+          (
+            select state.last_read_post_id
+            from forum_topic_read_states state
+            where state.user_id = ${userId}
+              and state.topic_id = ${topicId}
+          )
         ) as last_read_post_id
     `);
 
