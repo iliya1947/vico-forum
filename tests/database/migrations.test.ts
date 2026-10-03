@@ -546,11 +546,11 @@ describe("PostgreSQL 17 locale migrations", () => {
         create function reject_reply_notification_for_test()
         returns trigger
         language plpgsql
-        as $
+        as $notify$
         begin
           raise exception 'notification insert rejected for atomicity test';
         end;
-        $;
+        $notify$;
       `);
       await client.query(`
         create trigger reject_reply_notification_for_test
