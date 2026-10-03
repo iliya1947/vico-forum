@@ -957,3 +957,140 @@ LTR/RTL, включая keyboard-only traversal, selection/caret, preview, copy 
 5. Отдельно владелец должен решить process-state противоречие: ChatGPT service-channel update уже
    находится в `main`, хотя service PR по регламенту не должен merge. Codex не менял `main`, PR #147
    или implementation branch.
+
+---
+
+# Update 2026-10-03 — defer editor acceptance and hand off Unread/new
+
+## Current state and latest ChatGPT update
+
+Актуально проверены:
+
+- GitHub `main`: `2466c7a8d68bdf4986f64d30121cde966f54474f`;
+- PR #147 head: `e45f264ffcf2d099611aea3ce01117fb8bdff909`;
+- PR #176 head: `0e6a1607e7a8a3f2f16c9a4207536c32ba4d4131`;
+- PR #176 exact-head CI `37131216253` и Pages `37131367036`: success;
+- PR #176 сейчас GitHub показывает `mergeable: true`, `mergeable_state: clean`;
+- PR #147 из-за уже находящейся в `main` более ранней копии communication-файла показывает
+  `mergeable: false`, `mergeable_state: dirty`.
+
+Последнее обновление PR #147 принято как owner decision: расширенный editor получил дополнительные
+controls и Write/Preview/Split modes, но его presentation **не принят визуально**. PR #176 не
+считается merge-ready или owner-accepted; его дальнейшая visual/product refinement отложена до
+завтра. Green CI/Pages этого решения не заменяют. Codex в этой итерации не ревьюит новый editor UX,
+не меняет PR #176 и не переносит его незавершённое состояние в следующую задачу.
+
+Current source-of-truth documents на `main` относительно implementation baseline `22fae44` не
+изменялись: единственный новый main file — ошибочно попавший туда ChatGPT communication channel.
+Ранее отмеченное process-state противоречие остаётся отдельным owner issue и не используется для
+самовольного изменения `main`.
+
+## Selection of the next independent bounded slice
+
+Следующая bounded UI/UX product-задача — **authenticated Unread/new state and jump to first
+unread**.
+
+Она выбрана потому, что:
+
+1. это прямой approved target из `docs/UI_UX_PASS.md` и уже имеет authenticated-only navigation
+   entry, который сейчас честно ведёт на `Under development`;
+2. задача не зависит от визуально непринятого editor и не должна менять PR #176;
+3. persisted read position является foundation для будущих notifications, поэтому Unread должен
+   предшествовать notification delivery/badges;
+4. задача может быть изолирована в forum read-state model без drafts, profiles, registration,
+   pinning, online presence или Stage 6;
+5. она завершает реальный reading/navigation flow, а не добавляет fake preview behavior.
+
+## Handoff to ChatGPT — Unread/new and first-unread navigation
+
+### Objective
+
+Для authenticated user заменить временный `Unread` destination реальным locale-aware списком
+непрочитанных тем, показать truthful New/Unread state и дать переход к первому непрочитанному
+сообщению, сохранив классическую линейную discussion order и permanent post anchors.
+
+### Required product semantics
+
+1. Read state принадлежит паре `user + topic` и хранит последний **фактически показанный** post
+   position. Guest state не сохраняется.
+2. Stable post order должен совпадать с authoritative repository/message numbering order. Visual
+   promotion best answer не меняет read cursor, permanent number или first-unread calculation.
+3. Topic имеет state:
+   - `new`, если authenticated user ещё не имеет read marker;
+   - `unread`, если после marker существует хотя бы один persisted post;
+   - read/отсутствует в Unread destination, если marker достиг последнего показанного post.
+4. First-unread link ведёт на существующий permanent `#post-<id>` anchor первого post после marker;
+   для `new` topic — на первый post.
+5. Mark-read mutation получает last post id из реально отданного пользователю topic snapshot,
+   server-side проверяет membership/order и продвигает cursor только монотонно. Новый concurrent
+   reply после snapshot не должен случайно считаться прочитанным.
+6. Public GET/loader остаётся read-only. Автоматическая отметка после показа topic, если выбрана,
+   выполняется отдельным idempotent authenticated same-origin mutation и не блокирует public read
+   либо rendering при classified dependency failure.
+7. Собственные topic/reply writes не должны вводить ad-hoc особую семантику. Любое automatic cursor
+   advancement в write transaction допустимо только если оно согласовано с тем же visible-snapshot
+   invariant и покрыто race tests.
+
+### Required implementation scope
+
+1. Добавить минимальную forward-only Drizzle migration/read-state schema:
+   - composite identity `userId + topicId`;
+   - referential integrity к user/topic;
+   - last-read post обязан принадлежать той же теме;
+   - timestamps/indexes только под реальные unread/list/advance queries;
+   - monotonic upsert/advance contract.
+2. Добавить repository/service boundary для:
+   - bounded/set-based authenticated unread listing without N+1;
+   - first-unread resolution;
+   - monotonic mark-through-post update;
+   - deterministic activity/order tie-breaks.
+3. Заменить authenticated header `Unread` link на реальный generic `/:locale/unread` route. Guest
+   header по-прежнему не показывает этот entry и direct guest request получает существующий safe
+   auth boundary, а не утечку private state.
+4. Unread page переиспользует accepted ForumShell, compact topic-row patterns и реальные title,
+   author, section/category context, activity/reply data. Не создавать notification inbox.
+5. Добавить локализованные `New`/`Unread` indicators там, где они нужны для этого flow: unread page
+   и существующий section topic list. Не раскатывать unread joins по всем discovery queries без
+   доказанной необходимости текущего slice.
+6. Topic page для authenticated user предоставляет jump-to-first-unread only when applicable и
+   отмечает только snapshot, который действительно был rendered. Existing Reply/Quote, solution,
+   translation, message numbering и best-answer visual promotion сохраняются.
+7. Удалить `unread` из `Under development` только после genuine route/data/mutation completion.
+   Notifications остаются unfinished и не получают fake badge/count.
+8. Добавить representative Pages states через те же presentation components: unread list, new vs
+   unread rows, topic with first-unread target, LTR/RTL and Desktop/Mobile. Preview не имитирует
+   persistence или authentication backend.
+9. Обновить canonical English, complete RU/HE packs и fingerprint manifest; после фактической
+   verification узко обновить `PROJECT_STATE.md` и `docs/UI_UX_PASS.md`.
+
+### Required tests
+
+- clean migration and schema/constraint parity;
+- same-topic FK/integrity and cascade behavior;
+- no marker / middle marker / final marker semantics;
+- stable first-unread under equal timestamps and visually promoted best answer;
+- monotonic concurrent updates and stale snapshot cannot move cursor backward;
+- reply arriving after rendered snapshot remains unread;
+- set-based unread listing query and no route-level N+1;
+- guest/authenticated route and mutation security, same-origin enforcement and user isolation;
+- locale preservation, permanent anchor correctness and LTR/RTL presentation;
+- existing forum/auth/translation/Reply/Quote tests remain green.
+
+### Explicit exclusions
+
+- notifications, email/push delivery or notification badge counts;
+- subscriptions/watch preferences;
+- cross-device realtime/WebSocket updates;
+- drafts/autosave or any PR #176 editor work;
+- profiles, registration, pinning, online presence;
+- changes to post revision/translation identity, solution ordering, permissions catalog or Stage 6.
+
+### Verification and delivery boundary
+
+Один отдельный mergeable implementation PR от exact current `main`; PR #176 не merge/rebase и не
+копировать из него editor code. Required: full repository CI, migration/disposable PostgreSQL
+checks, UI preview build/Pages deploy, browser review Desktop/Mobile + LTR/RTL + guest/user, keyboard
+focus and first-unread anchor navigation. Pages не заменяет real-runtime final acceptance.
+
+После self-review ChatGPT записывает exact head, migration/query semantics, CI/Pages evidence и
+честный browser-acceptance status в PR #147 и останавливается для independent Codex whole-PR review.
