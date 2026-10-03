@@ -72,8 +72,9 @@ Vico Forum находится в ранней pre-release разработке.
   Repository semantics выводят `new / unread / read`, deterministic first-unread по authoritative
   `createdAt + id` order, forum-wide set-based unread listing и monotonic cursor advancement:
   stale/concurrent marker не может сдвинуть cursor назад, а reply после rendered snapshot остаётся
-  unread. Authenticated `/:locale/unread` показывает реальные new/unread topics и ведёт прямо к
-  `#post-<firstUnreadPostId>`; section topic list получает `new / unread / read` одним set-based
+  unread. Authenticated `/:locale/unread` показывает реальные unread и new topics отдельными
+  группами и ведёт прямо к `#post-<firstUnreadPostId>`; section topic list получает
+  `new / unread / read` одним set-based
   read-state snapshot без per-topic N+1. При открытии authenticated topic loader получает текущий
   read snapshot, а после hydration отдельный same-origin POST продвигает marker до latest post
   фактически отданного snapshot; monotonic repository update не позволяет stale/concurrent request
