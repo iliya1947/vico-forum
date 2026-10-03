@@ -31,6 +31,12 @@ describe("embedded preview routing", () => {
     await userEvent.click(sectionLink);
 
     expect(await screen.findByRole("heading", { level: 1, name: "TypeScript & architecture" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /How should I structure a typed API client\?/ })).toBeInTheDocument();
+    const topicLink = screen.getByRole("link", { name: /How should I structure a typed API client\?/ });
+    expect(topicLink).toBeInTheDocument();
+
+    await userEvent.click(topicLink);
+
+    expect(await screen.findByRole("heading", { level: 1, name: "How should I structure a typed API client?" })).toBeInTheDocument();
+    expect(screen.getByText("I want strong typing without coupling the whole app to one HTTP library.")).toBeInTheDocument();
   });
 });
