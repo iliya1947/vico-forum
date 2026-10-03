@@ -71,6 +71,7 @@ export const russianCommonValues = {
   unreadIntro: "Новые темы и темы с сообщениями, которые вы ещё не читали.",
   unreadEmpty: "Непрочитанных тем нет.",
   unreadNew: "Новая",
+  readStateRead: "Прочитано",
   unreadCount: {
     one: "{{count}} непрочитанное сообщение",
     few: "{{count}} непрочитанных сообщения",
@@ -338,6 +339,7 @@ export const hebrewCommonValues = {
   unreadIntro: "נושאים חדשים ונושאים עם הודעות שעדיין לא קראת.",
   unreadEmpty: "אין לך נושאים שלא נקראו.",
   unreadNew: "חדש",
+  readStateRead: "נקרא",
   unreadCount: {
     one: "{{count}} הודעה שלא נקראה",
     two: "{{count}} הודעות שלא נקראו",
