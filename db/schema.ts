@@ -560,7 +560,7 @@ export const authzRoles = pgTable("authz_roles", {
 export const authzPermissions = pgTable("authz_permissions", {
   key: text("key").primaryKey(),
 }, (table) => [check("authz_permissions_catalog_check", sql`${table.key} in (
-  'forum.topic.create', 'forum.reply.create', 'forum.solution.manageOwn',
+  'forum.topic.create', 'forum.reply.create', 'forum.topic.pin', 'forum.solution.manageOwn',
   'forum.solution.manageAny', 'forum.sourceLocale.correctOwn',
   'forum.sourceLocale.correctAny', 'forum.translation.generate',
   'access.authorization.manage'
@@ -669,6 +669,22 @@ export const forumTopicTags = pgTable(
   (table) => [
     primaryKey({ name: "forum_topic_tags_pk", columns: [table.topicId, table.tagKey] }),
     index("forum_topic_tags_tag_key_idx").on(table.tagKey),
+  ],
+);
+
+export const forumTopicPins = pgTable(
+  "forum_topic_pins",
+  {
+    topicId: text("topic_id")
+      .primaryKey()
+      .references(() => forumTopics.id, { onDelete: "cascade" }),
+    pinnedByUserId: text("pinned_by_user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    pinnedAt: timestamp("pinned_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("forum_topic_pins_order_idx").on(table.pinnedAt, table.topicId),
   ],
 );
 
