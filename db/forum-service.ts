@@ -153,6 +153,24 @@ export class ForumService {
     }
   }
 
+  readUnreadForUser(userId: string) {
+    requireText(userId, "user id");
+    return this.repository.readUnreadForUser(userId);
+  }
+
+  readTopicReadState(userId: string, topicId: string) {
+    requireText(userId, "user id");
+    requireText(topicId, "topic id");
+    return this.repository.readTopicReadState(userId, topicId);
+  }
+
+  advanceTopicReadState(userId: string, topicId: string, postId: string) {
+    requireText(userId, "user id");
+    requireText(topicId, "topic id");
+    requireText(postId, "post id");
+    return this.repository.advanceTopicReadState(userId, topicId, postId);
+  }
+
   readTopic(id: string) { return this.repository.readTopic(id); }
   readPost(id: string) { return this.repository.readPost(id); }
   readHierarchy(categoryId: string) { return this.repository.readHierarchy(categoryId); }

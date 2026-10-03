@@ -1,11 +1,13 @@
-import { and, asc, desc, eq, gte, inArray, lte, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, gte, inArray, isNull, lte, or, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import { alias } from "drizzle-orm/pg-core";
 import {
   forumCategories,
   forumPostRevisions,
   forumPosts,
   forumSections,
   forumTags,
+  forumTopicReadStates,
   forumTopicTags,
   forumTopicTitleRevisions,
   forumTopics,
@@ -90,6 +92,29 @@ export interface ForumSearchResult {
   section: { id: string; name: string };
   category: { id: string; name: string };
   tags: ForumTag[];
+}
+
+export type ForumTopicReadKind = "new" | "unread" | "read";
+
+export interface ForumTopicReadState {
+  topicId: string;
+  state: ForumTopicReadKind;
+  lastReadPostId: string | null;
+  firstUnreadPostId: string | null;
+  latestPostId: string | null;
+}
+
+export interface ForumUnreadTopicSummary {
+  id: string;
+  title: string;
+  authorName: string;
+  state: Exclude<ForumTopicReadKind, "read">;
+  firstUnreadPostId: string;
+  latestPostId: string;
+  unreadCount: number;
+  activityAt: Date;
+  section: { id: string; name: string };
+  category: { id: string; name: string };
 }
 
 export interface ForumSectionSummary {
@@ -676,6 +701,167 @@ export class DrizzleForumRepository {
       category: { id: row.categoryId, name: row.categoryName },
       tags: tagsByTopic.get(row.id) ?? [],
     }));
+  }
+
+  async readUnreadForUser(userId: string): Promise<ForumUnreadTopicSummary[]> {
+    const lastReadPost = alias(forumPosts, "forum_last_read_post");
+    const activityAt = sql<Date>`max(${forumPosts.createdAt})`.mapWith(forumPosts.createdAt);
+    const firstUnreadPostId = sql<string>`(array_agg(${forumPosts.id} order by ${forumPosts.createdAt} asc, ${forumPosts.id} asc))[1]`;
+    const latestPostId = sql<string>`(array_agg(${forumPosts.id} order by ${forumPosts.createdAt} desc, ${forumPosts.id} desc))[1]`;
+
+    const rows = await this.database
+      .select({
+        id: forumTopics.id,
+        title: forumTopicTitleRevisions.originalContent,
+        authorName: user.name,
+        state: sql<"new" | "unread">`case when ${forumTopicReadStates.userId} is null then 'new' else 'unread' end`,
+        firstUnreadPostId,
+        latestPostId,
+        unreadCount: sql<number>`count(${forumPosts.id})::int`,
+        activityAt,
+        sectionId: forumSections.id,
+        sectionName: forumSections.name,
+        categoryId: forumCategories.id,
+        categoryName: forumCategories.name,
+      })
+      .from(forumTopics)
+      .innerJoin(forumTopicTitleRevisions, and(
+        eq(forumTopicTitleRevisions.topicId, forumTopics.id),
+        eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId),
+      ))
+      .innerJoin(user, eq(user.id, forumTopics.authorId))
+      .innerJoin(forumSections, eq(forumSections.id, forumTopics.sectionId))
+      .innerJoin(forumCategories, eq(forumCategories.id, forumSections.categoryId))
+      .innerJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
+      .leftJoin(forumTopicReadStates, and(
+        eq(forumTopicReadStates.userId, userId),
+        eq(forumTopicReadStates.topicId, forumTopics.id),
+      ))
+      .leftJoin(lastReadPost, and(
+        eq(lastReadPost.topicId, forumTopicReadStates.topicId),
+        eq(lastReadPost.id, forumTopicReadStates.lastReadPostId),
+      ))
+      .where(or(
+        isNull(forumTopicReadStates.userId),
+        gt(forumPosts.createdAt, lastReadPost.createdAt),
+        and(eq(forumPosts.createdAt, lastReadPost.createdAt), gt(forumPosts.id, lastReadPost.id)),
+      ))
+      .groupBy(
+        forumTopics.id,
+        forumTopicTitleRevisions.id,
+        user.name,
+        forumSections.id,
+        forumSections.name,
+        forumCategories.id,
+        forumCategories.name,
+        forumTopicReadStates.userId,
+      )
+      .orderBy(desc(activityAt), desc(forumTopics.id));
+
+    return rows.map((row) => ({
+      id: row.id,
+      title: row.title,
+      authorName: row.authorName,
+      state: row.state,
+      firstUnreadPostId: row.firstUnreadPostId,
+      latestPostId: row.latestPostId,
+      unreadCount: row.unreadCount,
+      activityAt: row.activityAt,
+      section: { id: row.sectionId, name: row.sectionName },
+      category: { id: row.categoryId, name: row.categoryName },
+    }));
+  }
+
+  async readTopicReadState(userId: string, topicId: string): Promise<ForumTopicReadState | undefined> {
+    const [topic] = await this.database
+      .select({ id: forumTopics.id })
+      .from(forumTopics)
+      .where(eq(forumTopics.id, topicId));
+    if (!topic) return undefined;
+
+    const [marker] = await this.database
+      .select({ lastReadPostId: forumTopicReadStates.lastReadPostId })
+      .from(forumTopicReadStates)
+      .where(and(
+        eq(forumTopicReadStates.userId, userId),
+        eq(forumTopicReadStates.topicId, topicId),
+      ));
+
+    const posts = await this.database
+      .select({ id: forumPosts.id })
+      .from(forumPosts)
+      .where(eq(forumPosts.topicId, topicId))
+      .orderBy(asc(forumPosts.createdAt), asc(forumPosts.id));
+
+    const latestPostId = posts.at(-1)?.id ?? null;
+    if (!latestPostId) {
+      return {
+        topicId,
+        state: "read",
+        lastReadPostId: marker?.lastReadPostId ?? null,
+        firstUnreadPostId: null,
+        latestPostId: null,
+      };
+    }
+
+    if (!marker) {
+      return {
+        topicId,
+        state: "new",
+        lastReadPostId: null,
+        firstUnreadPostId: posts[0]!.id,
+        latestPostId,
+      };
+    }
+
+    const markerIndex = posts.findIndex((post) => post.id === marker.lastReadPostId);
+    if (markerIndex < 0) {
+      throw new ForumStateConflictError("topic read marker does not belong to current topic snapshot");
+    }
+    const firstUnreadPostId = posts[markerIndex + 1]?.id ?? null;
+    return {
+      topicId,
+      state: firstUnreadPostId ? "unread" : "read",
+      lastReadPostId: marker.lastReadPostId,
+      firstUnreadPostId,
+      latestPostId,
+    };
+  }
+
+  async advanceTopicReadState(userId: string, topicId: string, postId: string): Promise<ForumTopicReadState> {
+    const [target] = await this.database
+      .select({ id: forumPosts.id })
+      .from(forumPosts)
+      .where(and(eq(forumPosts.topicId, topicId), eq(forumPosts.id, postId)));
+    if (!target) throw new ForumEntityNotFoundError("post does not exist in topic");
+
+    await this.database.execute(sql`
+      insert into forum_topic_read_states (user_id, topic_id, last_read_post_id, updated_at)
+      values (${userId}, ${topicId}, ${postId}, now())
+      on conflict (user_id, topic_id) do update
+      set last_read_post_id = excluded.last_read_post_id,
+          updated_at = now()
+      where exists (
+        select 1
+        from forum_posts as candidate
+        inner join forum_posts as current_marker
+          on current_marker.topic_id = forum_topic_read_states.topic_id
+         and current_marker.id = forum_topic_read_states.last_read_post_id
+        where candidate.topic_id = excluded.topic_id
+          and candidate.id = excluded.last_read_post_id
+          and (
+            candidate.created_at > current_marker.created_at
+            or (
+              candidate.created_at = current_marker.created_at
+              and candidate.id > current_marker.id
+            )
+          )
+      )
+    `);
+
+    const state = await this.readTopicReadState(userId, topicId);
+    if (!state) throw new ForumEntityNotFoundError("topic does not exist");
+    return state;
   }
 
   async readCategory(id: string): Promise<ForumCategoryPage | undefined> {

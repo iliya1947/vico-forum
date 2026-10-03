@@ -58,7 +58,7 @@ describe("PostgreSQL 17 locale migrations", () => {
     const applied = await client.query<{ count: string }>(
       'select count(*)::text as count from drizzle."__drizzle_migrations"',
     );
-    expect(applied.rows[0]?.count).toBe("23");
+    expect(applied.rows[0]?.count).toBe("24");
   });
 
   it("rejects trimmed canonical English in persistent UI translation storage", async () => {
@@ -265,6 +265,166 @@ describe("PostgreSQL 17 locale migrations", () => {
       posts: [{ id: "post-1", authorName: "Forum Author", body: { originalContent: "Нужен пример." } }],
     });
     expect(await repository.readCategory("missing")).toBeUndefined();
+  });
+
+  it("persists monotonic per-user topic read state and derives new/unread/first-unread deterministically", async () => {
+    await insertForumAuthor("read-state-user", "read-state-user@example.test", null);
+    await insertForumAuthor("read-race-user", "read-race-user@example.test", null);
+    await insertForumAuthor("read-fk-user", "read-fk-user@example.test", null);
+
+    await client.query("begin");
+    try {
+      await client.query("set constraints all deferred");
+      await client.query(`
+        insert into forum_topics
+          (id, section_id, author_id, current_title_revision_id, created_at)
+        values
+          ('read-state-topic', 'typescript', 'forum-author', 'read-state-title-r1', '2026-10-03T09:00:00Z')
+      `);
+      await client.query(`
+        insert into forum_topic_title_revisions
+          (id, topic_id, author_id, original_content, source_locale, created_at)
+        values
+          ('read-state-title-r1', 'read-state-topic', 'forum-author', 'Read state topic', 'en', '2026-10-03T09:00:00Z')
+      `);
+      await client.query(`
+        insert into forum_posts
+          (id, topic_id, author_id, current_revision_id, created_at)
+        values
+          ('read-post-1', 'read-state-topic', 'forum-author', 'read-body-1', '2026-10-03T10:00:00Z'),
+          ('read-post-2', 'read-state-topic', 'forum-author', 'read-body-2', '2026-10-03T11:00:00Z'),
+          ('read-post-3', 'read-state-topic', 'forum-author', 'read-body-3', '2026-10-03T11:00:00Z')
+      `);
+      await client.query(`
+        insert into forum_post_revisions
+          (id, post_id, author_id, original_content, source_locale, created_at)
+        values
+          ('read-body-1', 'read-post-1', 'forum-author', 'One', 'en', '2026-10-03T10:00:00Z'),
+          ('read-body-2', 'read-post-2', 'forum-author', 'Two', 'en', '2026-10-03T11:00:00Z'),
+          ('read-body-3', 'read-post-3', 'forum-author', 'Three', 'en', '2026-10-03T11:00:00Z')
+      `);
+      await client.query("commit");
+    } catch (error) {
+      await client.query("rollback");
+      throw error;
+    }
+
+    const repository = new DrizzleForumRepository(drizzle(client));
+    const forum = new ForumService(repository);
+    const firstPool = new Pool({ connectionString: databaseUrl });
+    const secondPool = new Pool({ connectionString: databaseUrl });
+
+    try {
+      expect(await forum.readTopicReadState("read-state-user", "read-state-topic")).toEqual({
+        topicId: "read-state-topic",
+        state: "new",
+        lastReadPostId: null,
+        firstUnreadPostId: "read-post-1",
+        latestPostId: "read-post-3",
+      });
+      expect(await forum.readUnreadForUser("read-state-user")).toEqual(expect.arrayContaining([
+        expect.objectContaining({
+          id: "read-state-topic",
+          state: "new",
+          firstUnreadPostId: "read-post-1",
+          latestPostId: "read-post-3",
+          unreadCount: 3,
+        }),
+      ]));
+
+      expect(await forum.advanceTopicReadState("read-state-user", "read-state-topic", "read-post-1")).toMatchObject({
+        state: "unread",
+        lastReadPostId: "read-post-1",
+        firstUnreadPostId: "read-post-2",
+      });
+      expect(await forum.advanceTopicReadState("read-state-user", "read-state-topic", "read-post-3")).toMatchObject({
+        state: "read",
+        lastReadPostId: "read-post-3",
+        firstUnreadPostId: null,
+      });
+      expect(await forum.advanceTopicReadState("read-state-user", "read-state-topic", "read-post-1")).toMatchObject({
+        state: "read",
+        lastReadPostId: "read-post-3",
+      });
+      expect((await forum.readUnreadForUser("read-state-user")).some(({ id }) => id === "read-state-topic")).toBe(false);
+
+      await expect(
+        forum.advanceTopicReadState("read-state-user", "read-state-topic", "post-1"),
+      ).rejects.toBeInstanceOf(ForumEntityNotFoundError);
+      await expectDatabaseCode(
+        client.query(
+          `insert into forum_topic_read_states (user_id, topic_id, last_read_post_id)
+           values ('read-fk-user', 'read-state-topic', 'post-1')`,
+        ),
+        "23503",
+      );
+
+      const firstForum = new ForumService(new DrizzleForumRepository(drizzle(firstPool)));
+      const secondForum = new ForumService(new DrizzleForumRepository(drizzle(secondPool)));
+      await Promise.all([
+        firstForum.advanceTopicReadState("read-race-user", "read-state-topic", "read-post-2"),
+        secondForum.advanceTopicReadState("read-race-user", "read-state-topic", "read-post-3"),
+      ]);
+      expect(await forum.readTopicReadState("read-race-user", "read-state-topic")).toMatchObject({
+        state: "read",
+        lastReadPostId: "read-post-3",
+      });
+      await firstForum.advanceTopicReadState("read-race-user", "read-state-topic", "read-post-2");
+      expect(await forum.readTopicReadState("read-race-user", "read-state-topic")).toMatchObject({
+        lastReadPostId: "read-post-3",
+      });
+
+      await client.query("begin");
+      try {
+        await client.query("set constraints all deferred");
+        await client.query(`
+          insert into forum_posts
+            (id, topic_id, author_id, current_revision_id, created_at)
+          values
+            ('read-post-4', 'read-state-topic', 'forum-author', 'read-body-4', '2026-10-03T12:00:00Z')
+        `);
+        await client.query(`
+          insert into forum_post_revisions
+            (id, post_id, author_id, original_content, source_locale, created_at)
+          values
+            ('read-body-4', 'read-post-4', 'forum-author', 'Four', 'en', '2026-10-03T12:00:00Z')
+        `);
+        await client.query("commit");
+      } catch (error) {
+        await client.query("rollback");
+        throw error;
+      }
+
+      expect(await forum.readTopicReadState("read-state-user", "read-state-topic")).toMatchObject({
+        state: "unread",
+        lastReadPostId: "read-post-3",
+        firstUnreadPostId: "read-post-4",
+        latestPostId: "read-post-4",
+      });
+      expect(await forum.readUnreadForUser("read-state-user")).toEqual(expect.arrayContaining([
+        expect.objectContaining({
+          id: "read-state-topic",
+          state: "unread",
+          firstUnreadPostId: "read-post-4",
+          unreadCount: 1,
+        }),
+      ]));
+
+      const beforeCascade = await client.query<{ count: number }>(
+        "select count(*)::int as count from forum_topic_read_states where user_id = 'read-state-user'",
+      );
+      expect(beforeCascade.rows[0]?.count).toBe(1);
+      await client.query(`delete from "user" where id = 'read-state-user'`);
+      const afterCascade = await client.query<{ count: number }>(
+        "select count(*)::int as count from forum_topic_read_states where user_id = 'read-state-user'",
+      );
+      expect(afterCascade.rows[0]?.count).toBe(0);
+    } finally {
+      await firstPool.end();
+      await secondPool.end();
+      await client.query(`delete from "user" where id in ('read-state-user', 'read-race-user', 'read-fk-user')`);
+      await client.query("delete from forum_topics where id = 'read-state-topic'");
+    }
   });
 
   it("persists browser write capability topics/replies with und revisions and rolls back an incomplete topic", async () => {

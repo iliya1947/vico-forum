@@ -726,6 +726,31 @@ export const forumPosts = pgTable(
   ],
 );
 
+export const forumTopicReadStates = pgTable(
+  "forum_topic_read_states",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    topicId: text("topic_id")
+      .notNull()
+      .references(() => forumTopics.id, { onDelete: "cascade" }),
+    lastReadPostId: text("last_read_post_id").notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({
+      name: "forum_topic_read_states_pk",
+      columns: [table.userId, table.topicId],
+    }),
+    foreignKey({
+      name: "forum_topic_read_states_post_topic_fk",
+      columns: [table.topicId, table.lastReadPostId],
+      foreignColumns: [forumPosts.topicId, forumPosts.id],
+    }).onDelete("restrict"),
+  ],
+);
+
 export const forumPostRevisions = pgTable(
   "forum_post_revisions",
   {
