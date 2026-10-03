@@ -1220,14 +1220,6 @@ export function TopicView({
                     <span className="topic-message-author-copy">
                       <strong>{post.authorName}</strong>
                     </span>
-                    <span className="topic-message-labels topic-message-labels-mobile">
-                      {isOriginalQuestion && (
-                        <strong className="original-question-label">{t("originalQuestion")}</strong>
-                      )}
-                      {isBestAnswer && (
-                        <strong className="best-answer-label">{t("bestAnswer")}</strong>
-                      )}
-                    </span>
                   </header>
 
                   <div className="forum-post-content">
