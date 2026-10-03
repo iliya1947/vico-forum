@@ -64,6 +64,14 @@ export async function topicAction({ request, params, context }: {
   let formData: FormData;
   try { formData = await request.formData(); } catch { return mutationFailure("invalid", 400); }
   const intent = requiredFormText(formData, "intent") ?? "reply";
+  if (intent === "markTopicRead") {
+    const postId = requiredFormText(formData, "postId");
+    if (!postId) return mutationFailure("invalid", 400);
+    return runForumMutation(request, context, async (writer, userId) => {
+      await writer.advanceTopicReadState({ userId, topicId, postId });
+      return data({ ok: true }, { status: 200 });
+    });
+  }
   if (
     intent === "generateTopicTitleTranslation"
     || intent === "generatePostBodyTranslation"
