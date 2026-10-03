@@ -161,7 +161,7 @@ export interface ForumReader {
   readHomepage(latestTopicsPerCategory?: number): Promise<ForumHomepageCategorySummary[]>;
   readPopular(referenceTime?: Date, limitPerPeriod?: number): Promise<ForumPopularPage>;
   readUnanswered(): Promise<ForumUnansweredTopicSummary[]>;
-  readUnreadTopics(userId: string): Promise<ForumUnreadTopicSummary[]>;
+  readUnreadTopics(userId: string, limit?: number): Promise<ForumUnreadTopicSummary[]>;
   readTopicReadState(userId: string, topicId: string): Promise<ForumTopicReadState | undefined>;
   readTags(): Promise<ForumTagSummary[]>;
   readTag(key: string): Promise<ForumTagPage | undefined>;
@@ -509,7 +509,11 @@ export class DrizzleForumRepository {
     };
   }
 
-  async readUnreadTopics(userId: string): Promise<ForumUnreadTopicSummary[]> {
+  async readUnreadTopics(userId: string, limit = 50): Promise<ForumUnreadTopicSummary[]> {
+    if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
+      throw new RangeError("unread topic limit must be an integer between 1 and 100");
+    }
+
     const result = await this.database.execute<{
       id: string;
       title: string;
@@ -570,6 +574,7 @@ export class DrizzleForumRepository {
         limit 1
       ) latest on true
       order by latest.created_at desc, latest.id desc, t.id desc
+      limit ${limit}
     `);
 
     return result.rows.map((row) => ({
