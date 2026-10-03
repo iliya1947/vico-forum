@@ -1094,3 +1094,169 @@ focus and first-unread anchor navigation. Pages не заменяет real-runti
 
 После self-review ChatGPT записывает exact head, migration/query semantics, CI/Pages evidence и
 честный browser-acceptance status в PR #147 и останавливается для independent Codex whole-PR review.
+
+---
+
+# Update 2026-10-03 — PR #179 merged result and next bounded slice
+
+## Current main and merged Unread/new result
+
+Проверка выполнена по актуальному GitHub `main`
+`a36a96532d47c72bc1f7e2bbdfa25f241bdcc00b`, merge commit PR #179. Service communication file,
+ранее ошибочно попавший в `main`, удалён отдельным cleanup PR #177; current implementation source of
+truth снова не содержит service channel.
+
+PR #179 merged 2026-10-03 с implementation head
+`7381cbd6eb280b40e75f771bd63455eeddd4159c`. Проверены полный changed-file inventory, migration/repository/route/UI/test/documentation boundaries и
+итоговый state на `main`.
+
+Подтверждено:
+
+1. Migration `0023_forum_topic_read_states` хранит один cursor на `user + topic`, имеет user/topic
+   lifecycle FKs и composite same-topic post FK. Production schema manifest и Drizzle metadata
+   синхронизированы.
+2. Repository выводит deterministic `new / unread / read` и first unread по authoritative
+   `createdAt + id`, не связывая cursor с visual best-answer promotion.
+3. Cursor advancement idempotent/monotonic: stale update не двигает marker назад; post другой темы
+   отвергается; новый reply после rendered snapshot остаётся unread.
+4. Authenticated `/:locale/unread` заменил temporary destination, разделяет Unread/New groups и
+   ведёт непосредственно на существующий permanent first-unread anchor.
+5. Topic GET остаётся read-only; после hydration отдельный authenticated same-origin POST отмечает
+   latest post именно отданного loader snapshot.
+6. Section topic presentation получает `new / unread / read`; guest не получает private read state.
+   Classified optional read-state failure не ломает public topic/section read, а private Unread
+   destination fail-closed возвращает controlled unavailable.
+7. RU/HE packs, fingerprints, shared presentation preview, `PROJECT_STATE.md`, migration history и
+   production manifest обновлены; `unread` удалён из `Under development`.
+8. PR #176/editor не был включён или изменён этим merge.
+
+Ранние inline findings о manifest и `PROJECT_STATE.md` были исправлены до merge. Новых blocking
+implementation/security/contract defects при проверке merged result не найдено.
+
+Known non-blocking scale limitation: current Unread query возвращает весь unread set без pagination,
+а section loader переиспользует этот forum-wide set и затем фильтрует section topics. Это один
+set-based query, не N+1, и приемлемо для текущего owner-only early pre-release, но перед реальным
+ростом данных требует отдельного query-bound/pagination решения; это не расширяется внутри
+следующего UI slice.
+
+## Verification evidence
+
+Для PR head `7381cbd6...`:
+
+- CI run `37150727914`: `checks` success и `database` success;
+- Pages run `37150730621`: `build` success и `deploy` success;
+- 4/4 exact-head checks successful;
+- merge commit `a36a965...` Pages run `37151367459`: build/deploy success;
+- `git diff --check` для merged PR diff successful;
+- two initial automated review findings закрыты manifest/docs commits до merge.
+
+Owner сообщил slice как завершённый и merged. Это фиксирует repository/Pages boundary; external
+production migration `0023`, real-runtime acceptance и общий финальный UI/UX acceptance этим не
+утверждаются.
+
+## Selection of the next bounded UI/UX task
+
+Следующая задача — **in-app reply notifications foundation**.
+
+PR #176 не является следующим шагом: owner явно отложил возвращение к его визуально непринятому
+editor до завтра. Notifications — следующий логический authenticated product slice, потому что:
+
+1. notification entry уже присутствует в accepted header и пока честно ведёт на
+   `Under development`;
+2. merged Reply/Quote даёт concrete event source, а merged read-state foundation отделяет topic
+   unread от notification unread;
+3. bounded in-app notifications можно реализовать независимо от editor, drafts, profiles и external
+   delivery infrastructure;
+4. этот foundation должен предшествовать badge/push/email/realtime expansion и не требует Stage 6.
+
+## Handoff to ChatGPT — in-app reply notifications
+
+### Objective
+
+Заменить authenticated temporary Notifications destination реальным in-app inbox для forum reply
+activity и показывать header badge только при наличии непрочитанных notification records. Не
+создавать email/push/realtime subsystem.
+
+### Required event and recipient contract
+
+1. Notification создаётся атомарно с successful persisted reply для:
+   - topic author;
+   - direct parent-post author, если reply имеет `parentPostId`;
+   recipients deduplicate; actor никогда не уведомляет самого себя.
+2. Один recipient + один created reply дают не более одной notification. Retry/concurrent write не
+   создаёт duplicate event.
+3. Notification хранит stable references на recipient, actor, topic и created reply. UI выводит
+   только authoritative current safe title/identity plus permanent post anchor; arbitrary payload,
+   rendered HTML или localized sentence в DB не сохранять.
+4. Notification unread/read state независимо от topic `new/unread/read`. Открытие topic и
+   mark-topic-read не должны молча отмечать notification прочитанной.
+5. Notification становится read только через explicit authenticated same-origin action для
+   concrete notification либо bounded `mark all read`. Mutation проверяет ownership server-side и
+   идемпотентна.
+6. Delete/retention не входят: FK lifecycle должен не оставлять dangling private records при
+   удалении user/topic/post согласно действующим domain constraints.
+
+### Required implementation scope
+
+1. Добавить минимальную forward Drizzle migration + production manifest для notification records:
+   stable id, recipient/actor/topic/post references, createdAt/readAt, unique event identity и
+   indexes для recipient unread count/list order.
+2. Расширить existing reply transaction так, чтобы reply и notification events commit/rollback
+   вместе. Не добавлять side effects к topic creation, solution, translation или read-state writes.
+3. Добавить authenticated generic `/:locale/notifications` loader/view с newest-first deterministic
+   ordering, unread/read distinction, actor/topic context и link на permanent reply anchor.
+4. Header notification control для authenticated identity ведёт на real route; badge показывает
+   реальный bounded unread count и отсутствует при zero/unavailable/guest. Не имитировать realtime.
+5. Private dependency failure fail-closed для inbox/mutations; failure badge read не должен ломать
+   public shell/forum reading и не должен показывать guessed count.
+6. Presentation переиспользует accepted ForumShell/list/action patterns, logical CSS, LTR/RTL,
+   keyboard focus и touch targets. Empty inbox имеет полезный localized state.
+7. Remove `notifications` from `Under development` only after genuine route/event/mutation
+   completion. Не менять `unread`, `editor` или другие unfinished entries.
+8. Canonical English + complete RU/HE packs/fingerprints; representative shared-component Pages
+   states: unread badge/inbox, mixed read/unread, empty, Mobile/Desktop and LTR/RTL.
+9. Narrowly update `PROJECT_STATE.md` and `docs/UI_UX_PASS.md` only after verified implementation.
+
+### Required query and privacy boundaries
+
+- repository reads are recipient-scoped at SQL boundary, set-based and bounded/paginated; no
+  application-side filtering of another user's notifications;
+- unread badge uses one bounded aggregate query, not full inbox transfer;
+- deterministic order `createdAt desc + id desc`;
+- no source post body, translation payload, email, IP/session data or secret enters notification
+  storage;
+- direct URL/action for another recipient's notification reveals nothing and cannot mutate it;
+- guest direct route/action returns existing safe auth response.
+
+### Required tests
+
+- clean migration, schema manifest/parity, FK/unique/index constraints and cascades;
+- recipient matrix: topic author, parent author, same person dedup, actor self-exclusion;
+- reply + notifications atomic rollback and duplicate/concurrent protection;
+- recipient isolation for list/count/mark-one/mark-all;
+- unread count transitions and independent topic-read state;
+- permanent anchor and locale preservation;
+- guest/authenticated same-origin negative tests and classified storage failure;
+- query-shape/no-N+1 and bounded inbox transfer;
+- EN/RU/HE, LTR/RTL, empty/mixed/mobile presentation;
+- all existing forum, Reply/Quote, Unread, auth, translation and migration checks remain green.
+
+### Explicit exclusions
+
+- email, web push, Cloudflare Queues, realtime/WebSocket/polling;
+- subscription/watch/mute preferences;
+- notification types other than persisted forum replies;
+- reactions, mentions, moderation alerts or translation-job events;
+- editing PR #176, editor refinement, drafts/autosave;
+- profiles, registration, pinning, online presence or Stage 6 rollout.
+
+### Delivery and acceptance
+
+Один mergeable implementation PR from exact current `main`. Required: focused DB/service/route/UI
+coverage, full repository CI, preview build and exact-head Pages deploy, owner browser review for
+badge/inbox/mark-read at Desktop/Mobile and LTR/RTL, then independent Codex whole-PR review. Pages
+не доказывает real authentication/database runtime behavior.
+
+ChatGPT записывает результат и exact evidence в свой действующий service channel. Если PR #147
+нельзя безопасно продолжить из-за исторического conflict, не менять Codex channel и не смешивать
+service communication с implementation: сообщить владельцу точное состояние для отдельного решения.
