@@ -3701,6 +3701,34 @@ p {
   gap: 0.28rem;
 }
 
+.section-topic-title-line {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.section-topic-title-line > strong {
+  min-width: 0;
+}
+
+.pinned-topic-badge {
+  display: inline-flex;
+  min-height: 1.35rem;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  padding: 0.15rem 0.45rem;
+  border: 1px solid var(--color-accent);
+  border-radius: 999px;
+  color: var(--color-accent-hover);
+  background: var(--color-accent-soft);
+  font-size: 0.64rem;
+  font-weight: 850;
+  line-height: 1;
+  white-space: nowrap;
+}
+
 .section-topic-copy strong {
   overflow: hidden;
   color: var(--color-text);
@@ -3897,6 +3925,13 @@ p {
 
 .topic-heading-side .topic-message-author-copy {
   min-width: 0;
+}
+
+.topic-heading-state-badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.35rem;
 }
 
 .topic-heading-side .solved-badge {
@@ -4239,10 +4274,13 @@ p {
     gap: 0.45rem;
   }
 
-  .topic-heading-side .solved-badge {
+  .topic-heading-state-badges {
     grid-column: 2;
     grid-row: 1;
-    justify-self: end;
+    justify-content: flex-end;
+  }
+
+  .topic-heading-side .solved-badge {
     min-height: 2.5rem;
     padding: 0.4rem 0.95rem;
     font-size: 0.82rem;
