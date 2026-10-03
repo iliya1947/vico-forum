@@ -72,6 +72,8 @@ const reader: ForumReader = {
   }],
   readPopular: async () => ({ "24h": [], "7d": [], "30d": [] }),
   readUnanswered: async () => [],
+  readUnreadTopics: async () => [],
+  readTopicReadState: async () => undefined,
   readTags: async () => [],
   readTag: async () => undefined,
   search: async () => [],
