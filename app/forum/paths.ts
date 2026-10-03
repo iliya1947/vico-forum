@@ -29,6 +29,10 @@ export function forumUnansweredPath(locale: string) {
   return generatePath("/:locale/unanswered", { locale });
 }
 
+export function forumUnreadPath(locale: string) {
+  return generatePath("/:locale/unread", { locale });
+}
+
 export function forumTagsPath(locale: string) {
   return generatePath("/:locale/tags", { locale });
 }

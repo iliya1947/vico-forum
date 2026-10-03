@@ -193,7 +193,7 @@ describe("homepage target presentation", () => {
     );
 
     expect(await screen.findByRole("link", { name: "Unread" }))
-      .toHaveAttribute("href", "/en/under-development?feature=unread");
+      .toHaveAttribute("href", "/en/unread");
   });
 
   it("does not pretend pinned-topic data exists when runtime pinning is unavailable", async () => {

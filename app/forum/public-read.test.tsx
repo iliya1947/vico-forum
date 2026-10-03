@@ -109,6 +109,25 @@ const reader: ForumReader = {
       tags: topic.tags,
     }],
   } : undefined,
+  readUnreadForUser: async () => [{
+    id: topic.id,
+    title: topic.title.originalContent,
+    authorName: topic.authorName,
+    state: "new" as const,
+    firstUnreadPostId: topic.posts[0]!.id,
+    latestPostId: topic.posts.at(-1)!.id,
+    unreadCount: topic.posts.length,
+    activityAt: topic.posts.at(-1)!.createdAt,
+    section: { id: topic.section.id, name: topic.section.name },
+    category: topic.section.category,
+  }],
+  readTopicReadState: async (_userId, id) => id === topic.id ? {
+    topicId: topic.id,
+    state: "new" as const,
+    lastReadPostId: null,
+    firstUnreadPostId: topic.posts[0]!.id,
+    latestPostId: topic.posts.at(-1)!.id,
+  } : undefined,
   search: async (query) => query.toLowerCase().includes("type") ? [{
     id: topic.id,
     title: topic.title.originalContent,
@@ -195,6 +214,7 @@ function topicRenderData(
     canManageSolution: false,
     canCorrectTitleSourceLocale: false,
     correctablePostIds: [],
+    topicReadState: null,
     ...overrides,
   };
 }
@@ -788,11 +808,11 @@ describe("forum read states", () => {
   });
 
   it("shows accessible forum write forms only for an authenticated loader result", async () => {
-    const guestView = renderRoute(SectionRoute, { locale: "en", section, canCreateTopic: false }, "/en/sections/typescript", "en", "ltr");
+    const guestView = renderRoute(SectionRoute, { locale: "en", section, canCreateTopic: false, topicReadStates: null }, "/en/sections/typescript", "en", "ltr");
     expect(screen.queryByRole("form", { name: "Create a new topic" })).not.toBeInTheDocument();
     guestView.unmount();
 
-    const authenticatedView = renderRoute(SectionRoute, { locale: "en", section, canCreateTopic: true }, "/en/sections/typescript", "en", "ltr");
+    const authenticatedView = renderRoute(SectionRoute, { locale: "en", section, canCreateTopic: true, topicReadStates: { [topic.id]: "read" } }, "/en/sections/typescript", "en", "ltr");
     const createTopicForm = await screen.findByRole("form", { name: "Create a new topic" });
     expect(createTopicForm).toHaveClass("section-create-form");
     expect(createTopicForm.querySelector('input[name="intent"]')).toHaveValue("createTopic");

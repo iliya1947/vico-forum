@@ -66,6 +66,22 @@ Vico Forum находится в ранней pre-release разработке.
   `/:locale/search?q=...` поверх current topic-title/post revisions и topic tags без новой
   migration/search-index subsystem. Repository CI и GitHub Pages preview прошли; owner visual acceptance подтверждён 2026-10-03. Search merged через PR #171. Message links реализован и merged через PR #172: public permanent post anchors + copy-link UI работают без DB/backend изменений; GitHub Pages preview пройден, owner visual acceptance подтверждён 2026-10-03. Reply/Quote реализован: migration `0022_forum_reply_relationships` добавляет nullable same-topic parent relation для forum posts; обсуждение остаётся линейным, Reply привязывает новый post к конкретному parent, Quote вставляет только выделенный текст как Markdown blockquote, а parent/child сообщения связываются стабильными anchors. Existing permissions/rate-limit semantics не меняются; repository CI и GitHub Pages preview проходят, owner visual acceptance подтверждён 2026-10-03. Дальнейшая косметическая полировка homepage
   сейчас не является приоритетом.
+- Текущий Unread/new slice подключает repository/database foundation к runtime/UI:
+  forward migration `0023_forum_topic_read_states` хранит один last-read cursor на пару
+  authenticated user + topic и same-topic FK не позволяет ссылаться на post другой темы.
+  Repository semantics выводят `new / unread / read`, deterministic first-unread по authoritative
+  `createdAt + id` order, forum-wide set-based unread listing и monotonic cursor advancement:
+  stale/concurrent marker не может сдвинуть cursor назад, а reply после rendered snapshot остаётся
+  unread. Authenticated `/:locale/unread` показывает реальные unread и new topics отдельными
+  группами, без отдельной текстовой status-колонки: unread count вынесен в расширенный orange
+  entry action, который ведёт прямо к `#post-<firstUnreadPostId>`; section topic list получает
+  `new / unread / read` одним set-based
+  read-state snapshot без per-topic N+1. При открытии authenticated topic loader получает текущий
+  read snapshot, а после hydration отдельный same-origin POST продвигает marker до latest post
+  фактически отданного snapshot; monotonic repository update не позволяет stale/concurrent request
+  откатить cursor. Classified read-state storage failure не ломает публичное чтение topic/section,
+  тогда как authenticated Unread route возвращает controlled unavailable. External migration/rollout
+  для `0023` не выполнялся.
 - Category-page discovery slice в PR #159 прошёл owner visual acceptance в GitHub Pages:
   owner-approved header/logo/discovery nav переиспользованы без backend/DB изменений; category
   heading показывает только derived section/topic/message totals, section rows стали compact
@@ -260,7 +276,7 @@ Vico Forum находится в ранней pre-release разработке.
 - generic `/:locale/*`, runtime `LocaleRegistry`, BCP-47 resolution, LTR/RTL и request-scoped
   `i18next`;
 - persistent locale registry, persistent UI translation storage и compiled bundle storage;
-- текущая migration history — `0000`–`0020`.
+- текущая repository migration history — `0000`–`0023`; external accepted migration evidence по-прежнему заканчивается на `0020`.
 
 ## Forum core — Stage 4
 

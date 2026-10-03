@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Form, Link, useNavigation } from "react-router";
+import { Form, Link, useFetcher, useNavigation } from "react-router";
 import { useTranslation } from "react-i18next";
 
 import type {
@@ -11,7 +11,10 @@ import type {
   ForumTagPage,
   ForumTagSummary,
   ForumTopicPage,
+  ForumTopicReadKind,
+  ForumTopicReadState,
   ForumUnansweredTopicSummary,
+  ForumUnreadTopicSummary,
 } from "../../db/forum-repository";
 import type { ContentTranslationPresentation } from "../localization/content-translation-presentation";
 import type { ContentGenerationUnitView } from "../localization/content-generation-view";
@@ -230,6 +233,99 @@ export function UnansweredView({
             ))}
           </ul>
         </section>
+      )}
+    </ForumShell>
+  );
+}
+
+
+type UnreadTopicPresentation = Pick<
+  ForumUnreadTopicSummary,
+  "id" | "title" | "authorName" | "state" | "firstUnreadPostId" | "unreadCount" | "section" | "category"
+>;
+
+export function UnreadView({
+  locale,
+  topics,
+}: {
+  locale: string;
+  topics: readonly UnreadTopicPresentation[];
+}) {
+  const { t } = useTranslation("common");
+  const unreadTopics = topics.filter((topic) => topic.state === "unread");
+  const newTopics = topics.filter((topic) => topic.state === "new");
+
+  const topicList = (items: readonly UnreadTopicPresentation[]) => (
+    <ul className="unanswered-topic-list">
+      {items.map((topic) => (
+        <li key={topic.id}>
+          <Link
+            className="unanswered-topic-card unread-topic-card"
+            to={`${forumTopicPath(locale, topic.id)}#post-${encodeURIComponent(topic.firstUnreadPostId)}`}
+          >
+            <span className="unanswered-topic-main">
+              <span className="unanswered-topic-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <rect x="3.5" y="5.5" width="17" height="13" rx="1.5" />
+                  <path d="m4.5 7 7.5 6 7.5-6" />
+                </svg>
+              </span>
+              <span className="unanswered-topic-copy">
+                <strong dir="auto">{topic.title}</strong>
+                <small>{t("startedBy", { author: topic.authorName })}</small>
+              </span>
+            </span>
+
+            <span className="unanswered-topic-location">
+              <span>{topic.category.name}</span>
+              <span>{topic.section.name}</span>
+            </span>
+
+            <span className="unanswered-topic-enter unread-topic-enter" aria-hidden="true">
+              <strong className="unread-topic-enter-count">{topic.unreadCount}</strong>
+              <svg viewBox="0 0 24 24">
+                <path d="m9 5 7 7-7 7" />
+              </svg>
+            </span>
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
+
+  return (
+    <ForumShell locale={locale} variant="unread">
+      <Breadcrumbs locale={locale} items={[{ label: t("unreadNav") }]} />
+
+      <header className="unanswered-heading">
+        <h1>{t("unreadHeading")}</h1>
+        <p>{t("unreadIntro")}</p>
+      </header>
+
+      {topics.length === 0 ? (
+        <div className="unanswered-empty">
+          <EmptyState>{t("unreadEmpty")}</EmptyState>
+        </div>
+      ) : (
+        <div className="unread-topic-groups">
+          {unreadTopics.length > 0 ? (
+            <section className="unanswered-topics unread-topic-group" aria-labelledby="unread-existing-heading">
+              <h2 id="unread-existing-heading" className="unread-topic-group-heading">
+                {t("unreadExistingHeading")}
+              </h2>
+              {topicList(unreadTopics)}
+            </section>
+          ) : null}
+
+          {newTopics.length > 0 ? (
+            <section className="unanswered-topics unread-topic-group" aria-labelledby="unread-new-heading">
+              <h2 id="unread-new-heading" className="unread-topic-group-heading">
+                {t("unreadNewHeading")}
+              </h2>
+              {topicList(newTopics)}
+            </section>
+          ) : null}
+        </div>
       )}
     </ForumShell>
   );
@@ -763,11 +859,13 @@ export function SectionView({
   locale,
   section,
   canCreateTopic,
+  topicReadStates,
   actionData,
 }: {
   locale: string;
   section: ForumSectionPage;
   canCreateTopic: boolean;
+  topicReadStates: Readonly<Record<string, ForumTopicReadKind>> | null;
   actionData?: ForumMutationError;
 }) {
   const { t } = useTranslation("common");
@@ -824,6 +922,15 @@ export function SectionView({
                     <span className="section-topic-copy">
                       <strong>{topic.title.originalContent}</strong>
                       <small>{t("startedBy", { author: topic.authorName })}</small>
+                      {topicReadStates?.[topic.id] ? (
+                        <small className={`section-topic-read-state is-${topicReadStates[topic.id]}`}>
+                          {topicReadStates[topic.id] === "new"
+                            ? t("unreadNew")
+                            : topicReadStates[topic.id] === "unread"
+                              ? t("unreadNav")
+                              : t("readStateRead")}
+                        </small>
+                      ) : null}
                       {topic.tags.length > 0 ? (
                         <span className="topic-tag-list" aria-label={t("topicTagsLabel")}>
                           {topic.tags.map((tag) => <span className="topic-tag" key={tag.key}>#{tag.name}</span>)}
@@ -983,6 +1090,7 @@ export function TopicView({
   canManageSolution,
   canCorrectTitleSourceLocale,
   correctablePostIds,
+  topicReadState,
   actionData,
 }: {
   locale: string;
@@ -994,6 +1102,7 @@ export function TopicView({
   canManageSolution: boolean;
   canCorrectTitleSourceLocale: boolean;
   correctablePostIds: readonly string[];
+  topicReadState: ForumTopicReadState | null;
   actionData?: TopicViewActionData;
 }) {
   const correctablePosts = new Set(correctablePostIds);
@@ -1035,6 +1144,21 @@ export function TopicView({
   const messageLinkRequestId = useRef(0);
   const replyTextareaRef = useRef<HTMLTextAreaElement>(null);
   const navigation = useNavigation();
+  const readStateFetcher = useFetcher();
+  const markedReadSnapshot = useRef<string | null>(null);
+
+  useEffect(() => {
+    const latestPostId = topicReadState?.latestPostId;
+    if (!latestPostId) return;
+    const snapshot = `${topic.id}:${latestPostId}`;
+    if (markedReadSnapshot.current === snapshot) return;
+    markedReadSnapshot.current = snapshot;
+    void readStateFetcher.submit(
+      { intent: "markTopicRead", postId: latestPostId },
+      { method: "post" },
+    );
+  }, [readStateFetcher, topic.id, topicReadState?.latestPostId]);
+
   const isReplySubmitting =
     navigation.state === "submitting"
     && navigation.formData?.get("intent") === "reply";
