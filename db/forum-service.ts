@@ -153,9 +153,9 @@ export class ForumService {
     }
   }
 
-  readUnreadTopics(userId: string) {
+  readUnreadTopics(userId: string, limit?: number) {
     requireText(userId, "user id");
-    return this.repository.readUnreadTopics(userId);
+    return this.repository.readUnreadTopics(userId, limit);
   }
 
   readTopicReadState(userId: string, topicId: string) {
