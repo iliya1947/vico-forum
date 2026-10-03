@@ -521,6 +521,15 @@ body.ui-preview-embedded .auth-controls button {
   line-height: 1.1;
 }
 
+.message-action-parent-link {
+  margin-inline-start: auto;
+  color: #d64c13;
+  font-size: 0.64rem;
+  font-weight: 750;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
 .message-action-header-control {
   position: relative;
   margin-inline-start: auto;
@@ -592,6 +601,7 @@ body.ui-preview-embedded .auth-controls button {
 }
 
 .message-action-demo-card .message-layout-demo-body {
+  padding-inline: 0.75rem;
   padding-bottom: 0.6rem;
 }
 
