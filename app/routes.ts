@@ -13,6 +13,7 @@ export default [
     route("popular", "routes/popular.tsx"),
     route("unanswered", "routes/unanswered.tsx"),
     route("unread", "routes/unread.tsx"),
+    route("notifications", "routes/notifications.tsx"),
     route("tags", "routes/tags.tsx"),
     route("tags/:tagKey", "routes/tag.tsx"),
     route("admin/authorization", "routes/authorization-admin.tsx"),
