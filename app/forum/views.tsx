@@ -1300,15 +1300,6 @@ export function TopicView({
                         )}
                       </div>
                     </div>
-                    <div className="topic-message-toolbar">
-                      <MessagePermalinkControl
-                        postId={post.id}
-                        messageNumber={messageNumber}
-                        feedback={messageLinkFeedback}
-                        onCopy={copyMessageLink}
-                      />
-                    </div>
-
                     {parentMessageNumber !== undefined && (
                       <a className="topic-message-parent-link" href={`#post-${encodeURIComponent(post.parentPostId!)}`}>
                         {t("replyToMessageNumber", { number: parentMessageNumber })}
@@ -1347,23 +1338,31 @@ export function TopicView({
                         )}
                       </div>
 
-                      {canReply && (
-                        <div className="topic-message-participation">
-                          <div className="topic-message-participation-actions">
-                            <button type="button" onClick={() => targetReply(post.id)}>
-                              {t("replyToMessage")}
-                            </button>
-                            <button type="button" onClick={() => quoteSelectedText(post.id)}>
-                              {t("quoteSelectedText")}
-                            </button>
+                      <div className="topic-message-desktop-actions">
+                        {canReply && (
+                          <div className="topic-message-participation">
+                            <div className="topic-message-participation-actions">
+                              <button type="button" onClick={() => targetReply(post.id)}>
+                                {t("replyToMessage")}
+                              </button>
+                              <button type="button" onClick={() => quoteSelectedText(post.id)}>
+                                {t("quoteSelectedText")}
+                              </button>
+                            </div>
+                            {quoteSelectionErrorPostId === post.id && (
+                              <span className="topic-message-quote-feedback" role="status" aria-live="polite">
+                                {t("quoteSelectionRequired")}
+                              </span>
+                            )}
                           </div>
-                          {quoteSelectionErrorPostId === post.id && (
-                            <span className="topic-message-quote-feedback" role="status" aria-live="polite">
-                              {t("quoteSelectionRequired")}
-                            </span>
-                          )}
-                        </div>
-                      )}
+                        )}
+                        <MessagePermalinkControl
+                          postId={post.id}
+                          messageNumber={messageNumber}
+                          feedback={messageLinkFeedback}
+                          onCopy={copyMessageLink}
+                        />
+                      </div>
                     </div>
 
                     {hasMessageTools && (
