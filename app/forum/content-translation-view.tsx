@@ -77,6 +77,37 @@ export function TopicTitlePresentation({
   );
 }
 
+export function PostBodyContent({
+  presentation,
+}: {
+  presentation: ContentTranslationPresentation;
+}) {
+  return (
+    <div
+      className="content-translation-body"
+      lang={presentation.contentLocale}
+      dir={presentation.contentDirection}
+    >
+      <ForumMarkdown>{presentation.content}</ForumMarkdown>
+    </div>
+  );
+}
+
+export function PostBodyTranslationControls({
+  presentation,
+}: {
+  presentation: ContentTranslationPresentation;
+}) {
+  if (presentation.selected !== "translation") return null;
+
+  return (
+    <div className="topic-message-translation-controls">
+      <TranslationProvenance presentation={presentation} />
+      <OriginalDisclosure presentation={presentation} markdown />
+    </div>
+  );
+}
+
 export function PostBodyPresentation({
   presentation,
 }: {
@@ -84,14 +115,8 @@ export function PostBodyPresentation({
 }) {
   return (
     <div className="content-translation-presentation">
-      <div
-        lang={presentation.contentLocale}
-        dir={presentation.contentDirection}
-      >
-        <ForumMarkdown>{presentation.content}</ForumMarkdown>
-      </div>
-      <TranslationProvenance presentation={presentation} />
-      <OriginalDisclosure presentation={presentation} markdown />
+      <PostBodyContent presentation={presentation} />
+      <PostBodyTranslationControls presentation={presentation} />
     </div>
   );
 }
