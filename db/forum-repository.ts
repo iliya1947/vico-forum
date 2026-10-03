@@ -167,6 +167,8 @@ export interface ForumReader {
   readTags(): Promise<ForumTagSummary[]>;
   readTag(key: string): Promise<ForumTagPage | undefined>;
   search(query: string, limit?: number): Promise<ForumSearchResult[]>;
+  readUnreadForUser(userId: string): Promise<ForumUnreadTopicSummary[]>;
+  readTopicReadState(userId: string, topicId: string): Promise<ForumTopicReadState | undefined>;
   readCategory(id: string): Promise<ForumCategoryPage | undefined>;
   readSection(id: string): Promise<ForumSectionPage | undefined>;
   readTopicPage(id: string): Promise<ForumTopicPage | undefined>;
