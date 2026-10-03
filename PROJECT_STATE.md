@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-10-03
+Последнее обновление: 2026-10-04
 
 ## Назначение
 
@@ -38,9 +38,9 @@ Vico Forum находится в ранней pre-release разработке.
 - В текущем UI/UX slice реализованы и repository-CI/Pages-проверены semantic visual tokens,
   Light/Dark с first-use `prefers-color-scheme` и persisted manual choice, two-zone shell/header,
   approved homepage frame и общая локализованная страница `Under development`. Runtime homepage
-  использует только существующие forum data для counts/latest topics; отсутствующие pinning и
-  online-presence capability не имитируются real data. Это не означает финальную browser/real-runtime
-  acceptance всего UI/UX pass.
+  использует только существующие forum data для counts/latest topics; persisted pinning реализуется
+  отдельным bounded slice, а отсутствующая online-presence capability не имитируется real data. Это
+  не означает финальную browser/real-runtime acceptance всего UI/UX pass.
 - Homepage correction slice прошёл owner visual acceptance в GitHub Pages. Приняты текущая
   композиция homepage, icon-led discovery navigation `Unanswered · Tags · Popular` и
   authenticated-only `Unread` без дублирующего `Home`, orange labels/icons и понятный
@@ -95,6 +95,18 @@ Vico Forum находится в ранней pre-release разработке.
   presentation и representative mixed/empty Pages states добавлены; notifications удалены из
   Under development. Clean PostgreSQL 17 tests, schema/manifest parity, runtime privilege probes и
   полный repository CI проходят. External migration/Stage 6 rollout не выполнялись.
+- Persisted Pinned topics bounded slice реализован в PR #181 от актуального `main`: forward
+  migration `0025_forum_topic_pins` хранит максимум один active pin на topic с DB-owned
+  `pinnedAt`, actor reference и cascade lifecycle. Новый code-backed permission
+  `forum.topic.pin` входит в initial grants moderator/admin, но не user; авторство темы само по
+  себе право не даёт, а pin/unpin mutation повторно проверяет authenticated same-origin effective
+  permission server-side. Homepage получает реальные pins set-based с DB-side rank/limit по
+  category, deterministic order `pinnedAt DESC, topicId DESC`, current title/author и latest
+  activity без N+1. Section/topic presentation показывает pin независимо от solved/unread/new;
+  topic tools дают idempotent Pin/Unpin только при permission. Пустой Pinned block теперь truthful
+  non-link state, а `pinned-topics` удалён из Under development. Repository CI для implementation
+  head до docs-only sync прошёл полностью; external migration/Stage 6 rollout не выполнялись.
+  Pages/owner visual acceptance этого slice ещё не зафиксированы.
 - Category-page discovery slice в PR #159 прошёл owner visual acceptance в GitHub Pages:
   owner-approved header/logo/discovery nav переиспользованы без backend/DB изменений; category
   heading показывает только derived section/topic/message totals, section rows стали compact
