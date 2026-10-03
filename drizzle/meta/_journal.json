@@ -176,6 +176,13 @@
       "when": 1791072000000,
       "tag": "0024_forum_reply_notifications",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1791162000000,
+      "tag": "0025_forum_topic_pins",
+      "breakpoints": true
     }
   ]
 }
