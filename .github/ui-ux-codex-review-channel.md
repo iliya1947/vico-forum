@@ -639,3 +639,103 @@ Technical-consensus cycle is closed:
 ## Recommended next owner action
 
 Merge PR #156. Record owner visual/browser acceptance separately if performed; do not interpret Pages/CI as final real-runtime acceptance. Start the next forum-discovery slice only as a separate bounded task from updated main.
+
+---
+
+# Update 2026-10-03 — next bounded UI/UX task handoff
+
+## Current-main review
+
+Работа продолжена от актуального GitHub `main` `22fae444da2f31bfaeb8857d68835319fcfb320a` (`Forum: connect homepage rail to category (#175)`). Перед определением следующей задачи полностью повторно сверены актуальные `AGENTS.md`, `PROJECT.md`, `PROJECT_STATE.md`, `ROADMAP.md`, `docs/UI_UX_PASS.md`, последнее состояние служебного PR ChatGPT #147 и текущая implementation/presentation boundary.
+
+На `main` уже merged и зафиксированы:
+
+- visual baseline/Pages preview, semantic theme/shell и owner-accepted homepage correction;
+- Category, Section, Topic/messages, create-topic/reply forms, secondary controls, auth/admin/system states и shared-shell accessibility hardening;
+- discovery functions `Popular`, `Unanswered`, `Tags`, global `Search`;
+- permanent message links;
+- persisted direct Reply/selected-text Quote relationship;
+- homepage category rail correction.
+
+Open implementation PR сейчас отсутствует. Stage 6 остаётся на паузе. Full final real-runtime acceptance matrix ещё не закрыта, но source of truth не требует останавливать отдельные reversible UI/product slices, прошедшие собственные repository/Pages/owner gates.
+
+## Selection of the next bounded product task
+
+Следующей bounded product-задачей назначается **full Markdown editor and code presentation foundation**.
+
+Причины порядка:
+
+1. Это ближайший незавершённый пункт текущего `Topics, messages and participation` contract после merged message links и Reply/Quote.
+2. Existing create-topic/reply forms уже стабилизированы и дают два реальных integration points без изменения domain/write contracts.
+3. Drafts/autosave логически должны строиться поверх принятого editor state contract, поэтому editor должен предшествовать drafts.
+4. Editor остаётся в code-owned `Under development` checklist; его завершение уменьшает approved pre-release backlog без запуска независимой тяжёлой backend subsystem.
+5. Notifications, profiles, unread и registration не являются prerequisite для editor и остаются отдельными будущими tasks.
+
+## Handoff to ChatGPT — full Markdown editor foundation
+
+### Objective
+
+Сделать существующее authoring experience полноценным безопасным Markdown/code editor для create-topic initial post и reply, сохранив существующие server actions, permissions, validation, rate limits, source-locale/revision и Reply/Quote semantics.
+
+### Required scope
+
+1. Создать один shared client-safe editor component/boundary и использовать его в обоих существующих body fields:
+   - create-topic initial body;
+   - topic reply body.
+2. Сохранить exact form contracts: `intent`, `body`, `title`, `tags`, `parentPostId`, normal React Router submission и current pending/disabled behavior.
+3. Добавить accessible selection-aware Markdown authoring controls минимум для:
+   - bold;
+   - italic;
+   - inline code;
+   - fenced code block;
+   - optional fenced-code language identifier.
+4. Сохранить merged Reply/Quote flow:
+   - selected-text quote по-прежнему вставляет только реально выделенный text как Markdown blockquote;
+   - quote/reply target не теряется при editor interaction;
+   - insertion respects current selection/caret and restores focus.
+5. Добавить preview mode/panel через существующий safe `ForumMarkdown`, без второго Markdown parser и без raw-HTML path. Preview обязан отражать тот же body value, который отправится server action.
+6. Завершить approved rendered code presentation:
+   - visible optional language label where present;
+   - copy-code action with localized success/failure feedback;
+   - user-controlled wrap/no-wrap for long code;
+   - LTR code isolation inside RTL UI;
+   - syntax highlighting only through a concrete, reviewed client-safe approach. Если для highlighting действительно нужна новая dependency, сначала проверить official documentation exact version, обосновать необходимость и не тянуть editor framework/WYSIWYG package.
+7. New strings добавить в canonical English catalog и синхронизировать complete current `ru`/`he` manual packs + reviewed fingerprint manifest через существующий contract.
+8. Pages preview должен использовать тот же editor/code presentation, а не duplicate mock UI, и покрыть representative:
+   - create-topic editor;
+   - reply editor with active reply target and inserted selected-text quote;
+   - Markdown preview with inline/fenced code and language label;
+   - long code wrap/no-wrap;
+   - desktop/mobile;
+   - LTR/RTL with code remaining LTR.
+9. Добавить focused automated coverage для selection transformations, caret/focus behavior, exact submitted body, Reply/Quote integration, safe preview, copy feedback and wrap state. Existing security/Markdown tests must stay green.
+10. После фактической verification обновить `PROJECT_STATE.md` и `docs/UI_UX_PASS.md` narrowly: record only implemented/verified editor scope, remove `editor` from `Under development` only when its temporary entry is genuinely replaced/obsolete, and do not claim drafts/autosave or full UI/UX acceptance.
+
+### Explicit exclusions
+
+- drafts/autosave persistence;
+- attachments/uploads or external-image enablement;
+- WYSIWYG/rich-text document model;
+- arbitrary raw HTML;
+- edit-existing-post/topic functionality;
+- notifications, unread, profiles, registration, pinning or online presence;
+- changes to forum DB schema, post revision identity, translation Markdown protection, permissions, rate limits or Stage 6 infrastructure unless an independently demonstrated blocker requires separate agreement.
+
+### Required verification and acceptance
+
+- focused unit/component tests for editor/code behavior;
+- existing Markdown XSS/image/link safety coverage;
+- full repository CI, including database and Workers smoke;
+- `pnpm ui-preview:build` and exact-head Pages deployment;
+- browser review of editor/preview/code interactions at desktop and narrow mobile in LTR and RTL;
+- keyboard-only traversal, visible focus, selection/caret behavior, reduced-motion behavior, long-line overflow and zoom/reflow;
+- record revision, scenarios, browser/viewports, screenshots/findings and re-test result truthfully;
+- independent Codex whole-PR review before merge under the existing technical-consensus protocol.
+
+### Delivery boundary
+
+Один mergeable implementation PR from exact current `main`. Не смешивать с drafts/autosave or another unfinished subsystem. Если syntax-highlighting dependency materially expands risk or bundle size, keep the PR reviewable by isolating that decision and evidence inside the same bounded editor objective rather than adding unrelated product work.
+
+## Requested ChatGPT action
+
+ChatGPT должен проверить актуальный `main` и этот handoff в PR #153, реализовать только описанный editor/code slice в отдельном mergeable PR, выполнить self-review и automated/Pages evidence, записать результат в PR #147 и остановиться для независимой Codex проверки. Codex implementation не выполняет.
