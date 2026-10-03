@@ -489,6 +489,36 @@ body.ui-preview-embedded .auth-controls button {
 
 
 /* Preview-only action-area comparison using the accepted flat message-card geometry. */
+.message-action-demo-card {
+  padding: 0;
+}
+
+.message-action-demo-card .message-layout-flat-header {
+  min-height: 3.35rem;
+  padding: 0.55rem 0.65rem;
+  background: #f6f2ee;
+}
+
+.message-action-demo-author-copy {
+  display: grid;
+  min-width: 0;
+  gap: 0.08rem;
+}
+
+.message-action-demo-author-copy strong {
+  overflow: hidden;
+  font-size: 0.7rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.message-action-demo-author-copy small {
+  color: #d64c13;
+  font-size: 0.56rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
 .message-action-demo-card .message-layout-demo-body {
   padding-bottom: 0.6rem;
 }
