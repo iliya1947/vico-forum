@@ -22,6 +22,7 @@ import {
   TagsView,
   TagView,
   UnansweredView,
+  UnreadView,
   TopicView,
 } from "../forum/views";
 import type { ContentTranslationPresentation } from "../localization/content-translation-presentation";
@@ -32,7 +33,7 @@ import { localeRegistry } from "../localization/registry";
 
 type Direction = "ltr" | "rtl";
 type PreviewIdentity = "guest" | "user" | "manager";
-type PreviewView = "home" | "search" | "popular" | "unanswered" | "tags" | "tag" | "category" | "section" | "topic" | "admin" | "empty" | "under-development" | "not-found";
+type PreviewView = "home" | "search" | "popular" | "unanswered" | "unread" | "tags" | "tag" | "category" | "section" | "topic" | "admin" | "empty" | "under-development" | "not-found";
 
 type PreviewVariant =
   | "empty-category"
@@ -72,6 +73,7 @@ export const scenarios: readonly Scenario[] = [
   { id: "search-no-results-guest", label: "Search · no results · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/search?q=WebAssembly", view: "search", variant: "search-no-results" },
   { id: "popular-guest", label: "Popular · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/popular", view: "popular" },
   { id: "unanswered-guest", label: "Unanswered · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/unanswered", view: "unanswered" },
+  { id: "unread-user", label: "Unread · user", locale: "en", direction: "ltr", identity: "user", path: "/en/unread", view: "unread" },
   { id: "tags-guest", label: "Tags · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/tags", view: "tags" },
   { id: "tag-typescript-guest", label: "Tag · TypeScript · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/tags/typescript", view: "tag" },
   { id: "category-guest", label: "Category · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/development", view: "category" },
@@ -496,6 +498,18 @@ function unansweredTopics(locale: PreviewLocale) {
   ];
 }
 
+function unreadTopics(locale: PreviewLocale) {
+  const base = unansweredTopics(locale);
+  return base.slice(0, 2).map((topic, index) => ({
+    ...topic,
+    state: index === 0 ? "new" as const : "unread" as const,
+    firstUnreadPostId: `${topic.id}-post-${index + 1}`,
+    latestPostId: `${topic.id}-post-3`,
+    unreadCount: index === 0 ? 3 : 2,
+    activityAt: new Date(index === 0 ? "2026-09-30T16:00:00.000Z" : "2026-09-30T14:00:00.000Z"),
+  }));
+}
+
 function previewSearchResults(locale: PreviewLocale) {
   const rtl = locale === "he";
   const russian = locale === "ru";
@@ -852,6 +866,12 @@ function PreviewSectionRoute({ scenario }: { scenario: Scenario }) {
       locale={scenario.locale}
       section={previewSection(scenario.locale, routeSectionId)}
       canCreateTopic={scenario.identity !== "guest"}
+      topicReadStates={scenario.identity === "guest" ? null : Object.fromEntries(
+        previewSection(scenario.locale, routeSectionId).topics.map((topic, index) => [
+          topic.id,
+          (["new", "unread", "read"] as const)[index % 3],
+        ]),
+      )}
       actionData={scenario.view === "section" && scenario.variant === "section-form-error"
         ? { error: "rateLimited" }
         : undefined}
@@ -987,6 +1007,7 @@ function PreviewTopicRoute({ scenario }: { scenario: Scenario }) {
       canManageSolution={false}
       canCorrectTitleSourceLocale={false}
       correctablePostIds={[]}
+      topicReadState={null}
     />
   );
 }
@@ -1023,6 +1044,8 @@ function previewElement(scenario: Scenario) {
       return <PopularView locale={scenario.locale} periods={popularPeriods(scenario.locale)} />;
     case "unanswered":
       return <UnansweredView locale={scenario.locale} topics={unansweredTopics(scenario.locale)} />;
+    case "unread":
+      return <UnreadView locale={scenario.locale} topics={unreadTopics(scenario.locale)} />;
     case "tags":
       return <TagsView locale={scenario.locale} tags={previewTags()} />;
     case "tag":
@@ -1050,6 +1073,12 @@ function previewElement(scenario: Scenario) {
           locale={scenario.locale}
           section={scenario.locale === "ru" ? sectionRu : scenario.direction === "rtl" ? sectionRtl : section}
           canCreateTopic
+          topicReadStates={Object.fromEntries(
+            (scenario.locale === "ru" ? sectionRu : scenario.direction === "rtl" ? sectionRtl : section).topics.map((topic, index) => [
+              topic.id,
+              (["new", "unread", "read"] as const)[index % 3],
+            ]),
+          )}
           actionData={scenario.variant === "section-form-error" ? { error: "rateLimited" } : undefined}
         />
       );
@@ -1075,6 +1104,7 @@ function previewElement(scenario: Scenario) {
             topics: [],
           }}
           canCreateTopic={false}
+          topicReadStates={null}
         />
       );
     case "topic": {
@@ -1158,6 +1188,7 @@ function topicData(
     correctablePostIds: showSecondaryControls
       ? translatedTopic.posts.map((post) => post.id)
       : [],
+    topicReadState: null,
   };
 }
 
