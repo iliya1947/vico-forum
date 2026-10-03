@@ -20,6 +20,7 @@ export interface ForumWriter {
   selectBestAnswer(input: { topicId: string; postId: string; actorId: string; scope: SolutionManagementScope }): Promise<void>;
   correctTopicTitleSourceLocale(input: { topicId: string; expectedRevisionId: string; sourceLocale: string; actorId: string; scope: SourceLocaleCorrectionScope }): Promise<void>;
   correctPostBodySourceLocale(input: { topicId: string; postId: string; expectedRevisionId: string; sourceLocale: string; actorId: string; scope: SourceLocaleCorrectionScope }): Promise<void>;
+  advanceTopicReadState(input: { userId: string; topicId: string; postId: string }): Promise<void>;
 }
 
 export class ForumStorageUnavailableError extends Error {
@@ -59,6 +60,8 @@ export function createHyperdriveForumReader(
     readTags: () => read((repository) => repository.readTags()),
     readTag: (key) => read((repository) => repository.readTag(key)),
     search: (query, limit) => read((repository) => repository.search(query, limit)),
+    readUnreadForUser: (userId) => read((repository) => repository.readUnreadForUser(userId)),
+    readTopicReadState: (userId, topicId) => read((repository) => repository.readTopicReadState(userId, topicId)),
     readCategory: (id) => read((repository) => repository.readCategory(id)),
     readSection: (id) => read((repository) => repository.readSection(id)),
     readTopicPage: (id) => read((repository) => repository.readTopicPage(id)),
@@ -122,6 +125,9 @@ export function createHyperdriveForumWriter(
     selectBestAnswer: ({ topicId, postId, actorId, scope }) => write((forum) => forum.selectBestAnswer(topicId, postId, actorId, scope)),
     correctTopicTitleSourceLocale: (input) => writeCorrection(async (forum) => { await forum.correctTopicTitleSourceLocale(input); }),
     correctPostBodySourceLocale: (input) => writeCorrection(async (forum) => { await forum.correctPostBodySourceLocale(input); }),
+    advanceTopicReadState: ({ userId, topicId, postId }) => writeCorrection(async (forum) => {
+      await forum.advanceTopicReadState(userId, topicId, postId);
+    }),
   };
 }
 
