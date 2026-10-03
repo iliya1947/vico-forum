@@ -1419,3 +1419,134 @@ Pages должен тем же shared component покрыть:
 После current-main integration, corrections, focused tests, full exact-head CI/Pages and explicit
 owner visual acceptance ChatGPT выполняет whole-PR self-review и записывает exact head/evidence в
 PR #147. Затем останавливается для independent Codex review; merge выполняет только owner.
+
+---
+
+# Update 2026-10-04 — owner defers editor; hand off Pinned topics
+
+## Owner direction and current baseline
+
+Owner explicitly отменил предыдущий next-step выбор: PR #176/editor нельзя продолжать до нового
+прямого указания. Поэтому handoff `editor visual/product refinement` выше superseded и не должен
+исполняться сейчас.
+
+Повторно сверены current GitHub `main`
+`d6da8fa8c183c77f2b0cdb0c7cbe7949526a8b7d`, remaining `Under development` registry, homepage
+runtime/preview boundary, topic schema, authorization catalog и target contract. PR #176 остаётся
+open на `0e6a1607e7a8a3f2f16c9a4207536c32ba4d4131`; его branch, preview и editor code не трогать.
+
+## Selection of the next bounded task
+
+Следующая bounded UI/UX product-задача — **real Pinned topics persistence and management**.
+
+Причины порядка:
+
+1. `Pinned` — обязательная часть уже принятой homepage card composition, но real loader сейчас всегда
+   передаёт `pinnedTopics: []`; данные существуют только в Pages fixture.
+2. Runtime честно показывает temporary `Under development`, поэтому это следующий явный разрыв между
+   accepted target UI и реальным продуктом.
+3. Slice независим от editor, drafts, profiles, registration, notifications и external services.
+4. Topic/section/category hierarchy, homepage cards и dynamic authorization foundation уже существуют;
+   требуется узкая persisted capability, а не новый product surface.
+5. После completion homepage перестанет использовать последний значимый preview-only content block.
+
+## Handoff to ChatGPT — persisted Pinned topics
+
+### Objective
+
+Добавить управляемое закрепление forum topics и подключить реальные pinned topics к существующей
+homepage `Pinned` колонке и topic-list state, сохранив classic hierarchy и permission-based
+server authorization.
+
+### Product semantics
+
+1. Pin относится к topic целиком. На homepage topic показывается в block своей текущей category,
+   derived через `topic → section → category`; отдельную дублирующую category identity в pin record
+   не хранить.
+2. Один topic имеет максимум один active pin. Pin/unpin идемпотентны.
+3. Deterministic ordering: newest pin first, tie-break по topic id. Homepage read получает server-
+   bounded количество pins на category; limit является repository input с validated narrow bound,
+   а не application-side slice после unbounded transfer.
+4. Pin state не зависит от solved/unread/new и не меняет chronological topic/message ordering.
+5. Pinning доступен только через новую code-backed permission `forum.topic.pin`; initial grant —
+   `moderator` и `admin`, не обычный `user`. Dynamic roles/overrides продолжают работать через
+   существующий PermissionResolver.
+6. Topic author сам по себе не получает pin capability. Client visibility не заменяет server-side
+   permission check.
+7. Unpin удаляет только pin state; topic, posts, revisions, tags, read state и notifications не
+   изменяются.
+
+### Required implementation scope
+
+1. Добавить минимальную forward Drizzle migration и production manifest:
+   - `topicId` unique/primary FK с cascade on topic deletion;
+   - `pinnedByUserId` authoritative actor FK с подходящим lifecycle согласно существующему user
+     deletion contract;
+   - `pinnedAt` database timestamp;
+   - index только для реального ordered homepage read.
+2. Расширить code-backed permission catalog/check constraint migration той же forward history,
+   добавить initial moderator/admin grants и сохранить lockout/authorization management contracts.
+3. Repository/service operations:
+   - atomic/idempotent pin;
+   - idempotent unpin;
+   - read current pin state for topic presentation;
+   - bounded set-based homepage pins per category without N+1 or unbounded all-pin transfer.
+4. Existing homepage loader передаёт реальные pinned topics с current title, author и activity.
+   Preview продолжает использовать тот же presentation component, но не является runtime source.
+5. Topic secondary tools получает Pin/Unpin только при effective permission. Mutation использует
+   existing authenticated same-origin boundary и повторно проверяет permission server-side.
+6. Section topic rows и topic page показывают компактный localized pinned indicator, не меняя
+   solved/unread/tags/message hierarchy и не превращая его в color-only state.
+7. Existing homepage empty Pinned column после capability completion показывает truthful localized
+   empty state без ссылки на `Under development`; `pinned-topics` удаляется из unfinished registry.
+8. Добавить canonical English и complete RU/HE strings/fingerprints. CSS — logical-direction,
+   responsive, theme-token based, with keyboard-visible focus.
+9. Pages states через shared views: homepage with real-shaped multiple pins, no-pins category,
+   manager pin/unpin controls, regular user without controls, Desktop/Mobile, LTR/RTL, Light/Dark.
+10. После фактической проверки узко обновить `PROJECT_STATE.md` и `docs/UI_UX_PASS.md`; не заявлять
+    production migration или final UI/UX acceptance.
+
+### Query and mutation boundaries
+
+- homepage counts/latest semantics из current `readHomepage()` не регрессируют;
+- pinned read выполняется set-based с database-side per-category rank/limit and deterministic order;
+- title берётся только из current title revision, activity — из authoritative topic/posts semantics;
+- pin/unpin ошибки classified storage/authz возвращают existing safe mutation responses;
+- unexpected DB/programming errors не маскировать как permission denial;
+- никакого client-provided category, author/title/activity или permission decision;
+- no external calls, Queue, cache or production mutation.
+
+### Required tests
+
+- clean migration, Drizzle metadata, production manifest, constraints/indexes and topic cascade;
+- permission catalog/check parity and initial grants: user denied, moderator/admin allowed, dynamic
+  role grant/override respected;
+- same-origin/authenticated negative mutation tests and server-side authorization recheck;
+- idempotent pin/unpin and concurrent duplicate pin;
+- homepage database test: per-category grouping, current title/author/activity, deterministic order,
+  validated limit and no N+1/unbounded transfer;
+- pinned state coexists with solved/unread/new/tags and survives unrelated reply/read/notification
+  mutations;
+- topic deletion removes pin without dangling state;
+- route/presentation/locale anchor checks and EN/RU/HE completeness;
+- representative Pages regression across responsive/RTL/theme/identity states;
+- full existing forum, Unread, Notifications, authz, migration and Workers checks remain green.
+
+### Explicit exclusions
+
+- sticky ordering inside section lists or manual drag/reorder;
+- per-section/per-user pins, bookmarks/favorites or subscriptions;
+- scheduled/expiring pins;
+- notification event for pin/unpin;
+- changes to editor PR #176, drafts/autosave, profiles, registration or online presence;
+- footer/static content polish and Stage 6 production rollout.
+
+### Delivery and acceptance
+
+Один отдельный mergeable implementation PR from exact current `main`; не использовать и не менять
+PR #176. Required: focused tests, full repository CI/database/migration/Workers checks, exact-head
+Pages deployment, owner browser review homepage/topic management at Desktop/Mobile + LTR/RTL +
+Light/Dark + manager/user, then independent Codex whole-PR review. Merge выполняет только owner.
+
+ChatGPT записывает implementation head, schema/permission/query semantics, CI/Pages и truthful owner
+acceptance status в PR #147 и останавливается для проверки. Codex implementation не выполняет.
