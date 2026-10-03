@@ -546,8 +546,11 @@ describe("forum read states", () => {
     expect(questionCard).not.toBeNull();
     expect(replyCard).not.toBeNull();
 
-    expect(within(replyCard as HTMLElement).getByRole("link", { name: "Reply to #1" }))
-      .toHaveAttribute("href", "#post-question");
+    const parentLinks = within(replyCard as HTMLElement).getAllByRole("link", { name: "Reply to #1" });
+    expect(parentLinks).toHaveLength(2);
+    for (const parentLink of parentLinks) {
+      expect(parentLink).toHaveAttribute("href", "#post-question");
+    }
     expect(within(questionCard as HTMLElement).getByRole("navigation", { name: "Direct replies" })
       .querySelector('a[href="#post-reply"]')).not.toBeNull();
 
