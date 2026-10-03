@@ -5962,10 +5962,19 @@ a.topic-tag:focus-visible {
   grid-area: translation;
   align-self: end;
   width: fit-content;
+  list-style: none;
   color: var(--color-accent-hover);
   cursor: pointer;
   font-size: 0.75rem;
   font-weight: 700;
+}
+
+.topic-message-translation-summary::marker {
+  content: "";
+}
+
+.topic-message-translation-summary::-webkit-details-marker {
+  display: none;
 }
 
 .topic-message-translation-summary-copy {
@@ -5985,11 +5994,15 @@ a.topic-tag:focus-visible {
   display: inline;
 }
 
+.topic-message-translation-summary .translation-hide-original {
+  display: none;
+}
+
 .topic-message-translation-controls[open] .translation-show-original {
   display: none;
 }
 
-.topic-message-translation-controls[open] .translation-show-translation {
+.topic-message-translation-controls[open] .translation-hide-original {
   display: inline;
 }
 
