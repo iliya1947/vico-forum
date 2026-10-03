@@ -95,6 +95,51 @@ describe("MarkdownEditor", () => {
     expect(textarea).toHaveFocus();
   });
 
+  it("preserves selected backticks when inserting inline code", async () => {
+    renderEditor(
+      <>
+        <label htmlFor="body">Body</label>
+        <MarkdownEditor id="body" name="body" defaultValue="`hello`" />
+      </>,
+    );
+
+    const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
+    textarea.focus();
+    textarea.setSelectionRange(0, textarea.value.length);
+
+    await userEvent.click(screen.getByRole("button", { name: "Inline code" }));
+
+    expect(textarea).toHaveValue("`` `hello` ``");
+    expect(textarea.selectionStart).toBe(3);
+    expect(textarea.selectionEnd).toBe(10);
+
+    await userEvent.click(screen.getByRole("button", { name: "Preview" }));
+    const renderedCode = screen.getByText("`hello`");
+    expect(renderedCode.tagName).toBe("CODE");
+  });
+
+  it("uses an outer fenced-code delimiter longer than selected backtick runs", async () => {
+    renderEditor(
+      <>
+        <label htmlFor="body">Body</label>
+        <MarkdownEditor id="body" name="body" defaultValue={"```\ninner\n```"} />
+      </>,
+    );
+
+    const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
+    textarea.focus();
+    textarea.setSelectionRange(0, textarea.value.length);
+
+    await userEvent.click(screen.getByRole("button", { name: "Code block" }));
+
+    expect(textarea).toHaveValue("````ts\n```\ninner\n```\n````");
+
+    await userEvent.click(screen.getByRole("button", { name: "Preview" }));
+    const codeBlocks = document.querySelectorAll(".forum-code-block");
+    expect(codeBlocks).toHaveLength(1);
+    expect(codeBlocks[0]?.querySelector("pre")?.textContent).toBe("```\ninner\n```");
+  });
+
   it("inserts imperative quote text at the current selection and keeps the field focused", () => {
     const editorRef = createRef<MarkdownEditorHandle>();
     renderEditor(
