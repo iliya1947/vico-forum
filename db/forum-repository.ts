@@ -118,6 +118,16 @@ export interface ForumUnreadTopicSummary {
   category: { id: string; name: string };
 }
 
+export interface ForumReplyNotificationSummary {
+  id: string;
+  actorName: string;
+  topicId: string;
+  topicTitle: string;
+  postId: string;
+  createdAt: Date;
+  readAt: Date | null;
+}
+
 export interface ForumSectionSummary {
   id: string;
   name: string;
@@ -170,6 +180,8 @@ export interface ForumReader {
   search(query: string, limit?: number): Promise<ForumSearchResult[]>;
   readUnreadForUser(userId: string): Promise<ForumUnreadTopicSummary[]>;
   readTopicReadState(userId: string, topicId: string): Promise<ForumTopicReadState | undefined>;
+  readReplyNotifications(userId: string, limit?: number): Promise<ForumReplyNotificationSummary[]>;
+  countUnreadReplyNotifications(userId: string): Promise<number>;
   readCategory(id: string): Promise<ForumCategoryPage | undefined>;
   readSection(id: string): Promise<ForumSectionPage | undefined>;
   readTopicPage(id: string): Promise<ForumTopicPage | undefined>;
@@ -886,6 +898,63 @@ export class DrizzleForumRepository {
     const state = await this.readTopicReadState(userId, topicId);
     if (!state) throw new ForumEntityNotFoundError("topic does not exist");
     return state;
+  }
+
+  async readReplyNotifications(userId: string, limit = 50): Promise<ForumReplyNotificationSummary[]> {
+    if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
+      throw new RangeError("notification limit must be an integer between 1 and 100");
+    }
+    const actor = alias(user, "notification_actor");
+    return this.database
+      .select({
+        id: forumReplyNotifications.id,
+        actorName: actor.name,
+        topicId: forumReplyNotifications.topicId,
+        topicTitle: forumTopicTitleRevisions.originalContent,
+        postId: forumReplyNotifications.postId,
+        createdAt: forumReplyNotifications.createdAt,
+        readAt: forumReplyNotifications.readAt,
+      })
+      .from(forumReplyNotifications)
+      .innerJoin(actor, eq(actor.id, forumReplyNotifications.actorUserId))
+      .innerJoin(forumTopics, eq(forumTopics.id, forumReplyNotifications.topicId))
+      .innerJoin(forumTopicTitleRevisions, and(
+        eq(forumTopicTitleRevisions.topicId, forumTopics.id),
+        eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId),
+      ))
+      .where(eq(forumReplyNotifications.recipientUserId, userId))
+      .orderBy(desc(forumReplyNotifications.createdAt), desc(forumReplyNotifications.id))
+      .limit(limit);
+  }
+
+  async countUnreadReplyNotifications(userId: string): Promise<number> {
+    const [row] = await this.database
+      .select({ count: sql<number>`count(*)::int` })
+      .from(forumReplyNotifications)
+      .where(and(
+        eq(forumReplyNotifications.recipientUserId, userId),
+        isNull(forumReplyNotifications.readAt),
+      ));
+    return row?.count ?? 0;
+  }
+
+  async markReplyNotificationRead(
+    userId: string,
+    notificationId: string,
+  ): Promise<{ topicId: string; postId: string }> {
+    const [notification] = await this.database
+      .update(forumReplyNotifications)
+      .set({ readAt: sql`coalesce(${forumReplyNotifications.readAt}, now())` })
+      .where(and(
+        eq(forumReplyNotifications.id, notificationId),
+        eq(forumReplyNotifications.recipientUserId, userId),
+      ))
+      .returning({
+        topicId: forumReplyNotifications.topicId,
+        postId: forumReplyNotifications.postId,
+      });
+    if (!notification) throw new ForumEntityNotFoundError("notification does not exist for user");
+    return notification;
   }
 
   async readCategory(id: string): Promise<ForumCategoryPage | undefined> {
