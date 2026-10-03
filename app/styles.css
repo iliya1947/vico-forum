@@ -2919,7 +2919,7 @@ p {
 }
 
 .unread-topic-card {
-  grid-template-columns: minmax(0, 1fr) 17rem 6.5rem;
+  grid-template-columns: minmax(0, 1fr) 17rem 4.75rem;
 }
 
 .unanswered-topic-enter {
@@ -2939,9 +2939,9 @@ p {
 .unread-topic-enter {
   display: grid;
   grid-template-columns: 1fr auto;
-  gap: 0.6rem;
-  min-width: 6.5rem;
-  padding-inline: 0.9rem 0.65rem;
+  gap: 0.35rem;
+  min-width: 4.75rem;
+  padding-inline: 0.65rem 0.5rem;
 }
 
 .unread-topic-enter-count {
@@ -2964,7 +2964,7 @@ p {
   }
 
   .unread-topic-card {
-    grid-template-columns: minmax(0, 1fr) 5.75rem;
+    grid-template-columns: minmax(0, 1fr) 4.5rem;
   }
 
   .unanswered-topic-main {
@@ -2995,8 +2995,8 @@ p {
 
   .unread-topic-enter {
     grid-row: 1 / 3;
-    min-width: 5.75rem;
-    padding-inline: 0.7rem 0.55rem;
+    min-width: 4.5rem;
+    padding-inline: 0.6rem 0.45rem;
   }
 
   .unanswered-topic-copy strong {
