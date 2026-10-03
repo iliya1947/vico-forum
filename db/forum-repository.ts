@@ -9,6 +9,7 @@ import {
   forumSections,
   forumTags,
   forumTopicReadStates,
+  forumTopicPins,
   forumTopicTags,
   forumTopicTitleRevisions,
   forumTopics,
@@ -35,6 +36,7 @@ export interface ForumHomepageCategorySummary {
   sectionCount: number;
   topicCount: number;
   messageCount: number;
+  pinnedTopics: ForumHomepageTopicSummary[];
   latestTopics: ForumHomepageTopicSummary[];
 }
 
@@ -147,6 +149,7 @@ export interface ForumTopicSummary {
   authorName: string;
   postCount: number;
   createdAt: Date;
+  isPinned: boolean;
   tags: ForumTag[];
 }
 
@@ -165,6 +168,7 @@ export interface ForumThreadPost extends ForumPost {
 export interface ForumTopicPage extends ForumTopic {
   createdAt: Date;
   authorName: string;
+  isPinned: boolean;
   section: { id: string; name: string; category: { id: string; name: string } };
   tags: ForumTag[];
   posts: ForumThreadPost[];
@@ -172,7 +176,7 @@ export interface ForumTopicPage extends ForumTopic {
 
 export interface ForumReader {
   listCategories(): Promise<ForumCategorySummary[]>;
-  readHomepage(latestTopicsPerCategory?: number): Promise<ForumHomepageCategorySummary[]>;
+  readHomepage(latestTopicsPerCategory?: number, pinnedTopicsPerCategory?: number): Promise<ForumHomepageCategorySummary[]>;
   readPopular(referenceTime?: Date, limitPerPeriod?: number): Promise<ForumPopularPage>;
   readUnanswered(): Promise<ForumUnansweredTopicSummary[]>;
   readTags(): Promise<ForumTagSummary[]>;
@@ -182,6 +186,7 @@ export interface ForumReader {
   readTopicReadState(userId: string, topicId: string): Promise<ForumTopicReadState | undefined>;
   readReplyNotifications(userId: string, limit?: number): Promise<ForumReplyNotificationSummary[]>;
   countUnreadReplyNotifications(userId: string): Promise<number>;
+  readTopicPinState(topicId: string): Promise<boolean>;
   readCategory(id: string): Promise<ForumCategoryPage | undefined>;
   readSection(id: string): Promise<ForumSectionPage | undefined>;
   readTopicPage(id: string): Promise<ForumTopicPage | undefined>;
@@ -393,9 +398,15 @@ export class DrizzleForumRepository {
       .orderBy(asc(forumCategories.createdAt), asc(forumCategories.id));
   }
 
-  async readHomepage(latestTopicsPerCategory = 6): Promise<ForumHomepageCategorySummary[]> {
+  async readHomepage(
+    latestTopicsPerCategory = 6,
+    pinnedTopicsPerCategory = 3,
+  ): Promise<ForumHomepageCategorySummary[]> {
     if (!Number.isInteger(latestTopicsPerCategory) || latestTopicsPerCategory < 1 || latestTopicsPerCategory > 20) {
       throw new RangeError("latestTopicsPerCategory must be an integer between 1 and 20");
+    }
+    if (!Number.isInteger(pinnedTopicsPerCategory) || pinnedTopicsPerCategory < 1 || pinnedTopicsPerCategory > 10) {
+      throw new RangeError("pinnedTopicsPerCategory must be an integer between 1 and 10");
     }
 
     const categories = await this.database
@@ -462,6 +473,75 @@ export class DrizzleForumRepository {
       .where(lte(rankedTopics.activityRank, latestTopicsPerCategory))
       .orderBy(asc(rankedTopics.categoryId), asc(rankedTopics.activityRank));
 
+    const pinnedActivity = this.database
+      .select({
+        categoryId: forumSections.categoryId,
+        id: forumTopics.id,
+        title: forumTopicTitleRevisions.originalContent,
+        authorName: user.name,
+        pinnedAt: forumTopicPins.pinnedAt,
+        activityAt: sql`greatest(
+          ${forumTopics.createdAt},
+          coalesce(max(${forumPosts.createdAt}), ${forumTopics.createdAt})
+        )`.mapWith(forumTopics.createdAt).as("activity_at"),
+      })
+      .from(forumTopicPins)
+      .innerJoin(forumTopics, eq(forumTopics.id, forumTopicPins.topicId))
+      .innerJoin(forumSections, eq(forumSections.id, forumTopics.sectionId))
+      .innerJoin(forumTopicTitleRevisions, and(
+        eq(forumTopicTitleRevisions.topicId, forumTopics.id),
+        eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId),
+      ))
+      .innerJoin(user, eq(user.id, forumTopics.authorId))
+      .leftJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
+      .groupBy(
+        forumTopics.id,
+        forumSections.categoryId,
+        forumTopicTitleRevisions.id,
+        user.name,
+        forumTopicPins.pinnedAt,
+      )
+      .as("homepage_pinned_activity");
+
+    const rankedPinned = this.database
+      .select({
+        categoryId: pinnedActivity.categoryId,
+        id: pinnedActivity.id,
+        title: pinnedActivity.title,
+        authorName: pinnedActivity.authorName,
+        activityAt: pinnedActivity.activityAt,
+        pinRank: sql<number>`row_number() over (
+          partition by ${pinnedActivity.categoryId}
+          order by ${pinnedActivity.pinnedAt} desc, ${pinnedActivity.id} desc
+        )::int`.as("pin_rank"),
+      })
+      .from(pinnedActivity)
+      .as("homepage_ranked_pins");
+
+    const pinnedTopics = await this.database
+      .select({
+        categoryId: rankedPinned.categoryId,
+        id: rankedPinned.id,
+        title: rankedPinned.title,
+        authorName: rankedPinned.authorName,
+        activityAt: rankedPinned.activityAt,
+      })
+      .from(rankedPinned)
+      .where(lte(rankedPinned.pinRank, pinnedTopicsPerCategory))
+      .orderBy(asc(rankedPinned.categoryId), asc(rankedPinned.pinRank));
+
+    const pinnedByCategory = new Map<string, ForumHomepageTopicSummary[]>();
+    for (const topic of pinnedTopics) {
+      const list = pinnedByCategory.get(topic.categoryId) ?? [];
+      list.push({
+        id: topic.id,
+        title: topic.title,
+        authorName: topic.authorName,
+        activityAt: topic.activityAt,
+      });
+      pinnedByCategory.set(topic.categoryId, list);
+    }
+
     const latestByCategory = new Map<string, ForumHomepageTopicSummary[]>();
     for (const topic of latestTopics) {
       const list = latestByCategory.get(topic.categoryId) ?? [];
@@ -476,6 +556,7 @@ export class DrizzleForumRepository {
 
     return categories.map((category) => ({
       ...category,
+      pinnedTopics: pinnedByCategory.get(category.id) ?? [],
       latestTopics: latestByCategory.get(category.id) ?? [],
     }));
   }
@@ -617,6 +698,7 @@ export class DrizzleForumRepository {
         authorName: user.name,
         postCount: sql<number>`count(distinct ${forumPosts.id})::int`,
         createdAt: forumTopics.createdAt,
+        isPinned: sql<boolean>`${forumTopicPins.topicId} is not null`,
         sectionId: forumSections.id,
         sectionName: forumSections.name,
         categoryId: forumCategories.id,
@@ -957,6 +1039,38 @@ export class DrizzleForumRepository {
     return notification;
   }
 
+  async readTopicPinState(topicId: string): Promise<boolean> {
+    const [pin] = await this.database
+      .select({ topicId: forumTopicPins.topicId })
+      .from(forumTopicPins)
+      .where(eq(forumTopicPins.topicId, topicId));
+    return Boolean(pin);
+  }
+
+  async pinTopic(topicId: string, pinnedByUserId: string): Promise<void> {
+    await this.database.transaction(async (tx) => {
+      const [topic] = await tx.select({ id: forumTopics.id })
+        .from(forumTopics)
+        .where(eq(forumTopics.id, topicId))
+        .for("update");
+      if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
+      await tx.insert(forumTopicPins)
+        .values({ topicId, pinnedByUserId })
+        .onConflictDoNothing({ target: forumTopicPins.topicId });
+    });
+  }
+
+  async unpinTopic(topicId: string): Promise<void> {
+    await this.database.transaction(async (tx) => {
+      const [topic] = await tx.select({ id: forumTopics.id })
+        .from(forumTopics)
+        .where(eq(forumTopics.id, topicId))
+        .for("update");
+      if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
+      await tx.delete(forumTopicPins).where(eq(forumTopicPins.topicId, topicId));
+    });
+  }
+
   async readCategory(id: string): Promise<ForumCategoryPage | undefined> {
     const rows = await this.database
       .select({
@@ -1010,8 +1124,9 @@ export class DrizzleForumRepository {
       ))
       .innerJoin(user, eq(user.id, forumTopics.authorId))
       .leftJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
+      .leftJoin(forumTopicPins, eq(forumTopicPins.topicId, forumTopics.id))
       .where(eq(forumTopics.sectionId, id))
-      .groupBy(forumTopics.id, forumTopicTitleRevisions.id, user.name)
+      .groupBy(forumTopics.id, forumTopicTitleRevisions.id, user.name, forumTopicPins.topicId)
       .orderBy(asc(forumTopics.createdAt), asc(forumTopics.id));
     const tagsByTopic = await this.readTagsForTopics(topics.map((topic) => topic.id));
     return {
@@ -1024,6 +1139,7 @@ export class DrizzleForumRepository {
         authorName: topic.authorName,
         postCount: topic.postCount,
         createdAt: topic.createdAt,
+        isPinned: topic.isPinned,
         tags: tagsByTopic.get(topic.id) ?? [],
       })),
     };
@@ -1037,6 +1153,7 @@ export class DrizzleForumRepository {
         authorName: user.name, createdAt: forumTopics.createdAt, revisionId: forumTopicTitleRevisions.id,
         originalContent: forumTopicTitleRevisions.originalContent, sourceLocale: forumTopicTitleRevisions.sourceLocale,
         isSolved: forumTopics.isSolved, bestAnswerPostId: forumTopics.bestAnswerPostId,
+        isPinned: sql<boolean>`${forumTopicPins.topicId} is not null`,
       })
       .from(forumTopics)
       .innerJoin(forumSections, eq(forumSections.id, forumTopics.sectionId))
@@ -1046,6 +1163,7 @@ export class DrizzleForumRepository {
         eq(forumTopicTitleRevisions.topicId, forumTopics.id),
         eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId),
       ))
+      .leftJoin(forumTopicPins, eq(forumTopicPins.topicId, forumTopics.id))
       .where(eq(forumTopics.id, id));
     if (!topic) return undefined;
     const tags = await this.readTagsForTopics([id]);
@@ -1067,6 +1185,7 @@ export class DrizzleForumRepository {
     return {
       id: topic.id, sectionId: topic.sectionId, authorId: topic.authorId, authorName: topic.authorName,
       isSolved: topic.isSolved, bestAnswerPostId: topic.bestAnswerPostId,
+      isPinned: topic.isPinned,
       createdAt: topic.createdAt,
       title: { id: topic.revisionId, originalContent: topic.originalContent, sourceLocale: topic.sourceLocale },
       section: { id: topic.sectionId, name: topic.sectionName, category: { id: topic.categoryId, name: topic.categoryName } },
