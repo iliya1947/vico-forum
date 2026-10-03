@@ -881,6 +881,7 @@ function MessageCardLayoutDemo() {
               <strong>Sam Chen</strong>
               <small>Best answer</small>
             </span>
+            <a className="message-action-parent-link" href="#demo-hybrid-parent">↳ Reply to #1</a>
             <div className="message-action-header-control">
               <button
                 type="button"
@@ -900,13 +901,12 @@ function MessageCardLayoutDemo() {
             </div>
           </header>
           <div className="message-layout-demo-body">
-            <a href="#demo-hybrid-parent">↳ Reply to #1</a>
             <DemoMessageBody />
           </div>
           <footer className="message-action-hybrid-footer">
             <nav aria-label="Direct replies">
-              <span>Replies</span>
               <span className="message-current-number">#3</span>
+              <span>Replies</span>
               <a href="#demo-hybrid-r4">#4</a>
               <a href="#demo-hybrid-r5">#5</a>
             </nav>
@@ -924,6 +924,7 @@ function MessageCardLayoutDemo() {
               <strong>Sam Chen</strong>
               <small>Best answer</small>
             </span>
+            <a className="message-action-parent-link" href="#demo-collapsible-parent">↳ Reply to #1</a>
             <div className="message-action-header-control">
               <button
                 type="button"
@@ -945,13 +946,12 @@ function MessageCardLayoutDemo() {
             </div>
           </header>
           <div className="message-layout-demo-body">
-            <a href="#demo-collapsible-parent">↳ Reply to #1</a>
             <DemoMessageBody />
           </div>
           <footer className="message-action-collapsible-footer">
             <nav aria-label="Direct replies">
-              <span>Replies</span>
               <span className="message-current-number">#3</span>
+              <span>Replies</span>
               <a href="#demo-collapsible-r4">#4</a>
               <a href="#demo-collapsible-r5">#5</a>
             </nav>
