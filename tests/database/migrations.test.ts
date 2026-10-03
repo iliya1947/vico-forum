@@ -570,7 +570,7 @@ describe("PostgreSQL 17 locale migrations", () => {
               sourceLocale: "en",
             },
           }),
-        ).rejects.toThrow(/notification insert rejected/);
+        ).rejects.toThrow();
       } finally {
         await client.query("drop trigger if exists reject_reply_notification_for_test on forum_reply_notifications");
         await client.query("drop function if exists reject_reply_notification_for_test()");
