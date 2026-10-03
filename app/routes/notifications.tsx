@@ -20,9 +20,14 @@ export async function loader({ params, context }: {
   if (!session) throw new Response("Unauthorized", { status: 401 });
 
   try {
+    const notifications = await forumReaderForRequest(context).readReplyNotifications(session.user.id);
     return {
       locale: params.locale ?? "en",
-      notifications: await forumReaderForRequest(context).readReplyNotifications(session.user.id),
+      notifications: notifications.map((notification) => ({
+        ...notification,
+        createdAt: notification.createdAt.toISOString(),
+        readAt: notification.readAt?.toISOString() ?? null,
+      })),
     };
   } catch (error) {
     if (error instanceof ForumStorageUnavailableError) {
