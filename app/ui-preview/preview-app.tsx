@@ -877,8 +877,10 @@ function MessageCardLayoutDemo() {
         <article className="message-layout-card message-layout-card-flat message-action-demo-card">
           <header className="message-layout-flat-header">
             <span className="message-layout-demo-avatar">S</span>
-            <strong>Sam Chen</strong>
-            <small>Best answer</small>
+            <span className="message-action-demo-author-copy">
+              <strong>Sam Chen</strong>
+              <small>Best answer</small>
+            </span>
             <span className="message-layout-flat-number">#3</span>
           </header>
           <div className="message-layout-demo-body">
@@ -918,8 +920,10 @@ function MessageCardLayoutDemo() {
         <article className="message-layout-card message-layout-card-flat message-action-demo-card">
           <header className="message-layout-flat-header">
             <span className="message-layout-demo-avatar">S</span>
-            <strong>Sam Chen</strong>
-            <small>Best answer</small>
+            <span className="message-action-demo-author-copy">
+              <strong>Sam Chen</strong>
+              <small>Best answer</small>
+            </span>
             <span className="message-layout-flat-number">#3</span>
           </header>
           <div className="message-layout-demo-body">
