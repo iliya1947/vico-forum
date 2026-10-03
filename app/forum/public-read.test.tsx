@@ -95,6 +95,8 @@ const reader: ForumReader = {
     section: topic.section,
     category: topic.section.category,
   }],
+  readUnreadTopics: async () => [],
+  readTopicReadState: async () => undefined,
   readTags: async () => [{ key: "typescript", name: "TypeScript", topicCount: 1 }],
   readTag: async (key) => key === "typescript" ? {
     tag: { key: "typescript", name: "TypeScript" },
