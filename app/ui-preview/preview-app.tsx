@@ -238,6 +238,7 @@ const sectionRtl = {
       authorName: "אלכס ריברה",
       postCount: 3,
       createdAt: new Date("2026-09-27T10:00:00Z"),
+      isPinned: true,
       tags: [{ key: "typescript", name: "TypeScript" }, { key: "api", name: "API" }],
       title: {
         id: "title-r1",
@@ -250,6 +251,7 @@ const sectionRtl = {
       authorName: "נועה לוי",
       postCount: 4,
       createdAt: new Date("2026-09-27T12:00:00Z"),
+      isPinned: false,
       tags: [{ key: "typescript", name: "TypeScript" }, { key: "rtl", name: "RTL" }],
       title: {
         id: "title-r2",
@@ -262,6 +264,7 @@ const sectionRtl = {
       authorName: "סם צ'ן",
       postCount: 12,
       createdAt: new Date("2026-09-28T08:00:00Z"),
+      isPinned: true,
       tags: [{ key: "cloudflare", name: "Cloudflare" }, { key: "auth", name: "Auth" }],
       title: {
         id: "title-r3",
