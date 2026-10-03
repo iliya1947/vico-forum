@@ -35,6 +35,7 @@ const session = {
 const allForumPermissions = [
   "forum.topic.create",
   "forum.reply.create",
+  "forum.topic.pin",
   "forum.solution.manageOwn",
   "forum.solution.manageAny",
   "forum.sourceLocale.correctOwn",
@@ -162,10 +163,60 @@ function writer() {
     correctPostBodySourceLocale: vi.fn(async () => undefined),
     advanceTopicReadState: vi.fn(async () => undefined),
     markReplyNotificationRead: vi.fn(async () => ({ topicId: "topic-1", postId: "post-1" })),
+    pinTopic: vi.fn(async () => undefined),
+    unpinTopic: vi.fn(async () => undefined),
   } satisfies ForumWriter;
 }
 
 describe("forum write route actions", () => {
+  it("pins and unpins only with the effective server permission", async () => {
+    const allowed = writer();
+    const pinResponse = await topicAction({
+      request: request("/ru/topics/t", { intent: "pinTopic", actorId: "forged" }),
+      params: { locale: "ru", topicId: "t" },
+      context: context(allowed, true, ["forum.topic.pin"]),
+    });
+    expect(allowed.pinTopic).toHaveBeenCalledWith({ topicId: "t", actorId: "session-user" });
+    if (!(pinResponse instanceof Response)) throw new Error("expected pin redirect");
+    expect(pinResponse.headers.get("Location")).toBe("/ru/topics/t");
+
+    const unpinResponse = await topicAction({
+      request: request("/he/topics/t", { intent: "unpinTopic" }),
+      params: { locale: "he", topicId: "t" },
+      context: context(allowed, true, ["forum.topic.pin"]),
+    });
+    expect(allowed.unpinTopic).toHaveBeenCalledWith({ topicId: "t", actorId: "session-user" });
+    if (!(unpinResponse instanceof Response)) throw new Error("expected unpin redirect");
+    expect(unpinResponse.headers.get("Location")).toBe("/he/topics/t");
+
+    const denied = writer();
+    const deniedResponse = await topicAction({
+      request: request("/en/topics/t", { intent: "pinTopic" }),
+      params: { locale: "en", topicId: "t" },
+      context: context(denied, true, ["forum.reply.create"]),
+    });
+    expect(deniedResponse).toMatchObject({ data: { error: "forbidden" }, init: { status: 403 } });
+    expect(denied.pinTopic).not.toHaveBeenCalled();
+
+    const guest = writer();
+    const guestResponse = await topicAction({
+      request: request("/en/topics/t", { intent: "pinTopic" }),
+      params: { locale: "en", topicId: "t" },
+      context: context(guest, false, ["forum.topic.pin"]),
+    });
+    expect(guestResponse).toMatchObject({ init: { status: 401 } });
+    expect(guest.pinTopic).not.toHaveBeenCalled();
+
+    const crossOrigin = writer();
+    const originResponse = await topicAction({
+      request: request("/en/topics/t", { intent: "pinTopic" }, "https://evil.example"),
+      params: { locale: "en", topicId: "t" },
+      context: context(crossOrigin, true, ["forum.topic.pin"]),
+    });
+    expect(originResponse).toMatchObject({ init: { status: 403 } });
+    expect(crossOrigin.pinTopic).not.toHaveBeenCalled();
+  });
+
   it("advances only the authenticated user's topic read state", async () => {
     const forumWriter = writer();
     await topicAction({
