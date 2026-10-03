@@ -642,56 +642,67 @@ export class DrizzleForumRepository {
   }
 
   async markTopicReadThrough(userId: string, topicId: string, postId: string): Promise<string> {
-    const result = await this.database.execute<{
-      target_exists: boolean;
-      last_read_post_id: string | null;
-    }>(sql`
-      with target as (
-        select id, topic_id
-        from forum_posts
-        where topic_id = ${topicId}
-          and id = ${postId}
-      ),
-      upsert as (
-        insert into forum_topic_read_states (user_id, topic_id, last_read_post_id)
-        select ${userId}, target.topic_id, target.id
-        from target
-        on conflict (user_id, topic_id) do update
-          set last_read_post_id = excluded.last_read_post_id
-          where exists (
-            select 1
-            from forum_posts current_post
-            inner join forum_posts candidate_post
-              on candidate_post.topic_id = excluded.topic_id
-             and candidate_post.id = excluded.last_read_post_id
-            where current_post.topic_id = forum_topic_read_states.topic_id
-              and current_post.id = forum_topic_read_states.last_read_post_id
-              and (candidate_post.created_at, candidate_post.id)
-                  > (current_post.created_at, current_post.id)
-          )
-        returning last_read_post_id
-      )
-      select
-        exists(select 1 from target) as target_exists,
-        coalesce(
-          (select last_read_post_id from upsert),
-          (
-            select state.last_read_post_id
-            from forum_topic_read_states state
-            where state.user_id = ${userId}
-              and state.topic_id = ${topicId}
-          )
-        ) as last_read_post_id
-    `);
+    return this.database.transaction(async (tx) => {
+      const [reader] = await tx
+        .select({ id: user.id })
+        .from(user)
+        .where(eq(user.id, userId))
+        .for("update");
+      if (!reader) {
+        throw new ForumEntityNotFoundError("user does not exist");
+      }
 
-    const row = result.rows[0];
-    if (!row?.target_exists) {
-      throw new ForumEntityNotFoundError("post does not exist in topic");
-    }
-    if (!row.last_read_post_id) {
-      throw new ForumStateConflictError("read marker was not persisted");
-    }
-    return row.last_read_post_id;
+      const result = await tx.execute<{
+        target_exists: boolean;
+        last_read_post_id: string | null;
+      }>(sql`
+        with target as (
+          select id, topic_id
+          from forum_posts
+          where topic_id = ${topicId}
+            and id = ${postId}
+        ),
+        upsert as (
+          insert into forum_topic_read_states (user_id, topic_id, last_read_post_id)
+          select ${userId}, target.topic_id, target.id
+          from target
+          on conflict (user_id, topic_id) do update
+            set last_read_post_id = excluded.last_read_post_id
+            where exists (
+              select 1
+              from forum_posts current_post
+              inner join forum_posts candidate_post
+                on candidate_post.topic_id = excluded.topic_id
+               and candidate_post.id = excluded.last_read_post_id
+              where current_post.topic_id = forum_topic_read_states.topic_id
+                and current_post.id = forum_topic_read_states.last_read_post_id
+                and (candidate_post.created_at, candidate_post.id)
+                    > (current_post.created_at, current_post.id)
+            )
+          returning last_read_post_id
+        )
+        select
+          exists(select 1 from target) as target_exists,
+          coalesce(
+            (select last_read_post_id from upsert),
+            (
+              select state.last_read_post_id
+              from forum_topic_read_states state
+              where state.user_id = ${userId}
+                and state.topic_id = ${topicId}
+            )
+          ) as last_read_post_id
+      `);
+
+      const row = result.rows[0];
+      if (!row?.target_exists) {
+        throw new ForumEntityNotFoundError("post does not exist in topic");
+      }
+      if (!row.last_read_post_id) {
+        throw new ForumStateConflictError("read marker was not persisted");
+      }
+      return row.last_read_post_id;
+    });
   }
 
   async readUnanswered(): Promise<ForumUnansweredTopicSummary[]> {
