@@ -765,11 +765,15 @@ export function SectionView({
   section,
   canCreateTopic,
   actionData,
+  createTopicBodyDefaultValue = "",
+  createTopicPreviewOpen = false,
 }: {
   locale: string;
   section: ForumSectionPage;
   canCreateTopic: boolean;
   actionData?: ForumMutationError;
+  createTopicBodyDefaultValue?: string;
+  createTopicPreviewOpen?: boolean;
 }) {
   const { t } = useTranslation("common");
   const navigation = useNavigation();
@@ -911,6 +915,8 @@ export function SectionView({
                 rows={8}
                 disabled={isCreateTopicSubmitting}
                 describedBy="create-topic-body-help"
+                defaultValue={createTopicBodyDefaultValue}
+                defaultPreviewOpen={createTopicPreviewOpen}
               />
               <small id="create-topic-body-help">{t("messageBodyHelp")}</small>
             </div>
@@ -985,6 +991,9 @@ export function TopicView({
   canCorrectTitleSourceLocale,
   correctablePostIds,
   actionData,
+  initialReplyTargetPostId = null,
+  replyBodyDefaultValue = "",
+  replyPreviewOpen = false,
 }: {
   locale: string;
   topic: ForumTopicPage;
@@ -996,6 +1005,9 @@ export function TopicView({
   canCorrectTitleSourceLocale: boolean;
   correctablePostIds: readonly string[];
   actionData?: TopicViewActionData;
+  initialReplyTargetPostId?: string | null;
+  replyBodyDefaultValue?: string;
+  replyPreviewOpen?: boolean;
 }) {
   const correctablePosts = new Set(correctablePostIds);
   const generationByContentId = new Map(generationUnits.map((unit) => [unit.contentId, unit]));
@@ -1030,7 +1042,7 @@ export function TopicView({
   }
   const { t } = useTranslation("common");
   const [messageLinkFeedback, setMessageLinkFeedback] = useState<MessageLinkFeedback>(null);
-  const [replyTargetPostId, setReplyTargetPostId] = useState<string | null>(null);
+  const [replyTargetPostId, setReplyTargetPostId] = useState<string | null>(initialReplyTargetPostId);
   const [quoteSelectionErrorPostId, setQuoteSelectionErrorPostId] = useState<string | null>(null);
   const [openMessageActionsPostId, setOpenMessageActionsPostId] = useState<string | null>(null);
   const messageLinkRequestId = useRef(0);
@@ -1470,6 +1482,8 @@ export function TopicView({
                   rows={8}
                   disabled={isReplySubmitting}
                   describedBy="reply-body-help"
+                  defaultValue={replyBodyDefaultValue}
+                  defaultPreviewOpen={replyPreviewOpen}
                 />
                 <small id="reply-body-help">{t("messageBodyHelp")}</small>
               </div>
