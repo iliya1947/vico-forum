@@ -1124,10 +1124,15 @@ export function TopicView({
 
         <section className="topic-heading">
           <div className="topic-heading-side">
-            <p className="eyebrow">{t("topicLabel")}</p>
-            <div className="topic-heading-meta">
-              <span>{t("startedBy", { author: topic.authorName })}</span>
+            <div className="topic-heading-author">
+              <span className="topic-message-avatar" aria-hidden="true">
+                {topic.authorName.trim().slice(0, 1).toUpperCase()}
+              </span>
+              <span className="topic-message-author-copy">
+                <strong>{topic.authorName}</strong>
+              </span>
             </div>
+            {topic.isSolved && <strong className="solved-badge">{t("solved")}</strong>}
           </div>
 
           <div className="topic-heading-content">
@@ -1148,7 +1153,6 @@ export function TopicView({
             </div>
 
             <div className="topic-heading-actions">
-              {topic.isSolved && <strong className="solved-badge">{t("solved")}</strong>}
               {topic.bestAnswerPostId && (
                 <a className="topic-solution-link" href={`#post-${encodeURIComponent(topic.bestAnswerPostId)}`}>
                   {t("goToSolution")}
@@ -1332,7 +1336,7 @@ export function TopicView({
                             className="topic-message-parent-link"
                             href={`#post-${encodeURIComponent(post.parentPostId!)}`}
                           >
-                            {t("replyToMessageNumber", { number: parentMessageNumber })}
+                            {t("replyToMessageNumberCompact", { number: parentMessageNumber })}
                           </a>
                         )}
                         <a
