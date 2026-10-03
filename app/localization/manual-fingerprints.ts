@@ -179,6 +179,7 @@ export const reviewedCommonFingerprints = {
   automaticTranslation: "328aee58a00577f0eca2c2242dd759fc36d34c21e742fa3c304d5ff1bc2781ab",
   manualTranslation: "b6129ebb0f837131585832111ee62f85c3881d0d3113bc035a2ce6cbdcd56d5e",
   showOriginal: "e1734b62d045fa66a74aeee5d2bfad7143e0a336cb2542ac0ff9c1b6fba7e6ea",
+  hideOriginal: "9fea8e9f69a036bdad1d1af296a43c0a098696ec4bc089a52f536ad5b06753b3",
   showTranslation: "0444ae2c987613a8e908a2c059008eb3ddf3ab17cb8fe99c379ef206eef28865",
   translationRequesting: "b970e1ab74a80e170e4fe690850c43725a0d3c8e749541791d323a8a057dc962",
   translationPending: "ee483f717f30ceaa8dcf7996a8b96618e61a8a2a904c07022a3ad20c5f1d6e6a",
