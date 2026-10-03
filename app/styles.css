@@ -2806,7 +2806,7 @@ p {
 
 .unanswered-topic-card {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(17rem, 24rem) 14rem 2.9rem;
+  grid-template-columns: minmax(0, 1fr) 17rem 10.5rem 2.9rem;
   align-items: stretch;
   min-height: 4.35rem;
   overflow: hidden;
