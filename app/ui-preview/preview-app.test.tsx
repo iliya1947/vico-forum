@@ -25,6 +25,6 @@ describe("embedded preview routing", () => {
     await userEvent.click(await screen.findByRole("link", { name: "Open Development" }));
 
     expect(await screen.findByRole("heading", { level: 1, name: "Development" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "TypeScript & architecture" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /TypeScript & architecture/ })).toBeInTheDocument();
   });
 });
