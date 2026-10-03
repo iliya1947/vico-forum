@@ -743,6 +743,10 @@ function previewRouter(scenario: Scenario) {
       element: <UnansweredView locale={scenario.locale} topics={unansweredTopics(scenario.locale)} />,
     },
     {
+      path: "/:locale/unread",
+      element: <UnreadView locale={scenario.locale} topics={unreadTopics(scenario.locale)} />,
+    },
+    {
       path: "/:locale/tags",
       element: <TagsView locale={scenario.locale} tags={previewTags()} />,
     },
