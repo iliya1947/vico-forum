@@ -1052,7 +1052,6 @@ function topicTitlePresentation(rtl: boolean): ContentTranslationPresentation {
         origin: "machine",
         provider: "preview",
         model: "representative",
-        attribution: "Representative preview data",
       },
     };
   }
