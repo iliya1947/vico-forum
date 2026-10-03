@@ -123,7 +123,7 @@ export function PostBodyTranslationControls({
           )}
           <span className="topic-message-translation-toggle">
             <span className="translation-show-original">{t("showOriginal")}</span>
-            <span className="translation-show-translation">{t("showTranslation")}</span>
+            <span className="translation-hide-original">{t("hideOriginal")}</span>
           </span>
         </span>
       </summary>
