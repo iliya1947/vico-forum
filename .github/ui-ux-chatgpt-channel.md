@@ -93,3 +93,57 @@ Acceptance должна подтверждать, что существующи�
 - Последняя owner browser-проверка navigation chain прошла.
 - Текущий `PROJECT_STATE.md` после merge не задаёт следующую bounded product subtask после Reply/Quote/navigation cleanup: remaining heavy approved functions остаются отдельными задачами.
 - Нужен следующий Codex handoff с выбранной bounded UI/UX product subtask и её критериями готовности; Stage 6 infrastructure остаётся на паузе.
+
+
+## Markdown editor + code presentation — implementation handoff — 2026-10-03
+
+Codex handoff из PR #153 выполнен отдельным mergeable PR #176 от exact `main`
+`22fae444da2f31bfaeb8857d68835319fcfb320a`.
+
+### Реализовано
+
+- Shared client-safe `MarkdownEditor` подключён к существующим create-topic и reply body forms без
+  изменения их server contracts: field name `body`, existing `intent` / `title` / `tags` /
+  `parentPostId`, обычный React Router submit и pending/disabled semantics сохранены.
+- Selection-aware controls: Bold, Italic, Inline code и fenced Code block; fenced code принимает
+  optional bounded language identifier. После transform selection/caret и focus восстанавливаются.
+- Existing Reply/Quote flow сохранён: Reply target остаётся в `parentPostId`; Quote по-прежнему
+  принимает только реально выделенный текст из concrete message body, вставляет Markdown blockquote
+  в текущую selection/caret editor и возвращает focus в reply body.
+- Editor preview использует ровно существующий safe `ForumMarkdown` renderer; отдельного parser,
+  raw-HTML path или WYSIWYG слоя не добавлено.
+- Fenced/indented rendered code получил language label, Copy code с localized success/failure,
+  Wrap/No wrap, explicit LTR isolation внутри RTL page и client-safe dependency-free syntax token
+  presentation для reviewed common language identifiers. Existing no-images/raw-HTML/unsafe-link
+  renderer policy сохранён. Новых dependencies нет.
+- Canonical English catalog и complete RU/HE manual packs расширены editor/code strings; fixed
+  reviewed fingerprint manifest обновлён.
+- Pages fixture дополнен states `Markdown editor · create topic · user` и
+  `Markdown editor · reply + quote · user`; create-topic state содержит inline/fenced TypeScript,
+  preview и длинную code line, reply state — active parent target, inserted Markdown quote и preview.
+  Existing locale switch и Desktop/Mobile viewport позволяют проверять LTR/RTL и responsive surface.
+- `PROJECT_STATE.md` и `docs/UI_UX_PASS.md` узко обновлены фактическим implementation state.
+  `editor` пока намеренно остаётся в shared `Under development` checklist: по handoff он должен
+  удаляться только после genuine completion; independent Codex/browser acceptance ещё не выполнены.
+  Drafts/autosave, attachments/images, WYSIWYG, edit-existing, notifications/unread/profiles/
+  registration/pinning/online-presence и Stage 6 не затронуты.
+
+### Проверки
+
+Exact implementation head: `ecd36d5041d72b44f85e43fa9ea4e96f7f036af5`.
+
+- PR #176 CI run `37119899449`: `database` success, `checks` success; lint/typecheck/tests/build,
+  migration/DB contracts, Workers smoke и UI preview build завершились успешно.
+- Regression coverage включает selection transforms, caret/focus restoration, exact submitted body,
+  imperative quote insertion, safe Markdown preview, code syntax spans, clipboard success/failure,
+  wrap/no-wrap, LTR code in RTL, existing protected-Markdown renderer assertions и representative
+  preview states.
+- GitHub Pages run `37119986749`: build success, deploy success для exact implementation head.
+- Реальный browser visual acceptance я не утверждаю: в текущем tool surface нет interactive browser
+  session. Pages deployment подготовлен для независимого Codex/owner browser review.
+
+### Следующее действие
+
+Codex должен полностью проверить PR #176 против своего handoff и актуального `main`, включая
+Pages browser review/remaining acceptance. До результата Codex review merge и дальнейший slice не
+начинаются.
