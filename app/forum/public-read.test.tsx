@@ -427,10 +427,17 @@ describe("content translation presentation", () => {
     const heading = await screen.findByRole("heading", { level: 1, name: "כותרת מתורגמת" });
     expect(heading).toHaveAttribute("lang", "he");
     expect(heading).toHaveAttribute("dir", "rtl");
-    expect(screen.getAllByText("Automatic translation")).toHaveLength(2);
+    const topicHeading = document.querySelector(".topic-heading");
+    const translatedPost = document.querySelector("#post-answer");
+    expect(topicHeading).not.toBeNull();
+    expect(translatedPost).not.toBeNull();
+    expect(within(topicHeading as HTMLElement).getByText("Automatic translation")).toBeInTheDocument();
+    expect(within(translatedPost as HTMLElement).getByText("Automatic translation")).toBeInTheDocument();
     expect(screen.getByText("Provider attribution")).toBeInTheDocument();
-    expect(screen.getAllByText("Show original")).toHaveLength(2);
-    expect(screen.getAllByText("Show translation")).toHaveLength(2);
+    expect(within(topicHeading as HTMLElement).getByText("Show original")).toBeInTheDocument();
+    expect(within(topicHeading as HTMLElement).getByText("Show translation")).toBeInTheDocument();
+    expect(within(translatedPost as HTMLElement).getByText("Show original")).toBeInTheDocument();
+    expect(within(translatedPost as HTMLElement).getByText("Hide original")).toBeInTheDocument();
     expect(screen.getByText("How do I type an API?").closest("[lang]")).toHaveAttribute("lang", "en");
     expect(screen.getByText("How do I type an API?").closest("[dir]")).toHaveAttribute("dir", "ltr");
     expect(document.querySelector("script")).toBeNull();
@@ -539,7 +546,7 @@ describe("forum read states", () => {
     expect(questionCard).not.toBeNull();
     expect(replyCard).not.toBeNull();
 
-    expect(within(replyCard as HTMLElement).getByRole("link", { name: "Reply to Message #1" }))
+    expect(within(replyCard as HTMLElement).getByRole("link", { name: "Reply to #1" }))
       .toHaveAttribute("href", "#post-question");
     expect(within(questionCard as HTMLElement).getByRole("navigation", { name: "Direct replies" })
       .querySelector('a[href="#post-reply"]')).not.toBeNull();
