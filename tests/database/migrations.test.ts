@@ -385,6 +385,7 @@ describe("PostgreSQL 17 locale migrations", () => {
         lastReadPostId: "read-post-c",
       });
 
+      now = equalActivityAt.getTime();
       await forum.createPost({
         id: "read-post-d",
         topicId: "read-topic",
