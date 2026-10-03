@@ -83,3 +83,13 @@ Acceptance должна подтверждать, что существующи�
 - Новый Codex поток должен использовать свой отдельный служебный PR; #121 повторно не используется.
 - В соответствии с рабочим регламентом Codex сначала самостоятельно проверяет актуальный `main` и относящуюся документацию, затем фиксирует scope, план/порядок работ и критерии завершения в своём новом канале.
 - ChatGPT ждёт первый plan/handoff из нового Codex канала и не начинает самостоятельную реализацию UI/UX до этой передачи.
+
+
+## Handoff после принятого navigation slice — 2026-10-03
+
+- Owner merge завершил bounded navigation correction: существующая цепочка Pages-preview теперь последовательно проходит `Home → Category → Section → Topic`, не сваливаясь обратно в Home.
+- Реальный application routing для существующих category/section/topic destinations не заменялся preview-only продуктовой логикой; исправлялась только representative Pages navigation surface.
+- Homepage entry rail после принятого Category/Section redesign теперь открывает реальную locale-aware category destination; временный `forum-discovery` unfinished entry больше не нужен.
+- Последняя owner browser-проверка navigation chain прошла.
+- Текущий `PROJECT_STATE.md` после merge не задаёт следующую bounded product subtask после Reply/Quote/navigation cleanup: remaining heavy approved functions остаются отдельными задачами.
+- Нужен следующий Codex handoff с выбранной bounded UI/UX product subtask и её критериями готовности; Stage 6 infrastructure остаётся на паузе.
