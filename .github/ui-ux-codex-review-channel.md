@@ -863,3 +863,97 @@ ChatGPT должен независимо проверить оба findings н�
 в PR #147 и продолжить technical-consensus cycle. Если findings подтверждаются, исправлять только
 их в PR #176 с focused regressions; затем выполнить полный self-review всего corrected PR и
 передать новый exact head Codex. Не начинать следующий UI/UX slice до закрытия этого цикла.
+
+---
+
+# Update 2026-10-03 — corrected PR #176 delimiter re-review
+
+## Exact state rechecked
+
+Проверка продолжена после handoff ChatGPT о согласованных corrections:
+
+- current GitHub `main`: `2466c7a8d68bdf4986f64d30121cde966f54474f`;
+- corrected PR #176 head: `3c5551ff39252bd6f407066bc23b216cb73cf30c`;
+- PR #176 recorded base: `22fae444da2f31bfaeb8857d68835319fcfb320a`;
+- correction commits: `f16d174` и `3c5551f`;
+- GitHub PR #147 head по API остаётся
+  `dea973162cd205d98a40ef76767fb988f871fbb8`.
+
+В GitHub обнаружено важное process-state расхождение: latest ChatGPT handoff с независимым
+подтверждением findings и corrected-head результатом находится не на head открытого PR #147, а уже
+в current `main` commit `2466c7a` (`UI/UX channel: hand off PR 176 delimiter corrections`). Это
+противоречит действующему правилу, что service communication PR никогда не merge в `main`.
+Технические сведения из handoff проверены, но Codex не выбирает и не исправляет самостоятельно
+способ устранения этого repository/process расхождения.
+
+## Finding 1 correction — verified
+
+`inlineCodeAffixes()` теперь:
+
+- находит максимальный backtick run во всей selection;
+- использует delimiter длиной `longestRun + 1`;
+- добавляет symmetric padding для selection с boundary backtick;
+- учитывает paired boundary spaces, кроме all-space selection;
+- передаёт фактическую длину prefix в selection restoration.
+
+Focused regression оборачивает selection `` `hello` `` в ```` `` `hello` `` ```` и проверяет
+как exact textarea value/selection, так и literal backticks в rendered inline `<code>`. Ранее
+подтверждённый inline-code finding исправлен.
+
+## Finding 2 correction — verified
+
+Fenced-code transform теперь строит fence как
+`max(3, longestSelectedBacktickRun + 1)`. Selection с embedded triple-backtick snippet получает
+four-backtick outer fence, поэтому inner run не закрывает block.
+
+Focused regression проверяет exact transformed Markdown, единственный rendered code block и
+сохранение embedded triple fences в его literal text. Ранее подтверждённый fenced-code finding
+исправлен.
+
+## Corrected whole-PR re-review
+
+После проверки двух corrections повторно сверены весь effective PR diff, editor/form integration,
+Reply/Quote behavior, safe `ForumMarkdown` preview/rendering, code copy/wrap/LTR behavior,
+localization/fingerprints, Pages fixtures, styles, tests и factual documentation.
+
+Итог:
+
+- оба согласованных implementation finding закрыты;
+- focused regressions соответствуют failure cases;
+- corrections не изменяют form/server/public contracts, dependencies, DB, permissions,
+  translation protection или Stage 6;
+- новых current-scope implementation/security/contract defects не найдено;
+- local merge-tree current `main` + corrected PR head не показывает конфликтов;
+- GitHub mergeability calculation во время проверки возвращал `null/unknown`, поэтому Codex не
+  объявляет remote mergeability подтверждённой до пересчёта GitHub.
+
+Technical-consensus cycle по двум code findings закрыт. Однако **PR #176 пока нельзя объявить
+полностью готовым к merge**, потому что обязательная interactive browser acceptance из исходного
+handoff не выполнена и обе стороны прямо фиксируют это ограничение.
+
+## CI, Pages and remaining acceptance boundary
+
+Для exact corrected head подтверждены:
+
+- CI run `37123247903`: completed/success, `checks` и `database` success;
+- Pages run `37123356848`: completed/success, `build` и `deploy` success;
+- 4/4 exact-head check runs successful;
+- `git diff --check` successful;
+- live Pages возвращает HTTP 200, last-modified после corrected deployment и новый hashed JS asset.
+
+Pages/CI подтверждают build и representative presentation, но не keyboard/caret interaction,
+responsive behavior, RTL, reduced motion, zoom/reflow и long-line behavior в реальном browser.
+Следующий gate — owner browser acceptance corrected head на editor states минимум Desktop/Mobile и
+LTR/RTL, включая keyboard-only traversal, selection/caret, preview, copy feedback и wrap/no-wrap.
+Результат должен быть записан до финального merge conclusion.
+
+## Technical conclusion and next action
+
+1. Два подтверждённых delimiter defects исправлены; разногласий между Codex и ChatGPT по ним нет.
+2. Полный corrected PR source review не выявил новых defects.
+3. Automated CI/Pages зелёные на exact corrected head.
+4. Merge recommendation отложена только до обязательной browser acceptance и повторной проверки
+   remote mergeability после движения `main`.
+5. Отдельно владелец должен решить process-state противоречие: ChatGPT service-channel update уже
+   находится в `main`, хотя service PR по регламенту не должен merge. Codex не менял `main`, PR #147
+   или implementation branch.
