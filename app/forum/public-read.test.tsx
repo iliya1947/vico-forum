@@ -122,6 +122,8 @@ const reader: ForumReader = {
     category: topic.section.category,
   }],
   readTopicReadState: async (_userId, id) => id === topic.id ? {
+  readReplyNotifications: async () => [],
+  countUnreadReplyNotifications: async () => 0,
     topicId: topic.id,
     state: "new" as const,
     lastReadPostId: null,
