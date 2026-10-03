@@ -1,5 +1,4 @@
 export const UNDER_DEVELOPMENT_FEATURES = [
-  { id: "notifications", labelKey: "underDevelopmentFeatureNotifications" },
   { id: "registration", labelKey: "underDevelopmentFeatureRegistration" },
   { id: "pinned-topics", labelKey: "underDevelopmentFeaturePinnedTopics" },
   { id: "drafts", labelKey: "underDevelopmentFeatureDrafts" },
