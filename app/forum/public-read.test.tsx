@@ -677,7 +677,7 @@ describe("forum read states", () => {
     ]);
   });
 
-  it("keeps best-answer, body, and solution controls inside one post content region", async () => {
+  it("keeps message metadata in the author column while body and solution controls stay in post content", async () => {
     const followup = {
       ...topic.posts[0]!,
       id: "followup",
@@ -712,7 +712,8 @@ describe("forum read states", () => {
     expect(bestPost!.children).toHaveLength(2);
     expect(bestHeader?.tagName).toBe("HEADER");
     expect(bestContent).toHaveClass("forum-post-content");
-    expect(bestContent).toContainElement(bestPost!.querySelector(".best-answer-label"));
+    expect(bestHeader).toContainElement(bestPost!.querySelector(".best-answer-label"));
+    expect(bestHeader).toContainElement(bestPost!.querySelector(".topic-message-anchor"));
     expect(bestContent).toContainElement(bestPost!.querySelector(".post-body"));
     expect(bestHeader).not.toContainElement(bestContent as HTMLElement);
 
@@ -721,6 +722,7 @@ describe("forum read states", () => {
     expect(followupPost!.children).toHaveLength(2);
     expect(followupHeader?.tagName).toBe("HEADER");
     expect(followupContent).toHaveClass("forum-post-content");
+    expect(followupHeader).toContainElement(followupPost!.querySelector(".topic-message-anchor"));
     expect(followupContent).toContainElement(followupPost!.querySelector(".post-body"));
     expect(followupContent).toContainElement(followupPost!.querySelector(".solution-form"));
     const followupTools = followupPost!.querySelector("details.message-secondary-tools");
