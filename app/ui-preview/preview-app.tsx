@@ -859,6 +859,21 @@ function PreviewSectionRoute({ scenario }: { scenario: Scenario }) {
       actionData={scenario.view === "section" && scenario.variant === "section-form-error"
         ? { error: "rateLimited" }
         : undefined}
+      createTopicBodyDefaultValue={scenario.variant === "section-editor"
+        ? `A typed client can keep **domain types** separate from transport details.
+
+Use \`request<T>()\` for the boundary:
+
+\`\`\`ts
+export async function request<T>(path: string): Promise<T> {
+  const response = await fetch(path);
+  return response.json() as Promise<T>;
+}
+\`\`\`
+
+Long line for wrap review: const veryLongIdentifier = "this-is-a-deliberately-long-code-line-for-horizontal-overflow-and-wrap-review";`
+        : ""}
+      createTopicPreviewOpen={scenario.variant === "section-editor"}
     />
   );
 }
@@ -885,6 +900,13 @@ function PreviewTopicRoute({ scenario }: { scenario: Scenario }) {
         actionData={scenario.view === "topic" && scenario.variant === "topic-reply-error"
           ? { error: "rateLimited" }
           : undefined}
+        initialReplyTargetPostId={scenario.variant === "topic-editor" ? "question" : null}
+        replyBodyDefaultValue={scenario.variant === "topic-editor"
+          ? `> I want strong typing without coupling the whole app to one HTTP library.
+
+I would keep the transport adapter small and expose an \`ApiResult<T>\` to the domain.`
+          : ""}
+        replyPreviewOpen={scenario.variant === "topic-editor"}
       />
     );
   }
