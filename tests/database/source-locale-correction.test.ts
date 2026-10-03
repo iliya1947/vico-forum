@@ -100,6 +100,7 @@ beforeAll(async () => {
     "0018_source_locale_correction_permissions.sql",
     "0021_forum_tags.sql",
     "0022_forum_reply_relationships.sql",
+    "0024_forum_reply_notifications.sql",
   ]) {
     const sql = (await readFile(`drizzle/${file}`, "utf8")).replaceAll('"public".', `"${schemaName}".`);
     await client.query(sql);
@@ -109,6 +110,7 @@ beforeAll(async () => {
 beforeEach(async () => {
   await client.query(`
     truncate
+      forum_reply_notifications,
       forum_topic_tags,
       forum_tags,
       forum_topic_title_translations,

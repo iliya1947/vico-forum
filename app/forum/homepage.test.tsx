@@ -220,11 +220,15 @@ describe("homepage target presentation", () => {
 
 describe("under development page", () => {
   it("identifies the requested unfinished function and lists remaining approved work", async () => {
-    renderView(<UnderDevelopmentView locale="en" requestedFeature="notifications" />, "/en/under-development?feature=notifications");
+    renderView(
+      <UnderDevelopmentView locale="en" requestedFeature="pinned-topics" />,
+      "/en/under-development?feature=pinned-topics",
+    );
 
     expect(await screen.findByRole("heading", { level: 1, name: "Under development" })).toBeVisible();
-    expect(screen.getByText("Notifications is not finished yet.")).toBeVisible();
-    expect(screen.getAllByText("Notifications").length).toBeGreaterThan(0);
+    expect(screen.getByText("Pinned-topic management is not finished yet.")).toBeVisible();
+    expect(screen.getAllByText("Pinned-topic management").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Notifications")).not.toBeInTheDocument();
     expect(screen.getByText("Drafts and autosave")).toBeVisible();
     expect(screen.getByRole("link", { name: "Back to the forum" })).toHaveAttribute("href", "/en");
   });

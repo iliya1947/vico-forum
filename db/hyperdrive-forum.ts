@@ -21,6 +21,7 @@ export interface ForumWriter {
   correctTopicTitleSourceLocale(input: { topicId: string; expectedRevisionId: string; sourceLocale: string; actorId: string; scope: SourceLocaleCorrectionScope }): Promise<void>;
   correctPostBodySourceLocale(input: { topicId: string; postId: string; expectedRevisionId: string; sourceLocale: string; actorId: string; scope: SourceLocaleCorrectionScope }): Promise<void>;
   advanceTopicReadState(input: { userId: string; topicId: string; postId: string }): Promise<void>;
+  markReplyNotificationRead(input: { userId: string; notificationId: string }): Promise<{ topicId: string; postId: string }>;
 }
 
 export class ForumStorageUnavailableError extends Error {
@@ -62,6 +63,8 @@ export function createHyperdriveForumReader(
     search: (query, limit) => read((repository) => repository.search(query, limit)),
     readUnreadForUser: (userId) => read((repository) => repository.readUnreadForUser(userId)),
     readTopicReadState: (userId, topicId) => read((repository) => repository.readTopicReadState(userId, topicId)),
+    readReplyNotifications: (userId, limit) => read((repository) => repository.readReplyNotifications(userId, limit)),
+    countUnreadReplyNotifications: (userId) => read((repository) => repository.countUnreadReplyNotifications(userId)),
     readCategory: (id) => read((repository) => repository.readCategory(id)),
     readSection: (id) => read((repository) => repository.readSection(id)),
     readTopicPage: (id) => read((repository) => repository.readTopicPage(id)),
@@ -128,6 +131,9 @@ export function createHyperdriveForumWriter(
     advanceTopicReadState: ({ userId, topicId, postId }) => writeCorrection(async (forum) => {
       await forum.advanceTopicReadState(userId, topicId, postId);
     }),
+    markReplyNotificationRead: ({ userId, notificationId }) => writeCorrection(
+      (forum) => forum.markReplyNotificationRead(userId, notificationId),
+    ),
   };
 }
 

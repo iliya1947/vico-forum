@@ -77,6 +77,8 @@ const reader: ForumReader = {
   search: async () => [],
   readUnreadForUser: async () => [],
   readTopicReadState: async () => undefined,
+  readReplyNotifications: async () => [],
+  countUnreadReplyNotifications: async () => 0,
   readCategory: async () => undefined,
   readSection: async (id) => id === section.id ? section : undefined,
   readTopicPage: async (id) => id === topic.id ? topic : undefined,

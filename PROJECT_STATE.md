@@ -82,6 +82,19 @@ Vico Forum находится в ранней pre-release разработке.
   откатить cursor. Classified read-state storage failure не ломает публичное чтение topic/section,
   тогда как authenticated Unread route возвращает controlled unavailable. External migration/rollout
   для `0023` не выполнялся.
+- In-app reply notifications slice реализован в PR #180:
+  forward migration `0024_forum_reply_notifications` хранит только stable recipient/actor/topic/post
+  references, `createdAt` и nullable `readAt`; unique recipient + reply identity предотвращает
+  дубли одного события, а recipient-scoped indexes обслуживают bounded inbox/unread queries.
+  Успешный reply в той же transaction создаёт deduplicated notifications для topic author и
+  direct-parent author, исключая самого actor; failure notification insert откатывает и reply.
+  Authenticated `/:locale/notifications` читает только inbox текущего пользователя; header bell
+  показывает best-effort unread count, а открытие notification атомарно ставит `readAt` и
+  перенаправляет на permanent `#post-<id>` anchor. Runtime role имеет только необходимые
+  `INSERT / SELECT / UPDATE` на notification relation, без `DELETE`. RU/HE copy, responsive/RTL
+  presentation и representative mixed/empty Pages states добавлены; notifications удалены из
+  Under development. Clean PostgreSQL 17 tests, schema/manifest parity, runtime privilege probes и
+  полный repository CI проходят. External migration/Stage 6 rollout не выполнялись.
 - Category-page discovery slice в PR #159 прошёл owner visual acceptance в GitHub Pages:
   owner-approved header/logo/discovery nav переиспользованы без backend/DB изменений; category
   heading показывает только derived section/topic/message totals, section rows стали compact

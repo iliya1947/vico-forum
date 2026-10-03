@@ -6,6 +6,7 @@ import type {
   ForumCategoryPage,
   ForumPopularPeriod,
   ForumPopularTopicSummary,
+  ForumReplyNotificationSummary,
   ForumSearchResult,
   ForumSectionPage,
   ForumTagPage,
@@ -326,6 +327,82 @@ export function UnreadView({
             </section>
           ) : null}
         </div>
+      )}
+    </ForumShell>
+  );
+}
+
+type NotificationPresentation = Omit<ForumReplyNotificationSummary, "createdAt" | "readAt"> & {
+  createdAt: string;
+  readAt: string | null;
+};
+
+export function NotificationsView({
+  locale,
+  notifications,
+}: {
+  locale: string;
+  notifications: readonly NotificationPresentation[];
+}) {
+  const { t } = useTranslation("common");
+  const formatter = new Intl.DateTimeFormat(locale, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+
+  return (
+    <ForumShell locale={locale} variant="notifications">
+      <Breadcrumbs locale={locale} items={[{ label: t("notifications") }]} />
+
+      <header className="notifications-heading">
+        <h1>{t("notifications")}</h1>
+        <p>{t("notificationIntro")}</p>
+      </header>
+
+      {notifications.length === 0 ? (
+        <div className="notifications-empty">
+          <EmptyState>{t("notificationEmpty")}</EmptyState>
+        </div>
+      ) : (
+        <section className="notifications-list-wrap" aria-label={t("notifications")}>
+          <ul className="notifications-list">
+            {notifications.map((notification) => {
+              const unread = notification.readAt === null;
+              return (
+                <li key={notification.id}>
+                  <Form method="post" className="notification-form">
+                    <input type="hidden" name="intent" value="open" />
+                    <input type="hidden" name="notificationId" value={notification.id} />
+                    <button
+                      className={unread ? "notification-card is-unread" : "notification-card"}
+                      type="submit"
+                      aria-label={`${t("notificationOpen")}: ${notification.topicTitle}`}
+                    >
+                      <span className="notification-avatar" aria-hidden="true">
+                        {notification.actorName.trim().slice(0, 1).toUpperCase()}
+                      </span>
+                      <span className="notification-copy">
+                        <span className="notification-summary">
+                          <span>{t("notificationReplyBy", { actor: notification.actorName })}</span>
+                          <strong dir="auto">{notification.topicTitle}</strong>
+                        </span>
+                        <time dateTime={notification.createdAt}>
+                          {formatter.format(new Date(notification.createdAt))}
+                        </time>
+                      </span>
+                      <span className={unread ? "notification-state is-unread" : "notification-state"}>
+                        {t(unread ? "notificationUnread" : "notificationRead")}
+                      </span>
+                      <span className="notification-enter" aria-hidden="true">
+                        <svg viewBox="0 0 24 24"><path d="m9 5 7 7-7 7" /></svg>
+                      </span>
+                    </button>
+                  </Form>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
       )}
     </ForumShell>
   );

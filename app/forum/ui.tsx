@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, isRouteErrorResponse, useLocation, useNavigate, useParams, useRouteError } from "react-router";
 import { useTranslation } from "react-i18next";
-import { forumIndexPath, forumPopularPath, forumSearchPath, forumTagsPath, forumUnansweredPath, forumUnreadPath, underDevelopmentPath } from "./paths";
+import { forumIndexPath, forumNotificationsPath, forumPopularPath, forumSearchPath, forumTagsPath, forumUnansweredPath, forumUnreadPath, underDevelopmentPath } from "./paths";
 import { AuthControls, useHeaderAuthUser } from "../auth/auth-controls";
 import { DARK_THEME_QUERY, THEME_STORAGE_KEY, type Theme } from "../theme";
 import { useLocaleNavigation } from "../localization/locale-navigation";
@@ -195,7 +195,7 @@ export function ForumShell({
 }: {
   locale: string;
   children: ReactNode;
-  variant?: "home" | "search" | "popular" | "unanswered" | "unread" | "tags" | "category" | "section" | "topic" | "admin" | "system";
+  variant?: "home" | "search" | "popular" | "unanswered" | "unread" | "notifications" | "tags" | "category" | "section" | "topic" | "admin" | "system";
 }) {
   const { t } = useTranslation("common");
   const authUser = useHeaderAuthUser();
@@ -204,6 +204,7 @@ export function ForumShell({
     || variant === "popular"
     || variant === "unanswered"
     || variant === "unread"
+    || variant === "notifications"
     || variant === "tags"
     || variant === "category"
     || variant === "section"
@@ -223,6 +224,8 @@ export function ForumShell({
             ? "forum-shell home-shell unanswered-shell"
             : variant === "unread"
               ? "forum-shell home-shell unread-shell"
+              : variant === "notifications"
+                ? "forum-shell home-shell notifications-shell"
             : variant === "tags"
               ? "forum-shell home-shell tags-shell"
               : variant === "category"
@@ -322,11 +325,18 @@ export function ForumShell({
           <div className="site-account-actions">
             {authUser ? (
               <Link
-                className="header-icon-link"
-                to={underDevelopmentPath(locale, "notifications")}
-                aria-label={t("notifications")}
+                className="header-icon-link notification-link"
+                to={forumNotificationsPath(locale)}
+                aria-label={authUser.unreadNotificationCount
+                  ? t("notificationsUnreadLabel", { count: authUser.unreadNotificationCount })
+                  : t("notifications")}
               >
                 <BellIcon />
+                {authUser.unreadNotificationCount ? (
+                  <span className="notification-badge" aria-hidden="true">
+                    {authUser.unreadNotificationCount > 99 ? "99+" : authUser.unreadNotificationCount}
+                  </span>
+                ) : null}
               </Link>
             ) : null}
             <AuthControls locale={locale} />
