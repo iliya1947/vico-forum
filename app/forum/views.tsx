@@ -948,9 +948,6 @@ function MessagePermalinkControl({
 
   return (
     <span className="topic-message-permalink">
-      <a className="topic-message-anchor" href={`#post-${encodeURIComponent(postId)}`}>
-        {messageLabel}
-      </a>
       <button
         type="button"
         className="topic-message-copy-link"
@@ -1225,7 +1222,21 @@ export function TopicView({
                     </span>
                     <span className="topic-message-author-copy">
                       <strong>{post.authorName}</strong>
+                      <span className="topic-message-author-statuses">
+                        {isOriginalQuestion && (
+                          <strong className="original-question-label">{t("originalQuestion")}</strong>
+                        )}
+                        {isBestAnswer && (
+                          <strong className="best-answer-label">{t("bestAnswer")}</strong>
+                        )}
+                      </span>
                     </span>
+                    <a
+                      className="topic-message-anchor topic-message-author-number"
+                      href={`#post-${encodeURIComponent(post.id)}`}
+                    >
+                      {t("postNumber", { number: messageNumber })}
+                    </a>
                   </header>
 
                   <div className="forum-post-content">
@@ -1290,14 +1301,6 @@ export function TopicView({
                       </div>
                     </div>
                     <div className="topic-message-toolbar">
-                      <span className="topic-message-labels">
-                        {isOriginalQuestion && (
-                          <strong className="original-question-label">{t("originalQuestion")}</strong>
-                        )}
-                        {isBestAnswer && (
-                          <strong className="best-answer-label">{t("bestAnswer")}</strong>
-                        )}
-                      </span>
                       <MessagePermalinkControl
                         postId={post.id}
                         messageNumber={messageNumber}
