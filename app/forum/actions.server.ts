@@ -64,6 +64,15 @@ export async function topicAction({ request, params, context }: {
   let formData: FormData;
   try { formData = await request.formData(); } catch { return mutationFailure("invalid", 400); }
   const intent = requiredFormText(formData, "intent") ?? "reply";
+  if (intent === "pinTopic" || intent === "unpinTopic") {
+    const forbidden = await requireForumPermission(context, "forum.topic.pin");
+    if (forbidden) return forbidden;
+    return runForumMutation(request, context, async (writer, actorId) => {
+      if (intent === "pinTopic") await writer.pinTopic({ topicId, actorId });
+      else await writer.unpinTopic({ topicId, actorId });
+      return redirect(forumTopicPath(locale, topicId));
+    });
+  }
   if (intent === "markTopicRead") {
     const postId = requiredFormText(formData, "postId");
     if (!postId) return mutationFailure("invalid", 400);
