@@ -675,3 +675,29 @@ body.ui-preview-embedded .auth-controls button {
     width: 100%;
   }
 }
+
+/* Selected Actions variant: compress the header/footer bands without changing the message body. */
+.message-layout-option:nth-of-type(2) .message-layout-flat-header {
+  min-height: 2.55rem;
+  padding-block: 0.3rem;
+}
+
+.message-layout-option:nth-of-type(2) .message-action-expand {
+  min-height: 2.15rem;
+  padding-block: 0.25rem;
+}
+
+.message-layout-option:nth-of-type(2) .message-action-collapsible-footer {
+  padding-block: 0.3rem;
+}
+
+.message-layout-option:nth-of-type(2) .message-action-collapsible-footer nav a,
+.message-layout-option:nth-of-type(2) .message-action-collapsible-footer .message-current-number {
+  min-width: 2rem;
+  width: 2rem;
+  min-height: 2rem;
+}
+
+.message-layout-option:nth-of-type(2) .message-action-collapsible-footer nav {
+  gap: 0.25rem;
+}
