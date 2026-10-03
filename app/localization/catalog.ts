@@ -107,6 +107,7 @@ export const canonicalEnglishCatalog = {
     unreadIntro: message("unreadIntro", "New topics and topics with messages you have not read yet.", "Short explanation of the authenticated Unread topics page."),
     unreadEmpty: message("unreadEmpty", "You have no unread topics.", "Empty-state message for the authenticated Unread topics page."),
     unreadNew: message("unreadNew", "New", "Status label for a topic the current user has never opened."),
+    readStateRead: message("readStateRead", "Read", "Status label for a topic whose current messages have been read."),
     unreadCount: pluralMessage(
       "unreadCount",
       { one: "{{count}} unread message", other: "{{count}} unread messages" },
