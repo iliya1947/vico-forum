@@ -49,6 +49,9 @@ describe("editor preview states", () => {
     render(<EmbeddedPreview scenarioId="section-editor" />);
 
     expect(await screen.findByRole("toolbar", { name: "Markdown formatting" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Split", pressed: true })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Heading" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Bulleted list" })).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Markdown preview" })).toBeInTheDocument();
     expect(document.querySelector(".forum-code-language")).toHaveTextContent("ts");
     expect(screen.getByRole("button", { name: "Copy code" })).toBeInTheDocument();

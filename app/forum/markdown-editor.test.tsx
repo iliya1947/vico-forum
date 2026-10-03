@@ -71,6 +71,28 @@ describe("MarkdownEditor", () => {
     expect(textarea.selectionEnd).toBe(7);
   });
 
+  it("formats block-level Markdown and link destinations from the current selection", async () => {
+    renderEditor(
+      <>
+        <label htmlFor="body">Body</label>
+        <MarkdownEditor id="body" name="body" defaultValue={"alpha\nbeta"} />
+      </>,
+    );
+
+    const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
+    textarea.focus();
+    textarea.setSelectionRange(0, textarea.value.length);
+
+    await userEvent.click(screen.getByRole("button", { name: "Bulleted list" }));
+    expect(textarea).toHaveValue("- alpha\n- beta");
+    expect(textarea).toHaveFocus();
+
+    textarea.setSelectionRange(2, 7);
+    await userEvent.click(screen.getByRole("button", { name: "Link" }));
+    expect(textarea).toHaveValue("- [alpha](https://)\n- beta");
+    expect(textarea.value.slice(textarea.selectionStart, textarea.selectionEnd)).toBe("https://");
+  });
+
   it("inserts inline and fenced code with the selected language at the caret", async () => {
     renderEditor(
       <>
@@ -177,6 +199,7 @@ describe("MarkdownEditor", () => {
 
     const textarea = screen.getByLabelText("Body");
     await userEvent.type(textarea, "Text with **Markdown** and `code()`.");
+    await userEvent.click(screen.getByRole("button", { name: "Preview" }));
     await userEvent.click(screen.getByRole("button", { name: "Submit" }));
 
     expect(submitted).toHaveBeenCalledWith("Text with **Markdown** and `code()`.");
@@ -201,7 +224,7 @@ describe("MarkdownEditor", () => {
     expect(screen.getByRole("button", { name: "Wrap lines" })).toBeInTheDocument();
   });
 
-  it("toggles the preview without changing the textarea value", async () => {
+  it("switches between write, preview, and split views without changing the textarea value", async () => {
     renderEditor(
       <>
         <label htmlFor="body">Body</label>
@@ -213,9 +236,15 @@ describe("MarkdownEditor", () => {
     await userEvent.click(screen.getByRole("button", { name: "Preview" }));
     expect(screen.getByRole("region", { name: "Markdown preview" })).toBeInTheDocument();
     expect(screen.getByText("preview me").tagName).toBe("STRONG");
+    expect(textarea).not.toBeVisible();
 
-    await userEvent.click(screen.getByRole("button", { name: "Hide preview" }));
+    await userEvent.click(screen.getByRole("button", { name: "Split" }));
+    expect(screen.getByRole("region", { name: "Markdown preview" })).toBeInTheDocument();
+    expect(textarea).toBeVisible();
+
+    await userEvent.click(screen.getByRole("button", { name: "Write" }));
     expect(screen.queryByRole("region", { name: "Markdown preview" })).not.toBeInTheDocument();
+    expect(textarea).toBeVisible();
     expect(textarea).toHaveValue("**preview me**");
   });
 });
