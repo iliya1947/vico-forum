@@ -27,7 +27,11 @@ import {
   type HomepageCategoryOverview,
   type HomepageTopicSummary,
 } from "./homepage";
-import { PostBodyPresentation, TopicTitlePresentation } from "./content-translation-view";
+import {
+  PostBodyContent,
+  PostBodyTranslationControls,
+  TopicTitlePresentation,
+} from "./content-translation-view";
 import {
   ContentGenerationNavigationBoundary,
   ContentGenerationUnitStatus,
@@ -1129,7 +1133,6 @@ export function TopicView({
             )}
             <div className="topic-heading-meta">
               <span>{t("startedBy", { author: topic.authorName })}</span>
-              {topic.isSolved && <strong className="solved-badge">{t("solved")}</strong>}
             </div>
             {topic.tags.length > 0 ? (
               <nav className="topic-tag-list topic-heading-tags" aria-label={t("topicTagsLabel")}>
@@ -1141,6 +1144,7 @@ export function TopicView({
           </div>
 
           <div className="topic-heading-actions">
+            {topic.isSolved && <strong className="solved-badge">{t("solved")}</strong>}
             {topic.bestAnswerPostId && (
               <a className="topic-solution-link" href={`#post-${encodeURIComponent(topic.bestAnswerPostId)}`}>
                 {t("goToSolution")}
@@ -1204,6 +1208,7 @@ export function TopicView({
               const parentMessageNumber =
                 post.parentPostId ? messageNumberById.get(post.parentPostId) : undefined;
               const directReplyIds = directRepliesByParent.get(post.id) ?? [];
+              const postPresentation = presentedPosts.get(post.id)!;
 
               return (
                 <li
@@ -1222,14 +1227,14 @@ export function TopicView({
                     </span>
                     <span className="topic-message-author-copy">
                       <strong>{post.authorName}</strong>
-                      <span className="topic-message-author-statuses">
-                        {isOriginalQuestion && (
-                          <strong className="original-question-label">{t("originalQuestion")}</strong>
-                        )}
-                        {isBestAnswer && (
-                          <strong className="best-answer-label">{t("bestAnswer")}</strong>
-                        )}
-                      </span>
+                    </span>
+                    <span className="topic-message-author-statuses">
+                      {isOriginalQuestion && (
+                        <strong className="original-question-label">{t("originalQuestion")}</strong>
+                      )}
+                      {isBestAnswer && (
+                        <strong className="best-answer-label">{t("bestAnswer")}</strong>
+                      )}
                     </span>
                     <a
                       className="topic-message-anchor topic-message-author-number"
@@ -1306,8 +1311,13 @@ export function TopicView({
                       </a>
                     )}
 
-                    <div data-message-body>
-                      <PostBodyPresentation presentation={presentedPosts.get(post.id)!} />
+                    <div
+                      data-message-body
+                      className={postPresentation.selected === "translation"
+                        ? "topic-message-body has-translation"
+                        : "topic-message-body"}
+                    >
+                      <PostBodyContent presentation={postPresentation} />
                     </div>
 
                     {generationUnit && (
@@ -1317,25 +1327,28 @@ export function TopicView({
                     )}
 
                     <div className="topic-message-footer">
-                      <div className="topic-message-mobile-relations">
-                        <a
-                          className="topic-message-mobile-number"
-                          href={`#post-${encodeURIComponent(post.id)}`}
-                          aria-label={t("postNumber", { number: messageNumber })}
-                        >
-                          #{messageNumber}
-                        </a>
-                        {directReplyIds.length > 0 && (
-                          <nav className="topic-message-direct-replies" aria-label={t("directReplies")}>
-                            <span className="topic-message-direct-replies-label-desktop">{t("directReplies")}:</span>
-                            <span className="topic-message-direct-replies-label-mobile">{t("directRepliesCompact")}</span>
-                            {directReplyIds.map((replyId) => (
-                              <a key={replyId} href={`#post-${encodeURIComponent(replyId)}`}>
-                                #{messageNumberById.get(replyId)}
-                              </a>
-                            ))}
-                          </nav>
-                        )}
+                      <div className="topic-message-secondary">
+                        <PostBodyTranslationControls presentation={postPresentation} />
+                        <div className="topic-message-mobile-relations">
+                          <a
+                            className="topic-message-mobile-number"
+                            href={`#post-${encodeURIComponent(post.id)}`}
+                            aria-label={t("postNumber", { number: messageNumber })}
+                          >
+                            #{messageNumber}
+                          </a>
+                          {directReplyIds.length > 0 && (
+                            <nav className="topic-message-direct-replies" aria-label={t("directReplies")}>
+                              <span className="topic-message-direct-replies-label-desktop">{t("directReplies")}:</span>
+                              <span className="topic-message-direct-replies-label-mobile">{t("directRepliesCompact")}</span>
+                              {directReplyIds.map((replyId) => (
+                                <a key={replyId} href={`#post-${encodeURIComponent(replyId)}`}>
+                                  #{messageNumberById.get(replyId)}
+                                </a>
+                              ))}
+                            </nav>
+                          )}
+                        </div>
                       </div>
 
                       <div className="topic-message-desktop-actions">
