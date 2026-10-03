@@ -537,7 +537,7 @@ describe("PostgreSQL 17 locale migrations", () => {
         client.query(
           `insert into forum_reply_notifications
             (id, recipient_user_id, actor_user_id, topic_id, post_id)
-           values ('notify-wrong-topic', 'notify-owner', 'notify-actor', 'topic-1', 'notify-child-post')`,
+           values ('notify-wrong-topic', 'forum-author', 'notify-actor', 'topic-1', 'notify-child-post')`,
         ),
         "23503",
       );
