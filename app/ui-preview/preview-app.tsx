@@ -924,7 +924,7 @@ function MessageCardLayoutDemo() {
               <strong>Sam Chen</strong>
               <small>Best answer</small>
             </span>
-            <a className="message-action-parent-link" href="#demo-collapsible-parent">↳ Reply to #1</a>
+            <a className="message-action-parent-link" href="#demo-collapsible-parent">Reply to #1</a>
             <div className="message-action-header-control">
               <button
                 type="button"
