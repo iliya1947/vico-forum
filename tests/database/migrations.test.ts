@@ -528,7 +528,7 @@ describe("PostgreSQL 17 locale migrations", () => {
       const ownerInbox = await repository.readReplyNotifications("notify-owner");
       expect(ownerInbox).toHaveLength(2);
       expect(ownerInbox[0]).toMatchObject({
-        actorName: "notify-actor",
+        actorName: "Forum Author",
         topicId: "notify-topic",
         topicTitle: "Notification topic",
         postId: "notify-child-post",
