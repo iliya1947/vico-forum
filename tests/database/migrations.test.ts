@@ -403,6 +403,8 @@ describe("PostgreSQL 17 locale migrations", () => {
         lastReadPostId: null,
         firstUnreadPostId: "read-post-a",
       });
+      expect(await forum.readUnreadTopics("reader-c", 1)).toHaveLength(1);
+      await expect(forum.readUnreadTopics("reader-c", 0)).rejects.toBeInstanceOf(RangeError);
 
       await expectDatabaseCode(
         client.query(
