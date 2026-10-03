@@ -244,6 +244,13 @@ type UnreadTopicPresentation = Pick<
   "id" | "title" | "authorName" | "state" | "firstUnreadPostId" | "unreadCount" | "section" | "category"
 >;
 
+function splitUnreadCountLabel(value: string) {
+  const label = value.trim().replace(/^\S+\s+/, "");
+  const words = label.split(/\s+/).filter(Boolean);
+  if (words.length <= 1) return [label, ""] as const;
+  return [words.slice(0, -1).join(" "), words.at(-1) ?? ""] as const;
+}
+
 export function UnreadView({
   locale,
   topics,
@@ -291,14 +298,26 @@ export function UnreadView({
 
                   <span className="unanswered-topic-location">
                     <span>{topic.category.name}</span>
-                    <span aria-hidden="true"> / </span>
                     <span>{topic.section.name}</span>
                   </span>
 
                   <span className="unanswered-topic-status">
-                    {topic.state === "new"
-                      ? t("unreadNew")
-                      : t("unreadCount", { count: topic.unreadCount })}
+                    {topic.state === "new" ? (
+                      <span className="unread-topic-new-label">{t("unreadNew")}</span>
+                    ) : (() => {
+                      const [firstLine, secondLine] = splitUnreadCountLabel(
+                        t("unreadCount", { count: topic.unreadCount }),
+                      );
+                      return (
+                        <>
+                          <strong className="unread-topic-count-number">{topic.unreadCount}</strong>
+                          <span className="unread-topic-count-label">
+                            <span>{firstLine}</span>
+                            {secondLine ? <span>{secondLine}</span> : null}
+                          </span>
+                        </>
+                      );
+                    })()}
                   </span>
 
                   <span className="unanswered-topic-enter" aria-hidden="true">
