@@ -1225,79 +1225,70 @@ export function TopicView({
                     </span>
                     <span className="topic-message-author-copy">
                       <strong>{post.authorName}</strong>
-                      <span className="topic-message-mobile-labels">
-                        {isOriginalQuestion && (
-                          <strong className="original-question-label">{t("originalQuestion")}</strong>
-                        )}
-                        {isBestAnswer && (
-                          <strong className="best-answer-label">{t("bestAnswer")}</strong>
-                        )}
-                      </span>
                     </span>
                   </header>
 
-                  <div className="topic-message-mobile-head">
-                    {parentMessageNumber !== undefined && (
-                      <a
-                        className="topic-message-mobile-parent-link"
-                        href={`#post-${encodeURIComponent(post.parentPostId!)}`}
-                      >
-                        {t("replyToMessageNumberCompact", { number: parentMessageNumber })}
-                      </a>
-                    )}
-                    <div className="topic-message-mobile-actions">
-                      <button
-                        type="button"
-                        className="topic-message-mobile-actions-toggle"
-                        aria-expanded={openMessageActionsPostId === post.id}
-                        aria-controls={`message-actions-${post.id}`}
-                        onClick={() => {
-                          setOpenMessageActionsPostId((current) => current === post.id ? null : post.id);
-                        }}
-                      >
-                        <span>{t("messageActions")}</span>
-                        <span aria-hidden="true">{openMessageActionsPostId === post.id ? "⌃" : "⌄"}</span>
-                      </button>
-                      {openMessageActionsPostId === post.id && (
-                        <div
-                          id={`message-actions-${post.id}`}
-                          className="topic-message-mobile-actions-menu"
-                        >
-                          {canReply && (
-                            <button type="button" onClick={() => targetReply(post.id)}>
-                              {t("replyToMessage")}
-                            </button>
-                          )}
-                          {canReply && (
-                            <button type="button" onClick={() => quoteSelectedText(post.id)}>
-                              {t("quoteSelectedText")}
-                            </button>
-                          )}
-                          <button type="button" onClick={() => void copyMessageLink(post.id)}>
-                            {t("copyMessageLink")}
-                          </button>
-                          {quoteSelectionErrorPostId === post.id && (
-                            <span className="topic-message-mobile-action-feedback" role="status" aria-live="polite">
-                              {t("quoteSelectionRequired")}
-                            </span>
-                          )}
-                          {messageLinkState && (
-                            <span
-                              className={messageLinkState === "error"
-                                ? "topic-message-mobile-action-feedback is-error"
-                                : "topic-message-mobile-action-feedback"}
-                              role="status"
-                              aria-live="polite"
-                            >
-                              {t(messageLinkState === "copied" ? "messageLinkCopied" : "messageLinkCopyFailed")}
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
                   <div className="forum-post-content">
+                    <div className="topic-message-mobile-head">
+                      {parentMessageNumber !== undefined && (
+                        <a
+                          className="topic-message-mobile-parent-link"
+                          href={`#post-${encodeURIComponent(post.parentPostId!)}`}
+                        >
+                          {t("replyToMessageNumberCompact", { number: parentMessageNumber })}
+                        </a>
+                      )}
+                      <div className="topic-message-mobile-actions">
+                        <button
+                          type="button"
+                          className="topic-message-mobile-actions-toggle"
+                          aria-expanded={openMessageActionsPostId === post.id}
+                          aria-controls={`message-actions-${post.id}`}
+                          onClick={() => {
+                            setOpenMessageActionsPostId((current) => current === post.id ? null : post.id);
+                          }}
+                        >
+                          <span>{t("messageActions")}</span>
+                          <span aria-hidden="true">{openMessageActionsPostId === post.id ? "⌃" : "⌄"}</span>
+                        </button>
+                        {openMessageActionsPostId === post.id && (
+                          <div
+                            id={`message-actions-${post.id}`}
+                            className="topic-message-mobile-actions-menu"
+                          >
+                            {canReply && (
+                              <button type="button" onClick={() => targetReply(post.id)}>
+                                {t("replyToMessage")}
+                              </button>
+                            )}
+                            {canReply && (
+                              <button type="button" onClick={() => quoteSelectedText(post.id)}>
+                                {t("quoteSelectedText")}
+                              </button>
+                            )}
+                            <button type="button" onClick={() => void copyMessageLink(post.id)}>
+                              {t("copyMessageLink")}
+                            </button>
+                            {quoteSelectionErrorPostId === post.id && (
+                              <span className="topic-message-mobile-action-feedback" role="status" aria-live="polite">
+                                {t("quoteSelectionRequired")}
+                              </span>
+                            )}
+                            {messageLinkState && (
+                              <span
+                                className={messageLinkState === "error"
+                                  ? "topic-message-mobile-action-feedback is-error"
+                                  : "topic-message-mobile-action-feedback"}
+                                role="status"
+                                aria-live="polite"
+                              >
+                                {t(messageLinkState === "copied" ? "messageLinkCopied" : "messageLinkCopyFailed")}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
                     <div className="topic-message-toolbar">
                       <span className="topic-message-labels">
                         {isOriginalQuestion && (
@@ -1352,17 +1343,6 @@ export function TopicView({
                           </nav>
                         )}
                       </div>
-
-                      {directReplyIds.length > 0 && (
-                        <nav className="topic-message-direct-replies topic-message-direct-replies-desktop" aria-label={t("directReplies")}>
-                          <span>{t("directReplies")}:</span>
-                          {directReplyIds.map((replyId) => (
-                            <a key={replyId} href={`#post-${encodeURIComponent(replyId)}`}>
-                              #{messageNumberById.get(replyId)}
-                            </a>
-                          ))}
-                        </nav>
-                      )}
 
                       {canReply && (
                         <div className="topic-message-participation">
