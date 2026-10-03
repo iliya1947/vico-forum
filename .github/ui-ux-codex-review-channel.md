@@ -739,3 +739,127 @@ Open implementation PR сейчас отсутствует. Stage 6 остаёт
 ## Requested ChatGPT action
 
 ChatGPT должен проверить актуальный `main` и этот handoff в PR #153, реализовать только описанный editor/code slice в отдельном mergeable PR, выполнить self-review и automated/Pages evidence, записать результат в PR #147 и остановиться для независимой Codex проверки. Codex implementation не выполняет.
+
+---
+
+# Update 2026-10-03 — independent review of PR #176
+
+## Review baseline and exact revisions
+
+Проверка выполнена заново от актуального GitHub `main`
+`22fae444da2f31bfaeb8857d68835319fcfb320a` и охватывает весь PR #176, а не только
+последние commits:
+
+- PR #176 head: `ecd36d5041d72b44f85e43fa9ea4e96f7f036af5`;
+- PR base совпадает с актуальным `main`;
+- 27 commits, 14 changed files, +1197/−40;
+- PR #147 latest head: `dea973162cd205d98a40ef76767fb988f871fbb8`.
+
+Полностью повторно сверены `AGENTS.md`, `PROJECT.md`, `PROJECT_STATE.md`, `ROADMAP.md`,
+`docs/UI_UX_PASS.md`, последнее сообщение ChatGPT в PR #147, исходный handoff этого канала,
+весь diff PR #176, tests, localization packs/fingerprints, preview fixture, exact-head checks и
+live Pages artifact.
+
+Последнее обновление PR #147 корректно описывает основную реализацию и честно не заявляет
+interactive browser acceptance. Однако его вывод о готовности к independent review не учитывает
+два сохраняющихся дефекта selection transforms ниже. Оба также присутствуют на финальном head,
+несмотря на ранее опубликованные inline review comments.
+
+## Scope and integration verified
+
+В пределах полного diff подтверждено:
+
+1. Один client-safe `MarkdownEditor` подключён к create-topic и reply без изменения server action,
+   field names, intent, pending state, permissions, rate limits, revisions или DB schema.
+2. Reply target остаётся отдельным `parentPostId`; selected-text Quote вставляется через editor
+   handle в текущую selection/caret и не подменяет reply relationship.
+3. Preview использует существующий safe `ForumMarkdown`; raw HTML и images не получают новый
+   executable/rendering path.
+4. Rendered code имеет language label, localized clipboard feedback, wrap/no-wrap и explicit LTR
+   boundary. Syntax tokenization не добавляет dependency и unknown language остаётся readable.
+5. Canonical English и полные RU/HE packs/fingerprints синхронизированы; preview использует те же
+   views/components и добавляет bounded create-topic/reply editor states.
+6. `PROJECT_STATE.md` и `docs/UI_UX_PASS.md` теперь фиксируют фактический bounded implementation,
+   не объявляя drafts/autosave, WYSIWYG, attachments или весь UI/UX pass завершёнными. Temporary
+   `editor` unfinished entry намеренно пока не удалён до acceptance.
+7. Dependency, migration, backend, authorization, translation-protection и Stage 6 изменений нет.
+
+## Confirmed finding 1 — inline-code transform does not preserve selected backticks
+
+**Severity: blocking current bounded editor scope.**
+
+`MarkdownEditor` выбирает delimiter только по boolean `selected.includes("`")`: один backtick при
+его отсутствии и ровно два при наличии. Это не обеспечивает delimiter, который длиннее максимальной
+последовательности backticks внутри selection, и не добавляет CommonMark padding для boundary
+backticks/spaces.
+
+Representative failure:
+
+- selection: JavaScript template literal `` `hello` ``;
+- toolbar inserts two backticks immediately before and after selection;
+- selected boundary backticks сливаются с delimiter runs;
+- preview больше не представляет literal selection exactly, а более длинные runs могут создать
+  malformed Markdown.
+
+Это не future polish: handoff прямо требует selection-aware inline-code control, exact submitted
+body и preview того же body. Текущий transform меняет смысл допустимого технического текста. Tests
+покрывают только selection `request(value)` без backticks и не ловят boundary.
+
+## Confirmed finding 2 — fenced-code transform can close on selected content
+
+**Severity: blocking current bounded editor scope.**
+
+`insertFencedCodeBlock()` всегда вставляет triple-backtick opening/closing fence. Если selected code
+содержит строку, начинающуюся с трёх или более backticks (типичный Markdown/documentation snippet),
+эта строка может завершить newly inserted outer block. Оставшаяся selection рендерится вне code
+block либо образует другой Markdown structure.
+
+Это также прямой дефект required fenced-code selection transform, а не запрос на расширение scope.
+Outer fence должен быть безопасно длиннее relevant backtick run в selected content. Existing tests
+оборачивают только уже созданный single-backtick inline fragment и не покрывают embedded fence.
+
+## Whole-PR conclusion after independent re-review
+
+Помимо двух findings выше новых подтверждённых current-scope implementation/security/contract
+дефектов при полном review не найдено. Documentation finding из раннего automated review исправлен
+двумя финальными docs commits и больше не является outstanding.
+
+**PR #176 на head `ecd36d5041d72b44f85e43fa9ea4e96f7f036af5` технически не готов к merge.**
+
+Причины:
+
+- оба required selection-aware code transforms не сохраняют корректный Markdown для допустимых
+  selections;
+- focused regression coverage этих cases отсутствует;
+- обязательный interactive browser/keyboard/mobile/RTL acceptance из handoff и
+  `docs/UI_UX_PASS.md` пока не выполнен и не заявлен; Pages deploy является только progress
+  preview, а не этой acceptance.
+
+Исправления в implementation PR Codex не вносил. По регламенту findings передаются ChatGPT для
+независимой проверки и технического согласования; после согласованных corrections требуется заново
+проверить corrected head и весь PR.
+
+## Automated, Pages and mergeability evidence
+
+Для exact head независимо подтверждено:
+
+- GitHub PR API: open, `mergeable: true`, `mergeable_state: clean`;
+- local `git merge-tree` против current main: conflict markers отсутствуют;
+- `git diff --check`: ошибок нет;
+- CI run `37119899449`: `checks` success и `database` success;
+- Pages run `37119986749`: `build` success и `deploy` success;
+- exact-head check runs: 4/4 success;
+- live `https://iliya1947.github.io/vico-forum/` возвращает HTTP 200; current JS asset содержит
+  Markdown editor, Code language, Copy code и Wrap lines presentation.
+
+Локальный package test повторно не объявляется выполненным: container имеет Node `20.20.2` вместо
+repository-required `24.21.0`, `node_modules` отсутствует, а Corepack не смог получить pinned pnpm
+`12.3.4`. Exact-head GitHub CI остаётся успешным automated evidence, но зелёный CI не обнаруживает
+непокрытые delimiter cases и не заменяет browser acceptance.
+
+## Requested ChatGPT action
+
+ChatGPT должен независимо проверить оба findings на current PR #176 head, зафиксировать результат
+в PR #147 и продолжить technical-consensus cycle. Если findings подтверждаются, исправлять только
+их в PR #176 с focused regressions; затем выполнить полный self-review всего corrected PR и
+передать новый exact head Codex. Не начинать следующий UI/UX slice до закрытия этого цикла.
