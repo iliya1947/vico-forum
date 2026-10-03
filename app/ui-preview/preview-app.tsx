@@ -309,7 +309,7 @@ const topic = {
       topicId,
       authorId: "sam",
       authorName: "Sam Chen",
-      parentPostId: "question",
+      parentPostId: "followup",
       createdAt: new Date("2026-09-27T12:00:00Z"),
       body: {
         id: "post-r2",
