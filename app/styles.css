@@ -6030,3 +6030,191 @@ a.topic-tag:focus-visible {
     border-block-start: 1px solid var(--color-border);
   }
 }
+
+
+.topic-message-labels-mobile {
+  display: none;
+}
+
+.topic-message-footer {
+  display: contents;
+}
+
+/* Simplified mobile message composition: header, body, footer. */
+@media (max-width: 44rem) {
+  .topic-shell .topic-message {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: stretch;
+  }
+
+  .topic-message-author {
+    grid-column: 1;
+    grid-row: 1;
+    display: grid;
+    grid-template-columns: 2rem minmax(0, 1fr);
+    grid-template-areas:
+      "avatar author"
+      "avatar labels";
+    min-height: 3.35rem;
+    align-items: center;
+    gap: 0.1rem 0.5rem;
+    padding: 0.45rem 0.25rem 0.45rem 0.65rem;
+    border: 0;
+    border-block-end: 1px solid var(--color-border);
+    background: var(--color-surface-muted);
+  }
+
+  .topic-message.best-answer .topic-message-author {
+    background: var(--color-accent-soft);
+  }
+
+  .topic-message-avatar {
+    grid-area: avatar;
+  }
+
+  .topic-message-author-copy {
+    grid-area: author;
+    align-self: end;
+  }
+
+  .topic-message-labels-mobile {
+    grid-area: labels;
+    display: flex;
+    align-self: start;
+    gap: 0.25rem;
+  }
+
+  .topic-message-labels-mobile .original-question-label,
+  .topic-message-labels-mobile .best-answer-label {
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    font-size: 0.58rem;
+    line-height: 1.15;
+  }
+
+  .topic-message-labels-mobile .original-question-label {
+    color: var(--color-text-muted);
+  }
+
+  .topic-message-labels-mobile .best-answer-label {
+    color: var(--color-accent-hover);
+  }
+
+  .topic-shell .forum-post-content {
+    display: contents;
+  }
+
+  .topic-message-toolbar {
+    grid-column: 2;
+    grid-row: 1;
+    display: flex;
+    min-height: 3.35rem;
+    align-items: center;
+    justify-content: flex-end;
+    margin: 0;
+    padding: 0.35rem 0.55rem 0.35rem 0.2rem;
+    border: 0;
+    border-block-end: 1px solid var(--color-border);
+    background: var(--color-surface-muted);
+  }
+
+  .topic-message.best-answer .topic-message-toolbar {
+    background: var(--color-accent-soft);
+  }
+
+  .topic-message-toolbar > .topic-message-labels {
+    display: none;
+  }
+
+  .topic-message-permalink {
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+  }
+
+  .topic-message-copy-link {
+    width: 2.5rem;
+    min-width: 2.5rem;
+    min-height: 2.5rem;
+  }
+
+  .message-link-status {
+    position: absolute;
+    inset-block-start: 0.2rem;
+    inset-inline-end: 0.35rem;
+    transform: translateY(-100%);
+    white-space: nowrap;
+  }
+
+  .topic-message-parent-link,
+  .topic-shell [data-message-body],
+  .message-generation-status,
+  .topic-message-footer,
+  .message-secondary-tools {
+    grid-column: 1 / -1;
+  }
+
+  .topic-message-parent-link {
+    min-height: 0;
+    margin: 0;
+    padding: 0.55rem 0.65rem 0;
+    border: 0;
+    background: transparent;
+    font-size: 0.66rem;
+  }
+
+  .topic-shell [data-message-body] {
+    padding: 0.55rem 0.65rem 0.65rem;
+  }
+
+  .topic-message-parent-link + [data-message-body] {
+    padding-block-start: 0.35rem;
+  }
+
+  .message-generation-status {
+    margin: -0.15rem 0.65rem 0.55rem;
+  }
+
+  .topic-message-footer {
+    display: block;
+    margin: 0;
+    padding: 0.55rem 0.65rem 0.65rem;
+    border-block-start: 1px solid var(--color-border);
+    background: transparent;
+  }
+
+  .topic-message-direct-replies {
+    margin: 0 0 0.5rem;
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+
+  .topic-message-direct-replies a {
+    min-width: 2.25rem;
+    min-height: 2.25rem;
+    padding: 0.25rem 0.4rem;
+    border-radius: 0.4rem;
+    background: var(--color-surface-muted);
+  }
+
+  .topic-message-participation {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+
+  .topic-message-participation-actions button {
+    min-height: 2.8rem;
+  }
+
+  .message-secondary-tools {
+    margin: 0;
+    padding: 0.5rem 0.65rem 0.65rem;
+    border-block-start: 1px solid var(--color-border);
+  }
+}
