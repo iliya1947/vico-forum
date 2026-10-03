@@ -2946,8 +2946,8 @@ p {
 
 .unread-topic-enter-count {
   justify-self: center;
-  font-size: 1.35rem;
-  line-height: 1;
+  font-size: 3.4rem;
+  line-height: 0.9;
 }
 
 .unread-topic-enter svg {
