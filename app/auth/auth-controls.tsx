@@ -4,7 +4,11 @@ import { useTranslation } from "react-i18next";
 import { underDevelopmentPath } from "../forum/paths";
 import { authClientActions, type AuthClientActions } from "./auth-client";
 
-export interface HeaderAuthUser { readonly name: string; readonly canManageAuthorization?: boolean }
+export interface HeaderAuthUser {
+  readonly name: string;
+  readonly canManageAuthorization?: boolean;
+  readonly unreadNotificationCount?: number;
+}
 export type HeaderAuthPresentationState = "idle" | "pending" | "error";
 
 const HeaderAuthContext = createContext<{
