@@ -5875,13 +5875,17 @@ a.topic-tag:focus-visible {
     overflow: visible;
   }
 
-  .topic-message-author {
+  .topic-shell .topic-message .topic-message-author {
     grid-column: 1;
     grid-row: 1;
     display: flex;
     min-width: 0;
     min-height: 2.6rem;
+    flex-direction: row;
+    flex-wrap: nowrap;
     align-items: center;
+    align-content: center;
+    justify-content: flex-start;
     gap: 0.45rem;
     padding: 0.3rem 0.2rem 0.3rem 0.65rem;
     border: 0;
@@ -5889,24 +5893,28 @@ a.topic-tag:focus-visible {
     background: var(--color-surface-muted);
   }
 
-  .topic-message.best-answer .topic-message-author,
+  .topic-shell .topic-message.best-answer .topic-message-author,
   .topic-message.best-answer .topic-message-mobile-head {
     background: var(--color-accent-soft);
   }
 
-  .topic-message-avatar {
+  .topic-shell .topic-message .topic-message-author .topic-message-avatar {
     width: 2rem;
     height: 2rem;
     flex: none;
+    margin: 0;
+    color: var(--color-accent-hover);
     font-size: 0.74rem;
   }
 
-  .topic-message-author-copy {
+  .topic-shell .topic-message .topic-message-author .topic-message-author-copy {
     display: grid;
     min-width: 0;
     align-self: stretch;
     align-content: start;
     padding-block-start: 0.18rem;
+    color: var(--color-text);
+    font-size: inherit;
   }
 
   .topic-message-author-copy > strong {
