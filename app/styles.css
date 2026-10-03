@@ -3572,7 +3572,7 @@ p {
 }
 
 .topic-heading-side .solved-badge {
-  justify-self: start;
+  justify-self: center;
 }
 
 .topic-heading-content {
