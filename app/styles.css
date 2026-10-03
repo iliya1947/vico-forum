@@ -2792,6 +2792,18 @@ p {
   margin: 0 1rem 1rem;
 }
 
+.unread-topic-groups {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.unread-topic-group-heading {
+  margin: 0 0 0.45rem;
+  color: var(--color-text);
+  font-size: 0.9rem;
+  line-height: 1.2;
+}
+
 .unanswered-empty .empty-state {
   margin: 0;
 }
