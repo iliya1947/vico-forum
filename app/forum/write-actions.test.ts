@@ -160,10 +160,25 @@ function writer() {
     selectBestAnswer: vi.fn(async () => undefined),
     correctTopicTitleSourceLocale: vi.fn(async () => undefined),
     correctPostBodySourceLocale: vi.fn(async () => undefined),
+    advanceTopicReadState: vi.fn(async () => undefined),
   } satisfies ForumWriter;
 }
 
 describe("forum write route actions", () => {
+  it("advances only the authenticated user's topic read state", async () => {
+    const forumWriter = writer();
+    await topicAction({
+      request: request("/en/topics/t", { intent: "markTopicRead", postId: "post-3" }),
+      params: { locale: "en", topicId: "t" },
+      context: context(forumWriter),
+    });
+    expect(forumWriter.advanceTopicReadState).toHaveBeenCalledWith({
+      userId: "session-user",
+      topicId: "t",
+      postId: "post-3",
+    });
+  });
+
   it("creates a topic as the session user and redirects to its canonical locale path", async () => {
     const forumWriter = writer();
     const response = await sectionAction({
