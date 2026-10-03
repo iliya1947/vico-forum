@@ -3599,6 +3599,14 @@ p {
   gap: 0.65rem;
 }
 
+@media (min-width: 44.01rem) {
+  .topic-heading .solved-badge {
+    min-height: 2.5rem;
+    padding: 0.4rem 0.95rem;
+    font-size: 0.82rem;
+  }
+}
+
 .topic-solution-link,
 .topic-heading-actions button {
   display: inline-flex;
@@ -3744,8 +3752,10 @@ p {
 }
 
 .topic-shell .forum-post-content {
+  display: flex;
   min-width: 0;
-  padding: 0.85rem 1rem 1rem;
+  flex-direction: column;
+  padding: 0.85rem 1rem 0.65rem;
 }
 
 .topic-message-labels {
@@ -5856,10 +5866,6 @@ a.topic-tag:focus-visible {
   display: none;
 }
 
-.topic-message-mobile-relations {
-  display: contents;
-}
-
 .topic-message-footer {
   display: flex;
   min-width: 0;
@@ -5867,24 +5873,38 @@ a.topic-tag:focus-visible {
   align-items: flex-end;
   justify-content: space-between;
   gap: 0.55rem 0.8rem;
-  margin-top: 0.65rem;
+  margin-top: auto;
+  padding-top: 0.65rem;
 }
 
-.topic-message-secondary {
+.topic-message-relations {
   display: flex;
   min-width: 0;
   flex: 1 1 auto;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.4rem 0.75rem;
+  gap: 0.3rem 0.55rem;
+}
+
+.topic-message-relations .topic-message-parent-link,
+.topic-message-relations .topic-message-direct-replies {
+  margin: 0;
+}
+
+.topic-message-footer-end {
+  display: flex;
+  flex: none;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 0.65rem;
+  margin-inline-start: auto;
 }
 
 .topic-message-translation-controls {
-  display: flex;
+  display: grid;
   min-width: 0;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.35rem 0.65rem;
+  align-self: flex-end;
+  gap: 0.18rem;
 }
 
 .topic-message-translation-controls .translation-provenance,
@@ -5903,7 +5923,6 @@ a.topic-tag:focus-visible {
   align-items: center;
   justify-content: flex-end;
   gap: 0.4rem;
-  margin-inline-start: auto;
 }
 
 .topic-message-desktop-actions .topic-message-participation {
@@ -6126,20 +6145,24 @@ a.topic-tag:focus-visible {
   }
 
   .topic-message-footer {
-    display: block;
+    display: flex;
     margin: 0;
     padding: 0;
+    flex-direction: column;
+    gap: 0;
     border: 0;
     background: transparent;
   }
 
-  .topic-message-secondary {
-    display: grid;
-    gap: 0;
+  .topic-message-footer-end {
+    order: 1;
+    width: 100%;
+    margin: 0;
   }
 
   .topic-message-translation-controls {
     display: grid;
+    width: 100%;
     gap: 0.35rem;
     padding: 0 1rem 0.75rem;
   }
@@ -6153,8 +6176,10 @@ a.topic-tag:focus-visible {
     padding-block-end: 0.2rem;
   }
 
-  .topic-message-mobile-relations {
+  .topic-message-relations {
+    order: 2;
     display: flex;
+    width: 100%;
     min-width: 0;
     align-items: center;
     gap: 0.28rem;
