@@ -22,6 +22,7 @@ export const runtimeCapabilityContracts = Object.freeze({
       forum_posts: Object.freeze(["INSERT", "SELECT", "UPDATE"]),
       forum_sections: Object.freeze(["SELECT"]),
       forum_tags: Object.freeze(["INSERT", "SELECT"]),
+      forum_topic_read_states: Object.freeze(["INSERT", "SELECT", "UPDATE"]),
       forum_topic_tags: Object.freeze(["INSERT", "SELECT"]),
       forum_topic_title_revisions: Object.freeze(["INSERT", "SELECT"]),
       forum_topic_title_translations: Object.freeze(["SELECT"]),
