@@ -58,7 +58,7 @@ describe("PostgreSQL 17 locale migrations", () => {
     const applied = await client.query<{ count: string }>(
       'select count(*)::text as count from drizzle."__drizzle_migrations"',
     );
-    expect(applied.rows[0]?.count).toBe("24");
+    expect(applied.rows[0]?.count).toBe("25");
   });
 
   it("rejects trimmed canonical English in persistent UI translation storage", async () => {
@@ -424,6 +424,203 @@ describe("PostgreSQL 17 locale migrations", () => {
       await secondPool.end();
       await client.query(`delete from "user" where id in ('read-state-user', 'read-race-user', 'read-fk-user')`);
       await client.query("delete from forum_topics where id = 'read-state-topic'");
+    }
+  });
+
+  it("creates deduplicated reply notifications inside the reply transaction", async () => {
+    await insertForumAuthor("notify-owner", "notify-owner@example.test", null);
+    await insertForumAuthor("notify-parent", "notify-parent@example.test", null);
+    await insertForumAuthor("notify-actor", "notify-actor@example.test", null);
+
+    let clock = Date.parse("2026-10-03T13:00:00Z");
+    const repository = new DrizzleForumRepository(drizzle(client), {
+      cooldownMs: FORUM_WRITE_COOLDOWN_MS,
+      now: () => new Date(clock += FORUM_WRITE_COOLDOWN_MS),
+    });
+    const forum = new ForumService(repository);
+
+    try {
+      await forum.createTopicWithInitialPost({
+        id: "notify-topic",
+        sectionId: "typescript",
+        authorId: "notify-owner",
+        titleRevision: {
+          id: "notify-title-r1",
+          originalContent: "Notification topic",
+          sourceLocale: "en",
+        },
+        initialPost: {
+          id: "notify-root",
+          topicId: "notify-topic",
+          authorId: "notify-owner",
+          bodyRevision: {
+            id: "notify-root-r1",
+            originalContent: "Root",
+            sourceLocale: "en",
+          },
+        },
+      });
+
+      await forum.createPost({
+        id: "notify-parent-post",
+        topicId: "notify-topic",
+        authorId: "notify-parent",
+        parentPostId: "notify-root",
+        bodyRevision: {
+          id: "notify-parent-r1",
+          originalContent: "Parent reply",
+          sourceLocale: "en",
+        },
+      });
+
+      const firstRecipients = await client.query<{ recipient_user_id: string; actor_user_id: string }>(
+        `select recipient_user_id, actor_user_id
+         from forum_reply_notifications
+         where post_id = 'notify-parent-post'
+         order by recipient_user_id`,
+      );
+      expect(firstRecipients.rows).toEqual([
+        { recipient_user_id: "notify-owner", actor_user_id: "notify-parent" },
+      ]);
+
+      await forum.createPost({
+        id: "notify-child-post",
+        topicId: "notify-topic",
+        authorId: "notify-actor",
+        parentPostId: "notify-parent-post",
+        bodyRevision: {
+          id: "notify-child-r1",
+          originalContent: "Child reply",
+          sourceLocale: "en",
+        },
+      });
+
+      const childRecipients = await client.query<{ recipient_user_id: string; actor_user_id: string }>(
+        `select recipient_user_id, actor_user_id
+         from forum_reply_notifications
+         where post_id = 'notify-child-post'
+         order by recipient_user_id`,
+      );
+      expect(childRecipients.rows).toEqual([
+        { recipient_user_id: "notify-owner", actor_user_id: "notify-actor" },
+        { recipient_user_id: "notify-parent", actor_user_id: "notify-actor" },
+      ]);
+
+      await forum.createPost({
+        id: "notify-owner-reply",
+        topicId: "notify-topic",
+        authorId: "notify-owner",
+        parentPostId: "notify-parent-post",
+        bodyRevision: {
+          id: "notify-owner-reply-r1",
+          originalContent: "Owner reply",
+          sourceLocale: "en",
+        },
+      });
+
+      const ownerReplyRecipients = await client.query<{ recipient_user_id: string }>(
+        `select recipient_user_id
+         from forum_reply_notifications
+         where post_id = 'notify-owner-reply'`,
+      );
+      expect(ownerReplyRecipients.rows).toEqual([{ recipient_user_id: "notify-parent" }]);
+
+      const ownerInbox = await repository.readReplyNotifications("notify-owner");
+      expect(ownerInbox).toHaveLength(2);
+      expect(ownerInbox[0]).toMatchObject({
+        actorName: "Forum Author",
+        topicId: "notify-topic",
+        topicTitle: "Notification topic",
+        postId: "notify-child-post",
+        readAt: null,
+      });
+      expect(await repository.countUnreadReplyNotifications("notify-owner")).toBe(2);
+
+      const opened = await repository.markReplyNotificationRead("notify-owner", ownerInbox[0]!.id);
+      expect(opened).toEqual({ topicId: "notify-topic", postId: "notify-child-post" });
+      expect(await repository.countUnreadReplyNotifications("notify-owner")).toBe(1);
+      await repository.markReplyNotificationRead("notify-owner", ownerInbox[0]!.id);
+      expect(await repository.countUnreadReplyNotifications("notify-owner")).toBe(1);
+      await expect(
+        repository.markReplyNotificationRead("notify-parent", ownerInbox[0]!.id),
+      ).rejects.toBeInstanceOf(ForumEntityNotFoundError);
+
+      await expectDatabaseCode(
+        client.query(
+          `insert into forum_reply_notifications
+            (id, recipient_user_id, actor_user_id, topic_id, post_id)
+           values ('notify-duplicate', 'notify-owner', 'notify-actor', 'notify-topic', 'notify-child-post')`,
+        ),
+        "23505",
+      );
+      await expectDatabaseCode(
+        client.query(
+          `insert into forum_reply_notifications
+            (id, recipient_user_id, actor_user_id, topic_id, post_id)
+           values ('notify-wrong-topic', 'forum-author', 'notify-actor', 'topic-1', 'notify-child-post')`,
+        ),
+        "23503",
+      );
+
+      await client.query(`
+        create function reject_reply_notification_for_test()
+        returns trigger
+        language plpgsql
+        as $notify$
+        begin
+          raise exception 'notification insert rejected for atomicity test';
+        end;
+        $notify$;
+      `);
+      await client.query(`
+        create trigger reject_reply_notification_for_test
+        before insert on forum_reply_notifications
+        for each row execute function reject_reply_notification_for_test();
+      `);
+      try {
+        await expect(
+          forum.createPost({
+            id: "notify-rollback-post",
+            topicId: "notify-topic",
+            authorId: "notify-actor",
+            parentPostId: "notify-parent-post",
+            bodyRevision: {
+              id: "notify-rollback-r1",
+              originalContent: "Must roll back",
+              sourceLocale: "en",
+            },
+          }),
+        ).rejects.toThrow();
+      } finally {
+        await client.query("drop trigger if exists reject_reply_notification_for_test on forum_reply_notifications");
+        await client.query("drop function if exists reject_reply_notification_for_test()");
+      }
+
+      const rolledBack = await client.query<{ count: number }>(
+        `select count(*)::int as count from forum_posts where id = 'notify-rollback-post'`,
+      );
+      expect(rolledBack.rows[0]?.count).toBe(0);
+
+      const selfNotifications = await client.query<{ count: number }>(
+        `select count(*)::int as count
+         from forum_reply_notifications
+         where recipient_user_id = actor_user_id
+           and topic_id = 'notify-topic'`,
+      );
+      expect(selfNotifications.rows[0]?.count).toBe(0);
+
+      await client.query("delete from forum_topics where id = 'notify-topic'");
+      const afterTopicDelete = await client.query<{ count: number }>(
+        `select count(*)::int as count
+         from forum_reply_notifications
+         where topic_id = 'notify-topic'`,
+      );
+      expect(afterTopicDelete.rows[0]?.count).toBe(0);
+    } finally {
+      await client.query("delete from forum_topics where id = 'notify-topic'");
+      await client.query(
+        `delete from "user" where id in ('notify-owner', 'notify-parent', 'notify-actor')`,
+      );
     }
   });
 

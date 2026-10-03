@@ -33,6 +33,10 @@ export function forumUnreadPath(locale: string) {
   return generatePath("/:locale/unread", { locale });
 }
 
+export function forumNotificationsPath(locale: string) {
+  return generatePath("/:locale/notifications", { locale });
+}
+
 export function forumTagsPath(locale: string) {
   return generatePath("/:locale/tags", { locale });
 }

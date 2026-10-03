@@ -16,6 +16,7 @@ import { ForumRouteError } from "../forum/ui";
 import {
   CategoryView,
   HomeView,
+  NotificationsView,
   PopularView,
   SearchView,
   SectionView,
@@ -33,7 +34,7 @@ import { localeRegistry } from "../localization/registry";
 
 type Direction = "ltr" | "rtl";
 type PreviewIdentity = "guest" | "user" | "manager";
-type PreviewView = "home" | "search" | "popular" | "unanswered" | "unread" | "tags" | "tag" | "category" | "section" | "topic" | "admin" | "empty" | "under-development" | "not-found";
+type PreviewView = "home" | "search" | "popular" | "unanswered" | "unread" | "notifications" | "tags" | "tag" | "category" | "section" | "topic" | "admin" | "empty" | "under-development" | "not-found";
 
 type PreviewVariant =
   | "empty-category"
@@ -47,7 +48,8 @@ type PreviewVariant =
   | "route-403"
   | "route-503"
   | "route-500"
-  | "search-no-results";
+  | "search-no-results"
+  | "notifications-empty";
 
 interface Scenario {
   id: string;
@@ -68,7 +70,8 @@ export const scenarios: readonly Scenario[] = [
   { id: "auth-pending", label: "Authentication · pending · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en", view: "home", authPresentationState: "pending" },
   { id: "auth-error", label: "Authentication · failed · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en", view: "home", authPresentationState: "error" },
   { id: "under-development-search", label: "Under development · search · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/under-development?feature=search", view: "under-development" },
-  { id: "under-development-notifications", label: "Under development · notifications · user", locale: "en", direction: "ltr", identity: "user", path: "/en/under-development?feature=notifications", view: "under-development" },
+  { id: "notifications-user", label: "Notifications · mixed · user", locale: "en", direction: "ltr", identity: "user", path: "/en/notifications", view: "notifications" },
+  { id: "notifications-empty", label: "Notifications · empty · user", locale: "en", direction: "ltr", identity: "user", path: "/en/notifications", view: "notifications", variant: "notifications-empty" },
   { id: "search-results-guest", label: "Search · results · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/search?q=TypeScript", view: "search" },
   { id: "search-no-results-guest", label: "Search · no results · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/search?q=WebAssembly", view: "search", variant: "search-no-results" },
   { id: "popular-guest", label: "Popular · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/popular", view: "popular" },
@@ -576,10 +579,59 @@ function previewTagPage(locale: PreviewLocale) {
   };
 }
 
-function previewUser(identity: PreviewIdentity): HeaderAuthUser | null {
-  if (identity === "guest") return null;
-  if (identity === "manager") return { name: "Maya Cohen", canManageAuthorization: true };
-  return { name: "Alex Rivera" };
+function previewUser(scenario: Scenario): HeaderAuthUser | null {
+  if (scenario.identity === "guest") return null;
+  const unreadNotificationCount = scenario.variant === "notifications-empty" ? 0 : 3;
+  if (scenario.identity === "manager") {
+    return { name: "Maya Cohen", canManageAuthorization: true, unreadNotificationCount };
+  }
+  return { name: "Alex Rivera", unreadNotificationCount };
+}
+
+function previewNotifications(locale: PreviewLocale) {
+  const russian = locale === "ru";
+  const hebrew = locale === "he";
+  return [
+    {
+      id: "notification-1",
+      actorName: hebrew ? "מאיה כהן" : "Maya Cohen",
+      topicId: "typed-api",
+      topicTitle: hebrew
+        ? "איך כדאי לבנות לקוח API עם טיפוסים?"
+        : russian
+          ? "Как лучше построить типизированный API-клиент?"
+          : "How should I structure a typed API client?",
+      postId: "followup",
+      createdAt: "2026-10-03T18:42:00.000Z",
+      readAt: null,
+    },
+    {
+      id: "notification-2",
+      actorName: hebrew ? "סם צ'ן" : "Sam Chen",
+      topicId: "worker-auth",
+      topicTitle: hebrew
+        ? "Worker auth: session boundary מול permissions"
+        : russian
+          ? "Worker auth: граница сессии и permissions"
+          : "Worker auth: session boundary vs permissions",
+      postId: "worker-auth-post-3",
+      createdAt: "2026-10-03T16:15:00.000Z",
+      readAt: null,
+    },
+    {
+      id: "notification-3",
+      actorName: hebrew ? "נועה לוי" : "Noa Levi",
+      topicId: "rtl-markdown",
+      topicTitle: hebrew
+        ? "תוכן RTL מעורב עם בלוקי קוד"
+        : russian
+          ? "Смешанный RTL-контент с блоками кода"
+          : "Mixed RTL content with code blocks",
+      postId: "rtl-markdown-post-2",
+      createdAt: "2026-10-02T12:30:00.000Z",
+      readAt: "2026-10-02T13:10:00.000Z",
+    },
+  ];
 }
 
 export function PreviewController() {
@@ -673,7 +725,7 @@ export function EmbeddedPreview({ scenarioId }: { scenarioId: string }) {
       }}
     >
       <HeaderAuthProvider
-        initialUser={previewUser(activeScenario.identity)}
+        initialUser={previewUser(activeScenario)}
         initialPresentationState={activeScenario.authPresentationState}
       >
         <I18nextProvider i18n={runtime}>
@@ -745,6 +797,15 @@ function previewRouter(scenario: Scenario) {
     {
       path: "/:locale/unread",
       element: <UnreadView locale={scenario.locale} topics={unreadTopics(scenario.locale)} />,
+    },
+    {
+      path: "/:locale/notifications",
+      element: (
+        <NotificationsView
+          locale={scenario.locale}
+          notifications={scenario.variant === "notifications-empty" ? [] : previewNotifications(scenario.locale)}
+        />
+      ),
     },
     {
       path: "/:locale/tags",
@@ -1050,6 +1111,13 @@ function previewElement(scenario: Scenario) {
       return <UnansweredView locale={scenario.locale} topics={unansweredTopics(scenario.locale)} />;
     case "unread":
       return <UnreadView locale={scenario.locale} topics={unreadTopics(scenario.locale)} />;
+    case "notifications":
+      return (
+        <NotificationsView
+          locale={scenario.locale}
+          notifications={scenario.variant === "notifications-empty" ? [] : previewNotifications(scenario.locale)}
+        />
+      );
     case "tags":
       return <TagsView locale={scenario.locale} tags={previewTags()} />;
     case "tag":

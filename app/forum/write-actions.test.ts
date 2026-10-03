@@ -161,6 +161,7 @@ function writer() {
     correctTopicTitleSourceLocale: vi.fn(async () => undefined),
     correctPostBodySourceLocale: vi.fn(async () => undefined),
     advanceTopicReadState: vi.fn(async () => undefined),
+    markReplyNotificationRead: vi.fn(async () => ({ topicId: "topic-1", postId: "post-1" })),
   } satisfies ForumWriter;
 }
 

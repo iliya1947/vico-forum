@@ -128,6 +128,8 @@ const reader: ForumReader = {
     firstUnreadPostId: topic.posts[0]!.id,
     latestPostId: topic.posts.at(-1)!.id,
   } : undefined,
+  readReplyNotifications: async () => [],
+  countUnreadReplyNotifications: async () => 0,
   search: async (query) => query.toLowerCase().includes("type") ? [{
     id: topic.id,
     title: topic.title.originalContent,

@@ -72,7 +72,8 @@ async function positiveCapabilityProbe(role, contract) {
         await client.query(`SELECT 1 FROM ${relation} LIMIT 0`);
       }
       if (privileges.includes("INSERT")) {
-        await client.query(`INSERT INTO ${relation} SELECT * FROM ${relation} WHERE false`);
+        const column = quoteIdentifier(await firstColumn(name));
+        await client.query(`INSERT INTO ${relation} (${column}) SELECT NULL WHERE false`);
       }
       if (privileges.includes("UPDATE")) {
         const column = quoteIdentifier(await firstColumn(name));

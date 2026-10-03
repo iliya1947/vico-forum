@@ -21,6 +21,8 @@ import { HeaderAuthProvider } from "../auth/auth-controls";
 import { LocaleNavigationProvider } from "../localization/locale-navigation";
 import { authorizationForRequest } from "../authorization/request-context";
 import { AuthorizationUnavailableError } from "../../db/authorization-service";
+import { forumReaderForRequest, ForumReaderConfigurationError } from "../forum/request-context";
+import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
 
 interface LocaleBoundaryArgs {
   request: Request;
@@ -84,6 +86,7 @@ export async function loader(args: LocaleBoundaryArgs) {
   const snapshot = await resourceLoader.load(locale, ["common"]);
   const session = authSessionForRequest(args.context);
   let canManageAuthorization = false;
+  let unreadNotificationCount: number | undefined;
   if (session) {
     try {
       const resolver = authorizationForRequest(args.context).forUser(session.user.id);
@@ -92,11 +95,28 @@ export async function loader(args: LocaleBoundaryArgs) {
       if (!(error instanceof AuthorizationUnavailableError)) throw error;
       // The header link is presentation-only; the protected admin route checks permission independently.
     }
+
+    try {
+      unreadNotificationCount = await forumReaderForRequest(args.context)
+        .countUnreadReplyNotifications(session.user.id);
+    } catch (error) {
+      if (
+        !(error instanceof ForumStorageUnavailableError)
+        && !(error instanceof ForumReaderConfigurationError)
+      ) throw error;
+      // Header notification count is presentation-only; the protected inbox route handles outage separately.
+    }
   }
   return {
     ...snapshot,
     activeLocales,
-    authUser: session ? { name: session.user.name, canManageAuthorization } : null,
+    authUser: session
+      ? {
+          name: session.user.name,
+          canManageAuthorization,
+          ...(unreadNotificationCount === undefined ? {} : { unreadNotificationCount }),
+        }
+      : null,
   };
 }
 
