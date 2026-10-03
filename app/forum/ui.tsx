@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, isRouteErrorResponse, useLocation, useNavigate, useParams, useRouteError } from "react-router";
 import { useTranslation } from "react-i18next";
-import { forumIndexPath, forumPopularPath, forumSearchPath, forumTagsPath, forumUnansweredPath, underDevelopmentPath } from "./paths";
+import { forumIndexPath, forumPopularPath, forumSearchPath, forumTagsPath, forumUnansweredPath, forumUnreadPath, underDevelopmentPath } from "./paths";
 import { AuthControls, useHeaderAuthUser } from "../auth/auth-controls";
 import { DARK_THEME_QUERY, THEME_STORAGE_KEY, type Theme } from "../theme";
 import { useLocaleNavigation } from "../localization/locale-navigation";
@@ -195,7 +195,7 @@ export function ForumShell({
 }: {
   locale: string;
   children: ReactNode;
-  variant?: "home" | "search" | "popular" | "unanswered" | "tags" | "category" | "section" | "topic" | "admin" | "system";
+  variant?: "home" | "search" | "popular" | "unanswered" | "unread" | "tags" | "category" | "section" | "topic" | "admin" | "system";
 }) {
   const { t } = useTranslation("common");
   const authUser = useHeaderAuthUser();
@@ -203,6 +203,7 @@ export function ForumShell({
     || variant === "search"
     || variant === "popular"
     || variant === "unanswered"
+    || variant === "unread"
     || variant === "tags"
     || variant === "category"
     || variant === "section"
@@ -220,6 +221,8 @@ export function ForumShell({
           ? "forum-shell home-shell popular-shell"
           : variant === "unanswered"
             ? "forum-shell home-shell unanswered-shell"
+            : variant === "unread"
+              ? "forum-shell home-shell unread-shell"
             : variant === "tags"
               ? "forum-shell home-shell tags-shell"
               : variant === "category"
@@ -303,7 +306,7 @@ export function ForumShell({
                 {authUser ? (
                   <Link
                     className="home-discovery-link"
-                    to={underDevelopmentPath(locale, "unread")}
+                    to={forumUnreadPath(locale)}
                     aria-label={t("unreadNav")}
                     title={t("unreadNav")}
                   >
