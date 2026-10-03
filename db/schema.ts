@@ -781,10 +781,6 @@ export const forumReplyNotifications = pgTable(
       columns: [table.topicId, table.postId],
       foreignColumns: [forumPosts.topicId, forumPosts.id],
     }).onDelete("cascade"),
-    check(
-      "forum_reply_notifications_recipient_not_actor_check",
-      sql`${table.recipientUserId} <> ${table.actorUserId}`,
-    ),
   ],
 );
 
