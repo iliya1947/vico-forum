@@ -669,7 +669,6 @@ function HomepageCategoryCard({
           locale={locale}
           topics={pinned}
           emptyLabel={t("homepagePinnedEmpty")}
-          emptyHref={underDevelopmentPath(locale, "pinned-topics")}
           referenceTime={referenceTime}
           showActivity={false}
           pinned
@@ -997,7 +996,10 @@ export function SectionView({
                       </svg>
                     </span>
                     <span className="section-topic-copy">
-                      <strong>{topic.title.originalContent}</strong>
+                      <span className="section-topic-title-line">
+                        <strong>{topic.title.originalContent}</strong>
+                        {topic.isPinned ? <span className="pinned-topic-badge">{t("pinnedHeading")}</span> : null}
+                      </span>
                       <small>{t("startedBy", { author: topic.authorName })}</small>
                       {topicReadStates?.[topic.id] ? (
                         <small className={`section-topic-read-state is-${topicReadStates[topic.id]}`}>
@@ -1166,6 +1168,7 @@ export function TopicView({
   canReply,
   canManageSolution,
   canCorrectTitleSourceLocale,
+  canManagePin,
   correctablePostIds,
   topicReadState,
   actionData,
@@ -1178,6 +1181,7 @@ export function TopicView({
   canReply: boolean;
   canManageSolution: boolean;
   canCorrectTitleSourceLocale: boolean;
+  canManagePin: boolean;
   correctablePostIds: readonly string[];
   topicReadState: ForumTopicReadState | null;
   actionData?: TopicViewActionData;
@@ -1333,7 +1337,10 @@ export function TopicView({
                 <strong>{topic.authorName}</strong>
               </span>
             </div>
-            {topic.isSolved && <strong className="solved-badge">{t("solved")}</strong>}
+            <div className="topic-heading-state-badges">
+              {topic.isPinned && <strong className="pinned-topic-badge">{t("pinnedHeading")}</strong>}
+              {topic.isSolved && <strong className="solved-badge">{t("solved")}</strong>}
+            </div>
           </div>
 
           <div className="topic-heading-content">
@@ -1362,10 +1369,19 @@ export function TopicView({
             </div>
           </div>
 
-          {(canCorrectTitleSourceLocale || (canManageSolution && !topic.isSolved)) && (
+          {(canCorrectTitleSourceLocale || canManagePin || (canManageSolution && !topic.isSolved)) && (
             <details className="secondary-tools topic-heading-secondary">
               <summary>{t("topicTools")}</summary>
               <div className="secondary-tools-panel">
+                {canManagePin && (
+                  <Form method="post" className="pin-topic-form secondary-tools-form">
+                    <input type="hidden" name="intent" value={topic.isPinned ? "unpinTopic" : "pinTopic"} />
+                    <button type="submit">
+                      {t(topic.isPinned ? "unpinTopic" : "pinTopic")}
+                    </button>
+                  </Form>
+                )}
+
                 {canManageSolution && !topic.isSolved && (
                   <Form method="post" className="solution-form secondary-tools-form">
                     <input type="hidden" name="intent" value="markSolved" />
