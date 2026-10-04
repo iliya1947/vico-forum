@@ -97,16 +97,15 @@ Vico Forum находится в ранней pre-release разработке.
   полный repository CI проходят. External migration/Stage 6 rollout не выполнялись.
 - Persisted Pinned topics bounded slice реализован в PR #181 от актуального `main`: forward
   migration `0025_forum_topic_pins` хранит максимум один active pin на topic с DB-owned
-  `pinnedAt`, actor reference и cascade lifecycle. Новый code-backed permission
+  `pinnedAt`, topic-delete cascade и actor reference с `RESTRICT`, как у authoritative forum authors. Новый code-backed permission
   `forum.topic.pin` входит в initial grants moderator/admin, но не user; авторство темы само по
   себе право не даёт, а pin/unpin mutation повторно проверяет authenticated same-origin effective
   permission server-side. Homepage получает реальные pins set-based с DB-side rank/limit по
   category, deterministic order `pinnedAt DESC, topicId DESC`, current title/author и latest
   activity без N+1. Section/topic presentation показывает pin независимо от solved/unread/new;
   topic tools дают idempotent Pin/Unpin только при permission. Пустой Pinned block теперь truthful
-  non-link state, а `pinned-topics` удалён из Under development. Repository CI для implementation
-  head до docs-only sync прошёл полностью; external migration/Stage 6 rollout не выполнялись.
-  Pages/owner visual acceptance этого slice ещё не зафиксированы.
+  non-link state, а `pinned-topics` удалён из Under development. External migration/Stage 6 rollout
+  не выполнялись. Exact-head CI/Pages и owner visual acceptance этого slice ещё не зафиксированы.
 - Category-page discovery slice в PR #159 прошёл owner visual acceptance в GitHub Pages:
   owner-approved header/logo/discovery nav переиспользованы без backend/DB изменений; category
   heading показывает только derived section/topic/message totals, section rows стали compact
