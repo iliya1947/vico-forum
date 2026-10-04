@@ -19,13 +19,10 @@ describe("UI preview state catalog", () => {
 
 
 describe("embedded preview routing", () => {
-  it("opens the real category view from a homepage rail", async () => {
+  it("opens the real section view directly from the homepage category map", async () => {
     render(<EmbeddedPreview scenarioId="home-guest" />);
 
-    await userEvent.click(await screen.findByRole("link", { name: "Open Development" }));
-
-    expect(await screen.findByRole("heading", { level: 1, name: "Development" })).toBeInTheDocument();
-    const sectionLink = screen.getByRole("link", { name: /TypeScript & architecture/ });
+    const sectionLink = await screen.findByRole("link", { name: /TypeScript & architecture/ });
     expect(sectionLink).toBeInTheDocument();
 
     await userEvent.click(sectionLink);
