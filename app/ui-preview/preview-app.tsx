@@ -326,17 +326,6 @@ const topic = {
 };
 
 
-const previewReferenceTime = "2026-09-30T16:00:00.000Z";
-
-function homepageTopic(
-  id: string,
-  title: string,
-  authorName: string,
-  activityAt: string,
-) {
-  return { id, title, authorName, activityAt };
-}
-
 function homepageCategories(locale: PreviewLocale): HomepageCategoryOverview[] {
   const rtl = locale === "he";
   const russian = locale === "ru";
@@ -394,27 +383,46 @@ function homepageCategories(locale: PreviewLocale): HomepageCategoryOverview[] {
         ];
   const icons = ["help", "ai", "code", "deploy", "projects", "community"];
   const ids = ["help-solutions", "vibe-ai-tools", "development", "deploy-infrastructure", "projects-reviews", "community"];
+  const topicTotals = [0, 64, 10, 43, 27, 31];
+  const messageTotals = [0, 387, 76, 296, 148, 203];
+  const genericSectionNames = rtl
+    ? ["כללי", "שאלות", "פרקטיקה"]
+    : russian
+      ? ["Основное", "Вопросы", "Практика"]
+      : ["General", "Questions", "Practice"];
 
-  return ids.map((id, index) => ({
-    id,
-    name: names[index]!,
-    description: descriptions[index]!,
-    icon: icons[index]!,
-    sectionCount: [4, 5, 6, 4, 3, 3][index]!,
-    topicCount: [38, 64, 91, 43, 27, 31][index]!,
-    messageCount: [214, 387, 624, 296, 148, 203][index]!,
-    pinnedTopics: [
-      homepageTopic(`${id}-pinned-1`, rtl ? "כללי המדור ומשאבים שימושיים" : russian ? "Правила раздела и полезные материалы" : "Section guide and useful resources", "Vico Team", "2026-09-29T09:30:00.000Z"),
-      homepageTopic(`${id}-pinned-2`, rtl ? "לפני שפותחים נושא חדש" : russian ? "Перед созданием новой темы" : "Before you open a new topic", "Maya Cohen", "2026-09-28T14:00:00.000Z"),
-      homepageTopic(`${id}-pinned-3`, rtl ? "אוסף קישורים מומלץ" : russian ? "Рекомендуемая подборка материалов" : "Recommended reference collection", "Sam Chen", "2026-09-27T18:00:00.000Z"),
-    ],
-    latestTopics: [
-      homepageTopic(`${id}-latest-1`, rtl ? "איך לבחור את הגבול הנכון לפתרון?" : russian ? "Как выбрать правильную границу решения?" : "How do I choose the right boundary for this?", "Alex Rivera", "2026-09-30T15:42:00.000Z"),
-      homepageTopic(`${id}-latest-2`, rtl ? "מה הדרך הפשוטה לבדוק את זה?" : russian ? "Как проще всего это проверить?" : "What is the simplest way to test this?", "Noa Levi", "2026-09-30T13:15:00.000Z"),
-      homepageTopic(`${id}-latest-3`, rtl ? "דוגמה מעשית מפרויקט אמיתי" : russian ? "Практический пример из реального проекта" : "A practical example from a real project", "Sam Chen", "2026-09-29T17:30:00.000Z"),
-      homepageTopic(`${id}-latest-4`, rtl ? "האם כדאי לפשט את המבנה?" : russian ? "Стоит ли упростить эту структуру?" : "Should this structure be simplified?", "Maya Cohen", "2026-09-28T11:00:00.000Z"),
-    ],
-  }));
+  function distribute(total: number, count: number, index: number) {
+    return Math.floor(total / count) + (index < total % count ? 1 : 0);
+  }
+
+  return ids.map((id, index) => {
+    const sections = id === "help-solutions"
+      ? []
+      : id === "development"
+        ? (rtl ? categoryRtl : russian ? categoryRu : category).sections.map((section) => ({
+            id: section.id,
+            name: section.name,
+            topicCount: section.topicCount,
+            messageCount: section.postCount,
+          }))
+        : genericSectionNames.map((name, sectionIndex) => ({
+            id: `${id}-preview-${sectionIndex + 1}`,
+            name,
+            topicCount: distribute(topicTotals[index]!, genericSectionNames.length, sectionIndex),
+            messageCount: distribute(messageTotals[index]!, genericSectionNames.length, sectionIndex),
+          }));
+
+    return {
+      id,
+      name: names[index]!,
+      description: descriptions[index]!,
+      icon: icons[index]!,
+      sectionCount: sections.length,
+      topicCount: sections.reduce((sum, section) => sum + section.topicCount, 0),
+      messageCount: sections.reduce((sum, section) => sum + section.messageCount, 0),
+      sections,
+    };
+  });
 }
 
 function popularPeriods(locale: PreviewLocale): ForumPopularPage {
@@ -833,21 +841,14 @@ function previewCategory(locale: PreviewLocale, routeCategoryId: string | undefi
   const overview = homepageCategories(locale).find((item) => item.id === routeCategoryId);
   if (!overview) return localizedCategory;
 
-  const sectionNames = locale === "ru"
-    ? ["Основное", "Вопросы", "Практика"]
-    : locale === "he"
-      ? ["כללי", "שאלות", "פרקטיקה"]
-      : ["General", "Questions", "Practice"];
-  const visibleSectionCount = Math.min(overview.sectionCount, sectionNames.length);
-
   return {
     id: overview.id,
     name: overview.name,
-    sections: Array.from({ length: visibleSectionCount }, (_, index) => ({
-      id: `${overview.id}-preview-${index + 1}`,
-      name: sectionNames[index]!,
-      topicCount: Math.max(1, Math.round(overview.topicCount / visibleSectionCount)),
-      postCount: Math.max(1, Math.round(overview.messageCount / visibleSectionCount)),
+    sections: overview.sections.map((section) => ({
+      id: section.id,
+      name: section.name,
+      topicCount: section.topicCount,
+      postCount: section.messageCount,
     })),
   };
 }
@@ -1094,7 +1095,6 @@ function previewElement(scenario: Scenario) {
         <HomeView
           locale={scenario.locale}
           categories={homepageCategories(scenario.locale)}
-          referenceTime={previewReferenceTime}
         />
       );
     case "search":
