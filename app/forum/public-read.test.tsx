@@ -57,11 +57,11 @@ const reader: ForumReader = {
     sectionCount: 1,
     topicCount: 1,
     messageCount: 1,
-    latestTopics: [{
-      id: topic.id,
-      title: topic.title.originalContent,
-      authorName: topic.authorName,
-      activityAt: topic.posts[0]!.createdAt,
+    sections: [{
+      id: section.id,
+      name: section.name,
+      topicCount: 1,
+      messageCount: 1,
     }],
   }],
   readPopular: async () => ({
@@ -268,7 +268,10 @@ describe.each([
     expect(topicData.generationUnits).toEqual([]);
 
     const homeView = renderRoute(Home, home, `/${locale}`, locale, direction);
-    expect(await screen.findByRole("link", { name: "Development" })).toHaveAttribute("href", `/${locale}/categories/development%2Fcore`);
+    expect(await screen.findByRole("link", { name: "Development" }))
+      .toHaveAttribute("href", `/${locale}/categories/development%2Fcore`);
+    expect(screen.getByRole("link", { name: /TypeScript/ }))
+      .toHaveAttribute("href", `/${locale}/sections/typescript%2Fbasics`);
     expect(document.querySelector(`[dir="${direction}"]`)).toBeInTheDocument();
     homeView.unmount();
 
