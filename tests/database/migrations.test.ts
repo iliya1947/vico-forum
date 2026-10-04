@@ -384,11 +384,15 @@ describe("PostgreSQL 17 locale migrations", () => {
       );
       expect(topicCascade.rows[0]?.count).toBe(0);
 
-      await client.query('delete from "user" where id = \'pin-actor\'');
-      const actorCascade = await client.query<{ count: number }>(
+      await expectDatabaseCode(
+        client.query('delete from "user" where id = \'pin-actor\''),
+        "23503",
+      );
+      const actorReference = await client.query<{ count: number }>(
         "select count(*)::int as count from forum_topic_pins where topic_id = 'pin-topic-a'",
       );
-      expect(actorCascade.rows[0]?.count).toBe(0);
+      expect(actorReference.rows[0]?.count).toBe(1);
+      await client.query("delete from forum_topic_pins where topic_id = 'pin-topic-a'");
     } finally {
       await firstPool.end();
       await secondPool.end();
