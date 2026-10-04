@@ -398,7 +398,6 @@ export class DrizzleForumRepository {
       .select({
         id: forumCategories.id,
         name: forumCategories.name,
-        createdAt: forumCategories.createdAt,
       })
       .from(forumCategories)
       .orderBy(
@@ -442,7 +441,7 @@ export class DrizzleForumRepository {
       sectionsByCategory.set(section.categoryId, sections);
     }
 
-    return categories.map(({ createdAt: _createdAt, ...category }) => {
+    return categories.map((category) => {
       const sections = sectionsByCategory.get(category.id) ?? [];
       return {
         ...category,
