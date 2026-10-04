@@ -23,6 +23,6 @@ ALTER TABLE "forum_topic_pins" ADD CONSTRAINT "forum_topic_pins_topic_id_forum_t
   FOREIGN KEY ("topic_id") REFERENCES "public"."forum_topics"("id") ON DELETE cascade ON UPDATE no action;
 --> statement-breakpoint
 ALTER TABLE "forum_topic_pins" ADD CONSTRAINT "forum_topic_pins_pinned_by_user_id_user_id_fk"
-  FOREIGN KEY ("pinned_by_user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;
+  FOREIGN KEY ("pinned_by_user_id") REFERENCES "public"."user"("id") ON DELETE restrict ON UPDATE no action;
 --> statement-breakpoint
 CREATE INDEX "forum_topic_pins_order_idx" ON "forum_topic_pins" USING btree ("pinned_at","topic_id");
