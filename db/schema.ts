@@ -680,7 +680,7 @@ export const forumTopicPins = pgTable(
       .references(() => forumTopics.id, { onDelete: "cascade" }),
     pinnedByUserId: text("pinned_by_user_id")
       .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
+      .references(() => user.id, { onDelete: "restrict" }),
     pinnedAt: timestamp("pinned_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
