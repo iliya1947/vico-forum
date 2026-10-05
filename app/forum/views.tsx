@@ -607,7 +607,7 @@ function HomepageCategoryCard({
       <header className="home-category-header">
         <div className="home-category-identity">
           <HomepageCategoryIcon icon={category.icon} name={category.name} />
-          <div>
+          <div className="home-category-copy">
             <h2>
               <Link to={forumCategoryPath(locale, category.id)}>{category.name}</Link>
             </h2>
