@@ -76,12 +76,14 @@ describe("homepage category map", () => {
             name: "Development",
             description: "Frontend, backend, architecture, languages, and testing.",
             icon: "code",
-            sectionCount: 2,
-            topicCount: 12,
-            messageCount: 48,
+            sectionCount: 4,
+            topicCount: 22,
+            messageCount: 78,
             sections: [
               { id: "typescript", name: "TypeScript & architecture", topicCount: 7, messageCount: 31 },
               { id: "databases", name: "Databases", topicCount: 5, messageCount: 17 },
+              { id: "testing", name: "Testing", topicCount: 6, messageCount: 18 },
+              { id: "frontend", name: "Frontend", topicCount: 4, messageCount: 12 },
             ],
           },
         ]}
@@ -94,20 +96,25 @@ describe("homepage category map", () => {
     expect(categoryLinks[0]).toHaveAttribute("href", "/en/categories/help-solutions");
     const developmentToggle = screen.getByRole("button", { name: "Development" });
     expect(developmentToggle).toHaveAttribute("aria-expanded", "false");
-    expect(screen.queryByRole("link", { name: /TypeScript & architecture/ })).not.toBeInTheDocument();
-
-    fireEvent.click(developmentToggle);
-
-    expect(developmentToggle).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByRole("link", { name: /TypeScript & architecture/ }))
       .toHaveAttribute("href", "/en/sections/typescript");
     expect(screen.getByRole("link", { name: /Databases/ }))
       .toHaveAttribute("href", "/en/sections/databases");
+    expect(screen.getByRole("link", { name: /Testing/ }))
+      .toHaveAttribute("href", "/en/sections/testing");
+    expect(screen.queryByRole("link", { name: /Frontend/ })).not.toBeInTheDocument();
+
+    fireEvent.click(developmentToggle);
+
+    expect(developmentToggle).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("link", { name: /Frontend/ }))
+      .toHaveAttribute("href", "/en/sections/frontend");
 
     fireEvent.click(developmentToggle);
 
     expect(developmentToggle).toHaveAttribute("aria-expanded", "false");
-    expect(screen.queryByRole("link", { name: /TypeScript & architecture/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /TypeScript & architecture/ })).toBeVisible();
+    expect(screen.queryByRole("link", { name: /Frontend/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Pinned" })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Latest topics" })).not.toBeInTheDocument();
   });
@@ -129,11 +136,8 @@ describe("homepage category map", () => {
 
     expect(await screen.findByRole("link", { name: "Help & solutions" }))
       .toHaveAttribute("href", "/en/categories/help-solutions");
+    expect(screen.queryByRole("button", { name: "Help & solutions" })).not.toBeInTheDocument();
     expect(screen.queryByText("There are no sections in this category yet.")).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "Help & solutions" }));
-
-    expect(screen.getByText("There are no sections in this category yet.")).toBeVisible();
   });
 
   it("routes unfinished shell destinations to development and implemented discovery destinations to real pages", async () => {
