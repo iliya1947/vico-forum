@@ -1267,6 +1267,7 @@ p {
 
 .home-category-sections .category-section-card {
   min-height: 0;
+  margin-inline-start: -0.4rem;
   border-start-start-radius: 0;
   border-end-start-radius: 0;
   box-shadow: none;
@@ -1275,7 +1276,8 @@ p {
 .home-category-sections .category-section-main {
   gap: 0.45rem;
   padding-block: 0;
-  padding-inline: 0.55rem;
+  padding-inline-end: 0.55rem;
+  padding-inline-start: 0.95rem;
 }
 
 .home-category-sections .category-section-icon {
