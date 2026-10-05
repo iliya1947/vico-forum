@@ -25,7 +25,7 @@ describe("embedded preview routing", () => {
     const categoryToggle = await screen.findByRole("button", { name: "Development" });
     await userEvent.click(categoryToggle);
 
-    const sectionLink = await screen.findByRole("link", { name: "TypeScript & architecture" });
+    const sectionLink = await screen.findByRole("link", { name: /TypeScript & architecture/ });
     expect(sectionLink).toBeInTheDocument();
 
     await userEvent.click(sectionLink);

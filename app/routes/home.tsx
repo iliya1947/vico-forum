@@ -9,24 +9,11 @@ export function meta() {
 }
 
 export async function loader({ params, context }: { params: { locale?: string }; context: RouterContextProvider }) {
-  const categories = await forumReaderForRequest(context).readHomepage();
-
-  const presentation: HomepageCategoryOverview[] = categories.map((category) => ({
-    ...category,
-    sections: category.sections.map((section) => ({
-      ...section,
-      pinnedTopics: [],
-      latestTopics: section.latestTopics.map((topic) => ({
-        ...topic,
-        activityAt: topic.activityAt.toISOString(),
-      })),
-    })),
-  }));
+  const categories: HomepageCategoryOverview[] = await forumReaderForRequest(context).readHomepage();
 
   return {
     locale: params.locale ?? "en",
-    referenceTime: new Date().toISOString(),
-    categories: presentation,
+    categories,
   };
 }
 

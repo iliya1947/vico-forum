@@ -1243,7 +1243,12 @@ p {
 }
 
 .home-category-sections .category-section-list {
-  gap: 0.65rem;
+  gap: 0.45rem;
+}
+
+.home-category-sections .category-section-card {
+  min-height: 4.25rem;
+  box-shadow: none;
 }
 
 .home-category-empty {
@@ -1269,7 +1274,7 @@ p {
 
 @media (max-width: 29.99rem) {
   .home-forum-categories {
-    gap: 1rem;
+    gap: 0.75rem;
     padding-inline: 0.55rem;
   }
 

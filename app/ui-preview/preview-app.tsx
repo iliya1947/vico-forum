@@ -450,18 +450,13 @@ function homepageCategories(locale: PreviewLocale): HomepageCategoryOverview[] {
             name: section.name,
             topicCount: section.topicCount,
             messageCount: section.postCount,
-            ...previewCategoryTopics(locale, section.id, section.name),
           }))
-        : genericSectionNames.map((name, sectionIndex) => {
-            const sectionIdValue = `${id}-preview-${sectionIndex + 1}`;
-            return {
-              id: sectionIdValue,
-              name,
-              topicCount: distribute(topicTotals[index]!, genericSectionNames.length, sectionIndex),
-              messageCount: distribute(messageTotals[index]!, genericSectionNames.length, sectionIndex),
-              ...previewCategoryTopics(locale, sectionIdValue, name),
-            };
-          });
+        : genericSectionNames.map((name, sectionIndex) => ({
+            id: `${id}-preview-${sectionIndex + 1}`,
+            name,
+            topicCount: distribute(topicTotals[index]!, genericSectionNames.length, sectionIndex),
+            messageCount: distribute(messageTotals[index]!, genericSectionNames.length, sectionIndex),
+          }));
 
     return {
       id,
@@ -1162,7 +1157,6 @@ function previewElement(scenario: Scenario) {
         <HomeView
           locale={scenario.locale}
           categories={homepageCategories(scenario.locale)}
-          referenceTime={previewReferenceTime}
         />
       );
     case "search":

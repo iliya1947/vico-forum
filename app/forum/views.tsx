@@ -39,11 +39,9 @@ import { Breadcrumbs, EmptyState, ForumShell } from "./ui";
 export function HomeView({
   locale,
   categories,
-  referenceTime,
 }: {
   locale: string;
   categories: readonly HomepageCategoryOverview[];
-  referenceTime: string;
 }) {
   const { t } = useTranslation("common");
   const totals = categories.reduce(
@@ -66,7 +64,6 @@ export function HomeView({
                 key={category.id}
                 locale={locale}
                 category={category}
-                referenceTime={referenceTime}
               />
             ))}
           </section>
@@ -595,11 +592,9 @@ export function TagView({
 function HomepageCategoryCard({
   locale,
   category,
-  referenceTime,
 }: {
   locale: string;
   category: HomepageCategoryOverview;
-  referenceTime: string;
 }) {
   const { t } = useTranslation("common");
   const [expanded, setExpanded] = useState(false);
@@ -636,18 +631,38 @@ function HomepageCategoryCard({
               <ul className="category-section-list">
                 {category.sections.map((section) => (
                   <li key={section.id}>
-                    <CategorySectionCard
-                      locale={locale}
-                      referenceTime={referenceTime}
-                      section={{
-                        id: section.id,
-                        name: section.name,
-                        topicCount: section.topicCount,
-                        postCount: section.messageCount,
-                        pinnedTopics: section.pinnedTopics,
-                        latestTopics: section.latestTopics,
-                      }}
-                    />
+                    <Link className="category-section-card" to={forumSectionPath(locale, section.id)}>
+                      <span className="category-section-main">
+                        <span className="category-section-icon" aria-hidden="true">
+                          <svg viewBox="0 0 24 24">
+                            <path d="M4 6.5h6l2 2h8v9H4z" />
+                            <path d="M7 12h10M7 15h7" />
+                          </svg>
+                        </span>
+                        <strong>{section.name}</strong>
+                      </span>
+
+                      <span
+                        className="category-section-stats"
+                        role="group"
+                        aria-label={`${t("topicCount", { count: section.topicCount })} · ${t("messageCount", { count: section.messageCount })}`}
+                      >
+                        <span aria-hidden="true">
+                          <strong>{section.topicCount}</strong>
+                          <small>{t("topicsHeading")}</small>
+                        </span>
+                        <span aria-hidden="true">
+                          <strong>{section.messageCount}</strong>
+                          <small>{t("postsColumn")}</small>
+                        </span>
+                      </span>
+
+                      <span className="category-section-enter" aria-hidden="true">
+                        <svg viewBox="0 0 24 24">
+                          <path d="m9 5 7 7-7 7" />
+                        </svg>
+                      </span>
+                    </Link>
                   </li>
                 ))}
               </ul>

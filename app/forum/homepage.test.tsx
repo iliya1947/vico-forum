@@ -46,8 +46,6 @@ function runtime() {
   });
 }
 
-const referenceTime = "2026-09-30T16:00:00.000Z";
-
 function renderView(element: React.ReactNode, path = "/en") {
   const router = createMemoryRouter([{ path: "*", element }], { initialEntries: [path] });
   return render(
@@ -62,7 +60,6 @@ describe("homepage category map", () => {
     renderView(
       <HomeView
         locale="en"
-        referenceTime={referenceTime}
         categories={[
           {
             id: "help-solutions",
@@ -83,32 +80,8 @@ describe("homepage category map", () => {
             topicCount: 12,
             messageCount: 48,
             sections: [
-              {
-                id: "typescript",
-                name: "TypeScript & architecture",
-                topicCount: 7,
-                messageCount: 31,
-                pinnedTopics: [{
-                  id: "typescript-pinned",
-                  title: "Section guide",
-                  authorName: "Vico Team",
-                  activityAt: "2026-09-29T10:00:00.000Z",
-                }],
-                latestTopics: [{
-                  id: "typed-api",
-                  title: "How should I structure a typed API client?",
-                  authorName: "Alex Rivera",
-                  activityAt: "2026-09-30T15:42:00.000Z",
-                }],
-              },
-              {
-                id: "databases",
-                name: "Databases",
-                topicCount: 5,
-                messageCount: 17,
-                pinnedTopics: [],
-                latestTopics: [],
-              },
+              { id: "typescript", name: "TypeScript & architecture", topicCount: 7, messageCount: 31 },
+              { id: "databases", name: "Databases", topicCount: 5, messageCount: 17 },
             ],
           },
         ]}
@@ -121,26 +94,20 @@ describe("homepage category map", () => {
     expect(categoryLinks[0]).toHaveAttribute("href", "/en/categories/help-solutions");
     const developmentToggle = screen.getByRole("button", { name: "Development" });
     expect(developmentToggle).toHaveAttribute("aria-expanded", "false");
-    expect(screen.queryByRole("link", { name: "TypeScript & architecture" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /TypeScript & architecture/ })).not.toBeInTheDocument();
 
     fireEvent.click(developmentToggle);
 
     expect(developmentToggle).toHaveAttribute("aria-expanded", "true");
-    const typescriptLink = screen.getByRole("link", { name: "TypeScript & architecture" });
-    expect(typescriptLink).toHaveAttribute("href", "/en/sections/typescript");
-    expect(typescriptLink.closest("article")).toHaveClass("home-section-card");
-    expect(screen.getByRole("link", { name: "Databases" }))
+    expect(screen.getByRole("link", { name: /TypeScript & architecture/ }))
+      .toHaveAttribute("href", "/en/sections/typescript");
+    expect(screen.getByRole("link", { name: /Databases/ }))
       .toHaveAttribute("href", "/en/sections/databases");
-    expect(screen.getAllByRole("heading", { name: "Pinned" })).toHaveLength(2);
-    expect(screen.getAllByRole("heading", { name: "Latest topics" })).toHaveLength(2);
-    expect(screen.getByRole("link", { name: "Section guide" })).toHaveAttribute("href", "/en/topics/typescript-pinned");
-    expect(screen.getByRole("link", { name: "How should I structure a typed API client?" }))
-      .toHaveAttribute("href", "/en/topics/typed-api");
 
     fireEvent.click(developmentToggle);
 
     expect(developmentToggle).toHaveAttribute("aria-expanded", "false");
-    expect(screen.queryByRole("link", { name: "TypeScript & architecture" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /TypeScript & architecture/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Pinned" })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Latest topics" })).not.toBeInTheDocument();
   });
@@ -149,7 +116,6 @@ describe("homepage category map", () => {
     renderView(
       <HomeView
         locale="en"
-        referenceTime={referenceTime}
         categories={[{
           id: "help-solutions",
           name: "Help & solutions",
@@ -174,7 +140,6 @@ describe("homepage category map", () => {
     renderView(
       <HomeView
         locale="en"
-        referenceTime={referenceTime}
         categories={[]}
       />,
     );
@@ -197,7 +162,6 @@ describe("homepage category map", () => {
       <HeaderAuthProvider initialUser={{ name: "Ada Lovelace" }}>
         <HomeView
           locale="en"
-          referenceTime={referenceTime}
           categories={[]}
         />
       </HeaderAuthProvider>,
