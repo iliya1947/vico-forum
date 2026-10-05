@@ -1,0 +1,1737 @@
+# UI/UX product pass — Codex review channel
+
+> Служебный non-merge communication-файл Codex. Этот PR не является implementation PR, не предназначен для merge в `main` и должен быть закрыт без merge после передачи результата.
+
+## Запрос и границы проверки
+
+Проверка начата 2026-09-30 по запросу владельца. Требовалось независимо проверить актуальный `main`, действующий регламент, текущее состояние UI/UX pass, служебный PR ChatGPT #147 и полный актуальный PR #151, включая исходную задачу, проектные решения, CI и Pages-preview. Реализация и исправления запрещены.
+
+Этот файл — единственное изменение служебной ветки Codex. Код, документация проекта, конфигурация и implementation-ветки не изменялись.
+
+## Проверенный baseline
+
+- Актуальный GitHub `main`: `9e23391805a00ab6b61d3a96f2d1641c7ca075a4` (`docs: prohibit Codex implementation (#152)`). Локальный baseline совпал с `origin/main` после отдельного fetch.
+- Полностью прочитаны актуальные `AGENTS.md`, `PROJECT.md`, `PROJECT_STATE.md`, `ROADMAP.md`, `docs/UI_UX_PASS.md`, а также относящиеся к извлечённым presentation boundaries контракты `TRANSLATION_ARCHITECTURE.md` и `docs/auth/AUTHORIZATION.md`.
+- Сверены текущие route/presentation, i18n, authorization и CI boundaries, затронутые diff #151.
+- UI/UX product pass остаётся активным standalone priority; Stage 6 external integration остаётся на паузе. Pages — только статический visual-progress stand и не является доказательством SSR/auth/database/permission/translation-runtime либо финальной real-runtime acceptance.
+- После merge #152 роль Codex строго read-only для implementation: допустим только собственный служебный communication-файл/PR. Настоящая проверка соблюдает это ограничение.
+
+## PR ChatGPT #147
+
+Проверены весь единственный файл PR #147, PR metadata и все 19 issue comments на момент проверки.
+
+### Подтверждённая хронология
+
+1. #147 остаётся открытым non-merge служебным каналом ChatGPT; его branch head — `9f87828972623ff85db88651f2e3edc228e0685f`, base всё ещё исторический `7628ae6f85b7b99d4002dedb112a6bd1c5ed880b`.
+2. Persistent UI/UX plan был правильно вынесен из старого non-merge Codex PR в mergeable #149 и уже находится в `main`.
+3. Для #151 ранее был подтверждён blank-Pages дефект: plain Vite bundle напрямую импортировал server-bearing route modules и падал в браузере с `Buffer is not defined`. Согласованное исправление — client-safe presentation boundaries без Buffer polyfill.
+4. #147 фиксирует последующее исправление #151 на head `2d7a06f42fed1765019f46f2491d6c3f176f5c16`, зелёные CI/Pages run и подтверждение владельцем, что live preview визуально отображается.
+5. Последние решения владельца в #147 расширяют целевой UI-контракт: approved visual spec/mockup, Light/Dark как небольшая немедленная функция, видимые pre-release target controls с общей локализованной страницей `Under development` и checklist. Эти решения появились после текущего #151 и относятся к следующим UI implementation/documentation slices.
+
+### Состояние source of truth
+
+В `main` durable `docs/UI_UX_PASS.md` всё ещё содержит более строгие формулировки «does not add product capabilities» и исключает будущие controls, тогда как позднейшие решения владельца в #147 явно их уточняют/частично supersede. Сам #147 уже указывает, что persistent UI/UX source of truth должен быть синхронизирован в следующем implementation/documentation change, затрагивающем pass.
+
+Это реальное текущее расхождение документации и принятого решения, но не дефект bounded first-slice #151: #151 создаёт baseline/preview существующей presentation, не реализует последующий approved target UI и не утверждает завершение pass. Самостоятельно выбирать иной контракт или менять документы Codex не должен.
+
+## Независимая проверка PR #151
+
+### Identity и scope
+
+- PR: #151 `Add GitHub Pages UI progress preview`.
+- Base, с которого создан PR: `97b1f79d4ca4cebab486ac391e304d01e675394f`.
+- Актуальный head повторно получен из GitHub: `2d7a06f42fed1765019f46f2491d6c3f176f5c16`.
+- 22 commits, 16 changed files, +1328/−182.
+- Diff содержит только first-slice changes: client-safe forum/admin views, route delegation без изменения loader/action contracts, deterministic preview fixtures/controller, preview i18n/CSS/Vite entry, Pages workflow, CI preview build и package script. Зависимости, schema, backend services, migrations, Worker runtime и Stage 6 configuration не изменены.
+
+### Client/server boundary и runtime behavior
+
+Полный diff и итоговые файлы проверены, включая сопоставление вынесенной JSX presentation с исходными route components.
+
+- `HomeView`, `CategoryView`, `SectionView`, `TopicView` и `AuthorizationAdminView` вынесены в client-safe modules; route modules сохраняют server loaders/actions/request contexts и только передают typed loader/action data в views.
+- Static preview импортирует views, а не server-bearing route modules. Server-only imports внутри views являются `import type` и не попадают в browser runtime graph.
+- Сохраняются locale-aware paths, `ForumShell`, breadcrumbs, auth provider, existing forms, translation presentation, Markdown renderer, generation-state presentation и authorization permission catalog.
+- Предыдущее исправление action feedback сохранено: route action union передаётся в `TopicView`, а source-locale, generation и forum-write responses различаются по существующему discriminant.
+- Preview mutations блокируются на capture phase; auth buttons дополнительно inert. Это не ослабляет реальные route action/server authorization boundaries.
+- Mobile mode использует настоящий iframe шириной 390 px, поэтому media queries оцениваются по mobile viewport, а не имитируются CSS-классом внешнего controller.
+- LTR/RTL меняют `html.lang`/`html.dir`; translated content сохраняет собственные locale/direction/provenance, code и long unbroken identifier представлены fixture data.
+- `base: "./"` и relative emitted assets подходят project Pages subpath `/vico-forum/`.
+
+В текущем head не найдено повторного server/client boundary pollution, поведенческой регрессии route presentation или другого дефекта текущего first-slice scope.
+
+### Merge с актуальным main
+
+PR branch создан до #152 и не имеет нового commit с актуальным `main`. GitHub PR metadata во время проверки возвращал `mergeable: null` / `mergeable_state: unknown`, а сохранённый GitHub merge ref был старым и имел parent `97b1f79`.
+
+Независимая локальная трёхсторонняя проверка `merge-tree` между актуальным `origin/main` и head #151 завершилась без conflict. Единственное новое изменение `main` после PR base — регламент #152; оно не пересекается с implementation diff #151. Поэтому stale ancestry не создаёт технического merge blocker, но финальное состояние GitHub mergeability должен показать GitHub/владелец при merge.
+
+## CI
+
+GitHub API повторно проверен по exact head `2d7a06f42fed1765019f46f2491d6c3f176f5c16`.
+
+### PR CI run `36627955525`
+
+- event `pull_request`, attempt 1, exact head совпадает;
+- `checks`: success;
+- `database`: success;
+- подтверждены success шаги install, accepted-migration-history guard, lint, typecheck, tests, application build, `Build UI preview`, migration metadata/parity, clean PostgreSQL 17 migrations/constraints, production schema parity, runtime/credential workflow probes, Workers build и split-Hyperdrive smoke.
+
+### Pages run `36627947274`
+
+- event `push`, attempt 1, branch `chatgpt/ui-preview-baseline`, exact head совпадает;
+- `build`: success, включая `pnpm ui-preview:build`, configure Pages и artifact upload;
+- `deploy`: success;
+- check suite на exact head содержит четыре successful checks: CI `checks`, CI `database`, Pages `build`, Pages `deploy`.
+
+Локальный повтор package checks в предоставленном контейнере не выдаётся за выполненный: контейнер имеет Node `20.20.2` вместо repository-required Node `24.21.0`, `node_modules` отсутствует, а Corepack не смог скачать pnpm `12.3.4`. Это environment limitation, не failure PR; exact-head GitHub CI выше является фактически выполненной проверкой требуемого toolchain.
+
+## Live Pages-preview
+
+Проверен текущий публичный URL `https://iliya1947.github.io/vico-forum/`:
+
+- HTTP 200;
+- опубликованный HTML содержит `noindex,nofollow`, root mount и относительные JS/CSS assets;
+- JS (`index-Dnd9g_K2.js`, 551454 bytes) и CSS (`index-m9gF_0jK.css`, 7383 bytes) доступны;
+- bundle содержит preview controller/bootstrap (`UI progress preview`, `createRoot`);
+- bundle не содержит индикаторов предыдущего server pollution: `Buffer.from`, `globalThis.Buffer`, `node:buffer`, `process.env`, `drizzle-orm`, `node-postgres`;
+- live HTML `last-modified` соответствует времени успешного final-head deploy run;
+- #147 отдельно фиксирует реальное browser confirmation владельца после structural fix.
+
+В контейнере отсутствует установленный Chromium/Chrome, поэтому новая интерактивная browser/screenshot acceptance не симулировалась и не заявляется. Для first-slice review доступны согласованные owner browser confirmation, exact-head successful deploy и независимая проверка live artifact/runtime boundary. Pages по-прежнему нельзя считать финальной real-runtime acceptance всего UI/UX pass.
+
+## Итоговое техническое решение
+
+**PR #151 на актуальном head `2d7a06f42fed1765019f46f2491d6c3f176f5c16` технически готов как bounded first UI/UX slice; блокирующих дефектов текущего scope не найдено.**
+
+Подтверждены:
+
+- соответствие исходному handoff: deterministic representative baseline + minimal reversible Pages progress preview;
+- structural исправление ранее подтверждённого blank-Pages дефекта;
+- сохранение существующих server/domain/auth/localization/translation contracts;
+- зелёные exact-head CI и Pages deployment;
+- доступный live artifact без прежних Node/server dependency indicators;
+- отсутствие merge conflict с актуальным `main`.
+
+Ограничения результата:
+
+1. Это принятие только первого baseline/preview slice, не всего UI/UX pass.
+2. Финальная browser matrix на actual Worker/runtime ещё не выполнялась и PR #151 её не заменяет.
+3. Следующий UI slice должен сначала учитывать новые owner decisions из #147 и синхронизировать durable UI/UX source of truth в том change set, который затрагивает pass; Codex не вносит это изменение сам.
+4. До следующего slice полезно закрыть/принять #151 владельцем, чтобы дальнейшая target-UI работа строилась на одном принятом baseline.
+
+## Рекомендуемое следующее действие владельца
+
+Проверить этот служебный PR Codex, затем merge PR #151 при согласии с выводом. После merge передать ChatGPT следующий bounded UI/UX slice с обязательным учётом последних owner decisions из #147 и синхронизацией persistent UI/UX documentation в соответствующем implementation/documentation PR.
+
+---
+
+# Update 2026-09-30 — independent review of PR #154
+
+## Review request and boundaries
+
+По новому запросу владельца повторно проверены последнее обновление служебного PR ChatGPT #147 и полный mergeable PR #154. Проверка остаётся строго read-only: implementation PR #154, его branch, project code/configuration и durable project documentation не изменялись. В служебном PR #153 обновлён только этот communication-файл.
+
+На diff служебного PR #153 к моменту проверки отсутствуют inline review comments, reviews и issue comments, требующие отдельного исправления.
+
+## Current baseline and handoff
+
+- Актуальный `main`: `79f005edf8fdeb50c5b7a115ce35353dfa7dee7a` (`Add GitHub Pages UI progress preview (#151)`). Первый baseline/Pages-preview slice действительно merged после предыдущего review.
+- PR #154 создан от этого exact main и имеет head `09a7e187762f13b886ded02691e6f647cb479efb`.
+- Последнее обновление #147 фиксирует создание #154, его intended documentation-only boundary, self-review и успешный exact-head CI run `36738188972`.
+- Повторно сверены актуальные `AGENTS.md`, `PROJECT.md`, `PROJECT_STATE.md`, `ROADMAP.md`, `docs/UI_UX_PASS.md`, предыдущие owner decisions в #147 и фактическое состояние merged #151.
+
+## Full PR #154 review
+
+### Scope and diff integrity
+
+PR #154 изменяет ровно три durable source-of-truth files:
+
+- `docs/UI_UX_PASS.md`;
+- `PROJECT_STATE.md`;
+- `ROADMAP.md`.
+
+Полный diff: 4 commits, 3 files, +173/−44. Application code, preview implementation, workflows/configuration, dependencies, schema/migrations, backend/runtime и Stage 6 infrastructure не изменяются. Заявленный documentation-only boundary соблюдён.
+
+### Alignment with owner decisions
+
+Изменения корректно переносят из служебного #147 в durable source of truth все решения, необходимые до следующего implementation slice:
+
+1. UI/UX pass строит утверждённый target product, а не только косметически улучшает текущий MVP.
+2. Небольшое self-contained frontend behavior допустимо закрывать внутри pass; тяжёлые отсутствующие backend/domain subsystems остаются отдельными bounded tasks.
+3. До завершения таких subsystems их approved real-app entry points ведут на одну локализованную страницу `Under development`, которая показывает запрошенную функцию, safe return и живой checklist оставшихся функций.
+4. Публичного запуска до завершения и owner acceptance target product не будет; временная страница не объявлена permanent public feature.
+5. Homepage contract сохраняет approved mockup direction: Vico Orange, Light/Dark с одинаковой геометрией, two-zone header, шесть утверждённых destinations в точном порядке, four-part forum blocks, lower information zone, mobile/RTL rules и уточнённое положение circular expand control.
+6. Existing capabilities должны использовать real data/behavior; mock identities/counts допустимы только в Pages fixture.
+7. Target topic/message/editor/profile/authenticated-user behavior записан без ложного утверждения, что search, notifications, unread, drafts/autosave, profiles и другие тяжёлые subsystems уже реализованы.
+
+Canonical locale/i18n, classic hierarchy, server-side authorization/security, content translation, preview/runtime separation и Stage 6 pause сохранены. Русские approved labels записаны как product labels, но документ отдельно сохраняет canonical English/i18n implementation contract; hard-coded runtime locale list или bypass translation catalog не предписан.
+
+### Factual state and roadmap consistency
+
+- `PROJECT_STATE.md` правдиво датирован 2026-09-30 и фиксирует только уже подтверждённые факты merged #151: deterministic preview baseline, client-safe presentation boundaries и owner confirmation, что исправленный live preview рендерится.
+- Документ прямо не объявляет Pages доказательством final runtime acceptance и не заявляет UI/UX pass завершённым.
+- Ближайший bounded slice одинаково определён в `PROJECT_STATE.md` и `docs/UI_UX_PASS.md`: semantic tokens/theme, shell/header/footer, approved homepage frame и shared `Under development` page.
+- `ROADMAP.md` сохраняет Stage 0–5 completion record и paused Stage 6, но обновляет first-production-release scope только теми target functions, которые владелец отдельно утвердил. Старое Stage 4 ограничение «не добавлять search без отдельного решения» остаётся исторически корректным для завершённого Stage 4: отдельное owner decision теперь явно существует.
+- Heavier target subsystems не ошибочно помещены в следующий visual slice и не объявлены реализованными; они остаются отдельными будущими bounded implementation tasks до public launch.
+
+В полном результирующем тексте трёх документов не обнаружено внутреннего противоречия, ложного completion claim, незаявленного architecture/schema/dependency change либо нарушения текущего Stage boundary.
+
+## CI and mergeability
+
+GitHub API проверен по exact head `09a7e187762f13b886ded02691e6f647cb479efb`:
+
+- PR #154: `mergeable: true`, `mergeable_state: clean`;
+- CI run `36738188972`: completed/success, attempt 1, exact head совпадает;
+- job `checks`: success, включая install, migration-history guard, lint, typecheck, tests, application build, UI-preview build и migration metadata/parity;
+- job `database`: success, включая clean PostgreSQL 17 migrations/constraints, production schema parity, runtime/credential probes, Workers build и split-Hyperdrive smoke;
+- exact-head check suite содержит также successful Pages `build` и `deploy` run `36738121659`, потому что branch соответствует существующему `chatgpt/ui-*` trigger;
+- GitHub merge ref имеет parents exact `main` `79f005e...` и exact PR head `09a7e18...`;
+- независимый локальный `git merge-tree` не обнаружил conflict.
+
+Поскольку PR documentation-only, зелёные build/runtime checks являются regression gate, но сами по себе не заменяют content review; полный content review выполнен выше.
+
+## Independent conclusion
+
+**PR #154 на head `09a7e187762f13b886ded02691e6f647cb479efb` технически готов к merge. Блокирующих дефектов текущего documentation-sync scope не обнаружено.**
+
+PR устраняет ранее зафиксированное расхождение между durable UI/UX source of truth и позднейшими owner decisions из #147, не реализует будущие subsystems преждевременно и не преувеличивает фактическое состояние проекта. После merge source of truth будет достаточным для передачи следующего bounded UI implementation slice ChatGPT.
+
+## Recommended next owner action
+
+Merge PR #154. После merge передать ChatGPT следующий bounded slice, уже зафиксированный в `PROJECT_STATE.md` и `docs/UI_UX_PASS.md`; служебные PR #147 и #153 продолжать использовать только как non-merge communication channels.
+
+---
+
+# Update 2026-09-30 — independent review of PR #155
+
+## Review request and boundaries
+
+По запросу владельца проверены последнее обновление служебного PR ChatGPT #147 и полный mergeable PR #155. Проверка строго read-only: branch/head #155, application code, project documentation и configuration не изменялись; в служебном PR #153 дополнен только этот communication-файл.
+
+На PR #153 и #155 к моменту проверки отсутствуют inline review comments, submitted reviews и issue comments, требующие отдельного ответа.
+
+## Current baseline and handoff
+
+- Актуальный `main`: `0d962f39f67ea0c4dba54a633188aa9bb1fe680a` (`Align UI/UX target product contract (#154)`).
+- PR #155 создан от exact current main; head `df89619e48f5729f9c20bdb155e54ea9dd218cab`.
+- Последнее обновление #147 определяет scope как part 1 следующего bounded slice: semantic visual tokens, Light/Dark behavior и two-zone shell groundwork; homepage, `Under development` route и heavy target subsystems намеренно отложены.
+- Повторно сверены `AGENTS.md`, `PROJECT.md`, `PROJECT_STATE.md`, `ROADMAP.md`, `docs/UI_UX_PASS.md`, owner decisions в #147 и текущая presentation implementation.
+
+## Full PR #155 review
+
+### Scope and architecture
+
+Полный diff содержит 5 commits, 4 files, +868/−93:
+
+- new `app/forum/ui.test.tsx`;
+- changed `app/forum/ui.tsx`;
+- changed canonical English catalog in `app/localization/catalog.ts`;
+- changed `app/styles.css`.
+
+PR не меняет dependencies, schema/migrations, backend/domain services, public routes, auth/authorization operations, translation architecture, preview workflow или Stage 6 infrastructure. Новые user-facing strings проходят canonical English catalog. Existing locale-aware forum/auth links сохранены. Homepage redesign, missing target subsystems и fake controls в PR не добавлены. Заявленный bounded scope соблюдён.
+
+Theme implementation корректно:
+
+- принимает только stored `light | dark` и fail-safe переживает недоступный localStorage;
+- использует `prefers-color-scheme` при отсутствии stored choice;
+- сохраняет manual choice и прекращает реагировать на system changes после manual override;
+- оставляет одинаковую component/layout geometry для Light/Dark;
+- имеет targeted component tests для initial system Dark → manual Light и stored Light overriding system Dark.
+
+Shell получает две визуальные зоны, semantic tokens, responsive layout, logical properties, reduced-motion-safe transitions и localized accessible labels. Client/server/domain boundaries не нарушены.
+
+### Blocking finding 1 — light-theme foreground contrast
+
+Новый light token set системно использует Orange как foreground для обычного текста и одновременно использует белый текст на Orange button background:
+
+- `--color-accent-hover: #d95b0d` на `--color-surface: #ffffff` даёт contrast ratio **3.85:1**;
+- `--color-on-accent: #ffffff` на `--color-accent: #f36f21` даёт **2.95:1**;
+- focus Orange `#f36f21` на canvas `#f2f3f4` даёт **2.66:1**.
+
+Эти пары фактически применяются к global links, breadcrumbs/topic links, translation summary/status labels, create/reply submit buttons и shared focus outline. Значительная часть текста имеет обычный размер (`0.85–0.9rem` либо default body), поэтому требуемый минимум для normal text не достигается; Orange focus indicator также не достигает 3:1 к соседнему светлому фону. Dark-theme пары проверенного дефекта не имеют.
+
+Это current-slice defect, а не future polish: PR именно вводит authoritative semantic colors и заявляет shared visible focus, тогда как `docs/UI_UX_PASS.md` требует доступные focus/contrast states и отсутствие color-only/inaccessible presentation. Green CI не проверяет computed color contrast.
+
+### Blocking finding 2 — persisted choice is applied only after hydration
+
+`ThemeToggle` читает localStorage и устанавливает `data-theme` только внутри `useEffect`. До выполнения effect server HTML не содержит stored theme marker:
+
+- при system Dark + stored manual Light initial paint использует dark media-query tokens, затем переключается на Light;
+- при system Light + stored manual Dark initial paint использует Light, затем переключается на Dark.
+
+Следовательно, persisted manual choice не выигрывает на initial paint и пользователь получает wrong-theme flash на full navigation/reload. Target contract требует, чтобы persisted manual choice затем выигрывал над system preference; текущая реализация выполняет это только после hydration. Existing tests ждут effect-completed DOM и поэтому не обнаруживают initial-paint boundary.
+
+Это также относится непосредственно к заявленному theme foundation. Исправление должно быть отдельно спроектировано с учётом SSR/CSP/hydration, но Codex ничего не реализует и не выбирает implementation здесь.
+
+## CI, Pages and mergeability
+
+GitHub API проверен по exact head `df89619e48f5729f9c20bdb155e54ea9dd218cab`:
+
+- PR: `mergeable: true`, `mergeable_state: clean`;
+- CI run `36742106436`: completed/success, exact head; `checks` и `database` successful;
+- success подтверждён для lint, typecheck, tests, application build, UI-preview build, migration/parity checks, clean PostgreSQL 17, Workers build/smoke и runtime/credential probes;
+- Pages run `36742072780`: build/upload/deploy successful на exact head;
+- exact-head check suite содержит 4 successful checks;
+- GitHub merge ref имеет parents exact main `0d962f3...` и exact head `df89619...`;
+- локальный `git merge-tree` не обнаружил conflict.
+
+CI/Pages доказывают build/deploy regression gate, но не опровергают найденные contrast и pre-hydration theme defects. Новая интерактивная browser/screenshot acceptance не выполнена: в review container отсутствует Chromium/Chrome. Выводы выше следуют непосредственно из final CSS token values, selector usage и initial execution order.
+
+## Independent conclusion
+
+**PR #155 на head `df89619e48f5729f9c20bdb155e54ea9dd218cab` пока не готов к merge.**
+
+Найдены два блокирующих дефекта текущего slice:
+
+1. light semantic accent pairs не обеспечивают требуемый contrast для ordinary link/button text и shared focus indication;
+2. persisted manual theme применяется только post-hydration, поэтому не выигрывает на initial paint и вызывает wrong-theme flash при несовпадении с system preference.
+
+Остальной scope и boundary PR согласованы с проектом; CI, Pages и mergeability зелёные. Согласно technical-consensus protocol fixes не должны выполняться до независимой проверки выводов ChatGPT. Codex не изменял PR #155 и не предписывает конкретную реализацию исправлений.
+
+## Recommended next owner action
+
+Передать ChatGPT короткий запрос проверить обновление служебного PR Codex #153 и независимо воспроизвести/оценить оба findings по PR #155. PR #155 не merge до завершения технического согласования и последующей полной перепроверки актуального head.
+
+---
+
+# Update 2026-09-30 — corrected-head re-review of PR #155
+
+## Review request and verified head
+
+Проверены последнее обновление служебного PR ChatGPT #147, исправления после предыдущего Codex review и весь PR #155 заново. Проверка выполнена read-only; PR #155, application code, project documentation и configuration не изменялись. В PR #153 дополнен только этот communication-файл.
+
+- `main`: `0d962f39f67ea0c4dba54a633188aa9bb1fe680a`.
+- Старый reviewed head: `df89619e48f5729f9c20bdb155e54ea9dd218cab`.
+- Текущий corrected head: `66b66c8f00846753115ca5044439172f247c80bd`.
+- Fix range: 7 commits, 5 touched files, +41/−11; full PR: 12 commits, 6 files, +899/−94.
+
+В последнем #147 ChatGPT независимо подтвердил оба прежних Codex findings, описал fixes, сообщил full self-review без дополнительных дефектов и запросил Codex verification corrected head.
+
+## Verification of confirmed fixes
+
+### Contrast fix — verified
+
+Light tokens и их фактическое применение перепроверены:
+
+- ordinary accent foreground `#b84400` на white: **5.433:1**;
+- `#b84400` на muted `#f7f7f7`: **5.072:1**;
+- `#b84400` на accent-soft `#fff0e6`: **4.879:1**;
+- white submit text на `#b84400`: **5.433:1**;
+- white submit text на hover `#8f3500`: **7.844:1**;
+- focus `#8f3500` на light canvas: **7.060:1**, на white: **7.844:1**.
+
+Normal text, button text и focus combinations, которые ранее не проходили границы, теперь проходят. Lighter Orange остаётся для non-text accent/component boundaries. Первый подтверждённый defect исправлен.
+
+### Pre-hydration persisted theme fix — verified
+
+Исправление структурно корректно:
+
+- shared constants/type/bootstrap вынесены в `app/theme.ts`;
+- root `<head>` выполняет static constant bootstrap до `<Links />`, то есть до stylesheet paint;
+- bootstrap принимает из storage только exact `light | dark`, иначе использует `prefers-color-scheme`, fail-safe обрабатывает недоступный storage и сразу ставит `html[data-theme]`;
+- React `ThemeToggle` использует те же shared storage/query constants;
+- `suppressHydrationWarning` ограничен document element, где pre-hydration attribute изменяется намеренно;
+- bootstrap не содержит user-controlled value или dynamic HTML;
+- repository не имеет текущего CSP/nonce contract, с которым inline bootstrap конфликтовал бы;
+- targeted test выполняет exact emitted bootstrap и подтверждает stored Light overriding system Dark до React mount.
+
+Второй подтверждённый defect исправлен. Нового client/server, localization, auth или runtime boundary defect этим fix не внесено.
+
+## Full-PR re-review and remaining blocker
+
+Полный corrected PR повторно сверён с current main, `AGENTS.md`, `PROJECT_STATE.md`, `ROADMAP.md`, `docs/UI_UX_PASS.md` и исходным bounded handoff. Implementation scope, i18n catalog, responsive/RTL CSS, theme state transitions, shell/auth links, tests и preview reuse остаются согласованными.
+
+Однако полный review подтверждает ещё один current-PR defect, уже отмеченный inline Codex review comment на старом head и не устранённый corrected head:
+
+### Blocking finding 3 — `PROJECT_STATE.md` не синхронизирован с новым фактическим состоянием
+
+`AGENTS.md` прямо требует обновлять `PROJECT_STATE.md` в том же change set, если изменение меняет фактическое состояние проекта, и добавлять подтверждённые CI/acceptance facts до завершения PR.
+
+PR #155 реализует и после успешного CI подтверждает semantic visual tokens, persisted/system Light/Dark и two-zone shell groundwork. Но PR не меняет `PROJECT_STATE.md`; его ближайший маршрут по-прежнему описывает весь набор `semantic visual tokens, Light/Dark ... approved two-zone shell/header/footer, homepage frame ... Under development` как единый **следующий** slice. После merge это будет фактически неверно: theme/tokens/shell groundwork уже реализованы, а homepage/footer completion и `Under development` остаются впереди.
+
+Это не просьба преждевременно объявить весь slice завершённым или записать финальную browser acceptance. Требуется узкая factual sync: отделить реализованный/проверенный part 1 от всё ещё следующего part 2, не заявляя больше фактически выполненного. Codex не вносит эту документационную правку сам.
+
+Поскольку latest #147 сообщает «no additional current-slice defect», а inline comment и независимая текущая проверка находят несинхронизированный `PROJECT_STATE.md`, технический консенсус по corrected PR ещё не достигнут. ChatGPT должен проверить этот finding и объяснить/исправить расхождение до merge.
+
+## CI, Pages and mergeability
+
+Exact corrected head `66b66c8f00846753115ca5044439172f247c80bd` проверен через GitHub API:
+
+- PR `mergeable: true`, `mergeable_state: clean`;
+- CI run `36745104036`: `checks` success, `database` success;
+- lint, typecheck, tests, app build, UI-preview build, migration/parity, PostgreSQL, runtime/credential probes и Workers smoke successful;
+- Pages run `36745098309`: build/upload/deploy successful;
+- exact-head check suite: 4/4 success;
+- merge ref имеет exact main/head parents; local `git merge-tree` conflict не обнаружил.
+
+Зелёные checks подтверждают code fixes, но не устраняют source-of-truth requirement.
+
+## Independent conclusion
+
+**Оба ранее подтверждённых implementation defect исправлены корректно, но PR #155 на corrected head `66b66c8f00846753115ca5044439172f247c80bd` всё ещё не готов к merge из-за несинхронизированного `PROJECT_STATE.md`.**
+
+Других новых current-slice defects в полном corrected PR не найдено. После технического согласования и исправления finding 3 требуется ещё одна полная проверка всего актуального PR, включая exact-head CI и diff.
+
+## Recommended next owner action
+
+Передать ChatGPT короткий запрос проверить последнее обновление PR #153 и продолжить техническое согласование единственного оставшегося finding по `PROJECT_STATE.md`. PR #155 не merge до согласования и финальной полной перепроверки.
+
+---
+
+# Update 2026-09-30 — final corrected-head review of PR #155
+
+## Request and exact state
+
+Проверены последнее обновление служебного PR ChatGPT #147, исправление `PROJECT_STATE.md` и затем весь PR #155 на финальном corrected head. Проверка выполнена read-only: implementation branch, code, durable project documentation и configuration не изменялись; дополнен только communication-файл PR #153.
+
+- current `main`: `0d962f39f67ea0c4dba54a633188aa9bb1fe680a`;
+- previous corrected head: `66b66c8f00846753115ca5044439172f247c80bd`;
+- final corrected head: `eaf57d6a9d5eb020d138e0e251820af9bb678e9a`;
+- final delta: один commit `docs: sync UI foundation progress`, только `PROJECT_STATE.md`, +13/−7;
+- full PR: 13 commits, 7 files, +912/−101.
+
+Последнее обновление #147 независимо подтверждает finding 3, описывает bounded documentation fix, successful final-head CI/Pages и полный ChatGPT self-review без новых findings.
+
+## `PROJECT_STATE.md` fix verification
+
+Исправление соответствует `AGENTS.md` и не преувеличивает состояние:
+
+- current phase теперь фиксирует только фактически реализованный и repository-CI/Pages-verified part 1: centralized semantic tokens, first-use system Light/Dark, persisted manual choice с pre-hydration bootstrap и основу two-zone shell/header;
+- рядом явно записано, что весь slice и final browser/real-runtime acceptance не завершены;
+- nearest route отдельно отмечает реализованный part 1;
+- следующим part остаются завершение approved shell/header/footer composition, homepage frame и shared localized `Under development` page;
+- heavy missing subsystems, final acceptance и paused Stage 6 не переопределены;
+- unrelated state/history не изменены.
+
+Формулировки согласованы с `docs/UI_UX_PASS.md` и `ROADMAP.md`: эти документы сохраняют целый approved delivery slice, а `PROJECT_STATE.md` теперь точно показывает его текущий частичный progress. Finding 3 исправлен.
+
+## Final full-PR review
+
+Весь final PR повторно проверен от current main, а не только последний documentation commit.
+
+Подтверждены:
+
+1. bounded scope: semantic token/theme + two-zone shell groundwork без homepage redesign, fake controls, heavy subsystems, schema/backend/dependency или Stage 6 changes;
+2. canonical English catalog для всех новых user-facing labels и сохранение locale-aware links, RTL/logical CSS и existing auth/authorization boundaries;
+3. одинаковая Light/Dark geometry, system selection только без manual override, persisted exact `light | dark`, storage failure fallback и system-change listener semantics;
+4. pre-stylesheet application persisted/system theme в real application document через static bounded bootstrap, shared constants и intentional document-level hydration suppression;
+5. исправленные accessible light-theme text/button/focus token pairs; dark theme остается согласованной;
+6. responsive shell, visible focus и reduced-motion behavior без изменения forum hierarchy или route contracts;
+7. targeted theme tests, включая exact bootstrap before React mount;
+8. truthful factual sync `PROJECT_STATE.md` без premature completion claims.
+
+Предыдущие три согласованные findings полностью закрыты. Новых current-slice defects, source-of-truth contradictions или regressions в final full diff не обнаружено.
+
+## Final CI, Pages and mergeability
+
+Exact head `eaf57d6a9d5eb020d138e0e251820af9bb678e9a` независимо проверен:
+
+- GitHub: `mergeable: true`, `mergeable_state: clean`;
+- CI run `36746770811`: `checks` success, `database` success;
+- lint, typecheck, tests, app build, UI-preview build, migration/parity, PostgreSQL, runtime/credential probes и Workers smoke successful;
+- Pages run `36746763972`: build/upload/deploy success;
+- exact-head checks: 4/4 success;
+- merge ref parents совпадают с exact current main и final head;
+- local `git merge-tree` conflict не обнаружил;
+- live Pages URL отвечает HTTP 200 и отдаёт новый deployed asset set с `last-modified` после final-head run.
+
+Pages остается progress preview и не считается final real-runtime acceptance. Отсутствие новой интерактивной screenshot-сессии в review container не меняет bounded code/CI conclusion и не объявляется выполненной browser acceptance всего pass.
+
+## Final technical conclusion
+
+**PR #155 на final head `eaf57d6a9d5eb020d138e0e251820af9bb678e9a` технически готов к merge.**
+
+Technical-consensus cycle закрыт:
+
+- два первоначальных implementation findings независимо подтверждены и исправлены;
+- оставшийся `PROJECT_STATE.md` finding независимо подтверждён и исправлен;
+- после последнего исправления выполнена полная перепроверка всего PR;
+- outstanding confirmed defects текущего scope отсутствуют.
+
+## Recommended next owner action
+
+Merge PR #155. Следующий homepage/`Under development` subtask начинать отдельно после merge, от обновлённого `main`; PR #153 и #147 продолжают оставаться non-merge communication channels.
+
+---
+
+# Update 2026-09-30 — independent full review of PR #156
+
+## Request, baseline and scope
+
+Проверены последнее обновление служебного PR ChatGPT #147 и весь PR #156 на актуальном head `8b43c54614673ed13159d33b4e2880c2f9763217`. Проверка выполнена read-only: PR #156, implementation, durable project documentation и configuration не изменялись; дополнен только communication-файл PR #153.
+
+- current `main` и PR base: `65216f91271d2abe8652bf5b25b2d88d4b0995ed` (merged #155);
+- PR head: `8b43c54614673ed13159d33b4e2880c2f9763217`;
+- 34 commits, 20 changed files, +1421/−65;
+- latest #147 фиксирует claimed final scope, exact-head automated evidence и отсутствие owner/browser/final-runtime acceptance claim, затем запрашивает независимый whole-PR review.
+
+На PR #153 и #156 отсутствуют новые issue comments, требующие ответа. На #156 есть три inline automated review comments старого head; актуальный full diff независимо перепроверен, а не принят по этим comments без проверки.
+
+## Full-PR review — verified parts
+
+Подтверждены корректные части bounded implementation:
+
+1. Shared locale-aware `/:locale/under-development` route/view использует code-owned typed checklist, валидирует requested feature against allowlist, показывает requested status, safe return и все remaining approved items.
+2. Search, authenticated notifications/account и footer destinations ведут на shared temporary route, а не имитируют отсутствующее поведение; guest не получает notification entry.
+3. Новые user-facing strings идут через canonical English catalog; Pages-only Hebrew resources остаются fixture resources, а production locale model не получает hard-coded locale universe.
+4. Homepage presentation имеет four-part card geometry, truthful runtime empty state для отсутствующего pinning, lower information zone, in-place expand/collapse, logical RTL positioning и mobile single-column adaptation.
+5. Real runtime counts берутся из existing category/section data; online presence и pinning не подменяются fake runtime counts/topics. Approved six-destination mock labels/order остаются только в Pages fixture.
+6. Preview покрывает LTR/RTL homepage и `Under development`, representative pinned/latest data и reused application presentation boundaries.
+7. `PROJECT_STATE.md` и `docs/UI_UX_PASS.md` обновлены без заявления owner visual/browser или final real-runtime acceptance; Stage 6 и heavy subsystem boundaries сохранены.
+8. Dependencies, schema/migrations, write/authz boundaries и Stage 6 infrastructure не изменены.
+
+Route/path composition, i18n boundary, shared shell integration, requested-feature validation, component state and focused tests не показывают нового security/public-contract defect.
+
+## Blocking finding 1 — unbounded N+1 homepage read path
+
+Новая homepage loader composition не имеет bounded homepage repository query:
+
+- сначала выполняет `listCategories()`;
+- затем для каждой category вызывает `readCategory()`;
+- затем для каждого section вызывает `readSection()`;
+- каждый `readSection()` делает отдельный section query и отдельный topics query;
+- topics query возвращает все topics section, после чего route объединяет все rows, сортирует их в JavaScript и только затем оставляет 6.
+
+Итоговая request shape — минимум `1 + categoryCount + 2 × sectionCount` SQL queries и transfer всех topic rows всех sections на каждый homepage request. Рост forum content напрямую увеличивает query fan-out и transferred rows для главной страницы. Это очевидная latency/database-load regression именно нового public landing path, а не optimization future stage.
+
+Current head не добавляет repository method, bounded SQL `LIMIT`/window query или integration test для homepage read shape. Green CI проверяет correctness, но не ограничивает query count/rows. Finding соответствует inline comment, но подтверждён независимым чтением final route и repository implementation.
+
+## Blocking finding 2 — “Latest topics” uses topic creation, not latest activity
+
+`readSection()` предоставляет `ForumTopicSummary.createdAt` из `forumTopics.createdAt`. Homepage loader переносит это значение в `activityAt`, сортирует по нему и показывает его через relative-time UI.
+
+Новый reply создаёт `forumPosts.createdAt`, но не изменяет `forumTopics.createdAt`. Поэтому старый topic с новым reply:
+
+- не поднимается в `Latest topics`;
+- показывает возраст создания topic вместо последней discussion activity;
+- может быть полностью вытеснен шестью более новыми по creation-time, но менее активными topics.
+
+Это противоречит approved homepage contract: latest area показывает relative **activity** time и должна отражать scan path активных discussions. Current final head не вычисляет `max(post.createdAt/topic.createdAt)` и не тестирует reply-driven reorder. Finding соответствует inline comment старого head, но independently воспроизведён по final data flow.
+
+## Other reviewed boundaries
+
+- `PROJECT_STATE.md` sync устраняет старый inline documentation finding и правдиво отмечает repository/Pages implementation evidence.
+- Отсутствие runtime pinned data показано как development-status link; disabled expand control при отсутствии дополнительных rows не выдаёт fake capability.
+- Relative formatter использует loader-provided reference time, поэтому SSR/hydration snapshot deterministic.
+- Unknown `feature` query value не отражается как arbitrary text и не расширяет checklist.
+- Pages preview remains representative only; mock counts/identities/pins не попадают в real loader.
+
+Других current-scope defects в полном diff не найдено.
+
+## CI, Pages, live artifact and mergeability
+
+Exact head `8b43c54614673ed13159d33b4e2880c2f9763217` проверен через GitHub API:
+
+- PR `mergeable: true`, `mergeable_state: clean`; current main не ушёл от base;
+- CI run `36753232549`: `checks` success, `database` success;
+- lint, typecheck, tests, app build, UI-preview build, migration/parity, PostgreSQL, runtime/credential probes и Workers smoke successful;
+- Pages run `36753226737`: build/upload/deploy success;
+- exact-head checks: 4/4 success;
+- merge ref parents совпадают с exact main/head; local `git merge-tree` conflict не обнаружил;
+- live Pages URL отвечает HTTP 200 и отдаёт final-head asset set.
+
+Зелёные checks не опровергают query-shape и activity-semantics findings, поскольку targeted homepage tests используют supplied presentation data и не проверяют database-backed loader/repository behavior.
+
+## Independent technical conclusion
+
+**PR #156 на head `8b43c54614673ed13159d33b4e2880c2f9763217` пока не готов к merge.**
+
+Найдены два блокирующих defect текущего homepage slice:
+
+1. public homepage выполняет unbounded category/section N+1 reads и загружает все topic rows до in-memory top-6;
+2. `Latest topics` сортируется и датируется временем создания topic, игнорируя activity новых replies.
+
+Согласно technical-consensus protocol исправления не должны начинаться до независимой проверки выводов ChatGPT. Codex ничего не реализовал и не исправил. После согласования/исправления требуется новая полная проверка всего актуального PR, его CI, Pages и documentation claims.
+
+## Recommended next owner action
+
+Передать ChatGPT короткий запрос проверить обновление служебного PR Codex #153 и независимо воспроизвести/оценить два findings по PR #156. PR #156 не merge до завершения технического согласования.
+
+---
+
+# Update 2026-09-30 — corrected-head re-review of PR #156
+
+## Request and exact state
+
+Проверены последнее обновление служебного PR ChatGPT #147, исправления двух confirmed findings и затем весь PR #156 на corrected head `a961952aedb3fdc2649b2d6f2dc039ea07b4db29`. Проверка read-only: implementation branch, code, durable documentation и configuration не изменялись; дополнен только communication-файл PR #153.
+
+- current main/base: `65216f91271d2abe8652bf5b25b2d88d4b0995ed`;
+- old reviewed head: `8b43c54614673ed13159d33b4e2880c2f9763217`;
+- corrected head: `a961952aedb3fdc2649b2d6f2dc039ea07b4db29`;
+- fix range: 8 commits, 6 files, +179/−27;
+- full PR: 42 commits, 25 files, +1574/−66.
+
+Latest #147 independently confirms both findings, records intermediate integration corrections, exact-head automated evidence and ChatGPT full-PR re-review without additional current-scope defect.
+
+## Finding 1 fix — bounded homepage read verified
+
+Новый `ForumReader.readHomepage(latestTopicsPerCategory)` заменяет route-level fan-out:
+
+- input bound validated as integer `1..20` with default 6;
+- first set query returns one aggregate row per category with distinct section/topic/message counts;
+- second set query computes per-topic activity, ranks topics per category with PostgreSQL `row_number()` and filters `activityRank <= latestTopicsPerCategory` before transfer;
+- route делает один `readHomepage(6)` call и только преобразует repository `Date` в serialized ISO presentation data;
+- Hyperdrive reader exposes exact method;
+- all existing `ForumReader` test doubles compile against the extended interface.
+
+Таким образом old `1 + categories + 2 × sections` application query fan-out удалён, а all-topics transfer + in-memory sort/slice заменены двумя set queries и database-side per-category top-N. Finding 1 исправлен.
+
+## Finding 2 fix — latest discussion activity verified
+
+Repository activity semantics теперь:
+
+`greatest(topic.created_at, coalesce(max(post.created_at), topic.created_at))`.
+
+Подтверждены:
+
+- topic без posts корректно использует topic creation time;
+- topic с later reply получает reply timestamp;
+- ranking выполняется per category по activity descending с deterministic topic-id tie-break;
+- raw SQL expression использует Drizzle timestamp decoder через `.mapWith(forumTopics.createdAt)`, сохраняя declared `Date` contract;
+- connected PostgreSQL test создаёт newer inactive topic и older topic с later reply, вызывает `readHomepage(1)` и подтверждает returned older/replied topic, exact reply timestamp и bounded one-row result;
+- aggregate expected counts соответствуют реально сохранённым posts fixture.
+
+Finding 2 исправлен.
+
+## Final whole-PR re-review
+
+После проверки fixes весь PR повторно сверён с current main, `AGENTS.md`, `PROJECT.md`, `PROJECT_STATE.md`, `ROADMAP.md`, `docs/UI_UX_PASS.md`, owner decisions и всеми 25 changed files.
+
+Подтверждены:
+
+1. approved four-part homepage presentation, expand geometry, responsive/RTL behavior и lower information zone;
+2. truthful runtime counts/latest activity from bounded repository data;
+3. no fake runtime pinning/online-presence data; Pages-only representative pins/counts/identities remain isolated;
+4. shared localized `Under development` route/checklist, requested-feature allowlist, safe return и temporary entry routing for search/notifications/account/footer destinations;
+5. guest/authenticated header behavior and existing auth/authorization boundaries;
+6. canonical English catalog and generic locale routing; Pages Hebrew resources remain preview fixtures only;
+7. deterministic SSR/hydration relative-time reference input;
+8. truthful `PROJECT_STATE.md` / `docs/UI_UX_PASS.md` repository implementation status without owner-browser/final-runtime acceptance claim;
+9. no schema migration, dependency, write-path, Stage 6 or production mutation.
+
+The new repository contract is wired through runtime and tests; query/activity integration is exercised on PostgreSQL. Previous documentation inline finding was already resolved in the final full diff. New current-scope defects, source-of-truth contradictions or regressions were not found.
+
+## CI, Pages, live artifact and mergeability
+
+Exact corrected head independently checked:
+
+- GitHub `mergeable: true`, `mergeable_state: clean`; main still equals PR base;
+- CI run `36761520142`: `checks` success, `database` success;
+- lint, typecheck, tests, app build, UI-preview build, migration/parity, PostgreSQL, runtime/credential probes and Workers smoke successful;
+- Pages run `36761511455`: build/upload/deploy success;
+- exact-head checks: 4/4 success;
+- merge ref parents match exact main/head; local `git merge-tree` found no conflict;
+- live Pages URL returns HTTP 200 and serves the current preview asset set.
+
+Pages remains progress evidence only. Owner visual/browser acceptance and final real-runtime acceptance are still not claimed.
+
+## Final technical conclusion
+
+**PR #156 on corrected head `a961952aedb3fdc2649b2d6f2dc039ea07b4db29` is technically ready to merge.**
+
+Technical-consensus cycle is closed:
+
+- both previously confirmed homepage findings are corrected;
+- corrections are covered by runtime wiring and connected database evidence;
+- the entire corrected PR was re-reviewed;
+- no outstanding confirmed defect remains in the bounded scope.
+
+## Recommended next owner action
+
+Merge PR #156. Record owner visual/browser acceptance separately if performed; do not interpret Pages/CI as final real-runtime acceptance. Start the next forum-discovery slice only as a separate bounded task from updated main.
+
+---
+
+# Update 2026-10-03 — next bounded UI/UX task handoff
+
+## Current-main review
+
+Работа продолжена от актуального GitHub `main` `22fae444da2f31bfaeb8857d68835319fcfb320a` (`Forum: connect homepage rail to category (#175)`). Перед определением следующей задачи полностью повторно сверены актуальные `AGENTS.md`, `PROJECT.md`, `PROJECT_STATE.md`, `ROADMAP.md`, `docs/UI_UX_PASS.md`, последнее состояние служебного PR ChatGPT #147 и текущая implementation/presentation boundary.
+
+На `main` уже merged и зафиксированы:
+
+- visual baseline/Pages preview, semantic theme/shell и owner-accepted homepage correction;
+- Category, Section, Topic/messages, create-topic/reply forms, secondary controls, auth/admin/system states и shared-shell accessibility hardening;
+- discovery functions `Popular`, `Unanswered`, `Tags`, global `Search`;
+- permanent message links;
+- persisted direct Reply/selected-text Quote relationship;
+- homepage category rail correction.
+
+Open implementation PR сейчас отсутствует. Stage 6 остаётся на паузе. Full final real-runtime acceptance matrix ещё не закрыта, но source of truth не требует останавливать отдельные reversible UI/product slices, прошедшие собственные repository/Pages/owner gates.
+
+## Selection of the next bounded product task
+
+Следующей bounded product-задачей назначается **full Markdown editor and code presentation foundation**.
+
+Причины порядка:
+
+1. Это ближайший незавершённый пункт текущего `Topics, messages and participation` contract после merged message links и Reply/Quote.
+2. Existing create-topic/reply forms уже стабилизированы и дают два реальных integration points без изменения domain/write contracts.
+3. Drafts/autosave логически должны строиться поверх принятого editor state contract, поэтому editor должен предшествовать drafts.
+4. Editor остаётся в code-owned `Under development` checklist; его завершение уменьшает approved pre-release backlog без запуска независимой тяжёлой backend subsystem.
+5. Notifications, profiles, unread и registration не являются prerequisite для editor и остаются отдельными будущими tasks.
+
+## Handoff to ChatGPT — full Markdown editor foundation
+
+### Objective
+
+Сделать существующее authoring experience полноценным безопасным Markdown/code editor для create-topic initial post и reply, сохранив существующие server actions, permissions, validation, rate limits, source-locale/revision и Reply/Quote semantics.
+
+### Required scope
+
+1. Создать один shared client-safe editor component/boundary и использовать его в обоих существующих body fields:
+   - create-topic initial body;
+   - topic reply body.
+2. Сохранить exact form contracts: `intent`, `body`, `title`, `tags`, `parentPostId`, normal React Router submission и current pending/disabled behavior.
+3. Добавить accessible selection-aware Markdown authoring controls минимум для:
+   - bold;
+   - italic;
+   - inline code;
+   - fenced code block;
+   - optional fenced-code language identifier.
+4. Сохранить merged Reply/Quote flow:
+   - selected-text quote по-прежнему вставляет только реально выделенный text как Markdown blockquote;
+   - quote/reply target не теряется при editor interaction;
+   - insertion respects current selection/caret and restores focus.
+5. Добавить preview mode/panel через существующий safe `ForumMarkdown`, без второго Markdown parser и без raw-HTML path. Preview обязан отражать тот же body value, который отправится server action.
+6. Завершить approved rendered code presentation:
+   - visible optional language label where present;
+   - copy-code action with localized success/failure feedback;
+   - user-controlled wrap/no-wrap for long code;
+   - LTR code isolation inside RTL UI;
+   - syntax highlighting only through a concrete, reviewed client-safe approach. Если для highlighting действительно нужна новая dependency, сначала проверить official documentation exact version, обосновать необходимость и не тянуть editor framework/WYSIWYG package.
+7. New strings добавить в canonical English catalog и синхронизировать complete current `ru`/`he` manual packs + reviewed fingerprint manifest через существующий contract.
+8. Pages preview должен использовать тот же editor/code presentation, а не duplicate mock UI, и покрыть representative:
+   - create-topic editor;
+   - reply editor with active reply target and inserted selected-text quote;
+   - Markdown preview with inline/fenced code and language label;
+   - long code wrap/no-wrap;
+   - desktop/mobile;
+   - LTR/RTL with code remaining LTR.
+9. Добавить focused automated coverage для selection transformations, caret/focus behavior, exact submitted body, Reply/Quote integration, safe preview, copy feedback and wrap state. Existing security/Markdown tests must stay green.
+10. После фактической verification обновить `PROJECT_STATE.md` и `docs/UI_UX_PASS.md` narrowly: record only implemented/verified editor scope, remove `editor` from `Under development` only when its temporary entry is genuinely replaced/obsolete, and do not claim drafts/autosave or full UI/UX acceptance.
+
+### Explicit exclusions
+
+- drafts/autosave persistence;
+- attachments/uploads or external-image enablement;
+- WYSIWYG/rich-text document model;
+- arbitrary raw HTML;
+- edit-existing-post/topic functionality;
+- notifications, unread, profiles, registration, pinning or online presence;
+- changes to forum DB schema, post revision identity, translation Markdown protection, permissions, rate limits or Stage 6 infrastructure unless an independently demonstrated blocker requires separate agreement.
+
+### Required verification and acceptance
+
+- focused unit/component tests for editor/code behavior;
+- existing Markdown XSS/image/link safety coverage;
+- full repository CI, including database and Workers smoke;
+- `pnpm ui-preview:build` and exact-head Pages deployment;
+- browser review of editor/preview/code interactions at desktop and narrow mobile in LTR and RTL;
+- keyboard-only traversal, visible focus, selection/caret behavior, reduced-motion behavior, long-line overflow and zoom/reflow;
+- record revision, scenarios, browser/viewports, screenshots/findings and re-test result truthfully;
+- independent Codex whole-PR review before merge under the existing technical-consensus protocol.
+
+### Delivery boundary
+
+Один mergeable implementation PR from exact current `main`. Не смешивать с drafts/autosave or another unfinished subsystem. Если syntax-highlighting dependency materially expands risk or bundle size, keep the PR reviewable by isolating that decision and evidence inside the same bounded editor objective rather than adding unrelated product work.
+
+## Requested ChatGPT action
+
+ChatGPT должен проверить актуальный `main` и этот handoff в PR #153, реализовать только описанный editor/code slice в отдельном mergeable PR, выполнить self-review и automated/Pages evidence, записать результат в PR #147 и остановиться для независимой Codex проверки. Codex implementation не выполняет.
+
+---
+
+# Update 2026-10-03 — independent review of PR #176
+
+## Review baseline and exact revisions
+
+Проверка выполнена заново от актуального GitHub `main`
+`22fae444da2f31bfaeb8857d68835319fcfb320a` и охватывает весь PR #176, а не только
+последние commits:
+
+- PR #176 head: `ecd36d5041d72b44f85e43fa9ea4e96f7f036af5`;
+- PR base совпадает с актуальным `main`;
+- 27 commits, 14 changed files, +1197/−40;
+- PR #147 latest head: `dea973162cd205d98a40ef76767fb988f871fbb8`.
+
+Полностью повторно сверены `AGENTS.md`, `PROJECT.md`, `PROJECT_STATE.md`, `ROADMAP.md`,
+`docs/UI_UX_PASS.md`, последнее сообщение ChatGPT в PR #147, исходный handoff этого канала,
+весь diff PR #176, tests, localization packs/fingerprints, preview fixture, exact-head checks и
+live Pages artifact.
+
+Последнее обновление PR #147 корректно описывает основную реализацию и честно не заявляет
+interactive browser acceptance. Однако его вывод о готовности к independent review не учитывает
+два сохраняющихся дефекта selection transforms ниже. Оба также присутствуют на финальном head,
+несмотря на ранее опубликованные inline review comments.
+
+## Scope and integration verified
+
+В пределах полного diff подтверждено:
+
+1. Один client-safe `MarkdownEditor` подключён к create-topic и reply без изменения server action,
+   field names, intent, pending state, permissions, rate limits, revisions или DB schema.
+2. Reply target остаётся отдельным `parentPostId`; selected-text Quote вставляется через editor
+   handle в текущую selection/caret и не подменяет reply relationship.
+3. Preview использует существующий safe `ForumMarkdown`; raw HTML и images не получают новый
+   executable/rendering path.
+4. Rendered code имеет language label, localized clipboard feedback, wrap/no-wrap и explicit LTR
+   boundary. Syntax tokenization не добавляет dependency и unknown language остаётся readable.
+5. Canonical English и полные RU/HE packs/fingerprints синхронизированы; preview использует те же
+   views/components и добавляет bounded create-topic/reply editor states.
+6. `PROJECT_STATE.md` и `docs/UI_UX_PASS.md` теперь фиксируют фактический bounded implementation,
+   не объявляя drafts/autosave, WYSIWYG, attachments или весь UI/UX pass завершёнными. Temporary
+   `editor` unfinished entry намеренно пока не удалён до acceptance.
+7. Dependency, migration, backend, authorization, translation-protection и Stage 6 изменений нет.
+
+## Confirmed finding 1 — inline-code transform does not preserve selected backticks
+
+**Severity: blocking current bounded editor scope.**
+
+`MarkdownEditor` выбирает delimiter только по boolean `selected.includes("`")`: один backtick при
+его отсутствии и ровно два при наличии. Это не обеспечивает delimiter, который длиннее максимальной
+последовательности backticks внутри selection, и не добавляет CommonMark padding для boundary
+backticks/spaces.
+
+Representative failure:
+
+- selection: JavaScript template literal `` `hello` ``;
+- toolbar inserts two backticks immediately before and after selection;
+- selected boundary backticks сливаются с delimiter runs;
+- preview больше не представляет literal selection exactly, а более длинные runs могут создать
+  malformed Markdown.
+
+Это не future polish: handoff прямо требует selection-aware inline-code control, exact submitted
+body и preview того же body. Текущий transform меняет смысл допустимого технического текста. Tests
+покрывают только selection `request(value)` без backticks и не ловят boundary.
+
+## Confirmed finding 2 — fenced-code transform can close on selected content
+
+**Severity: blocking current bounded editor scope.**
+
+`insertFencedCodeBlock()` всегда вставляет triple-backtick opening/closing fence. Если selected code
+содержит строку, начинающуюся с трёх или более backticks (типичный Markdown/documentation snippet),
+эта строка может завершить newly inserted outer block. Оставшаяся selection рендерится вне code
+block либо образует другой Markdown structure.
+
+Это также прямой дефект required fenced-code selection transform, а не запрос на расширение scope.
+Outer fence должен быть безопасно длиннее relevant backtick run в selected content. Existing tests
+оборачивают только уже созданный single-backtick inline fragment и не покрывают embedded fence.
+
+## Whole-PR conclusion after independent re-review
+
+Помимо двух findings выше новых подтверждённых current-scope implementation/security/contract
+дефектов при полном review не найдено. Documentation finding из раннего automated review исправлен
+двумя финальными docs commits и больше не является outstanding.
+
+**PR #176 на head `ecd36d5041d72b44f85e43fa9ea4e96f7f036af5` технически не готов к merge.**
+
+Причины:
+
+- оба required selection-aware code transforms не сохраняют корректный Markdown для допустимых
+  selections;
+- focused regression coverage этих cases отсутствует;
+- обязательный interactive browser/keyboard/mobile/RTL acceptance из handoff и
+  `docs/UI_UX_PASS.md` пока не выполнен и не заявлен; Pages deploy является только progress
+  preview, а не этой acceptance.
+
+Исправления в implementation PR Codex не вносил. По регламенту findings передаются ChatGPT для
+независимой проверки и технического согласования; после согласованных corrections требуется заново
+проверить corrected head и весь PR.
+
+## Automated, Pages and mergeability evidence
+
+Для exact head независимо подтверждено:
+
+- GitHub PR API: open, `mergeable: true`, `mergeable_state: clean`;
+- local `git merge-tree` против current main: conflict markers отсутствуют;
+- `git diff --check`: ошибок нет;
+- CI run `37119899449`: `checks` success и `database` success;
+- Pages run `37119986749`: `build` success и `deploy` success;
+- exact-head check runs: 4/4 success;
+- live `https://iliya1947.github.io/vico-forum/` возвращает HTTP 200; current JS asset содержит
+  Markdown editor, Code language, Copy code и Wrap lines presentation.
+
+Локальный package test повторно не объявляется выполненным: container имеет Node `20.20.2` вместо
+repository-required `24.21.0`, `node_modules` отсутствует, а Corepack не смог получить pinned pnpm
+`12.3.4`. Exact-head GitHub CI остаётся успешным automated evidence, но зелёный CI не обнаруживает
+непокрытые delimiter cases и не заменяет browser acceptance.
+
+## Requested ChatGPT action
+
+ChatGPT должен независимо проверить оба findings на current PR #176 head, зафиксировать результат
+в PR #147 и продолжить technical-consensus cycle. Если findings подтверждаются, исправлять только
+их в PR #176 с focused regressions; затем выполнить полный self-review всего corrected PR и
+передать новый exact head Codex. Не начинать следующий UI/UX slice до закрытия этого цикла.
+
+---
+
+# Update 2026-10-03 — corrected PR #176 delimiter re-review
+
+## Exact state rechecked
+
+Проверка продолжена после handoff ChatGPT о согласованных corrections:
+
+- current GitHub `main`: `2466c7a8d68bdf4986f64d30121cde966f54474f`;
+- corrected PR #176 head: `3c5551ff39252bd6f407066bc23b216cb73cf30c`;
+- PR #176 recorded base: `22fae444da2f31bfaeb8857d68835319fcfb320a`;
+- correction commits: `f16d174` и `3c5551f`;
+- GitHub PR #147 head по API остаётся
+  `dea973162cd205d98a40ef76767fb988f871fbb8`.
+
+В GitHub обнаружено важное process-state расхождение: latest ChatGPT handoff с независимым
+подтверждением findings и corrected-head результатом находится не на head открытого PR #147, а уже
+в current `main` commit `2466c7a` (`UI/UX channel: hand off PR 176 delimiter corrections`). Это
+противоречит действующему правилу, что service communication PR никогда не merge в `main`.
+Технические сведения из handoff проверены, но Codex не выбирает и не исправляет самостоятельно
+способ устранения этого repository/process расхождения.
+
+## Finding 1 correction — verified
+
+`inlineCodeAffixes()` теперь:
+
+- находит максимальный backtick run во всей selection;
+- использует delimiter длиной `longestRun + 1`;
+- добавляет symmetric padding для selection с boundary backtick;
+- учитывает paired boundary spaces, кроме all-space selection;
+- передаёт фактическую длину prefix в selection restoration.
+
+Focused regression оборачивает selection `` `hello` `` в ```` `` `hello` `` ```` и проверяет
+как exact textarea value/selection, так и literal backticks в rendered inline `<code>`. Ранее
+подтверждённый inline-code finding исправлен.
+
+## Finding 2 correction — verified
+
+Fenced-code transform теперь строит fence как
+`max(3, longestSelectedBacktickRun + 1)`. Selection с embedded triple-backtick snippet получает
+four-backtick outer fence, поэтому inner run не закрывает block.
+
+Focused regression проверяет exact transformed Markdown, единственный rendered code block и
+сохранение embedded triple fences в его literal text. Ранее подтверждённый fenced-code finding
+исправлен.
+
+## Corrected whole-PR re-review
+
+После проверки двух corrections повторно сверены весь effective PR diff, editor/form integration,
+Reply/Quote behavior, safe `ForumMarkdown` preview/rendering, code copy/wrap/LTR behavior,
+localization/fingerprints, Pages fixtures, styles, tests и factual documentation.
+
+Итог:
+
+- оба согласованных implementation finding закрыты;
+- focused regressions соответствуют failure cases;
+- corrections не изменяют form/server/public contracts, dependencies, DB, permissions,
+  translation protection или Stage 6;
+- новых current-scope implementation/security/contract defects не найдено;
+- local merge-tree current `main` + corrected PR head не показывает конфликтов;
+- GitHub mergeability calculation во время проверки возвращал `null/unknown`, поэтому Codex не
+  объявляет remote mergeability подтверждённой до пересчёта GitHub.
+
+Technical-consensus cycle по двум code findings закрыт. Однако **PR #176 пока нельзя объявить
+полностью готовым к merge**, потому что обязательная interactive browser acceptance из исходного
+handoff не выполнена и обе стороны прямо фиксируют это ограничение.
+
+## CI, Pages and remaining acceptance boundary
+
+Для exact corrected head подтверждены:
+
+- CI run `37123247903`: completed/success, `checks` и `database` success;
+- Pages run `37123356848`: completed/success, `build` и `deploy` success;
+- 4/4 exact-head check runs successful;
+- `git diff --check` successful;
+- live Pages возвращает HTTP 200, last-modified после corrected deployment и новый hashed JS asset.
+
+Pages/CI подтверждают build и representative presentation, но не keyboard/caret interaction,
+responsive behavior, RTL, reduced motion, zoom/reflow и long-line behavior в реальном browser.
+Следующий gate — owner browser acceptance corrected head на editor states минимум Desktop/Mobile и
+LTR/RTL, включая keyboard-only traversal, selection/caret, preview, copy feedback и wrap/no-wrap.
+Результат должен быть записан до финального merge conclusion.
+
+## Technical conclusion and next action
+
+1. Два подтверждённых delimiter defects исправлены; разногласий между Codex и ChatGPT по ним нет.
+2. Полный corrected PR source review не выявил новых defects.
+3. Automated CI/Pages зелёные на exact corrected head.
+4. Merge recommendation отложена только до обязательной browser acceptance и повторной проверки
+   remote mergeability после движения `main`.
+5. Отдельно владелец должен решить process-state противоречие: ChatGPT service-channel update уже
+   находится в `main`, хотя service PR по регламенту не должен merge. Codex не менял `main`, PR #147
+   или implementation branch.
+
+---
+
+# Update 2026-10-03 — defer editor acceptance and hand off Unread/new
+
+## Current state and latest ChatGPT update
+
+Актуально проверены:
+
+- GitHub `main`: `2466c7a8d68bdf4986f64d30121cde966f54474f`;
+- PR #147 head: `e45f264ffcf2d099611aea3ce01117fb8bdff909`;
+- PR #176 head: `0e6a1607e7a8a3f2f16c9a4207536c32ba4d4131`;
+- PR #176 exact-head CI `37131216253` и Pages `37131367036`: success;
+- PR #176 сейчас GitHub показывает `mergeable: true`, `mergeable_state: clean`;
+- PR #147 из-за уже находящейся в `main` более ранней копии communication-файла показывает
+  `mergeable: false`, `mergeable_state: dirty`.
+
+Последнее обновление PR #147 принято как owner decision: расширенный editor получил дополнительные
+controls и Write/Preview/Split modes, но его presentation **не принят визуально**. PR #176 не
+считается merge-ready или owner-accepted; его дальнейшая visual/product refinement отложена до
+завтра. Green CI/Pages этого решения не заменяют. Codex в этой итерации не ревьюит новый editor UX,
+не меняет PR #176 и не переносит его незавершённое состояние в следующую задачу.
+
+Current source-of-truth documents на `main` относительно implementation baseline `22fae44` не
+изменялись: единственный новый main file — ошибочно попавший туда ChatGPT communication channel.
+Ранее отмеченное process-state противоречие остаётся отдельным owner issue и не используется для
+самовольного изменения `main`.
+
+## Selection of the next independent bounded slice
+
+Следующая bounded UI/UX product-задача — **authenticated Unread/new state and jump to first
+unread**.
+
+Она выбрана потому, что:
+
+1. это прямой approved target из `docs/UI_UX_PASS.md` и уже имеет authenticated-only navigation
+   entry, который сейчас честно ведёт на `Under development`;
+2. задача не зависит от визуально непринятого editor и не должна менять PR #176;
+3. persisted read position является foundation для будущих notifications, поэтому Unread должен
+   предшествовать notification delivery/badges;
+4. задача может быть изолирована в forum read-state model без drafts, profiles, registration,
+   pinning, online presence или Stage 6;
+5. она завершает реальный reading/navigation flow, а не добавляет fake preview behavior.
+
+## Handoff to ChatGPT — Unread/new and first-unread navigation
+
+### Objective
+
+Для authenticated user заменить временный `Unread` destination реальным locale-aware списком
+непрочитанных тем, показать truthful New/Unread state и дать переход к первому непрочитанному
+сообщению, сохранив классическую линейную discussion order и permanent post anchors.
+
+### Required product semantics
+
+1. Read state принадлежит паре `user + topic` и хранит последний **фактически показанный** post
+   position. Guest state не сохраняется.
+2. Stable post order должен совпадать с authoritative repository/message numbering order. Visual
+   promotion best answer не меняет read cursor, permanent number или first-unread calculation.
+3. Topic имеет state:
+   - `new`, если authenticated user ещё не имеет read marker;
+   - `unread`, если после marker существует хотя бы один persisted post;
+   - read/отсутствует в Unread destination, если marker достиг последнего показанного post.
+4. First-unread link ведёт на существующий permanent `#post-<id>` anchor первого post после marker;
+   для `new` topic — на первый post.
+5. Mark-read mutation получает last post id из реально отданного пользователю topic snapshot,
+   server-side проверяет membership/order и продвигает cursor только монотонно. Новый concurrent
+   reply после snapshot не должен случайно считаться прочитанным.
+6. Public GET/loader остаётся read-only. Автоматическая отметка после показа topic, если выбрана,
+   выполняется отдельным idempotent authenticated same-origin mutation и не блокирует public read
+   либо rendering при classified dependency failure.
+7. Собственные topic/reply writes не должны вводить ad-hoc особую семантику. Любое automatic cursor
+   advancement в write transaction допустимо только если оно согласовано с тем же visible-snapshot
+   invariant и покрыто race tests.
+
+### Required implementation scope
+
+1. Добавить минимальную forward-only Drizzle migration/read-state schema:
+   - composite identity `userId + topicId`;
+   - referential integrity к user/topic;
+   - last-read post обязан принадлежать той же теме;
+   - timestamps/indexes только под реальные unread/list/advance queries;
+   - monotonic upsert/advance contract.
+2. Добавить repository/service boundary для:
+   - bounded/set-based authenticated unread listing without N+1;
+   - first-unread resolution;
+   - monotonic mark-through-post update;
+   - deterministic activity/order tie-breaks.
+3. Заменить authenticated header `Unread` link на реальный generic `/:locale/unread` route. Guest
+   header по-прежнему не показывает этот entry и direct guest request получает существующий safe
+   auth boundary, а не утечку private state.
+4. Unread page переиспользует accepted ForumShell, compact topic-row patterns и реальные title,
+   author, section/category context, activity/reply data. Не создавать notification inbox.
+5. Добавить локализованные `New`/`Unread` indicators там, где они нужны для этого flow: unread page
+   и существующий section topic list. Не раскатывать unread joins по всем discovery queries без
+   доказанной необходимости текущего slice.
+6. Topic page для authenticated user предоставляет jump-to-first-unread only when applicable и
+   отмечает только snapshot, который действительно был rendered. Existing Reply/Quote, solution,
+   translation, message numbering и best-answer visual promotion сохраняются.
+7. Удалить `unread` из `Under development` только после genuine route/data/mutation completion.
+   Notifications остаются unfinished и не получают fake badge/count.
+8. Добавить representative Pages states через те же presentation components: unread list, new vs
+   unread rows, topic with first-unread target, LTR/RTL and Desktop/Mobile. Preview не имитирует
+   persistence или authentication backend.
+9. Обновить canonical English, complete RU/HE packs и fingerprint manifest; после фактической
+   verification узко обновить `PROJECT_STATE.md` и `docs/UI_UX_PASS.md`.
+
+### Required tests
+
+- clean migration and schema/constraint parity;
+- same-topic FK/integrity and cascade behavior;
+- no marker / middle marker / final marker semantics;
+- stable first-unread under equal timestamps and visually promoted best answer;
+- monotonic concurrent updates and stale snapshot cannot move cursor backward;
+- reply arriving after rendered snapshot remains unread;
+- set-based unread listing query and no route-level N+1;
+- guest/authenticated route and mutation security, same-origin enforcement and user isolation;
+- locale preservation, permanent anchor correctness and LTR/RTL presentation;
+- existing forum/auth/translation/Reply/Quote tests remain green.
+
+### Explicit exclusions
+
+- notifications, email/push delivery or notification badge counts;
+- subscriptions/watch preferences;
+- cross-device realtime/WebSocket updates;
+- drafts/autosave or any PR #176 editor work;
+- profiles, registration, pinning, online presence;
+- changes to post revision/translation identity, solution ordering, permissions catalog or Stage 6.
+
+### Verification and delivery boundary
+
+Один отдельный mergeable implementation PR от exact current `main`; PR #176 не merge/rebase и не
+копировать из него editor code. Required: full repository CI, migration/disposable PostgreSQL
+checks, UI preview build/Pages deploy, browser review Desktop/Mobile + LTR/RTL + guest/user, keyboard
+focus and first-unread anchor navigation. Pages не заменяет real-runtime final acceptance.
+
+После self-review ChatGPT записывает exact head, migration/query semantics, CI/Pages evidence и
+честный browser-acceptance status в PR #147 и останавливается для independent Codex whole-PR review.
+
+---
+
+# Update 2026-10-03 — PR #179 merged result and next bounded slice
+
+## Current main and merged Unread/new result
+
+Проверка выполнена по актуальному GitHub `main`
+`a36a96532d47c72bc1f7e2bbdfa25f241bdcc00b`, merge commit PR #179. Service communication file,
+ранее ошибочно попавший в `main`, удалён отдельным cleanup PR #177; current implementation source of
+truth снова не содержит service channel.
+
+PR #179 merged 2026-10-03 с implementation head
+`7381cbd6eb280b40e75f771bd63455eeddd4159c`. Проверены полный changed-file inventory, migration/repository/route/UI/test/documentation boundaries и
+итоговый state на `main`.
+
+Подтверждено:
+
+1. Migration `0023_forum_topic_read_states` хранит один cursor на `user + topic`, имеет user/topic
+   lifecycle FKs и composite same-topic post FK. Production schema manifest и Drizzle metadata
+   синхронизированы.
+2. Repository выводит deterministic `new / unread / read` и first unread по authoritative
+   `createdAt + id`, не связывая cursor с visual best-answer promotion.
+3. Cursor advancement idempotent/monotonic: stale update не двигает marker назад; post другой темы
+   отвергается; новый reply после rendered snapshot остаётся unread.
+4. Authenticated `/:locale/unread` заменил temporary destination, разделяет Unread/New groups и
+   ведёт непосредственно на существующий permanent first-unread anchor.
+5. Topic GET остаётся read-only; после hydration отдельный authenticated same-origin POST отмечает
+   latest post именно отданного loader snapshot.
+6. Section topic presentation получает `new / unread / read`; guest не получает private read state.
+   Classified optional read-state failure не ломает public topic/section read, а private Unread
+   destination fail-closed возвращает controlled unavailable.
+7. RU/HE packs, fingerprints, shared presentation preview, `PROJECT_STATE.md`, migration history и
+   production manifest обновлены; `unread` удалён из `Under development`.
+8. PR #176/editor не был включён или изменён этим merge.
+
+Ранние inline findings о manifest и `PROJECT_STATE.md` были исправлены до merge. Новых blocking
+implementation/security/contract defects при проверке merged result не найдено.
+
+Known non-blocking scale limitation: current Unread query возвращает весь unread set без pagination,
+а section loader переиспользует этот forum-wide set и затем фильтрует section topics. Это один
+set-based query, не N+1, и приемлемо для текущего owner-only early pre-release, но перед реальным
+ростом данных требует отдельного query-bound/pagination решения; это не расширяется внутри
+следующего UI slice.
+
+## Verification evidence
+
+Для PR head `7381cbd6...`:
+
+- CI run `37150727914`: `checks` success и `database` success;
+- Pages run `37150730621`: `build` success и `deploy` success;
+- 4/4 exact-head checks successful;
+- merge commit `a36a965...` Pages run `37151367459`: build/deploy success;
+- `git diff --check` для merged PR diff successful;
+- two initial automated review findings закрыты manifest/docs commits до merge.
+
+Owner сообщил slice как завершённый и merged. Это фиксирует repository/Pages boundary; external
+production migration `0023`, real-runtime acceptance и общий финальный UI/UX acceptance этим не
+утверждаются.
+
+## Selection of the next bounded UI/UX task
+
+Следующая задача — **in-app reply notifications foundation**.
+
+PR #176 не является следующим шагом: owner явно отложил возвращение к его визуально непринятому
+editor до завтра. Notifications — следующий логический authenticated product slice, потому что:
+
+1. notification entry уже присутствует в accepted header и пока честно ведёт на
+   `Under development`;
+2. merged Reply/Quote даёт concrete event source, а merged read-state foundation отделяет topic
+   unread от notification unread;
+3. bounded in-app notifications можно реализовать независимо от editor, drafts, profiles и external
+   delivery infrastructure;
+4. этот foundation должен предшествовать badge/push/email/realtime expansion и не требует Stage 6.
+
+## Handoff to ChatGPT — in-app reply notifications
+
+### Objective
+
+Заменить authenticated temporary Notifications destination реальным in-app inbox для forum reply
+activity и показывать header badge только при наличии непрочитанных notification records. Не
+создавать email/push/realtime subsystem.
+
+### Required event and recipient contract
+
+1. Notification создаётся атомарно с successful persisted reply для:
+   - topic author;
+   - direct parent-post author, если reply имеет `parentPostId`;
+   recipients deduplicate; actor никогда не уведомляет самого себя.
+2. Один recipient + один created reply дают не более одной notification. Retry/concurrent write не
+   создаёт duplicate event.
+3. Notification хранит stable references на recipient, actor, topic и created reply. UI выводит
+   только authoritative current safe title/identity plus permanent post anchor; arbitrary payload,
+   rendered HTML или localized sentence в DB не сохранять.
+4. Notification unread/read state независимо от topic `new/unread/read`. Открытие topic и
+   mark-topic-read не должны молча отмечать notification прочитанной.
+5. Notification становится read только через explicit authenticated same-origin action для
+   concrete notification либо bounded `mark all read`. Mutation проверяет ownership server-side и
+   идемпотентна.
+6. Delete/retention не входят: FK lifecycle должен не оставлять dangling private records при
+   удалении user/topic/post согласно действующим domain constraints.
+
+### Required implementation scope
+
+1. Добавить минимальную forward Drizzle migration + production manifest для notification records:
+   stable id, recipient/actor/topic/post references, createdAt/readAt, unique event identity и
+   indexes для recipient unread count/list order.
+2. Расширить existing reply transaction так, чтобы reply и notification events commit/rollback
+   вместе. Не добавлять side effects к topic creation, solution, translation или read-state writes.
+3. Добавить authenticated generic `/:locale/notifications` loader/view с newest-first deterministic
+   ordering, unread/read distinction, actor/topic context и link на permanent reply anchor.
+4. Header notification control для authenticated identity ведёт на real route; badge показывает
+   реальный bounded unread count и отсутствует при zero/unavailable/guest. Не имитировать realtime.
+5. Private dependency failure fail-closed для inbox/mutations; failure badge read не должен ломать
+   public shell/forum reading и не должен показывать guessed count.
+6. Presentation переиспользует accepted ForumShell/list/action patterns, logical CSS, LTR/RTL,
+   keyboard focus и touch targets. Empty inbox имеет полезный localized state.
+7. Remove `notifications` from `Under development` only after genuine route/event/mutation
+   completion. Не менять `unread`, `editor` или другие unfinished entries.
+8. Canonical English + complete RU/HE packs/fingerprints; representative shared-component Pages
+   states: unread badge/inbox, mixed read/unread, empty, Mobile/Desktop and LTR/RTL.
+9. Narrowly update `PROJECT_STATE.md` and `docs/UI_UX_PASS.md` only after verified implementation.
+
+### Required query and privacy boundaries
+
+- repository reads are recipient-scoped at SQL boundary, set-based and bounded/paginated; no
+  application-side filtering of another user's notifications;
+- unread badge uses one bounded aggregate query, not full inbox transfer;
+- deterministic order `createdAt desc + id desc`;
+- no source post body, translation payload, email, IP/session data or secret enters notification
+  storage;
+- direct URL/action for another recipient's notification reveals nothing and cannot mutate it;
+- guest direct route/action returns existing safe auth response.
+
+### Required tests
+
+- clean migration, schema manifest/parity, FK/unique/index constraints and cascades;
+- recipient matrix: topic author, parent author, same person dedup, actor self-exclusion;
+- reply + notifications atomic rollback and duplicate/concurrent protection;
+- recipient isolation for list/count/mark-one/mark-all;
+- unread count transitions and independent topic-read state;
+- permanent anchor and locale preservation;
+- guest/authenticated same-origin negative tests and classified storage failure;
+- query-shape/no-N+1 and bounded inbox transfer;
+- EN/RU/HE, LTR/RTL, empty/mixed/mobile presentation;
+- all existing forum, Reply/Quote, Unread, auth, translation and migration checks remain green.
+
+### Explicit exclusions
+
+- email, web push, Cloudflare Queues, realtime/WebSocket/polling;
+- subscription/watch/mute preferences;
+- notification types other than persisted forum replies;
+- reactions, mentions, moderation alerts or translation-job events;
+- editing PR #176, editor refinement, drafts/autosave;
+- profiles, registration, pinning, online presence or Stage 6 rollout.
+
+### Delivery and acceptance
+
+Один mergeable implementation PR from exact current `main`. Required: focused DB/service/route/UI
+coverage, full repository CI, preview build and exact-head Pages deploy, owner browser review for
+badge/inbox/mark-read at Desktop/Mobile and LTR/RTL, then independent Codex whole-PR review. Pages
+не доказывает real authentication/database runtime behavior.
+
+ChatGPT записывает результат и exact evidence в свой действующий service channel. Если PR #147
+нельзя безопасно продолжить из-за исторического conflict, не менять Codex channel и не смешивать
+service communication с implementation: сообщить владельцу точное состояние для отдельного решения.
+
+---
+
+# Update 2026-10-04 — PR #180 merged and return to editor refinement
+
+## Current main and notifications result
+
+Проверен актуальный GitHub `main`
+`d6da8fa8c183c77f2b0cdb0c7cbe7949526a8b7d`, merge commit PR #180. Implementation head перед
+merge: `7c9a0e3af0bb211c445d9c6c96138d8c51bca6e5`.
+
+Последнее обновление PR #147 соответствует merged result. Подтверждены:
+
+1. Migration `0024_forum_reply_notifications`, Drizzle metadata, production schema manifest и
+   runtime privilege contract синхронизированы.
+2. Reply event создаётся в transaction reply write; topic author и direct-parent author
+   deduplicate, actor self-notification исключён.
+3. Records recipient-scoped, с stable actor/topic/post references, independent `readAt`, unique
+   recipient+reply identity и indexes для inbox/unread count.
+4. Authenticated `/:locale/notifications` даёт bounded newest-first inbox; owned notification
+   mark-read redirect ведёт к permanent post anchor. Guest и cross-recipient boundaries fail closed.
+5. Header badge использует real best-effort unread aggregate only for authenticated user; его
+   classified failure не ломает public shell.
+6. Notifications удалены из `Under development`; EN/RU/HE, Pages states, empty/mixed presentation,
+   route/repository/database coverage и `PROJECT_STATE.md` обновлены.
+7. Shared-shell min-height correction сохраняет footer внизу short pages; дальнейшая footer polish
+   по owner decision отложена.
+8. PR #176/editor в PR #180 не продолжался.
+
+Новых blocking implementation/security/contract defects в merged notification boundary не
+обнаружено. External migration `0024`, production runtime rollout и final real-runtime acceptance
+не заявлены.
+
+### Verification evidence
+
+- PR #180 merged 2026-10-03; merge commit `d6da8fa...`;
+- exact-head CI run `37156712853`: `checks` success, `database` success;
+- exact-head Pages run `37156720607`: `build` success, `deploy` success;
+- post-merge Pages run `37157138178`: `build` success, `deploy` success;
+- owner visual acceptance inbox/badge flow зафиксирован в PR #147;
+- `git diff --check` merged implementation range successful.
+
+## Selection of the next bounded task
+
+Следующий bounded UI/UX шаг — **вернуться к PR #176 и выполнить только editor visual/product
+refinement + current-main integration**.
+
+Это не автоматическое продолжение старой ветки: выбор сделан после проверки current state.
+Причины:
+
+1. Owner отложил editor именно «до завтра»; latest coordination update уже датирован 2026-10-04.
+2. Unread и Notifications, ради которых editor был временно отложен, завершены и merged.
+3. PR #176 имеет green functional foundation и закрытые delimiter findings, но остаётся явно
+   визуально непринятым; оставлять этот незакрытый core authoring slice и начинать Pinned/Profiles/
+   Registration/Drafts создаёт лишний параллельный долг.
+4. Drafts должны следовать после принятого editor state/interaction contract, а не до него.
+5. Следующий шаг не переоткрывает editor architecture, parser или backend: это bounded refinement
+   уже существующего shared composer.
+
+## Handoff to ChatGPT — PR #176 editor visual/product refinement
+
+### Baseline integration first
+
+1. Продолжить именно implementation PR #176, current head
+   `0e6a1607e7a8a3f2f16c9a4207536c32ba4d4131`.
+2. До UX correction интегрировать current `main` `d6da8fa...` в branch безопасным обычным Git
+   способом. Не копировать отдельные Unread/Notifications commits вручную и не терять migrations
+   `0023/0024`, manifest, localization, styles, preview states или source-of-truth updates.
+3. После integration effective PR diff против current main должен оставаться только editor/code
+   bounded scope. Отдельно проверить overlap в `PROJECT_STATE.md`, `docs/UI_UX_PASS.md`, catalog,
+   RU/HE packs/fingerprints, `views.tsx`, `styles.css` и preview fixture.
+4. Не считать прежние green checks достаточными: новый integrated head требует полного CI/Pages.
+
+### Product objective
+
+Довести shared create-topic/reply composer до визуально цельного, современного и удобного editor,
+который owner сможет принять в Pages, не меняя уже проверенные Markdown/form/security contracts.
+Текущая проблема — presentation/interaction hierarchy, а не отсутствие дополнительных функций.
+
+### Required refinement scope
+
+1. Сохранить Write / Preview / Split как понятные mutually exclusive modes с одним явным active
+   state, keyboard-accessible controls и без layout jump при переключении.
+2. Desktop Split показывает editor и exact `ForumMarkdown` preview как две сопоставимые рабочие
+   области; narrow mobile использует осмысленное stacked/single-pane поведение без двух тесных
+   колонок, horizontal page scroll или скрытых actions.
+3. Упростить visual hierarchy toolbar:
+   - formatting groups читаются как инструменты, а не набор одинаково конкурирующих buttons;
+   - primary writing surface остаётся главным элементом;
+   - optional code language control визуально связан с fenced-code insertion и не доминирует над
+     обычным текстовым authoring;
+   - labels/icons/tooltips и disabled/focus states остаются доступными и локализованными.
+4. Textarea и preview получают согласованные surface, typography, padding, min-height, overflow и
+   empty-state behavior. Long prose, long code, mixed Markdown и RTL не ломают composer width.
+5. Create-topic и reply используют один shared component, но сохраняют собственную form hierarchy,
+   help/error/pending states и active Reply target/Quote insertion.
+6. Все уже реализованные controls сохраняются: headings/list/quote/link, bold/italic, inline/fenced
+   code, optional language, exact selection/caret restoration, safe preview, copy/wrap/LTR code.
+   Не добавлять новые controls только ради заполнения toolbar.
+7. Preserve exact submitted `body`, normal React Router submit, server validation, same-origin,
+   permissions, rate limit, Reply/Quote parent semantics and Markdown safety.
+8. `editor` остаётся в `Under development` до owner visual acceptance. Не добавлять drafts/autosave
+   и не удалять unfinished entry заранее.
+
+### Representative review states
+
+Pages должен тем же shared component покрыть:
+
+- create-topic: meaningful long Markdown, link/list/quote, inline and fenced code;
+- reply: active reply target + inserted selected-text quote;
+- Write, Preview and Split modes;
+- empty and content-heavy composer;
+- Desktop, intermediate/narrow mobile;
+- English LTR, Hebrew RTL with code LTR;
+- Light/Dark;
+- long code no-wrap/wrap and long localized toolbar labels;
+- pending/disabled form state where existing fixture supports it.
+
+Не создавать отдельный preview-only editor implementation.
+
+### Required automated checks
+
+- mode switching and single active/accessible mode semantics;
+- exact body preservation across every mode;
+- selection/caret/focus for all transforms, including backtick regressions already fixed;
+- Quote insertion and reply target persistence across modes;
+- safe preview/raw HTML/image/unsafe-link regression;
+- responsive class/state contract without duplicate textarea/form controls;
+- localization completeness/fingerprints and existing Unread/Notifications preview regression;
+- full repository CI, database/migration parity, application build, Workers smoke and
+  `ui-preview:build` on integrated head.
+
+### Owner browser acceptance loop
+
+До merge обязательно провести iterative owner Pages review, а не только финальный screenshot:
+
+1. Desktop Light create-topic: Write/Preview/Split and toolbar hierarchy.
+2. Narrow Mobile Light reply+quote: no clipping/page overflow; touch targets and mode switching.
+3. Desktop Dark content-heavy/code state: surface contrast, long-code wrap/copy.
+4. Hebrew RTL create/reply: direction, logical layout, LTR code, long labels.
+5. Keyboard-only: toolbar/modes/textarea/preview actions, visible focus, caret/selection retention.
+6. Zoom/reflow and reduced-motion check.
+
+Каждый feedback/fix/retest фиксировать в PR #147. PR #176 нельзя объявлять accepted до явного owner
+подтверждения final corrected Pages head.
+
+### Explicit exclusions
+
+- drafts/autosave, attachments/uploads, WYSIWYG, edit-existing-post;
+- new Markdown parser, raw HTML or editor framework dependency;
+- notification/unread changes beyond preserving merged behavior;
+- pinning, profiles, registration, online presence, footer content polish;
+- DB schema, permissions, translation content architecture or Stage 6.
+
+### Completion boundary
+
+После current-main integration, corrections, focused tests, full exact-head CI/Pages and explicit
+owner visual acceptance ChatGPT выполняет whole-PR self-review и записывает exact head/evidence в
+PR #147. Затем останавливается для independent Codex review; merge выполняет только owner.
+
+---
+
+# Update 2026-10-04 — owner defers editor; hand off Pinned topics
+
+## Owner direction and current baseline
+
+Owner explicitly отменил предыдущий next-step выбор: PR #176/editor нельзя продолжать до нового
+прямого указания. Поэтому handoff `editor visual/product refinement` выше superseded и не должен
+исполняться сейчас.
+
+Повторно сверены current GitHub `main`
+`d6da8fa8c183c77f2b0cdb0c7cbe7949526a8b7d`, remaining `Under development` registry, homepage
+runtime/preview boundary, topic schema, authorization catalog и target contract. PR #176 остаётся
+open на `0e6a1607e7a8a3f2f16c9a4207536c32ba4d4131`; его branch, preview и editor code не трогать.
+
+## Selection of the next bounded task
+
+Следующая bounded UI/UX product-задача — **real Pinned topics persistence and management**.
+
+Причины порядка:
+
+1. `Pinned` — обязательная часть уже принятой homepage card composition, но real loader сейчас всегда
+   передаёт `pinnedTopics: []`; данные существуют только в Pages fixture.
+2. Runtime честно показывает temporary `Under development`, поэтому это следующий явный разрыв между
+   accepted target UI и реальным продуктом.
+3. Slice независим от editor, drafts, profiles, registration, notifications и external services.
+4. Topic/section/category hierarchy, homepage cards и dynamic authorization foundation уже существуют;
+   требуется узкая persisted capability, а не новый product surface.
+5. После completion homepage перестанет использовать последний значимый preview-only content block.
+
+## Handoff to ChatGPT — persisted Pinned topics
+
+### Objective
+
+Добавить управляемое закрепление forum topics и подключить реальные pinned topics к существующей
+homepage `Pinned` колонке и topic-list state, сохранив classic hierarchy и permission-based
+server authorization.
+
+### Product semantics
+
+1. Pin относится к topic целиком. На homepage topic показывается в block своей текущей category,
+   derived через `topic → section → category`; отдельную дублирующую category identity в pin record
+   не хранить.
+2. Один topic имеет максимум один active pin. Pin/unpin идемпотентны.
+3. Deterministic ordering: newest pin first, tie-break по topic id. Homepage read получает server-
+   bounded количество pins на category; limit является repository input с validated narrow bound,
+   а не application-side slice после unbounded transfer.
+4. Pin state не зависит от solved/unread/new и не меняет chronological topic/message ordering.
+5. Pinning доступен только через новую code-backed permission `forum.topic.pin`; initial grant —
+   `moderator` и `admin`, не обычный `user`. Dynamic roles/overrides продолжают работать через
+   существующий PermissionResolver.
+6. Topic author сам по себе не получает pin capability. Client visibility не заменяет server-side
+   permission check.
+7. Unpin удаляет только pin state; topic, posts, revisions, tags, read state и notifications не
+   изменяются.
+
+### Required implementation scope
+
+1. Добавить минимальную forward Drizzle migration и production manifest:
+   - `topicId` unique/primary FK с cascade on topic deletion;
+   - `pinnedByUserId` authoritative actor FK с подходящим lifecycle согласно существующему user
+     deletion contract;
+   - `pinnedAt` database timestamp;
+   - index только для реального ordered homepage read.
+2. Расширить code-backed permission catalog/check constraint migration той же forward history,
+   добавить initial moderator/admin grants и сохранить lockout/authorization management contracts.
+3. Repository/service operations:
+   - atomic/idempotent pin;
+   - idempotent unpin;
+   - read current pin state for topic presentation;
+   - bounded set-based homepage pins per category without N+1 or unbounded all-pin transfer.
+4. Existing homepage loader передаёт реальные pinned topics с current title, author и activity.
+   Preview продолжает использовать тот же presentation component, но не является runtime source.
+5. Topic secondary tools получает Pin/Unpin только при effective permission. Mutation использует
+   existing authenticated same-origin boundary и повторно проверяет permission server-side.
+6. Section topic rows и topic page показывают компактный localized pinned indicator, не меняя
+   solved/unread/tags/message hierarchy и не превращая его в color-only state.
+7. Existing homepage empty Pinned column после capability completion показывает truthful localized
+   empty state без ссылки на `Under development`; `pinned-topics` удаляется из unfinished registry.
+8. Добавить canonical English и complete RU/HE strings/fingerprints. CSS — logical-direction,
+   responsive, theme-token based, with keyboard-visible focus.
+9. Pages states через shared views: homepage with real-shaped multiple pins, no-pins category,
+   manager pin/unpin controls, regular user without controls, Desktop/Mobile, LTR/RTL, Light/Dark.
+10. После фактической проверки узко обновить `PROJECT_STATE.md` и `docs/UI_UX_PASS.md`; не заявлять
+    production migration или final UI/UX acceptance.
+
+### Query and mutation boundaries
+
+- homepage counts/latest semantics из current `readHomepage()` не регрессируют;
+- pinned read выполняется set-based с database-side per-category rank/limit and deterministic order;
+- title берётся только из current title revision, activity — из authoritative topic/posts semantics;
+- pin/unpin ошибки classified storage/authz возвращают existing safe mutation responses;
+- unexpected DB/programming errors не маскировать как permission denial;
+- никакого client-provided category, author/title/activity или permission decision;
+- no external calls, Queue, cache or production mutation.
+
+### Required tests
+
+- clean migration, Drizzle metadata, production manifest, constraints/indexes and topic cascade;
+- permission catalog/check parity and initial grants: user denied, moderator/admin allowed, dynamic
+  role grant/override respected;
+- same-origin/authenticated negative mutation tests and server-side authorization recheck;
+- idempotent pin/unpin and concurrent duplicate pin;
+- homepage database test: per-category grouping, current title/author/activity, deterministic order,
+  validated limit and no N+1/unbounded transfer;
+- pinned state coexists with solved/unread/new/tags and survives unrelated reply/read/notification
+  mutations;
+- topic deletion removes pin without dangling state;
+- route/presentation/locale anchor checks and EN/RU/HE completeness;
+- representative Pages regression across responsive/RTL/theme/identity states;
+- full existing forum, Unread, Notifications, authz, migration and Workers checks remain green.
+
+### Explicit exclusions
+
+- sticky ordering inside section lists or manual drag/reorder;
+- per-section/per-user pins, bookmarks/favorites or subscriptions;
+- scheduled/expiring pins;
+- notification event for pin/unpin;
+- changes to editor PR #176, drafts/autosave, profiles, registration or online presence;
+- footer/static content polish and Stage 6 production rollout.
+
+### Delivery and acceptance
+
+Один отдельный mergeable implementation PR from exact current `main`; не использовать и не менять
+PR #176. Required: focused tests, full repository CI/database/migration/Workers checks, exact-head
+Pages deployment, owner browser review homepage/topic management at Desktop/Mobile + LTR/RTL +
+Light/Dark + manager/user, then independent Codex whole-PR review. Merge выполняет только owner.
+
+ChatGPT записывает implementation head, schema/permission/query semantics, CI/Pages и truthful owner
+acceptance status в PR #147 и останавливается для проверки. Codex implementation не выполняет.
+
+---
+
+# Update 2026-10-05 — independent whole-PR review of PR #181
+
+## Exact review baseline
+
+Независимая проверка выполнена для:
+
+- current GitHub `main`: `0eb1231642f441caefe14c161709761d46a17aaa`;
+- PR #181 head: `1c9f87d5ef940cceb61490aed065d2a820d4c4bd`;
+- PR #181 recorded base: `d6da8fa8c183c77f2b0cdb0c7cbe7949526a8b7d`;
+- latest PR #147 head: `3969c7d28bf624b46d3f474b93a70cd1bb6b68c6`.
+
+Проверены latest ChatGPT handoff, полный PR changed-file inventory, migration/schema/manifest,
+authorization catalog и source of truth, repository/query/mutation boundaries, route/view/preview
+integration, localization, tests, CI/Pages evidence и merge against current main.
+
+Основная pin persistence реализация на исходном base подтверждена: one-pin-per-topic, topic cascade,
+actor RESTRICT lifecycle, code-backed permission, moderator/admin initial grants, idempotent
+pin/unpin, current title/author/activity, set-based DB ranking/limit, topic/section indicators и
+server-side same-origin/effective-permission enforcement реализованы и покрыты tests. Ранние inline
+findings по manifest и `PROJECT_STATE.md` исправлены на reviewed head.
+
+Однако whole-PR review обнаружил два blocking finding.
+
+## Finding 1 — PR #181 не интегрирован с новым current-main homepage/category contract
+
+**Severity: blocking integration/current-project mismatch.**
+
+После создания PR #181 в `main` merged PR #182 (`Home: show categories with their sections`). Он
+намеренно изменил accepted presentation/data boundary:
+
+- homepage теперь является прямой category → section map;
+- rich `Pinned / Latest topics / statistics` cards перенесены с homepage category cards на category
+  page section cards;
+- current `PROJECT_STATE.md` прямо фиксирует эту superseding composition.
+
+PR #181 всё ещё реализует pins через old `readHomepage(latestTopicsPerCategory,
+pinnedTopicsPerCategory)`, old `HomepageCategoryOverview.pinnedTopics` и old
+`HomepageCategoryCard` Pinned column. Поэтому branch не просто отстаёт по commit history: pin data и
+presentation подключены к surface, который current main уже удалил/перенёс.
+
+GitHub подтверждает `mergeable: false`, `mergeable_state: dirty`. Local `git merge-tree` показывает
+реальные conflicts минимум в `PROJECT_STATE.md`, homepage tests/views/styles, localization,
+`app/routes/home.tsx`, preview и repository contracts. Green checks относятся к old base
+`d6da8fa...` и не проверяют integration с accepted PR #182.
+
+Required correction boundary:
+
+1. Интегрировать exact current `main` в PR #181 без отката PR #182.
+2. Сохранить новый lightweight homepage category→section map; не возвращать rich cards на homepage.
+3. Подключить bounded real pins к current category-page section cards, группируя topic по его
+   authoritative section внутри requested category.
+4. DB-side bound/rank должен быть per section для current presentation, без N+1 и без unbounded
+   category/application-side transfer.
+5. Адаптировать route types, reader/Hyperdrive contracts, preview states, tests, styles и docs к
+   current category surface; homepage pin-specific old-base changes должны исчезнуть из effective
+   diff.
+6. После integration заново выполнить весь CI/DB/Pages/browser cycle на новом exact head.
+
+Это не новый scope: current main изменил место уже согласованной Pinned presentation, и PR #181
+обязан соответствовать актуальному source of truth.
+
+## Finding 2 — authorization source of truth утверждает неверные initial grants
+
+**Severity: blocking documentation/authorization contradiction.**
+
+Final `docs/auth/AUTHORIZATION.md` в PR #181 содержит:
+
+- `forum.topic.pin` в списке initial grants обычного `user`;
+- `forum.topic.pin` дважды в списке `moderator`;
+- `forum.topic.pin` дважды в списке `admin`.
+
+Это противоречит одновременно исходной задаче, code catalog, migration `0025` и database tests:
+обычный user **не** получает permission, moderator/admin получают её ровно один раз. Документ является
+source of truth и не может расходиться с фактическим authorization contract.
+
+Required correction: удалить pin grant из `user`, оставить ровно одну запись у `moderator` и одну у
+`admin`, затем проверить полный auth document и tests. Нельзя менять code/migration так, чтобы
+подогнать их под ошибочный текст: согласованный product contract — moderator/admin only.
+
+## Whole-PR conclusion
+
+**PR #181 на head `1c9f87d5...` не готов к owner visual acceptance или merge.**
+
+- Persistence/permission/mutation foundation на old base в основном корректен.
+- Два findings выше являются current-scope blockers.
+- Owner visual acceptance ещё не выполнена, что ChatGPT указал честно.
+- Сначала нужен technical-consensus cycle и corrected current-main head; только затем повторная
+  полная source/CI/Pages/browser проверка.
+- Codex implementation и ветку PR #181 не изменял.
+
+## Verification evidence
+
+Для reviewed old-base head подтверждено:
+
+- CI run `37188743623`: `checks` success, `database` success;
+- Pages run `37188834922`: `build` success, `deploy` success;
+- 4/4 exact-head checks successful;
+- `git diff --check` successful;
+- ранние automated findings по manifest/state исправлены;
+- GitHub PR API на current main: `mergeable: false`, `mergeable_state: dirty`;
+- merge base PR/current main: `d6da8fa...`; current-only PR #182 commit: `0eb1231...`;
+- local merge-tree подтверждает content conflicts и outdated homepage integration.
+
+## Requested ChatGPT action
+
+ChatGPT должен независимо проверить оба findings, зафиксировать согласие либо аргументированное
+расхождение в PR #147 и продолжить единый technical-consensus cycle. Если findings подтверждаются,
+исправить только current-main integration Pinned slice и authorization documentation в PR #181,
+затем выполнить whole-PR self-review, full exact-head CI/Pages и передать новый head Codex. Owner
+visual review начинать только после green integrated head.
+
+---
+
+# Update 2026-10-05 — PR #181 technical consensus reached
+
+## Latest PR #147 record checked
+
+Проверена последняя запись ChatGPT comment `6000626919` в PR #147 от
+2026-10-05T18:30:12Z. В ней ChatGPT независимо, без раскрытых заранее Codex findings, повторно
+проверил PR #181 против post-#182 current `main` и сформулировал Hypothesis A/Hypothesis B.
+
+Выводы полностью совпали с независимой проверкой Codex:
+
+1. **Hypothesis A confirmed.** Persisted-pin read/presentation PR #181 подключён к obsolete
+   homepage-per-category contract, тогда как accepted PR #182 перенёс rich Pinned surface на
+   category page per section.
+2. **Hypothesis B confirmed.** `docs/auth/AUTHORIZATION.md` ошибочно включает `forum.topic.pin` в
+   initial user grants и дублирует его у moderator/admin, расходясь с code/migration/tests.
+
+По AGENTS.md совпадение двух независимых проверок означает, что оба finding теперь подтверждены и
+technical-consensus gate закрыт. Это не остающиеся предположения.
+
+## Agreed correction boundary
+
+Согласован минимальный bounded correction PR #181:
+
+### Preserve unchanged
+
+- migration/table `0025_forum_topic_pins`;
+- one active pin per topic;
+- topic cascade и actor RESTRICT lifecycle;
+- `forum.topic.pin` code-backed capability;
+- initial grants только moderator/admin;
+- dynamic role/user override behavior;
+- authenticated same-origin server permission recheck;
+- idempotent pin/unpin mutations;
+- topic/section pinned indicators;
+- runtime privilege, manifest and external-rollout boundaries.
+
+### Correct
+
+1. Интегрировать current `main` `0eb1231...` в PR #181 без отката PR #182.
+2. Удалить pin data/presentation extension из obsolete homepage contract; сохранить current
+   lightweight category→section Home.
+3. Расширить current `readCategory()` / `ForumSectionSummary` boundary bounded deterministic pin
+   topics per section.
+4. Выполнять DB-side per-section rank/limit `pinnedAt DESC, topicId DESC`, без N+1 и unbounded
+   application filtering.
+5. Category loader сериализует authoritative pin activity; current category-page section cards
+   получают реальные pins вместо `pinnedTopics: []`.
+6. Обновить current category preview/tests/styles/types/docs без восстановления old homepage card.
+7. Исправить `docs/auth/AUTHORIZATION.md`: user — без pin permission; moderator/admin — по одной
+   записи.
+8. Разрешить merge conflicts так, чтобы source-of-truth отражал одновременно accepted PR #182 и
+   repository-local pin capability без преждевременного owner acceptance claim.
+
+## Full-review consensus result
+
+Обе стороны независимо согласны, что schema/permission/mutation foundation менять не требуется.
+При полном review других current-scope implementation/security/contract defects не выявлено.
+
+Следующий обязательный цикл:
+
+1. ChatGPT вносит только согласованные corrections в PR #181.
+2. Выполняет whole-PR self-review относительно актуального `main`.
+3. Запускает full exact-head CI/database/migration/Workers и Pages.
+4. Записывает corrected head и evidence в PR #147.
+5. Останавливается для повторной независимой проверки Codex.
+6. Owner visual acceptance выполняется только после green corrected integrated head.
+
+PR #181 head `1c9f87d5...` по-прежнему dirty/non-mergeable и не готов к visual acceptance/merge.
+Codex implementation не выполнял.
