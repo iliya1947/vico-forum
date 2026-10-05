@@ -22,9 +22,6 @@ describe("embedded preview routing", () => {
   it("opens the real section view directly from the homepage category map", async () => {
     render(<EmbeddedPreview scenarioId="home-guest" />);
 
-    const categoryToggle = await screen.findByRole("button", { name: "Development" });
-    await userEvent.click(categoryToggle);
-
     const sectionLink = await screen.findByRole("link", { name: /TypeScript & architecture/ });
     expect(sectionLink).toBeInTheDocument();
 
