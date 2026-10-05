@@ -1121,10 +1121,6 @@ p {
   position: relative;
   min-width: 0;
   overflow: visible;
-  border: 1px solid var(--color-border);
-  border-radius: 0.65rem;
-  background: var(--color-surface);
-  box-shadow: var(--shadow-panel);
 }
 
 .home-category-header {
@@ -1167,6 +1163,8 @@ p {
   align-items: center;
   gap: 0.65rem;
   padding-inline: 0.75rem;
+  border-block: 1px solid var(--color-border);
+  background: var(--color-surface);
 }
 
 .home-category-copy h2 {
@@ -1205,13 +1203,17 @@ p {
   justify-content: flex-end;
   gap: 0.35rem;
   padding-inline: 0.75rem;
+  border-block: 1px solid var(--color-border);
+  border-inline-end: 1px solid var(--color-border);
+  border-start-end-radius: 0.65rem;
+  border-end-end-radius: 0.65rem;
   color: var(--color-text-muted);
+  background: var(--color-surface);
   font-size: 0.72rem;
   white-space: nowrap;
 }
 
 .home-category-sections {
-  border-block-start: 1px solid var(--color-border);
   background: var(--color-canvas);
 }
 
