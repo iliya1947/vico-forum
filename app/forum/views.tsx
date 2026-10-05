@@ -639,6 +639,9 @@ function HomepageCategoryCard({
                         </svg>
                       </span>
                       <strong>{section.name}</strong>
+                      <span className="home-category-section-description">
+                        {t("homepageSectionFallbackDescription")}
+                      </span>
                     </span>
 
                     <span
