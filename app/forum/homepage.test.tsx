@@ -90,7 +90,8 @@ describe("homepage category map", () => {
       />,
     );
 
-    expect(await screen.findByRole("heading", { level: 1, name: "Categories" })).toBeVisible();
+    expect(await screen.findByRole("region", { name: "Categories" })).toBeVisible();
+    expect(screen.queryByRole("heading", { level: 1, name: "Categories" })).not.toBeInTheDocument();
     const categoryLinks = [...document.querySelectorAll<HTMLAnchorElement>(".home-category-identity h2 a")];
     expect(categoryLinks.map((link) => link.textContent)).toEqual(["Help & solutions", "Development"]);
     expect(categoryLinks[0]).toHaveAttribute("href", "/en/categories/help-solutions");
