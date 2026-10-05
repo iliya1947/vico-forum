@@ -1,5 +1,5 @@
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { I18nextProvider } from "react-i18next";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -92,13 +92,24 @@ describe("homepage category map", () => {
     const categoryLinks = [...document.querySelectorAll<HTMLAnchorElement>(".home-category-identity h2 a")];
     expect(categoryLinks.map((link) => link.textContent)).toEqual(["Help & solutions", "Development"]);
     expect(categoryLinks[0]).toHaveAttribute("href", "/en/categories/help-solutions");
+    const developmentToggle = screen.getByRole("button", { name: "Development" });
+    expect(developmentToggle).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("link", { name: /TypeScript & architecture/ })).not.toBeInTheDocument();
+
+    fireEvent.click(developmentToggle);
+
+    expect(developmentToggle).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByRole("link", { name: /TypeScript & architecture/ }))
       .toHaveAttribute("href", "/en/sections/typescript");
     expect(screen.getByRole("link", { name: /Databases/ }))
       .toHaveAttribute("href", "/en/sections/databases");
+
+    fireEvent.click(developmentToggle);
+
+    expect(developmentToggle).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("link", { name: /TypeScript & architecture/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Pinned" })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Latest topics" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Show more topics" })).not.toBeInTheDocument();
   });
 
   it("keeps a category visible when its internal structure is not defined yet", async () => {
@@ -118,6 +129,10 @@ describe("homepage category map", () => {
 
     expect(await screen.findByRole("link", { name: "Help & solutions" }))
       .toHaveAttribute("href", "/en/categories/help-solutions");
+    expect(screen.queryByText("There are no sections in this category yet.")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Help & solutions" }));
+
     expect(screen.getByText("There are no sections in this category yet.")).toBeVisible();
   });
 
