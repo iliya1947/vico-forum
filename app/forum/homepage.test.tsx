@@ -99,7 +99,7 @@ describe("homepage category map", () => {
     expect(developmentCopy).not.toBeNull();
     expect(developmentCopy).toHaveTextContent("Development");
     expect(developmentCopy).toHaveTextContent("Frontend, backend, architecture, languages, and testing.");
-    const developmentToggle = screen.getByRole("button", { name: "Development" });
+    const developmentToggle = screen.getByRole("button", { name: "Show 1 more section" });
     expect(developmentToggle).toHaveAttribute("aria-expanded", "false");
     expect(screen.getByRole("link", { name: /TypeScript & architecture/ }))
       .toHaveAttribute("href", "/en/sections/typescript");
@@ -117,12 +117,14 @@ describe("homepage category map", () => {
     fireEvent.click(developmentToggle);
 
     expect(developmentToggle).toHaveAttribute("aria-expanded", "true");
+    expect(developmentToggle).toHaveTextContent("Show fewer sections");
     expect(screen.getByRole("link", { name: /Frontend/ }))
       .toHaveAttribute("href", "/en/sections/frontend");
 
     fireEvent.click(developmentToggle);
 
     expect(developmentToggle).toHaveAttribute("aria-expanded", "false");
+    expect(developmentToggle).toHaveTextContent("Show 1 more section");
     expect(screen.getByRole("link", { name: /TypeScript & architecture/ })).toBeVisible();
     expect(screen.queryByRole("link", { name: /Frontend/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Pinned" })).not.toBeInTheDocument();
