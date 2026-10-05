@@ -68,8 +68,8 @@ Vico Forum находится в ранней pre-release разработке.
   `/:locale/search?q=...` поверх current topic-title/post revisions и topic tags без новой
   migration/search-index subsystem. Repository CI и GitHub Pages preview прошли; owner visual acceptance подтверждён 2026-10-03. Search merged через PR #171. Message links реализован и merged через PR #172: public permanent post anchors + copy-link UI работают без DB/backend изменений; GitHub Pages preview пройден, owner visual acceptance подтверждён 2026-10-03. Reply/Quote реализован: migration `0022_forum_reply_relationships` добавляет nullable same-topic parent relation для forum posts; обсуждение остаётся линейным, Reply привязывает новый post к конкретному parent, Quote вставляет только выделенный текст как Markdown blockquote, а parent/child сообщения связываются стабильными anchors. Existing permissions/rate-limit semantics не меняются; repository CI и GitHub Pages preview проходят, owner visual acceptance подтверждён 2026-10-03. Последующая hierarchy correction в PR #182
   заменяет topic-oriented homepage blocks на category → section map и переносит прежнюю rich
-  section presentation на category pages. Current head прошёл repository CI/Pages и owner visual
-  acceptance 2026-10-05; schema/migration/auth/permission/Stage 6 изменений нет.
+  section presentation на category pages. Owner visual acceptance реализации подтверждён
+  2026-10-05; schema/migration/auth/permission/Stage 6 изменений нет.
 - Текущий Unread/new slice подключает repository/database foundation к runtime/UI:
   forward migration `0023_forum_topic_read_states` хранит один last-read cursor на пару
   authenticated user + topic и same-topic FK не позволяет ссылаться на post другой темы.
@@ -105,8 +105,7 @@ Vico Forum находится в ранней pre-release разработке.
   composition: category page теперь переиспользует прежний rich section block с
   `Pinned / Latest topics / statistics / entry`; bounded latest-topic data читается реально по
   каждому section, а pinning не имитируется. Homepage одновременно становится прямой
-  category → section map. Repository CI/Pages и owner visual acceptance принятого head подтверждены
-  2026-10-05.
+  category → section map. Owner visual acceptance реализации подтверждён 2026-10-05.
 - Section-page discovery slice в PR #160 прошёл owner visual acceptance в GitHub Pages:
   approved header/logo/discovery nav переиспользованы без backend/DB изменений; heading показывает
   только derived topic/message totals, topic rows стали full-card links с реальными author/message
