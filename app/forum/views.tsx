@@ -597,6 +597,8 @@ function HomepageCategoryCard({
   category: HomepageCategoryOverview;
 }) {
   const { t } = useTranslation("common");
+  const [expanded, setExpanded] = useState(false);
+  const detailsId = `home-category-${category.id.replace(/[^a-zA-Z0-9_-]/g, "-")}-sections`;
 
   return (
     <article className="home-category-card">
@@ -611,59 +613,78 @@ function HomepageCategoryCard({
           </div>
         </div>
 
-        <div className="home-category-summary" role="group" aria-label={category.name}>
-          <span>{t("sectionCount", { count: category.sectionCount })}</span>
-          <span aria-hidden="true">·</span>
-          <span>{t("topicCount", { count: category.topicCount })}</span>
-          <span aria-hidden="true">·</span>
-          <span>{t("messageCount", { count: category.messageCount })}</span>
+        <div className="home-category-controls">
+          <div className="home-category-summary" role="group" aria-label={category.name}>
+            <span>{t("sectionCount", { count: category.sectionCount })}</span>
+            <span aria-hidden="true">·</span>
+            <span>{t("topicCount", { count: category.topicCount })}</span>
+            <span aria-hidden="true">·</span>
+            <span>{t("messageCount", { count: category.messageCount })}</span>
+          </div>
+
+          <button
+            className="home-category-toggle"
+            type="button"
+            aria-expanded={expanded}
+            aria-controls={detailsId}
+            aria-label={category.name}
+            onClick={() => setExpanded((value) => !value)}
+          >
+            <svg aria-hidden="true" viewBox="0 0 20 20">
+              <path d={expanded ? "m5 12 5-5 5 5" : "m5 8 5 5 5-5"} />
+            </svg>
+          </button>
         </div>
       </header>
 
-      {category.sections.length === 0 ? (
-        <p className="home-category-empty">{t("sectionsEmpty")}</p>
-      ) : (
-        <div className="home-category-sections">
-          <ul className="category-section-list">
-            {category.sections.map((section) => (
-              <li key={section.id}>
-                <Link className="category-section-card" to={forumSectionPath(locale, section.id)}>
-                  <span className="category-section-main">
-                    <span className="category-section-icon" aria-hidden="true">
-                      <svg viewBox="0 0 24 24">
-                        <path d="M4 6.5h6l2 2h8v9H4z" />
-                        <path d="M7 12h10M7 15h7" />
-                      </svg>
-                    </span>
-                    <strong>{section.name}</strong>
-                  </span>
+      {expanded ? (
+        <div id={detailsId} className="home-category-details">
+          {category.sections.length === 0 ? (
+            <p className="home-category-empty">{t("sectionsEmpty")}</p>
+          ) : (
+            <div className="home-category-sections">
+              <ul className="category-section-list">
+                {category.sections.map((section) => (
+                  <li key={section.id}>
+                    <Link className="category-section-card" to={forumSectionPath(locale, section.id)}>
+                      <span className="category-section-main">
+                        <span className="category-section-icon" aria-hidden="true">
+                          <svg viewBox="0 0 24 24">
+                            <path d="M4 6.5h6l2 2h8v9H4z" />
+                            <path d="M7 12h10M7 15h7" />
+                          </svg>
+                        </span>
+                        <strong>{section.name}</strong>
+                      </span>
 
-                  <span
-                    className="category-section-stats"
-                    role="group"
-                    aria-label={`${t("topicCount", { count: section.topicCount })} · ${t("messageCount", { count: section.messageCount })}`}
-                  >
-                    <span aria-hidden="true">
-                      <strong>{section.topicCount}</strong>
-                      <small>{t("topicsHeading")}</small>
-                    </span>
-                    <span aria-hidden="true">
-                      <strong>{section.messageCount}</strong>
-                      <small>{t("postsColumn")}</small>
-                    </span>
-                  </span>
+                      <span
+                        className="category-section-stats"
+                        role="group"
+                        aria-label={`${t("topicCount", { count: section.topicCount })} · ${t("messageCount", { count: section.messageCount })}`}
+                      >
+                        <span aria-hidden="true">
+                          <strong>{section.topicCount}</strong>
+                          <small>{t("topicsHeading")}</small>
+                        </span>
+                        <span aria-hidden="true">
+                          <strong>{section.messageCount}</strong>
+                          <small>{t("postsColumn")}</small>
+                        </span>
+                      </span>
 
-                  <span className="category-section-enter" aria-hidden="true">
-                    <svg viewBox="0 0 24 24">
-                      <path d="m9 5 7 7-7 7" />
-                    </svg>
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
+                      <span className="category-section-enter" aria-hidden="true">
+                        <svg viewBox="0 0 24 24">
+                          <path d="m9 5 7 7-7 7" />
+                        </svg>
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
-      )}
+      ) : null}
     </article>
   );
 }
