@@ -117,14 +117,16 @@ describe("homepage category map", () => {
     fireEvent.click(developmentToggle);
 
     expect(developmentToggle).toHaveAttribute("aria-expanded", "true");
-    expect(developmentToggle).toHaveTextContent("Show fewer sections");
+    expect(developmentToggle).toHaveAttribute("aria-label", "Show fewer sections");
+    expect(developmentToggle).toHaveTextContent("");
     expect(screen.getByRole("link", { name: /Frontend/ }))
       .toHaveAttribute("href", "/en/sections/frontend");
 
     fireEvent.click(developmentToggle);
 
     expect(developmentToggle).toHaveAttribute("aria-expanded", "false");
-    expect(developmentToggle).toHaveTextContent("Show 1 more section");
+    expect(developmentToggle).toHaveAttribute("aria-label", "Show 1 more section");
+    expect(developmentToggle).toHaveTextContent("");
     expect(screen.getByRole("link", { name: /TypeScript & architecture/ })).toBeVisible();
     expect(screen.queryByRole("link", { name: /Frontend/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Pinned" })).not.toBeInTheDocument();
