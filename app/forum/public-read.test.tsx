@@ -28,7 +28,22 @@ import TopicRoute, { loader as topicLoader } from "../routes/topic";
 import { forumCategoryPath, forumPopularPath, forumSearchPath, forumSectionPath, forumTagPath, forumTagsPath, forumTopicPath, forumUnansweredPath } from "./paths";
 import { forumReaderContext } from "./request-context";
 
-const category = { id: "development/core", name: "Development", sections: [{ id: "typescript/basics", name: "TypeScript", topicCount: 1, postCount: 1 }] };
+const category = {
+  id: "development/core",
+  name: "Development",
+  sections: [{
+    id: "typescript/basics",
+    name: "TypeScript",
+    topicCount: 1,
+    postCount: 1,
+    latestTopics: [{
+      id: "typed/api",
+      title: "How do I type an API?",
+      authorName: "Ada",
+      activityAt: new Date("2026-01-02"),
+    }],
+  }],
+};
 const section = {
   id: "typescript/basics", name: "TypeScript", category: { id: "development/core", name: "Development" },
   topics: [{
@@ -278,7 +293,8 @@ describe.each([
     const categoryView = renderRoute(CategoryRoute, categoryData, forumCategoryPath(locale, category.id), locale, direction);
     const categorySectionLink = await screen.findByRole("link", { name: /TypeScript/ });
     expect(categorySectionLink).toHaveAttribute("href", `/${locale}/sections/typescript%2Fbasics`);
-    expect(categorySectionLink).toHaveClass("category-section-card");
+    expect(categorySectionLink.closest("article")).toHaveClass("home-section-card");
+    expect(screen.getByRole("heading", { name: "Latest topics" })).toBeVisible();
     categoryView.unmount();
 
     const sectionView = renderRoute(SectionRoute, sectionData, forumSectionPath(locale, section.id), locale, direction);
