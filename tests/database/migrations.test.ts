@@ -287,7 +287,12 @@ describe("PostgreSQL 17 locale migrations", () => {
 
   it("persists idempotent topic pins and returns bounded deterministic pins per category section", async () => {
     await insertForumAuthor("pin-actor", "pin-actor@example.test", null);
-    const repository = new DrizzleForumRepository(drizzle(client));
+
+    let pinClock = Date.parse("2030-01-01T00:00:00Z");
+    const repository = new DrizzleForumRepository(drizzle(client), {
+      cooldownMs: FORUM_WRITE_COOLDOWN_MS,
+      now: () => new Date(pinClock += FORUM_WRITE_COOLDOWN_MS + 1),
+    });
     const forum = new ForumService(repository);
 
     await forum.createSection({ id: "pin-database", categoryId: "development", name: "Pinned Database" });
