@@ -9,7 +9,22 @@ export async function loader({ params, context }: {
 }) {
   const category = await forumReaderForRequest(context).readCategory(params.categoryId ?? "");
   if (!category) throw new Response("Not Found", { status: 404 });
-  return { locale: params.locale ?? "en", category };
+
+  return {
+    locale: params.locale ?? "en",
+    referenceTime: new Date().toISOString(),
+    category: {
+      ...category,
+      sections: category.sections.map((section) => ({
+        ...section,
+        pinnedTopics: [],
+        latestTopics: section.latestTopics.map((topic) => ({
+          ...topic,
+          activityAt: topic.activityAt.toISOString(),
+        })),
+      })),
+    },
+  };
 }
 
 export default function CategoryRoute() {
