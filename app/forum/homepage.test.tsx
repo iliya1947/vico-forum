@@ -94,6 +94,10 @@ describe("homepage category map", () => {
     const categoryLinks = [...document.querySelectorAll<HTMLAnchorElement>(".home-category-identity h2 a")];
     expect(categoryLinks.map((link) => link.textContent)).toEqual(["Help & solutions", "Development"]);
     expect(categoryLinks[0]).toHaveAttribute("href", "/en/categories/help-solutions");
+    const developmentCopy = categoryLinks[1]!.closest(".home-category-copy");
+    expect(developmentCopy).not.toBeNull();
+    expect(developmentCopy).toHaveTextContent("Development");
+    expect(developmentCopy).toHaveTextContent("Frontend, backend, architecture, languages, and testing.");
     const developmentToggle = screen.getByRole("button", { name: "Development" });
     expect(developmentToggle).toHaveAttribute("aria-expanded", "false");
     expect(screen.getByRole("link", { name: /TypeScript & architecture/ }))
