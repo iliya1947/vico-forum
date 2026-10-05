@@ -1116,8 +1116,9 @@ p {
 }
 
 .home-category-card {
+  position: relative;
   min-width: 0;
-  overflow: hidden;
+  overflow: visible;
   border: 1px solid var(--color-border);
   border-radius: 0.65rem;
   background: var(--color-surface);
@@ -1186,14 +1187,6 @@ p {
   line-height: 1.4;
 }
 
-.home-category-controls {
-  display: flex;
-  flex: none;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.7rem;
-}
-
 .home-category-summary {
   display: flex;
   flex: none;
@@ -1206,28 +1199,36 @@ p {
 }
 
 .home-category-toggle {
+  position: absolute;
+  z-index: 4;
+  inset-inline-start: 50%;
+  bottom: 0;
   display: grid;
-  width: 2rem;
-  height: 2rem;
-  flex: none;
+  width: 1.85rem;
+  height: 1.85rem;
   place-items: center;
   padding: 0;
-  border: 2px solid var(--color-surface);
+  border: 0.13rem solid var(--color-surface);
   border-radius: 999px;
   color: var(--color-action-on-accent);
-  background: color-mix(in srgb, var(--color-accent) 78%, var(--color-surface));
+  background: color-mix(in srgb, var(--color-accent) 72%, var(--color-surface));
   box-shadow: 0 0.12rem 0.38rem rgb(0 0 0 / 16%);
+  transform: translate(-50%, 50%);
   cursor: pointer;
+}
+
+:dir(rtl) .home-category-toggle {
+  transform: translate(50%, 50%);
 }
 
 .home-category-toggle:hover,
 .home-category-toggle:focus-visible {
-  background: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 84%, var(--color-surface));
 }
 
 .home-category-toggle svg {
-  width: 0.95rem;
-  height: 0.95rem;
+  width: 0.9rem;
+  height: 0.9rem;
   fill: none;
   stroke: currentColor;
   stroke-linecap: round;
@@ -1242,12 +1243,7 @@ p {
 }
 
 .home-category-sections .category-section-list {
-  gap: 0.45rem;
-}
-
-.home-category-sections .category-section-card {
-  min-height: 4.25rem;
-  box-shadow: none;
+  gap: 0.65rem;
 }
 
 .home-category-empty {
@@ -1265,11 +1261,6 @@ p {
     flex-direction: column;
   }
 
-  .home-category-controls {
-    width: 100%;
-    justify-content: space-between;
-  }
-
   .home-category-summary {
     justify-content: flex-start;
     white-space: normal;
@@ -1278,7 +1269,7 @@ p {
 
 @media (max-width: 29.99rem) {
   .home-forum-categories {
-    gap: 0.75rem;
+    gap: 1rem;
     padding-inline: 0.55rem;
   }
 
