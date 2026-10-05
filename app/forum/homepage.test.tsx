@@ -121,15 +121,15 @@ describe("homepage category map", () => {
     expect(categoryLinks[0]).toHaveAttribute("href", "/en/categories/help-solutions");
     const developmentToggle = screen.getByRole("button", { name: "Development" });
     expect(developmentToggle).toHaveAttribute("aria-expanded", "false");
-    expect(screen.queryByRole("link", { name: /TypeScript & architecture/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "TypeScript & architecture" })).not.toBeInTheDocument();
 
     fireEvent.click(developmentToggle);
 
     expect(developmentToggle).toHaveAttribute("aria-expanded", "true");
-    const typescriptLink = screen.getByRole("link", { name: /TypeScript & architecture/ });
+    const typescriptLink = screen.getByRole("link", { name: "TypeScript & architecture" });
     expect(typescriptLink).toHaveAttribute("href", "/en/sections/typescript");
     expect(typescriptLink.closest("article")).toHaveClass("home-section-card");
-    expect(screen.getByRole("link", { name: /Databases/ }))
+    expect(screen.getByRole("link", { name: "Databases" }))
       .toHaveAttribute("href", "/en/sections/databases");
     expect(screen.getAllByRole("heading", { name: "Pinned" })).toHaveLength(2);
     expect(screen.getAllByRole("heading", { name: "Latest topics" })).toHaveLength(2);
@@ -140,7 +140,7 @@ describe("homepage category map", () => {
     fireEvent.click(developmentToggle);
 
     expect(developmentToggle).toHaveAttribute("aria-expanded", "false");
-    expect(screen.queryByRole("link", { name: /TypeScript & architecture/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "TypeScript & architecture" })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Pinned" })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Latest topics" })).not.toBeInTheDocument();
   });
