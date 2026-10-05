@@ -107,6 +107,8 @@ describe("homepage category map", () => {
       .toHaveAttribute("href", "/en/sections/databases");
     expect(screen.getByRole("link", { name: /Testing/ }))
       .toHaveAttribute("href", "/en/sections/testing");
+    expect(document.querySelectorAll(".home-category-section-row")).toHaveLength(3);
+    expect(document.querySelector(".home-category-sections .category-section-card")).not.toBeInTheDocument();
     expect(document.querySelectorAll(".home-category-section-description")).toHaveLength(3);
     expect(document.querySelector(".home-category-section-description"))
       .toHaveTextContent("Sections, discussions, and practical answers in this area.");
