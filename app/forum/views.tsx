@@ -3,7 +3,6 @@ import { Form, Link, useFetcher, useNavigation } from "react-router";
 import { useTranslation } from "react-i18next";
 
 import type {
-  ForumCategoryPage,
   ForumPopularPeriod,
   ForumPopularTopicSummary,
   ForumReplyNotificationSummary,
