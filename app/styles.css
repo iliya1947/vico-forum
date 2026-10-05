@@ -1287,9 +1287,9 @@ p {
 .home-category-section-icon::before {
   position: absolute;
   inset-block-start: 50%;
-  inset-inline-end: -0.775rem;
-  width: 1.55rem;
-  height: 1.55rem;
+  inset-inline-end: -1.1rem;
+  width: 2.2rem;
+  height: 2.2rem;
   border: 1px solid var(--color-border);
   border-radius: 50%;
   background: var(--color-surface-subtle);
@@ -1318,7 +1318,7 @@ p {
   align-items: center;
   gap: 0.5rem;
   padding-inline-end: 0.55rem;
-  padding-inline-start: 1.05rem;
+  padding-inline-start: 1.35rem;
   background: var(--color-surface);
 }
 
