@@ -271,8 +271,8 @@ composition without changing the forum hierarchy or schema:
   pre-release `Under development` behavior;
 - `Help & solutions` is the first approved homepage category in the representative Pages map and
   may remain without fabricated sections until its internal structure is defined;
-- repository CI and GitHub Pages passed for the accepted head, and owner visual acceptance was
-  confirmed on 2026-10-05.
+- owner visual acceptance of the implementation was confirmed on 2026-10-05; exact-head
+  automated verification remains a separate PR check.
 
 Section-page implementation in PR #160 passed owner visual acceptance in GitHub Pages on
 2026-10-01:
