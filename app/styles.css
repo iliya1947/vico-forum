@@ -1377,7 +1377,6 @@ p {
   justify-content: center;
   padding: 0;
   border: 0;
-  border-block-start: 1px solid var(--color-border);
   color: var(--color-action-on-accent);
   background: transparent;
   cursor: pointer;
