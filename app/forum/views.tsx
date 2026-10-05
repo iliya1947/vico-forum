@@ -813,7 +813,12 @@ function CategorySectionCard({
         />
       </div>
 
-      <div className="home-section-stats" id={`${detailsId}-stats`}>
+      <div
+        className="home-section-stats"
+        id={`${detailsId}-stats`}
+        role="group"
+        aria-label={`${t("topicCount", { count: section.topicCount })} · ${t("messageCount", { count: section.postCount })}`}
+      >
         <span>
           <strong>{section.topicCount}</strong>
           {t("topicsHeading")}
