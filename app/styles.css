@@ -1370,26 +1370,29 @@ p {
 .home-category-toggle {
   display: flex;
   width: 100%;
-  min-height: 1.8rem;
+  min-height: 1.28rem;
   align-items: center;
   justify-content: center;
-  gap: 0.4rem;
-  padding: 0.25rem 0.65rem;
+  padding: 0.08rem 0.65rem;
   border: 0;
   border-block-start: 1px solid var(--color-border);
-  border-radius: 0 0 0.58rem 0.58rem;
-  color: var(--color-accent-hover);
-  background: var(--color-surface-muted);
-  font: inherit;
-  font-size: 0.72rem;
-  font-weight: 700;
+  color: var(--color-action-on-accent);
+  background: transparent;
   cursor: pointer;
 }
 
-.home-category-toggle:hover,
-.home-category-toggle:focus-visible {
-  color: var(--color-text);
-  background: var(--color-accent-soft);
+.home-category-toggle-core {
+  display: grid;
+  width: 9rem;
+  height: 1rem;
+  place-items: center;
+  border-radius: 0.32rem;
+  background: var(--color-accent);
+}
+
+.home-category-toggle:hover .home-category-toggle-core,
+.home-category-toggle:focus-visible .home-category-toggle-core {
+  background: var(--color-accent-hover);
 }
 
 .home-category-toggle:focus-visible {
@@ -1398,14 +1401,13 @@ p {
 }
 
 .home-category-toggle svg {
-  width: 0.85rem;
-  height: 0.85rem;
-  flex: none;
+  width: 0.78rem;
+  height: 0.78rem;
   fill: none;
   stroke: currentColor;
   stroke-linecap: round;
   stroke-linejoin: round;
-  stroke-width: 2.2;
+  stroke-width: 2.3;
 }
 
 .home-category-empty {
