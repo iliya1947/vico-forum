@@ -1287,9 +1287,9 @@ p {
 .home-category-section-icon::before {
   position: absolute;
   inset-block-start: 50%;
-  inset-inline-end: -1.1rem;
-  width: 2.2rem;
-  height: 2.2rem;
+  inset-inline-end: -1.05rem;
+  width: 2.1rem;
+  height: 2.1rem;
   border: 1px solid var(--color-border);
   border-radius: 50%;
   background: var(--color-surface-subtle);
