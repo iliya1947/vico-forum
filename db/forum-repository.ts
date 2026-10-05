@@ -27,6 +27,7 @@ export interface ForumHomepageSectionSummary {
   name: string;
   topicCount: number;
   messageCount: number;
+  latestTopics: ForumSectionTopicSummary[];
 }
 
 export interface ForumHomepageCategorySummary {
@@ -437,6 +438,66 @@ export class DrizzleForumRepository {
         asc(forumSections.id),
       );
 
+    const topicActivity = this.database
+      .select({
+        sectionId: forumTopics.sectionId,
+        id: forumTopics.id,
+        title: forumTopicTitleRevisions.originalContent,
+        authorName: user.name,
+        activityAt: sql`greatest(
+          ${forumTopics.createdAt},
+          coalesce(max(${forumPosts.createdAt}), ${forumTopics.createdAt})
+        )`.mapWith(forumTopics.createdAt).as("activity_at"),
+      })
+      .from(forumTopics)
+      .innerJoin(forumTopicTitleRevisions, and(
+        eq(forumTopicTitleRevisions.topicId, forumTopics.id),
+        eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId),
+      ))
+      .innerJoin(user, eq(user.id, forumTopics.authorId))
+      .leftJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
+      .groupBy(forumTopics.id, forumTopicTitleRevisions.id, user.name)
+      .as("homepage_section_topic_activity");
+
+    const rankedTopics = this.database
+      .select({
+        sectionId: topicActivity.sectionId,
+        id: topicActivity.id,
+        title: topicActivity.title,
+        authorName: topicActivity.authorName,
+        activityAt: topicActivity.activityAt,
+        activityRank: sql<number>`row_number() over (
+          partition by ${topicActivity.sectionId}
+          order by ${topicActivity.activityAt} desc, ${topicActivity.id} desc
+        )::int`.as("activity_rank"),
+      })
+      .from(topicActivity)
+      .as("homepage_section_ranked_topics");
+
+    const latestTopics = await this.database
+      .select({
+        sectionId: rankedTopics.sectionId,
+        id: rankedTopics.id,
+        title: rankedTopics.title,
+        authorName: rankedTopics.authorName,
+        activityAt: rankedTopics.activityAt,
+      })
+      .from(rankedTopics)
+      .where(lte(rankedTopics.activityRank, 6))
+      .orderBy(asc(rankedTopics.sectionId), asc(rankedTopics.activityRank));
+
+    const latestBySection = new Map<string, ForumSectionTopicSummary[]>();
+    for (const topic of latestTopics) {
+      const topics = latestBySection.get(topic.sectionId) ?? [];
+      topics.push({
+        id: topic.id,
+        title: topic.title,
+        authorName: topic.authorName,
+        activityAt: topic.activityAt,
+      });
+      latestBySection.set(topic.sectionId, topics);
+    }
+
     const sectionsByCategory = new Map<string, ForumHomepageSectionSummary[]>();
     for (const section of sectionRows) {
       const sections = sectionsByCategory.get(section.categoryId) ?? [];
@@ -445,6 +506,7 @@ export class DrizzleForumRepository {
         name: section.name,
         topicCount: section.topicCount,
         messageCount: section.messageCount,
+        latestTopics: latestBySection.get(section.id) ?? [],
       });
       sectionsByCategory.set(section.categoryId, sections);
     }
