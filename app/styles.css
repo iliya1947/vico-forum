@@ -1109,8 +1109,10 @@ p {
 
 .home-forum-categories {
   display: grid;
-  gap: 0.45rem;
-  padding: 0.45rem 0.55rem;
+  gap: 0.65rem;
+  padding-block: 0.7rem;
+  padding-inline-end: 0.7rem;
+  padding-inline-start: 0;
   border-inline: 1px solid var(--color-border);
   background: var(--color-canvas);
 }
@@ -1130,8 +1132,8 @@ p {
   min-width: 0;
   align-items: center;
   justify-content: space-between;
-  gap: 0.7rem;
-  padding: 0.28rem 0.6rem;
+  gap: 0.8rem;
+  padding: 0.42rem 0.7rem;
 }
 
 .home-category-identity {
@@ -1139,7 +1141,7 @@ p {
   min-width: 0;
   flex: 1 1 auto;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.65rem;
 }
 
 .home-category-copy {
@@ -1147,13 +1149,13 @@ p {
   min-width: 0;
   flex: 1 1 auto;
   align-items: baseline;
-  gap: 0.5rem;
+  gap: 0.65rem;
 }
 
 .home-category-icon {
   display: grid;
-  width: 2rem;
-  height: 2rem;
+  width: 2.4rem;
+  height: 2.4rem;
   flex: none;
   place-items: center;
   border: 1px solid var(--color-accent);
@@ -1163,8 +1165,8 @@ p {
 }
 
 .home-category-icon svg {
-  width: 1.12rem;
-  height: 1.12rem;
+  width: 1.35rem;
+  height: 1.35rem;
   fill: none;
   stroke: currentColor;
   stroke-linecap: round;
