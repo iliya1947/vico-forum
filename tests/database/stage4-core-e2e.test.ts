@@ -254,7 +254,7 @@ describe("Stage 4 connected forum authorization flow", () => {
         messageCount: 3,
         latestTopics: [
           { id: topicId, title: "Core E2E topic", authorName: "Author" },
-          { id: newerTopicId, title: "Newer topic", authorName: "Author" },
+          { id: newerTopicId, title: "Newer but inactive topic", authorName: "Author" },
         ],
       }],
     });
