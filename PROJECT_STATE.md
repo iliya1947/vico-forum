@@ -37,8 +37,10 @@ Vico Forum находится в ранней pre-release разработке.
   заменяет будущую real-runtime acceptance.
 - В текущем UI/UX slice реализованы и repository-CI/Pages-проверены semantic visual tokens,
   Light/Dark с first-use `prefers-color-scheme` и persisted manual choice, two-zone shell/header,
-  approved homepage frame и общая локализованная страница `Under development`. Runtime homepage
-  использует только существующие forum data для counts/latest topics; отсутствующие pinning и
+  approved shell/homepage foundation и общая локализованная страница `Under development`.
+  Current PR #182 переносит rich `Pinned / Latest topics / statistics` presentation с homepage на
+  category pages: runtime homepage теперь читает реальные categories + sections + aggregate counts,
+  а category reader — bounded latest-topic activity по каждому section. Отсутствующие pinning и
   online-presence capability не имитируются real data. Это не означает финальную browser/real-runtime
   acceptance всего UI/UX pass.
 - Homepage correction slice прошёл owner visual acceptance в GitHub Pages. Приняты текущая
@@ -64,8 +66,10 @@ Vico Forum находится в ранней pre-release разработке.
   owner visual acceptance подтверждён 2026-10-02. По выбору владельца следующая bounded
   product-функция — global Search: текущая implementation-ветка добавляет public
   `/:locale/search?q=...` поверх current topic-title/post revisions и topic tags без новой
-  migration/search-index subsystem. Repository CI и GitHub Pages preview прошли; owner visual acceptance подтверждён 2026-10-03. Search merged через PR #171. Message links реализован и merged через PR #172: public permanent post anchors + copy-link UI работают без DB/backend изменений; GitHub Pages preview пройден, owner visual acceptance подтверждён 2026-10-03. Reply/Quote реализован: migration `0022_forum_reply_relationships` добавляет nullable same-topic parent relation для forum posts; обсуждение остаётся линейным, Reply привязывает новый post к конкретному parent, Quote вставляет только выделенный текст как Markdown blockquote, а parent/child сообщения связываются стабильными anchors. Existing permissions/rate-limit semantics не меняются; repository CI и GitHub Pages preview проходят, owner visual acceptance подтверждён 2026-10-03. Дальнейшая косметическая полировка homepage
-  сейчас не является приоритетом.
+  migration/search-index subsystem. Repository CI и GitHub Pages preview прошли; owner visual acceptance подтверждён 2026-10-03. Search merged через PR #171. Message links реализован и merged через PR #172: public permanent post anchors + copy-link UI работают без DB/backend изменений; GitHub Pages preview пройден, owner visual acceptance подтверждён 2026-10-03. Reply/Quote реализован: migration `0022_forum_reply_relationships` добавляет nullable same-topic parent relation для forum posts; обсуждение остаётся линейным, Reply привязывает новый post к конкретному parent, Quote вставляет только выделенный текст как Markdown blockquote, а parent/child сообщения связываются стабильными anchors. Existing permissions/rate-limit semantics не меняются; repository CI и GitHub Pages preview проходят, owner visual acceptance подтверждён 2026-10-03. Последующая hierarchy correction в PR #182
+  заменяет topic-oriented homepage blocks на category → section map и переносит прежнюю rich
+  section presentation на category pages. Owner visual acceptance реализации подтверждён
+  2026-10-05; schema/migration/auth/permission/Stage 6 изменений нет.
 - Текущий Unread/new slice подключает repository/database foundation к runtime/UI:
   forward migration `0023_forum_topic_read_states` хранит один last-read cursor на пару
   authenticated user + topic и same-topic FK не позволяет ссылаться на post другой темы.
@@ -95,12 +99,13 @@ Vico Forum находится в ранней pre-release разработке.
   presentation и representative mixed/empty Pages states добавлены; notifications удалены из
   Under development. Clean PostgreSQL 17 tests, schema/manifest parity, runtime privilege probes и
   полный repository CI проходят. External migration/Stage 6 rollout не выполнялись.
-- Category-page discovery slice в PR #159 прошёл owner visual acceptance в GitHub Pages:
-  owner-approved header/logo/discovery nav переиспользованы без backend/DB изменений; category
-  heading показывает только derived section/topic/message totals, section rows стали compact
-  clickable cards с реальными counts и orange entry rail, добавлены responsive/RTL-safe geometry
-  и representative LTR/RTL/empty-category Pages states. Repository CI и Pages для принятой
-  реализации проходят. Следующая bounded UI/UX подзадача после merge — Section page.
+- Category-page discovery baseline в PR #159 прошёл owner visual acceptance в GitHub Pages:
+  owner-approved header/logo/discovery nav, derived section/topic/message totals и
+  responsive/RTL/empty-category states сохранены. PR #182 supersede-ит только section-card
+  composition: category page теперь переиспользует прежний rich section block с
+  `Pinned / Latest topics / statistics / entry`; bounded latest-topic data читается реально по
+  каждому section, а pinning не имитируется. Homepage одновременно становится прямой
+  category → section map. Owner visual acceptance реализации подтверждён 2026-10-05.
 - Section-page discovery slice в PR #160 прошёл owner visual acceptance в GitHub Pages:
   approved header/logo/discovery nav переиспользованы без backend/DB изменений; heading показывает
   только derived topic/message totals, topic rows стали full-card links с реальными author/message

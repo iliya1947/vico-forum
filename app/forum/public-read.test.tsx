@@ -28,7 +28,22 @@ import TopicRoute, { loader as topicLoader } from "../routes/topic";
 import { forumCategoryPath, forumPopularPath, forumSearchPath, forumSectionPath, forumTagPath, forumTagsPath, forumTopicPath, forumUnansweredPath } from "./paths";
 import { forumReaderContext } from "./request-context";
 
-const category = { id: "development/core", name: "Development", sections: [{ id: "typescript/basics", name: "TypeScript", topicCount: 1, postCount: 1 }] };
+const category = {
+  id: "development/core",
+  name: "Development",
+  sections: [{
+    id: "typescript/basics",
+    name: "TypeScript",
+    topicCount: 1,
+    postCount: 1,
+    latestTopics: [{
+      id: "typed/api",
+      title: "How do I type an API?",
+      authorName: "Ada",
+      activityAt: new Date("2026-01-02"),
+    }],
+  }],
+};
 const section = {
   id: "typescript/basics", name: "TypeScript", category: { id: "development/core", name: "Development" },
   topics: [{
@@ -57,11 +72,11 @@ const reader: ForumReader = {
     sectionCount: 1,
     topicCount: 1,
     messageCount: 1,
-    latestTopics: [{
-      id: topic.id,
-      title: topic.title.originalContent,
-      authorName: topic.authorName,
-      activityAt: topic.posts[0]!.createdAt,
+    sections: [{
+      id: section.id,
+      name: section.name,
+      topicCount: 1,
+      messageCount: 1,
     }],
   }],
   readPopular: async () => ({
@@ -268,14 +283,19 @@ describe.each([
     expect(topicData.generationUnits).toEqual([]);
 
     const homeView = renderRoute(Home, home, `/${locale}`, locale, direction);
-    expect(await screen.findByRole("link", { name: "Development" })).toHaveAttribute("href", `/${locale}/categories/development%2Fcore`);
+    expect(await screen.findByRole("link", { name: "Development" }))
+      .toHaveAttribute("href", `/${locale}/categories/development%2Fcore`);
+    expect(screen.getByRole("link", { name: /TypeScript/ }))
+      .toHaveAttribute("href", `/${locale}/sections/typescript%2Fbasics`);
+    expect(screen.queryByRole("button", { name: "Development" })).not.toBeInTheDocument();
     expect(document.querySelector(`[dir="${direction}"]`)).toBeInTheDocument();
     homeView.unmount();
 
     const categoryView = renderRoute(CategoryRoute, categoryData, forumCategoryPath(locale, category.id), locale, direction);
-    const categorySectionLink = await screen.findByRole("link", { name: /TypeScript/ });
+    const categorySectionLink = await screen.findByRole("link", { name: "TypeScript" });
     expect(categorySectionLink).toHaveAttribute("href", `/${locale}/sections/typescript%2Fbasics`);
-    expect(categorySectionLink).toHaveClass("category-section-card");
+    expect(categorySectionLink.closest("article")).toHaveClass("home-section-card");
+    expect(screen.getByRole("heading", { name: "Latest topics" })).toBeVisible();
     categoryView.unmount();
 
     const sectionView = renderRoute(SectionRoute, sectionData, forumSectionPath(locale, section.id), locale, direction);
@@ -509,11 +529,26 @@ describe("category count presentation", () => {
   it("composes topic and message totals through independent plural lookups", async () => {
     const data = {
       locale: "en",
+      referenceTime: "2026-01-03T00:00:00.000Z",
       category: {
         ...category,
         sections: [
-          { id: "mixed-one", name: "Mixed one", topicCount: 1, postCount: 2 },
-          { id: "mixed-two", name: "Mixed two", topicCount: 2, postCount: 1 },
+          {
+            id: "mixed-one",
+            name: "Mixed one",
+            topicCount: 1,
+            postCount: 2,
+            pinnedTopics: [],
+            latestTopics: [],
+          },
+          {
+            id: "mixed-two",
+            name: "Mixed two",
+            topicCount: 2,
+            postCount: 1,
+            pinnedTopics: [],
+            latestTopics: [],
+          },
         ],
       },
     };

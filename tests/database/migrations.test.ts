@@ -254,7 +254,16 @@ describe("PostgreSQL 17 locale migrations", () => {
     ]);
     expect(await repository.readCategory("development")).toMatchObject({
       id: "development",
-      sections: [{ id: "typescript", topicCount: 1, postCount: 1 }],
+      sections: [{
+        id: "typescript",
+        topicCount: 1,
+        postCount: 1,
+        latestTopics: [{
+          id: "topic-1",
+          title: "Как типизировать API?",
+          authorName: "Forum Author",
+        }],
+      }],
     });
     expect(await repository.readSection("typescript")).toMatchObject({
       category: { id: "development" },

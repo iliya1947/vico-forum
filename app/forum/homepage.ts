@@ -1,8 +1,8 @@
-export interface HomepageTopicSummary {
+export interface HomepageSectionSummary {
   id: string;
-  title: string;
-  authorName: string;
-  activityAt: string;
+  name: string;
+  topicCount: number;
+  messageCount: number;
 }
 
 export interface HomepageCategoryOverview {
@@ -13,9 +13,5 @@ export interface HomepageCategoryOverview {
   sectionCount: number;
   topicCount: number;
   messageCount: number;
-  pinnedTopics: readonly HomepageTopicSummary[];
-  latestTopics: readonly HomepageTopicSummary[];
+  sections: readonly HomepageSectionSummary[];
 }
-
-export const HOMEPAGE_COMPACT_PINNED_LIMIT = 3;
-export const HOMEPAGE_COMPACT_LATEST_LIMIT = 2;

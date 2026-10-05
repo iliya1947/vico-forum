@@ -139,6 +139,17 @@ export const canonicalEnglishCatalog = {
     homepageLatestEmpty: message("homepageLatestEmpty", "No topics yet.", "Empty latest-topic area on a real homepage category."),
     homepageExpand: message("homepageExpand", "Show more topics", "Accessible label for expanding a homepage forum block."),
     homepageCollapse: message("homepageCollapse", "Show fewer topics", "Accessible label for collapsing a homepage forum block."),
+    homepageMoreSections: pluralMessage(
+      "homepageMoreSections",
+      { one: "Show {{count}} more section", other: "Show {{count}} more sections" },
+      "Homepage category action for revealing sections beyond the first three.",
+      ["count"],
+    ),
+    homepageFewerSections: message(
+      "homepageFewerSections",
+      "Show fewer sections",
+      "Homepage category action for hiding sections beyond the first three.",
+    ),
     forumStatisticsHeading: message("forumStatisticsHeading", "Forum statistics", "Heading for aggregate homepage forum statistics."),
     whosOnlineHeading: message("whosOnlineHeading", "Who's online", "Heading for the homepage online-presence area."),
     onlinePresencePending: message("onlinePresencePending", "Online presence is still under development.", "Truthful placeholder while online presence is not implemented."),

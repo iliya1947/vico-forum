@@ -241,19 +241,18 @@ describe("Stage 4 connected forum authorization flow", () => {
       [topicId, newerTopicId, reply.id],
     );
 
-    const homepage = await forum.readHomepage(1);
+    const homepage = await forum.readHomepage();
     const homepageCategory = homepage.find((entry) => entry.id === "e2e-category");
     expect(homepageCategory).toMatchObject({
       sectionCount: 1,
       topicCount: 2,
       messageCount: 3,
-    });
-    expect(homepageCategory?.latestTopics).toHaveLength(1);
-    expect(homepageCategory?.latestTopics[0]).toMatchObject({
-      id: topicId,
-      title: "Core E2E topic",
-      authorName: "Author",
-      activityAt: new Date("2026-09-10T00:00:00.000Z"),
+      sections: [{
+        id: "e2e-section",
+        name: "E2E Section",
+        topicCount: 2,
+        messageCount: 3,
+      }],
     });
 
     const popular = await forum.readPopular(new Date("2026-09-11T00:00:00.000Z"), 10);
