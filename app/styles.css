@@ -1113,7 +1113,6 @@ p {
   padding-block: 0.7rem;
   padding-inline-end: 0.7rem;
   padding-inline-start: 0;
-  border-inline: 1px solid var(--color-border);
   background: var(--color-canvas);
 }
 
