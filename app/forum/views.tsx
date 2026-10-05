@@ -599,6 +599,7 @@ function HomepageCategoryCard({
   const [expanded, setExpanded] = useState(false);
   const detailsId = `home-category-${category.id.replace(/[^a-zA-Z0-9_-]/g, "-")}-sections`;
   const hasMoreSections = category.sections.length > 3;
+  const remainingSectionCount = Math.max(0, category.sections.length - 3);
   const visibleSections = expanded ? category.sections : category.sections.slice(0, 3);
 
   return (
@@ -678,9 +679,13 @@ function HomepageCategoryCard({
           type="button"
           aria-expanded={expanded}
           aria-controls={detailsId}
-          aria-label={category.name}
           onClick={() => setExpanded((value) => !value)}
         >
+          <span>
+            {expanded
+              ? t("homepageFewerSections")
+              : t("homepageMoreSections", { count: remainingSectionCount })}
+          </span>
           <svg aria-hidden="true" viewBox="0 0 20 20">
             <path d={expanded ? "m5 12 5-5 5 5" : "m5 8 5 5 5-5"} />
           </svg>
