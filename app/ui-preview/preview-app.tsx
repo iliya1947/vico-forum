@@ -1162,6 +1162,7 @@ function previewElement(scenario: Scenario) {
         <HomeView
           locale={scenario.locale}
           categories={homepageCategories(scenario.locale)}
+          referenceTime={previewReferenceTime}
         />
       );
     case "search":
