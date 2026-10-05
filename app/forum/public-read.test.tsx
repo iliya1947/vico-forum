@@ -285,6 +285,7 @@ describe.each([
     const homeView = renderRoute(Home, home, `/${locale}`, locale, direction);
     expect(await screen.findByRole("link", { name: "Development" }))
       .toHaveAttribute("href", `/${locale}/categories/development%2Fcore`);
+    fireEvent.click(screen.getByRole("button", { name: "Development" }));
     expect(screen.getByRole("link", { name: /TypeScript/ }))
       .toHaveAttribute("href", `/${locale}/sections/typescript%2Fbasics`);
     expect(document.querySelector(`[dir="${direction}"]`)).toBeInTheDocument();
