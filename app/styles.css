@@ -1286,17 +1286,22 @@ p {
 
 .home-category-section-icon::before {
   position: absolute;
+  inset-block-start: 50%;
+  inset-inline-end: -0.775rem;
   width: 1.55rem;
   height: 1.55rem;
   border: 1px solid var(--color-border);
   border-radius: 50%;
   background: var(--color-surface-subtle);
+  transform: translateY(-50%);
   content: "";
 }
 
 .home-category-section-icon svg {
-  position: relative;
+  position: absolute;
   z-index: 1;
+  inset-block-start: 50%;
+  inset-inline-end: -0.41rem;
   width: 0.82rem;
   height: 0.82rem;
   fill: none;
@@ -1304,6 +1309,7 @@ p {
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 1.8;
+  transform: translateY(-50%);
 }
 
 .home-category-section-copy {
@@ -1311,7 +1317,8 @@ p {
   min-width: 0;
   align-items: center;
   gap: 0.5rem;
-  padding-inline: 0.55rem;
+  padding-inline-end: 0.55rem;
+  padding-inline-start: 1.05rem;
   background: var(--color-surface);
 }
 
