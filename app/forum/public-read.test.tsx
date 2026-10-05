@@ -528,11 +528,26 @@ describe("category count presentation", () => {
   it("composes topic and message totals through independent plural lookups", async () => {
     const data = {
       locale: "en",
+      referenceTime: "2026-01-03T00:00:00.000Z",
       category: {
         ...category,
         sections: [
-          { id: "mixed-one", name: "Mixed one", topicCount: 1, postCount: 2 },
-          { id: "mixed-two", name: "Mixed two", topicCount: 2, postCount: 1 },
+          {
+            id: "mixed-one",
+            name: "Mixed one",
+            topicCount: 1,
+            postCount: 2,
+            pinnedTopics: [],
+            latestTopics: [],
+          },
+          {
+            id: "mixed-two",
+            name: "Mixed two",
+            topicCount: 2,
+            postCount: 1,
+            pinnedTopics: [],
+            latestTopics: [],
+          },
         ],
       },
     };
