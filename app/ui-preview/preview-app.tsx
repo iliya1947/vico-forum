@@ -1193,12 +1193,9 @@ function previewElement(scenario: Scenario) {
           category={
             scenario.variant === "empty-category"
               ? emptyCategory
-              : scenario.locale === "ru"
-                ? categoryRu
-                : scenario.direction === "rtl"
-                  ? categoryRtl
-                  : category
+              : previewCategory(scenario.locale, categoryId)
           }
+          referenceTime={previewReferenceTime}
         />
       );
     case "section":
