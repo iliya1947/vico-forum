@@ -326,6 +326,52 @@ const topic = {
 };
 
 
+const previewReferenceTime = "2026-09-30T16:00:00.000Z";
+
+function previewCategoryTopics(
+  locale: PreviewLocale,
+  sectionIdValue: string,
+  sectionName: string,
+) {
+  const russian = locale === "ru";
+  const rtl = locale === "he";
+  const pinnedTitles = rtl
+    ? ["כללי המדור ומשאבים שימושיים", "לפני שפותחים נושא חדש", "אוסף קישורים מומלץ"]
+    : russian
+      ? ["Правила раздела и полезные материалы", "Перед созданием новой темы", "Рекомендуемая подборка материалов"]
+      : ["Section guide and useful resources", "Before you open a new topic", "Recommended reference collection"];
+  const latestTitles = sectionIdValue === sectionId
+    ? (rtl
+        ? ["איך כדאי לבנות לקוח API עם טיפוסים?", "תוכן RTL מעורב עם בלוקי קוד", "Worker auth: session boundary מול permissions", "דוגמה מעשית מהמדור"]
+        : russian
+          ? ["Как лучше построить типизированный API-клиент?", "Смешанный RTL-контент с блоками кода", "Worker auth: граница сессии и permissions", "Практический пример из раздела"]
+          : ["How should I structure a typed API client?", "Mixed RTL content with code blocks", "Worker auth: session boundary vs permissions", "A practical example from this section"])
+    : (rtl
+        ? [`השאלה האחרונה ב-${sectionName}`, "דוגמה מעשית", "דיון שימושי", "שאלה נוספת"]
+        : russian
+          ? [`Последний вопрос: ${sectionName}`, "Практический пример", "Полезное обсуждение", "Ещё один вопрос"]
+          : [`Latest question in ${sectionName}`, "A practical example", "Useful discussion", "Another question"]);
+
+  const latestIds = sectionIdValue === sectionId
+    ? [topicId, "rtl-markdown", "worker-auth", `${sectionIdValue}-latest-4`]
+    : latestTitles.map((_, index) => `${sectionIdValue}-latest-${index + 1}`);
+
+  return {
+    pinnedTopics: pinnedTitles.map((title, index) => ({
+      id: `${sectionIdValue}-pinned-${index + 1}`,
+      title,
+      authorName: ["Vico Team", "Maya Cohen", "Sam Chen"][index]!,
+      activityAt: new Date(Date.UTC(2026, 8, 29 - index, 9 + index, 30)).toISOString(),
+    })),
+    latestTopics: latestTitles.map((title, index) => ({
+      id: latestIds[index]!,
+      title,
+      authorName: ["Alex Rivera", "Noa Levi", "Sam Chen", "Maya Cohen"][index]!,
+      activityAt: new Date(Date.UTC(2026, 8, 30 - Math.min(index, 2), 15 - index * 2, 42)).toISOString(),
+    })),
+  };
+}
+
 function homepageCategories(locale: PreviewLocale): HomepageCategoryOverview[] {
   const rtl = locale === "he";
   const russian = locale === "ru";
@@ -836,19 +882,29 @@ function previewCategory(locale: PreviewLocale, routeCategoryId: string | undefi
     : locale === "he"
       ? categoryRtl
       : category;
-  if (!routeCategoryId || routeCategoryId === categoryId) return localizedCategory;
 
-  const overview = homepageCategories(locale).find((item) => item.id === routeCategoryId);
-  if (!overview) return localizedCategory;
+  const source = !routeCategoryId || routeCategoryId === categoryId
+    ? localizedCategory
+    : (() => {
+        const overview = homepageCategories(locale).find((item) => item.id === routeCategoryId);
+        if (!overview) return localizedCategory;
+        return {
+          id: overview.id,
+          name: overview.name,
+          sections: overview.sections.map((section) => ({
+            id: section.id,
+            name: section.name,
+            topicCount: section.topicCount,
+            postCount: section.messageCount,
+          })),
+        };
+      })();
 
   return {
-    id: overview.id,
-    name: overview.name,
-    sections: overview.sections.map((section) => ({
-      id: section.id,
-      name: section.name,
-      topicCount: section.topicCount,
-      postCount: section.messageCount,
+    ...source,
+    sections: source.sections.map((section) => ({
+      ...section,
+      ...previewCategoryTopics(locale, section.id, section.name),
     })),
   };
 }
@@ -861,7 +917,13 @@ function PreviewCategoryRoute({ scenario }: { scenario: Scenario }) {
     ? emptyCategory
     : previewCategory(scenario.locale, routeCategoryId);
 
-  return <CategoryView locale={scenario.locale} category={categoryPage} />;
+  return (
+    <CategoryView
+      locale={scenario.locale}
+      category={categoryPage}
+      referenceTime={previewReferenceTime}
+    />
+  );
 }
 
 function previewSection(locale: PreviewLocale, routeSectionId: string | undefined) {
