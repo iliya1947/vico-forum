@@ -88,7 +88,7 @@ export const reviewedCommonFingerprints = {
   pinnedHeading: "a19d47c77401ff9d847105e9217b4a59c25335a4bf8b90e52962fe3178d168f4",
   latestTopicsHeading: "e8b3dc8148616c646917e7f10c09885354b0264b0614e26b3d9cf5e4887d1fda",
   homepageSectionFallbackDescription: "04a846267e78a1b38f1a4bc7426766dd601044e941f6b3c778f437de7cd8461d",
-  homepagePinnedEmpty: "2a643ecd6de1d6b413e19f1d5d98ed595f7bf725a011cc2c5f02bc850c86a3c7",
+  homepagePinnedEmpty: "410033919e025af71c05f663f5cdf16275c008114ee135f65365353c4405777a",
   homepageLatestEmpty: "ef920a66b48f200c89ccd487f497c61289eb6f98db57552db5306de741741856",
   homepageExpand: "13343e06820e340ea0e945a0f544c524de43dd5e7f0712944048613331ea73af",
   homepageCollapse: "3e1f46e9d4265ea34afc4758f7108d20ae7a01faddfd6d92b3c75fb9c114743e",
