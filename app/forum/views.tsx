@@ -626,17 +626,18 @@ function HomepageCategoryCard({
       {category.sections.length > 0 ? (
         <div id={detailsId} className="home-category-details">
           <div className="home-category-sections">
-            <ul className="category-section-list">
+            <ul className="home-category-section-list">
               {visibleSections.map((section) => (
                 <li key={section.id}>
-                  <Link className="category-section-card" to={forumSectionPath(locale, section.id)}>
-                    <span className="category-section-main">
-                      <span className="category-section-icon" aria-hidden="true">
-                        <svg viewBox="0 0 24 24">
-                          <path d="M4 6.5h6l2 2h8v9H4z" />
-                          <path d="M7 12h10M7 15h7" />
-                        </svg>
-                      </span>
+                  <Link className="home-category-section-row" to={forumSectionPath(locale, section.id)}>
+                    <span className="home-category-section-icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24">
+                        <path d="M4 6.5h6l2 2h8v9H4z" />
+                        <path d="M7 12h10M7 15h7" />
+                      </svg>
+                    </span>
+
+                    <span className="home-category-section-copy">
                       <strong>{section.name}</strong>
                       <span className="home-category-section-description">
                         {t("homepageSectionFallbackDescription")}
@@ -644,7 +645,7 @@ function HomepageCategoryCard({
                     </span>
 
                     <span
-                      className="category-section-stats"
+                      className="home-category-section-stats"
                       role="group"
                       aria-label={`${t("topicCount", { count: section.topicCount })} · ${t("messageCount", { count: section.messageCount })}`}
                     >
@@ -658,7 +659,7 @@ function HomepageCategoryCard({
                       </span>
                     </span>
 
-                    <span className="category-section-enter" aria-hidden="true">
+                    <span className="home-category-section-enter" aria-hidden="true">
                       <svg viewBox="0 0 24 24">
                         <path d="m9 5 7 7-7 7" />
                       </svg>
