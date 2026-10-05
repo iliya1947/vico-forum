@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gt, gte, inArray, isNull, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, gte, inArray, isNull, lte, or, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { alias } from "drizzle-orm/pg-core";
 import {
@@ -128,11 +128,19 @@ export interface ForumReplyNotificationSummary {
   readAt: Date | null;
 }
 
+export interface ForumSectionTopicSummary {
+  id: string;
+  title: string;
+  authorName: string;
+  activityAt: Date;
+}
+
 export interface ForumSectionSummary {
   id: string;
   name: string;
   topicCount: number;
   postCount: number;
+  latestTopics: ForumSectionTopicSummary[];
 }
 
 export interface ForumCategoryPage {
@@ -950,11 +958,80 @@ export class DrizzleForumRepository {
       .orderBy(asc(forumSections.createdAt), asc(forumSections.id));
     const first = rows[0];
     if (!first) return undefined;
+
+    const topicActivity = this.database
+      .select({
+        sectionId: forumTopics.sectionId,
+        id: forumTopics.id,
+        title: forumTopicTitleRevisions.originalContent,
+        authorName: user.name,
+        activityAt: sql`greatest(
+          ${forumTopics.createdAt},
+          coalesce(max(${forumPosts.createdAt}), ${forumTopics.createdAt})
+        )`.mapWith(forumTopics.createdAt).as("activity_at"),
+      })
+      .from(forumTopics)
+      .innerJoin(forumSections, eq(forumSections.id, forumTopics.sectionId))
+      .innerJoin(forumTopicTitleRevisions, and(
+        eq(forumTopicTitleRevisions.topicId, forumTopics.id),
+        eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId),
+      ))
+      .innerJoin(user, eq(user.id, forumTopics.authorId))
+      .leftJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
+      .where(eq(forumSections.categoryId, id))
+      .groupBy(forumTopics.id, forumTopicTitleRevisions.id, user.name)
+      .as("category_section_topic_activity");
+
+    const rankedTopics = this.database
+      .select({
+        sectionId: topicActivity.sectionId,
+        id: topicActivity.id,
+        title: topicActivity.title,
+        authorName: topicActivity.authorName,
+        activityAt: topicActivity.activityAt,
+        activityRank: sql<number>`row_number() over (
+          partition by ${topicActivity.sectionId}
+          order by ${topicActivity.activityAt} desc, ${topicActivity.id} desc
+        )::int`.as("activity_rank"),
+      })
+      .from(topicActivity)
+      .as("category_section_ranked_topics");
+
+    const latestTopics = await this.database
+      .select({
+        sectionId: rankedTopics.sectionId,
+        id: rankedTopics.id,
+        title: rankedTopics.title,
+        authorName: rankedTopics.authorName,
+        activityAt: rankedTopics.activityAt,
+      })
+      .from(rankedTopics)
+      .where(lte(rankedTopics.activityRank, 6))
+      .orderBy(asc(rankedTopics.sectionId), asc(rankedTopics.activityRank));
+
+    const latestBySection = new Map<string, ForumSectionTopicSummary[]>();
+    for (const topic of latestTopics) {
+      const list = latestBySection.get(topic.sectionId) ?? [];
+      list.push({
+        id: topic.id,
+        title: topic.title,
+        authorName: topic.authorName,
+        activityAt: topic.activityAt,
+      });
+      latestBySection.set(topic.sectionId, list);
+    }
+
     return {
       id: first.categoryId,
       name: first.categoryName,
       sections: rows.flatMap((row) => row.sectionId && row.sectionName
-        ? [{ id: row.sectionId, name: row.sectionName, topicCount: row.topicCount, postCount: row.postCount }]
+        ? [{
+            id: row.sectionId,
+            name: row.sectionName,
+            topicCount: row.topicCount,
+            postCount: row.postCount,
+            latestTopics: latestBySection.get(row.sectionId) ?? [],
+          }]
         : []),
     };
   }
