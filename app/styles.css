@@ -1370,10 +1370,11 @@ p {
 .home-category-toggle {
   display: flex;
   width: 100%;
-  min-height: 1.28rem;
-  align-items: center;
+  height: 1rem;
+  min-height: 0;
+  align-items: stretch;
   justify-content: center;
-  padding: 0.08rem 0.65rem;
+  padding: 0;
   border: 0;
   border-block-start: 1px solid var(--color-border);
   color: var(--color-action-on-accent);
@@ -1384,7 +1385,7 @@ p {
 .home-category-toggle-core {
   display: grid;
   width: 9rem;
-  height: 1rem;
+  height: 100%;
   place-items: center;
   border-radius: 0.32rem;
   background: var(--color-accent);
