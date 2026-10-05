@@ -1256,7 +1256,8 @@ p {
 
 .home-category-sections {
   padding-block: 0;
-  padding-inline: 0.4rem;
+  padding-inline-end: 0.4rem;
+  padding-inline-start: 0;
   border-block-start: 1px solid var(--color-border);
   background: var(--color-canvas);
 }
