@@ -1281,15 +1281,24 @@ p {
   margin-block-start: -1px;
   place-items: center;
   align-self: stretch;
-  border: 1px solid var(--color-border);
-  border-radius: 0.5rem;
   color: var(--color-accent);
+}
+
+.home-category-section-icon::before {
+  position: absolute;
+  width: 1.55rem;
+  height: 1.55rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.36rem;
   background: var(--color-surface-subtle);
+  content: "";
 }
 
 .home-category-section-icon svg {
-  width: 0.9rem;
-  height: 0.9rem;
+  position: relative;
+  z-index: 1;
+  width: 0.82rem;
+  height: 0.82rem;
   fill: none;
   stroke: currentColor;
   stroke-linecap: round;
@@ -1391,8 +1400,8 @@ p {
   transform: rotate(180deg);
 }
 
-.home-category-section-row:hover .home-category-section-icon,
-.home-category-section-row:focus-visible .home-category-section-icon,
+.home-category-section-row:hover .home-category-section-icon::before,
+.home-category-section-row:focus-visible .home-category-section-icon::before,
 .home-category-section-row:hover .home-category-section-stats,
 .home-category-section-row:focus-visible .home-category-section-stats {
   border-color: var(--color-accent);
