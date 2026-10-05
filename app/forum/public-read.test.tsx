@@ -291,7 +291,7 @@ describe.each([
     homeView.unmount();
 
     const categoryView = renderRoute(CategoryRoute, categoryData, forumCategoryPath(locale, category.id), locale, direction);
-    const categorySectionLink = await screen.findByRole("link", { name: /TypeScript/ });
+    const categorySectionLink = await screen.findByRole("link", { name: "TypeScript" });
     expect(categorySectionLink).toHaveAttribute("href", `/${locale}/sections/typescript%2Fbasics`);
     expect(categorySectionLink.closest("article")).toHaveClass("home-section-card");
     expect(screen.getByRole("heading", { name: "Latest topics" })).toBeVisible();
