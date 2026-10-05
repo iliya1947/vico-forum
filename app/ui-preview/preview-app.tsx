@@ -432,10 +432,10 @@ function homepageCategories(locale: PreviewLocale): HomepageCategoryOverview[] {
   const topicTotals = [0, 64, 10, 43, 27, 31];
   const messageTotals = [0, 387, 76, 296, 148, 203];
   const genericSectionNames = rtl
-    ? ["כללי", "שאלות", "פרקטיקה"]
+    ? ["כללי", "שאלות", "פרקטיקה", "כלים", "דיונים"]
     : russian
-      ? ["Основное", "Вопросы", "Практика"]
-      : ["General", "Questions", "Practice"];
+      ? ["Основное", "Вопросы", "Практика", "Инструменты", "Обсуждения"]
+      : ["General", "Questions", "Practice", "Tools", "Discussions"];
 
   function distribute(total: number, count: number, index: number) {
     return Math.floor(total / count) + (index < total % count ? 1 : 0);
