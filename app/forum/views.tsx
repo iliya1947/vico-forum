@@ -3,7 +3,6 @@ import { Form, Link, useFetcher, useNavigation } from "react-router";
 import { useTranslation } from "react-i18next";
 
 import type {
-  ForumCategoryPage,
   ForumPopularPeriod,
   ForumPopularTopicSummary,
   ForumReplyNotificationSummary,
@@ -25,12 +24,7 @@ import type {
   SourceLocaleCorrectionMutationError,
 } from "./mutations.server";
 import { forumCategoryPath, forumSearchPath, forumSectionPath, forumTagPath, forumTagsPath, forumTopicPath, underDevelopmentPath } from "./paths";
-import {
-  HOMEPAGE_COMPACT_LATEST_LIMIT,
-  HOMEPAGE_COMPACT_PINNED_LIMIT,
-  type HomepageCategoryOverview,
-  type HomepageTopicSummary,
-} from "./homepage";
+import type { HomepageCategoryOverview } from "./homepage";
 import {
   PostBodyContent,
   PostBodyTranslationControls,
@@ -45,11 +39,9 @@ import { Breadcrumbs, EmptyState, ForumShell } from "./ui";
 export function HomeView({
   locale,
   categories,
-  referenceTime,
 }: {
   locale: string;
   categories: readonly HomepageCategoryOverview[];
-  referenceTime: string;
 }) {
   const { t } = useTranslation("common");
   const totals = categories.reduce(
@@ -65,16 +57,14 @@ export function HomeView({
     <ForumShell locale={locale} variant="home">
       {categories.length === 0 ? <EmptyState>{t("categoriesEmpty")}</EmptyState> : (
         <>
-          <h1 className="home-sections-heading">{t("homeForumSectionsHeading")}</h1>
-          <section className="home-forum-sections" aria-label={t("homeForumSectionsHeading")}>
-          {categories.map((category) => (
-            <HomepageCategoryCard
-              key={category.id}
-              locale={locale}
-              category={category}
-              referenceTime={referenceTime}
-            />
-          ))}
+          <section className="home-forum-categories" aria-label={t("categoriesHeading")}>
+            {categories.map((category) => (
+              <HomepageCategoryCard
+                key={category.id}
+                locale={locale}
+                category={category}
+              />
+            ))}
           </section>
         </>
       )}
@@ -598,128 +588,111 @@ export function TagView({
   );
 }
 
-const HOMEPAGE_MOBILE_CARD_QUERY = "(max-width: 29.99rem)";
-
-function useHomepageMobileCardLayout(): boolean {
-  const [mobile, setMobile] = useState(false);
-
-  useEffect(() => {
-    const media = window.matchMedia?.(HOMEPAGE_MOBILE_CARD_QUERY);
-    if (!media) return undefined;
-
-    const sync = () => setMobile(media.matches);
-    sync();
-    media.addEventListener("change", sync);
-    return () => media.removeEventListener("change", sync);
-  }, []);
-
-  return mobile;
-}
-
 function HomepageCategoryCard({
   locale,
   category,
-  referenceTime,
 }: {
   locale: string;
   category: HomepageCategoryOverview;
-  referenceTime: string;
 }) {
   const { t } = useTranslation("common");
-  const mobileLayout = useHomepageMobileCardLayout();
   const [expanded, setExpanded] = useState(false);
-  const [mobileDetailsOpen, setMobileDetailsOpen] = useState(false);
-  const pinned = expanded && !mobileLayout
-    ? category.pinnedTopics
-    : category.pinnedTopics.slice(0, HOMEPAGE_COMPACT_PINNED_LIMIT);
-  const latest = expanded && !mobileLayout
-    ? category.latestTopics
-    : category.latestTopics.slice(0, HOMEPAGE_COMPACT_LATEST_LIMIT);
-  const hasMore = category.pinnedTopics.length > HOMEPAGE_COMPACT_PINNED_LIMIT
-    || category.latestTopics.length > HOMEPAGE_COMPACT_LATEST_LIMIT;
-  const controlExpanded = mobileLayout ? mobileDetailsOpen : expanded;
-  const detailsId = `home-category-${category.id.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
-
-  const toggleDetails = () => {
-    if (mobileLayout) {
-      setMobileDetailsOpen((value) => !value);
-      return;
-    }
-    setExpanded((value) => !value);
-  };
+  const detailsId = `home-category-${category.id.replace(/[^a-zA-Z0-9_-]/g, "-")}-sections`;
+  const hasMoreSections = category.sections.length > 3;
+  const remainingSectionCount = Math.max(0, category.sections.length - 3);
+  const visibleSections = expanded ? category.sections : category.sections.slice(0, 3);
 
   return (
-    <article
-      className="home-section-card"
-      data-mobile-details={mobileDetailsOpen ? "open" : "closed"}
-    >
-      <div className="home-section-identity">
-        <HomepageCategoryIcon icon={category.icon} name={category.name} />
-        <div>
-          <h2>
-            <Link to={forumCategoryPath(locale, category.id)}>{category.name}</Link>
-          </h2>
-          <p>{category.description ?? t("homepageSectionFallbackDescription")}</p>
+    <article className="home-category-card">
+      <header className="home-category-header">
+        <div className="home-category-identity">
+          <HomepageCategoryIcon icon={category.icon} name={category.name} />
+          <div className="home-category-copy">
+            <h2>
+              <Link to={forumCategoryPath(locale, category.id)}>{category.name}</Link>
+            </h2>
+            <p>{category.description ?? t("homepageSectionFallbackDescription")}</p>
+          </div>
         </div>
-      </div>
 
-      <div className="home-section-column home-section-pinned" id={`${detailsId}-pinned`}>
-        <h3>{t("pinnedHeading")}</h3>
-        <HomepageTopicList
-          locale={locale}
-          topics={pinned}
-          emptyLabel={t("homepagePinnedEmpty")}
-          referenceTime={referenceTime}
-          showActivity={false}
-          pinned
-        />
-      </div>
+        <div className="home-category-summary" role="group" aria-label={category.name}>
+          <span>{t("sectionCount", { count: category.sectionCount })}</span>
+          <span aria-hidden="true">·</span>
+          <span>{t("topicCount", { count: category.topicCount })}</span>
+          <span aria-hidden="true">·</span>
+          <span>{t("messageCount", { count: category.messageCount })}</span>
+        </div>
+      </header>
 
-      <div className="home-section-column home-section-latest" id={`${detailsId}-latest`}>
-        <h3>{t("latestTopicsHeading")}</h3>
-        <HomepageTopicList
-          locale={locale}
-          topics={latest}
-          emptyLabel={t("homepageLatestEmpty")}
-          referenceTime={referenceTime}
-          showActivity
-        />
-      </div>
+      {category.sections.length > 0 ? (
+        <div id={detailsId} className="home-category-details">
+          <div className="home-category-sections">
+            <ul className="home-category-section-list">
+              {visibleSections.map((section) => (
+                <li key={section.id}>
+                  <Link className="home-category-section-row" to={forumSectionPath(locale, section.id)}>
+                    <span className="home-category-section-icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24">
+                        <path d="M4 6.5h6l2 2h8v9H4z" />
+                        <path d="M7 12h10M7 15h7" />
+                      </svg>
+                    </span>
 
-      <div className="home-section-stats" id={`${detailsId}-stats`}>
-        <span>
-          <strong>{category.topicCount}</strong>
-          {t("topicsHeading")}
-        </span>
-        <span>
-          <strong>{category.messageCount}</strong>
-          {t("postsColumn")}
-        </span>
-      </div>
+                    <span className="home-category-section-copy">
+                      <strong>{section.name}</strong>
+                      <span className="home-category-section-description">
+                        {t("homepageSectionFallbackDescription")}
+                      </span>
+                    </span>
 
-      <Link
-        className="home-section-enter"
-        to={forumCategoryPath(locale, category.id)}
-        aria-label={t("enterForumSection", { section: category.name })}
-      >
-        <svg aria-hidden="true" viewBox="0 0 24 24">
-          <path d="m9 5 7 7-7 7" />
-        </svg>
-      </Link>
+                    <span
+                      className="home-category-section-stats"
+                      role="group"
+                      aria-label={`${t("topicCount", { count: section.topicCount })} · ${t("messageCount", { count: section.messageCount })}`}
+                    >
+                      <span aria-hidden="true">
+                        <strong>{section.topicCount}</strong>
+                        <small>{t("topicsHeading")}</small>
+                      </span>
+                      <span aria-hidden="true">
+                        <strong>{section.messageCount}</strong>
+                        <small>{t("postsColumn")}</small>
+                      </span>
+                    </span>
 
-      <button
-        className="home-section-expand"
-        type="button"
-        disabled={!mobileLayout && !hasMore}
-        aria-expanded={controlExpanded}
-        aria-controls={`${detailsId}-pinned ${detailsId}-latest ${detailsId}-stats`}
-        aria-label={t(controlExpanded ? "homepageCollapse" : "homepageExpand")}
-        onClick={toggleDetails}
-      >
-        <svg aria-hidden="true" viewBox="0 0 20 20">
-          <path d={controlExpanded ? "m5 12 5-5 5 5" : "m5 8 5 5 5-5"} />
-        </svg>
-      </button>
+                    <span className="home-category-section-enter" aria-hidden="true">
+                      <svg viewBox="0 0 24 24">
+                        <path d="m9 5 7 7-7 7" />
+                      </svg>
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      ) : null}
+
+      {hasMoreSections ? (
+        <button
+          className="home-category-toggle"
+          type="button"
+          aria-expanded={expanded}
+          aria-controls={detailsId}
+          aria-label={
+            expanded
+              ? t("homepageFewerSections")
+              : t("homepageMoreSections", { count: remainingSectionCount })
+          }
+          onClick={() => setExpanded((value) => !value)}
+        >
+          <span className="home-category-toggle-core" aria-hidden="true">
+            <svg viewBox="0 0 20 20">
+              <path d={expanded ? "m5 12 5-5 5 5" : "m5 8 5 5 5-5"} />
+            </svg>
+          </span>
+        </button>
+      ) : null}
     </article>
   );
 }
@@ -745,13 +718,173 @@ function HomepageCategoryIcon({ icon, name }: { icon?: string; name: string }) {
   })();
 
   return (
-    <div className="home-section-icon" aria-hidden="true">
+    <div className="home-category-icon" aria-hidden="true">
       {path ? <svg viewBox="0 0 24 24">{path}</svg> : name.trim().slice(0, 1).toUpperCase()}
     </div>
   );
 }
 
-function HomepageTopicList({
+type CategoryTopicPresentation = {
+  id: string;
+  title: string;
+  authorName: string;
+  activityAt: string;
+};
+
+type CategorySectionPresentation = {
+  id: string;
+  name: string;
+  topicCount: number;
+  postCount: number;
+  pinnedTopics: readonly CategoryTopicPresentation[];
+  latestTopics: readonly CategoryTopicPresentation[];
+};
+
+type CategoryPagePresentation = {
+  id: string;
+  name: string;
+  sections: readonly CategorySectionPresentation[];
+};
+
+const CATEGORY_SECTION_COMPACT_PINNED_LIMIT = 3;
+const CATEGORY_SECTION_COMPACT_LATEST_LIMIT = 2;
+const CATEGORY_SECTION_MOBILE_QUERY = "(max-width: 29.99rem)";
+
+function useCategorySectionMobileLayout(): boolean {
+  const [mobile, setMobile] = useState(false);
+
+  useEffect(() => {
+    const media = window.matchMedia?.(CATEGORY_SECTION_MOBILE_QUERY);
+    if (!media) return undefined;
+
+    const sync = () => setMobile(media.matches);
+    sync();
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
+  }, []);
+
+  return mobile;
+}
+
+function CategorySectionCard({
+  locale,
+  section,
+  referenceTime,
+}: {
+  locale: string;
+  section: CategorySectionPresentation;
+  referenceTime: string;
+}) {
+  const { t } = useTranslation("common");
+  const mobileLayout = useCategorySectionMobileLayout();
+  const [expanded, setExpanded] = useState(false);
+  const [mobileDetailsOpen, setMobileDetailsOpen] = useState(false);
+  const pinned = expanded && !mobileLayout
+    ? section.pinnedTopics
+    : section.pinnedTopics.slice(0, CATEGORY_SECTION_COMPACT_PINNED_LIMIT);
+  const latest = expanded && !mobileLayout
+    ? section.latestTopics
+    : section.latestTopics.slice(0, CATEGORY_SECTION_COMPACT_LATEST_LIMIT);
+  const hasMore = section.pinnedTopics.length > CATEGORY_SECTION_COMPACT_PINNED_LIMIT
+    || section.latestTopics.length > CATEGORY_SECTION_COMPACT_LATEST_LIMIT;
+  const controlExpanded = mobileLayout ? mobileDetailsOpen : expanded;
+  const detailsId = `category-section-${section.id.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
+
+  const toggleDetails = () => {
+    if (mobileLayout) {
+      setMobileDetailsOpen((value) => !value);
+      return;
+    }
+    setExpanded((value) => !value);
+  };
+
+  return (
+    <article
+      className="home-section-card"
+      data-mobile-details={mobileDetailsOpen ? "open" : "closed"}
+    >
+      <div className="home-section-identity">
+        <div className="home-section-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <path d="M4 6.5h6l2 2h8v9H4z" />
+            <path d="M7 12h10M7 15h7" />
+          </svg>
+        </div>
+        <div>
+          <h2>
+            <Link to={forumSectionPath(locale, section.id)}>{section.name}</Link>
+          </h2>
+          <p>{t("homepageSectionFallbackDescription")}</p>
+        </div>
+      </div>
+
+      <div className="home-section-column home-section-pinned" id={`${detailsId}-pinned`}>
+        <h3>{t("pinnedHeading")}</h3>
+        <CategorySectionTopicList
+          locale={locale}
+          topics={pinned}
+          emptyLabel={t("homepagePinnedEmpty")}
+          referenceTime={referenceTime}
+          showActivity={false}
+          pinned
+        />
+      </div>
+
+      <div className="home-section-column home-section-latest" id={`${detailsId}-latest`}>
+        <h3>{t("latestTopicsHeading")}</h3>
+        <CategorySectionTopicList
+          locale={locale}
+          topics={latest}
+          emptyLabel={t("homepageLatestEmpty")}
+          referenceTime={referenceTime}
+          showActivity
+        />
+      </div>
+
+      <div
+        className="home-section-stats"
+        id={`${detailsId}-stats`}
+        role="group"
+        aria-label={`${t("topicCount", { count: section.topicCount })} · ${t("messageCount", { count: section.postCount })}`}
+      >
+        <span>
+          <strong>{section.topicCount}</strong>
+          {t("topicsHeading")}
+        </span>
+        <span>
+          <strong>{section.postCount}</strong>
+          {t("postsColumn")}
+        </span>
+      </div>
+
+      <Link
+        className="home-section-enter"
+        to={forumSectionPath(locale, section.id)}
+        aria-label={t("enterForumSection", { section: section.name })}
+      >
+        <svg aria-hidden="true" viewBox="0 0 24 24">
+          <path d="m9 5 7 7-7 7" />
+        </svg>
+      </Link>
+
+      <button
+        className="home-section-expand"
+        type="button"
+        disabled={!mobileLayout && !hasMore}
+        aria-expanded={controlExpanded}
+        aria-controls={`${detailsId}-pinned ${detailsId}-latest ${detailsId}-stats`}
+        aria-label={t(controlExpanded ? "homepageCollapse" : "homepageExpand")}
+        onClick={toggleDetails}
+      >
+        <svg aria-hidden="true" viewBox="0 0 20 20">
+          <path d={controlExpanded ? "m5 12 5-5 5 5" : "m5 8 5 5 5-5"} />
+        </svg>
+      </button>
+    </article>
+  );
+}
+
+function CategorySectionTopicList({
   locale,
   topics,
   emptyLabel,
@@ -761,7 +894,7 @@ function HomepageTopicList({
   pinned = false,
 }: {
   locale: string;
-  topics: readonly HomepageTopicSummary[];
+  topics: readonly CategoryTopicPresentation[];
   emptyLabel: string;
   emptyHref?: string;
   referenceTime: string;
@@ -795,7 +928,7 @@ function HomepageTopicList({
                 <span>{topic.authorName}</span>
                 <span aria-hidden="true">·</span>
                 <time dateTime={topic.activityAt}>
-                  {formatRelativeActivity(topic.activityAt, referenceTime, locale)}
+                  {formatCategorySectionActivity(topic.activityAt, referenceTime, locale)}
                 </time>
               </span>
             ) : null}
@@ -806,7 +939,7 @@ function HomepageTopicList({
   );
 }
 
-function formatRelativeActivity(activityAt: string, referenceTime: string, locale: string): string {
+function formatCategorySectionActivity(activityAt: string, referenceTime: string, locale: string): string {
   const activity = Date.parse(activityAt);
   const reference = Date.parse(referenceTime);
   if (!Number.isFinite(activity) || !Number.isFinite(reference)) return "";
@@ -850,9 +983,11 @@ function formatRelativeActivity(activityAt: string, referenceTime: string, local
 export function CategoryView({
   locale,
   category,
+  referenceTime,
 }: {
   locale: string;
-  category: ForumCategoryPage;
+  category: CategoryPagePresentation;
+  referenceTime: string;
 }) {
   const { t } = useTranslation("common");
   const totals = category.sections.reduce(
@@ -890,38 +1025,11 @@ export function CategoryView({
           <ul className="category-section-list">
             {category.sections.map((section) => (
               <li key={section.id}>
-                <Link className="category-section-card" to={forumSectionPath(locale, section.id)}>
-                  <span className="category-section-main">
-                    <span className="category-section-icon" aria-hidden="true">
-                      <svg viewBox="0 0 24 24">
-                        <path d="M4 6.5h6l2 2h8v9H4z" />
-                        <path d="M7 12h10M7 15h7" />
-                      </svg>
-                    </span>
-                    <strong>{section.name}</strong>
-                  </span>
-
-                  <span
-                    className="category-section-stats"
-                    role="group"
-                    aria-label={`${t("topicCount", { count: section.topicCount })} · ${t("messageCount", { count: section.postCount })}`}
-                  >
-                    <span aria-hidden="true">
-                      <strong>{section.topicCount}</strong>
-                      <small>{t("topicsHeading")}</small>
-                    </span>
-                    <span aria-hidden="true">
-                      <strong>{section.postCount}</strong>
-                      <small>{t("postsColumn")}</small>
-                    </span>
-                  </span>
-
-                  <span className="category-section-enter" aria-hidden="true">
-                    <svg viewBox="0 0 24 24">
-                      <path d="m9 5 7 7-7 7" />
-                    </svg>
-                  </span>
-                </Link>
+                <CategorySectionCard
+                  locale={locale}
+                  section={section}
+                  referenceTime={referenceTime}
+                />
               </li>
             ))}
           </ul>

@@ -23,11 +23,11 @@ export interface ForumCategorySummary {
   sectionCount: number;
 }
 
-export interface ForumHomepageTopicSummary {
+export interface ForumHomepageSectionSummary {
   id: string;
-  title: string;
-  authorName: string;
-  activityAt: Date;
+  name: string;
+  topicCount: number;
+  messageCount: number;
 }
 
 export interface ForumHomepageCategorySummary {
@@ -36,8 +36,7 @@ export interface ForumHomepageCategorySummary {
   sectionCount: number;
   topicCount: number;
   messageCount: number;
-  pinnedTopics: ForumHomepageTopicSummary[];
-  latestTopics: ForumHomepageTopicSummary[];
+  sections: ForumHomepageSectionSummary[];
 }
 
 export type ForumPopularPeriod = "24h" | "7d" | "30d";
@@ -130,11 +129,20 @@ export interface ForumReplyNotificationSummary {
   readAt: Date | null;
 }
 
+export interface ForumSectionTopicSummary {
+  id: string;
+  title: string;
+  authorName: string;
+  activityAt: Date;
+}
+
 export interface ForumSectionSummary {
   id: string;
   name: string;
   topicCount: number;
   postCount: number;
+  pinnedTopics: ForumSectionTopicSummary[];
+  latestTopics: ForumSectionTopicSummary[];
 }
 
 export interface ForumCategoryPage {
@@ -176,7 +184,7 @@ export interface ForumTopicPage extends ForumTopic {
 
 export interface ForumReader {
   listCategories(): Promise<ForumCategorySummary[]>;
-  readHomepage(latestTopicsPerCategory?: number, pinnedTopicsPerCategory?: number): Promise<ForumHomepageCategorySummary[]>;
+  readHomepage(): Promise<ForumHomepageCategorySummary[]>;
   readPopular(referenceTime?: Date, limitPerPeriod?: number): Promise<ForumPopularPage>;
   readUnanswered(): Promise<ForumUnansweredTopicSummary[]>;
   readTags(): Promise<ForumTagSummary[]>;
@@ -187,7 +195,7 @@ export interface ForumReader {
   readReplyNotifications(userId: string, limit?: number): Promise<ForumReplyNotificationSummary[]>;
   countUnreadReplyNotifications(userId: string): Promise<number>;
   readTopicPinState(topicId: string): Promise<boolean>;
-  readCategory(id: string): Promise<ForumCategoryPage | undefined>;
+  readCategory(id: string, pinnedTopicsPerSection?: number): Promise<ForumCategoryPage | undefined>;
   readSection(id: string): Promise<ForumSectionPage | undefined>;
   readTopicPage(id: string): Promise<ForumTopicPage | undefined>;
 }
@@ -398,167 +406,64 @@ export class DrizzleForumRepository {
       .orderBy(asc(forumCategories.createdAt), asc(forumCategories.id));
   }
 
-  async readHomepage(
-    latestTopicsPerCategory = 6,
-    pinnedTopicsPerCategory = 3,
-  ): Promise<ForumHomepageCategorySummary[]> {
-    if (!Number.isInteger(latestTopicsPerCategory) || latestTopicsPerCategory < 1 || latestTopicsPerCategory > 20) {
-      throw new RangeError("latestTopicsPerCategory must be an integer between 1 and 20");
-    }
-    if (!Number.isInteger(pinnedTopicsPerCategory) || pinnedTopicsPerCategory < 1 || pinnedTopicsPerCategory > 10) {
-      throw new RangeError("pinnedTopicsPerCategory must be an integer between 1 and 10");
-    }
-
+  async readHomepage(): Promise<ForumHomepageCategorySummary[]> {
     const categories = await this.database
       .select({
         id: forumCategories.id,
         name: forumCategories.name,
-        sectionCount: sql<number>`count(distinct ${forumSections.id})::int`,
+      })
+      .from(forumCategories)
+      .orderBy(
+        sql`case when ${forumCategories.id} = 'help-solutions' then 0 else 1 end`,
+        asc(forumCategories.createdAt),
+        asc(forumCategories.id),
+      );
+
+    const sectionRows = await this.database
+      .select({
+        categoryId: forumSections.categoryId,
+        id: forumSections.id,
+        name: forumSections.name,
         topicCount: sql<number>`count(distinct ${forumTopics.id})::int`,
         messageCount: sql<number>`count(distinct ${forumPosts.id})::int`,
       })
-      .from(forumCategories)
-      .leftJoin(forumSections, eq(forumSections.categoryId, forumCategories.id))
+      .from(forumSections)
       .leftJoin(forumTopics, eq(forumTopics.sectionId, forumSections.id))
       .leftJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
-      .groupBy(forumCategories.id, forumCategories.name, forumCategories.createdAt)
-      .orderBy(asc(forumCategories.createdAt), asc(forumCategories.id));
-
-    const topicActivity = this.database
-      .select({
-        categoryId: forumSections.categoryId,
-        id: forumTopics.id,
-        title: forumTopicTitleRevisions.originalContent,
-        authorName: user.name,
-        activityAt: sql`greatest(
-          ${forumTopics.createdAt},
-          coalesce(max(${forumPosts.createdAt}), ${forumTopics.createdAt})
-        )`.mapWith(forumTopics.createdAt).as("activity_at"),
-      })
-      .from(forumTopics)
-      .innerJoin(forumSections, eq(forumSections.id, forumTopics.sectionId))
-      .innerJoin(forumTopicTitleRevisions, and(
-        eq(forumTopicTitleRevisions.topicId, forumTopics.id),
-        eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId),
-      ))
-      .innerJoin(user, eq(user.id, forumTopics.authorId))
-      .leftJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
-      .groupBy(forumTopics.id, forumSections.categoryId, forumTopicTitleRevisions.id, user.name)
-      .as("homepage_topic_activity");
-
-    const rankedTopics = this.database
-      .select({
-        categoryId: topicActivity.categoryId,
-        id: topicActivity.id,
-        title: topicActivity.title,
-        authorName: topicActivity.authorName,
-        activityAt: topicActivity.activityAt,
-        activityRank: sql<number>`row_number() over (
-          partition by ${topicActivity.categoryId}
-          order by ${topicActivity.activityAt} desc, ${topicActivity.id} desc
-        )::int`.as("activity_rank"),
-      })
-      .from(topicActivity)
-      .as("homepage_ranked_topics");
-
-    const latestTopics = await this.database
-      .select({
-        categoryId: rankedTopics.categoryId,
-        id: rankedTopics.id,
-        title: rankedTopics.title,
-        authorName: rankedTopics.authorName,
-        activityAt: rankedTopics.activityAt,
-      })
-      .from(rankedTopics)
-      .where(lte(rankedTopics.activityRank, latestTopicsPerCategory))
-      .orderBy(asc(rankedTopics.categoryId), asc(rankedTopics.activityRank));
-
-    const pinnedActivity = this.database
-      .select({
-        categoryId: forumSections.categoryId,
-        id: forumTopics.id,
-        title: forumTopicTitleRevisions.originalContent,
-        authorName: user.name,
-        pinnedAt: forumTopicPins.pinnedAt,
-        activityAt: sql`greatest(
-          ${forumTopics.createdAt},
-          coalesce(max(${forumPosts.createdAt}), ${forumTopics.createdAt})
-        )`.mapWith(forumTopics.createdAt).as("activity_at"),
-      })
-      .from(forumTopicPins)
-      .innerJoin(forumTopics, eq(forumTopics.id, forumTopicPins.topicId))
-      .innerJoin(forumSections, eq(forumSections.id, forumTopics.sectionId))
-      .innerJoin(forumTopicTitleRevisions, and(
-        eq(forumTopicTitleRevisions.topicId, forumTopics.id),
-        eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId),
-      ))
-      .innerJoin(user, eq(user.id, forumTopics.authorId))
-      .leftJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
       .groupBy(
-        forumTopics.id,
+        forumSections.id,
         forumSections.categoryId,
-        forumTopicTitleRevisions.id,
-        user.name,
-        forumTopicPins.pinnedAt,
+        forumSections.name,
+        forumSections.createdAt,
       )
-      .as("homepage_pinned_activity");
+      .orderBy(
+        asc(forumSections.categoryId),
+        asc(forumSections.createdAt),
+        asc(forumSections.id),
+      );
 
-    const rankedPinned = this.database
-      .select({
-        categoryId: pinnedActivity.categoryId,
-        id: pinnedActivity.id,
-        title: pinnedActivity.title,
-        authorName: pinnedActivity.authorName,
-        activityAt: pinnedActivity.activityAt,
-        pinRank: sql<number>`row_number() over (
-          partition by ${pinnedActivity.categoryId}
-          order by ${pinnedActivity.pinnedAt} desc, ${pinnedActivity.id} desc
-        )::int`.as("pin_rank"),
-      })
-      .from(pinnedActivity)
-      .as("homepage_ranked_pins");
-
-    const pinnedTopics = await this.database
-      .select({
-        categoryId: rankedPinned.categoryId,
-        id: rankedPinned.id,
-        title: rankedPinned.title,
-        authorName: rankedPinned.authorName,
-        activityAt: rankedPinned.activityAt,
-      })
-      .from(rankedPinned)
-      .where(lte(rankedPinned.pinRank, pinnedTopicsPerCategory))
-      .orderBy(asc(rankedPinned.categoryId), asc(rankedPinned.pinRank));
-
-    const pinnedByCategory = new Map<string, ForumHomepageTopicSummary[]>();
-    for (const topic of pinnedTopics) {
-      const list = pinnedByCategory.get(topic.categoryId) ?? [];
-      list.push({
-        id: topic.id,
-        title: topic.title,
-        authorName: topic.authorName,
-        activityAt: topic.activityAt,
+    const sectionsByCategory = new Map<string, ForumHomepageSectionSummary[]>();
+    for (const section of sectionRows) {
+      const sections = sectionsByCategory.get(section.categoryId) ?? [];
+      sections.push({
+        id: section.id,
+        name: section.name,
+        topicCount: section.topicCount,
+        messageCount: section.messageCount,
       });
-      pinnedByCategory.set(topic.categoryId, list);
+      sectionsByCategory.set(section.categoryId, sections);
     }
 
-    const latestByCategory = new Map<string, ForumHomepageTopicSummary[]>();
-    for (const topic of latestTopics) {
-      const list = latestByCategory.get(topic.categoryId) ?? [];
-      list.push({
-        id: topic.id,
-        title: topic.title,
-        authorName: topic.authorName,
-        activityAt: topic.activityAt,
-      });
-      latestByCategory.set(topic.categoryId, list);
-    }
-
-    return categories.map((category) => ({
-      ...category,
-      pinnedTopics: pinnedByCategory.get(category.id) ?? [],
-      latestTopics: latestByCategory.get(category.id) ?? [],
-    }));
+    return categories.map((category) => {
+      const sections = sectionsByCategory.get(category.id) ?? [];
+      return {
+        ...category,
+        sectionCount: sections.length,
+        topicCount: sections.reduce((sum, section) => sum + section.topicCount, 0),
+        messageCount: sections.reduce((sum, section) => sum + section.messageCount, 0),
+        sections,
+      };
+    });
   }
 
   async readPopular(referenceTime = new Date(), limitPerPeriod = 10): Promise<ForumPopularPage> {
@@ -1070,7 +975,10 @@ export class DrizzleForumRepository {
     });
   }
 
-  async readCategory(id: string): Promise<ForumCategoryPage | undefined> {
+  async readCategory(id: string, pinnedTopicsPerSection = 10): Promise<ForumCategoryPage | undefined> {
+    if (!Number.isInteger(pinnedTopicsPerSection) || pinnedTopicsPerSection < 1 || pinnedTopicsPerSection > 10) {
+      throw new RangeError("pinnedTopicsPerSection must be an integer between 1 and 10");
+    }
     const rows = await this.database
       .select({
         categoryId: forumCategories.id,
@@ -1090,11 +998,151 @@ export class DrizzleForumRepository {
       .orderBy(asc(forumSections.createdAt), asc(forumSections.id));
     const first = rows[0];
     if (!first) return undefined;
+
+    const topicActivity = this.database
+      .select({
+        sectionId: forumTopics.sectionId,
+        id: forumTopics.id,
+        title: forumTopicTitleRevisions.originalContent,
+        authorName: user.name,
+        activityAt: sql`greatest(
+          ${forumTopics.createdAt},
+          coalesce(max(${forumPosts.createdAt}), ${forumTopics.createdAt})
+        )`.mapWith(forumTopics.createdAt).as("activity_at"),
+      })
+      .from(forumTopics)
+      .innerJoin(forumSections, eq(forumSections.id, forumTopics.sectionId))
+      .innerJoin(forumTopicTitleRevisions, and(
+        eq(forumTopicTitleRevisions.topicId, forumTopics.id),
+        eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId),
+      ))
+      .innerJoin(user, eq(user.id, forumTopics.authorId))
+      .leftJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
+      .where(eq(forumSections.categoryId, id))
+      .groupBy(forumTopics.id, forumTopicTitleRevisions.id, user.name)
+      .as("category_section_topic_activity");
+
+    const rankedTopics = this.database
+      .select({
+        sectionId: topicActivity.sectionId,
+        id: topicActivity.id,
+        title: topicActivity.title,
+        authorName: topicActivity.authorName,
+        activityAt: topicActivity.activityAt,
+        activityRank: sql<number>`row_number() over (
+          partition by ${topicActivity.sectionId}
+          order by ${topicActivity.activityAt} desc, ${topicActivity.id} desc
+        )::int`.as("activity_rank"),
+      })
+      .from(topicActivity)
+      .as("category_section_ranked_topics");
+
+    const latestTopics = await this.database
+      .select({
+        sectionId: rankedTopics.sectionId,
+        id: rankedTopics.id,
+        title: rankedTopics.title,
+        authorName: rankedTopics.authorName,
+        activityAt: rankedTopics.activityAt,
+      })
+      .from(rankedTopics)
+      .where(lte(rankedTopics.activityRank, 6))
+      .orderBy(asc(rankedTopics.sectionId), asc(rankedTopics.activityRank));
+
+    const latestBySection = new Map<string, ForumSectionTopicSummary[]>();
+    for (const topic of latestTopics) {
+      const list = latestBySection.get(topic.sectionId) ?? [];
+      list.push({
+        id: topic.id,
+        title: topic.title,
+        authorName: topic.authorName,
+        activityAt: topic.activityAt,
+      });
+      latestBySection.set(topic.sectionId, list);
+    }
+
+    const pinnedActivity = this.database
+      .select({
+        sectionId: forumTopics.sectionId,
+        id: forumTopics.id,
+        title: forumTopicTitleRevisions.originalContent,
+        authorName: user.name,
+        pinnedAt: forumTopicPins.pinnedAt,
+        activityAt: sql`greatest(
+          ${forumTopics.createdAt},
+          coalesce(max(${forumPosts.createdAt}), ${forumTopics.createdAt})
+        )`.mapWith(forumTopics.createdAt).as("activity_at"),
+      })
+      .from(forumTopicPins)
+      .innerJoin(forumTopics, eq(forumTopics.id, forumTopicPins.topicId))
+      .innerJoin(forumSections, eq(forumSections.id, forumTopics.sectionId))
+      .innerJoin(forumTopicTitleRevisions, and(
+        eq(forumTopicTitleRevisions.topicId, forumTopics.id),
+        eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId),
+      ))
+      .innerJoin(user, eq(user.id, forumTopics.authorId))
+      .leftJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
+      .where(eq(forumSections.categoryId, id))
+      .groupBy(
+        forumTopics.id,
+        forumSections.id,
+        forumTopicTitleRevisions.id,
+        user.name,
+        forumTopicPins.pinnedAt,
+      )
+      .as("category_section_pin_activity");
+
+    const rankedPinned = this.database
+      .select({
+        sectionId: pinnedActivity.sectionId,
+        id: pinnedActivity.id,
+        title: pinnedActivity.title,
+        authorName: pinnedActivity.authorName,
+        activityAt: pinnedActivity.activityAt,
+        pinRank: sql<number>`row_number() over (
+          partition by ${pinnedActivity.sectionId}
+          order by ${pinnedActivity.pinnedAt} desc, ${pinnedActivity.id} desc
+        )::int`.as("pin_rank"),
+      })
+      .from(pinnedActivity)
+      .as("category_section_ranked_pins");
+
+    const pinnedTopics = await this.database
+      .select({
+        sectionId: rankedPinned.sectionId,
+        id: rankedPinned.id,
+        title: rankedPinned.title,
+        authorName: rankedPinned.authorName,
+        activityAt: rankedPinned.activityAt,
+      })
+      .from(rankedPinned)
+      .where(lte(rankedPinned.pinRank, pinnedTopicsPerSection))
+      .orderBy(asc(rankedPinned.sectionId), asc(rankedPinned.pinRank));
+
+    const pinnedBySection = new Map<string, ForumSectionTopicSummary[]>();
+    for (const topic of pinnedTopics) {
+      const list = pinnedBySection.get(topic.sectionId) ?? [];
+      list.push({
+        id: topic.id,
+        title: topic.title,
+        authorName: topic.authorName,
+        activityAt: topic.activityAt,
+      });
+      pinnedBySection.set(topic.sectionId, list);
+    }
+
     return {
       id: first.categoryId,
       name: first.categoryName,
       sections: rows.flatMap((row) => row.sectionId && row.sectionName
-        ? [{ id: row.sectionId, name: row.sectionName, topicCount: row.topicCount, postCount: row.postCount }]
+        ? [{
+            id: row.sectionId,
+            name: row.sectionName,
+            topicCount: row.topicCount,
+            postCount: row.postCount,
+            pinnedTopics: pinnedBySection.get(row.sectionId) ?? [],
+            latestTopics: latestBySection.get(row.sectionId) ?? [],
+          }]
         : []),
     };
   }

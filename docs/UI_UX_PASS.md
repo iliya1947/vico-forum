@@ -167,32 +167,28 @@ composition:
    Implementation still routes user-facing strings through the canonical English/i18n catalog;
    these approved product labels do not change the authoritative domain hierarchy
    `category → section → topic → messages`.
-7. Every homepage forum block uses the same four-part structure: icon/name/description,
-   `Pinned`, `Latest topics`, and section statistics, plus a dedicated entry action at the far
-   edge of the card.
-8. `Pinned` is mandatory in the target presentation, visually secondary to the section title but
-   clearly discoverable, with compact topics and orange markers.
-9. `Latest topics` shows topic title, author/avatar and relative activity time; the same area is
-   designed to carry approved topic states such as solved, unanswered, unread and new.
-10. Section statistics use real topic/message counts in the real application. Representative/mock
-   identities and numbers are allowed only in the Pages visual fixture. On desktop this statistics
-   area stays compact; a separate full-height orange action rail sits at the far card edge and uses
-   a bold white arrow. With the accepted category/section discovery presentation now implemented,
-   that rail routes to the real locale-aware category page instead of the temporary
-   `Under development` destination.
-11. The circular orange expand control never navigates. On desktop it expands more pinned/latest
-   content in the same block; its horizontal center aligns exactly with the divider between
-   `Pinned` and `Latest topics`, and its vertical center sits on the card bottom boundary so it
-   straddles the edge. The coordinate is consistent across all cards and independent of text
-   height. On narrow mobile the same control instead discloses/collapses the whole secondary
-   details group (`Pinned`, `Latest topics`, and section statistics) in place.
-12. The lower homepage zone keeps `Who's online` and `Forum statistics`, using only useful real
+7. The homepage forum area is a category map rather than a topic feed. Each category keeps a
+   compact icon/name/description header, real aggregate section/topic/message counts and a direct
+   locale-aware category link.
+8. Each category exposes up to the first three real sections as compact rows. A row contains the
+   section icon, name, short supporting description, real topic/message counts and the orange
+   section-entry action, and navigates directly to the locale-aware section page.
+9. When a category contains more than three sections, an in-place disclosure control reveals or
+   hides the remaining sections without navigation. A category with no defined sections remains
+   visible as a category destination and does not fabricate section rows or runtime data.
+10. The previously approved rich four-part block is moved one hierarchy level down to the category
+    page. Each category page presents its sections using section identity/description, `Pinned`,
+    `Latest topics`, section statistics and the dedicated section-entry action.
+11. Category-page `Latest topics` uses real per-section topic activity from the forum reader.
+    The persisted-pinning slice adds bounded deterministic real pins through the same category
+    reader boundary; a section with no pins shows a truthful non-link empty state rather than
+    fake data or an `Under development` destination.
+12. The rich category-page section card keeps the existing expand/disclosure behavior: desktop can
+    reveal additional pinned/latest entries in place, while narrow mobile collapses the secondary
+    `Pinned`, `Latest topics` and statistics group behind the same control. The discussion
+    hierarchy remains category → section → topic → messages.
+13. The lower homepage zone keeps `Who's online` and `Forum statistics`, using only useful real
     metrics such as topics, messages, registered users and online count when available.
-13. Narrow mobile keeps the section identity/description visible and collapses `Pinned`,
-    `Latest topics`, and section statistics by default behind the circular expand control. Opening
-    it restores that secondary content in place. The orange section-entry action moves from the
-    full-width card footer to a compact inline-end rail beside the section identity, so collapsed
-    cards remain short without removing any substantive content.
 
 ### Topic, message and authoring target
 
@@ -243,17 +239,16 @@ shell/header/footer composition, homepage block geometry and the shared localize
 accepted the corrected homepage visual result on 2026-10-01. This acceptance is for the homepage
 slice only and does not replace the final real-runtime/browser acceptance matrix for the full pass.
 
-- Real application homepage counts, latest-topic data and persisted pinned topics come from the
-  forum reader. Online-presence remains unavailable and is not represented as fake runtime data.
-- The persisted Pinned topics slice in PR #181 adds one active pin per topic, a server-authorized
-  `forum.topic.pin` capability, idempotent Pin/Unpin topic tools, bounded DB-ranked homepage pins
-  per category, and independent pinned indicators on section/topic presentation. Pin state does not
-  change chronological discussion order or solved/unread/new semantics.
-- The Pages fixture carries representative target-only identities/content for visual review, including
-  multiple pins, a category with no pins, and manager/user permission presentation; it does not
-  pretend to persist preview interactions.
-- Drafts/autosave, profiles and other heavier missing subsystems remain separate bounded work. Their
-  approved pre-release entry points continue to route to `Under development` until implemented.
+- Real application homepage category/section structure and aggregate counts come from the forum
+  reader. Per-section latest-topic data is consumed by category pages; PR #181 adds repository-backed
+  per-section pinned topics to the same category-page presentation while online-presence remains
+  unavailable and is not represented as fake runtime data.
+- The Pages fixture carries representative target-only data, including the approved six-category
+  order, homepage section rows and category-page pinned/latest presentation, so visual work can be
+  reviewed without inventing production persistence.
+- Search, notifications, unread state, drafts/autosave, profiles and other heavier missing
+  subsystems are still separate bounded work. Their approved pre-release entry points route to
+  `Under development` instead of pretending to work.
 - `<html lang>`/`dir`, SSR/hydration, canonical locale-aware links and existing protected server
   boundaries remain unchanged.
 
@@ -267,6 +262,19 @@ Category-page implementation in PR #159 passed owner visual acceptance in GitHub
 - section destinations are compact full-card links with real topic/message counts and a dedicated
   orange entry rail;
 - responsive, RTL and empty-category preview states are included.
+
+The owner-approved hierarchy correction in PR #182 supersedes the earlier homepage/category card
+composition without changing the forum hierarchy or schema:
+
+- the homepage now exposes categories with direct real section rows and aggregate counts instead of
+  rendering pinned/latest topic columns at category level;
+- the richer section-card composition moves to category pages, where real per-section latest-topic
+  activity is loaded through the forum reader; the follow-up persisted-pinning slice connects
+  bounded real pins to that same section-card surface without restoring topic blocks on Home;
+- `Help & solutions` is the first approved homepage category in the representative Pages map and
+  may remain without fabricated sections until its internal structure is defined;
+- owner visual acceptance of the implementation was confirmed on 2026-10-05; exact-head
+  automated verification remains a separate PR check.
 
 Section-page implementation in PR #160 passed owner visual acceptance in GitHub Pages on
 2026-10-01:

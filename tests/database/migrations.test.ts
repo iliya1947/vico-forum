@@ -263,7 +263,16 @@ describe("PostgreSQL 17 locale migrations", () => {
     ]);
     expect(await repository.readCategory("development")).toMatchObject({
       id: "development",
-      sections: [{ id: "typescript", topicCount: 1, postCount: 1 }],
+      sections: [{
+        id: "typescript",
+        topicCount: 1,
+        postCount: 1,
+        latestTopics: [{
+          id: "topic-1",
+          title: "Как типизировать API?",
+          authorName: "Forum Author",
+        }],
+      }],
     });
     expect(await repository.readSection("typescript")).toMatchObject({
       category: { id: "development" },
@@ -276,56 +285,30 @@ describe("PostgreSQL 17 locale migrations", () => {
     expect(await repository.readCategory("missing")).toBeUndefined();
   });
 
-  it("persists idempotent topic pins and returns bounded deterministic homepage pins", async () => {
+  it("persists idempotent topic pins and returns bounded deterministic pins per category section", async () => {
     await insertForumAuthor("pin-actor", "pin-actor@example.test", null);
-
-    let pinClock = Date.parse("2030-01-01T00:00:00Z");
-    const repository = new DrizzleForumRepository(drizzle(client), {
-      cooldownMs: FORUM_WRITE_COOLDOWN_MS,
-      now: () => new Date(pinClock += FORUM_WRITE_COOLDOWN_MS + 1),
-    });
+    const repository = new DrizzleForumRepository(drizzle(client));
     const forum = new ForumService(repository);
 
-    await forum.createTopicWithInitialPost({
-      id: "pin-topic-a",
-      sectionId: "typescript",
-      authorId: "forum-author",
-      titleRevision: {
-        id: "pin-topic-a-title",
-        originalContent: "Pinned A",
-        sourceLocale: "en",
-      },
-      initialPost: {
-        id: "pin-topic-a-post",
-        topicId: "pin-topic-a",
+    await forum.createSection({ id: "pin-database", categoryId: "development", name: "Pinned Database" });
+    for (const [id, sectionId, title] of [
+      ["pin-topic-a", "typescript", "Pinned A"],
+      ["pin-topic-b", "typescript", "Pinned B"],
+      ["pin-topic-c", "pin-database", "Pinned C"],
+    ] as const) {
+      await forum.createTopicWithInitialPost({
+        id,
+        sectionId,
         authorId: "forum-author",
-        bodyRevision: {
-          id: "pin-topic-a-body",
-          originalContent: "Pinned A body",
-          sourceLocale: "en",
+        titleRevision: { id: `${id}-title`, originalContent: title, sourceLocale: "en" },
+        initialPost: {
+          id: `${id}-post`,
+          topicId: id,
+          authorId: "forum-author",
+          bodyRevision: { id: `${id}-body`, originalContent: `${title} body`, sourceLocale: "en" },
         },
-      },
-    });
-    await forum.createTopicWithInitialPost({
-      id: "pin-topic-b",
-      sectionId: "typescript",
-      authorId: "forum-author",
-      titleRevision: {
-        id: "pin-topic-b-title",
-        originalContent: "Pinned B",
-        sourceLocale: "en",
-      },
-      initialPost: {
-        id: "pin-topic-b-post",
-        topicId: "pin-topic-b",
-        authorId: "forum-author",
-        bodyRevision: {
-          id: "pin-topic-b-body",
-          originalContent: "Pinned B body",
-          sourceLocale: "en",
-        },
-      },
-    });
+      });
+    }
 
     const firstPool = new Pool({ connectionString: databaseUrl });
     const secondPool = new Pool({ connectionString: databaseUrl });
@@ -347,7 +330,8 @@ describe("PostgreSQL 17 locale migrations", () => {
         `insert into forum_topic_pins (topic_id, pinned_by_user_id, pinned_at)
          values
            ('pin-topic-a', 'pin-actor', '2026-10-04T10:00:00Z'),
-           ('pin-topic-b', 'pin-actor', '2026-10-04T10:00:00Z')
+           ('pin-topic-b', 'pin-actor', '2026-10-04T10:00:00Z'),
+           ('pin-topic-c', 'pin-actor', '2026-10-04T11:00:00Z')
          on conflict (topic_id) do update
            set pinned_by_user_id = excluded.pinned_by_user_id,
                pinned_at = excluded.pinned_at`,
@@ -356,22 +340,19 @@ describe("PostgreSQL 17 locale migrations", () => {
         "update forum_topic_pins set pinned_at = '2026-10-04T09:00:00Z' where topic_id = 'topic-1'",
       );
 
-      const homepage = await repository.readHomepage(6, 2);
-      const development = homepage.find(({ id }) => id === "development");
-      expect(development?.pinnedTopics.map(({ id }) => id)).toEqual([
-        "pin-topic-b",
-        "pin-topic-a",
-      ]);
-      expect(development?.pinnedTopics[0]).toMatchObject({
-        title: "Pinned B",
-        authorName: "Forum Author",
-      });
+      const category = await repository.readCategory("development", 2);
+      const typeScriptPins = category?.sections.find(({ id }) => id === "typescript")?.pinnedTopics ?? [];
+      expect(typeScriptPins.map(({ id }) => id)).toEqual(["pin-topic-b", "pin-topic-a"]);
+      expect(typeScriptPins[0]).toMatchObject({ title: "Pinned B", authorName: "Forum Author" });
+      expect(category?.sections.find(({ id }) => id === "pin-database")?.pinnedTopics)
+        .toEqual([expect.objectContaining({ id: "pin-topic-c", title: "Pinned C" })]);
+      await expect(repository.readCategory("development", 0)).rejects.toThrow(RangeError);
+      await expect(repository.readCategory("development", 11)).rejects.toThrow(RangeError);
 
-      expect((await repository.readSection("typescript"))?.topics)
-        .toEqual(expect.arrayContaining([
-          expect.objectContaining({ id: "topic-1", isPinned: true }),
-          expect.objectContaining({ id: "pin-topic-a", isPinned: true }),
-        ]));
+      expect((await repository.readSection("typescript"))?.topics).toEqual(expect.arrayContaining([
+        expect.objectContaining({ id: "topic-1", isPinned: true }),
+        expect.objectContaining({ id: "pin-topic-a", isPinned: true }),
+      ]));
       expect(await repository.readTopicPage("topic-1")).toMatchObject({ isPinned: true });
 
       await forum.unpinTopic("topic-1", "pin-actor");
@@ -379,24 +360,16 @@ describe("PostgreSQL 17 locale migrations", () => {
       expect(await repository.readTopicPinState("topic-1")).toBe(false);
 
       await client.query("delete from forum_topics where id = 'pin-topic-b'");
-      const topicCascade = await client.query<{ count: number }>(
+      expect((await client.query<{ count: number }>(
         "select count(*)::int as count from forum_topic_pins where topic_id = 'pin-topic-b'",
-      );
-      expect(topicCascade.rows[0]?.count).toBe(0);
+      )).rows[0]?.count).toBe(0);
 
-      await expectDatabaseCode(
-        client.query('delete from "user" where id = \'pin-actor\''),
-        "23503",
-      );
-      const actorReference = await client.query<{ count: number }>(
-        "select count(*)::int as count from forum_topic_pins where topic_id = 'pin-topic-a'",
-      );
-      expect(actorReference.rows[0]?.count).toBe(1);
-      await client.query("delete from forum_topic_pins where topic_id = 'pin-topic-a'");
+      await expectDatabaseCode(client.query('delete from "user" where id = \'pin-actor\''), "23503");
     } finally {
       await firstPool.end();
       await secondPool.end();
-      await client.query("delete from forum_topics where id in ('pin-topic-a', 'pin-topic-b')");
+      await client.query("delete from forum_topics where id in ('pin-topic-a', 'pin-topic-b', 'pin-topic-c')");
+      await client.query("delete from forum_sections where id = 'pin-database'");
       await client.query('delete from "user" where id = \'pin-actor\'');
     }
   });

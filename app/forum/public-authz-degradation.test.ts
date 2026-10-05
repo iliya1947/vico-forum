@@ -65,12 +65,11 @@ const reader: ForumReader = {
     sectionCount: 1,
     topicCount: 1,
     messageCount: 1,
-    pinnedTopics: [],
-    latestTopics: [{
-      id: topic.id,
-      title: topic.title.originalContent,
-      authorName: topic.authorName,
-      activityAt: topic.posts[0]!.createdAt,
+    sections: [{
+      id: section.id,
+      name: section.name,
+      topicCount: 1,
+      messageCount: 1,
     }],
   }],
   readPopular: async () => ({ "24h": [], "7d": [], "30d": [] }),

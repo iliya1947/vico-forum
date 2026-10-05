@@ -1,6 +1,5 @@
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { I18nextProvider } from "react-i18next";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -56,114 +55,109 @@ function renderView(element: React.ReactNode, path = "/en") {
   );
 }
 
-describe("homepage target presentation", () => {
-  it("renders the four-part forum block and expands additional topics in place", async () => {
+describe("homepage category map", () => {
+  it("shows Help & solutions first and links directly to category sections", async () => {
     renderView(
       <HomeView
         locale="en"
-        referenceTime="2026-09-30T16:00:00.000Z"
-        categories={[{
-          id: "development",
-          name: "Development",
-          description: "Frontend, backend, architecture, languages, and testing.",
-          icon: "</>",
-          sectionCount: 3,
-          topicCount: 12,
-          messageCount: 48,
-          pinnedTopics: [
-            { id: "p1", title: "Pinned one", authorName: "Ada", activityAt: "2026-09-30T12:00:00.000Z" },
-            { id: "p2", title: "Pinned two", authorName: "Lin", activityAt: "2026-09-30T11:00:00.000Z" },
-            { id: "p3", title: "Pinned three", authorName: "Sam", activityAt: "2026-09-30T10:00:00.000Z" },
-          ],
-          latestTopics: [
-            { id: "l1", title: "Latest one", authorName: "Ada", activityAt: "2026-09-30T15:42:00.000Z" },
-            { id: "l2", title: "Latest two", authorName: "Lin", activityAt: "2026-09-30T14:00:00.000Z" },
-            { id: "l3", title: "Latest three", authorName: "Sam", activityAt: "2026-09-29T16:00:00.000Z" },
-          ],
-        }]}
+        categories={[
+          {
+            id: "help-solutions",
+            name: "Help & solutions",
+            description: "Questions, troubleshooting, and verified solutions.",
+            icon: "help",
+            sectionCount: 0,
+            topicCount: 0,
+            messageCount: 0,
+            sections: [],
+          },
+          {
+            id: "development",
+            name: "Development",
+            description: "Frontend, backend, architecture, languages, and testing.",
+            icon: "code",
+            sectionCount: 4,
+            topicCount: 22,
+            messageCount: 78,
+            sections: [
+              { id: "typescript", name: "TypeScript & architecture", topicCount: 7, messageCount: 31 },
+              { id: "databases", name: "Databases", topicCount: 5, messageCount: 17 },
+              { id: "testing", name: "Testing", topicCount: 6, messageCount: 18 },
+              { id: "frontend", name: "Frontend", topicCount: 4, messageCount: 12 },
+            ],
+          },
+        ]}
       />,
     );
 
-    expect(await screen.findByRole("heading", { name: "Development" })).toBeVisible();
-    expect(screen.getByRole("heading", { name: "Pinned" })).toBeVisible();
-    expect(screen.getByRole("heading", { name: "Latest topics" })).toBeVisible();
-    expect(screen.getByRole("link", { name: "Open Development" }))
-      .toHaveAttribute("href", "/en/categories/development");
-    expect(screen.getAllByText("12").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("48").length).toBeGreaterThan(0);
-    expect(screen.getByRole("link", { name: "Pinned three" })).toBeVisible();
-    expect(screen.queryByRole("link", { name: "Latest three" })).not.toBeInTheDocument();
+    expect(await screen.findByRole("region", { name: "Categories" })).toBeVisible();
+    expect(screen.queryByRole("heading", { level: 1, name: "Categories" })).not.toBeInTheDocument();
+    const categoryLinks = [...document.querySelectorAll<HTMLAnchorElement>(".home-category-identity h2 a")];
+    expect(categoryLinks.map((link) => link.textContent)).toEqual(["Help & solutions", "Development"]);
+    expect(categoryLinks[0]).toHaveAttribute("href", "/en/categories/help-solutions");
+    const developmentCopy = categoryLinks[1]!.closest(".home-category-copy");
+    expect(developmentCopy).not.toBeNull();
+    expect(developmentCopy).toHaveTextContent("Development");
+    expect(developmentCopy).toHaveTextContent("Frontend, backend, architecture, languages, and testing.");
+    const developmentToggle = screen.getByRole("button", { name: "Show 1 more section" });
+    expect(developmentToggle).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByRole("link", { name: /TypeScript & architecture/ }))
+      .toHaveAttribute("href", "/en/sections/typescript");
+    expect(screen.getByRole("link", { name: /Databases/ }))
+      .toHaveAttribute("href", "/en/sections/databases");
+    expect(screen.getByRole("link", { name: /Testing/ }))
+      .toHaveAttribute("href", "/en/sections/testing");
+    expect(document.querySelectorAll(".home-category-section-row")).toHaveLength(3);
+    expect(document.querySelector(".home-category-sections .category-section-card")).not.toBeInTheDocument();
+    expect(document.querySelectorAll(".home-category-section-description")).toHaveLength(3);
+    expect(document.querySelector(".home-category-section-description"))
+      .toHaveTextContent("Sections, discussions, and practical answers in this area.");
+    expect(screen.queryByRole("link", { name: /Frontend/ })).not.toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("button", { name: "Show more topics" }));
+    fireEvent.click(developmentToggle);
 
-    expect(screen.getByRole("link", { name: "Latest three" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Show fewer topics" })).toHaveAttribute("aria-expanded", "true");
+    expect(developmentToggle).toHaveAttribute("aria-expanded", "true");
+    expect(developmentToggle).toHaveAttribute("aria-label", "Show fewer sections");
+    expect(developmentToggle).toHaveTextContent("");
+    expect(screen.getByRole("link", { name: /Frontend/ }))
+      .toHaveAttribute("href", "/en/sections/frontend");
+
+    fireEvent.click(developmentToggle);
+
+    expect(developmentToggle).toHaveAttribute("aria-expanded", "false");
+    expect(developmentToggle).toHaveAttribute("aria-label", "Show 1 more section");
+    expect(developmentToggle).toHaveTextContent("");
+    expect(screen.getByRole("link", { name: /TypeScript & architecture/ })).toBeVisible();
+    expect(screen.queryByRole("link", { name: /Frontend/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Pinned" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Latest topics" })).not.toBeInTheDocument();
   });
 
-  it("uses the section toggle to disclose compact details on narrow mobile", async () => {
-    vi.stubGlobal("matchMedia", () => ({
-      matches: true,
-      media: "(max-width: 29.99rem)",
-      onchange: null,
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-      addListener: vi.fn(),
-      removeListener: vi.fn(),
-      dispatchEvent: vi.fn(),
-    }));
-
+  it("keeps a category visible when its internal structure is not defined yet", async () => {
     renderView(
       <HomeView
         locale="en"
-        referenceTime="2026-09-30T16:00:00.000Z"
         categories={[{
-          id: "development",
-          name: "Development",
-          description: "Frontend, backend, architecture, languages, and testing.",
-          icon: "</>",
-          sectionCount: 3,
-          topicCount: 12,
-          messageCount: 48,
-          pinnedTopics: [
-            { id: "p1", title: "Pinned one", authorName: "Ada", activityAt: "2026-09-30T12:00:00.000Z" },
-          ],
-          latestTopics: [
-            { id: "l1", title: "Latest one", authorName: "Ada", activityAt: "2026-09-30T15:42:00.000Z" },
-          ],
+          id: "help-solutions",
+          name: "Help & solutions",
+          sectionCount: 0,
+          topicCount: 0,
+          messageCount: 0,
+          sections: [],
         }]}
       />,
     );
 
-    const heading = await screen.findByRole("heading", { name: "Development" });
-    const card = heading.closest("article");
-    expect(card).toHaveAttribute("data-mobile-details", "closed");
-
-    const toggle = screen.getByRole("button", { name: "Show more topics" });
-    await waitFor(() => expect(toggle).toBeEnabled());
-    expect(toggle.querySelector("path")).toHaveAttribute("d", "m5 8 5 5 5-5");
-
-    await userEvent.click(toggle);
-
-    expect(card).toHaveAttribute("data-mobile-details", "open");
-    expect(toggle).toHaveAttribute("aria-expanded", "true");
-    expect(toggle.querySelector("path")).toHaveAttribute("d", "m5 12 5-5 5 5");
-    expect(toggle).toHaveAttribute(
-      "aria-controls",
-      "home-category-development-pinned home-category-development-latest home-category-development-stats",
-    );
-
-    const collapseToggle = screen.getByRole("button", { name: "Show fewer topics" });
-    await userEvent.click(collapseToggle);
-    expect(card).toHaveAttribute("data-mobile-details", "closed");
-    expect(screen.getByRole("button", { name: "Show more topics" }).querySelector("path"))
-      .toHaveAttribute("d", "m5 8 5 5 5-5");
+    expect(await screen.findByRole("link", { name: "Help & solutions" }))
+      .toHaveAttribute("href", "/en/categories/help-solutions");
+    expect(screen.queryByRole("button", { name: "Help & solutions" })).not.toBeInTheDocument();
+    expect(screen.queryByText("There are no sections in this category yet.")).not.toBeInTheDocument();
   });
 
   it("routes unfinished shell destinations to development and implemented discovery destinations to real pages", async () => {
     renderView(
       <HomeView
         locale="en"
-        referenceTime="2026-09-30T16:00:00.000Z"
         categories={[]}
       />,
     );
@@ -186,7 +180,6 @@ describe("homepage target presentation", () => {
       <HeaderAuthProvider initialUser={{ name: "Ada Lovelace" }}>
         <HomeView
           locale="en"
-          referenceTime="2026-09-30T16:00:00.000Z"
           categories={[]}
         />
       </HeaderAuthProvider>,
@@ -194,27 +187,6 @@ describe("homepage target presentation", () => {
 
     expect(await screen.findByRole("link", { name: "Unread" }))
       .toHaveAttribute("href", "/en/unread");
-  });
-
-  it("shows a truthful non-link empty state when a category has no persisted pins", async () => {
-    renderView(
-      <HomeView
-        locale="en"
-        referenceTime="2026-09-30T16:00:00.000Z"
-        categories={[{
-          id: "development",
-          name: "Development",
-          sectionCount: 1,
-          topicCount: 1,
-          messageCount: 1,
-          pinnedTopics: [],
-          latestTopics: [],
-        }]}
-      />,
-    );
-
-    expect(await screen.findByText("No pinned topics yet.")).toBeVisible();
-    expect(screen.queryByRole("link", { name: "No pinned topics yet." })).not.toBeInTheDocument();
   });
 });
 

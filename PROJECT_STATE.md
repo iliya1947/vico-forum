@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-10-04
+Последнее обновление: 2026-10-05
 
 ## Назначение
 
@@ -37,10 +37,14 @@ Vico Forum находится в ранней pre-release разработке.
   заменяет будущую real-runtime acceptance.
 - В текущем UI/UX slice реализованы и repository-CI/Pages-проверены semantic visual tokens,
   Light/Dark с first-use `prefers-color-scheme` и persisted manual choice, two-zone shell/header,
-  approved homepage frame и общая локализованная страница `Under development`. Runtime homepage
-  использует только существующие forum data для counts/latest topics; persisted pinning реализуется
-  отдельным bounded slice, а отсутствующая online-presence capability не имитируется real data. Это
-  не означает финальную browser/real-runtime acceptance всего UI/UX pass.
+  approved shell/homepage foundation и общая локализованная страница `Under development`.
+  Merged PR #182 перенёс rich `Pinned / Latest topics / statistics` presentation с homepage на
+  category pages: runtime homepage читает реальные categories + sections + aggregate counts, а
+  category reader — bounded latest-topic activity по каждому section. Текущий PR #181 добавляет к
+  этому же category-reader boundary persisted pins, bounded DB-side rank/limit по section и
+  pin/unpin management; online-presence capability по-прежнему не имитируется real data. Exact-head
+  CI/Pages и owner visual acceptance PR #181 ещё не зафиксированы. Это не означает финальную
+  browser/real-runtime acceptance всего UI/UX pass.
 - Homepage correction slice прошёл owner visual acceptance в GitHub Pages. Приняты текущая
   композиция homepage, icon-led discovery navigation `Unanswered · Tags · Popular` и
   authenticated-only `Unread` без дублирующего `Home`, orange labels/icons и понятный
@@ -64,8 +68,10 @@ Vico Forum находится в ранней pre-release разработке.
   owner visual acceptance подтверждён 2026-10-02. По выбору владельца следующая bounded
   product-функция — global Search: текущая implementation-ветка добавляет public
   `/:locale/search?q=...` поверх current topic-title/post revisions и topic tags без новой
-  migration/search-index subsystem. Repository CI и GitHub Pages preview прошли; owner visual acceptance подтверждён 2026-10-03. Search merged через PR #171. Message links реализован и merged через PR #172: public permanent post anchors + copy-link UI работают без DB/backend изменений; GitHub Pages preview пройден, owner visual acceptance подтверждён 2026-10-03. Reply/Quote реализован: migration `0022_forum_reply_relationships` добавляет nullable same-topic parent relation для forum posts; обсуждение остаётся линейным, Reply привязывает новый post к конкретному parent, Quote вставляет только выделенный текст как Markdown blockquote, а parent/child сообщения связываются стабильными anchors. Existing permissions/rate-limit semantics не меняются; repository CI и GitHub Pages preview проходят, owner visual acceptance подтверждён 2026-10-03. Дальнейшая косметическая полировка homepage
-  сейчас не является приоритетом.
+  migration/search-index subsystem. Repository CI и GitHub Pages preview прошли; owner visual acceptance подтверждён 2026-10-03. Search merged через PR #171. Message links реализован и merged через PR #172: public permanent post anchors + copy-link UI работают без DB/backend изменений; GitHub Pages preview пройден, owner visual acceptance подтверждён 2026-10-03. Reply/Quote реализован: migration `0022_forum_reply_relationships` добавляет nullable same-topic parent relation для forum posts; обсуждение остаётся линейным, Reply привязывает новый post к конкретному parent, Quote вставляет только выделенный текст как Markdown blockquote, а parent/child сообщения связываются стабильными anchors. Existing permissions/rate-limit semantics не меняются; repository CI и GitHub Pages preview проходят, owner visual acceptance подтверждён 2026-10-03. Последующая hierarchy correction в PR #182
+  заменяет topic-oriented homepage blocks на category → section map и переносит прежнюю rich
+  section presentation на category pages. Owner visual acceptance реализации подтверждён
+  2026-10-05; schema/migration/auth/permission/Stage 6 изменений нет.
 - Текущий Unread/new slice подключает repository/database foundation к runtime/UI:
   forward migration `0023_forum_topic_read_states` хранит один last-read cursor на пару
   authenticated user + topic и same-topic FK не позволяет ссылаться на post другой темы.
@@ -82,6 +88,16 @@ Vico Forum находится в ранней pre-release разработке.
   откатить cursor. Classified read-state storage failure не ломает публичное чтение topic/section,
   тогда как authenticated Unread route возвращает controlled unavailable. External migration/rollout
   для `0023` не выполнялся.
+- Persisted Pinned topics bounded slice реализуется в PR #181 поверх принятой hierarchy correction
+  PR #182: migration `0025_forum_topic_pins` хранит максимум один active pin на topic с DB-owned
+  `pinnedAt`, topic-delete cascade и actor reference `RESTRICT`. Code-backed
+  `forum.topic.pin` входит в initial grants moderator/admin, но не user; авторство темы само по
+  себе право не даёт. Pin/unpin остаются authenticated same-origin mutations с повторной
+  server-side effective-permission проверкой. Category reader выдаёт bounded deterministic pins
+  по section в порядке `pinnedAt DESC, topicId DESC`; Home остаётся category → section map.
+  Section/topic presentation показывает persisted pin state, а пустой category-page Pinned block
+  становится truthful non-link state. External migration/Stage 6 rollout, exact-head CI/Pages и
+  owner visual acceptance этого slice ещё не заявлены.
 - In-app reply notifications slice реализован в PR #180:
   forward migration `0024_forum_reply_notifications` хранит только stable recipient/actor/topic/post
   references, `createdAt` и nullable `readAt`; unique recipient + reply identity предотвращает
@@ -95,23 +111,14 @@ Vico Forum находится в ранней pre-release разработке.
   presentation и representative mixed/empty Pages states добавлены; notifications удалены из
   Under development. Clean PostgreSQL 17 tests, schema/manifest parity, runtime privilege probes и
   полный repository CI проходят. External migration/Stage 6 rollout не выполнялись.
-- Persisted Pinned topics bounded slice реализован в PR #181 от актуального `main`: forward
-  migration `0025_forum_topic_pins` хранит максимум один active pin на topic с DB-owned
-  `pinnedAt`, topic-delete cascade и actor reference с `RESTRICT`, как у authoritative forum authors. Новый code-backed permission
-  `forum.topic.pin` входит в initial grants moderator/admin, но не user; авторство темы само по
-  себе право не даёт, а pin/unpin mutation повторно проверяет authenticated same-origin effective
-  permission server-side. Homepage получает реальные pins set-based с DB-side rank/limit по
-  category, deterministic order `pinnedAt DESC, topicId DESC`, current title/author и latest
-  activity без N+1. Section/topic presentation показывает pin независимо от solved/unread/new;
-  topic tools дают idempotent Pin/Unpin только при permission. Пустой Pinned block теперь truthful
-  non-link state, а `pinned-topics` удалён из Under development. External migration/Stage 6 rollout
-  не выполнялись. Exact-head CI/Pages и owner visual acceptance этого slice ещё не зафиксированы.
-- Category-page discovery slice в PR #159 прошёл owner visual acceptance в GitHub Pages:
-  owner-approved header/logo/discovery nav переиспользованы без backend/DB изменений; category
-  heading показывает только derived section/topic/message totals, section rows стали compact
-  clickable cards с реальными counts и orange entry rail, добавлены responsive/RTL-safe geometry
-  и representative LTR/RTL/empty-category Pages states. Repository CI и Pages для принятой
-  реализации проходят. Следующая bounded UI/UX подзадача после merge — Section page.
+- Category-page discovery baseline в PR #159 прошёл owner visual acceptance в GitHub Pages:
+  owner-approved header/logo/discovery nav, derived section/topic/message totals и
+  responsive/RTL/empty-category states сохранены. PR #182 supersede-ит только section-card
+  composition: category page теперь переиспользует прежний rich section block с
+  `Pinned / Latest topics / statistics / entry`; bounded latest-topic data читается реально по
+  каждому section, а текущий PR #181 подключает к той же section-card surface persisted pins.
+  Homepage остаётся прямым category → section map. Owner visual acceptance hierarchy correction
+  подтверждён 2026-10-05; acceptance persisted-pinning slice ещё не заявлена.
 - Section-page discovery slice в PR #160 прошёл owner visual acceptance в GitHub Pages:
   approved header/logo/discovery nav переиспользованы без backend/DB изменений; heading показывает
   только derived topic/message totals, topic rows стали full-card links с реальными author/message
@@ -300,7 +307,7 @@ Vico Forum находится в ранней pre-release разработке.
 - generic `/:locale/*`, runtime `LocaleRegistry`, BCP-47 resolution, LTR/RTL и request-scoped
   `i18next`;
 - persistent locale registry, persistent UI translation storage и compiled bundle storage;
-- текущая repository migration history — `0000`–`0023`; external accepted migration evidence по-прежнему заканчивается на `0020`.
+- текущая repository migration history — `0000`–`0025`; external accepted migration evidence по-прежнему заканчивается на `0020`.
 
 ## Forum core — Stage 4
 

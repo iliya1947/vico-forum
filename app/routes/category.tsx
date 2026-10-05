@@ -7,9 +7,27 @@ export async function loader({ params, context }: {
   params: { locale?: string; categoryId?: string };
   context: RouterContextProvider;
 }) {
-  const category = await forumReaderForRequest(context).readCategory(params.categoryId ?? "");
+  const category = await forumReaderForRequest(context).readCategory(params.categoryId ?? "", 10);
   if (!category) throw new Response("Not Found", { status: 404 });
-  return { locale: params.locale ?? "en", category };
+
+  return {
+    locale: params.locale ?? "en",
+    referenceTime: new Date().toISOString(),
+    category: {
+      ...category,
+      sections: category.sections.map((section) => ({
+        ...section,
+        pinnedTopics: section.pinnedTopics.map((topic) => ({
+          ...topic,
+          activityAt: topic.activityAt.toISOString(),
+        })),
+        latestTopics: section.latestTopics.map((topic) => ({
+          ...topic,
+          activityAt: topic.activityAt.toISOString(),
+        })),
+      })),
+    },
+  };
 }
 
 export default function CategoryRoute() {

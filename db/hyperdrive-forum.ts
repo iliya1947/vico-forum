@@ -57,9 +57,7 @@ export function createHyperdriveForumReader(
 
   return {
     listCategories: () => read((repository) => repository.listCategories()),
-    readHomepage: (latestTopicsPerCategory, pinnedTopicsPerCategory) => read(
-      (repository) => repository.readHomepage(latestTopicsPerCategory, pinnedTopicsPerCategory),
-    ),
+    readHomepage: () => read((repository) => repository.readHomepage()),
     readPopular: (referenceTime, limitPerPeriod) => read((repository) => repository.readPopular(referenceTime, limitPerPeriod)),
     readUnanswered: () => read((repository) => repository.readUnanswered()),
     readTags: () => read((repository) => repository.readTags()),
@@ -70,7 +68,7 @@ export function createHyperdriveForumReader(
     readReplyNotifications: (userId, limit) => read((repository) => repository.readReplyNotifications(userId, limit)),
     countUnreadReplyNotifications: (userId) => read((repository) => repository.countUnreadReplyNotifications(userId)),
     readTopicPinState: (topicId) => read((repository) => repository.readTopicPinState(topicId)),
-    readCategory: (id) => read((repository) => repository.readCategory(id)),
+    readCategory: (id, pinnedTopicsPerSection) => read((repository) => repository.readCategory(id, pinnedTopicsPerSection)),
     readSection: (id) => read((repository) => repository.readSection(id)),
     readTopicPage: (id) => read((repository) => repository.readTopicPage(id)),
   };

@@ -92,6 +92,8 @@ export const reviewedCommonFingerprints = {
   homepageLatestEmpty: "ef920a66b48f200c89ccd487f497c61289eb6f98db57552db5306de741741856",
   homepageExpand: "13343e06820e340ea0e945a0f544c524de43dd5e7f0712944048613331ea73af",
   homepageCollapse: "3e1f46e9d4265ea34afc4758f7108d20ae7a01faddfd6d92b3c75fb9c114743e",
+  homepageMoreSections: "50830d76af886aa1235db12c52396b38d026963368c0776686dae0a287dcecc9",
+  homepageFewerSections: "882e4f2fe1b531a8294808ddd3d0409476bb22dbfb565f08cd52b6fdef721297",
   forumStatisticsHeading: "c1b197fb6c64a673cd06095c1f3d2dfddf0f347c291d9963d45296d64b1aedcb",
   whosOnlineHeading: "bcdd1eea7e9a04ddf54cc2b6aece962463da824c2fdeaf0dd9bda4b49a1aaede",
   onlinePresencePending: "9e8249352175b993ecdedb77e5aa33922a918d578dcb1ae8bc351b4d49392362",
