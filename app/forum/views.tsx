@@ -57,7 +57,6 @@ export function HomeView({
     <ForumShell locale={locale} variant="home">
       {categories.length === 0 ? <EmptyState>{t("categoriesEmpty")}</EmptyState> : (
         <>
-          <h1 className="home-sections-heading">{t("categoriesHeading")}</h1>
           <section className="home-forum-categories" aria-label={t("categoriesHeading")}>
             {categories.map((category) => (
               <HomepageCategoryCard
