@@ -1255,10 +1255,22 @@ p {
 }
 
 .home-category-sections {
+  position: relative;
   padding-block: 0;
   padding-inline: 0.4rem;
-  border-block-start: 1px solid var(--color-border);
+  border-block-start: 0;
   background: var(--color-canvas);
+}
+
+.home-category-sections::before {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 2.6rem;
+  inset-inline-end: 0.4rem;
+  height: 1px;
+  background: var(--color-border);
+  content: "";
+  pointer-events: none;
 }
 
 .home-category-sections .category-section-list {
@@ -1266,12 +1278,40 @@ p {
 }
 
 .home-category-sections .category-section-card {
+  position: relative;
   min-height: 0;
   margin-inline-start: 0.55rem;
+  border-block: 0;
   border-inline-start: 0;
+  border-inline-end: 1px solid var(--color-border);
   border-start-start-radius: 0;
   border-end-start-radius: 0;
   box-shadow: none;
+}
+
+.home-category-sections .category-section-card::before,
+.home-category-sections .category-section-card::after {
+  position: absolute;
+  z-index: 2;
+  inset-inline-start: 1.65rem;
+  inset-inline-end: 0;
+  height: 1px;
+  background: var(--color-border);
+  content: "";
+  pointer-events: none;
+}
+
+.home-category-sections .category-section-card::before {
+  inset-block-start: 0;
+}
+
+.home-category-sections .category-section-card::after {
+  inset-block-end: 0;
+}
+
+.home-category-sections .category-section-card:hover::before,
+.home-category-sections .category-section-card:hover::after {
+  background: var(--color-accent);
 }
 
 .home-category-sections .category-section-main {
