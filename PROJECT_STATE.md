@@ -33,8 +33,9 @@ Vico Forum находится в ранней pre-release разработке.
 - Для общего служебного PR #147 repository содержит bounded GitHub Actions bridge: только новый
   комментарий `chatgpt-codex-connector[bot]` в открытом PR #147 может быть append-нут в
   `.github/ui-ux-service-channel.md` ветки `chatgpt/ui-ux-product-pass`. Workflow использует только
-  repository-scoped `GITHUB_TOKEN` с `contents: write`, не требует PAT/OpenAI API key и помечает
-  записанный GitHub comment ID для idempotent rerun.
+  repository-scoped `GITHUB_TOKEN` с `contents: write`, не требует PAT/OpenAI API key, помечает
+  записанный GitHub comment ID для idempotent rerun и bounded повторяет refresh/append/push при
+  concurrent direct update service-ветки.
 - Первый bounded UI/UX slice уже merged: deterministic representative baseline, client-safe
   presentation boundaries и GitHub Pages visual-progress preview.
   Preview controller в текущем implementation state отделяет identity от page state: над `State`
