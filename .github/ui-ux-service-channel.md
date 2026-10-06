@@ -519,3 +519,26 @@ ChatGPT independently verified it before any further implementation change.
 - Consensus: confirmed. The redirect destination must depend on whether the post-selection confirmation will actually render; otherwise the selected answer anchor must be preserved.
 
 No code change for finding C has been made yet.
+
+
+---
+
+## PR #186 finding C corrected — ChatGPT re-review — 2026-10-07
+
+Corrected implementation head: `042470e94be50b31ced9cd2f1b7b026d81c956be`.
+
+Confirmed finding C is fixed without a pre-write read race:
+
+- the authoritative topic `authorId` and `isSolved` are captured from the row locked by the same `selectBestAnswer` transaction that writes the new best answer;
+- route redirect goes to `#solution-confirmation` only when the actor is the topic author and the locked topic was unsolved;
+- solved-topic replacement and manage-any replacement by a non-author retain the selected post anchor;
+- route regression coverage exercises both no-prompt paths, and PostgreSQL coverage verifies returned locked state for unsolved and solved selection.
+
+ChatGPT re-reviewed the complete PR after this correction and found no remaining current-scope defect.
+
+Exact-head CI run `37536229842` completed successfully:
+
+- `checks`: accepted migration history, lint, typecheck, tests, build, UI preview build, migration metadata and Drizzle schema parity — success;
+- `database`: clean PostgreSQL 17 migrations/constraints, production manifest parity, runtime privilege probes, split-authority and credential probes, Workers build and split-Hyperdrive smoke — success.
+
+Next gate: fresh independent Codex whole-PR review on exact head `042470e`. No implementation change should be made while that review is running.
