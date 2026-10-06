@@ -58,7 +58,7 @@ describe("PostgreSQL 17 locale migrations", () => {
     const applied = await client.query<{ count: string }>(
       'select count(*)::text as count from drizzle."__drizzle_migrations"',
     );
-    expect(applied.rows[0]?.count).toBe("26");
+    expect(applied.rows[0]?.count).toBe("27");
   });
 
   it("rejects trimmed canonical English in persistent UI translation storage", async () => {
@@ -839,7 +839,7 @@ describe("PostgreSQL 17 locale migrations", () => {
            where conname = 'forum_topics_best_answer_topic_post_fk'`);
       expect(constraint.rows[0]).toEqual({ confdeltype: "a", condeferrable: true, condeferred: true });
       const solvedCouplingConstraint = await client.query(
-        "select conname from pg_constraint where conname = 'forum_topics_best_answer_requires_solved_check'",
+        "select conname from pg_constraint where conname = 'forum_topics_best_answer_requires_solved_check' and conrelid = 'public.forum_topics'::regclass",
       );
       expect(solvedCouplingConstraint.rows).toHaveLength(0);
 

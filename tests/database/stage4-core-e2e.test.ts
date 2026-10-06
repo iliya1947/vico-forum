@@ -42,6 +42,7 @@ const migrationFiles = [
   "0022_forum_reply_relationships.sql",
   "0024_forum_reply_notifications.sql",
   "0025_forum_topic_pins.sql",
+  "0026_best_answer_independent_from_solved.sql",
 ] as const;
 
 const client = new Client({ connectionString: databaseUrl, options: `-c search_path=${schemaName}` });
