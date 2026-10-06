@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Form, Link, useFetcher, useNavigation } from "react-router";
+import { Form, Link, useFetcher, useLocation, useNavigation } from "react-router";
 import { useTranslation } from "react-i18next";
 
 import type {
@@ -1275,6 +1275,7 @@ export function TopicView({
   generationUnits,
   canReply,
   canManageSolution,
+  isTopicAuthor = false,
   canCorrectTitleSourceLocale,
   canManagePin,
   correctablePostIds,
@@ -1288,6 +1289,7 @@ export function TopicView({
   generationUnits: readonly ContentGenerationUnitView[];
   canReply: boolean;
   canManageSolution: boolean;
+  isTopicAuthor?: boolean;
   canCorrectTitleSourceLocale: boolean;
   canManagePin: boolean;
   correctablePostIds: readonly string[];
@@ -1326,6 +1328,16 @@ export function TopicView({
     directRepliesByParent.set(post.parentPostId, replies);
   }
   const { t } = useTranslation("common");
+  const location = useLocation();
+  const solutionPromptPostId = new URLSearchParams(location.search).get("solutionPrompt");
+  const promptedBestAnswerPostId =
+    isTopicAuthor
+    && canManageSolution
+    && !topic.isSolved
+    && topic.bestAnswerPostId
+    && topic.bestAnswerPostId === solutionPromptPostId
+      ? topic.bestAnswerPostId
+      : null;
   const [messageLinkFeedback, setMessageLinkFeedback] = useState<MessageLinkFeedback>(null);
   const [replyTargetPostId, setReplyTargetPostId] = useState<string | null>(null);
   const [quoteSelectionErrorPostId, setQuoteSelectionErrorPostId] = useState<string | null>(null);
@@ -1522,6 +1534,24 @@ export function TopicView({
         {correctionError && <p className="topic-page-alert" role="alert">{t(`sourceLocaleCorrectionError_${correctionError}`)}</p>}
         {forumWriteError && <p className="topic-page-alert" role="alert">{t(`forumWriteError_${forumWriteError}`)}</p>}
 
+        {promptedBestAnswerPostId && (
+          <section id="solution-confirmation" className="solution-confirmation" aria-label={t("problemSolvedPrompt")}>
+            <strong>{t("problemSolvedPrompt")}</strong>
+            <div className="solution-confirmation-actions">
+              <Form method="post" className="solution-form">
+                <input type="hidden" name="intent" value="markSolved" />
+                <button type="submit">{t("problemSolvedYes")}</button>
+              </Form>
+              <Link
+                className="solution-confirmation-dismiss"
+                to={`${forumTopicPath(locale, topic.id)}#post-${encodeURIComponent(promptedBestAnswerPostId)}`}
+              >
+                {t("problemSolvedNo")}
+              </Link>
+            </div>
+          </section>
+        )}
+
         {orderedPosts.length === 0 ? (
           <div className="topic-empty">
             <EmptyState>{t("postsEmpty")}</EmptyState>
@@ -1535,7 +1565,7 @@ export function TopicView({
               const generationUnit = generationByContentId.get(post.id);
               const canCorrectPostSourceLocale = correctablePosts.has(post.id);
               const canSelectBestAnswer =
-                canManageSolution && topic.isSolved && topic.bestAnswerPostId !== post.id;
+                canManageSolution && !isOriginalQuestion && topic.bestAnswerPostId !== post.id;
               const hasMessageTools = canCorrectPostSourceLocale || canSelectBestAnswer;
               const messageLinkState =
                 messageLinkFeedback?.postId === post.id ? messageLinkFeedback.state : null;

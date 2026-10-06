@@ -41,6 +41,7 @@ type PreviewVariant =
   | "section-form-error"
   | "topic-reply-error"
   | "topic-unsolved"
+  | "topic-best-answer-unsolved"
   | "admin-success"
   | "admin-conflict"
   | "route-401"
@@ -83,6 +84,7 @@ export const scenarios: readonly Scenario[] = [
   { id: "section-user", label: "Section", locale: "en", direction: "ltr", identity: "user", path: "/en/sections/typescript", view: "section" },
   { id: "section-form-error", label: "Create topic error", locale: "en", direction: "ltr", identity: "user", path: "/en/sections/typescript", view: "section", variant: "section-form-error", allowedIdentities: ["user", "manager"] },
   { id: "topic-solved-user", label: "Solved topic", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api", view: "topic" },
+  { id: "topic-best-answer-unsolved", label: "Best answer · confirmation", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api?solutionPrompt=answer#solution-confirmation", view: "topic", variant: "topic-best-answer-unsolved", allowedIdentities: ["user"] },
   { id: "topic-reply-error", label: "Reply error", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api", view: "topic", variant: "topic-reply-error", allowedIdentities: ["user", "manager"] },
   { id: "topic-unsolved", label: "Unsolved topic", locale: "en", direction: "ltr", identity: "guest", path: "/en/topics/typed-api", view: "topic", variant: "topic-unsolved" },
   { id: "admin", label: "Authorization", locale: "en", direction: "ltr", identity: "manager", path: "/en/admin/authorization", view: "admin", allowedIdentities: ["manager"] },
@@ -1267,19 +1269,22 @@ function previewElement(scenario: Scenario) {
         />
       );
     case "topic": {
+      const solutionConfirmation = scenario.variant === "topic-best-answer-unsolved";
       const solved = scenario.variant !== "topic-unsolved"
         && scenario.variant !== "topic-reply-error"
-  ;
+        && !solutionConfirmation;
       const data = topicData(
         scenario.locale,
         scenario.direction,
         scenario.identity,
         solved,
         scenario.identity === "manager",
+        solutionConfirmation,
       );
       return (
         <TopicView
           {...data}
+          topic={solutionConfirmation ? { ...data.topic, bestAnswerPostId: "answer" } : data.topic}
           actionData={scenario.variant === "topic-reply-error" ? { error: "rateLimited" } : undefined}
         />
       );
@@ -1304,6 +1309,7 @@ function topicData(
   identity: PreviewIdentity,
   solved: boolean,
   showSecondaryControls: boolean,
+  solutionAuthor = false,
 ) {
   const rtl = direction === "rtl";
   const russian = locale === "ru";
@@ -1342,7 +1348,8 @@ function topicData(
       ? topicToolsGenerationUnits(locale)
       : [],
     canReply: identity !== "guest",
-    canManageSolution: showSecondaryControls,
+    canManageSolution: showSecondaryControls || solutionAuthor,
+    isTopicAuthor: solutionAuthor,
     canCorrectTitleSourceLocale: showSecondaryControls,
     canManagePin: identity === "manager",
     correctablePostIds: showSecondaryControls

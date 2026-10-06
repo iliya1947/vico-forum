@@ -158,7 +158,7 @@ function writer() {
     createTopic: vi.fn(async () => ({ topicId: "server-topic" })),
     createReply: vi.fn(async () => ({ postId: "server-post" })),
     markTopicSolved: vi.fn(async () => undefined),
-    selectBestAnswer: vi.fn(async () => undefined),
+    selectBestAnswer: vi.fn(async () => ({ topicAuthorId: "session-user", isSolved: false })),
     correctTopicTitleSourceLocale: vi.fn(async () => undefined),
     correctPostBodySourceLocale: vi.fn(async () => undefined),
     advanceTopicReadState: vi.fn(async () => undefined),
@@ -335,7 +335,29 @@ describe("forum write route actions", () => {
     });
     expect(anyWriter.selectBestAnswer).toHaveBeenCalledWith({ topicId: "topic-1", postId: "post-2", actorId: "session-user", scope: "any" });
     if (!(selected instanceof Response)) throw new Error("expected redirect");
-    expect(selected.headers.get("Location")).toBe("/en/topics/topic-1#post-post-2");
+    expect(selected.headers.get("Location")).toBe("/en/topics/topic-1?solutionPrompt=post-2#solution-confirmation");
+  });
+
+  it("redirects best-answer selection to the selected post when no solved confirmation will render", async () => {
+    const solvedWriter = writer();
+    solvedWriter.selectBestAnswer.mockResolvedValueOnce({ topicAuthorId: "session-user", isSolved: true });
+    const solvedResponse = await topicAction({
+      request: request("/en/topics/topic-1", { intent: "selectBestAnswer", postId: "post-3" }),
+      params: { locale: "en", topicId: "topic-1" },
+      context: context(solvedWriter, true, ["forum.solution.manageOwn"]),
+    });
+    if (!(solvedResponse instanceof Response)) throw new Error("expected solved-topic redirect");
+    expect(solvedResponse.headers.get("Location")).toBe("/en/topics/topic-1#post-post-3");
+
+    const managerWriter = writer();
+    managerWriter.selectBestAnswer.mockResolvedValueOnce({ topicAuthorId: "topic-author", isSolved: false });
+    const managerResponse = await topicAction({
+      request: request("/en/topics/topic-1", { intent: "selectBestAnswer", postId: "post-4" }),
+      params: { locale: "en", topicId: "topic-1" },
+      context: context(managerWriter, true, ["forum.solution.manageAny"]),
+    });
+    if (!(managerResponse instanceof Response)) throw new Error("expected manager redirect");
+    expect(managerResponse.headers.get("Location")).toBe("/en/topics/topic-1#post-post-4");
   });
 
   it("denies solution mutations when no solution permission is effective", async () => {

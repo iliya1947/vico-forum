@@ -109,6 +109,15 @@ Vico Forum находится в ранней pre-release разработке.
   Section/topic presentation показывает persisted pin state, а пустой category-page Pinned block
   становится truthful non-link state. Exact-head CI/Pages и owner visual acceptance подтверждены
   2026-10-06; External migration/Stage 6 rollout не выполнялись.
+- Текущий solution-model slice для будущей категории **Help & solutions** разводит выбранный
+  best answer и solved state: forward migration `0026_best_answer_independent_from_solved`
+  удаляет только прежний check `best_answer_post_id → is_solved`, сохраняя same-topic
+  deferred best-answer FK. Best answer теперь можно выбрать у нерешённой темы; после выбора
+  автор собственной нерешённой темы получает отдельное подтверждение `Problem solved?`,
+  где подтверждение использует существующий protected `markSolved`, а отказ оставляет
+  выбранный best answer без изменения solved state. Full repository CI, clean PostgreSQL 17,
+  schema/manifest parity, runtime privilege probes, Workers smoke и UI preview build проходят на
+  exact implementation head; external migration/Stage 6 rollout не выполнялся.
 - In-app reply notifications slice реализован в PR #180:
   forward migration `0024_forum_reply_notifications` хранит только stable recipient/actor/topic/post
   references, `createdAt` и nullable `readAt`; unique recipient + reply identity предотвращает
@@ -318,7 +327,7 @@ Vico Forum находится в ранней pre-release разработке.
 - generic `/:locale/*`, runtime `LocaleRegistry`, BCP-47 resolution, LTR/RTL и request-scoped
   `i18next`;
 - persistent locale registry, persistent UI translation storage и compiled bundle storage;
-- текущая repository migration history — `0000`–`0025`; external accepted migration evidence по-прежнему заканчивается на `0020`.
+- текущая repository migration history — `0000`–`0026`; external accepted migration evidence по-прежнему заканчивается на `0020`.
 
 ## Forum core — Stage 4
 

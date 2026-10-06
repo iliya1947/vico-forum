@@ -1309,17 +1309,25 @@ export class DrizzleForumRepository {
     });
   }
 
-  async selectBestAnswer(topicId: string, postId: string, actorId: string, scope: SolutionManagementScope = "own"): Promise<void> {
-    await this.database.transaction(async (tx) => {
+  async selectBestAnswer(topicId: string, postId: string, actorId: string, scope: SolutionManagementScope = "own"): Promise<{ topicAuthorId: string; isSolved: boolean }> {
+    return this.database.transaction(async (tx) => {
       const [topic] = await tx.select({ authorId: forumTopics.authorId, isSolved: forumTopics.isSolved })
         .from(forumTopics).where(eq(forumTopics.id, topicId)).for("update");
       if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
       if (scope === "own" && topic.authorId !== actorId) throw new ForumAuthorizationError("only the topic author may select an answer");
-      if (!topic.isSolved) throw new ForumStateConflictError("topic must be solved first");
       const [post] = await tx.select({ topicId: forumPosts.topicId }).from(forumPosts).where(eq(forumPosts.id, postId));
       if (!post) throw new ForumEntityNotFoundError("post does not exist");
       if (post.topicId !== topicId) throw new ForumStateConflictError("post belongs to another topic");
+      const [originalPost] = await tx.select({ id: forumPosts.id })
+        .from(forumPosts)
+        .where(eq(forumPosts.topicId, topicId))
+        .orderBy(asc(forumPosts.createdAt), asc(forumPosts.id))
+        .limit(1);
+      if (originalPost?.id === postId) {
+        throw new ForumStateConflictError("original topic post cannot be selected as best answer");
+      }
       await tx.update(forumTopics).set({ bestAnswerPostId: postId }).where(eq(forumTopics.id, topicId));
+      return { topicAuthorId: topic.authorId, isSolved: topic.isSolved };
     });
   }
 

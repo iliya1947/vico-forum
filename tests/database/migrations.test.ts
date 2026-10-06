@@ -58,7 +58,7 @@ describe("PostgreSQL 17 locale migrations", () => {
     const applied = await client.query<{ count: string }>(
       'select count(*)::text as count from drizzle."__drizzle_migrations"',
     );
-    expect(applied.rows[0]?.count).toBe("26");
+    expect(applied.rows[0]?.count).toBe("27");
   });
 
   it("rejects trimmed canonical English in persistent UI translation storage", async () => {
@@ -819,7 +819,7 @@ describe("PostgreSQL 17 locale migrations", () => {
     }
   });
 
-  it("atomically enforces topic-author and topic/post solution consistency", async () => {
+  it("keeps best-answer selection independent from solved state while enforcing topic-author and topic/post consistency", async () => {
     let now = Date.parse("2026-09-14T14:00:00.000Z");
     const repository = new DrizzleForumRepository(drizzle(client), {
       cooldownMs: FORUM_WRITE_COOLDOWN_MS,
@@ -838,14 +838,26 @@ describe("PostgreSQL 17 locale migrations", () => {
             from pg_constraint
            where conname = 'forum_topics_best_answer_topic_post_fk'`);
       expect(constraint.rows[0]).toEqual({ confdeltype: "a", condeferrable: true, condeferred: true });
+      const solvedCouplingConstraint = await client.query(
+        "select conname from pg_constraint where conname = 'forum_topics_best_answer_requires_solved_check' and conrelid = 'public.forum_topics'::regclass",
+      );
+      expect(solvedCouplingConstraint.rows).toHaveLength(0);
 
       await forum.createTopic({ id: "solution-topic", sectionId: "typescript", authorId: "solution-author", titleRevision: { id: "solution-title", originalContent: "Solution", sourceLocale: "en" } });
+      await forum.createPost({ id: "solution-question", topicId: "solution-topic", authorId: "solution-author", bodyRevision: { id: "solution-question-body", originalContent: "Question", sourceLocale: "en" } });
       await forum.createPost({ id: "solution-post-1", topicId: "solution-topic", authorId: "solution-other", bodyRevision: { id: "solution-body-1", originalContent: "One", sourceLocale: "en" } });
       await forum.createPost({ id: "solution-post-2", topicId: "solution-topic", authorId: "solution-other", bodyRevision: { id: "solution-body-2", originalContent: "Two", sourceLocale: "en" } });
 
-      await expect(forum.selectBestAnswer("solution-topic", "solution-post-1", "solution-author")).rejects.toBeInstanceOf(ForumStateConflictError);
+      await expect(forum.selectBestAnswer("solution-topic", "solution-question", "solution-author")).rejects.toBeInstanceOf(ForumStateConflictError);
+      expect(await forum.selectBestAnswer("solution-topic", "solution-post-1", "solution-author")).toEqual({
+        topicAuthorId: "solution-author",
+        isSolved: false,
+      });
+      expect(await repository.readTopicPage("solution-topic")).toMatchObject({
+        isSolved: false,
+        bestAnswerPostId: "solution-post-1",
+      });
       await expect(forum.markTopicSolved("solution-topic", "solution-other")).rejects.toBeInstanceOf(ForumAuthorizationError);
-      await forum.markTopicSolved("solution-topic", "solution-other", "any");
       await expect(forum.selectBestAnswer("solution-topic", "missing", "solution-author")).rejects.toBeInstanceOf(ForumEntityNotFoundError);
       await expect(forum.selectBestAnswer("solution-topic", "post-1", "solution-author")).rejects.toBeInstanceOf(ForumStateConflictError);
 
@@ -858,9 +870,12 @@ describe("PostgreSQL 17 locale migrations", () => {
         await client.query("rollback");
       }
 
-      await forum.selectBestAnswer("solution-topic", "solution-post-1", "solution-author");
+      await forum.markTopicSolved("solution-topic", "solution-other", "any");
       expect(await repository.readTopicPage("solution-topic")).toMatchObject({ isSolved: true, bestAnswerPostId: "solution-post-1" });
-      await forum.selectBestAnswer("solution-topic", "solution-post-2", "solution-author");
+      expect(await forum.selectBestAnswer("solution-topic", "solution-post-2", "solution-author")).toEqual({
+        topicAuthorId: "solution-author",
+        isSolved: true,
+      });
       expect(await repository.readTopicPage("solution-topic")).toMatchObject({ isSolved: true, bestAnswerPostId: "solution-post-2" });
       await forum.selectBestAnswer("solution-topic", "solution-post-1", "solution-other", "any");
       expect(await repository.readTopicPage("solution-topic")).toMatchObject({ bestAnswerPostId: "solution-post-1" });

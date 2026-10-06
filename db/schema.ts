@@ -639,7 +639,6 @@ export const forumTopics = pgTable(
   (table) => [
     index("forum_topics_section_id_idx").on(table.sectionId),
     index("forum_topics_author_id_idx").on(table.authorId),
-    check("forum_topics_best_answer_requires_solved_check", sql`${table.bestAnswerPostId} is null or ${table.isSolved}`),
   ],
 );
 
