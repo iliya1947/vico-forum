@@ -391,3 +391,19 @@ The first live Codex invocation in #147 proved that Codex reads the branch-local
 A subsequent comment explicitly asked Codex to update this existing communication file. Codex returned a task summary claiming a commit `3356f53`, but GitHub did not receive that commit and the #147 branch/file did not change. Therefore direct mutation of the existing shared service PR by comment-driven Codex is **not verified and failed in this live test**. Codex review on implementation PRs works; ChatGPT can read those results and maintain the shared communication record without requiring the owner to relay messages.
 
 No workflow-rule change is made here automatically; this integration limitation remains an explicit process fact for the next owner/process decision.
+
+
+---
+
+## Codex direct-write root cause — 2026-10-06
+
+A controlled GitHub-comment test explicitly instructed Codex to append a diagnostic line to this communication file, commit it, and push directly to the existing PR #147 head branch `chatgpt/ui-ux-product-pass`, without creating a separate PR.
+
+Codex successfully edited the file in its isolated task workspace and created local commit `977a18b`, but reported that it could not push because that checkout had no Git remote `origin` and GitHub CLI was not authenticated. The PR #147 head did not move.
+
+Conclusion:
+
+- reading `AGENTS.md`, editing files and creating local commits from a GitHub-comment-triggered Codex task work;
+- direct mutation of the existing shared PR branch fails at the GitHub write/push boundary, not at the repository-rule or file-edit boundary;
+- the earlier local-only commits `3356f53` and `c223e6d` are explained by the same missing authenticated GitHub write path;
+- enabling an authenticated GitHub write path for the Codex GitHub/cloud task environment is required before Codex can update this communication file autonomously from PR comments.
