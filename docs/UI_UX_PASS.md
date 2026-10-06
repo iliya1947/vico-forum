@@ -272,8 +272,10 @@ composition without changing the forum hierarchy or schema:
 - the richer section-card composition moves to category pages, where real per-section latest-topic
   activity is loaded through the forum reader; the follow-up persisted-pinning slice connects
   bounded real pins to that same section-card surface without restoring topic blocks on Home;
-- `Help & solutions` is the first approved homepage category in the representative Pages map and
-  may remain without fabricated sections until its internal structure is defined;
+- `Help & solutions` is the first approved homepage category. Its persistence foundation uses a
+  reserved category plus one internal service section hidden from generic section discovery and
+  generic create-topic routing, preserving the classic storage hierarchy without presenting a
+  fake user-facing subforum. Dedicated Q&A modes/views remain a separate bounded product slice;
 - owner visual acceptance of the implementation was confirmed on 2026-10-05; exact-head
   automated verification remains a separate PR check.
 
