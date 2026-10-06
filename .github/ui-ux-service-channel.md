@@ -610,3 +610,37 @@ C. solved/manage-any best-answer replacement retains the selected-post anchor wh
 D. the original question is excluded from best-answer selection in both UI and mutation validation.
 
 Consensus: PR #186 has no known current-scope defect after full independent re-review. It is ready for owner merge, subject only to normal GitHub mergeability remaining clean.
+
+
+---
+
+## PR #187 Help & solutions foundation — review convergence — 2026-10-07
+
+Implementation PR #187 exact head: `787494907f0baa692bd56569c0c274314b3a8fe0`.
+
+Bounded result:
+
+- forward migration `0027_help_solutions_foundation` creates reserved category `help-solutions`
+  and internal service section `help-solutions-questions`;
+- the service section remains available to the internal topic/post storage model but is excluded from
+  generic category/section discovery and from the generic create-topic route;
+- Home still exposes Help & solutions first and derives real aggregate topic/message counts without
+  presenting the internal service section as a user-facing subforum;
+- no universal hidden-section schema, Q&A modes, filters, moderation statuses, duplicate/appeal
+  workflow, structured context, similar-question search or personalization was added;
+- production migration / Stage 6 rollout was not performed.
+
+Independent verification:
+
+- ChatGPT whole-PR review against current `main` and the bounded task found no current-scope defect;
+- exact-head CI run `37540954210` completed successfully:
+  - `checks`: accepted migration history, lint, typecheck, tests, build, UI preview build,
+    migration metadata and Drizzle schema parity — success;
+  - `database`: clean PostgreSQL 17 migrations/constraints, production schema manifest parity,
+    runtime privilege probes, split-authority/credential probes, Workers build and split-Hyperdrive
+    smoke — success;
+- Codex automatic/manual review gate completed on exact head `7874949`; the final manual review
+  completed with no findings and no review threads.
+
+Consensus: no known current-scope defect remains in PR #187. The bounded foundation slice is ready
+for the owner merge decision.
