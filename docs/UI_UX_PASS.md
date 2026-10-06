@@ -438,8 +438,9 @@ Remaining work:
 
 - Run the complete automated repository checks.
 - Perform and record the browser matrix below against representative populated data.
-- Have ChatGPT and Codex independently review the complete pass through the implementation PR,
-  then resolve any differing findings there using the project technical-consensus protocol.
+- Have ChatGPT and Codex independently review the complete implementation PR, then compare,
+  discuss and resolve findings through the shared service PR using the project technical-consensus
+  protocol.
 - Re-run the whole acceptance matrix after confirmed fixes, update `PROJECT_STATE.md` only with
   results actually obtained, and leave Stage 6 infrastructure gates paused until the owner resumes
   them explicitly.
