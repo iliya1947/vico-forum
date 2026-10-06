@@ -192,6 +192,10 @@ composition:
 - The original question remains first. When a best answer exists, it is visually promoted directly
   after the first message while retaining its real message anchor/number; the remaining discussion
   stays linear below it.
+- Best-answer selection and solved state are independent. A topic author may select a best answer
+  while the topic is still unsolved; immediately after that selection the UI asks whether the
+  problem is solved. Confirming marks the topic solved through the existing protected solution
+  mutation, while declining keeps the selected best answer and leaves the topic unsolved.
 - Every message has a permanent anchor number and copy-link action. The target product supports
   reply/quote of a concrete message or selected text, while parent messages expose links to their
   direct replies without turning the discussion into a Reddit-style tree.

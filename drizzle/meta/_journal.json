@@ -183,6 +183,13 @@
       "when": 1791162000000,
       "tag": "0025_forum_topic_pins",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1791328200000,
+      "tag": "0026_best_answer_independent_from_solved",
+      "breakpoints": true
     }
   ]
 }

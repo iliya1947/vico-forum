@@ -237,6 +237,7 @@ function topicRenderData(
     generationUnits: [],
     canReply: false,
     canManageSolution: false,
+    isTopicAuthor: false,
     canCorrectTitleSourceLocale: false,
     canManagePin: false,
     correctablePostIds: [],
@@ -809,18 +810,47 @@ describe("forum read states", () => {
   });
 
   it("shows solution controls only to the topic author behind progressive disclosure", async () => {
-    const unsolved = topicRenderData(topic, { canReply: true, canManageSolution: true });
+    const unsolved = topicRenderData(topic, { canReply: true, canManageSolution: true, isTopicAuthor: true });
     const authorView = renderRoute(TopicRoute, unsolved, "/en/topics/typed-api", "en", "ltr");
     const topicTools = await screen.findByText("Topic tools");
     const topicToolsDetails = topicTools.closest("details");
     expect(topicToolsDetails).not.toBeNull();
     expect(topicToolsDetails).not.toHaveAttribute("open");
     expect(screen.getByRole("button", { name: "Mark as solved" }).closest("details")).toBe(topicToolsDetails);
+    expect(screen.getByRole("button", { name: "Select as best answer" })).toBeInTheDocument();
     authorView.unmount();
 
     renderRoute(TopicRoute, { ...unsolved, canManageSolution: false }, "/en/topics/typed-api", "en", "ltr");
     expect(screen.queryByText("Topic tools")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Mark as solved" })).not.toBeInTheDocument();
+  });
+
+  it("keeps a selected best answer on an unsolved topic and asks only the topic author whether the problem is solved", async () => {
+    const unsolvedWithBest = { ...topic, isSolved: false, bestAnswerPostId: "answer" };
+    const authorView = renderRoute(
+      TopicRoute,
+      topicRenderData(unsolvedWithBest, { canManageSolution: true, isTopicAuthor: true }),
+      "/en/topics/typed-api?solutionPrompt=answer#post-answer",
+      "en",
+      "ltr",
+    );
+
+    expect(await screen.findByText("Best answer")).toBeInTheDocument();
+    expect(screen.getByText("Problem solved?")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Yes, mark as solved" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "No, keep it unsolved" }))
+      .toHaveAttribute("href", "/en/topics/typed%2Fapi#post-answer");
+    authorView.unmount();
+
+    renderRoute(
+      TopicRoute,
+      topicRenderData(unsolvedWithBest, { canManageSolution: true, isTopicAuthor: false }),
+      "/en/topics/typed-api?solutionPrompt=answer#post-answer",
+      "en",
+      "ltr",
+    );
+    expect(await screen.findByText("Best answer")).toBeInTheDocument();
+    expect(screen.queryByText("Problem solved?")).not.toBeInTheDocument();
   });
 
   it("renders source-locale correction only for authorized resources behind secondary disclosures", async () => {

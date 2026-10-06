@@ -130,6 +130,7 @@ export async function loader({ params, context }: {
     generationUnits,
     canReply,
     canManageSolution,
+    isTopicAuthor: Boolean(session && session.user.id === topic.authorId),
     canCorrectTitleSourceLocale,
     canManagePin,
     correctablePostIds,

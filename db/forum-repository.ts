@@ -1311,11 +1311,10 @@ export class DrizzleForumRepository {
 
   async selectBestAnswer(topicId: string, postId: string, actorId: string, scope: SolutionManagementScope = "own"): Promise<void> {
     await this.database.transaction(async (tx) => {
-      const [topic] = await tx.select({ authorId: forumTopics.authorId, isSolved: forumTopics.isSolved })
+      const [topic] = await tx.select({ authorId: forumTopics.authorId })
         .from(forumTopics).where(eq(forumTopics.id, topicId)).for("update");
       if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
       if (scope === "own" && topic.authorId !== actorId) throw new ForumAuthorizationError("only the topic author may select an answer");
-      if (!topic.isSolved) throw new ForumStateConflictError("topic must be solved first");
       const [post] = await tx.select({ topicId: forumPosts.topicId }).from(forumPosts).where(eq(forumPosts.id, postId));
       if (!post) throw new ForumEntityNotFoundError("post does not exist");
       if (post.topicId !== topicId) throw new ForumStateConflictError("post belongs to another topic");

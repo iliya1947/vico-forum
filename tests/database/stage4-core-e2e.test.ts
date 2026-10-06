@@ -202,7 +202,6 @@ describe("Stage 4 connected forum authorization flow", () => {
     if (!reply) throw new Error("reply was not persisted");
     expect(reply.parentPostId).toBe(initialPostId);
 
-    expect(responseStatus(await markSolved("e2e-author", "Author", topicId))).toBe(302);
     const bestState = await userContext("e2e-author", "Author");
     try {
       const bestResponse = await topicAction({
@@ -215,6 +214,10 @@ describe("Stage 4 connected forum authorization flow", () => {
       await bestState.close();
     }
 
+    const selectedButUnsolved = await forum.readTopicPage(topicId);
+    expect(selectedButUnsolved).toMatchObject({ isSolved: false, bestAnswerPostId: reply.id });
+
+    expect(responseStatus(await markSolved("e2e-author", "Author", topicId))).toBe(302);
     const publicTopic = await forum.readTopicPage(topicId);
     expect(publicTopic).toMatchObject({ isSolved: true, bestAnswerPostId: reply.id });
     expect(publicTopic?.posts.find((post) => post.id === reply.id)?.body.originalContent).toBe("Connected reply");
