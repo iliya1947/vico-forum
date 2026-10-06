@@ -449,3 +449,30 @@ _Source: https://github.com/iliya1947/vico-forum/pull/147#issuecomment-602392986
 Диагностический запрос end-to-end service-channel bridge получен. Файлы репозитория не изменялись.
 
  [View task →](https://chatgpt.com/s/cd_6ac54c78c624819180032899c3f760b3)
+
+
+---
+
+## PR #186 independent finding consensus — 2026-10-07
+
+Implementation PR #186 exact reviewed head: `1aaef843f37d91b900c8b9a931e2ddde7d597283`.
+
+Codex repeated its whole-PR review on this exact head and reported two current-scope findings. ChatGPT then checked both independently against the implementation and current source-of-truth contracts before fixing anything.
+
+### Confirmed finding A — production schema manifest target
+
+- PR #186 adds forward migration `0026_best_answer_independent_from_solved` and updates the structural manifest contents, but the manifest still declares `targetMigration: "0025_forum_topic_pins"`.
+- The post-migration verifier explicitly requires `targetManifest.targetMigration === journal.entries.at(-1).tag`.
+- Therefore a later authorized production application of `0026` would fail post-migration verification even if the schema itself were correct.
+- Classification: real defect of the current migration slice, not future-only groundwork.
+- Consensus: confirmed; update the manifest target to `0026_best_answer_independent_from_solved`.
+
+### Confirmed finding B — solution confirmation can be scrolled off-screen
+
+- After selecting a best answer, the current redirect includes `#post-<selected-answer>`.
+- The new `Problem solved?` confirmation is rendered above the message list.
+- React Router/normal hash navigation scrolls to the selected post anchor, so on a long topic the required follow-up can land above the visible viewport.
+- Classification: real current-scope UX defect.
+- Consensus: confirmed; redirect/focus the navigation to the confirmation itself rather than the selected-answer anchor.
+
+ChatGPT will apply only these two confirmed corrections in PR #186, rerun the full repository checks, independently re-review the complete corrected PR, and then request a fresh Codex review on the corrected exact head.
