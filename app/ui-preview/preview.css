@@ -44,6 +44,11 @@ body.ui-preview-controller {
   gap: 0.8rem;
 }
 
+.preview-state-controls {
+  display: grid;
+  gap: 0.55rem;
+}
+
 .preview-controls label,
 .preview-controls fieldset {
   display: grid;
@@ -55,6 +60,10 @@ body.ui-preview-controller {
   grid-template-columns: repeat(2, auto);
   border: 0;
   padding: 0;
+}
+
+.preview-controls .preview-role-controls {
+  grid-template-columns: repeat(3, auto);
 }
 
 .preview-controls legend {
