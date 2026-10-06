@@ -847,7 +847,10 @@ describe("PostgreSQL 17 locale migrations", () => {
       await forum.createPost({ id: "solution-post-1", topicId: "solution-topic", authorId: "solution-other", bodyRevision: { id: "solution-body-1", originalContent: "One", sourceLocale: "en" } });
       await forum.createPost({ id: "solution-post-2", topicId: "solution-topic", authorId: "solution-other", bodyRevision: { id: "solution-body-2", originalContent: "Two", sourceLocale: "en" } });
 
-      await forum.selectBestAnswer("solution-topic", "solution-post-1", "solution-author");
+      expect(await forum.selectBestAnswer("solution-topic", "solution-post-1", "solution-author")).toEqual({
+        topicAuthorId: "solution-author",
+        isSolved: false,
+      });
       expect(await repository.readTopicPage("solution-topic")).toMatchObject({
         isSolved: false,
         bestAnswerPostId: "solution-post-1",
@@ -867,7 +870,10 @@ describe("PostgreSQL 17 locale migrations", () => {
 
       await forum.markTopicSolved("solution-topic", "solution-other", "any");
       expect(await repository.readTopicPage("solution-topic")).toMatchObject({ isSolved: true, bestAnswerPostId: "solution-post-1" });
-      await forum.selectBestAnswer("solution-topic", "solution-post-2", "solution-author");
+      expect(await forum.selectBestAnswer("solution-topic", "solution-post-2", "solution-author")).toEqual({
+        topicAuthorId: "solution-author",
+        isSolved: true,
+      });
       expect(await repository.readTopicPage("solution-topic")).toMatchObject({ isSolved: true, bestAnswerPostId: "solution-post-2" });
       await forum.selectBestAnswer("solution-topic", "solution-post-1", "solution-other", "any");
       expect(await repository.readTopicPage("solution-topic")).toMatchObject({ bestAnswerPostId: "solution-post-1" });

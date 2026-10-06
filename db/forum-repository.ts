@@ -1309,9 +1309,9 @@ export class DrizzleForumRepository {
     });
   }
 
-  async selectBestAnswer(topicId: string, postId: string, actorId: string, scope: SolutionManagementScope = "own"): Promise<void> {
-    await this.database.transaction(async (tx) => {
-      const [topic] = await tx.select({ authorId: forumTopics.authorId })
+  async selectBestAnswer(topicId: string, postId: string, actorId: string, scope: SolutionManagementScope = "own"): Promise<{ topicAuthorId: string; isSolved: boolean }> {
+    return this.database.transaction(async (tx) => {
+      const [topic] = await tx.select({ authorId: forumTopics.authorId, isSolved: forumTopics.isSolved })
         .from(forumTopics).where(eq(forumTopics.id, topicId)).for("update");
       if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
       if (scope === "own" && topic.authorId !== actorId) throw new ForumAuthorizationError("only the topic author may select an answer");
@@ -1319,6 +1319,7 @@ export class DrizzleForumRepository {
       if (!post) throw new ForumEntityNotFoundError("post does not exist");
       if (post.topicId !== topicId) throw new ForumStateConflictError("post belongs to another topic");
       await tx.update(forumTopics).set({ bestAnswerPostId: postId }).where(eq(forumTopics.id, topicId));
+      return { topicAuthorId: topic.authorId, isSolved: topic.isSolved };
     });
   }
 

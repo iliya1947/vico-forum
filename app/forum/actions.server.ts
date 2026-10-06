@@ -163,7 +163,11 @@ export async function topicAction({ request, params, context }: {
     const authorization = await solutionScope(context);
     if ("error" in authorization) return authorization.error;
     return runForumMutation(request, context, async (writer, actorId) => {
-      await writer.selectBestAnswer({ topicId, postId, actorId, scope: authorization.scope });
+      const selection = await writer.selectBestAnswer({ topicId, postId, actorId, scope: authorization.scope });
+      const shouldPromptSolvedConfirmation = !selection.isSolved && selection.topicAuthorId === actorId;
+      if (!shouldPromptSolvedConfirmation) {
+        return redirect(`${forumTopicPath(locale, topicId)}#post-${encodeURIComponent(postId)}`);
+      }
       const solutionPrompt = new URLSearchParams({ solutionPrompt: postId });
       return redirect(`${forumTopicPath(locale, topicId)}?${solutionPrompt.toString()}#solution-confirmation`);
     });
