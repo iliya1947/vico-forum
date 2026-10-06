@@ -1,0 +1,77 @@
+name: Codex service-channel bridge
+
+on:
+  issue_comment:
+    types:
+      - created
+
+permissions:
+  contents: write
+
+concurrency:
+  group: codex-service-channel-pr-147
+  cancel-in-progress: false
+  queue: max
+
+jobs:
+  append-codex-response:
+    if: >-
+      ${{
+        github.event.issue.number == 147 &&
+        github.event.issue.pull_request &&
+        github.event.issue.state == 'open' &&
+        github.event.comment.user.login == 'chatgpt-codex-connector[bot]'
+      }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: chatgpt/ui-ux-product-pass
+          fetch-depth: 0
+
+      - name: Append Codex response to the shared communication file
+        env:
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          COMMENT_CREATED_AT: ${{ github.event.comment.created_at }}
+          COMMENT_ID: ${{ github.event.comment.id }}
+          COMMENT_URL: ${{ github.event.comment.html_url }}
+        run: |
+          set -euo pipefail
+
+          branch="chatgpt/ui-ux-product-pass"
+          file=".github/ui-ux-service-channel.md"
+          marker="<!-- codex-service-channel-comment:${COMMENT_ID} -->"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          for attempt in 1 2 3; do
+            git fetch origin "refs/heads/${branch}:refs/remotes/origin/${branch}"
+            git reset --hard "refs/remotes/origin/${branch}"
+
+            if grep -Fqx "${marker}" "${file}"; then
+              echo "Codex comment ${COMMENT_ID} is already recorded."
+              exit 0
+            fi
+
+            {
+              printf '\n\n---\n\n'
+              printf '%s\n' "${marker}"
+              printf '## Codex GitHub response — comment %s\n\n' "${COMMENT_ID}"
+              printf '_Source: %s · %s_\n\n' "${COMMENT_URL}" "${COMMENT_CREATED_AT}"
+              printf '%s\n' "${COMMENT_BODY}"
+            } >> "${file}"
+
+            git add -- "${file}"
+            git commit -m "Record Codex service response ${COMMENT_ID} [skip ci]"
+
+            if git push origin "HEAD:refs/heads/${branch}"; then
+              exit 0
+            fi
+
+            echo "Service branch changed during attempt ${attempt}; refreshing and retrying."
+            sleep 1
+          done
+
+          echo "Failed to persist Codex comment ${COMMENT_ID} after bounded retries." >&2
+          exit 1
