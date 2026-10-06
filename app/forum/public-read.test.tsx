@@ -687,7 +687,17 @@ describe("forum read states", () => {
   });
 
   it("shows public solved state, highlights the answer, and links to its stable post anchor", async () => {
-    const solvedTopic = { ...topic, isSolved: true, bestAnswerPostId: "answer" };
+    const seed = topic.posts[0]!;
+    const question = {
+      ...seed,
+      id: "question",
+      authorId: "ada",
+      authorName: "Ada",
+      createdAt: new Date("2026-01-01"),
+      body: { id: "post-q", originalContent: "Question.", sourceLocale: "en" },
+    };
+    const answer = { ...seed, id: "answer", createdAt: new Date("2026-01-02") };
+    const solvedTopic = { ...topic, isSolved: true, bestAnswerPostId: "answer", posts: [question, answer] };
     renderRoute(TopicRoute, topicRenderData(solvedTopic), "/en/topics/typed-api", "en", "ltr");
     expect(await screen.findByText("Solved")).toBeInTheDocument();
     expect(screen.getByText("Best answer").closest("li")).toHaveAttribute("id", "post-answer");
@@ -755,18 +765,29 @@ describe("forum read states", () => {
   });
 
   it("keeps message metadata in the author column while body and solution controls stay in post content", async () => {
+    const seed = topic.posts[0]!;
+    const question = {
+      ...seed,
+      id: "question",
+      authorId: "ada",
+      authorName: "Ada",
+      createdAt: new Date("2026-01-01"),
+      body: { id: "post-q", originalContent: "Question.", sourceLocale: "en" },
+    };
+    const answer = { ...seed, id: "answer", createdAt: new Date("2026-01-02") };
     const followup = {
-      ...topic.posts[0]!,
+      ...seed,
       id: "followup",
       authorId: "sam",
       authorName: "Sam",
+      createdAt: new Date("2026-01-03"),
       body: { id: "post-r2", originalContent: "Follow-up explanation.", sourceLocale: "en" },
     };
     const solvedTopic = {
       ...topic,
       isSolved: true,
       bestAnswerPostId: "answer",
-      posts: [topic.posts[0]!, followup],
+      posts: [question, answer, followup],
     };
 
     renderRoute(
@@ -810,14 +831,26 @@ describe("forum read states", () => {
   });
 
   it("shows solution controls only to the topic author behind progressive disclosure", async () => {
-    const unsolved = topicRenderData(topic, { canReply: true, canManageSolution: true, isTopicAuthor: true });
+    const seed = topic.posts[0]!;
+    const question = {
+      ...seed,
+      id: "question",
+      authorId: "ada",
+      authorName: "Ada",
+      createdAt: new Date("2026-01-01"),
+      body: { id: "post-q", originalContent: "Question.", sourceLocale: "en" },
+    };
+    const reply = { ...seed, id: "answer", createdAt: new Date("2026-01-02") };
+    const unsolvedTopic = { ...topic, posts: [question, reply] };
+    const unsolved = topicRenderData(unsolvedTopic, { canReply: true, canManageSolution: true, isTopicAuthor: true });
     const authorView = renderRoute(TopicRoute, unsolved, "/en/topics/typed-api", "en", "ltr");
     const topicTools = await screen.findByText("Topic tools");
     const topicToolsDetails = topicTools.closest("details");
     expect(topicToolsDetails).not.toBeNull();
     expect(topicToolsDetails).not.toHaveAttribute("open");
     expect(screen.getByRole("button", { name: "Mark as solved" }).closest("details")).toBe(topicToolsDetails);
-    expect(screen.getByRole("button", { name: "Select as best answer" })).toBeInTheDocument();
+    expect(within(document.querySelector("#post-question") as HTMLElement).queryByRole("button", { name: "Select as best answer" })).not.toBeInTheDocument();
+    expect(within(document.querySelector("#post-answer") as HTMLElement).getByRole("button", { name: "Select as best answer" })).toBeInTheDocument();
     authorView.unmount();
 
     renderRoute(TopicRoute, { ...unsolved, canManageSolution: false }, "/en/topics/typed-api", "en", "ltr");
@@ -826,7 +859,17 @@ describe("forum read states", () => {
   });
 
   it("keeps a selected best answer on an unsolved topic and asks only the topic author whether the problem is solved", async () => {
-    const unsolvedWithBest = { ...topic, isSolved: false, bestAnswerPostId: "answer" };
+    const seed = topic.posts[0]!;
+    const question = {
+      ...seed,
+      id: "question",
+      authorId: "ada",
+      authorName: "Ada",
+      createdAt: new Date("2026-01-01"),
+      body: { id: "post-q", originalContent: "Question.", sourceLocale: "en" },
+    };
+    const answer = { ...seed, id: "answer", createdAt: new Date("2026-01-02") };
+    const unsolvedWithBest = { ...topic, isSolved: false, bestAnswerPostId: "answer", posts: [question, answer] };
     const authorView = renderRoute(
       TopicRoute,
       topicRenderData(unsolvedWithBest, { canManageSolution: true, isTopicAuthor: true }),

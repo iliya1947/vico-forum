@@ -1565,7 +1565,7 @@ export function TopicView({
               const generationUnit = generationByContentId.get(post.id);
               const canCorrectPostSourceLocale = correctablePosts.has(post.id);
               const canSelectBestAnswer =
-                canManageSolution && topic.bestAnswerPostId !== post.id;
+                canManageSolution && !isOriginalQuestion && topic.bestAnswerPostId !== post.id;
               const hasMessageTools = canCorrectPostSourceLocale || canSelectBestAnswer;
               const messageLinkState =
                 messageLinkFeedback?.postId === post.id ? messageLinkFeedback.state : null;

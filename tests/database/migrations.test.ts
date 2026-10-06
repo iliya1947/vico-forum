@@ -844,9 +844,11 @@ describe("PostgreSQL 17 locale migrations", () => {
       expect(solvedCouplingConstraint.rows).toHaveLength(0);
 
       await forum.createTopic({ id: "solution-topic", sectionId: "typescript", authorId: "solution-author", titleRevision: { id: "solution-title", originalContent: "Solution", sourceLocale: "en" } });
+      await forum.createPost({ id: "solution-question", topicId: "solution-topic", authorId: "solution-author", bodyRevision: { id: "solution-question-body", originalContent: "Question", sourceLocale: "en" } });
       await forum.createPost({ id: "solution-post-1", topicId: "solution-topic", authorId: "solution-other", bodyRevision: { id: "solution-body-1", originalContent: "One", sourceLocale: "en" } });
       await forum.createPost({ id: "solution-post-2", topicId: "solution-topic", authorId: "solution-other", bodyRevision: { id: "solution-body-2", originalContent: "Two", sourceLocale: "en" } });
 
+      await expect(forum.selectBestAnswer("solution-topic", "solution-question", "solution-author")).rejects.toBeInstanceOf(ForumStateConflictError);
       expect(await forum.selectBestAnswer("solution-topic", "solution-post-1", "solution-author")).toEqual({
         topicAuthorId: "solution-author",
         isSolved: false,
