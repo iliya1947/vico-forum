@@ -335,6 +335,8 @@ describe.each([
     const topicData = await topicLoader({ params: { locale, topicId: topic.id }, context: requestContext });
 
     expect(home.categories).toHaveLength(1);
+    expect(categoryData.kind).toBe("category");
+    if (categoryData.kind !== "category") throw new Error("expected regular category page");
     expect(categoryData.category.sections).toHaveLength(1);
     expect(sectionData.section.topics).toHaveLength(1);
     expect(topicData.topic.posts[0]?.body.originalContent).toBe("Start with an explicit response type.");

@@ -68,6 +68,7 @@ export function createHyperdriveForumReader(
     readReplyNotifications: (userId, limit) => read((repository) => repository.readReplyNotifications(userId, limit)),
     countUnreadReplyNotifications: (userId) => read((repository) => repository.countUnreadReplyNotifications(userId)),
     readTopicPinState: (topicId) => read((repository) => repository.readTopicPinState(topicId)),
+    readHelpSolutionsAll: () => read((repository) => repository.readHelpSolutionsAll()),
     readCategory: (id, pinnedTopicsPerSection) => read((repository) => repository.readCategory(id, pinnedTopicsPerSection)),
     readSection: (id) => read((repository) => repository.readSection(id)),
     readTopicPage: (id) => read((repository) => repository.readTopicPage(id)),
