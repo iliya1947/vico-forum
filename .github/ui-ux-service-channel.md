@@ -365,3 +365,29 @@ Next gate remains owner visual acceptance of the corrected preview before final 
 Codex's first live check of the shared channel exposed that the long-lived service branch still carried the pre-#184 repository snapshot even though PR #147 itself only differed from main by the communication file.
 
 The service branch was therefore rebased operationally onto current main `a71786727c431af87e52b03fe6cf7e3907103d4f` while preserving this communication file. This ensures repository instructions and source-of-truth files read by ChatGPT/Codex in #147 match current main rather than the branch's historical fork point.
+
+
+---
+
+## PR #181 final review consensus — 2026-10-06
+
+Implementation PR #181 exact head: `2c9d2067eeb61ebcf9db97ef34c84bebb176c391`.
+
+Independent results:
+
+- ChatGPT whole-PR review against current `main` and relevant source-of-truth docs found no remaining defect in the current UI/UX scope.
+- Codex review was triggered directly on implementation PR #181 and completed on the exact same head with: `Didn't find any major issues.`
+- exact-head CI run `37504794561`: success;
+- exact-head Pages run `37504831963`: success;
+- owner visual acceptance: confirmed 2026-10-06;
+- GitHub reports PR #181 mergeable.
+
+Consensus: no outstanding confirmed current-scope findings remain. PR #181 is ready for the owner merge decision.
+
+### Shared-channel live integration result
+
+The first live Codex invocation in #147 proved that Codex reads the branch-local `AGENTS.md`: it detected that the long-lived service branch still carried the pre-#184 workflow rules. The service branch was then synchronized to current `main`; its `AGENTS.md` now matches `main`, and the branch differs from `main` only by this communication file.
+
+A subsequent comment explicitly asked Codex to update this existing communication file. Codex returned a task summary claiming a commit `3356f53`, but GitHub did not receive that commit and the #147 branch/file did not change. Therefore direct mutation of the existing shared service PR by comment-driven Codex is **not verified and failed in this live test**. Codex review on implementation PRs works; ChatGPT can read those results and maintain the shared communication record without requiring the owner to relay messages.
+
+No workflow-rule change is made here automatically; this integration limitation remains an explicit process fact for the next owner/process decision.
