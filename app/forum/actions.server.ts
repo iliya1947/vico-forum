@@ -165,7 +165,7 @@ export async function topicAction({ request, params, context }: {
     return runForumMutation(request, context, async (writer, actorId) => {
       await writer.selectBestAnswer({ topicId, postId, actorId, scope: authorization.scope });
       const solutionPrompt = new URLSearchParams({ solutionPrompt: postId });
-      return redirect(`${forumTopicPath(locale, topicId)}?${solutionPrompt.toString()}#post-${encodeURIComponent(postId)}`);
+      return redirect(`${forumTopicPath(locale, topicId)}?${solutionPrompt.toString()}#solution-confirmation`);
     });
   }
   if (intent === "correctTitleSourceLocale") {

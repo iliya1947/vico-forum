@@ -830,13 +830,13 @@ describe("forum read states", () => {
     const authorView = renderRoute(
       TopicRoute,
       topicRenderData(unsolvedWithBest, { canManageSolution: true, isTopicAuthor: true }),
-      "/en/topics/typed-api?solutionPrompt=answer#post-answer",
+      "/en/topics/typed-api?solutionPrompt=answer#solution-confirmation",
       "en",
       "ltr",
     );
 
     expect(await screen.findByText("Best answer")).toBeInTheDocument();
-    expect(screen.getByText("Problem solved?")).toBeInTheDocument();
+    expect(screen.getByText("Problem solved?").closest("section")).toHaveAttribute("id", "solution-confirmation");
     expect(screen.getByRole("button", { name: "Yes, mark as solved" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "No, keep it unsolved" }))
       .toHaveAttribute("href", "/en/topics/typed%2Fapi#post-answer");
@@ -845,7 +845,7 @@ describe("forum read states", () => {
     renderRoute(
       TopicRoute,
       topicRenderData(unsolvedWithBest, { canManageSolution: true, isTopicAuthor: false }),
-      "/en/topics/typed-api?solutionPrompt=answer#post-answer",
+      "/en/topics/typed-api?solutionPrompt=answer#solution-confirmation",
       "en",
       "ltr",
     );

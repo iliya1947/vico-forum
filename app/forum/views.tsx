@@ -1535,7 +1535,7 @@ export function TopicView({
         {forumWriteError && <p className="topic-page-alert" role="alert">{t(`forumWriteError_${forumWriteError}`)}</p>}
 
         {promptedBestAnswerPostId && (
-          <section className="solution-confirmation" aria-label={t("problemSolvedPrompt")}>
+          <section id="solution-confirmation" className="solution-confirmation" aria-label={t("problemSolvedPrompt")}>
             <strong>{t("problemSolvedPrompt")}</strong>
             <div className="solution-confirmation-actions">
               <Form method="post" className="solution-form">

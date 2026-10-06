@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema": "public",
-  "targetMigration": "0025_forum_topic_pins",
+  "targetMigration": "0026_best_answer_independent_from_solved",
   "tables": {
     "account": {
       "columns": [

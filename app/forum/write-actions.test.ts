@@ -335,7 +335,7 @@ describe("forum write route actions", () => {
     });
     expect(anyWriter.selectBestAnswer).toHaveBeenCalledWith({ topicId: "topic-1", postId: "post-2", actorId: "session-user", scope: "any" });
     if (!(selected instanceof Response)) throw new Error("expected redirect");
-    expect(selected.headers.get("Location")).toBe("/en/topics/topic-1?solutionPrompt=post-2#post-post-2");
+    expect(selected.headers.get("Location")).toBe("/en/topics/topic-1?solutionPrompt=post-2#solution-confirmation");
   });
 
   it("denies solution mutations when no solution permission is effective", async () => {
