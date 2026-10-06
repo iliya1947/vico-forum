@@ -10,11 +10,16 @@ import {
 import { PERMISSION_CATALOG, type PermissionKey } from "../authorization/catalog";
 import { AuthorizationAdminView } from "../authorization/admin-view";
 import type { ForumPopularPage } from "../../db/forum-repository";
+import {
+  HELP_SOLUTIONS_CATEGORY_ID,
+  HELP_SOLUTIONS_SERVICE_SECTION_ID,
+} from "../../db/forum-repository";
 import type { HomepageCategoryOverview } from "../forum/homepage";
 import { UnderDevelopmentView } from "../forum/under-development-view";
 import { ForumRouteError } from "../forum/ui";
 import {
   CategoryView,
+  HelpSolutionsView,
   HomeView,
   NotificationsView,
   PopularView,
@@ -79,6 +84,7 @@ export const scenarios: readonly Scenario[] = [
   { id: "unread-user", label: "Unread", locale: "en", direction: "ltr", identity: "user", path: "/en/unread", view: "unread", allowedIdentities: ["user", "manager"] },
   { id: "tags-guest", label: "Tags", locale: "en", direction: "ltr", identity: "guest", path: "/en/tags", view: "tags" },
   { id: "tag-typescript-guest", label: "Tag · TypeScript", locale: "en", direction: "ltr", identity: "guest", path: "/en/tags/typescript", view: "tag" },
+  { id: "help-solutions-all", label: "Help & solutions · All", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions", view: "category" },
   { id: "category-guest", label: "Category", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/development", view: "category" },
   { id: "category-no-pins", label: "Category · no pins", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/development", view: "category", variant: "category-no-pins" },
   { id: "section-user", label: "Section", locale: "en", direction: "ltr", identity: "user", path: "/en/sections/typescript", view: "section" },
@@ -432,8 +438,8 @@ function homepageCategories(locale: PreviewLocale): HomepageCategoryOverview[] {
         ];
   const icons = ["help", "ai", "code", "deploy", "projects", "community"];
   const ids = ["help-solutions", "vibe-ai-tools", "development", "deploy-infrastructure", "projects-reviews", "community"];
-  const topicTotals = [0, 64, 10, 43, 27, 31];
-  const messageTotals = [0, 387, 76, 296, 148, 203];
+  const topicTotals = [8, 64, 10, 43, 27, 31];
+  const messageTotals = [27, 387, 76, 296, 148, 203];
   const genericSectionNames = rtl
     ? ["כללי", "שאלות", "פרקטיקה", "כלים", "דיונים"]
     : russian
@@ -467,13 +473,63 @@ function homepageCategories(locale: PreviewLocale): HomepageCategoryOverview[] {
       description: descriptions[index]!,
       icon: icons[index]!,
       sectionCount: sections.length,
-      topicCount: sections.reduce((sum, section) => sum + section.topicCount, 0),
-      messageCount: sections.reduce((sum, section) => sum + section.messageCount, 0),
+      topicCount: id === HELP_SOLUTIONS_CATEGORY_ID
+        ? topicTotals[index]!
+        : sections.reduce((sum, section) => sum + section.topicCount, 0),
+      messageCount: id === HELP_SOLUTIONS_CATEGORY_ID
+        ? messageTotals[index]!
+        : sections.reduce((sum, section) => sum + section.messageCount, 0),
       sections,
     };
   });
 }
 
+function previewHelpSolutions(locale: PreviewLocale) {
+  const russian = locale === "ru";
+  const hebrew = locale === "he";
+  const titles = hebrew
+    ? [
+        "למה ה-Worker מאבד את ה-session אחרי redirect?",
+        "נבחרה תשובה מיטבית, אבל האימות עדיין לא יציב",
+        "איך מתקנים statement timeout ב-PostgreSQL?",
+      ]
+    : russian
+      ? [
+          "Почему Worker теряет сессию после redirect?",
+          "Лучший ответ выбран, но авторизация всё ещё нестабильна",
+          "Как исправить statement timeout в PostgreSQL?",
+        ]
+      : [
+          "Why does my Worker lose the session after redirect?",
+          "Best answer selected, but auth is still intermittent",
+          "How do I fix PostgreSQL statement timeouts?",
+        ];
+
+  return {
+    id: HELP_SOLUTIONS_CATEGORY_ID,
+    name: hebrew ? "עזרה ופתרונות" : russian ? "Помощь и решения" : "Help & solutions",
+    questions: [
+      {
+        id: "help-worker-session", title: titles[0]!, authorName: "Alex Rivera", answerCount: 0,
+        isSolved: false, hasBestAnswer: false, createdAt: "2026-09-30T11:30:00.000Z",
+        activityAt: "2026-09-30T15:40:00.000Z",
+        tags: [{ key: "cloudflare", name: "Cloudflare" }, { key: "auth", name: "Auth" }],
+      },
+      {
+        id: "help-auth-best-answer", title: titles[1]!, authorName: "Noa Levi", answerCount: 3,
+        isSolved: false, hasBestAnswer: true, createdAt: "2026-09-29T09:00:00.000Z",
+        activityAt: "2026-09-30T14:20:00.000Z",
+        tags: [{ key: "better-auth", name: "Better Auth" }, { key: "workers", name: "Workers" }],
+      },
+      {
+        id: "help-postgres-timeout", title: titles[2]!, authorName: "Maya Cohen", answerCount: 5,
+        isSolved: true, hasBestAnswer: true, createdAt: "2026-09-27T08:00:00.000Z",
+        activityAt: "2026-09-29T18:10:00.000Z",
+        tags: [{ key: "postgresql", name: "PostgreSQL" }, { key: "neon", name: "Neon" }],
+      },
+    ],
+  };
+}
 function popularPeriods(locale: PreviewLocale): ForumPopularPage {
   const rtl = locale === "he";
   const russian = locale === "ru";
@@ -941,6 +997,16 @@ function previewCategory(locale: PreviewLocale, routeCategoryId: string | undefi
 
 function PreviewCategoryRoute({ scenario }: { scenario: Scenario }) {
   const { categoryId: routeCategoryId } = useParams();
+  if (routeCategoryId === HELP_SOLUTIONS_CATEGORY_ID) {
+    return (
+      <HelpSolutionsView
+        locale={scenario.locale}
+        page={previewHelpSolutions(scenario.locale)}
+        referenceTime={previewReferenceTime}
+      />
+    );
+  }
+
   const baseCategoryPage = previewCategory(scenario.locale, routeCategoryId);
   const categoryPage = scenario.variant === "category-no-pins"
     ? {
@@ -1043,6 +1109,78 @@ function PreviewSectionRoute({ scenario }: { scenario: Scenario }) {
 function PreviewTopicRoute({ scenario }: { scenario: Scenario }) {
   const { topicId: routeTopicId } = useParams();
 
+
+  const helpQuestion = previewHelpSolutions(scenario.locale).questions
+    .find((question) => question.id === routeTopicId);
+  if (helpQuestion) {
+    const postCount = helpQuestion.answerCount + 1;
+    const posts = Array.from({ length: postCount }, (_, index) => ({
+      id: `${helpQuestion.id}-post-${index + 1}`,
+      topicId: helpQuestion.id,
+      authorId: index === 0 ? "help-author" : `help-replier-${index}`,
+      authorName: index === 0 ? helpQuestion.authorName : ["Sam Chen", "Maya Cohen", "Noa Levi"][index % 3]!,
+      parentPostId: index === 0 ? null : `${helpQuestion.id}-post-1`,
+      createdAt: new Date(`2026-09-${28 + Math.min(index, 2)}T${10 + index}:00:00Z`),
+      body: {
+        id: `${helpQuestion.id}-body-${index + 1}`,
+        originalContent: index === 0
+          ? scenario.locale === "ru"
+            ? "Представительный технический вопрос из категории «Помощь и решения»."
+            : scenario.locale === "he"
+              ? "שאלה טכנית מייצגת מקטגוריית עזרה ופתרונות."
+              : "Representative technical question from Help & solutions."
+          : scenario.locale === "ru"
+            ? `Представительный ответ №${index}.`
+            : scenario.locale === "he"
+              ? `תשובה מייצגת מספר ${index}.`
+              : `Representative answer #${index}.`,
+        sourceLocale: scenario.locale,
+      },
+    }));
+    const helpTopic = {
+      id: helpQuestion.id,
+      sectionId: HELP_SOLUTIONS_SERVICE_SECTION_ID,
+      authorId: "help-author",
+      authorName: helpQuestion.authorName,
+      createdAt: new Date(helpQuestion.createdAt),
+      isPinned: false,
+      isSolved: helpQuestion.isSolved,
+      bestAnswerPostId: helpQuestion.hasBestAnswer && posts[1] ? posts[1].id : null,
+      title: {
+        id: `${helpQuestion.id}-title`,
+        originalContent: helpQuestion.title,
+        sourceLocale: scenario.locale,
+      },
+      section: {
+        id: HELP_SOLUTIONS_SERVICE_SECTION_ID,
+        name: "Questions",
+        category: { id: HELP_SOLUTIONS_CATEGORY_ID, name: previewHelpSolutions(scenario.locale).name },
+      },
+      tags: helpQuestion.tags,
+      posts,
+    };
+    return (
+      <TopicView
+        locale={scenario.locale}
+        topic={helpTopic}
+        titlePresentation={originalPresentation(
+          "topic-title", helpTopic.id, helpTopic.title.id, helpTopic.title.originalContent,
+          scenario.locale, scenario.direction,
+        )}
+        postPresentations={posts.map((post) => originalPresentation(
+          "post-body", post.id, post.body.id, post.body.originalContent, scenario.locale, scenario.direction,
+        ))}
+        generationUnits={[]}
+        canReply={scenario.identity !== "guest"}
+        canManageSolution={false}
+        isTopicAuthor={false}
+        canCorrectTitleSourceLocale={false}
+        canManagePin={false}
+        correctablePostIds={[]}
+        topicReadState={null}
+      />
+    );
+  }
   if (!routeTopicId || routeTopicId === topicId) {
     const solved = scenario.view === "topic"
       ? scenario.variant !== "topic-unsolved"
