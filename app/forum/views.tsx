@@ -3,6 +3,7 @@ import { Form, Link, useFetcher, useLocation, useNavigation } from "react-router
 import { useTranslation } from "react-i18next";
 
 import type {
+  ForumHelpSolutionsPage,
   ForumPopularPeriod,
   ForumPopularTopicSummary,
   ForumReplyNotificationSummary,
@@ -15,6 +16,10 @@ import type {
   ForumTopicReadState,
   ForumUnansweredTopicSummary,
   ForumUnreadTopicSummary,
+} from "../../db/forum-repository";
+import {
+  HELP_SOLUTIONS_CATEGORY_ID,
+  HELP_SOLUTIONS_SERVICE_SECTION_ID,
 } from "../../db/forum-repository";
 import type { ContentTranslationPresentation } from "../localization/content-translation-presentation";
 import type { ContentGenerationUnitView } from "../localization/content-generation-view";
@@ -980,6 +985,100 @@ function formatCategorySectionActivity(activityAt: string, referenceTime: string
   }
 }
 
+type HelpSolutionsQuestionPresentation = Omit<
+  ForumHelpSolutionsPage["questions"][number],
+  "createdAt" | "activityAt"
+> & {
+  createdAt: string;
+  activityAt: string;
+};
+
+type HelpSolutionsPagePresentation = Omit<ForumHelpSolutionsPage, "questions"> & {
+  questions: readonly HelpSolutionsQuestionPresentation[];
+};
+
+export function HelpSolutionsView({
+  locale,
+  page,
+  referenceTime,
+}: {
+  locale: string;
+  page: HelpSolutionsPagePresentation;
+  referenceTime: string;
+}) {
+  const { t } = useTranslation("common");
+
+  return (
+    <ForumShell locale={locale} variant="category">
+      <div className="help-solutions-page">
+        <Breadcrumbs locale={locale} items={[{ label: t("helpSolutionsHeading") }]} />
+
+        <header className="help-solutions-heading">
+          <div>
+            <p className="eyebrow">{t("categoryLabel")}</p>
+            <h1>{t("helpSolutionsHeading")}</h1>
+            <p>{t("helpSolutionsIntro")}</p>
+          </div>
+        </header>
+
+        <nav className="help-solutions-modes" aria-label={t("helpSolutionsHeading")}>
+          <span className="help-solutions-mode is-active" aria-current="page">
+            {t("helpSolutionsAllMode")}
+          </span>
+        </nav>
+
+        <section className="help-solutions-questions" aria-labelledby="help-solutions-all-heading">
+          <h2 id="help-solutions-all-heading">{t("helpSolutionsAllHeading")}</h2>
+          {page.questions.length === 0 ? (
+            <EmptyState>{t("helpSolutionsEmpty")}</EmptyState>
+          ) : (
+            <ul className="help-question-list">
+              {page.questions.map((question) => (
+                <li key={question.id}>
+                  <Link className="help-question-card" to={forumTopicPath(locale, question.id)}>
+                    <span className="help-question-main">
+                      <span className="help-question-title-row">
+                        <strong dir="auto">{question.title}</strong>
+                        <span className={"help-question-status " + (question.isSolved ? "is-solved" : "is-open")}>
+                          {t(question.isSolved ? "solved" : "helpSolutionsOpen")}
+                        </span>
+                        {question.hasBestAnswer ? (
+                          <span className="help-question-best-answer">{t("bestAnswer")}</span>
+                        ) : null}
+                      </span>
+                      <small>{t("startedBy", { author: question.authorName })}</small>
+                      {question.tags.length > 0 ? (
+                        <span className="topic-tag-list" aria-label={t("topicTagsLabel")}>
+                          {question.tags.map((tag) => (
+                            <span className="topic-tag" key={tag.key}>#{tag.name}</span>
+                          ))}
+                        </span>
+                      ) : null}
+                    </span>
+
+                    <span className="help-question-activity">
+                      {t("helpSolutionsUpdated", {
+                        time: formatCategorySectionActivity(question.activityAt, referenceTime, locale),
+                      })}
+                    </span>
+
+                    <span className="help-question-answer-count">
+                      {t("helpSolutionsAnswerCount", { count: question.answerCount })}
+                    </span>
+
+                    <span className="help-question-enter" aria-hidden="true">
+                      <svg viewBox="0 0 24 24"><path d="m9 5 7 7-7 7" /></svg>
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
+    </ForumShell>
+  );
+}
 export function CategoryView({
   locale,
   category,
@@ -1441,11 +1540,19 @@ export function TopicView({
       units={generationUnits}
     >
       <ForumShell locale={locale} variant="topic">
-        <Breadcrumbs locale={locale} items={[
-          { label: topic.section.category.name, to: forumCategoryPath(locale, topic.section.category.id) },
-          { label: topic.section.name, to: forumSectionPath(locale, topic.section.id) },
-          { label: titlePresentation.content },
-        ]} />
+        <Breadcrumbs
+          locale={locale}
+          items={topic.section.id === HELP_SOLUTIONS_SERVICE_SECTION_ID
+            ? [
+                { label: t("helpSolutionsHeading"), to: forumCategoryPath(locale, HELP_SOLUTIONS_CATEGORY_ID) },
+                { label: titlePresentation.content },
+              ]
+            : [
+                { label: topic.section.category.name, to: forumCategoryPath(locale, topic.section.category.id) },
+                { label: topic.section.name, to: forumSectionPath(locale, topic.section.id) },
+                { label: titlePresentation.content },
+              ]}
+        />
 
         <section className="topic-heading">
           <div className="topic-heading-side">
