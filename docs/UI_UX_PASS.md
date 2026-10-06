@@ -4,9 +4,6 @@
 
 This document is the execution plan for the standalone UI/UX product pass started on
 2026-09-29. Stage 6 external-integration orchestration is paused while this task is active.
-Its service PRs `#121` and `#122` are frozen historical context and are not working channels
-for this pass.
-
 The goal is to make Vico Forum look and behave like the approved target product rather than a
 technical scaffold or a cosmetic layer over the current MVP. Existing domain, authorization,
 localization, translation, security and persistence contracts remain authoritative.
@@ -438,8 +435,6 @@ Remaining work:
 
 - Run the complete automated repository checks.
 - Perform and record the browser matrix below against representative populated data.
-- Review the complete pass independently through the new ChatGPT service channel using the project
-  technical-consensus protocol.
 - Re-run the whole acceptance matrix after confirmed fixes, update `PROJECT_STATE.md` only with
   results actually obtained, and leave Stage 6 infrastructure gates paused until the owner resumes
   them explicitly.
