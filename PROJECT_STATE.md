@@ -31,7 +31,10 @@ Vico Forum находится в ранней pre-release разработке.
   актуальный target-product contract, порядок реализации и обязательная browser acceptance matrix
   зафиксированы в `docs/UI_UX_PASS.md`.
 - Первый bounded UI/UX slice уже merged: deterministic representative baseline, client-safe
-  presentation boundaries и GitHub Pages visual-progress preview. Текущий correction branch
+  presentation boundaries и GitHub Pages visual-progress preview.
+  Preview controller в текущем implementation state отделяет identity от page state: над `State`
+  используются отдельные `Guest / User / Manager` controls, а role-specific варианты не дублируются
+  в названиях State; theme/locale по-прежнему переключаются внутри самого forum UI. Текущий correction branch
   дополнительно cache-bust-ит embedded iframe по hash текущего preview bundle, чтобы новый Pages
   deploy не мог оставить iframe на stale HTML со ссылкой на удалённый hashed asset. Это не
   заменяет будущую real-runtime acceptance.
