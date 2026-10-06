@@ -476,3 +476,26 @@ Codex repeated its whole-PR review on this exact head and reported two current-s
 - Consensus: confirmed; redirect/focus the navigation to the confirmation itself rather than the selected-answer anchor.
 
 ChatGPT will apply only these two confirmed corrections in PR #186, rerun the full repository checks, independently re-review the complete corrected PR, and then request a fresh Codex review on the corrected exact head.
+
+
+---
+
+## PR #186 corrected-head ChatGPT re-review — 2026-10-07
+
+Corrected implementation head: `f07fe277a6b7b494ac0aa9c385fbc80c090f5a35`.
+
+Confirmed findings A/B were fixed without expanding the slice:
+
+- production schema manifest now targets `0026_best_answer_independent_from_solved`;
+- PR CI's schema-manifest parity step now also asserts that manifest target equals the newest Drizzle journal tag;
+- post-selection navigation now targets the rendered `#solution-confirmation` element, so hash scrolling cannot skip the required `Problem solved?` follow-up;
+- focused route/component/preview regression coverage was updated accordingly.
+
+ChatGPT independently re-reviewed the complete PR against the original bounded task, current `main`, and relevant migration/UI contracts. No remaining current-scope defect was found.
+
+Exact-head CI run `37534797078` is fully successful:
+
+- `checks`: accepted-history guard, lint, typecheck, tests, application build, UI preview build, migration metadata and Drizzle schema parity — success;
+- `database`: clean PostgreSQL 17 migrations/constraints, production schema manifest parity including the new journal-target assertion, runtime privilege probes, split-authority/credential probes, Workers build and split-Hyperdrive smoke — success.
+
+Next gate: fresh independent Codex whole-PR review on exact corrected head `f07fe27`, then compare results here before owner merge.
