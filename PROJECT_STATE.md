@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-10-05
+Последнее обновление: 2026-10-06
 
 ## Назначение
 
@@ -30,6 +30,11 @@ Vico Forum находится в ранней pre-release разработке.
 - Отдельная задача **UI/UX product pass** сейчас является активным продуктовым приоритетом;
   актуальный target-product contract, порядок реализации и обязательная browser acceptance matrix
   зафиксированы в `docs/UI_UX_PASS.md`.
+- Для общего служебного PR #147 repository содержит bounded GitHub Actions bridge: только новый
+  комментарий `chatgpt-codex-connector[bot]` в открытом PR #147 может быть append-нут в
+  `.github/ui-ux-service-channel.md` ветки `chatgpt/ui-ux-product-pass`. Workflow использует только
+  repository-scoped `GITHUB_TOKEN` с `contents: write`, не требует PAT/OpenAI API key и помечает
+  записанный GitHub comment ID для idempotent rerun.
 - Первый bounded UI/UX slice уже merged: deterministic representative baseline, client-safe
   presentation boundaries и GitHub Pages visual-progress preview.
   Preview controller в текущем implementation state отделяет identity от page state: над `State`
