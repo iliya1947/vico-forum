@@ -1855,16 +1855,7 @@
           "initiallyDeferred": false
         }
       ],
-      "checks": [
-        {
-          "name": "forum_topics_best_answer_requires_solved_check",
-          "columns": [
-            "best_answer_post_id",
-            "is_solved"
-          ],
-          "definitionSha256": "1fd4d1006d8bd1b81b2a95de4fd83ecec2d23818adddeb5810c4563a0b11b18b"
-        }
-      ],
+      "checks": [],
       "indexes": [
         {
           "name": "forum_topics_author_id_idx",
