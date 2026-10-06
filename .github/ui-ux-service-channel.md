@@ -564,3 +564,26 @@ ChatGPT independently verified it against the corrected implementation and curre
 Classification: real defect of the current PR #186 slice, not future-only groundwork.
 
 Consensus: confirmed. The original question must be excluded in the UI and rejected at the mutation/domain boundary, with regression coverage.
+
+
+---
+
+## PR #186 finding D corrected — ChatGPT re-review — 2026-10-07
+
+Corrected implementation head: `844f0f0fc5bb13c28b69f746a12a7fa465bbe1ea`.
+
+Confirmed finding D is fixed without a schema change:
+
+- `TopicView` no longer offers `Select as best answer` on the original question;
+- repository mutation validation identifies the original question by the same deterministic `(createdAt, id)` ordering used by `readTopicPage()` and rejects selecting it;
+- PostgreSQL coverage now has an explicit original-question post and asserts that selecting it fails while selecting later replies still works;
+- public-read fixtures that model best answers now keep the original question and answer as distinct posts.
+
+ChatGPT re-reviewed the complete PR after this correction and found no remaining current-scope defect.
+
+Exact-head CI run `37537442182` completed successfully:
+
+- `checks`: accepted migration history, lint, typecheck, tests, application build, UI preview build, migration metadata and Drizzle schema parity — success;
+- `database`: clean PostgreSQL 17 migrations/constraints, production schema manifest parity, runtime privilege probes, split-authority and credential probes, Workers build and split-Hyperdrive smoke — success.
+
+Next gate: fresh independent Codex whole-PR review on exact head `844f0f0`. No implementation change should be made while that review is running.
