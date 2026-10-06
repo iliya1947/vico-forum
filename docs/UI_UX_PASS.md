@@ -435,7 +435,6 @@ Remaining work:
 
 - Run the complete automated repository checks.
 - Perform and record the browser matrix below against representative populated data.
-- Complete independent technical review according to `AGENTS.md`.
 - Re-run the whole acceptance matrix after confirmed fixes, update `PROJECT_STATE.md` only with
   results actually obtained, and leave Stage 6 infrastructure gates paused until the owner resumes
   them explicitly.
