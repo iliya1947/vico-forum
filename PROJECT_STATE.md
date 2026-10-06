@@ -48,8 +48,8 @@ Vico Forum находится в ранней pre-release разработке.
   category reader — bounded latest-topic activity по каждому section. Текущий PR #181 добавляет к
   этому же category-reader boundary persisted pins, bounded DB-side rank/limit по section и
   pin/unpin management; online-presence capability по-прежнему не имитируется real data. Exact-head
-  CI/Pages и owner visual acceptance PR #181 ещё не зафиксированы. Это не означает финальную
-  browser/real-runtime acceptance всего UI/UX pass.
+  CI/Pages проходят, а owner visual acceptance PR #181 подтверждён 2026-10-06. Это не означает
+  финальную browser/real-runtime acceptance всего UI/UX pass.
 - Homepage correction slice прошёл owner visual acceptance в GitHub Pages. Приняты текущая
   композиция homepage, icon-led discovery navigation `Unanswered · Tags · Popular` и
   authenticated-only `Unread` без дублирующего `Home`, orange labels/icons и понятный
@@ -101,8 +101,8 @@ Vico Forum находится в ранней pre-release разработке.
   server-side effective-permission проверкой. Category reader выдаёт bounded deterministic pins
   по section в порядке `pinnedAt DESC, topicId DESC`; Home остаётся category → section map.
   Section/topic presentation показывает persisted pin state, а пустой category-page Pinned block
-  становится truthful non-link state. External migration/Stage 6 rollout, exact-head CI/Pages и
-  owner visual acceptance этого slice ещё не заявлены.
+  становится truthful non-link state. Exact-head CI/Pages и owner visual acceptance подтверждены
+  2026-10-06; External migration/Stage 6 rollout не выполнялись.
 - In-app reply notifications slice реализован в PR #180:
   forward migration `0024_forum_reply_notifications` хранит только stable recipient/actor/topic/post
   references, `createdAt` и nullable `readAt`; unique recipient + reply identity предотвращает
@@ -123,7 +123,7 @@ Vico Forum находится в ранней pre-release разработке.
   `Pinned / Latest topics / statistics / entry`; bounded latest-topic data читается реально по
   каждому section, а текущий PR #181 подключает к той же section-card surface persisted pins.
   Homepage остаётся прямым category → section map. Owner visual acceptance hierarchy correction
-  подтверждён 2026-10-05; acceptance persisted-pinning slice ещё не заявлена.
+  подтверждён 2026-10-05; persisted-pinning slice owner visual acceptance подтверждён 2026-10-06.
 - Section-page discovery slice в PR #160 прошёл owner visual acceptance в GitHub Pages:
   approved header/logo/discovery nav переиспользованы без backend/DB изменений; heading показывает
   только derived topic/message totals, topic rows стали full-card links с реальными author/message
