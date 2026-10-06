@@ -177,8 +177,9 @@ composition:
     page. Each category page presents its sections using section identity/description, `Pinned`,
     `Latest topics`, section statistics and the dedicated section-entry action.
 11. Category-page `Latest topics` uses real per-section topic activity from the forum reader.
-    Pinning remains an approved target but, until persisted pinning exists, runtime presentation
-    uses the shared truthful `Under development` path rather than fake pinned data.
+    The persisted-pinning slice adds bounded deterministic real pins through the same category
+    reader boundary; a section with no pins shows a truthful non-link empty state rather than
+    fake data or an `Under development` destination.
 12. The rich category-page section card keeps the existing expand/disclosure behavior: desktop can
     reveal additional pinned/latest entries in place, while narrow mobile collapses the secondary
     `Pinned`, `Latest topics` and statistics group behind the same control. The discussion
@@ -236,8 +237,9 @@ accepted the corrected homepage visual result on 2026-10-01. This acceptance is 
 slice only and does not replace the final real-runtime/browser acceptance matrix for the full pass.
 
 - Real application homepage category/section structure and aggregate counts come from the forum
-  reader. Per-section latest-topic data is now consumed by category pages; unavailable pinning and
-  online-presence capabilities are not represented as fake runtime data.
+  reader. Per-section latest-topic data is consumed by category pages; PR #181 adds repository-backed
+  per-section pinned topics to the same category-page presentation while online-presence remains
+  unavailable and is not represented as fake runtime data.
 - The Pages fixture carries representative target-only data, including the approved six-category
   order, homepage section rows and category-page pinned/latest presentation, so visual work can be
   reviewed without inventing production persistence.
@@ -264,8 +266,8 @@ composition without changing the forum hierarchy or schema:
 - the homepage now exposes categories with direct real section rows and aggregate counts instead of
   rendering pinned/latest topic columns at category level;
 - the richer section-card composition moves to category pages, where real per-section latest-topic
-  activity is loaded through the forum reader while unavailable pinning remains truthful
-  pre-release `Under development` behavior;
+  activity is loaded through the forum reader; the follow-up persisted-pinning slice connects
+  bounded real pins to that same section-card surface without restoring topic blocks on Home;
 - `Help & solutions` is the first approved homepage category in the representative Pages map and
   may remain without fabricated sections until its internal structure is defined;
 - owner visual acceptance of the implementation was confirmed on 2026-10-05; exact-head

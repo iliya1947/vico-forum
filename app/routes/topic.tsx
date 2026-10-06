@@ -62,7 +62,7 @@ export async function loader({ params, context }: {
   const postPresentations = presentations.slice(1);
 
   const session = authSessionForRequest(context);
-  let canReply = false, canManageSolution = false, canCorrectTitleSourceLocale = false;
+  let canReply = false, canManageSolution = false, canCorrectTitleSourceLocale = false, canManagePin = false;
   let canGenerateTranslations = false;
   let correctablePostIds: string[] = [];
   let topicReadState: ForumTopicReadState | null = null;
@@ -75,18 +75,20 @@ export async function loader({ params, context }: {
 
     try {
       const resolver = authorizationForRequest(context).forUser(session.user.id);
-      const [reply, solutionAny, solutionOwn, sourceAny, sourceOwn, generate] = await Promise.all([
+      const [reply, solutionAny, solutionOwn, sourceAny, sourceOwn, generate, pin] = await Promise.all([
         resolver.has("forum.reply.create"),
         resolver.has("forum.solution.manageAny"),
         resolver.has("forum.solution.manageOwn"),
         resolver.has("forum.sourceLocale.correctAny"),
         resolver.has("forum.sourceLocale.correctOwn"),
         resolver.has("forum.translation.generate"),
+        resolver.has("forum.topic.pin"),
       ]);
       canReply = reply;
       canManageSolution = solutionAny || (solutionOwn && session.user.id === topic.authorId);
       canCorrectTitleSourceLocale = sourceAny || (sourceOwn && session.user.id === topic.authorId);
       canGenerateTranslations = generate && contentGenerationActionForRequest(context).enabled;
+      canManagePin = pin;
       correctablePostIds = sourceAny
         ? topic.posts.map((post) => post.id)
         : sourceOwn
@@ -129,6 +131,7 @@ export async function loader({ params, context }: {
     canReply,
     canManageSolution,
     canCorrectTitleSourceLocale,
+    canManagePin,
     correctablePostIds,
     topicReadState,
   };

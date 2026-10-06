@@ -34,6 +34,7 @@ Permission key означает существующую capability прилож
 
 - `forum.topic.create`;
 - `forum.reply.create`;
+- `forum.topic.pin`;
 - `forum.solution.manageOwn`;
 - `forum.solution.manageAny`;
 - `forum.sourceLocale.correctOwn`;
@@ -49,7 +50,9 @@ actor должен быть author target topic. `forum.sourceLocale.correctOwn`
 исправление source-locale metadata только для topic title/post body, чей authoritative author
 совпадает с actor; `forum.sourceLocale.correctAny` снимает только это resource ownership
 ограничение и не даёт general edit rights. Client-provided `authorId`, role или permission не
-являются authorization evidence.
+являются authorization evidence. `forum.topic.pin` — отдельная capability без ownership-исключения:
+авторство темы само по себе не даёт права закреплять или откреплять её; каждый mutation повторно
+проверяет effective permission server-side.
 
 ## Initial role defaults
 
@@ -68,6 +71,7 @@ actor должен быть author target topic. `forum.sourceLocale.correctOwn`
 
 - `forum.topic.create`;
 - `forum.reply.create`;
+- `forum.topic.pin`;
 - `forum.solution.manageOwn`;
 - `forum.solution.manageAny`;
 - `forum.sourceLocale.correctOwn`;
@@ -78,6 +82,7 @@ actor должен быть author target topic. `forum.sourceLocale.correctOwn`
 
 - `forum.topic.create`;
 - `forum.reply.create`;
+- `forum.topic.pin`;
 - `forum.solution.manageOwn`;
 - `forum.solution.manageAny`;
 - `forum.sourceLocale.correctOwn`;

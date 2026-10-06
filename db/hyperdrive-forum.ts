@@ -22,6 +22,8 @@ export interface ForumWriter {
   correctPostBodySourceLocale(input: { topicId: string; postId: string; expectedRevisionId: string; sourceLocale: string; actorId: string; scope: SourceLocaleCorrectionScope }): Promise<void>;
   advanceTopicReadState(input: { userId: string; topicId: string; postId: string }): Promise<void>;
   markReplyNotificationRead(input: { userId: string; notificationId: string }): Promise<{ topicId: string; postId: string }>;
+  pinTopic(input: { topicId: string; actorId: string }): Promise<void>;
+  unpinTopic(input: { topicId: string; actorId: string }): Promise<void>;
 }
 
 export class ForumStorageUnavailableError extends Error {
@@ -65,7 +67,8 @@ export function createHyperdriveForumReader(
     readTopicReadState: (userId, topicId) => read((repository) => repository.readTopicReadState(userId, topicId)),
     readReplyNotifications: (userId, limit) => read((repository) => repository.readReplyNotifications(userId, limit)),
     countUnreadReplyNotifications: (userId) => read((repository) => repository.countUnreadReplyNotifications(userId)),
-    readCategory: (id) => read((repository) => repository.readCategory(id)),
+    readTopicPinState: (topicId) => read((repository) => repository.readTopicPinState(topicId)),
+    readCategory: (id, pinnedTopicsPerSection) => read((repository) => repository.readCategory(id, pinnedTopicsPerSection)),
     readSection: (id) => read((repository) => repository.readSection(id)),
     readTopicPage: (id) => read((repository) => repository.readTopicPage(id)),
   };
@@ -134,6 +137,12 @@ export function createHyperdriveForumWriter(
     markReplyNotificationRead: ({ userId, notificationId }) => writeCorrection(
       (forum) => forum.markReplyNotificationRead(userId, notificationId),
     ),
+    pinTopic: ({ topicId, actorId }) => writeCorrection(async (forum) => {
+      await forum.pinTopic(topicId, actorId);
+    }),
+    unpinTopic: ({ topicId, actorId }) => writeCorrection(async (forum) => {
+      await forum.unpinTopic(topicId, actorId);
+    }),
   };
 }
 

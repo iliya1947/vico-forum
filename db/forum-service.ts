@@ -187,6 +187,21 @@ export class ForumService {
     return this.repository.markReplyNotificationRead(userId, notificationId);
   }
 
+  readTopicPinState(topicId: string) {
+    requireText(topicId, "topic id");
+    return this.repository.readTopicPinState(topicId);
+  }
+
+  pinTopic(topicId: string, actorId: string) {
+    validateEntity(topicId, actorId);
+    return this.repository.pinTopic(topicId, actorId);
+  }
+
+  unpinTopic(topicId: string, actorId: string) {
+    validateEntity(topicId, actorId);
+    return this.repository.unpinTopic(topicId);
+  }
+
   readTopic(id: string) { return this.repository.readTopic(id); }
   readPost(id: string) { return this.repository.readPost(id); }
   readHierarchy(categoryId: string) { return this.repository.readHierarchy(categoryId); }

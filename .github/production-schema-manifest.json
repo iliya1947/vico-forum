@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema": "public",
-  "targetMigration": "0024_forum_reply_notifications",
+  "targetMigration": "0025_forum_topic_pins",
   "tables": {
     "account": {
       "columns": [
@@ -186,7 +186,7 @@
           "columns": [
             "key"
           ],
-          "definitionSha256": "ed2d102c0b0d06a07d296a4d9ba0e5173bc9c581bc6f5ecc23e2f6958055fcf8"
+          "definitionSha256": "bde8d2d8b56827460aaae2f1997f739d954bbadb02de8d15b2b5ece0f3bcebcc"
         }
       ],
       "indexes": []
@@ -3545,6 +3545,87 @@
             },
             {
               "name": "read_at",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ]
+        }
+      ]
+    },
+    "forum_topic_pins": {
+      "columns": [
+        {
+          "name": "topic_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "pinned_by_user_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "pinned_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "defaultSha256": "28a4dae0461e17af56e979c2095abfbe0bfc45fe9ca8abf3144338a518a1bb8f"
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "forum_topic_pins_pkey",
+          "columns": [
+            "topic_id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [
+        {
+          "name": "forum_topic_pins_pinned_by_user_id_user_id_fk",
+          "columns": [
+            "pinned_by_user_id"
+          ],
+          "referencedTable": "user",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        },
+        {
+          "name": "forum_topic_pins_topic_id_forum_topics_id_fk",
+          "columns": [
+            "topic_id"
+          ],
+          "referencedTable": "forum_topics",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        }
+      ],
+      "checks": [],
+      "indexes": [
+        {
+          "name": "forum_topic_pins_order_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "pinned_at",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "topic_id",
               "order": "asc",
               "nulls": "last"
             }
