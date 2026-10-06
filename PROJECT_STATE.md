@@ -115,8 +115,9 @@ Vico Forum находится в ранней pre-release разработке.
   deferred best-answer FK. Best answer теперь можно выбрать у нерешённой темы; после выбора
   автор собственной нерешённой темы получает отдельное подтверждение `Problem solved?`,
   где подтверждение использует существующий protected `markSolved`, а отказ оставляет
-  выбранный best answer без изменения solved state. External migration/Stage 6 rollout не
-  выполнялся.
+  выбранный best answer без изменения solved state. Full repository CI, clean PostgreSQL 17,
+  schema/manifest parity, runtime privilege probes, Workers smoke и UI preview build проходят на
+  exact implementation head; external migration/Stage 6 rollout не выполнялся.
 - In-app reply notifications slice реализован в PR #180:
   forward migration `0024_forum_reply_notifications` хранит только stable recipient/actor/topic/post
   references, `createdAt` и nullable `readAt`; unique recipient + reply identity предотвращает
