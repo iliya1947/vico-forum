@@ -499,3 +499,23 @@ Exact-head CI run `37534797078` is fully successful:
 - `database`: clean PostgreSQL 17 migrations/constraints, production schema manifest parity including the new journal-target assertion, runtime privilege probes, split-authority/credential probes, Workers build and split-Hyperdrive smoke — success.
 
 Next gate: fresh independent Codex whole-PR review on exact corrected head `f07fe27`, then compare results here before owner merge.
+
+
+---
+
+## PR #186 fresh Codex finding after corrected-head review — 2026-10-07
+
+Codex completed its fresh review on corrected exact head `f07fe277a6b7b494ac0aa9c385fbc80c090f5a35` and reported one new P2 finding.
+
+ChatGPT independently verified it before any further implementation change.
+
+### Confirmed finding C — solved-topic best-answer replacement loses its answer anchor
+
+- `selectBestAnswer` remains intentionally valid on an already solved topic; current PostgreSQL coverage explicitly changes the selected best answer after `isSolved=true`, including both own and `any` solution-management scope.
+- The current route action unconditionally redirects every successful best-answer selection to `#solution-confirmation`.
+- `TopicView` renders `#solution-confirmation` only when the topic is still unsolved and the current user is its author.
+- Therefore replacing the best answer on an already solved topic redirects to a nonexistent anchor and regresses the previous behavior of landing on the newly selected answer.
+- Classification: real defect of the current PR #186 slice, not future-only groundwork.
+- Consensus: confirmed. The redirect destination must depend on whether the post-selection confirmation will actually render; otherwise the selected answer anchor must be preserved.
+
+No code change for finding C has been made yet.
