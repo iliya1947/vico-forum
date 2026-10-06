@@ -587,3 +587,26 @@ Exact-head CI run `37537442182` completed successfully:
 - `database`: clean PostgreSQL 17 migrations/constraints, production schema manifest parity, runtime privilege probes, split-authority and credential probes, Workers build and split-Hyperdrive smoke — success.
 
 Next gate: fresh independent Codex whole-PR review on exact head `844f0f0`. No implementation change should be made while that review is running.
+
+
+---
+
+## PR #186 review convergence — 2026-10-07
+
+Final implementation head: `844f0f0fc5bb13c28b69f746a12a7fa465bbe1ea`.
+
+The independent review/fix cycle has converged.
+
+- ChatGPT whole-PR re-review after finding D correction: no remaining current-scope defects.
+- Exact-head CI run `37537442182`: fully successful across `checks` and `database`.
+- Codex automatic review of `844f0f0`: completed with no new finding.
+- Codex manual whole-PR review of the same exact head: completed with no new finding.
+- No new Codex review thread was created for `844f0f0`.
+
+Previously confirmed findings A-D are all implemented and covered:
+A. production manifest target advanced to migration 0026 and guarded against journal drift;
+B. unsolved-author confirmation navigation targets the visible confirmation block;
+C. solved/manage-any best-answer replacement retains the selected-post anchor when no confirmation renders;
+D. the original question is excluded from best-answer selection in both UI and mutation validation.
+
+Consensus: PR #186 has no known current-scope defect after full independent re-review. It is ready for owner merge, subject only to normal GitHub mergeability remaining clean.
