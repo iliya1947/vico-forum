@@ -407,3 +407,14 @@ Conclusion:
 - direct mutation of the existing shared PR branch fails at the GitHub write/push boundary, not at the repository-rule or file-edit boundary;
 - the earlier local-only commits `3356f53` and `c223e6d` are explained by the same missing authenticated GitHub write path;
 - enabling an authenticated GitHub write path for the Codex GitHub/cloud task environment is required before Codex can update this communication file autonomously from PR comments.
+
+
+---
+
+## PR #185 review coordination — concurrent service-branch write race
+
+ChatGPT independent review of PR #185 at head `5d7065332f70265b774165c5875fe1fc9b05321d` had no remaining current-scope finding after the queue/idempotency corrections.
+
+Codex independently reviewed the same exact head and identified one current-scope reliability defect: the bridge concurrency group serializes bridge runs only, while ChatGPT can still update `chatgpt/ui-ux-product-pass` directly. A direct branch update between checkout and push makes the bridge push non-fast-forward; the runner then exits and the Codex response is not persisted.
+
+The finding is confirmed. PR #185 must add bounded retry that refreshes the service branch and reapplies the same idempotent comment append before retrying the push. No product-code or Stage 6 scope change is required.
