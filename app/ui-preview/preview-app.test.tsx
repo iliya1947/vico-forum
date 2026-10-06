@@ -2,7 +2,7 @@ import "@testing-library/jest-dom/vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
-import { EmbeddedPreview, scenarios } from "./preview-app";
+import { EmbeddedPreview, PreviewController, scenarios } from "./preview-app";
 
 describe("UI preview state catalog", () => {
   it("keeps locale and direction out of State options", () => {
@@ -13,7 +13,28 @@ describe("UI preview state catalog", () => {
       expect(scenario.locale).toBe("en");
       expect(scenario.direction).toBe("ltr");
       expect(scenario.label).not.toMatch(/(?:^| · )(?:EN|RU|HE|RTL)(?: · |$)/);
+      expect(scenario.label).not.toMatch(/(?:^| · )(?:guest|user|manager)(?: · |$)/i);
     }
+  });
+
+  it("selects the preview role separately from State", async () => {
+    render(<PreviewController />);
+
+    const guest = screen.getByRole("button", { name: "Guest" });
+    const user = screen.getByRole("button", { name: "User" });
+    const manager = screen.getByRole("button", { name: "Manager" });
+
+    expect(guest).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("option", { name: "Home" })).toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: "Notifications · mixed" })).not.toBeInTheDocument();
+
+    await userEvent.click(user);
+    expect(user).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("option", { name: "Notifications · mixed" })).toBeInTheDocument();
+
+    await userEvent.click(manager);
+    expect(manager).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("option", { name: "Authorization" })).toBeInTheDocument();
   });
 });
 
