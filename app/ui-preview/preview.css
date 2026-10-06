@@ -90,9 +90,6 @@ body.ui-preview-controller {
 .preview-frame-wrap {
   overflow: auto;
   min-height: 60rem;
-  padding: 1rem;
-  border-radius: 0.5rem;
-  background: #d9dfe4;
   text-align: center;
 }
 
@@ -101,7 +98,7 @@ body.ui-preview-controller {
   width: min(100%, 72rem);
   height: 58rem;
   margin-inline: auto;
-  border: 1px solid #8b98a3;
+  border: 0;
   background: #eef1f4;
 }
 
