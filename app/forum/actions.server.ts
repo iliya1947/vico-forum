@@ -23,6 +23,7 @@ import {
   localeContext,
 } from "../localization/request-context";
 import type { ContentGenerationActionResponse } from "../localization/content-generation-response";
+import { HELP_SOLUTIONS_SERVICE_SECTION_ID } from "../../db/forum-repository";
 
 export async function sectionAction({ request, params, context }: {
   request: Request;
@@ -32,6 +33,7 @@ export async function sectionAction({ request, params, context }: {
   const sectionId = typeof params.sectionId === "string" && params.sectionId.trim() ? params.sectionId : undefined;
   const locale = typeof params.locale === "string" && params.locale.trim() ? params.locale : undefined;
   if (!sectionId || !locale) return mutationFailure("invalid", 400);
+  if (sectionId === HELP_SOLUTIONS_SERVICE_SECTION_ID) return mutationFailure("notFound", 404);
   const denied = forumMutationGuard(request, context);
   if (denied) return denied;
   const forbidden = await requireForumPermission(context, "forum.topic.create");

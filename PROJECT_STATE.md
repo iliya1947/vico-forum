@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-10-06
+Последнее обновление: 2026-10-07
 
 ## Назначение
 
@@ -109,7 +109,7 @@ Vico Forum находится в ранней pre-release разработке.
   Section/topic presentation показывает persisted pin state, а пустой category-page Pinned block
   становится truthful non-link state. Exact-head CI/Pages и owner visual acceptance подтверждены
   2026-10-06; External migration/Stage 6 rollout не выполнялись.
-- Текущий solution-model slice для будущей категории **Help & solutions** разводит выбранный
+- Merged PR #186 solution-model slice для будущей категории **Help & solutions** разводит выбранный
   best answer и solved state: forward migration `0026_best_answer_independent_from_solved`
   удаляет только прежний check `best_answer_post_id → is_solved`, сохраняя same-topic
   deferred best-answer FK. Best answer теперь можно выбрать у нерешённой темы; после выбора
@@ -118,6 +118,14 @@ Vico Forum находится в ранней pre-release разработке.
   выбранный best answer без изменения solved state. Full repository CI, clean PostgreSQL 17,
   schema/manifest parity, runtime privilege probes, Workers smoke и UI preview build проходят на
   exact implementation head; external migration/Stage 6 rollout не выполнялся.
+- Текущий **Help & solutions foundation** slice добавляет migration
+  `0027_help_solutions_foundation`: она создаёт reserved category `help-solutions` и
+  внутренний service section `help-solutions-questions` для хранения вопросов в существующей
+  topic/post model. Generic Home/category discovery, прямой section route и обычный create-topic
+  action этот service section не показывают/не используют; Home при этом сохраняет реальные
+  aggregate topic/message counts категории. Режимы Q&A, фильтры, moderation statuses,
+  duplicates/appeals и personalization в этот bounded slice не входят. External migration/Stage 6
+  rollout не выполняется.
 - In-app reply notifications slice реализован в PR #180:
   forward migration `0024_forum_reply_notifications` хранит только stable recipient/actor/topic/post
   references, `createdAt` и nullable `readAt`; unique recipient + reply identity предотвращает
@@ -327,7 +335,7 @@ Vico Forum находится в ранней pre-release разработке.
 - generic `/:locale/*`, runtime `LocaleRegistry`, BCP-47 resolution, LTR/RTL и request-scoped
   `i18next`;
 - persistent locale registry, persistent UI translation storage и compiled bundle storage;
-- текущая repository migration history — `0000`–`0026`; external accepted migration evidence по-прежнему заканчивается на `0020`.
+- текущая repository migration history — `0000`–`0027`; external accepted migration evidence по-прежнему заканчивается на `0020`.
 
 ## Forum core — Stage 4
 

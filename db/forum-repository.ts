@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gt, gte, inArray, isNull, lte, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, gte, inArray, isNull, lte, ne, or, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { alias } from "drizzle-orm/pg-core";
 import {
@@ -16,6 +16,9 @@ import {
   user,
 } from "./schema";
 import { ForumWriteRateLimitError, forumWritePolicy, type ForumWritePolicy } from "./forum-write-policy";
+
+export const HELP_SOLUTIONS_CATEGORY_ID = "help-solutions";
+export const HELP_SOLUTIONS_SERVICE_SECTION_ID = "help-solutions-questions";
 
 export interface ForumCategorySummary {
   id: string;
@@ -401,9 +404,19 @@ export class DrizzleForumRepository {
         sectionCount: sql<number>`count(distinct ${forumSections.id})::int`,
       })
       .from(forumCategories)
-      .leftJoin(forumSections, eq(forumSections.categoryId, forumCategories.id))
+      .leftJoin(
+        forumSections,
+        and(
+          eq(forumSections.categoryId, forumCategories.id),
+          ne(forumSections.id, HELP_SOLUTIONS_SERVICE_SECTION_ID),
+        ),
+      )
       .groupBy(forumCategories.id, forumCategories.name, forumCategories.createdAt)
-      .orderBy(asc(forumCategories.createdAt), asc(forumCategories.id));
+      .orderBy(
+        sql`case when ${forumCategories.id} = ${HELP_SOLUTIONS_CATEGORY_ID} then 0 else 1 end`,
+        asc(forumCategories.createdAt),
+        asc(forumCategories.id),
+      );
   }
 
   async readHomepage(): Promise<ForumHomepageCategorySummary[]> {
@@ -411,10 +424,16 @@ export class DrizzleForumRepository {
       .select({
         id: forumCategories.id,
         name: forumCategories.name,
+        topicCount: sql<number>`count(distinct ${forumTopics.id})::int`,
+        messageCount: sql<number>`count(distinct ${forumPosts.id})::int`,
       })
       .from(forumCategories)
+      .leftJoin(forumSections, eq(forumSections.categoryId, forumCategories.id))
+      .leftJoin(forumTopics, eq(forumTopics.sectionId, forumSections.id))
+      .leftJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
+      .groupBy(forumCategories.id, forumCategories.name, forumCategories.createdAt)
       .orderBy(
-        sql`case when ${forumCategories.id} = 'help-solutions' then 0 else 1 end`,
+        sql`case when ${forumCategories.id} = ${HELP_SOLUTIONS_CATEGORY_ID} then 0 else 1 end`,
         asc(forumCategories.createdAt),
         asc(forumCategories.id),
       );
@@ -430,6 +449,7 @@ export class DrizzleForumRepository {
       .from(forumSections)
       .leftJoin(forumTopics, eq(forumTopics.sectionId, forumSections.id))
       .leftJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
+      .where(ne(forumSections.id, HELP_SOLUTIONS_SERVICE_SECTION_ID))
       .groupBy(
         forumSections.id,
         forumSections.categoryId,
@@ -459,8 +479,8 @@ export class DrizzleForumRepository {
       return {
         ...category,
         sectionCount: sections.length,
-        topicCount: sections.reduce((sum, section) => sum + section.topicCount, 0),
-        messageCount: sections.reduce((sum, section) => sum + section.messageCount, 0),
+        topicCount: category.topicCount,
+        messageCount: category.messageCount,
         sections,
       };
     });
@@ -990,7 +1010,13 @@ export class DrizzleForumRepository {
         postCount: sql<number>`count(distinct ${forumPosts.id})::int`,
       })
       .from(forumCategories)
-      .leftJoin(forumSections, eq(forumSections.categoryId, forumCategories.id))
+      .leftJoin(
+        forumSections,
+        and(
+          eq(forumSections.categoryId, forumCategories.id),
+          ne(forumSections.id, HELP_SOLUTIONS_SERVICE_SECTION_ID),
+        ),
+      )
       .leftJoin(forumTopics, eq(forumTopics.sectionId, forumSections.id))
       .leftJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
       .where(eq(forumCategories.id, id))
@@ -1018,7 +1044,10 @@ export class DrizzleForumRepository {
       ))
       .innerJoin(user, eq(user.id, forumTopics.authorId))
       .leftJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
-      .where(eq(forumSections.categoryId, id))
+      .where(and(
+        eq(forumSections.categoryId, id),
+        ne(forumSections.id, HELP_SOLUTIONS_SERVICE_SECTION_ID),
+      ))
       .groupBy(forumTopics.id, forumTopicTitleRevisions.id, user.name)
       .as("category_section_topic_activity");
 
@@ -1082,7 +1111,10 @@ export class DrizzleForumRepository {
       ))
       .innerJoin(user, eq(user.id, forumTopics.authorId))
       .leftJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
-      .where(eq(forumSections.categoryId, id))
+      .where(and(
+        eq(forumSections.categoryId, id),
+        ne(forumSections.id, HELP_SOLUTIONS_SERVICE_SECTION_ID),
+      ))
       .groupBy(
         forumTopics.id,
         forumSections.id,
@@ -1148,6 +1180,7 @@ export class DrizzleForumRepository {
   }
 
   async readSection(id: string): Promise<ForumSectionPage | undefined> {
+    if (id === HELP_SOLUTIONS_SERVICE_SECTION_ID) return undefined;
     const [section] = await this.database
       .select({ id: forumSections.id, name: forumSections.name, categoryId: forumCategories.id, categoryName: forumCategories.name })
       .from(forumSections)

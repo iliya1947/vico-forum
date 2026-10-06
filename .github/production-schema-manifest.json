@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema": "public",
-  "targetMigration": "0026_best_answer_independent_from_solved",
+  "targetMigration": "0027_help_solutions_foundation",
   "tables": {
     "account": {
       "columns": [
