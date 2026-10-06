@@ -37,7 +37,6 @@ type PreviewIdentity = "guest" | "user" | "manager";
 type PreviewView = "home" | "search" | "popular" | "unanswered" | "unread" | "notifications" | "tags" | "tag" | "category" | "section" | "topic" | "admin" | "empty" | "under-development" | "not-found";
 
 type PreviewVariant =
-  | "empty-category"
   | "section-form-error"
   | "topic-reply-error"
   | "topic-unsolved"
@@ -83,7 +82,6 @@ export const scenarios: readonly Scenario[] = [
   { id: "category-guest", label: "Category · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/development", view: "category" },
   { id: "category-user", label: "Category · user", locale: "en", direction: "ltr", identity: "user", path: "/en/categories/development", view: "category" },
   { id: "category-no-pins", label: "Category · no pins · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/development", view: "category", variant: "category-no-pins" },
-  { id: "category-empty", label: "Empty category · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/empty", view: "category", variant: "empty-category" },
   { id: "section-user", label: "Section · user", locale: "en", direction: "ltr", identity: "user", path: "/en/sections/typescript", view: "section" },
   { id: "section-form-error", label: "Create topic error · user", locale: "en", direction: "ltr", identity: "user", path: "/en/sections/typescript", view: "section", variant: "section-form-error" },
   { id: "topic-solved-user", label: "Solved topic · user", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api", view: "topic" },
@@ -166,12 +164,6 @@ const categoryRtl = {
     { id: "cloud", name: "ענן ופריסה", topicCount: 5, postCount: 41 },
     { id: "databases", name: "מסדי נתונים", topicCount: 2, postCount: 12 },
   ],
-};
-
-const emptyCategory = {
-  id: "empty",
-  name: "New category",
-  sections: [],
 };
 
 const section = {
@@ -920,11 +912,7 @@ function previewCategory(locale: PreviewLocale, routeCategoryId: string | undefi
 
 function PreviewCategoryRoute({ scenario }: { scenario: Scenario }) {
   const { categoryId: routeCategoryId } = useParams();
-  const baseCategoryPage = scenario.view === "category"
-    && scenario.variant === "empty-category"
-    && routeCategoryId === "empty"
-    ? emptyCategory
-    : previewCategory(scenario.locale, routeCategoryId);
+  const baseCategoryPage = previewCategory(scenario.locale, routeCategoryId);
   const categoryPage = scenario.variant === "category-no-pins"
     ? {
         ...baseCategoryPage,
@@ -1208,11 +1196,7 @@ function previewElement(scenario: Scenario) {
       return (
         <CategoryView
           locale={scenario.locale}
-          category={
-            scenario.variant === "empty-category"
-              ? emptyCategory
-              : previewCategory(scenario.locale, categoryId)
-          }
+          category={previewCategory(scenario.locale, categoryId)}
           referenceTime={previewReferenceTime}
         />
       );
