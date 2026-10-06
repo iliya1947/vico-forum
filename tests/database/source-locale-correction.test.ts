@@ -103,6 +103,7 @@ beforeAll(async () => {
     "0024_forum_reply_notifications.sql",
     "0025_forum_topic_pins.sql",
     "0026_best_answer_independent_from_solved.sql",
+    "0027_help_solutions_foundation.sql",
   ]) {
     const sql = (await readFile(`drizzle/${file}`, "utf8")).replaceAll('"public".', `"${schemaName}".`);
     await client.query(sql);

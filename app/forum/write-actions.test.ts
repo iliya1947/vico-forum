@@ -231,6 +231,17 @@ describe("forum write route actions", () => {
     });
   });
 
+  it("does not expose the Help & solutions service section through the generic create-topic action", async () => {
+    const forumWriter = writer();
+    const response = await sectionAction({
+      request: request("/en/sections/help-solutions-questions", { title: "Hidden", body: "Hidden" }),
+      params: { locale: "en", sectionId: "help-solutions-questions" },
+      context: context(forumWriter),
+    });
+    expect(response).toMatchObject({ data: { error: "notFound" }, init: { status: 404 } });
+    expect(forumWriter.createTopic).not.toHaveBeenCalled();
+  });
+
   it("creates a topic as the session user and redirects to its canonical locale path", async () => {
     const forumWriter = writer();
     const response = await sectionAction({

@@ -5,7 +5,15 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { loadPersistentRegistry } from "../../app/localization/persistent-registry";
 import { parseLocaleCandidate } from "../../app/localization/locale";
 import { AmbiguousCommitOutcomeError, ControlledLocaleWriter, DrizzleLocaleRepository } from "../../db/locale-repository";
-import { ConcurrentRevisionError, DrizzleForumRepository, ForumAuthorizationError, ForumEntityNotFoundError, ForumStateConflictError } from "../../db/forum-repository";
+import {
+  ConcurrentRevisionError,
+  DrizzleForumRepository,
+  ForumAuthorizationError,
+  ForumEntityNotFoundError,
+  ForumStateConflictError,
+  HELP_SOLUTIONS_CATEGORY_ID,
+  HELP_SOLUTIONS_SERVICE_SECTION_ID,
+} from "../../db/forum-repository";
 import { ForumService, InvalidForumContentError } from "../../db/forum-service";
 import { createHyperdriveForumWriter } from "../../db/hyperdrive-forum";
 import { FORUM_WRITE_COOLDOWN_MS, ForumWriteRateLimitError } from "../../db/forum-write-policy";
@@ -58,7 +66,95 @@ describe("PostgreSQL 17 locale migrations", () => {
     const applied = await client.query<{ count: string }>(
       'select count(*)::text as count from drizzle."__drizzle_migrations"',
     );
-    expect(applied.rows[0]?.count).toBe("27");
+    expect(applied.rows[0]?.count).toBe("28");
+  });
+
+  it("seeds Help & solutions while keeping its service section internal to generic discovery", async () => {
+    const repository = new DrizzleForumRepository(drizzle(client));
+    const forum = new ForumService(repository);
+
+    const reservedRows = await client.query<{
+      category_id: string;
+      category_name: string;
+      section_id: string;
+      section_name: string;
+    }>(`
+      select
+        c.id as category_id,
+        c.name as category_name,
+        s.id as section_id,
+        s.name as section_name
+      from forum_categories c
+      join forum_sections s on s.category_id = c.id
+      where c.id = $1
+    `, [HELP_SOLUTIONS_CATEGORY_ID]);
+
+    expect(reservedRows.rows).toEqual([{
+      category_id: HELP_SOLUTIONS_CATEGORY_ID,
+      category_name: "Help & solutions",
+      section_id: HELP_SOLUTIONS_SERVICE_SECTION_ID,
+      section_name: "Questions",
+    }]);
+
+    expect(await repository.listCategories()).toEqual([{
+      id: HELP_SOLUTIONS_CATEGORY_ID,
+      name: "Help & solutions",
+      sectionCount: 0,
+    }]);
+    expect((await repository.readHomepage()).find(({ id }) => id === HELP_SOLUTIONS_CATEGORY_ID)).toEqual({
+      id: HELP_SOLUTIONS_CATEGORY_ID,
+      name: "Help & solutions",
+      sectionCount: 0,
+      topicCount: 0,
+      messageCount: 0,
+      sections: [],
+    });
+    expect(await repository.readCategory(HELP_SOLUTIONS_CATEGORY_ID)).toEqual({
+      id: HELP_SOLUTIONS_CATEGORY_ID,
+      name: "Help & solutions",
+      sections: [],
+    });
+    expect(await repository.readSection(HELP_SOLUTIONS_SERVICE_SECTION_ID)).toBeUndefined();
+    expect(await forum.readHierarchy(HELP_SOLUTIONS_CATEGORY_ID)).toMatchObject({
+      id: HELP_SOLUTIONS_CATEGORY_ID,
+      sections: [{ id: HELP_SOLUTIONS_SERVICE_SECTION_ID, name: "Questions", topics: [] }],
+    });
+
+    await insertForumAuthor("help-foundation-author", "help-foundation@example.test", null);
+    try {
+      await forum.createTopicWithInitialPost({
+        id: "help-foundation-topic",
+        sectionId: HELP_SOLUTIONS_SERVICE_SECTION_ID,
+        authorId: "help-foundation-author",
+        titleRevision: {
+          id: "help-foundation-title",
+          originalContent: "Help foundation question",
+          sourceLocale: "en",
+        },
+        initialPost: {
+          id: "help-foundation-question",
+          topicId: "help-foundation-topic",
+          authorId: "help-foundation-author",
+          bodyRevision: {
+            id: "help-foundation-body",
+            originalContent: "Question body",
+            sourceLocale: "en",
+          },
+        },
+      });
+      expect((await repository.readHomepage()).find(({ id }) => id === HELP_SOLUTIONS_CATEGORY_ID)).toEqual({
+        id: HELP_SOLUTIONS_CATEGORY_ID,
+        name: "Help & solutions",
+        sectionCount: 0,
+        topicCount: 1,
+        messageCount: 1,
+        sections: [],
+      });
+      expect(await repository.readSection(HELP_SOLUTIONS_SERVICE_SECTION_ID)).toBeUndefined();
+    } finally {
+      await client.query("delete from forum_topics where id = 'help-foundation-topic'");
+      await client.query(`delete from "user" where id = 'help-foundation-author'`);
+    }
   });
 
   it("rejects trimmed canonical English in persistent UI translation storage", async () => {
@@ -259,6 +355,7 @@ describe("PostgreSQL 17 locale migrations", () => {
     });
     expect(await repository.revisionCounts()).toEqual({ topicTitles: 1, postBodies: 1 });
     expect(await repository.listCategories()).toEqual([
+      { id: HELP_SOLUTIONS_CATEGORY_ID, name: "Help & solutions", sectionCount: 0 },
       { id: "development", name: "Development", sectionCount: 1 },
     ]);
     expect(await repository.readCategory("development")).toMatchObject({
@@ -1044,19 +1141,19 @@ describe("PostgreSQL 17 locale migrations", () => {
     const cases = [
       {
         deleteSql: "delete from forum_posts where id = 'post-1'",
-        expected: { categories: 1, sections: 1, topics: 1, titleRevisions: 2, posts: 0, postRevisions: 0 },
+        expected: { categories: 2, sections: 2, topics: 1, titleRevisions: 2, posts: 0, postRevisions: 0 },
       },
       {
         deleteSql: "delete from forum_topics where id = 'topic-1'",
-        expected: { categories: 1, sections: 1, topics: 0, titleRevisions: 0, posts: 0, postRevisions: 0 },
+        expected: { categories: 2, sections: 2, topics: 0, titleRevisions: 0, posts: 0, postRevisions: 0 },
       },
       {
         deleteSql: "delete from forum_sections where id = 'typescript'",
-        expected: { categories: 1, sections: 0, topics: 0, titleRevisions: 0, posts: 0, postRevisions: 0 },
+        expected: { categories: 2, sections: 1, topics: 0, titleRevisions: 0, posts: 0, postRevisions: 0 },
       },
       {
         deleteSql: "delete from forum_categories where id = 'development'",
-        expected: { categories: 0, sections: 0, topics: 0, titleRevisions: 0, posts: 0, postRevisions: 0 },
+        expected: { categories: 1, sections: 1, topics: 0, titleRevisions: 0, posts: 0, postRevisions: 0 },
       },
     ];
 
