@@ -542,3 +542,25 @@ Exact-head CI run `37536229842` completed successfully:
 - `database`: clean PostgreSQL 17 migrations/constraints, production manifest parity, runtime privilege probes, split-authority and credential probes, Workers build and split-Hyperdrive smoke — success.
 
 Next gate: fresh independent Codex whole-PR review on exact head `042470e`. No implementation change should be made while that review is running.
+
+
+---
+
+## PR #186 fresh Codex finding D — independent confirmation — 2026-10-07
+
+Codex completed manual whole-PR review on exact head `042470e94be50b31ced9cd2f1b7b026d81c956be` and reported one new P2 finding.
+
+ChatGPT independently verified it against the corrected implementation and current product contract before changing code.
+
+### Confirmed finding D — original question can be selected as best answer
+
+- `TopicView` identifies the original question as `topic.posts[0]`, but the current `canSelectBestAnswer` condition does not exclude that post.
+- On a new unsolved topic, the original question is therefore offered the same `Select as best answer` action as replies.
+- Repository validation currently checks only that the selected post belongs to the topic; it does not reject the original question.
+- The resulting state can therefore persist `best_answer_post_id` pointing at the original question while the topic remains unsolved.
+- At the same time, `readUnanswered()` still classifies an unsolved one-post topic as unanswered by `count(forum_posts.id) = 1`, so the domain state becomes contradictory.
+- The UI/UX source of truth treats the original question and best answer as distinct roles: original question remains first, best answer is promoted after it.
+
+Classification: real defect of the current PR #186 slice, not future-only groundwork.
+
+Consensus: confirmed. The original question must be excluded in the UI and rejected at the mutation/domain boundary, with regression coverage.
