@@ -34,7 +34,9 @@ Vico Forum находится в ранней pre-release разработке.
   presentation boundaries и GitHub Pages visual-progress preview.
   Preview controller в текущем implementation state отделяет identity от page state: над `State`
   используются отдельные `Guest / User / Manager` controls, а role-specific варианты не дублируются
-  в названиях State; theme/locale по-прежнему переключаются внутри самого forum UI. Текущий correction branch
+  в названиях State; theme/locale по-прежнему переключаются внутри самого forum UI. Preview iframe
+  показывается без искусственной светлой внешней подложки/рамки, чтобы визуальные границы страницы
+  не искажались. Текущий correction branch
   дополнительно cache-bust-ит embedded iframe по hash текущего preview bundle, чтобы новый Pages
   deploy не мог оставить iframe на stale HTML со ссылкой на удалённый hashed asset. Это не
   заменяет будущую real-runtime acceptance.
