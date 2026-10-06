@@ -33,14 +33,14 @@ import { LocaleNavigationProvider } from "../localization/locale-navigation";
 import { localeRegistry } from "../localization/registry";
 
 type Direction = "ltr" | "rtl";
-type PreviewIdentity = "guest" | "user" | "manager";
+export const previewIdentities = ["guest", "user", "manager"] as const;
+export type PreviewIdentity = typeof previewIdentities[number];
 type PreviewView = "home" | "search" | "popular" | "unanswered" | "unread" | "notifications" | "tags" | "tag" | "category" | "section" | "topic" | "admin" | "empty" | "under-development" | "not-found";
 
 type PreviewVariant =
   | "section-form-error"
   | "topic-reply-error"
   | "topic-unsolved"
-  | "topic-tools"
   | "admin-success"
   | "admin-conflict"
   | "route-401"
@@ -61,44 +61,44 @@ interface Scenario {
   view: PreviewView;
   variant?: PreviewVariant;
   authPresentationState?: HeaderAuthPresentationState;
+  allowedIdentities?: readonly PreviewIdentity[];
 }
 
 export const scenarios: readonly Scenario[] = [
-  { id: "home-guest", label: "Home · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en", view: "home" },
-  { id: "home-user", label: "Home · user", locale: "en", direction: "ltr", identity: "user", path: "/en", view: "home" },
-  { id: "home-manager", label: "Home · manager", locale: "en", direction: "ltr", identity: "manager", path: "/en", view: "home" },
-  { id: "auth-pending", label: "Authentication · pending · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en", view: "home", authPresentationState: "pending" },
-  { id: "auth-error", label: "Authentication · failed · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en", view: "home", authPresentationState: "error" },
-  { id: "under-development-search", label: "Under development · search · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/under-development?feature=search", view: "under-development" },
-  { id: "notifications-user", label: "Notifications · mixed · user", locale: "en", direction: "ltr", identity: "user", path: "/en/notifications", view: "notifications" },
-  { id: "notifications-empty", label: "Notifications · empty · user", locale: "en", direction: "ltr", identity: "user", path: "/en/notifications", view: "notifications", variant: "notifications-empty" },
-  { id: "search-results-guest", label: "Search · results · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/search?q=TypeScript", view: "search" },
-  { id: "search-no-results-guest", label: "Search · no results · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/search?q=WebAssembly", view: "search", variant: "search-no-results" },
-  { id: "popular-guest", label: "Popular · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/popular", view: "popular" },
-  { id: "unanswered-guest", label: "Unanswered · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/unanswered", view: "unanswered" },
-  { id: "unread-user", label: "Unread · user", locale: "en", direction: "ltr", identity: "user", path: "/en/unread", view: "unread" },
-  { id: "tags-guest", label: "Tags · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/tags", view: "tags" },
-  { id: "tag-typescript-guest", label: "Tag · TypeScript · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/tags/typescript", view: "tag" },
-  { id: "category-guest", label: "Category · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/development", view: "category" },
-  { id: "category-user", label: "Category · user", locale: "en", direction: "ltr", identity: "user", path: "/en/categories/development", view: "category" },
-  { id: "category-no-pins", label: "Category · no pins · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/development", view: "category", variant: "category-no-pins" },
-  { id: "section-user", label: "Section · user", locale: "en", direction: "ltr", identity: "user", path: "/en/sections/typescript", view: "section" },
-  { id: "section-form-error", label: "Create topic error · user", locale: "en", direction: "ltr", identity: "user", path: "/en/sections/typescript", view: "section", variant: "section-form-error" },
-  { id: "topic-solved-user", label: "Solved topic · user", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api", view: "topic" },
-  { id: "topic-solved-manager", label: "Solved topic · manager", locale: "en", direction: "ltr", identity: "manager", path: "/en/topics/typed-api", view: "topic" },
-  { id: "topic-reply-error", label: "Reply error · user", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api", view: "topic", variant: "topic-reply-error" },
-  { id: "topic-unsolved", label: "Unsolved topic · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/topics/typed-api", view: "topic", variant: "topic-unsolved" },
-  { id: "topic-tools", label: "Topic tools · manager", locale: "en", direction: "ltr", identity: "manager", path: "/en/topics/typed-api", view: "topic", variant: "topic-tools" },
-  { id: "admin", label: "Authorization · manager", locale: "en", direction: "ltr", identity: "manager", path: "/en/admin/authorization", view: "admin" },
-  { id: "admin-success", label: "Authorization · saved · manager", locale: "en", direction: "ltr", identity: "manager", path: "/en/admin/authorization", view: "admin", variant: "admin-success" },
-  { id: "admin-conflict", label: "Authorization · conflict · manager", locale: "en", direction: "ltr", identity: "manager", path: "/en/admin/authorization", view: "admin", variant: "admin-conflict" },
-  { id: "empty-section", label: "Empty section · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/sections/empty", view: "empty" },
-  { id: "route-401", label: "System · 401 · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/admin/authorization", view: "not-found", variant: "route-401" },
-  { id: "route-403", label: "System · 403 · user", locale: "en", direction: "ltr", identity: "user", path: "/en/admin/authorization", view: "not-found", variant: "route-403" },
-  { id: "not-found", label: "System · 404 · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/missing", view: "not-found" },
-  { id: "route-503", label: "System · 503 · manager", locale: "en", direction: "ltr", identity: "manager", path: "/en/admin/authorization", view: "not-found", variant: "route-503" },
-  { id: "route-500", label: "System · unexpected · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/topics/typed-api", view: "not-found", variant: "route-500" },
+  { id: "home-guest", label: "Home", locale: "en", direction: "ltr", identity: "guest", path: "/en", view: "home" },
+  { id: "auth-pending", label: "Authentication · pending", locale: "en", direction: "ltr", identity: "guest", path: "/en", view: "home", authPresentationState: "pending", allowedIdentities: ["guest"] },
+  { id: "auth-error", label: "Authentication · failed", locale: "en", direction: "ltr", identity: "guest", path: "/en", view: "home", authPresentationState: "error", allowedIdentities: ["guest"] },
+  { id: "under-development-search", label: "Under development · search", locale: "en", direction: "ltr", identity: "guest", path: "/en/under-development?feature=search", view: "under-development" },
+  { id: "notifications-user", label: "Notifications · mixed", locale: "en", direction: "ltr", identity: "user", path: "/en/notifications", view: "notifications", allowedIdentities: ["user", "manager"] },
+  { id: "notifications-empty", label: "Notifications · empty", locale: "en", direction: "ltr", identity: "user", path: "/en/notifications", view: "notifications", variant: "notifications-empty", allowedIdentities: ["user", "manager"] },
+  { id: "search-results-guest", label: "Search · results", locale: "en", direction: "ltr", identity: "guest", path: "/en/search?q=TypeScript", view: "search" },
+  { id: "search-no-results-guest", label: "Search · no results", locale: "en", direction: "ltr", identity: "guest", path: "/en/search?q=WebAssembly", view: "search", variant: "search-no-results" },
+  { id: "popular-guest", label: "Popular", locale: "en", direction: "ltr", identity: "guest", path: "/en/popular", view: "popular" },
+  { id: "unanswered-guest", label: "Unanswered", locale: "en", direction: "ltr", identity: "guest", path: "/en/unanswered", view: "unanswered" },
+  { id: "unread-user", label: "Unread", locale: "en", direction: "ltr", identity: "user", path: "/en/unread", view: "unread", allowedIdentities: ["user", "manager"] },
+  { id: "tags-guest", label: "Tags", locale: "en", direction: "ltr", identity: "guest", path: "/en/tags", view: "tags" },
+  { id: "tag-typescript-guest", label: "Tag · TypeScript", locale: "en", direction: "ltr", identity: "guest", path: "/en/tags/typescript", view: "tag" },
+  { id: "category-guest", label: "Category", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/development", view: "category" },
+  { id: "category-no-pins", label: "Category · no pins", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/development", view: "category", variant: "category-no-pins" },
+  { id: "section-user", label: "Section", locale: "en", direction: "ltr", identity: "user", path: "/en/sections/typescript", view: "section" },
+  { id: "section-form-error", label: "Create topic error", locale: "en", direction: "ltr", identity: "user", path: "/en/sections/typescript", view: "section", variant: "section-form-error", allowedIdentities: ["user", "manager"] },
+  { id: "topic-solved-user", label: "Solved topic", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api", view: "topic" },
+  { id: "topic-reply-error", label: "Reply error", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api", view: "topic", variant: "topic-reply-error", allowedIdentities: ["user", "manager"] },
+  { id: "topic-unsolved", label: "Unsolved topic", locale: "en", direction: "ltr", identity: "guest", path: "/en/topics/typed-api", view: "topic", variant: "topic-unsolved" },
+  { id: "admin", label: "Authorization", locale: "en", direction: "ltr", identity: "manager", path: "/en/admin/authorization", view: "admin", allowedIdentities: ["manager"] },
+  { id: "admin-success", label: "Authorization · saved", locale: "en", direction: "ltr", identity: "manager", path: "/en/admin/authorization", view: "admin", variant: "admin-success", allowedIdentities: ["manager"] },
+  { id: "admin-conflict", label: "Authorization · conflict", locale: "en", direction: "ltr", identity: "manager", path: "/en/admin/authorization", view: "admin", variant: "admin-conflict", allowedIdentities: ["manager"] },
+  { id: "empty-section", label: "Empty section", locale: "en", direction: "ltr", identity: "guest", path: "/en/sections/empty", view: "empty" },
+  { id: "route-401", label: "System · 401", locale: "en", direction: "ltr", identity: "guest", path: "/en/admin/authorization", view: "not-found", variant: "route-401", allowedIdentities: ["guest"] },
+  { id: "route-403", label: "System · 403", locale: "en", direction: "ltr", identity: "user", path: "/en/admin/authorization", view: "not-found", variant: "route-403", allowedIdentities: ["user"] },
+  { id: "not-found", label: "System · 404", locale: "en", direction: "ltr", identity: "guest", path: "/en/missing", view: "not-found" },
+  { id: "route-503", label: "System · 503", locale: "en", direction: "ltr", identity: "manager", path: "/en/admin/authorization", view: "not-found", variant: "route-503", allowedIdentities: ["manager"] },
+  { id: "route-500", label: "System · unexpected", locale: "en", direction: "ltr", identity: "guest", path: "/en/topics/typed-api", view: "not-found", variant: "route-500" },
 ] as const;
+
+function supportsPreviewIdentity(scenario: Scenario, identity: PreviewIdentity): boolean {
+  return scenario.allowedIdentities?.includes(identity) ?? true;
+}
 
 const categoryId = "development";
 const sectionId = "typescript";
@@ -690,10 +690,21 @@ function previewNotifications(locale: PreviewLocale) {
 }
 
 export function PreviewController() {
+  const [identity, setIdentity] = useState<PreviewIdentity>("guest");
   const [scenarioId, setScenarioId] = useState(scenarios[0]!.id);
   const [viewport, setViewport] = useState<"desktop" | "mobile">("desktop");
-  const selected = scenarios.find((scenario) => scenario.id === scenarioId) ?? scenarios[0]!;
-  const src = `?embed=1&scenario=${encodeURIComponent(selected.id)}&build=${encodeURIComponent(previewBuildKey)}`;
+  const availableScenarios = scenarios.filter((scenario) => supportsPreviewIdentity(scenario, identity));
+  const selected = availableScenarios.find((scenario) => scenario.id === scenarioId) ?? availableScenarios[0]!;
+
+  const selectIdentity = (nextIdentity: PreviewIdentity) => {
+    const nextScenarios = scenarios.filter((scenario) => supportsPreviewIdentity(scenario, nextIdentity));
+    setIdentity(nextIdentity);
+    if (!nextScenarios.some((scenario) => scenario.id === scenarioId)) {
+      setScenarioId(nextScenarios[0]!.id);
+    }
+  };
+
+  const src = `?embed=1&scenario=${encodeURIComponent(selected.id)}&identity=${encodeURIComponent(identity)}&build=${encodeURIComponent(previewBuildKey)}`;
 
   return (
     <main className="preview-controller">
@@ -704,15 +715,30 @@ export function PreviewController() {
           <p>Static representative data only. Runtime behavior is verified separately.</p>
         </div>
         <div className="preview-controls">
-          <label>
-            State
-            <select value={scenarioId} onChange={(event) => setScenarioId(event.target.value)}>
-              {scenarios.map((scenario) => (
-                <option key={scenario.id} value={scenario.id}>{scenario.label}</option>
+          <div className="preview-state-controls">
+            <fieldset className="preview-role-controls">
+              <legend>Role</legend>
+              {previewIdentities.map((candidate) => (
+                <button
+                  key={candidate}
+                  type="button"
+                  aria-pressed={identity === candidate}
+                  onClick={() => selectIdentity(candidate)}
+                >
+                  {candidate === "guest" ? "Guest" : candidate === "user" ? "User" : "Manager"}
+                </button>
               ))}
-            </select>
-          </label>
-          <fieldset>
+            </fieldset>
+            <label>
+              State
+              <select value={selected.id} onChange={(event) => setScenarioId(event.target.value)}>
+                {availableScenarios.map((scenario) => (
+                  <option key={scenario.id} value={scenario.id}>{scenario.label}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <fieldset className="preview-viewport-controls">
             <legend>Viewport</legend>
             <button type="button" aria-pressed={viewport === "desktop"} onClick={() => setViewport("desktop")}>Desktop</button>
             <button type="button" aria-pressed={viewport === "mobile"} onClick={() => setViewport("mobile")}>Mobile</button>
@@ -721,9 +747,9 @@ export function PreviewController() {
       </header>
       <section className="preview-frame-wrap" data-viewport={viewport}>
         <iframe
-          key={`${scenarioId}-${viewport}`}
+          key={`${selected.id}-${identity}-${viewport}`}
           className="preview-frame"
-          title={selected.label}
+          title={`${selected.label} · ${identity}`}
           src={src}
         />
       </section>
@@ -731,12 +757,13 @@ export function PreviewController() {
   );
 }
 
-export function EmbeddedPreview({ scenarioId }: { scenarioId: string }) {
+export function EmbeddedPreview({ scenarioId, identity }: { scenarioId: string; identity?: PreviewIdentity }) {
   const scenario = scenarios.find((candidate) => candidate.id === scenarioId) ?? scenarios[0]!;
+  const activeIdentity = identity && supportsPreviewIdentity(scenario, identity) ? identity : scenario.identity;
   const [previewLocale, setPreviewLocale] = useState<PreviewLocale>(initialPreviewLocale);
   const activeScenario = useMemo(
-    () => scenarioForLocale(scenario, previewLocale),
-    [scenario, previewLocale],
+    () => scenarioForLocale({ ...scenario, identity: activeIdentity }, previewLocale),
+    [scenario, activeIdentity, previewLocale],
   );
   const runtime = useMemo(
     () => previewTranslationRuntime(activeScenario.locale, activeScenario.direction),
@@ -1018,7 +1045,6 @@ function PreviewTopicRoute({ scenario }: { scenario: Scenario }) {
     const solved = scenario.view === "topic"
       ? scenario.variant !== "topic-unsolved"
         && scenario.variant !== "topic-reply-error"
-        && scenario.variant !== "topic-tools"
       : true;
     const data = topicData(
       scenario.locale,
@@ -1243,7 +1269,7 @@ function previewElement(scenario: Scenario) {
     case "topic": {
       const solved = scenario.variant !== "topic-unsolved"
         && scenario.variant !== "topic-reply-error"
-        && scenario.variant !== "topic-tools";
+  ;
       const data = topicData(
         scenario.locale,
         scenario.direction,
