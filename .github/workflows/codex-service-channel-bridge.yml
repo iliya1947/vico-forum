@@ -57,5 +57,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -- "${file}"
-          git commit -m "Record Codex service response ${COMMENT_ID}"
+          git commit -m "Record Codex service response ${COMMENT_ID} [skip ci]"
           git push origin HEAD:chatgpt/ui-ux-product-pass
