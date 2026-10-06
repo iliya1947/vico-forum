@@ -154,6 +154,24 @@ export interface ForumCategoryPage {
   sections: ForumSectionSummary[];
 }
 
+export interface ForumHelpQuestionSummary {
+  id: string;
+  title: string;
+  authorName: string;
+  answerCount: number;
+  isSolved: boolean;
+  hasBestAnswer: boolean;
+  createdAt: Date;
+  activityAt: Date;
+  tags: ForumTag[];
+}
+
+export interface ForumHelpSolutionsPage {
+  id: string;
+  name: string;
+  questions: ForumHelpQuestionSummary[];
+}
+
 export interface ForumTopicSummary {
   id: string;
   title: ForumRevisionContent;
@@ -198,6 +216,7 @@ export interface ForumReader {
   readReplyNotifications(userId: string, limit?: number): Promise<ForumReplyNotificationSummary[]>;
   countUnreadReplyNotifications(userId: string): Promise<number>;
   readTopicPinState(topicId: string): Promise<boolean>;
+  readHelpSolutionsAll(): Promise<ForumHelpSolutionsPage | undefined>;
   readCategory(id: string, pinnedTopicsPerSection?: number): Promise<ForumCategoryPage | undefined>;
   readSection(id: string): Promise<ForumSectionPage | undefined>;
   readTopicPage(id: string): Promise<ForumTopicPage | undefined>;
@@ -995,6 +1014,56 @@ export class DrizzleForumRepository {
     });
   }
 
+  async readHelpSolutionsAll(): Promise<ForumHelpSolutionsPage | undefined> {
+    const [category] = await this.database
+      .select({ id: forumCategories.id, name: forumCategories.name })
+      .from(forumCategories)
+      .where(eq(forumCategories.id, HELP_SOLUTIONS_CATEGORY_ID));
+    if (!category) return undefined;
+
+    const activityAt = sql`greatest(
+      ${forumTopics.createdAt},
+      coalesce(max(${forumPosts.createdAt}), ${forumTopics.createdAt})
+    )`.mapWith(forumTopics.createdAt);
+
+    const rows = await this.database
+      .select({
+        id: forumTopics.id,
+        title: forumTopicTitleRevisions.originalContent,
+        authorName: user.name,
+        postCount: sql<number>`count(distinct ${forumPosts.id})::int`,
+        isSolved: forumTopics.isSolved,
+        bestAnswerPostId: forumTopics.bestAnswerPostId,
+        createdAt: forumTopics.createdAt,
+        activityAt,
+      })
+      .from(forumTopics)
+      .innerJoin(forumTopicTitleRevisions, and(
+        eq(forumTopicTitleRevisions.topicId, forumTopics.id),
+        eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId),
+      ))
+      .innerJoin(user, eq(user.id, forumTopics.authorId))
+      .leftJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
+      .where(eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID))
+      .groupBy(forumTopics.id, forumTopicTitleRevisions.id, user.name)
+      .orderBy(desc(activityAt), desc(forumTopics.id));
+
+    const tagsByTopic = await this.readTagsForTopics(rows.map(({ id }) => id));
+    return {
+      ...category,
+      questions: rows.map((row) => ({
+        id: row.id,
+        title: row.title,
+        authorName: row.authorName,
+        answerCount: Math.max(0, row.postCount - 1),
+        isSolved: row.isSolved,
+        hasBestAnswer: row.bestAnswerPostId !== null,
+        createdAt: row.createdAt,
+        activityAt: row.activityAt,
+        tags: tagsByTopic.get(row.id) ?? [],
+      })),
+    };
+  }
   async readCategory(id: string, pinnedTopicsPerSection = 10): Promise<ForumCategoryPage | undefined> {
     if (!Number.isInteger(pinnedTopicsPerSection) || pinnedTopicsPerSection < 1 || pinnedTopicsPerSection > 10) {
       throw new RangeError("pinnedTopicsPerSection must be an integer between 1 and 10");
