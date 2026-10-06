@@ -5,6 +5,10 @@ import { I18nextProvider } from "react-i18next";
 import { RouterContextProvider, RouterProvider, createMemoryRouter, matchRoutes } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ForumReader, ForumTopicPage } from "../../db/forum-repository";
+import {
+  HELP_SOLUTIONS_CATEGORY_ID,
+  HELP_SOLUTIONS_SERVICE_SECTION_ID,
+} from "../../db/forum-repository";
 import { canonicalEnglishCatalog } from "../localization/catalog";
 import { createTranslationRuntime } from "../localization/runtime";
 import { ContentTranslationPresentationService, type ContentTranslationPresentation } from "../localization/content-translation-presentation";
@@ -71,6 +75,49 @@ const topic = {
   }],
 };
 
+const helpTopic = {
+  id: "help-question", sectionId: HELP_SOLUTIONS_SERVICE_SECTION_ID, authorId: "ada", authorName: "Ada",
+  createdAt: new Date("2026-01-03"), isPinned: false, isSolved: false, bestAnswerPostId: "help-answer",
+  title: { id: "help-title-r1", originalContent: "Why does my Worker lose auth state?", sourceLocale: "en" },
+  section: {
+    id: HELP_SOLUTIONS_SERVICE_SECTION_ID, name: "Questions",
+    category: { id: HELP_SOLUTIONS_CATEGORY_ID, name: "Help & solutions" },
+  },
+  tags: [{ key: "cloudflare", name: "Cloudflare" }],
+  posts: [
+    {
+      id: "help-question-post", topicId: "help-question", authorId: "ada", authorName: "Ada", parentPostId: null,
+      createdAt: new Date("2026-01-03"),
+      body: { id: "help-question-body", originalContent: "The session disappears after redirect.", sourceLocale: "en" },
+    },
+    {
+      id: "help-answer", topicId: "help-question", authorId: "lin", authorName: "Lin", parentPostId: "help-question-post",
+      createdAt: new Date("2026-01-04"),
+      body: { id: "help-answer-body", originalContent: "Check the callback cookie boundary.", sourceLocale: "en" },
+    },
+    {
+      id: "help-followup", topicId: "help-question", authorId: "ada", authorName: "Ada", parentPostId: "help-answer",
+      createdAt: new Date("2026-01-05"),
+      body: { id: "help-followup-body", originalContent: "That helped, but the issue is not fully solved.", sourceLocale: "en" },
+    },
+  ],
+};
+
+const helpPage = {
+  id: HELP_SOLUTIONS_CATEGORY_ID,
+  name: "Help & solutions",
+  questions: [{
+    id: helpTopic.id,
+    title: helpTopic.title.originalContent,
+    authorName: helpTopic.authorName,
+    answerCount: 2,
+    isSolved: false,
+    hasBestAnswer: true,
+    createdAt: helpTopic.createdAt,
+    activityAt: helpTopic.posts.at(-1)!.createdAt,
+    tags: helpTopic.tags,
+  }],
+};
 const reader: ForumReader = {
   listCategories: async () => [{ id: category.id, name: category.name, sectionCount: 1 }],
   readHomepage: async () => [{
@@ -153,6 +200,7 @@ const reader: ForumReader = {
   readReplyNotifications: async () => [],
   countUnreadReplyNotifications: async () => 0,
   readTopicPinState: async (id) => id === topic.id,
+  readHelpSolutionsAll: async () => helpPage,
   search: async (query) => query.toLowerCase().includes("type") ? [{
     id: topic.id,
     title: topic.title.originalContent,
@@ -165,7 +213,7 @@ const reader: ForumReader = {
   }] : [],
   readCategory: async (id) => id === category.id ? category : undefined,
   readSection: async (id) => id === section.id ? section : undefined,
-  readTopicPage: async (id) => id === topic.id ? topic : undefined,
+  readTopicPage: async (id) => id === topic.id ? topic : id === helpTopic.id ? helpTopic : undefined,
 };
 
 afterEach(() => {
@@ -322,6 +370,47 @@ describe.each([
   });
 });
 
+describe("Help & solutions All mode", () => {
+  it("renders real service-section questions and keeps the storage section out of navigation", async () => {
+    const requestContext = context("en", "ltr");
+    const data = await categoryLoader({
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: requestContext,
+    });
+
+    expect(data.kind).toBe("help-solutions");
+    if (data.kind !== "help-solutions") throw new Error("expected Help & solutions page");
+    expect(data.page.questions).toEqual([
+      expect.objectContaining({
+        id: helpTopic.id, answerCount: 2, isSolved: false, hasBestAnswer: true,
+      }),
+    ]);
+
+    const pageView = renderRoute(
+      CategoryRoute, data, forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID), "en", "ltr",
+    );
+    expect(await screen.findByRole("heading", { level: 1, name: "Help & solutions" })).toBeVisible();
+    expect(screen.getByText("All")).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("heading", { level: 2, name: "All questions" })).toBeVisible();
+    expect(screen.getByText("Open")).toBeVisible();
+    expect(screen.getByText("Best answer")).toBeVisible();
+    expect(screen.getByText("2 answers")).toBeVisible();
+    expect(screen.getByText("#Cloudflare")).toBeVisible();
+    expect(screen.getByRole("link", { name: /Why does my Worker lose auth state/ }))
+      .toHaveAttribute("href", forumTopicPath("en", helpTopic.id));
+    pageView.unmount();
+
+    const topicData = await topicLoader({
+      params: { locale: "en", topicId: helpTopic.id },
+      context: requestContext,
+    });
+    renderRoute(TopicRoute, topicData, forumTopicPath("en", helpTopic.id), "en", "ltr");
+    expect(await screen.findByRole("link", { name: "Help & solutions" }))
+      .toHaveAttribute("href", forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID));
+    expect(screen.queryByRole("link", { name: "Questions" })).not.toBeInTheDocument();
+    expect(document.querySelector(`a[href="/en/sections/${HELP_SOLUTIONS_SERVICE_SECTION_ID}"]`)).toBeNull();
+  });
+});
 describe("Popular topics", () => {
   it("loads all three activity periods and keeps topic links locale-aware", async () => {
     const data = await popularLoader({
