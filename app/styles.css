@@ -7246,6 +7246,10 @@ a.topic-tag:focus-visible {
 }
 
 .help-solutions-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
   margin: 0 1rem 0.55rem;
   padding: 0.95rem 1rem;
   border: 1px solid var(--color-border);
@@ -7278,8 +7282,31 @@ a.topic-tag:focus-visible {
   line-height: 1.45;
 }
 
+.help-solutions-ask-toggle {
+  flex: 0 0 auto;
+  min-height: 2.35rem;
+  padding: 0.5rem 0.85rem;
+  border: 0;
+  border-radius: 0.45rem;
+  color: var(--color-action-on-accent);
+  background: var(--color-accent);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.help-solutions-ask-toggle:hover,
+.help-solutions-ask-toggle:focus-visible {
+  background: var(--color-accent-hover);
+}
+
 .help-question-create-form {
   margin: 0 1rem 0.65rem;
+}
+
+.help-question-create-actions {
+  justify-content: flex-end;
 }
 
 .help-solutions-modes {
@@ -7469,6 +7496,10 @@ a.topic-tag:focus-visible {
 }
 
 @media (max-width: 52rem) {
+  .help-solutions-heading {
+    align-items: stretch;
+  }
+
   .help-question-card {
     grid-template-columns: minmax(0, 1fr) minmax(4.5rem, auto) 2.65rem;
   }
@@ -7508,7 +7539,12 @@ a.topic-tag:focus-visible {
   }
 
   .help-solutions-heading {
+    flex-direction: column;
     padding: 0.75rem;
+  }
+
+  .help-solutions-ask-toggle {
+    width: 100%;
   }
 
   .help-question-card {
