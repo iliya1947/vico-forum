@@ -152,6 +152,8 @@ export interface ForumCategoryPage {
   sections: ForumSectionSummary[];
 }
 
+export type HelpSolutionModerationStatus = "needs-review" | "outdated";
+
 export interface ForumHelpQuestionSummary {
   id: string;
   title: string;
@@ -159,6 +161,8 @@ export interface ForumHelpQuestionSummary {
   replyCount: number;
   isSolved: boolean;
   hasBestAnswer: boolean;
+  solutionModerationStatus: HelpSolutionModerationStatus | null;
+  solutionOutdatedReason: string | null;
   createdAt: Date;
   activityAt: Date;
   tags: ForumTag[];
@@ -256,6 +260,8 @@ export interface ForumTopic {
   title: ForumRevisionContent;
   isSolved: boolean;
   bestAnswerPostId: string | null;
+  solutionModerationStatus: HelpSolutionModerationStatus | null;
+  solutionOutdatedReason: string | null;
 }
 
 export interface ForumPost {
