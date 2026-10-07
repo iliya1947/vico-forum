@@ -165,14 +165,17 @@ Vico Forum находится в ранней pre-release разработке.
   Help & solutions вопросы с хотя бы одним ответом выбираются server-side только из
   `help-solutions-questions`, включают open и solved состояния, сортируются по existing
   latest-activity projection и ограничены первыми 100 вопросами.
-- Текущий bounded Q&A follow-up добавляет public режим **Needs attention / Требуют внимания**
-  через `?mode=attention`. В него входят только нерешённые persisted Help & solutions вопросы
-  без ответов; фильтрация выполняется на repository/DB boundary внутри
+- Текущий bounded Q&A follow-up добавляет permission-gated режим **Needs attention / Требуют
+  внимания** через `?mode=attention`. В него входят только нерешённые persisted Help & solutions
+  вопросы без ответов; фильтрация выполняется на repository/DB boundary внутри
   `help-solutions-questions`, использует существующие deterministic activity tie-breaks и
-  ограничена первыми 100 вопросами. Existing cards, tags, statuses, authoring, auth boundaries,
-  similar-question check и остальные Q&A modes переиспользуются без новой schema, migrations,
-  permissions, notifications, personalization, moderation flags, age thresholds, visual polish
-  или Stage 6 работы.
+  ограничена первыми 100 вопросами. Новый code-backed permission
+  `forum.help.attention.read` имеет initial grants только built-in `moderator`/`admin`;
+  Guest получает 401, authenticated actor без effective permission — 403, authorization
+  unavailable на protected read — controlled 503, а navigation показывает режим только при
+  server-resolved permission. Existing cards, tags, statuses, authoring, similar-question check и
+  остальные Q&A modes переиспользуются без notifications, personalization, moderation flags,
+  age thresholds, visual polish или Stage 6 работы.
 - In-app reply notifications slice реализован в PR #180:
   forward migration `0024_forum_reply_notifications` хранит только stable recipient/actor/topic/post
   references, `createdAt` и nullable `readAt`; unique recipient + reply identity предотвращает
