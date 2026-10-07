@@ -30,16 +30,17 @@ export async function loader({ request, params, context }: {
           ? "mine" as const
           : "all" as const;
     const session = authSessionForRequest(context);
-    if (mode === "mine" && !session) {
-      throw new Response("Unauthorized", { status: 401 });
-    }
-    const helpSolutions = mode === "open"
-      ? await reader.readHelpSolutionsOpen()
-      : mode === "solutions"
-        ? await reader.readHelpSolutionsSolved()
-        : mode === "mine"
-          ? await reader.readHelpSolutionsMine(session!.user.id)
+    let helpSolutions;
+    if (mode === "mine") {
+      if (!session) throw new Response("Unauthorized", { status: 401 });
+      helpSolutions = await reader.readHelpSolutionsMine(session.user.id);
+    } else {
+      helpSolutions = mode === "open"
+        ? await reader.readHelpSolutionsOpen()
+        : mode === "solutions"
+          ? await reader.readHelpSolutionsSolved()
           : await reader.readHelpSolutionsAll();
+    }
     if (!helpSolutions) throw new Response("Not Found", { status: 404 });
     let canAskQuestion = false;
     if (session) {
