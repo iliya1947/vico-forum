@@ -26,7 +26,9 @@ export async function loader({ request, params, context }: {
       ? "open" as const
       : requestedMode === "help"
         ? "help" as const
-        : requestedMode === "active"
+        : requestedMode === "for-me"
+          ? "for-me" as const
+          : requestedMode === "active"
           ? "active" as const
           : requestedMode === "attention"
           ? "attention" as const
@@ -36,7 +38,7 @@ export async function loader({ request, params, context }: {
               ? "mine" as const
               : "all" as const;
     const session = authSessionForRequest(context);
-    if ((mode === "mine" || mode === "help" || mode === "attention") && !session) {
+    if ((mode === "mine" || mode === "help" || mode === "for-me" || mode === "attention") && !session) {
       throw new Response("Unauthorized", { status: 401 });
     }
 
@@ -64,6 +66,8 @@ export async function loader({ request, params, context }: {
       helpSolutions = await reader.readHelpSolutionsMine(session!.user.id);
     } else if (mode === "help") {
       helpSolutions = await reader.readHelpSolutionsWantToHelp(session!.user.id);
+    } else if (mode === "for-me") {
+      helpSolutions = await reader.readHelpSolutionsForMe(session!.user.id);
     } else {
       helpSolutions = mode === "open"
         ? await reader.readHelpSolutionsOpen()
