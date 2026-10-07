@@ -1010,7 +1010,7 @@ export function HelpSolutionsView({
   actionData,
 }: {
   locale: string;
-  mode: "all" | "open" | "help" | "active" | "attention" | "solutions" | "mine";
+  mode: "all" | "open" | "help" | "for-me" | "active" | "attention" | "solutions" | "mine";
   page: HelpSolutionsPagePresentation;
   referenceTime: string;
   isAuthenticated?: boolean;
@@ -1038,6 +1038,7 @@ export function HelpSolutionsView({
   const categoryPath = forumCategoryPath(locale, HELP_SOLUTIONS_CATEGORY_ID);
   const openPath = `${categoryPath}?mode=open`;
   const helpPath = `${categoryPath}?mode=help`;
+  const forMePath = `${categoryPath}?mode=for-me`;
   const activePath = `${categoryPath}?mode=active`;
   const attentionPath = `${categoryPath}?mode=attention`;
   const solutionsPath = `${categoryPath}?mode=solutions`;
@@ -1045,6 +1046,7 @@ export function HelpSolutionsView({
   const allMode = mode === "all";
   const openMode = mode === "open";
   const helpMode = mode === "help";
+  const forMeMode = mode === "for-me";
   const activeMode = mode === "active";
   const attentionMode = mode === "attention";
   const solutionsMode = mode === "solutions";
@@ -1054,7 +1056,9 @@ export function HelpSolutionsView({
       ? "helpSolutionsNeedsHelpHeading"
       : helpMode
         ? "helpSolutionsWantToHelpHeading"
-        : activeMode
+        : forMeMode
+          ? "helpSolutionsForMeHeading"
+          : activeMode
           ? "helpSolutionsActiveHeading"
           : attentionMode
           ? "helpSolutionsNeedsAttentionHeading"
@@ -1069,7 +1073,9 @@ export function HelpSolutionsView({
       ? "helpSolutionsNeedsHelpEmpty"
       : helpMode
         ? "helpSolutionsWantToHelpEmpty"
-        : activeMode
+        : forMeMode
+          ? "helpSolutionsForMeEmpty"
+          : activeMode
           ? "helpSolutionsActiveEmpty"
           : attentionMode
           ? "helpSolutionsNeedsAttentionEmpty"
@@ -1151,6 +1157,15 @@ export function HelpSolutionsView({
           >
             {t("helpSolutionsSolutionsMode")}
           </Link>
+          {isAuthenticated ? (
+            <Link
+              className={"help-solutions-mode" + (forMeMode ? " is-active" : "")}
+              to={forMePath}
+              aria-current={forMeMode ? "page" : undefined}
+            >
+              {t("helpSolutionsForMeMode")}
+            </Link>
+          ) : null}
           {isAuthenticated ? (
             <Link
               className={"help-solutions-mode" + (mineMode ? " is-active" : "")}
