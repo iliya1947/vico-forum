@@ -209,6 +209,7 @@ const reader: ForumReader = {
   readTopicPinState: async (id) => id === topic.id,
   readHelpSolutionsAll: async () => helpPage,
   readHelpSolutionsOpen: async () => helpPage,
+  readHelpSolutionsActive: async () => helpPage,
   readHelpSolutionsSolved: async () => solvedHelpPage,
   readHelpSolutionsMine: async () => helpPage,
   searchHelpSolutionsSimilar: async () => [],
@@ -406,6 +407,8 @@ describe("Help & solutions modes and authoring", () => {
     expect(screen.getByText("All")).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("link", { name: "Needs help" }))
       .toHaveAttribute("href", forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=open");
+    expect(screen.getByRole("link", { name: "Active" }))
+      .toHaveAttribute("href", forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=active");
     expect(screen.getByRole("link", { name: "Solutions" }))
       .toHaveAttribute("href", forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=solutions");
     expect(screen.queryByRole("link", { name: "My questions" })).not.toBeInTheDocument();
@@ -534,6 +537,55 @@ describe("Help & solutions modes and authoring", () => {
     if (unknownData.kind !== "help-solutions") throw new Error("expected Help & solutions page");
     expect(unknownData.mode).toBe("all");
     expect(unknownData.page.questions).toHaveLength(1);
+  });
+
+  it("shows Active questions with replies and renders its empty state", async () => {
+    const requestContext = context("en", "ltr");
+    const data = await categoryLoader({
+      request: new Request("https://forum.example/en/categories/help-solutions?mode=active"),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: requestContext,
+    });
+
+    expect(data.kind).toBe("help-solutions");
+    if (data.kind !== "help-solutions") throw new Error("expected Help & solutions page");
+    expect(data.mode).toBe("active");
+    expect(data.page.questions).toEqual([
+      expect.objectContaining({ id: helpTopic.id, replyCount: 2 }),
+    ]);
+
+    const activeView = renderRoute(
+      CategoryRoute,
+      data,
+      forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=active",
+      "en",
+      "ltr",
+    );
+    expect(await screen.findByRole("link", { name: "Active" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("heading", { level: 2, name: "Active questions" })).toBeVisible();
+    expect(screen.getByText("2 replies")).toBeVisible();
+    activeView.unmount();
+
+    const emptyContext = context("en", "ltr");
+    emptyContext.set(forumReaderContext, {
+      ...reader,
+      readHelpSolutionsActive: async () => ({ ...helpPage, questions: [] }),
+    });
+    const emptyData = await categoryLoader({
+      request: new Request("https://forum.example/en/categories/help-solutions?mode=active"),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: emptyContext,
+    });
+    if (emptyData.kind !== "help-solutions") throw new Error("expected Help & solutions page");
+
+    renderRoute(
+      CategoryRoute,
+      emptyData,
+      forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=active",
+      "en",
+      "ltr",
+    );
+    expect(await screen.findByText("There are no active questions right now.")).toBeVisible();
   });
 
   it("shows My questions only to authenticated users and binds it to the session identity", async () => {
