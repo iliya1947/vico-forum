@@ -1339,3 +1339,44 @@ Return only:
 
 Do not choose visual polish or similar-question search refinement yet. Do not assume `For me` unless it is the most appropriate next bounded slice from the actual current repository/product state.
 
+
+
+---
+
+<!-- codex-service-channel-comment:6046168285 -->
+## Codex GitHub response — comment 6046168285
+
+_Source: https://github.com/iliya1947/vico-forum/pull/147#issuecomment-6046168285 · 2026-10-07T20:24:10Z_
+
+# Действие пользователя
+
+Ничего.
+
+## Required result
+
+Добавить authenticated-режим **For me / Для меня**. Он показывает открытые вопросы других авторов, теги которых пересекаются с тегами из существующего участия текущего пользователя в Help & solutions. Ранжирование должно быть прозрачным и детерминированным; `All` остаётся canonical default, семантика завершённых режимов не меняется. [.github/ui-ux-service-channel.mdL1344-L1348](https://github.com/iliya1947/vico-forum/blob/bf0e135b8d509224a63ff3acdd285097c6baccac/.github/ui-ux-service-channel.md#L1344-L1348)
+
+## Bounded scope and explicit exclusions
+
+- Добавить locale-aware `mode=for-me`, видимый только authenticated users; для прямого guest-доступа определить безопасное локализованное поведение.
+- Получать authoritative current user исключительно из server-side session.
+- Выводить интересы только из persisted Help & solutions тем, которые пользователь создал или в которых отвечал.
+- Возвращать только нерешённые вопросы других авторов из внутреннего раздела `help-solutions-questions`.
+- Ранжировать по количеству совпавших тегов, затем по существующей latest activity и стабильному tie-break.
+- Сохранить bounded Q&A projection, статусы, reply counts, tags и canonical locale-aware destinations.
+- Для отсутствующих сигналов или совпадений показывать честное localized empty state, не подменяя его списком `All` или `Want to help`.
+- Добавить canonical EN, reviewed RU/HE, focused regression coverage и representative Pages states. [.github/ui-ux-service-channel.mdL1350-L1357](https://github.com/iliya1947/vico-forum/blob/bf0e135b8d509224a63ff3acdd285097c6baccac/.github/ui-ux-service-channel.md#L1350-L1357)
+- Исключить explicit interests/subscriptions, настройки профиля, tracking signals, opaque/AI scoring, schema/migrations, новые permissions, moderation actions, notifications, изменения authoring, generic forum filtering и Stage 6.
+- Не выполнять visual polish или refinement similar-question search. [.github/ui-ux-service-channel.mdL1358-L1359](https://github.com/iliya1947/vico-forum/blob/bf0e135b8d509224a63ff3acdd285097c6baccac/.github/ui-ux-service-channel.md#L1358-L1359)
+
+## Readiness criteria
+
+- `mode=for-me` привязан к server-side identity; client input не может подменить пользователя или передать собственные interest tags.
+- Запросы сигналов и кандидатов bounded и deterministic, без client-side filtering и N+1; собственные, решённые вопросы и обычные разделы исключены.
+- Тесты подтверждают приоритет количества совпавших тегов, activity/stable tie-break, а также no-signal, no-match, populated и guest states.
+- Режим сам по себе не предоставляет права отвечать; существующие authentication и reply-permission boundaries остаются authoritative.
+- Не регрессируют `All`, `Needs help`, `Solutions`, `My questions`, `Active`, permission-gated `Needs attention`, `Want to help`, similar-question checking и question authoring.
+- Проверены representative desktop/mobile и LTR/RTL Pages states.
+- Exact-head CI и Pages deployment успешны; owner browser acceptance и независимый whole-PR review завершены без открытых findings текущего scope. [.github/ui-ux-service-channel.mdL1361-L1369](https://github.com/iliya1947/vico-forum/blob/bf0e135b8d509224a63ff3acdd285097c6baccac/.github/ui-ux-service-channel.md#L1361-L1369)
+
+ [View task →](https://chatgpt.com/s/cd_6ac6a9dae5108191acf89f62edae10ab)
