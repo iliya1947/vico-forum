@@ -7373,7 +7373,7 @@ a.topic-tag:focus-visible {
 
 .help-question-card {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(7rem, auto) minmax(5rem, auto) 2.8rem;
+  grid-template-columns: minmax(0, 1fr) 10rem 5rem 2.8rem;
   min-height: 5.15rem;
   align-items: stretch;
   color: inherit;
