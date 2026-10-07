@@ -21,12 +21,17 @@ export async function loader({ request, params, context }: {
   const referenceTime = new Date().toISOString();
 
   if (categoryId === HELP_SOLUTIONS_CATEGORY_ID) {
-    const mode = request && new URL(request.url).searchParams.get("mode") === "solutions"
-      ? "solutions" as const
-      : "all" as const;
-    const helpSolutions = mode === "solutions"
-      ? await reader.readHelpSolutionsSolved()
-      : await reader.readHelpSolutionsAll();
+    const requestedMode = request ? new URL(request.url).searchParams.get("mode") : null;
+    const mode = requestedMode === "open"
+      ? "open" as const
+      : requestedMode === "solutions"
+        ? "solutions" as const
+        : "all" as const;
+    const helpSolutions = mode === "open"
+      ? await reader.readHelpSolutionsOpen()
+      : mode === "solutions"
+        ? await reader.readHelpSolutionsSolved()
+        : await reader.readHelpSolutionsAll();
     if (!helpSolutions) throw new Response("Not Found", { status: 404 });
     const session = authSessionForRequest(context);
     let canAskQuestion = false;
