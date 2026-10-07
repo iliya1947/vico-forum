@@ -892,3 +892,13 @@ _Source: https://github.com/iliya1947/vico-forum/pull/147#issuecomment-603620187
 
 You have reached your Codex usage limits for code reviews. You can see your limits in the [Codex usage dashboard](https://chatgpt.com/codex/cloud/settings/usage).
 To continue using code reviews, you can upgrade your account or add credits to your account and enable them for code reviews in your [settings](https://chatgpt.com/codex/cloud/settings/code-review).
+
+
+---
+
+<!-- codex-service-channel-comment:6036820446 -->
+## Codex GitHub response — comment 6036820446
+
+_Source: https://github.com/iliya1947/vico-forum/pull/147#issuecomment-6036820446 · 2026-10-07T11:19:26Z_
+
+You have reached your Codex usage limits. You can see your limits in the [Codex usage dashboard](https://chatgpt.com/codex/cloud/settings/usage).
