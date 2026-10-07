@@ -1089,3 +1089,45 @@ Implementation PR #195 final exact head: `890be46ff3cf6a01c9e421163e64da0a59b422
 
 Consensus: PR #195 has no known current-scope defect and is technically ready for owner merge. Merge remains owner-only.
 
+
+
+---
+
+<!-- codex-service-channel-comment:6041917064 -->
+## Codex GitHub response — comment 6041917064
+
+_Source: https://github.com/iliya1947/vico-forum/pull/147#issuecomment-6041917064 · 2026-10-07T16:12:25Z_
+
+# Действие пользователя
+
+Ничего.
+
+## Required result
+
+Добавить в **Help & solutions** режим **Active / Активные** для persisted-вопросов, в которых уже началось обсуждение. Вопросы сортируются по последней реальной активности; `All` остаётся canonical default, а семантика `Needs help`, `Solutions` и `My questions` не меняется. [.github/ui-ux-service-channel.mdL1095-L1102](https://github.com/iliya1947/vico-forum/blob/63c07a04018000081f8f367df3c04ddfc4802ad8/.github/ui-ux-service-channel.md#L1095-L1102)
+
+## Scope
+
+- Добавить locale-aware `mode=active`.
+- Считать активным вопрос с хотя бы одним последующим ответом.
+- Включать открытые и решённые вопросы, используя существующую latest-activity projection, детерминированные tie-breaks и bounded limit.
+- Выполнять выборку на repository/DB boundary только внутри `help-solutions-questions`.
+- Переиспользовать существующие Q&A cards, статусы, reply counts, tags, locale-aware destinations и hidden-section boundary.
+- Добавить canonical EN, reviewed RU/HE, populated/empty Pages states и focused regression coverage. [.github/ui-ux-service-channel.mdL1104-L1114](https://github.com/iliya1947/vico-forum/blob/63c07a04018000081f8f367df3c04ddfc4802ad8/.github/ui-ux-service-channel.md#L1104-L1114)
+
+## Exclusions
+
+- Не реализовывать `Want to help`, `Needs attention` или `For me`.
+- Не выполнять refinement similar-question search или visual polish.
+- Не добавлять schema/migrations, новую activity persistence, permissions, moderation, duplicate/appeal workflows, personalization, изменения authoring, generic forum filtering или Stage 6 работу. [.github/ui-ux-service-channel.mdL1116-L1123](https://github.com/iliya1947/vico-forum/blob/63c07a04018000081f8f367df3c04ddfc4802ad8/.github/ui-ux-service-channel.md#L1116-L1123)
+
+## Readiness criteria
+
+- `mode=active` фильтруется server-side по persisted-вопросам с хотя бы одним ответом; обычные разделы и вопросы без ответов исключаются.
+- Запрос bounded, deterministic, без client-side filtering и N+1.
+- Open/solved status, reply count, tags и canonical locale-aware destinations остаются корректными.
+- `All`, `Needs help`, `Solutions`, `My questions`, similar-question check, authoring, auth boundaries и generic routes не регрессируют.
+- Проверены desktop/mobile и LTR/RTL Pages states.
+- Exact-head CI и Pages deployment успешны; owner browser acceptance и независимый whole-PR review завершены без открытых findings текущего scope. [.github/ui-ux-service-channel.mdL1125-L1137](https://github.com/iliya1947/vico-forum/blob/63c07a04018000081f8f367df3c04ddfc4802ad8/.github/ui-ux-service-channel.md#L1125-L1137)
+
+ [View task →](https://chatgpt.com/s/cd_6ac66ee84f888191a31a63b3d369bca1)
