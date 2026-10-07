@@ -297,7 +297,7 @@ composition without changing the forum hierarchy or schema:
   `?mode=active`: questions with at least one persisted reply are selected server-side from the
   hidden service section, include both open and solved states, reuse existing latest-activity
   ordering, and are bounded to the first 100 results. The current bounded follow-up adds public
-  `Needs attention / Требуют внимания` as `?mode=attention`: only unsolved questions with zero
+  permission-gated `Needs attention / Требуют внимания` as `?mode=attention`: only unsolved questions with zero
   persisted replies are selected server-side from the same hidden service section, reuse the
   existing Q&A projection/activity ordering, and are bounded to the first 100 results. The mode is
   permission-gated by `forum.help.attention.read`, initially granted only to built-in
