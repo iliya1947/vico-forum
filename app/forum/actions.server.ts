@@ -47,7 +47,7 @@ export async function helpSolutionsCategoryAction({ request, params, context }: 
   if (forbidden) return forbidden;
   let formData: FormData;
   try { formData = await request.formData(); } catch { return mutationFailure("invalid", 400); }
-  const intent = requiredFormText(formData, "intent") ?? "createHelpQuestion";
+  const intent = requiredFormText(formData, "intent");
   const draft = helpQuestionDraft(formData);
 
   if (intent === "checkSimilarHelpQuestions") {
