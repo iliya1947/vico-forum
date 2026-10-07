@@ -467,11 +467,20 @@ describe("Help & solutions All mode", () => {
       "ltr",
     );
 
+    const askButton = await screen.findByRole("button", { name: "Ask a question" });
+    expect(askButton).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByRole("link", { name: "All" })).toHaveAttribute("aria-current", "page");
+    expect(screen.queryByRole("form", { name: "Ask a question" })).not.toBeInTheDocument();
+
+    fireEvent.click(askButton);
+
+    expect(askButton).toHaveAttribute("aria-expanded", "true");
     const form = await screen.findByRole("form", { name: "Ask a question" });
     expect(within(form).getByLabelText("Question title")).toBeRequired();
     expect(within(form).getByLabelText("Question details")).toBeRequired();
     expect(within(form).getByLabelText("Tags")).not.toBeRequired();
     expect(within(form).getByRole("button", { name: "Ask question" })).toBeEnabled();
+    expect(within(form).queryByText("All fields are required.")).not.toBeInTheDocument();
     expect(form.querySelector('input[name="intent"]')).toHaveValue("createHelpQuestion");
     expect(form.querySelector('[name="sectionId"]')).toBeNull();
   });
