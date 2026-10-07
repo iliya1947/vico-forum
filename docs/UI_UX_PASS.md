@@ -310,9 +310,16 @@ composition without changing the forum hierarchy or schema:
   mode and direct guest access uses the existing unauthenticated route state; actual reply
   submission remains governed by the existing reply authorization/origin/validation/rate-limit
   boundaries. Owner visual acceptance of populated/empty Pages states and Guest/User/Manager
-  identity presentation was confirmed on 2026-10-07. Recommendation scoring,
-  interests/subscriptions, `For me`, age or staleness thresholds, moderation flags,
-  notifications, personalization, similar-search refinement and visual polish remain separate
+  identity presentation was confirmed on 2026-10-07. The current bounded follow-up adds
+  authenticated `For me / Для меня` as `?mode=for-me`: interest tags are derived server-side
+  only from persisted Help & solutions questions the current user authored or participated in,
+  while candidates are unsolved questions from other authors sharing at least one of those tags.
+  Ranking is deterministic by matched-tag count, then existing latest activity and stable topic-id
+  tie-break; both interest-tag and result sets are bounded to 100. No-signal/no-match uses a
+  truthful localized empty state rather than falling back to `All` or `Want to help`. The mode
+  does not add explicit interests/subscriptions, tracking signals, profile settings, opaque/AI
+  scoring, schema/migrations, new permissions or reply capability. Age/staleness thresholds,
+  moderation flags, notifications, similar-search refinement and visual polish remain separate
   bounded product work;
 - owner visual acceptance of the implementation was confirmed on 2026-10-05; exact-head
   automated verification remains a separate PR check.
