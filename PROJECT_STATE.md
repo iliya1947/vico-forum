@@ -161,14 +161,18 @@ Vico Forum находится в ранней pre-release разработке.
   persisted вопросы по `forum_topics.author_id` внутри internal `help-solutions-questions`;
   client не передаёт и не выбирает author identity. Режим виден в Q&A navigation только
   authenticated пользователю, прямой guest-доступ fail-closed с unauthenticated route state.
-- Текущий bounded Q&A follow-up добавляет public режим **Active / Активные** через
-  `?mode=active`. Активным считается persisted Help & solutions вопрос с хотя бы одним
-  последующим ответом; open и solved вопросы допускаются одинаково. Фильтрация выполняется на
-  repository/DB boundary только внутри `help-solutions-questions`, результаты сортируются по
-  существующей latest-activity projection и ограничены первыми 100 вопросами. Existing cards,
-  statuses, reply counts, tags, locale-aware destinations, authoring, auth boundaries и
-  similar-question check переиспользуются без новой schema, migrations, permissions,
-  moderation/duplicate workflow, refinement поиска, visual polish или Stage 6 работы.
+- Merged PR #196 добавил public режим **Active / Активные** через `?mode=active`: persisted
+  Help & solutions вопросы с хотя бы одним ответом выбираются server-side только из
+  `help-solutions-questions`, включают open и solved состояния, сортируются по existing
+  latest-activity projection и ограничены первыми 100 вопросами.
+- Текущий bounded Q&A follow-up добавляет public режим **Needs attention / Требуют внимания**
+  через `?mode=attention`. В него входят только нерешённые persisted Help & solutions вопросы
+  без ответов; фильтрация выполняется на repository/DB boundary внутри
+  `help-solutions-questions`, использует существующие deterministic activity tie-breaks и
+  ограничена первыми 100 вопросами. Existing cards, tags, statuses, authoring, auth boundaries,
+  similar-question check и остальные Q&A modes переиспользуются без новой schema, migrations,
+  permissions, notifications, personalization, moderation flags, age thresholds, visual polish
+  или Stage 6 работы.
 - In-app reply notifications slice реализован в PR #180:
   forward migration `0024_forum_reply_notifications` хранит только stable recipient/actor/topic/post
   references, `createdAt` и nullable `readAt`; unique recipient + reply identity предотвращает
