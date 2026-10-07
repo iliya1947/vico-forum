@@ -1059,9 +1059,9 @@ export function HelpSolutionsView({
         : forMeMode
           ? "helpSolutionsForMeHeading"
           : activeMode
-          ? "helpSolutionsActiveHeading"
-          : attentionMode
-          ? "helpSolutionsNeedsAttentionHeading"
+            ? "helpSolutionsActiveHeading"
+            : attentionMode
+              ? "helpSolutionsNeedsAttentionHeading"
           : solutionsMode
             ? "helpSolutionsSolutionsHeading"
             : mineMode
@@ -1076,9 +1076,9 @@ export function HelpSolutionsView({
         : forMeMode
           ? "helpSolutionsForMeEmpty"
           : activeMode
-          ? "helpSolutionsActiveEmpty"
-          : attentionMode
-          ? "helpSolutionsNeedsAttentionEmpty"
+            ? "helpSolutionsActiveEmpty"
+            : attentionMode
+              ? "helpSolutionsNeedsAttentionEmpty"
           : solutionsMode
             ? "helpSolutionsSolutionsEmpty"
             : mineMode
