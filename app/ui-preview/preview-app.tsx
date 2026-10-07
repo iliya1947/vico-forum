@@ -1038,8 +1038,8 @@ function PreviewCategoryRoute({ scenario }: { scenario: Scenario }) {
         : requestedMode === "for-me"
           ? "for-me"
           : requestedMode === "active"
-        ? "active"
-        : requestedMode === "attention"
+            ? "active"
+            : requestedMode === "attention"
           ? "attention"
           : requestedMode === "solutions"
             ? "solutions"
@@ -1055,9 +1055,9 @@ function PreviewCategoryRoute({ scenario }: { scenario: Scenario }) {
         : scenario.variant === "help-solutions-for-me-empty" && mode === "for-me"
           ? { ...page, questions: [] }
           : scenario.variant === "help-solutions-active-empty" && mode === "active"
-          ? { ...page, questions: [] }
-          : scenario.variant === "help-solutions-attention-empty" && mode === "attention"
-          ? { ...page, questions: [] }
+            ? { ...page, questions: [] }
+            : scenario.variant === "help-solutions-attention-empty" && mode === "attention"
+              ? { ...page, questions: [] }
           : scenario.variant === "help-solutions-mine-empty" && mode === "mine"
             ? { ...page, questions: [] }
             : mode === "open"
@@ -1074,9 +1074,9 @@ function PreviewCategoryRoute({ scenario }: { scenario: Scenario }) {
                       ),
                     }
                   : mode === "active"
-                ? { ...page, questions: page.questions.filter((question) => question.replyCount > 0) }
-                : mode === "attention"
-                ? { ...page, questions: page.questions.filter((question) => !question.isSolved && question.replyCount === 0) }
+                    ? { ...page, questions: page.questions.filter((question) => question.replyCount > 0) }
+                    : mode === "attention"
+                      ? { ...page, questions: page.questions.filter((question) => !question.isSolved && question.replyCount === 0) }
                 : mode === "solutions"
                   ? { ...page, questions: page.questions.filter((question) => question.isSolved) }
                   : mode === "mine"
