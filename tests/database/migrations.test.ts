@@ -208,6 +208,7 @@ describe("PostgreSQL 17 locale migrations", () => {
           isSolved: false,
         }],
       });
+      expect(await repository.readHelpSolutionsNeedsAttention()).toMatchObject({ questions: [] });
       expect(await repository.readHelpSolutionsSolved()).toMatchObject({ questions: [] });
 
       await forum.markTopicSolved("help-foundation-topic", "help-foundation-author");
@@ -226,6 +227,7 @@ describe("PostgreSQL 17 locale migrations", () => {
           isSolved: true,
         }],
       });
+      expect(await repository.readHelpSolutionsNeedsAttention()).toMatchObject({ questions: [] });
 
       await forum.createTopicWithInitialPost({
         id: "help-foundation-no-replies",
@@ -253,6 +255,16 @@ describe("PostgreSQL 17 locale migrations", () => {
         }],
       });
       expect((await repository.readHelpSolutionsActive())?.questions).toHaveLength(1);
+      expect(await repository.readHelpSolutionsNeedsAttention()).toMatchObject({
+        questions: [{
+          id: "help-foundation-no-replies",
+          replyCount: 0,
+          isSolved: false,
+        }],
+      });
+      expect((await repository.readHelpSolutionsNeedsAttention())?.questions).toHaveLength(1);
+      await forum.markTopicSolved("help-foundation-no-replies", "help-foundation-waiting");
+      expect(await repository.readHelpSolutionsNeedsAttention()).toMatchObject({ questions: [] });
       expect(await repository.readSection(HELP_SOLUTIONS_SERVICE_SECTION_ID)).toBeUndefined();
     } finally {
       await client.query("delete from forum_topics where id in ('help-foundation-topic', 'help-foundation-no-replies')");
