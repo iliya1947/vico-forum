@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema": "public",
-  "targetMigration": "0027_help_solutions_foundation",
+  "targetMigration": "0028_help_solution_moderation",
   "tables": {
     "account": {
       "columns": [
@@ -1782,6 +1782,18 @@
           "type": "timestamp with time zone",
           "nullable": false,
           "defaultSha256": "28a4dae0461e17af56e979c2095abfbe0bfc45fe9ca8abf3144338a518a1bb8f"
+        },
+        {
+          "name": "solution_moderation_status",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "solution_outdated_reason",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
         }
       ],
       "primaryKeys": [
@@ -1855,7 +1867,31 @@
           "initiallyDeferred": false
         }
       ],
-      "checks": [],
+      "checks": [
+        {
+          "name": "forum_topics_solution_moderation_requires_solved_check",
+          "columns": [
+            "is_solved",
+            "solution_moderation_status"
+          ],
+          "definitionSha256": "PENDING"
+        },
+        {
+          "name": "forum_topics_solution_moderation_status_check",
+          "columns": [
+            "solution_moderation_status"
+          ],
+          "definitionSha256": "PENDING"
+        },
+        {
+          "name": "forum_topics_solution_outdated_reason_check",
+          "columns": [
+            "solution_moderation_status",
+            "solution_outdated_reason"
+          ],
+          "definitionSha256": "PENDING"
+        }
+      ],
       "indexes": [
         {
           "name": "forum_topics_author_id_idx",
