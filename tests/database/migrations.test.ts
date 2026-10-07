@@ -314,16 +314,24 @@ describe("PostgreSQL 17 locale migrations", () => {
       "for-me-own-candidate",
       "for-me-solved-candidate",
       "for-me-no-match-signal",
+      "for-me-regular-signal",
+      "for-me-regular-signal-candidate",
+      "for-me-regular-candidate",
     ];
 
     for (const userId of userIds) {
       await insertForumAuthor(userId, `${userId}@example.test`, null);
     }
 
-    const createQuestion = async (id: string, authorId: string, tags: string[]) => {
+    const createQuestion = async (
+      id: string,
+      authorId: string,
+      tags: string[],
+      sectionId = HELP_SOLUTIONS_SERVICE_SECTION_ID,
+    ) => {
       await forum.createTopicWithInitialPost({
         id,
-        sectionId: HELP_SOLUTIONS_SERVICE_SECTION_ID,
+        sectionId,
         authorId,
         titleRevision: {
           id: `${id}-title`,
@@ -372,6 +380,10 @@ describe("PostgreSQL 17 locale migrations", () => {
       await createQuestion("for-me-no-match-signal", "for-me-no-match-user", ["formenone"]);
       await forum.markTopicSolved("for-me-no-match-signal", "for-me-no-match-user");
 
+      await createQuestion("for-me-regular-signal", "for-me-user", ["formeregularsignal"], "typescript");
+      await createQuestion("for-me-regular-signal-candidate", "for-me-other", ["formeregularsignal"]);
+      await createQuestion("for-me-regular-candidate", "for-me-other", ["formeowned"], "typescript");
+
       const setActivity = async (topicId: string, timestamp: string) => {
         await client.query("update forum_topics set created_at = $2 where id = $1", [topicId, timestamp]);
         await client.query("update forum_posts set created_at = $2 where topic_id = $1", [topicId, timestamp]);
@@ -393,6 +405,8 @@ describe("PostgreSQL 17 locale migrations", () => {
         expect.objectContaining({ id: "for-me-own-candidate" }),
         expect.objectContaining({ id: "for-me-solved-candidate" }),
         expect.objectContaining({ id: "for-me-signal-replied" }),
+        expect.objectContaining({ id: "for-me-regular-signal-candidate" }),
+        expect.objectContaining({ id: "for-me-regular-candidate" }),
       ]));
 
       expect(await repository.readHelpSolutionsForMe("for-me-no-signal-user"))
@@ -404,7 +418,7 @@ describe("PostgreSQL 17 locale migrations", () => {
       await client.query('delete from "user" where id = any($1::text[])', [userIds]);
       await client.query(
         "delete from forum_tags where key = any($1::text[])",
-        [["formeowned", "formereplied", "formeunrelated", "formenone"]],
+        [["formeowned", "formereplied", "formeunrelated", "formenone", "formeregularsignal"]],
       );
     }
   });
