@@ -1009,7 +1009,7 @@ export function HelpSolutionsView({
   actionData,
 }: {
   locale: string;
-  mode: "all" | "open" | "solutions" | "mine";
+  mode: "all" | "open" | "active" | "solutions" | "mine";
   page: HelpSolutionsPagePresentation;
   referenceTime: string;
   isAuthenticated?: boolean;
@@ -1035,29 +1035,35 @@ export function HelpSolutionsView({
   const isQuestionFormBusy = isQuestionSubmitting || isSimilarChecking;
   const categoryPath = forumCategoryPath(locale, HELP_SOLUTIONS_CATEGORY_ID);
   const openPath = `${categoryPath}?mode=open`;
+  const activePath = `${categoryPath}?mode=active`;
   const solutionsPath = `${categoryPath}?mode=solutions`;
   const minePath = `${categoryPath}?mode=mine`;
   const allMode = mode === "all";
   const openMode = mode === "open";
+  const activeMode = mode === "active";
   const solutionsMode = mode === "solutions";
   const mineMode = mode === "mine";
   const listHeading = t(
     openMode
       ? "helpSolutionsNeedsHelpHeading"
-      : solutionsMode
-        ? "helpSolutionsSolutionsHeading"
-        : mineMode
-          ? "helpSolutionsMineHeading"
-          : "helpSolutionsAllHeading",
+      : activeMode
+        ? "helpSolutionsActiveHeading"
+        : solutionsMode
+          ? "helpSolutionsSolutionsHeading"
+          : mineMode
+            ? "helpSolutionsMineHeading"
+            : "helpSolutionsAllHeading",
   );
   const emptyCopy = t(
     openMode
       ? "helpSolutionsNeedsHelpEmpty"
-      : solutionsMode
-        ? "helpSolutionsSolutionsEmpty"
-        : mineMode
-          ? "helpSolutionsMineEmpty"
-          : "helpSolutionsEmpty",
+      : activeMode
+        ? "helpSolutionsActiveEmpty"
+        : solutionsMode
+          ? "helpSolutionsSolutionsEmpty"
+          : mineMode
+            ? "helpSolutionsMineEmpty"
+            : "helpSolutionsEmpty",
   );
 
   return (
@@ -1098,6 +1104,13 @@ export function HelpSolutionsView({
             aria-current={openMode ? "page" : undefined}
           >
             {t("helpSolutionsNeedsHelpMode")}
+          </Link>
+          <Link
+            className={"help-solutions-mode" + (activeMode ? " is-active" : "")}
+            to={activePath}
+            aria-current={activeMode ? "page" : undefined}
+          >
+            {t("helpSolutionsActiveMode")}
           </Link>
           <Link
             className={"help-solutions-mode" + (solutionsMode ? " is-active" : "")}
