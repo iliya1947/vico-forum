@@ -1523,3 +1523,37 @@ _Source: https://github.com/iliya1947/vico-forum/pull/147#issuecomment-604707134
 * ✅ `git status --short --branch` — рабочее дерево чистое после commit.
 
  [View task →](https://chatgpt.com/s/cd_6ac6b6f268e881919e75c55730793681)
+
+---
+
+## Owner-proposed fixed Help & solutions completion sequence — request for Codex validation — 2026-10-08
+
+The owner wants to stop re-selecting the next slice after every PR and instead fix the remaining Help-specific functional sequence, provided Codex has no concrete technical dependency objection.
+
+Proposed order:
+
+1. **Solution moderation statuses** — add persisted `needs-review` and `outdated`; `outdated` requires a persisted explanation/reason.
+2. **Question quality** — add persisted `normal | needs-details`.
+3. **Duplicate relationship workflow** — confirmed duplicate links to an original question, moderator/admin confirmation where required, visible relationship, and dispute/appeal behavior.
+4. **User moderation signals** — users can submit the approved signals that feed the moderation states above; authoritative state remains server-side/moderated.
+5. **Expand Needs attention** — extend the existing queue beyond `unsolved + zero replies` to include questions requiring attention from the persisted moderation/quality/relationship signals established by earlier steps.
+6. **Combined filters** — implement the approved combinable filters only after their persisted dimensions exist:
+   - solution: unresolved / solved / needs review / outdated;
+   - replies: no replies / has replies;
+   - quality: normal / needs details;
+   - relationship: standalone / duplicate.
+
+After these six functional steps are implemented and accepted, revisit the separately deferred similar-question search relevance/UX refinement, then proceed to visual polish.
+
+### Codex validation request
+
+Review this **ordering only** against current `main` and current project contracts.
+
+Do not implement project code and do not choose a different feature merely by preference.
+
+Reply with exactly one of:
+- **No objection** — if the six-step order is technically sound; or
+- **Ordering objection** — identify the concrete dependency/rework risk, the smallest necessary reorder, and why.
+
+A future enhancement, personal preference, or an alternative equally-valid sequence is not an objection.
+
