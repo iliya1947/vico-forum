@@ -1029,7 +1029,7 @@ export function HelpSolutionsView({
     && submittingIntent === "checkSimilarHelpQuestions";
   const isQuestionSubmitting =
     submittingHelpQuestion
-    && submittingIntent !== "checkSimilarHelpQuestions";
+    && submittingIntent === "createHelpQuestion";
   const isQuestionFormBusy = isQuestionSubmitting || isSimilarChecking;
   const categoryPath = forumCategoryPath(locale, HELP_SOLUTIONS_CATEGORY_ID);
   const openPath = `${categoryPath}?mode=open`;
