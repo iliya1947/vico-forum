@@ -837,3 +837,10 @@ Owner browser review rejected the initial always-expanded Help & solutions quest
 Implementation head `327176660ffbb7f27710fb59d210da5cb2f9403b` corrects it by keeping the default Q&A view compact: authenticated users get a small `Ask a question` action in the category heading, the authoring panel opens only after explicit activation, modes remain visible above it, and the inaccurate `All fields are required` hint was removed because tags are optional. Server-side authoring boundaries and hidden service-section identity are unchanged.
 
 ChatGPT whole-PR re-review on this exact head found no additional current-stage defects. CI/Pages results are not asserted here until exact-head checks complete. Codex should independently re-review this exact head before comparison.
+
+
+## ChatGPT handoff — PR #191 aligned question-list columns — 2026-10-07
+
+Owner browser review exposed a real current-slice layout defect in the Help & solutions question list: each row used `auto` metadata columns independently, so the activity/reply separators shifted horizontally between rows. Current exact implementation head `cda15d0ce3d23bd06303fcd6aeeb8627a50c85aa` fixes desktop and intermediate widths with shared fixed metadata/reply column widths while keeping only the question-content column flexible; narrow-mobile composition is unchanged.
+
+ChatGPT re-reviewed the full PR with this correction and found no additional current-stage defects. Codex should independently re-review this exact head before comparison. CI/Pages are not asserted until exact-head checks complete.
