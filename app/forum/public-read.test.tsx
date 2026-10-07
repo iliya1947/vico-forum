@@ -9,6 +9,8 @@ import {
   HELP_SOLUTIONS_CATEGORY_ID,
   HELP_SOLUTIONS_SERVICE_SECTION_ID,
 } from "../../db/forum-identifiers";
+import { authSessionContext } from "../auth/request-context";
+import { authorizationContext } from "../authorization/request-context";
 import { canonicalEnglishCatalog } from "../localization/catalog";
 import { createTranslationRuntime } from "../localization/runtime";
 import { ContentTranslationPresentationService, type ContentTranslationPresentation } from "../localization/content-translation-presentation";
@@ -402,6 +404,7 @@ describe("Help & solutions All mode", () => {
     expect(screen.getByRole("link", { name: "Solutions" }))
       .toHaveAttribute("href", forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=solutions");
     expect(screen.getByRole("heading", { level: 2, name: "All questions" })).toBeVisible();
+    expect(screen.queryByRole("form", { name: "Ask a question" })).not.toBeInTheDocument();
     expect(screen.getByText("Open")).toBeVisible();
     expect(screen.getByText("Best answer")).toBeVisible();
     expect(screen.getByText("2 replies")).toBeVisible();
@@ -419,6 +422,58 @@ describe("Help & solutions All mode", () => {
       .toHaveAttribute("href", forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID));
     expect(screen.queryByRole("link", { name: "Questions" })).not.toBeInTheDocument();
     expect(document.querySelector(`a[href="/en/sections/${HELP_SOLUTIONS_SERVICE_SECTION_ID}"]`)).toBeNull();
+  });
+
+  it("shows dedicated question authoring only when topic creation is allowed", async () => {
+    const requestContext = context("en", "ltr");
+    requestContext.set(authSessionContext, {
+      user: {
+        id: "session-user",
+        name: "Ada",
+        email: "ada@example.test",
+        emailVerified: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      session: {
+        id: "session",
+        token: "token",
+        userId: "session-user",
+        expiresAt: new Date(Date.now() + 60_000),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    });
+    requestContext.set(authorizationContext, {
+      forUser: () => ({
+        resolve: vi.fn(),
+        has: vi.fn(async () => true),
+      }),
+    } as never);
+
+    const data = await categoryLoader({
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: requestContext,
+    });
+    expect(data.kind).toBe("help-solutions");
+    if (data.kind !== "help-solutions") throw new Error("expected Help & solutions page");
+    expect(data.canAskQuestion).toBe(true);
+
+    renderRoute(
+      CategoryRoute,
+      data,
+      forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID),
+      "en",
+      "ltr",
+    );
+
+    const form = await screen.findByRole("form", { name: "Ask a question" });
+    expect(within(form).getByLabelText("Question title")).toBeRequired();
+    expect(within(form).getByLabelText("Question details")).toBeRequired();
+    expect(within(form).getByLabelText("Tags")).not.toBeRequired();
+    expect(within(form).getByRole("button", { name: "Ask question" })).toBeEnabled();
+    expect(form.querySelector('input[name="intent"]')).toHaveValue("createHelpQuestion");
+    expect(form.querySelector('[name="sectionId"]')).toBeNull();
   });
 
   it("filters Solutions mode to solved questions and keeps All as the canonical default", async () => {
