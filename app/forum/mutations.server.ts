@@ -16,6 +16,30 @@ import type { PermissionKey } from "../authorization/catalog";
 import { AuthorizationUnavailableError } from "../../db/authorization-service";
 
 export interface ForumMutationError { error: "invalid" | "unauthenticated" | "origin" | "forbidden" | "notFound" | "conflict" | "rateLimited" | "unavailable" }
+
+export interface HelpQuestionDraft {
+  title: string;
+  body: string;
+  tags: string;
+}
+
+export interface HelpSimilarQuestionResult {
+  id: string;
+  title: string;
+  replyCount: number;
+  isSolved: boolean;
+  tags: readonly { key: string; name: string }[];
+}
+
+export type HelpSimilarQuestionsActionData = {
+  operation: "helpSimilarQuestions";
+  outcome: "results" | "empty" | "invalid" | "unavailable";
+  draft: HelpQuestionDraft;
+  results: readonly HelpSimilarQuestionResult[];
+};
+
+export type HelpQuestionActionData = ForumMutationError | HelpSimilarQuestionsActionData;
+
 export interface SourceLocaleCorrectionMutationError {
   error: Exclude<ForumMutationError["error"], "rateLimited">;
   operation: "sourceLocaleCorrection";
