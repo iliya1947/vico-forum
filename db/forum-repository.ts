@@ -225,6 +225,7 @@ export interface ForumReader {
   readHelpSolutionsAll(): Promise<ForumHelpSolutionsPage | undefined>;
   readHelpSolutionsOpen(): Promise<ForumHelpSolutionsPage | undefined>;
   readHelpSolutionsSolved(): Promise<ForumHelpSolutionsPage | undefined>;
+  readHelpSolutionsMine(userId: string): Promise<ForumHelpSolutionsPage | undefined>;
   searchHelpSolutionsSimilar(query: string, limit?: number): Promise<ForumHelpSimilarQuestionSummary[]>;
   readCategory(id: string, pinnedTopicsPerSection?: number): Promise<ForumCategoryPage | undefined>;
   readSection(id: string): Promise<ForumSectionPage | undefined>;
@@ -1089,19 +1090,27 @@ export class DrizzleForumRepository {
   }
 
   async readHelpSolutionsAll(): Promise<ForumHelpSolutionsPage | undefined> {
-    return this.readHelpSolutionsPage("all");
+    return this.readHelpSolutionsPage({ mode: "all" });
   }
 
   async readHelpSolutionsOpen(): Promise<ForumHelpSolutionsPage | undefined> {
-    return this.readHelpSolutionsPage("open");
+    return this.readHelpSolutionsPage({ mode: "open" });
   }
 
   async readHelpSolutionsSolved(): Promise<ForumHelpSolutionsPage | undefined> {
-    return this.readHelpSolutionsPage("solved");
+    return this.readHelpSolutionsPage({ mode: "solved" });
+  }
+
+  async readHelpSolutionsMine(userId: string): Promise<ForumHelpSolutionsPage | undefined> {
+    return this.readHelpSolutionsPage({ mode: "mine", authorId: userId });
   }
 
   private async readHelpSolutionsPage(
-    mode: "all" | "open" | "solved",
+    filter:
+      | { mode: "all" }
+      | { mode: "open" }
+      | { mode: "solved" }
+      | { mode: "mine"; authorId: string },
   ): Promise<ForumHelpSolutionsPage | undefined> {
     const [category] = await this.database
       .select({ id: forumCategories.id, name: forumCategories.name })
@@ -1133,17 +1142,22 @@ export class DrizzleForumRepository {
       .innerJoin(user, eq(user.id, forumTopics.authorId))
       .leftJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
       .where(
-        mode === "solved"
+        filter.mode === "solved"
           ? and(
               eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
               eq(forumTopics.isSolved, true),
             )
-          : mode === "open"
+          : filter.mode === "open"
             ? and(
                 eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
                 eq(forumTopics.isSolved, false),
               )
-            : eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
+            : filter.mode === "mine"
+              ? and(
+                  eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
+                  eq(forumTopics.authorId, filter.authorId),
+                )
+              : eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
       )
       .groupBy(forumTopics.id, forumTopicTitleRevisions.id, user.name)
       .orderBy(desc(activityAt), desc(forumTopics.id));
