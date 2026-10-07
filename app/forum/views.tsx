@@ -1006,14 +1006,16 @@ export function HelpSolutionsView({
   referenceTime,
   isAuthenticated = false,
   canAskQuestion = false,
+  canViewAttention = false,
   actionData,
 }: {
   locale: string;
-  mode: "all" | "open" | "active" | "solutions" | "mine";
+  mode: "all" | "open" | "active" | "attention" | "solutions" | "mine";
   page: HelpSolutionsPagePresentation;
   referenceTime: string;
   isAuthenticated?: boolean;
   canAskQuestion?: boolean;
+  canViewAttention?: boolean;
   actionData?: HelpQuestionActionData;
 }) {
   const { t } = useTranslation("common");
@@ -1036,11 +1038,13 @@ export function HelpSolutionsView({
   const categoryPath = forumCategoryPath(locale, HELP_SOLUTIONS_CATEGORY_ID);
   const openPath = `${categoryPath}?mode=open`;
   const activePath = `${categoryPath}?mode=active`;
+  const attentionPath = `${categoryPath}?mode=attention`;
   const solutionsPath = `${categoryPath}?mode=solutions`;
   const minePath = `${categoryPath}?mode=mine`;
   const allMode = mode === "all";
   const openMode = mode === "open";
   const activeMode = mode === "active";
+  const attentionMode = mode === "attention";
   const solutionsMode = mode === "solutions";
   const mineMode = mode === "mine";
   const listHeading = t(
@@ -1048,22 +1052,26 @@ export function HelpSolutionsView({
       ? "helpSolutionsNeedsHelpHeading"
       : activeMode
         ? "helpSolutionsActiveHeading"
-        : solutionsMode
-          ? "helpSolutionsSolutionsHeading"
-          : mineMode
-            ? "helpSolutionsMineHeading"
-            : "helpSolutionsAllHeading",
+        : attentionMode
+          ? "helpSolutionsNeedsAttentionHeading"
+          : solutionsMode
+            ? "helpSolutionsSolutionsHeading"
+            : mineMode
+              ? "helpSolutionsMineHeading"
+              : "helpSolutionsAllHeading",
   );
   const emptyCopy = t(
     openMode
       ? "helpSolutionsNeedsHelpEmpty"
       : activeMode
         ? "helpSolutionsActiveEmpty"
-        : solutionsMode
-          ? "helpSolutionsSolutionsEmpty"
-          : mineMode
-            ? "helpSolutionsMineEmpty"
-            : "helpSolutionsEmpty",
+        : attentionMode
+          ? "helpSolutionsNeedsAttentionEmpty"
+          : solutionsMode
+            ? "helpSolutionsSolutionsEmpty"
+            : mineMode
+              ? "helpSolutionsMineEmpty"
+              : "helpSolutionsEmpty",
   );
 
   return (
@@ -1112,6 +1120,15 @@ export function HelpSolutionsView({
           >
             {t("helpSolutionsActiveMode")}
           </Link>
+          {canViewAttention ? (
+            <Link
+              className={"help-solutions-mode" + (attentionMode ? " is-active" : "")}
+              to={attentionPath}
+              aria-current={attentionMode ? "page" : undefined}
+            >
+              {t("helpSolutionsNeedsAttentionMode")}
+            </Link>
+          ) : null}
           <Link
             className={"help-solutions-mode" + (solutionsMode ? " is-active" : "")}
             to={solutionsPath}

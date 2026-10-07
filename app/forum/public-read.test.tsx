@@ -124,6 +124,16 @@ const solvedHelpPage = {
   ...helpPage,
   questions: helpPage.questions.map((question) => ({ ...question, isSolved: true })),
 };
+const needsAttentionHelpPage = {
+  ...helpPage,
+  questions: helpPage.questions.map((question) => ({
+    ...question,
+    replyCount: 0,
+    isSolved: false,
+    hasBestAnswer: false,
+    activityAt: question.createdAt,
+  })),
+};
 
 const reader: ForumReader = {
   listCategories: async () => [{ id: category.id, name: category.name, sectionCount: 1 }],
@@ -210,6 +220,7 @@ const reader: ForumReader = {
   readHelpSolutionsAll: async () => helpPage,
   readHelpSolutionsOpen: async () => helpPage,
   readHelpSolutionsActive: async () => helpPage,
+  readHelpSolutionsNeedsAttention: async () => needsAttentionHelpPage,
   readHelpSolutionsSolved: async () => solvedHelpPage,
   readHelpSolutionsMine: async () => helpPage,
   searchHelpSolutionsSimilar: async () => [],
@@ -409,6 +420,7 @@ describe("Help & solutions modes and authoring", () => {
       .toHaveAttribute("href", forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=open");
     expect(screen.getByRole("link", { name: "Active" }))
       .toHaveAttribute("href", forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=active");
+    expect(screen.queryByRole("link", { name: "Needs attention" })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Solutions" }))
       .toHaveAttribute("href", forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=solutions");
     expect(screen.queryByRole("link", { name: "My questions" })).not.toBeInTheDocument();
@@ -456,7 +468,7 @@ describe("Help & solutions modes and authoring", () => {
     requestContext.set(authorizationContext, {
       forUser: () => ({
         resolve: vi.fn(),
-        has: vi.fn(async () => true),
+        has: vi.fn(async (permission) => permission === "forum.topic.create"),
       }),
     } as never);
 
@@ -479,6 +491,7 @@ describe("Help & solutions modes and authoring", () => {
     const askButton = await screen.findByRole("button", { name: "Ask a question" });
     expect(askButton).toHaveAttribute("aria-expanded", "false");
     expect(screen.getByRole("link", { name: "All" })).toHaveAttribute("aria-current", "page");
+    expect(screen.queryByRole("link", { name: "Needs attention" })).not.toBeInTheDocument();
     expect(screen.queryByRole("form", { name: "Ask a question" })).not.toBeInTheDocument();
 
     fireEvent.click(askButton);
@@ -586,6 +599,128 @@ describe("Help & solutions modes and authoring", () => {
       "ltr",
     );
     expect(await screen.findByText("There are no active questions right now.")).toBeVisible();
+  });
+
+  it("protects Needs attention and renders it only with the moderation permission", async () => {
+    const attentionUrl = "https://forum.example/en/categories/help-solutions?mode=attention";
+    const guestContext = context("en", "ltr");
+    const readNeedsAttention = vi.fn(async () => needsAttentionHelpPage);
+    guestContext.set(forumReaderContext, { ...reader, readHelpSolutionsNeedsAttention: readNeedsAttention });
+    await expect(categoryLoader({
+      request: new Request(attentionUrl),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: guestContext,
+    })).rejects.toMatchObject({ status: 401 });
+    expect(readNeedsAttention).not.toHaveBeenCalled();
+
+    const userContext = context("en", "ltr");
+    userContext.set(authSessionContext, {
+      user: {
+        id: "regular-user",
+        name: "Regular User",
+        email: "user@example.test",
+        emailVerified: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      session: {
+        id: "regular-session",
+        token: "regular-token",
+        userId: "regular-user",
+        expiresAt: new Date(Date.now() + 60_000),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    });
+    userContext.set(forumReaderContext, { ...reader, readHelpSolutionsNeedsAttention: readNeedsAttention });
+    userContext.set(authorizationContext, {
+      forUser: () => ({
+        resolve: vi.fn(),
+        has: vi.fn(async (permission) => permission === "forum.topic.create"),
+      }),
+    } as never);
+    await expect(categoryLoader({
+      request: new Request(attentionUrl),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: userContext,
+    })).rejects.toMatchObject({ status: 403 });
+    expect(readNeedsAttention).not.toHaveBeenCalled();
+
+    const managerContext = context("en", "ltr");
+    managerContext.set(authSessionContext, {
+      user: {
+        id: "manager",
+        name: "Manager",
+        email: "manager@example.test",
+        emailVerified: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      session: {
+        id: "manager-session",
+        token: "manager-token",
+        userId: "manager",
+        expiresAt: new Date(Date.now() + 60_000),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    });
+    managerContext.set(authorizationContext, {
+      forUser: () => ({
+        resolve: vi.fn(),
+        has: vi.fn(async (permission) =>
+          permission === "forum.topic.create" || permission === "forum.solution.manageAny"
+        ),
+      }),
+    } as never);
+    const data = await categoryLoader({
+      request: new Request(attentionUrl),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: managerContext,
+    });
+
+    expect(data.kind).toBe("help-solutions");
+    if (data.kind !== "help-solutions") throw new Error("expected Help & solutions page");
+    expect(data.mode).toBe("attention");
+    expect(data.canViewAttention).toBe(true);
+    expect(data.page.questions).toEqual([
+      expect.objectContaining({ id: helpTopic.id, replyCount: 0, isSolved: false }),
+    ]);
+
+    const attentionView = renderRoute(
+      CategoryRoute,
+      data,
+      forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=attention",
+      "en",
+      "ltr",
+    );
+    expect(await screen.findByRole("link", { name: "Needs attention" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("heading", { level: 2, name: "Questions needing attention" })).toBeVisible();
+    expect(screen.getByText("0 replies")).toBeVisible();
+    attentionView.unmount();
+
+    const emptyContext = context("en", "ltr");
+    emptyContext.set(authSessionContext, managerContext.get(authSessionContext));
+    emptyContext.set(authorizationContext, managerContext.get(authorizationContext));
+    emptyContext.set(forumReaderContext, {
+      ...reader,
+      readHelpSolutionsNeedsAttention: async () => ({ ...helpPage, questions: [] }),
+    });
+    const emptyData = await categoryLoader({
+      request: new Request(attentionUrl),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: emptyContext,
+    });
+    if (emptyData.kind !== "help-solutions") throw new Error("expected Help & solutions page");
+
+    renderRoute(
+      CategoryRoute,
+      emptyData,
+      forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=attention",
+      "en",
+      "ltr",
+    );
+    expect(await screen.findByText("There are no questions needing attention right now.")).toBeVisible();
   });
 
   it("shows My questions only to authenticated users and binds it to the session identity", async () => {

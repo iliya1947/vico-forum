@@ -57,6 +57,7 @@ type PreviewVariant =
   | "notifications-empty"
   | "help-solutions-open-empty"
   | "help-solutions-active-empty"
+  | "help-solutions-attention-empty"
   | "help-solutions-mine-empty"
   | "help-solutions-similar-results"
   | "help-solutions-similar-empty"
@@ -101,6 +102,8 @@ export const scenarios: readonly Scenario[] = [
   { id: "help-solutions-needs-help-empty", label: "Help & solutions · Needs help · empty", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=open", view: "category", variant: "help-solutions-open-empty" },
   { id: "help-solutions-active", label: "Help & solutions · Active", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=active", view: "category" },
   { id: "help-solutions-active-empty", label: "Help & solutions · Active · empty", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=active", view: "category", variant: "help-solutions-active-empty" },
+  { id: "help-solutions-attention", label: "Help & solutions · Needs attention", locale: "en", direction: "ltr", identity: "manager", path: "/en/categories/help-solutions?mode=attention", view: "category", allowedIdentities: ["manager"] },
+  { id: "help-solutions-attention-empty", label: "Help & solutions · Needs attention · empty", locale: "en", direction: "ltr", identity: "manager", path: "/en/categories/help-solutions?mode=attention", view: "category", variant: "help-solutions-attention-empty", allowedIdentities: ["manager"] },
   { id: "help-solutions-solutions", label: "Help & solutions · Solutions", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=solutions", view: "category" },
   { id: "help-solutions-mine", label: "Help & solutions · My questions", locale: "en", direction: "ltr", identity: "user", path: "/en/categories/help-solutions?mode=mine", view: "category", allowedIdentities: ["user", "manager"] },
   { id: "help-solutions-mine-empty", label: "Help & solutions · My questions · empty", locale: "en", direction: "ltr", identity: "user", path: "/en/categories/help-solutions?mode=mine", view: "category", variant: "help-solutions-mine-empty", allowedIdentities: ["user", "manager"] },
@@ -1024,28 +1027,34 @@ function PreviewCategoryRoute({ scenario }: { scenario: Scenario }) {
       ? "open"
       : requestedMode === "active"
         ? "active"
-        : requestedMode === "solutions"
-          ? "solutions"
-          : requestedMode === "mine"
-            ? "mine"
-            : "all";
+        : requestedMode === "attention"
+          ? "attention"
+          : requestedMode === "solutions"
+            ? "solutions"
+            : requestedMode === "mine"
+              ? "mine"
+              : "all";
     const page = previewHelpSolutions(scenario.locale);
     const previewIdentity = previewUser(scenario);
     const filteredPage = scenario.variant === "help-solutions-open-empty" && mode === "open"
       ? { ...page, questions: [] }
       : scenario.variant === "help-solutions-active-empty" && mode === "active"
         ? { ...page, questions: [] }
-        : scenario.variant === "help-solutions-mine-empty" && mode === "mine"
+        : scenario.variant === "help-solutions-attention-empty" && mode === "attention"
           ? { ...page, questions: [] }
-          : mode === "open"
+          : scenario.variant === "help-solutions-mine-empty" && mode === "mine"
+            ? { ...page, questions: [] }
+            : mode === "open"
             ? { ...page, questions: page.questions.filter((question) => !question.isSolved) }
             : mode === "active"
               ? { ...page, questions: page.questions.filter((question) => question.replyCount > 0) }
-              : mode === "solutions"
-                ? { ...page, questions: page.questions.filter((question) => question.isSolved) }
-                : mode === "mine"
-                  ? { ...page, questions: page.questions.filter((question) => question.authorName === previewIdentity?.name) }
-                  : page;
+              : mode === "attention"
+                ? { ...page, questions: page.questions.filter((question) => !question.isSolved && question.replyCount === 0) }
+                : mode === "solutions"
+                  ? { ...page, questions: page.questions.filter((question) => question.isSolved) }
+                  : mode === "mine"
+                    ? { ...page, questions: page.questions.filter((question) => question.authorName === previewIdentity?.name) }
+                    : page;
     const similarVariant = scenario.variant?.startsWith("help-solutions-similar-")
       ? scenario.variant
       : undefined;
@@ -1088,6 +1097,7 @@ function PreviewCategoryRoute({ scenario }: { scenario: Scenario }) {
         referenceTime={previewReferenceTime}
         isAuthenticated={scenario.identity !== "guest"}
         canAskQuestion={scenario.identity !== "guest"}
+        canViewAttention={scenario.identity === "manager"}
         actionData={actionData}
       />
     );

@@ -179,6 +179,7 @@ export interface ForumHelpSimilarQuestionSummary {
 }
 
 const HELP_SOLUTIONS_ACTIVE_LIMIT = 100;
+const HELP_SOLUTIONS_NEEDS_ATTENTION_LIMIT = 100;
 const HELP_SOLUTIONS_MINE_LIMIT = 100;
 
 export interface ForumTopicSummary {
@@ -228,6 +229,7 @@ export interface ForumReader {
   readHelpSolutionsAll(): Promise<ForumHelpSolutionsPage | undefined>;
   readHelpSolutionsOpen(): Promise<ForumHelpSolutionsPage | undefined>;
   readHelpSolutionsActive(): Promise<ForumHelpSolutionsPage | undefined>;
+  readHelpSolutionsNeedsAttention(): Promise<ForumHelpSolutionsPage | undefined>;
   readHelpSolutionsSolved(): Promise<ForumHelpSolutionsPage | undefined>;
   readHelpSolutionsMine(userId: string): Promise<ForumHelpSolutionsPage | undefined>;
   searchHelpSolutionsSimilar(query: string, limit?: number): Promise<ForumHelpSimilarQuestionSummary[]>;
@@ -1105,6 +1107,10 @@ export class DrizzleForumRepository {
     return this.readHelpSolutionsPage({ mode: "active" });
   }
 
+  async readHelpSolutionsNeedsAttention(): Promise<ForumHelpSolutionsPage | undefined> {
+    return this.readHelpSolutionsPage({ mode: "attention" });
+  }
+
   async readHelpSolutionsSolved(): Promise<ForumHelpSolutionsPage | undefined> {
     return this.readHelpSolutionsPage({ mode: "solved" });
   }
@@ -1118,6 +1124,7 @@ export class DrizzleForumRepository {
       | { mode: "all" }
       | { mode: "open" }
       | { mode: "active" }
+      | { mode: "attention" }
       | { mode: "solved" }
       | { mode: "mine"; authorId: string },
   ): Promise<ForumHelpSolutionsPage | undefined> {
@@ -1156,7 +1163,7 @@ export class DrizzleForumRepository {
               eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
               eq(forumTopics.isSolved, true),
             )
-          : filter.mode === "open"
+          : filter.mode === "open" || filter.mode === "attention"
             ? and(
                 eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
                 eq(forumTopics.isSolved, false),
@@ -1172,15 +1179,19 @@ export class DrizzleForumRepository {
       .having(
         filter.mode === "active"
           ? sql`count(distinct ${forumPosts.id}) > 1`
-          : sql`true`,
+          : filter.mode === "attention"
+            ? sql`count(distinct ${forumPosts.id}) <= 1`
+            : sql`true`,
       )
       .orderBy(desc(activityAt), desc(forumTopics.id));
 
     const rows = filter.mode === "active"
       ? await questionQuery.limit(HELP_SOLUTIONS_ACTIVE_LIMIT)
-      : filter.mode === "mine"
-        ? await questionQuery.limit(HELP_SOLUTIONS_MINE_LIMIT)
-        : await questionQuery;
+      : filter.mode === "attention"
+        ? await questionQuery.limit(HELP_SOLUTIONS_NEEDS_ATTENTION_LIMIT)
+        : filter.mode === "mine"
+          ? await questionQuery.limit(HELP_SOLUTIONS_MINE_LIMIT)
+          : await questionQuery;
     const tagsByTopic = await this.readTagsForTopics(rows.map(({ id }) => id));
     return {
       ...category,
