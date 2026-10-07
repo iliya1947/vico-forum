@@ -669,7 +669,7 @@ describe("Help & solutions modes and authoring", () => {
       forUser: () => ({
         resolve: vi.fn(),
         has: vi.fn(async (permission) =>
-          permission === "forum.topic.create" || permission === "forum.help.attention.read"
+          permission === "forum.topic.create" || permission === "forum.solution.manageAny"
         ),
       }),
     } as never);
