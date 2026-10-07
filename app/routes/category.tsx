@@ -26,8 +26,10 @@ export async function loader({ request, params, context }: {
       ? "open" as const
       : requestedMode === "active"
         ? "active" as const
-        : requestedMode === "solutions"
-          ? "solutions" as const
+        : requestedMode === "attention"
+          ? "attention" as const
+          : requestedMode === "solutions"
+            ? "solutions" as const
           : requestedMode === "mine"
             ? "mine" as const
             : "all" as const;
@@ -41,9 +43,11 @@ export async function loader({ request, params, context }: {
         ? await reader.readHelpSolutionsOpen()
         : mode === "active"
           ? await reader.readHelpSolutionsActive()
-          : mode === "solutions"
-            ? await reader.readHelpSolutionsSolved()
-            : await reader.readHelpSolutionsAll();
+          : mode === "attention"
+            ? await reader.readHelpSolutionsNeedsAttention()
+            : mode === "solutions"
+              ? await reader.readHelpSolutionsSolved()
+              : await reader.readHelpSolutionsAll();
     }
     if (!helpSolutions) throw new Response("Not Found", { status: 404 });
     let canAskQuestion = false;
