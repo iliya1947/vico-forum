@@ -60,6 +60,9 @@ function context(
   const allowed = new Set<PermissionKey>(permissions);
   value.set(authSessionContext, authenticated ? session : null);
   value.set(forumWriterContext, writer);
+  value.set(forumReaderContext, {
+    searchHelpSolutionsSimilar: vi.fn(async () => []),
+  } as never);
   value.set(authorizationContext, {
     forUser: () => ({
       resolve: vi.fn(),
@@ -256,6 +259,128 @@ describe("forum write route actions", () => {
     });
     if (!(response instanceof Response)) throw new Error("expected redirect response");
     expect(response.headers.get("Location")).toBe("/he/topics/server-topic");
+  });
+
+  it("checks similar Help questions without writing and preserves the draft", async () => {
+    const forumWriter = writer();
+    const requestContext = context(forumWriter, true, ["forum.topic.create"]);
+    const searchHelpSolutionsSimilar = vi.fn(async () => [{
+      id: "existing-help",
+      title: "A focused question about Worker auth",
+      replyCount: 3,
+      isSolved: true,
+      tags: [{ key: "cloudflare", name: "Cloudflare" }],
+    }]);
+    requestContext.set(forumReaderContext, { searchHelpSolutionsSimilar } as never);
+
+    const response = await categoryAction({
+      request: request("/en/categories/help-solutions", {
+        intent: "checkSimilarHelpQuestions",
+        title: "  Worker auth  ",
+        body: " Draft body ",
+        tags: " Cloudflare, Auth ",
+      }),
+      params: { locale: "en", categoryId: "help-solutions" },
+      context: requestContext,
+    });
+
+    expect(searchHelpSolutionsSimilar).toHaveBeenCalledWith("Worker auth", 5);
+    expect(forumWriter.createTopic).not.toHaveBeenCalled();
+    expect(response).toMatchObject({
+      data: {
+        operation: "helpSimilarQuestions",
+        outcome: "results",
+        draft: {
+          title: "  Worker auth  ",
+          body: " Draft body ",
+          tags: " Cloudflare, Auth ",
+        },
+        results: [{
+          id: "existing-help",
+          title: "A focused question about Worker auth",
+          replyCount: 3,
+          isSolved: true,
+        }],
+      },
+      init: { status: 200 },
+    });
+  });
+
+  it("returns bounded invalid, empty, and unavailable similar-question states without writing", async () => {
+    const invalidWriter = writer();
+    const invalidContext = context(invalidWriter, true, ["forum.topic.create"]);
+    const invalidSearch = vi.fn(async () => []);
+    invalidContext.set(forumReaderContext, { searchHelpSolutionsSimilar: invalidSearch } as never);
+    const invalidResponse = await categoryAction({
+      request: request("/en/categories/help-solutions", {
+        intent: "checkSimilarHelpQuestions",
+        title: "   ",
+        body: "Draft body",
+        tags: "TypeScript",
+      }),
+      params: { locale: "en", categoryId: "help-solutions" },
+      context: invalidContext,
+    });
+    expect(invalidSearch).not.toHaveBeenCalled();
+    expect(invalidResponse).toMatchObject({
+      data: {
+        operation: "helpSimilarQuestions",
+        outcome: "invalid",
+        draft: { title: "   ", body: "Draft body", tags: "TypeScript" },
+        results: [],
+      },
+      init: { status: 400 },
+    });
+    expect(invalidWriter.createTopic).not.toHaveBeenCalled();
+
+    const emptyWriter = writer();
+    const emptyContext = context(emptyWriter, true, ["forum.topic.create"]);
+    emptyContext.set(forumReaderContext, {
+      searchHelpSolutionsSimilar: vi.fn(async () => []),
+    } as never);
+    const emptyResponse = await categoryAction({
+      request: request("/en/categories/help-solutions", {
+        intent: "checkSimilarHelpQuestions",
+        title: "No existing match",
+        body: "Draft body",
+        tags: "",
+      }),
+      params: { locale: "en", categoryId: "help-solutions" },
+      context: emptyContext,
+    });
+    expect(emptyResponse).toMatchObject({
+      data: { operation: "helpSimilarQuestions", outcome: "empty", results: [] },
+      init: { status: 200 },
+    });
+    expect(emptyWriter.createTopic).not.toHaveBeenCalled();
+
+    const unavailableWriter = writer();
+    const unavailableContext = context(unavailableWriter, true, ["forum.topic.create"]);
+    unavailableContext.set(forumReaderContext, {
+      searchHelpSolutionsSimilar: vi.fn(async () => {
+        throw new ForumStorageUnavailableError();
+      }),
+    } as never);
+    const unavailableResponse = await categoryAction({
+      request: request("/en/categories/help-solutions", {
+        intent: "checkSimilarHelpQuestions",
+        title: "Worker auth",
+        body: "Keep this draft",
+        tags: "Cloudflare",
+      }),
+      params: { locale: "en", categoryId: "help-solutions" },
+      context: unavailableContext,
+    });
+    expect(unavailableResponse).toMatchObject({
+      data: {
+        operation: "helpSimilarQuestions",
+        outcome: "unavailable",
+        draft: { title: "Worker auth", body: "Keep this draft", tags: "Cloudflare" },
+        results: [],
+      },
+      init: { status: 503 },
+    });
+    expect(unavailableWriter.createTopic).not.toHaveBeenCalled();
   });
 
   it("guards Help question authoring before writing", async () => {
