@@ -193,7 +193,8 @@ Vico Forum находится в ранней pre-release разработке.
   profile interests/subscriptions/tracking signals и не предоставляет reply capability. Existing
   cards, tags, statuses и reply boundaries переиспользуются без schema/migrations, новых
   permissions, opaque/AI scoring, notifications, visual polish, similar-search refinement или
-  Stage 6 работы.
+  Stage 6 работы. Owner visual acceptance populated/empty Pages presentation и Guest/User/Manager
+  identity switching подтверждён 2026-10-07.
 - In-app reply notifications slice реализован в PR #180:
   forward migration `0024_forum_reply_notifications` хранит только stable recipient/actor/topic/post
   references, `createdAt` и nullable `readAt`; unique recipient + reply identity предотвращает
