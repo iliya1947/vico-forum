@@ -1000,3 +1000,38 @@ Implementation PR #194 final exact head: `308f30749186455ef4ce720b50ea88172e1713
 
 Consensus: the bounded similar-question check is technically ready for owner merge. The owner separately recorded that search quality/relevance/UX must be revisited only after the full **Help & solutions** category is complete; that deferred refinement is not a defect of PR #194 and must not expand this slice.
 
+
+
+---
+
+<!-- codex-service-channel-comment:6040290635 -->
+## Codex GitHub response — comment 6040290635
+
+_Source: https://github.com/iliya1947/vico-forum/pull/147#issuecomment-6040290635 · 2026-10-07T14:37:46Z_
+
+# Действие пользователя
+
+Ничего.
+
+## Required result
+
+Улучшить проверку похожих вопросов в **Help & solutions**, чтобы persisted matching и сортировка по релевантности корректно работали для обычных многословных вопросов. Проверка остаётся необязательной и не блокирует публикацию. Это следующий bounded slice для завершения категории; визуальная полировка и работа вне Help & solutions не входят в приоритет. [.github/ui-ux-service-channel.mdL1006-L1013](https://github.com/iliya1947/vico-forum/blob/43d7f177cf02ec901cbe4272f0e4fc5c38fce301/.github/ui-ux-service-channel.md#L1006-L1013)
+
+## Scope
+
+- Заменить поиск по цельной подстроке заголовка на bounded deterministic relevance по нормализованным термам из title, body и tags.
+- Искать только среди актуального persisted content внутреннего раздела `help-solutions-questions`.
+- Ранжировать сильные совпадения по title и tags выше body-only совпадений, сохранив детерминированные tie-breaks, bounded projection и locale-aware topic links.
+- Сохранить explicit optional check, введённые поля, solved/open status, reply count и populated/empty/invalid/unavailable states.
+- Покрыть multi-term, partial-overlap, punctuation/case/Unicode normalization и unrelated-content сценарии.
+- Не добавлять fuzzy/vector/AI search, отдельный search index, schema/migrations, duplicate marking, moderation/appeal workflow, personalization, permissions, redesign глобального поиска или Stage 6 работу. [.github/ui-ux-service-channel.mdL1015-L1029](https://github.com/iliya1947/vico-forum/blob/43d7f177cf02ec901cbe4272f0e4fc5c38fce301/.github/ui-ux-service-channel.md#L1015-L1029)
+
+## Readiness criteria
+
+- Matching выполняется server-side, bounded и deterministic; обычные разделы и stale revisions исключены, N+1 и client-side filtering отсутствуют.
+- Тесты подтверждают правильное ранжирование title/tag относительно body-only совпадений, исключение нерелевантных вопросов, соблюдение лимитов и generic Unicode normalization без language-specific hard-coding.
+- Проверка остаётся read-only и необязательной, сохраняет title/body/tags и не ослабляет session/origin/permission/validation boundaries публикации.
+- `All`, `Needs help`, `Solutions`, topic destinations и создание вопроса не регрессируют; representative states проверены в desktop/mobile и LTR/RTL.
+- Exact-head CI и Pages deployment успешны; owner browser acceptance зафиксирована; финальный manual Codex whole-PR review не оставляет findings текущего scope. [.github/ui-ux-service-channel.mdL1031-L1043](https://github.com/iliya1947/vico-forum/blob/43d7f177cf02ec901cbe4272f0e4fc5c38fce301/.github/ui-ux-service-channel.md#L1031-L1043)
+
+ [View task →](https://chatgpt.com/s/cd_6ac65877e2d081919a8e5173c4ec6478)
