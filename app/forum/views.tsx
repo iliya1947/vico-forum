@@ -26,6 +26,8 @@ import type { ContentGenerationUnitView } from "../localization/content-generati
 import type { ContentGenerationActionResponse } from "../localization/content-generation-response";
 import type {
   ForumMutationError,
+  HelpQuestionActionData,
+  HelpSimilarQuestionsActionData,
   SourceLocaleCorrectionMutationError,
 } from "./mutations.server";
 import { forumCategoryPath, forumSearchPath, forumSectionPath, forumTagPath, forumTagsPath, forumTopicPath, underDevelopmentPath } from "./paths";
@@ -1010,14 +1012,25 @@ export function HelpSolutionsView({
   page: HelpSolutionsPagePresentation;
   referenceTime: string;
   canAskQuestion?: boolean;
-  actionData?: ForumMutationError;
+  actionData?: HelpQuestionActionData;
 }) {
   const { t } = useTranslation("common");
   const navigation = useNavigation();
-  const [questionComposerOpen, setQuestionComposerOpen] = useState(false);
+  const similarAction: HelpSimilarQuestionsActionData | undefined =
+    actionData && "operation" in actionData && actionData.operation === "helpSimilarQuestions"
+      ? actionData
+      : undefined;
+  const mutationError = actionData && "error" in actionData ? actionData.error : undefined;
+  const [questionComposerOpen, setQuestionComposerOpen] = useState(Boolean(similarAction));
+  const submittingHelpQuestion = navigation.state === "submitting";
+  const submittingIntent = navigation.formData?.get("intent");
+  const isSimilarChecking =
+    submittingHelpQuestion
+    && submittingIntent === "checkSimilarHelpQuestions";
   const isQuestionSubmitting =
-    navigation.state === "submitting"
-    && navigation.formData?.get("intent") === "createHelpQuestion";
+    submittingHelpQuestion
+    && submittingIntent === "createHelpQuestion";
+  const isQuestionFormBusy = isQuestionSubmitting || isSimilarChecking;
   const categoryPath = forumCategoryPath(locale, HELP_SOLUTIONS_CATEGORY_ID);
   const openPath = `${categoryPath}?mode=open`;
   const solutionsPath = `${categoryPath}?mode=solutions`;
@@ -1093,10 +1106,8 @@ export function HelpSolutionsView({
             method="post"
             className="forum-write-form help-question-create-form"
             aria-labelledby="help-question-create-heading"
-            aria-busy={isQuestionSubmitting}
+            aria-busy={isQuestionFormBusy}
           >
-            <input type="hidden" name="intent" value="createHelpQuestion" />
-
             <header className="forum-write-header">
               <div>
                 <p className="eyebrow">{t("authoringLabel")}</p>
@@ -1105,9 +1116,9 @@ export function HelpSolutionsView({
               <p>{t("helpSolutionsAskHelp")}</p>
             </header>
 
-            {actionData?.error ? (
+            {mutationError ? (
               <p className="forum-write-alert" role="alert">
-                {t(`forumWriteError_${actionData.error}`)}
+                {t(`forumWriteError_${mutationError}`)}
               </p>
             ) : null}
 
@@ -1118,7 +1129,8 @@ export function HelpSolutionsView({
                   id="help-question-title"
                   name="title"
                   required
-                  disabled={isQuestionSubmitting}
+                  defaultValue={similarAction?.draft.title}
+                  disabled={isQuestionFormBusy}
                   aria-describedby="help-question-title-help"
                 />
                 <small id="help-question-title-help">{t("topicTitleHelp")}</small>
@@ -1131,7 +1143,8 @@ export function HelpSolutionsView({
                   name="body"
                   required
                   rows={8}
-                  disabled={isQuestionSubmitting}
+                  defaultValue={similarAction?.draft.body}
+                  disabled={isQuestionFormBusy}
                   aria-describedby="help-question-body-help"
                 />
                 <small id="help-question-body-help">{t("messageBodyHelp")}</small>
@@ -1142,15 +1155,63 @@ export function HelpSolutionsView({
                 <input
                   id="help-question-tags"
                   name="tags"
-                  disabled={isQuestionSubmitting}
+                  defaultValue={similarAction?.draft.tags}
+                  disabled={isQuestionFormBusy}
                   aria-describedby="help-question-tags-help"
                 />
                 <small id="help-question-tags-help">{t("topicTagsInputHelp")}</small>
               </div>
             </div>
 
+            {similarAction ? (
+              <section className="help-similar-results" aria-live="polite" aria-labelledby="help-similar-heading">
+                <h3 id="help-similar-heading">{t("helpSolutionsSimilarHeading")}</h3>
+                {similarAction.outcome === "results" ? (
+                  <>
+                    <p>{t("helpSolutionsSimilarIntro")}</p>
+                    <ul>
+                      {similarAction.results.map((question) => (
+                        <li key={question.id}>
+                          <Link to={forumTopicPath(locale, question.id)}>
+                            <strong dir="auto">{question.title}</strong>
+                            <span>{t(question.isSolved ? "solved" : "helpSolutionsOpen")}</span>
+                            <span>{t("helpSolutionsReplyCount", { count: question.replyCount })}</span>
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                ) : (
+                  <p>
+                    {t(
+                      similarAction.outcome === "empty"
+                        ? "helpSolutionsSimilarEmpty"
+                        : similarAction.outcome === "invalid"
+                          ? "helpSolutionsSimilarInvalid"
+                          : "helpSolutionsSimilarUnavailable",
+                    )}
+                  </p>
+                )}
+              </section>
+            ) : null}
+
             <footer className="forum-write-actions help-question-create-actions">
-              <button type="submit" disabled={isQuestionSubmitting}>
+              <button
+                type="submit"
+                name="intent"
+                value="checkSimilarHelpQuestions"
+                formNoValidate
+                className="help-similar-check"
+                disabled={isQuestionFormBusy}
+              >
+                {t(isSimilarChecking ? "helpSolutionsSimilarChecking" : "helpSolutionsSimilarCheck")}
+              </button>
+              <button
+                type="submit"
+                name="intent"
+                value="createHelpQuestion"
+                disabled={isQuestionFormBusy}
+              >
                 {t(isQuestionSubmitting ? "helpSolutionsAskSubmitting" : "helpSolutionsAskSubmit")}
               </button>
             </footer>

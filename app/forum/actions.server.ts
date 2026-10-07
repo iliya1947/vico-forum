@@ -9,6 +9,8 @@ import {
   solutionScope,
   sourceLocaleCorrectionFailure,
   sourceLocaleCorrectionScope,
+  type HelpQuestionDraft,
+  type HelpSimilarQuestionsActionData,
 } from "./mutations.server";
 import { forumTopicPath } from "./paths";
 import { authSessionForRequest } from "../auth/request-context";
@@ -45,16 +47,33 @@ export async function helpSolutionsCategoryAction({ request, params, context }: 
   if (forbidden) return forbidden;
   let formData: FormData;
   try { formData = await request.formData(); } catch { return mutationFailure("invalid", 400); }
-  if (requiredFormText(formData, "intent") !== "createHelpQuestion") {
-    return mutationFailure("invalid", 400);
+  const intent = requiredFormText(formData, "intent");
+  const draft = helpQuestionDraft(formData);
+
+  if (intent === "checkSimilarHelpQuestions") {
+    const normalizedTitle = draft.title.normalize("NFKC").trim().replace(/\s+/gu, " ");
+    if (!normalizedTitle || normalizedTitle.length > 200) {
+      return helpSimilarQuestionsResult("invalid", draft, [], 400);
+    }
+    try {
+      const results = await forumReaderForRequest(context).searchHelpSolutionsSimilar(normalizedTitle, 5);
+      return helpSimilarQuestionsResult(results.length > 0 ? "results" : "empty", draft, results, 200);
+    } catch (error) {
+      if (error instanceof ForumStorageUnavailableError) {
+        return helpSimilarQuestionsResult("unavailable", draft, [], 503);
+      }
+      if (error instanceof RangeError) {
+        return helpSimilarQuestionsResult("invalid", draft, [], 400);
+      }
+      throw error;
+    }
   }
+
+  if (intent !== "createHelpQuestion") return mutationFailure("invalid", 400);
   const title = requiredFormText(formData, "title");
   const body = requiredFormText(formData, "body");
   if (!title || !body) return mutationFailure("invalid", 400);
-  const rawTags = formData.get("tags");
-  const tags = typeof rawTags === "string"
-    ? rawTags.split(",").map((tag) => tag.trim()).filter(Boolean)
-    : [];
+  const tags = draft.tags.split(",").map((tag) => tag.trim()).filter(Boolean);
   return runForumMutation(request, context, async (writer, authorId) => {
     const created = await writer.createTopic({
       sectionId: HELP_SOLUTIONS_SERVICE_SECTION_ID,
@@ -65,6 +84,30 @@ export async function helpSolutionsCategoryAction({ request, params, context }: 
     });
     return redirect(forumTopicPath(locale, created.topicId));
   });
+}
+
+function helpQuestionDraft(formData: FormData): HelpQuestionDraft {
+  const text = (name: string) => {
+    const value = formData.get(name);
+    return typeof value === "string" ? value : "";
+  };
+  return {
+    title: text("title"),
+    body: text("body"),
+    tags: text("tags"),
+  };
+}
+
+function helpSimilarQuestionsResult(
+  outcome: HelpSimilarQuestionsActionData["outcome"],
+  draft: HelpQuestionDraft,
+  results: HelpSimilarQuestionsActionData["results"],
+  status: number,
+) {
+  return data<HelpSimilarQuestionsActionData>(
+    { operation: "helpSimilarQuestions", outcome, draft, results },
+    { status },
+  );
 }
 
 export async function sectionAction({ request, params, context }: {

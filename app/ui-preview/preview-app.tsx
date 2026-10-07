@@ -56,6 +56,10 @@ type PreviewVariant =
   | "search-no-results"
   | "notifications-empty"
   | "help-solutions-open-empty"
+  | "help-solutions-similar-results"
+  | "help-solutions-similar-empty"
+  | "help-solutions-similar-invalid"
+  | "help-solutions-similar-unavailable"
   | "category-no-pins";
 
 interface Scenario {
@@ -87,6 +91,10 @@ export const scenarios: readonly Scenario[] = [
   { id: "tag-typescript-guest", label: "Tag · TypeScript", locale: "en", direction: "ltr", identity: "guest", path: "/en/tags/typescript", view: "tag" },
   { id: "help-solutions-all", label: "Help & solutions · All", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions", view: "category" },
   { id: "help-solutions-ask", label: "Help & solutions · Ask", locale: "en", direction: "ltr", identity: "user", path: "/en/categories/help-solutions", view: "category", allowedIdentities: ["user", "manager"] },
+  { id: "help-solutions-similar-results", label: "Help & solutions · Similar questions", locale: "en", direction: "ltr", identity: "user", path: "/en/categories/help-solutions", view: "category", variant: "help-solutions-similar-results", allowedIdentities: ["user", "manager"] },
+  { id: "help-solutions-similar-empty", label: "Help & solutions · Similar · empty", locale: "en", direction: "ltr", identity: "user", path: "/en/categories/help-solutions", view: "category", variant: "help-solutions-similar-empty", allowedIdentities: ["user", "manager"] },
+  { id: "help-solutions-similar-invalid", label: "Help & solutions · Similar · invalid", locale: "en", direction: "ltr", identity: "user", path: "/en/categories/help-solutions", view: "category", variant: "help-solutions-similar-invalid", allowedIdentities: ["user", "manager"] },
+  { id: "help-solutions-similar-unavailable", label: "Help & solutions · Similar · unavailable", locale: "en", direction: "ltr", identity: "user", path: "/en/categories/help-solutions", view: "category", variant: "help-solutions-similar-unavailable", allowedIdentities: ["user", "manager"] },
   { id: "help-solutions-needs-help", label: "Help & solutions · Needs help", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=open", view: "category" },
   { id: "help-solutions-needs-help-empty", label: "Help & solutions · Needs help · empty", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=open", view: "category", variant: "help-solutions-open-empty" },
   { id: "help-solutions-solutions", label: "Help & solutions · Solutions", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=solutions", view: "category" },
@@ -1018,6 +1026,40 @@ function PreviewCategoryRoute({ scenario }: { scenario: Scenario }) {
         : mode === "solutions"
           ? { ...page, questions: page.questions.filter((question) => question.isSolved) }
           : page;
+    const similarVariant = scenario.variant?.startsWith("help-solutions-similar-")
+      ? scenario.variant
+      : undefined;
+    const similarDraft = {
+      title: similarVariant === "help-solutions-similar-invalid" ? "" : page.questions[0]?.title ?? "Worker authentication issue",
+      body: scenario.locale === "ru"
+        ? "Сессия пропадает после redirect. Проверяю, обсуждалась ли уже такая проблема."
+        : scenario.locale === "he"
+          ? "ה-session נעלם אחרי redirect. בודק אם הבעיה כבר נדונה."
+          : "The session disappears after redirect. Checking whether this issue already exists.",
+      tags: "Cloudflare, Auth",
+    };
+    const actionData = similarVariant
+      ? {
+          operation: "helpSimilarQuestions" as const,
+          outcome: similarVariant === "help-solutions-similar-results"
+            ? "results" as const
+            : similarVariant === "help-solutions-similar-empty"
+              ? "empty" as const
+              : similarVariant === "help-solutions-similar-invalid"
+                ? "invalid" as const
+                : "unavailable" as const,
+          draft: similarDraft,
+          results: similarVariant === "help-solutions-similar-results"
+            ? page.questions.slice(0, 2).map((question) => ({
+                id: question.id,
+                title: question.title,
+                replyCount: question.replyCount,
+                isSolved: question.isSolved,
+                tags: question.tags,
+              }))
+            : [],
+        }
+      : undefined;
     return (
       <HelpSolutionsView
         locale={scenario.locale}
@@ -1025,6 +1067,7 @@ function PreviewCategoryRoute({ scenario }: { scenario: Scenario }) {
         page={filteredPage}
         referenceTime={previewReferenceTime}
         canAskQuestion={scenario.identity !== "guest"}
+        actionData={actionData}
       />
     );
   }

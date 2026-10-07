@@ -284,9 +284,12 @@ composition without changing the forum hierarchy or schema:
   keeps modes and questions primary. It reuses the existing protected create-topic boundary while
   keeping the internal service section server-fixed and hidden; owner visual acceptance of the
   corrected compact authoring entry, aligned question-list columns and restored Pages preview was
-  confirmed on 2026-10-07. The current bounded follow-up adds `Needs help / Нужна помощь` as
+  confirmed on 2026-10-07. Merged PR #193 adds `Needs help / Нужна помощь` as
   `?mode=open`, filtering persisted questions server-side by existing final `isSolved = false`
-  while reusing the same projection, ordering and cards. Moderation workflow, duplicate/appeal
+  while reusing the same projection, ordering and cards. The current bounded follow-up adds an
+  optional similar-question check inside dedicated Help & solutions authoring: it searches only
+  persisted service-section title/body/tags, preserves the draft across check states and never
+  blocks publication or marks duplicates automatically. Moderation workflow, duplicate/appeal
   handling, personalization and additional modes remain separate bounded product work;
 - owner visual acceptance of the implementation was confirmed on 2026-10-05; exact-head
   automated verification remains a separate PR check.

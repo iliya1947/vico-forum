@@ -210,6 +210,7 @@ const reader: ForumReader = {
   readHelpSolutionsAll: async () => helpPage,
   readHelpSolutionsOpen: async () => helpPage,
   readHelpSolutionsSolved: async () => solvedHelpPage,
+  searchHelpSolutionsSimilar: async () => [],
   search: async (query) => query.toLowerCase().includes("type") ? [{
     id: topic.id,
     title: topic.title.originalContent,
@@ -482,9 +483,16 @@ describe("Help & solutions modes and authoring", () => {
     expect(within(form).getByLabelText("Question title")).toBeRequired();
     expect(within(form).getByLabelText("Question details")).toBeRequired();
     expect(within(form).getByLabelText("Tags")).not.toBeRequired();
-    expect(within(form).getByRole("button", { name: "Ask question" })).toBeEnabled();
+    const similarButton = within(form).getByRole("button", { name: "Check similar questions" });
+    expect(similarButton).toBeEnabled();
+    expect(similarButton).toHaveAttribute("name", "intent");
+    expect(similarButton).toHaveAttribute("value", "checkSimilarHelpQuestions");
+    const askQuestionButton = within(form).getByRole("button", { name: "Ask question" });
+    expect(askQuestionButton).toBeEnabled();
+    expect(askQuestionButton).toHaveAttribute("name", "intent");
+    expect(askQuestionButton).toHaveAttribute("value", "createHelpQuestion");
     expect(within(form).queryByText("All fields are required.")).not.toBeInTheDocument();
-    expect(form.querySelector('input[name="intent"]')).toHaveValue("createHelpQuestion");
+    expect(form.querySelector('input[name="intent"]')).toBeNull();
     expect(form.querySelector('[name="sectionId"]')).toBeNull();
   });
 

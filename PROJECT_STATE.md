@@ -145,12 +145,19 @@ Vico Forum находится в ранней pre-release разработке.
   `writer.createTopic()` transaction для topic/initial post/revisions/tags. Exact-head repository
   CI и GitHub Pages прошли; owner visual acceptance corrected authoring/list presentation
   подтверждён 2026-10-07. External migration/Stage 6 rollout не выполнялся.
-- Текущий bounded Q&A follow-up добавляет режим **Needs help / Нужна помощь** через
-  `?mode=open`. Он фильтрует persisted Help & solutions questions на repository/DB boundary по
-  существующему final `isSolved = false`, сохраняя `All` canonical default и существующий
-  `Solutions` по `isSolved = true`. Текущие projection, ordering, карточки, topic destinations,
-  authoring и hidden service-section boundary переиспользуются без новой schema, migrations,
-  permissions, moderation statuses, duplicate/appeal workflow, personalization или Stage 6 работы.
+- Merged PR #193 добавил режим **Needs help / Нужна помощь** через `?mode=open`: persisted
+  Help & solutions questions фильтруются на repository/DB boundary по существующему final
+  `isSolved = false`, сохраняя `All` canonical default и `Solutions` по
+  `isSolved = true`. Projection, ordering, карточки, topic destinations, authoring и hidden
+  service-section boundary переиспользуются без новой schema, migrations или permissions.
+- Текущий bounded Q&A follow-up добавляет необязательную проверку похожих вопросов перед
+  публикацией. Проверка использует persisted current title/body/tags только внутреннего
+  `help-solutions-questions`, возвращает bounded deterministic список с текущими solved/open
+  состояниями и reply count и не блокирует создание нового вопроса. Введённые title/body/tags
+  сохраняются между populated/empty/invalid/unavailable состояниями проверки; переход к найденному
+  вопросу остаётся обычной locale-aware ссылкой без mutation. Новая schema, migrations,
+  permissions, fuzzy/vector/AI search, duplicate marking, moderation/appeal workflow,
+  personalization и Stage 6 работа в этот slice не входят.
 - In-app reply notifications slice реализован в PR #180:
   forward migration `0024_forum_reply_notifications` хранит только stable recipient/actor/topic/post
   references, `createdAt` и nullable `readAt`; unique recipient + reply identity предотвращает

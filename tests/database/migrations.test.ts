@@ -434,6 +434,57 @@ describe("PostgreSQL 17 locale migrations", () => {
     expect(await repository.readCategory("missing")).toBeUndefined();
   });
 
+  it("searches similar questions only inside the Help & solutions service section", async () => {
+    await insertForumAuthor("help-similar-author", "help-similar-author@example.test", null);
+    const repository = new DrizzleForumRepository(drizzle(client));
+    const forum = new ForumService(repository);
+
+    try {
+      await forum.createTopicWithInitialPost({
+        id: "help-similar-topic",
+        sectionId: HELP_SOLUTIONS_SERVICE_SECTION_ID,
+        authorId: "help-similar-author",
+        titleRevision: {
+          id: "help-similar-title",
+          originalContent: "Как типизировать API в Worker?",
+          sourceLocale: "ru",
+        },
+        tags: [{ key: "cloudflare", name: "Cloudflare" }],
+        initialPost: {
+          id: "help-similar-post",
+          topicId: "help-similar-topic",
+          authorId: "help-similar-author",
+          bodyRevision: {
+            id: "help-similar-body",
+            originalContent: "Нужен пример типизации ответа API.",
+            sourceLocale: "ru",
+          },
+        },
+      });
+
+      expect(await repository.searchHelpSolutionsSimilar("типизировать", 5)).toEqual([
+        expect.objectContaining({
+          id: "help-similar-topic",
+          title: "Как типизировать API в Worker?",
+          replyCount: 0,
+          isSolved: false,
+          tags: [{ key: "cloudflare", name: "Cloudflare" }],
+        }),
+      ]);
+
+      await forum.markTopicSolved("help-similar-topic", "help-similar-author");
+      expect(await repository.searchHelpSolutionsSimilar("типизировать", 5)).toEqual([
+        expect.objectContaining({
+          id: "help-similar-topic",
+          isSolved: true,
+        }),
+      ]);
+    } finally {
+      await client.query("delete from forum_topics where id = 'help-similar-topic'");
+      await client.query(`delete from "user" where id = 'help-similar-author'`);
+    }
+  });
+
   it("persists idempotent topic pins and returns bounded deterministic pins per category section", async () => {
     await insertForumAuthor("pin-actor", "pin-actor@example.test", null);
 
