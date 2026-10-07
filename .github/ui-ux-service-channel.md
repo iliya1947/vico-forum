@@ -902,3 +902,37 @@ To continue using code reviews, you can upgrade your account or add credits to y
 _Source: https://github.com/iliya1947/vico-forum/pull/147#issuecomment-6036820446 · 2026-10-07T11:19:26Z_
 
 You have reached your Codex usage limits. You can see your limits in the [Codex usage dashboard](https://chatgpt.com/codex/cloud/settings/usage).
+
+
+---
+
+<!-- codex-service-channel-comment:6038306844 -->
+## Codex GitHub response — comment 6038306844
+
+_Source: https://github.com/iliya1947/vico-forum/pull/147#issuecomment-6038306844 · 2026-10-07T12:52:13Z_
+
+# Действие пользователя
+
+Ничего.
+
+## Required result
+
+Добавить в **Help & solutions** отдельный режим **Open questions** для вопросов, ещё не отмеченных решёнными. `All` остаётся каноническим режимом по умолчанию, `Solutions` — режимом решённых вопросов. [.github/ui-ux-service-channel.mdL908-L912](https://github.com/iliya1947/vico-forum/blob/7a7ac694279c6b165320b33903b5260965800bb7/.github/ui-ux-service-channel.md#L908-L912)
+
+## Scope
+
+- Добавить locale-aware `mode=open` рядом с существующими `All` и `Solutions`.
+- Фильтровать на repository/DB boundary по существующему `isSolved = false`.
+- Переиспользовать текущие Q&A projection, ordering, карточки, topic destinations и скрытый service-section boundary.
+- Добавить EN/RU/HE локализацию, Pages-состояния и focused regression coverage.
+- Не добавлять schema/migrations, permissions, moderation statuses, duplicate/appeal workflow, personalization, similar-question search, изменения authoring, generic forum filtering или Stage 6 работу. [.github/ui-ux-service-channel.mdL914-L919](https://github.com/iliya1947/vico-forum/blob/7a7ac694279c6b165320b33903b5260965800bb7/.github/ui-ux-service-channel.md#L914-L919)
+
+## Readiness criteria
+
+- Поведение default/no-query, `mode=open`, `mode=solutions` и неизвестного mode явно определено и покрыто тестами.
+- Open questions выбираются server-side из persisted `isSolved = false`, без client-side filtering и N+1.
+- Authoring, независимость best-answer/solved, authorization, скрытый service section и generic routes не изменены.
+- Empty/populated Open states проверены в Pages для desktop/mobile и LTR/RTL без регрессий All/Solutions.
+- Полный CI и exact-head Pages deployment успешны; owner browser review и независимый whole-PR review завершены без незакрытых findings текущего scope. [.github/ui-ux-service-channel.mdL921-L927](https://github.com/iliya1947/vico-forum/blob/7a7ac694279c6b165320b33903b5260965800bb7/.github/ui-ux-service-channel.md#L921-L927)
+
+ [View task →](https://chatgpt.com/s/cd_6ac63f8442588191bf1d7aaab0a2a0d8)
