@@ -286,11 +286,15 @@ composition without changing the forum hierarchy or schema:
   corrected compact authoring entry, aligned question-list columns and restored Pages preview was
   confirmed on 2026-10-07. Merged PR #193 adds `Needs help / Нужна помощь` as
   `?mode=open`, filtering persisted questions server-side by existing final `isSolved = false`
-  while reusing the same projection, ordering and cards. The current bounded follow-up adds an
-  optional similar-question check inside dedicated Help & solutions authoring: it searches only
-  persisted service-section title/body/tags, preserves the draft across check states and never
-  blocks publication or marks duplicates automatically. Moderation workflow, duplicate/appeal
-  handling, personalization and additional modes remain separate bounded product work;
+  while reusing the same projection, ordering and cards. Merged PR #194 adds an optional
+  similar-question check inside dedicated Help & solutions authoring: it searches only persisted
+  service-section title/body/tags, preserves the draft across check states and never blocks
+  publication or marks duplicates automatically. The current bounded follow-up adds authenticated
+  `My questions / Мои` as `?mode=mine`, deriving the author only from the server-side session
+  and filtering persisted service-section questions at the repository/DB boundary. The mode is
+  exposed only to authenticated users; direct guest access uses the existing localized
+  unauthenticated route state. Moderation workflow, duplicate/appeal handling, personalization,
+  similar-search refinement and additional modes remain separate bounded product work;
 - owner visual acceptance of the implementation was confirmed on 2026-10-05; exact-head
   automated verification remains a separate PR check.
 
