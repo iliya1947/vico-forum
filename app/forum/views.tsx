@@ -1014,6 +1014,7 @@ export function HelpSolutionsView({
   const { t } = useTranslation("common");
   const navigation = useNavigation();
   const similarAction = isHelpSimilarQuestionsActionData(actionData) ? actionData : undefined;
+  const mutationError = actionData && "error" in actionData ? actionData.error : undefined;
   const [questionComposerOpen, setQuestionComposerOpen] = useState(Boolean(similarAction));
   const submittingHelpQuestion = navigation.state === "submitting";
   const submittingIntent = navigation.formData?.get("intent");
@@ -1099,7 +1100,7 @@ export function HelpSolutionsView({
             method="post"
             className="forum-write-form help-question-create-form"
             aria-labelledby="help-question-create-heading"
-            aria-busy={isQuestionSubmitting}
+            aria-busy={isQuestionFormBusy}
           >
             <header className="forum-write-header">
               <div>
@@ -1109,9 +1110,9 @@ export function HelpSolutionsView({
               <p>{t("helpSolutionsAskHelp")}</p>
             </header>
 
-            {actionData?.error ? (
+            {mutationError ? (
               <p className="forum-write-alert" role="alert">
-                {t(`forumWriteError_${actionData.error}`)}
+                {t(`forumWriteError_${mutationError}`)}
               </p>
             ) : null}
 
