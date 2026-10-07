@@ -383,6 +383,20 @@ describe("forum write route actions", () => {
     expect(unavailableWriter.createTopic).not.toHaveBeenCalled();
   });
 
+  it("keeps Help question actions fail-closed when intent is missing", async () => {
+    const forumWriter = writer();
+    const response = await categoryAction({
+      request: request("/en/categories/help-solutions", {
+        title: "Question",
+        body: "Details",
+      }),
+      params: { locale: "en", categoryId: "help-solutions" },
+      context: context(forumWriter, true, ["forum.topic.create"]),
+    });
+    expect(response).toMatchObject({ data: { error: "invalid" }, init: { status: 400 } });
+    expect(forumWriter.createTopic).not.toHaveBeenCalled();
+  });
+
   it("guards Help question authoring before writing", async () => {
     const guest = writer();
     const guestResponse = await categoryAction({
