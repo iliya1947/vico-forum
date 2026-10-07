@@ -29,9 +29,9 @@ export async function loader({ request, params, context }: {
         : requestedMode === "for-me"
           ? "for-me" as const
           : requestedMode === "active"
-          ? "active" as const
-          : requestedMode === "attention"
-          ? "attention" as const
+            ? "active" as const
+            : requestedMode === "attention"
+              ? "attention" as const
           : requestedMode === "solutions"
             ? "solutions" as const
             : requestedMode === "mine"
