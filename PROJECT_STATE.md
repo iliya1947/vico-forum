@@ -124,15 +124,18 @@ Vico Forum находится в ранней pre-release разработке.
   topic/post model. Generic Home/category discovery, прямой section route и обычный create-topic
   action этот service section не показывают/не используют; Home при этом сохраняет реальные
   aggregate topic/message counts категории. External migration/Stage 6 rollout не выполнялся.
-- Текущий bounded Q&A slice добавляет первый реальный режим **All / Все** на существующем
-  `/:locale/categories/help-solutions`. Dedicated reader читает вопросы только из internal
+- Merged PR #188 добавил первый реальный Q&A-режим **All / Все** на
+  `/:locale/categories/help-solutions`: dedicated reader читает вопросы только из internal
   service section и возвращает current title/author, technology tags, число последующих сообщений
-  (`replies`) после original question, independent solved/best-answer state и latest activity. Generic category UI для этой
-  reserved category заменяется специальным public Q&A list view; topic breadcrumb для таких
-  вопросов больше не ведёт на скрытый service-section route. Остальные Q&A modes, фильтры,
-  создание вопроса, moderation signals/statuses, duplicates/appeals, structured context,
-  similar-question search и personalization в этот slice не входят. CI/Pages/owner acceptance
-  ещё не утверждаются; external migration/Stage 6 rollout не выполняется.
+  (`replies`) после original question, independent solved/best-answer state и latest activity.
+  Generic category UI для reserved category заменён специальным public Q&A list view; topic
+  breadcrumb больше не ведёт на скрытый service-section route.
+- Текущий bounded Q&A slice добавляет только режим **Solutions / Решения** поверх уже существующего
+  final `isSolved = true`: query `?mode=solutions` фильтруется на DB boundary и использует тот же
+  Q&A list presentation; default URL без query остаётся `All`. Новая schema, statuses,
+  permissions, authoring, moderation signals, duplicates/appeals, personalization и остальные
+  Q&A modes в этот slice не входят. CI/Pages/owner acceptance ещё не утверждаются; external
+  migration/Stage 6 rollout не выполняется.
 - In-app reply notifications slice реализован в PR #180:
   forward migration `0024_forum_reply_notifications` хранит только stable recipient/actor/topic/post
   references, `createdAt` и nullable `readAt`; unique recipient + reply identity предотвращает

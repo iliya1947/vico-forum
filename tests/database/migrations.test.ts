@@ -184,6 +184,16 @@ describe("PostgreSQL 17 locale migrations", () => {
           tags: [{ key: "typescript", name: "TypeScript" }],
         }],
       });
+      expect(await repository.readHelpSolutionsSolved()).toMatchObject({ questions: [] });
+
+      await forum.markTopicSolved("help-foundation-topic", "help-foundation-author");
+      expect(await repository.readHelpSolutionsSolved()).toMatchObject({
+        questions: [{
+          id: "help-foundation-topic",
+          isSolved: true,
+          hasBestAnswer: true,
+        }],
+      });
       expect(await repository.readSection(HELP_SOLUTIONS_SERVICE_SECTION_ID)).toBeUndefined();
     } finally {
       await client.query("delete from forum_topics where id = 'help-foundation-topic'");

@@ -85,6 +85,7 @@ export const scenarios: readonly Scenario[] = [
   { id: "tags-guest", label: "Tags", locale: "en", direction: "ltr", identity: "guest", path: "/en/tags", view: "tags" },
   { id: "tag-typescript-guest", label: "Tag · TypeScript", locale: "en", direction: "ltr", identity: "guest", path: "/en/tags/typescript", view: "tag" },
   { id: "help-solutions-all", label: "Help & solutions · All", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions", view: "category" },
+  { id: "help-solutions-solutions", label: "Help & solutions · Solutions", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=solutions", view: "category" },
   { id: "category-guest", label: "Category", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/development", view: "category" },
   { id: "category-no-pins", label: "Category · no pins", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/development", view: "category", variant: "category-no-pins" },
   { id: "section-user", label: "Section", locale: "en", direction: "ltr", identity: "user", path: "/en/sections/typescript", view: "section" },
@@ -997,11 +998,17 @@ function previewCategory(locale: PreviewLocale, routeCategoryId: string | undefi
 
 function PreviewCategoryRoute({ scenario }: { scenario: Scenario }) {
   const { categoryId: routeCategoryId } = useParams();
+  const [searchParams] = useSearchParams();
   if (routeCategoryId === HELP_SOLUTIONS_CATEGORY_ID) {
+    const mode = searchParams.get("mode") === "solutions" ? "solutions" : "all";
+    const page = previewHelpSolutions(scenario.locale);
     return (
       <HelpSolutionsView
         locale={scenario.locale}
-        page={previewHelpSolutions(scenario.locale)}
+        mode={mode}
+        page={mode === "solutions"
+          ? { ...page, questions: page.questions.filter((question) => question.isSolved) }
+          : page}
         referenceTime={previewReferenceTime}
       />
     );

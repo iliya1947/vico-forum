@@ -45,6 +45,9 @@ export const russianCommonValues = {
   helpSolutionsIntro: "Технические вопросы, поиск причин проблем и практические решения от сообщества.",
   helpSolutionsAllMode: "Все",
   helpSolutionsAllHeading: "Все вопросы",
+  helpSolutionsSolutionsMode: "Решения",
+  helpSolutionsSolutionsHeading: "Решённые вопросы",
+  helpSolutionsSolutionsEmpty: "Решённых вопросов пока нет.",
   helpSolutionsEmpty: "Вопросов пока нет.",
   helpSolutionsOpen: "Открыт",
   helpSolutionsReplyCount: {
@@ -348,6 +351,9 @@ export const hebrewCommonValues = {
   helpSolutionsIntro: "שאלות טכניות, פתרון תקלות ופתרונות מעשיים מהקהילה.",
   helpSolutionsAllMode: "הכול",
   helpSolutionsAllHeading: "כל השאלות",
+  helpSolutionsSolutionsMode: "פתרונות",
+  helpSolutionsSolutionsHeading: "שאלות פתורות",
+  helpSolutionsSolutionsEmpty: "עדיין אין שאלות פתורות.",
   helpSolutionsEmpty: "עדיין אין שאלות.",
   helpSolutionsOpen: "פתוח",
   helpSolutionsReplyCount: {
