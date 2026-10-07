@@ -738,3 +738,27 @@ Independent corrected-head verification:
 
 Next gate: fresh independent Codex whole-PR review on exact head `8c476ba`, then compare results
 here before owner merge.
+
+
+---
+
+## PR #188 review convergence — 2026-10-07
+
+Final implementation head: `8c476bad44132596656a40d8dc49f2401822ed57`.
+
+The independent review/fix cycle has converged.
+
+- Confirmed finding A was fixed by moving Help & solutions reserved IDs to client-safe
+  `db/forum-identifiers.ts`; exact Pages artifact inspection confirmed the browser bundle no
+  longer contains Drizzle/schema table declarations introduced by the previous runtime import.
+- Confirmed finding B was fixed by changing the data/presentation contract from semantic
+  `answerCount` to factual `replyCount`, including EN/RU/HE copy, fixtures, tests and state docs.
+- ChatGPT whole-PR re-review on corrected head: no remaining current-scope defects.
+- Exact-head CI run `37589512357`: fully successful across `checks` and `database`.
+- Exact-head Pages run `37589507754`: successful.
+- Codex automatic review of `8c476ba`: completed with no new finding.
+- Codex manual whole-PR review of the same exact head: completed with no new finding.
+- The two original Codex threads are now outdated because their affected lines were replaced.
+
+Consensus: PR #188 has no known current-scope defect after full independent re-review and is ready
+for owner merge, subject to normal GitHub mergeability remaining clean.
