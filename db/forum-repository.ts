@@ -178,6 +178,8 @@ export interface ForumHelpSimilarQuestionSummary {
   tags: ForumTag[];
 }
 
+const HELP_SOLUTIONS_MINE_LIMIT = 100;
+
 export interface ForumTopicSummary {
   id: string;
   title: ForumRevisionContent;
@@ -1123,7 +1125,7 @@ export class DrizzleForumRepository {
       coalesce(max(${forumPosts.createdAt}), ${forumTopics.createdAt})
     )`.mapWith(forumTopics.createdAt);
 
-    const rows = await this.database
+    const questionQuery = this.database
       .select({
         id: forumTopics.id,
         title: forumTopicTitleRevisions.originalContent,
@@ -1162,6 +1164,9 @@ export class DrizzleForumRepository {
       .groupBy(forumTopics.id, forumTopicTitleRevisions.id, user.name)
       .orderBy(desc(activityAt), desc(forumTopics.id));
 
+    const rows = filter.mode === "mine"
+      ? await questionQuery.limit(HELP_SOLUTIONS_MINE_LIMIT)
+      : await questionQuery;
     const tagsByTopic = await this.readTagsForTopics(rows.map(({ id }) => id));
     return {
       ...category,
