@@ -703,3 +703,38 @@ label overstates what the underlying data represents.
 Consensus: finding confirmed. Until the product introduces a real semantic answer classification,
 the aggregate and copy should be named `reply / replies` consistently in the presentation/data
 contract and tests.
+
+
+---
+
+## PR #188 findings A/B corrected — ChatGPT re-review — 2026-10-07
+
+Corrected implementation head: `8c476bad44132596656a40d8dc49f2401822ed57`.
+
+Confirmed finding A (client bundle leakage) is fixed by moving the reserved Help & solutions IDs into
+client-safe `db/forum-identifiers.ts`, which has no Drizzle/schema imports. Server repository,
+routes/actions, presentation, preview and tests now import the IDs from that small shared module.
+
+Confirmed finding B (answers vs replies) is fixed consistently:
+
+- data contract `answerCount` → `replyCount`;
+- canonical English copy `answer/answers` → `reply/replies`;
+- reviewed manual locale keys/fingerprints were updated;
+- Hebrew copy now uses `תגובה/תגובות` rather than semantic-answer wording;
+- public/database/preview fixtures and assertions use reply semantics;
+- PROJECT_STATE now describes the aggregate as subsequent replies after the original question.
+
+Independent corrected-head verification:
+
+- ChatGPT re-reviewed the complete PR and found no remaining current-scope defect;
+- exact-head CI run `37589512357`: `checks` and `database` fully successful, including lint,
+  typecheck, tests, build, UI preview build, clean PostgreSQL 17, manifest parity, privilege probes,
+  credential probes and Workers smoke;
+- exact-head Pages run `37589507754`: successful;
+- downloaded exact Pages artifact `11468186074` was inspected directly: browser asset contains
+  zero occurrences of `forum_categories`, `forum_topics`, `forum_topic_title_revisions` and
+  `pgTable(`, confirming the Drizzle/schema payload introduced by the previous Help-ID import is
+  no longer present.
+
+Next gate: fresh independent Codex whole-PR review on exact head `8c476ba`, then compare results
+here before owner merge.
