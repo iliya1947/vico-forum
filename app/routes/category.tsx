@@ -4,7 +4,8 @@ import { ForumRouteError } from "../forum/ui";
 import { HELP_SOLUTIONS_CATEGORY_ID } from "../../db/forum-identifiers";
 import { CategoryView, HelpSolutionsView } from "../forum/views";
 
-export async function loader({ params, context }: {
+export async function loader({ request, params, context }: {
+  request?: Request;
   params: { locale?: string; categoryId?: string };
   context: RouterContextProvider;
 }) {
@@ -14,11 +15,17 @@ export async function loader({ params, context }: {
   const referenceTime = new Date().toISOString();
 
   if (categoryId === HELP_SOLUTIONS_CATEGORY_ID) {
-    const helpSolutions = await reader.readHelpSolutionsAll();
+    const mode = request && new URL(request.url).searchParams.get("mode") === "solutions"
+      ? "solutions" as const
+      : "all" as const;
+    const helpSolutions = mode === "solutions"
+      ? await reader.readHelpSolutionsSolved()
+      : await reader.readHelpSolutionsAll();
     if (!helpSolutions) throw new Response("Not Found", { status: 404 });
     return {
       kind: "help-solutions" as const,
       locale,
+      mode,
       referenceTime,
       page: {
         ...helpSolutions,
@@ -58,7 +65,7 @@ export async function loader({ params, context }: {
 export default function CategoryRoute() {
   const data = useLoaderData<typeof loader>();
   if (data.kind === "help-solutions") {
-    return <HelpSolutionsView locale={data.locale} page={data.page} referenceTime={data.referenceTime} />;
+    return <HelpSolutionsView locale={data.locale} mode={data.mode} page={data.page} referenceTime={data.referenceTime} />;
   }
   return <CategoryView locale={data.locale} category={data.category} referenceTime={data.referenceTime} />;
 }

@@ -7299,6 +7299,7 @@ a.topic-tag:focus-visible {
   font-size: 0.78rem;
   font-weight: 800;
   white-space: nowrap;
+  text-decoration: none;
 }
 
 .help-solutions-mode.is-active {

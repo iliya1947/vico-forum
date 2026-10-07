@@ -999,14 +999,21 @@ type HelpSolutionsPagePresentation = Omit<ForumHelpSolutionsPage, "questions"> &
 
 export function HelpSolutionsView({
   locale,
+  mode,
   page,
   referenceTime,
 }: {
   locale: string;
+  mode: "all" | "solutions";
   page: HelpSolutionsPagePresentation;
   referenceTime: string;
 }) {
   const { t } = useTranslation("common");
+  const categoryPath = forumCategoryPath(locale, HELP_SOLUTIONS_CATEGORY_ID);
+  const solutionsPath = `${categoryPath}?mode=solutions`;
+  const solutionsMode = mode === "solutions";
+  const listHeading = t(solutionsMode ? "helpSolutionsSolutionsHeading" : "helpSolutionsAllHeading");
+  const emptyCopy = t(solutionsMode ? "helpSolutionsSolutionsEmpty" : "helpSolutionsEmpty");
 
   return (
     <ForumShell locale={locale} variant="category">
@@ -1022,15 +1029,26 @@ export function HelpSolutionsView({
         </header>
 
         <nav className="help-solutions-modes" aria-label={t("helpSolutionsHeading")}>
-          <span className="help-solutions-mode is-active" aria-current="page">
+          <Link
+            className={"help-solutions-mode" + (!solutionsMode ? " is-active" : "")}
+            to={categoryPath}
+            aria-current={!solutionsMode ? "page" : undefined}
+          >
             {t("helpSolutionsAllMode")}
-          </span>
+          </Link>
+          <Link
+            className={"help-solutions-mode" + (solutionsMode ? " is-active" : "")}
+            to={solutionsPath}
+            aria-current={solutionsMode ? "page" : undefined}
+          >
+            {t("helpSolutionsSolutionsMode")}
+          </Link>
         </nav>
 
-        <section className="help-solutions-questions" aria-labelledby="help-solutions-all-heading">
-          <h2 id="help-solutions-all-heading">{t("helpSolutionsAllHeading")}</h2>
+        <section className="help-solutions-questions" aria-labelledby="help-solutions-mode-heading">
+          <h2 id="help-solutions-mode-heading">{listHeading}</h2>
           {page.questions.length === 0 ? (
-            <EmptyState>{t("helpSolutionsEmpty")}</EmptyState>
+            <EmptyState>{emptyCopy}</EmptyState>
           ) : (
             <ul className="help-question-list">
               {page.questions.map((question) => (
