@@ -1658,7 +1658,6 @@ function authorizationData(locale: string) {
   const userGrants: PermissionKey[] = ["forum.topic.create", "forum.reply.create"];
   const moderatorGrants: PermissionKey[] = [
     ...userGrants,
-    "forum.help.attention.read",
     "forum.topic.pin",
     "forum.solution.manageAny",
     "forum.sourceLocale.correctAny",
