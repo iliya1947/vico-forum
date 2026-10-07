@@ -328,6 +328,9 @@ describe("PostgreSQL 17 locale migrations", () => {
       Object.fromEntries(Object.entries(INITIAL_ROLE_GRANTS).map(([slug, grants]) => [slug, [...grants].sort()])),
     );
     const builtIn = Object.fromEntries(roles.rows.map((row) => [row.slug, row.grants]));
+    expect(builtIn.user).not.toContain("forum.help.attention.read");
+    expect(builtIn.moderator).toContain("forum.help.attention.read");
+    expect(builtIn.admin).toContain("forum.help.attention.read");
     expect(builtIn.user).not.toContain("forum.topic.pin");
     expect(builtIn.moderator).toContain("forum.topic.pin");
     expect(builtIn.admin).toContain("forum.topic.pin");
