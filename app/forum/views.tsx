@@ -1055,8 +1055,8 @@ export function HelpSolutionsView({
       : helpMode
         ? "helpSolutionsWantToHelpHeading"
         : activeMode
-        ? "helpSolutionsActiveHeading"
-        : attentionMode
+          ? "helpSolutionsActiveHeading"
+          : attentionMode
           ? "helpSolutionsNeedsAttentionHeading"
           : solutionsMode
             ? "helpSolutionsSolutionsHeading"
@@ -1070,8 +1070,8 @@ export function HelpSolutionsView({
       : helpMode
         ? "helpSolutionsWantToHelpEmpty"
         : activeMode
-        ? "helpSolutionsActiveEmpty"
-        : attentionMode
+          ? "helpSolutionsActiveEmpty"
+          : attentionMode
           ? "helpSolutionsNeedsAttentionEmpty"
           : solutionsMode
             ? "helpSolutionsSolutionsEmpty"
