@@ -23,7 +23,49 @@ import {
   localeContext,
 } from "../localization/request-context";
 import type { ContentGenerationActionResponse } from "../localization/content-generation-response";
-import { HELP_SOLUTIONS_SERVICE_SECTION_ID } from "../../db/forum-identifiers";
+import {
+  HELP_SOLUTIONS_CATEGORY_ID,
+  HELP_SOLUTIONS_SERVICE_SECTION_ID,
+} from "../../db/forum-identifiers";
+
+export async function helpSolutionsCategoryAction({ request, params, context }: {
+  request: Request;
+  params: { locale?: string; categoryId?: string };
+  context: RouterContextProvider;
+}) {
+  const categoryId = typeof params.categoryId === "string" && params.categoryId.trim()
+    ? params.categoryId
+    : undefined;
+  const locale = typeof params.locale === "string" && params.locale.trim() ? params.locale : undefined;
+  if (!categoryId || !locale) return mutationFailure("invalid", 400);
+  if (categoryId !== HELP_SOLUTIONS_CATEGORY_ID) return mutationFailure("notFound", 404);
+  const denied = forumMutationGuard(request, context);
+  if (denied) return denied;
+  const forbidden = await requireForumPermission(context, "forum.topic.create");
+  if (forbidden) return forbidden;
+  let formData: FormData;
+  try { formData = await request.formData(); } catch { return mutationFailure("invalid", 400); }
+  if (requiredFormText(formData, "intent") !== "createHelpQuestion") {
+    return mutationFailure("invalid", 400);
+  }
+  const title = requiredFormText(formData, "title");
+  const body = requiredFormText(formData, "body");
+  if (!title || !body) return mutationFailure("invalid", 400);
+  const rawTags = formData.get("tags");
+  const tags = typeof rawTags === "string"
+    ? rawTags.split(",").map((tag) => tag.trim()).filter(Boolean)
+    : [];
+  return runForumMutation(request, context, async (writer, authorId) => {
+    const created = await writer.createTopic({
+      sectionId: HELP_SOLUTIONS_SERVICE_SECTION_ID,
+      authorId,
+      title,
+      body,
+      tags,
+    });
+    return redirect(forumTopicPath(locale, created.topicId));
+  });
+}
 
 export async function sectionAction({ request, params, context }: {
   request: Request;
