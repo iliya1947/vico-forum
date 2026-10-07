@@ -1004,13 +1004,15 @@ export function HelpSolutionsView({
   mode,
   page,
   referenceTime,
+  isAuthenticated = false,
   canAskQuestion = false,
   actionData,
 }: {
   locale: string;
-  mode: "all" | "open" | "solutions";
+  mode: "all" | "open" | "solutions" | "mine";
   page: HelpSolutionsPagePresentation;
   referenceTime: string;
+  isAuthenticated?: boolean;
   canAskQuestion?: boolean;
   actionData?: HelpQuestionActionData;
 }) {
@@ -1034,22 +1036,28 @@ export function HelpSolutionsView({
   const categoryPath = forumCategoryPath(locale, HELP_SOLUTIONS_CATEGORY_ID);
   const openPath = `${categoryPath}?mode=open`;
   const solutionsPath = `${categoryPath}?mode=solutions`;
+  const minePath = `${categoryPath}?mode=mine`;
   const allMode = mode === "all";
   const openMode = mode === "open";
   const solutionsMode = mode === "solutions";
+  const mineMode = mode === "mine";
   const listHeading = t(
     openMode
       ? "helpSolutionsNeedsHelpHeading"
       : solutionsMode
         ? "helpSolutionsSolutionsHeading"
-        : "helpSolutionsAllHeading",
+        : mineMode
+          ? "helpSolutionsMineHeading"
+          : "helpSolutionsAllHeading",
   );
   const emptyCopy = t(
     openMode
       ? "helpSolutionsNeedsHelpEmpty"
       : solutionsMode
         ? "helpSolutionsSolutionsEmpty"
-        : "helpSolutionsEmpty",
+        : mineMode
+          ? "helpSolutionsMineEmpty"
+          : "helpSolutionsEmpty",
   );
 
   return (
@@ -1098,6 +1106,15 @@ export function HelpSolutionsView({
           >
             {t("helpSolutionsSolutionsMode")}
           </Link>
+          {isAuthenticated ? (
+            <Link
+              className={"help-solutions-mode" + (mineMode ? " is-active" : "")}
+              to={minePath}
+              aria-current={mineMode ? "page" : undefined}
+            >
+              {t("helpSolutionsMineMode")}
+            </Link>
+          ) : null}
         </nav>
 
         {canAskQuestion && questionComposerOpen ? (
