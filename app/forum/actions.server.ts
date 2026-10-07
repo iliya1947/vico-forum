@@ -244,6 +244,29 @@ export async function topicAction({ request, params, context }: {
       return redirect(forumTopicPath(locale, topicId));
     });
   }
+  if (
+    intent === "markSolutionNeedsReview"
+    || intent === "markSolutionOutdated"
+    || intent === "clearSolutionModeration"
+  ) {
+    const forbidden = await requireForumPermission(context, "forum.solution.manageAny");
+    if (forbidden) return forbidden;
+    const outdatedReason = intent === "markSolutionOutdated"
+      ? requiredFormText(formData, "outdatedReason") ?? null
+      : null;
+    return runForumMutation(request, context, async (writer) => {
+      await writer.setHelpSolutionModeration({
+        topicId,
+        status: intent === "markSolutionNeedsReview"
+          ? "needs-review"
+          : intent === "markSolutionOutdated"
+            ? "outdated"
+            : null,
+        outdatedReason,
+      });
+      return redirect(forumTopicPath(locale, topicId));
+    });
+  }
   if (intent === "selectBestAnswer") {
     const postId = requiredFormText(formData, "postId");
     if (!postId) return mutationFailure("invalid", 400);
