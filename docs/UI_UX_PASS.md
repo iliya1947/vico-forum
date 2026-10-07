@@ -284,7 +284,8 @@ composition without changing the forum hierarchy or schema:
   so the default Q&A view keeps modes and questions primary. It reuses the existing protected
   create-topic boundary while keeping the internal service section server-fixed and hidden;
   additional modes, moderation workflow, duplicate/appeal handling and personalization remain
-  separate bounded product work;
+  separate bounded product work. Owner visual acceptance of the corrected compact authoring entry,
+  aligned question-list columns and restored Pages preview was confirmed on 2026-10-07;
 - owner visual acceptance of the implementation was confirmed on 2026-10-05; exact-head
   automated verification remains a separate PR check.
 
