@@ -178,6 +178,7 @@ export interface ForumHelpSimilarQuestionSummary {
   tags: ForumTag[];
 }
 
+const HELP_SOLUTIONS_ACTIVE_LIMIT = 100;
 const HELP_SOLUTIONS_MINE_LIMIT = 100;
 
 export interface ForumTopicSummary {
@@ -226,6 +227,7 @@ export interface ForumReader {
   readTopicPinState(topicId: string): Promise<boolean>;
   readHelpSolutionsAll(): Promise<ForumHelpSolutionsPage | undefined>;
   readHelpSolutionsOpen(): Promise<ForumHelpSolutionsPage | undefined>;
+  readHelpSolutionsActive(): Promise<ForumHelpSolutionsPage | undefined>;
   readHelpSolutionsSolved(): Promise<ForumHelpSolutionsPage | undefined>;
   readHelpSolutionsMine(userId: string): Promise<ForumHelpSolutionsPage | undefined>;
   searchHelpSolutionsSimilar(query: string, limit?: number): Promise<ForumHelpSimilarQuestionSummary[]>;
@@ -1099,6 +1101,10 @@ export class DrizzleForumRepository {
     return this.readHelpSolutionsPage({ mode: "open" });
   }
 
+  async readHelpSolutionsActive(): Promise<ForumHelpSolutionsPage | undefined> {
+    return this.readHelpSolutionsPage({ mode: "active" });
+  }
+
   async readHelpSolutionsSolved(): Promise<ForumHelpSolutionsPage | undefined> {
     return this.readHelpSolutionsPage({ mode: "solved" });
   }
@@ -1111,6 +1117,7 @@ export class DrizzleForumRepository {
     filter:
       | { mode: "all" }
       | { mode: "open" }
+      | { mode: "active" }
       | { mode: "solved" }
       | { mode: "mine"; authorId: string },
   ): Promise<ForumHelpSolutionsPage | undefined> {
@@ -1162,11 +1169,18 @@ export class DrizzleForumRepository {
               : eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
       )
       .groupBy(forumTopics.id, forumTopicTitleRevisions.id, user.name)
+      .having(
+        filter.mode === "active"
+          ? sql`count(distinct ${forumPosts.id}) > 1`
+          : sql`true`,
+      )
       .orderBy(desc(activityAt), desc(forumTopics.id));
 
-    const rows = filter.mode === "mine"
-      ? await questionQuery.limit(HELP_SOLUTIONS_MINE_LIMIT)
-      : await questionQuery;
+    const rows = filter.mode === "active"
+      ? await questionQuery.limit(HELP_SOLUTIONS_ACTIVE_LIMIT)
+      : filter.mode === "mine"
+        ? await questionQuery.limit(HELP_SOLUTIONS_MINE_LIMIT)
+        : await questionQuery;
     const tagsByTopic = await this.readTagsForTopics(rows.map(({ id }) => id));
     return {
       ...category,
