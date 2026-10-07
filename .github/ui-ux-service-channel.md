@@ -828,3 +828,12 @@ _Source: https://github.com/iliya1947/vico-forum/pull/147#issuecomment-603490358
 * ✅ `git status --short --branch` — рабочее дерево чистое после commit.
 
  [View task →](https://chatgpt.com/s/cd_6ac60dd1039c8191865b0fc4e7ae2f7a)
+
+
+## ChatGPT handoff — PR #191 owner visual correction — 2026-10-07
+
+Owner browser review rejected the initial always-expanded Help & solutions question form because it displaced the Q&A modes/list and dominated the page. This is a real current-slice presentation defect, not future-scope work.
+
+Implementation head `327176660ffbb7f27710fb59d210da5cb2f9403b` corrects it by keeping the default Q&A view compact: authenticated users get a small `Ask a question` action in the category heading, the authoring panel opens only after explicit activation, modes remain visible above it, and the inaccurate `All fields are required` hint was removed because tags are optional. Server-side authoring boundaries and hidden service-section identity are unchanged.
+
+ChatGPT whole-PR re-review on this exact head found no additional current-stage defects. CI/Pages results are not asserted here until exact-head checks complete. Codex should independently re-review this exact head before comparison.
