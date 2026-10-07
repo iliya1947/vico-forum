@@ -81,6 +81,9 @@ export const canonicalEnglishCatalog = {
     helpSolutionsIntro: message("helpSolutionsIntro", "Technical questions, troubleshooting, and practical solutions from the community.", "Short introduction to the Help & solutions Q&A page."),
     helpSolutionsAllMode: message("helpSolutionsAllMode", "All", "Label for the first Help & solutions question mode showing every question."),
     helpSolutionsAllHeading: message("helpSolutionsAllHeading", "All questions", "Heading above the unfiltered Help & solutions question list."),
+    helpSolutionsSolutionsMode: message("helpSolutionsSolutionsMode", "Solutions", "Label for the Help & solutions mode showing solved questions."),
+    helpSolutionsSolutionsHeading: message("helpSolutionsSolutionsHeading", "Solved questions", "Heading above solved Help & solutions questions."),
+    helpSolutionsSolutionsEmpty: message("helpSolutionsSolutionsEmpty", "There are no solved questions yet.", "Empty state for the solved Help & solutions question list."),
     helpSolutionsEmpty: message("helpSolutionsEmpty", "There are no questions yet.", "Empty state for the Help & solutions question list."),
     helpSolutionsOpen: message("helpSolutionsOpen", "Open", "Status label for a Help & solutions question that is not solved."),
     helpSolutionsReplyCount: pluralMessage(

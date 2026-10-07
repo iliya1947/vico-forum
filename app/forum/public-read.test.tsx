@@ -118,6 +118,11 @@ const helpPage = {
     tags: helpTopic.tags,
   }],
 };
+const solvedHelpPage = {
+  ...helpPage,
+  questions: helpPage.questions.map((question) => ({ ...question, isSolved: true })),
+};
+
 const reader: ForumReader = {
   listCategories: async () => [{ id: category.id, name: category.name, sectionCount: 1 }],
   readHomepage: async () => [{
@@ -201,6 +206,7 @@ const reader: ForumReader = {
   countUnreadReplyNotifications: async () => 0,
   readTopicPinState: async (id) => id === topic.id,
   readHelpSolutionsAll: async () => helpPage,
+  readHelpSolutionsSolved: async () => solvedHelpPage,
   search: async (query) => query.toLowerCase().includes("type") ? [{
     id: topic.id,
     title: topic.title.originalContent,
@@ -393,6 +399,8 @@ describe("Help & solutions All mode", () => {
     );
     expect(await screen.findByRole("heading", { level: 1, name: "Help & solutions" })).toBeVisible();
     expect(screen.getByText("All")).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "Solutions" }))
+      .toHaveAttribute("href", forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=solutions");
     expect(screen.getByRole("heading", { level: 2, name: "All questions" })).toBeVisible();
     expect(screen.getByText("Open")).toBeVisible();
     expect(screen.getByText("Best answer")).toBeVisible();
@@ -411,6 +419,36 @@ describe("Help & solutions All mode", () => {
       .toHaveAttribute("href", forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID));
     expect(screen.queryByRole("link", { name: "Questions" })).not.toBeInTheDocument();
     expect(document.querySelector(`a[href="/en/sections/${HELP_SOLUTIONS_SERVICE_SECTION_ID}"]`)).toBeNull();
+  });
+
+  it("filters Solutions mode to solved questions and keeps All as the canonical default", async () => {
+    const requestContext = context("en", "ltr");
+    const data = await categoryLoader({
+      request: new Request("https://forum.example/en/categories/help-solutions?mode=solutions"),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: requestContext,
+    });
+
+    expect(data.kind).toBe("help-solutions");
+    if (data.kind !== "help-solutions") throw new Error("expected Help & solutions page");
+    expect(data.mode).toBe("solutions");
+    expect(data.page.questions).toEqual([
+      expect.objectContaining({ id: helpTopic.id, isSolved: true }),
+    ]);
+
+    renderRoute(
+      CategoryRoute,
+      data,
+      forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=solutions",
+      "en",
+      "ltr",
+    );
+    expect(await screen.findByRole("link", { name: "Solutions" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "All" }))
+      .toHaveAttribute("href", forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID));
+    expect(screen.getByRole("heading", { level: 2, name: "Solved questions" })).toBeVisible();
+    expect(screen.queryByText("Open")).not.toBeInTheDocument();
+    expect(screen.getByText("Solved")).toBeVisible();
   });
 });
 describe("Popular topics", () => {
