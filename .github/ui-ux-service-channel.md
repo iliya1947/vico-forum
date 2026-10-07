@@ -1401,3 +1401,26 @@ Implementation PR #199 final implementation head: `817e48b78f97e69545cc828b9de9d
 
 Consensus: PR #199 has no known current-scope defect and is technically ready for owner merge. Merge remains owner-only.
 
+---
+
+## Request next Help & solutions functional slice — 2026-10-08
+
+Current `main`: `4553d320d228251446bd642519e2eaeb3e006b13`.
+
+The approved top-level Help & solutions modes are now all implemented: `All`, `Needs help`, `Want to help`, `Active`, permission-gated `Needs attention`, `Solutions`, authenticated `For me`, and `My questions`. Dedicated question authoring and the optional similar-question check are also implemented.
+
+Owner priority remains: finish the category's remaining functional product surface before visual polish. The separately recorded similar-question search relevance/UX refinement remains deferred until Help & solutions is fully implemented and accepted.
+
+### Requested Codex handoff
+
+Inspect current `main`, current source-of-truth documents, and this shared service-channel context. Choose exactly one next bounded functional **Help & solutions** implementation slice from the remaining approved product functionality.
+
+Do not implement project code.
+
+Return only:
+- required result;
+- bounded scope and explicit exclusions;
+- readiness criteria.
+
+Do not choose visual polish or similar-question search refinement yet. Do not assume that a schema/moderation-status change is required unless the chosen current slice actually needs it. Distinguish current approved functionality from richer future elaboration.
+
