@@ -1231,3 +1231,26 @@ Implementation PR #197 final implementation head: `e16f2d9197e00b89e0399817842a0
 
 Consensus: PR #197 has no known current-scope defect and is technically ready for owner merge. Merge remains owner-only.
 
+---
+
+## Request next Help & solutions functional slice — 2026-10-07
+
+Current `main`: `abea8544a65906ecc61f7b81280c5f96f034a784`.
+
+Completed Help & solutions functionality now includes `All`, `Solutions`, dedicated question authoring, `Needs help`, optional similar-question check, `My questions`, `Active`, and permission-gated `Needs attention`.
+
+Owner priority remains: finish the category’s functional surface first, then do visual polish. The separately recorded similar-question search refinement also remains deferred until the category is fully implemented and accepted.
+
+### Requested Codex handoff
+
+Inspect current `main`, the current source-of-truth documents, and this shared service-channel context. Choose exactly one next bounded functional **Help & solutions** implementation slice from the remaining approved product functionality.
+
+Do not implement project code.
+
+Return only:
+- required result;
+- bounded scope and explicit exclusions;
+- readiness criteria.
+
+Do not choose visual polish or similar-question search refinement yet. Do not assume a specific remaining mode if another bounded functional slice is more appropriate from the current repository/product state.
+
