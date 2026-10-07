@@ -24,11 +24,13 @@ export async function loader({ request, params, context }: {
     const requestedMode = request ? new URL(request.url).searchParams.get("mode") : null;
     const mode = requestedMode === "open"
       ? "open" as const
-      : requestedMode === "solutions"
-        ? "solutions" as const
-        : requestedMode === "mine"
-          ? "mine" as const
-          : "all" as const;
+      : requestedMode === "active"
+        ? "active" as const
+        : requestedMode === "solutions"
+          ? "solutions" as const
+          : requestedMode === "mine"
+            ? "mine" as const
+            : "all" as const;
     const session = authSessionForRequest(context);
     let helpSolutions;
     if (mode === "mine") {
@@ -37,9 +39,11 @@ export async function loader({ request, params, context }: {
     } else {
       helpSolutions = mode === "open"
         ? await reader.readHelpSolutionsOpen()
-        : mode === "solutions"
-          ? await reader.readHelpSolutionsSolved()
-          : await reader.readHelpSolutionsAll();
+        : mode === "active"
+          ? await reader.readHelpSolutionsActive()
+          : mode === "solutions"
+            ? await reader.readHelpSolutionsSolved()
+            : await reader.readHelpSolutionsAll();
     }
     if (!helpSolutions) throw new Response("Not Found", { status: 404 });
     let canAskQuestion = false;
