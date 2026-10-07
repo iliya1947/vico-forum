@@ -191,6 +191,15 @@ describe("PostgreSQL 17 locale migrations", () => {
           hasBestAnswer: true,
         }],
       });
+      expect(await repository.readHelpSolutionsMine("help-foundation-author")).toMatchObject({
+        questions: [{
+          id: "help-foundation-topic",
+          authorName: "Forum Author",
+          isSolved: false,
+          hasBestAnswer: true,
+        }],
+      });
+      expect(await repository.readHelpSolutionsMine("help-foundation-replier")).toMatchObject({ questions: [] });
       expect(await repository.readHelpSolutionsSolved()).toMatchObject({ questions: [] });
 
       await forum.markTopicSolved("help-foundation-topic", "help-foundation-author");
