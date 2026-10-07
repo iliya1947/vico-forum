@@ -972,3 +972,16 @@ _Source: https://github.com/iliya1947/vico-forum/pull/147#issuecomment-603908595
 - Полный CI и exact-head Pages deployment успешны; owner browser review и независимый whole-PR review завершены без незакрытых findings текущего scope. [.github/ui-ux-service-channel.mdL963-L977](https://github.com/iliya1947/vico-forum/blob/ba521562a002361f3a59c12f86817d3a4afb49c5/.github/ui-ux-service-channel.md#L963-L977)
 
  [View task →](https://chatgpt.com/s/cd_6ac649738ea88191aff07b158db9d77a)
+
+---
+
+## Owner follow-up — refine Help & solutions similar-question search after category completion — 2026-10-07
+
+Owner explicitly wants the current similar-question search treated as an initial bounded implementation, not the final search quality target.
+
+- Current scope may reuse the existing persisted title/body/tags search restricted to the internal `help-solutions-questions` service section.
+- After the **Help & solutions** category is fully implemented and accepted, return to this search as a separate bounded product task and improve its matching/relevance/UX as needed.
+- This is deliberate future follow-up, not a defect of the current bounded similar-question slice and therefore is not a reason to expand or block the current PR.
+- When Help & solutions reaches full category completion, remind the owner about this follow-up before moving away from the category.
+- The eventual refinement approach is intentionally not preselected here; it should be researched against the then-current repository/product state.
+
