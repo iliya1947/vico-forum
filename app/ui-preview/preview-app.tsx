@@ -1011,7 +1011,7 @@ function PreviewCategoryRoute({ scenario }: { scenario: Scenario }) {
         ? "solutions"
         : "all";
     const page = previewHelpSolutions(scenario.locale);
-    const filteredPage = scenario.variant === "help-solutions-open-empty"
+    const filteredPage = scenario.variant === "help-solutions-open-empty" && mode === "open"
       ? { ...page, questions: [] }
       : mode === "open"
         ? { ...page, questions: page.questions.filter((question) => !question.isSolved) }
