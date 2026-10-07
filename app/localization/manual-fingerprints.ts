@@ -46,7 +46,7 @@ export const reviewedCommonFingerprints = {
   helpSolutionsAllHeading: "710e6522b5e95eceaf64f9117f430929c705f503f2d40dde86df3096bc4286f1",
   helpSolutionsEmpty: "cbe7daf3009bc8d1e034be2324f2d619197c79bab3566acb395415978855f209",
   helpSolutionsOpen: "8cb4f32912a689bb78c6349270e6a635288b617e71217cae38ecdaca5778f940",
-  helpSolutionsAnswerCount: "856700adc5168616a2f4de0723950084e443a6943f6696821dee2a30ebefa35a",
+  helpSolutionsReplyCount: "8d4dcd94a5f54e45a4e364e7dfb8b3edb6e8e952801a4f6d7b135a5a6bb0356a",
   helpSolutionsUpdated: "11e8cd24312c19588dd50c07e40fc83e64c3475da2ad90a95c7997480754480d",
   unansweredNav: "c104d7f66dce2b59845094a2411d507cbcc038f6a0379916d5bd41e52d174214",
   unansweredEyebrow: "e4337cac06078fecdbe982b7fc45221682736f2c976b49252e9f6051ee6290f9",

@@ -16,9 +16,7 @@ import {
   user,
 } from "./schema";
 import { ForumWriteRateLimitError, forumWritePolicy, type ForumWritePolicy } from "./forum-write-policy";
-
-export const HELP_SOLUTIONS_CATEGORY_ID = "help-solutions";
-export const HELP_SOLUTIONS_SERVICE_SECTION_ID = "help-solutions-questions";
+import { HELP_SOLUTIONS_CATEGORY_ID, HELP_SOLUTIONS_SERVICE_SECTION_ID } from "./forum-identifiers";
 
 export interface ForumCategorySummary {
   id: string;
@@ -158,7 +156,7 @@ export interface ForumHelpQuestionSummary {
   id: string;
   title: string;
   authorName: string;
-  answerCount: number;
+  replyCount: number;
   isSolved: boolean;
   hasBestAnswer: boolean;
   createdAt: Date;
@@ -1055,7 +1053,7 @@ export class DrizzleForumRepository {
         id: row.id,
         title: row.title,
         authorName: row.authorName,
-        answerCount: Math.max(0, row.postCount - 1),
+        replyCount: Math.max(0, row.postCount - 1),
         isSolved: row.isSolved,
         hasBestAnswer: row.bestAnswerPostId !== null,
         createdAt: row.createdAt,

@@ -11,9 +11,11 @@ import {
   ForumAuthorizationError,
   ForumEntityNotFoundError,
   ForumStateConflictError,
+} from "../../db/forum-repository";
+import {
   HELP_SOLUTIONS_CATEGORY_ID,
   HELP_SOLUTIONS_SERVICE_SECTION_ID,
-} from "../../db/forum-repository";
+} from "../../db/forum-identifiers";
 import { ForumService, InvalidForumContentError } from "../../db/forum-service";
 import { createHyperdriveForumWriter } from "../../db/hyperdrive-forum";
 import { FORUM_WRITE_COOLDOWN_MS, ForumWriteRateLimitError } from "../../db/forum-write-policy";
@@ -176,7 +178,7 @@ describe("PostgreSQL 17 locale migrations", () => {
           id: "help-foundation-topic",
           title: "Help foundation question",
           authorName: "Forum Author",
-          answerCount: 1,
+          replyCount: 1,
           isSolved: false,
           hasBestAnswer: true,
           tags: [{ key: "typescript", name: "TypeScript" }],

@@ -20,7 +20,7 @@ import type {
 import {
   HELP_SOLUTIONS_CATEGORY_ID,
   HELP_SOLUTIONS_SERVICE_SECTION_ID,
-} from "../../db/forum-repository";
+} from "../../db/forum-identifiers";
 import type { ContentTranslationPresentation } from "../localization/content-translation-presentation";
 import type { ContentGenerationUnitView } from "../localization/content-generation-view";
 import type { ContentGenerationActionResponse } from "../localization/content-generation-response";
@@ -1063,7 +1063,7 @@ export function HelpSolutionsView({
                     </span>
 
                     <span className="help-question-answer-count">
-                      {t("helpSolutionsAnswerCount", { count: question.answerCount })}
+                      {t("helpSolutionsReplyCount", { count: question.replyCount })}
                     </span>
 
                     <span className="help-question-enter" aria-hidden="true">

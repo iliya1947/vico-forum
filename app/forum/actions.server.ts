@@ -23,7 +23,7 @@ import {
   localeContext,
 } from "../localization/request-context";
 import type { ContentGenerationActionResponse } from "../localization/content-generation-response";
-import { HELP_SOLUTIONS_SERVICE_SECTION_ID } from "../../db/forum-repository";
+import { HELP_SOLUTIONS_SERVICE_SECTION_ID } from "../../db/forum-identifiers";
 
 export async function sectionAction({ request, params, context }: {
   request: Request;

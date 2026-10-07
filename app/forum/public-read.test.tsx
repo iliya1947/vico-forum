@@ -8,7 +8,7 @@ import type { ForumReader, ForumTopicPage } from "../../db/forum-repository";
 import {
   HELP_SOLUTIONS_CATEGORY_ID,
   HELP_SOLUTIONS_SERVICE_SECTION_ID,
-} from "../../db/forum-repository";
+} from "../../db/forum-identifiers";
 import { canonicalEnglishCatalog } from "../localization/catalog";
 import { createTranslationRuntime } from "../localization/runtime";
 import { ContentTranslationPresentationService, type ContentTranslationPresentation } from "../localization/content-translation-presentation";
@@ -110,7 +110,7 @@ const helpPage = {
     id: helpTopic.id,
     title: helpTopic.title.originalContent,
     authorName: helpTopic.authorName,
-    answerCount: 2,
+    replyCount: 2,
     isSolved: false,
     hasBestAnswer: true,
     createdAt: helpTopic.createdAt,
@@ -384,7 +384,7 @@ describe("Help & solutions All mode", () => {
     if (data.kind !== "help-solutions") throw new Error("expected Help & solutions page");
     expect(data.page.questions).toEqual([
       expect.objectContaining({
-        id: helpTopic.id, answerCount: 2, isSolved: false, hasBestAnswer: true,
+        id: helpTopic.id, replyCount: 2, isSolved: false, hasBestAnswer: true,
       }),
     ]);
 
@@ -396,7 +396,7 @@ describe("Help & solutions All mode", () => {
     expect(screen.getByRole("heading", { level: 2, name: "All questions" })).toBeVisible();
     expect(screen.getByText("Open")).toBeVisible();
     expect(screen.getByText("Best answer")).toBeVisible();
-    expect(screen.getByText("2 answers")).toBeVisible();
+    expect(screen.getByText("2 replies")).toBeVisible();
     expect(screen.getByText("#Cloudflare")).toBeVisible();
     expect(screen.getByRole("link", { name: /Why does my Worker lose auth state/ }))
       .toHaveAttribute("href", forumTopicPath("en", helpTopic.id));

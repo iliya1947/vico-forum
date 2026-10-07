@@ -83,9 +83,9 @@ export const canonicalEnglishCatalog = {
     helpSolutionsAllHeading: message("helpSolutionsAllHeading", "All questions", "Heading above the unfiltered Help & solutions question list."),
     helpSolutionsEmpty: message("helpSolutionsEmpty", "There are no questions yet.", "Empty state for the Help & solutions question list."),
     helpSolutionsOpen: message("helpSolutionsOpen", "Open", "Status label for a Help & solutions question that is not solved."),
-    helpSolutionsAnswerCount: pluralMessage(
-      "helpSolutionsAnswerCount",
-      { one: "{{count}} answer", other: "{{count}} answers" },
+    helpSolutionsReplyCount: pluralMessage(
+      "helpSolutionsReplyCount",
+      { one: "{{count}} reply", other: "{{count}} replies" },
       "Number of replies after the original Help & solutions question.",
       ["count"],
     ),

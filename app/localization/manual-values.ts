@@ -47,7 +47,7 @@ export const russianCommonValues = {
   helpSolutionsAllHeading: "Все вопросы",
   helpSolutionsEmpty: "Вопросов пока нет.",
   helpSolutionsOpen: "Открыт",
-  helpSolutionsAnswerCount: {
+  helpSolutionsReplyCount: {
     one: "{{count}} ответ",
     few: "{{count}} ответа",
     many: "{{count}} ответов",
@@ -350,10 +350,10 @@ export const hebrewCommonValues = {
   helpSolutionsAllHeading: "כל השאלות",
   helpSolutionsEmpty: "עדיין אין שאלות.",
   helpSolutionsOpen: "פתוח",
-  helpSolutionsAnswerCount: {
-    one: "{{count}} תשובה",
-    two: "{{count}} תשובות",
-    other: "{{count}} תשובות",
+  helpSolutionsReplyCount: {
+    one: "{{count}} תגובה",
+    two: "{{count}} תגובות",
+    other: "{{count}} תגובות",
   },
   helpSolutionsUpdated: "עודכן {{time}}",
   unansweredNav: "ללא תשובה",

@@ -1,7 +1,7 @@
 import { useLoaderData, type RouterContextProvider } from "react-router";
 import { forumReaderForRequest } from "../forum/request-context";
 import { ForumRouteError } from "../forum/ui";
-import { HELP_SOLUTIONS_CATEGORY_ID } from "../../db/forum-repository";
+import { HELP_SOLUTIONS_CATEGORY_ID } from "../../db/forum-identifiers";
 import { CategoryView, HelpSolutionsView } from "../forum/views";
 
 export async function loader({ params, context }: {

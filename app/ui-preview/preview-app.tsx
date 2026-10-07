@@ -13,7 +13,7 @@ import type { ForumPopularPage } from "../../db/forum-repository";
 import {
   HELP_SOLUTIONS_CATEGORY_ID,
   HELP_SOLUTIONS_SERVICE_SECTION_ID,
-} from "../../db/forum-repository";
+} from "../../db/forum-identifiers";
 import type { HomepageCategoryOverview } from "../forum/homepage";
 import { UnderDevelopmentView } from "../forum/under-development-view";
 import { ForumRouteError } from "../forum/ui";
@@ -510,19 +510,19 @@ function previewHelpSolutions(locale: PreviewLocale) {
     name: hebrew ? "עזרה ופתרונות" : russian ? "Помощь и решения" : "Help & solutions",
     questions: [
       {
-        id: "help-worker-session", title: titles[0]!, authorName: "Alex Rivera", answerCount: 0,
+        id: "help-worker-session", title: titles[0]!, authorName: "Alex Rivera", replyCount: 0,
         isSolved: false, hasBestAnswer: false, createdAt: "2026-09-30T11:30:00.000Z",
         activityAt: "2026-09-30T15:40:00.000Z",
         tags: [{ key: "cloudflare", name: "Cloudflare" }, { key: "auth", name: "Auth" }],
       },
       {
-        id: "help-auth-best-answer", title: titles[1]!, authorName: "Noa Levi", answerCount: 3,
+        id: "help-auth-best-answer", title: titles[1]!, authorName: "Noa Levi", replyCount: 3,
         isSolved: false, hasBestAnswer: true, createdAt: "2026-09-29T09:00:00.000Z",
         activityAt: "2026-09-30T14:20:00.000Z",
         tags: [{ key: "better-auth", name: "Better Auth" }, { key: "workers", name: "Workers" }],
       },
       {
-        id: "help-postgres-timeout", title: titles[2]!, authorName: "Maya Cohen", answerCount: 5,
+        id: "help-postgres-timeout", title: titles[2]!, authorName: "Maya Cohen", replyCount: 5,
         isSolved: true, hasBestAnswer: true, createdAt: "2026-09-27T08:00:00.000Z",
         activityAt: "2026-09-29T18:10:00.000Z",
         tags: [{ key: "postgresql", name: "PostgreSQL" }, { key: "neon", name: "Neon" }],
@@ -1113,7 +1113,7 @@ function PreviewTopicRoute({ scenario }: { scenario: Scenario }) {
   const helpQuestion = previewHelpSolutions(scenario.locale).questions
     .find((question) => question.id === routeTopicId);
   if (helpQuestion) {
-    const postCount = helpQuestion.answerCount + 1;
+    const postCount = helpQuestion.replyCount + 1;
     const posts = Array.from({ length: postCount }, (_, index) => ({
       id: `${helpQuestion.id}-post-${index + 1}`,
       topicId: helpQuestion.id,
