@@ -135,9 +135,11 @@ Vico Forum находится в ранней pre-release разработке.
   Q&A list presentation; default URL без query остаётся `All`.
 - Текущий bounded Q&A slice добавляет dedicated создание вопроса прямо из
   `/:locale/categories/help-solutions`. Presentation permission использует существующий
-  `forum.topic.create`; POST action повторно проверяет session/origin/permission и сервер сам
-  фиксирует destination как internal `help-solutions-questions`, поэтому browser не выбирает и
-  не передаёт hidden section identity. Запись переиспользует существующий
+  `forum.topic.create`; compact action в category heading раскрывает форму только по явному
+  действию пользователя, поэтому default Q&A view сохраняет modes/list выше authoring panel.
+  POST action повторно проверяет session/origin/permission и сервер сам фиксирует destination как
+  internal `help-solutions-questions`, поэтому browser не выбирает и не передаёт hidden section
+  identity. Запись переиспользует существующий
   `writer.createTopic()` transaction для topic/initial post/revisions/tags. Новая schema,
   migrations, permissions, moderation statuses/signals, duplicates/appeals, personalization и
   дополнительные Q&A modes в этот slice не входят. CI/Pages/owner acceptance ещё не утверждаются;
