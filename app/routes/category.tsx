@@ -34,10 +34,32 @@ export async function loader({ request, params, context }: {
               ? "mine" as const
               : "all" as const;
     const session = authSessionForRequest(context);
+    if ((mode === "mine" || mode === "attention") && !session) {
+      throw new Response("Unauthorized", { status: 401 });
+    }
+
+    let canAskQuestion = false;
+    let canViewAttention = false;
+    if (session) {
+      try {
+        const resolver = authorizationForRequest(context).forUser(session.user.id);
+        [canAskQuestion, canViewAttention] = await Promise.all([
+          resolver.has("forum.topic.create"),
+          resolver.has("forum.help.attention.read"),
+        ]);
+      } catch (error) {
+        if (!(error instanceof AuthorizationUnavailableError)) throw error;
+        if (mode === "attention") throw new Response("Unavailable", { status: 503 });
+        // Public Q&A reading remains available when optional presentation authorization is unavailable.
+      }
+    }
+    if (mode === "attention" && !canViewAttention) {
+      throw new Response("Forbidden", { status: 403 });
+    }
+
     let helpSolutions;
     if (mode === "mine") {
-      if (!session) throw new Response("Unauthorized", { status: 401 });
-      helpSolutions = await reader.readHelpSolutionsMine(session.user.id);
+      helpSolutions = await reader.readHelpSolutionsMine(session!.user.id);
     } else {
       helpSolutions = mode === "open"
         ? await reader.readHelpSolutionsOpen()
@@ -50,23 +72,13 @@ export async function loader({ request, params, context }: {
               : await reader.readHelpSolutionsAll();
     }
     if (!helpSolutions) throw new Response("Not Found", { status: 404 });
-    let canAskQuestion = false;
-    if (session) {
-      try {
-        canAskQuestion = await authorizationForRequest(context)
-          .forUser(session.user.id)
-          .has("forum.topic.create");
-      } catch (error) {
-        if (!(error instanceof AuthorizationUnavailableError)) throw error;
-        // Public Q&A reading remains available when optional presentation authorization is unavailable.
-      }
-    }
     return {
       kind: "help-solutions" as const,
       locale,
       mode,
       isAuthenticated: Boolean(session),
       canAskQuestion,
+      canViewAttention,
       referenceTime,
       page: {
         ...helpSolutions,
@@ -115,6 +127,7 @@ export default function CategoryRoute() {
         referenceTime={data.referenceTime}
         isAuthenticated={data.isAuthenticated}
         canAskQuestion={data.canAskQuestion}
+        canViewAttention={data.canViewAttention}
         actionData={actionData}
       />
     );
