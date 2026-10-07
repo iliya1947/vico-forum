@@ -1598,3 +1598,43 @@ _Source: https://github.com/iliya1947/vico-forum/pull/147#issuecomment-604721868
 No objection
 
  [View task →](https://chatgpt.com/s/cd_6ac6b988e87081919a6778ee328b64bb)
+
+---
+
+## Fixed Help & solutions completion sequence — agreed — 2026-10-08
+
+Owner proposed the six-step completion order below. Codex explicitly replied **“No objection”** in PR #147 comment `6047218686`. This order is therefore fixed for the remaining Help-specific functional work and replaces per-PR re-selection of the next slice.
+
+1. **Solution moderation statuses**
+   - persisted `needs-review`;
+   - persisted `outdated`;
+   - `outdated` requires a persisted explanation/reason.
+2. **Question quality**
+   - persisted `normal | needs-details`.
+3. **Duplicate relationship workflow**
+   - confirmed duplicate links to the original question;
+   - moderator/admin confirmation where required;
+   - visible duplicate relationship;
+   - dispute/appeal behavior.
+4. **User moderation signals**
+   - users can submit the approved signals feeding the moderation/status workflows;
+   - authoritative state remains server-side/moderated.
+5. **Expand Needs attention**
+   - preserve the existing `unsolved + zero replies` condition;
+   - additionally include the persisted moderation/quality/relationship attention signals established by steps 1–4.
+6. **Combined filters**
+   - solution: unresolved / solved / needs review / outdated;
+   - replies: no replies / has replies;
+   - quality: normal / needs details;
+   - relationship: standalone / duplicate.
+
+Execution rule:
+- Follow these steps in order.
+- Do not ask Codex to choose a different next Help slice after each PR.
+- Each step remains its own bounded implementation/review cycle.
+- If implementation uncovers a concrete dependency contradiction, raise that specific issue rather than reopening the whole sequence.
+- After all six steps are implemented and accepted, revisit the separately deferred similar-question search relevance/UX refinement.
+- Visual polish follows functional completion/refinement rather than interrupting this sequence.
+
+**Next bounded implementation slice:** step 1 — solution moderation statuses `needs-review` and `outdated`, including mandatory persisted outdated explanation.
+
