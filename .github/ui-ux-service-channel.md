@@ -1170,3 +1170,44 @@ Return only:
 - readiness criteria.
 
 Do not select similar-question search refinement or visual polish at this stage.
+
+
+---
+
+<!-- codex-service-channel-comment:6043527859 -->
+## Codex GitHub response — comment 6043527859
+
+_Source: https://github.com/iliya1947/vico-forum/pull/147#issuecomment-6043527859 · 2026-10-07T17:46:00Z_
+
+# Действие пользователя
+
+Ничего.
+
+## Required result
+
+Добавить locale-aware режим **Needs attention / Требуют внимания** для persisted-вопросов **Help & solutions**, которые ещё не решены и не получили ни одного ответа. `All` остаётся canonical default; семантика `Needs help`, `Solutions`, `My questions` и `Active` не меняется. [.github/ui-ux-service-channel.mdL1177-L1183](https://github.com/iliya1947/vico-forum/blob/330c256f27bcb2c1460e3f28e8a02e93d4c79503/.github/ui-ux-service-channel.md#L1177-L1183)
+
+## Bounded scope and exclusions
+
+- Добавить один отдельный query mode **Needs attention**.
+- Выбирать server-side только актуальные вопросы внутреннего раздела `help-solutions-questions`, где `isSolved = false` и persisted reply count равен нулю.
+- Переиспользовать существующие bounded Q&A projection, activity ordering, deterministic tie-breaks, карточки, теги, статусы, locale-aware destinations и hidden service-section boundary.
+- Добавить canonical EN, reviewed RU/HE локализацию, populated/empty Pages states и focused regression coverage.
+- Не добавлять age/staleness thresholds, ручные priority/moderation flags, schema/migrations, permissions, notifications, personalization, изменения authoring или generic forum filtering.
+- Не реализовывать `Want to help` или `For me`; не выполнять similar-question search refinement, visual polish или Stage 6 работу. [.github/ui-ux-service-channel.mdL1185-L1198](https://github.com/iliya1947/vico-forum/blob/330c256f27bcb2c1460e3f28e8a02e93d4c79503/.github/ui-ux-service-channel.md#L1185-L1198)
+
+## Readiness criteria
+
+- Server-side выборка возвращает только нерешённые Help & solutions вопросы без ответов; решённые вопросы, вопросы с ответами и обычные forum sections исключены.
+- Запрос bounded и deterministic, без client-side filtering и N+1, с корректными tags, status, reply count, activity data и canonical locale-aware links.
+- Не регрессируют `All`, `Needs help`, `Solutions`, `My questions`, `Active`, similar-question checking, question authoring, authorization boundaries и generic routes.
+- Populated и empty states проверены в Pages для desktop/mobile и LTR/RTL.
+- Exact-head CI и Pages deployment успешны; owner browser acceptance и независимый whole-PR review завершены без открытых findings текущего scope. [.github/ui-ux-service-channel.mdL1200-L1210](https://github.com/iliya1947/vico-forum/blob/330c256f27bcb2c1460e3f28e8a02e93d4c79503/.github/ui-ux-service-channel.md#L1200-L1210)
+
+**Testing**
+
+- ✅ `git diff --check`
+- ✅ `git status --short --branch`
+- ✅ `git show --stat --oneline HEAD` — commit `36a1fcf` изменяет только shared communication-файл.
+
+ [View task →](https://chatgpt.com/s/cd_6ac684f6d3d08191bee23e66569fc4b5)
