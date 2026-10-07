@@ -34,6 +34,7 @@ Permission key означает существующую capability прилож
 
 - `forum.topic.create`;
 - `forum.reply.create`;
+- `forum.help.attention.read`;
 - `forum.topic.pin`;
 - `forum.solution.manageOwn`;
 - `forum.solution.manageAny`;
@@ -44,6 +45,12 @@ Permission key означает существующую capability прилож
 
 При появлении новой защищённой функции код добавляет новый permission key в централизованный
 catalog, после чего он становится доступен role/user configuration UI.
+
+`forum.help.attention.read` защищает модераторскую очередь Help & solutions «Needs attention»:
+Guest не имеет доступа, authenticated пользователь без effective permission получает forbidden,
+а сам UI не показывает режим без server-resolved permission. Эта capability не определяется
+названием роли: built-in moderator/admin получают её только как initial grant, custom roles и
+per-user overrides участвуют по общим правилам authorization.
 
 `forum.solution.manageOwn` всегда применяется вместе с server-side resource condition:
 actor должен быть author target topic. `forum.sourceLocale.correctOwn` аналогично разрешает
@@ -71,6 +78,7 @@ actor должен быть author target topic. `forum.sourceLocale.correctOwn`
 
 - `forum.topic.create`;
 - `forum.reply.create`;
+- `forum.help.attention.read`;
 - `forum.topic.pin`;
 - `forum.solution.manageOwn`;
 - `forum.solution.manageAny`;
@@ -82,6 +90,7 @@ actor должен быть author target topic. `forum.sourceLocale.correctOwn`
 
 - `forum.topic.create`;
 - `forum.reply.create`;
+- `forum.help.attention.read`;
 - `forum.topic.pin`;
 - `forum.solution.manageOwn`;
 - `forum.solution.manageAny`;
