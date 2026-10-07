@@ -936,3 +936,39 @@ _Source: https://github.com/iliya1947/vico-forum/pull/147#issuecomment-603830684
 - Полный CI и exact-head Pages deployment успешны; owner browser review и независимый whole-PR review завершены без незакрытых findings текущего scope. [.github/ui-ux-service-channel.mdL921-L927](https://github.com/iliya1947/vico-forum/blob/7a7ac694279c6b165320b33903b5260965800bb7/.github/ui-ux-service-channel.md#L921-L927)
 
  [View task →](https://chatgpt.com/s/cd_6ac63f8442588191bf1d7aaab0a2a0d8)
+
+
+---
+
+<!-- codex-service-channel-comment:6039085950 -->
+## Codex GitHub response — comment 6039085950
+
+_Source: https://github.com/iliya1947/vico-forum/pull/147#issuecomment-6039085950 · 2026-10-07T13:34:19Z_
+
+# Действие пользователя
+
+Ничего.
+
+## Required result
+
+Добавить в **Help & solutions** проверку похожих существующих вопросов перед публикацией. Автор сможет перейти к уже существующему обсуждению или решению, но проверка не будет блокировать создание нового вопроса. [.github/ui-ux-service-channel.mdL943-L947](https://github.com/iliya1947/vico-forum/blob/ba521562a002361f3a59c12f86817d3a4afb49c5/.github/ui-ux-service-channel.md#L943-L947)
+
+## Scope
+
+- Переиспользовать существующий поиск по persisted title/body/tags, ограничив результаты внутренним разделом `help-solutions-questions`.
+- Возвращать bounded deterministic список реальных вопросов с текущими solved/open-состояниями, reply count и locale-aware ссылками.
+- Встроить явную проверку в компактный question-authoring flow с сохранением введённых title/body/tags во всех состояниях.
+- Добавить canonical EN, reviewed RU/HE локализацию, representative Pages states и focused regression coverage.
+- Не включать fuzzy/vector/AI search, schema/migrations, автоматическую маркировку дубликатов, moderation/appeal workflow, personalization, новые permissions, redesign глобального поиска или Stage 6. [.github/ui-ux-service-channel.mdL949-L961](https://github.com/iliya1947/vico-forum/blob/ba521562a002361f3a59c12f86817d3a4afb49c5/.github/ui-ux-service-channel.md#L949-L961)
+
+## Readiness criteria
+
+- Поиск выполняется server-side только по persisted Help & solutions content, имеет валидированные ограничения и не создаёт N+1 или client-side filtering.
+- Обычные forum sections исключены из результатов; ссылки ведут только на canonical locale-aware question topics.
+- Ошибка проверки не ослабляет существующие session/origin/permission/validation boundaries публикации.
+- Проверка остаётся необязательной и не изменяет данные при выборе найденного вопроса.
+- Populated, empty, invalid и unavailable states, а также сохранение полей формы покрыты тестами и Pages-сценариями для desktop/mobile и LTR/RTL.
+- `All`, `Needs help`, `Solutions` и существующий authoring flow не регрессируют.
+- Полный CI и exact-head Pages deployment успешны; owner browser review и независимый whole-PR review завершены без незакрытых findings текущего scope. [.github/ui-ux-service-channel.mdL963-L977](https://github.com/iliya1947/vico-forum/blob/ba521562a002361f3a59c12f86817d3a4afb49c5/.github/ui-ux-service-channel.md#L963-L977)
+
+ [View task →](https://chatgpt.com/s/cd_6ac649738ea88191aff07b158db9d77a)
