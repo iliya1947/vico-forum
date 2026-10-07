@@ -1031,9 +1031,9 @@ function PreviewCategoryRoute({ scenario }: { scenario: Scenario }) {
           ? "attention"
           : requestedMode === "solutions"
             ? "solutions"
-          : requestedMode === "mine"
-            ? "mine"
-            : "all";
+            : requestedMode === "mine"
+              ? "mine"
+              : "all";
     const page = previewHelpSolutions(scenario.locale);
     const previewIdentity = previewUser(scenario);
     const filteredPage = scenario.variant === "help-solutions-open-empty" && mode === "open"
@@ -1043,8 +1043,8 @@ function PreviewCategoryRoute({ scenario }: { scenario: Scenario }) {
         : scenario.variant === "help-solutions-attention-empty" && mode === "attention"
           ? { ...page, questions: [] }
           : scenario.variant === "help-solutions-mine-empty" && mode === "mine"
-          ? { ...page, questions: [] }
-          : mode === "open"
+            ? { ...page, questions: [] }
+            : mode === "open"
             ? { ...page, questions: page.questions.filter((question) => !question.isSolved) }
             : mode === "active"
               ? { ...page, questions: page.questions.filter((question) => question.replyCount > 0) }
@@ -1052,9 +1052,9 @@ function PreviewCategoryRoute({ scenario }: { scenario: Scenario }) {
                 ? { ...page, questions: page.questions.filter((question) => !question.isSolved && question.replyCount === 0) }
                 : mode === "solutions"
                   ? { ...page, questions: page.questions.filter((question) => question.isSolved) }
-                : mode === "mine"
-                  ? { ...page, questions: page.questions.filter((question) => question.authorName === previewIdentity?.name) }
-                  : page;
+                  : mode === "mine"
+                    ? { ...page, questions: page.questions.filter((question) => question.authorName === previewIdentity?.name) }
+                    : page;
     const similarVariant = scenario.variant?.startsWith("help-solutions-similar-")
       ? scenario.variant
       : undefined;
