@@ -32,11 +32,7 @@
 
 10. До ручного Codex review ChatGPT завершает реализацию, собственную проверку, относящиеся к задаче CI/checks, Pages/browser review и owner visual acceptance, если они применимы, а также необходимые изменения project state/documentation. После этого implementation head не должен планово меняться.
 
-11. Для проекта используется account-level конфигурация Codex: automatic review выключен, exhaustive code review включён для ручных reviews, использование credits после исчерпания лимита выключено. Эти настройки не имитируются commit-ами или repository-инструкциями.
-
-12. Если Codex review временно недоступен из-за quota, ChatGPT не запускает повторные запросы/polling ради обхода лимита. Разработка следующего bounded work может продолжаться, если нет другого блокера, но конкретный implementation PR не считается готовым к merge до обязательного финального review.
-
-13. Merge всегда выполняет только пользователь.
+11. Merge всегда выполняет только пользователь.
 
 ## Действие пользователя
 
