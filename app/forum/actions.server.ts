@@ -9,6 +9,8 @@ import {
   solutionScope,
   sourceLocaleCorrectionFailure,
   sourceLocaleCorrectionScope,
+  type HelpQuestionDraft,
+  type HelpSimilarQuestionsActionData,
 } from "./mutations.server";
 import { forumTopicPath } from "./paths";
 import { authSessionForRequest } from "../auth/request-context";
@@ -27,7 +29,6 @@ import {
   HELP_SOLUTIONS_CATEGORY_ID,
   HELP_SOLUTIONS_SERVICE_SECTION_ID,
 } from "../../db/forum-identifiers";
-import type { HelpQuestionDraft, HelpSimilarQuestionsActionData } from "./help-question-action";
 
 export async function helpSolutionsCategoryAction({ request, params, context }: {
   request: Request;
