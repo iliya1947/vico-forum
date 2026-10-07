@@ -169,13 +169,14 @@ Vico Forum находится в ранней pre-release разработке.
   внимания** через `?mode=attention`. В него входят только нерешённые persisted Help & solutions
   вопросы без ответов; фильтрация выполняется на repository/DB boundary внутри
   `help-solutions-questions`, использует существующие deterministic activity tie-breaks и
-  ограничена первыми 100 вопросами. Новый code-backed permission
-  `forum.help.attention.read` имеет initial grants только built-in `moderator`/`admin`;
-  Guest получает 401, authenticated actor без effective permission — 403, authorization
+  ограничена первыми 100 вопросами. Доступ использует уже существующую moderation capability
+  `forum.solution.manageAny`: её initial grants есть у built-in `moderator`/`admin`, но нет
+  у ordinary `user`; custom roles и per-user overrides продолжают работать по общей permission
+  model. Guest получает 401, authenticated actor без effective permission — 403, authorization
   unavailable на protected read — controlled 503, а navigation показывает режим только при
   server-resolved permission. Existing cards, tags, statuses, authoring, similar-question check и
-  остальные Q&A modes переиспользуются без notifications, personalization, moderation flags,
-  age thresholds, visual polish или Stage 6 работы.
+  остальные Q&A modes переиспользуются без schema/migrations, notifications, personalization,
+  moderation flags, age thresholds, visual polish или Stage 6 работы.
 - In-app reply notifications slice реализован в PR #180:
   forward migration `0024_forum_reply_notifications` хранит только stable recipient/actor/topic/post
   references, `createdAt` и nullable `readAt`; unique recipient + reply identity предотвращает
