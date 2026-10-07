@@ -170,7 +170,7 @@ Vico Forum находится в ранней pre-release разработке.
   `help-solutions-questions`, а доступ использует существующую capability
   `forum.solution.manageAny`. Guest и ordinary authenticated users не видят режим и не проходят
   direct-route boundary; schema/migrations и новые permissions не добавлялись.
-- PR #198 добавляет authenticated режим **Want to help / Хочу помочь** через `?mode=help`.
+- Merged PR #198 добавил authenticated режим **Want to help / Хочу помочь** через `?mode=help`.
   Authoritative current user берётся только из server-side session, а repository/DB boundary
   возвращает только нерешённые persisted Help & solutions вопросы других авторов внутри
   `help-solutions-questions`; собственные и solved вопросы исключаются. Запрос использует
@@ -182,6 +182,18 @@ Vico Forum находится в ранней pre-release разработке.
   permissions, recommendation scoring, interests/subscriptions, notifications, visual polish или
   Stage 6 работы. Owner visual acceptance populated/empty Pages presentation подтверждён
   2026-10-07 для Guest/User/Manager identity switching.
+- Текущий bounded Q&A follow-up добавляет authenticated режим **For me / Для меня** через
+  `?mode=for-me`. Authoritative current user берётся только из server-side session. Repository
+  выводит interest tags из существующего persisted участия пользователя только внутри
+  `help-solutions-questions`: вопросов, созданных этим пользователем, и тем, где он оставлял
+  сообщения. Кандидаты ограничены нерешёнными вопросами других авторов с пересечением по этим
+  тегам; ranking прозрачно идёт по числу совпавших тегов, затем existing latest activity и
+  stable topic-id tie-break. Interest tag set ограничен 100 distinct tag keys, result — первыми
+  100 вопросами; no-signal/no-match возвращают честный empty state. Режим не создаёт новые
+  profile interests/subscriptions/tracking signals и не предоставляет reply capability. Existing
+  cards, tags, statuses и reply boundaries переиспользуются без schema/migrations, новых
+  permissions, opaque/AI scoring, notifications, visual polish, similar-search refinement или
+  Stage 6 работы.
 - In-app reply notifications slice реализован в PR #180:
   forward migration `0024_forum_reply_notifications` хранит только stable recipient/actor/topic/post
   references, `createdAt` и nullable `readAt`; unique recipient + reply identity предотвращает
