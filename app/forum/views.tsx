@@ -24,9 +24,12 @@ import {
 import type { ContentTranslationPresentation } from "../localization/content-translation-presentation";
 import type { ContentGenerationUnitView } from "../localization/content-generation-view";
 import type { ContentGenerationActionResponse } from "../localization/content-generation-response";
-import type { SourceLocaleCorrectionMutationError } from "./mutations.server";
-import type { HelpQuestionActionData } from "./help-question-action";
-import { isHelpSimilarQuestionsActionData } from "./help-question-action";
+import type {
+  ForumMutationError,
+  HelpQuestionActionData,
+  HelpSimilarQuestionsActionData,
+  SourceLocaleCorrectionMutationError,
+} from "./mutations.server";
 import { forumCategoryPath, forumSearchPath, forumSectionPath, forumTagPath, forumTagsPath, forumTopicPath, underDevelopmentPath } from "./paths";
 import type { HomepageCategoryOverview } from "./homepage";
 import {
@@ -1013,7 +1016,10 @@ export function HelpSolutionsView({
 }) {
   const { t } = useTranslation("common");
   const navigation = useNavigation();
-  const similarAction = isHelpSimilarQuestionsActionData(actionData) ? actionData : undefined;
+  const similarAction: HelpSimilarQuestionsActionData | undefined =
+    actionData && "operation" in actionData && actionData.operation === "helpSimilarQuestions"
+      ? actionData
+      : undefined;
   const mutationError = actionData && "error" in actionData ? actionData.error : undefined;
   const [questionComposerOpen, setQuestionComposerOpen] = useState(Boolean(similarAction));
   const submittingHelpQuestion = navigation.state === "submitting";
