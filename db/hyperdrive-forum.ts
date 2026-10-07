@@ -70,6 +70,7 @@ export function createHyperdriveForumReader(
     readTopicPinState: (topicId) => read((repository) => repository.readTopicPinState(topicId)),
     readHelpSolutionsAll: () => read((repository) => repository.readHelpSolutionsAll()),
     readHelpSolutionsOpen: () => read((repository) => repository.readHelpSolutionsOpen()),
+    readHelpSolutionsActive: () => read((repository) => repository.readHelpSolutionsActive()),
     readHelpSolutionsSolved: () => read((repository) => repository.readHelpSolutionsSolved()),
     readHelpSolutionsMine: (userId) => read((repository) => repository.readHelpSolutionsMine(userId)),
     searchHelpSolutionsSimilar: (query, limit) => read((repository) => repository.searchHelpSolutionsSimilar(query, limit)),

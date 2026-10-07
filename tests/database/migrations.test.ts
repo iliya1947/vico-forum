@@ -124,6 +124,7 @@ describe("PostgreSQL 17 locale migrations", () => {
 
     await insertForumAuthor("help-foundation-author", "help-foundation@example.test", null);
     await insertForumAuthor("help-foundation-replier", "help-foundation-replier@example.test", null);
+    await insertForumAuthor("help-foundation-waiting", "help-foundation-waiting@example.test", null);
     try {
       await forum.createTopicWithInitialPost({
         id: "help-foundation-topic",
@@ -200,6 +201,13 @@ describe("PostgreSQL 17 locale migrations", () => {
         }],
       });
       expect(await repository.readHelpSolutionsMine("help-foundation-replier")).toMatchObject({ questions: [] });
+      expect(await repository.readHelpSolutionsActive()).toMatchObject({
+        questions: [{
+          id: "help-foundation-topic",
+          replyCount: 1,
+          isSolved: false,
+        }],
+      });
       expect(await repository.readHelpSolutionsSolved()).toMatchObject({ questions: [] });
 
       await forum.markTopicSolved("help-foundation-topic", "help-foundation-author");
@@ -211,10 +219,44 @@ describe("PostgreSQL 17 locale migrations", () => {
           hasBestAnswer: true,
         }],
       });
+      expect(await repository.readHelpSolutionsActive()).toMatchObject({
+        questions: [{
+          id: "help-foundation-topic",
+          replyCount: 1,
+          isSolved: true,
+        }],
+      });
+
+      await forum.createTopicWithInitialPost({
+        id: "help-foundation-no-replies",
+        sectionId: HELP_SOLUTIONS_SERVICE_SECTION_ID,
+        authorId: "help-foundation-waiting",
+        titleRevision: {
+          id: "help-foundation-no-replies-title",
+          originalContent: "Help question without replies",
+          sourceLocale: "en",
+        },
+        initialPost: {
+          id: "help-foundation-no-replies-question",
+          topicId: "help-foundation-no-replies",
+          authorId: "help-foundation-waiting",
+          bodyRevision: {
+            id: "help-foundation-no-replies-body",
+            originalContent: "Still waiting for an answer",
+            sourceLocale: "en",
+          },
+        },
+      });
+      expect(await repository.readHelpSolutionsActive()).toMatchObject({
+        questions: [{
+          id: "help-foundation-topic",
+        }],
+      });
+      expect((await repository.readHelpSolutionsActive())?.questions).toHaveLength(1);
       expect(await repository.readSection(HELP_SOLUTIONS_SERVICE_SECTION_ID)).toBeUndefined();
     } finally {
-      await client.query("delete from forum_topics where id = 'help-foundation-topic'");
-      await client.query(`delete from "user" where id in ('help-foundation-author', 'help-foundation-replier')`);
+      await client.query("delete from forum_topics where id in ('help-foundation-topic', 'help-foundation-no-replies')");
+      await client.query(`delete from "user" where id in ('help-foundation-author', 'help-foundation-replier', 'help-foundation-waiting')`);
     }
   });
 

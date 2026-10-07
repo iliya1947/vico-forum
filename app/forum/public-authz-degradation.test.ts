@@ -84,6 +84,7 @@ const reader: ForumReader = {
   readTopicPinState: async () => false,
   readHelpSolutionsAll: async () => undefined,
   readHelpSolutionsOpen: async () => undefined,
+  readHelpSolutionsActive: async () => undefined,
   readHelpSolutionsSolved: async () => undefined,
   readHelpSolutionsMine: async () => undefined,
   searchHelpSolutionsSimilar: async () => [],

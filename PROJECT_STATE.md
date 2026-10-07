@@ -156,14 +156,19 @@ Vico Forum находится в ранней pre-release разработке.
   блокирует создание нового вопроса. Введённые title/body/tags сохраняются между
   populated/empty/invalid/unavailable состояниями проверки; переход к найденному вопросу остаётся
   обычной locale-aware ссылкой без mutation.
-- Текущий bounded Q&A follow-up добавляет authenticated режим **My questions / Мои** через
-  `?mode=mine`. Authoritative user identity берётся только из server-side session, а repository
-  фильтрует persisted вопросы по `forum_topics.author_id` внутри internal
-  `help-solutions-questions`; client не передаёт и не выбирает author identity. Режим виден в
-  Q&A navigation только authenticated пользователю, прямой guest-доступ fail-closed с
-  unauthenticated route state. Existing projection, activity ordering, cards, tags, reply counts,
-  statuses, authoring и similar-question check переиспользуются без новой schema, migrations,
-  permissions, moderation/duplicate workflow, refinement поиска или Stage 6 работы.
+- Merged PR #195 добавил authenticated режим **My questions / Мои** через `?mode=mine`.
+  Authoritative user identity берётся только из server-side session, а repository фильтрует
+  persisted вопросы по `forum_topics.author_id` внутри internal `help-solutions-questions`;
+  client не передаёт и не выбирает author identity. Режим виден в Q&A navigation только
+  authenticated пользователю, прямой guest-доступ fail-closed с unauthenticated route state.
+- Текущий bounded Q&A follow-up добавляет public режим **Active / Активные** через
+  `?mode=active`. Активным считается persisted Help & solutions вопрос с хотя бы одним
+  последующим ответом; open и solved вопросы допускаются одинаково. Фильтрация выполняется на
+  repository/DB boundary только внутри `help-solutions-questions`, результаты сортируются по
+  существующей latest-activity projection и ограничены первыми 100 вопросами. Existing cards,
+  statuses, reply counts, tags, locale-aware destinations, authoring, auth boundaries и
+  similar-question check переиспользуются без новой schema, migrations, permissions,
+  moderation/duplicate workflow, refinement поиска, visual polish или Stage 6 работы.
 - In-app reply notifications slice реализован в PR #180:
   forward migration `0024_forum_reply_notifications` хранит только stable recipient/actor/topic/post
   references, `createdAt` и nullable `readAt`; unique recipient + reply identity предотвращает

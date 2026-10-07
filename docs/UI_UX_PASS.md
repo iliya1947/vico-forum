@@ -289,12 +289,16 @@ composition without changing the forum hierarchy or schema:
   while reusing the same projection, ordering and cards. Merged PR #194 adds an optional
   similar-question check inside dedicated Help & solutions authoring: it searches only persisted
   service-section title/body/tags, preserves the draft across check states and never blocks
-  publication or marks duplicates automatically. The current bounded follow-up adds authenticated
+  publication or marks duplicates automatically. Merged PR #195 adds authenticated
   `My questions / Мои` as `?mode=mine`, deriving the author only from the server-side session
   and filtering persisted service-section questions at the repository/DB boundary. The mode is
   exposed only to authenticated users; direct guest access uses the existing localized
-  unauthenticated route state. Moderation workflow, duplicate/appeal handling, personalization,
-  similar-search refinement and additional modes remain separate bounded product work;
+  unauthenticated route state. The current bounded follow-up adds public `Active / Активные` as
+  `?mode=active`: questions with at least one persisted reply are selected server-side from the
+  hidden service section, include both open and solved states, reuse existing latest-activity
+  ordering, and are bounded to the first 100 results. Moderation workflow, duplicate/appeal
+  handling, personalization, similar-search refinement and additional modes remain separate
+  bounded product work;
 - owner visual acceptance of the implementation was confirmed on 2026-10-05; exact-head
   automated verification remains a separate PR check.
 
