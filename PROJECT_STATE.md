@@ -144,8 +144,9 @@ Vico Forum находится в ранней pre-release разработке.
   identity. Запись переиспользует существующий
   `writer.createTopic()` transaction для topic/initial post/revisions/tags. Новая schema,
   migrations, permissions, moderation statuses/signals, duplicates/appeals, personalization и
-  дополнительные Q&A modes в этот slice не входят. CI/Pages/owner acceptance ещё не утверждаются;
-  external migration/Stage 6 rollout не выполняется.
+  дополнительные Q&A modes в этот slice не входят. Exact-head repository CI и GitHub Pages проходят;
+  owner visual acceptance corrected authoring/list presentation подтверждён 2026-10-07. External
+  migration/Stage 6 rollout не выполняется.
 - In-app reply notifications slice реализован в PR #180:
   forward migration `0024_forum_reply_notifications` хранит только stable recipient/actor/topic/post
   references, `createdAt` и nullable `readAt`; unique recipient + reply identity предотвращает
