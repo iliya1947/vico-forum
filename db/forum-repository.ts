@@ -181,6 +181,7 @@ export interface ForumHelpSimilarQuestionSummary {
 const HELP_SOLUTIONS_ACTIVE_LIMIT = 100;
 const HELP_SOLUTIONS_NEEDS_ATTENTION_LIMIT = 100;
 const HELP_SOLUTIONS_MINE_LIMIT = 100;
+const HELP_SOLUTIONS_WANT_TO_HELP_LIMIT = 100;
 
 export interface ForumTopicSummary {
   id: string;
@@ -232,6 +233,7 @@ export interface ForumReader {
   readHelpSolutionsNeedsAttention(): Promise<ForumHelpSolutionsPage | undefined>;
   readHelpSolutionsSolved(): Promise<ForumHelpSolutionsPage | undefined>;
   readHelpSolutionsMine(userId: string): Promise<ForumHelpSolutionsPage | undefined>;
+  readHelpSolutionsWantToHelp(userId: string): Promise<ForumHelpSolutionsPage | undefined>;
   searchHelpSolutionsSimilar(query: string, limit?: number): Promise<ForumHelpSimilarQuestionSummary[]>;
   readCategory(id: string, pinnedTopicsPerSection?: number): Promise<ForumCategoryPage | undefined>;
   readSection(id: string): Promise<ForumSectionPage | undefined>;
@@ -1119,6 +1121,10 @@ export class DrizzleForumRepository {
     return this.readHelpSolutionsPage({ mode: "mine", authorId: userId });
   }
 
+  async readHelpSolutionsWantToHelp(userId: string): Promise<ForumHelpSolutionsPage | undefined> {
+    return this.readHelpSolutionsPage({ mode: "help", excludedAuthorId: userId });
+  }
+
   private async readHelpSolutionsPage(
     filter:
       | { mode: "all" }
@@ -1126,7 +1132,8 @@ export class DrizzleForumRepository {
       | { mode: "active" }
       | { mode: "attention" }
       | { mode: "solved" }
-      | { mode: "mine"; authorId: string },
+      | { mode: "mine"; authorId: string }
+      | { mode: "help"; excludedAuthorId: string },
   ): Promise<ForumHelpSolutionsPage | undefined> {
     const [category] = await this.database
       .select({ id: forumCategories.id, name: forumCategories.name })
@@ -1173,7 +1180,13 @@ export class DrizzleForumRepository {
                   eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
                   eq(forumTopics.authorId, filter.authorId),
                 )
-              : eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
+              : filter.mode === "help"
+                ? and(
+                    eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
+                    eq(forumTopics.isSolved, false),
+                    ne(forumTopics.authorId, filter.excludedAuthorId),
+                  )
+                : eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
       )
       .groupBy(forumTopics.id, forumTopicTitleRevisions.id, user.name)
       .having(
@@ -1191,7 +1204,9 @@ export class DrizzleForumRepository {
         ? await questionQuery.limit(HELP_SOLUTIONS_NEEDS_ATTENTION_LIMIT)
         : filter.mode === "mine"
           ? await questionQuery.limit(HELP_SOLUTIONS_MINE_LIMIT)
-          : await questionQuery;
+          : filter.mode === "help"
+            ? await questionQuery.limit(HELP_SOLUTIONS_WANT_TO_HELP_LIMIT)
+            : await questionQuery;
     const tagsByTopic = await this.readTagsForTopics(rows.map(({ id }) => id));
     return {
       ...category,

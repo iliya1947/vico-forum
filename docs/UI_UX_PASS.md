@@ -302,9 +302,18 @@ composition without changing the forum hierarchy or schema:
   existing Q&A projection/activity ordering, and are bounded to the first 100 results. Access
   reuses the existing `forum.solution.manageAny` moderation capability, initially granted to
   built-in moderator/admin but not ordinary user; Guest and actors without effective permission
-  neither see the navigation item nor pass direct-route authorization. Age or staleness thresholds,
-  moderation flags, notifications, personalization, similar-search refinement and additional modes
-  remain separate bounded product work;
+  neither see the navigation item nor pass direct-route authorization. Merged PR #197 finalized
+  that boundary without new schema/migration/permission. PR #198 adds authenticated
+  `Want to help / Хочу помочь` as `?mode=help`: server-side selection returns only unsolved
+  questions from other authors using the authenticated session identity, keeps the existing Q&A
+  projection/activity ordering, and is bounded to the first 100 results. Guest does not see the
+  mode and direct guest access uses the existing unauthenticated route state; actual reply
+  submission remains governed by the existing reply authorization/origin/validation/rate-limit
+  boundaries. Owner visual acceptance of populated/empty Pages states and Guest/User/Manager
+  identity presentation was confirmed on 2026-10-07. Recommendation scoring,
+  interests/subscriptions, `For me`, age or staleness thresholds, moderation flags,
+  notifications, personalization, similar-search refinement and visual polish remain separate
+  bounded product work;
 - owner visual acceptance of the implementation was confirmed on 2026-10-05; exact-head
   automated verification remains a separate PR check.
 

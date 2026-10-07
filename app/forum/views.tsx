@@ -1010,7 +1010,7 @@ export function HelpSolutionsView({
   actionData,
 }: {
   locale: string;
-  mode: "all" | "open" | "active" | "attention" | "solutions" | "mine";
+  mode: "all" | "open" | "help" | "active" | "attention" | "solutions" | "mine";
   page: HelpSolutionsPagePresentation;
   referenceTime: string;
   isAuthenticated?: boolean;
@@ -1037,12 +1037,14 @@ export function HelpSolutionsView({
   const isQuestionFormBusy = isQuestionSubmitting || isSimilarChecking;
   const categoryPath = forumCategoryPath(locale, HELP_SOLUTIONS_CATEGORY_ID);
   const openPath = `${categoryPath}?mode=open`;
+  const helpPath = `${categoryPath}?mode=help`;
   const activePath = `${categoryPath}?mode=active`;
   const attentionPath = `${categoryPath}?mode=attention`;
   const solutionsPath = `${categoryPath}?mode=solutions`;
   const minePath = `${categoryPath}?mode=mine`;
   const allMode = mode === "all";
   const openMode = mode === "open";
+  const helpMode = mode === "help";
   const activeMode = mode === "active";
   const attentionMode = mode === "attention";
   const solutionsMode = mode === "solutions";
@@ -1050,9 +1052,11 @@ export function HelpSolutionsView({
   const listHeading = t(
     openMode
       ? "helpSolutionsNeedsHelpHeading"
-      : activeMode
-        ? "helpSolutionsActiveHeading"
-        : attentionMode
+      : helpMode
+        ? "helpSolutionsWantToHelpHeading"
+        : activeMode
+          ? "helpSolutionsActiveHeading"
+          : attentionMode
           ? "helpSolutionsNeedsAttentionHeading"
           : solutionsMode
             ? "helpSolutionsSolutionsHeading"
@@ -1063,9 +1067,11 @@ export function HelpSolutionsView({
   const emptyCopy = t(
     openMode
       ? "helpSolutionsNeedsHelpEmpty"
-      : activeMode
-        ? "helpSolutionsActiveEmpty"
-        : attentionMode
+      : helpMode
+        ? "helpSolutionsWantToHelpEmpty"
+        : activeMode
+          ? "helpSolutionsActiveEmpty"
+          : attentionMode
           ? "helpSolutionsNeedsAttentionEmpty"
           : solutionsMode
             ? "helpSolutionsSolutionsEmpty"
@@ -1113,6 +1119,15 @@ export function HelpSolutionsView({
           >
             {t("helpSolutionsNeedsHelpMode")}
           </Link>
+          {isAuthenticated ? (
+            <Link
+              className={"help-solutions-mode" + (helpMode ? " is-active" : "")}
+              to={helpPath}
+              aria-current={helpMode ? "page" : undefined}
+            >
+              {t("helpSolutionsWantToHelpMode")}
+            </Link>
+          ) : null}
           <Link
             className={"help-solutions-mode" + (activeMode ? " is-active" : "")}
             to={activePath}
