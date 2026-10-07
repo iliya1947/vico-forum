@@ -860,3 +860,8 @@ This is a real current UI/UX tooling defect and the workflow guard is the bounde
 ChatGPT whole-PR review after the owner-driven visual corrections found no remaining defects in the current bounded slice. Codex independent review completed on exact head `4526fec65b17ef7c9dbc51f1c9e99b0f76e13f20` with no findings. Unresolved review threads: 0. Exact-head CI and UI preview Pages are both green, and the Pages workflow guard prevents the permanent service branch from redeploying stale preview artifacts.
 
 Technical review cycle is complete for PR #191. Remaining gate is owner visual acceptance of the corrected Help & solutions presentation in Pages; merge remains owner-only.
+
+
+## Owner acceptance — PR #191 — 2026-10-07
+
+Owner visually accepted the corrected Help & solutions authoring/list presentation in Pages (“Да, сойдёт”). PR source-of-truth docs now record that acceptance on exact head `47d2d27f041b23383ae14a0ddf489548e4328753`. Exact-head CI and UI preview Pages are green. ChatGPT whole-PR review remains clean; unresolved review threads are 0. Codex automatic review of this documentation-only final head is still running; merge remains owner-only after that exact-head review completes.
