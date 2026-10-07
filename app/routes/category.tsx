@@ -1,18 +1,43 @@
 import { useLoaderData, type RouterContextProvider } from "react-router";
 import { forumReaderForRequest } from "../forum/request-context";
 import { ForumRouteError } from "../forum/ui";
-import { CategoryView } from "../forum/views";
+import { HELP_SOLUTIONS_CATEGORY_ID } from "../../db/forum-identifiers";
+import { CategoryView, HelpSolutionsView } from "../forum/views";
 
 export async function loader({ params, context }: {
   params: { locale?: string; categoryId?: string };
   context: RouterContextProvider;
 }) {
-  const category = await forumReaderForRequest(context).readCategory(params.categoryId ?? "", 10);
+  const categoryId = params.categoryId ?? "";
+  const reader = forumReaderForRequest(context);
+  const locale = params.locale ?? "en";
+  const referenceTime = new Date().toISOString();
+
+  if (categoryId === HELP_SOLUTIONS_CATEGORY_ID) {
+    const helpSolutions = await reader.readHelpSolutionsAll();
+    if (!helpSolutions) throw new Response("Not Found", { status: 404 });
+    return {
+      kind: "help-solutions" as const,
+      locale,
+      referenceTime,
+      page: {
+        ...helpSolutions,
+        questions: helpSolutions.questions.map((question) => ({
+          ...question,
+          createdAt: question.createdAt.toISOString(),
+          activityAt: question.activityAt.toISOString(),
+        })),
+      },
+    };
+  }
+
+  const category = await reader.readCategory(categoryId, 10);
   if (!category) throw new Response("Not Found", { status: 404 });
 
   return {
-    locale: params.locale ?? "en",
-    referenceTime: new Date().toISOString(),
+    kind: "category" as const,
+    locale,
+    referenceTime,
     category: {
       ...category,
       sections: category.sections.map((section) => ({
@@ -32,7 +57,10 @@ export async function loader({ params, context }: {
 
 export default function CategoryRoute() {
   const data = useLoaderData<typeof loader>();
-  return <CategoryView {...data} />;
+  if (data.kind === "help-solutions") {
+    return <HelpSolutionsView locale={data.locale} page={data.page} referenceTime={data.referenceTime} />;
+  }
+  return <CategoryView locale={data.locale} category={data.category} referenceTime={data.referenceTime} />;
 }
 
 export const ErrorBoundary = ForumRouteError;

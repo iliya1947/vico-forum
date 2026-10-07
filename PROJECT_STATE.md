@@ -118,14 +118,21 @@ Vico Forum находится в ранней pre-release разработке.
   выбранный best answer без изменения solved state. Full repository CI, clean PostgreSQL 17,
   schema/manifest parity, runtime privilege probes, Workers smoke и UI preview build проходят на
   exact implementation head; external migration/Stage 6 rollout не выполнялся.
-- Текущий **Help & solutions foundation** slice добавляет migration
+- Merged PR #187 **Help & solutions foundation** добавил migration
   `0027_help_solutions_foundation`: она создаёт reserved category `help-solutions` и
   внутренний service section `help-solutions-questions` для хранения вопросов в существующей
   topic/post model. Generic Home/category discovery, прямой section route и обычный create-topic
   action этот service section не показывают/не используют; Home при этом сохраняет реальные
-  aggregate topic/message counts категории. Режимы Q&A, фильтры, moderation statuses,
-  duplicates/appeals и personalization в этот bounded slice не входят. External migration/Stage 6
-  rollout не выполняется.
+  aggregate topic/message counts категории. External migration/Stage 6 rollout не выполнялся.
+- Текущий bounded Q&A slice добавляет первый реальный режим **All / Все** на существующем
+  `/:locale/categories/help-solutions`. Dedicated reader читает вопросы только из internal
+  service section и возвращает current title/author, technology tags, число последующих сообщений
+  (`replies`) после original question, independent solved/best-answer state и latest activity. Generic category UI для этой
+  reserved category заменяется специальным public Q&A list view; topic breadcrumb для таких
+  вопросов больше не ведёт на скрытый service-section route. Остальные Q&A modes, фильтры,
+  создание вопроса, moderation signals/statuses, duplicates/appeals, structured context,
+  similar-question search и personalization в этот slice не входят. CI/Pages/owner acceptance
+  ещё не утверждаются; external migration/Stage 6 rollout не выполняется.
 - In-app reply notifications slice реализован в PR #180:
   forward migration `0024_forum_reply_notifications` хранит только stable recipient/actor/topic/post
   references, `createdAt` и nullable `readAt`; unique recipient + reply identity предотвращает

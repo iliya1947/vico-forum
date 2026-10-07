@@ -275,7 +275,11 @@ composition without changing the forum hierarchy or schema:
 - `Help & solutions` is the first approved homepage category. Its persistence foundation uses a
   reserved category plus one internal service section hidden from generic section discovery and
   generic create-topic routing, preserving the classic storage hierarchy without presenting a
-  fake user-facing subforum. Dedicated Q&A modes/views remain a separate bounded product slice;
+  fake user-facing subforum. The current bounded Q&A slice adds only the first real `All` mode:
+  it lists service-section questions with author, tags, reply count, solved/best-answer state and
+  latest activity, while question topics breadcrumb directly back to Help & solutions instead of
+  exposing the hidden section. Additional modes, filters and question-authoring remain separate
+  bounded product work;
 - owner visual acceptance of the implementation was confirmed on 2026-10-05; exact-head
   automated verification remains a separate PR check.
 

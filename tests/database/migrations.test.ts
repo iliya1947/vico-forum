@@ -11,9 +11,11 @@ import {
   ForumAuthorizationError,
   ForumEntityNotFoundError,
   ForumStateConflictError,
+} from "../../db/forum-repository";
+import {
   HELP_SOLUTIONS_CATEGORY_ID,
   HELP_SOLUTIONS_SERVICE_SECTION_ID,
-} from "../../db/forum-repository";
+} from "../../db/forum-identifiers";
 import { ForumService, InvalidForumContentError } from "../../db/forum-service";
 import { createHyperdriveForumWriter } from "../../db/hyperdrive-forum";
 import { FORUM_WRITE_COOLDOWN_MS, ForumWriteRateLimitError } from "../../db/forum-write-policy";
@@ -121,6 +123,7 @@ describe("PostgreSQL 17 locale migrations", () => {
     });
 
     await insertForumAuthor("help-foundation-author", "help-foundation@example.test", null);
+    await insertForumAuthor("help-foundation-replier", "help-foundation-replier@example.test", null);
     try {
       await forum.createTopicWithInitialPost({
         id: "help-foundation-topic",
@@ -131,6 +134,7 @@ describe("PostgreSQL 17 locale migrations", () => {
           originalContent: "Help foundation question",
           sourceLocale: "en",
         },
+        tags: [{ key: "typescript", name: "TypeScript" }],
         initialPost: {
           id: "help-foundation-question",
           topicId: "help-foundation-topic",
@@ -142,18 +146,48 @@ describe("PostgreSQL 17 locale migrations", () => {
           },
         },
       });
+      await forum.createPost({
+        id: "help-foundation-answer",
+        topicId: "help-foundation-topic",
+        authorId: "help-foundation-replier",
+        parentPostId: "help-foundation-question",
+        bodyRevision: {
+          id: "help-foundation-answer-body",
+          originalContent: "Try this fix",
+          sourceLocale: "en",
+        },
+      });
+      await forum.selectBestAnswer(
+        "help-foundation-topic",
+        "help-foundation-answer",
+        "help-foundation-author",
+      );
+
       expect((await repository.readHomepage()).find(({ id }) => id === HELP_SOLUTIONS_CATEGORY_ID)).toEqual({
         id: HELP_SOLUTIONS_CATEGORY_ID,
         name: "Help & solutions",
         sectionCount: 0,
         topicCount: 1,
-        messageCount: 1,
+        messageCount: 2,
         sections: [],
+      });
+      expect(await repository.readHelpSolutionsAll()).toMatchObject({
+        id: HELP_SOLUTIONS_CATEGORY_ID,
+        name: "Help & solutions",
+        questions: [{
+          id: "help-foundation-topic",
+          title: "Help foundation question",
+          authorName: "Forum Author",
+          replyCount: 1,
+          isSolved: false,
+          hasBestAnswer: true,
+          tags: [{ key: "typescript", name: "TypeScript" }],
+        }],
       });
       expect(await repository.readSection(HELP_SOLUTIONS_SERVICE_SECTION_ID)).toBeUndefined();
     } finally {
       await client.query("delete from forum_topics where id = 'help-foundation-topic'");
-      await client.query(`delete from "user" where id = 'help-foundation-author'`);
+      await client.query(`delete from "user" where id in ('help-foundation-author', 'help-foundation-replier')`);
     }
   });
 
