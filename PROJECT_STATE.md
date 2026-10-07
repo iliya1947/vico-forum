@@ -150,14 +150,20 @@ Vico Forum находится в ранней pre-release разработке.
   `isSolved = false`, сохраняя `All` canonical default и `Solutions` по
   `isSolved = true`. Projection, ordering, карточки, topic destinations, authoring и hidden
   service-section boundary переиспользуются без новой schema, migrations или permissions.
-- Текущий bounded Q&A follow-up добавляет необязательную проверку похожих вопросов перед
-  публикацией. Проверка использует persisted current title/body/tags только внутреннего
-  `help-solutions-questions`, возвращает bounded deterministic список с текущими solved/open
-  состояниями и reply count и не блокирует создание нового вопроса. Введённые title/body/tags
-  сохраняются между populated/empty/invalid/unavailable состояниями проверки; переход к найденному
-  вопросу остаётся обычной locale-aware ссылкой без mutation. Новая schema, migrations,
-  permissions, fuzzy/vector/AI search, duplicate marking, moderation/appeal workflow,
-  personalization и Stage 6 работа в этот slice не входят.
+- Merged PR #194 добавил необязательную проверку похожих вопросов перед публикацией. Проверка
+  использует persisted current title/body/tags только внутреннего `help-solutions-questions`,
+  возвращает bounded deterministic список с текущими solved/open состояниями и reply count и не
+  блокирует создание нового вопроса. Введённые title/body/tags сохраняются между
+  populated/empty/invalid/unavailable состояниями проверки; переход к найденному вопросу остаётся
+  обычной locale-aware ссылкой без mutation.
+- Текущий bounded Q&A follow-up добавляет authenticated режим **My questions / Мои** через
+  `?mode=mine`. Authoritative user identity берётся только из server-side session, а repository
+  фильтрует persisted вопросы по `forum_topics.author_id` внутри internal
+  `help-solutions-questions`; client не передаёт и не выбирает author identity. Режим виден в
+  Q&A navigation только authenticated пользователю, прямой guest-доступ fail-closed с
+  unauthenticated route state. Existing projection, activity ordering, cards, tags, reply counts,
+  statuses, authoring и similar-question check переиспользуются без новой schema, migrations,
+  permissions, moderation/duplicate workflow, refinement поиска или Stage 6 работы.
 - In-app reply notifications slice реализован в PR #180:
   forward migration `0024_forum_reply_notifications` хранит только stable recipient/actor/topic/post
   references, `createdAt` и nullable `readAt`; unique recipient + reply identity предотвращает

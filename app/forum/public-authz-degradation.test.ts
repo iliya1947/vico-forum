@@ -85,6 +85,7 @@ const reader: ForumReader = {
   readHelpSolutionsAll: async () => undefined,
   readHelpSolutionsOpen: async () => undefined,
   readHelpSolutionsSolved: async () => undefined,
+  readHelpSolutionsMine: async () => undefined,
   searchHelpSolutionsSimilar: async () => [],
   readCategory: async () => undefined,
   readSection: async (id) => id === section.id ? section : undefined,

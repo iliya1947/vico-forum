@@ -210,6 +210,7 @@ const reader: ForumReader = {
   readHelpSolutionsAll: async () => helpPage,
   readHelpSolutionsOpen: async () => helpPage,
   readHelpSolutionsSolved: async () => solvedHelpPage,
+  readHelpSolutionsMine: async () => helpPage,
   searchHelpSolutionsSimilar: async () => [],
   search: async (query) => query.toLowerCase().includes("type") ? [{
     id: topic.id,
@@ -407,6 +408,7 @@ describe("Help & solutions modes and authoring", () => {
       .toHaveAttribute("href", forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=open");
     expect(screen.getByRole("link", { name: "Solutions" }))
       .toHaveAttribute("href", forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=solutions");
+    expect(screen.queryByRole("link", { name: "My questions" })).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 2, name: "All questions" })).toBeVisible();
     expect(screen.queryByRole("form", { name: "Ask a question" })).not.toBeInTheDocument();
     expect(screen.getByText("Open")).toBeVisible();
@@ -532,6 +534,124 @@ describe("Help & solutions modes and authoring", () => {
     if (unknownData.kind !== "help-solutions") throw new Error("expected Help & solutions page");
     expect(unknownData.mode).toBe("all");
     expect(unknownData.page.questions).toHaveLength(1);
+  });
+
+  it("shows My questions only to authenticated users and binds it to the session identity", async () => {
+    const requestContext = context("en", "ltr");
+    requestContext.set(authSessionContext, {
+      user: {
+        id: "ada",
+        name: "Ada",
+        email: "ada@example.test",
+        emailVerified: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      session: {
+        id: "session-mine",
+        token: "token-mine",
+        userId: "ada",
+        expiresAt: new Date(Date.now() + 60_000),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    });
+    const readHelpSolutionsMine = vi.fn(async () => helpPage);
+    requestContext.set(forumReaderContext, { ...reader, readHelpSolutionsMine });
+    requestContext.set(authorizationContext, {
+      forUser: () => ({
+        resolve: vi.fn(),
+        has: vi.fn(async () => false),
+      }),
+    } as never);
+
+    const data = await categoryLoader({
+      request: new Request("https://forum.example/en/categories/help-solutions?mode=mine&authorId=lin"),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: requestContext,
+    });
+
+    expect(readHelpSolutionsMine).toHaveBeenCalledWith("ada");
+    expect(data.kind).toBe("help-solutions");
+    if (data.kind !== "help-solutions") throw new Error("expected Help & solutions page");
+    expect(data.mode).toBe("mine");
+    expect(data.isAuthenticated).toBe(true);
+    expect(data.canAskQuestion).toBe(false);
+    expect(data.page.questions).toEqual([
+      expect.objectContaining({ id: helpTopic.id, authorName: "Ada" }),
+    ]);
+
+    renderRoute(
+      CategoryRoute,
+      data,
+      forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=mine",
+      "en",
+      "ltr",
+    );
+    expect(await screen.findByRole("link", { name: "My questions" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("heading", { level: 2, name: "My questions" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Ask a question" })).not.toBeInTheDocument();
+  });
+
+  it("renders the authenticated My questions empty state", async () => {
+    const requestContext = context("en", "ltr");
+    requestContext.set(authSessionContext, {
+      user: {
+        id: "ada",
+        name: "Ada",
+        email: "ada@example.test",
+        emailVerified: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      session: {
+        id: "session-mine-empty",
+        token: "token-mine-empty",
+        userId: "ada",
+        expiresAt: new Date(Date.now() + 60_000),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    });
+    requestContext.set(forumReaderContext, {
+      ...reader,
+      readHelpSolutionsMine: async () => ({ ...helpPage, questions: [] }),
+    });
+    requestContext.set(authorizationContext, {
+      forUser: () => ({
+        resolve: vi.fn(),
+        has: vi.fn(async () => false),
+      }),
+    } as never);
+
+    const data = await categoryLoader({
+      request: new Request("https://forum.example/en/categories/help-solutions?mode=mine"),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: requestContext,
+    });
+    if (data.kind !== "help-solutions") throw new Error("expected Help & solutions page");
+
+    renderRoute(
+      CategoryRoute,
+      data,
+      forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=mine",
+      "en",
+      "ltr",
+    );
+    expect(await screen.findByText("You have not asked any questions yet.")).toBeVisible();
+  });
+
+  it("rejects direct guest access to My questions without querying an author", async () => {
+    const requestContext = context("en", "ltr");
+    const readHelpSolutionsMine = vi.fn(async () => helpPage);
+    requestContext.set(forumReaderContext, { ...reader, readHelpSolutionsMine });
+
+    await expect(categoryLoader({
+      request: new Request("https://forum.example/en/categories/help-solutions?mode=mine"),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: requestContext,
+    })).rejects.toMatchObject({ status: 401 });
+    expect(readHelpSolutionsMine).not.toHaveBeenCalled();
   });
 
   it("filters Solutions mode to solved questions and keeps All as the canonical default", async () => {
