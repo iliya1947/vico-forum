@@ -644,3 +644,33 @@ Independent verification:
 
 Consensus: no known current-scope defect remains in PR #187. The bounded foundation slice is ready
 for the owner merge decision.
+
+
+---
+
+## PR #188 independent verification — finding A — 2026-10-07
+
+Implementation PR #188 exact reviewed head: `3221091891323be6a52d4ea6b6dcbac14540fc66`.
+
+Codex reported that client presentation code imports `HELP_SOLUTIONS_CATEGORY_ID` and
+`HELP_SOLUTIONS_SERVICE_SECTION_ID` at runtime from `db/forum-repository.ts`, which in turn
+imports the Drizzle schema.
+
+ChatGPT independently verified the finding against the exact-head GitHub Pages artifact rather than
+relying only on import-graph reasoning.
+
+Observed exact artifact:
+
+- UI preview Pages run: `37544034405`, exact head `3221091`, status success;
+- built browser asset: `assets/index-DNqK6K-N.js`;
+- that client JS contains evaluated schema/table declarations and schema literals including
+  `forum_categories`, `forum_sections`, `forum_topics`, `forum_topic_title_revisions`,
+  locale/authz table definitions and associated checks;
+- the same bundle also contains the Help & solutions reserved IDs.
+
+Classification: **real defect of the current slice**, not future-only groundwork. The new Q&A
+presentation introduced a server/database module dependency into client code, so ordinary browser
+bundles now carry DB/schema initialization that is not needed for presentation.
+
+Consensus: finding confirmed. The reserved Help & solutions IDs should move to a client-safe shared
+constants module, with server repository/route code importing them from there.
