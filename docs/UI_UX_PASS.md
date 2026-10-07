@@ -320,7 +320,8 @@ composition without changing the forum hierarchy or schema:
   does not add explicit interests/subscriptions, tracking signals, profile settings, opaque/AI
   scoring, schema/migrations, new permissions or reply capability. Age/staleness thresholds,
   moderation flags, notifications, similar-search refinement and visual polish remain separate
-  bounded product work;
+  bounded product work. Owner visual acceptance of populated/empty Pages states and
+  Guest/User/Manager identity switching was confirmed on 2026-10-07;
 - owner visual acceptance of the implementation was confirmed on 2026-10-05; exact-head
   automated verification remains a separate PR check.
 
