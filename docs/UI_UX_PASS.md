@@ -296,7 +296,7 @@ composition without changing the forum hierarchy or schema:
   unauthenticated route state. Merged PR #196 adds public `Active / Активные` as
   `?mode=active`: questions with at least one persisted reply are selected server-side from the
   hidden service section, include both open and solved states, reuse existing latest-activity
-  ordering, and are bounded to the first 100 results. The current bounded follow-up adds public
+  ordering, and are bounded to the first 100 results. The current bounded follow-up adds
   permission-gated `Needs attention / Требуют внимания` as `?mode=attention`: only unsolved questions with zero
   persisted replies are selected server-side from the same hidden service section, reuse the
   existing Q&A projection/activity ordering, and are bounded to the first 100 results. The mode is
