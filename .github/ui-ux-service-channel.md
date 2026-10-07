@@ -1131,3 +1131,20 @@ _Source: https://github.com/iliya1947/vico-forum/pull/147#issuecomment-604191706
 - Exact-head CI и Pages deployment успешны; owner browser acceptance и независимый whole-PR review завершены без открытых findings текущего scope. [.github/ui-ux-service-channel.mdL1125-L1137](https://github.com/iliya1947/vico-forum/blob/63c07a04018000081f8f367df3c04ddfc4802ad8/.github/ui-ux-service-channel.md#L1125-L1137)
 
  [View task →](https://chatgpt.com/s/cd_6ac66ee84f888191a31a63b3d369bca1)
+
+
+---
+
+## Review comparison — PR #196 exact head c696a43 — 2026-10-07
+
+Implementation PR #196 final exact head: `c696a43f3e79c626868c7c217ea389161a2c921a`.
+
+- Bounded result: locale-aware `Active / Активные` mode at `?mode=active`; active means a persisted Help & solutions question with at least one reply, including both open and solved questions, ordered by latest real activity.
+- Selection remains server-side and restricted to the internal `help-solutions-questions` section; existing bounded/deterministic projection, reply counts, tags, statuses and canonical locale-aware destinations are preserved.
+- ChatGPT whole-PR review on the final implementation head found no remaining current-scope defects.
+- Exact-head CI run `37654394681`: successful; both `checks` and `database` completed successfully.
+- Codex manual Code Review completed on the same exact head and reported: “Didn't find any major issues.”
+- Unresolved review threads: 0.
+- Excluded future modes (`Want to help`, `Needs attention`, `For me`), visual polish and similar-question refinement were not expanded into this slice.
+
+Consensus: PR #196 has no known current-scope defect and is technically ready for owner merge. Merge remains owner-only.
