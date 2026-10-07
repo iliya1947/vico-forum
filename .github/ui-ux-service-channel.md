@@ -865,3 +865,14 @@ Technical review cycle is complete for PR #191. Remaining gate is owner visual a
 ## Owner acceptance — PR #191 — 2026-10-07
 
 Owner visually accepted the corrected Help & solutions authoring/list presentation in Pages (“Да, сойдёт”). PR source-of-truth docs now record that acceptance on exact head `47d2d27f041b23383ae14a0ddf489548e4328753`. Exact-head CI and UI preview Pages are green. ChatGPT whole-PR review remains clean; unresolved review threads are 0. Codex automatic review of this documentation-only final head is still running; merge remains owner-only after that exact-head review completes.
+
+
+---
+
+<!-- codex-service-channel-comment:6035717845 -->
+## Codex GitHub response — comment 6035717845
+
+_Source: https://github.com/iliya1947/vico-forum/pull/147#issuecomment-6035717845 · 2026-10-07T10:08:48Z_
+
+You have reached your Codex usage limits for code reviews. You can see your limits in the [Codex usage dashboard](https://chatgpt.com/codex/cloud/settings/usage).
+To continue using code reviews, you can upgrade your account or add credits to your account and enable them for code reviews in your [settings](https://chatgpt.com/codex/cloud/settings/code-review).
