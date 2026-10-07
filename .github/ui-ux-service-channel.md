@@ -762,3 +762,41 @@ The independent review/fix cycle has converged.
 
 Consensus: PR #188 has no known current-scope defect after full independent re-review and is ready
 for owner merge, subject to normal GitHub mergeability remaining clean.
+
+
+---
+
+## PR #190 Help & solutions Solutions mode — review convergence — 2026-10-07
+
+Implementation PR #190 exact head: `857a719946c7d7a27d0bd9fda7a23f1dafa7109a`.
+
+Bounded result:
+
+- existing `/:locale/categories/help-solutions` remains the canonical `All` mode;
+- `?mode=solutions` adds a second real public mode backed only by existing final
+  `forum_topics.is_solved = true`;
+- solved filtering happens in the repository/DB query rather than client-side runtime data;
+- both modes reuse the same Help & solutions card presentation, locale-aware links and hidden
+  service-section boundary;
+- EN/RU/HE copy, representative Pages state and regression coverage were added;
+- no schema, migration, permission, authoring, moderation-status, duplicate/appeal or
+  personalization work was introduced.
+
+Process note:
+
+- PR #189 carried the same implementation tree and passed CI, but its branch did not match the
+  repository `chatgpt/ui-*` Pages trigger pattern;
+- #189 was closed as a technical duplicate;
+- #190 uses the same implementation tree plus an empty trigger commit on a matching branch so
+  exact-head Pages verification is available.
+
+Independent verification:
+
+- ChatGPT whole-PR review: no current-scope defect;
+- exact-head CI run `37594735563`: `checks` and `database` fully successful;
+- exact-head UI preview Pages run `37594667609`: successful;
+- Codex automatic review of `857a719`: completed with no findings;
+- Codex manual whole-PR review of the same exact head: completed with no findings;
+- no review threads were created.
+
+Consensus: PR #190 has no known current-scope defect and is ready for owner merge.
