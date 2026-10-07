@@ -280,7 +280,8 @@ composition without changing the forum hierarchy or schema:
   question topics breadcrumb directly back to Help & solutions instead of exposing the hidden
   section. Merged PR #190 adds only `Solutions`, backed by existing final
   `isSolved = true` and exposed as `?mode=solutions`. The current bounded follow-up adds
-  dedicated question authoring directly on Help & solutions by reusing the existing protected
+  dedicated question authoring directly on Help & solutions behind a compact explicit action,
+  so the default Q&A view keeps modes and questions primary. It reuses the existing protected
   create-topic boundary while keeping the internal service section server-fixed and hidden;
   additional modes, moderation workflow, duplicate/appeal handling and personalization remain
   separate bounded product work;
