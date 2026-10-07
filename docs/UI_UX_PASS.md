@@ -299,9 +299,12 @@ composition without changing the forum hierarchy or schema:
   ordering, and are bounded to the first 100 results. The current bounded follow-up adds public
   `Needs attention / Требуют внимания` as `?mode=attention`: only unsolved questions with zero
   persisted replies are selected server-side from the same hidden service section, reuse the
-  existing Q&A projection/activity ordering, and are bounded to the first 100 results. Age or
-  staleness thresholds, moderation flags, notifications, personalization, similar-search
-  refinement and additional modes remain separate bounded product work;
+  existing Q&A projection/activity ordering, and are bounded to the first 100 results. The mode is
+  permission-gated by `forum.help.attention.read`, initially granted only to built-in
+  moderator/admin: Guest and ordinary authenticated users neither see the navigation item nor pass
+  direct-route authorization. Age or staleness thresholds, moderation flags, notifications,
+  personalization, similar-search refinement and additional modes remain separate bounded product
+  work;
 - owner visual acceptance of the implementation was confirmed on 2026-10-05; exact-head
   automated verification remains a separate PR check.
 
