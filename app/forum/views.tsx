@@ -1006,6 +1006,7 @@ export function HelpSolutionsView({
   referenceTime,
   isAuthenticated = false,
   canAskQuestion = false,
+  canViewAttention = false,
   actionData,
 }: {
   locale: string;
@@ -1014,6 +1015,7 @@ export function HelpSolutionsView({
   referenceTime: string;
   isAuthenticated?: boolean;
   canAskQuestion?: boolean;
+  canViewAttention?: boolean;
   actionData?: HelpQuestionActionData;
 }) {
   const { t } = useTranslation("common");
@@ -1118,13 +1120,15 @@ export function HelpSolutionsView({
           >
             {t("helpSolutionsActiveMode")}
           </Link>
-          <Link
-            className={"help-solutions-mode" + (attentionMode ? " is-active" : "")}
-            to={attentionPath}
-            aria-current={attentionMode ? "page" : undefined}
-          >
-            {t("helpSolutionsNeedsAttentionMode")}
-          </Link>
+          {canViewAttention ? (
+            <Link
+              className={"help-solutions-mode" + (attentionMode ? " is-active" : "")}
+              to={attentionPath}
+              aria-current={attentionMode ? "page" : undefined}
+            >
+              {t("helpSolutionsNeedsAttentionMode")}
+            </Link>
+          ) : null}
           <Link
             className={"help-solutions-mode" + (solutionsMode ? " is-active" : "")}
             to={solutionsPath}
