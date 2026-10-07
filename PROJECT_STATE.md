@@ -44,8 +44,10 @@ Vico Forum находится в ранней pre-release разработке.
   показывается без искусственной светлой внешней подложки/рамки, чтобы визуальные границы страницы
   не искажались. Текущий correction branch
   дополнительно cache-bust-ит embedded iframe по hash текущего preview bundle, чтобы новый Pages
-  deploy не мог оставить iframe на stale HTML со ссылкой на удалённый hashed asset. Это не
-  заменяет будущую real-runtime acceptance.
+  deploy не мог оставить iframe на stale HTML со ссылкой на удалённый hashed asset. Pages workflow
+  явно исключает общий service branch `chatgpt/ui-ux-product-pass`, чтобы технические updates
+  communication-файла не могли перезаписать visual preview артефактом из отставшей служебной ветки.
+  Это не заменяет будущую real-runtime acceptance.
 - В текущем UI/UX slice реализованы и repository-CI/Pages-проверены semantic visual tokens,
   Light/Dark с first-use `prefers-color-scheme` и persisted manual choice, two-zone shell/header,
   approved shell/homepage foundation и общая локализованная страница `Under development`.
