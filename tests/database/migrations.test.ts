@@ -275,7 +275,7 @@ describe("PostgreSQL 17 locale migrations", () => {
       expect(await repository.readHelpSolutionsWantToHelp("help-foundation-author")).toMatchObject({
         questions: [{
           id: "help-foundation-no-replies",
-          authorName: "Waiting User",
+          authorName: "Forum Author",
           replyCount: 0,
           isSolved: false,
         }],
