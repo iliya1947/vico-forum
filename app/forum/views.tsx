@@ -1055,8 +1055,8 @@ export function HelpSolutionsView({
           : solutionsMode
             ? "helpSolutionsSolutionsHeading"
             : mineMode
-            ? "helpSolutionsMineHeading"
-            : "helpSolutionsAllHeading",
+              ? "helpSolutionsMineHeading"
+              : "helpSolutionsAllHeading",
   );
   const emptyCopy = t(
     openMode
@@ -1068,8 +1068,8 @@ export function HelpSolutionsView({
           : solutionsMode
             ? "helpSolutionsSolutionsEmpty"
             : mineMode
-            ? "helpSolutionsMineEmpty"
-            : "helpSolutionsEmpty",
+              ? "helpSolutionsMineEmpty"
+              : "helpSolutionsEmpty",
   );
 
   return (
