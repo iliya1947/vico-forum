@@ -1009,7 +1009,7 @@ export function HelpSolutionsView({
   actionData,
 }: {
   locale: string;
-  mode: "all" | "open" | "active" | "solutions" | "mine";
+  mode: "all" | "open" | "active" | "attention" | "solutions" | "mine";
   page: HelpSolutionsPagePresentation;
   referenceTime: string;
   isAuthenticated?: boolean;
@@ -1036,11 +1036,13 @@ export function HelpSolutionsView({
   const categoryPath = forumCategoryPath(locale, HELP_SOLUTIONS_CATEGORY_ID);
   const openPath = `${categoryPath}?mode=open`;
   const activePath = `${categoryPath}?mode=active`;
+  const attentionPath = `${categoryPath}?mode=attention`;
   const solutionsPath = `${categoryPath}?mode=solutions`;
   const minePath = `${categoryPath}?mode=mine`;
   const allMode = mode === "all";
   const openMode = mode === "open";
   const activeMode = mode === "active";
+  const attentionMode = mode === "attention";
   const solutionsMode = mode === "solutions";
   const mineMode = mode === "mine";
   const listHeading = t(
@@ -1048,9 +1050,11 @@ export function HelpSolutionsView({
       ? "helpSolutionsNeedsHelpHeading"
       : activeMode
         ? "helpSolutionsActiveHeading"
-        : solutionsMode
-          ? "helpSolutionsSolutionsHeading"
-          : mineMode
+        : attentionMode
+          ? "helpSolutionsNeedsAttentionHeading"
+          : solutionsMode
+            ? "helpSolutionsSolutionsHeading"
+            : mineMode
             ? "helpSolutionsMineHeading"
             : "helpSolutionsAllHeading",
   );
@@ -1059,9 +1063,11 @@ export function HelpSolutionsView({
       ? "helpSolutionsNeedsHelpEmpty"
       : activeMode
         ? "helpSolutionsActiveEmpty"
-        : solutionsMode
-          ? "helpSolutionsSolutionsEmpty"
-          : mineMode
+        : attentionMode
+          ? "helpSolutionsNeedsAttentionEmpty"
+          : solutionsMode
+            ? "helpSolutionsSolutionsEmpty"
+            : mineMode
             ? "helpSolutionsMineEmpty"
             : "helpSolutionsEmpty",
   );
@@ -1111,6 +1117,13 @@ export function HelpSolutionsView({
             aria-current={activeMode ? "page" : undefined}
           >
             {t("helpSolutionsActiveMode")}
+          </Link>
+          <Link
+            className={"help-solutions-mode" + (attentionMode ? " is-active" : "")}
+            to={attentionPath}
+            aria-current={attentionMode ? "page" : undefined}
+          >
+            {t("helpSolutionsNeedsAttentionMode")}
           </Link>
           <Link
             className={"help-solutions-mode" + (solutionsMode ? " is-active" : "")}
