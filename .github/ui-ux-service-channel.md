@@ -1035,3 +1035,38 @@ _Source: https://github.com/iliya1947/vico-forum/pull/147#issuecomment-604029063
 - Exact-head CI и Pages deployment успешны; owner browser acceptance зафиксирована; финальный manual Codex whole-PR review не оставляет findings текущего scope. [.github/ui-ux-service-channel.mdL1031-L1043](https://github.com/iliya1947/vico-forum/blob/43d7f177cf02ec901cbe4272f0e4fc5c38fce301/.github/ui-ux-service-channel.md#L1031-L1043)
 
  [View task →](https://chatgpt.com/s/cd_6ac65877e2d081919a8e5173c4ec6478)
+
+
+---
+
+<!-- codex-service-channel-comment:6041019206 -->
+## Codex GitHub response — comment 6041019206
+
+_Source: https://github.com/iliya1947/vico-forum/pull/147#issuecomment-6041019206 · 2026-10-07T15:24:07Z_
+
+# Действие пользователя
+
+Ничего.
+
+## Required result
+
+Добавить в **Help & solutions** authenticated-режим **My questions**, чтобы автор мог находить собственные persisted-вопросы без просмотра всей категории. `All` остаётся canonical default; семантика `Needs help` и `Solutions` не меняется. [.github/ui-ux-service-channel.mdL1047-L1051](https://github.com/iliya1947/vico-forum/blob/2122906d915695fac84b673fbaacb06981aab21a/.github/ui-ux-service-channel.md#L1047-L1051)
+
+## Scope
+
+- Добавить locale-aware `mode=mine`, доступный в навигации только аутентифицированным пользователям.
+- Определять authoritative current user server-side и выбирать только его вопросы из внутреннего раздела `help-solutions-questions`.
+- Переиспользовать существующие Q&A projection, activity ordering, карточки, статусы, reply counts, tags, destinations, authoring flow и hidden service-section boundary.
+- Для прямого guest-доступа к `mode=mine` определить безопасное локализованное поведение.
+- Добавить canonical EN, reviewed RU/HE локализацию, Pages-состояния и focused regression coverage.
+- Не включать refinement похожих вопросов, schema/migrations, moderation, duplicate/appeal workflow, новые permissions, visual polish, generic forum filtering или Stage 6. [.github/ui-ux-service-channel.mdL1053-L1067](https://github.com/iliya1947/vico-forum/blob/2122906d915695fac84b673fbaacb06981aab21a/.github/ui-ux-service-channel.md#L1053-L1067)
+
+## Readiness criteria
+
+- `mode=mine` ограничен authenticated identity на repository/DB boundary; client input не может выбрать другого автора.
+- Запрос bounded и deterministic, не создаёт N+1 и не возвращает вопросы обычных forum sections.
+- Guest, authenticated populated и authenticated empty states имеют явно проверенное поведение.
+- `All`, `Needs help`, `Solutions`, similar-question check, создание вопросов и canonical locale-aware topic links не регрессируют.
+- Desktop/mobile и LTR/RTL Pages-состояния проверены; exact-head CI и Pages deployment успешны; owner browser acceptance зафиксирована; финальный manual Codex whole-PR review не оставляет findings текущего scope. [.github/ui-ux-service-channel.mdL1069-L1081](https://github.com/iliya1947/vico-forum/blob/2122906d915695fac84b673fbaacb06981aab21a/.github/ui-ux-service-channel.md#L1069-L1081)
+
+ [View task →](https://chatgpt.com/s/cd_6ac6637b8f38819195cf49bd07fe570c)
