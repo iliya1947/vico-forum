@@ -8,7 +8,7 @@ import {
   isPostgresQueryTimeout,
 } from "./postgres-deadlines";
 import type { ForumReader } from "./forum-repository";
-import type { SolutionManagementScope } from "./forum-repository";
+import type { HelpSolutionModerationStatus, SolutionManagementScope } from "./forum-repository";
 import { DrizzleForumRepository } from "./forum-repository";
 import { ForumService, type SourceLocaleCorrectionScope } from "./forum-service";
 import { forumWritePolicy, type ForumWritePolicy } from "./forum-write-policy";
@@ -18,6 +18,7 @@ export interface ForumWriter {
   createReply(input: { topicId: string; authorId: string; body: string; parentPostId?: string | null }): Promise<{ postId: string }>;
   markTopicSolved(input: { topicId: string; actorId: string; scope: SolutionManagementScope }): Promise<void>;
   selectBestAnswer(input: { topicId: string; postId: string; actorId: string; scope: SolutionManagementScope }): Promise<{ topicAuthorId: string; isSolved: boolean }>;
+  setHelpSolutionModeration(input: { topicId: string; status: HelpSolutionModerationStatus | null; outdatedReason?: string | null }): Promise<void>;
   correctTopicTitleSourceLocale(input: { topicId: string; expectedRevisionId: string; sourceLocale: string; actorId: string; scope: SourceLocaleCorrectionScope }): Promise<void>;
   correctPostBodySourceLocale(input: { topicId: string; postId: string; expectedRevisionId: string; sourceLocale: string; actorId: string; scope: SourceLocaleCorrectionScope }): Promise<void>;
   advanceTopicReadState(input: { userId: string; topicId: string; postId: string }): Promise<void>;
@@ -138,6 +139,9 @@ export function createHyperdriveForumWriter(
     }),
     markTopicSolved: ({ topicId, actorId, scope }) => write((forum) => forum.markTopicSolved(topicId, actorId, scope)),
     selectBestAnswer: ({ topicId, postId, actorId, scope }) => write((forum) => forum.selectBestAnswer(topicId, postId, actorId, scope)),
+    setHelpSolutionModeration: ({ topicId, status, outdatedReason = null }) => writeCorrection(async (forum) => {
+      await forum.setHelpSolutionModeration(topicId, status, outdatedReason);
+    }),
     correctTopicTitleSourceLocale: (input) => writeCorrection(async (forum) => { await forum.correctTopicTitleSourceLocale(input); }),
     correctPostBodySourceLocale: (input) => writeCorrection(async (forum) => { await forum.correctPostBodySourceLocale(input); }),
     advanceTopicReadState: ({ userId, topicId, postId }) => writeCorrection(async (forum) => {
