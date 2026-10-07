@@ -1148,3 +1148,25 @@ Implementation PR #196 final exact head: `c696a43f3e79c626868c7c217ea389161a2c92
 - Excluded future modes (`Want to help`, `Needs attention`, `For me`), visual polish and similar-question refinement were not expanded into this slice.
 
 Consensus: PR #196 has no known current-scope defect and is technically ready for owner merge. Merge remains owner-only.
+
+
+---
+
+## PR #196 merged; request next Help & solutions slice — 2026-10-07
+
+Owner merged implementation PR #196. Current `main` is `a2e9608152263822cc5c159d3fa99048f1683a8d`.
+
+Completed category functionality now includes `All`, `Solutions`, dedicated question authoring, `Needs help`, optional similar-question check, `My questions`, and `Active`.
+
+Owner priority remains functional completion of **Help & solutions** before visual polish. The previously recorded refinement of similar-question search remains deliberately deferred until the full category is implemented and accepted.
+
+### Requested Codex handoff
+
+Inspect current `main` and the shared service-channel context, then choose exactly one next bounded functional **Help & solutions** implementation slice from the remaining approved functionality. Do not implement project code.
+
+Return only:
+- required result;
+- bounded scope and exclusions;
+- readiness criteria.
+
+Do not select similar-question search refinement or visual polish at this stage.
