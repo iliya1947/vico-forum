@@ -291,6 +291,157 @@ describe("PostgreSQL 17 locale migrations", () => {
     }
   });
 
+  it("ranks For me by shared participation tags, activity, and stable topic id", async () => {
+    const repository = new DrizzleForumRepository(drizzle(client), {
+      cooldownMs: 0,
+      now: () => new Date(),
+    });
+    const forum = new ForumService(repository);
+    const userIds = [
+      "for-me-user",
+      "for-me-other",
+      "for-me-no-signal-user",
+      "for-me-no-match-user",
+    ];
+    const topicIds = [
+      "for-me-signal-owned",
+      "for-me-signal-replied",
+      "for-me-two-match",
+      "for-me-one-new",
+      "for-me-one-a",
+      "for-me-one-b",
+      "for-me-no-match",
+      "for-me-own-candidate",
+      "for-me-solved-candidate",
+      "for-me-no-match-signal",
+      "for-me-regular-signal",
+      "for-me-regular-signal-candidate",
+      "for-me-regular-candidate",
+    ];
+
+    for (const userId of userIds) {
+      await insertForumAuthor(userId, `${userId}@example.test`, null);
+    }
+
+    const createQuestion = async (
+      id: string,
+      authorId: string,
+      tags: string[],
+      sectionId = HELP_SOLUTIONS_SERVICE_SECTION_ID,
+    ) => {
+      await forum.createTopicWithInitialPost({
+        id,
+        sectionId,
+        authorId,
+        titleRevision: {
+          id: `${id}-title`,
+          originalContent: `${id} title`,
+          sourceLocale: "en",
+        },
+        tags: tags.map((name) => ({ key: name, name })),
+        initialPost: {
+          id: `${id}-post`,
+          topicId: id,
+          authorId,
+          bodyRevision: {
+            id: `${id}-body`,
+            originalContent: `${id} body`,
+            sourceLocale: "en",
+          },
+        },
+      });
+    };
+
+    try {
+      await forum.createCategory({ id: "for-me-regular-category", name: "For me regular category" });
+      await forum.createSection({
+        id: "for-me-regular-section",
+        categoryId: "for-me-regular-category",
+        name: "For me regular section",
+      });
+
+      await createQuestion("for-me-signal-owned", "for-me-user", ["formeowned"]);
+      await createQuestion("for-me-signal-replied", "for-me-other", ["formereplied"]);
+      await forum.createPost({
+        id: "for-me-signal-reply",
+        topicId: "for-me-signal-replied",
+        authorId: "for-me-user",
+        parentPostId: "for-me-signal-replied-post",
+        bodyRevision: {
+          id: "for-me-signal-reply-body",
+          originalContent: "participation signal",
+          sourceLocale: "en",
+        },
+      });
+      await forum.markTopicSolved("for-me-signal-replied", "for-me-other");
+
+      await createQuestion("for-me-two-match", "for-me-other", ["formeowned", "formereplied"]);
+      await createQuestion("for-me-one-new", "for-me-other", ["formeowned"]);
+      await createQuestion("for-me-one-a", "for-me-other", ["formereplied"]);
+      await createQuestion("for-me-one-b", "for-me-other", ["formereplied"]);
+      await createQuestion("for-me-no-match", "for-me-other", ["formeunrelated"]);
+      await createQuestion("for-me-own-candidate", "for-me-user", ["formeowned", "formereplied"]);
+      await createQuestion("for-me-solved-candidate", "for-me-other", ["formeowned", "formereplied"]);
+      await forum.markTopicSolved("for-me-solved-candidate", "for-me-other");
+
+      await createQuestion("for-me-no-match-signal", "for-me-no-match-user", ["formenone"]);
+      await forum.markTopicSolved("for-me-no-match-signal", "for-me-no-match-user");
+
+      await createQuestion(
+        "for-me-regular-signal",
+        "for-me-user",
+        ["formeregularsignal"],
+        "for-me-regular-section",
+      );
+      await createQuestion("for-me-regular-signal-candidate", "for-me-other", ["formeregularsignal"]);
+      await createQuestion(
+        "for-me-regular-candidate",
+        "for-me-other",
+        ["formeowned"],
+        "for-me-regular-section",
+      );
+
+      const setActivity = async (topicId: string, timestamp: string) => {
+        await client.query("update forum_topics set created_at = $2 where id = $1", [topicId, timestamp]);
+        await client.query("update forum_posts set created_at = $2 where topic_id = $1", [topicId, timestamp]);
+      };
+      await setActivity("for-me-two-match", "2026-01-01T00:00:00.000Z");
+      await setActivity("for-me-one-new", "2026-03-01T00:00:00.000Z");
+      await setActivity("for-me-one-a", "2026-02-01T00:00:00.000Z");
+      await setActivity("for-me-one-b", "2026-02-01T00:00:00.000Z");
+
+      const forMe = await repository.readHelpSolutionsForMe("for-me-user");
+      expect(forMe?.questions.map(({ id }) => id)).toEqual([
+        "for-me-two-match",
+        "for-me-one-new",
+        "for-me-one-b",
+        "for-me-one-a",
+      ]);
+      expect(forMe?.questions).not.toEqual(expect.arrayContaining([
+        expect.objectContaining({ id: "for-me-no-match" }),
+        expect.objectContaining({ id: "for-me-own-candidate" }),
+        expect.objectContaining({ id: "for-me-solved-candidate" }),
+        expect.objectContaining({ id: "for-me-signal-replied" }),
+        expect.objectContaining({ id: "for-me-regular-signal-candidate" }),
+        expect.objectContaining({ id: "for-me-regular-candidate" }),
+      ]));
+
+      expect(await repository.readHelpSolutionsForMe("for-me-no-signal-user"))
+        .toMatchObject({ questions: [] });
+      expect(await repository.readHelpSolutionsForMe("for-me-no-match-user"))
+        .toMatchObject({ questions: [] });
+    } finally {
+      await client.query("delete from forum_topics where id = any($1::text[])", [topicIds]);
+      await client.query("delete from forum_sections where id = 'for-me-regular-section'");
+      await client.query("delete from forum_categories where id = 'for-me-regular-category'");
+      await client.query('delete from "user" where id = any($1::text[])', [userIds]);
+      await client.query(
+        "delete from forum_tags where key = any($1::text[])",
+        [["formeowned", "formereplied", "formeunrelated", "formenone", "formeregularsignal"]],
+      );
+    }
+  });
+
   it("rejects trimmed canonical English in persistent UI translation storage", async () => {
     const sourceFingerprint = "0".repeat(64);
     const bundleVersion = "1".repeat(64);

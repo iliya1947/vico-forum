@@ -182,6 +182,8 @@ const HELP_SOLUTIONS_ACTIVE_LIMIT = 100;
 const HELP_SOLUTIONS_NEEDS_ATTENTION_LIMIT = 100;
 const HELP_SOLUTIONS_MINE_LIMIT = 100;
 const HELP_SOLUTIONS_WANT_TO_HELP_LIMIT = 100;
+const HELP_SOLUTIONS_FOR_ME_LIMIT = 100;
+const HELP_SOLUTIONS_FOR_ME_INTEREST_TAG_LIMIT = 100;
 
 export interface ForumTopicSummary {
   id: string;
@@ -234,6 +236,7 @@ export interface ForumReader {
   readHelpSolutionsSolved(): Promise<ForumHelpSolutionsPage | undefined>;
   readHelpSolutionsMine(userId: string): Promise<ForumHelpSolutionsPage | undefined>;
   readHelpSolutionsWantToHelp(userId: string): Promise<ForumHelpSolutionsPage | undefined>;
+  readHelpSolutionsForMe(userId: string): Promise<ForumHelpSolutionsPage | undefined>;
   searchHelpSolutionsSimilar(query: string, limit?: number): Promise<ForumHelpSimilarQuestionSummary[]>;
   readCategory(id: string, pinnedTopicsPerSection?: number): Promise<ForumCategoryPage | undefined>;
   readSection(id: string): Promise<ForumSectionPage | undefined>;
@@ -1123,6 +1126,95 @@ export class DrizzleForumRepository {
 
   async readHelpSolutionsWantToHelp(userId: string): Promise<ForumHelpSolutionsPage | undefined> {
     return this.readHelpSolutionsPage({ mode: "help", excludedAuthorId: userId });
+  }
+
+  async readHelpSolutionsForMe(userId: string): Promise<ForumHelpSolutionsPage | undefined> {
+    const [category] = await this.database
+      .select({ id: forumCategories.id, name: forumCategories.name })
+      .from(forumCategories)
+      .where(eq(forumCategories.id, HELP_SOLUTIONS_CATEGORY_ID));
+    if (!category) return undefined;
+
+    const interestRows = await this.database
+      .selectDistinct({ tagKey: forumTopicTags.tagKey })
+      .from(forumTopicTags)
+      .innerJoin(forumTopics, eq(forumTopics.id, forumTopicTags.topicId))
+      .leftJoin(
+        forumPosts,
+        and(
+          eq(forumPosts.topicId, forumTopics.id),
+          eq(forumPosts.authorId, userId),
+        ),
+      )
+      .where(and(
+        eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
+        or(
+          eq(forumTopics.authorId, userId),
+          eq(forumPosts.authorId, userId),
+        ),
+      ))
+      .orderBy(asc(forumTopicTags.tagKey))
+      .limit(HELP_SOLUTIONS_FOR_ME_INTEREST_TAG_LIMIT);
+
+    const interestTagKeys = interestRows.map(({ tagKey }) => tagKey);
+    if (interestTagKeys.length === 0) return { ...category, questions: [] };
+
+    const activityAt = sql`greatest(
+      ${forumTopics.createdAt},
+      coalesce(max(${forumPosts.createdAt}), ${forumTopics.createdAt})
+    )`.mapWith(forumTopics.createdAt);
+    const matchCount = sql<number>`count(distinct ${forumTopicTags.tagKey})::int`;
+
+    const rows = await this.database
+      .select({
+        id: forumTopics.id,
+        title: forumTopicTitleRevisions.originalContent,
+        authorName: user.name,
+        postCount: sql<number>`count(distinct ${forumPosts.id})::int`,
+        isSolved: forumTopics.isSolved,
+        bestAnswerPostId: forumTopics.bestAnswerPostId,
+        createdAt: forumTopics.createdAt,
+        activityAt,
+        matchCount,
+      })
+      .from(forumTopics)
+      .innerJoin(forumTopicTitleRevisions, and(
+        eq(forumTopicTitleRevisions.topicId, forumTopics.id),
+        eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId),
+      ))
+      .innerJoin(user, eq(user.id, forumTopics.authorId))
+      .innerJoin(
+        forumTopicTags,
+        and(
+          eq(forumTopicTags.topicId, forumTopics.id),
+          inArray(forumTopicTags.tagKey, interestTagKeys),
+        ),
+      )
+      .leftJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
+      .where(and(
+        eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
+        eq(forumTopics.isSolved, false),
+        ne(forumTopics.authorId, userId),
+      ))
+      .groupBy(forumTopics.id, forumTopicTitleRevisions.id, user.name)
+      .orderBy(desc(matchCount), desc(activityAt), desc(forumTopics.id))
+      .limit(HELP_SOLUTIONS_FOR_ME_LIMIT);
+
+    const tagsByTopic = await this.readTagsForTopics(rows.map(({ id }) => id));
+    return {
+      ...category,
+      questions: rows.map((row) => ({
+        id: row.id,
+        title: row.title,
+        authorName: row.authorName,
+        replyCount: Math.max(0, row.postCount - 1),
+        isSolved: row.isSolved,
+        hasBestAnswer: row.bestAnswerPostId !== null,
+        createdAt: row.createdAt,
+        activityAt: row.activityAt,
+        tags: tagsByTopic.get(row.id) ?? [],
+      })),
+    };
   }
 
   private async readHelpSolutionsPage(

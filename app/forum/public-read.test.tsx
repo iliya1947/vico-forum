@@ -142,6 +142,13 @@ const wantToHelpPage = {
     isSolved: false,
   })),
 };
+const forMePage = {
+  ...wantToHelpPage,
+  questions: wantToHelpPage.questions.map((question) => ({
+    ...question,
+    tags: [{ key: "workers", name: "Workers" }],
+  })),
+};
 
 const reader: ForumReader = {
   listCategories: async () => [{ id: category.id, name: category.name, sectionCount: 1 }],
@@ -232,6 +239,7 @@ const reader: ForumReader = {
   readHelpSolutionsSolved: async () => solvedHelpPage,
   readHelpSolutionsMine: async () => helpPage,
   readHelpSolutionsWantToHelp: async () => wantToHelpPage,
+  readHelpSolutionsForMe: async () => forMePage,
   searchHelpSolutionsSimilar: async () => [],
   search: async (query) => query.toLowerCase().includes("type") ? [{
     id: topic.id,
@@ -428,6 +436,7 @@ describe("Help & solutions modes and authoring", () => {
     expect(screen.getByRole("link", { name: "Needs help" }))
       .toHaveAttribute("href", forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=open");
     expect(screen.queryByRole("link", { name: "Want to help" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "For me" })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Active" }))
       .toHaveAttribute("href", forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=active");
     expect(screen.queryByRole("link", { name: "Needs attention" })).not.toBeInTheDocument();
@@ -503,6 +512,8 @@ describe("Help & solutions modes and authoring", () => {
     expect(screen.getByRole("link", { name: "All" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("link", { name: "Want to help" }))
       .toHaveAttribute("href", forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=help");
+    expect(screen.getByRole("link", { name: "For me" }))
+      .toHaveAttribute("href", forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=for-me");
     expect(screen.queryByRole("link", { name: "Needs attention" })).not.toBeInTheDocument();
     expect(screen.queryByRole("form", { name: "Ask a question" })).not.toBeInTheDocument();
 
@@ -651,6 +662,95 @@ describe("Help & solutions modes and authoring", () => {
       "ltr",
     );
     expect(await screen.findByText("There are no open questions from other users right now.")).toBeVisible();
+  });
+
+  it("shows For me only to authenticated users and binds recommendation signals to the session identity", async () => {
+    const forMeUrl = "https://forum.example/en/categories/help-solutions?mode=for-me&userId=lin&tags=postgresql";
+    const readForMe = vi.fn(async () => forMePage);
+
+    const guestContext = context("en", "ltr");
+    guestContext.set(forumReaderContext, { ...reader, readHelpSolutionsForMe: readForMe });
+    await expect(categoryLoader({
+      request: new Request(forMeUrl),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: guestContext,
+    })).rejects.toMatchObject({ status: 401 });
+    expect(readForMe).not.toHaveBeenCalled();
+
+    const userContext = context("en", "ltr");
+    userContext.set(authSessionContext, {
+      user: {
+        id: "ada",
+        name: "Ada",
+        email: "ada@example.test",
+        emailVerified: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      session: {
+        id: "session-for-me",
+        token: "token-for-me",
+        userId: "ada",
+        expiresAt: new Date(Date.now() + 60_000),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    });
+    userContext.set(forumReaderContext, { ...reader, readHelpSolutionsForMe: readForMe });
+    userContext.set(authorizationContext, {
+      forUser: () => ({
+        resolve: vi.fn(),
+        has: vi.fn(async () => false),
+      }),
+    } as never);
+
+    const data = await categoryLoader({
+      request: new Request(forMeUrl),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: userContext,
+    });
+
+    expect(readForMe).toHaveBeenCalledWith("ada");
+    expect(data.kind).toBe("help-solutions");
+    if (data.kind !== "help-solutions") throw new Error("expected Help & solutions page");
+    expect(data.mode).toBe("for-me");
+    expect(data.page.questions).toEqual([
+      expect.objectContaining({ id: helpTopic.id, authorName: "Lin", isSolved: false }),
+    ]);
+
+    const forMeView = renderRoute(
+      CategoryRoute,
+      data,
+      forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=for-me",
+      "en",
+      "ltr",
+    );
+    expect(await screen.findByRole("link", { name: "For me" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("heading", { level: 2, name: "Questions for you" })).toBeVisible();
+    forMeView.unmount();
+
+    const emptyContext = context("en", "ltr");
+    emptyContext.set(authSessionContext, userContext.get(authSessionContext));
+    emptyContext.set(authorizationContext, userContext.get(authorizationContext));
+    emptyContext.set(forumReaderContext, {
+      ...reader,
+      readHelpSolutionsForMe: async () => ({ ...helpPage, questions: [] }),
+    });
+    const emptyData = await categoryLoader({
+      request: new Request("https://forum.example/en/categories/help-solutions?mode=for-me"),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: emptyContext,
+    });
+    if (emptyData.kind !== "help-solutions") throw new Error("expected Help & solutions page");
+
+    renderRoute(
+      CategoryRoute,
+      emptyData,
+      forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=for-me",
+      "en",
+      "ltr",
+    );
+    expect(await screen.findByText("There are no matching open questions for you right now.")).toBeVisible();
   });
 
   it("shows Active questions with replies and renders its empty state", async () => {
