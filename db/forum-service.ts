@@ -10,12 +10,14 @@ import {
   type DrizzleForumRepository,
   type ForumRevisionContent,
   type ForumTag,
+  type HelpSolutionModerationStatus,
   type SolutionManagementScope,
 } from "./forum-repository";
 
 export class InvalidForumContentError extends Error {}
 
 export type SourceLocaleCorrectionScope = "own" | "any";
+export const HELP_SOLUTION_OUTDATED_REASON_MAX_LENGTH = 1000;
 
 export class ForumService {
   constructor(private readonly repository: DrizzleForumRepository) {}
@@ -215,6 +217,30 @@ export class ForumService {
     requireText(postId, "post id");
     validateSolutionScope(scope);
     return this.repository.selectBestAnswer(topicId, postId, actorId, scope);
+  }
+
+  setHelpSolutionModeration(
+    topicId: string,
+    status: HelpSolutionModerationStatus | null,
+    outdatedReason: string | null = null,
+  ) {
+    requireText(topicId, "topic id");
+    if (status !== null && status !== "needs-review" && status !== "outdated") {
+      throw new InvalidForumContentError("help solution moderation status is invalid");
+    }
+    let normalizedReason: string | null = null;
+    if (status === "outdated") {
+      if (typeof outdatedReason !== "string") {
+        throw new InvalidForumContentError("outdated solution reason is required");
+      }
+      normalizedReason = outdatedReason.normalize("NFKC").trim().replace(/\s+/gu, " ");
+      if (!normalizedReason || normalizedReason.length > HELP_SOLUTION_OUTDATED_REASON_MAX_LENGTH) {
+        throw new InvalidForumContentError(
+          `outdated solution reason must be between 1 and ${HELP_SOLUTION_OUTDATED_REASON_MAX_LENGTH} characters`,
+        );
+      }
+    }
+    return this.repository.setHelpSolutionModeration(topicId, status, normalizedReason);
   }
 }
 
