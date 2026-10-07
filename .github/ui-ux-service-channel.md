@@ -1211,3 +1211,23 @@ _Source: https://github.com/iliya1947/vico-forum/pull/147#issuecomment-604352785
 - ✅ `git show --stat --oneline HEAD` — commit `36a1fcf` изменяет только shared communication-файл.
 
  [View task →](https://chatgpt.com/s/cd_6ac684f6d3d08191bee23e66569fc4b5)
+
+---
+
+## Review comparison — PR #197 exact head e16f2d9 — 2026-10-07
+
+Implementation PR #197 final implementation head: `e16f2d9197e00b89e0399817842a08367409f09d`.
+
+- Bounded result: `Needs attention / Требуют внимания` at `?mode=attention` returns only persisted Help & solutions questions from the internal `help-solutions-questions` section with `isSolved = false` and zero replies; selection is server-side, bounded and deterministic.
+- Owner clarified the product boundary during visual review: this mode is moderation-only, not public. The implementation reuses the existing dynamic authorization capability `forum.solution.manageAny` rather than adding a role-name check or a new permission/schema/migration. Guest does not see the mode and direct access returns 401; an authenticated actor without the effective capability does not see the mode and direct access returns 403; classified authorization unavailability on the protected read returns controlled 503.
+- Manager-only populated/empty Pages states use the same Q&A cards, tags, status, reply count and locale-aware destinations. Guest/User preview presentation hides the navigation item.
+- ChatGPT whole-PR review on the final implementation head found no remaining current-scope defects after correcting the Guest/User visibility/access boundary.
+- Exact-head CI run `37666850525`: successful; both `checks` and `database` completed successfully.
+- Exact-head UI preview Pages run `37667136597`: build and deploy successful.
+- Owner browser acceptance confirmed the corrected Guest/User/Manager presentation on 2026-10-07.
+- Codex manual Code Review completed on the same implementation head and reported: “Didn't find any major issues.”
+- Unresolved review threads: 0.
+- No new permission, schema/migration, age/staleness threshold, manual moderation flag/action, notification, personalization, authoring change, visual-polish expansion, similar-search refinement or Stage 6 work was introduced.
+
+Consensus: PR #197 has no known current-scope defect and is technically ready for owner merge. Merge remains owner-only.
+
