@@ -566,7 +566,7 @@ describe("Help & solutions modes and authoring", () => {
     } as never);
 
     const data = await categoryLoader({
-      request: new Request("https://forum.example/en/categories/help-solutions?mode=mine"),
+      request: new Request("https://forum.example/en/categories/help-solutions?mode=mine&authorId=lin"),
       params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
       context: requestContext,
     });
@@ -591,6 +591,54 @@ describe("Help & solutions modes and authoring", () => {
     expect(await screen.findByRole("link", { name: "My questions" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("heading", { level: 2, name: "My questions" })).toBeVisible();
     expect(screen.queryByRole("button", { name: "Ask a question" })).not.toBeInTheDocument();
+  });
+
+  it("renders the authenticated My questions empty state", async () => {
+    const requestContext = context("en", "ltr");
+    requestContext.set(authSessionContext, {
+      user: {
+        id: "ada",
+        name: "Ada",
+        email: "ada@example.test",
+        emailVerified: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      session: {
+        id: "session-mine-empty",
+        token: "token-mine-empty",
+        userId: "ada",
+        expiresAt: new Date(Date.now() + 60_000),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    });
+    requestContext.set(forumReaderContext, {
+      ...reader,
+      readHelpSolutionsMine: async () => ({ ...helpPage, questions: [] }),
+    });
+    requestContext.set(authorizationContext, {
+      forUser: () => ({
+        resolve: vi.fn(),
+        has: vi.fn(async () => false),
+      }),
+    } as never);
+
+    const data = await categoryLoader({
+      request: new Request("https://forum.example/en/categories/help-solutions?mode=mine"),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: requestContext,
+    });
+    if (data.kind !== "help-solutions") throw new Error("expected Help & solutions page");
+
+    renderRoute(
+      CategoryRoute,
+      data,
+      forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=mine",
+      "en",
+      "ltr",
+    );
+    expect(await screen.findByText("You have not asked any questions yet.")).toBeVisible();
   });
 
   it("rejects direct guest access to My questions without querying an author", async () => {
