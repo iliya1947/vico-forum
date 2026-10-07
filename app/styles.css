@@ -7278,6 +7278,10 @@ a.topic-tag:focus-visible {
   line-height: 1.45;
 }
 
+.help-question-create-form {
+  margin: 0 1rem 0.65rem;
+}
+
 .help-solutions-modes {
   display: flex;
   gap: 0.35rem;
@@ -7497,6 +7501,7 @@ a.topic-tag:focus-visible {
 @media (max-width: 29.99rem) {
   .help-solutions-page .breadcrumbs,
   .help-solutions-heading,
+  .help-question-create-form,
   .help-solutions-modes,
   .help-solutions-questions {
     margin-inline: 0.75rem;
