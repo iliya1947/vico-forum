@@ -58,6 +58,7 @@ type PreviewVariant =
   | "help-solutions-open-empty"
   | "help-solutions-active-empty"
   | "help-solutions-want-empty"
+  | "help-solutions-for-me-empty"
   | "help-solutions-attention-empty"
   | "help-solutions-mine-empty"
   | "help-solutions-similar-results"
@@ -104,6 +105,9 @@ export const scenarios: readonly Scenario[] = [
   { id: "help-solutions-want", label: "Help & solutions · Want to help", locale: "en", direction: "ltr", identity: "user", path: "/en/categories/help-solutions?mode=help", view: "category", allowedIdentities: ["user", "manager"] },
   { id: "help-solutions-want-empty", label: "Help & solutions · Want to help · empty", locale: "en", direction: "ltr", identity: "user", path: "/en/categories/help-solutions?mode=help", view: "category", variant: "help-solutions-want-empty", allowedIdentities: ["user", "manager"] },
   { id: "help-solutions-want-guest", label: "Help & solutions · Want to help · unauthenticated", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=help", view: "not-found", variant: "route-401", allowedIdentities: ["guest"] },
+  { id: "help-solutions-for-me", label: "Help & solutions · For me", locale: "en", direction: "ltr", identity: "user", path: "/en/categories/help-solutions?mode=for-me", view: "category", allowedIdentities: ["user", "manager"] },
+  { id: "help-solutions-for-me-empty", label: "Help & solutions · For me · empty", locale: "en", direction: "ltr", identity: "user", path: "/en/categories/help-solutions?mode=for-me", view: "category", variant: "help-solutions-for-me-empty", allowedIdentities: ["user", "manager"] },
+  { id: "help-solutions-for-me-guest", label: "Help & solutions · For me · unauthenticated", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=for-me", view: "not-found", variant: "route-401", allowedIdentities: ["guest"] },
   { id: "help-solutions-active", label: "Help & solutions · Active", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=active", view: "category" },
   { id: "help-solutions-active-empty", label: "Help & solutions · Active · empty", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=active", view: "category", variant: "help-solutions-active-empty" },
   { id: "help-solutions-attention", label: "Help & solutions · Needs attention", locale: "en", direction: "ltr", identity: "manager", path: "/en/categories/help-solutions?mode=attention", view: "category", allowedIdentities: ["manager"] },
@@ -1031,7 +1035,9 @@ function PreviewCategoryRoute({ scenario }: { scenario: Scenario }) {
       ? "open"
       : requestedMode === "help"
         ? "help"
-        : requestedMode === "active"
+        : requestedMode === "for-me"
+          ? "for-me"
+          : requestedMode === "active"
         ? "active"
         : requestedMode === "attention"
           ? "attention"
@@ -1046,7 +1052,9 @@ function PreviewCategoryRoute({ scenario }: { scenario: Scenario }) {
       ? { ...page, questions: [] }
       : scenario.variant === "help-solutions-want-empty" && mode === "help"
         ? { ...page, questions: [] }
-        : scenario.variant === "help-solutions-active-empty" && mode === "active"
+        : scenario.variant === "help-solutions-for-me-empty" && mode === "for-me"
+          ? { ...page, questions: [] }
+          : scenario.variant === "help-solutions-active-empty" && mode === "active"
           ? { ...page, questions: [] }
           : scenario.variant === "help-solutions-attention-empty" && mode === "attention"
           ? { ...page, questions: [] }
@@ -1055,8 +1063,17 @@ function PreviewCategoryRoute({ scenario }: { scenario: Scenario }) {
             : mode === "open"
               ? { ...page, questions: page.questions.filter((question) => !question.isSolved) }
               : mode === "help"
-              ? { ...page, questions: page.questions.filter((question) => !question.isSolved && question.authorName !== previewIdentity?.name) }
-              : mode === "active"
+                ? { ...page, questions: page.questions.filter((question) => !question.isSolved && question.authorName !== previewIdentity?.name) }
+                : mode === "for-me"
+                  ? {
+                      ...page,
+                      questions: page.questions.filter((question) =>
+                        !question.isSolved
+                        && question.authorName !== previewIdentity?.name
+                        && question.tags.some(({ key }) => key === "better-auth" || key === "workers")
+                      ),
+                    }
+                  : mode === "active"
                 ? { ...page, questions: page.questions.filter((question) => question.replyCount > 0) }
                 : mode === "attention"
                 ? { ...page, questions: page.questions.filter((question) => !question.isSolved && question.replyCount === 0) }
