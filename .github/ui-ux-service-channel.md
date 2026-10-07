@@ -1462,3 +1462,36 @@ _Source: https://github.com/iliya1947/vico-forum/pull/147#issuecomment-604698701
 - Exact-head CI и Pages deployment успешны; owner browser acceptance и независимый whole-PR review завершены без открытых findings текущего scope. [.github/ui-ux-service-channel.mdL1446-L1453](https://github.com/iliya1947/vico-forum/blob/9a73ff8de14fc55068619e43077f45f6eb60b4cc/.github/ui-ux-service-channel.md#L1446-L1453)
 
  [View task →](https://chatgpt.com/s/cd_6ac6b5b2727881918e7661eec2d06485)
+
+---
+
+## Owner clarification after Codex draft/autosave proposal — 2026-10-08
+
+Codex proposed browser-local Help question draft/autosave as the next bounded slice. That capability is approved elsewhere in the target product, but it is **not** the next slice for the current Help & solutions completion sequence.
+
+The owner just confirmed continuation of the remaining Help-specific moderation/filter functionality already agreed for this category. Remaining approved product work includes the combined filter/status/relationship mechanics around:
+- solution state: unresolved / solved / needs review / outdated;
+- replies: no replies / has replies;
+- quality: normal / needs details;
+- relationship: standalone / duplicate;
+- moderator/admin confirmation where applicable;
+- user signals feeding moderation states;
+- mandatory explanation for outdated;
+- confirmed duplicate linking to the original and dispute/appeal behavior;
+- extending Needs attention beyond the already-implemented simple unsolved + zero-replies subset when those persisted signals exist.
+
+Draft/autosave remains a separate approved authoring capability and should not displace this Help-specific completion work.
+
+### Requested corrected Codex handoff
+
+Inspect current `main`, source-of-truth documents and this clarification. Choose exactly **one** next bounded functional slice from the remaining Help-specific moderation/filter product logic above.
+
+Do not implement project code.
+
+Return only:
+- required result;
+- bounded scope and explicit exclusions;
+- readiness criteria.
+
+Prefer the smallest coherent foundation that unlocks later approved filters/statuses without prematurely implementing the whole moderation system. Do not choose visual polish, similar-question search refinement, drafts/autosave, or unrelated global forum work.
+
