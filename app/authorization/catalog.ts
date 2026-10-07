@@ -1,6 +1,7 @@
 export const PERMISSION_CATALOG = [
   "forum.topic.create",
   "forum.reply.create",
+  "forum.help.attention.read",
   "forum.topic.pin",
   "forum.solution.manageOwn",
   "forum.solution.manageAny",
@@ -29,6 +30,7 @@ export const INITIAL_ROLE_GRANTS = {
   moderator: [
     "forum.topic.create",
     "forum.reply.create",
+    "forum.help.attention.read",
     "forum.topic.pin",
     "forum.solution.manageOwn",
     "forum.solution.manageAny",
