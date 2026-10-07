@@ -1002,13 +1002,21 @@ export function HelpSolutionsView({
   mode,
   page,
   referenceTime,
+  canAskQuestion = false,
+  actionData,
 }: {
   locale: string;
   mode: "all" | "solutions";
   page: HelpSolutionsPagePresentation;
   referenceTime: string;
+  canAskQuestion?: boolean;
+  actionData?: ForumMutationError;
 }) {
   const { t } = useTranslation("common");
+  const navigation = useNavigation();
+  const isQuestionSubmitting =
+    navigation.state === "submitting"
+    && navigation.formData?.get("intent") === "createHelpQuestion";
   const categoryPath = forumCategoryPath(locale, HELP_SOLUTIONS_CATEGORY_ID);
   const solutionsPath = `${categoryPath}?mode=solutions`;
   const solutionsMode = mode === "solutions";
@@ -1027,6 +1035,76 @@ export function HelpSolutionsView({
             <p>{t("helpSolutionsIntro")}</p>
           </div>
         </header>
+
+        {canAskQuestion ? (
+          <Form
+            method="post"
+            className="forum-write-form help-question-create-form"
+            aria-labelledby="help-question-create-heading"
+            aria-busy={isQuestionSubmitting}
+          >
+            <input type="hidden" name="intent" value="createHelpQuestion" />
+
+            <header className="forum-write-header">
+              <div>
+                <p className="eyebrow">{t("authoringLabel")}</p>
+                <h2 id="help-question-create-heading">{t("helpSolutionsAskHeading")}</h2>
+              </div>
+              <p>{t("helpSolutionsAskHelp")}</p>
+            </header>
+
+            {actionData?.error ? (
+              <p className="forum-write-alert" role="alert">
+                {t(`forumWriteError_${actionData.error}`)}
+              </p>
+            ) : null}
+
+            <div className="forum-write-fields">
+              <div className="forum-write-field">
+                <label htmlFor="help-question-title">{t("helpSolutionsQuestionTitleLabel")}</label>
+                <input
+                  id="help-question-title"
+                  name="title"
+                  required
+                  disabled={isQuestionSubmitting}
+                  aria-describedby="help-question-title-help"
+                />
+                <small id="help-question-title-help">{t("topicTitleHelp")}</small>
+              </div>
+
+              <div className="forum-write-field">
+                <label htmlFor="help-question-body">{t("helpSolutionsQuestionBodyLabel")}</label>
+                <textarea
+                  id="help-question-body"
+                  name="body"
+                  required
+                  rows={8}
+                  disabled={isQuestionSubmitting}
+                  aria-describedby="help-question-body-help"
+                />
+                <small id="help-question-body-help">{t("messageBodyHelp")}</small>
+              </div>
+
+              <div className="forum-write-field">
+                <label htmlFor="help-question-tags">{t("topicTagsInputLabel")}</label>
+                <input
+                  id="help-question-tags"
+                  name="tags"
+                  disabled={isQuestionSubmitting}
+                  aria-describedby="help-question-tags-help"
+                />
+                <small id="help-question-tags-help">{t("topicTagsInputHelp")}</small>
+              </div>
+            </div>
+
+            <footer className="forum-write-actions">
+              <p>{t("authoringRequiredHint")}</p>
+              <button type="submit" disabled={isQuestionSubmitting}>
+                {t(isQuestionSubmitting ? "helpSolutionsAskSubmitting" : "helpSolutionsAskSubmit")}
+              </button>
+            </footer>
+          </Form>
+        ) : null}
 
         <nav className="help-solutions-modes" aria-label={t("helpSolutionsHeading")}>
           <Link
