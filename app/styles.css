@@ -4469,7 +4469,8 @@ p {
   font-size: 0.78rem;
 }
 
-.topic-heading .solved-badge {
+.topic-heading .solved-badge,
+.topic-heading .solution-moderation-badge {
   display: inline-flex;
   align-items: center;
   min-height: 1.5rem;
@@ -4490,7 +4491,8 @@ p {
 }
 
 @media (min-width: 44.01rem) {
-  .topic-heading .solved-badge {
+  .topic-heading .solved-badge,
+  .topic-heading .solution-moderation-badge {
     min-height: 2.5rem;
     padding: 0.4rem 0.95rem;
     font-size: 0.82rem;
@@ -4520,6 +4522,28 @@ p {
 .topic-heading-actions button:hover,
 .topic-heading-actions button:focus-visible {
   background: var(--color-accent-hover);
+}
+
+.solution-outdated-reason {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 0.25rem;
+  margin: 0.25rem 1rem 0.75rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--color-danger);
+  border-radius: 0.45rem;
+  color: var(--color-text);
+  background: var(--color-surface-muted);
+}
+
+.solution-outdated-reason strong {
+  color: var(--color-danger);
+  font-size: 0.72rem;
+}
+
+.solution-outdated-reason span {
+  overflow-wrap: anywhere;
+  font-size: 0.78rem;
 }
 
 .topic-heading-secondary {
@@ -4771,7 +4795,8 @@ p {
     justify-content: flex-end;
   }
 
-  .topic-heading-side .solved-badge {
+  .topic-heading-side .solved-badge,
+  .topic-heading-side .solution-moderation-badge {
     min-height: 2.5rem;
     padding: 0.4rem 0.95rem;
     font-size: 0.82rem;
@@ -5164,7 +5189,8 @@ p {
   font-weight: 750;
 }
 
-.topic-shell .secondary-tools-form input {
+.topic-shell .secondary-tools-form input,
+.topic-shell .secondary-tools-form textarea {
   width: 100%;
   padding: 0.42rem 0.5rem;
   border: 1px solid var(--color-border-strong);
@@ -5174,7 +5200,8 @@ p {
   font: inherit;
 }
 
-.topic-shell .secondary-tools-form input:focus {
+.topic-shell .secondary-tools-form input:focus,
+.topic-shell .secondary-tools-form textarea:focus {
   border-color: var(--color-accent);
   outline: 0.13rem solid var(--color-accent-soft);
   outline-offset: 0.06rem;
@@ -7492,7 +7519,8 @@ a.topic-tag:focus-visible {
 }
 
 .help-question-status,
-.help-question-best-answer {
+.help-question-best-answer,
+.help-question-solution-moderation {
   display: inline-flex;
   min-height: 1.35rem;
   align-items: center;
@@ -7518,6 +7546,19 @@ a.topic-tag:focus-visible {
   border: 1px solid var(--color-accent);
   color: var(--color-accent-hover);
   background: transparent;
+}
+
+.help-question-solution-moderation,
+.solution-moderation-badge {
+  border: 1px solid var(--color-border-strong);
+  color: var(--color-text);
+  background: var(--color-surface-muted);
+}
+
+.help-question-solution-moderation.is-outdated,
+.solution-moderation-badge.is-outdated {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
 }
 
 .help-question-main .topic-tag-list {
