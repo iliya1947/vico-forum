@@ -1495,3 +1495,31 @@ Return only:
 
 Prefer the smallest coherent foundation that unlocks later approved filters/statuses without prematurely implementing the whole moderation system. Do not choose visual polish, similar-question search refinement, drafts/autosave, or unrelated global forum work.
 
+
+
+---
+
+<!-- codex-service-channel-comment:6047071340 -->
+## Codex GitHub response — comment 6047071340
+
+_Source: https://github.com/iliya1947/vico-forum/pull/147#issuecomment-6047071340 · 2026-10-07T21:19:37Z_
+
+# Действие пользователя
+
+Ничего.
+
+### Summary
+
+* В качестве следующего минимального функционального среза выбран persisted workflow **Needs details**: пользовательский сигнал, подтверждение или отклонение уполномоченным модератором и включение подтверждённых вопросов в существующий режим **Needs attention**. [.github/ui-ux-service-channel.mdL1500-L1504](https://github.com/iliya1947/vico-forum/blob/243cb164348ce5f0364e29db3e73b16401aef942/.github/ui-ux-service-channel.md#L1500-L1504)
+* Scope ограничен одной осью качества `normal | needs-details`, серверной идентификацией и авторизацией, аудитом переходов, Help-specific topic actions и существующей hidden-section boundary. [.github/ui-ux-service-channel.mdL1506-L1512](https://github.com/iliya1947/vico-forum/blob/243cb164348ce5f0364e29db3e73b16401aef942/.github/ui-ux-service-channel.md#L1506-L1512)
+* Явно исключены остальные solution/moderation statuses, outdated explanations, duplicate/appeal mechanics, drafts/autosave, refinement похожих вопросов, visual polish и unrelated global forum work. [.github/ui-ux-service-channel.mdL1513-L1514](https://github.com/iliya1947/vico-forum/blob/243cb164348ce5f0364e29db3e73b16401aef942/.github/ui-ux-service-channel.md#L1513-L1514)
+* Зафиксированы readiness criteria для DB constraints, permissions, privacy pending signals, расширения `mode=attention`, regression coverage, Pages-сценариев и финальной независимой проверки. [.github/ui-ux-service-channel.mdL1516-L1524](https://github.com/iliya1947/vico-forum/blob/243cb164348ce5f0364e29db3e73b16401aef942/.github/ui-ux-service-channel.md#L1516-L1524)
+* Изменение communication-файла закоммичено как `9537d60` (`Coordinate Help quality moderation foundation`), после чего подготовлен PR **Service channel: hand off Help quality moderation foundation**.
+
+**Testing**
+
+* ✅ `git diff --check`
+* ✅ `git show --stat --oneline HEAD`
+* ✅ `git status --short --branch` — рабочее дерево чистое после commit.
+
+ [View task →](https://chatgpt.com/s/cd_6ac6b6f268e881919e75c55730793681)
