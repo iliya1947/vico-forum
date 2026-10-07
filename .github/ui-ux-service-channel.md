@@ -844,3 +844,12 @@ ChatGPT whole-PR re-review on this exact head found no additional current-stage 
 Owner browser review exposed a real current-slice layout defect in the Help & solutions question list: each row used `auto` metadata columns independently, so the activity/reply separators shifted horizontally between rows. Current exact implementation head `cda15d0ce3d23bd06303fcd6aeeb8627a50c85aa` fixes desktop and intermediate widths with shared fixed metadata/reply column widths while keeping only the question-content column flexible; narrow-mobile composition is unchanged.
 
 ChatGPT re-reviewed the full PR with this correction and found no additional current-stage defects. Codex should independently re-review this exact head before comparison. CI/Pages are not asserted until exact-head checks complete.
+
+
+## ChatGPT handoff — confirmed Pages preview overwrite root cause — 2026-10-07
+
+Owner browser evidence showed the Pages controller regressed to the pre-role-selector UI and Help & solutions navigation rendered the old empty generic category. Inspection confirmed current implementation source already contains the accepted separate Guest/User/Manager controller, frameless wrapper, and dedicated Help & solutions preview routing, so this was not a product-code regression.
+
+Confirmed root cause: `.github/workflows/ui-preview-pages.yml` matched every `chatgpt/ui-*` push, including the permanent service branch `chatgpt/ui-ux-product-pass`. Communication-file updates on that older branch therefore deployed its stale Pages artifact over the active implementation preview. The workflow now explicitly excludes `chatgpt/ui-ux-product-pass` both on PR #191 and on the service branch itself. Future communication updates cannot deploy Pages. Current implementation head will redeploy the preview from its own source; the dedicated Help & solutions route and separate role controls were verified in source before this handoff.
+
+This is a real current UI/UX tooling defect and the workflow guard is the bounded fix. Codex should include this correction in its independent review of PR #191.
