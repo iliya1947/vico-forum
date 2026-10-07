@@ -201,6 +201,14 @@ describe("PostgreSQL 17 locale migrations", () => {
         }],
       });
       expect(await repository.readHelpSolutionsMine("help-foundation-replier")).toMatchObject({ questions: [] });
+      expect(await repository.readHelpSolutionsWantToHelp("help-foundation-author")).toMatchObject({ questions: [] });
+      expect(await repository.readHelpSolutionsWantToHelp("help-foundation-replier")).toMatchObject({
+        questions: [{
+          id: "help-foundation-topic",
+          authorName: "Forum Author",
+          isSolved: false,
+        }],
+      });
       expect(await repository.readHelpSolutionsActive()).toMatchObject({
         questions: [{
           id: "help-foundation-topic",
@@ -228,6 +236,7 @@ describe("PostgreSQL 17 locale migrations", () => {
         }],
       });
       expect(await repository.readHelpSolutionsNeedsAttention()).toMatchObject({ questions: [] });
+      expect(await repository.readHelpSolutionsWantToHelp("help-foundation-replier")).toMatchObject({ questions: [] });
 
       await forum.createTopicWithInitialPost({
         id: "help-foundation-no-replies",
@@ -263,8 +272,18 @@ describe("PostgreSQL 17 locale migrations", () => {
         }],
       });
       expect((await repository.readHelpSolutionsNeedsAttention())?.questions).toHaveLength(1);
+      expect(await repository.readHelpSolutionsWantToHelp("help-foundation-author")).toMatchObject({
+        questions: [{
+          id: "help-foundation-no-replies",
+          authorName: "Waiting User",
+          replyCount: 0,
+          isSolved: false,
+        }],
+      });
+      expect(await repository.readHelpSolutionsWantToHelp("help-foundation-waiting")).toMatchObject({ questions: [] });
       await forum.markTopicSolved("help-foundation-no-replies", "help-foundation-waiting");
       expect(await repository.readHelpSolutionsNeedsAttention()).toMatchObject({ questions: [] });
+      expect(await repository.readHelpSolutionsWantToHelp("help-foundation-author")).toMatchObject({ questions: [] });
       expect(await repository.readSection(HELP_SOLUTIONS_SERVICE_SECTION_ID)).toBeUndefined();
     } finally {
       await client.query("delete from forum_topics where id in ('help-foundation-topic', 'help-foundation-no-replies')");
