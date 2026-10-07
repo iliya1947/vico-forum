@@ -30,9 +30,9 @@ export async function loader({ request, params, context }: {
           ? "attention" as const
           : requestedMode === "solutions"
             ? "solutions" as const
-          : requestedMode === "mine"
-            ? "mine" as const
-            : "all" as const;
+            : requestedMode === "mine"
+              ? "mine" as const
+              : "all" as const;
     const session = authSessionForRequest(context);
     let helpSolutions;
     if (mode === "mine") {
