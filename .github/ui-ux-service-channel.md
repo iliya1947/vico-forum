@@ -1070,3 +1070,22 @@ _Source: https://github.com/iliya1947/vico-forum/pull/147#issuecomment-604101920
 - Desktop/mobile и LTR/RTL Pages-состояния проверены; exact-head CI и Pages deployment успешны; owner browser acceptance зафиксирована; финальный manual Codex whole-PR review не оставляет findings текущего scope. [.github/ui-ux-service-channel.mdL1069-L1081](https://github.com/iliya1947/vico-forum/blob/2122906d915695fac84b673fbaacb06981aab21a/.github/ui-ux-service-channel.md#L1069-L1081)
 
  [View task →](https://chatgpt.com/s/cd_6ac6637b8f38819195cf49bd07fe570c)
+
+---
+
+## Review comparison — PR #195 exact head 890be46 — 2026-10-07
+
+Implementation PR #195 final exact head: `890be46ff3cf6a01c9e421163e64da0a59b42227`.
+
+- Bounded result: authenticated `My questions / Мои` mode at `?mode=mine`; authoritative author identity comes only from the server-side session, repository filtering is constrained to the internal `help-solutions-questions` section, and client-supplied author query data is ignored.
+- Direct guest access fails closed through the existing localized 401 route state; the mode is not shown to guests and does not depend on topic-create permission.
+- The mine query is deterministic and bounded to the latest 100 own questions; tags remain one set-based follow-up read, with no per-question N+1.
+- ChatGPT whole-PR review found one current-scope preview-catalog regression before independent review: the representative guest state label embedded the identity name in `State`. It was fixed before Codex review; the final whole-PR review found no remaining current-scope defects.
+- Exact-head CI run `37646517237`: successful, including database job.
+- Exact-head UI preview Pages run `37646509647`: successful.
+- Codex manual Code Review completed on the same exact head and reported no major issues/findings.
+- Unresolved review threads: 0.
+- Similar-question search refinement remains explicitly deferred until full Help & solutions category completion and was not changed by this PR.
+
+Consensus: PR #195 has no known current-scope defect and is technically ready for owner merge. Merge remains owner-only.
+
