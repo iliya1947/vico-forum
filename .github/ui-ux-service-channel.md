@@ -1424,3 +1424,41 @@ Return only:
 
 Do not choose visual polish or similar-question search refinement yet. Do not assume that a schema/moderation-status change is required unless the chosen current slice actually needs it. Distinguish current approved functionality from richer future elaboration.
 
+
+
+---
+
+<!-- codex-service-channel-comment:6046987018 -->
+## Codex GitHub response — comment 6046987018
+
+_Source: https://github.com/iliya1947/vico-forum/pull/147#issuecomment-6046987018 · 2026-10-07T21:14:36Z_
+
+# Действие пользователя
+
+Ничего.
+
+## Required result
+
+Добавить bounded browser-local **draft/autosave** для существующей authenticated-формы создания вопроса в **Help & solutions**. Незавершённые title, body и tags должны переживать случайную навигацию или перезагрузку в том же браузере; пользователь может явно удалить черновик, а успешная публикация очищает его. Более богатая cross-device draft subsystem в этот срез не входит. [.github/ui-ux-service-channel.mdL1430-L1434](https://github.com/iliya1947/vico-forum/blob/9a73ff8de14fc55068619e43077f45f6eb60b4cc/.github/ui-ux-service-channel.md#L1430-L1434)
+
+## Bounded scope and explicit exclusions
+
+- Ограничить сохранение, восстановление и удаление черновика существующей формой вопроса Help & solutions.
+- Хранить только title, body и tags в namespaced/versioned browser-local record.
+- Не сохранять session identity, authorization data, результаты similar-question check, ошибки или server responses.
+- Сохранить без изменений server-authoritative transaction, validation, origin/rate-limit/permission boundaries и фиксированный internal service-section destination.
+- Определить детерминированный приоритет между восстановленным черновиком и более новыми form values, возвращёнными после проверки похожих вопросов или неуспешной отправки.
+- При недоступном browser storage форма должна продолжать работать без autosave.
+- Добавить необходимую EN/RU/HE локализацию, focused regression coverage и representative Pages states.
+- Исключить server-side/cross-device drafts, draft lists, background sync, profile settings, schema/migrations, новые permissions, moderation statuses/actions, duplicate/appeal workflow, другие authoring surfaces, visual polish, similar-question search refinement и Stage 6. [.github/ui-ux-service-channel.mdL1436-L1444](https://github.com/iliya1947/vico-forum/blob/9a73ff8de14fc55068619e43077f45f6eb60b4cc/.github/ui-ux-service-channel.md#L1436-L1444)
+
+## Readiness criteria
+
+- Покрыты save, reload/restore, explicit discard, очистка после успешной публикации и storage-unavailable degradation.
+- Восстановленный черновик не может выбирать пользователя, locale route, destination section, permission или mutation intent.
+- Similar-question и validation states сохраняют самые новые значения формы без stale-draft overwrite.
+- Не регрессируют существующие режимы, создание вопросов и topic destinations.
+- Restore/discard states проверены в desktop/mobile и LTR/RTL Pages scenarios.
+- Exact-head CI и Pages deployment успешны; owner browser acceptance и независимый whole-PR review завершены без открытых findings текущего scope. [.github/ui-ux-service-channel.mdL1446-L1453](https://github.com/iliya1947/vico-forum/blob/9a73ff8de14fc55068619e43077f45f6eb60b4cc/.github/ui-ux-service-channel.md#L1446-L1453)
+
+ [View task →](https://chatgpt.com/s/cd_6ac6b5b2727881918e7661eec2d06485)
