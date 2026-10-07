@@ -1179,6 +1179,8 @@ export class DrizzleForumRepository {
         postCount: sql<number>`count(distinct ${forumPosts.id})::int`,
         isSolved: forumTopics.isSolved,
         bestAnswerPostId: forumTopics.bestAnswerPostId,
+        solutionModerationStatus: forumTopics.solutionModerationStatus,
+        solutionOutdatedReason: forumTopics.solutionOutdatedReason,
         createdAt: forumTopics.createdAt,
         activityAt,
         matchCount,
@@ -1216,6 +1218,8 @@ export class DrizzleForumRepository {
         replyCount: Math.max(0, row.postCount - 1),
         isSolved: row.isSolved,
         hasBestAnswer: row.bestAnswerPostId !== null,
+        solutionModerationStatus: row.solutionModerationStatus as HelpSolutionModerationStatus | null,
+        solutionOutdatedReason: row.solutionOutdatedReason,
         createdAt: row.createdAt,
         activityAt: row.activityAt,
         tags: tagsByTopic.get(row.id) ?? [],
@@ -1252,6 +1256,8 @@ export class DrizzleForumRepository {
         postCount: sql<number>`count(distinct ${forumPosts.id})::int`,
         isSolved: forumTopics.isSolved,
         bestAnswerPostId: forumTopics.bestAnswerPostId,
+        solutionModerationStatus: forumTopics.solutionModerationStatus,
+        solutionOutdatedReason: forumTopics.solutionOutdatedReason,
         createdAt: forumTopics.createdAt,
         activityAt,
       })
@@ -1315,6 +1321,8 @@ export class DrizzleForumRepository {
         replyCount: Math.max(0, row.postCount - 1),
         isSolved: row.isSolved,
         hasBestAnswer: row.bestAnswerPostId !== null,
+        solutionModerationStatus: row.solutionModerationStatus as HelpSolutionModerationStatus | null,
+        solutionOutdatedReason: row.solutionOutdatedReason,
         createdAt: row.createdAt,
         activityAt: row.activityAt,
         tags: tagsByTopic.get(row.id) ?? [],
@@ -1560,6 +1568,8 @@ export class DrizzleForumRepository {
         authorName: user.name, createdAt: forumTopics.createdAt, revisionId: forumTopicTitleRevisions.id,
         originalContent: forumTopicTitleRevisions.originalContent, sourceLocale: forumTopicTitleRevisions.sourceLocale,
         isSolved: forumTopics.isSolved, bestAnswerPostId: forumTopics.bestAnswerPostId,
+        solutionModerationStatus: forumTopics.solutionModerationStatus,
+        solutionOutdatedReason: forumTopics.solutionOutdatedReason,
         isPinned: sql<boolean>`${forumTopicPins.topicId} is not null`,
       })
       .from(forumTopics)
@@ -1592,6 +1602,8 @@ export class DrizzleForumRepository {
     return {
       id: topic.id, sectionId: topic.sectionId, authorId: topic.authorId, authorName: topic.authorName,
       isSolved: topic.isSolved, bestAnswerPostId: topic.bestAnswerPostId,
+      solutionModerationStatus: topic.solutionModerationStatus as HelpSolutionModerationStatus | null,
+      solutionOutdatedReason: topic.solutionOutdatedReason,
       isPinned: topic.isPinned,
       createdAt: topic.createdAt,
       title: { id: topic.revisionId, originalContent: topic.originalContent, sourceLocale: topic.sourceLocale },
@@ -1637,6 +1649,8 @@ export class DrizzleForumRepository {
         sourceLocale: forumTopicTitleRevisions.sourceLocale,
         isSolved: forumTopics.isSolved,
         bestAnswerPostId: forumTopics.bestAnswerPostId,
+        solutionModerationStatus: forumTopics.solutionModerationStatus,
+        solutionOutdatedReason: forumTopics.solutionOutdatedReason,
       })
       .from(forumTopics)
       .innerJoin(
@@ -1653,8 +1667,37 @@ export class DrizzleForumRepository {
       authorId: row.authorId,
       isSolved: row.isSolved,
       bestAnswerPostId: row.bestAnswerPostId,
+      solutionModerationStatus: row.solutionModerationStatus as HelpSolutionModerationStatus | null,
+      solutionOutdatedReason: row.solutionOutdatedReason,
       title: { id: row.revisionId, originalContent: row.originalContent, sourceLocale: row.sourceLocale },
     };
+  }
+
+  async setHelpSolutionModeration(
+    topicId: string,
+    status: HelpSolutionModerationStatus | null,
+    outdatedReason: string | null,
+  ): Promise<void> {
+    await this.database.transaction(async (tx) => {
+      const [topic] = await tx
+        .select({ sectionId: forumTopics.sectionId, isSolved: forumTopics.isSolved })
+        .from(forumTopics)
+        .where(eq(forumTopics.id, topicId))
+        .for("update");
+      if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
+      if (topic.sectionId !== HELP_SOLUTIONS_SERVICE_SECTION_ID) {
+        throw new ForumStateConflictError("solution moderation is only available for Help & solutions questions");
+      }
+      if (!topic.isSolved) {
+        throw new ForumStateConflictError("solution moderation requires a solved Help & solutions question");
+      }
+      await tx.update(forumTopics)
+        .set({
+          solutionModerationStatus: status,
+          solutionOutdatedReason: status === "outdated" ? outdatedReason : null,
+        })
+        .where(eq(forumTopics.id, topicId));
+    });
   }
 
   async markTopicSolved(topicId: string, actorId: string, scope: SolutionManagementScope = "own"): Promise<void> {
