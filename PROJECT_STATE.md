@@ -126,8 +126,8 @@ Vico Forum находится в ранней pre-release разработке.
   aggregate topic/message counts категории. External migration/Stage 6 rollout не выполнялся.
 - Текущий bounded Q&A slice добавляет первый реальный режим **All / Все** на существующем
   `/:locale/categories/help-solutions`. Dedicated reader читает вопросы только из internal
-  service section и возвращает current title/author, technology tags, число ответов без original
-  question, independent solved/best-answer state и latest activity. Generic category UI для этой
+  service section и возвращает current title/author, technology tags, число последующих сообщений
+  (`replies`) после original question, independent solved/best-answer state и latest activity. Generic category UI для этой
   reserved category заменяется специальным public Q&A list view; topic breadcrumb для таких
   вопросов больше не ведёт на скрытый service-section route. Остальные Q&A modes, фильтры,
   создание вопроса, moderation signals/statuses, duplicates/appeals, structured context,
