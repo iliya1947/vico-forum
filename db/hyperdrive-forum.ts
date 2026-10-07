@@ -71,6 +71,7 @@ export function createHyperdriveForumReader(
     readHelpSolutionsAll: () => read((repository) => repository.readHelpSolutionsAll()),
     readHelpSolutionsOpen: () => read((repository) => repository.readHelpSolutionsOpen()),
     readHelpSolutionsSolved: () => read((repository) => repository.readHelpSolutionsSolved()),
+    readHelpSolutionsMine: (userId) => read((repository) => repository.readHelpSolutionsMine(userId)),
     searchHelpSolutionsSimilar: (query, limit) => read((repository) => repository.searchHelpSolutionsSimilar(query, limit)),
     readCategory: (id, pinnedTopicsPerSection) => read((repository) => repository.readCategory(id, pinnedTopicsPerSection)),
     readSection: (id) => read((repository) => repository.readSection(id)),
