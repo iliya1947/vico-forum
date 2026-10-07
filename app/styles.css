@@ -7496,10 +7496,6 @@ a.topic-tag:focus-visible {
 }
 
 @media (max-width: 52rem) {
-  .help-solutions-heading {
-    align-items: stretch;
-  }
-
   .help-question-card {
     grid-template-columns: minmax(0, 1fr) minmax(4.5rem, auto) 2.65rem;
   }
@@ -7540,6 +7536,7 @@ a.topic-tag:focus-visible {
 
   .help-solutions-heading {
     flex-direction: column;
+    align-items: stretch;
     padding: 0.75rem;
   }
 
