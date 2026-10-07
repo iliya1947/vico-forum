@@ -560,7 +560,7 @@ export const authzRoles = pgTable("authz_roles", {
 export const authzPermissions = pgTable("authz_permissions", {
   key: text("key").primaryKey(),
 }, (table) => [check("authz_permissions_catalog_check", sql`${table.key} in (
-  'forum.topic.create', 'forum.reply.create', 'forum.topic.pin', 'forum.solution.manageOwn',
+  'forum.topic.create', 'forum.reply.create', 'forum.help.attention.read', 'forum.topic.pin', 'forum.solution.manageOwn',
   'forum.solution.manageAny', 'forum.sourceLocale.correctOwn',
   'forum.sourceLocale.correctAny', 'forum.translation.generate',
   'access.authorization.manage'
