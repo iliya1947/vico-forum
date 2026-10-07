@@ -278,9 +278,12 @@ composition without changing the forum hierarchy or schema:
   fake user-facing subforum. Merged PR #188 provides the real `All` mode, listing service-section
   questions with author, tags, reply count, solved/best-answer state and latest activity while
   question topics breadcrumb directly back to Help & solutions instead of exposing the hidden
-  section. The current bounded follow-up adds only `Solutions`, backed by existing final
-  `isSolved = true` and exposed as `?mode=solutions`; additional modes, filters and
-  question-authoring remain separate bounded product work;
+  section. Merged PR #190 adds only `Solutions`, backed by existing final
+  `isSolved = true` and exposed as `?mode=solutions`. The current bounded follow-up adds
+  dedicated question authoring directly on Help & solutions by reusing the existing protected
+  create-topic boundary while keeping the internal service section server-fixed and hidden;
+  additional modes, moderation workflow, duplicate/appeal handling and personalization remain
+  separate bounded product work;
 - owner visual acceptance of the implementation was confirmed on 2026-10-05; exact-head
   automated verification remains a separate PR check.
 
