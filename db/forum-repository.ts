@@ -170,6 +170,14 @@ export interface ForumHelpSolutionsPage {
   questions: ForumHelpQuestionSummary[];
 }
 
+export interface ForumHelpSimilarQuestionSummary {
+  id: string;
+  title: string;
+  replyCount: number;
+  isSolved: boolean;
+  tags: ForumTag[];
+}
+
 export interface ForumTopicSummary {
   id: string;
   title: ForumRevisionContent;
@@ -217,6 +225,7 @@ export interface ForumReader {
   readHelpSolutionsAll(): Promise<ForumHelpSolutionsPage | undefined>;
   readHelpSolutionsOpen(): Promise<ForumHelpSolutionsPage | undefined>;
   readHelpSolutionsSolved(): Promise<ForumHelpSolutionsPage | undefined>;
+  searchHelpSolutionsSimilar(query: string, limit?: number): Promise<ForumHelpSimilarQuestionSummary[]>;
   readCategory(id: string, pinnedTopicsPerSection?: number): Promise<ForumCategoryPage | undefined>;
   readSection(id: string): Promise<ForumSectionPage | undefined>;
   readTopicPage(id: string): Promise<ForumTopicPage | undefined>;
@@ -1012,6 +1021,71 @@ export class DrizzleForumRepository {
       if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
       await tx.delete(forumTopicPins).where(eq(forumTopicPins.topicId, topicId));
     });
+  }
+
+  async searchHelpSolutionsSimilar(
+    query: string,
+    limit = 5,
+  ): Promise<ForumHelpSimilarQuestionSummary[]> {
+    const normalizedQuery = query.normalize("NFKC").trim().replace(/\s+/gu, " ");
+    if (!normalizedQuery) return [];
+    if (normalizedQuery.length > 200) {
+      throw new RangeError("similar-question query must be at most 200 characters");
+    }
+    if (!Number.isInteger(limit) || limit < 1 || limit > 10) {
+      throw new RangeError("similar-question limit must be an integer between 1 and 10");
+    }
+
+    const pattern = `%${escapeSearchPattern(normalizedQuery)}%`;
+    const titleMatch = sql<boolean>`${forumTopicTitleRevisions.originalContent} ilike ${pattern} escape '!'`;
+    const tagMatch = sql<boolean>`coalesce(${forumTags.name} ilike ${pattern} escape '!', false)
+      or coalesce(${forumTags.key} ilike ${pattern} escape '!', false)`;
+    const postMatch = sql<boolean>`coalesce(${forumPostRevisions.originalContent} ilike ${pattern} escape '!', false)`;
+    const matchRank = sql<number>`case
+      when ${titleMatch} then 3
+      when bool_or(${tagMatch}) then 2
+      else 1
+    end::int`;
+    const activityAt = sql`greatest(
+      ${forumTopics.createdAt},
+      coalesce(max(${forumPosts.createdAt}), ${forumTopics.createdAt})
+    )`.mapWith(forumTopics.createdAt);
+
+    const rows = await this.database
+      .select({
+        id: forumTopics.id,
+        title: forumTopicTitleRevisions.originalContent,
+        postCount: sql<number>`count(distinct ${forumPosts.id})::int`,
+        isSolved: forumTopics.isSolved,
+        activityAt,
+        matchRank,
+      })
+      .from(forumTopics)
+      .innerJoin(forumTopicTitleRevisions, and(
+        eq(forumTopicTitleRevisions.topicId, forumTopics.id),
+        eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId),
+      ))
+      .leftJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
+      .leftJoin(forumPostRevisions, and(
+        eq(forumPostRevisions.postId, forumPosts.id),
+        eq(forumPostRevisions.id, forumPosts.currentRevisionId),
+      ))
+      .leftJoin(forumTopicTags, eq(forumTopicTags.topicId, forumTopics.id))
+      .leftJoin(forumTags, eq(forumTags.key, forumTopicTags.tagKey))
+      .where(eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID))
+      .groupBy(forumTopics.id, forumTopicTitleRevisions.id)
+      .having(sql`bool_or(${titleMatch}) or bool_or(${tagMatch}) or bool_or(${postMatch})`)
+      .orderBy(desc(matchRank), desc(activityAt), desc(forumTopics.id))
+      .limit(limit);
+
+    const tagsByTopic = await this.readTagsForTopics(rows.map(({ id }) => id));
+    return rows.map((row) => ({
+      id: row.id,
+      title: row.title,
+      replyCount: Math.max(0, row.postCount - 1),
+      isSolved: row.isSolved,
+      tags: tagsByTopic.get(row.id) ?? [],
+    }));
   }
 
   async readHelpSolutionsAll(): Promise<ForumHelpSolutionsPage | undefined> {
