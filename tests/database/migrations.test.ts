@@ -292,7 +292,10 @@ describe("PostgreSQL 17 locale migrations", () => {
   });
 
   it("ranks For me by shared participation tags, activity, and stable topic id", async () => {
-    const repository = new DrizzleForumRepository(drizzle(client));
+    const repository = new DrizzleForumRepository(drizzle(client), {
+      cooldownMs: 0,
+      now: () => new Date(),
+    });
     const forum = new ForumService(repository);
     const userIds = [
       "for-me-user",
