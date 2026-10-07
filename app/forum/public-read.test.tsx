@@ -491,6 +491,7 @@ describe("Help & solutions modes and authoring", () => {
     const askButton = await screen.findByRole("button", { name: "Ask a question" });
     expect(askButton).toHaveAttribute("aria-expanded", "false");
     expect(screen.getByRole("link", { name: "All" })).toHaveAttribute("aria-current", "page");
+    expect(screen.queryByRole("link", { name: "Needs attention" })).not.toBeInTheDocument();
     expect(screen.queryByRole("form", { name: "Ask a question" })).not.toBeInTheDocument();
 
     fireEvent.click(askButton);
