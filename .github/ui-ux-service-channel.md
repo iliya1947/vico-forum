@@ -1254,3 +1254,44 @@ Return only:
 
 Do not choose visual polish or similar-question search refinement yet. Do not assume a specific remaining mode if another bounded functional slice is more appropriate from the current repository/product state.
 
+
+
+---
+
+<!-- codex-service-channel-comment:6044630236 -->
+## Codex GitHub response — comment 6044630236
+
+_Source: https://github.com/iliya1947/vico-forum/pull/147#issuecomment-6044630236 · 2026-10-07T18:51:59Z_
+
+# Действие пользователя
+
+Ничего.
+
+## Required result
+
+Добавить authenticated-режим **Want to help / Хочу помочь**, в котором пользователь видит открытые persisted-вопросы **Help & solutions**, созданные другими авторами и доступные для ответа. `All` остаётся canonical default; существующие режимы не меняют семантику.
+
+## Bounded scope and explicit exclusions
+
+- Добавить locale-aware `mode=help`.
+- Определять authoritative current user только из server-side session.
+- Выбирать на repository/DB boundary только вопросы внутреннего раздела `help-solutions-questions`, где `isSolved = false` и автор вопроса не равен текущему пользователю.
+- Переиспользовать существующие bounded Q&A projection, activity ordering, deterministic tie-breaks, карточки, reply counts, tags, locale-aware destinations и hidden service-section boundary.
+- Показывать режим в навигации только authenticated users; для прямого guest-доступа определить безопасное локализованное поведение.
+- Существующая server-side permission проверка reply остаётся authoritative: режим не предоставляет право отвечать сам по себе.
+- Добавить canonical EN, reviewed RU/HE локализацию, populated/empty Pages states и focused regression coverage.
+- Не реализовывать `For me`, similar-question search refinement или visual polish.
+- Не добавлять recommendation scoring, interests/subscriptions, age thresholds, schema/migrations, новые permissions, moderation actions, notifications, изменения authoring, generic forum filtering или Stage 6 работу.
+
+## Readiness criteria
+
+- `mode=help` доступен только authenticated identity и server-side возвращает исключительно нерешённые Help & solutions вопросы других авторов; собственные, решённые и темы обычных разделов исключены.
+- Client input не может выбрать или подменить current user.
+- Запрос bounded и deterministic, без client-side filtering и N+1; status, reply count, tags, activity data и canonical locale-aware links остаются корректными.
+- Guest, authenticated populated и authenticated empty states имеют явно проверенное поведение.
+- Возможность фактически отправить ответ по-прежнему определяется существующими authentication, origin, validation, rate-limit и effective-permission boundaries.
+- `All`, `Needs help`, `Solutions`, `My questions`, `Active`, `Needs attention`, similar-question checking и question authoring не регрессируют.
+- Representative desktop/mobile и LTR/RTL Pages states проверены.
+- Exact-head CI и Pages deployment успешны; owner browser acceptance и независимый whole-PR review завершены без открытых findings текущего scope.
+
+ [View task →](https://chatgpt.com/s/cd_6ac694619ec88191b7527b3c0f15dd1b)
