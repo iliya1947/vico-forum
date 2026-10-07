@@ -7497,7 +7497,7 @@ a.topic-tag:focus-visible {
 
 @media (max-width: 52rem) {
   .help-question-card {
-    grid-template-columns: minmax(0, 1fr) minmax(4.5rem, auto) 2.65rem;
+    grid-template-columns: minmax(0, 1fr) 5rem 2.65rem;
   }
 
   .help-question-activity {
