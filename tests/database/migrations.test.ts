@@ -353,6 +353,13 @@ describe("PostgreSQL 17 locale migrations", () => {
     };
 
     try {
+      await forum.createCategory({ id: "for-me-regular-category", name: "For me regular category" });
+      await forum.createSection({
+        id: "for-me-regular-section",
+        categoryId: "for-me-regular-category",
+        name: "For me regular section",
+      });
+
       await createQuestion("for-me-signal-owned", "for-me-user", ["formeowned"]);
       await createQuestion("for-me-signal-replied", "for-me-other", ["formereplied"]);
       await forum.createPost({
@@ -380,9 +387,19 @@ describe("PostgreSQL 17 locale migrations", () => {
       await createQuestion("for-me-no-match-signal", "for-me-no-match-user", ["formenone"]);
       await forum.markTopicSolved("for-me-no-match-signal", "for-me-no-match-user");
 
-      await createQuestion("for-me-regular-signal", "for-me-user", ["formeregularsignal"], "typescript");
+      await createQuestion(
+        "for-me-regular-signal",
+        "for-me-user",
+        ["formeregularsignal"],
+        "for-me-regular-section",
+      );
       await createQuestion("for-me-regular-signal-candidate", "for-me-other", ["formeregularsignal"]);
-      await createQuestion("for-me-regular-candidate", "for-me-other", ["formeowned"], "typescript");
+      await createQuestion(
+        "for-me-regular-candidate",
+        "for-me-other",
+        ["formeowned"],
+        "for-me-regular-section",
+      );
 
       const setActivity = async (topicId: string, timestamp: string) => {
         await client.query("update forum_topics set created_at = $2 where id = $1", [topicId, timestamp]);
@@ -415,6 +432,8 @@ describe("PostgreSQL 17 locale migrations", () => {
         .toMatchObject({ questions: [] });
     } finally {
       await client.query("delete from forum_topics where id = any($1::text[])", [topicIds]);
+      await client.query("delete from forum_sections where id = 'for-me-regular-section'");
+      await client.query("delete from forum_categories where id = 'for-me-regular-category'");
       await client.query('delete from "user" where id = any($1::text[])', [userIds]);
       await client.query(
         "delete from forum_tags where key = any($1::text[])",
