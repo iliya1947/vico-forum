@@ -674,3 +674,32 @@ bundles now carry DB/schema initialization that is not needed for presentation.
 
 Consensus: finding confirmed. The reserved Help & solutions IDs should move to a client-safe shared
 constants module, with server repository/route code importing them from there.
+
+
+---
+
+## PR #188 independent verification — finding B — 2026-10-07
+
+Codex reported that the new Help & solutions card labels the aggregate as `answer / answers`
+while the reader actually computes every post after the original question.
+
+ChatGPT independently verified the current implementation and test fixture:
+
+- `readHelpSolutionsAll()` sets `answerCount = max(0, postCount - 1)`;
+- there is no post classification that distinguishes semantic answers from clarifications,
+  author follow-ups or other discussion replies;
+- the PR's own public-read fixture contains:
+  1. the original question by Ada;
+  2. one reply by Lin;
+  3. a follow-up by Ada saying the problem is not fully solved;
+- the fixture sets `answerCount: 2`, so the UI renders the author's follow-up as a second
+  `answer`;
+- the catalog descriptor already describes this value as the number of replies after the original
+  question.
+
+Classification: **real defect of the current slice**, not future-only groundwork. The displayed
+label overstates what the underlying data represents.
+
+Consensus: finding confirmed. Until the product introduces a real semantic answer classification,
+the aggregate and copy should be named `reply / replies` consistently in the presentation/data
+contract and tests.
