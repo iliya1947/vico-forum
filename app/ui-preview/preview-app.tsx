@@ -1047,18 +1047,18 @@ function PreviewCategoryRoute({ scenario }: { scenario: Scenario }) {
       : scenario.variant === "help-solutions-want-empty" && mode === "help"
         ? { ...page, questions: [] }
         : scenario.variant === "help-solutions-active-empty" && mode === "active"
-        ? { ...page, questions: [] }
-        : scenario.variant === "help-solutions-attention-empty" && mode === "attention"
+          ? { ...page, questions: [] }
+          : scenario.variant === "help-solutions-attention-empty" && mode === "attention"
           ? { ...page, questions: [] }
           : scenario.variant === "help-solutions-mine-empty" && mode === "mine"
             ? { ...page, questions: [] }
             : mode === "open"
-            ? { ...page, questions: page.questions.filter((question) => !question.isSolved) }
-            : mode === "help"
+              ? { ...page, questions: page.questions.filter((question) => !question.isSolved) }
+              : mode === "help"
               ? { ...page, questions: page.questions.filter((question) => !question.isSolved && question.authorName !== previewIdentity?.name) }
               : mode === "active"
-              ? { ...page, questions: page.questions.filter((question) => question.replyCount > 0) }
-              : mode === "attention"
+                ? { ...page, questions: page.questions.filter((question) => question.replyCount > 0) }
+                : mode === "attention"
                 ? { ...page, questions: page.questions.filter((question) => !question.isSolved && question.replyCount === 0) }
                 : mode === "solutions"
                   ? { ...page, questions: page.questions.filter((question) => question.isSolved) }
