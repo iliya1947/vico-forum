@@ -26,14 +26,21 @@ export async function loader({ request, params, context }: {
       ? "open" as const
       : requestedMode === "solutions"
         ? "solutions" as const
-        : "all" as const;
+        : requestedMode === "mine"
+          ? "mine" as const
+          : "all" as const;
+    const session = authSessionForRequest(context);
+    if (mode === "mine" && !session) {
+      throw new Response("Unauthorized", { status: 401 });
+    }
     const helpSolutions = mode === "open"
       ? await reader.readHelpSolutionsOpen()
       : mode === "solutions"
         ? await reader.readHelpSolutionsSolved()
-        : await reader.readHelpSolutionsAll();
+        : mode === "mine"
+          ? await reader.readHelpSolutionsMine(session!.user.id)
+          : await reader.readHelpSolutionsAll();
     if (!helpSolutions) throw new Response("Not Found", { status: 404 });
-    const session = authSessionForRequest(context);
     let canAskQuestion = false;
     if (session) {
       try {
@@ -49,6 +56,7 @@ export async function loader({ request, params, context }: {
       kind: "help-solutions" as const,
       locale,
       mode,
+      isAuthenticated: Boolean(session),
       canAskQuestion,
       referenceTime,
       page: {
@@ -96,6 +104,7 @@ export default function CategoryRoute() {
         mode={data.mode}
         page={data.page}
         referenceTime={data.referenceTime}
+        isAuthenticated={data.isAuthenticated}
         canAskQuestion={data.canAskQuestion}
         actionData={actionData}
       />
