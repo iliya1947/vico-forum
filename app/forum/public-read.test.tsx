@@ -210,6 +210,7 @@ const reader: ForumReader = {
   readHelpSolutionsAll: async () => helpPage,
   readHelpSolutionsOpen: async () => helpPage,
   readHelpSolutionsSolved: async () => solvedHelpPage,
+  searchHelpSolutionsSimilar: async () => [],
   search: async (query) => query.toLowerCase().includes("type") ? [{
     id: topic.id,
     title: topic.title.originalContent,
