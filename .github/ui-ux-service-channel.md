@@ -1295,3 +1295,24 @@ _Source: https://github.com/iliya1947/vico-forum/pull/147#issuecomment-604463023
 - Exact-head CI и Pages deployment успешны; owner browser acceptance и независимый whole-PR review завершены без открытых findings текущего scope.
 
  [View task →](https://chatgpt.com/s/cd_6ac694619ec88191b7527b3c0f15dd1b)
+
+---
+
+## Review comparison — PR #198 exact head c3818b3 — 2026-10-07
+
+Implementation PR #198 final head: `c3818b3a2945976ce511291310846ba4cd04a3fc`.
+
+- Bounded result: authenticated `Want to help / Хочу помочь` at `?mode=help` returns only unsolved persisted Help & solutions questions authored by users other than the authoritative current session user, inside the internal `help-solutions-questions` section.
+- Current user identity is derived only from the server-side session; client query input cannot select or replace the excluded author identity.
+- The query reuses existing Q&A projection/activity ordering and deterministic tie-breaks, is bounded to the first 100 results, and introduces no schema/migration or new permission.
+- Guest navigation does not expose the mode and direct guest access uses the existing 401 unauthenticated route boundary. The mode itself does not grant reply capability; existing reply authentication/origin/validation/rate-limit/effective-permission boundaries remain authoritative.
+- ChatGPT whole-PR review on the final head found no remaining current-scope defects. The only CI failure encountered during implementation was a test-fixture expectation using a display name different from the shared fixture; correcting that test expectation required no implementation change.
+- Exact-head CI run `37679696176`: successful; both `checks` and `database` completed successfully.
+- Exact-head UI preview Pages run `37679735350`: build and deploy successful.
+- Owner visual acceptance of populated/empty presentation and Guest/User/Manager identity switching was confirmed on 2026-10-07.
+- Codex manual Code Review completed on the same exact head and reported: “Didn't find any major issues.”
+- Unresolved review threads: 0.
+- No `For me`, recommendation scoring, interests/subscriptions, age thresholds, new permissions, moderation actions, notifications, authoring changes, similar-question search refinement, visual polish, generic forum filtering or Stage 6 work was introduced.
+
+Consensus: PR #198 has no known current-scope defect and is technically ready for owner merge. Merge remains owner-only.
+
