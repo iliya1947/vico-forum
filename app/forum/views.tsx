@@ -1014,6 +1014,7 @@ export function HelpSolutionsView({
 }) {
   const { t } = useTranslation("common");
   const navigation = useNavigation();
+  const [questionComposerOpen, setQuestionComposerOpen] = useState(false);
   const isQuestionSubmitting =
     navigation.state === "submitting"
     && navigation.formData?.get("intent") === "createHelpQuestion";
@@ -1034,10 +1035,39 @@ export function HelpSolutionsView({
             <h1>{t("helpSolutionsHeading")}</h1>
             <p>{t("helpSolutionsIntro")}</p>
           </div>
+          {canAskQuestion ? (
+            <button
+              type="button"
+              className="help-solutions-ask-toggle"
+              aria-expanded={questionComposerOpen}
+              aria-controls="help-question-create-form"
+              onClick={() => setQuestionComposerOpen((open) => !open)}
+            >
+              {t("helpSolutionsAskHeading")}
+            </button>
+          ) : null}
         </header>
 
-        {canAskQuestion ? (
+        <nav className="help-solutions-modes" aria-label={t("helpSolutionsHeading")}>
+          <Link
+            className={"help-solutions-mode" + (!solutionsMode ? " is-active" : "")}
+            to={categoryPath}
+            aria-current={!solutionsMode ? "page" : undefined}
+          >
+            {t("helpSolutionsAllMode")}
+          </Link>
+          <Link
+            className={"help-solutions-mode" + (solutionsMode ? " is-active" : "")}
+            to={solutionsPath}
+            aria-current={solutionsMode ? "page" : undefined}
+          >
+            {t("helpSolutionsSolutionsMode")}
+          </Link>
+        </nav>
+
+        {canAskQuestion && questionComposerOpen ? (
           <Form
+            id="help-question-create-form"
             method="post"
             className="forum-write-form help-question-create-form"
             aria-labelledby="help-question-create-heading"
@@ -1097,31 +1127,13 @@ export function HelpSolutionsView({
               </div>
             </div>
 
-            <footer className="forum-write-actions">
-              <p>{t("authoringRequiredHint")}</p>
+            <footer className="forum-write-actions help-question-create-actions">
               <button type="submit" disabled={isQuestionSubmitting}>
                 {t(isQuestionSubmitting ? "helpSolutionsAskSubmitting" : "helpSolutionsAskSubmit")}
               </button>
             </footer>
           </Form>
         ) : null}
-
-        <nav className="help-solutions-modes" aria-label={t("helpSolutionsHeading")}>
-          <Link
-            className={"help-solutions-mode" + (!solutionsMode ? " is-active" : "")}
-            to={categoryPath}
-            aria-current={!solutionsMode ? "page" : undefined}
-          >
-            {t("helpSolutionsAllMode")}
-          </Link>
-          <Link
-            className={"help-solutions-mode" + (solutionsMode ? " is-active" : "")}
-            to={solutionsPath}
-            aria-current={solutionsMode ? "page" : undefined}
-          >
-            {t("helpSolutionsSolutionsMode")}
-          </Link>
-        </nav>
 
         <section className="help-solutions-questions" aria-labelledby="help-solutions-mode-heading">
           <h2 id="help-solutions-mode-heading">{listHeading}</h2>
