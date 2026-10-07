@@ -135,18 +135,22 @@ Vico Forum находится в ранней pre-release разработке.
 - Merged PR #190 добавил режим **Solutions / Решения** поверх существующего final
   `isSolved = true`: query `?mode=solutions` фильтруется на DB boundary и использует тот же
   Q&A list presentation; default URL без query остаётся `All`.
-- Текущий bounded Q&A slice добавляет dedicated создание вопроса прямо из
+- Merged PR #191 добавил dedicated создание вопроса прямо из
   `/:locale/categories/help-solutions`. Presentation permission использует существующий
   `forum.topic.create`; compact action в category heading раскрывает форму только по явному
   действию пользователя, поэтому default Q&A view сохраняет modes/list выше authoring panel.
   POST action повторно проверяет session/origin/permission и сервер сам фиксирует destination как
   internal `help-solutions-questions`, поэтому browser не выбирает и не передаёт hidden section
   identity. Запись переиспользует существующий
-  `writer.createTopic()` transaction для topic/initial post/revisions/tags. Новая schema,
-  migrations, permissions, moderation statuses/signals, duplicates/appeals, personalization и
-  дополнительные Q&A modes в этот slice не входят. Exact-head repository CI и GitHub Pages проходят;
-  owner visual acceptance corrected authoring/list presentation подтверждён 2026-10-07. External
-  migration/Stage 6 rollout не выполняется.
+  `writer.createTopic()` transaction для topic/initial post/revisions/tags. Exact-head repository
+  CI и GitHub Pages прошли; owner visual acceptance corrected authoring/list presentation
+  подтверждён 2026-10-07. External migration/Stage 6 rollout не выполнялся.
+- Текущий bounded Q&A follow-up добавляет режим **Needs help / Нужна помощь** через
+  `?mode=open`. Он фильтрует persisted Help & solutions questions на repository/DB boundary по
+  существующему final `isSolved = false`, сохраняя `All` canonical default и существующий
+  `Solutions` по `isSolved = true`. Текущие projection, ordering, карточки, topic destinations,
+  authoring и hidden service-section boundary переиспользуются без новой schema, migrations,
+  permissions, moderation statuses, duplicate/appeal workflow, personalization или Stage 6 работы.
 - In-app reply notifications slice реализован в PR #180:
   forward migration `0024_forum_reply_notifications` хранит только stable recipient/actor/topic/post
   references, `createdAt` и nullable `readAt`; unique recipient + reply identity предотвращает

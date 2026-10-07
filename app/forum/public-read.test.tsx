@@ -208,6 +208,7 @@ const reader: ForumReader = {
   countUnreadReplyNotifications: async () => 0,
   readTopicPinState: async (id) => id === topic.id,
   readHelpSolutionsAll: async () => helpPage,
+  readHelpSolutionsOpen: async () => helpPage,
   readHelpSolutionsSolved: async () => solvedHelpPage,
   search: async (query) => query.toLowerCase().includes("type") ? [{
     id: topic.id,
@@ -380,7 +381,7 @@ describe.each([
   });
 });
 
-describe("Help & solutions All mode", () => {
+describe("Help & solutions modes and authoring", () => {
   it("renders real service-section questions and keeps the storage section out of navigation", async () => {
     const requestContext = context("en", "ltr");
     const data = await categoryLoader({
@@ -401,6 +402,8 @@ describe("Help & solutions All mode", () => {
     );
     expect(await screen.findByRole("heading", { level: 1, name: "Help & solutions" })).toBeVisible();
     expect(screen.getByText("All")).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "Needs help" }))
+      .toHaveAttribute("href", forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=open");
     expect(screen.getByRole("link", { name: "Solutions" }))
       .toHaveAttribute("href", forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=solutions");
     expect(screen.getByRole("heading", { level: 2, name: "All questions" })).toBeVisible();
@@ -483,6 +486,44 @@ describe("Help & solutions All mode", () => {
     expect(within(form).queryByText("All fields are required.")).not.toBeInTheDocument();
     expect(form.querySelector('input[name="intent"]')).toHaveValue("createHelpQuestion");
     expect(form.querySelector('[name="sectionId"]')).toBeNull();
+  });
+
+  it("shows Needs help from persisted unsolved questions and falls back unknown modes to All", async () => {
+    const requestContext = context("en", "ltr");
+    const openData = await categoryLoader({
+      request: new Request("https://forum.example/en/categories/help-solutions?mode=open"),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: requestContext,
+    });
+
+    expect(openData.kind).toBe("help-solutions");
+    if (openData.kind !== "help-solutions") throw new Error("expected Help & solutions page");
+    expect(openData.mode).toBe("open");
+    expect(openData.page.questions).toEqual([
+      expect.objectContaining({ id: helpTopic.id, isSolved: false }),
+    ]);
+
+    const openView = renderRoute(
+      CategoryRoute,
+      openData,
+      forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=open",
+      "en",
+      "ltr",
+    );
+    expect(await screen.findByRole("link", { name: "Needs help" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("heading", { level: 2, name: "Questions needing help" })).toBeVisible();
+    expect(screen.getByText("Open")).toBeVisible();
+    openView.unmount();
+
+    const unknownData = await categoryLoader({
+      request: new Request("https://forum.example/en/categories/help-solutions?mode=unknown"),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: requestContext,
+    });
+    expect(unknownData.kind).toBe("help-solutions");
+    if (unknownData.kind !== "help-solutions") throw new Error("expected Help & solutions page");
+    expect(unknownData.mode).toBe("all");
+    expect(unknownData.page.questions).toHaveLength(1);
   });
 
   it("filters Solutions mode to solved questions and keeps All as the canonical default", async () => {

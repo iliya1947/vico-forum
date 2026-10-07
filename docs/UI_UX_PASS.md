@@ -279,13 +279,15 @@ composition without changing the forum hierarchy or schema:
   questions with author, tags, reply count, solved/best-answer state and latest activity while
   question topics breadcrumb directly back to Help & solutions instead of exposing the hidden
   section. Merged PR #190 adds only `Solutions`, backed by existing final
-  `isSolved = true` and exposed as `?mode=solutions`. The current bounded follow-up adds
-  dedicated question authoring directly on Help & solutions behind a compact explicit action,
-  so the default Q&A view keeps modes and questions primary. It reuses the existing protected
-  create-topic boundary while keeping the internal service section server-fixed and hidden;
-  additional modes, moderation workflow, duplicate/appeal handling and personalization remain
-  separate bounded product work. Owner visual acceptance of the corrected compact authoring entry,
-  aligned question-list columns and restored Pages preview was confirmed on 2026-10-07;
+  `isSolved = true` and exposed as `?mode=solutions`. Merged PR #191 adds dedicated question
+  authoring directly on Help & solutions behind a compact explicit action, so the default Q&A view
+  keeps modes and questions primary. It reuses the existing protected create-topic boundary while
+  keeping the internal service section server-fixed and hidden; owner visual acceptance of the
+  corrected compact authoring entry, aligned question-list columns and restored Pages preview was
+  confirmed on 2026-10-07. The current bounded follow-up adds `Needs help / Нужна помощь` as
+  `?mode=open`, filtering persisted questions server-side by existing final `isSolved = false`
+  while reusing the same projection, ordering and cards. Moderation workflow, duplicate/appeal
+  handling, personalization and additional modes remain separate bounded product work;
 - owner visual acceptance of the implementation was confirmed on 2026-10-05; exact-head
   automated verification remains a separate PR check.
 

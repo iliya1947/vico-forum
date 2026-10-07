@@ -55,6 +55,7 @@ type PreviewVariant =
   | "route-500"
   | "search-no-results"
   | "notifications-empty"
+  | "help-solutions-open-empty"
   | "category-no-pins";
 
 interface Scenario {
@@ -86,6 +87,8 @@ export const scenarios: readonly Scenario[] = [
   { id: "tag-typescript-guest", label: "Tag · TypeScript", locale: "en", direction: "ltr", identity: "guest", path: "/en/tags/typescript", view: "tag" },
   { id: "help-solutions-all", label: "Help & solutions · All", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions", view: "category" },
   { id: "help-solutions-ask", label: "Help & solutions · Ask", locale: "en", direction: "ltr", identity: "user", path: "/en/categories/help-solutions", view: "category", allowedIdentities: ["user", "manager"] },
+  { id: "help-solutions-needs-help", label: "Help & solutions · Needs help", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=open", view: "category" },
+  { id: "help-solutions-needs-help-empty", label: "Help & solutions · Needs help · empty", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=open", view: "category", variant: "help-solutions-open-empty" },
   { id: "help-solutions-solutions", label: "Help & solutions · Solutions", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=solutions", view: "category" },
   { id: "category-guest", label: "Category", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/development", view: "category" },
   { id: "category-no-pins", label: "Category · no pins", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/development", view: "category", variant: "category-no-pins" },
@@ -1001,15 +1004,25 @@ function PreviewCategoryRoute({ scenario }: { scenario: Scenario }) {
   const { categoryId: routeCategoryId } = useParams();
   const [searchParams] = useSearchParams();
   if (routeCategoryId === HELP_SOLUTIONS_CATEGORY_ID) {
-    const mode = searchParams.get("mode") === "solutions" ? "solutions" : "all";
+    const requestedMode = searchParams.get("mode");
+    const mode = requestedMode === "open"
+      ? "open"
+      : requestedMode === "solutions"
+        ? "solutions"
+        : "all";
     const page = previewHelpSolutions(scenario.locale);
+    const filteredPage = scenario.variant === "help-solutions-open-empty" && mode === "open"
+      ? { ...page, questions: [] }
+      : mode === "open"
+        ? { ...page, questions: page.questions.filter((question) => !question.isSolved) }
+        : mode === "solutions"
+          ? { ...page, questions: page.questions.filter((question) => question.isSolved) }
+          : page;
     return (
       <HelpSolutionsView
         locale={scenario.locale}
         mode={mode}
-        page={mode === "solutions"
-          ? { ...page, questions: page.questions.filter((question) => question.isSolved) }
-          : page}
+        page={filteredPage}
         referenceTime={previewReferenceTime}
         canAskQuestion={scenario.identity !== "guest"}
       />

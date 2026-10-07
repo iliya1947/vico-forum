@@ -184,9 +184,17 @@ describe("PostgreSQL 17 locale migrations", () => {
           tags: [{ key: "typescript", name: "TypeScript" }],
         }],
       });
+      expect(await repository.readHelpSolutionsOpen()).toMatchObject({
+        questions: [{
+          id: "help-foundation-topic",
+          isSolved: false,
+          hasBestAnswer: true,
+        }],
+      });
       expect(await repository.readHelpSolutionsSolved()).toMatchObject({ questions: [] });
 
       await forum.markTopicSolved("help-foundation-topic", "help-foundation-author");
+      expect(await repository.readHelpSolutionsOpen()).toMatchObject({ questions: [] });
       expect(await repository.readHelpSolutionsSolved()).toMatchObject({
         questions: [{
           id: "help-foundation-topic",

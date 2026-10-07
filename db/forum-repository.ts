@@ -215,6 +215,7 @@ export interface ForumReader {
   countUnreadReplyNotifications(userId: string): Promise<number>;
   readTopicPinState(topicId: string): Promise<boolean>;
   readHelpSolutionsAll(): Promise<ForumHelpSolutionsPage | undefined>;
+  readHelpSolutionsOpen(): Promise<ForumHelpSolutionsPage | undefined>;
   readHelpSolutionsSolved(): Promise<ForumHelpSolutionsPage | undefined>;
   readCategory(id: string, pinnedTopicsPerSection?: number): Promise<ForumCategoryPage | undefined>;
   readSection(id: string): Promise<ForumSectionPage | undefined>;
@@ -1014,14 +1015,20 @@ export class DrizzleForumRepository {
   }
 
   async readHelpSolutionsAll(): Promise<ForumHelpSolutionsPage | undefined> {
-    return this.readHelpSolutionsPage(false);
+    return this.readHelpSolutionsPage("all");
+  }
+
+  async readHelpSolutionsOpen(): Promise<ForumHelpSolutionsPage | undefined> {
+    return this.readHelpSolutionsPage("open");
   }
 
   async readHelpSolutionsSolved(): Promise<ForumHelpSolutionsPage | undefined> {
-    return this.readHelpSolutionsPage(true);
+    return this.readHelpSolutionsPage("solved");
   }
 
-  private async readHelpSolutionsPage(solvedOnly: boolean): Promise<ForumHelpSolutionsPage | undefined> {
+  private async readHelpSolutionsPage(
+    mode: "all" | "open" | "solved",
+  ): Promise<ForumHelpSolutionsPage | undefined> {
     const [category] = await this.database
       .select({ id: forumCategories.id, name: forumCategories.name })
       .from(forumCategories)
@@ -1052,12 +1059,17 @@ export class DrizzleForumRepository {
       .innerJoin(user, eq(user.id, forumTopics.authorId))
       .leftJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
       .where(
-        solvedOnly
+        mode === "solved"
           ? and(
               eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
               eq(forumTopics.isSolved, true),
             )
-          : eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
+          : mode === "open"
+            ? and(
+                eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
+                eq(forumTopics.isSolved, false),
+              )
+            : eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
       )
       .groupBy(forumTopics.id, forumTopicTitleRevisions.id, user.name)
       .orderBy(desc(activityAt), desc(forumTopics.id));

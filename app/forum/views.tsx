@@ -1006,7 +1006,7 @@ export function HelpSolutionsView({
   actionData,
 }: {
   locale: string;
-  mode: "all" | "solutions";
+  mode: "all" | "open" | "solutions";
   page: HelpSolutionsPagePresentation;
   referenceTime: string;
   canAskQuestion?: boolean;
@@ -1019,10 +1019,25 @@ export function HelpSolutionsView({
     navigation.state === "submitting"
     && navigation.formData?.get("intent") === "createHelpQuestion";
   const categoryPath = forumCategoryPath(locale, HELP_SOLUTIONS_CATEGORY_ID);
+  const openPath = `${categoryPath}?mode=open`;
   const solutionsPath = `${categoryPath}?mode=solutions`;
+  const allMode = mode === "all";
+  const openMode = mode === "open";
   const solutionsMode = mode === "solutions";
-  const listHeading = t(solutionsMode ? "helpSolutionsSolutionsHeading" : "helpSolutionsAllHeading");
-  const emptyCopy = t(solutionsMode ? "helpSolutionsSolutionsEmpty" : "helpSolutionsEmpty");
+  const listHeading = t(
+    openMode
+      ? "helpSolutionsNeedsHelpHeading"
+      : solutionsMode
+        ? "helpSolutionsSolutionsHeading"
+        : "helpSolutionsAllHeading",
+  );
+  const emptyCopy = t(
+    openMode
+      ? "helpSolutionsNeedsHelpEmpty"
+      : solutionsMode
+        ? "helpSolutionsSolutionsEmpty"
+        : "helpSolutionsEmpty",
+  );
 
   return (
     <ForumShell locale={locale} variant="category">
@@ -1050,11 +1065,18 @@ export function HelpSolutionsView({
 
         <nav className="help-solutions-modes" aria-label={t("helpSolutionsHeading")}>
           <Link
-            className={"help-solutions-mode" + (!solutionsMode ? " is-active" : "")}
+            className={"help-solutions-mode" + (allMode ? " is-active" : "")}
             to={categoryPath}
-            aria-current={!solutionsMode ? "page" : undefined}
+            aria-current={allMode ? "page" : undefined}
           >
             {t("helpSolutionsAllMode")}
+          </Link>
+          <Link
+            className={"help-solutions-mode" + (openMode ? " is-active" : "")}
+            to={openPath}
+            aria-current={openMode ? "page" : undefined}
+          >
+            {t("helpSolutionsNeedsHelpMode")}
           </Link>
           <Link
             className={"help-solutions-mode" + (solutionsMode ? " is-active" : "")}
