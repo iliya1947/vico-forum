@@ -45,7 +45,7 @@ export async function loader({ request, params, context }: {
         const resolver = authorizationForRequest(context).forUser(session.user.id);
         [canAskQuestion, canViewAttention] = await Promise.all([
           resolver.has("forum.topic.create"),
-          resolver.has("forum.help.attention.read"),
+          resolver.has("forum.solution.manageAny"),
         ]);
       } catch (error) {
         if (!(error instanceof AuthorizationUnavailableError)) throw error;
