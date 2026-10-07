@@ -853,3 +853,10 @@ Owner browser evidence showed the Pages controller regressed to the pre-role-sel
 Confirmed root cause: `.github/workflows/ui-preview-pages.yml` matched every `chatgpt/ui-*` push, including the permanent service branch `chatgpt/ui-ux-product-pass`. Communication-file updates on that older branch therefore deployed its stale Pages artifact over the active implementation preview. The workflow now explicitly excludes `chatgpt/ui-ux-product-pass` both on PR #191 and on the service branch itself. Future communication updates cannot deploy Pages. Current implementation head will redeploy the preview from its own source; the dedicated Help & solutions route and separate role controls were verified in source before this handoff.
 
 This is a real current UI/UX tooling defect and the workflow guard is the bounded fix. Codex should include this correction in its independent review of PR #191.
+
+
+## Review comparison — PR #191 exact head 4526fec — 2026-10-07
+
+ChatGPT whole-PR review after the owner-driven visual corrections found no remaining defects in the current bounded slice. Codex independent review completed on exact head `4526fec65b17ef7c9dbc51f1c9e99b0f76e13f20` with no findings. Unresolved review threads: 0. Exact-head CI and UI preview Pages are both green, and the Pages workflow guard prevents the permanent service branch from redeploying stale preview artifacts.
+
+Technical review cycle is complete for PR #191. Remaining gate is owner visual acceptance of the corrected Help & solutions presentation in Pages; merge remains owner-only.
