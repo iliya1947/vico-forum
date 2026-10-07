@@ -1380,3 +1380,24 @@ _Source: https://github.com/iliya1947/vico-forum/pull/147#issuecomment-604616828
 - Exact-head CI и Pages deployment успешны; owner browser acceptance и независимый whole-PR review завершены без открытых findings текущего scope. [.github/ui-ux-service-channel.mdL1361-L1369](https://github.com/iliya1947/vico-forum/blob/bf0e135b8d509224a63ff3acdd285097c6baccac/.github/ui-ux-service-channel.md#L1361-L1369)
 
  [View task →](https://chatgpt.com/s/cd_6ac6a9dae5108191acf89f62edae10ab)
+
+---
+
+## Review comparison — PR #199 exact head 817e48b — 2026-10-07
+
+Implementation PR #199 final implementation head: `817e48b78f97e69545cc828b9de9d0dbe5a4f78e`.
+
+- Bounded result: authenticated `For me / Для меня` at `?mode=for-me` derives interest tags server-side only from persisted Help & solutions topics the current user authored or participated in, then selects unsolved questions from other authors sharing at least one of those tags.
+- Ranking is deterministic by matched-tag count, then existing latest activity, then stable topic-id tie-break; both distinct interest tags and returned questions are bounded to 100.
+- Guest does not see the mode and direct guest access returns 401. Client query parameters cannot replace the authoritative session identity or inject interest tags.
+- Regression coverage confirms no-signal/no-match empty states, own/solved exclusion, and exclusion of ordinary forum sections from both interest signals and candidates.
+- ChatGPT whole-PR review on the final implementation head found no remaining current-scope defects.
+- Exact-head CI run `37686149182`: successful; both `checks` and `database` completed successfully.
+- Exact-head UI preview Pages run `37686165906`: build and deploy successful.
+- Owner visual acceptance of populated/empty presentation and Guest/User/Manager identity switching was confirmed on 2026-10-07.
+- Codex manual Code Review completed on the same exact head and reported: “Didn't find any major issues.”
+- Unresolved review threads: 0.
+- No explicit interests/subscriptions, profile settings, tracking signals, opaque/AI scoring, schema/migrations, new permissions, moderation actions, notifications, authoring changes, generic forum filtering, similar-question search refinement, visual polish or Stage 6 work was introduced.
+
+Consensus: PR #199 has no known current-scope defect and is technically ready for owner merge. Merge remains owner-only.
+
