@@ -124,6 +124,16 @@ const solvedHelpPage = {
   ...helpPage,
   questions: helpPage.questions.map((question) => ({ ...question, isSolved: true })),
 };
+const needsAttentionHelpPage = {
+  ...helpPage,
+  questions: helpPage.questions.map((question) => ({
+    ...question,
+    replyCount: 0,
+    isSolved: false,
+    hasBestAnswer: false,
+    activityAt: question.createdAt,
+  })),
+};
 
 const reader: ForumReader = {
   listCategories: async () => [{ id: category.id, name: category.name, sectionCount: 1 }],
@@ -210,6 +220,7 @@ const reader: ForumReader = {
   readHelpSolutionsAll: async () => helpPage,
   readHelpSolutionsOpen: async () => helpPage,
   readHelpSolutionsActive: async () => helpPage,
+  readHelpSolutionsNeedsAttention: async () => needsAttentionHelpPage,
   readHelpSolutionsSolved: async () => solvedHelpPage,
   readHelpSolutionsMine: async () => helpPage,
   searchHelpSolutionsSimilar: async () => [],
@@ -409,6 +420,8 @@ describe("Help & solutions modes and authoring", () => {
       .toHaveAttribute("href", forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=open");
     expect(screen.getByRole("link", { name: "Active" }))
       .toHaveAttribute("href", forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=active");
+    expect(screen.getByRole("link", { name: "Needs attention" }))
+      .toHaveAttribute("href", forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=attention");
     expect(screen.getByRole("link", { name: "Solutions" }))
       .toHaveAttribute("href", forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=solutions");
     expect(screen.queryByRole("link", { name: "My questions" })).not.toBeInTheDocument();
@@ -586,6 +599,55 @@ describe("Help & solutions modes and authoring", () => {
       "ltr",
     );
     expect(await screen.findByText("There are no active questions right now.")).toBeVisible();
+  });
+
+  it("shows Needs attention for unsolved questions without replies and renders its empty state", async () => {
+    const requestContext = context("en", "ltr");
+    const data = await categoryLoader({
+      request: new Request("https://forum.example/en/categories/help-solutions?mode=attention"),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: requestContext,
+    });
+
+    expect(data.kind).toBe("help-solutions");
+    if (data.kind !== "help-solutions") throw new Error("expected Help & solutions page");
+    expect(data.mode).toBe("attention");
+    expect(data.page.questions).toEqual([
+      expect.objectContaining({ id: helpTopic.id, replyCount: 0, isSolved: false }),
+    ]);
+
+    const attentionView = renderRoute(
+      CategoryRoute,
+      data,
+      forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=attention",
+      "en",
+      "ltr",
+    );
+    expect(await screen.findByRole("link", { name: "Needs attention" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("heading", { level: 2, name: "Questions needing attention" })).toBeVisible();
+    expect(screen.getByText("0 replies")).toBeVisible();
+    attentionView.unmount();
+
+    const emptyContext = context("en", "ltr");
+    emptyContext.set(forumReaderContext, {
+      ...reader,
+      readHelpSolutionsNeedsAttention: async () => ({ ...helpPage, questions: [] }),
+    });
+    const emptyData = await categoryLoader({
+      request: new Request("https://forum.example/en/categories/help-solutions?mode=attention"),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: emptyContext,
+    });
+    if (emptyData.kind !== "help-solutions") throw new Error("expected Help & solutions page");
+
+    renderRoute(
+      CategoryRoute,
+      emptyData,
+      forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=attention",
+      "en",
+      "ltr",
+    );
+    expect(await screen.findByText("There are no questions needing attention right now.")).toBeVisible();
   });
 
   it("shows My questions only to authenticated users and binds it to the session identity", async () => {
