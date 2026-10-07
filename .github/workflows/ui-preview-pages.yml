@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - "chatgpt/ui-*"
+      - "!chatgpt/ui-ux-product-pass"
   workflow_dispatch:
 
 permissions:
