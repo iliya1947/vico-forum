@@ -634,11 +634,33 @@ export const forumTopics = pgTable(
     currentTitleRevisionId: text("current_title_revision_id").notNull(),
     isSolved: boolean("is_solved").notNull().default(false),
     bestAnswerPostId: text("best_answer_post_id"),
+    solutionModerationStatus: text("solution_moderation_status"),
+    solutionOutdatedReason: text("solution_outdated_reason"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
     index("forum_topics_section_id_idx").on(table.sectionId),
     index("forum_topics_author_id_idx").on(table.authorId),
+    check(
+      "forum_topics_solution_moderation_status_check",
+      sql`${table.solutionModerationStatus} is null or ${table.solutionModerationStatus} in ('needs-review', 'outdated')`,
+    ),
+    check(
+      "forum_topics_solution_moderation_requires_solved_check",
+      sql`${table.solutionModerationStatus} is null or ${table.isSolved}`,
+    ),
+    check(
+      "forum_topics_solution_outdated_reason_check",
+      sql`(
+        ${table.solutionModerationStatus} = 'outdated'
+        and ${table.solutionOutdatedReason} is not null
+        and btrim(${table.solutionOutdatedReason}) <> ''
+        and char_length(${table.solutionOutdatedReason}) <= 1000
+      ) or (
+        ${table.solutionModerationStatus} is distinct from 'outdated'
+        and ${table.solutionOutdatedReason} is null
+      )`,
+    ),
   ],
 );
 
