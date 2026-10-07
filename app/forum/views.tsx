@@ -1080,7 +1080,7 @@ export function HelpSolutionsView({
                       })}
                     </span>
 
-                    <span className="help-question-answer-count">
+                    <span className="help-question-reply-count">
                       {t("helpSolutionsReplyCount", { count: question.replyCount })}
                     </span>
 
