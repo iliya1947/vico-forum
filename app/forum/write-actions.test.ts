@@ -11,6 +11,7 @@ import {
   type ForumWriter,
 } from "../../db/hyperdrive-forum";
 import { forumReaderContext, forumWriterContext } from "./request-context";
+import { action as categoryAction } from "../routes/category";
 import { action as sectionAction } from "../routes/section";
 import { action as topicAction } from "../routes/topic";
 import { ForumWriteRateLimitError } from "../../db/forum-write-policy";
@@ -229,6 +230,99 @@ describe("forum write route actions", () => {
       topicId: "t",
       postId: "post-3",
     });
+  });
+
+  it("creates Help & solutions questions only in the server-fixed service section", async () => {
+    const forumWriter = writer();
+    const response = await categoryAction({
+      request: request("/he/categories/help-solutions", {
+        intent: "createHelpQuestion",
+        title: " A focused question ",
+        body: " Reproduction details ",
+        tags: " TypeScript, Cloudflare ",
+        sectionId: "attacker-section",
+        authorId: "attacker",
+      }),
+      params: { locale: "he", categoryId: "help-solutions" },
+      context: context(forumWriter, true, ["forum.topic.create"]),
+    });
+
+    expect(forumWriter.createTopic).toHaveBeenCalledWith({
+      sectionId: "help-solutions-questions",
+      authorId: "session-user",
+      title: "A focused question",
+      body: "Reproduction details",
+      tags: ["TypeScript", "Cloudflare"],
+    });
+    if (!(response instanceof Response)) throw new Error("expected redirect response");
+    expect(response.headers.get("Location")).toBe("/he/topics/server-topic");
+  });
+
+  it("guards Help question authoring before writing", async () => {
+    const guest = writer();
+    const guestResponse = await categoryAction({
+      request: request("/en/categories/help-solutions", {
+        intent: "createHelpQuestion",
+        title: "Question",
+        body: "Details",
+      }),
+      params: { locale: "en", categoryId: "help-solutions" },
+      context: context(guest, false, ["forum.topic.create"]),
+    });
+    expect(guestResponse).toMatchObject({ init: { status: 401 } });
+    expect(guest.createTopic).not.toHaveBeenCalled();
+
+    const denied = writer();
+    const deniedResponse = await categoryAction({
+      request: request("/en/categories/help-solutions", {
+        intent: "createHelpQuestion",
+        title: "Question",
+        body: "Details",
+      }),
+      params: { locale: "en", categoryId: "help-solutions" },
+      context: context(denied, true, ["forum.reply.create"]),
+    });
+    expect(deniedResponse).toMatchObject({ data: { error: "forbidden" }, init: { status: 403 } });
+    expect(denied.createTopic).not.toHaveBeenCalled();
+
+    const crossOrigin = writer();
+    const originResponse = await categoryAction({
+      request: request("/en/categories/help-solutions", {
+        intent: "createHelpQuestion",
+        title: "Question",
+        body: "Details",
+      }, "https://evil.example"),
+      params: { locale: "en", categoryId: "help-solutions" },
+      context: context(crossOrigin, true, ["forum.topic.create"]),
+    });
+    expect(originResponse).toMatchObject({ init: { status: 403 } });
+    expect(crossOrigin.createTopic).not.toHaveBeenCalled();
+
+    const invalid = writer();
+    const invalidResponse = await categoryAction({
+      request: request("/en/categories/help-solutions", {
+        intent: "createHelpQuestion",
+        title: "   ",
+        body: "Details",
+      }),
+      params: { locale: "en", categoryId: "help-solutions" },
+      context: context(invalid, true, ["forum.topic.create"]),
+    });
+    expect(invalidResponse).toMatchObject({ init: { status: 400 } });
+    expect(invalid.createTopic).not.toHaveBeenCalled();
+
+    const wrongCategory = writer();
+    const wrongCategoryResponse = await categoryAction({
+      request: request("/en/categories/development", {
+        intent: "createHelpQuestion",
+        title: "Question",
+        body: "Details",
+      }),
+      params: { locale: "en", categoryId: "development" },
+      context: context(wrongCategory, true, ["forum.topic.create"]),
+    });
+    expect(wrongCategoryResponse).toMatchObject({ data: { error: "notFound" }, init: { status: 404 } });
+    expect(wrongCategory.createTopic).not.toHaveBeenCalled();
   });
 
   it("does not expose the Help & solutions service section through the generic create-topic action", async () => {

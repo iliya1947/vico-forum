@@ -1,8 +1,14 @@
-import { useLoaderData, type RouterContextProvider } from "react-router";
+import { useActionData, useLoaderData, type RouterContextProvider } from "react-router";
+import { authSessionForRequest } from "../auth/request-context";
+import { authorizationForRequest } from "../authorization/request-context";
+import { AuthorizationUnavailableError } from "../../db/authorization-service";
 import { forumReaderForRequest } from "../forum/request-context";
+import type { ForumMutationError } from "../forum/mutations.server";
 import { ForumRouteError } from "../forum/ui";
 import { HELP_SOLUTIONS_CATEGORY_ID } from "../../db/forum-identifiers";
 import { CategoryView, HelpSolutionsView } from "../forum/views";
+
+export { helpSolutionsCategoryAction as action } from "../forum/actions.server";
 
 export async function loader({ request, params, context }: {
   request?: Request;
@@ -22,10 +28,23 @@ export async function loader({ request, params, context }: {
       ? await reader.readHelpSolutionsSolved()
       : await reader.readHelpSolutionsAll();
     if (!helpSolutions) throw new Response("Not Found", { status: 404 });
+    const session = authSessionForRequest(context);
+    let canAskQuestion = false;
+    if (session) {
+      try {
+        canAskQuestion = await authorizationForRequest(context)
+          .forUser(session.user.id)
+          .has("forum.topic.create");
+      } catch (error) {
+        if (!(error instanceof AuthorizationUnavailableError)) throw error;
+        // Public Q&A reading remains available when optional presentation authorization is unavailable.
+      }
+    }
     return {
       kind: "help-solutions" as const,
       locale,
       mode,
+      canAskQuestion,
       referenceTime,
       page: {
         ...helpSolutions,
@@ -64,8 +83,18 @@ export async function loader({ request, params, context }: {
 
 export default function CategoryRoute() {
   const data = useLoaderData<typeof loader>();
+  const actionData = useActionData<ForumMutationError>();
   if (data.kind === "help-solutions") {
-    return <HelpSolutionsView locale={data.locale} mode={data.mode} page={data.page} referenceTime={data.referenceTime} />;
+    return (
+      <HelpSolutionsView
+        locale={data.locale}
+        mode={data.mode}
+        page={data.page}
+        referenceTime={data.referenceTime}
+        canAskQuestion={data.canAskQuestion}
+        actionData={actionData}
+      />
+    );
   }
   return <CategoryView locale={data.locale} category={data.category} referenceTime={data.referenceTime} />;
 }

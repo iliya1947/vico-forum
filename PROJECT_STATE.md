@@ -44,8 +44,10 @@ Vico Forum находится в ранней pre-release разработке.
   показывается без искусственной светлой внешней подложки/рамки, чтобы визуальные границы страницы
   не искажались. Текущий correction branch
   дополнительно cache-bust-ит embedded iframe по hash текущего preview bundle, чтобы новый Pages
-  deploy не мог оставить iframe на stale HTML со ссылкой на удалённый hashed asset. Это не
-  заменяет будущую real-runtime acceptance.
+  deploy не мог оставить iframe на stale HTML со ссылкой на удалённый hashed asset. Pages workflow
+  явно исключает общий service branch `chatgpt/ui-ux-product-pass`, чтобы технические updates
+  communication-файла не могли перезаписать visual preview артефактом из отставшей служебной ветки.
+  Это не заменяет будущую real-runtime acceptance.
 - В текущем UI/UX slice реализованы и repository-CI/Pages-проверены semantic visual tokens,
   Light/Dark с first-use `prefers-color-scheme` и persisted manual choice, two-zone shell/header,
   approved shell/homepage foundation и общая локализованная страница `Under development`.
@@ -130,11 +132,20 @@ Vico Forum находится в ранней pre-release разработке.
   (`replies`) после original question, independent solved/best-answer state и latest activity.
   Generic category UI для reserved category заменён специальным public Q&A list view; topic
   breadcrumb больше не ведёт на скрытый service-section route.
-- Текущий bounded Q&A slice добавляет только режим **Solutions / Решения** поверх уже существующего
-  final `isSolved = true`: query `?mode=solutions` фильтруется на DB boundary и использует тот же
-  Q&A list presentation; default URL без query остаётся `All`. Новая schema, statuses,
-  permissions, authoring, moderation signals, duplicates/appeals, personalization и остальные
-  Q&A modes в этот slice не входят. CI/Pages/owner acceptance ещё не утверждаются; external
+- Merged PR #190 добавил режим **Solutions / Решения** поверх существующего final
+  `isSolved = true`: query `?mode=solutions` фильтруется на DB boundary и использует тот же
+  Q&A list presentation; default URL без query остаётся `All`.
+- Текущий bounded Q&A slice добавляет dedicated создание вопроса прямо из
+  `/:locale/categories/help-solutions`. Presentation permission использует существующий
+  `forum.topic.create`; compact action в category heading раскрывает форму только по явному
+  действию пользователя, поэтому default Q&A view сохраняет modes/list выше authoring panel.
+  POST action повторно проверяет session/origin/permission и сервер сам фиксирует destination как
+  internal `help-solutions-questions`, поэтому browser не выбирает и не передаёт hidden section
+  identity. Запись переиспользует существующий
+  `writer.createTopic()` transaction для topic/initial post/revisions/tags. Новая schema,
+  migrations, permissions, moderation statuses/signals, duplicates/appeals, personalization и
+  дополнительные Q&A modes в этот slice не входят. Exact-head repository CI и GitHub Pages проходят;
+  owner visual acceptance corrected authoring/list presentation подтверждён 2026-10-07. External
   migration/Stage 6 rollout не выполняется.
 - In-app reply notifications slice реализован в PR #180:
   forward migration `0024_forum_reply_notifications` хранит только stable recipient/actor/topic/post
