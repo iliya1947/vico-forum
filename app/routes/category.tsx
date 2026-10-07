@@ -3,7 +3,7 @@ import { authSessionForRequest } from "../auth/request-context";
 import { authorizationForRequest } from "../authorization/request-context";
 import { AuthorizationUnavailableError } from "../../db/authorization-service";
 import { forumReaderForRequest } from "../forum/request-context";
-import type { ForumMutationError } from "../forum/mutations.server";
+import type { HelpQuestionActionData } from "../forum/help-question-action";
 import { ForumRouteError } from "../forum/ui";
 import { HELP_SOLUTIONS_CATEGORY_ID } from "../../db/forum-identifiers";
 import { CategoryView, HelpSolutionsView } from "../forum/views";
@@ -88,7 +88,7 @@ export async function loader({ request, params, context }: {
 
 export default function CategoryRoute() {
   const data = useLoaderData<typeof loader>();
-  const actionData = useActionData<ForumMutationError>();
+  const actionData = useActionData<HelpQuestionActionData>();
   if (data.kind === "help-solutions") {
     return (
       <HelpSolutionsView
