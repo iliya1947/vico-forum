@@ -97,7 +97,7 @@ export async function loader({ params, context }: {
       canCorrectAnySourceLocale = sourceAny;
       canGenerateTranslations = generate && contentGenerationActionForRequest(context).enabled;
       canManagePin = pin;
-      canUseAdminPanel = solutionAny || duplicateManage || sourceAny || pin;
+      canUseAdminPanel = solutionAny || canManageHelpDuplicate || sourceAny || pin;
       correctablePostIds = sourceAny
         ? topic.posts.map((post) => post.id)
         : sourceOwn
