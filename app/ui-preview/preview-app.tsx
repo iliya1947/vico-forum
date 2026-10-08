@@ -319,8 +319,6 @@ const topic = {
   isPinned: true,
   isSolved: true,
   bestAnswerPostId: "answer",
-  solutionModerationStatus: null,
-  solutionOutdatedReason: null,
   title: section.topics[0]!.title,
   section: {
     id: sectionId,
@@ -335,6 +333,9 @@ const topic = {
       authorId: "alex",
       authorName: "Alex Rivera",
       parentPostId: null,
+      solutionModerationStatus: null,
+      solutionOutdatedReason: null,
+      solutionOutdatedReasonKind: null,
       createdAt: new Date("2026-09-27T10:00:00Z"),
       body: {
         id: "post-r1",
@@ -348,6 +349,9 @@ const topic = {
       authorId: "maya",
       authorName: "Maya Cohen",
       parentPostId: "question",
+      solutionModerationStatus: null,
+      solutionOutdatedReason: null,
+      solutionOutdatedReasonKind: null,
       createdAt: new Date("2026-09-27T11:00:00Z"),
       body: {
         id: "post-r3",
@@ -361,6 +365,9 @@ const topic = {
       authorId: "sam",
       authorName: "Sam Chen",
       parentPostId: "followup",
+      solutionModerationStatus: null,
+      solutionOutdatedReason: null,
+      solutionOutdatedReasonKind: null,
       createdAt: new Date("2026-09-27T12:00:00Z"),
       body: {
         id: "post-r2",
@@ -554,13 +561,13 @@ function previewHelpSolutions(locale: PreviewLocale) {
     questions: [
       {
         id: "help-worker-session", title: titles[0]!, authorName: "Alex Rivera", replyCount: 0,
-        isSolved: false, hasBestAnswer: false, solutionModerationStatus: null, solutionOutdatedReason: null, createdAt: "2026-09-30T11:30:00.000Z",
+        isSolved: false, hasBestAnswer: false, solutionModerationStatus: null, solutionOutdatedReason: null, solutionOutdatedReasonKind: null, createdAt: "2026-09-30T11:30:00.000Z",
         activityAt: "2026-09-30T15:40:00.000Z",
         tags: [{ key: "cloudflare", name: "Cloudflare" }, { key: "auth", name: "Auth" }],
       },
       {
         id: "help-auth-best-answer", title: titles[1]!, authorName: "Noa Levi", replyCount: 3,
-        isSolved: false, hasBestAnswer: true, solutionModerationStatus: null, solutionOutdatedReason: null, createdAt: "2026-09-29T09:00:00.000Z",
+        isSolved: false, hasBestAnswer: true, solutionModerationStatus: null, solutionOutdatedReason: null, solutionOutdatedReasonKind: null, createdAt: "2026-09-29T09:00:00.000Z",
         activityAt: "2026-09-30T14:20:00.000Z",
         tags: [{ key: "better-auth", name: "Better Auth" }, { key: "workers", name: "Workers" }],
       },
@@ -572,20 +579,21 @@ function previewHelpSolutions(locale: PreviewLocale) {
           : russian
             ? "В новой версии PostgreSQL поведение этой настройки изменилось."
             : "A newer PostgreSQL version changed the behavior of this setting.",
+        solutionOutdatedReasonKind: null,
         createdAt: "2026-09-27T08:00:00.000Z",
         activityAt: "2026-09-29T18:10:00.000Z",
         tags: [{ key: "postgresql", name: "PostgreSQL" }, { key: "neon", name: "Neon" }],
       },
       {
         id: "help-cloudflare-cache", title: titles[3]!, authorName: "Sam Chen", replyCount: 4,
-        isSolved: true, hasBestAnswer: true, solutionModerationStatus: null, solutionOutdatedReason: null,
+        isSolved: true, hasBestAnswer: true, solutionModerationStatus: null, solutionOutdatedReason: null, solutionOutdatedReasonKind: null,
         createdAt: "2026-09-26T09:15:00.000Z",
         activityAt: "2026-09-29T15:30:00.000Z",
         tags: [{ key: "cloudflare", name: "Cloudflare" }, { key: "cache", name: "Cache" }],
       },
       {
         id: "help-neon-pooling", title: titles[4]!, authorName: "Alex Rivera", replyCount: 2,
-        isSolved: true, hasBestAnswer: true, solutionModerationStatus: "needs-review" as const, solutionOutdatedReason: null,
+        isSolved: true, hasBestAnswer: true, solutionModerationStatus: "needs-review" as const, solutionOutdatedReason: null, solutionOutdatedReasonKind: null,
         createdAt: "2026-09-25T12:20:00.000Z",
         activityAt: "2026-09-28T17:45:00.000Z",
         tags: [{ key: "neon", name: "Neon" }, { key: "postgresql", name: "PostgreSQL" }],
@@ -1269,29 +1277,39 @@ function PreviewTopicRoute({ scenario }: { scenario: Scenario }) {
     .find((question) => question.id === routeTopicId);
   if (helpQuestion) {
     const postCount = helpQuestion.replyCount + 1;
-    const posts = Array.from({ length: postCount }, (_, index) => ({
-      id: `${helpQuestion.id}-post-${index + 1}`,
-      topicId: helpQuestion.id,
-      authorId: index === 0 ? "help-author" : `help-replier-${index}`,
-      authorName: index === 0 ? helpQuestion.authorName : ["Sam Chen", "Maya Cohen", "Noa Levi"][index % 3]!,
-      parentPostId: index === 0 ? null : `${helpQuestion.id}-post-1`,
-      createdAt: new Date(`2026-09-${28 + Math.min(index, 2)}T${10 + index}:00:00Z`),
-      body: {
-        id: `${helpQuestion.id}-body-${index + 1}`,
-        originalContent: index === 0
-          ? scenario.locale === "ru"
-            ? "Представительный технический вопрос из категории «Помощь и решения»."
-            : scenario.locale === "he"
-              ? "שאלה טכנית מייצגת מקטגוריית עזרה ופתרונות."
-              : "Representative technical question from Help & solutions."
-          : scenario.locale === "ru"
-            ? `Представительный ответ №${index}.`
-            : scenario.locale === "he"
-              ? `תשובה מייצגת מספר ${index}.`
-              : `Representative answer #${index}.`,
-        sourceLocale: scenario.locale,
-      },
-    }));
+    const bestAnswerPostId = helpQuestion.hasBestAnswer && postCount > 1
+      ? `${helpQuestion.id}-post-${Math.min(5, postCount)}`
+      : null;
+    const posts = Array.from({ length: postCount }, (_, index) => {
+      const id = `${helpQuestion.id}-post-${index + 1}`;
+      const isBestAnswer = id === bestAnswerPostId;
+      return {
+        id,
+        topicId: helpQuestion.id,
+        authorId: index === 0 ? "help-author" : `help-replier-${index}`,
+        authorName: index === 0 ? helpQuestion.authorName : ["Sam Chen", "Maya Cohen", "Noa Levi"][index % 3]!,
+        parentPostId: index === 0 ? null : `${helpQuestion.id}-post-1`,
+        solutionModerationStatus: isBestAnswer ? helpQuestion.solutionModerationStatus : null,
+        solutionOutdatedReason: isBestAnswer ? helpQuestion.solutionOutdatedReason : null,
+        solutionOutdatedReasonKind: isBestAnswer ? helpQuestion.solutionOutdatedReasonKind : null,
+        createdAt: new Date(`2026-09-${28 + Math.min(index, 2)}T${10 + index}:00:00Z`),
+        body: {
+          id: `${helpQuestion.id}-body-${index + 1}`,
+          originalContent: index === 0
+            ? scenario.locale === "ru"
+              ? "Представительный технический вопрос из категории «Помощь и решения»."
+              : scenario.locale === "he"
+                ? "שאלה טכנית מייצגת מקטגוריית עזרה ופתרונות."
+                : "Representative technical question from Help & solutions."
+            : scenario.locale === "ru"
+              ? `Представительный ответ №${index}.`
+              : scenario.locale === "he"
+                ? `תשובה מייצגת מספר ${index}.`
+                : `Representative answer #${index}.`,
+          sourceLocale: scenario.locale,
+        },
+      };
+    });
     const helpTopic = {
       id: helpQuestion.id,
       sectionId: HELP_SOLUTIONS_SERVICE_SECTION_ID,
@@ -1300,11 +1318,7 @@ function PreviewTopicRoute({ scenario }: { scenario: Scenario }) {
       createdAt: new Date(helpQuestion.createdAt),
       isPinned: false,
       isSolved: helpQuestion.isSolved,
-      bestAnswerPostId: helpQuestion.hasBestAnswer && posts.length > 1
-        ? posts[Math.min(4, posts.length - 1)]!.id
-        : null,
-      solutionModerationStatus: helpQuestion.solutionModerationStatus,
-      solutionOutdatedReason: helpQuestion.solutionOutdatedReason,
+      bestAnswerPostId,
       title: {
         id: `${helpQuestion.id}-title`,
         originalContent: helpQuestion.title,
@@ -1431,8 +1445,6 @@ function PreviewTopicRoute({ scenario }: { scenario: Scenario }) {
     isPinned: matched.topic.isPinned,
     isSolved: false,
     bestAnswerPostId: null,
-    solutionModerationStatus: null,
-    solutionOutdatedReason: null,
     title: matched.topic.title,
     section: {
       id: matched.section.id,
