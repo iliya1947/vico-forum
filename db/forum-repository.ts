@@ -443,10 +443,22 @@ export class DrizzleForumRepository {
 
   async createPost(input: CreatePostInput): Promise<ForumPost> {
     return this.database.transaction(async (tx) => {
-      const createdAt = await enforceForumWriteCooldown(tx, input.authorId, this.writePolicy);
       const [topic] = await tx.select({ id: forumTopics.id, authorId: forumTopics.authorId }).from(forumTopics)
-        .where(eq(forumTopics.id, input.topicId));
+        .where(eq(forumTopics.id, input.topicId))
+        .for("update");
       if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
+      const [activeDuplicate] = await tx
+        .select({ id: forumHelpDuplicateRelationships.id })
+        .from(forumHelpDuplicateRelationships)
+        .where(and(
+          eq(forumHelpDuplicateRelationships.duplicateTopicId, input.topicId),
+          isNull(forumHelpDuplicateRelationships.removedAt),
+        ))
+        .limit(1);
+      if (activeDuplicate) {
+        throw new ForumStateConflictError("a confirmed duplicate cannot receive new replies");
+      }
+      const createdAt = await enforceForumWriteCooldown(tx, input.authorId, this.writePolicy);
       const parentPostId = input.parentPostId ?? null;
       let parentAuthorId: string | null = null;
       if (parentPostId) {
