@@ -1004,11 +1004,12 @@
           "primaryKey": false,
           "notNull": false
         },
-        "help_question_quality": {
-          "name": "help_question_quality",
-          "type": "text",
+        "needs_details": {
+          "name": "needs_details",
+          "type": "boolean",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true,
+          "default": false
         },
         "created_at": {
           "name": "created_at",
@@ -1081,12 +1082,7 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "checkConstraints": {
-        "forum_topics_help_question_quality_check": {
-          "name": "forum_topics_help_question_quality_check",
-          "value": "(\n        \"forum_topics\".\"section_id\" = 'help-solutions-questions'\n        and \"forum_topics\".\"help_question_quality\" is not null\n        and \"forum_topics\".\"help_question_quality\" in ('normal', 'needs-details')\n      ) or (\n        \"forum_topics\".\"section_id\" <> 'help-solutions-questions'\n        and \"forum_topics\".\"help_question_quality\" is null\n      )"
-        }
-      },
+      "checkConstraints": {},
       "isRLSEnabled": false
     },
     "public.locales": {
