@@ -1331,12 +1331,15 @@ function PreviewTopicRoute({ scenario }: { scenario: Scenario }) {
         ))}
         generationUnits={[]}
         canReply={scenario.identity !== "guest"}
-        canManageSolution={false}
-        canModerateHelpSolution={scenario.identity === "manager" && helpQuestion.isSolved}
+        canManageSolution={scenario.identity === "manager"}
+        canManageAnySolution={scenario.identity === "manager"}
+        canModerateHelpSolution={scenario.identity === "manager"}
         isTopicAuthor={false}
-        canCorrectTitleSourceLocale={false}
-        canManagePin={false}
-        correctablePostIds={[]}
+        canCorrectTitleSourceLocale={scenario.identity === "manager"}
+        canCorrectAnySourceLocale={scenario.identity === "manager"}
+        canManagePin={scenario.identity === "manager"}
+        canUseAdminPanel={scenario.identity === "manager"}
+        correctablePostIds={scenario.identity === "manager" ? posts.map((post) => post.id) : []}
         topicReadState={null}
       />
     );
@@ -1465,10 +1468,14 @@ function PreviewTopicRoute({ scenario }: { scenario: Scenario }) {
       )}
       generationUnits={[]}
       canReply={scenario.identity !== "guest"}
-      canManageSolution={false}
-      canCorrectTitleSourceLocale={false}
+      canManageSolution={scenario.identity === "manager"}
+      canManageAnySolution={scenario.identity === "manager"}
+      canModerateHelpSolution={false}
+      canCorrectTitleSourceLocale={scenario.identity === "manager"}
+      canCorrectAnySourceLocale={scenario.identity === "manager"}
       canManagePin={scenario.identity === "manager"}
-      correctablePostIds={[]}
+      canUseAdminPanel={scenario.identity === "manager"}
+      correctablePostIds={scenario.identity === "manager" ? posts.map((post) => post.id) : []}
       topicReadState={null}
     />
   );
@@ -1649,10 +1656,13 @@ function topicData(
       : [],
     canReply: identity !== "guest",
     canManageSolution: showSecondaryControls || solutionAuthor,
+    canManageAnySolution: identity === "manager",
     canModerateHelpSolution: false,
     isTopicAuthor: solutionAuthor,
     canCorrectTitleSourceLocale: showSecondaryControls,
+    canCorrectAnySourceLocale: identity === "manager",
     canManagePin: identity === "manager",
+    canUseAdminPanel: identity === "manager",
     correctablePostIds: showSecondaryControls
       ? translatedTopic.posts.map((post) => post.id)
       : [],
