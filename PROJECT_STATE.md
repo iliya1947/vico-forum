@@ -45,7 +45,7 @@ Vico Forum находится в ранней pre-release разработке.
   не искажались. Текущий correction branch
   дополнительно cache-bust-ит embedded iframe по hash текущего preview bundle, чтобы новый Pages
   deploy не мог оставить iframe на stale HTML со ссылкой на удалённый hashed asset. Pages workflow
-  настроен на push в `main` и все implementation-ветки `chatgpt/**`, при этом общий service
+  настроен на push в `main` и implementation-ветки `chatgpt/*`, при этом общий service
   branch `chatgpt/ui-ux-product-pass` явно исключён, чтобы технические updates communication-файла
   не могли перезаписать visual preview артефактом из отставшей служебной ветки. Deploy остаётся на
   существующем protected `github-pages` environment; его repository deployment-branch policy
