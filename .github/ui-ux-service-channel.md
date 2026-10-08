@@ -2542,3 +2542,37 @@ CI run `37841539470` on exact head `fa2a0068c73366128b89e885f1b9b35acd0ccc4d` co
 This was a current-scope repository metadata defect and is now closed.
 
 Codex was asked twice for a plain diagnostic reply; the connector instead triggered service-PR Code Review and did not provide the requested technical diagnosis. The exact generated parity SQL from CI independently established the cause above.
+
+
+---
+
+## Deferred product question — related solved questions — 2026-10-08
+
+Owner decision is intentionally deferred.
+
+### Problem
+
+A Help question can later turn out to describe the same underlying problem as another question **after it has already received its own answer and that answer solved the user's case**.
+
+The owner explicitly does **not** want such a topic to be treated as an ordinary duplicate:
+
+- a solved question with its own useful answer is valuable independent content;
+- calling it a duplicate would incorrectly subordinate it to another topic;
+- nevertheless, if several solved questions represent the same underlying problem, the forum should eventually provide some way to relate or group them.
+
+### Open product question
+
+Define the future product model for multiple independently useful solved questions that represent the same underlying problem.
+
+Possible directions may include a peer relation, grouping, "same problem" relation, or another model, but **no solution is approved yet** and implementation must not assume one.
+
+### Current boundary
+
+For current Help & solutions step 3 / PR #205:
+
+- this deferred question is **not** part of the implementation scope;
+- a question that already has its own selected best answer / solved state must not be confirmable as an ordinary duplicate;
+- an active confirmed duplicate must not gain its own solved state or best answer until the duplicate relationship is removed;
+- do not introduce a new grouping/relation entity in PR #205 to anticipate the deferred decision.
+
+Revisit this product question later with the owner before implementing any solved-question relationship model.
