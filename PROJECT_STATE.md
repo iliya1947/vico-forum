@@ -202,8 +202,10 @@ Vico Forum находится в ранней pre-release разработке.
   уже решённых вопросов внутреннего `help-solutions-questions`, а `outdated` требует непустую
   persisted причину длиной до 1000 символов. Protected mutations повторно проверяют существующую
   effective capability `forum.solution.manageAny`; новая permission не вводится. Public Help
-  cards/topic показывают persisted marker, topic показывает outdated explanation, а management
-  controls доступны только при server-resolved `manageAny`. User signals, quality
+  cards показывают persisted marker, а на topic page marker и persisted outdated explanation
+  визуально относятся к выбранному best answer. Manager-only moderation controls доступны только
+  при server-resolved `manageAny` и вынесены в отдельный admin slot над topic heading, а не в
+  обычные topic tools. User signals, quality
   `needs-details`, duplicate/appeal workflow, расширение `Needs attention` и комбинируемые
   фильтры остаются следующими отдельными шагами; external migration/Stage 6 rollout не выполняется.
 - In-app reply notifications slice реализован в PR #180:
