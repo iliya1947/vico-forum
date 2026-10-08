@@ -1999,3 +1999,33 @@ All four earlier inline review threads were replied to with their final classifi
 
 Conclusion: PR #200 has no remaining confirmed defect in the current bounded scope and is ready for owner merge.
 
+---
+
+## Help & solutions step 2 scope — Question quality — 2026-10-08
+
+PR #200 is merged. Per the fixed six-step sequence, the next bounded implementation slice is step 2: **Question quality**.
+
+Current-scope interpretation from the agreed sequence and current `main`:
+
+- add a persisted Help-question quality axis with authoritative values `normal | needs-details`;
+- quality belongs to the question/topic, not to an answer post;
+- existing Help questions are backfilled to explicit `normal`;
+- newly created Help questions persist explicit `normal`;
+- generic forum topics are not given Help-specific semantics;
+- repository/read models project the persisted quality so later steps can consume it;
+- representative UI/Pages may expose the persisted `needs-details` state if needed to verify the projection, but this step does not add broader filtering or attention behavior.
+
+Explicitly excluded from step 2 because the fixed sequence places them later:
+
+- user moderation signals — step 4;
+- moderator confirmation/rejection workflow for user-submitted signals — step 4;
+- expanding `Needs attention` using quality — step 5;
+- combined quality filters — step 6;
+- duplicate workflow — step 3;
+- additional admin-panel redesign/polish;
+- similar-question refinement, drafts/autosave, unrelated forum work.
+
+No new executable permission is required for this persistence/projection-only step. If a later moderation mutation is introduced in step 4, its permission boundary must be designed then against the authorization source of truth rather than prematurely coupling this schema foundation to a permission choice.
+
+Implementation should use the smallest schema shape consistent with Help-only semantics and explicit persisted `normal`, with DB constraints/backfill/new-topic behavior and focused regression coverage. If implementation reveals a concrete dependency contradiction, reopen only that dependency rather than the fixed sequence.
+
