@@ -323,10 +323,14 @@ composition without changing the forum hierarchy or schema:
   bounded product work. Owner visual acceptance of populated/empty Pages states and
   Guest/User/Manager identity switching was confirmed on 2026-10-07. PR #200 adds
   the first fixed moderation/filter completion step without changing solved semantics:
-  `needs-review` and `outdated` are persisted markers on already-solved Help questions,
-  `outdated` always carries a persisted explanation, public cards surface the marker, and topic
-  pages keep the moderation marker beside the selected best-answer label and place any persisted
-  outdated explanation at the bottom of that answer message. Topic title/tags and the original
+  `needs-review` and `outdated` are persisted on the concrete answer post rather than on the
+  Help topic. Manual moderation targets the current selected best answer; manual `outdated`
+  carries a persisted explanation, while replacing the selected best answer atomically marks the
+  previous one `outdated` with the localized system reason “A new best answer was selected.” and
+  clears moderation state on the newly selected answer. Public cards surface only the current best
+  answer marker; topic pages retain marker/explanation on the concrete answer, including a replaced
+  historical best answer, with any outdated explanation at the bottom of that message. Topic
+  title/tags and the original
   question are presented as one message card, while a later-numbered selected answer is still
   promoted directly after it without renumbering. The breadcrumb row exposes a general
   `Admin panel` for actors with existing moderator-level capabilities
