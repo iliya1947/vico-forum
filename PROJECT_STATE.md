@@ -232,9 +232,19 @@ Vico Forum находится в ранней pre-release разработке.
   `status = NULL + reason != NULL + reason_kind = NULL`. Help Pages fixtures
   выбирают best answer с более поздним исходным номером и визуально проверяют его promotion сразу
   под original question.
-  User signals, quality
-  `needs-details`, duplicate/appeal workflow, расширение `Needs attention` и комбинируемые
+  User signals, duplicate/appeal workflow, расширение `Needs attention` и комбинируемые
   фильтры остаются следующими отдельными шагами; external migration/Stage 6 rollout не выполняется.
+- PR #204 реализует второй шаг зафиксированной Help & solutions moderation/filter sequence:
+  migration `0029_help_question_quality` добавляет persisted Help-only качество вопроса
+  `normal | needs-details` на `forum_topics`. Existing Help questions backfill в explicit
+  `normal`; runtime creation также записывает `normal` для внутреннего
+  `help-solutions-questions`, а generic forum topics сохраняют `NULL`. DB CHECK не допускает
+  Help-вопрос без quality, неизвестные quality values или Help-specific quality на обычной теме.
+  Help list projections и topic-page read model возвращают persisted quality для последующих
+  workflow/filter steps. В этот slice не входят user signals/moderator confirmation (step 4),
+  расширение `Needs attention` (step 5), combined filters (step 6), duplicate workflow (step 3),
+  новая permission/mutation, admin-panel redesign, similar-search refinement или drafts/autosave.
+  CI/Pages/final independent review ещё не зафиксированы.
 - In-app reply notifications slice реализован в PR #180:
   forward migration `0024_forum_reply_notifications` хранит только stable recipient/actor/topic/post
   references, `createdAt` и nullable `readAt`; unique recipient + reply identity предотвращает
