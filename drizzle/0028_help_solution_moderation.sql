@@ -16,7 +16,7 @@ ALTER TABLE "forum_posts" ADD CONSTRAINT "forum_posts_solution_outdated_reason_c
       "solution_moderation_status" = 'outdated'
       and (
         (
-          "solution_outdated_reason_kind" = 'best-answer-replaced'
+          "solution_outdated_reason_kind" is not distinct from 'best-answer-replaced'
           and "solution_outdated_reason" is null
         )
         or (
