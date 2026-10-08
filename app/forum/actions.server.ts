@@ -252,8 +252,11 @@ export async function topicAction({ request, params, context }: {
     const forbidden = await requireForumPermission(context, "forum.solution.manageAny");
     if (forbidden) return forbidden;
     const outdatedReason = intent === "markSolutionOutdated"
-      ? requiredFormText(formData, "outdatedReason") ?? null
-      : null;
+      ? requiredFormText(formData, "outdatedReason")
+      : undefined;
+    if (intent === "markSolutionOutdated" && !outdatedReason) {
+      return mutationFailure("invalid", 400);
+    }
     return runForumMutation(request, context, async (writer) => {
       await writer.setHelpSolutionModeration({
         topicId,
@@ -262,7 +265,7 @@ export async function topicAction({ request, params, context }: {
           : intent === "markSolutionOutdated"
             ? "outdated"
             : null,
-        outdatedReason,
+        outdatedReason: outdatedReason ?? null,
       });
       return redirect(forumTopicPath(locale, topicId));
     });
