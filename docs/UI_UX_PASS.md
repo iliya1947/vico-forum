@@ -325,11 +325,14 @@ composition without changing the forum hierarchy or schema:
   the first fixed moderation/filter completion step without changing solved semantics:
   `needs-review` and `outdated` are persisted markers on already-solved Help questions,
   `outdated` always carries a persisted explanation, public cards surface the marker, and topic
-  pages attach the marker/explanation to the selected best answer rather than to the question
-  heading. Only server-resolved `forum.solution.manageAny` receives the dedicated solution-
-  moderation admin slot above the topic heading; ordinary topic tools stay separate. Pages
-  fixtures expose multiple solved Help questions across current/needs-review/outdated states and
-  allow Guest/User/Manager identity switching for public-vs-manager presentation. User signals,
+  pages keep the moderation marker beside the selected best-answer label and place any persisted
+  outdated explanation below that answer body rather than on the question heading. Only server-
+  resolved `forum.solution.manageAny` receives the dedicated solution-moderation control in the
+  inline-end side of the breadcrumb row; ordinary topic tools stay separate. Pages fixtures expose
+  multiple solved Help questions across current/needs-review/outdated states, allow Guest/User/
+  Manager identity switching, and select a later-numbered best answer so its promotion directly
+  below the original question is visibly exercised while its permanent message number is retained.
+  User signals,
   `needs-details`, duplicates/appeals, broader Needs attention logic and
   combined filters remain later fixed-sequence steps;
 - owner visual acceptance of the implementation was confirmed on 2026-10-05; exact-head
