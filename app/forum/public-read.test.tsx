@@ -1396,7 +1396,7 @@ describe("Help & solutions modes and authoring", () => {
       readHelpSolutionsSolved: async () => reviewPage,
     });
     const guestData = await categoryLoader({
-      request: new Request("https://forum.example/en/categories/help-solutions?mode=all"),
+      request: new Request("https://forum.example/en/categories/help-solutions?mode=solutions"),
       params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
       context: guestContext,
     });
@@ -1404,7 +1404,7 @@ describe("Help & solutions modes and authoring", () => {
     const guestView = renderRoute(
       CategoryRoute,
       guestData,
-      forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=all",
+      forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=solutions",
       "en",
       "ltr",
     );
@@ -1427,7 +1427,7 @@ describe("Help & solutions modes and authoring", () => {
       }),
     } as never);
     const managerData = await categoryLoader({
-      request: new Request("https://forum.example/en/categories/help-solutions?mode=all"),
+      request: new Request("https://forum.example/en/categories/help-solutions?mode=solutions"),
       params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
       context: managerContext,
     });
@@ -1435,7 +1435,7 @@ describe("Help & solutions modes and authoring", () => {
     renderRoute(
       CategoryRoute,
       managerData,
-      forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=all",
+      forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=solutions",
       "en",
       "ltr",
     );
@@ -1507,7 +1507,7 @@ describe("Help & solutions modes and authoring", () => {
   it("filters Solutions mode to solved questions and keeps All as the canonical default", async () => {
     const requestContext = context("en", "ltr");
     const data = await categoryLoader({
-      request: new Request("https://forum.example/en/categories/help-solutions?mode=all"),
+      request: new Request("https://forum.example/en/categories/help-solutions?mode=solutions"),
       params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
       context: requestContext,
     });
@@ -1522,7 +1522,7 @@ describe("Help & solutions modes and authoring", () => {
     renderRoute(
       CategoryRoute,
       data,
-      forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=all",
+      forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=solutions",
       "en",
       "ltr",
     );
