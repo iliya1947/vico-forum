@@ -2383,3 +2383,21 @@ _Source: https://github.com/iliya1947/vico-forum/pull/147#issuecomment-606704266
 * ✅ `git status --short --branch` — рабочее дерево чистое после commit.
 
  [View task →](https://chatgpt.com/s/cd_6ac7e871fe248191b84df87ba6f1ce0f)
+
+
+---
+
+## Owner decision — duplicate appeal contract confirmed — 2026-10-08
+
+The owner confirmed the recommended appeal contract for Help & solutions step 3:
+
+- only the author of the question that is already authoritatively marked as a duplicate may submit an appeal;
+- an appeal requires an explanation;
+- while the appeal is pending, the confirmed duplicate relationship remains authoritative;
+- public presentation shows only a neutral `Disputed` / localized equivalent marker;
+- the appeal explanation is visible only to the duplicate-question author and actors with the duplicate-management capability;
+- rejecting the appeal preserves the confirmed duplicate relationship;
+- accepting the appeal removes the authoritative duplicate relationship;
+- this appeal path remains specific to an already-confirmed duplicate and does not absorb the general user moderation signals reserved for fixed step 4.
+
+This resolves the only product choice raised by the step-3 technical plan. The bounded implementation may now proceed under that plan.
