@@ -1059,6 +1059,7 @@ describe("Help & solutions modes and authoring", () => {
   it("keeps duplicate appeal explanation private while exposing the public disputed marker", async () => {
     const duplicateTopic = {
       ...helpTopic,
+      bestAnswerPostId: null,
       duplicateOf: { id: "help-original", title: "Canonical original question" },
       duplicateDisputed: true,
     };
@@ -1138,7 +1139,9 @@ describe("Help & solutions modes and authoring", () => {
     managerContext.set(authorizationContext, {
       forUser: () => ({
         resolve: vi.fn(),
-        has: vi.fn(async (permission) => permission === "forum.helpDuplicate.manage"),
+        has: vi.fn(async (permission) =>
+          permission === "forum.helpDuplicate.manage" || permission === "forum.solution.manageAny"
+        ),
       }),
     } as never);
     managerContext.set(forumReaderContext, {
@@ -1159,7 +1162,9 @@ describe("Help & solutions modes and authoring", () => {
       "en",
       "ltr",
     );
+    expect(screen.queryByText("Select as best answer")).not.toBeInTheDocument();
     fireEvent.click(await screen.findByText("Admin panel"));
+    expect(screen.queryByRole("button", { name: "Mark solved" })).not.toBeInTheDocument();
     expect(screen.getByText("Private appeal reason.")).toBeVisible();
     expect(screen.getByRole("button", { name: "Accept dispute and remove duplicate" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Reject dispute" })).toBeVisible();
@@ -1325,7 +1330,9 @@ describe("Help & solutions modes and authoring", () => {
     topicContext.set(authorizationContext, {
       forUser: () => ({
         resolve: vi.fn(),
-        has: vi.fn(async (permission) => permission === "forum.solution.manageAny"),
+        has: vi.fn(async (permission) =>
+          permission === "forum.solution.manageAny" || permission === "forum.helpDuplicate.manage"
+        ),
       }),
     } as never);
     const topicData = await topicLoader({
@@ -1349,6 +1356,7 @@ describe("Help & solutions modes and authoring", () => {
     expect(screen.getByRole("button", { name: "Mark as needs review" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Mark solution outdated" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Clear solution status" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Confirm duplicate" })).not.toBeInTheDocument();
   });
 
   it("keeps needs-review hidden from public Help lists and visible to moderators", async () => {
