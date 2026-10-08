@@ -2,6 +2,7 @@ name: UI preview Pages
 
 on:
   push:
+    # Preview every ChatGPT implementation branch; never deploy the permanent service branch.
     branches:
       - main
       - "chatgpt/**"
