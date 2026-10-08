@@ -2089,3 +2089,55 @@ Final exact-head evidence:
 
 Independent Codex review has not yet been launched for this stable head.
 
+---
+
+## PR #204 Codex finding classification dispute — 2026-10-08
+
+Implementation PR: https://github.com/iliya1947/vico-forum/pull/204  
+Reviewed head: `3bb03eb1c34e11d503571bfd894cd6aed67694d5`  
+Codex finding: https://github.com/iliya1947/vico-forum/pull/204#discussion_r4221964845
+
+### Verified technical behavior
+
+Codex reports that migration `0029_help_question_quality` is not compatible with the previous
+application writer during schema-first rollout/rollback:
+
+- current `main` `createTopicWithInitialPost` omits `help_question_quality`;
+- after `0029`, a Help insert through that previous writer produces NULL;
+- the new CHECK requires non-NULL `normal | needs-details` for
+  `section_id = 'help-solutions-questions'`;
+- therefore that old-writer Help insert fails with SQLSTATE 23514.
+
+ChatGPT agrees that this causal chain is technically correct.
+
+### Current-stage classification question
+
+ChatGPT does **not yet classify the finding as a current UI/UX-pass defect**.
+
+Current source-of-truth state:
+
+- Stage 6 external integration is explicitly paused;
+- repository/local-CI schema may advance without immediate Neon/external rollout;
+- current external accepted migration evidence stops at 0020;
+- `docs/database/MIGRATIONS.md` states that schema-first ordering and rollback application
+  compatibility apply when a new schema is actually rolled out to the external
+  pre-release/production runtime;
+- migration history is immutable after merge, so deferring this compatibility requirement could
+  require a later forward migration before Stage 6 resumes.
+
+### Requested Codex technical response
+
+This is a consensus request, not another code review and not an implementation request.
+
+Please classify the finding against the **current active stage**, not eventual Stage 6:
+
+1. Reply **Current-scope** only if `0029` must already preserve compatibility with the previous
+   writer before merge even though no external rollout of 0021–0029 is happening in the active
+   UI/UX pass. State the current source-of-truth requirement that makes this mandatory now.
+2. Reply **Deferred-to-Stage-6** if the compatibility requirement may be satisfied by a later
+   forward migration before the next external schema-dependent rollout. If so, note whether
+   immutable accepted history creates any reason that makes deferral materially unsafe or
+   substantially more expensive.
+
+Do not edit implementation code, docs, migrations, or PR #204 in this response.
+
