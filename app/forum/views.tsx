@@ -1658,7 +1658,6 @@ export function TopicView({
   canCorrectAnySourceLocale = false,
   canManagePin,
   canUseAdminPanel = false,
-  correctablePostIds,
   topicReadState,
   actionData,
 }: {
@@ -1676,11 +1675,9 @@ export function TopicView({
   canCorrectAnySourceLocale?: boolean;
   canManagePin: boolean;
   canUseAdminPanel?: boolean;
-  correctablePostIds: readonly string[];
   topicReadState: ForumTopicReadState | null;
   actionData?: TopicViewActionData;
 }) {
-  const correctablePosts = new Set(correctablePostIds);
   const generationByContentId = new Map(generationUnits.map((unit) => [unit.contentId, unit]));
   const titleGenerationUnit = generationByContentId.get(topic.id);
   const presentedPosts = new Map(postPresentations.map((presentation) => [presentation.contentId, presentation]));
@@ -1707,6 +1704,9 @@ export function TopicView({
       ]
     : [];
   const messageNumberById = new Map(topic.posts.map((post, index) => [post.id, index + 1]));
+  const selectableBestAnswerPosts = canManageSolution
+    ? topic.posts.slice(1).filter((post) => post.id !== topic.bestAnswerPostId)
+    : [];
   const directRepliesByParent = new Map<string, string[]>();
   for (const post of topic.posts) {
     if (!post.parentPostId) continue;
@@ -1843,8 +1843,25 @@ export function TopicView({
                 ]}
           />
 
-          {canUseAdminPanel ? (
-            <details className="topic-admin-tools">
+          {(selectableBestAnswerPosts.length > 0 || canUseAdminPanel) ? (
+            <div className="topic-breadcrumb-actions">
+              {selectableBestAnswerPosts.length > 0 ? (
+                <details className="topic-best-answer-tools">
+                  <summary>{t("selectBestAnswer")}</summary>
+                  <div className="topic-best-answer-panel">
+                    {selectableBestAnswerPosts.map((post) => (
+                      <Form method="post" className="solution-form topic-best-answer-form" key={post.id}>
+                        <input type="hidden" name="intent" value="selectBestAnswer" />
+                        <input type="hidden" name="postId" value={post.id} />
+                        <button type="submit">{t("postNumber", { number: messageNumberById.get(post.id)! })}</button>
+                      </Form>
+                    ))}
+                  </div>
+                </details>
+              ) : null}
+
+              {canUseAdminPanel ? (
+                <details className="topic-admin-tools">
               <summary>{t("topicAdminPanel")}</summary>
               <div className="topic-admin-panel">
                 {canManagePin ? (
@@ -1911,8 +1928,10 @@ export function TopicView({
                     ) : null}
                   </>
                 ) : null}
-              </div>
-            </details>
+                  </div>
+                </details>
+              ) : null}
+            </div>
           ) : null}
         </div>
 
@@ -1948,10 +1967,6 @@ export function TopicView({
               const isOriginalQuestion = post.id === originalPost?.id;
               const isBestAnswer = topic.bestAnswerPostId === post.id;
               const generationUnit = generationByContentId.get(post.id);
-              const canCorrectPostSourceLocale = correctablePosts.has(post.id);
-              const canSelectBestAnswer =
-                canManageSolution && !isOriginalQuestion && topic.bestAnswerPostId !== post.id;
-              const hasMessageTools = canCorrectPostSourceLocale || canSelectBestAnswer;
               const messageLinkState =
                 messageLinkFeedback?.postId === post.id ? messageLinkFeedback.state : null;
               const parentMessageNumber =
@@ -2165,41 +2180,6 @@ export function TopicView({
                         )}
                       </div>
                     </div>
-
-                    {hasMessageTools && (
-                      <details className="secondary-tools message-secondary-tools">
-                        <summary>{t("messageTools")}</summary>
-                        <div className="secondary-tools-panel">
-                          {canCorrectPostSourceLocale && (
-                            <Form method="post" className="source-locale-form secondary-tools-form">
-                              <input type="hidden" name="intent" value="correctPostSourceLocale" />
-                              <input type="hidden" name="postId" value={post.id} />
-                              <input type="hidden" name="expectedRevisionId" value={post.body.id} />
-                              <p>{t("sourceLocaleCurrent", { locale: post.body.sourceLocale })}</p>
-                              <label>
-                                {t("sourceLocaleCorrectionInput")}
-                                <input
-                                  name="sourceLocale"
-                                  required
-                                  defaultValue={post.body.sourceLocale === "und" ? "" : post.body.sourceLocale}
-                                  autoComplete="off"
-                                />
-                              </label>
-                              <button type="submit">{t("sourceLocaleCorrectionSubmit")}</button>
-                            </Form>
-                          )}
-
-                          {canSelectBestAnswer && (
-                            <Form method="post" className="solution-form secondary-tools-form">
-                              <input type="hidden" name="intent" value="selectBestAnswer" />
-                              <input type="hidden" name="postId" value={post.id} />
-                              <button type="submit">{t("selectBestAnswer")}</button>
-                            </Form>
-                          )}
-                        </div>
-                      </details>
-                    )}
-
 
                     {isOriginalQuestion && canShowOwnTopicTools ? (
                       <details className="secondary-tools message-secondary-tools topic-question-tools">
