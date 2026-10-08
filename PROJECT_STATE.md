@@ -270,8 +270,10 @@ Vico Forum находится в ранней pre-release разработке.
   duplicate; пока active duplicate relation существует, нельзя выбрать ему best answer,
   пометить его solved или добавить новый reply. При pending appeal duplicate-manager видит
   explanation автора прямо в duplicate notice на topic page; accept/reject остаются в admin panel. В Help question list публично остаются `Solved` и `Duplicate`;
-  отдельный `Best answer` badge там не показывается. `Solution outdated` в списке публичен;
-  `Needs review` и pending `Disputed` видны только соответствующим moderation actors. Topic page показывает locale-aware ссылку на canonical
+  отдельный `Best answer` badge там не показывается. `Solution outdated` публичен;
+  `Needs review` и pending `Disputed` badges видны только соответствующим moderation actors
+  и в списке, и на topic page; author pending appeal при этом видит собственное appeal-сообщение
+  без moderator-only badge. Topic page показывает locale-aware ссылку на canonical
   original без раскрытия internal service section.
   General user moderation signals остаются step 4, расширение `Needs attention` — step 5,
   combined filters — step 6; admin-panel redesign, similar-search refinement и Stage 6 rollout
