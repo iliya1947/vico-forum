@@ -1300,7 +1300,9 @@ function PreviewTopicRoute({ scenario }: { scenario: Scenario }) {
       createdAt: new Date(helpQuestion.createdAt),
       isPinned: false,
       isSolved: helpQuestion.isSolved,
-      bestAnswerPostId: helpQuestion.hasBestAnswer && posts[1] ? posts[1].id : null,
+      bestAnswerPostId: helpQuestion.hasBestAnswer && posts.length > 1
+        ? posts[Math.min(4, posts.length - 1)]!.id
+        : null,
       solutionModerationStatus: helpQuestion.solutionModerationStatus,
       solutionOutdatedReason: helpQuestion.solutionOutdatedReason,
       title: {
