@@ -1819,22 +1819,22 @@ export function TopicView({
       units={generationUnits}
     >
       <ForumShell locale={locale} variant="topic">
-        <Breadcrumbs
-          locale={locale}
-          items={topic.section.id === HELP_SOLUTIONS_SERVICE_SECTION_ID
-            ? [
-                { label: t("helpSolutionsHeading"), to: forumCategoryPath(locale, HELP_SOLUTIONS_CATEGORY_ID) },
-                { label: titlePresentation.content },
-              ]
-            : [
-                { label: topic.section.category.name, to: forumCategoryPath(locale, topic.section.category.id) },
-                { label: topic.section.name, to: forumSectionPath(locale, topic.section.id) },
-                { label: titlePresentation.content },
-              ]}
-        />
+        <div className="topic-breadcrumb-row">
+          <Breadcrumbs
+            locale={locale}
+            items={topic.section.id === HELP_SOLUTIONS_SERVICE_SECTION_ID
+              ? [
+                  { label: t("helpSolutionsHeading"), to: forumCategoryPath(locale, HELP_SOLUTIONS_CATEGORY_ID) },
+                  { label: titlePresentation.content },
+                ]
+              : [
+                  { label: topic.section.category.name, to: forumCategoryPath(locale, topic.section.category.id) },
+                  { label: topic.section.name, to: forumSectionPath(locale, topic.section.id) },
+                  { label: titlePresentation.content },
+                ]}
+          />
 
-        {canModerateHelpSolution && topic.isSolved ? (
-          <div className="topic-admin-slot">
+          {canModerateHelpSolution && topic.isSolved ? (
             <details className="help-solution-admin-tools">
               <summary>{t("helpSolutionModerationTools")}</summary>
               <div className="help-solution-admin-panel">
@@ -1868,8 +1868,8 @@ export function TopicView({
                 ) : null}
               </div>
             </details>
-          </div>
-        ) : null}
+          ) : null}
+        </div>
 
         <section className="topic-heading">
           <div className="topic-heading-side">
@@ -2099,13 +2099,6 @@ export function TopicView({
                         )}
                       </div>
                     </div>
-                    {isBestAnswer && topic.solutionModerationStatus === "outdated" && topic.solutionOutdatedReason ? (
-                      <div className="solution-outdated-reason">
-                        <strong>{t("helpSolutionOutdatedReasonLabel")}</strong>
-                        <span dir="auto">{topic.solutionOutdatedReason}</span>
-                      </div>
-                    ) : null}
-
                     <div
                       data-message-body
                       className={postPresentation.selected === "translation"
@@ -2114,6 +2107,13 @@ export function TopicView({
                     >
                       <PostBodyContent presentation={postPresentation} />
                     </div>
+
+                    {isBestAnswer && topic.solutionModerationStatus === "outdated" && topic.solutionOutdatedReason ? (
+                      <div className="solution-outdated-reason">
+                        <strong>{t("helpSolutionOutdatedReasonLabel")}</strong>
+                        <span dir="auto">{topic.solutionOutdatedReason}</span>
+                      </div>
+                    ) : null}
 
                     {generationUnit && (
                       <div className="message-generation-status">
