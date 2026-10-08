@@ -1256,8 +1256,8 @@ describe("Help & solutions modes and authoring", () => {
       "ltr",
     );
     expect(await screen.findByText("Duplicate")).toBeVisible();
+    expect(screen.getByText("Solution outdated")).toBeVisible();
     expect(screen.queryByText("Best answer")).not.toBeInTheDocument();
-    expect(screen.queryByText("Solution outdated")).not.toBeInTheDocument();
     expect(screen.queryByText("Disputed")).not.toBeInTheDocument();
     guestView.unmount();
 
