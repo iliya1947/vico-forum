@@ -64,6 +64,7 @@ export async function loader({ params, context }: {
 
   const session = authSessionForRequest(context);
   let canReply = false, canManageSolution = false, canModerateHelpSolution = false;
+  let canManageHelpDuplicate = false;
   let canCorrectTitleSourceLocale = false, canManagePin = false, canGenerateTranslations = false;
   let canUseAdminPanel = false, canManageAnySolution = false, canCorrectAnySourceLocale = false;
   let correctablePostIds: string[] = [];
@@ -77,10 +78,11 @@ export async function loader({ params, context }: {
 
     try {
       const resolver = authorizationForRequest(context).forUser(session.user.id);
-      const [reply, solutionAny, solutionOwn, sourceAny, sourceOwn, generate, pin] = await Promise.all([
+      const [reply, solutionAny, solutionOwn, duplicateManage, sourceAny, sourceOwn, generate, pin] = await Promise.all([
         resolver.has("forum.reply.create"),
         resolver.has("forum.solution.manageAny"),
         resolver.has("forum.solution.manageOwn"),
+        resolver.has("forum.helpDuplicate.manage"),
         resolver.has("forum.sourceLocale.correctAny"),
         resolver.has("forum.sourceLocale.correctOwn"),
         resolver.has("forum.translation.generate"),
@@ -90,11 +92,12 @@ export async function loader({ params, context }: {
       canManageSolution = solutionAny || (solutionOwn && session.user.id === topic.authorId);
       canManageAnySolution = solutionAny;
       canModerateHelpSolution = solutionAny && topic.section.id === HELP_SOLUTIONS_SERVICE_SECTION_ID;
+      canManageHelpDuplicate = duplicateManage && topic.section.id === HELP_SOLUTIONS_SERVICE_SECTION_ID;
       canCorrectTitleSourceLocale = sourceAny || (sourceOwn && session.user.id === topic.authorId);
       canCorrectAnySourceLocale = sourceAny;
       canGenerateTranslations = generate && contentGenerationActionForRequest(context).enabled;
       canManagePin = pin;
-      canUseAdminPanel = solutionAny || sourceAny || pin;
+      canUseAdminPanel = solutionAny || duplicateManage || sourceAny || pin;
       correctablePostIds = sourceAny
         ? topic.posts.map((post) => post.id)
         : sourceOwn
@@ -103,6 +106,31 @@ export async function loader({ params, context }: {
     } catch (error) {
       if (!(error instanceof AuthorizationUnavailableError)) throw error;
       // Public topic reads remain available when optional presentation authorization is unavailable.
+    }
+  }
+
+  let pendingDuplicateAppeal: {
+    id: string;
+    relationshipId: string;
+    explanation: string;
+    createdAt: string;
+  } | null = null;
+  if (
+    session
+    && topic.duplicateOf
+    && (session.user.id === topic.authorId || canManageHelpDuplicate)
+  ) {
+    try {
+      const appeal = await forumReaderForRequest(context).readPendingHelpDuplicateAppeal(topic.id);
+      if (appeal) {
+        pendingDuplicateAppeal = {
+          ...appeal,
+          createdAt: appeal.createdAt.toISOString(),
+        };
+      }
+    } catch (error) {
+      if (!(error instanceof ForumStorageUnavailableError)) throw error;
+      // Optional private appeal details may degrade without blocking the public topic read.
     }
   }
 
@@ -138,6 +166,8 @@ export async function loader({ params, context }: {
     canManageSolution,
     canManageAnySolution,
     canModerateHelpSolution,
+    canManageHelpDuplicate,
+    pendingDuplicateAppeal,
     isTopicAuthor: Boolean(session && session.user.id === topic.authorId),
     canCorrectTitleSourceLocale,
     canCorrectAnySourceLocale,
