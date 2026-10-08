@@ -236,6 +236,44 @@ export async function topicAction({ request, params, context }: {
       throw error;
     }
   }
+  if (intent === "confirmHelpDuplicate") {
+    const originalTopicId = requiredFormText(formData, "originalTopicId");
+    if (!originalTopicId) return mutationFailure("invalid", 400);
+    const forbidden = await requireForumPermission(context, "forum.helpDuplicate.manage");
+    if (forbidden) return forbidden;
+    return runForumMutation(request, context, async (writer, actorId) => {
+      await writer.confirmHelpDuplicate({ topicId, originalTopicId, actorId });
+      return redirect(forumTopicPath(locale, topicId));
+    });
+  }
+  if (intent === "removeHelpDuplicate") {
+    const forbidden = await requireForumPermission(context, "forum.helpDuplicate.manage");
+    if (forbidden) return forbidden;
+    return runForumMutation(request, context, async (writer, actorId) => {
+      await writer.removeHelpDuplicate({ topicId, actorId });
+      return redirect(forumTopicPath(locale, topicId));
+    });
+  }
+  if (intent === "appealHelpDuplicate") {
+    const explanation = requiredFormText(formData, "explanation");
+    if (!explanation) return mutationFailure("invalid", 400);
+    return runForumMutation(request, context, async (writer, actorId) => {
+      await writer.appealHelpDuplicate({ topicId, actorId, explanation });
+      return redirect(forumTopicPath(locale, topicId));
+    });
+  }
+  if (intent === "acceptHelpDuplicateAppeal" || intent === "rejectHelpDuplicateAppeal") {
+    const forbidden = await requireForumPermission(context, "forum.helpDuplicate.manage");
+    if (forbidden) return forbidden;
+    return runForumMutation(request, context, async (writer, actorId) => {
+      await writer.resolveHelpDuplicateAppeal({
+        topicId,
+        actorId,
+        resolution: intent === "acceptHelpDuplicateAppeal" ? "accepted" : "rejected",
+      });
+      return redirect(forumTopicPath(locale, topicId));
+    });
+  }
   if (intent === "markSolved") {
     const authorization = await solutionScope(context);
     if ("error" in authorization) return authorization.error;
