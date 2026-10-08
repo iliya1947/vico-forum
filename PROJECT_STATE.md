@@ -48,7 +48,9 @@ Vico Forum находится в ранней pre-release разработке.
   автоматически deploy-ит push в `main` и все implementation-ветки `chatgpt/**`, при этом общий
   service branch `chatgpt/ui-ux-product-pass` явно исключён, чтобы технические updates
   communication-файла не могли перезаписать visual preview артефактом из отставшей служебной ветки.
-  Это не заменяет будущую real-runtime acceptance.
+  `main` сохраняет protected `github-pages` environment, а implementation previews используют
+  отдельный `github-pages-preview` environment без production-like branch restriction. Это не
+  заменяет будущую real-runtime acceptance.
 - В текущем UI/UX slice реализованы и repository-CI/Pages-проверены semantic visual tokens,
   Light/Dark с first-use `prefers-color-scheme` и persisted manual choice, two-zone shell/header,
   approved shell/homepage foundation и общая локализованная страница `Under development`.
