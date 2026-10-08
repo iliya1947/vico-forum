@@ -1833,6 +1833,44 @@ export function TopicView({
               ]}
         />
 
+        {canModerateHelpSolution && topic.isSolved ? (
+          <div className="topic-admin-slot">
+            <details className="help-solution-admin-tools">
+              <summary>{t("helpSolutionModerationTools")}</summary>
+              <div className="help-solution-admin-panel">
+                {topic.solutionModerationStatus !== "needs-review" ? (
+                  <Form method="post" className="solution-form help-solution-admin-form">
+                    <input type="hidden" name="intent" value="markSolutionNeedsReview" />
+                    <button type="submit">{t("helpSolutionMarkNeedsReview")}</button>
+                  </Form>
+                ) : null}
+
+                <Form method="post" className="solution-form help-solution-admin-form">
+                  <input type="hidden" name="intent" value="markSolutionOutdated" />
+                  <label>
+                    {t("helpSolutionOutdatedReasonInput")}
+                    <textarea
+                      name="outdatedReason"
+                      required
+                      maxLength={1000}
+                      rows={3}
+                      defaultValue={topic.solutionOutdatedReason ?? ""}
+                    />
+                  </label>
+                  <button type="submit">{t("helpSolutionMarkOutdated")}</button>
+                </Form>
+
+                {topic.solutionModerationStatus ? (
+                  <Form method="post" className="solution-form help-solution-admin-form">
+                    <input type="hidden" name="intent" value="clearSolutionModeration" />
+                    <button type="submit">{t("helpSolutionClearModeration")}</button>
+                  </Form>
+                ) : null}
+              </div>
+            </details>
+          </div>
+        ) : null}
+
         <section className="topic-heading">
           <div className="topic-heading-side">
             <div className="topic-heading-author">
@@ -1846,12 +1884,6 @@ export function TopicView({
             <div className="topic-heading-state-badges">
               {topic.isPinned && <strong className="pinned-topic-badge">{t("pinnedHeading")}</strong>}
               {topic.isSolved && <strong className="solved-badge">{t("solved")}</strong>}
-              {topic.solutionModerationStatus === "needs-review" && (
-                <strong className="solution-moderation-badge is-needs-review">{t("helpSolutionNeedsReview")}</strong>
-              )}
-              {topic.solutionModerationStatus === "outdated" && (
-                <strong className="solution-moderation-badge is-outdated">{t("helpSolutionOutdated")}</strong>
-              )}
             </div>
           </div>
 
@@ -1881,14 +1913,7 @@ export function TopicView({
             </div>
           </div>
 
-          {topic.solutionModerationStatus === "outdated" && topic.solutionOutdatedReason ? (
-            <p className="solution-outdated-reason">
-              <strong>{t("helpSolutionOutdatedReasonLabel")}</strong>
-              <span dir="auto">{topic.solutionOutdatedReason}</span>
-            </p>
-          ) : null}
-
-          {(canCorrectTitleSourceLocale || canManagePin || (canManageSolution && !topic.isSolved) || (canModerateHelpSolution && topic.isSolved)) && (
+          {(canCorrectTitleSourceLocale || canManagePin || (canManageSolution && !topic.isSolved)) && (
             <details className="secondary-tools topic-heading-secondary">
               <summary>{t("topicTools")}</summary>
               <div className="secondary-tools-panel">
@@ -1907,39 +1932,6 @@ export function TopicView({
                     <button type="submit">{t("markSolved")}</button>
                   </Form>
                 )}
-
-                {canModerateHelpSolution && topic.isSolved ? (
-                  <>
-                    {topic.solutionModerationStatus !== "needs-review" ? (
-                      <Form method="post" className="solution-form secondary-tools-form">
-                        <input type="hidden" name="intent" value="markSolutionNeedsReview" />
-                        <button type="submit">{t("helpSolutionMarkNeedsReview")}</button>
-                      </Form>
-                    ) : null}
-
-                    <Form method="post" className="solution-form secondary-tools-form">
-                      <input type="hidden" name="intent" value="markSolutionOutdated" />
-                      <label>
-                        {t("helpSolutionOutdatedReasonInput")}
-                        <textarea
-                          name="outdatedReason"
-                          required
-                          maxLength={1000}
-                          rows={3}
-                          defaultValue={topic.solutionOutdatedReason ?? ""}
-                        />
-                      </label>
-                      <button type="submit">{t("helpSolutionMarkOutdated")}</button>
-                    </Form>
-
-                    {topic.solutionModerationStatus ? (
-                      <Form method="post" className="solution-form secondary-tools-form">
-                        <input type="hidden" name="intent" value="clearSolutionModeration" />
-                        <button type="submit">{t("helpSolutionClearModeration")}</button>
-                      </Form>
-                    ) : null}
-                  </>
-                ) : null}
 
                 {canCorrectTitleSourceLocale && (
                   <Form method="post" className="source-locale-form secondary-tools-form">
@@ -2031,6 +2023,12 @@ export function TopicView({
                       {isBestAnswer && (
                         <strong className="best-answer-label">{t("bestAnswer")}</strong>
                       )}
+                      {isBestAnswer && topic.solutionModerationStatus === "needs-review" && (
+                        <strong className="solution-moderation-badge is-needs-review">{t("helpSolutionNeedsReview")}</strong>
+                      )}
+                      {isBestAnswer && topic.solutionModerationStatus === "outdated" && (
+                        <strong className="solution-moderation-badge is-outdated">{t("helpSolutionOutdated")}</strong>
+                      )}
                     </span>
                     <a
                       className="topic-message-anchor topic-message-author-number"
@@ -2101,6 +2099,13 @@ export function TopicView({
                         )}
                       </div>
                     </div>
+                    {isBestAnswer && topic.solutionModerationStatus === "outdated" && topic.solutionOutdatedReason ? (
+                      <div className="solution-outdated-reason">
+                        <strong>{t("helpSolutionOutdatedReasonLabel")}</strong>
+                        <span dir="auto">{topic.solutionOutdatedReason}</span>
+                      </div>
+                    ) : null}
+
                     <div
                       data-message-body
                       className={postPresentation.selected === "translation"
