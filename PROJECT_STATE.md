@@ -196,14 +196,18 @@ Vico Forum находится в ранней pre-release разработке.
   Stage 6 работы. Owner visual acceptance populated/empty Pages presentation и Guest/User/Manager
   identity switching подтверждён 2026-10-07.
 - PR #200 реализует первый шаг зафиксированной Help & solutions moderation/filter sequence:
-  migration `0028_help_solution_moderation` добавляет к Help-question topic отдельную persisted
-  пометку решения `needs-review | outdated` и nullable explanation. `isSolved` остаётся
-  независимым final state и не сбрасывается этими пометками; moderation state допустим только для
-  уже решённых вопросов внутреннего `help-solutions-questions`, а `outdated` требует непустую
-  persisted причину длиной до 1000 символов. Protected mutations повторно проверяют существующую
-  effective capability `forum.solution.manageAny`; новая permission не вводится. Public Help
-  cards показывают persisted marker; на topic page marker остаётся рядом с меткой best answer, а
-  persisted outdated explanation находится в самом низу выбранного ответа. Topic title/tags и
+  migration `0028_help_solution_moderation` хранит persisted состояние решения
+  `needs-review | outdated` на конкретном answer post, а не на topic. `isSolved` остаётся
+  независимым final state и не сбрасывается этими пометками. Ручная moderation mutation применяется
+  к текущему выбранному best answer решённого вопроса внутреннего `help-solutions-questions`;
+  ручной `outdated` требует непустую persisted причину длиной до 1000 символов. При выборе другого
+  best answer прежний выбранный ответ атомарно получает `outdated` с системной reason-kind
+  `best-answer-replaced` (UI локализует её как «Выбран новый лучший ответ»), а новый best answer
+  начинает с очищенного moderation state и не наследует пометку прежнего решения. Protected
+  mutations повторно проверяют существующую effective capability `forum.solution.manageAny`;
+  новая permission не вводится. Public Help cards проецируют marker только текущего best answer;
+  topic page сохраняет marker и explanation у конкретного ответа, включая исторический заменённый
+  best answer, а explanation находится в самом низу соответствующего сообщения. Topic title/tags и
   original question теперь составляют одну message-card композицию вместо двух соседних карточек;
   выбранный best answer по-прежнему поднимается сразу следом с сохранением permanent номера/anchor.
   Справа в строке breadcrumbs для actor с существующими moderator-level capabilities
