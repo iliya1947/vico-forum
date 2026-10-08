@@ -1166,7 +1166,7 @@ describe("Help & solutions modes and authoring", () => {
       "ltr",
     );
     expect(await screen.findByText("Private appeal reason.")).toBeVisible();
-    expect(screen.getByText("Author: Ada")).toBeVisible();
+    expect(screen.getByText("Started by Ada")).toBeVisible();
     expect(screen.queryByText("Select as best answer")).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Add reply" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Reply" })).not.toBeInTheDocument();
