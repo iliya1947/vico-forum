@@ -324,9 +324,13 @@ composition without changing the forum hierarchy or schema:
   Guest/User/Manager identity switching was confirmed on 2026-10-07. PR #200 adds
   the first fixed moderation/filter completion step without changing solved semantics:
   `needs-review` and `outdated` are persisted markers on already-solved Help questions,
-  `outdated` always carries a persisted explanation, public cards/topic surface the marker and
-  explanation, and only server-resolved `forum.solution.manageAny` receives the topic management
-  controls. User signals, `needs-details`, duplicates/appeals, broader Needs attention logic and
+  `outdated` always carries a persisted explanation, public cards surface the marker, and topic
+  pages attach the marker/explanation to the selected best answer rather than to the question
+  heading. Only server-resolved `forum.solution.manageAny` receives the dedicated solution-
+  moderation admin slot above the topic heading; ordinary topic tools stay separate. Pages
+  fixtures expose multiple solved Help questions across current/needs-review/outdated states and
+  allow Guest/User/Manager identity switching for public-vs-manager presentation. User signals,
+  `needs-details`, duplicates/appeals, broader Needs attention logic and
   combined filters remain later fixed-sequence steps;
 - owner visual acceptance of the implementation was confirmed on 2026-10-05; exact-head
   automated verification remains a separate PR check.
