@@ -2227,3 +2227,37 @@ Because implementation/schema/tests materially changed after the earlier Codex r
 is no longer final. After this correction passes CI, ChatGPT must perform a fresh whole-PR review,
 Pages verification as applicable, then one new Codex review on the corrected stable exact head.
 
+---
+
+## PR #204 corrected-model whole-PR review handoff — 2026-10-08
+
+Implementation PR: https://github.com/iliya1947/vico-forum/pull/204
+
+Owner correction replaced the separate question-quality axis with a single persisted **Needs details**
+system-label flag.
+
+Fresh ChatGPT whole-PR review result:
+
+- current schema is only `forum_topics.needs_details boolean NOT NULL DEFAULT false`;
+- there is no persisted `normal` state, Help-only CHECK or special backfill;
+- both current and previous topic writers omit the field, and clean PostgreSQL integration confirms
+  they receive database default `false`;
+- `needsDetails` is projected through Help question summaries and topic-page reads only as
+  foundation for later workflow/filter steps;
+- user-submitted moderation request state remains a separate future signal entity in fixed step 4;
+- the rewritten unmerged 0029 snapshot changes only `public.forum_topics` and chains correctly to
+  0028;
+- no confirmed current-scope implementation defect remains after whole-PR review.
+
+Verification on reviewed implementation revision `7d45450260a26e72e899ba884ea68ec3f4bfa956`:
+
+- CI run `37820799601`: `checks` success, `database` success;
+- UI preview Pages run `37822487018`: `build` success, `deploy` success;
+- no separate owner visual acceptance is required because this bounded foundation adds no visible
+  Needs-details label/workflow presentation.
+
+After review, only `PROJECT_STATE.md` was updated to record these completed checks, producing
+doc-only final pre-Codex head `5fcc05ecc4463396ed707bd4c13224a67b8e629d`.
+Because the implementation materially changed after the earlier Codex review, one new independent
+Codex review is still required after final-head CI is green.
+
