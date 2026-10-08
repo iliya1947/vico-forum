@@ -1706,6 +1706,7 @@ export function TopicView({
   const forumWriteError = actionData && !("operation" in actionData)
     ? actionData.error
     : null;
+  const canParticipate = canReply && !topic.duplicateOf;
   const canShowOwnTopicTools =
     (canManageSolution && !canManageAnySolution && !topic.isSolved && !topic.duplicateOf)
     || (canCorrectTitleSourceLocale && !canCorrectAnySourceLocale);
@@ -1907,7 +1908,6 @@ export function TopicView({
                       {pendingDuplicateAppeal ? (
                         <section className="help-duplicate-appeal-review">
                           <strong>{t("helpDuplicateAppealReviewHeading")}</strong>
-                          <p>{pendingDuplicateAppeal.explanation}</p>
                           <div className="help-duplicate-appeal-review-actions">
                             <Form method="post" className="topic-admin-form">
                               <input type="hidden" name="intent" value="acceptHelpDuplicateAppeal" />
@@ -2015,6 +2015,14 @@ export function TopicView({
                 <span className="help-duplicate-disputed-badge">{t("helpDuplicateDisputed")}</span>
               ) : null}
             </div>
+
+            {canManageHelpDuplicate && pendingDuplicateAppeal ? (
+              <div className="help-duplicate-appeal-pending help-duplicate-appeal-moderator-message">
+                <strong>{t("helpDuplicateAppealReviewHeading")}</strong>
+                <span>{t("startedBy", { author: topic.authorName })}</span>
+                <p>{pendingDuplicateAppeal.explanation}</p>
+              </div>
+            ) : null}
 
             {isTopicAuthor ? (
               topic.duplicateDisputed ? (
@@ -2151,12 +2159,12 @@ export function TopicView({
                             id={`message-actions-${post.id}`}
                             className="topic-message-mobile-actions-menu"
                           >
-                            {canReply && (
+                            {canParticipate && (
                               <button type="button" onClick={() => targetReply(post.id)}>
                                 {t("replyToMessage")}
                               </button>
                             )}
-                            {canReply && (
+                            {canParticipate && (
                               <button type="button" onClick={() => quoteSelectedText(post.id)}>
                                 {t("quoteSelectedText")}
                               </button>
@@ -2264,7 +2272,7 @@ export function TopicView({
                           feedback={messageLinkFeedback}
                           onCopy={copyMessageLink}
                         />
-                        {canReply && (
+                        {canParticipate && (
                           <div className="topic-message-participation">
                             <div className="topic-message-participation-actions">
                               <button type="button" onClick={() => quoteSelectedText(post.id)}>
@@ -2329,7 +2337,7 @@ export function TopicView({
           </ol>
         )}
 
-        {canReply && (
+        {canParticipate && (
           <Form
             method="post"
             className="forum-write-form topic-reply-form"
