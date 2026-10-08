@@ -353,7 +353,10 @@ describe("PostgreSQL 17 locale migrations", () => {
   });
 
   it("keeps Help solution moderation scoped to the reserved Help questions section", async () => {
-    const repository = new DrizzleForumRepository(drizzle(client), { cooldownMs: 0 });
+    const repository = new DrizzleForumRepository(drizzle(client), {
+      cooldownMs: 0,
+      now: () => new Date(),
+    });
     const forum = new ForumService(repository);
     await insertForumAuthor("solution-moderation-regular-author", "solution-moderation-regular@example.test", null);
 
