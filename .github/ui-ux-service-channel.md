@@ -1893,3 +1893,17 @@ If Codex has suggestions, it will comment; otherwise it will react with 👍.
 Codex can also answer questions or update the PR. Try commenting "@codex address that feedback".
             
 </details>
+
+
+---
+
+<!-- codex-service-channel-comment:6063401889 -->
+## Codex GitHub response — comment 6063401889
+
+_Source: https://github.com/iliya1947/vico-forum/pull/147#issuecomment-6063401889 · 2026-10-08T15:33:35Z_
+
+1. Deferred — The owner explicitly deferred admin-panel applicability, and the protected mutation safely rejects the unsupported solved-without-best-answer state.
+2. Confirmed — The uncontrolled textarea can retain stale input across same-route revalidation, and resetting it when the authoritative best-answer/status/reason identity changes closes the defect.
+3. Deferred — Current user-facing topic creation atomically creates the initial post, while postless topics are only representable through lower-level internal/test paths without a current contract requiring full heading presentation.
+
+ [View task →](https://chatgpt.com/s/cd_6ac7b76c82488191831201280cd796b3)
