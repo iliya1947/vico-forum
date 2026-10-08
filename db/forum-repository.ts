@@ -1881,7 +1881,12 @@ export class DrizzleForumRepository {
     await this.database.transaction(async (tx) => {
       const lockedIds = [topicId, originalTopicId].sort();
       const topics = await tx
-        .select({ id: forumTopics.id, sectionId: forumTopics.sectionId })
+        .select({
+          id: forumTopics.id,
+          sectionId: forumTopics.sectionId,
+          isSolved: forumTopics.isSolved,
+          bestAnswerPostId: forumTopics.bestAnswerPostId,
+        })
         .from(forumTopics)
         .where(inArray(forumTopics.id, lockedIds))
         .orderBy(asc(forumTopics.id))
@@ -1889,6 +1894,13 @@ export class DrizzleForumRepository {
       if (topics.length !== 2) throw new ForumEntityNotFoundError("duplicate question or original question does not exist");
       if (topics.some((topic) => topic.sectionId !== HELP_SOLUTIONS_SERVICE_SECTION_ID)) {
         throw new ForumStateConflictError("duplicate relationships are only available between Help & solutions questions");
+      }
+      const duplicateTopic = topics.find((topic) => topic.id === topicId);
+      if (!duplicateTopic) {
+        throw new ForumEntityNotFoundError("duplicate question does not exist");
+      }
+      if (duplicateTopic.isSolved || duplicateTopic.bestAnswerPostId) {
+        throw new ForumStateConflictError("a question with its own solution cannot be confirmed as a duplicate");
       }
 
       const active = await tx
@@ -2053,6 +2065,17 @@ export class DrizzleForumRepository {
       if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
       if (scope === "own" && topic.authorId !== actorId) throw new ForumAuthorizationError("only the topic author may solve it");
       if (topic.isSolved) throw new ForumStateConflictError("topic is already solved");
+      const [activeDuplicate] = await tx
+        .select({ id: forumHelpDuplicateRelationships.id })
+        .from(forumHelpDuplicateRelationships)
+        .where(and(
+          eq(forumHelpDuplicateRelationships.duplicateTopicId, topicId),
+          isNull(forumHelpDuplicateRelationships.removedAt),
+        ))
+        .limit(1);
+      if (activeDuplicate) {
+        throw new ForumStateConflictError("a confirmed duplicate cannot be marked solved");
+      }
       await tx.update(forumTopics).set({ isSolved: true }).where(eq(forumTopics.id, topicId));
     });
   }
@@ -2071,6 +2094,17 @@ export class DrizzleForumRepository {
         .for("update");
       if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
       if (scope === "own" && topic.authorId !== actorId) throw new ForumAuthorizationError("only the topic author may select an answer");
+      const [activeDuplicate] = await tx
+        .select({ id: forumHelpDuplicateRelationships.id })
+        .from(forumHelpDuplicateRelationships)
+        .where(and(
+          eq(forumHelpDuplicateRelationships.duplicateTopicId, topicId),
+          isNull(forumHelpDuplicateRelationships.removedAt),
+        ))
+        .limit(1);
+      if (activeDuplicate) {
+        throw new ForumStateConflictError("a confirmed duplicate cannot have its own best answer");
+      }
       const [post] = await tx.select({ topicId: forumPosts.topicId }).from(forumPosts).where(eq(forumPosts.id, postId));
       if (!post) throw new ForumEntityNotFoundError("post does not exist");
       if (post.topicId !== topicId) throw new ForumStateConflictError("post belongs to another topic");
