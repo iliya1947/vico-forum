@@ -1958,3 +1958,44 @@ Previously coordinated review classifications remain unchanged:
 
 The implementation head is stable and ready for the required final Codex review.
 
+---
+
+## PR #200 final review closure — 2026-10-08
+
+Implementation PR: https://github.com/iliya1947/vico-forum/pull/200  
+Final reviewed head: `8765dfde2bc48ff3946620e873203ae71667e5fd`.
+
+### Confirmed fixes after the first Codex review
+
+1. **Stale manual outdated reason across same-route revalidation**
+   - fixed by remounting only the manual outdated-reason form when authoritative best-answer/status/persisted-reason identity changes;
+   - focused route revalidation regression coverage verifies that an unsaved stale reason is cleared after the current best answer changes.
+
+2. **PostgreSQL CHECK NULL-semantics hole**
+   - repeat Codex review on intermediate head `336c5746dd0102d86acf0135ee7763f5a375b75b` found that `status = NULL + reason != NULL + reason_kind = NULL` could evaluate the CHECK to UNKNOWN and therefore pass;
+   - fixed with null-safe comparison `solution_moderation_status is not distinct from 'outdated'`;
+   - schema, forward migration, generated snapshot and production manifest are aligned;
+   - DB regression explicitly verifies the orphan-reason tuple is rejected.
+
+### Deferred findings
+
+- Solved Help question without a best answer can temporarily expose admin-panel moderation controls that the protected mutation rejects. Explicitly deferred by owner as part of later admin-panel applicability/design work; not a PR #200 blocker.
+- Full heading presentation for a synthetic postless topic remains deferred: current user-facing topic creation atomically creates the initial post, and no current runtime/product contract requires this lower-level representable state to receive the full topic heading.
+
+### Final independent verification
+
+ChatGPT re-reviewed the complete final delta relative to the previously reviewed head `a720ba2`: only the two confirmed corrections above plus corresponding tests/docs/schema metadata changed. No new confirmed current-scope defect was found.
+
+Final exact-head automated evidence:
+- `checks`: success
+- `database`: success
+- Pages `build`: success
+- Pages `deploy`: success
+
+Final Codex review on exact head `8765dfde2b` completed with **no findings**:
+https://github.com/iliya1947/vico-forum/pull/200#issuecomment-6063963206
+
+All four earlier inline review threads were replied to with their final classification/fix status and resolved.
+
+Conclusion: PR #200 has no remaining confirmed defect in the current bounded scope and is ready for owner merge.
+
