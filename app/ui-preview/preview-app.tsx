@@ -1418,6 +1418,9 @@ function PreviewTopicRoute({ scenario }: { scenario: Scenario }) {
       ? matched.topic.authorName
       : replyAuthors[(index - 1) % replyAuthors.length]!,
     parentPostId: index === 0 ? null : `${matched.topic.id}-post-1`,
+    solutionModerationStatus: null,
+    solutionOutdatedReason: null,
+    solutionOutdatedReasonKind: null,
     createdAt: new Date(`2026-09-${27 + Math.min(index, 3)}T${10 + (index % 8)}:00:00Z`),
     body: {
       id: `${matched.topic.id}-body-${index + 1}`,
