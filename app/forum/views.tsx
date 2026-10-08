@@ -2015,10 +2015,10 @@ export function TopicView({
             </div>
 
             {isTopicAuthor ? (
-              pendingDuplicateAppeal ? (
+              topic.duplicateDisputed ? (
                 <div className="help-duplicate-appeal-pending">
                   <strong>{t("helpDuplicateAppealPending")}</strong>
-                  <p>{pendingDuplicateAppeal.explanation}</p>
+                  {pendingDuplicateAppeal ? <p>{pendingDuplicateAppeal.explanation}</p> : null}
                 </div>
               ) : (
                 <Form method="post" className="help-duplicate-appeal-form">
