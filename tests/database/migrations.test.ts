@@ -125,6 +125,7 @@ describe("PostgreSQL 17 locale migrations", () => {
     await insertForumAuthor("help-foundation-author", "help-foundation@example.test", null);
     await insertForumAuthor("help-foundation-replier", "help-foundation-replier@example.test", null);
     await insertForumAuthor("help-foundation-waiting", "help-foundation-waiting@example.test", null);
+    await insertForumAuthor("help-foundation-replier-2", "help-foundation-replier-2@example.test", null);
     try {
       await forum.createTopicWithInitialPost({
         id: "help-foundation-topic",
@@ -277,7 +278,7 @@ describe("PostgreSQL 17 locale migrations", () => {
       await forum.createPost({
         id: "help-foundation-answer-2",
         topicId: "help-foundation-topic",
-        authorId: "help-foundation-replier",
+        authorId: "help-foundation-replier-2",
         parentPostId: "help-foundation-question",
         bodyRevision: {
           id: "help-foundation-answer-2-body",
@@ -393,7 +394,7 @@ describe("PostgreSQL 17 locale migrations", () => {
       expect(await repository.readSection(HELP_SOLUTIONS_SERVICE_SECTION_ID)).toBeUndefined();
     } finally {
       await client.query("delete from forum_topics where id in ('help-foundation-topic', 'help-foundation-no-replies')");
-      await client.query(`delete from "user" where id in ('help-foundation-author', 'help-foundation-replier', 'help-foundation-waiting')`);
+      await client.query(`delete from "user" where id in ('help-foundation-author', 'help-foundation-replier', 'help-foundation-replier-2', 'help-foundation-waiting')`);
     }
   });
 
