@@ -1981,6 +1981,12 @@ export function TopicView({
                       {isOriginalQuestion && (
                         <strong className="original-question-label">{t("originalQuestion")}</strong>
                       )}
+                      {isOriginalQuestion && topic.isPinned && (
+                        <strong className="pinned-topic-badge">{t("pinnedHeading")}</strong>
+                      )}
+                      {isOriginalQuestion && topic.isSolved && (
+                        <strong className="solved-badge">{t("solved")}</strong>
+                      )}
                       {isBestAnswer && (
                         <strong className="best-answer-label">{t("bestAnswer")}</strong>
                       )}
@@ -2060,6 +2066,33 @@ export function TopicView({
                         )}
                       </div>
                     </div>
+
+                    {isOriginalQuestion ? (
+                      <div className="topic-question-heading">
+                        <div className="topic-question-heading-main">
+                          <TopicTitlePresentation presentation={titlePresentation} />
+                          {titleGenerationUnit && (
+                            <div className="topic-generation-status">
+                              <ContentGenerationUnitStatus unit={titleGenerationUnit} />
+                            </div>
+                          )}
+                          {topic.tags.length > 0 ? (
+                            <nav className="topic-tag-list topic-question-tags" aria-label={t("topicTagsLabel")}>
+                              {topic.tags.map((tag) => (
+                                <Link className="topic-tag" key={tag.key} to={forumTagPath(locale, tag.key)}>#{tag.name}</Link>
+                              ))}
+                            </nav>
+                          ) : null}
+                        </div>
+
+                        {topic.bestAnswerPostId ? (
+                          <a className="topic-solution-link" href={`#post-${encodeURIComponent(topic.bestAnswerPostId)}`}>
+                            {t("goToSolution")}
+                          </a>
+                        ) : null}
+                      </div>
+                    ) : null}
+
                     <div
                       data-message-body
                       className={postPresentation.selected === "translation"
@@ -2068,13 +2101,6 @@ export function TopicView({
                     >
                       <PostBodyContent presentation={postPresentation} />
                     </div>
-
-                    {isBestAnswer && topic.solutionModerationStatus === "outdated" && topic.solutionOutdatedReason ? (
-                      <div className="solution-outdated-reason">
-                        <strong>{t("helpSolutionOutdatedReasonLabel")}</strong>
-                        <span dir="auto">{topic.solutionOutdatedReason}</span>
-                      </div>
-                    ) : null}
 
                     {generationUnit && (
                       <div className="message-generation-status">
@@ -2173,6 +2199,46 @@ export function TopicView({
                         </div>
                       </details>
                     )}
+
+
+                    {isOriginalQuestion && canShowOwnTopicTools ? (
+                      <details className="secondary-tools message-secondary-tools topic-question-tools">
+                        <summary>{t("topicTools")}</summary>
+                        <div className="secondary-tools-panel">
+                          {canManageSolution && !canManageAnySolution && !topic.isSolved ? (
+                            <Form method="post" className="solution-form secondary-tools-form">
+                              <input type="hidden" name="intent" value="markSolved" />
+                              <button type="submit">{t("markSolved")}</button>
+                            </Form>
+                          ) : null}
+
+                          {canCorrectTitleSourceLocale && !canCorrectAnySourceLocale ? (
+                            <Form method="post" className="source-locale-form secondary-tools-form">
+                              <input type="hidden" name="intent" value="correctTitleSourceLocale" />
+                              <input type="hidden" name="expectedRevisionId" value={topic.title.id} />
+                              <p>{t("sourceLocaleCurrent", { locale: topic.title.sourceLocale })}</p>
+                              <label>
+                                {t("sourceLocaleCorrectionInput")}
+                                <input
+                                  name="sourceLocale"
+                                  required
+                                  defaultValue={topic.title.sourceLocale === "und" ? "" : topic.title.sourceLocale}
+                                  autoComplete="off"
+                                />
+                              </label>
+                              <button type="submit">{t("sourceLocaleCorrectionSubmit")}</button>
+                            </Form>
+                          ) : null}
+                        </div>
+                      </details>
+                    ) : null}
+
+                    {isBestAnswer && topic.solutionModerationStatus === "outdated" && topic.solutionOutdatedReason ? (
+                      <div className="solution-outdated-reason">
+                        <strong>{t("helpSolutionOutdatedReasonLabel")}</strong>
+                        <span dir="auto">{topic.solutionOutdatedReason}</span>
+                      </div>
+                    ) : null}
                   </div>
                 </li>
               );
