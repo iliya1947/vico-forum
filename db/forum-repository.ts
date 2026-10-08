@@ -1810,18 +1810,29 @@ export class DrizzleForumRepository {
       }
       if (
         topic.sectionId === HELP_SOLUTIONS_SERVICE_SECTION_ID
-        && topic.bestAnswerPostId
         && topic.bestAnswerPostId !== postId
       ) {
+        if (topic.bestAnswerPostId) {
+          await tx.update(forumPosts)
+            .set({
+              solutionModerationStatus: "outdated",
+              solutionOutdatedReason: null,
+              solutionOutdatedReasonKind: "best-answer-replaced",
+            })
+            .where(and(
+              eq(forumPosts.topicId, topicId),
+              eq(forumPosts.id, topic.bestAnswerPostId),
+            ));
+        }
         await tx.update(forumPosts)
           .set({
-            solutionModerationStatus: "outdated",
+            solutionModerationStatus: null,
             solutionOutdatedReason: null,
-            solutionOutdatedReasonKind: "best-answer-replaced",
+            solutionOutdatedReasonKind: null,
           })
           .where(and(
             eq(forumPosts.topicId, topicId),
-            eq(forumPosts.id, topic.bestAnswerPostId),
+            eq(forumPosts.id, postId),
           ));
       }
       await tx.update(forumTopics).set({ bestAnswerPostId: postId }).where(eq(forumTopics.id, topicId));
