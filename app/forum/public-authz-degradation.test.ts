@@ -43,6 +43,8 @@ const topic = {
   isPinned: false,
   isSolved: false,
   bestAnswerPostId: null,
+  solutionModerationStatus: null,
+  solutionOutdatedReason: null,
   title: section.topics[0]!.title,
   section: { id: "section-1", name: "Section", category: { id: "category-1", name: "Category" } },
   tags: [],
