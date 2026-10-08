@@ -248,8 +248,13 @@ Vico Forum находится в ранней pre-release разработке.
   superseded обязательному `help_question_quality` CHECK; после упрощения модели его причинная
   цепочка устранена в самом незамерженном `0029`. Исправленная implementation revision прошла
   repository `checks` и `database`, включая migration metadata, Drizzle schema parity и clean
-  PostgreSQL 17 suite. Fresh whole-PR review, Pages verification и повторный Codex review после
-  этой implementation correction ещё не выполнены.
+  PostgreSQL 17 suite. Fresh whole-PR review исправленной модели не оставляет подтверждённых
+  дефектов текущего scope: writer omits `needs_details` and receives database default `false`,
+  snapshot changes only `forum_topics`, and Help projections expose the persisted flag without
+  adding moderation/filter behavior early. GitHub Pages preview build/deploy for the same reviewed
+  implementation revision succeeds; separate owner visual acceptance is not required because this
+  foundation slice adds no visible label/workflow presentation. Repeat Codex review after the
+  material implementation correction is still pending.
 - In-app reply notifications slice реализован в PR #180:
   forward migration `0024_forum_reply_notifications` хранит только stable recipient/actor/topic/post
   references, `createdAt` и nullable `readAt`; unique recipient + reply identity предотвращает
