@@ -1055,6 +1055,116 @@ describe("Help & solutions modes and authoring", () => {
     expect(readHelpSolutionsMine).not.toHaveBeenCalled();
   });
 
+  it("keeps duplicate appeal explanation private while exposing the public disputed marker", async () => {
+    const duplicateTopic = {
+      ...helpTopic,
+      duplicateOf: { id: "help-original", title: "Canonical original question" },
+      duplicateDisputed: true,
+    };
+    const pendingAppeal = {
+      id: "appeal-1",
+      relationshipId: "duplicate-relation-1",
+      explanation: "Private appeal reason.",
+      createdAt: new Date("2026-10-08T18:00:00Z"),
+    };
+
+    const guestReadAppeal = vi.fn(async () => pendingAppeal);
+    const guestContext = context("en", "ltr");
+    guestContext.set(forumReaderContext, {
+      ...reader,
+      readTopicPage: async (id) => id === duplicateTopic.id ? duplicateTopic : undefined,
+      readPendingHelpDuplicateAppeal: guestReadAppeal,
+    });
+    const guestData = await topicLoader({
+      params: { locale: "en", topicId: duplicateTopic.id },
+      context: guestContext,
+    });
+    expect(guestReadAppeal).not.toHaveBeenCalled();
+    const guestView = renderRoute(
+      TopicRoute,
+      guestData,
+      forumTopicPath("en", duplicateTopic.id),
+      "en",
+      "ltr",
+    );
+    expect(await screen.findByText("Duplicate")).toBeVisible();
+    expect(screen.getByText("Disputed")).toBeVisible();
+    expect(screen.getByRole("link", { name: "Canonical original question" }))
+      .toHaveAttribute("href", forumTopicPath("en", "help-original"));
+    expect(screen.queryByText("Private appeal reason.")).not.toBeInTheDocument();
+    guestView.unmount();
+
+    const authorReadAppeal = vi.fn(async () => pendingAppeal);
+    const authorContext = context("en", "ltr");
+    authorContext.set(authSessionContext, {
+      user: { id: "ada", name: "Ada", email: "ada@example.test", emailVerified: true, createdAt: new Date(), updatedAt: new Date() },
+      session: { id: "author-session", token: "author-token", userId: "ada", expiresAt: new Date(Date.now() + 60_000), createdAt: new Date(), updatedAt: new Date() },
+    });
+    authorContext.set(authorizationContext, {
+      forUser: () => ({
+        resolve: vi.fn(),
+        has: vi.fn(async () => false),
+      }),
+    } as never);
+    authorContext.set(forumReaderContext, {
+      ...reader,
+      readTopicPage: async (id) => id === duplicateTopic.id ? duplicateTopic : undefined,
+      readPendingHelpDuplicateAppeal: authorReadAppeal,
+    });
+    const authorData = await topicLoader({
+      params: { locale: "en", topicId: duplicateTopic.id },
+      context: authorContext,
+    });
+    expect(authorReadAppeal).toHaveBeenCalledWith(duplicateTopic.id);
+    const authorView = renderRoute(
+      TopicRoute,
+      authorData,
+      forumTopicPath("en", duplicateTopic.id),
+      "en",
+      "ltr",
+    );
+    expect(await screen.findByText("Private appeal reason.")).toBeVisible();
+    expect(screen.getByText("This duplicate status is disputed.")).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Accept dispute and remove duplicate" })).not.toBeInTheDocument();
+    authorView.unmount();
+
+    const managerReadAppeal = vi.fn(async () => pendingAppeal);
+    const managerContext = context("en", "ltr");
+    managerContext.set(authSessionContext, {
+      user: { id: "manager", name: "Manager", email: "manager@example.test", emailVerified: true, createdAt: new Date(), updatedAt: new Date() },
+      session: { id: "manager-session", token: "manager-token", userId: "manager", expiresAt: new Date(Date.now() + 60_000), createdAt: new Date(), updatedAt: new Date() },
+    });
+    managerContext.set(authorizationContext, {
+      forUser: () => ({
+        resolve: vi.fn(),
+        has: vi.fn(async (permission) => permission === "forum.helpDuplicate.manage"),
+      }),
+    } as never);
+    managerContext.set(forumReaderContext, {
+      ...reader,
+      readTopicPage: async (id) => id === duplicateTopic.id ? duplicateTopic : undefined,
+      readPendingHelpDuplicateAppeal: managerReadAppeal,
+    });
+    const managerData = await topicLoader({
+      params: { locale: "en", topicId: duplicateTopic.id },
+      context: managerContext,
+    });
+    expect(managerReadAppeal).toHaveBeenCalledWith(duplicateTopic.id);
+    expect(managerData.canManageHelpDuplicate).toBe(true);
+    const managerView = renderRoute(
+      TopicRoute,
+      managerData,
+      forumTopicPath("en", duplicateTopic.id),
+      "en",
+      "ltr",
+    );
+    fireEvent.click(await screen.findByText("Admin panel"));
+    expect(screen.getByText("Private appeal reason.")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Accept dispute and remove duplicate" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Reject dispute" })).toBeVisible();
+    managerView.unmount();
+  });
+
   it("renders persisted Help solution moderation status and outdated reason", async () => {
     const moderatedPage = {
       ...solvedHelpPage,
