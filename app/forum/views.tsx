@@ -1651,10 +1651,13 @@ export function TopicView({
   generationUnits,
   canReply,
   canManageSolution,
+  canManageAnySolution = false,
   canModerateHelpSolution = false,
   isTopicAuthor = false,
   canCorrectTitleSourceLocale,
+  canCorrectAnySourceLocale = false,
   canManagePin,
+  canUseAdminPanel = false,
   correctablePostIds,
   topicReadState,
   actionData,
@@ -1666,10 +1669,13 @@ export function TopicView({
   generationUnits: readonly ContentGenerationUnitView[];
   canReply: boolean;
   canManageSolution: boolean;
+  canManageAnySolution?: boolean;
   canModerateHelpSolution?: boolean;
   isTopicAuthor?: boolean;
   canCorrectTitleSourceLocale: boolean;
+  canCorrectAnySourceLocale?: boolean;
   canManagePin: boolean;
+  canUseAdminPanel?: boolean;
   correctablePostIds: readonly string[];
   topicReadState: ForumTopicReadState | null;
   actionData?: TopicViewActionData;
@@ -1686,6 +1692,9 @@ export function TopicView({
   const forumWriteError = actionData && !("operation" in actionData)
     ? actionData.error
     : null;
+  const canShowOwnTopicTools =
+    (canManageSolution && !canManageAnySolution && !topic.isSolved)
+    || (canCorrectTitleSourceLocale && !canCorrectAnySourceLocale);
   const originalPost = topic.posts[0];
   const bestAnswerPost = topic.bestAnswerPostId
     ? topic.posts.find((post) => post.id === topic.bestAnswerPostId)
