@@ -83,8 +83,6 @@ const generationTopic = {
   createdAt: new Date("2026-01-01"),
   isSolved: false,
   bestAnswerPostId: null,
-  solutionModerationStatus: null,
-  solutionOutdatedReason: null,
   title: {
     id: "title-r1",
     originalContent: "Authoritative title",
