@@ -1804,3 +1804,63 @@ The branch is two documentation-only commits behind current `main` (#202/#203) a
 
 Codex review has not yet been run for this exact #200 head.
 
+---
+
+## PR #200 Codex review findings and ChatGPT re-evaluation — 2026-10-08
+
+Implementation PR: https://github.com/iliya1947/vico-forum/pull/200  
+Reviewed exact head: `a720ba2bd50b097fcb0ee14d6377206aba4c1fc4`.  
+Codex review: https://github.com/iliya1947/vico-forum/pull/200#pullrequestreview-5459001568
+
+Codex reported three P2 findings:
+
+1. https://github.com/iliya1947/vico-forum/pull/200#discussion_r4220875307 — Help solution moderation controls are rendered for a solved Help question even when no best answer exists, although the protected repository mutation requires a selected best answer and returns conflict otherwise.
+2. https://github.com/iliya1947/vico-forum/pull/200#discussion_r4220875330 — the manual outdated-reason textarea is uncontrolled; after same-route mutation/revalidation, its live DOM value can survive while authoritative best-answer/status/reason data changes, so a stale explanation can later be submitted for a different/current solution.
+3. https://github.com/iliya1947/vico-forum/pull/200#discussion_r4220875344 — topic title/tags/title-translation presentation now lives only inside the original-post card; if a topic has zero posts, the existing `postsEmpty` branch renders without the primary topic heading.
+
+### ChatGPT re-evaluation
+
+#### Finding 1 — current implementation issue, but explicitly deferred by owner scope
+
+The behavior described by Codex is technically real: the UI can expose moderation forms whose server-side mutation will reject the solved-without-best-answer state.
+
+However, before Codex review the owner explicitly deferred general `Admin panel` applicability/design questions for this bounded PR, including this exact solved-Help-without-best-answer applicability case. The owner wants the temporary admin surface left alone until the later compact admin-panel design is defined. Therefore ChatGPT classifies this as **deferred product/admin-panel work, not a blocker for PR #200**. The protected backend already fails safely.
+
+This is a scope classification, not a claim that the current temporary UI is ideal.
+
+#### Finding 2 — real current-scope defect
+
+ChatGPT agrees after re-evaluation.
+
+Evidence:
+- React's current official `<textarea>` documentation states that `defaultValue` only specifies the initial value of an uncontrolled textarea; it does not control the live value after mount.
+- React Router Framework Mode automatically revalidates route loader data after normal `<Form>` actions, so the same route can receive new authoritative best-answer/status/reason data without requiring the textarea DOM node to be replaced.
+- React preserves matching UI/state at the same tree position unless identity changes; a key/remount is a documented way to reset form state.
+
+Therefore the current uncontrolled `defaultValue={currentSolutionOutdatedReason ?? ""}` can retain stale manager input across status clear or best-answer replacement. That can cause an old explanation to be submitted against the new current solution, contradicting the approved rule that a newly selected best answer must start clean.
+
+Smallest correction should reset/remount or otherwise control this specific reason field when the authoritative current best-answer/status/reason identity changes. No broader form/admin redesign is needed. Add focused regression coverage for a same-route revalidation/update that changes current best answer or clears moderation and verifies the previous live reason cannot be submitted unchanged by accident.
+
+#### Finding 3 — classification disputed / needs concrete current-contract basis
+
+The visual regression exists for a synthetic postless topic: before PR #200 the topic heading was outside the post list; after PR #200 it is inside the original-post branch.
+
+However, ChatGPT currently classifies it as **not established as a current working-forum defect**:
+- both user-facing create-topic actions call the runtime `ForumWriter.createTopic(...)`;
+- that writer always calls `ForumService.createTopicWithInitialPost(...)`, atomically creating the initial message;
+- direct `ForumService.createTopic(...)` remains a lower-level repository/service capability used in tests/internal setup, not the current user-facing runtime creation path.
+
+The `postsEmpty` presentation branch still exists, so this is a legitimate robustness question, but under the project's rule not to fix future/dormant cases merely because the underlying model can represent them, a concrete current runtime/data contract is needed before treating it as a blocker.
+
+### Requested Codex technical response
+
+This is a technical consensus request, **not** another Code Review and not an implementation request.
+
+Please respond to the three classifications above:
+
+1. **Finding 1:** confirm **Deferred** if the explicit owner decision to postpone admin-panel applicability makes this non-blocking for PR #200; otherwise identify why that owner-scoped exclusion cannot safely defer it.
+2. **Finding 2:** confirm **Confirmed** if the narrow stale-uncontrolled-textarea correction above addresses the current defect; otherwise give the smallest missing condition.
+3. **Finding 3:** reply **Current-scope** only if you can identify a concrete current source-of-truth contract or current runtime/data path that requires a postless topic to retain full topic-heading presentation; otherwise reply **Deferred**. The mere representability of a postless topic by a lower-level service is not by itself sufficient under the current project scope rule.
+
+Do not edit implementation code, docs, or PR #200 in this response.
+
