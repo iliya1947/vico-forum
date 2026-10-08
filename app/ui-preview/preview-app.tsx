@@ -1308,6 +1308,7 @@ function PreviewTopicRoute({ scenario }: { scenario: Scenario }) {
         generationUnits={[]}
         canReply={scenario.identity !== "guest"}
         canManageSolution={false}
+        canModerateHelpSolution={scenario.identity === "manager" && helpQuestion.isSolved}
         isTopicAuthor={false}
         canCorrectTitleSourceLocale={false}
         canManagePin={false}
@@ -1545,12 +1546,9 @@ function previewElement(scenario: Scenario) {
       );
     case "topic": {
       const solutionConfirmation = scenario.variant === "topic-best-answer-unsolved";
-      const helpSolutionOutdated = scenario.variant === "help-solution-outdated";
-      const solved = helpSolutionOutdated || (
-        scenario.variant !== "topic-unsolved"
+      const solved = scenario.variant !== "topic-unsolved"
         && scenario.variant !== "topic-reply-error"
-        && !solutionConfirmation
-      );
+        && !solutionConfirmation;
       const data = topicData(
         scenario.locale,
         scenario.direction,
@@ -1559,32 +1557,10 @@ function previewElement(scenario: Scenario) {
         scenario.identity === "manager",
         solutionConfirmation,
       );
-      const renderedTopic = helpSolutionOutdated
-        ? {
-            ...data.topic,
-            id: "help-postgres-timeout",
-            sectionId: HELP_SOLUTIONS_SERVICE_SECTION_ID,
-            isSolved: true,
-            solutionModerationStatus: "outdated" as const,
-            solutionOutdatedReason: scenario.locale === "ru"
-              ? "В новой версии PostgreSQL поведение этой настройки изменилось."
-              : scenario.locale === "he"
-                ? "גרסת PostgreSQL החדשה שינתה את ההתנהגות של ההגדרה הזו."
-                : "A newer PostgreSQL version changed the behavior of this setting.",
-            section: {
-              id: HELP_SOLUTIONS_SERVICE_SECTION_ID,
-              name: "Questions",
-              category: { id: HELP_SOLUTIONS_CATEGORY_ID, name: "Help & solutions" },
-            },
-          }
-        : solutionConfirmation
-          ? { ...data.topic, bestAnswerPostId: "answer" }
-          : data.topic;
       return (
         <TopicView
           {...data}
-          topic={renderedTopic}
-          canModerateHelpSolution={helpSolutionOutdated}
+          topic={solutionConfirmation ? { ...data.topic, bestAnswerPostId: "answer" } : data.topic}
           actionData={scenario.variant === "topic-reply-error" ? { error: "rateLimited" } : undefined}
         />
       );
