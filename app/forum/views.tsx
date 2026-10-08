@@ -1707,7 +1707,7 @@ export function TopicView({
     ? actionData.error
     : null;
   const canShowOwnTopicTools =
-    (canManageSolution && !canManageAnySolution && !topic.isSolved)
+    (canManageSolution && !canManageAnySolution && !topic.isSolved && !topic.duplicateOf)
     || (canCorrectTitleSourceLocale && !canCorrectAnySourceLocale);
   const originalPost = topic.posts[0];
   const bestAnswerPost = topic.bestAnswerPostId
@@ -1723,7 +1723,7 @@ export function TopicView({
       ]
     : [];
   const messageNumberById = new Map(topic.posts.map((post, index) => [post.id, index + 1]));
-  const selectableBestAnswerPosts = canManageSolution
+  const selectableBestAnswerPosts = canManageSolution && !topic.duplicateOf
     ? topic.posts.slice(1).filter((post) => post.id !== topic.bestAnswerPostId)
     : [];
   const directRepliesByParent = new Map<string, string[]>();
@@ -1890,7 +1890,7 @@ export function TopicView({
                   </Form>
                 ) : null}
 
-                {canManageAnySolution && !topic.isSolved ? (
+                {canManageAnySolution && !topic.isSolved && !topic.duplicateOf ? (
                   <Form method="post" className="solution-form topic-admin-form">
                     <input type="hidden" name="intent" value="markSolved" />
                     <button type="submit">{t("markSolved")}</button>
@@ -1921,7 +1921,7 @@ export function TopicView({
                         </section>
                       ) : null}
                     </>
-                  ) : (
+                  ) : !topic.isSolved && !topic.bestAnswerPostId ? (
                     <Form method="post" className="topic-admin-form help-duplicate-admin-form">
                       <input type="hidden" name="intent" value="confirmHelpDuplicate" />
                       <label>
@@ -1930,7 +1930,7 @@ export function TopicView({
                       </label>
                       <button type="submit">{t("helpDuplicateConfirm")}</button>
                     </Form>
-                  )
+                  ) : null
                 ) : null}
 
                 {canCorrectAnySourceLocale ? (
