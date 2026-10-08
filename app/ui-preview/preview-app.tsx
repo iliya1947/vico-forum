@@ -564,7 +564,11 @@ function previewHelpSolutions(locale: PreviewLocale) {
     questions: [
       {
         id: "help-worker-session", title: titles[0]!, authorName: "Alex Rivera", replyCount: 0,
-        isSolved: false, hasBestAnswer: false, solutionModerationStatus: null, solutionOutdatedReason: null, solutionOutdatedReasonKind: null, needsDetails: false, duplicateOf: null, duplicateDisputed: false, createdAt: "2026-09-30T11:30:00.000Z",
+        isSolved: false, hasBestAnswer: false, solutionModerationStatus: null, solutionOutdatedReason: null, solutionOutdatedReasonKind: null,
+        needsDetails: false,
+        duplicateOf: { id: "help-auth-best-answer", title: titles[1]! },
+        duplicateDisputed: true,
+        createdAt: "2026-09-30T11:30:00.000Z",
         activityAt: "2026-09-30T15:40:00.000Z",
         tags: [{ key: "cloudflare", name: "Cloudflare" }, { key: "auth", name: "Auth" }],
       },
@@ -584,11 +588,8 @@ function previewHelpSolutions(locale: PreviewLocale) {
             : "A newer PostgreSQL version changed the behavior of this setting.",
         solutionOutdatedReasonKind: null,
         needsDetails: false,
-        duplicateOf: {
-          id: "help-worker-session",
-          title: titles[0]!,
-        },
-        duplicateDisputed: true,
+        duplicateOf: null,
+        duplicateDisputed: false,
         createdAt: "2026-09-27T08:00:00.000Z",
         activityAt: "2026-09-29T18:10:00.000Z",
         tags: [{ key: "postgresql", name: "PostgreSQL" }, { key: "neon", name: "Neon" }],
