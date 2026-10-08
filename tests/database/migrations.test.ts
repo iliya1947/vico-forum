@@ -256,9 +256,9 @@ describe("PostgreSQL 17 locale migrations", () => {
         solutionModerationStatus: "outdated",
         solutionOutdatedReason: "The provider removed this API.",
       });
-      await expect(
+      expect(() =>
         forum.setHelpSolutionModeration("help-foundation-topic", "outdated", "   "),
-      ).rejects.toBeInstanceOf(InvalidForumContentError);
+      ).toThrow(InvalidForumContentError);
       expect(await repository.readTopic("help-foundation-topic")).toMatchObject({
         isSolved: true,
         solutionModerationStatus: "outdated",
