@@ -336,7 +336,10 @@ composition without changing the forum hierarchy or schema:
   `Admin panel` for actors with existing moderator-level capabilities
   `forum.solution.manageAny`, `forum.sourceLocale.correctAny` or `forum.topic.pin`; individual
   actions keep their existing server-side capability checks, and the Help-specific solution-status
-  controls remain gated by `forum.solution.manageAny` and applicable Help state. Best-answer
+  controls remain gated by `forum.solution.manageAny` and applicable Help state. A confirmed
+  independent-review correction resets the manual outdated-reason form whenever authoritative
+  best-answer/status/persisted-reason identity changes, preventing stale uncontrolled textarea
+  input from carrying across same-route revalidation onto a newly selected solution. Best-answer
   selection is temporarily surfaced as a compact breadcrumb-row selector using permanent message
   numbers: it occupies the admin-panel slot for an ordinary topic author and sits immediately before
   `Admin panel` for a manager. The old message-level `Message tools` disclosure is removed from
