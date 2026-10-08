@@ -1312,17 +1312,17 @@ describe("content translation presentation", () => {
     const heading = await screen.findByRole("heading", { level: 1, name: "כותרת מתורגמת" });
     expect(heading).toHaveAttribute("lang", "he");
     expect(heading).toHaveAttribute("dir", "rtl");
-    const topicHeading = document.querySelector(".topic-heading");
-    const translatedPost = document.querySelector("#post-answer");
+    const originalQuestion = document.querySelector("#post-answer");
+    const topicHeading = originalQuestion?.querySelector(".topic-question-heading");
+    expect(originalQuestion).not.toBeNull();
     expect(topicHeading).not.toBeNull();
-    expect(translatedPost).not.toBeNull();
     expect(within(topicHeading as HTMLElement).getByText("Automatic translation")).toBeInTheDocument();
-    expect(within(translatedPost as HTMLElement).getByText("Automatic translation")).toBeInTheDocument();
+    expect(within(originalQuestion as HTMLElement).getAllByText("Automatic translation")).toHaveLength(2);
     expect(screen.getByText("Provider attribution")).toBeInTheDocument();
     expect(within(topicHeading as HTMLElement).getByText("Show original")).toBeInTheDocument();
     expect(within(topicHeading as HTMLElement).getByText("Show translation")).toBeInTheDocument();
-    expect(within(translatedPost as HTMLElement).getByText("Show original")).toBeInTheDocument();
-    expect(within(translatedPost as HTMLElement).getByText("Hide original")).toBeInTheDocument();
+    expect(within(originalQuestion as HTMLElement).getAllByText("Show original")).toHaveLength(2);
+    expect(within(originalQuestion as HTMLElement).getByText("Hide original")).toBeInTheDocument();
     expect(screen.getByText("How do I type an API?").closest("[lang]")).toHaveAttribute("lang", "en");
     expect(screen.getByText("How do I type an API?").closest("[dir]")).toHaveAttribute("dir", "ltr");
     expect(document.querySelector("script")).toBeNull();
@@ -1802,10 +1802,8 @@ describe("forum read states", () => {
 
     const correctionButtons = screen.getAllByRole("button", { name: "Correct language" });
     expect(correctionButtons).toHaveLength(2);
-    expect(correctionButtons.map((button) => button.closest("details"))).toEqual([
-      topicToolsDetails,
-      messageToolsDetails,
-    ]);
+    expect(within(topicToolsDetails as HTMLElement).getByRole("button", { name: "Correct language" })).toBeVisible();
+    expect(within(messageToolsDetails as HTMLElement).getByRole("button", { name: "Correct language" })).toBeVisible();
     expect(screen.getAllByText("Source language: en")).toHaveLength(2);
     expect(document.querySelector('input[name="expectedRevisionId"][value="title-r1"]')).not.toBeNull();
     expect(document.querySelector('input[name="postId"][value="answer"]')).not.toBeNull();
