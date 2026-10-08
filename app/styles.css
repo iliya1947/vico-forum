@@ -4469,8 +4469,7 @@ p {
   font-size: 0.78rem;
 }
 
-.topic-heading .solved-badge,
-.topic-heading .solution-moderation-badge {
+.topic-heading .solved-badge {
   display: inline-flex;
   align-items: center;
   min-height: 1.5rem;
@@ -4491,8 +4490,7 @@ p {
 }
 
 @media (min-width: 44.01rem) {
-  .topic-heading .solved-badge,
-  .topic-heading .solution-moderation-badge {
+  .topic-heading .solved-badge {
     min-height: 2.5rem;
     padding: 0.4rem 0.95rem;
     font-size: 0.82rem;
@@ -4524,13 +4522,116 @@ p {
   background: var(--color-accent-hover);
 }
 
+.topic-admin-slot {
+  display: flex;
+  justify-content: flex-end;
+  margin: 0.35rem 1rem 0.45rem;
+}
+
+.help-solution-admin-tools {
+  width: min(30rem, 100%);
+}
+
+.help-solution-admin-tools > summary {
+  width: fit-content;
+  margin-inline-start: auto;
+  padding: 0.4rem 0.65rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 0.45rem;
+  color: var(--color-accent-hover);
+  background: var(--color-surface);
+  font-size: 0.72rem;
+  font-weight: 850;
+  cursor: pointer;
+  user-select: none;
+}
+
+.help-solution-admin-tools > summary::marker {
+  color: var(--color-accent);
+}
+
+.help-solution-admin-tools > summary:hover,
+.help-solution-admin-tools > summary:focus-visible,
+.help-solution-admin-tools[open] > summary {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+}
+
+.help-solution-admin-panel {
+  display: grid;
+  gap: 0.7rem;
+  margin-block-start: 0.4rem;
+  padding: 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-panel);
+}
+
+.topic-shell .help-solution-admin-form {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.topic-shell .help-solution-admin-form + .help-solution-admin-form {
+  padding-block-start: 0.7rem;
+  border-block-start: 1px solid var(--color-border);
+}
+
+.topic-shell .help-solution-admin-form label {
+  display: grid;
+  gap: 0.3rem;
+  color: var(--color-text);
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
+.topic-shell .help-solution-admin-form textarea {
+  width: 100%;
+  resize: vertical;
+  padding: 0.5rem 0.55rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 0.35rem;
+  color: var(--color-text);
+  background: var(--color-surface-muted);
+  font: inherit;
+}
+
+.topic-shell .help-solution-admin-form textarea:focus {
+  border-color: var(--color-accent);
+  outline: 0.13rem solid var(--color-accent-soft);
+  outline-offset: 0.06rem;
+}
+
+.topic-shell .help-solution-admin-form button {
+  width: fit-content;
+  min-height: 2rem;
+  padding: 0.36rem 0.65rem;
+  border: 1px solid var(--color-accent);
+  border-radius: 0.4rem;
+  color: var(--color-accent-hover);
+  background: var(--color-surface);
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.topic-shell .help-solution-admin-form button:hover,
+.topic-shell .help-solution-admin-form button:focus-visible {
+  background: var(--color-accent-soft);
+}
+
 .solution-outdated-reason {
-  grid-column: 1 / -1;
   display: grid;
   gap: 0.25rem;
-  margin: 0.25rem 1rem 0.75rem;
-  padding: 0.7rem 0.85rem;
-  border: 1px solid var(--color-danger);
+  margin: 0 0 0.7rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--color-border-strong);
+  border-inline-start: 0.22rem solid var(--color-danger);
   border-radius: 0.45rem;
   color: var(--color-text);
   background: var(--color-surface-muted);
@@ -4703,6 +4804,16 @@ p {
   background: var(--color-accent-soft);
 }
 
+.topic-shell .topic-message-author-statuses .solution-moderation-badge {
+  display: inline-flex;
+  min-height: 1.45rem;
+  align-items: center;
+  padding: 0.16rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 850;
+}
+
 .topic-message-anchor {
   flex: none;
   color: var(--color-accent-hover);
@@ -4795,8 +4906,7 @@ p {
     justify-content: flex-end;
   }
 
-  .topic-heading-side .solved-badge,
-  .topic-heading-side .solution-moderation-badge {
+  .topic-heading-side .solved-badge {
     min-height: 2.5rem;
     padding: 0.4rem 0.95rem;
     font-size: 0.82rem;
@@ -4842,6 +4952,19 @@ p {
 @media (max-width: 29.99rem) {
   .topic-shell .breadcrumbs {
     margin-inline: 0.75rem;
+  }
+
+  .topic-admin-slot {
+    margin-inline: 0.75rem;
+  }
+
+  .help-solution-admin-tools {
+    width: 100%;
+  }
+
+  .help-solution-admin-tools > summary,
+  .topic-shell .help-solution-admin-form button {
+    width: 100%;
   }
 
   .topic-heading,
