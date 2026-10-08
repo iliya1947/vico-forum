@@ -365,8 +365,9 @@ composition without changing the forum hierarchy or schema:
   the authoritative duplicate relationship: the topic page may show a neutral public `Disputed`
   marker, while Help question lists keep public `Solved` and `Duplicate`, omit the redundant
   `Best answer` badge, keep `Solution outdated` public, and expose `Needs review` plus pending
-  `Disputed` only to the relevant moderation actors. The appeal explanation remains private to
-  that author and duplicate managers. Reject preserves
+  `Disputed` badges only to the relevant moderation actors in both lists and topic presentation.
+  The appealing author still sees their own pending-appeal message; the appeal explanation remains
+  private to that author and duplicate managers. Reject preserves
   the relation, while accepting the dispute removes it. A question with its own selected best
   answer or solved state cannot be confirmed as a duplicate, and an active duplicate cannot gain
   its own best answer, solved state or new replies until that relationship is removed. While an
