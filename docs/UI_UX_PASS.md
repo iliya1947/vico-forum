@@ -367,7 +367,10 @@ composition without changing the forum hierarchy or schema:
   `Best answer` badge, keep `Solution outdated` public, and expose `Needs review` plus pending
   `Disputed` only to the relevant moderation actors. The appeal explanation remains private to
   that author and duplicate managers. Reject preserves
-  the relation, while accepting the dispute removes it. General user moderation signals remain
+  the relation, while accepting the dispute removes it. A question with its own selected best
+  answer or solved state cannot be confirmed as a duplicate, and an active duplicate cannot gain
+  its own best answer or solved state until that relationship is removed. General user moderation
+  signals remain
   step 4, Needs attention expansion step 5 and combined relationship filters step 6;
 - owner visual acceptance of the implementation was confirmed on 2026-10-05; exact-head
   automated verification remains a separate PR check.
