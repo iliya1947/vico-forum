@@ -8,7 +8,11 @@ import {
   isPostgresQueryTimeout,
 } from "./postgres-deadlines";
 import type { ForumReader } from "./forum-repository";
-import type { HelpSolutionModerationStatus, SolutionManagementScope } from "./forum-repository";
+import type {
+  HelpDuplicateAppealResolution,
+  HelpSolutionModerationStatus,
+  SolutionManagementScope,
+} from "./forum-repository";
 import { DrizzleForumRepository } from "./forum-repository";
 import { ForumService, type SourceLocaleCorrectionScope } from "./forum-service";
 import { forumWritePolicy, type ForumWritePolicy } from "./forum-write-policy";
@@ -19,6 +23,10 @@ export interface ForumWriter {
   markTopicSolved(input: { topicId: string; actorId: string; scope: SolutionManagementScope }): Promise<void>;
   selectBestAnswer(input: { topicId: string; postId: string; actorId: string; scope: SolutionManagementScope }): Promise<{ topicAuthorId: string; isSolved: boolean }>;
   setHelpSolutionModeration(input: { topicId: string; status: HelpSolutionModerationStatus | null; outdatedReason?: string | null }): Promise<void>;
+  confirmHelpDuplicate(input: { topicId: string; originalTopicId: string; actorId: string }): Promise<void>;
+  removeHelpDuplicate(input: { topicId: string; actorId: string }): Promise<void>;
+  appealHelpDuplicate(input: { topicId: string; actorId: string; explanation: string }): Promise<void>;
+  resolveHelpDuplicateAppeal(input: { topicId: string; actorId: string; resolution: HelpDuplicateAppealResolution }): Promise<void>;
   correctTopicTitleSourceLocale(input: { topicId: string; expectedRevisionId: string; sourceLocale: string; actorId: string; scope: SourceLocaleCorrectionScope }): Promise<void>;
   correctPostBodySourceLocale(input: { topicId: string; postId: string; expectedRevisionId: string; sourceLocale: string; actorId: string; scope: SourceLocaleCorrectionScope }): Promise<void>;
   advanceTopicReadState(input: { userId: string; topicId: string; postId: string }): Promise<void>;
@@ -78,6 +86,7 @@ export function createHyperdriveForumReader(
     readHelpSolutionsWantToHelp: (userId) => read((repository) => repository.readHelpSolutionsWantToHelp(userId)),
     readHelpSolutionsForMe: (userId) => read((repository) => repository.readHelpSolutionsForMe(userId)),
     searchHelpSolutionsSimilar: (query, limit) => read((repository) => repository.searchHelpSolutionsSimilar(query, limit)),
+    readPendingHelpDuplicateAppeal: (topicId) => read((repository) => repository.readPendingHelpDuplicateAppeal(topicId)),
     readCategory: (id, pinnedTopicsPerSection) => read((repository) => repository.readCategory(id, pinnedTopicsPerSection)),
     readSection: (id) => read((repository) => repository.readSection(id)),
     readTopicPage: (id) => read((repository) => repository.readTopicPage(id)),
@@ -141,6 +150,18 @@ export function createHyperdriveForumWriter(
     selectBestAnswer: ({ topicId, postId, actorId, scope }) => write((forum) => forum.selectBestAnswer(topicId, postId, actorId, scope)),
     setHelpSolutionModeration: ({ topicId, status, outdatedReason = null }) => writeCorrection(async (forum) => {
       await forum.setHelpSolutionModeration(topicId, status, outdatedReason);
+    }),
+    confirmHelpDuplicate: ({ topicId, originalTopicId, actorId }) => writeCorrection(async (forum) => {
+      await forum.confirmHelpDuplicate(topicId, originalTopicId, actorId);
+    }),
+    removeHelpDuplicate: ({ topicId, actorId }) => writeCorrection(async (forum) => {
+      await forum.removeHelpDuplicate(topicId, actorId);
+    }),
+    appealHelpDuplicate: ({ topicId, actorId, explanation }) => writeCorrection(async (forum) => {
+      await forum.appealHelpDuplicate(topicId, actorId, explanation);
+    }),
+    resolveHelpDuplicateAppeal: ({ topicId, actorId, resolution }) => writeCorrection(async (forum) => {
+      await forum.resolveHelpDuplicateAppeal(topicId, actorId, resolution);
     }),
     correctTopicTitleSourceLocale: (input) => writeCorrection(async (forum) => { await forum.correctTopicTitleSourceLocale(input); }),
     correctPostBodySourceLocale: (input) => writeCorrection(async (forum) => { await forum.correctPostBodySourceLocale(input); }),
