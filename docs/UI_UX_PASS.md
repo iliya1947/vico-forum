@@ -358,7 +358,14 @@ composition without changing the forum hierarchy or schema:
   This bounded slice intentionally adds no new mutation, permission or visible moderation
   workflow; user signals/moderator confirmation remain step 4, broader Needs attention logic
   remains step 5, and combined label/reply/solution/relationship filters remain step 6.
-  Duplicate/appeal workflow remains the separate step 3;
+  PR #205 adds the third fixed-sequence step as a Help-specific duplicate relationship workflow.
+  A confirmed duplicate points directly to a canonical original question; manager operations use
+  the dedicated `forum.helpDuplicate.manage` capability. The duplicate-question author can dispute
+  only an already confirmed relationship with a required explanation. Pending dispute preserves
+  the authoritative duplicate relationship while public readers see only a neutral `Disputed`
+  marker; the explanation remains private to that author and duplicate managers. Reject preserves
+  the relation, while accepting the dispute removes it. General user moderation signals remain
+  step 4, Needs attention expansion step 5 and combined relationship filters step 6;
 - owner visual acceptance of the implementation was confirmed on 2026-10-05; exact-head
   automated verification remains a separate PR check.
 
