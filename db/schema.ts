@@ -634,23 +634,12 @@ export const forumTopics = pgTable(
     currentTitleRevisionId: text("current_title_revision_id").notNull(),
     isSolved: boolean("is_solved").notNull().default(false),
     bestAnswerPostId: text("best_answer_post_id"),
-    helpQuestionQuality: text("help_question_quality"),
+    needsDetails: boolean("needs_details").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
     index("forum_topics_section_id_idx").on(table.sectionId),
     index("forum_topics_author_id_idx").on(table.authorId),
-    check(
-      "forum_topics_help_question_quality_check",
-      sql`(
-        ${table.sectionId} = 'help-solutions-questions'
-        and ${table.helpQuestionQuality} is not null
-        and ${table.helpQuestionQuality} in ('normal', 'needs-details')
-      ) or (
-        ${table.sectionId} <> 'help-solutions-questions'
-        and ${table.helpQuestionQuality} is null
-      )`,
-    ),
   ],
 );
 
