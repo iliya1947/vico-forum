@@ -1874,14 +1874,14 @@
             "is_solved",
             "solution_moderation_status"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "3cbcb95c2a3f53dc71738903e4705f0751d21c0b467c1ec8e39b43f9dd246f8a"
         },
         {
           "name": "forum_topics_solution_moderation_status_check",
           "columns": [
             "solution_moderation_status"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "0d9f55ce386be4d047dd62e4d9f49fbe5211dcc0472a6a97514a06caea87da1e"
         },
         {
           "name": "forum_topics_solution_outdated_reason_check",
@@ -1889,7 +1889,7 @@
             "solution_moderation_status",
             "solution_outdated_reason"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "2e7ab243c458593ffb41a7404b8e4d485e99e1f8f2ca7517690cf0282889fac0"
         }
       ],
       "indexes": [
