@@ -1606,6 +1606,55 @@ describe("forum read states", () => {
     ]);
   });
 
+  it("keeps a replaced Help answer marked outdated while the new best answer stays clean", async () => {
+    const seed = helpTopic.posts[0]!;
+    const question = {
+      ...seed,
+      id: "question",
+      body: { id: "post-q", originalContent: "Question.", sourceLocale: "en" },
+    };
+    const oldBest = {
+      ...helpTopic.posts[1]!,
+      id: "old-best",
+      solutionModerationStatus: "outdated" as const,
+      solutionOutdatedReason: null,
+      solutionOutdatedReasonKind: "best-answer-replaced" as const,
+      body: { id: "post-old", originalContent: "Old solution.", sourceLocale: "en" },
+    };
+    const newBest = {
+      ...helpTopic.posts[2]!,
+      id: "new-best",
+      solutionModerationStatus: null,
+      solutionOutdatedReason: null,
+      solutionOutdatedReasonKind: null,
+      body: { id: "post-new", originalContent: "Current solution.", sourceLocale: "en" },
+    };
+    const solvedTopic = {
+      ...helpTopic,
+      isSolved: true,
+      bestAnswerPostId: "new-best",
+      posts: [question, oldBest, newBest],
+    };
+
+    renderRoute(
+      TopicRoute,
+      topicRenderData(solvedTopic),
+      "/en/topics/help-question",
+      "en",
+      "ltr",
+    );
+
+    const currentBest = await screen.findByText("Best answer");
+    expect(currentBest.closest("li")).toHaveAttribute("id", "post-new-best");
+    expect(currentBest.closest("li")).not.toHaveTextContent("Solution outdated");
+
+    const oldAnswer = document.querySelector("#post-old-best");
+    expect(oldAnswer).not.toBeNull();
+    expect(oldAnswer).toHaveTextContent("Solution outdated");
+    expect(within(oldAnswer as HTMLElement).getByText("A new best answer was selected.")).toBeVisible();
+    expect(oldAnswer?.querySelector(".forum-post-content")?.lastElementChild).toHaveClass("solution-outdated-reason");
+  });
+
   it("keeps message metadata in the author column while best-answer selection stays beside topic controls", async () => {
     const seed = topic.posts[0]!;
     const question = {
