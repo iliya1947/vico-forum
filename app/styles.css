@@ -4393,6 +4393,58 @@ p {
   color: var(--color-accent-hover);
 }
 
+.topic-question-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0.65rem 1rem;
+  margin-block-end: 0.75rem;
+  padding-block-end: 0.75rem;
+  border-block-end: 1px solid var(--color-border);
+}
+
+.topic-question-heading-main {
+  min-width: 0;
+}
+
+.topic-question-heading h1 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: clamp(1.35rem, 3vw, 1.8rem);
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.topic-question-heading .translation-provenance {
+  margin-block: 0.45rem 0;
+}
+
+.topic-question-heading .translation-original {
+  margin-block-start: 0.45rem;
+}
+
+.topic-question-tags {
+  margin-block-start: 0.55rem;
+}
+
+.topic-question-heading .topic-solution-link {
+  align-self: center;
+}
+
+.topic-message-author-statuses .solved-badge,
+.topic-message-author-statuses .pinned-topic-badge {
+  display: inline-flex;
+  min-height: 1.45rem;
+  align-items: center;
+  padding: 0.16rem 0.45rem;
+  border: 1px solid var(--color-accent);
+  border-radius: 999px;
+  color: var(--color-accent-hover);
+  background: var(--color-accent-soft);
+  font-size: 0.65rem;
+  font-weight: 850;
+}
+
 .topic-heading {
   display: grid;
   grid-template-columns: 10.5rem minmax(0, 1fr);
@@ -4532,12 +4584,12 @@ p {
   background: var(--color-accent-hover);
 }
 
-.help-solution-admin-tools {
+.topic-admin-tools {
   flex: 0 1 30rem;
   width: min(30rem, 100%);
 }
 
-.help-solution-admin-tools > summary {
+.topic-admin-tools > summary {
   width: fit-content;
   margin-inline-start: auto;
   padding: 0.4rem 0.65rem;
@@ -4551,18 +4603,18 @@ p {
   user-select: none;
 }
 
-.help-solution-admin-tools > summary::marker {
+.topic-admin-tools > summary::marker {
   color: var(--color-accent);
 }
 
-.help-solution-admin-tools > summary:hover,
-.help-solution-admin-tools > summary:focus-visible,
-.help-solution-admin-tools[open] > summary {
+.topic-admin-tools > summary:hover,
+.topic-admin-tools > summary:focus-visible,
+.topic-admin-tools[open] > summary {
   border-color: var(--color-accent);
   background: var(--color-accent-soft);
 }
 
-.help-solution-admin-panel {
+.topic-admin-panel {
   display: grid;
   gap: 0.7rem;
   margin-block-start: 0.4rem;
@@ -4573,7 +4625,7 @@ p {
   box-shadow: var(--shadow-panel);
 }
 
-.topic-shell .help-solution-admin-form {
+.topic-shell .topic-admin-form {
   display: grid;
   gap: 0.45rem;
   margin: 0;
@@ -4581,12 +4633,12 @@ p {
   border: 0;
 }
 
-.topic-shell .help-solution-admin-form + .help-solution-admin-form {
+.topic-shell .topic-admin-form + .topic-admin-form {
   padding-block-start: 0.7rem;
   border-block-start: 1px solid var(--color-border);
 }
 
-.topic-shell .help-solution-admin-form label {
+.topic-shell .topic-admin-form label {
   display: grid;
   gap: 0.3rem;
   color: var(--color-text);
@@ -4594,7 +4646,7 @@ p {
   font-weight: 750;
 }
 
-.topic-shell .help-solution-admin-form textarea {
+.topic-shell .topic-admin-form textarea {
   width: 100%;
   resize: vertical;
   padding: 0.5rem 0.55rem;
@@ -4605,13 +4657,13 @@ p {
   font: inherit;
 }
 
-.topic-shell .help-solution-admin-form textarea:focus {
+.topic-shell .topic-admin-form textarea:focus {
   border-color: var(--color-accent);
   outline: 0.13rem solid var(--color-accent-soft);
   outline-offset: 0.06rem;
 }
 
-.topic-shell .help-solution-admin-form button {
+.topic-shell .topic-admin-form button {
   width: fit-content;
   min-height: 2rem;
   padding: 0.36rem 0.65rem;
@@ -4625,8 +4677,8 @@ p {
   cursor: pointer;
 }
 
-.topic-shell .help-solution-admin-form button:hover,
-.topic-shell .help-solution-admin-form button:focus-visible {
+.topic-shell .topic-admin-form button:hover,
+.topic-shell .topic-admin-form button:focus-visible {
   background: var(--color-accent-soft);
 }
 
@@ -4964,13 +5016,13 @@ p {
     flex-basis: 100%;
   }
 
-  .help-solution-admin-tools {
+  .topic-admin-tools {
     flex-basis: 100%;
     width: 100%;
   }
 
-  .help-solution-admin-tools > summary,
-  .topic-shell .help-solution-admin-form button {
+  .topic-admin-tools > summary,
+  .topic-shell .topic-admin-form button {
     width: 100%;
   }
 
@@ -7258,11 +7310,25 @@ a.topic-tag:focus-visible {
     display: none;
   }
 
+  .topic-question-heading,
   .topic-shell [data-message-body],
   .message-generation-status,
   .topic-message-footer,
-  .message-secondary-tools {
+  .message-secondary-tools,
+  .solution-outdated-reason {
     grid-column: 1 / -1;
+  }
+
+  .topic-question-heading {
+    grid-template-columns: 1fr;
+    gap: 0.55rem;
+    margin: 0;
+    padding: 0.7rem 1rem 0.75rem;
+    border-block-end: 1px solid var(--color-border);
+  }
+
+  .topic-question-heading .topic-solution-link {
+    width: fit-content;
   }
 
   .topic-shell [data-message-body] {
