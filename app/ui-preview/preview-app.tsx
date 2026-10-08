@@ -114,7 +114,9 @@ export const scenarios: readonly Scenario[] = [
   { id: "help-solutions-attention", label: "Help & solutions · Needs attention", locale: "en", direction: "ltr", identity: "manager", path: "/en/categories/help-solutions?mode=attention", view: "category", allowedIdentities: ["manager"] },
   { id: "help-solutions-attention-empty", label: "Help & solutions · Needs attention · empty", locale: "en", direction: "ltr", identity: "manager", path: "/en/categories/help-solutions?mode=attention", view: "category", variant: "help-solutions-attention-empty", allowedIdentities: ["manager"] },
   { id: "help-solutions-solutions", label: "Help & solutions · Solutions", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=solutions", view: "category" },
-  { id: "help-solution-outdated", label: "Help solution · outdated", locale: "en", direction: "ltr", identity: "manager", path: "/en/topics/help-postgres-timeout", view: "topic", variant: "help-solution-outdated", allowedIdentities: ["manager"] },
+  { id: "help-solution-current", label: "Help solution · current", locale: "en", direction: "ltr", identity: "manager", path: "/en/topics/help-cloudflare-cache", view: "topic", allowedIdentities: ["guest", "user", "manager"] },
+  { id: "help-solution-needs-review", label: "Help solution · needs review", locale: "en", direction: "ltr", identity: "manager", path: "/en/topics/help-neon-pooling", view: "topic", allowedIdentities: ["guest", "user", "manager"] },
+  { id: "help-solution-outdated", label: "Help solution · outdated", locale: "en", direction: "ltr", identity: "manager", path: "/en/topics/help-postgres-timeout", view: "topic", variant: "help-solution-outdated", allowedIdentities: ["guest", "user", "manager"] },
   { id: "help-solutions-mine", label: "Help & solutions · My questions", locale: "en", direction: "ltr", identity: "user", path: "/en/categories/help-solutions?mode=mine", view: "category", allowedIdentities: ["user", "manager"] },
   { id: "help-solutions-mine-empty", label: "Help & solutions · My questions · empty", locale: "en", direction: "ltr", identity: "user", path: "/en/categories/help-solutions?mode=mine", view: "category", variant: "help-solutions-mine-empty", allowedIdentities: ["user", "manager"] },
   { id: "help-solutions-mine-guest", label: "Help & solutions · My questions · unauthenticated", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=mine", view: "not-found", variant: "route-401", allowedIdentities: ["guest"] },
@@ -527,17 +529,23 @@ function previewHelpSolutions(locale: PreviewLocale) {
         "למה ה-Worker מאבד את ה-session אחרי redirect?",
         "נבחרה תשובה מיטבית, אבל האימות עדיין לא יציב",
         "איך מתקנים statement timeout ב-PostgreSQL?",
+        "איך מגדירים Cache-Control נכון ב-Cloudflare?",
+        "האם צריך לבדוק מחדש את הגדרות החיבור של Neon?",
       ]
     : russian
       ? [
           "Почему Worker теряет сессию после redirect?",
           "Лучший ответ выбран, но авторизация всё ещё нестабильна",
           "Как исправить statement timeout в PostgreSQL?",
+          "Как правильно настроить Cache-Control в Cloudflare?",
+          "Нужно ли перепроверить настройки подключения Neon?",
         ]
       : [
           "Why does my Worker lose the session after redirect?",
           "Best answer selected, but auth is still intermittent",
           "How do I fix PostgreSQL statement timeouts?",
+          "How should Cache-Control be configured on Cloudflare?",
+          "Should the Neon connection settings be reviewed again?",
         ];
 
   return {
@@ -567,6 +575,20 @@ function previewHelpSolutions(locale: PreviewLocale) {
         createdAt: "2026-09-27T08:00:00.000Z",
         activityAt: "2026-09-29T18:10:00.000Z",
         tags: [{ key: "postgresql", name: "PostgreSQL" }, { key: "neon", name: "Neon" }],
+      },
+      {
+        id: "help-cloudflare-cache", title: titles[3]!, authorName: "Sam Chen", replyCount: 4,
+        isSolved: true, hasBestAnswer: true, solutionModerationStatus: null, solutionOutdatedReason: null,
+        createdAt: "2026-09-26T09:15:00.000Z",
+        activityAt: "2026-09-29T15:30:00.000Z",
+        tags: [{ key: "cloudflare", name: "Cloudflare" }, { key: "cache", name: "Cache" }],
+      },
+      {
+        id: "help-neon-pooling", title: titles[4]!, authorName: "Alex Rivera", replyCount: 2,
+        isSolved: true, hasBestAnswer: true, solutionModerationStatus: "needs-review" as const, solutionOutdatedReason: null,
+        createdAt: "2026-09-25T12:20:00.000Z",
+        activityAt: "2026-09-28T17:45:00.000Z",
+        tags: [{ key: "neon", name: "Neon" }, { key: "postgresql", name: "PostgreSQL" }],
       },
     ],
   };
