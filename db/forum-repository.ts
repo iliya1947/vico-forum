@@ -344,7 +344,16 @@ export class DrizzleForumRepository {
           tagKey: tag.key,
         })));
       }
-      return { id: input.id, sectionId: input.sectionId, authorId: input.authorId, title: input.titleRevision, isSolved: false, bestAnswerPostId: null };
+      return {
+        id: input.id,
+        sectionId: input.sectionId,
+        authorId: input.authorId,
+        title: input.titleRevision,
+        isSolved: false,
+        bestAnswerPostId: null,
+        solutionModerationStatus: null,
+        solutionOutdatedReason: null,
+      };
     });
   }
 
@@ -386,7 +395,16 @@ export class DrizzleForumRepository {
         })));
       }
       return {
-        topic: { id: input.id, sectionId: input.sectionId, authorId: input.authorId, title: input.titleRevision, isSolved: false, bestAnswerPostId: null },
+        topic: {
+          id: input.id,
+          sectionId: input.sectionId,
+          authorId: input.authorId,
+          title: input.titleRevision,
+          isSolved: false,
+          bestAnswerPostId: null,
+          solutionModerationStatus: null,
+          solutionOutdatedReason: null,
+        },
         post: { id: input.initialPost.id, topicId: input.id, authorId: input.authorId, parentPostId: null, body: input.initialPost.bodyRevision },
       };
     });
