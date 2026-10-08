@@ -1907,3 +1907,54 @@ _Source: https://github.com/iliya1947/vico-forum/pull/147#issuecomment-606340188
 3. Deferred — Current user-facing topic creation atomically creates the initial post, while postless topics are only representable through lower-level internal/test paths without a current contract requiring full heading presentation.
 
  [View task →](https://chatgpt.com/s/cd_6ac7b76c82488191831201280cd796b3)
+
+---
+
+## PR #200 confirmed DB CHECK finding and final ChatGPT whole-PR review — 2026-10-08
+
+Implementation PR: https://github.com/iliya1947/vico-forum/pull/200  
+Codex finding: https://github.com/iliya1947/vico-forum/pull/200#discussion_r4221176458  
+Final exact head after correction: `8765dfde2bc48ff3946620e873203ae71667e5fd`.
+
+### Confirmed current-scope finding
+
+Codex found that the original `forum_posts_solution_outdated_reason_check` used
+`solution_moderation_status = 'outdated'`. For the invalid tuple
+`status = NULL + reason != NULL + reason_kind = NULL`, PostgreSQL evaluates the first branch as
+UNKNOWN and the second as FALSE; a CHECK accepts TRUE or UNKNOWN, so the orphan reason could pass.
+
+ChatGPT independently reproduced the three-valued-logic path and confirmed this as a real defect introduced by PR #200.
+
+### Correction
+
+- `db/schema.ts`, migration `0028_help_solution_moderation.sql` and generated
+  `0028_snapshot.json` now use null-safe
+  `solution_moderation_status IS NOT DISTINCT FROM 'outdated'` in that branch.
+- The migration regression explicitly sets
+  `status = NULL + reason = 'orphan reason' + reason_kind = NULL` and expects SQLSTATE `23514`.
+- Production manifest check hash was regenerated from clean PostgreSQL 17
+  `pg_get_expr`: `db0e66ffbaa4a5c82be18ba1e8ab2f822bd3e221079f21e8d82415b482dd5a9d`.
+- Generated snapshot comparison still changes no table other than `forum_posts`; no `PENDING`
+  manifest hashes remain.
+
+### Final ChatGPT verification for head `8765dfd`
+
+No confirmed current-scope defect remains in ChatGPT whole-PR review.
+
+Exact-head CI:
+- run `37804986188`: `checks` success and `database` success;
+- clean PostgreSQL 17 migrations/constraints success;
+- production schema manifest parity success;
+- Drizzle schema parity success;
+- Workers smoke and runtime privilege probes success.
+
+Exact-head Pages:
+- run `37805226075`: build success and deploy success.
+
+Previously coordinated review classifications remain unchanged:
+1. solved Help without best answer / temporary Admin panel applicability — **Deferred by owner**;
+2. stale uncontrolled outdated-reason textarea — **Confirmed and fixed**, with same-route revalidation regression;
+3. postless-topic heading robustness — **Deferred**, no current user-facing runtime creation path.
+
+The implementation head is stable and ready for the required final Codex review.
+
