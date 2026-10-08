@@ -425,6 +425,13 @@ describe("PostgreSQL 17 locale migrations", () => {
         }],
       });
       expect(await repository.readHelpSolutionsWantToHelp("help-foundation-waiting")).toMatchObject({ questions: [] });
+      await expect(
+        forum.confirmHelpDuplicate(
+          "help-foundation-topic",
+          "help-foundation-no-replies",
+          "help-foundation-replier",
+        ),
+      ).rejects.toBeInstanceOf(ForumStateConflictError);
       await forum.confirmHelpDuplicate(
         "help-foundation-no-replies",
         "help-foundation-topic",
@@ -443,6 +450,27 @@ describe("PostgreSQL 17 locale migrations", () => {
           }),
         ]),
       });
+      await expect(
+        forum.markTopicSolved("help-foundation-no-replies", "help-foundation-waiting"),
+      ).rejects.toBeInstanceOf(ForumStateConflictError);
+      await forum.createPost({
+        id: "help-foundation-duplicate-answer",
+        topicId: "help-foundation-no-replies",
+        authorId: "help-foundation-replier",
+        parentPostId: "help-foundation-no-replies-question",
+        bodyRevision: {
+          id: "help-foundation-duplicate-answer-body",
+          originalContent: "A reply must not turn an active duplicate into its own solved question.",
+          sourceLocale: "en",
+        },
+      });
+      await expect(
+        forum.selectBestAnswer(
+          "help-foundation-no-replies",
+          "help-foundation-duplicate-answer",
+          "help-foundation-waiting",
+        ),
+      ).rejects.toBeInstanceOf(ForumStateConflictError);
 
       await expect(
         forum.confirmHelpDuplicate(
