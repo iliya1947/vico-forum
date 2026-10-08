@@ -277,8 +277,10 @@ Vico Forum находится в ранней pre-release разработке.
   combined filters — step 6; admin-panel redesign, similar-search refinement и Stage 6 rollout
   в этот slice не входят. Forward migration `0030_help_duplicate_workflow`, runtime ACL
   contract, schema manifest, RU/HE localization, focused route/privacy/database coverage и Pages
-  fixtures добавлены. Финальная owner visual acceptance и independent Codex review PR #205 ещё
-  не выполнены.
+  fixtures добавлены. Owner visual acceptance representative Pages states подтверждена
+  2026-10-09 после corrections duplicate-list statuses, solved-vs-duplicate exclusivity,
+  pending-appeal message visibility и блокировки новых replies у active duplicate.
+  Independent Codex review PR #205 ещё не выполнен.
 - In-app reply notifications slice реализован в PR #180:
   forward migration `0024_forum_reply_notifications` хранит только stable recipient/actor/topic/post
   references, `createdAt` и nullable `readAt`; unique recipient + reply identity предотвращает
