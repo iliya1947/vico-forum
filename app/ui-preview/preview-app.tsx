@@ -1174,8 +1174,7 @@ function PreviewCategoryRoute({ scenario }: { scenario: Scenario }) {
         isAuthenticated={scenario.identity !== "guest"}
         canAskQuestion={scenario.identity !== "guest"}
         canViewAttention={scenario.identity === "manager"}
-        canViewSolutionModeration={scenario.identity === "manager"}
-        canViewDuplicateDispute={scenario.identity === "manager"}
+        canViewDuplicateModeration={scenario.identity === "manager"}
         actionData={actionData}
       />
     );
