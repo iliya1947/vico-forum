@@ -5,6 +5,7 @@ import { I18nextProvider } from "react-i18next";
 import { RouterContextProvider, RouterProvider, createMemoryRouter, matchRoutes } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ForumReader, ForumTopicPage } from "../../db/forum-repository";
+import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
 import {
   HELP_SOLUTIONS_CATEGORY_ID,
   HELP_SOLUTIONS_SERVICE_SECTION_ID,
@@ -1163,6 +1164,64 @@ describe("Help & solutions modes and authoring", () => {
     expect(screen.getByRole("button", { name: "Accept dispute and remove duplicate" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Reject dispute" })).toBeVisible();
     managerView.unmount();
+
+    const degradedAuthorContext = context("en", "ltr");
+    degradedAuthorContext.set(authSessionContext, {
+      user: { id: "ada", name: "Ada", email: "ada@example.test", emailVerified: true, createdAt: new Date(), updatedAt: new Date() },
+      session: { id: "degraded-author-session", token: "degraded-author-token", userId: "ada", expiresAt: new Date(Date.now() + 60_000), createdAt: new Date(), updatedAt: new Date() },
+    });
+    degradedAuthorContext.set(authorizationContext, {
+      forUser: () => ({
+        resolve: vi.fn(),
+        has: vi.fn(async () => false),
+      }),
+    } as never);
+    degradedAuthorContext.set(forumReaderContext, {
+      ...reader,
+      readTopicPage: async (id) => id === duplicateTopic.id ? duplicateTopic : undefined,
+      readPendingHelpDuplicateAppeal: vi.fn(async () => {
+        throw new ForumStorageUnavailableError();
+      }),
+    });
+    const degradedAuthorData = await topicLoader({
+      params: { locale: "en", topicId: duplicateTopic.id },
+      context: degradedAuthorContext,
+    });
+    const degradedAuthorView = renderRoute(
+      TopicRoute,
+      degradedAuthorData,
+      forumTopicPath("en", duplicateTopic.id),
+      "en",
+      "ltr",
+    );
+    expect(await screen.findByText("This duplicate status is disputed.")).toBeVisible();
+    expect(screen.queryByText("Private appeal reason.")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Submit dispute" })).not.toBeInTheDocument();
+    degradedAuthorView.unmount();
+  });
+
+  it("duplicate-only permission does not expose an empty admin panel on ordinary topics", async () => {
+    const requestContext = context("en", "ltr");
+    requestContext.set(authSessionContext, {
+      user: { id: "duplicate-manager", name: "Duplicate manager", email: "duplicate@example.test", emailVerified: true, createdAt: new Date(), updatedAt: new Date() },
+      session: { id: "duplicate-manager-session", token: "duplicate-manager-token", userId: "duplicate-manager", expiresAt: new Date(Date.now() + 60_000), createdAt: new Date(), updatedAt: new Date() },
+    });
+    requestContext.set(authorizationContext, {
+      forUser: () => ({
+        resolve: vi.fn(),
+        has: vi.fn(async (permission) => permission === "forum.helpDuplicate.manage"),
+      }),
+    } as never);
+
+    const data = await topicLoader({
+      params: { locale: "en", topicId: topic.id },
+      context: requestContext,
+    });
+    expect(data.canManageHelpDuplicate).toBe(false);
+    expect(data.canUseAdminPanel).toBe(false);
+
+    renderRoute(TopicRoute, data, forumTopicPath("en", topic.id), "en", "ltr");
+    expect(screen.queryByText("Admin panel")).not.toBeInTheDocument();
   });
 
   it("renders persisted Help solution moderation status and outdated reason", async () => {
