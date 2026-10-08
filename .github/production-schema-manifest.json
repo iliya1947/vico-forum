@@ -985,7 +985,7 @@
           "name": "status",
           "type": "text",
           "nullable": false,
-          "defaultSha256": "PENDING"
+          "defaultSha256": "a89df8d14a00b7bd2ead7e86414dcd5232bff306786856171b38584e153bb73f"
         },
         {
           "name": "created_at",
@@ -1065,7 +1065,7 @@
           "columns": [
             "explanation"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "b5505cf040232514e4eb721eeaf033ffb44b83f1825f4d03bdde403d00a3f7f9"
         },
         {
           "name": "forum_help_duplicate_appeals_lifecycle_check",
@@ -1075,14 +1075,14 @@
             "resolved_by_user_id",
             "status"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "9bc11c82bf77bd5dc44618d7d7bc5ffab7e62be88a77b5017451ba764ce02cd0"
         },
         {
           "name": "forum_help_duplicate_appeals_status_check",
           "columns": [
             "status"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "9fbf8c4d50ed0330f1136be38e136a2b58ec2298a4c21fa9be296b1e24fd2c39"
         }
       ],
       "indexes": [
@@ -1241,7 +1241,7 @@
             "duplicate_topic_id",
             "original_topic_id"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "43df269811b88909af3ec2c915379bdc69c3c3678aff3bcaf8185a4d23421504"
         },
         {
           "name": "forum_help_duplicate_relationships_removal_check",
@@ -1250,7 +1250,7 @@
             "removed_at",
             "removed_by_user_id"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "0a0fe509a88f64d5df26dfbe6217e72829ab3802391f5942eeb01580feb3bc36"
         }
       ],
       "indexes": [
