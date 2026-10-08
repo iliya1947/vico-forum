@@ -228,14 +228,15 @@ describe("PostgreSQL 17 locale migrations", () => {
           hasBestAnswer: true,
           solutionModerationStatus: null,
           solutionOutdatedReason: null,
+          solutionOutdatedReasonKind: null,
         }],
       });
 
       await forum.setHelpSolutionModeration("help-foundation-topic", "needs-review");
-      expect(await repository.readTopic("help-foundation-topic")).toMatchObject({
-        isSolved: true,
+      expect(await repository.readPost("help-foundation-answer")).toMatchObject({
         solutionModerationStatus: "needs-review",
         solutionOutdatedReason: null,
+        solutionOutdatedReasonKind: null,
       });
       expect(await repository.readHelpSolutionsSolved()).toMatchObject({
         questions: [{
@@ -243,6 +244,7 @@ describe("PostgreSQL 17 locale migrations", () => {
           isSolved: true,
           solutionModerationStatus: "needs-review",
           solutionOutdatedReason: null,
+          solutionOutdatedReasonKind: null,
         }],
       });
 
@@ -251,25 +253,61 @@ describe("PostgreSQL 17 locale migrations", () => {
         "outdated",
         "  The provider removed   this API.  ",
       );
-      expect(await repository.readTopic("help-foundation-topic")).toMatchObject({
-        isSolved: true,
+      expect(await repository.readPost("help-foundation-answer")).toMatchObject({
         solutionModerationStatus: "outdated",
         solutionOutdatedReason: "The provider removed this API.",
+        solutionOutdatedReasonKind: null,
       });
       expect(() =>
         forum.setHelpSolutionModeration("help-foundation-topic", "outdated", "   "),
       ).toThrow(InvalidForumContentError);
-      expect(await repository.readTopic("help-foundation-topic")).toMatchObject({
-        isSolved: true,
+      expect(await repository.readPost("help-foundation-answer")).toMatchObject({
         solutionModerationStatus: "outdated",
         solutionOutdatedReason: "The provider removed this API.",
+        solutionOutdatedReasonKind: null,
       });
 
       await forum.setHelpSolutionModeration("help-foundation-topic", null);
-      expect(await repository.readTopic("help-foundation-topic")).toMatchObject({
-        isSolved: true,
+      expect(await repository.readPost("help-foundation-answer")).toMatchObject({
         solutionModerationStatus: null,
         solutionOutdatedReason: null,
+        solutionOutdatedReasonKind: null,
+      });
+
+      await forum.createPost({
+        id: "help-foundation-answer-2",
+        topicId: "help-foundation-topic",
+        authorId: "help-foundation-replier",
+        parentPostId: "help-foundation-question",
+        bodyRevision: {
+          id: "help-foundation-answer-2-body",
+          originalContent: "Use the newer fix instead",
+          sourceLocale: "en",
+        },
+      });
+      await forum.selectBestAnswer(
+        "help-foundation-topic",
+        "help-foundation-answer-2",
+        "help-foundation-author",
+      );
+      expect(await repository.readPost("help-foundation-answer")).toMatchObject({
+        solutionModerationStatus: "outdated",
+        solutionOutdatedReason: null,
+        solutionOutdatedReasonKind: "best-answer-replaced",
+      });
+      expect(await repository.readPost("help-foundation-answer-2")).toMatchObject({
+        solutionModerationStatus: null,
+        solutionOutdatedReason: null,
+        solutionOutdatedReasonKind: null,
+      });
+      expect(await repository.readHelpSolutionsSolved()).toMatchObject({
+        questions: [{
+          id: "help-foundation-topic",
+          hasBestAnswer: true,
+          solutionModerationStatus: null,
+          solutionOutdatedReason: null,
+          solutionOutdatedReasonKind: null,
+        }],
       });
 
       expect(await repository.readHelpSolutionsActive()).toMatchObject({
@@ -315,6 +353,7 @@ describe("PostgreSQL 17 locale migrations", () => {
           isSolved: false,
           solutionModerationStatus: null,
           solutionOutdatedReason: null,
+          solutionOutdatedReasonKind: null,
         }],
       });
       expect((await repository.readHelpSolutionsNeedsAttention())?.questions).toHaveLength(1);
@@ -323,13 +362,19 @@ describe("PostgreSQL 17 locale migrations", () => {
       ).rejects.toBeInstanceOf(ForumStateConflictError);
       await expectDatabaseCode(
         client.query(
-          "update forum_topics set solution_moderation_status = 'needs-review' where id = 'help-foundation-no-replies'",
+          "update forum_posts set solution_moderation_status = 'invalid' where id = 'help-foundation-answer-2'",
         ),
         "23514",
       );
       await expectDatabaseCode(
         client.query(
-          "update forum_topics set solution_moderation_status = 'outdated' where id = 'help-foundation-topic'",
+          "update forum_posts set solution_moderation_status = 'outdated', solution_outdated_reason = null, solution_outdated_reason_kind = null where id = 'help-foundation-answer-2'",
+        ),
+        "23514",
+      );
+      await expectDatabaseCode(
+        client.query(
+          "update forum_posts set solution_moderation_status = null, solution_outdated_reason = 'orphan reason' where id = 'help-foundation-answer-2'",
         ),
         "23514",
       );
@@ -404,8 +449,11 @@ describe("PostgreSQL 17 locale migrations", () => {
       ).rejects.toBeInstanceOf(ForumStateConflictError);
       expect(await repository.readTopic("solution-moderation-regular-topic")).toMatchObject({
         isSolved: true,
+      });
+      expect(await repository.readPost("solution-moderation-regular-post")).toMatchObject({
         solutionModerationStatus: null,
         solutionOutdatedReason: null,
+        solutionOutdatedReasonKind: null,
       });
     } finally {
       await client.query("delete from forum_topics where id = 'solution-moderation-regular-topic'");
