@@ -454,6 +454,19 @@ describe("PostgreSQL 17 locale migrations", () => {
         forum.markTopicSolved("help-foundation-no-replies", "help-foundation-waiting"),
       ).rejects.toBeInstanceOf(ForumStateConflictError);
       await expect(
+        forum.createPost({
+          id: "help-foundation-blocked-duplicate-reply",
+          topicId: "help-foundation-no-replies",
+          authorId: "help-foundation-replier",
+          parentPostId: "help-foundation-no-replies-question",
+          bodyRevision: {
+            id: "help-foundation-blocked-duplicate-reply-body",
+            originalContent: "This reply must be rejected while duplicate status is active.",
+            sourceLocale: "en",
+          },
+        }),
+      ).rejects.toThrow("a confirmed duplicate cannot receive new replies");
+      await expect(
         forum.selectBestAnswer(
           "help-foundation-no-replies",
           "help-foundation-no-replies-question",
