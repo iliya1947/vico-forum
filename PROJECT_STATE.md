@@ -262,11 +262,14 @@ Vico Forum находится в ранней pre-release разработке.
   сериализуются транзакционно. Новая code-backed capability `forum.helpDuplicate.manage`
   выдаётся initial built-in moderator/admin и защищает authoritative confirm/remove/resolve;
   обычный author подтверждённого duplicate-вопроса может отдельно подать appeal с обязательным
-  explanation. Pending appeal не снимает authoritative duplicate status: публично видна только
-  нейтральная метка `Disputed`, explanation доступен только author duplicate и actor с
+  explanation. Pending appeal не снимает authoritative duplicate status: на topic page публично
+  видна нейтральная метка `Disputed`, explanation доступен только author duplicate и actor с
   duplicate-management capability. Reject сохраняет relation; accept или manual removal снимает
-  active duplicate relation. Public Help cards показывают duplicate/disputed markers, а topic page
-  показывает locale-aware ссылку на canonical original без раскрытия internal service section.
+  active duplicate relation. В Help question list публично остаются `Solved` и `Duplicate`;
+  отдельный `Best answer` badge там не показывается. Answer-level moderation states
+  `Needs review` / `Solution outdated` и pending `Disputed` в списке видны только
+  соответствующим moderation actors. Topic page показывает locale-aware ссылку на canonical
+  original без раскрытия internal service section.
   General user moderation signals остаются step 4, расширение `Needs attention` — step 5,
   combined filters — step 6; admin-panel redesign, similar-search refinement и Stage 6 rollout
   в этот slice не входят. Forward migration `0030_help_duplicate_workflow`, runtime ACL
