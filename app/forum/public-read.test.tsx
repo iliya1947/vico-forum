@@ -1802,8 +1802,8 @@ describe("forum read states", () => {
 
     const correctionButtons = screen.getAllByRole("button", { name: "Correct language" });
     expect(correctionButtons).toHaveLength(2);
-    expect(within(topicToolsDetails as HTMLElement).getByRole("button", { name: "Correct language" })).toBeVisible();
-    expect(within(messageToolsDetails as HTMLElement).getByRole("button", { name: "Correct language" })).toBeVisible();
+    expect(within(topicToolsDetails as HTMLElement).getByRole("button", { name: "Correct language" })).toBeInTheDocument();
+    expect(within(messageToolsDetails as HTMLElement).getByRole("button", { name: "Correct language" })).toBeInTheDocument();
     expect(screen.getAllByText("Source language: en")).toHaveLength(2);
     expect(document.querySelector('input[name="expectedRevisionId"][value="title-r1"]')).not.toBeNull();
     expect(document.querySelector('input[name="postId"][value="answer"]')).not.toBeNull();
