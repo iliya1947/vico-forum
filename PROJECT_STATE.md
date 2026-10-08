@@ -202,12 +202,17 @@ Vico Forum находится в ранней pre-release разработке.
   уже решённых вопросов внутреннего `help-solutions-questions`, а `outdated` требует непустую
   persisted причину длиной до 1000 символов. Protected mutations повторно проверяют существующую
   effective capability `forum.solution.manageAny`; новая permission не вводится. Public Help
-  cards показывают persisted marker, а на topic page marker остаётся рядом с меткой best answer,
-  тогда как persisted outdated explanation показывается под body выбранного ответа. Manager-only
-  moderation controls доступны только при server-resolved `manageAny` и встроены справа в строку
-  breadcrumbs, отдельно от обычных topic tools. Help Pages fixtures выбирают best answer с более
-  поздним исходным номером и визуально проверяют его promotion сразу под original question с
-  сохранением permanent message number/anchor. User signals, quality
+  cards показывают persisted marker; на topic page marker остаётся рядом с меткой best answer, а
+  persisted outdated explanation находится в самом низу выбранного ответа. Topic title/tags и
+  original question теперь составляют одну message-card композицию вместо двух соседних карточек;
+  выбранный best answer по-прежнему поднимается сразу следом с сохранением permanent номера/anchor.
+  Справа в строке breadcrumbs для actor с существующими moderator-level capabilities
+  `forum.solution.manageAny`, `forum.sourceLocale.correctAny` или `forum.topic.pin` показывается
+  общий `Admin panel`; каждое действие внутри сохраняет собственную server-side permission
+  проверку, а Help-specific solution moderation по-прежнему доступна только через
+  `forum.solution.manageAny` для применимого solved Help question. Own-only topic tools автора
+  остаются отдельными. Help Pages fixtures выбирают best answer с более поздним исходным номером
+  и визуально проверяют его promotion сразу под original question. User signals, quality
   `needs-details`, duplicate/appeal workflow, расширение `Needs attention` и комбинируемые
   фильтры остаются следующими отдельными шагами; external migration/Stage 6 rollout не выполняется.
 - In-app reply notifications slice реализован в PR #180:
