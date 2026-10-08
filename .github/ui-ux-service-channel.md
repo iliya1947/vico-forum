@@ -2029,3 +2029,30 @@ No new executable permission is required for this persistence/projection-only st
 
 Implementation should use the smallest schema shape consistent with Help-only semantics and explicit persisted `normal`, with DB constraints/backfill/new-topic behavior and focused regression coverage. If implementation reveals a concrete dependency contradiction, reopen only that dependency rather than the fixed sequence.
 
+---
+
+## PR #204 implementation handoff — Help question quality — 2026-10-08
+
+Implementation PR: https://github.com/iliya1947/vico-forum/pull/204  
+Branch: `chatgpt/help-question-quality`.
+
+Implemented the fixed Help & solutions sequence step 2 within the previously agreed bounded scope:
+
+- persisted topic-level Help question quality `normal | needs-details`;
+- migration `0029_help_question_quality` backfills existing Help questions to explicit `normal`;
+- runtime Help question creation writes `normal`; generic forum topics retain `NULL`;
+- DB CHECK enforces Help-only semantics, non-null Help quality and the two allowed values;
+- Help list projections and topic-page read model expose the persisted quality;
+- no mutation/permission, user signal, Needs attention expansion, quality filter, duplicate workflow, admin redesign, similar-search refinement or draft work was added.
+
+During CI diagnosis, two isolated DB test schemas were found to stop at migration 0028. Their bootstrap lists were extended through 0029; the migration itself already passed the clean migrations suite. Type fixtures were also updated for the newly required read-model field.
+
+Implementation evidence before the documentation-only PROJECT_STATE update:
+
+- implementation head: `88fd8f682690020f397aa63f2ed80f174f70698c`;
+- CI run `37810294037`: `checks` success, `database` success;
+- database job includes clean PostgreSQL 17 migrations, new quality CHECK regressions and production schema manifest parity;
+- production check hash recorded as `f1f714bee46be360b324458abaf89d83dbe1db968c2e3752d94cf8ac9b90678a`.
+
+PR #204 remains draft. Whole-PR review, Pages evidence and final Codex review have not yet been performed for this slice.
+
