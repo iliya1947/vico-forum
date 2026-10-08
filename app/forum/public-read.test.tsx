@@ -460,7 +460,7 @@ describe("Help & solutions modes and authoring", () => {
     expect(screen.getByRole("heading", { level: 2, name: "All questions" })).toBeVisible();
     expect(screen.queryByRole("form", { name: "Ask a question" })).not.toBeInTheDocument();
     expect(screen.getByText("Open")).toBeVisible();
-    expect(screen.getByText("Best answer")).toBeVisible();
+    expect(screen.queryByText("Best answer")).not.toBeInTheDocument();
     expect(screen.getByText("2 replies")).toBeVisible();
     expect(screen.getByText("#Cloudflare")).toBeVisible();
     expect(screen.getByRole("link", { name: /Why does my Worker lose auth state/ }))
@@ -1255,9 +1255,9 @@ describe("Help & solutions modes and authoring", () => {
       "en",
       "ltr",
     );
-    expect(await screen.findByText("Best answer")).toBeVisible();
+    expect(await screen.findByText("Duplicate")).toBeVisible();
+    expect(screen.queryByText("Best answer")).not.toBeInTheDocument();
     expect(screen.queryByText("Solution outdated")).not.toBeInTheDocument();
-    expect(screen.queryByText("Duplicate")).not.toBeInTheDocument();
     expect(screen.queryByText("Disputed")).not.toBeInTheDocument();
     guestView.unmount();
 
@@ -1285,7 +1285,8 @@ describe("Help & solutions modes and authoring", () => {
       context: managerContext,
     });
     if (managerData.kind !== "help-solutions") throw new Error("expected Help & solutions page");
-    expect(managerData.canViewDuplicateModeration).toBe(true);
+    expect(managerData.canViewSolutionModeration).toBe(true);
+    expect(managerData.canViewDuplicateDispute).toBe(true);
     renderRoute(
       CategoryRoute,
       managerData,
@@ -1293,10 +1294,10 @@ describe("Help & solutions modes and authoring", () => {
       "en",
       "ltr",
     );
-    expect(await screen.findByText("Best answer")).toBeVisible();
-    expect(screen.getByText("Duplicate")).toBeVisible();
+    expect(await screen.findByText("Duplicate")).toBeVisible();
     expect(screen.getByText("Disputed")).toBeVisible();
-    expect(screen.queryByText("Solution outdated")).not.toBeInTheDocument();
+    expect(screen.getByText("Solution outdated")).toBeVisible();
+    expect(screen.queryByText("Best answer")).not.toBeInTheDocument();
 
     cleanup();
     const topicContext = context("en", "ltr");
