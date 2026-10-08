@@ -153,6 +153,7 @@ export interface ForumCategoryPage {
 }
 
 export type HelpSolutionModerationStatus = "needs-review" | "outdated";
+export type HelpSolutionOutdatedReasonKind = "best-answer-replaced";
 
 export interface ForumHelpQuestionSummary {
   id: string;
@@ -163,6 +164,7 @@ export interface ForumHelpQuestionSummary {
   hasBestAnswer: boolean;
   solutionModerationStatus: HelpSolutionModerationStatus | null;
   solutionOutdatedReason: string | null;
+  solutionOutdatedReasonKind: HelpSolutionOutdatedReasonKind | null;
   createdAt: Date;
   activityAt: Date;
   tags: ForumTag[];
@@ -260,8 +262,6 @@ export interface ForumTopic {
   title: ForumRevisionContent;
   isSolved: boolean;
   bestAnswerPostId: string | null;
-  solutionModerationStatus: HelpSolutionModerationStatus | null;
-  solutionOutdatedReason: string | null;
 }
 
 export interface ForumPost {
@@ -269,6 +269,9 @@ export interface ForumPost {
   topicId: string;
   authorId: string;
   parentPostId: string | null;
+  solutionModerationStatus: HelpSolutionModerationStatus | null;
+  solutionOutdatedReason: string | null;
+  solutionOutdatedReasonKind: HelpSolutionOutdatedReasonKind | null;
   body: ForumRevisionContent;
 }
 
@@ -351,8 +354,6 @@ export class DrizzleForumRepository {
         title: input.titleRevision,
         isSolved: false,
         bestAnswerPostId: null,
-        solutionModerationStatus: null,
-        solutionOutdatedReason: null,
       };
     });
   }
@@ -405,7 +406,16 @@ export class DrizzleForumRepository {
           solutionModerationStatus: null,
           solutionOutdatedReason: null,
         },
-        post: { id: input.initialPost.id, topicId: input.id, authorId: input.authorId, parentPostId: null, body: input.initialPost.bodyRevision },
+        post: {
+          id: input.initialPost.id,
+          topicId: input.id,
+          authorId: input.authorId,
+          parentPostId: null,
+          solutionModerationStatus: null,
+          solutionOutdatedReason: null,
+          solutionOutdatedReasonKind: null,
+          body: input.initialPost.bodyRevision,
+        },
       };
     });
   }
@@ -1188,6 +1198,7 @@ export class DrizzleForumRepository {
       coalesce(max(${forumPosts.createdAt}), ${forumTopics.createdAt})
     )`.mapWith(forumTopics.createdAt);
     const matchCount = sql<number>`count(distinct ${forumTopicTags.tagKey})::int`;
+    const currentBestAnswer = alias(forumPosts, "help_for_me_current_best_answer");
 
     const rows = await this.database
       .select({
@@ -1197,8 +1208,9 @@ export class DrizzleForumRepository {
         postCount: sql<number>`count(distinct ${forumPosts.id})::int`,
         isSolved: forumTopics.isSolved,
         bestAnswerPostId: forumTopics.bestAnswerPostId,
-        solutionModerationStatus: forumTopics.solutionModerationStatus,
-        solutionOutdatedReason: forumTopics.solutionOutdatedReason,
+        solutionModerationStatus: currentBestAnswer.solutionModerationStatus,
+        solutionOutdatedReason: currentBestAnswer.solutionOutdatedReason,
+        solutionOutdatedReasonKind: currentBestAnswer.solutionOutdatedReasonKind,
         createdAt: forumTopics.createdAt,
         activityAt,
         matchCount,
@@ -1217,12 +1229,23 @@ export class DrizzleForumRepository {
         ),
       )
       .leftJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
+      .leftJoin(currentBestAnswer, and(
+        eq(currentBestAnswer.topicId, forumTopics.id),
+        eq(currentBestAnswer.id, forumTopics.bestAnswerPostId),
+      ))
       .where(and(
         eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
         eq(forumTopics.isSolved, false),
         ne(forumTopics.authorId, userId),
       ))
-      .groupBy(forumTopics.id, forumTopicTitleRevisions.id, user.name)
+      .groupBy(
+        forumTopics.id,
+        forumTopicTitleRevisions.id,
+        user.name,
+        currentBestAnswer.solutionModerationStatus,
+        currentBestAnswer.solutionOutdatedReason,
+        currentBestAnswer.solutionOutdatedReasonKind,
+      )
       .orderBy(desc(matchCount), desc(activityAt), desc(forumTopics.id))
       .limit(HELP_SOLUTIONS_FOR_ME_LIMIT);
 
@@ -1238,6 +1261,7 @@ export class DrizzleForumRepository {
         hasBestAnswer: row.bestAnswerPostId !== null,
         solutionModerationStatus: row.solutionModerationStatus as HelpSolutionModerationStatus | null,
         solutionOutdatedReason: row.solutionOutdatedReason,
+        solutionOutdatedReasonKind: row.solutionOutdatedReasonKind as HelpSolutionOutdatedReasonKind | null,
         createdAt: row.createdAt,
         activityAt: row.activityAt,
         tags: tagsByTopic.get(row.id) ?? [],
@@ -1265,6 +1289,7 @@ export class DrizzleForumRepository {
       ${forumTopics.createdAt},
       coalesce(max(${forumPosts.createdAt}), ${forumTopics.createdAt})
     )`.mapWith(forumTopics.createdAt);
+    const currentBestAnswer = alias(forumPosts, "help_page_current_best_answer");
 
     const questionQuery = this.database
       .select({
@@ -1274,8 +1299,9 @@ export class DrizzleForumRepository {
         postCount: sql<number>`count(distinct ${forumPosts.id})::int`,
         isSolved: forumTopics.isSolved,
         bestAnswerPostId: forumTopics.bestAnswerPostId,
-        solutionModerationStatus: forumTopics.solutionModerationStatus,
-        solutionOutdatedReason: forumTopics.solutionOutdatedReason,
+        solutionModerationStatus: currentBestAnswer.solutionModerationStatus,
+        solutionOutdatedReason: currentBestAnswer.solutionOutdatedReason,
+        solutionOutdatedReasonKind: currentBestAnswer.solutionOutdatedReasonKind,
         createdAt: forumTopics.createdAt,
         activityAt,
       })
@@ -1286,6 +1312,10 @@ export class DrizzleForumRepository {
       ))
       .innerJoin(user, eq(user.id, forumTopics.authorId))
       .leftJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
+      .leftJoin(currentBestAnswer, and(
+        eq(currentBestAnswer.topicId, forumTopics.id),
+        eq(currentBestAnswer.id, forumTopics.bestAnswerPostId),
+      ))
       .where(
         filter.mode === "solved"
           ? and(
@@ -1310,7 +1340,14 @@ export class DrizzleForumRepository {
                   )
                 : eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
       )
-      .groupBy(forumTopics.id, forumTopicTitleRevisions.id, user.name)
+      .groupBy(
+        forumTopics.id,
+        forumTopicTitleRevisions.id,
+        user.name,
+        currentBestAnswer.solutionModerationStatus,
+        currentBestAnswer.solutionOutdatedReason,
+        currentBestAnswer.solutionOutdatedReasonKind,
+      )
       .having(
         filter.mode === "active"
           ? sql`count(distinct ${forumPosts.id}) > 1`
@@ -1341,6 +1378,7 @@ export class DrizzleForumRepository {
         hasBestAnswer: row.bestAnswerPostId !== null,
         solutionModerationStatus: row.solutionModerationStatus as HelpSolutionModerationStatus | null,
         solutionOutdatedReason: row.solutionOutdatedReason,
+        solutionOutdatedReasonKind: row.solutionOutdatedReasonKind as HelpSolutionOutdatedReasonKind | null,
         createdAt: row.createdAt,
         activityAt: row.activityAt,
         tags: tagsByTopic.get(row.id) ?? [],
@@ -1586,8 +1624,6 @@ export class DrizzleForumRepository {
         authorName: user.name, createdAt: forumTopics.createdAt, revisionId: forumTopicTitleRevisions.id,
         originalContent: forumTopicTitleRevisions.originalContent, sourceLocale: forumTopicTitleRevisions.sourceLocale,
         isSolved: forumTopics.isSolved, bestAnswerPostId: forumTopics.bestAnswerPostId,
-        solutionModerationStatus: forumTopics.solutionModerationStatus,
-        solutionOutdatedReason: forumTopics.solutionOutdatedReason,
         isPinned: sql<boolean>`${forumTopicPins.topicId} is not null`,
       })
       .from(forumTopics)
@@ -1608,6 +1644,9 @@ export class DrizzleForumRepository {
         parentPostId: forumPosts.parentPostId,
         authorName: user.name, createdAt: forumPosts.createdAt, revisionId: forumPostRevisions.id,
         originalContent: forumPostRevisions.originalContent, sourceLocale: forumPostRevisions.sourceLocale,
+        solutionModerationStatus: forumPosts.solutionModerationStatus,
+        solutionOutdatedReason: forumPosts.solutionOutdatedReason,
+        solutionOutdatedReasonKind: forumPosts.solutionOutdatedReasonKind,
       })
       .from(forumPosts)
       .innerJoin(user, eq(user.id, forumPosts.authorId))
@@ -1620,8 +1659,6 @@ export class DrizzleForumRepository {
     return {
       id: topic.id, sectionId: topic.sectionId, authorId: topic.authorId, authorName: topic.authorName,
       isSolved: topic.isSolved, bestAnswerPostId: topic.bestAnswerPostId,
-      solutionModerationStatus: topic.solutionModerationStatus as HelpSolutionModerationStatus | null,
-      solutionOutdatedReason: topic.solutionOutdatedReason,
       isPinned: topic.isPinned,
       createdAt: topic.createdAt,
       title: { id: topic.revisionId, originalContent: topic.originalContent, sourceLocale: topic.sourceLocale },
@@ -1630,6 +1667,9 @@ export class DrizzleForumRepository {
       posts: posts.map((post) => ({
         id: post.id, topicId: post.topicId, authorId: post.authorId, parentPostId: post.parentPostId,
         authorName: post.authorName, createdAt: post.createdAt,
+        solutionModerationStatus: post.solutionModerationStatus as HelpSolutionModerationStatus | null,
+        solutionOutdatedReason: post.solutionOutdatedReason,
+        solutionOutdatedReasonKind: post.solutionOutdatedReasonKind as HelpSolutionOutdatedReasonKind | null,
         body: { id: post.revisionId, originalContent: post.originalContent, sourceLocale: post.sourceLocale },
       })),
     };
@@ -1667,8 +1707,6 @@ export class DrizzleForumRepository {
         sourceLocale: forumTopicTitleRevisions.sourceLocale,
         isSolved: forumTopics.isSolved,
         bestAnswerPostId: forumTopics.bestAnswerPostId,
-        solutionModerationStatus: forumTopics.solutionModerationStatus,
-        solutionOutdatedReason: forumTopics.solutionOutdatedReason,
       })
       .from(forumTopics)
       .innerJoin(
@@ -1685,8 +1723,6 @@ export class DrizzleForumRepository {
       authorId: row.authorId,
       isSolved: row.isSolved,
       bestAnswerPostId: row.bestAnswerPostId,
-      solutionModerationStatus: row.solutionModerationStatus as HelpSolutionModerationStatus | null,
-      solutionOutdatedReason: row.solutionOutdatedReason,
       title: { id: row.revisionId, originalContent: row.originalContent, sourceLocale: row.sourceLocale },
     };
   }
@@ -1698,7 +1734,11 @@ export class DrizzleForumRepository {
   ): Promise<void> {
     await this.database.transaction(async (tx) => {
       const [topic] = await tx
-        .select({ sectionId: forumTopics.sectionId, isSolved: forumTopics.isSolved })
+        .select({
+          sectionId: forumTopics.sectionId,
+          isSolved: forumTopics.isSolved,
+          bestAnswerPostId: forumTopics.bestAnswerPostId,
+        })
         .from(forumTopics)
         .where(eq(forumTopics.id, topicId))
         .for("update");
@@ -1709,12 +1749,19 @@ export class DrizzleForumRepository {
       if (!topic.isSolved) {
         throw new ForumStateConflictError("solution moderation requires a solved Help & solutions question");
       }
-      await tx.update(forumTopics)
+      if (!topic.bestAnswerPostId) {
+        throw new ForumStateConflictError("solution moderation requires a selected best answer");
+      }
+      await tx.update(forumPosts)
         .set({
           solutionModerationStatus: status,
           solutionOutdatedReason: status === "outdated" ? outdatedReason : null,
+          solutionOutdatedReasonKind: null,
         })
-        .where(eq(forumTopics.id, topicId));
+        .where(and(
+          eq(forumPosts.topicId, topicId),
+          eq(forumPosts.id, topic.bestAnswerPostId),
+        ));
     });
   }
 
@@ -1731,8 +1778,16 @@ export class DrizzleForumRepository {
 
   async selectBestAnswer(topicId: string, postId: string, actorId: string, scope: SolutionManagementScope = "own"): Promise<{ topicAuthorId: string; isSolved: boolean }> {
     return this.database.transaction(async (tx) => {
-      const [topic] = await tx.select({ authorId: forumTopics.authorId, isSolved: forumTopics.isSolved })
-        .from(forumTopics).where(eq(forumTopics.id, topicId)).for("update");
+      const [topic] = await tx
+        .select({
+          authorId: forumTopics.authorId,
+          sectionId: forumTopics.sectionId,
+          isSolved: forumTopics.isSolved,
+          bestAnswerPostId: forumTopics.bestAnswerPostId,
+        })
+        .from(forumTopics)
+        .where(eq(forumTopics.id, topicId))
+        .for("update");
       if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
       if (scope === "own" && topic.authorId !== actorId) throw new ForumAuthorizationError("only the topic author may select an answer");
       const [post] = await tx.select({ topicId: forumPosts.topicId }).from(forumPosts).where(eq(forumPosts.id, postId));
@@ -1746,6 +1801,22 @@ export class DrizzleForumRepository {
       if (originalPost?.id === postId) {
         throw new ForumStateConflictError("original topic post cannot be selected as best answer");
       }
+      if (
+        topic.sectionId === HELP_SOLUTIONS_SERVICE_SECTION_ID
+        && topic.bestAnswerPostId
+        && topic.bestAnswerPostId !== postId
+      ) {
+        await tx.update(forumPosts)
+          .set({
+            solutionModerationStatus: "outdated",
+            solutionOutdatedReason: null,
+            solutionOutdatedReasonKind: "best-answer-replaced",
+          })
+          .where(and(
+            eq(forumPosts.topicId, topicId),
+            eq(forumPosts.id, topic.bestAnswerPostId),
+          ));
+      }
       await tx.update(forumTopics).set({ bestAnswerPostId: postId }).where(eq(forumTopics.id, topicId));
       return { topicAuthorId: topic.authorId, isSolved: topic.isSolved };
     });
@@ -1758,6 +1829,9 @@ export class DrizzleForumRepository {
         topicId: forumPosts.topicId,
         authorId: forumPosts.authorId,
         parentPostId: forumPosts.parentPostId,
+        solutionModerationStatus: forumPosts.solutionModerationStatus,
+        solutionOutdatedReason: forumPosts.solutionOutdatedReason,
+        solutionOutdatedReasonKind: forumPosts.solutionOutdatedReasonKind,
         revisionId: forumPostRevisions.id,
         originalContent: forumPostRevisions.originalContent,
         sourceLocale: forumPostRevisions.sourceLocale,
@@ -1773,6 +1847,9 @@ export class DrizzleForumRepository {
       topicId: row.topicId,
       authorId: row.authorId,
       parentPostId: row.parentPostId,
+      solutionModerationStatus: row.solutionModerationStatus as HelpSolutionModerationStatus | null,
+      solutionOutdatedReason: row.solutionOutdatedReason,
+      solutionOutdatedReasonKind: row.solutionOutdatedReasonKind as HelpSolutionOutdatedReasonKind | null,
       body: { id: row.revisionId, originalContent: row.originalContent, sourceLocale: row.sourceLocale },
     };
   }
