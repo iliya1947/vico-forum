@@ -7785,7 +7785,6 @@ a.topic-tag:focus-visible {
 }
 
 .help-question-status,
-.help-question-best-answer,
 .help-question-solution-moderation {
   display: inline-flex;
   min-height: 1.35rem;
