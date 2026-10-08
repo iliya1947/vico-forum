@@ -2283,3 +2283,19 @@ Final reviewed head: `5fcc05ecc4463396ed707bd4c13224a67b8e629d`.
 ### Conclusion
 
 PR #204 has no remaining confirmed defect in the current bounded Help & solutions step-2 scope and is ready for owner merge. User moderation-request state remains a separate later entity in fixed step 4 and is not part of this PR.
+
+
+---
+
+## PR #204 merged — Help & solutions step 2 complete — 2026-10-08
+
+Implementation PR #204 was merged by the owner into `main`.
+
+- final reviewed implementation head: `5fcc05ecc4463396ed707bd4c13224a67b8e629d`;
+- merge commit: `d87dfd444d413e0a2c162b75bc3ea39be6119d0f`;
+- final ChatGPT whole-PR review: no confirmed current-scope defects;
+- final independent Codex review on exact head: no findings;
+- Help & solutions step 2 is complete with persisted `needsDetails: boolean` foundation;
+- the separate user moderation-request state remains intentionally deferred to fixed step 4.
+
+No next implementation slice is started in this update.
