@@ -1224,7 +1224,7 @@ describe("Help & solutions modes and authoring", () => {
     expect(screen.queryByText("Admin panel")).not.toBeInTheDocument();
   });
 
-  it("keeps answer-level moderation out of Help lists and shows duplicate state only to moderators", async () => {
+  it("shows outdated and duplicate publicly while keeping disputed moderator-only in Help lists", async () => {
     const moderatedPage = {
       ...solvedHelpPage,
       questions: solvedHelpPage.questions.map((question) => ({
@@ -1349,6 +1349,69 @@ describe("Help & solutions modes and authoring", () => {
     expect(screen.getByRole("button", { name: "Mark as needs review" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Mark solution outdated" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Clear solution status" })).toBeVisible();
+  });
+
+  it("keeps needs-review hidden from public Help lists and visible to moderators", async () => {
+    const reviewPage = {
+      ...solvedHelpPage,
+      questions: solvedHelpPage.questions.map((question) => ({
+        ...question,
+        solutionModerationStatus: "needs-review" as const,
+        solutionOutdatedReason: null,
+        solutionOutdatedReasonKind: null,
+      })),
+    };
+
+    const guestContext = context("en", "ltr");
+    guestContext.set(forumReaderContext, {
+      ...reader,
+      readHelpSolutionsSolved: async () => reviewPage,
+    });
+    const guestData = await categoryLoader({
+      request: new Request("https://forum.example/en/categories/help-solutions?mode=solutions"),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: guestContext,
+    });
+    if (guestData.kind !== "help-solutions") throw new Error("expected Help & solutions page");
+    const guestView = renderRoute(
+      CategoryRoute,
+      guestData,
+      forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=solutions",
+      "en",
+      "ltr",
+    );
+    expect(screen.queryByText("Needs review")).not.toBeInTheDocument();
+    guestView.unmount();
+
+    const managerContext = context("en", "ltr");
+    managerContext.set(forumReaderContext, {
+      ...reader,
+      readHelpSolutionsSolved: async () => reviewPage,
+    });
+    managerContext.set(authSessionContext, {
+      user: { id: "manager", name: "Manager", email: "manager@example.test", emailVerified: true, createdAt: new Date(), updatedAt: new Date() },
+      session: { id: "manager-session", token: "manager-token", userId: "manager", expiresAt: new Date(Date.now() + 60_000), createdAt: new Date(), updatedAt: new Date() },
+    });
+    managerContext.set(authorizationContext, {
+      forUser: () => ({
+        resolve: vi.fn(),
+        has: vi.fn(async (permission) => permission === "forum.solution.manageAny"),
+      }),
+    } as never);
+    const managerData = await categoryLoader({
+      request: new Request("https://forum.example/en/categories/help-solutions?mode=solutions"),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: managerContext,
+    });
+    if (managerData.kind !== "help-solutions") throw new Error("expected Help & solutions page");
+    renderRoute(
+      CategoryRoute,
+      managerData,
+      forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=solutions",
+      "en",
+      "ltr",
+    );
+    expect(await screen.findByText("Needs review")).toBeVisible();
   });
 
   it("resets a stale outdated reason when the authoritative best answer changes on revalidation", async () => {
