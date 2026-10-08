@@ -210,9 +210,16 @@ Vico Forum находится в ранней pre-release разработке.
   `forum.solution.manageAny`, `forum.sourceLocale.correctAny` или `forum.topic.pin` показывается
   общий `Admin panel`; каждое действие внутри сохраняет собственную server-side permission
   проверку, а Help-specific solution moderation по-прежнему доступна только через
-  `forum.solution.manageAny` для применимого solved Help question. Own-only topic tools автора
-  остаются отдельными. Help Pages fixtures выбирают best answer с более поздним исходным номером
-  и визуально проверяют его promotion сразу под original question. User signals, quality
+  `forum.solution.manageAny` для применимого solved Help question. Выбор best answer больше не
+  находится в message-level `Message tools`: для actor с `forum.solution.manageOwn/manageAny`
+  отдельный compact selector стоит в той же breadcrumb action-zone, а при наличии admin panel —
+  непосредственно слева от неё; варианты внутри selector обозначены permanent message numbers.
+  Message-level source-locale correction UI на этом этапе скрыт вместе с `Message tools`;
+  существующая protected mutation/permission boundary сохранена для последующего включения в
+  спроектированную admin-panel систему по номеру сообщения. Own-only topic tools автора для
+  topic-level действий остаются отдельными. Help Pages fixtures выбирают best answer с более
+  поздним исходным номером и визуально проверяют его promotion сразу под original question.
+  User signals, quality
   `needs-details`, duplicate/appeal workflow, расширение `Needs attention` и комбинируемые
   фильтры остаются следующими отдельными шагами; external migration/Stage 6 rollout не выполняется.
 - In-app reply notifications slice реализован в PR #180:
