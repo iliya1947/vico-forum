@@ -2507,3 +2507,38 @@ If Codex has suggestions, it will comment; otherwise it will react with 👍.
 Codex can also answer questions or update the PR. Try commenting "@codex address that feedback".
             
 </details>
+
+
+---
+
+## PR #205 Drizzle parity diagnostic closure — 2026-10-08
+
+The remaining Drizzle parity failure is resolved on implementation head `fa2a0068c73366128b89e885f1b9b35acd0ccc4d`.
+
+### Root cause
+
+The committed `drizzle/meta/0030_snapshot.json` was hand-assembled and was semantically equivalent to the intended schema, but it did not exactly match Drizzle Kit's serialized representation for three expressions:
+
+1. `authz_permissions_catalog_check` had equivalent permission-list SQL with a different line-break representation;
+2. `forum_help_duplicate_relationships_active_duplicate_idx` stored the partial predicate as `"removed_at" is null` instead of Drizzle's qualified `"forum_help_duplicate_relationships"."removed_at" is null`;
+3. `forum_help_duplicate_appeals_pending_relationship_idx` stored `"status" = 'pending'` instead of Drizzle's qualified `"forum_help_duplicate_appeals"."status" = 'pending'`.
+
+Because snapshot metadata differed from current `db/schema.ts`, `drizzle-kit generate` emitted a synthetic `0031_ci-schema-parity` that only dropped/re-added that CHECK and the two partial indexes. The actual `0030_help_duplicate_workflow.sql` applied successfully and database lifecycle tests were already green.
+
+### Correction
+
+Only `0030_snapshot.json` metadata was aligned to Drizzle Kit's generated representation. No accepted migration `0000`–`0029` was changed, no new runtime/domain behavior was introduced, and the temporary diagnostic CI instrumentation was removed.
+
+### Verification
+
+CI run `37841539470` on exact head `fa2a0068c73366128b89e885f1b9b35acd0ccc4d` completed successfully:
+- lint, typecheck, tests, production build and UI preview build: success;
+- migration metadata validation: success;
+- **Verify Drizzle schema parity: success**;
+- clean PostgreSQL 17 migration/constraint suite: success;
+- production schema manifest parity: success;
+- runtime privilege, split-authority and Workers smoke checks: success.
+
+This was a current-scope repository metadata defect and is now closed.
+
+Codex was asked twice for a plain diagnostic reply; the connector instead triggered service-PR Code Review and did not provide the requested technical diagnosis. The exact generated parity SQL from CI independently established the cause above.
