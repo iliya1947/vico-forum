@@ -755,7 +755,7 @@ export const forumPosts = pgTable(
         ${table.solutionModerationStatus} = 'outdated'
         and (
           (
-            ${table.solutionOutdatedReasonKind} = 'best-answer-replaced'
+            ${table.solutionOutdatedReasonKind} is not distinct from 'best-answer-replaced'
             and ${table.solutionOutdatedReason} is null
           )
           or (
