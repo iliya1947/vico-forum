@@ -460,7 +460,7 @@ describe("Help & solutions modes and authoring", () => {
     expect(screen.getByRole("heading", { level: 2, name: "All questions" })).toBeVisible();
     expect(screen.queryByRole("form", { name: "Ask a question" })).not.toBeInTheDocument();
     expect(screen.getByText("Open")).toBeVisible();
-    expect(screen.getByText("Best answer")).toBeVisible();
+    expect(screen.queryByText("Best answer")).not.toBeInTheDocument();
     expect(screen.getByText("2 replies")).toBeVisible();
     expect(screen.getByText("#Cloudflare")).toBeVisible();
     expect(screen.getByRole("link", { name: /Why does my Worker lose auth state/ }))
@@ -1224,7 +1224,7 @@ describe("Help & solutions modes and authoring", () => {
     expect(screen.queryByText("Admin panel")).not.toBeInTheDocument();
   });
 
-  it("renders persisted Help solution moderation status and outdated reason", async () => {
+  it("shows Help list moderation statuses only to moderators while keeping duplicate public", async () => {
     const moderatedPage = {
       ...solvedHelpPage,
       questions: solvedHelpPage.questions.map((question) => ({
@@ -1232,28 +1232,72 @@ describe("Help & solutions modes and authoring", () => {
         solutionModerationStatus: "outdated" as const,
         solutionOutdatedReason: "The provider removed the API used by this workaround.",
         solutionOutdatedReasonKind: null,
+        duplicateOf: { id: "help-original", title: "Canonical original question" },
+        duplicateDisputed: true,
       })),
     };
-    const requestContext = context("en", "ltr");
-    requestContext.set(forumReaderContext, {
+    const guestContext = context("en", "ltr");
+    guestContext.set(forumReaderContext, {
       ...reader,
       readHelpSolutionsSolved: async () => moderatedPage,
     });
 
-    const data = await categoryLoader({
+    const guestData = await categoryLoader({
       request: new Request("https://forum.example/en/categories/help-solutions?mode=solutions"),
       params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
-      context: requestContext,
+      context: guestContext,
     });
-    if (data.kind !== "help-solutions") throw new Error("expected Help & solutions page");
+    if (guestData.kind !== "help-solutions") throw new Error("expected Help & solutions page");
+    const guestView = renderRoute(
+      CategoryRoute,
+      guestData,
+      forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=solutions",
+      "en",
+      "ltr",
+    );
+    expect(await screen.findByText("Duplicate")).toBeVisible();
+    expect(screen.queryByText("Solution outdated")).not.toBeInTheDocument();
+    expect(screen.queryByText("Disputed")).not.toBeInTheDocument();
+    expect(screen.queryByText("Best answer")).not.toBeInTheDocument();
+    guestView.unmount();
+
+    const managerContext = context("en", "ltr");
+    managerContext.set(forumReaderContext, {
+      ...reader,
+      readHelpSolutionsSolved: async () => moderatedPage,
+    });
+    managerContext.set(authSessionContext, {
+      user: { id: "manager", name: "Manager", email: "manager@example.test", emailVerified: true, createdAt: new Date(), updatedAt: new Date() },
+      session: { id: "manager-session", token: "manager-token", userId: "manager", expiresAt: new Date(Date.now() + 60_000), createdAt: new Date(), updatedAt: new Date() },
+    });
+    managerContext.set(authorizationContext, {
+      forUser: () => ({
+        resolve: vi.fn(),
+        has: vi.fn(async (permission) =>
+          permission === "forum.solution.manageAny" || permission === "forum.helpDuplicate.manage"
+        ),
+      }),
+    } as never);
+
+    const managerData = await categoryLoader({
+      request: new Request("https://forum.example/en/categories/help-solutions?mode=solutions"),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: managerContext,
+    });
+    if (managerData.kind !== "help-solutions") throw new Error("expected Help & solutions page");
+    expect(managerData.canViewSolutionModeration).toBe(true);
+    expect(managerData.canViewDuplicateDispute).toBe(true);
     renderRoute(
       CategoryRoute,
-      data,
+      managerData,
       forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=solutions",
       "en",
       "ltr",
     );
     expect(await screen.findByText("Solution outdated")).toBeVisible();
+    expect(screen.getByText("Disputed")).toBeVisible();
+    expect(screen.getByText("Duplicate")).toBeVisible();
+    expect(screen.queryByText("Best answer")).not.toBeInTheDocument();
 
     cleanup();
     const topicContext = context("en", "ltr");
