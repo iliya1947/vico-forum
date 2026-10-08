@@ -403,8 +403,6 @@ export class DrizzleForumRepository {
           title: input.titleRevision,
           isSolved: false,
           bestAnswerPostId: null,
-          solutionModerationStatus: null,
-          solutionOutdatedReason: null,
         },
         post: {
           id: input.initialPost.id,
@@ -466,7 +464,16 @@ export class DrizzleForumRepository {
         });
       }
 
-      return { id: input.id, topicId: input.topicId, authorId: input.authorId, parentPostId, body: input.bodyRevision };
+      return {
+        id: input.id,
+        topicId: input.topicId,
+        authorId: input.authorId,
+        parentPostId,
+        solutionModerationStatus: null,
+        solutionOutdatedReason: null,
+        solutionOutdatedReasonKind: null,
+        body: input.bodyRevision,
+      };
     });
   }
 
