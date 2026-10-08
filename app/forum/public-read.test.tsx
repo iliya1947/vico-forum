@@ -89,6 +89,7 @@ const helpTopic = {
   posts: [
     {
       id: "help-question-post", topicId: "help-question", authorId: "ada", authorName: "Ada", parentPostId: null,
+      solutionModerationStatus: null, solutionOutdatedReason: null, solutionOutdatedReasonKind: null,
       createdAt: new Date("2026-01-03"),
       body: { id: "help-question-body", originalContent: "The session disappears after redirect.", sourceLocale: "en" },
     },
@@ -1057,6 +1058,7 @@ describe("Help & solutions modes and authoring", () => {
         ...question,
         solutionModerationStatus: "outdated" as const,
         solutionOutdatedReason: "The provider removed the API used by this workaround.",
+        solutionOutdatedReasonKind: null,
       })),
     };
     const requestContext = context("en", "ltr");
@@ -1088,8 +1090,14 @@ describe("Help & solutions modes and authoring", () => {
         ? {
             ...helpTopic,
             isSolved: true,
-            solutionModerationStatus: "outdated",
-            solutionOutdatedReason: "The provider removed the API used by this workaround.",
+            posts: helpTopic.posts.map((post) => post.id === "help-answer"
+              ? {
+                  ...post,
+                  solutionModerationStatus: "outdated" as const,
+                  solutionOutdatedReason: "The provider removed the API used by this workaround.",
+                  solutionOutdatedReasonKind: null,
+                }
+              : post),
           }
         : undefined,
     });
