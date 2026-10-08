@@ -332,9 +332,14 @@ composition without changing the forum hierarchy or schema:
   `Admin panel` for actors with existing moderator-level capabilities
   `forum.solution.manageAny`, `forum.sourceLocale.correctAny` or `forum.topic.pin`; individual
   actions keep their existing server-side capability checks, and the Help-specific solution-status
-  controls remain gated by `forum.solution.manageAny` and applicable Help state. Own-only author
-  tools remain separate. Pages fixtures expose multiple solved Help questions across
-  current/needs-review/outdated states and allow Guest/User/Manager identity switching.
+  controls remain gated by `forum.solution.manageAny` and applicable Help state. Best-answer
+  selection is temporarily surfaced as a compact breadcrumb-row selector using permanent message
+  numbers: it occupies the admin-panel slot for an ordinary topic author and sits immediately before
+  `Admin panel` for a manager. The old message-level `Message tools` disclosure is removed from
+  the current presentation; message source-locale correction keeps its protected backend contract
+  but its UI waits for the later admin-panel design that can target a message by number. Own-only
+  topic-level author tools remain separate. Pages fixtures expose multiple solved Help questions
+  across current/needs-review/outdated states and allow Guest/User/Manager identity switching.
   User signals,
   `needs-details`, duplicates/appeals, broader Needs attention logic and
   combined filters remain later fixed-sequence steps;
