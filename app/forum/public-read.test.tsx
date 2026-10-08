@@ -1140,7 +1140,9 @@ describe("Help & solutions modes and authoring", () => {
       forUser: () => ({
         resolve: vi.fn(),
         has: vi.fn(async (permission) =>
-          permission === "forum.helpDuplicate.manage" || permission === "forum.solution.manageAny"
+          permission === "forum.helpDuplicate.manage"
+          || permission === "forum.solution.manageAny"
+          || permission === "forum.reply.create"
         ),
       }),
     } as never);
@@ -1155,6 +1157,7 @@ describe("Help & solutions modes and authoring", () => {
     });
     expect(managerReadAppeal).toHaveBeenCalledWith(duplicateTopic.id);
     expect(managerData.canManageHelpDuplicate).toBe(true);
+    expect(managerData.canReply).toBe(true);
     const managerView = renderRoute(
       TopicRoute,
       managerData,
@@ -1162,10 +1165,13 @@ describe("Help & solutions modes and authoring", () => {
       "en",
       "ltr",
     );
+    expect(await screen.findByText("Private appeal reason.")).toBeVisible();
+    expect(screen.getByText("Author: Ada")).toBeVisible();
     expect(screen.queryByText("Select as best answer")).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Add reply" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Reply" })).not.toBeInTheDocument();
     fireEvent.click(await screen.findByText("Admin panel"));
     expect(screen.queryByRole("button", { name: "Mark solved" })).not.toBeInTheDocument();
-    expect(screen.getByText("Private appeal reason.")).toBeVisible();
     expect(screen.getByRole("button", { name: "Accept dispute and remove duplicate" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Reject dispute" })).toBeVisible();
     managerView.unmount();
