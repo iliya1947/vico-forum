@@ -45,9 +45,11 @@ Vico Forum находится в ранней pre-release разработке.
   не искажались. Текущий correction branch
   дополнительно cache-bust-ит embedded iframe по hash текущего preview bundle, чтобы новый Pages
   deploy не мог оставить iframe на stale HTML со ссылкой на удалённый hashed asset. Pages workflow
-  явно исключает общий service branch `chatgpt/ui-ux-product-pass`, чтобы технические updates
-  communication-файла не могли перезаписать visual preview артефактом из отставшей служебной ветки.
-  Это не заменяет будущую real-runtime acceptance.
+  автоматически deploy-ит push в `main` и same-repository implementation PR, targeting `main`;
+  для PR build явно checkout-ит exact `pull_request.head.sha`. Общий service branch
+  `chatgpt/ui-ux-product-pass` исключён из PR deploy, чтобы технические updates communication-файла
+  не могли перезаписать visual preview артефактом из отставшей служебной ветки. Fork PR также не
+  получают Pages deploy. Это не заменяет будущую real-runtime acceptance.
 - В текущем UI/UX slice реализованы и repository-CI/Pages-проверены semantic visual tokens,
   Light/Dark с first-use `prefers-color-scheme` и persisted manual choice, two-zone shell/header,
   approved shell/homepage foundation и общая локализованная страница `Under development`.
