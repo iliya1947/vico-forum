@@ -1322,6 +1322,12 @@ export function HelpSolutionsView({
                             )}
                           </span>
                         ) : null}
+                        {question.duplicateOf ? (
+                          <span className="help-question-duplicate">{t("helpDuplicateBadge")}</span>
+                        ) : null}
+                        {question.duplicateDisputed ? (
+                          <span className="help-question-duplicate-disputed">{t("helpDuplicateDisputed")}</span>
+                        ) : null}
                       </span>
                       <small>{t("startedBy", { author: question.authorName })}</small>
                       {question.tags.length > 0 ? (
@@ -1653,6 +1659,8 @@ export function TopicView({
   canManageSolution,
   canManageAnySolution = false,
   canModerateHelpSolution = false,
+  canManageHelpDuplicate = false,
+  pendingDuplicateAppeal = null,
   isTopicAuthor = false,
   canCorrectTitleSourceLocale,
   canCorrectAnySourceLocale = false,
@@ -1670,6 +1678,13 @@ export function TopicView({
   canManageSolution: boolean;
   canManageAnySolution?: boolean;
   canModerateHelpSolution?: boolean;
+  canManageHelpDuplicate?: boolean;
+  pendingDuplicateAppeal?: {
+    id: string;
+    relationshipId: string;
+    explanation: string;
+    createdAt: string;
+  } | null;
   isTopicAuthor?: boolean;
   canCorrectTitleSourceLocale: boolean;
   canCorrectAnySourceLocale?: boolean;
@@ -1880,6 +1895,42 @@ export function TopicView({
                   </Form>
                 ) : null}
 
+                {canManageHelpDuplicate && topic.section.id === HELP_SOLUTIONS_SERVICE_SECTION_ID ? (
+                  topic.duplicateOf ? (
+                    <>
+                      <Form method="post" className="topic-admin-form help-duplicate-admin-form">
+                        <input type="hidden" name="intent" value="removeHelpDuplicate" />
+                        <button type="submit">{t("helpDuplicateRemove")}</button>
+                      </Form>
+                      {pendingDuplicateAppeal ? (
+                        <section className="help-duplicate-appeal-review">
+                          <strong>{t("helpDuplicateAppealReviewHeading")}</strong>
+                          <p>{pendingDuplicateAppeal.explanation}</p>
+                          <div className="help-duplicate-appeal-review-actions">
+                            <Form method="post" className="topic-admin-form">
+                              <input type="hidden" name="intent" value="acceptHelpDuplicateAppeal" />
+                              <button type="submit">{t("helpDuplicateAppealAccept")}</button>
+                            </Form>
+                            <Form method="post" className="topic-admin-form">
+                              <input type="hidden" name="intent" value="rejectHelpDuplicateAppeal" />
+                              <button type="submit">{t("helpDuplicateAppealReject")}</button>
+                            </Form>
+                          </div>
+                        </section>
+                      ) : null}
+                    </>
+                  ) : (
+                    <Form method="post" className="topic-admin-form help-duplicate-admin-form">
+                      <input type="hidden" name="intent" value="confirmHelpDuplicate" />
+                      <label>
+                        {t("helpDuplicateOriginalIdLabel")}
+                        <input name="originalTopicId" required autoComplete="off" />
+                      </label>
+                      <button type="submit">{t("helpDuplicateConfirm")}</button>
+                    </Form>
+                  )
+                ) : null}
+
                 {canCorrectAnySourceLocale ? (
                   <Form method="post" className="source-locale-form topic-admin-form">
                     <input type="hidden" name="intent" value="correctTitleSourceLocale" />
@@ -1947,6 +1998,41 @@ export function TopicView({
 
         {correctionError && <p className="topic-page-alert" role="alert">{t(`sourceLocaleCorrectionError_${correctionError}`)}</p>}
         {forumWriteError && <p className="topic-page-alert" role="alert">{t(`forumWriteError_${forumWriteError}`)}</p>}
+
+        {topic.duplicateOf ? (
+          <section className="help-duplicate-notice" aria-label={t("helpDuplicateBadge")}>
+            <div className="help-duplicate-notice-main">
+              <strong>{t("helpDuplicateBadge")}</strong>
+              <span>
+                {t("helpDuplicateOf")}{" "}
+                <Link to={forumTopicPath(locale, topic.duplicateOf.id)} dir="auto">
+                  {topic.duplicateOf.title}
+                </Link>
+              </span>
+              {topic.duplicateDisputed ? (
+                <span className="help-duplicate-disputed-badge">{t("helpDuplicateDisputed")}</span>
+              ) : null}
+            </div>
+
+            {isTopicAuthor ? (
+              pendingDuplicateAppeal ? (
+                <div className="help-duplicate-appeal-pending">
+                  <strong>{t("helpDuplicateAppealPending")}</strong>
+                  <p>{pendingDuplicateAppeal.explanation}</p>
+                </div>
+              ) : (
+                <Form method="post" className="help-duplicate-appeal-form">
+                  <input type="hidden" name="intent" value="appealHelpDuplicate" />
+                  <label>
+                    {t("helpDuplicateAppealExplanationLabel")}
+                    <textarea name="explanation" required maxLength={1000} rows={3} />
+                  </label>
+                  <button type="submit">{t("helpDuplicateAppealSubmit")}</button>
+                </Form>
+              )
+            ) : null}
+          </section>
+        ) : null}
 
         {promptedBestAnswerPostId && (
           <section id="solution-confirmation" className="solution-confirmation" aria-label={t("problemSolvedPrompt")}>
