@@ -1295,8 +1295,8 @@ function PreviewTopicRoute({ scenario }: { scenario: Scenario }) {
     const helpTopic = {
       id: helpQuestion.id,
       sectionId: HELP_SOLUTIONS_SERVICE_SECTION_ID,
-      authorId: "help-author",
-      authorName: helpQuestion.authorName,
+      authorId: scenario.identity === "user" ? "preview-user" : "help-author",
+      authorName: scenario.identity === "user" ? "Alex Rivera" : helpQuestion.authorName,
       createdAt: new Date(helpQuestion.createdAt),
       isPinned: false,
       isSolved: helpQuestion.isSolved,
@@ -1331,15 +1331,14 @@ function PreviewTopicRoute({ scenario }: { scenario: Scenario }) {
         ))}
         generationUnits={[]}
         canReply={scenario.identity !== "guest"}
-        canManageSolution={scenario.identity === "manager"}
+        canManageSolution={scenario.identity !== "guest"}
         canManageAnySolution={scenario.identity === "manager"}
         canModerateHelpSolution={scenario.identity === "manager"}
-        isTopicAuthor={false}
+        isTopicAuthor={scenario.identity === "user"}
         canCorrectTitleSourceLocale={scenario.identity === "manager"}
         canCorrectAnySourceLocale={scenario.identity === "manager"}
         canManagePin={scenario.identity === "manager"}
         canUseAdminPanel={scenario.identity === "manager"}
-        correctablePostIds={scenario.identity === "manager" ? posts.map((post) => post.id) : []}
         topicReadState={null}
       />
     );
@@ -1475,7 +1474,6 @@ function PreviewTopicRoute({ scenario }: { scenario: Scenario }) {
       canCorrectAnySourceLocale={scenario.identity === "manager"}
       canManagePin={scenario.identity === "manager"}
       canUseAdminPanel={scenario.identity === "manager"}
-      correctablePostIds={scenario.identity === "manager" ? posts.map((post) => post.id) : []}
       topicReadState={null}
     />
   );
