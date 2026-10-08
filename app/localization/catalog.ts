@@ -116,7 +116,7 @@ export const canonicalEnglishCatalog = {
     helpSolutionsSolutionsHeading: message("helpSolutionsSolutionsHeading", "Solved questions", "Heading above solved Help & solutions questions."),
     helpSolutionsSolutionsEmpty: message("helpSolutionsSolutionsEmpty", "There are no solved questions yet.", "Empty state for the solved Help & solutions question list."),
     helpSolutionNeedsReview: message("helpSolutionNeedsReview", "Needs review", "Status label for a solved Help & solutions question whose solution should be reviewed."),
-    helpSolutionModerationTools: message("helpSolutionModerationTools", "Solution moderation", "Manager-only control label for moderating the selected solution on a solved Help & solutions question."),
+    topicAdminPanel: message("topicAdminPanel", "Admin panel", "Manager-only administration controls for a forum topic."),
     helpSolutionOutdated: message("helpSolutionOutdated", "Solution outdated", "Status label for a solved Help & solutions question whose solution is outdated."),
     helpSolutionOutdatedReasonLabel: message("helpSolutionOutdatedReasonLabel", "Why this solution is outdated", "Label shown before the persisted reason explaining why a Help & solutions solution is outdated."),
     helpSolutionMarkNeedsReview: message("helpSolutionMarkNeedsReview", "Mark as needs review", "Moderator action that marks a solved Help & solutions solution as needing review."),
