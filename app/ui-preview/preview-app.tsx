@@ -319,6 +319,7 @@ const topic = {
   isPinned: true,
   isSolved: true,
   bestAnswerPostId: "answer",
+  needsDetails: false,
   title: section.topics[0]!.title,
   section: {
     id: sectionId,
@@ -561,13 +562,13 @@ function previewHelpSolutions(locale: PreviewLocale) {
     questions: [
       {
         id: "help-worker-session", title: titles[0]!, authorName: "Alex Rivera", replyCount: 0,
-        isSolved: false, hasBestAnswer: false, solutionModerationStatus: null, solutionOutdatedReason: null, solutionOutdatedReasonKind: null, createdAt: "2026-09-30T11:30:00.000Z",
+        isSolved: false, hasBestAnswer: false, solutionModerationStatus: null, solutionOutdatedReason: null, solutionOutdatedReasonKind: null, needsDetails: false, createdAt: "2026-09-30T11:30:00.000Z",
         activityAt: "2026-09-30T15:40:00.000Z",
         tags: [{ key: "cloudflare", name: "Cloudflare" }, { key: "auth", name: "Auth" }],
       },
       {
         id: "help-auth-best-answer", title: titles[1]!, authorName: "Noa Levi", replyCount: 3,
-        isSolved: false, hasBestAnswer: true, solutionModerationStatus: null, solutionOutdatedReason: null, solutionOutdatedReasonKind: null, createdAt: "2026-09-29T09:00:00.000Z",
+        isSolved: false, hasBestAnswer: true, solutionModerationStatus: null, solutionOutdatedReason: null, solutionOutdatedReasonKind: null, needsDetails: false, createdAt: "2026-09-29T09:00:00.000Z",
         activityAt: "2026-09-30T14:20:00.000Z",
         tags: [{ key: "better-auth", name: "Better Auth" }, { key: "workers", name: "Workers" }],
       },
@@ -580,20 +581,21 @@ function previewHelpSolutions(locale: PreviewLocale) {
             ? "В новой версии PostgreSQL поведение этой настройки изменилось."
             : "A newer PostgreSQL version changed the behavior of this setting.",
         solutionOutdatedReasonKind: null,
+        needsDetails: false,
         createdAt: "2026-09-27T08:00:00.000Z",
         activityAt: "2026-09-29T18:10:00.000Z",
         tags: [{ key: "postgresql", name: "PostgreSQL" }, { key: "neon", name: "Neon" }],
       },
       {
         id: "help-cloudflare-cache", title: titles[3]!, authorName: "Sam Chen", replyCount: 4,
-        isSolved: true, hasBestAnswer: true, solutionModerationStatus: null, solutionOutdatedReason: null, solutionOutdatedReasonKind: null,
+        isSolved: true, hasBestAnswer: true, solutionModerationStatus: null, solutionOutdatedReason: null, solutionOutdatedReasonKind: null, needsDetails: false,
         createdAt: "2026-09-26T09:15:00.000Z",
         activityAt: "2026-09-29T15:30:00.000Z",
         tags: [{ key: "cloudflare", name: "Cloudflare" }, { key: "cache", name: "Cache" }],
       },
       {
         id: "help-neon-pooling", title: titles[4]!, authorName: "Alex Rivera", replyCount: 2,
-        isSolved: true, hasBestAnswer: true, solutionModerationStatus: "needs-review" as const, solutionOutdatedReason: null, solutionOutdatedReasonKind: null,
+        isSolved: true, hasBestAnswer: true, solutionModerationStatus: "needs-review" as const, solutionOutdatedReason: null, solutionOutdatedReasonKind: null, needsDetails: false,
         createdAt: "2026-09-25T12:20:00.000Z",
         activityAt: "2026-09-28T17:45:00.000Z",
         tags: [{ key: "neon", name: "Neon" }, { key: "postgresql", name: "PostgreSQL" }],
@@ -1319,6 +1321,7 @@ function PreviewTopicRoute({ scenario }: { scenario: Scenario }) {
       isPinned: false,
       isSolved: helpQuestion.isSolved,
       bestAnswerPostId,
+      needsDetails: helpQuestion.needsDetails,
       title: {
         id: `${helpQuestion.id}-title`,
         originalContent: helpQuestion.title,
@@ -1448,6 +1451,7 @@ function PreviewTopicRoute({ scenario }: { scenario: Scenario }) {
     isPinned: matched.topic.isPinned,
     isSolved: false,
     bestAnswerPostId: null,
+    needsDetails: false,
     title: matched.topic.title,
     section: {
       id: matched.section.id,

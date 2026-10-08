@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-10-07
+Последнее обновление: 2026-10-08
 
 ## Назначение
 
@@ -232,9 +232,29 @@ Vico Forum находится в ранней pre-release разработке.
   `status = NULL + reason != NULL + reason_kind = NULL`. Help Pages fixtures
   выбирают best answer с более поздним исходным номером и визуально проверяют его promotion сразу
   под original question.
-  User signals, quality
-  `needs-details`, duplicate/appeal workflow, расширение `Needs attention` и комбинируемые
+  User signals, duplicate/appeal workflow, расширение `Needs attention` и комбинируемые
   фильтры остаются следующими отдельными шагами; external migration/Stage 6 rollout не выполняется.
+- PR #204 реализует второй шаг зафиксированной Help & solutions moderation/filter sequence
+  как минимальную persisted system-label foundation: migration
+  `0029_help_question_needs_details` добавляет на `forum_topics` только boolean
+  `needs_details NOT NULL DEFAULT false`. Отдельной оси `quality`, состояния `normal`,
+  Help-only CHECK и обязательного backfill нет: метка отсутствует при `false` и присутствует
+  при `true`. Help list projections и topic-page read model возвращают `needsDetails` для
+  последующих workflow/filter steps. Existing и previous writers, которые не передают это поле,
+  остаются совместимы через database default `false`. В этот slice не входят user
+  signals/moderator confirmation (step 4), расширение `Needs attention` (step 5), combined
+  filters (step 6), duplicate workflow (step 3), новая permission/mutation, admin-panel redesign,
+  similar-search refinement или drafts/autosave. Предыдущий Codex rollout finding относился к
+  superseded обязательному `help_question_quality` CHECK; после упрощения модели его причинная
+  цепочка устранена в самом незамерженном `0029`. Исправленная implementation revision прошла
+  repository `checks` и `database`, включая migration metadata, Drizzle schema parity и clean
+  PostgreSQL 17 suite. Fresh whole-PR review исправленной модели не оставляет подтверждённых
+  дефектов текущего scope: writer omits `needs_details` and receives database default `false`,
+  snapshot changes only `forum_topics`, and Help projections expose the persisted flag without
+  adding moderation/filter behavior early. GitHub Pages preview build/deploy for the same reviewed
+  implementation revision succeeds; separate owner visual acceptance is not required because this
+  foundation slice adds no visible label/workflow presentation. Repeat Codex review after the
+  material implementation correction is still pending.
 - In-app reply notifications slice реализован в PR #180:
   forward migration `0024_forum_reply_notifications` хранит только stable recipient/actor/topic/post
   references, `createdAt` и nullable `readAt`; unique recipient + reply identity предотвращает
@@ -444,7 +464,7 @@ Vico Forum находится в ранней pre-release разработке.
 - generic `/:locale/*`, runtime `LocaleRegistry`, BCP-47 resolution, LTR/RTL и request-scoped
   `i18next`;
 - persistent locale registry, persistent UI translation storage и compiled bundle storage;
-- текущая repository migration history — `0000`–`0028`; external accepted migration evidence по-прежнему заканчивается на `0020`.
+- текущая repository migration history — `0000`–`0029`; external accepted migration evidence по-прежнему заканчивается на `0020`.
 
 ## Forum core — Stage 4
 

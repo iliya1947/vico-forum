@@ -165,6 +165,7 @@ export interface ForumHelpQuestionSummary {
   solutionModerationStatus: HelpSolutionModerationStatus | null;
   solutionOutdatedReason: string | null;
   solutionOutdatedReasonKind: HelpSolutionOutdatedReasonKind | null;
+  needsDetails: boolean;
   createdAt: Date;
   activityAt: Date;
   tags: ForumTag[];
@@ -215,6 +216,7 @@ export interface ForumThreadPost extends ForumPost {
 
 export interface ForumTopicPage extends ForumTopic {
   createdAt: Date;
+  needsDetails: boolean;
   authorName: string;
   isPinned: boolean;
   section: { id: string; name: string; category: { id: string; name: string } };
@@ -1218,6 +1220,7 @@ export class DrizzleForumRepository {
         solutionModerationStatus: currentBestAnswer.solutionModerationStatus,
         solutionOutdatedReason: currentBestAnswer.solutionOutdatedReason,
         solutionOutdatedReasonKind: currentBestAnswer.solutionOutdatedReasonKind,
+        needsDetails: forumTopics.needsDetails,
         createdAt: forumTopics.createdAt,
         activityAt,
         matchCount,
@@ -1269,6 +1272,7 @@ export class DrizzleForumRepository {
         solutionModerationStatus: row.solutionModerationStatus as HelpSolutionModerationStatus | null,
         solutionOutdatedReason: row.solutionOutdatedReason,
         solutionOutdatedReasonKind: row.solutionOutdatedReasonKind as HelpSolutionOutdatedReasonKind | null,
+        needsDetails: row.needsDetails,
         createdAt: row.createdAt,
         activityAt: row.activityAt,
         tags: tagsByTopic.get(row.id) ?? [],
@@ -1309,6 +1313,7 @@ export class DrizzleForumRepository {
         solutionModerationStatus: currentBestAnswer.solutionModerationStatus,
         solutionOutdatedReason: currentBestAnswer.solutionOutdatedReason,
         solutionOutdatedReasonKind: currentBestAnswer.solutionOutdatedReasonKind,
+        needsDetails: forumTopics.needsDetails,
         createdAt: forumTopics.createdAt,
         activityAt,
       })
@@ -1386,6 +1391,7 @@ export class DrizzleForumRepository {
         solutionModerationStatus: row.solutionModerationStatus as HelpSolutionModerationStatus | null,
         solutionOutdatedReason: row.solutionOutdatedReason,
         solutionOutdatedReasonKind: row.solutionOutdatedReasonKind as HelpSolutionOutdatedReasonKind | null,
+        needsDetails: row.needsDetails,
         createdAt: row.createdAt,
         activityAt: row.activityAt,
         tags: tagsByTopic.get(row.id) ?? [],
@@ -1631,6 +1637,7 @@ export class DrizzleForumRepository {
         authorName: user.name, createdAt: forumTopics.createdAt, revisionId: forumTopicTitleRevisions.id,
         originalContent: forumTopicTitleRevisions.originalContent, sourceLocale: forumTopicTitleRevisions.sourceLocale,
         isSolved: forumTopics.isSolved, bestAnswerPostId: forumTopics.bestAnswerPostId,
+        needsDetails: forumTopics.needsDetails,
         isPinned: sql<boolean>`${forumTopicPins.topicId} is not null`,
       })
       .from(forumTopics)
@@ -1666,6 +1673,7 @@ export class DrizzleForumRepository {
     return {
       id: topic.id, sectionId: topic.sectionId, authorId: topic.authorId, authorName: topic.authorName,
       isSolved: topic.isSolved, bestAnswerPostId: topic.bestAnswerPostId,
+      needsDetails: topic.needsDetails,
       isPinned: topic.isPinned,
       createdAt: topic.createdAt,
       title: { id: topic.revisionId, originalContent: topic.originalContent, sourceLocale: topic.sourceLocale },

@@ -68,7 +68,7 @@ describe("PostgreSQL 17 locale migrations", () => {
     const applied = await client.query<{ count: string }>(
       'select count(*)::text as count from drizzle."__drizzle_migrations"',
     );
-    expect(applied.rows[0]?.count).toBe("29");
+    expect(applied.rows[0]?.count).toBe("30");
   });
 
   it("seeds Help & solutions while keeping its service section internal to generic discovery", async () => {
@@ -148,6 +148,26 @@ describe("PostgreSQL 17 locale migrations", () => {
           },
         },
       });
+      expect(await repository.readTopicPage("help-foundation-topic")).toMatchObject({
+        needsDetails: false,
+      });
+      expect(await repository.readHelpSolutionsAll()).toMatchObject({
+        questions: [{ id: "help-foundation-topic", needsDetails: false }],
+      });
+
+      await client.query(
+        "update forum_topics set needs_details = true where id = 'help-foundation-topic'",
+      );
+      expect(await repository.readTopicPage("help-foundation-topic")).toMatchObject({
+        needsDetails: true,
+      });
+      expect(await repository.readHelpSolutionsAll()).toMatchObject({
+        questions: [{ id: "help-foundation-topic", needsDetails: true }],
+      });
+      await client.query(
+        "update forum_topics set needs_details = false where id = 'help-foundation-topic'",
+      );
+
       await forum.createPost({
         id: "help-foundation-answer",
         topicId: "help-foundation-topic",
@@ -183,6 +203,7 @@ describe("PostgreSQL 17 locale migrations", () => {
           replyCount: 1,
           isSolved: false,
           hasBestAnswer: true,
+          needsDetails: false,
           tags: [{ key: "typescript", name: "TypeScript" }],
         }],
       });

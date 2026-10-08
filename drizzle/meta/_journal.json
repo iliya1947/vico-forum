@@ -204,6 +204,13 @@
       "when": 1791421200000,
       "tag": "0028_help_solution_moderation",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1791507600000,
+      "tag": "0029_help_question_needs_details",
+      "breakpoints": true
     }
   ]
 }

@@ -634,6 +634,7 @@ export const forumTopics = pgTable(
     currentTitleRevisionId: text("current_title_revision_id").notNull(),
     isSolved: boolean("is_solved").notNull().default(false),
     bestAnswerPostId: text("best_answer_post_id"),
+    needsDetails: boolean("needs_details").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
