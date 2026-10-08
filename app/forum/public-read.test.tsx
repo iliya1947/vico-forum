@@ -329,9 +329,12 @@ function topicRenderData(
     generationUnits: [],
     canReply: false,
     canManageSolution: false,
+    canManageAnySolution: false,
     isTopicAuthor: false,
     canCorrectTitleSourceLocale: false,
+    canCorrectAnySourceLocale: false,
     canManagePin: false,
+    canUseAdminPanel: false,
     correctablePostIds: [],
     topicReadState: null,
     ...overrides,
@@ -1104,6 +1107,7 @@ describe("Help & solutions modes and authoring", () => {
       context: topicContext,
     });
     expect(topicData.canModerateHelpSolution).toBe(true);
+    expect(topicData.canUseAdminPanel).toBe(true);
     renderRoute(TopicRoute, topicData, forumTopicPath("en", helpTopic.id), "en", "ltr");
     expect(await screen.findByText("Why this solution is outdated")).toBeVisible();
     const bestAnswer = screen.getByText("Best answer").closest("li");
@@ -1111,8 +1115,9 @@ describe("Help & solutions modes and authoring", () => {
     if (!bestAnswer) throw new Error("expected best answer message");
     expect(bestAnswer).toHaveTextContent("Solution outdated");
     expect(within(bestAnswer).getByText("The provider removed the API used by this workaround.")).toBeVisible();
+    expect(bestAnswer.querySelector(".forum-post-content")?.lastElementChild).toHaveClass("solution-outdated-reason");
     expect(screen.queryByText("Topic tools")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByText("Solution moderation"));
+    fireEvent.click(screen.getByText("Admin panel"));
     expect(screen.getByRole("textbox", { name: "Reason the solution is outdated" }))
       .toHaveValue("The provider removed the API used by this workaround.");
     expect(screen.getByRole("button", { name: "Mark as needs review" })).toBeVisible();
@@ -1656,6 +1661,58 @@ describe("forum read states", () => {
     expect(followupTools).not.toHaveAttribute("open");
     expect(followupTools!.querySelector("summary")).toHaveTextContent("Message tools");
     expect(screen.getByRole("button", { name: "Select as best answer" }).closest("details")).toBe(followupTools);
+  });
+
+  it("keeps the topic title and original question in one message card", async () => {
+    renderRoute(
+      TopicRoute,
+      topicRenderData(topic),
+      "/en/topics/typed-api",
+      "en",
+      "ltr",
+    );
+
+    const heading = await screen.findByRole("heading", { level: 1, name: "How do I type an API?" });
+    const originalQuestion = heading.closest("li");
+    expect(originalQuestion).not.toBeNull();
+    expect(originalQuestion).toHaveClass("original-question");
+    if (!originalQuestion) throw new Error("expected original question card");
+    expect(within(originalQuestion).getByText("Start with an explicit response type.")).toBeVisible();
+    expect(document.querySelector(".topic-heading")).not.toBeInTheDocument();
+  });
+
+  it("shows the admin panel on regular topics for moderation capabilities only", async () => {
+    const unsolvedTopic = { ...topic, isSolved: false, bestAnswerPostId: null };
+
+    const managerView = renderRoute(
+      TopicRoute,
+      topicRenderData(unsolvedTopic, {
+        canManageSolution: true,
+        canManageAnySolution: true,
+        canCorrectTitleSourceLocale: true,
+        canCorrectAnySourceLocale: true,
+        canManagePin: true,
+        canUseAdminPanel: true,
+      }),
+      "/en/topics/typed-api",
+      "en",
+      "ltr",
+    );
+
+    const adminPanel = await screen.findByText("Admin panel");
+    expect(adminPanel.closest("details")).not.toHaveAttribute("open");
+    expect(screen.getByRole("button", { name: "Mark as solved" }).closest("details")).toBe(adminPanel.closest("details"));
+    expect(screen.getByRole("button", { name: /Pin topic|Unpin topic/ }).closest("details")).toBe(adminPanel.closest("details"));
+    managerView.unmount();
+
+    renderRoute(
+      TopicRoute,
+      topicRenderData(unsolvedTopic),
+      "/en/topics/typed-api",
+      "en",
+      "ltr",
+    );
+    expect(screen.queryByText("Admin panel")).not.toBeInTheDocument();
   });
 
   it("shows solution controls only to the topic author behind progressive disclosure", async () => {
