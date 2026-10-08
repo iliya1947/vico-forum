@@ -1056,7 +1056,7 @@ describe("Help & solutions modes and authoring", () => {
     expect(readHelpSolutionsMine).not.toHaveBeenCalled();
   });
 
-  it("keeps duplicate appeal explanation private while exposing the public disputed marker", async () => {
+  it("keeps duplicate appeal details private and disputed badge moderator-only", async () => {
     const duplicateTopic = {
       ...helpTopic,
       bestAnswerPostId: null,
@@ -1090,7 +1090,7 @@ describe("Help & solutions modes and authoring", () => {
       "ltr",
     );
     expect(await screen.findByText("Duplicate")).toBeVisible();
-    expect(screen.getByText("Disputed")).toBeVisible();
+    expect(screen.queryByText("Disputed")).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Canonical original question" }))
       .toHaveAttribute("href", forumTopicPath("en", "help-original"));
     expect(screen.queryByText("Private appeal reason.")).not.toBeInTheDocument();
@@ -1166,6 +1166,7 @@ describe("Help & solutions modes and authoring", () => {
       "ltr",
     );
     expect(await screen.findByText("Private appeal reason.")).toBeVisible();
+    expect(screen.getByText("Disputed")).toBeVisible();
     expect(screen.getByText("Started by Ada")).toBeVisible();
     expect(screen.queryByText("Select as best answer")).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Add reply" })).not.toBeInTheDocument();
@@ -1377,6 +1378,63 @@ describe("Help & solutions modes and authoring", () => {
     expect(screen.getByRole("button", { name: "Mark solution outdated" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Clear solution status" })).toBeVisible();
     expect(screen.queryByRole("button", { name: "Confirm duplicate" })).not.toBeInTheDocument();
+  });
+
+  it("keeps needs-review topic badge hidden from public readers and visible to moderators", async () => {
+    const needsReviewTopic = {
+      ...helpTopic,
+      isSolved: true,
+      posts: helpTopic.posts.map((post) => post.id === "help-answer"
+        ? { ...post, solutionModerationStatus: "needs-review" as const }
+        : post),
+    };
+
+    const guestContext = context("en", "ltr");
+    guestContext.set(forumReaderContext, {
+      ...reader,
+      readTopicPage: async (id) => id === needsReviewTopic.id ? needsReviewTopic : undefined,
+    });
+    const guestData = await topicLoader({
+      params: { locale: "en", topicId: needsReviewTopic.id },
+      context: guestContext,
+    });
+    const guestView = renderRoute(
+      TopicRoute,
+      guestData,
+      forumTopicPath("en", needsReviewTopic.id),
+      "en",
+      "ltr",
+    );
+    expect(screen.queryByText("Needs review")).not.toBeInTheDocument();
+    guestView.unmount();
+
+    const managerContext = context("en", "ltr");
+    managerContext.set(forumReaderContext, {
+      ...reader,
+      readTopicPage: async (id) => id === needsReviewTopic.id ? needsReviewTopic : undefined,
+    });
+    managerContext.set(authSessionContext, {
+      user: { id: "manager", name: "Manager", email: "manager@example.test", emailVerified: true, createdAt: new Date(), updatedAt: new Date() },
+      session: { id: "manager-session", token: "manager-token", userId: "manager", expiresAt: new Date(Date.now() + 60_000), createdAt: new Date(), updatedAt: new Date() },
+    });
+    managerContext.set(authorizationContext, {
+      forUser: () => ({
+        resolve: vi.fn(),
+        has: vi.fn(async (permission) => permission === "forum.solution.manageAny"),
+      }),
+    } as never);
+    const managerData = await topicLoader({
+      params: { locale: "en", topicId: needsReviewTopic.id },
+      context: managerContext,
+    });
+    renderRoute(
+      TopicRoute,
+      managerData,
+      forumTopicPath("en", needsReviewTopic.id),
+      "en",
+      "ltr",
+    );
+    expect(await screen.findByText("Needs review")).toBeVisible();
   });
 
   it("keeps needs-review hidden from public Help lists and visible to moderators", async () => {
