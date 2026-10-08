@@ -265,7 +265,10 @@ Vico Forum находится в ранней pre-release разработке.
   explanation. Pending appeal не снимает authoritative duplicate status: на topic page публично
   видна нейтральная метка `Disputed`, explanation доступен только author duplicate и actor с
   duplicate-management capability. Reject сохраняет relation; accept или manual removal снимает
-  active duplicate relation. В Help question list публично остаются `Solved` и `Duplicate`;
+  active duplicate relation. В штатном workflow подтверждённый duplicate и собственное решение
+  взаимоисключаемы: question с `isSolved=true` или выбранным best answer нельзя подтвердить как
+  duplicate; пока active duplicate relation существует, нельзя выбрать ему best answer или
+  пометить его solved. В Help question list публично остаются `Solved` и `Duplicate`;
   отдельный `Best answer` badge там не показывается. `Solution outdated` в списке публичен;
   `Needs review` и pending `Disputed` видны только соответствующим moderation actors. Topic page показывает locale-aware ссылку на canonical
   original без раскрытия internal service section.
