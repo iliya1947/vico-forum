@@ -4584,6 +4584,15 @@ p {
   background: var(--color-accent-hover);
 }
 
+.topic-breadcrumb-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 0.45rem;
+}
+
+.topic-best-answer-tools,
 .topic-admin-tools {
   position: relative;
   z-index: 20;
@@ -4591,6 +4600,7 @@ p {
   width: auto;
 }
 
+.topic-best-answer-tools > summary,
 .topic-admin-tools > summary {
   width: fit-content;
   margin-inline-start: auto;
@@ -4605,10 +4615,14 @@ p {
   user-select: none;
 }
 
+.topic-best-answer-tools > summary::marker,
 .topic-admin-tools > summary::marker {
   color: var(--color-accent);
 }
 
+.topic-best-answer-tools > summary:hover,
+.topic-best-answer-tools > summary:focus-visible,
+.topic-best-answer-tools[open] > summary,
 .topic-admin-tools > summary:hover,
 .topic-admin-tools > summary:focus-visible,
 .topic-admin-tools[open] > summary {
@@ -4616,6 +4630,7 @@ p {
   background: var(--color-accent-soft);
 }
 
+.topic-best-answer-panel,
 .topic-admin-panel {
   position: absolute;
   z-index: 20;
@@ -4629,6 +4644,40 @@ p {
   border-radius: 0.5rem;
   background: var(--color-surface);
   box-shadow: var(--shadow-panel);
+}
+
+.topic-best-answer-panel {
+  width: max-content;
+  max-width: min(20rem, calc(100vw - 2rem));
+}
+
+.topic-best-answer-form {
+  margin: 0;
+}
+
+.topic-best-answer-form + .topic-best-answer-form {
+  padding-block-start: 0.45rem;
+  border-block-start: 1px solid var(--color-border);
+}
+
+.topic-best-answer-form button {
+  width: 100%;
+  min-height: 2rem;
+  padding: 0.36rem 0.65rem;
+  border: 1px solid var(--color-accent);
+  border-radius: 0.4rem;
+  color: var(--color-accent-hover);
+  background: var(--color-surface);
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-align: start;
+  cursor: pointer;
+}
+
+.topic-best-answer-form button:hover,
+.topic-best-answer-form button:focus-visible {
+  background: var(--color-accent-soft);
 }
 
 .topic-shell .topic-admin-form {
@@ -5022,15 +5071,26 @@ p {
     flex-basis: 100%;
   }
 
-  .topic-admin-tools {
+  .topic-breadcrumb-actions {
     flex-basis: 100%;
     width: 100%;
   }
 
-  .topic-admin-panel {
-    width: 100%;
+  .topic-best-answer-tools {
+    flex: 1 1 0;
   }
 
+  .topic-admin-tools {
+    flex: 1 1 0;
+  }
+
+  .topic-best-answer-panel,
+  .topic-admin-panel {
+    width: 100%;
+    max-width: none;
+  }
+
+  .topic-best-answer-tools > summary,
   .topic-admin-tools > summary,
   .topic-shell .topic-admin-form button {
     width: 100%;
