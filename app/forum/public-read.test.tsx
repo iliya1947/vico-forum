@@ -67,7 +67,7 @@ const section = {
 };
 const topic = {
   id: "typed/api", sectionId: "typescript/basics", authorId: "ada", authorName: "Ada", createdAt: new Date("2026-01-01"),
-  isPinned: true, isSolved: false, bestAnswerPostId: null,
+  isPinned: true, isSolved: false, bestAnswerPostId: null, questionQuality: null,
   title: section.topics[0]!.title,
   section: { id: "typescript/basics", name: "TypeScript", category: { id: "development/core", name: "Development" } },
   tags: [{ key: "typescript", name: "TypeScript" }],
@@ -79,7 +79,7 @@ const topic = {
 
 const helpTopic = {
   id: "help-question", sectionId: HELP_SOLUTIONS_SERVICE_SECTION_ID, authorId: "ada", authorName: "Ada",
-  createdAt: new Date("2026-01-03"), isPinned: false, isSolved: false, bestAnswerPostId: "help-answer",
+  createdAt: new Date("2026-01-03"), isPinned: false, isSolved: false, bestAnswerPostId: "help-answer", questionQuality: "normal" as const,
   title: { id: "help-title-r1", originalContent: "Why does my Worker lose auth state?", sourceLocale: "en" },
   section: {
     id: HELP_SOLUTIONS_SERVICE_SECTION_ID, name: "Questions",
@@ -121,6 +121,7 @@ const helpPage = {
     solutionModerationStatus: null,
     solutionOutdatedReason: null,
     solutionOutdatedReasonKind: null,
+    questionQuality: helpTopic.questionQuality,
     createdAt: helpTopic.createdAt,
     activityAt: helpTopic.posts.at(-1)!.createdAt,
     tags: helpTopic.tags,
