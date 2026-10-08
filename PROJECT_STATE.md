@@ -234,29 +234,20 @@ Vico Forum находится в ранней pre-release разработке.
   под original question.
   User signals, duplicate/appeal workflow, расширение `Needs attention` и комбинируемые
   фильтры остаются следующими отдельными шагами; external migration/Stage 6 rollout не выполняется.
-- PR #204 реализует второй шаг зафиксированной Help & solutions moderation/filter sequence:
-  migration `0029_help_question_quality` добавляет persisted Help-only качество вопроса
-  `normal | needs-details` на `forum_topics`. Existing Help questions backfill в explicit
-  `normal`; runtime creation также записывает `normal` для внутреннего
-  `help-solutions-questions`, а generic forum topics сохраняют `NULL`. DB CHECK не допускает
-  Help-вопрос без quality, неизвестные quality values или Help-specific quality на обычной теме.
-  Help list projections и topic-page read model возвращают persisted quality для последующих
-  workflow/filter steps. В этот slice не входят user signals/moderator confirmation (step 4),
-  расширение `Needs attention` (step 5), combined filters (step 6), duplicate workflow (step 3),
-  новая permission/mutation, admin-panel redesign, similar-search refinement или drafts/autosave.
-  Whole-PR review после исправления двух documentation-state несоответствий не оставляет
-  подтверждённых дефектов текущего scope: schema snapshot меняет только `forum_topics`, clean
-  PostgreSQL 17 migrations/quality constraints/production schema manifest parity и полный
-  repository CI проходят. GitHub Pages preview build/deploy для той же reviewed revision проходит;
-  отдельная owner visual acceptance не требуется, поскольку этот foundation slice не добавляет
-  видимого question-quality workflow или новую presentation. Independent Codex review exact head
-  `3bb03eb1c34e11d503571bfd894cd6aed67694d5` выявил только rollout-compatibility риск: после
-  `0029` предыдущий writer не сможет создавать Help questions из-за NULL
-  `help_question_quality`. После проверки и технического консенсуса в service channel finding
-  классифицирован как **Deferred-to-Stage-6**, а не дефект текущего UI/UX pass: migrations
-  `0021`–`0029` внешне не применены, Stage 6 приостановлен. Перед следующим external
-  schema-dependent rollout совместимость со старым writer должна быть восстановлена отдельной
-  forward migration. Подтверждённых дефектов текущего scope не осталось.
+- PR #204 реализует второй шаг зафиксированной Help & solutions moderation/filter sequence
+  как минимальную persisted system-label foundation: migration
+  `0029_help_question_needs_details` добавляет на `forum_topics` только boolean
+  `needs_details NOT NULL DEFAULT false`. Отдельной оси `quality`, состояния `normal`,
+  Help-only CHECK и обязательного backfill нет: метка отсутствует при `false` и присутствует
+  при `true`. Help list projections и topic-page read model возвращают `needsDetails` для
+  последующих workflow/filter steps. Existing и previous writers, которые не передают это поле,
+  остаются совместимы через database default `false`. В этот slice не входят user
+  signals/moderator confirmation (step 4), расширение `Needs attention` (step 5), combined
+  filters (step 6), duplicate workflow (step 3), новая permission/mutation, admin-panel redesign,
+  similar-search refinement или drafts/autosave. Предыдущий Codex rollout finding относился к
+  superseded обязательному `help_question_quality` CHECK; после упрощения модели его причинная
+  цепочка устранена в самом незамерженном `0029`. Новая whole-PR/CI/Pages/Codex проверка после
+  этой implementation correction ещё не выполнена.
 - In-app reply notifications slice реализован в PR #180:
   forward migration `0024_forum_reply_notifications` хранит только stable recipient/actor/topic/post
   references, `createdAt` и nullable `readAt`; unique recipient + reply identity предотвращает
