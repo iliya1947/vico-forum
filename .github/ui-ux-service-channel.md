@@ -2401,3 +2401,51 @@ The owner confirmed the recommended appeal contract for Help & solutions step 3:
 - this appeal path remains specific to an already-confirmed duplicate and does not absorb the general user moderation signals reserved for fixed step 4.
 
 This resolves the only product choice raised by the step-3 technical plan. The bounded implementation may now proceed under that plan.
+
+
+---
+
+## PR #205 Drizzle parity diagnostic handoff — 2026-10-08
+
+Implementation PR #205 (`chatgpt/help-duplicate-workflow`) is functionally implemented and remains Draft.
+
+Current exact implementation head under diagnosis: `730d575f2c2f2306ea7398e02146d496b1975643`.
+
+### Verified green evidence before the remaining failure
+
+On implementation head `8a650230d31cce8c4d4aa50f2a3272ee7a764cf2`:
+- lint: success;
+- typecheck: success;
+- unit/integration test suite: success (619 tests);
+- production build: success;
+- UI preview build: success;
+- `drizzle-kit check`: success;
+- clean PostgreSQL 17 migration/constraint suite: success;
+- production schema manifest parity: success;
+- runtime privilege probes and split-authority web relation provisioning checks: success;
+- Workers build/smoke: success.
+
+The only remaining CI failure is **Verify Drizzle schema parity**. Running:
+
+`pnpm exec drizzle-kit generate --name=ci-schema-parity`
+
+after committed migration `0030_help_duplicate_workflow` and `drizzle/meta/0030_snapshot.json` still generates:
+- `drizzle/0031_ci-schema-parity.sql`;
+- `drizzle/meta/0031_snapshot.json`;
+- a new journal entry.
+
+This means committed `0030_snapshot.json` does not exactly represent current `db/schema.ts`, although the SQL migration itself applies successfully and DB-level tests pass.
+
+The current head `730d575...` contains a temporary CI diagnostic only: when parity fails it prints the generated SQL and excerpts of the generated snapshot. That diagnostic change is not intended for the final PR.
+
+### Requested Codex help
+
+Please inspect PR #205 and determine the exact cause of the Drizzle schema parity mismatch.
+
+Return only:
+1. the concrete mismatch between committed `0030_snapshot.json` / `0030_help_duplicate_workflow.sql` and current `db/schema.ts`;
+2. whether the defect is in the snapshot, migration SQL, schema declaration, or more than one of them;
+3. the smallest correction that restores zero-diff `drizzle-kit generate` without rewriting accepted migrations `0000`–`0029`;
+4. any current-scope correctness issue revealed by the mismatch.
+
+Please diagnose independently from the current ChatGPT hypothesis and do not implement project code.
