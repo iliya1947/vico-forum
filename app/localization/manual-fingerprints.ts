@@ -79,7 +79,7 @@ export const reviewedCommonFingerprints = {
   helpSolutionsSolutionsHeading: "bd581308938829c503402133e17ba42e12e7ca6c07c453b13c20d7f90f88622c",
   helpSolutionsSolutionsEmpty: "2c0fce5b6678f81134756f6a9c578889f8e9ed238bf6af3a3ad5205279a84ba6",
   helpSolutionNeedsReview: "a7f73cf66e6910902e02e57bfc997dbf71d558423c70a1f2a4bb79db5efe8106",
-  helpSolutionModerationTools: "ffca5ba46441fc37f40d3af245a7f5bbe7ef199bbe0193ba3ae912811756da9f",
+  topicAdminPanel: "2a591c4eecafb4789dbb95f21f9a009c772737f49362d2c438ecad2cadaf7d2c",
   helpSolutionOutdated: "cdf1bbf660ba797114d6150e01cbb037074e7795dc40e57610e1683f750741c1",
   helpSolutionOutdatedReasonLabel: "00cf3ece4b19ceca7f1c876697a339f4e625270f92cb7289c0961670c3d0ac68",
   helpSolutionMarkNeedsReview: "9f0974848df67b619571a33f1b37cbeb5d76de6f58a4230c49873d339505ec1e",
