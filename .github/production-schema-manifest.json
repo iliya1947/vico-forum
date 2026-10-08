@@ -1031,7 +1031,7 @@
           "initiallyDeferred": false
         },
         {
-          "name": "forum_help_duplicate_appeals_relationship_id_forum_help_duplicate_relationships_id_fk",
+          "name": "forum_help_duplicate_appeals_relationship_id_forum_help_duplica",
           "columns": [
             "relationship_id"
           ],
@@ -1178,7 +1178,7 @@
       "uniqueConstraints": [],
       "foreignKeys": [
         {
-          "name": "forum_help_duplicate_relationships_confirmed_by_user_id_user_id_fk",
+          "name": "forum_help_duplicate_relationships_confirmed_by_user_id_user_id",
           "columns": [
             "confirmed_by_user_id"
           ],
@@ -1192,7 +1192,7 @@
           "initiallyDeferred": false
         },
         {
-          "name": "forum_help_duplicate_relationships_duplicate_topic_id_forum_topics_id_fk",
+          "name": "forum_help_duplicate_relationships_duplicate_topic_id_forum_top",
           "columns": [
             "duplicate_topic_id"
           ],
@@ -1206,7 +1206,7 @@
           "initiallyDeferred": false
         },
         {
-          "name": "forum_help_duplicate_relationships_original_topic_id_forum_topics_id_fk",
+          "name": "forum_help_duplicate_relationships_original_topic_id_forum_topi",
           "columns": [
             "original_topic_id"
           ],
@@ -1220,7 +1220,7 @@
           "initiallyDeferred": false
         },
         {
-          "name": "forum_help_duplicate_relationships_removed_by_user_id_user_id_fk",
+          "name": "forum_help_duplicate_relationships_removed_by_user_id_user_id_f",
           "columns": [
             "removed_by_user_id"
           ],
