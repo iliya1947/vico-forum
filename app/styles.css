@@ -4366,8 +4366,18 @@ p {
 
 /* Topic reading page: keeps the discussion linear while making the original question,
    selected answer and permanent message identity easy to scan. */
-.topic-shell .breadcrumbs {
+.topic-breadcrumb-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
   margin: 0.75rem 1rem 0;
+}
+
+.topic-shell .topic-breadcrumb-row .breadcrumbs {
+  min-width: 0;
+  flex: 1 1 auto;
+  margin: 0;
   padding: 0.5rem 0.2rem;
   border: 0;
   background: transparent;
@@ -4522,13 +4532,8 @@ p {
   background: var(--color-accent-hover);
 }
 
-.topic-admin-slot {
-  display: flex;
-  justify-content: flex-end;
-  margin: 0.35rem 1rem 0.45rem;
-}
-
 .help-solution-admin-tools {
+  flex: 0 1 30rem;
   width: min(30rem, 100%);
 }
 
@@ -4628,7 +4633,7 @@ p {
 .solution-outdated-reason {
   display: grid;
   gap: 0.25rem;
-  margin: 0 0 0.7rem;
+  margin: 0.7rem 0 0;
   padding: 0.6rem 0.75rem;
   border: 1px solid var(--color-border-strong);
   border-inline-start: 0.22rem solid var(--color-danger);
@@ -4950,15 +4955,17 @@ p {
 }
 
 @media (max-width: 29.99rem) {
-  .topic-shell .breadcrumbs {
+  .topic-breadcrumb-row {
+    flex-wrap: wrap;
     margin-inline: 0.75rem;
   }
 
-  .topic-admin-slot {
-    margin-inline: 0.75rem;
+  .topic-shell .topic-breadcrumb-row .breadcrumbs {
+    flex-basis: 100%;
   }
 
   .help-solution-admin-tools {
+    flex-basis: 100%;
     width: 100%;
   }
 
