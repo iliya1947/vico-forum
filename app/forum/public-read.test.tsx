@@ -1106,8 +1106,12 @@ describe("Help & solutions modes and authoring", () => {
     expect(topicData.canModerateHelpSolution).toBe(true);
     renderRoute(TopicRoute, topicData, forumTopicPath("en", helpTopic.id), "en", "ltr");
     expect(await screen.findByText("Why this solution is outdated")).toBeVisible();
-    expect(screen.getAllByText("The provider removed the API used by this workaround.")).toHaveLength(2);
-    fireEvent.click(screen.getByText("Topic tools"));
+    expect(screen.getAllByText("The provider removed the API used by this workaround.")).toHaveLength(1);
+    const bestAnswer = screen.getByText("Best answer").closest("li");
+    expect(bestAnswer).toHaveTextContent("Solution outdated");
+    expect(bestAnswer).toHaveTextContent("The provider removed the API used by this workaround.");
+    expect(screen.queryByText("Topic tools")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText("Solution moderation"));
     expect(screen.getByRole("button", { name: "Mark as needs review" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Mark solution outdated" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Clear solution status" })).toBeVisible();
