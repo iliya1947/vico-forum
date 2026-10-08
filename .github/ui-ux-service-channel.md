@@ -2350,3 +2350,36 @@ Return:
 5. any actual product choice that cannot be derived from the already approved contract.
 
 Do not implement project code or modify the implementation branch.
+
+
+---
+
+<!-- codex-service-channel-comment:6067042669 -->
+## Codex GitHub response — comment 6067042669
+
+_Source: https://github.com/iliya1947/vico-forum/pull/147#issuecomment-6067042669 · 2026-10-08T19:04:13Z_
+
+# Действие пользователя
+
+Подтвердить рекомендуемый контракт апелляции: апелляцию с обязательным объяснением подаёт только автор вопроса, отмеченного дубликатом; публично отображается нейтральная метка `Disputed`, но текст объяснения доступен только автору и модераторам.
+
+### Summary
+
+* В общий communication-файл добавлен технический план шага 3 **Duplicate relationship workflow**. Implementation-код и implementation-ветка не изменялись.
+* Предложены две Help-specific сущности: история подтверждённых duplicate → original отношений и отдельные долговечные апелляции с состояниями `pending | rejected | accepted`. [.github/ui-ux-service-channel.mdL2356-L2365](https://github.com/iliya1947/vico-forum/blob/0da0c0f46d60f826c1e14af5d494e6c2c4831068/.github/ui-ux-service-channel.md#L2356-L2365)
+* Зафиксирована canonical-root модель без цепочек и циклов, транзакционная сериализация конкурентных изменений и атомарная семантика удаления либо разрешения апелляции. [.github/ui-ux-service-channel.mdL2367-L2369](https://github.com/iliya1947/vico-forum/blob/0da0c0f46d60f826c1e14af5d494e6c2c4831068/.github/ui-ux-service-channel.md#L2367-L2369)
+* Обоснована отдельная capability `forum.helpDuplicate.manage` вместо семантически неподходящей `forum.solution.manageAny`; определены границы confirm/remove/appeal/resolve actions и обязательные server-side проверки. [.github/ui-ux-service-channel.mdL2371-L2382](https://github.com/iliya1947/vico-forum/blob/0da0c0f46d60f826c1e14af5d494e6c2c4831068/.github/ui-ux-service-channel.md#L2371-L2382)
+* Апелляция отделена от общих пользовательских moderation signals будущего шага 4: она применима только к уже подтверждённому отношению и сама не меняет authoritative duplicate status. [.github/ui-ux-service-channel.mdL2384-L2388](https://github.com/iliya1947/vico-forum/blob/0da0c0f46d60f826c1e14af5d494e6c2c4831068/.github/ui-ux-service-channel.md#L2384-L2388)
+* Перечислены конкретные implementation surfaces и обязательные проверки схемы, конкурентности, authorization, маршрутов, локализации, Pages и регрессий существующих Help-режимов. [.github/ui-ux-service-channel.mdL2390-L2409](https://github.com/iliya1947/vico-forum/blob/0da0c0f46d60f826c1e14af5d494e6c2c4831068/.github/ui-ux-service-channel.md#L2390-L2409)
+* Выделен единственный невыводимый из действующего контракта продуктовый выбор — круг заявителей апелляции и публичность pending-dispute marker — с минимальной рекомендуемой моделью. [.github/ui-ux-service-channel.mdL2411-L2413](https://github.com/iliya1947/vico-forum/blob/0da0c0f46d60f826c1e14af5d494e6c2c4831068/.github/ui-ux-service-channel.md#L2411-L2413)
+* Изменение закоммичено как `7d10aaf` (`Plan Help duplicate relationship workflow`), после чего подготовлен PR **Service channel: plan Help duplicate relationship workflow**.
+
+**Testing**
+
+* ✅ `git fetch https://github.com/iliya1947/vico-forum.git main:refs/remotes/upstream/main` — подтверждён актуальный `main` `d87dfd444d413e0a2c162b75bc3ea39be6119d0f`.
+* ✅ `git diff --check`
+* ✅ `test "$(git diff --name-only | wc -l)" -eq 1`
+* ✅ `test "$(git diff --name-only)" = '.github/ui-ux-service-channel.md'`
+* ✅ `git status --short --branch` — рабочее дерево чистое после commit.
+
+ [View task →](https://chatgpt.com/s/cd_6ac7e871fe248191b84df87ba6f1ce0f)
