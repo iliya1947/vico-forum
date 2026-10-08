@@ -2199,3 +2199,31 @@ Final review outcome:
   Codex; no presentation/runtime behavior changed afterward.
 - No confirmed defect remains in the current bounded Help question-quality scope.
 
+---
+
+## PR #204 owner model correction — Needs details is a system label — 2026-10-08
+
+The owner rejected the separate `quality = normal | needs-details` model as unnecessary complexity.
+The intended product semantics are presence/absence of a system label: **Needs details**.
+
+PR #204 has therefore been materially rewritten before merge:
+
+- `forum_topics.help_question_quality` and the `normal | needs-details` axis are removed;
+- migration 0029 is still unmerged, so its accepted-history boundary has not begun and it is
+  rewritten in-place as `0029_help_question_needs_details`;
+- the only persisted foundation is `forum_topics.needs_details boolean NOT NULL DEFAULT false`;
+- `false` means the system label is absent; `true` means it is present;
+- there is no Help-only CHECK, explicit `normal` state or backfill;
+- previous/current writers that omit the column remain compatible because PostgreSQL supplies the
+  default `false`;
+- Help summaries and topic-page reads expose only `needsDetails: boolean`;
+- user signals/moderator confirmation, Needs attention integration and combined filters remain
+  their later fixed-sequence steps.
+
+This removes the causal chain behind the previous Codex rollout-compatibility finding rather than
+deferring it: the previous writer can insert after 0029 without providing the new field.
+
+Because implementation/schema/tests materially changed after the earlier Codex review, that review
+is no longer final. After this correction passes CI, ChatGPT must perform a fresh whole-PR review,
+Pages verification as applicable, then one new Codex review on the corrected stable exact head.
+
