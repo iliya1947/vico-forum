@@ -49,12 +49,12 @@ export async function loader({ request, params, context }: {
     if (session) {
       try {
         const resolver = authorizationForRequest(context).forUser(session.user.id);
-        [canAskQuestion, canViewAttention, canViewSolutionModeration, canViewDuplicateDispute] = await Promise.all([
+        [canAskQuestion, canViewSolutionModeration, canViewDuplicateDispute] = await Promise.all([
           resolver.has("forum.topic.create"),
-          resolver.has("forum.solution.manageAny"),
           resolver.has("forum.solution.manageAny"),
           resolver.has("forum.helpDuplicate.manage"),
         ]);
+        canViewAttention = canViewSolutionModeration;
       } catch (error) {
         if (!(error instanceof AuthorizationUnavailableError)) throw error;
         if (mode === "attention") throw new Response("Unavailable", { status: 503 });
