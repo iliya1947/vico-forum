@@ -249,7 +249,14 @@ Vico Forum находится в ранней pre-release разработке.
   PostgreSQL 17 migrations/quality constraints/production schema manifest parity и полный
   repository CI проходят. GitHub Pages preview build/deploy для той же reviewed revision проходит;
   отдельная owner visual acceptance не требуется, поскольку этот foundation slice не добавляет
-  видимого question-quality workflow или новую presentation. Independent Codex review ещё не выполнен.
+  видимого question-quality workflow или новую presentation. Independent Codex review exact head
+  `3bb03eb1c34e11d503571bfd894cd6aed67694d5` выявил только rollout-compatibility риск: после
+  `0029` предыдущий writer не сможет создавать Help questions из-за NULL
+  `help_question_quality`. После проверки и технического консенсуса в service channel finding
+  классифицирован как **Deferred-to-Stage-6**, а не дефект текущего UI/UX pass: migrations
+  `0021`–`0029` внешне не применены, Stage 6 приостановлен. Перед следующим external
+  schema-dependent rollout совместимость со старым writer должна быть восстановлена отдельной
+  forward migration. Подтверждённых дефектов текущего scope не осталось.
 - In-app reply notifications slice реализован в PR #180:
   forward migration `0024_forum_reply_notifications` хранит только stable recipient/actor/topic/post
   references, `createdAt` и nullable `readAt`; unique recipient + reply identity предотвращает
