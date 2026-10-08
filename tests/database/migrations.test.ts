@@ -301,6 +301,22 @@ describe("PostgreSQL 17 locale migrations", () => {
         solutionOutdatedReason: null,
         solutionOutdatedReasonKind: null,
       });
+
+      await forum.selectBestAnswer(
+        "help-foundation-topic",
+        "help-foundation-answer",
+        "help-foundation-author",
+      );
+      expect(await repository.readPost("help-foundation-answer")).toMatchObject({
+        solutionModerationStatus: null,
+        solutionOutdatedReason: null,
+        solutionOutdatedReasonKind: null,
+      });
+      expect(await repository.readPost("help-foundation-answer-2")).toMatchObject({
+        solutionModerationStatus: "outdated",
+        solutionOutdatedReason: null,
+        solutionOutdatedReasonKind: "best-answer-replaced",
+      });
       expect(await repository.readHelpSolutionsSolved()).toMatchObject({
         questions: [{
           id: "help-foundation-topic",
@@ -314,7 +330,7 @@ describe("PostgreSQL 17 locale migrations", () => {
       expect(await repository.readHelpSolutionsActive()).toMatchObject({
         questions: [{
           id: "help-foundation-topic",
-          replyCount: 1,
+          replyCount: 2,
           isSolved: true,
         }],
       });
