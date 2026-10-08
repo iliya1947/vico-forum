@@ -246,8 +246,10 @@ Vico Forum находится в ранней pre-release разработке.
   filters (step 6), duplicate workflow (step 3), новая permission/mutation, admin-panel redesign,
   similar-search refinement или drafts/autosave. Предыдущий Codex rollout finding относился к
   superseded обязательному `help_question_quality` CHECK; после упрощения модели его причинная
-  цепочка устранена в самом незамерженном `0029`. Новая whole-PR/CI/Pages/Codex проверка после
-  этой implementation correction ещё не выполнена.
+  цепочка устранена в самом незамерженном `0029`. Исправленная implementation revision прошла
+  repository `checks` и `database`, включая migration metadata, Drizzle schema parity и clean
+  PostgreSQL 17 suite. Fresh whole-PR review, Pages verification и повторный Codex review после
+  этой implementation correction ещё не выполнены.
 - In-app reply notifications slice реализован в PR #180:
   forward migration `0024_forum_reply_notifications` хранит только stable recipient/actor/topic/post
   references, `createdAt` и nullable `readAt`; unique recipient + reply identity предотвращает
