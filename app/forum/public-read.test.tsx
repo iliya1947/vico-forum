@@ -1134,6 +1134,68 @@ describe("Help & solutions modes and authoring", () => {
     expect(screen.getByRole("button", { name: "Clear solution status" })).toBeVisible();
   });
 
+  it("resets a stale outdated reason when the authoritative best answer changes on revalidation", async () => {
+    const buildData = (bestAnswerPostId: string, outdatedReason: string | null) => {
+      const solvedTopic = {
+        ...helpTopic,
+        isSolved: true,
+        bestAnswerPostId,
+        posts: helpTopic.posts.map((post) => {
+          if (post.id === "help-answer") {
+            return {
+              ...post,
+              solutionModerationStatus: bestAnswerPostId === post.id && outdatedReason ? "outdated" as const : null,
+              solutionOutdatedReason: bestAnswerPostId === post.id ? outdatedReason : null,
+              solutionOutdatedReasonKind: null,
+            };
+          }
+          return {
+            ...post,
+            solutionModerationStatus: null,
+            solutionOutdatedReason: null,
+            solutionOutdatedReasonKind: null,
+          };
+        }),
+      };
+      return topicRenderData(solvedTopic, {
+        canManageSolution: true,
+        canManageAnySolution: true,
+        canModerateHelpSolution: true,
+        canUseAdminPanel: true,
+      });
+    };
+
+    let currentData = buildData("help-answer", "Persisted old reason.");
+    const router = createMemoryRouter([{
+      id: "page",
+      path: "*",
+      Component: TopicRoute,
+      loader: () => currentData,
+    }], {
+      initialEntries: [forumTopicPath("en", helpTopic.id)],
+    });
+    render(
+      <div lang="en" dir="ltr">
+        <I18nextProvider i18n={runtime("en", "ltr")}>
+          <RouterProvider router={router} />
+        </I18nextProvider>
+      </div>,
+    );
+
+    fireEvent.click(await screen.findByText("Admin panel"));
+    const reason = screen.getByRole("textbox", { name: "Reason the solution is outdated" });
+    expect(reason).toHaveValue("Persisted old reason.");
+    fireEvent.change(reason, { target: { value: "Unsaved stale reason." } });
+    expect(reason).toHaveValue("Unsaved stale reason.");
+
+    currentData = buildData("help-followup", null);
+    await router.revalidate();
+
+    await waitFor(() => {
+      expect(screen.getByRole("textbox", { name: "Reason the solution is outdated" })).toHaveValue("");
+    });
+  });
+
   it("filters Solutions mode to solved questions and keeps All as the canonical default", async () => {
     const requestContext = context("en", "ltr");
     const data = await categoryLoader({
