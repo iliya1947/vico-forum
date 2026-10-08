@@ -68,6 +68,7 @@ const section = {
 const topic = {
   id: "typed/api", sectionId: "typescript/basics", authorId: "ada", authorName: "Ada", createdAt: new Date("2026-01-01"),
   isPinned: true, isSolved: false, bestAnswerPostId: null,
+  solutionModerationStatus: null, solutionOutdatedReason: null,
   title: section.topics[0]!.title,
   section: { id: "typescript/basics", name: "TypeScript", category: { id: "development/core", name: "Development" } },
   tags: [{ key: "typescript", name: "TypeScript" }],
@@ -80,6 +81,7 @@ const topic = {
 const helpTopic = {
   id: "help-question", sectionId: HELP_SOLUTIONS_SERVICE_SECTION_ID, authorId: "ada", authorName: "Ada",
   createdAt: new Date("2026-01-03"), isPinned: false, isSolved: false, bestAnswerPostId: "help-answer",
+  solutionModerationStatus: null, solutionOutdatedReason: null,
   title: { id: "help-title-r1", originalContent: "Why does my Worker lose auth state?", sourceLocale: "en" },
   section: {
     id: HELP_SOLUTIONS_SERVICE_SECTION_ID, name: "Questions",
@@ -115,6 +117,8 @@ const helpPage = {
     replyCount: 2,
     isSolved: false,
     hasBestAnswer: true,
+    solutionModerationStatus: null,
+    solutionOutdatedReason: null,
     createdAt: helpTopic.createdAt,
     activityAt: helpTopic.posts.at(-1)!.createdAt,
     tags: helpTopic.tags,
@@ -1040,6 +1044,72 @@ describe("Help & solutions modes and authoring", () => {
       context: requestContext,
     })).rejects.toMatchObject({ status: 401 });
     expect(readHelpSolutionsMine).not.toHaveBeenCalled();
+  });
+
+  it("renders persisted Help solution moderation status and outdated reason", async () => {
+    const moderatedPage = {
+      ...solvedHelpPage,
+      questions: solvedHelpPage.questions.map((question) => ({
+        ...question,
+        solutionModerationStatus: "outdated" as const,
+        solutionOutdatedReason: "The provider removed the API used by this workaround.",
+      })),
+    };
+    const requestContext = context("en", "ltr");
+    requestContext.set(forumReaderContext, {
+      ...reader,
+      readHelpSolutionsSolved: async () => moderatedPage,
+    });
+
+    const data = await categoryLoader({
+      request: new Request("https://forum.example/en/categories/help-solutions?mode=solutions"),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: requestContext,
+    });
+    if (data.kind !== "help-solutions") throw new Error("expected Help & solutions page");
+    renderRoute(
+      CategoryRoute,
+      data,
+      forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=solutions",
+      "en",
+      "ltr",
+    );
+    expect(await screen.findByText("Solution outdated")).toBeVisible();
+
+    cleanup();
+    const topicContext = context("en", "ltr");
+    topicContext.set(forumReaderContext, {
+      ...reader,
+      readTopicPage: async (id) => id === helpTopic.id
+        ? {
+            ...helpTopic,
+            isSolved: true,
+            solutionModerationStatus: "outdated",
+            solutionOutdatedReason: "The provider removed the API used by this workaround.",
+          }
+        : undefined,
+    });
+    topicContext.set(authSessionContext, {
+      user: { id: "manager", name: "Manager", email: "manager@example.test", emailVerified: true, createdAt: new Date(), updatedAt: new Date() },
+      session: { id: "manager-session", token: "manager-token", userId: "manager", expiresAt: new Date(Date.now() + 60_000), createdAt: new Date(), updatedAt: new Date() },
+    });
+    topicContext.set(authorizationContext, {
+      forUser: () => ({
+        resolve: vi.fn(),
+        has: vi.fn(async (permission) => permission === "forum.solution.manageAny"),
+      }),
+    } as never);
+    const topicData = await topicLoader({
+      params: { locale: "en", topicId: helpTopic.id },
+      context: topicContext,
+    });
+    expect(topicData.canModerateHelpSolution).toBe(true);
+    renderRoute(TopicRoute, topicData, forumTopicPath("en", helpTopic.id), "en", "ltr");
+    expect(await screen.findByText("Why this solution is outdated")).toBeVisible();
+    expect(screen.getByText("The provider removed the API used by this workaround.")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Mark as needs review" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Mark solution outdated" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Clear solution status" })).toBeVisible();
   });
 
   it("filters Solutions mode to solved questions and keeps All as the canonical default", async () => {
