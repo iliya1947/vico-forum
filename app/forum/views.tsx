@@ -1696,6 +1696,8 @@ export function TopicView({
   const bestAnswerPost = topic.bestAnswerPostId
     ? topic.posts.find((post) => post.id === topic.bestAnswerPostId)
     : undefined;
+  const currentSolutionModerationStatus = bestAnswerPost?.solutionModerationStatus ?? null;
+  const currentSolutionOutdatedReason = bestAnswerPost?.solutionOutdatedReason ?? null;
   const orderedPosts = originalPost
     ? [
         originalPost,
@@ -1898,7 +1900,7 @@ export function TopicView({
 
                 {canModerateHelpSolution && topic.isSolved ? (
                   <>
-                    {topic.solutionModerationStatus !== "needs-review" ? (
+                    {currentSolutionModerationStatus !== "needs-review" ? (
                       <Form method="post" className="solution-form topic-admin-form">
                         <input type="hidden" name="intent" value="markSolutionNeedsReview" />
                         <button type="submit">{t("helpSolutionMarkNeedsReview")}</button>
@@ -1914,13 +1916,13 @@ export function TopicView({
                           required
                           maxLength={1000}
                           rows={3}
-                          defaultValue={topic.solutionOutdatedReason ?? ""}
+                          defaultValue={currentSolutionOutdatedReason ?? ""}
                         />
                       </label>
                       <button type="submit">{t("helpSolutionMarkOutdated")}</button>
                     </Form>
 
-                    {topic.solutionModerationStatus ? (
+                    {currentSolutionModerationStatus ? (
                       <Form method="post" className="solution-form topic-admin-form">
                         <input type="hidden" name="intent" value="clearSolutionModeration" />
                         <button type="submit">{t("helpSolutionClearModeration")}</button>
@@ -1973,6 +1975,11 @@ export function TopicView({
                 post.parentPostId ? messageNumberById.get(post.parentPostId) : undefined;
               const directReplyIds = directRepliesByParent.get(post.id) ?? [];
               const postPresentation = presentedPosts.get(post.id)!;
+              const outdatedReason = post.solutionModerationStatus === "outdated"
+                ? post.solutionOutdatedReasonKind === "best-answer-replaced"
+                  ? t("helpSolutionOutdatedReasonBestAnswerReplaced")
+                  : post.solutionOutdatedReason
+                : null;
 
               return (
                 <li
@@ -2005,10 +2012,10 @@ export function TopicView({
                       {isBestAnswer && (
                         <strong className="best-answer-label">{t("bestAnswer")}</strong>
                       )}
-                      {isBestAnswer && topic.solutionModerationStatus === "needs-review" && (
+                      {post.solutionModerationStatus === "needs-review" && (
                         <strong className="solution-moderation-badge is-needs-review">{t("helpSolutionNeedsReview")}</strong>
                       )}
-                      {isBestAnswer && topic.solutionModerationStatus === "outdated" && (
+                      {post.solutionModerationStatus === "outdated" && (
                         <strong className="solution-moderation-badge is-outdated">{t("helpSolutionOutdated")}</strong>
                       )}
                     </span>
@@ -2213,10 +2220,10 @@ export function TopicView({
                       </details>
                     ) : null}
 
-                    {isBestAnswer && topic.solutionModerationStatus === "outdated" && topic.solutionOutdatedReason ? (
+                    {outdatedReason ? (
                       <div className="solution-outdated-reason">
                         <strong>{t("helpSolutionOutdatedReasonLabel")}</strong>
-                        <span dir="auto">{topic.solutionOutdatedReason}</span>
+                        <span dir="auto">{outdatedReason}</span>
                       </div>
                     ) : null}
                   </div>
