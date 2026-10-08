@@ -65,6 +65,7 @@ type PreviewVariant =
   | "help-solutions-similar-empty"
   | "help-solutions-similar-invalid"
   | "help-solutions-similar-unavailable"
+  | "help-solution-outdated"
   | "category-no-pins";
 
 interface Scenario {
@@ -113,6 +114,7 @@ export const scenarios: readonly Scenario[] = [
   { id: "help-solutions-attention", label: "Help & solutions · Needs attention", locale: "en", direction: "ltr", identity: "manager", path: "/en/categories/help-solutions?mode=attention", view: "category", allowedIdentities: ["manager"] },
   { id: "help-solutions-attention-empty", label: "Help & solutions · Needs attention · empty", locale: "en", direction: "ltr", identity: "manager", path: "/en/categories/help-solutions?mode=attention", view: "category", variant: "help-solutions-attention-empty", allowedIdentities: ["manager"] },
   { id: "help-solutions-solutions", label: "Help & solutions · Solutions", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=solutions", view: "category" },
+  { id: "help-solution-outdated", label: "Help solution · outdated", locale: "en", direction: "ltr", identity: "manager", path: "/en/topics/help-postgres-timeout", view: "topic", variant: "help-solution-outdated", allowedIdentities: ["manager"] },
   { id: "help-solutions-mine", label: "Help & solutions · My questions", locale: "en", direction: "ltr", identity: "user", path: "/en/categories/help-solutions?mode=mine", view: "category", allowedIdentities: ["user", "manager"] },
   { id: "help-solutions-mine-empty", label: "Help & solutions · My questions · empty", locale: "en", direction: "ltr", identity: "user", path: "/en/categories/help-solutions?mode=mine", view: "category", variant: "help-solutions-mine-empty", allowedIdentities: ["user", "manager"] },
   { id: "help-solutions-mine-guest", label: "Help & solutions · My questions · unauthenticated", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=mine", view: "not-found", variant: "route-401", allowedIdentities: ["guest"] },
@@ -315,6 +317,8 @@ const topic = {
   isPinned: true,
   isSolved: true,
   bestAnswerPostId: "answer",
+  solutionModerationStatus: null,
+  solutionOutdatedReason: null,
   title: section.topics[0]!.title,
   section: {
     id: sectionId,
@@ -542,19 +546,25 @@ function previewHelpSolutions(locale: PreviewLocale) {
     questions: [
       {
         id: "help-worker-session", title: titles[0]!, authorName: "Alex Rivera", replyCount: 0,
-        isSolved: false, hasBestAnswer: false, createdAt: "2026-09-30T11:30:00.000Z",
+        isSolved: false, hasBestAnswer: false, solutionModerationStatus: null, solutionOutdatedReason: null, createdAt: "2026-09-30T11:30:00.000Z",
         activityAt: "2026-09-30T15:40:00.000Z",
         tags: [{ key: "cloudflare", name: "Cloudflare" }, { key: "auth", name: "Auth" }],
       },
       {
         id: "help-auth-best-answer", title: titles[1]!, authorName: "Noa Levi", replyCount: 3,
-        isSolved: false, hasBestAnswer: true, createdAt: "2026-09-29T09:00:00.000Z",
+        isSolved: false, hasBestAnswer: true, solutionModerationStatus: null, solutionOutdatedReason: null, createdAt: "2026-09-29T09:00:00.000Z",
         activityAt: "2026-09-30T14:20:00.000Z",
         tags: [{ key: "better-auth", name: "Better Auth" }, { key: "workers", name: "Workers" }],
       },
       {
         id: "help-postgres-timeout", title: titles[2]!, authorName: "Maya Cohen", replyCount: 5,
-        isSolved: true, hasBestAnswer: true, createdAt: "2026-09-27T08:00:00.000Z",
+        isSolved: true, hasBestAnswer: true, solutionModerationStatus: "outdated" as const,
+        solutionOutdatedReason: hebrew
+          ? "גרסת PostgreSQL החדשה שינתה את ההתנהגות של ההגדרה הזו."
+          : russian
+            ? "В новой версии PostgreSQL поведение этой настройки изменилось."
+            : "A newer PostgreSQL version changed the behavior of this setting.",
+        createdAt: "2026-09-27T08:00:00.000Z",
         activityAt: "2026-09-29T18:10:00.000Z",
         tags: [{ key: "postgresql", name: "PostgreSQL" }, { key: "neon", name: "Neon" }],
       },
@@ -1531,9 +1541,12 @@ function previewElement(scenario: Scenario) {
       );
     case "topic": {
       const solutionConfirmation = scenario.variant === "topic-best-answer-unsolved";
-      const solved = scenario.variant !== "topic-unsolved"
+      const helpSolutionOutdated = scenario.variant === "help-solution-outdated";
+      const solved = helpSolutionOutdated || (
+        scenario.variant !== "topic-unsolved"
         && scenario.variant !== "topic-reply-error"
-        && !solutionConfirmation;
+        && !solutionConfirmation
+      );
       const data = topicData(
         scenario.locale,
         scenario.direction,
@@ -1542,10 +1555,32 @@ function previewElement(scenario: Scenario) {
         scenario.identity === "manager",
         solutionConfirmation,
       );
+      const renderedTopic = helpSolutionOutdated
+        ? {
+            ...data.topic,
+            id: "help-postgres-timeout",
+            sectionId: HELP_SOLUTIONS_SERVICE_SECTION_ID,
+            isSolved: true,
+            solutionModerationStatus: "outdated" as const,
+            solutionOutdatedReason: scenario.locale === "ru"
+              ? "В новой версии PostgreSQL поведение этой настройки изменилось."
+              : scenario.locale === "he"
+                ? "גרסת PostgreSQL החדשה שינתה את ההתנהגות של ההגדרה הזו."
+                : "A newer PostgreSQL version changed the behavior of this setting.",
+            section: {
+              id: HELP_SOLUTIONS_SERVICE_SECTION_ID,
+              name: "Questions",
+              category: { id: HELP_SOLUTIONS_CATEGORY_ID, name: "Help & solutions" },
+            },
+          }
+        : solutionConfirmation
+          ? { ...data.topic, bestAnswerPostId: "answer" }
+          : data.topic;
       return (
         <TopicView
           {...data}
-          topic={solutionConfirmation ? { ...data.topic, bestAnswerPostId: "answer" } : data.topic}
+          topic={renderedTopic}
+          canModerateHelpSolution={helpSolutionOutdated}
           actionData={scenario.variant === "topic-reply-error" ? { error: "rateLimited" } : undefined}
         />
       );
@@ -1610,6 +1645,7 @@ function topicData(
       : [],
     canReply: identity !== "guest",
     canManageSolution: showSecondaryControls || solutionAuthor,
+    canModerateHelpSolution: false,
     isTopicAuthor: solutionAuthor,
     canCorrectTitleSourceLocale: showSecondaryControls,
     canManagePin: identity === "manager",
