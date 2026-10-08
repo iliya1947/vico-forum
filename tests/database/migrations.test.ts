@@ -68,7 +68,7 @@ describe("PostgreSQL 17 locale migrations", () => {
     const applied = await client.query<{ count: string }>(
       'select count(*)::text as count from drizzle."__drizzle_migrations"',
     );
-    expect(applied.rows[0]?.count).toBe("29");
+    expect(applied.rows[0]?.count).toBe("30");
   });
 
   it("seeds Help & solutions while keeping its service section internal to generic discovery", async () => {
@@ -148,6 +148,26 @@ describe("PostgreSQL 17 locale migrations", () => {
           },
         },
       });
+      expect(await repository.readTopicPage("help-foundation-topic")).toMatchObject({
+        questionQuality: "normal",
+      });
+      expect(await repository.readHelpSolutionsAll()).toMatchObject({
+        questions: [{ id: "help-foundation-topic", questionQuality: "normal" }],
+      });
+
+      await client.query(
+        "update forum_topics set help_question_quality = 'needs-details' where id = 'help-foundation-topic'",
+      );
+      expect(await repository.readTopicPage("help-foundation-topic")).toMatchObject({
+        questionQuality: "needs-details",
+      });
+      expect(await repository.readHelpSolutionsAll()).toMatchObject({
+        questions: [{ id: "help-foundation-topic", questionQuality: "needs-details" }],
+      });
+      await client.query(
+        "update forum_topics set help_question_quality = 'normal' where id = 'help-foundation-topic'",
+      );
+
       await forum.createPost({
         id: "help-foundation-answer",
         topicId: "help-foundation-topic",
@@ -183,6 +203,7 @@ describe("PostgreSQL 17 locale migrations", () => {
           replyCount: 1,
           isSolved: false,
           hasBestAnswer: true,
+          questionQuality: "normal",
           tags: [{ key: "typescript", name: "TypeScript" }],
         }],
       });
@@ -392,6 +413,18 @@ describe("PostgreSQL 17 locale migrations", () => {
       await expectDatabaseCode(
         client.query(
           "update forum_posts set solution_moderation_status = null, solution_outdated_reason = 'orphan reason', solution_outdated_reason_kind = null where id = 'help-foundation-answer-2'",
+        ),
+        "23514",
+      );
+      await expectDatabaseCode(
+        client.query(
+          "update forum_topics set help_question_quality = null where id = 'help-foundation-topic'",
+        ),
+        "23514",
+      );
+      await expectDatabaseCode(
+        client.query(
+          "update forum_topics set help_question_quality = 'invalid' where id = 'help-foundation-topic'",
         ),
         "23514",
       );
