@@ -2011,7 +2011,7 @@ export function TopicView({
                   {topic.duplicateOf.title}
                 </Link>
               </span>
-              {topic.duplicateDisputed ? (
+              {canManageHelpDuplicate && topic.duplicateDisputed ? (
                 <span className="help-duplicate-disputed-badge">{t("helpDuplicateDisputed")}</span>
               ) : null}
             </div>
@@ -2116,7 +2116,7 @@ export function TopicView({
                       {isBestAnswer && (
                         <strong className="best-answer-label">{t("bestAnswer")}</strong>
                       )}
-                      {post.solutionModerationStatus === "needs-review" && (
+                      {canModerateHelpSolution && post.solutionModerationStatus === "needs-review" && (
                         <strong className="solution-moderation-badge is-needs-review">{t("helpSolutionNeedsReview")}</strong>
                       )}
                       {post.solutionModerationStatus === "outdated" && (
