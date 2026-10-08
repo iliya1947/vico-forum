@@ -82,6 +82,7 @@ export const reviewedCommonFingerprints = {
   topicAdminPanel: "2a591c4eecafb4789dbb95f21f9a009c772737f49362d2c438ecad2cadaf7d2c",
   helpSolutionOutdated: "cdf1bbf660ba797114d6150e01cbb037074e7795dc40e57610e1683f750741c1",
   helpSolutionOutdatedReasonLabel: "00cf3ece4b19ceca7f1c876697a339f4e625270f92cb7289c0961670c3d0ac68",
+  helpSolutionOutdatedReasonBestAnswerReplaced: "66a01d5aa48ae35a44ab0573d95160836b1d4201b6ec3cd786383b35bd4f90ad",
   helpSolutionMarkNeedsReview: "9f0974848df67b619571a33f1b37cbeb5d76de6f58a4230c49873d339505ec1e",
   helpSolutionOutdatedReasonInput: "456b1ac9bf638116cd3d305012ef464ee13d4116b084beab85dd68a57fc6b67c",
   helpSolutionMarkOutdated: "f16830bb526f2cbf73cb23681047ec40ab3ad3b20c04c5f353fe205feed67cee",
