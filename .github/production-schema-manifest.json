@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema": "public",
-  "targetMigration": "0029_help_question_quality",
+  "targetMigration": "0029_help_question_needs_details",
   "tables": {
     "account": {
       "columns": [
@@ -1825,10 +1825,10 @@
           "defaultSha256": "28a4dae0461e17af56e979c2095abfbe0bfc45fe9ca8abf3144338a518a1bb8f"
         },
         {
-          "name": "help_question_quality",
-          "type": "text",
-          "nullable": true,
-          "defaultSha256": null
+          "name": "needs_details",
+          "type": "boolean",
+          "nullable": false,
+          "defaultSha256": "fcbcf165908dd18a9e49f7ff27810176db8e9f63b4352213741664245224f8aa"
         }
       ],
       "primaryKeys": [
@@ -1902,16 +1902,7 @@
           "initiallyDeferred": false
         }
       ],
-      "checks": [
-        {
-          "name": "forum_topics_help_question_quality_check",
-          "columns": [
-            "help_question_quality",
-            "section_id"
-          ],
-          "definitionSha256": "f1f714bee46be360b324458abaf89d83dbe1db968c2e3752d94cf8ac9b90678a"
-        }
-      ],
+      "checks": [],
       "indexes": [
         {
           "name": "forum_topics_author_id_idx",
