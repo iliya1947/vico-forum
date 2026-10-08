@@ -60,10 +60,6 @@ jobs:
           if [ -n "$(git status --porcelain -- drizzle)" ]; then
             git status --short -- drizzle
             git diff -- drizzle
-            printf '\n--- generated parity SQL ---\n'
-            cat drizzle/0031_ci-schema-parity.sql || true
-            printf '\n--- generated snapshot table excerpts ---\n'
-            node -e 'const fs=require("node:fs"); const s=JSON.parse(fs.readFileSync("drizzle/meta/0031_snapshot.json","utf8")); for (const n of ["public.authz_permissions","public.forum_help_duplicate_relationships","public.forum_help_duplicate_appeals"]) console.log(n, JSON.stringify(s.tables[n], null, 2));'
             exit 1
           fi
   database:
