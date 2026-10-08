@@ -1314,7 +1314,8 @@ export function HelpSolutionsView({
                         <span className={"help-question-status " + (question.isSolved ? "is-solved" : "is-open")}>
                           {t(question.isSolved ? "solved" : "helpSolutionsOpen")}
                         </span>
-                        {canViewSolutionModeration && question.solutionModerationStatus ? (
+                        {question.solutionModerationStatus === "outdated"
+                          || (canViewSolutionModeration && question.solutionModerationStatus === "needs-review") ? (
                           <span className={"help-question-solution-moderation is-" + question.solutionModerationStatus}>
                             {t(
                               question.solutionModerationStatus === "needs-review"
