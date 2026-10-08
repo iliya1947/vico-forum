@@ -182,7 +182,7 @@ Vico Forum находится в ранней pre-release разработке.
   permissions, recommendation scoring, interests/subscriptions, notifications, visual polish или
   Stage 6 работы. Owner visual acceptance populated/empty Pages presentation подтверждён
   2026-10-07 для Guest/User/Manager identity switching.
-- Текущий bounded Q&A follow-up добавляет authenticated режим **For me / Для меня** через
+- Merged PR #199 добавил authenticated режим **For me / Для меня** через
   `?mode=for-me`. Authoritative current user берётся только из server-side session. Repository
   выводит interest tags из существующего persisted участия пользователя только внутри
   `help-solutions-questions`: вопросов, созданных этим пользователем, и тем, где он оставлял
@@ -195,6 +195,17 @@ Vico Forum находится в ранней pre-release разработке.
   permissions, opaque/AI scoring, notifications, visual polish, similar-search refinement или
   Stage 6 работы. Owner visual acceptance populated/empty Pages presentation и Guest/User/Manager
   identity switching подтверждён 2026-10-07.
+- PR #200 реализует первый шаг зафиксированной Help & solutions moderation/filter sequence:
+  migration `0028_help_solution_moderation` добавляет к Help-question topic отдельную persisted
+  пометку решения `needs-review | outdated` и nullable explanation. `isSolved` остаётся
+  независимым final state и не сбрасывается этими пометками; moderation state допустим только для
+  уже решённых вопросов внутреннего `help-solutions-questions`, а `outdated` требует непустую
+  persisted причину длиной до 1000 символов. Protected mutations повторно проверяют существующую
+  effective capability `forum.solution.manageAny`; новая permission не вводится. Public Help
+  cards/topic показывают persisted marker, topic показывает outdated explanation, а management
+  controls доступны только при server-resolved `manageAny`. User signals, quality
+  `needs-details`, duplicate/appeal workflow, расширение `Needs attention` и комбинируемые
+  фильтры остаются следующими отдельными шагами; external migration/Stage 6 rollout не выполняется.
 - In-app reply notifications slice реализован в PR #180:
   forward migration `0024_forum_reply_notifications` хранит только stable recipient/actor/topic/post
   references, `createdAt` и nullable `readAt`; unique recipient + reply identity предотвращает
@@ -404,7 +415,7 @@ Vico Forum находится в ранней pre-release разработке.
 - generic `/:locale/*`, runtime `LocaleRegistry`, BCP-47 resolution, LTR/RTL и request-scoped
   `i18next`;
 - persistent locale registry, persistent UI translation storage и compiled bundle storage;
-- текущая repository migration history — `0000`–`0027`; external accepted migration evidence по-прежнему заканчивается на `0020`.
+- текущая repository migration history — `0000`–`0028`; external accepted migration evidence по-прежнему заканчивается на `0020`.
 
 ## Forum core — Stage 4
 
