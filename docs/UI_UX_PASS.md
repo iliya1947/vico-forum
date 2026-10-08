@@ -364,7 +364,7 @@ composition without changing the forum hierarchy or schema:
   only an already confirmed relationship with a required explanation. Pending dispute preserves
   the authoritative duplicate relationship: the topic page may show a neutral public `Disputed`
   marker, while Help question lists keep public `Solved` and `Duplicate`, omit the redundant
-  `Best answer` badge, and expose answer-level `Needs review` / `Solution outdated` plus pending
+  `Best answer` badge, keep `Solution outdated` public, and expose `Needs review` plus pending
   `Disputed` only to the relevant moderation actors. The appeal explanation remains private to
   that author and duplicate managers. Reject preserves
   the relation, while accepting the dispute removes it. General user moderation signals remain
