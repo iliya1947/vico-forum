@@ -44,15 +44,17 @@ export async function loader({ request, params, context }: {
 
     let canAskQuestion = false;
     let canViewAttention = false;
-    let canViewDuplicateModeration = false;
+    let canViewSolutionModeration = false;
+    let canViewDuplicateDispute = false;
     if (session) {
       try {
         const resolver = authorizationForRequest(context).forUser(session.user.id);
-        [canAskQuestion, canViewAttention, canViewDuplicateModeration] = await Promise.all([
+        [canAskQuestion, canViewSolutionModeration, canViewDuplicateDispute] = await Promise.all([
           resolver.has("forum.topic.create"),
           resolver.has("forum.solution.manageAny"),
           resolver.has("forum.helpDuplicate.manage"),
         ]);
+        canViewAttention = canViewSolutionModeration;
       } catch (error) {
         if (!(error instanceof AuthorizationUnavailableError)) throw error;
         if (mode === "attention") throw new Response("Unavailable", { status: 503 });
@@ -89,7 +91,8 @@ export async function loader({ request, params, context }: {
       isAuthenticated: Boolean(session),
       canAskQuestion,
       canViewAttention,
-      canViewDuplicateModeration,
+      canViewSolutionModeration,
+      canViewDuplicateDispute,
       referenceTime,
       page: {
         ...helpSolutions,
@@ -139,7 +142,8 @@ export default function CategoryRoute() {
         isAuthenticated={data.isAuthenticated}
         canAskQuestion={data.canAskQuestion}
         canViewAttention={data.canViewAttention}
-        canViewDuplicateModeration={data.canViewDuplicateModeration}
+        canViewSolutionModeration={data.canViewSolutionModeration}
+        canViewDuplicateDispute={data.canViewDuplicateDispute}
         actionData={actionData}
       />
     );
