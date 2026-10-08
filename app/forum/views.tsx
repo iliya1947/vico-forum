@@ -1907,7 +1907,15 @@ export function TopicView({
                       </Form>
                     ) : null}
 
-                    <Form method="post" className="solution-form topic-admin-form">
+                    <Form
+                      key={[
+                        bestAnswerPost?.id ?? "none",
+                        currentSolutionModerationStatus ?? "none",
+                        currentSolutionOutdatedReason ?? "",
+                      ].join("\u0000")}
+                      method="post"
+                      className="solution-form topic-admin-form"
+                    >
                       <input type="hidden" name="intent" value="markSolutionOutdated" />
                       <label>
                         {t("helpSolutionOutdatedReasonInput")}
