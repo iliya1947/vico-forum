@@ -1237,24 +1237,38 @@ describe("Help & solutions modes and authoring", () => {
 
   it("shows outdated and duplicate publicly while keeping disputed moderator-only in Help lists", async () => {
     const moderatedPage = {
-      ...solvedHelpPage,
-      questions: solvedHelpPage.questions.map((question) => ({
-        ...question,
-        solutionModerationStatus: "outdated" as const,
-        solutionOutdatedReason: "The provider removed the API used by this workaround.",
-        solutionOutdatedReasonKind: null,
-        duplicateOf: { id: "help-original", title: "Canonical original question" },
-        duplicateDisputed: true,
-      })),
+      ...helpPage,
+      questions: [
+        {
+          ...solvedHelpPage.questions[0]!,
+          solutionModerationStatus: "outdated" as const,
+          solutionOutdatedReason: "The provider removed the API used by this workaround.",
+          solutionOutdatedReasonKind: null,
+          duplicateOf: null,
+          duplicateDisputed: false,
+        },
+        {
+          ...helpPage.questions[0]!,
+          id: "help-duplicate-list-question",
+          title: "Repeated unresolved question",
+          isSolved: false,
+          hasBestAnswer: false,
+          solutionModerationStatus: null,
+          solutionOutdatedReason: null,
+          solutionOutdatedReasonKind: null,
+          duplicateOf: { id: "help-original", title: "Canonical original question" },
+          duplicateDisputed: true,
+        },
+      ],
     };
     const guestContext = context("en", "ltr");
     guestContext.set(forumReaderContext, {
       ...reader,
-      readHelpSolutionsSolved: async () => moderatedPage,
+      readHelpSolutionsAll: async () => moderatedPage,
     });
 
     const guestData = await categoryLoader({
-      request: new Request("https://forum.example/en/categories/help-solutions?mode=solutions"),
+      request: new Request("https://forum.example/en/categories/help-solutions?mode=all"),
       params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
       context: guestContext,
     });
@@ -1262,7 +1276,7 @@ describe("Help & solutions modes and authoring", () => {
     const guestView = renderRoute(
       CategoryRoute,
       guestData,
-      forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=solutions",
+      forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=all",
       "en",
       "ltr",
     );
@@ -1275,7 +1289,7 @@ describe("Help & solutions modes and authoring", () => {
     const managerContext = context("en", "ltr");
     managerContext.set(forumReaderContext, {
       ...reader,
-      readHelpSolutionsSolved: async () => moderatedPage,
+      readHelpSolutionsAll: async () => moderatedPage,
     });
     managerContext.set(authSessionContext, {
       user: { id: "manager", name: "Manager", email: "manager@example.test", emailVerified: true, createdAt: new Date(), updatedAt: new Date() },
@@ -1291,7 +1305,7 @@ describe("Help & solutions modes and authoring", () => {
     } as never);
 
     const managerData = await categoryLoader({
-      request: new Request("https://forum.example/en/categories/help-solutions?mode=solutions"),
+      request: new Request("https://forum.example/en/categories/help-solutions?mode=all"),
       params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
       context: managerContext,
     });
@@ -1301,7 +1315,7 @@ describe("Help & solutions modes and authoring", () => {
     renderRoute(
       CategoryRoute,
       managerData,
-      forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=solutions",
+      forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=all",
       "en",
       "ltr",
     );
@@ -1382,7 +1396,7 @@ describe("Help & solutions modes and authoring", () => {
       readHelpSolutionsSolved: async () => reviewPage,
     });
     const guestData = await categoryLoader({
-      request: new Request("https://forum.example/en/categories/help-solutions?mode=solutions"),
+      request: new Request("https://forum.example/en/categories/help-solutions?mode=all"),
       params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
       context: guestContext,
     });
@@ -1390,7 +1404,7 @@ describe("Help & solutions modes and authoring", () => {
     const guestView = renderRoute(
       CategoryRoute,
       guestData,
-      forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=solutions",
+      forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=all",
       "en",
       "ltr",
     );
@@ -1413,7 +1427,7 @@ describe("Help & solutions modes and authoring", () => {
       }),
     } as never);
     const managerData = await categoryLoader({
-      request: new Request("https://forum.example/en/categories/help-solutions?mode=solutions"),
+      request: new Request("https://forum.example/en/categories/help-solutions?mode=all"),
       params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
       context: managerContext,
     });
@@ -1421,7 +1435,7 @@ describe("Help & solutions modes and authoring", () => {
     renderRoute(
       CategoryRoute,
       managerData,
-      forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=solutions",
+      forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=all",
       "en",
       "ltr",
     );
@@ -1493,7 +1507,7 @@ describe("Help & solutions modes and authoring", () => {
   it("filters Solutions mode to solved questions and keeps All as the canonical default", async () => {
     const requestContext = context("en", "ltr");
     const data = await categoryLoader({
-      request: new Request("https://forum.example/en/categories/help-solutions?mode=solutions"),
+      request: new Request("https://forum.example/en/categories/help-solutions?mode=all"),
       params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
       context: requestContext,
     });
@@ -1508,7 +1522,7 @@ describe("Help & solutions modes and authoring", () => {
     renderRoute(
       CategoryRoute,
       data,
-      forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=solutions",
+      forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=all",
       "en",
       "ltr",
     );
