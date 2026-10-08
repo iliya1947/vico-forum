@@ -81,6 +81,7 @@ actor должен быть author target topic. `forum.sourceLocale.correctOwn`
 - `forum.topic.pin`;
 - `forum.solution.manageOwn`;
 - `forum.solution.manageAny`;
+- `forum.helpDuplicate.manage`;
 - `forum.sourceLocale.correctOwn`;
 - `forum.sourceLocale.correctAny`;
 - `forum.translation.generate`.
@@ -92,6 +93,7 @@ actor должен быть author target topic. `forum.sourceLocale.correctOwn`
 - `forum.topic.pin`;
 - `forum.solution.manageOwn`;
 - `forum.solution.manageAny`;
+- `forum.helpDuplicate.manage`;
 - `forum.sourceLocale.correctOwn`;
 - `forum.sourceLocale.correctAny`;
 - `forum.translation.generate`;
