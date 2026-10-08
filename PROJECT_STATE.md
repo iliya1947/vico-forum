@@ -225,7 +225,11 @@ Vico Forum находится в ранней pre-release разработке.
   дефект: uncontrolled причина `outdated` могла пережить same-route revalidation после смены
   текущего best answer и затем быть отправлена уже для нового решения. Исправление remount-ит
   только эту moderation-form при изменении authoritative best-answer/status/persisted-reason
-  identity; focused regression coverage проверяет reset после revalidation. Help Pages fixtures
+  identity; focused regression coverage проверяет reset после revalidation. Повторный independent
+  review также выявил SQL NULL-semantics defect в `forum_posts_solution_outdated_reason_check`:
+  orphan reason при `status = NULL` мог дать UNKNOWN и пройти PostgreSQL CHECK. Constraint
+  переведён на null-safe status comparison, а DB regression явно проверяет комбинацию
+  `status = NULL + reason != NULL + reason_kind = NULL`. Help Pages fixtures
   выбирают best answer с более поздним исходным номером и визуально проверяют его promotion сразу
   под original question.
   User signals, quality

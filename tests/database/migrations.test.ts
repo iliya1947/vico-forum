@@ -391,7 +391,7 @@ describe("PostgreSQL 17 locale migrations", () => {
       );
       await expectDatabaseCode(
         client.query(
-          "update forum_posts set solution_moderation_status = null, solution_outdated_reason = 'orphan reason' where id = 'help-foundation-answer-2'",
+          "update forum_posts set solution_moderation_status = null, solution_outdated_reason = 'orphan reason', solution_outdated_reason_kind = null where id = 'help-foundation-answer-2'",
         ),
         "23514",
       );

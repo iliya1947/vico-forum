@@ -1385,7 +1385,7 @@
             "solution_outdated_reason",
             "solution_outdated_reason_kind"
           ],
-          "definitionSha256": "6f4e79d9df1a86f8f2616ec2f978d46aa3d98cd75cf9a9b89b2c3f1384d224fd"
+          "definitionSha256": "PENDING"
         },
         {
           "name": "forum_posts_solution_outdated_reason_kind_check",

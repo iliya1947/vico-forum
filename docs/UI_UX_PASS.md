@@ -339,7 +339,10 @@ composition without changing the forum hierarchy or schema:
   controls remain gated by `forum.solution.manageAny` and applicable Help state. A confirmed
   independent-review correction resets the manual outdated-reason form whenever authoritative
   best-answer/status/persisted-reason identity changes, preventing stale uncontrolled textarea
-  input from carrying across same-route revalidation onto a newly selected solution. Best-answer
+  input from carrying across same-route revalidation onto a newly selected solution. A later
+  independent-review correction also makes the persisted outdated-reason CHECK null-safe, so a
+  non-empty reason cannot survive with a NULL moderation status; focused DB coverage exercises that
+  exact invalid tuple. Best-answer
   selection is temporarily surfaced as a compact breadcrumb-row selector using permanent message
   numbers: it occupies the admin-panel slot for an ordinary topic author and sits immediately before
   `Admin panel` for a manager. The old message-level `Message tools` disclosure is removed from

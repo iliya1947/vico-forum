@@ -13,7 +13,7 @@ ALTER TABLE "forum_posts" ADD CONSTRAINT "forum_posts_solution_outdated_reason_k
 ALTER TABLE "forum_posts" ADD CONSTRAINT "forum_posts_solution_outdated_reason_check"
   CHECK (
     (
-      "solution_moderation_status" = 'outdated'
+      "solution_moderation_status" is not distinct from 'outdated'
       and (
         (
           "solution_outdated_reason_kind" is not distinct from 'best-answer-replaced'

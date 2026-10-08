@@ -752,7 +752,7 @@ export const forumPosts = pgTable(
     check(
       "forum_posts_solution_outdated_reason_check",
       sql`(
-        ${table.solutionModerationStatus} = 'outdated'
+        ${table.solutionModerationStatus} is not distinct from 'outdated'
         and (
           (
             ${table.solutionOutdatedReasonKind} is not distinct from 'best-answer-replaced'
