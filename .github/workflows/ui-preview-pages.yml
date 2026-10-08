@@ -5,7 +5,7 @@ on:
     # Preview every ChatGPT implementation branch; never deploy the permanent service branch.
     branches:
       - main
-      - "chatgpt/**"
+      - "chatgpt/*"
       - "!chatgpt/ui-ux-product-pass"
   workflow_dispatch:
 
