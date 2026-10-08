@@ -1695,3 +1695,18 @@ Final head: `be1f49c83491803d2f62509893361d443995eb55`.
 - No repeat Codex review is required under AGENTS.md because the post-review change is documentation-only and does not change implementation.
 
 Consensus/result: PR #202 is ready for owner merge.
+
+
+---
+
+## Post-merge independent review request — PR #203 — 2026-10-08
+
+PR #203 was merged before the required Codex review was run.
+
+Review target: current `main` commit `b477782ef011e1f01ba8d77d0e2e061791558451`, specifically the six-line `AGENTS.md` section **«Масштаб исправления»** introduced by PR #203.
+
+### Codex review request
+
+Independently review that merged documentation change against the current repository instructions and project contracts.
+
+Do not implement changes. Do not assume the change is correct because it is already merged. Report any concrete current-scope contradiction, ambiguity, or workflow defect caused by the new section. If none is found, reply **No finding**.
