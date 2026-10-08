@@ -1768,3 +1768,39 @@ If Codex has suggestions, it will comment; otherwise it will react with 👍.
 Codex can also answer questions or update the PR. Try commenting "@codex address that feedback".
             
 </details>
+
+---
+
+## PR #200 owner clarification and ChatGPT whole-PR review — 2026-10-08
+
+Implementation PR: https://github.com/iliya1947/vico-forum/pull/200  
+Exact reviewed head: `a720ba2bd50b097fcb0ee14d6377206aba4c1fc4`.
+
+### Owner clarification
+
+- Solution moderation state belongs to the concrete answer post, not the topic.
+- When a different best answer is selected, the previous best answer becomes `outdated` with persisted system reason-kind `best-answer-replaced`; the UI localizes that reason as “A new best answer was selected.” / “Выбран новый лучший ответ.”. The newly selected best answer starts with cleared moderation state and does not inherit the old marker.
+- Manual `outdated` continues to require a non-empty persisted human explanation.
+- Questions about the general `Admin panel` design/applicability are explicitly deferred. In particular, the solved-Help-without-best-answer UI applicability case and the possibility of an empty admin dropdown for a capability/state combination are not blockers for PR #200 and must not expand this bounded slice.
+
+### ChatGPT independent whole-PR review
+
+No confirmed current-scope defect remains on the exact head above.
+
+Verified:
+- migration/schema store `needs-review | outdated` plus reason metadata on `forum_posts`;
+- best-answer replacement and old-answer marking occur atomically in one transaction under the topic row lock;
+- the replacement target is cleared before becoming current, while the previous best answer retains the historical `outdated` marker;
+- public Help cards project moderation state only from the current best answer, while topic pages retain per-answer historical state/reason;
+- manual mutation remains protected by existing effective `forum.solution.manageAny`;
+- generated Drizzle snapshot changes only `forum_posts`, adding exactly the three moderation columns and three expected checks; no other table contract changed;
+- EN/RU/HE copy, route/repository regression coverage, migration wiring and production manifest are aligned.
+
+Exact-head automated evidence:
+- CI run `37794207288`: `checks` success, `database` success;
+- Pages run `37794412915`: `build` success, `deploy` success.
+
+The branch is two documentation-only commits behind current `main` (#202/#203) and GitHub reports PR #200 mergeable/clean; those main-only documentation changes are not part of the PR diff and do not require an implementation change.
+
+Codex review has not yet been run for this exact #200 head.
+
