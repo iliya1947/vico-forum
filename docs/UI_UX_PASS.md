@@ -369,7 +369,9 @@ composition without changing the forum hierarchy or schema:
   that author and duplicate managers. Reject preserves
   the relation, while accepting the dispute removes it. A question with its own selected best
   answer or solved state cannot be confirmed as a duplicate, and an active duplicate cannot gain
-  its own best answer or solved state until that relationship is removed. General user moderation
+  its own best answer, solved state or new replies until that relationship is removed. While an
+  appeal is pending, duplicate managers see the author's explanation directly in the duplicate
+  notice; accept/reject controls remain in the admin panel. General user moderation
   signals remain
   step 4, Needs attention expansion step 5 and combined relationship filters step 6;
 - owner visual acceptance of the implementation was confirmed on 2026-10-05; exact-head
