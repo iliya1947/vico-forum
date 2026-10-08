@@ -644,6 +644,24 @@
           "type": "text",
           "primaryKey": false,
           "notNull": false
+        },
+        "solution_moderation_status": {
+          "name": "solution_moderation_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "solution_outdated_reason": {
+          "name": "solution_outdated_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "solution_outdated_reason_kind": {
+          "name": "solution_outdated_reason_kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {
@@ -752,6 +770,18 @@
         "forum_posts_parent_not_self_check": {
           "name": "forum_posts_parent_not_self_check",
           "value": "\"forum_posts\".\"parent_post_id\" is null or \"forum_posts\".\"parent_post_id\" <> \"forum_posts\".\"id\""
+        },
+        "forum_posts_solution_moderation_status_check": {
+          "name": "forum_posts_solution_moderation_status_check",
+          "value": "\"forum_posts\".\"solution_moderation_status\" is null or \"forum_posts\".\"solution_moderation_status\" in ('needs-review', 'outdated')"
+        },
+        "forum_posts_solution_outdated_reason_kind_check": {
+          "name": "forum_posts_solution_outdated_reason_kind_check",
+          "value": "\"forum_posts\".\"solution_outdated_reason_kind\" is null or \"forum_posts\".\"solution_outdated_reason_kind\" = 'best-answer-replaced'"
+        },
+        "forum_posts_solution_outdated_reason_check": {
+          "name": "forum_posts_solution_outdated_reason_check",
+          "value": "(\n        \"forum_posts\".\"solution_moderation_status\" = 'outdated'\n        and (\n          (\n            \"forum_posts\".\"solution_outdated_reason_kind\" = 'best-answer-replaced'\n            and \"forum_posts\".\"solution_outdated_reason\" is null\n          )\n          or (\n            \"forum_posts\".\"solution_outdated_reason_kind\" is null\n            and \"forum_posts\".\"solution_outdated_reason\" is not null\n            and btrim(\"forum_posts\".\"solution_outdated_reason\") <> ''\n            and char_length(\"forum_posts\".\"solution_outdated_reason\") <= 1000\n          )\n        )\n      ) or (\n        \"forum_posts\".\"solution_moderation_status\" is distinct from 'outdated'\n        and \"forum_posts\".\"solution_outdated_reason\" is null\n        and \"forum_posts\".\"solution_outdated_reason_kind\" is null\n      )"
         }
       },
       "isRLSEnabled": false
@@ -974,18 +1004,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "solution_moderation_status": {
-          "name": "solution_moderation_status",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "solution_outdated_reason": {
-          "name": "solution_outdated_reason",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -1057,20 +1075,7 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "checkConstraints": {
-        "forum_topics_solution_moderation_requires_solved_check": {
-          "name": "forum_topics_solution_moderation_requires_solved_check",
-          "value": "\"forum_topics\".\"solution_moderation_status\" is null or \"forum_topics\".\"is_solved\""
-        },
-        "forum_topics_solution_moderation_status_check": {
-          "name": "forum_topics_solution_moderation_status_check",
-          "value": "\"forum_topics\".\"solution_moderation_status\" is null or \"forum_topics\".\"solution_moderation_status\" in ('needs-review', 'outdated')"
-        },
-        "forum_topics_solution_outdated_reason_check": {
-          "name": "forum_topics_solution_outdated_reason_check",
-          "value": "(\n        \"forum_topics\".\"solution_moderation_status\" = 'outdated'\n        and \"forum_topics\".\"solution_outdated_reason\" is not null\n        and btrim(\"forum_topics\".\"solution_outdated_reason\") <> ''\n        and char_length(\"forum_topics\".\"solution_outdated_reason\") <= 1000\n      ) or (\n        \"forum_topics\".\"solution_moderation_status\" is distinct from 'outdated'\n        and \"forum_topics\".\"solution_outdated_reason\" is null\n      )"
-        }
-      },
+      "checkConstraints": {},
       "isRLSEnabled": false
     },
     "public.locales": {
