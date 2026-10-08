@@ -163,6 +163,7 @@ function writer() {
     createReply: vi.fn(async () => ({ postId: "server-post" })),
     markTopicSolved: vi.fn(async () => undefined),
     selectBestAnswer: vi.fn(async () => ({ topicAuthorId: "session-user", isSolved: false })),
+    setHelpSolutionModeration: vi.fn(async () => undefined),
     correctTopicTitleSourceLocale: vi.fn(async () => undefined),
     correctPostBodySourceLocale: vi.fn(async () => undefined),
     advanceTopicReadState: vi.fn(async () => undefined),
@@ -580,6 +581,75 @@ describe("forum write route actions", () => {
     expect(anyWriter.selectBestAnswer).toHaveBeenCalledWith({ topicId: "topic-1", postId: "post-2", actorId: "session-user", scope: "any" });
     if (!(selected instanceof Response)) throw new Error("expected redirect");
     expect(selected.headers.get("Location")).toBe("/en/topics/topic-1?solutionPrompt=post-2#solution-confirmation");
+  });
+
+  it("allows only manageAny to set Help solution moderation and ignores forged client authority", async () => {
+    const manager = writer();
+    const needsReview = await topicAction({
+      request: request("/en/topics/help-1", {
+        intent: "markSolutionNeedsReview",
+        actorId: "forged",
+        scope: "own",
+        status: "outdated",
+        outdatedReason: "forged reason",
+      }),
+      params: { locale: "en", topicId: "help-1" },
+      context: context(manager, true, ["forum.solution.manageAny"]),
+    });
+    expect(manager.setHelpSolutionModeration).toHaveBeenCalledWith({
+      topicId: "help-1",
+      status: "needs-review",
+      outdatedReason: null,
+    });
+    if (!(needsReview instanceof Response)) throw new Error("expected moderation redirect");
+    expect(needsReview.headers.get("Location")).toBe("/en/topics/help-1");
+
+    const outdated = await topicAction({
+      request: request("/ru/topics/help-1", {
+        intent: "markSolutionOutdated",
+        outdatedReason: "  Old workaround is no longer safe.  ",
+      }),
+      params: { locale: "ru", topicId: "help-1" },
+      context: context(manager, true, ["forum.solution.manageAny"]),
+    });
+    expect(manager.setHelpSolutionModeration).toHaveBeenLastCalledWith({
+      topicId: "help-1",
+      status: "outdated",
+      outdatedReason: "Old workaround is no longer safe.",
+    });
+    if (!(outdated instanceof Response)) throw new Error("expected outdated redirect");
+    expect(outdated.headers.get("Location")).toBe("/ru/topics/help-1");
+
+    const clear = await topicAction({
+      request: request("/he/topics/help-1", { intent: "clearSolutionModeration" }),
+      params: { locale: "he", topicId: "help-1" },
+      context: context(manager, true, ["forum.solution.manageAny"]),
+    });
+    expect(manager.setHelpSolutionModeration).toHaveBeenLastCalledWith({
+      topicId: "help-1",
+      status: null,
+      outdatedReason: null,
+    });
+    if (!(clear instanceof Response)) throw new Error("expected clear redirect");
+    expect(clear.headers.get("Location")).toBe("/he/topics/help-1");
+
+    const ownOnly = writer();
+    const denied = await topicAction({
+      request: request("/en/topics/help-1", { intent: "markSolutionNeedsReview" }),
+      params: { locale: "en", topicId: "help-1" },
+      context: context(ownOnly, true, ["forum.solution.manageOwn"]),
+    });
+    expect(denied).toMatchObject({ data: { error: "forbidden" }, init: { status: 403 } });
+    expect(ownOnly.setHelpSolutionModeration).not.toHaveBeenCalled();
+
+    const missingReason = writer();
+    const invalid = await topicAction({
+      request: request("/en/topics/help-1", { intent: "markSolutionOutdated" }),
+      params: { locale: "en", topicId: "help-1" },
+      context: context(missingReason, true, ["forum.solution.manageAny"]),
+    });
+    expect(invalid).toMatchObject({ data: { error: "invalid" }, init: { status: 400 } });
+    expect(missingReason.setHelpSolutionModeration).not.toHaveBeenCalled();
   });
 
   it("redirects best-answer selection to the selected post when no solved confirmation will render", async () => {

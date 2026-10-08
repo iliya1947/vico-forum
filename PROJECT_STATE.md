@@ -182,7 +182,7 @@ Vico Forum находится в ранней pre-release разработке.
   permissions, recommendation scoring, interests/subscriptions, notifications, visual polish или
   Stage 6 работы. Owner visual acceptance populated/empty Pages presentation подтверждён
   2026-10-07 для Guest/User/Manager identity switching.
-- Текущий bounded Q&A follow-up добавляет authenticated режим **For me / Для меня** через
+- Merged PR #199 добавил authenticated режим **For me / Для меня** через
   `?mode=for-me`. Authoritative current user берётся только из server-side session. Repository
   выводит interest tags из существующего persisted участия пользователя только внутри
   `help-solutions-questions`: вопросов, созданных этим пользователем, и тем, где он оставлял
@@ -195,6 +195,46 @@ Vico Forum находится в ранней pre-release разработке.
   permissions, opaque/AI scoring, notifications, visual polish, similar-search refinement или
   Stage 6 работы. Owner visual acceptance populated/empty Pages presentation и Guest/User/Manager
   identity switching подтверждён 2026-10-07.
+- PR #200 реализует первый шаг зафиксированной Help & solutions moderation/filter sequence:
+  migration `0028_help_solution_moderation` хранит persisted состояние решения
+  `needs-review | outdated` на конкретном answer post, а не на topic. `isSolved` остаётся
+  независимым final state и не сбрасывается этими пометками. Ручная moderation mutation применяется
+  к текущему выбранному best answer решённого вопроса внутреннего `help-solutions-questions`;
+  ручной `outdated` требует непустую persisted причину длиной до 1000 символов. При выборе другого
+  best answer прежний выбранный ответ атомарно получает `outdated` с системной reason-kind
+  `best-answer-replaced` (UI локализует её как «Выбран новый лучший ответ»), а новый best answer
+  начинает с очищенного moderation state и не наследует пометку прежнего решения. Protected
+  mutations повторно проверяют существующую effective capability `forum.solution.manageAny`;
+  новая permission не вводится. Public Help cards проецируют marker только текущего best answer;
+  topic page сохраняет marker и explanation у конкретного ответа, включая исторический заменённый
+  best answer, а explanation находится в самом низу соответствующего сообщения. Topic title/tags и
+  original question теперь составляют одну message-card композицию вместо двух соседних карточек;
+  выбранный best answer по-прежнему поднимается сразу следом с сохранением permanent номера/anchor.
+  Справа в строке breadcrumbs для actor с существующими moderator-level capabilities
+  `forum.solution.manageAny`, `forum.sourceLocale.correctAny` или `forum.topic.pin` показывается
+  общий `Admin panel`; каждое действие внутри сохраняет собственную server-side permission
+  проверку, а Help-specific solution moderation по-прежнему доступна только через
+  `forum.solution.manageAny` для применимого solved Help question. Выбор best answer больше не
+  находится в message-level `Message tools`: для actor с `forum.solution.manageOwn/manageAny`
+  отдельный compact selector стоит в той же breadcrumb action-zone, а при наличии admin panel —
+  непосредственно слева от неё; варианты внутри selector обозначены permanent message numbers.
+  Message-level source-locale correction UI на этом этапе скрыт вместе с `Message tools`;
+  существующая protected mutation/permission boundary сохранена для последующего включения в
+  спроектированную admin-panel систему по номеру сообщения. Own-only topic tools автора для
+  topic-level действий остаются отдельными. После независимого review подтверждён stale-form
+  дефект: uncontrolled причина `outdated` могла пережить same-route revalidation после смены
+  текущего best answer и затем быть отправлена уже для нового решения. Исправление remount-ит
+  только эту moderation-form при изменении authoritative best-answer/status/persisted-reason
+  identity; focused regression coverage проверяет reset после revalidation. Повторный independent
+  review также выявил SQL NULL-semantics defect в `forum_posts_solution_outdated_reason_check`:
+  orphan reason при `status = NULL` мог дать UNKNOWN и пройти PostgreSQL CHECK. Constraint
+  переведён на null-safe status comparison, а DB regression явно проверяет комбинацию
+  `status = NULL + reason != NULL + reason_kind = NULL`. Help Pages fixtures
+  выбирают best answer с более поздним исходным номером и визуально проверяют его promotion сразу
+  под original question.
+  User signals, quality
+  `needs-details`, duplicate/appeal workflow, расширение `Needs attention` и комбинируемые
+  фильтры остаются следующими отдельными шагами; external migration/Stage 6 rollout не выполняется.
 - In-app reply notifications slice реализован в PR #180:
   forward migration `0024_forum_reply_notifications` хранит только stable recipient/actor/topic/post
   references, `createdAt` и nullable `readAt`; unique recipient + reply identity предотвращает
@@ -404,7 +444,7 @@ Vico Forum находится в ранней pre-release разработке.
 - generic `/:locale/*`, runtime `LocaleRegistry`, BCP-47 resolution, LTR/RTL и request-scoped
   `i18next`;
 - persistent locale registry, persistent UI translation storage и compiled bundle storage;
-- текущая repository migration history — `0000`–`0027`; external accepted migration evidence по-прежнему заканчивается на `0020`.
+- текущая repository migration history — `0000`–`0028`; external accepted migration evidence по-прежнему заканчивается на `0020`.
 
 ## Forum core — Stage 4
 

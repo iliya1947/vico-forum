@@ -72,7 +72,7 @@ const topic = {
   section: { id: "typescript/basics", name: "TypeScript", category: { id: "development/core", name: "Development" } },
   tags: [{ key: "typescript", name: "TypeScript" }],
   posts: [{
-    id: "answer", topicId: "typed/api", authorId: "lin", authorName: "Lin", parentPostId: null, createdAt: new Date("2026-01-02"),
+    id: "answer", topicId: "typed/api", authorId: "lin", authorName: "Lin", parentPostId: null, solutionModerationStatus: null, solutionOutdatedReason: null, solutionOutdatedReasonKind: null, createdAt: new Date("2026-01-02"),
     body: { id: "post-r1", originalContent: "Start with an explicit response type.", sourceLocale: "en" },
   }],
 };
@@ -89,16 +89,19 @@ const helpTopic = {
   posts: [
     {
       id: "help-question-post", topicId: "help-question", authorId: "ada", authorName: "Ada", parentPostId: null,
+      solutionModerationStatus: null, solutionOutdatedReason: null, solutionOutdatedReasonKind: null,
       createdAt: new Date("2026-01-03"),
       body: { id: "help-question-body", originalContent: "The session disappears after redirect.", sourceLocale: "en" },
     },
     {
       id: "help-answer", topicId: "help-question", authorId: "lin", authorName: "Lin", parentPostId: "help-question-post",
+      solutionModerationStatus: null, solutionOutdatedReason: null, solutionOutdatedReasonKind: null,
       createdAt: new Date("2026-01-04"),
       body: { id: "help-answer-body", originalContent: "Check the callback cookie boundary.", sourceLocale: "en" },
     },
     {
       id: "help-followup", topicId: "help-question", authorId: "ada", authorName: "Ada", parentPostId: "help-answer",
+      solutionModerationStatus: null, solutionOutdatedReason: null, solutionOutdatedReasonKind: null,
       createdAt: new Date("2026-01-05"),
       body: { id: "help-followup-body", originalContent: "That helped, but the issue is not fully solved.", sourceLocale: "en" },
     },
@@ -115,6 +118,9 @@ const helpPage = {
     replyCount: 2,
     isSolved: false,
     hasBestAnswer: true,
+    solutionModerationStatus: null,
+    solutionOutdatedReason: null,
+    solutionOutdatedReasonKind: null,
     createdAt: helpTopic.createdAt,
     activityAt: helpTopic.posts.at(-1)!.createdAt,
     tags: helpTopic.tags,
@@ -325,9 +331,12 @@ function topicRenderData(
     generationUnits: [],
     canReply: false,
     canManageSolution: false,
+    canManageAnySolution: false,
     isTopicAuthor: false,
     canCorrectTitleSourceLocale: false,
+    canCorrectAnySourceLocale: false,
     canManagePin: false,
+    canUseAdminPanel: false,
     correctablePostIds: [],
     topicReadState: null,
     ...overrides,
@@ -1042,6 +1051,151 @@ describe("Help & solutions modes and authoring", () => {
     expect(readHelpSolutionsMine).not.toHaveBeenCalled();
   });
 
+  it("renders persisted Help solution moderation status and outdated reason", async () => {
+    const moderatedPage = {
+      ...solvedHelpPage,
+      questions: solvedHelpPage.questions.map((question) => ({
+        ...question,
+        solutionModerationStatus: "outdated" as const,
+        solutionOutdatedReason: "The provider removed the API used by this workaround.",
+        solutionOutdatedReasonKind: null,
+      })),
+    };
+    const requestContext = context("en", "ltr");
+    requestContext.set(forumReaderContext, {
+      ...reader,
+      readHelpSolutionsSolved: async () => moderatedPage,
+    });
+
+    const data = await categoryLoader({
+      request: new Request("https://forum.example/en/categories/help-solutions?mode=solutions"),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: requestContext,
+    });
+    if (data.kind !== "help-solutions") throw new Error("expected Help & solutions page");
+    renderRoute(
+      CategoryRoute,
+      data,
+      forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID) + "?mode=solutions",
+      "en",
+      "ltr",
+    );
+    expect(await screen.findByText("Solution outdated")).toBeVisible();
+
+    cleanup();
+    const topicContext = context("en", "ltr");
+    topicContext.set(forumReaderContext, {
+      ...reader,
+      readTopicPage: async (id) => id === helpTopic.id
+        ? {
+            ...helpTopic,
+            isSolved: true,
+            posts: helpTopic.posts.map((post) => post.id === "help-answer"
+              ? {
+                  ...post,
+                  solutionModerationStatus: "outdated" as const,
+                  solutionOutdatedReason: "The provider removed the API used by this workaround.",
+                  solutionOutdatedReasonKind: null,
+                }
+              : post),
+          }
+        : undefined,
+    });
+    topicContext.set(authSessionContext, {
+      user: { id: "manager", name: "Manager", email: "manager@example.test", emailVerified: true, createdAt: new Date(), updatedAt: new Date() },
+      session: { id: "manager-session", token: "manager-token", userId: "manager", expiresAt: new Date(Date.now() + 60_000), createdAt: new Date(), updatedAt: new Date() },
+    });
+    topicContext.set(authorizationContext, {
+      forUser: () => ({
+        resolve: vi.fn(),
+        has: vi.fn(async (permission) => permission === "forum.solution.manageAny"),
+      }),
+    } as never);
+    const topicData = await topicLoader({
+      params: { locale: "en", topicId: helpTopic.id },
+      context: topicContext,
+    });
+    expect(topicData.canModerateHelpSolution).toBe(true);
+    expect(topicData.canUseAdminPanel).toBe(true);
+    renderRoute(TopicRoute, topicData, forumTopicPath("en", helpTopic.id), "en", "ltr");
+    expect(await screen.findByText("Why this solution is outdated")).toBeVisible();
+    const bestAnswer = screen.getByText("Best answer").closest("li");
+    expect(bestAnswer).not.toBeNull();
+    if (!bestAnswer) throw new Error("expected best answer message");
+    expect(bestAnswer).toHaveTextContent("Solution outdated");
+    expect(within(bestAnswer).getByText("The provider removed the API used by this workaround.")).toBeVisible();
+    expect(bestAnswer.querySelector(".forum-post-content")?.lastElementChild).toHaveClass("solution-outdated-reason");
+    expect(screen.queryByText("Topic tools")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText("Admin panel"));
+    expect(screen.getByRole("textbox", { name: "Reason the solution is outdated" }))
+      .toHaveValue("The provider removed the API used by this workaround.");
+    expect(screen.getByRole("button", { name: "Mark as needs review" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Mark solution outdated" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Clear solution status" })).toBeVisible();
+  });
+
+  it("resets a stale outdated reason when the authoritative best answer changes on revalidation", async () => {
+    const buildData = (bestAnswerPostId: string, outdatedReason: string | null) => {
+      const solvedTopic = {
+        ...helpTopic,
+        isSolved: true,
+        bestAnswerPostId,
+        posts: helpTopic.posts.map((post) => {
+          if (post.id === "help-answer") {
+            return {
+              ...post,
+              solutionModerationStatus: bestAnswerPostId === post.id && outdatedReason ? "outdated" as const : null,
+              solutionOutdatedReason: bestAnswerPostId === post.id ? outdatedReason : null,
+              solutionOutdatedReasonKind: null,
+            };
+          }
+          return {
+            ...post,
+            solutionModerationStatus: null,
+            solutionOutdatedReason: null,
+            solutionOutdatedReasonKind: null,
+          };
+        }),
+      };
+      return topicRenderData(solvedTopic, {
+        canManageSolution: true,
+        canManageAnySolution: true,
+        canModerateHelpSolution: true,
+        canUseAdminPanel: true,
+      });
+    };
+
+    let currentData = buildData("help-answer", "Persisted old reason.");
+    const router = createMemoryRouter([{
+      id: "page",
+      path: "*",
+      Component: TopicRoute,
+      loader: () => currentData,
+    }], {
+      initialEntries: [forumTopicPath("en", helpTopic.id)],
+    });
+    render(
+      <div lang="en" dir="ltr">
+        <I18nextProvider i18n={runtime("en", "ltr")}>
+          <RouterProvider router={router} />
+        </I18nextProvider>
+      </div>,
+    );
+
+    fireEvent.click(await screen.findByText("Admin panel"));
+    const reason = screen.getByRole("textbox", { name: "Reason the solution is outdated" });
+    expect(reason).toHaveValue("Persisted old reason.");
+    fireEvent.change(reason, { target: { value: "Unsaved stale reason." } });
+    expect(reason).toHaveValue("Unsaved stale reason.");
+
+    currentData = buildData("help-followup", null);
+    await router.revalidate();
+
+    await waitFor(() => {
+      expect(screen.getByRole("textbox", { name: "Reason the solution is outdated" })).toHaveValue("");
+    });
+  });
+
   it("filters Solutions mode to solved questions and keeps All as the canonical default", async () => {
     const requestContext = context("en", "ltr");
     const data = await categoryLoader({
@@ -1229,17 +1383,17 @@ describe("content translation presentation", () => {
     const heading = await screen.findByRole("heading", { level: 1, name: "כותרת מתורגמת" });
     expect(heading).toHaveAttribute("lang", "he");
     expect(heading).toHaveAttribute("dir", "rtl");
-    const topicHeading = document.querySelector(".topic-heading");
-    const translatedPost = document.querySelector("#post-answer");
+    const originalQuestion = document.querySelector("#post-answer");
+    const topicHeading = originalQuestion?.querySelector(".topic-question-heading");
+    expect(originalQuestion).not.toBeNull();
     expect(topicHeading).not.toBeNull();
-    expect(translatedPost).not.toBeNull();
     expect(within(topicHeading as HTMLElement).getByText("Automatic translation")).toBeInTheDocument();
-    expect(within(translatedPost as HTMLElement).getByText("Automatic translation")).toBeInTheDocument();
+    expect(within(originalQuestion as HTMLElement).getAllByText("Automatic translation")).toHaveLength(2);
     expect(screen.getByText("Provider attribution")).toBeInTheDocument();
     expect(within(topicHeading as HTMLElement).getByText("Show original")).toBeInTheDocument();
     expect(within(topicHeading as HTMLElement).getByText("Show translation")).toBeInTheDocument();
-    expect(within(translatedPost as HTMLElement).getByText("Show original")).toBeInTheDocument();
-    expect(within(translatedPost as HTMLElement).getByText("Hide original")).toBeInTheDocument();
+    expect(within(originalQuestion as HTMLElement).getAllByText("Show original")).toHaveLength(2);
+    expect(within(originalQuestion as HTMLElement).getByText("Hide original")).toBeInTheDocument();
     expect(screen.getByText("How do I type an API?").closest("[lang]")).toHaveAttribute("lang", "en");
     expect(screen.getByText("How do I type an API?").closest("[dir]")).toHaveAttribute("dir", "ltr");
     expect(document.querySelector("script")).toBeNull();
@@ -1514,7 +1668,56 @@ describe("forum read states", () => {
     ]);
   });
 
-  it("keeps message metadata in the author column while body and solution controls stay in post content", async () => {
+  it("keeps a replaced Help answer marked outdated while the new best answer stays clean", async () => {
+    const seed = helpTopic.posts[0]!;
+    const question = {
+      ...seed,
+      id: "question",
+      body: { id: "post-q", originalContent: "Question.", sourceLocale: "en" },
+    };
+    const oldBest = {
+      ...helpTopic.posts[1]!,
+      id: "old-best",
+      solutionModerationStatus: "outdated" as const,
+      solutionOutdatedReason: null,
+      solutionOutdatedReasonKind: "best-answer-replaced" as const,
+      body: { id: "post-old", originalContent: "Old solution.", sourceLocale: "en" },
+    };
+    const newBest = {
+      ...helpTopic.posts[2]!,
+      id: "new-best",
+      solutionModerationStatus: null,
+      solutionOutdatedReason: null,
+      solutionOutdatedReasonKind: null,
+      body: { id: "post-new", originalContent: "Current solution.", sourceLocale: "en" },
+    };
+    const solvedTopic = {
+      ...helpTopic,
+      isSolved: true,
+      bestAnswerPostId: "new-best",
+      posts: [question, oldBest, newBest],
+    };
+
+    renderRoute(
+      TopicRoute,
+      topicRenderData(solvedTopic),
+      "/en/topics/help-question",
+      "en",
+      "ltr",
+    );
+
+    const currentBest = await screen.findByText("Best answer");
+    expect(currentBest.closest("li")).toHaveAttribute("id", "post-new-best");
+    expect(currentBest.closest("li")).not.toHaveTextContent("Solution outdated");
+
+    const oldAnswer = document.querySelector("#post-old-best");
+    expect(oldAnswer).not.toBeNull();
+    expect(oldAnswer).toHaveTextContent("Solution outdated");
+    expect(within(oldAnswer as HTMLElement).getByText("A new best answer was selected.")).toBeVisible();
+    expect(oldAnswer?.querySelector(".forum-post-content")?.lastElementChild).toHaveClass("solution-outdated-reason");
+  });
+
+  it("keeps message metadata in the author column while best-answer selection stays beside topic controls", async () => {
     const seed = topic.posts[0]!;
     const question = {
       ...seed,
@@ -1572,12 +1775,66 @@ describe("forum read states", () => {
     expect(followupContent).toHaveClass("forum-post-content");
     expect(followupHeader).toContainElement(followupPost!.querySelector(".topic-message-anchor"));
     expect(followupContent).toContainElement(followupPost!.querySelector(".post-body"));
-    expect(followupContent).toContainElement(followupPost!.querySelector(".solution-form"));
-    const followupTools = followupPost!.querySelector("details.message-secondary-tools");
-    expect(followupTools).not.toBeNull();
-    expect(followupTools).not.toHaveAttribute("open");
-    expect(followupTools!.querySelector("summary")).toHaveTextContent("Message tools");
-    expect(screen.getByRole("button", { name: "Select as best answer" }).closest("details")).toBe(followupTools);
+    expect(followupContent!.querySelector(".solution-form")).toBeNull();
+    expect(screen.queryByText("Message tools")).not.toBeInTheDocument();
+
+    const bestAnswerSelector = screen.getByText("Select as best answer").closest("details");
+    expect(bestAnswerSelector).not.toBeNull();
+    expect(bestAnswerSelector?.closest(".topic-breadcrumb-actions")).not.toBeNull();
+    fireEvent.click(screen.getByText("Select as best answer"));
+    expect(within(bestAnswerSelector as HTMLElement).getByRole("button", { name: "Message #3" })).toBeVisible();
+  });
+
+  it("keeps the topic title and original question in one message card", async () => {
+    renderRoute(
+      TopicRoute,
+      topicRenderData(topic),
+      "/en/topics/typed-api",
+      "en",
+      "ltr",
+    );
+
+    const heading = await screen.findByRole("heading", { level: 1, name: "How do I type an API?" });
+    const originalQuestion = heading.closest("li");
+    expect(originalQuestion).not.toBeNull();
+    expect(originalQuestion).toHaveClass("original-question");
+    if (!originalQuestion) throw new Error("expected original question card");
+    expect(within(originalQuestion).getByText("Start with an explicit response type.")).toBeVisible();
+    expect(document.querySelector(".topic-heading")).not.toBeInTheDocument();
+  });
+
+  it("shows the admin panel on regular topics for moderation capabilities only", async () => {
+    const unsolvedTopic = { ...topic, isSolved: false, bestAnswerPostId: null };
+
+    const managerView = renderRoute(
+      TopicRoute,
+      topicRenderData(unsolvedTopic, {
+        canManageSolution: true,
+        canManageAnySolution: true,
+        canCorrectTitleSourceLocale: true,
+        canCorrectAnySourceLocale: true,
+        canManagePin: true,
+        canUseAdminPanel: true,
+      }),
+      "/en/topics/typed-api",
+      "en",
+      "ltr",
+    );
+
+    const adminPanel = await screen.findByText("Admin panel");
+    expect(adminPanel.closest("details")).not.toHaveAttribute("open");
+    expect(screen.getByRole("button", { name: "Mark as solved" }).closest("details")).toBe(adminPanel.closest("details"));
+    expect(screen.getByRole("button", { name: /Pin topic|Unpin topic/ }).closest("details")).toBe(adminPanel.closest("details"));
+    managerView.unmount();
+
+    renderRoute(
+      TopicRoute,
+      topicRenderData(unsolvedTopic),
+      "/en/topics/typed-api",
+      "en",
+      "ltr",
+    );
+    expect(screen.queryByText("Admin panel")).not.toBeInTheDocument();
   });
 
   it("shows solution controls only to the topic author behind progressive disclosure", async () => {
@@ -1599,12 +1856,18 @@ describe("forum read states", () => {
     expect(topicToolsDetails).not.toBeNull();
     expect(topicToolsDetails).not.toHaveAttribute("open");
     expect(screen.getByRole("button", { name: "Mark as solved" }).closest("details")).toBe(topicToolsDetails);
-    expect(within(document.querySelector("#post-question") as HTMLElement).queryByRole("button", { name: "Select as best answer" })).not.toBeInTheDocument();
-    expect(within(document.querySelector("#post-answer") as HTMLElement).getByRole("button", { name: "Select as best answer" })).toBeInTheDocument();
+
+    const bestAnswerSelector = screen.getByText("Select as best answer").closest("details");
+    expect(bestAnswerSelector).not.toBeNull();
+    expect(bestAnswerSelector?.closest(".topic-breadcrumb-actions")).not.toBeNull();
+    expect(screen.queryByText("Message tools")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText("Select as best answer"));
+    expect(within(bestAnswerSelector as HTMLElement).getByRole("button", { name: "Message #2" })).toBeVisible();
     authorView.unmount();
 
     renderRoute(TopicRoute, { ...unsolved, canManageSolution: false }, "/en/topics/typed-api", "en", "ltr");
     expect(screen.queryByText("Topic tools")).not.toBeInTheDocument();
+    expect(screen.queryByText("Select as best answer")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Mark as solved" })).not.toBeInTheDocument();
   });
 
@@ -1646,7 +1909,7 @@ describe("forum read states", () => {
     expect(screen.queryByText("Problem solved?")).not.toBeInTheDocument();
   });
 
-  it("renders source-locale correction only for authorized resources behind secondary disclosures", async () => {
+  it("keeps title source-locale correction while message-level correction waits for the admin-panel redesign", async () => {
     renderRoute(
       TopicRoute,
       topicRenderData(topic, {
@@ -1659,21 +1922,16 @@ describe("forum read states", () => {
     );
 
     const topicTools = await screen.findByText("Topic tools");
-    const messageTools = screen.getByText("Message tools");
     const topicToolsDetails = topicTools.closest("details");
-    const messageToolsDetails = messageTools.closest("details");
     expect(topicToolsDetails).not.toHaveAttribute("open");
-    expect(messageToolsDetails).not.toHaveAttribute("open");
+    expect(screen.queryByText("Message tools")).not.toBeInTheDocument();
 
     const correctionButtons = screen.getAllByRole("button", { name: "Correct language" });
-    expect(correctionButtons).toHaveLength(2);
-    expect(correctionButtons.map((button) => button.closest("details"))).toEqual([
-      topicToolsDetails,
-      messageToolsDetails,
-    ]);
-    expect(screen.getAllByText("Source language: en")).toHaveLength(2);
+    expect(correctionButtons).toHaveLength(1);
+    expect(within(topicToolsDetails as HTMLElement).getByRole("button", { name: "Correct language" })).toBeInTheDocument();
+    expect(screen.getAllByText("Source language: en")).toHaveLength(1);
     expect(document.querySelector('input[name="expectedRevisionId"][value="title-r1"]')).not.toBeNull();
-    expect(document.querySelector('input[name="postId"][value="answer"]')).not.toBeNull();
+    expect(document.querySelector('input[name="postId"][value="answer"]')).toBeNull();
   });
 
   it("shows accessible forum write forms only for an authenticated loader result", async () => {

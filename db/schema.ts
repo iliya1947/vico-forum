@@ -725,6 +725,9 @@ export const forumPosts = pgTable(
     // The migration adds a deferred owner-matching FK to (post_id, revision_id).
     currentRevisionId: text("current_revision_id").notNull(),
     parentPostId: text("parent_post_id"),
+    solutionModerationStatus: text("solution_moderation_status"),
+    solutionOutdatedReason: text("solution_outdated_reason"),
+    solutionOutdatedReasonKind: text("solution_outdated_reason_kind"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
@@ -738,6 +741,36 @@ export const forumPosts = pgTable(
       foreignColumns: [table.topicId, table.id],
     }),
     check("forum_posts_parent_not_self_check", sql`${table.parentPostId} is null or ${table.parentPostId} <> ${table.id}`),
+    check(
+      "forum_posts_solution_moderation_status_check",
+      sql`${table.solutionModerationStatus} is null or ${table.solutionModerationStatus} in ('needs-review', 'outdated')`,
+    ),
+    check(
+      "forum_posts_solution_outdated_reason_kind_check",
+      sql`${table.solutionOutdatedReasonKind} is null or ${table.solutionOutdatedReasonKind} = 'best-answer-replaced'`,
+    ),
+    check(
+      "forum_posts_solution_outdated_reason_check",
+      sql`(
+        ${table.solutionModerationStatus} is not distinct from 'outdated'
+        and (
+          (
+            ${table.solutionOutdatedReasonKind} is not distinct from 'best-answer-replaced'
+            and ${table.solutionOutdatedReason} is null
+          )
+          or (
+            ${table.solutionOutdatedReasonKind} is null
+            and ${table.solutionOutdatedReason} is not null
+            and btrim(${table.solutionOutdatedReason}) <> ''
+            and char_length(${table.solutionOutdatedReason}) <= 1000
+          )
+        )
+      ) or (
+        ${table.solutionModerationStatus} is distinct from 'outdated'
+        and ${table.solutionOutdatedReason} is null
+        and ${table.solutionOutdatedReasonKind} is null
+      )`,
+    ),
   ],
 );
 

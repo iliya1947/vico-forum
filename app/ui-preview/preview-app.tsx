@@ -65,6 +65,7 @@ type PreviewVariant =
   | "help-solutions-similar-empty"
   | "help-solutions-similar-invalid"
   | "help-solutions-similar-unavailable"
+  | "help-solution-outdated"
   | "category-no-pins";
 
 interface Scenario {
@@ -113,6 +114,9 @@ export const scenarios: readonly Scenario[] = [
   { id: "help-solutions-attention", label: "Help & solutions · Needs attention", locale: "en", direction: "ltr", identity: "manager", path: "/en/categories/help-solutions?mode=attention", view: "category", allowedIdentities: ["manager"] },
   { id: "help-solutions-attention-empty", label: "Help & solutions · Needs attention · empty", locale: "en", direction: "ltr", identity: "manager", path: "/en/categories/help-solutions?mode=attention", view: "category", variant: "help-solutions-attention-empty", allowedIdentities: ["manager"] },
   { id: "help-solutions-solutions", label: "Help & solutions · Solutions", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=solutions", view: "category" },
+  { id: "help-solution-current", label: "Help solution · current", locale: "en", direction: "ltr", identity: "manager", path: "/en/topics/help-cloudflare-cache", view: "topic", allowedIdentities: ["guest", "user", "manager"] },
+  { id: "help-solution-needs-review", label: "Help solution · needs review", locale: "en", direction: "ltr", identity: "manager", path: "/en/topics/help-neon-pooling", view: "topic", allowedIdentities: ["guest", "user", "manager"] },
+  { id: "help-solution-outdated", label: "Help solution · outdated", locale: "en", direction: "ltr", identity: "manager", path: "/en/topics/help-postgres-timeout", view: "topic", variant: "help-solution-outdated", allowedIdentities: ["guest", "user", "manager"] },
   { id: "help-solutions-mine", label: "Help & solutions · My questions", locale: "en", direction: "ltr", identity: "user", path: "/en/categories/help-solutions?mode=mine", view: "category", allowedIdentities: ["user", "manager"] },
   { id: "help-solutions-mine-empty", label: "Help & solutions · My questions · empty", locale: "en", direction: "ltr", identity: "user", path: "/en/categories/help-solutions?mode=mine", view: "category", variant: "help-solutions-mine-empty", allowedIdentities: ["user", "manager"] },
   { id: "help-solutions-mine-guest", label: "Help & solutions · My questions · unauthenticated", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=mine", view: "not-found", variant: "route-401", allowedIdentities: ["guest"] },
@@ -329,6 +333,9 @@ const topic = {
       authorId: "alex",
       authorName: "Alex Rivera",
       parentPostId: null,
+      solutionModerationStatus: null,
+      solutionOutdatedReason: null,
+      solutionOutdatedReasonKind: null,
       createdAt: new Date("2026-09-27T10:00:00Z"),
       body: {
         id: "post-r1",
@@ -342,6 +349,9 @@ const topic = {
       authorId: "maya",
       authorName: "Maya Cohen",
       parentPostId: "question",
+      solutionModerationStatus: null,
+      solutionOutdatedReason: null,
+      solutionOutdatedReasonKind: null,
       createdAt: new Date("2026-09-27T11:00:00Z"),
       body: {
         id: "post-r3",
@@ -355,6 +365,9 @@ const topic = {
       authorId: "sam",
       authorName: "Sam Chen",
       parentPostId: "followup",
+      solutionModerationStatus: null,
+      solutionOutdatedReason: null,
+      solutionOutdatedReasonKind: null,
       createdAt: new Date("2026-09-27T12:00:00Z"),
       body: {
         id: "post-r2",
@@ -523,17 +536,23 @@ function previewHelpSolutions(locale: PreviewLocale) {
         "למה ה-Worker מאבד את ה-session אחרי redirect?",
         "נבחרה תשובה מיטבית, אבל האימות עדיין לא יציב",
         "איך מתקנים statement timeout ב-PostgreSQL?",
+        "איך מגדירים Cache-Control נכון ב-Cloudflare?",
+        "האם צריך לבדוק מחדש את הגדרות החיבור של Neon?",
       ]
     : russian
       ? [
           "Почему Worker теряет сессию после redirect?",
           "Лучший ответ выбран, но авторизация всё ещё нестабильна",
           "Как исправить statement timeout в PostgreSQL?",
+          "Как правильно настроить Cache-Control в Cloudflare?",
+          "Нужно ли перепроверить настройки подключения Neon?",
         ]
       : [
           "Why does my Worker lose the session after redirect?",
           "Best answer selected, but auth is still intermittent",
           "How do I fix PostgreSQL statement timeouts?",
+          "How should Cache-Control be configured on Cloudflare?",
+          "Should the Neon connection settings be reviewed again?",
         ];
 
   return {
@@ -542,21 +561,42 @@ function previewHelpSolutions(locale: PreviewLocale) {
     questions: [
       {
         id: "help-worker-session", title: titles[0]!, authorName: "Alex Rivera", replyCount: 0,
-        isSolved: false, hasBestAnswer: false, createdAt: "2026-09-30T11:30:00.000Z",
+        isSolved: false, hasBestAnswer: false, solutionModerationStatus: null, solutionOutdatedReason: null, solutionOutdatedReasonKind: null, createdAt: "2026-09-30T11:30:00.000Z",
         activityAt: "2026-09-30T15:40:00.000Z",
         tags: [{ key: "cloudflare", name: "Cloudflare" }, { key: "auth", name: "Auth" }],
       },
       {
         id: "help-auth-best-answer", title: titles[1]!, authorName: "Noa Levi", replyCount: 3,
-        isSolved: false, hasBestAnswer: true, createdAt: "2026-09-29T09:00:00.000Z",
+        isSolved: false, hasBestAnswer: true, solutionModerationStatus: null, solutionOutdatedReason: null, solutionOutdatedReasonKind: null, createdAt: "2026-09-29T09:00:00.000Z",
         activityAt: "2026-09-30T14:20:00.000Z",
         tags: [{ key: "better-auth", name: "Better Auth" }, { key: "workers", name: "Workers" }],
       },
       {
         id: "help-postgres-timeout", title: titles[2]!, authorName: "Maya Cohen", replyCount: 5,
-        isSolved: true, hasBestAnswer: true, createdAt: "2026-09-27T08:00:00.000Z",
+        isSolved: true, hasBestAnswer: true, solutionModerationStatus: "outdated" as const,
+        solutionOutdatedReason: hebrew
+          ? "גרסת PostgreSQL החדשה שינתה את ההתנהגות של ההגדרה הזו."
+          : russian
+            ? "В новой версии PostgreSQL поведение этой настройки изменилось."
+            : "A newer PostgreSQL version changed the behavior of this setting.",
+        solutionOutdatedReasonKind: null,
+        createdAt: "2026-09-27T08:00:00.000Z",
         activityAt: "2026-09-29T18:10:00.000Z",
         tags: [{ key: "postgresql", name: "PostgreSQL" }, { key: "neon", name: "Neon" }],
+      },
+      {
+        id: "help-cloudflare-cache", title: titles[3]!, authorName: "Sam Chen", replyCount: 4,
+        isSolved: true, hasBestAnswer: true, solutionModerationStatus: null, solutionOutdatedReason: null, solutionOutdatedReasonKind: null,
+        createdAt: "2026-09-26T09:15:00.000Z",
+        activityAt: "2026-09-29T15:30:00.000Z",
+        tags: [{ key: "cloudflare", name: "Cloudflare" }, { key: "cache", name: "Cache" }],
+      },
+      {
+        id: "help-neon-pooling", title: titles[4]!, authorName: "Alex Rivera", replyCount: 2,
+        isSolved: true, hasBestAnswer: true, solutionModerationStatus: "needs-review" as const, solutionOutdatedReason: null, solutionOutdatedReasonKind: null,
+        createdAt: "2026-09-25T12:20:00.000Z",
+        activityAt: "2026-09-28T17:45:00.000Z",
+        tags: [{ key: "neon", name: "Neon" }, { key: "postgresql", name: "PostgreSQL" }],
       },
     ],
   };
@@ -1237,38 +1277,48 @@ function PreviewTopicRoute({ scenario }: { scenario: Scenario }) {
     .find((question) => question.id === routeTopicId);
   if (helpQuestion) {
     const postCount = helpQuestion.replyCount + 1;
-    const posts = Array.from({ length: postCount }, (_, index) => ({
-      id: `${helpQuestion.id}-post-${index + 1}`,
-      topicId: helpQuestion.id,
-      authorId: index === 0 ? "help-author" : `help-replier-${index}`,
-      authorName: index === 0 ? helpQuestion.authorName : ["Sam Chen", "Maya Cohen", "Noa Levi"][index % 3]!,
-      parentPostId: index === 0 ? null : `${helpQuestion.id}-post-1`,
-      createdAt: new Date(`2026-09-${28 + Math.min(index, 2)}T${10 + index}:00:00Z`),
-      body: {
-        id: `${helpQuestion.id}-body-${index + 1}`,
-        originalContent: index === 0
-          ? scenario.locale === "ru"
-            ? "Представительный технический вопрос из категории «Помощь и решения»."
-            : scenario.locale === "he"
-              ? "שאלה טכנית מייצגת מקטגוריית עזרה ופתרונות."
-              : "Representative technical question from Help & solutions."
-          : scenario.locale === "ru"
-            ? `Представительный ответ №${index}.`
-            : scenario.locale === "he"
-              ? `תשובה מייצגת מספר ${index}.`
-              : `Representative answer #${index}.`,
-        sourceLocale: scenario.locale,
-      },
-    }));
+    const bestAnswerPostId = helpQuestion.hasBestAnswer && postCount > 1
+      ? `${helpQuestion.id}-post-${Math.min(5, postCount)}`
+      : null;
+    const posts = Array.from({ length: postCount }, (_, index) => {
+      const id = `${helpQuestion.id}-post-${index + 1}`;
+      const isBestAnswer = id === bestAnswerPostId;
+      return {
+        id,
+        topicId: helpQuestion.id,
+        authorId: index === 0 ? "help-author" : `help-replier-${index}`,
+        authorName: index === 0 ? helpQuestion.authorName : ["Sam Chen", "Maya Cohen", "Noa Levi"][index % 3]!,
+        parentPostId: index === 0 ? null : `${helpQuestion.id}-post-1`,
+        solutionModerationStatus: isBestAnswer ? helpQuestion.solutionModerationStatus : null,
+        solutionOutdatedReason: isBestAnswer ? helpQuestion.solutionOutdatedReason : null,
+        solutionOutdatedReasonKind: isBestAnswer ? helpQuestion.solutionOutdatedReasonKind : null,
+        createdAt: new Date(`2026-09-${28 + Math.min(index, 2)}T${10 + index}:00:00Z`),
+        body: {
+          id: `${helpQuestion.id}-body-${index + 1}`,
+          originalContent: index === 0
+            ? scenario.locale === "ru"
+              ? "Представительный технический вопрос из категории «Помощь и решения»."
+              : scenario.locale === "he"
+                ? "שאלה טכנית מייצגת מקטגוריית עזרה ופתרונות."
+                : "Representative technical question from Help & solutions."
+            : scenario.locale === "ru"
+              ? `Представительный ответ №${index}.`
+              : scenario.locale === "he"
+                ? `תשובה מייצגת מספר ${index}.`
+                : `Representative answer #${index}.`,
+          sourceLocale: scenario.locale,
+        },
+      };
+    });
     const helpTopic = {
       id: helpQuestion.id,
       sectionId: HELP_SOLUTIONS_SERVICE_SECTION_ID,
-      authorId: "help-author",
-      authorName: helpQuestion.authorName,
+      authorId: scenario.identity === "user" ? "preview-user" : "help-author",
+      authorName: scenario.identity === "user" ? "Alex Rivera" : helpQuestion.authorName,
       createdAt: new Date(helpQuestion.createdAt),
       isPinned: false,
       isSolved: helpQuestion.isSolved,
-      bestAnswerPostId: helpQuestion.hasBestAnswer && posts[1] ? posts[1].id : null,
+      bestAnswerPostId,
       title: {
         id: `${helpQuestion.id}-title`,
         originalContent: helpQuestion.title,
@@ -1295,11 +1345,14 @@ function PreviewTopicRoute({ scenario }: { scenario: Scenario }) {
         ))}
         generationUnits={[]}
         canReply={scenario.identity !== "guest"}
-        canManageSolution={false}
-        isTopicAuthor={false}
-        canCorrectTitleSourceLocale={false}
-        canManagePin={false}
-        correctablePostIds={[]}
+        canManageSolution={scenario.identity !== "guest"}
+        canManageAnySolution={scenario.identity === "manager"}
+        canModerateHelpSolution={scenario.identity === "manager"}
+        isTopicAuthor={scenario.identity === "user"}
+        canCorrectTitleSourceLocale={scenario.identity === "manager"}
+        canCorrectAnySourceLocale={scenario.identity === "manager"}
+        canManagePin={scenario.identity === "manager"}
+        canUseAdminPanel={scenario.identity === "manager"}
         topicReadState={null}
       />
     );
@@ -1365,6 +1418,9 @@ function PreviewTopicRoute({ scenario }: { scenario: Scenario }) {
       ? matched.topic.authorName
       : replyAuthors[(index - 1) % replyAuthors.length]!,
     parentPostId: index === 0 ? null : `${matched.topic.id}-post-1`,
+    solutionModerationStatus: null,
+    solutionOutdatedReason: null,
+    solutionOutdatedReasonKind: null,
     createdAt: new Date(`2026-09-${27 + Math.min(index, 3)}T${10 + (index % 8)}:00:00Z`),
     body: {
       id: `${matched.topic.id}-body-${index + 1}`,
@@ -1426,10 +1482,13 @@ function PreviewTopicRoute({ scenario }: { scenario: Scenario }) {
       )}
       generationUnits={[]}
       canReply={scenario.identity !== "guest"}
-      canManageSolution={false}
-      canCorrectTitleSourceLocale={false}
+      canManageSolution={scenario.identity === "manager"}
+      canManageAnySolution={scenario.identity === "manager"}
+      canModerateHelpSolution={false}
+      canCorrectTitleSourceLocale={scenario.identity === "manager"}
+      canCorrectAnySourceLocale={scenario.identity === "manager"}
       canManagePin={scenario.identity === "manager"}
-      correctablePostIds={[]}
+      canUseAdminPanel={scenario.identity === "manager"}
       topicReadState={null}
     />
   );
@@ -1610,9 +1669,13 @@ function topicData(
       : [],
     canReply: identity !== "guest",
     canManageSolution: showSecondaryControls || solutionAuthor,
+    canManageAnySolution: identity === "manager",
+    canModerateHelpSolution: false,
     isTopicAuthor: solutionAuthor,
     canCorrectTitleSourceLocale: showSecondaryControls,
+    canCorrectAnySourceLocale: identity === "manager",
     canManagePin: identity === "manager",
+    canUseAdminPanel: identity === "manager",
     correctablePostIds: showSecondaryControls
       ? translatedTopic.posts.map((post) => post.id)
       : [],

@@ -1313,6 +1313,15 @@ export function HelpSolutionsView({
                         {question.hasBestAnswer ? (
                           <span className="help-question-best-answer">{t("bestAnswer")}</span>
                         ) : null}
+                        {question.solutionModerationStatus ? (
+                          <span className={"help-question-solution-moderation is-" + question.solutionModerationStatus}>
+                            {t(
+                              question.solutionModerationStatus === "needs-review"
+                                ? "helpSolutionNeedsReview"
+                                : "helpSolutionOutdated",
+                            )}
+                          </span>
+                        ) : null}
                       </span>
                       <small>{t("startedBy", { author: question.authorName })}</small>
                       {question.tags.length > 0 ? (
@@ -1642,10 +1651,13 @@ export function TopicView({
   generationUnits,
   canReply,
   canManageSolution,
+  canManageAnySolution = false,
+  canModerateHelpSolution = false,
   isTopicAuthor = false,
   canCorrectTitleSourceLocale,
+  canCorrectAnySourceLocale = false,
   canManagePin,
-  correctablePostIds,
+  canUseAdminPanel = false,
   topicReadState,
   actionData,
 }: {
@@ -1656,14 +1668,16 @@ export function TopicView({
   generationUnits: readonly ContentGenerationUnitView[];
   canReply: boolean;
   canManageSolution: boolean;
+  canManageAnySolution?: boolean;
+  canModerateHelpSolution?: boolean;
   isTopicAuthor?: boolean;
   canCorrectTitleSourceLocale: boolean;
+  canCorrectAnySourceLocale?: boolean;
   canManagePin: boolean;
-  correctablePostIds: readonly string[];
+  canUseAdminPanel?: boolean;
   topicReadState: ForumTopicReadState | null;
   actionData?: TopicViewActionData;
 }) {
-  const correctablePosts = new Set(correctablePostIds);
   const generationByContentId = new Map(generationUnits.map((unit) => [unit.contentId, unit]));
   const titleGenerationUnit = generationByContentId.get(topic.id);
   const presentedPosts = new Map(postPresentations.map((presentation) => [presentation.contentId, presentation]));
@@ -1675,10 +1689,15 @@ export function TopicView({
   const forumWriteError = actionData && !("operation" in actionData)
     ? actionData.error
     : null;
+  const canShowOwnTopicTools =
+    (canManageSolution && !canManageAnySolution && !topic.isSolved)
+    || (canCorrectTitleSourceLocale && !canCorrectAnySourceLocale);
   const originalPost = topic.posts[0];
   const bestAnswerPost = topic.bestAnswerPostId
     ? topic.posts.find((post) => post.id === topic.bestAnswerPostId)
     : undefined;
+  const currentSolutionModerationStatus = bestAnswerPost?.solutionModerationStatus ?? null;
+  const currentSolutionOutdatedReason = bestAnswerPost?.solutionOutdatedReason ?? null;
   const orderedPosts = originalPost
     ? [
         originalPost,
@@ -1687,6 +1706,9 @@ export function TopicView({
       ]
     : [];
   const messageNumberById = new Map(topic.posts.map((post, index) => [post.id, index + 1]));
+  const selectableBestAnswerPosts = canManageSolution
+    ? topic.posts.slice(1).filter((post) => post.id !== topic.bestAnswerPostId)
+    : [];
   const directRepliesByParent = new Map<string, string[]>();
   for (const post of topic.posts) {
     if (!post.parentPostId) continue;
@@ -1808,84 +1830,58 @@ export function TopicView({
       units={generationUnits}
     >
       <ForumShell locale={locale} variant="topic">
-        <Breadcrumbs
-          locale={locale}
-          items={topic.section.id === HELP_SOLUTIONS_SERVICE_SECTION_ID
-            ? [
-                { label: t("helpSolutionsHeading"), to: forumCategoryPath(locale, HELP_SOLUTIONS_CATEGORY_ID) },
-                { label: titlePresentation.content },
-              ]
-            : [
-                { label: topic.section.category.name, to: forumCategoryPath(locale, topic.section.category.id) },
-                { label: topic.section.name, to: forumSectionPath(locale, topic.section.id) },
-                { label: titlePresentation.content },
-              ]}
-        />
+        <div className="topic-breadcrumb-row">
+          <Breadcrumbs
+            locale={locale}
+            items={topic.section.id === HELP_SOLUTIONS_SERVICE_SECTION_ID
+              ? [
+                  { label: t("helpSolutionsHeading"), to: forumCategoryPath(locale, HELP_SOLUTIONS_CATEGORY_ID) },
+                  { label: titlePresentation.content },
+                ]
+              : [
+                  { label: topic.section.category.name, to: forumCategoryPath(locale, topic.section.category.id) },
+                  { label: topic.section.name, to: forumSectionPath(locale, topic.section.id) },
+                  { label: titlePresentation.content },
+                ]}
+          />
 
-        <section className="topic-heading">
-          <div className="topic-heading-side">
-            <div className="topic-heading-author">
-              <span className="topic-message-avatar" aria-hidden="true">
-                {topic.authorName.trim().slice(0, 1).toUpperCase()}
-              </span>
-              <span className="topic-message-author-copy">
-                <strong>{topic.authorName}</strong>
-              </span>
-            </div>
-            <div className="topic-heading-state-badges">
-              {topic.isPinned && <strong className="pinned-topic-badge">{t("pinnedHeading")}</strong>}
-              {topic.isSolved && <strong className="solved-badge">{t("solved")}</strong>}
-            </div>
-          </div>
-
-          <div className="topic-heading-content">
-            <div className="topic-heading-main">
-              <TopicTitlePresentation presentation={titlePresentation} />
-              {titleGenerationUnit && (
-                <div className="topic-generation-status">
-                  <ContentGenerationUnitStatus unit={titleGenerationUnit} />
-                </div>
-              )}
-              {topic.tags.length > 0 ? (
-                <nav className="topic-tag-list topic-heading-tags" aria-label={t("topicTagsLabel")}>
-                  {topic.tags.map((tag) => (
-                    <Link className="topic-tag" key={tag.key} to={forumTagPath(locale, tag.key)}>#{tag.name}</Link>
-                  ))}
-                </nav>
+          {(selectableBestAnswerPosts.length > 0 || canUseAdminPanel) ? (
+            <div className="topic-breadcrumb-actions">
+              {selectableBestAnswerPosts.length > 0 ? (
+                <details className="topic-best-answer-tools">
+                  <summary>{t("selectBestAnswer")}</summary>
+                  <div className="topic-best-answer-panel">
+                    {selectableBestAnswerPosts.map((post) => (
+                      <Form method="post" className="solution-form topic-best-answer-form" key={post.id}>
+                        <input type="hidden" name="intent" value="selectBestAnswer" />
+                        <input type="hidden" name="postId" value={post.id} />
+                        <button type="submit">{t("postNumber", { number: messageNumberById.get(post.id)! })}</button>
+                      </Form>
+                    ))}
+                  </div>
+                </details>
               ) : null}
-            </div>
 
-            <div className="topic-heading-actions">
-              {topic.bestAnswerPostId && (
-                <a className="topic-solution-link" href={`#post-${encodeURIComponent(topic.bestAnswerPostId)}`}>
-                  {t("goToSolution")}
-                </a>
-              )}
-            </div>
-          </div>
-
-          {(canCorrectTitleSourceLocale || canManagePin || (canManageSolution && !topic.isSolved)) && (
-            <details className="secondary-tools topic-heading-secondary">
-              <summary>{t("topicTools")}</summary>
-              <div className="secondary-tools-panel">
-                {canManagePin && (
-                  <Form method="post" className="pin-topic-form secondary-tools-form">
+              {canUseAdminPanel ? (
+                <details className="topic-admin-tools">
+              <summary>{t("topicAdminPanel")}</summary>
+              <div className="topic-admin-panel">
+                {canManagePin ? (
+                  <Form method="post" className="pin-topic-form topic-admin-form">
                     <input type="hidden" name="intent" value={topic.isPinned ? "unpinTopic" : "pinTopic"} />
-                    <button type="submit">
-                      {t(topic.isPinned ? "unpinTopic" : "pinTopic")}
-                    </button>
+                    <button type="submit">{t(topic.isPinned ? "unpinTopic" : "pinTopic")}</button>
                   </Form>
-                )}
+                ) : null}
 
-                {canManageSolution && !topic.isSolved && (
-                  <Form method="post" className="solution-form secondary-tools-form">
+                {canManageAnySolution && !topic.isSolved ? (
+                  <Form method="post" className="solution-form topic-admin-form">
                     <input type="hidden" name="intent" value="markSolved" />
                     <button type="submit">{t("markSolved")}</button>
                   </Form>
-                )}
+                ) : null}
 
-                {canCorrectTitleSourceLocale && (
-                  <Form method="post" className="source-locale-form secondary-tools-form">
+                {canCorrectAnySourceLocale ? (
+                  <Form method="post" className="source-locale-form topic-admin-form">
                     <input type="hidden" name="intent" value="correctTitleSourceLocale" />
                     <input type="hidden" name="expectedRevisionId" value={topic.title.id} />
                     <p>{t("sourceLocaleCurrent", { locale: topic.title.sourceLocale })}</p>
@@ -1900,11 +1896,54 @@ export function TopicView({
                     </label>
                     <button type="submit">{t("sourceLocaleCorrectionSubmit")}</button>
                   </Form>
-                )}
-              </div>
-            </details>
-          )}
-        </section>
+                ) : null}
+
+                {canModerateHelpSolution && topic.isSolved ? (
+                  <>
+                    {currentSolutionModerationStatus !== "needs-review" ? (
+                      <Form method="post" className="solution-form topic-admin-form">
+                        <input type="hidden" name="intent" value="markSolutionNeedsReview" />
+                        <button type="submit">{t("helpSolutionMarkNeedsReview")}</button>
+                      </Form>
+                    ) : null}
+
+                    <Form
+                      key={[
+                        bestAnswerPost?.id ?? "none",
+                        currentSolutionModerationStatus ?? "none",
+                        currentSolutionOutdatedReason ?? "",
+                      ].join("\u0000")}
+                      method="post"
+                      className="solution-form topic-admin-form"
+                    >
+                      <input type="hidden" name="intent" value="markSolutionOutdated" />
+                      <label>
+                        {t("helpSolutionOutdatedReasonInput")}
+                        <textarea
+                          name="outdatedReason"
+                          required
+                          maxLength={1000}
+                          rows={3}
+                          defaultValue={currentSolutionOutdatedReason ?? ""}
+                        />
+                      </label>
+                      <button type="submit">{t("helpSolutionMarkOutdated")}</button>
+                    </Form>
+
+                    {currentSolutionModerationStatus ? (
+                      <Form method="post" className="solution-form topic-admin-form">
+                        <input type="hidden" name="intent" value="clearSolutionModeration" />
+                        <button type="submit">{t("helpSolutionClearModeration")}</button>
+                      </Form>
+                    ) : null}
+                  </>
+                ) : null}
+                  </div>
+                </details>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
 
         {correctionError && <p className="topic-page-alert" role="alert">{t(`sourceLocaleCorrectionError_${correctionError}`)}</p>}
         {forumWriteError && <p className="topic-page-alert" role="alert">{t(`forumWriteError_${forumWriteError}`)}</p>}
@@ -1938,16 +1977,17 @@ export function TopicView({
               const isOriginalQuestion = post.id === originalPost?.id;
               const isBestAnswer = topic.bestAnswerPostId === post.id;
               const generationUnit = generationByContentId.get(post.id);
-              const canCorrectPostSourceLocale = correctablePosts.has(post.id);
-              const canSelectBestAnswer =
-                canManageSolution && !isOriginalQuestion && topic.bestAnswerPostId !== post.id;
-              const hasMessageTools = canCorrectPostSourceLocale || canSelectBestAnswer;
               const messageLinkState =
                 messageLinkFeedback?.postId === post.id ? messageLinkFeedback.state : null;
               const parentMessageNumber =
                 post.parentPostId ? messageNumberById.get(post.parentPostId) : undefined;
               const directReplyIds = directRepliesByParent.get(post.id) ?? [];
               const postPresentation = presentedPosts.get(post.id)!;
+              const outdatedReason = post.solutionModerationStatus === "outdated"
+                ? post.solutionOutdatedReasonKind === "best-answer-replaced"
+                  ? t("helpSolutionOutdatedReasonBestAnswerReplaced")
+                  : post.solutionOutdatedReason
+                : null;
 
               return (
                 <li
@@ -1971,8 +2011,20 @@ export function TopicView({
                       {isOriginalQuestion && (
                         <strong className="original-question-label">{t("originalQuestion")}</strong>
                       )}
+                      {isOriginalQuestion && topic.isPinned && (
+                        <strong className="pinned-topic-badge">{t("pinnedHeading")}</strong>
+                      )}
+                      {isOriginalQuestion && topic.isSolved && (
+                        <strong className="solved-badge">{t("solved")}</strong>
+                      )}
                       {isBestAnswer && (
                         <strong className="best-answer-label">{t("bestAnswer")}</strong>
+                      )}
+                      {post.solutionModerationStatus === "needs-review" && (
+                        <strong className="solution-moderation-badge is-needs-review">{t("helpSolutionNeedsReview")}</strong>
+                      )}
+                      {post.solutionModerationStatus === "outdated" && (
+                        <strong className="solution-moderation-badge is-outdated">{t("helpSolutionOutdated")}</strong>
                       )}
                     </span>
                     <a
@@ -2044,6 +2096,33 @@ export function TopicView({
                         )}
                       </div>
                     </div>
+
+                    {isOriginalQuestion ? (
+                      <div className="topic-question-heading">
+                        <div className="topic-question-heading-main">
+                          <TopicTitlePresentation presentation={titlePresentation} />
+                          {titleGenerationUnit && (
+                            <div className="topic-generation-status">
+                              <ContentGenerationUnitStatus unit={titleGenerationUnit} />
+                            </div>
+                          )}
+                          {topic.tags.length > 0 ? (
+                            <nav className="topic-tag-list topic-question-tags" aria-label={t("topicTagsLabel")}>
+                              {topic.tags.map((tag) => (
+                                <Link className="topic-tag" key={tag.key} to={forumTagPath(locale, tag.key)}>#{tag.name}</Link>
+                              ))}
+                            </nav>
+                          ) : null}
+                        </div>
+
+                        {topic.bestAnswerPostId ? (
+                          <a className="topic-solution-link" href={`#post-${encodeURIComponent(topic.bestAnswerPostId)}`}>
+                            {t("goToSolution")}
+                          </a>
+                        ) : null}
+                      </div>
+                    ) : null}
+
                     <div
                       data-message-body
                       className={postPresentation.selected === "translation"
@@ -2117,39 +2196,44 @@ export function TopicView({
                       </div>
                     </div>
 
-                    {hasMessageTools && (
-                      <details className="secondary-tools message-secondary-tools">
-                        <summary>{t("messageTools")}</summary>
+                    {isOriginalQuestion && canShowOwnTopicTools ? (
+                      <details className="secondary-tools message-secondary-tools topic-question-tools">
+                        <summary>{t("topicTools")}</summary>
                         <div className="secondary-tools-panel">
-                          {canCorrectPostSourceLocale && (
+                          {canManageSolution && !canManageAnySolution && !topic.isSolved ? (
+                            <Form method="post" className="solution-form secondary-tools-form">
+                              <input type="hidden" name="intent" value="markSolved" />
+                              <button type="submit">{t("markSolved")}</button>
+                            </Form>
+                          ) : null}
+
+                          {canCorrectTitleSourceLocale && !canCorrectAnySourceLocale ? (
                             <Form method="post" className="source-locale-form secondary-tools-form">
-                              <input type="hidden" name="intent" value="correctPostSourceLocale" />
-                              <input type="hidden" name="postId" value={post.id} />
-                              <input type="hidden" name="expectedRevisionId" value={post.body.id} />
-                              <p>{t("sourceLocaleCurrent", { locale: post.body.sourceLocale })}</p>
+                              <input type="hidden" name="intent" value="correctTitleSourceLocale" />
+                              <input type="hidden" name="expectedRevisionId" value={topic.title.id} />
+                              <p>{t("sourceLocaleCurrent", { locale: topic.title.sourceLocale })}</p>
                               <label>
                                 {t("sourceLocaleCorrectionInput")}
                                 <input
                                   name="sourceLocale"
                                   required
-                                  defaultValue={post.body.sourceLocale === "und" ? "" : post.body.sourceLocale}
+                                  defaultValue={topic.title.sourceLocale === "und" ? "" : topic.title.sourceLocale}
                                   autoComplete="off"
                                 />
                               </label>
                               <button type="submit">{t("sourceLocaleCorrectionSubmit")}</button>
                             </Form>
-                          )}
-
-                          {canSelectBestAnswer && (
-                            <Form method="post" className="solution-form secondary-tools-form">
-                              <input type="hidden" name="intent" value="selectBestAnswer" />
-                              <input type="hidden" name="postId" value={post.id} />
-                              <button type="submit">{t("selectBestAnswer")}</button>
-                            </Form>
-                          )}
+                          ) : null}
                         </div>
                       </details>
-                    )}
+                    ) : null}
+
+                    {outdatedReason ? (
+                      <div className="solution-outdated-reason">
+                        <strong>{t("helpSolutionOutdatedReasonLabel")}</strong>
+                        <span dir="auto">{outdatedReason}</span>
+                      </div>
+                    ) : null}
                   </div>
                 </li>
               );

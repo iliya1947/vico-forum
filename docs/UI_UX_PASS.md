@@ -310,7 +310,7 @@ composition without changing the forum hierarchy or schema:
   mode and direct guest access uses the existing unauthenticated route state; actual reply
   submission remains governed by the existing reply authorization/origin/validation/rate-limit
   boundaries. Owner visual acceptance of populated/empty Pages states and Guest/User/Manager
-  identity presentation was confirmed on 2026-10-07. The current bounded follow-up adds
+  identity presentation was confirmed on 2026-10-07. Merged PR #199 adds
   authenticated `For me / Для меня` as `?mode=for-me`: interest tags are derived server-side
   only from persisted Help & solutions questions the current user authored or participated in,
   while candidates are unsolved questions from other authors sharing at least one of those tags.
@@ -321,7 +321,38 @@ composition without changing the forum hierarchy or schema:
   scoring, schema/migrations, new permissions or reply capability. Age/staleness thresholds,
   moderation flags, notifications, similar-search refinement and visual polish remain separate
   bounded product work. Owner visual acceptance of populated/empty Pages states and
-  Guest/User/Manager identity switching was confirmed on 2026-10-07;
+  Guest/User/Manager identity switching was confirmed on 2026-10-07. PR #200 adds
+  the first fixed moderation/filter completion step without changing solved semantics:
+  `needs-review` and `outdated` are persisted on the concrete answer post rather than on the
+  Help topic. Manual moderation targets the current selected best answer; manual `outdated`
+  carries a persisted explanation, while replacing the selected best answer atomically marks the
+  previous one `outdated` with the localized system reason “A new best answer was selected.” and
+  clears moderation state on the newly selected answer. Public cards surface only the current best
+  answer marker; topic pages retain marker/explanation on the concrete answer, including a replaced
+  historical best answer, with any outdated explanation at the bottom of that message. Topic
+  title/tags and the original
+  question are presented as one message card, while a later-numbered selected answer is still
+  promoted directly after it without renumbering. The breadcrumb row exposes a general
+  `Admin panel` for actors with existing moderator-level capabilities
+  `forum.solution.manageAny`, `forum.sourceLocale.correctAny` or `forum.topic.pin`; individual
+  actions keep their existing server-side capability checks, and the Help-specific solution-status
+  controls remain gated by `forum.solution.manageAny` and applicable Help state. A confirmed
+  independent-review correction resets the manual outdated-reason form whenever authoritative
+  best-answer/status/persisted-reason identity changes, preventing stale uncontrolled textarea
+  input from carrying across same-route revalidation onto a newly selected solution. A later
+  independent-review correction also makes the persisted outdated-reason CHECK null-safe, so a
+  non-empty reason cannot survive with a NULL moderation status; focused DB coverage exercises that
+  exact invalid tuple. Best-answer
+  selection is temporarily surfaced as a compact breadcrumb-row selector using permanent message
+  numbers: it occupies the admin-panel slot for an ordinary topic author and sits immediately before
+  `Admin panel` for a manager. The old message-level `Message tools` disclosure is removed from
+  the current presentation; message source-locale correction keeps its protected backend contract
+  but its UI waits for the later admin-panel design that can target a message by number. Own-only
+  topic-level author tools remain separate. Pages fixtures expose multiple solved Help questions
+  across current/needs-review/outdated states and allow Guest/User/Manager identity switching.
+  User signals,
+  `needs-details`, duplicates/appeals, broader Needs attention logic and
+  combined filters remain later fixed-sequence steps;
 - owner visual acceptance of the implementation was confirmed on 2026-10-05; exact-head
   automated verification remains a separate PR check.
 

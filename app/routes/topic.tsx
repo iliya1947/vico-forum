@@ -24,6 +24,7 @@ import { ForumRouteError } from "../forum/ui";
 import { TopicView } from "../forum/views";
 import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
 import type { ForumTopicReadState } from "../../db/forum-repository";
+import { HELP_SOLUTIONS_SERVICE_SECTION_ID } from "../../db/forum-identifiers";
 
 export { topicAction as action } from "../forum/actions.server";
 
@@ -62,8 +63,9 @@ export async function loader({ params, context }: {
   const postPresentations = presentations.slice(1);
 
   const session = authSessionForRequest(context);
-  let canReply = false, canManageSolution = false, canCorrectTitleSourceLocale = false, canManagePin = false;
-  let canGenerateTranslations = false;
+  let canReply = false, canManageSolution = false, canModerateHelpSolution = false;
+  let canCorrectTitleSourceLocale = false, canManagePin = false, canGenerateTranslations = false;
+  let canUseAdminPanel = false, canManageAnySolution = false, canCorrectAnySourceLocale = false;
   let correctablePostIds: string[] = [];
   let topicReadState: ForumTopicReadState | null = null;
   if (session) {
@@ -86,9 +88,13 @@ export async function loader({ params, context }: {
       ]);
       canReply = reply;
       canManageSolution = solutionAny || (solutionOwn && session.user.id === topic.authorId);
+      canManageAnySolution = solutionAny;
+      canModerateHelpSolution = solutionAny && topic.section.id === HELP_SOLUTIONS_SERVICE_SECTION_ID;
       canCorrectTitleSourceLocale = sourceAny || (sourceOwn && session.user.id === topic.authorId);
+      canCorrectAnySourceLocale = sourceAny;
       canGenerateTranslations = generate && contentGenerationActionForRequest(context).enabled;
       canManagePin = pin;
+      canUseAdminPanel = solutionAny || sourceAny || pin;
       correctablePostIds = sourceAny
         ? topic.posts.map((post) => post.id)
         : sourceOwn
@@ -130,9 +136,13 @@ export async function loader({ params, context }: {
     generationUnits,
     canReply,
     canManageSolution,
+    canManageAnySolution,
+    canModerateHelpSolution,
     isTopicAuthor: Boolean(session && session.user.id === topic.authorId),
     canCorrectTitleSourceLocale,
+    canCorrectAnySourceLocale,
     canManagePin,
+    canUseAdminPanel,
     correctablePostIds,
     topicReadState,
   };
