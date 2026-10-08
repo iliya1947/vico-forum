@@ -244,7 +244,10 @@ Vico Forum находится в ранней pre-release разработке.
   workflow/filter steps. В этот slice не входят user signals/moderator confirmation (step 4),
   расширение `Needs attention` (step 5), combined filters (step 6), duplicate workflow (step 3),
   новая permission/mutation, admin-panel redesign, similar-search refinement или drafts/autosave.
-  CI/Pages/final independent review ещё не зафиксированы.
+  Implementation head `88fd8f682690020f397aa63f2ed80f174f70698c`: CI run `37810294037`
+  завершён успешно — `checks` и `database` green, включая clean PostgreSQL 17 migrations,
+  quality constraints, production schema manifest parity и repository checks. Pages/final
+  independent review ещё не зафиксированы.
 - In-app reply notifications slice реализован в PR #180:
   forward migration `0024_forum_reply_notifications` хранит только stable recipient/actor/topic/post
   references, `createdAt` и nullable `readAt`; unique recipient + reply identity предотвращает
