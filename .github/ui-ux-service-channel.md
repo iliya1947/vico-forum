@@ -2168,3 +2168,34 @@ _Source: https://github.com/iliya1947/vico-forum/pull/147#issuecomment-606517007
 * ✅ `git status --short --branch` — рабочее дерево чистое после commit.
 
  [View task →](https://chatgpt.com/s/cd_6ac7cf0895b88191b41c2c67192b750b)
+
+---
+
+## PR #204 review closure — 2026-10-08
+
+Implementation PR: https://github.com/iliya1947/vico-forum/pull/204
+
+Final review outcome:
+
+- ChatGPT whole-PR review found no remaining implementation defect in the current step-2 scope.
+- Codex independently reviewed implementation head
+  `3bb03eb1c34e11d503571bfd894cd6aed67694d5` and raised one previous-writer
+  schema-first/rollback compatibility finding for migration 0029.
+- ChatGPT verified the causal chain: the previous writer omits `help_question_quality`, so after
+  0029 an old-writer Help insert would fail the non-NULL Help quality CHECK with SQLSTATE 23514.
+- After technical discussion in this service channel, Codex and ChatGPT agree on
+  **Deferred-to-Stage-6** classification. External accepted schema still stops at 0020, migrations
+  0021–0029 are not externally applied, and Stage 6 is paused. Before the next external
+  schema-dependent rollout, a separate forward migration must restore compatibility with the
+  previous writer.
+- The Codex inline finding was replied to and resolved with that classification.
+- After Codex review only `PROJECT_STATE.md` changed to record the agreed deferred rollout gate;
+  implementation/schema/query/test behavior did not change, so AGENTS.md does not require another
+  Codex review.
+- Final PR head after that documentation-only closure is
+  `8817bdf1ed947d88576d10182014badb81c68f38`.
+- Final-head CI run `37815035274`: `checks` success and `database` success.
+- Pages build/deploy evidence remains the successful exact implementation revision reviewed before
+  Codex; no presentation/runtime behavior changed afterward.
+- No confirmed defect remains in the current bounded Help question-quality scope.
+
