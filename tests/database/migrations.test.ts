@@ -352,6 +352,66 @@ describe("PostgreSQL 17 locale migrations", () => {
     }
   });
 
+  it("keeps Help solution moderation scoped to the reserved Help questions section", async () => {
+    const repository = new DrizzleForumRepository(drizzle(client), { cooldownMs: 0 });
+    const forum = new ForumService(repository);
+    await insertForumAuthor("solution-moderation-regular-author", "solution-moderation-regular@example.test", null);
+
+    try {
+      await forum.createCategory({
+        id: "solution-moderation-regular-category",
+        name: "Regular category",
+      });
+      await forum.createSection({
+        id: "solution-moderation-regular-section",
+        categoryId: "solution-moderation-regular-category",
+        name: "Regular section",
+      });
+      await forum.createTopicWithInitialPost({
+        id: "solution-moderation-regular-topic",
+        sectionId: "solution-moderation-regular-section",
+        authorId: "solution-moderation-regular-author",
+        titleRevision: {
+          id: "solution-moderation-regular-title",
+          originalContent: "Regular solved topic",
+          sourceLocale: "en",
+        },
+        initialPost: {
+          id: "solution-moderation-regular-post",
+          topicId: "solution-moderation-regular-topic",
+          authorId: "solution-moderation-regular-author",
+          bodyRevision: {
+            id: "solution-moderation-regular-body",
+            originalContent: "Regular topic body",
+            sourceLocale: "en",
+          },
+        },
+      });
+      await forum.markTopicSolved(
+        "solution-moderation-regular-topic",
+        "solution-moderation-regular-author",
+      );
+
+      await expect(
+        repository.setHelpSolutionModeration(
+          "solution-moderation-regular-topic",
+          "needs-review",
+          null,
+        ),
+      ).rejects.toBeInstanceOf(ForumStateConflictError);
+      expect(await repository.readTopic("solution-moderation-regular-topic")).toMatchObject({
+        isSolved: true,
+        solutionModerationStatus: null,
+        solutionOutdatedReason: null,
+      });
+    } finally {
+      await client.query("delete from forum_topics where id = 'solution-moderation-regular-topic'");
+      await client.query("delete from forum_sections where id = 'solution-moderation-regular-section'");
+      await client.query("delete from forum_categories where id = 'solution-moderation-regular-category'");
+      await client.query("delete from \"user\" where id = 'solution-moderation-regular-author'");
+    }
+  });
+
   it("ranks For me by shared participation tags, activity, and stable topic id", async () => {
     const repository = new DrizzleForumRepository(drizzle(client), {
       cooldownMs: 0,
