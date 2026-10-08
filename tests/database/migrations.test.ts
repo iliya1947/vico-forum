@@ -68,7 +68,7 @@ describe("PostgreSQL 17 locale migrations", () => {
     const applied = await client.query<{ count: string }>(
       'select count(*)::text as count from drizzle."__drizzle_migrations"',
     );
-    expect(applied.rows[0]?.count).toBe("30");
+    expect(applied.rows[0]?.count).toBe("31");
   });
 
   it("seeds Help & solutions while keeping its service section internal to generic discovery", async () => {
@@ -425,6 +425,110 @@ describe("PostgreSQL 17 locale migrations", () => {
         }],
       });
       expect(await repository.readHelpSolutionsWantToHelp("help-foundation-waiting")).toMatchObject({ questions: [] });
+      await forum.confirmHelpDuplicate(
+        "help-foundation-no-replies",
+        "help-foundation-topic",
+        "help-foundation-replier",
+      );
+      expect(await repository.readTopicPage("help-foundation-no-replies")).toMatchObject({
+        duplicateOf: { id: "help-foundation-topic", title: "Help foundation question" },
+        duplicateDisputed: false,
+      });
+      expect(await repository.readHelpSolutionsAll()).toMatchObject({
+        questions: expect.arrayContaining([
+          expect.objectContaining({
+            id: "help-foundation-no-replies",
+            duplicateOf: { id: "help-foundation-topic", title: "Help foundation question" },
+            duplicateDisputed: false,
+          }),
+        ]),
+      });
+
+      await expect(
+        forum.confirmHelpDuplicate(
+          "help-foundation-topic",
+          "help-foundation-no-replies",
+          "help-foundation-replier",
+        ),
+      ).rejects.toBeInstanceOf(ForumStateConflictError);
+      await expect(
+        forum.confirmHelpDuplicate(
+          "help-foundation-topic",
+          "help-foundation-topic",
+          "help-foundation-replier",
+        ),
+      ).rejects.toBeInstanceOf(ForumStateConflictError);
+      await expect(
+        forum.appealHelpDuplicate(
+          "help-foundation-no-replies",
+          "help-foundation-replier",
+          "Not my question",
+        ),
+      ).rejects.toBeInstanceOf(ForumAuthorizationError);
+
+      await forum.appealHelpDuplicate(
+        "help-foundation-no-replies",
+        "help-foundation-waiting",
+        "  The symptoms look similar,   but the root cause differs.  ",
+      );
+      expect(await repository.readPendingHelpDuplicateAppeal("help-foundation-no-replies")).toMatchObject({
+        explanation: "The symptoms look similar, but the root cause differs.",
+      });
+      expect(await repository.readTopicPage("help-foundation-no-replies")).toMatchObject({
+        duplicateOf: { id: "help-foundation-topic" },
+        duplicateDisputed: true,
+      });
+      await expect(
+        forum.appealHelpDuplicate(
+          "help-foundation-no-replies",
+          "help-foundation-waiting",
+          "Another pending appeal",
+        ),
+      ).rejects.toBeInstanceOf(ForumStateConflictError);
+
+      await forum.resolveHelpDuplicateAppeal(
+        "help-foundation-no-replies",
+        "help-foundation-replier",
+        "rejected",
+      );
+      expect(await repository.readPendingHelpDuplicateAppeal("help-foundation-no-replies")).toBeUndefined();
+      expect(await repository.readTopicPage("help-foundation-no-replies")).toMatchObject({
+        duplicateOf: { id: "help-foundation-topic" },
+        duplicateDisputed: false,
+      });
+
+      await forum.appealHelpDuplicate(
+        "help-foundation-no-replies",
+        "help-foundation-waiting",
+        "The accepted dispute removes the relationship.",
+      );
+      await forum.resolveHelpDuplicateAppeal(
+        "help-foundation-no-replies",
+        "help-foundation-replier",
+        "accepted",
+      );
+      expect(await repository.readTopicPage("help-foundation-no-replies")).toMatchObject({
+        duplicateOf: null,
+        duplicateDisputed: false,
+      });
+
+      await forum.confirmHelpDuplicate(
+        "help-foundation-no-replies",
+        "help-foundation-topic",
+        "help-foundation-replier",
+      );
+      await forum.appealHelpDuplicate(
+        "help-foundation-no-replies",
+        "help-foundation-waiting",
+        "Manual removal should resolve this pending dispute.",
+      );
+      await forum.removeHelpDuplicate("help-foundation-no-replies", "help-foundation-replier");
+      expect(await repository.readTopicPage("help-foundation-no-replies")).toMatchObject({
+        duplicateOf: null,
+        duplicateDisputed: false,
+      });
+      expect(await repository.readPendingHelpDuplicateAppeal("help-foundation-no-replies")).toBeUndefined();
+
       await forum.markTopicSolved("help-foundation-no-replies", "help-foundation-waiting");
       expect(await repository.readHelpSolutionsNeedsAttention()).toMatchObject({ questions: [] });
       expect(await repository.readHelpSolutionsWantToHelp("help-foundation-author")).toMatchObject({ questions: [] });
