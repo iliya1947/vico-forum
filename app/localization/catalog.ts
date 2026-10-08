@@ -119,6 +119,7 @@ export const canonicalEnglishCatalog = {
     topicAdminPanel: message("topicAdminPanel", "Admin panel", "Manager-only administration controls for a forum topic."),
     helpSolutionOutdated: message("helpSolutionOutdated", "Solution outdated", "Status label for a solved Help & solutions question whose solution is outdated."),
     helpSolutionOutdatedReasonLabel: message("helpSolutionOutdatedReasonLabel", "Why this solution is outdated", "Label shown before the persisted reason explaining why a Help & solutions solution is outdated."),
+    helpSolutionOutdatedReasonBestAnswerReplaced: message("helpSolutionOutdatedReasonBestAnswerReplaced", "A new best answer was selected.", "System-generated reason shown when a previous Help & solutions best answer becomes outdated because another answer was selected."),
     helpSolutionMarkNeedsReview: message("helpSolutionMarkNeedsReview", "Mark as needs review", "Moderator action that marks a solved Help & solutions solution as needing review."),
     helpSolutionOutdatedReasonInput: message("helpSolutionOutdatedReasonInput", "Reason the solution is outdated", "Label for the required reason when marking a Help & solutions solution outdated."),
     helpSolutionMarkOutdated: message("helpSolutionMarkOutdated", "Mark solution outdated", "Moderator action that marks a solved Help & solutions solution outdated."),
