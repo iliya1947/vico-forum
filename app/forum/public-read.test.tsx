@@ -1106,7 +1106,7 @@ describe("Help & solutions modes and authoring", () => {
     expect(topicData.canModerateHelpSolution).toBe(true);
     renderRoute(TopicRoute, topicData, forumTopicPath("en", helpTopic.id), "en", "ltr");
     expect(await screen.findByText("Why this solution is outdated")).toBeVisible();
-    expect(screen.getByText("The provider removed the API used by this workaround.")).toBeVisible();
+    expect(screen.getAllByText("The provider removed the API used by this workaround.")).toHaveLength(2);
     expect(screen.getByRole("button", { name: "Mark as needs review" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Mark solution outdated" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Clear solution status" })).toBeVisible();
