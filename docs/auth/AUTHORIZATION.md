@@ -37,6 +37,7 @@ Permission key означает существующую capability прилож
 - `forum.topic.pin`;
 - `forum.solution.manageOwn`;
 - `forum.solution.manageAny`;
+- `forum.helpDuplicate.manage`;
 - `forum.sourceLocale.correctOwn`;
 - `forum.sourceLocale.correctAny`;
 - `forum.translation.generate`;
@@ -44,6 +45,12 @@ Permission key означает существующую capability прилож
 
 При появлении новой защищённой функции код добавляет новый permission key в централизованный
 catalog, после чего он становится доступен role/user configuration UI.
+
+`forum.helpDuplicate.manage` разрешает authoritative управление подтверждёнными duplicate-связями
+и рассмотрение апелляций только для Help & solutions. Обычная подача апелляции автором уже
+подтверждённого вопроса-дубликата не является этой management-capability: авторство и наличие
+активной duplicate-связи повторно проверяются server-side. Общие пользовательские moderation
+signals остаются отдельным product workflow.
 
 `forum.solution.manageOwn` всегда применяется вместе с server-side resource condition:
 actor должен быть author target topic. `forum.sourceLocale.correctOwn` аналогично разрешает
