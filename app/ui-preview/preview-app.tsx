@@ -1279,6 +1279,8 @@ function PreviewTopicRoute({ scenario }: { scenario: Scenario }) {
       isPinned: false,
       isSolved: helpQuestion.isSolved,
       bestAnswerPostId: helpQuestion.hasBestAnswer && posts[1] ? posts[1].id : null,
+      solutionModerationStatus: helpQuestion.solutionModerationStatus,
+      solutionOutdatedReason: helpQuestion.solutionOutdatedReason,
       title: {
         id: `${helpQuestion.id}-title`,
         originalContent: helpQuestion.title,
@@ -1402,6 +1404,8 @@ function PreviewTopicRoute({ scenario }: { scenario: Scenario }) {
     isPinned: matched.topic.isPinned,
     isSolved: false,
     bestAnswerPostId: null,
+    solutionModerationStatus: null,
+    solutionOutdatedReason: null,
     title: matched.topic.title,
     section: {
       id: matched.section.id,
