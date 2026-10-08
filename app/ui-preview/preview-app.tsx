@@ -1451,6 +1451,7 @@ function PreviewTopicRoute({ scenario }: { scenario: Scenario }) {
     isPinned: matched.topic.isPinned,
     isSolved: false,
     bestAnswerPostId: null,
+    questionQuality: null,
     title: matched.topic.title,
     section: {
       id: matched.section.id,
