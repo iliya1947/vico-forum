@@ -350,13 +350,15 @@ composition without changing the forum hierarchy or schema:
   but its UI waits for the later admin-panel design that can target a message by number. Own-only
   topic-level author tools remain separate. Pages fixtures expose multiple solved Help questions
   across current/needs-review/outdated states and allow Guest/User/Manager identity switching.
-  PR #204 adds the second fixed-sequence foundation step: Help question quality is persisted on
-  `forum_topics` as `normal | needs-details`, existing Help questions are backfilled to
-  `normal`, new Help questions start at `normal`, and the value is projected through Help
-  question summaries and topic-page reads. This bounded slice intentionally adds no new mutation,
-  permission or visible moderation workflow; user signals/moderator confirmation remain step 4,
-  broader Needs attention logic remains step 5, and combined quality/reply/solution/relationship
-  filters remain step 6. Duplicate/appeal workflow remains the separate step 3;
+  PR #204 adds the second fixed-sequence foundation step as one persisted system label rather than
+  a separate question-quality state machine: `forum_topics.needs_details` is a boolean flag with
+  database default `false`; `true` means the question carries the `Needs details` label and
+  `false` means the label is absent. There is no persisted `normal` state, Help-only CHECK or
+  special backfill. The flag is projected through Help question summaries and topic-page reads.
+  This bounded slice intentionally adds no new mutation, permission or visible moderation
+  workflow; user signals/moderator confirmation remain step 4, broader Needs attention logic
+  remains step 5, and combined label/reply/solution/relationship filters remain step 6.
+  Duplicate/appeal workflow remains the separate step 3;
 - owner visual acceptance of the implementation was confirmed on 2026-10-05; exact-head
   automated verification remains a separate PR check.
 
