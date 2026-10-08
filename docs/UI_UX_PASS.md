@@ -310,7 +310,7 @@ composition without changing the forum hierarchy or schema:
   mode and direct guest access uses the existing unauthenticated route state; actual reply
   submission remains governed by the existing reply authorization/origin/validation/rate-limit
   boundaries. Owner visual acceptance of populated/empty Pages states and Guest/User/Manager
-  identity presentation was confirmed on 2026-10-07. The current bounded follow-up adds
+  identity presentation was confirmed on 2026-10-07. Merged PR #199 adds
   authenticated `For me / Для меня` as `?mode=for-me`: interest tags are derived server-side
   only from persisted Help & solutions questions the current user authored or participated in,
   while candidates are unsolved questions from other authors sharing at least one of those tags.
@@ -321,7 +321,13 @@ composition without changing the forum hierarchy or schema:
   scoring, schema/migrations, new permissions or reply capability. Age/staleness thresholds,
   moderation flags, notifications, similar-search refinement and visual polish remain separate
   bounded product work. Owner visual acceptance of populated/empty Pages states and
-  Guest/User/Manager identity switching was confirmed on 2026-10-07;
+  Guest/User/Manager identity switching was confirmed on 2026-10-07. PR #200 adds
+  the first fixed moderation/filter completion step without changing solved semantics:
+  `needs-review` and `outdated` are persisted markers on already-solved Help questions,
+  `outdated` always carries a persisted explanation, public cards/topic surface the marker and
+  explanation, and only server-resolved `forum.solution.manageAny` receives the topic management
+  controls. User signals, `needs-details`, duplicates/appeals, broader Needs attention logic and
+  combined filters remain later fixed-sequence steps;
 - owner visual acceptance of the implementation was confirmed on 2026-10-05; exact-head
   automated verification remains a separate PR check.
 
