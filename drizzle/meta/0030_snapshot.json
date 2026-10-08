@@ -176,7 +176,7 @@
       "checkConstraints": {
         "authz_permissions_catalog_check": {
           "name": "authz_permissions_catalog_check",
-          "value": "\"authz_permissions\".\"key\" in (\n  'forum.topic.create', 'forum.reply.create', 'forum.topic.pin', 'forum.solution.manageOwn',\n  'forum.solution.manageAny', 'forum.helpDuplicate.manage',\n  'forum.sourceLocale.correctOwn', 'forum.sourceLocale.correctAny',\n  'forum.translation.generate', 'access.authorization.manage'\n)"
+          "value": "\"authz_permissions\".\"key\" in (\n  'forum.topic.create', 'forum.reply.create', 'forum.topic.pin', 'forum.solution.manageOwn',\n  'forum.solution.manageAny', 'forum.helpDuplicate.manage',\n  'forum.sourceLocale.correctOwn', 'forum.sourceLocale.correctAny',\n  'forum.translation.generate',\n  'access.authorization.manage'\n)"
         }
       },
       "isRLSEnabled": false
@@ -3400,7 +3400,7 @@
           "isUnique": true,
           "concurrently": false,
           "method": "btree",
-          "where": "\"removed_at\" is null",
+          "where": "\"forum_help_duplicate_relationships\".\"removed_at\" is null",
           "with": {}
         },
         "forum_help_duplicate_relationships_active_original_idx": {
@@ -3563,7 +3563,7 @@
           "isUnique": true,
           "concurrently": false,
           "method": "btree",
-          "where": "\"status\" = 'pending'",
+          "where": "\"forum_help_duplicate_appeals\".\"status\" = 'pending'",
           "with": {}
         },
         "forum_help_duplicate_appeals_relationship_created_idx": {
