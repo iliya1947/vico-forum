@@ -1007,6 +1007,8 @@ export function HelpSolutionsView({
   isAuthenticated = false,
   canAskQuestion = false,
   canViewAttention = false,
+  canViewSolutionModeration = false,
+  canViewDuplicateDispute = false,
   actionData,
 }: {
   locale: string;
@@ -1016,6 +1018,8 @@ export function HelpSolutionsView({
   isAuthenticated?: boolean;
   canAskQuestion?: boolean;
   canViewAttention?: boolean;
+  canViewSolutionModeration?: boolean;
+  canViewDuplicateDispute?: boolean;
   actionData?: HelpQuestionActionData;
 }) {
   const { t } = useTranslation("common");
@@ -1310,10 +1314,7 @@ export function HelpSolutionsView({
                         <span className={"help-question-status " + (question.isSolved ? "is-solved" : "is-open")}>
                           {t(question.isSolved ? "solved" : "helpSolutionsOpen")}
                         </span>
-                        {question.hasBestAnswer ? (
-                          <span className="help-question-best-answer">{t("bestAnswer")}</span>
-                        ) : null}
-                        {question.solutionModerationStatus ? (
+                        {canViewSolutionModeration && question.solutionModerationStatus ? (
                           <span className={"help-question-solution-moderation is-" + question.solutionModerationStatus}>
                             {t(
                               question.solutionModerationStatus === "needs-review"
@@ -1325,7 +1326,7 @@ export function HelpSolutionsView({
                         {question.duplicateOf ? (
                           <span className="help-question-duplicate">{t("helpDuplicateBadge")}</span>
                         ) : null}
-                        {question.duplicateDisputed ? (
+                        {canViewDuplicateDispute && question.duplicateDisputed ? (
                           <span className="help-question-duplicate-disputed">{t("helpDuplicateDisputed")}</span>
                         ) : null}
                       </span>
