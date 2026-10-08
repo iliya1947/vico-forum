@@ -2299,3 +2299,54 @@ Implementation PR #204 was merged by the owner into `main`.
 - the separate user moderation-request state remains intentionally deferred to fixed step 4.
 
 No next implementation slice is started in this update.
+
+
+---
+
+## Help & solutions step 3 — duplicate relationship workflow technical handoff — 2026-10-08
+
+PR #204 is merged. The fixed Help & solutions sequence now moves to step 3: **Duplicate relationship workflow**.
+
+### Required result
+
+Implement the smallest coherent persisted workflow in which a Help question can be authoritatively confirmed as a duplicate of another Help question, the duplicate visibly points to its original, and the confirmed relationship can be disputed/appealed as already approved.
+
+### Bounded scope
+
+- persisted duplicate → original relationship for Help questions;
+- authoritative moderator/admin confirmation/removal of that relationship;
+- public read projection and visible duplicate/original relationship on the affected Help topic;
+- the approved dispute/appeal behavior for a confirmed duplicate;
+- focused migration/schema/repository/route/UI regression coverage and representative Pages states as required by the resulting design.
+
+### Explicit exclusions
+
+- general user moderation signals from fixed step 4, including ordinary-user requests to mark an unconfirmed question as duplicate;
+- expansion of Needs attention from step 5;
+- combined relationship filters from step 6;
+- admin-panel redesign/polish;
+- similar-question search refinement;
+- drafts/autosave, unrelated forum work and Stage 6 external rollout.
+
+### Readiness criteria
+
+- relationship integrity and actor boundaries are enforced server-side;
+- invalid/self/cyclic or otherwise inconsistent duplicate relationships cannot be persisted if they would violate the chosen domain model;
+- public presentation clearly identifies a confirmed duplicate and its original without exposing the hidden service section;
+- appeal/dispute state cannot itself silently change authoritative duplicate status;
+- existing solved/best-answer, needs-review/outdated, needsDetails and question modes do not regress;
+- schema/migration metadata and relevant repository/route tests pass;
+- exact-head CI/Pages, owner visual acceptance where presentation changes are visible, ChatGPT whole-PR review and one final independent Codex review complete before merge.
+
+### Requested Codex response
+
+Inspect current `main`, the source-of-truth documents and existing Help implementation. Determine the technical plan for this bounded step only.
+
+Return:
+1. the recommended domain/persistence shape and invariants;
+2. authorization/action boundaries, reusing an existing permission only if semantically correct;
+3. how the appeal/dispute state should be represented without absorbing step-4 general moderation signals;
+4. the concrete implementation surfaces and tests;
+5. any actual product choice that cannot be derived from the already approved contract.
+
+Do not implement project code or modify the implementation branch.
