@@ -1597,7 +1597,7 @@ describe("forum read states", () => {
     ]);
   });
 
-  it("keeps message metadata in the author column while body and solution controls stay in post content", async () => {
+  it("keeps message metadata in the author column while best-answer selection stays beside topic controls", async () => {
     const seed = topic.posts[0]!;
     const question = {
       ...seed,
@@ -1655,12 +1655,14 @@ describe("forum read states", () => {
     expect(followupContent).toHaveClass("forum-post-content");
     expect(followupHeader).toContainElement(followupPost!.querySelector(".topic-message-anchor"));
     expect(followupContent).toContainElement(followupPost!.querySelector(".post-body"));
-    expect(followupContent).toContainElement(followupPost!.querySelector(".solution-form"));
-    const followupTools = followupPost!.querySelector("details.message-secondary-tools");
-    expect(followupTools).not.toBeNull();
-    expect(followupTools).not.toHaveAttribute("open");
-    expect(followupTools!.querySelector("summary")).toHaveTextContent("Message tools");
-    expect(screen.getByRole("button", { name: "Select as best answer" }).closest("details")).toBe(followupTools);
+    expect(followupContent!.querySelector(".solution-form")).toBeNull();
+    expect(screen.queryByText("Message tools")).not.toBeInTheDocument();
+
+    const bestAnswerSelector = screen.getByText("Select as best answer").closest("details");
+    expect(bestAnswerSelector).not.toBeNull();
+    expect(bestAnswerSelector?.closest(".topic-breadcrumb-actions")).not.toBeNull();
+    fireEvent.click(screen.getByText("Select as best answer"));
+    expect(within(bestAnswerSelector as HTMLElement).getByRole("button", { name: "Message #3" })).toBeVisible();
   });
 
   it("keeps the topic title and original question in one message card", async () => {
@@ -1734,12 +1736,18 @@ describe("forum read states", () => {
     expect(topicToolsDetails).not.toBeNull();
     expect(topicToolsDetails).not.toHaveAttribute("open");
     expect(screen.getByRole("button", { name: "Mark as solved" }).closest("details")).toBe(topicToolsDetails);
-    expect(within(document.querySelector("#post-question") as HTMLElement).queryByRole("button", { name: "Select as best answer" })).not.toBeInTheDocument();
-    expect(within(document.querySelector("#post-answer") as HTMLElement).getByRole("button", { name: "Select as best answer" })).toBeInTheDocument();
+
+    const bestAnswerSelector = screen.getByText("Select as best answer").closest("details");
+    expect(bestAnswerSelector).not.toBeNull();
+    expect(bestAnswerSelector?.closest(".topic-breadcrumb-actions")).not.toBeNull();
+    expect(screen.queryByText("Message tools")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText("Select as best answer"));
+    expect(within(bestAnswerSelector as HTMLElement).getByRole("button", { name: "Message #2" })).toBeVisible();
     authorView.unmount();
 
     renderRoute(TopicRoute, { ...unsolved, canManageSolution: false }, "/en/topics/typed-api", "en", "ltr");
     expect(screen.queryByText("Topic tools")).not.toBeInTheDocument();
+    expect(screen.queryByText("Select as best answer")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Mark as solved" })).not.toBeInTheDocument();
   });
 
@@ -1781,7 +1789,7 @@ describe("forum read states", () => {
     expect(screen.queryByText("Problem solved?")).not.toBeInTheDocument();
   });
 
-  it("renders source-locale correction only for authorized resources behind secondary disclosures", async () => {
+  it("keeps title source-locale correction while message-level correction waits for the admin-panel redesign", async () => {
     renderRoute(
       TopicRoute,
       topicRenderData(topic, {
@@ -1794,19 +1802,16 @@ describe("forum read states", () => {
     );
 
     const topicTools = await screen.findByText("Topic tools");
-    const messageTools = screen.getByText("Message tools");
     const topicToolsDetails = topicTools.closest("details");
-    const messageToolsDetails = messageTools.closest("details");
     expect(topicToolsDetails).not.toHaveAttribute("open");
-    expect(messageToolsDetails).not.toHaveAttribute("open");
+    expect(screen.queryByText("Message tools")).not.toBeInTheDocument();
 
     const correctionButtons = screen.getAllByRole("button", { name: "Correct language" });
-    expect(correctionButtons).toHaveLength(2);
+    expect(correctionButtons).toHaveLength(1);
     expect(within(topicToolsDetails as HTMLElement).getByRole("button", { name: "Correct language" })).toBeInTheDocument();
-    expect(within(messageToolsDetails as HTMLElement).getByRole("button", { name: "Correct language" })).toBeInTheDocument();
-    expect(screen.getAllByText("Source language: en")).toHaveLength(2);
+    expect(screen.getAllByText("Source language: en")).toHaveLength(1);
     expect(document.querySelector('input[name="expectedRevisionId"][value="title-r1"]')).not.toBeNull();
-    expect(document.querySelector('input[name="postId"][value="answer"]')).not.toBeNull();
+    expect(document.querySelector('input[name="postId"][value="answer"]')).toBeNull();
   });
 
   it("shows accessible forum write forms only for an authenticated loader result", async () => {
