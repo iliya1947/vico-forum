@@ -326,12 +326,15 @@ composition without changing the forum hierarchy or schema:
   `needs-review` and `outdated` are persisted markers on already-solved Help questions,
   `outdated` always carries a persisted explanation, public cards surface the marker, and topic
   pages keep the moderation marker beside the selected best-answer label and place any persisted
-  outdated explanation below that answer body rather than on the question heading. Only server-
-  resolved `forum.solution.manageAny` receives the dedicated solution-moderation control in the
-  inline-end side of the breadcrumb row; ordinary topic tools stay separate. Pages fixtures expose
-  multiple solved Help questions across current/needs-review/outdated states, allow Guest/User/
-  Manager identity switching, and select a later-numbered best answer so its promotion directly
-  below the original question is visibly exercised while its permanent message number is retained.
+  outdated explanation at the bottom of that answer message. Topic title/tags and the original
+  question are presented as one message card, while a later-numbered selected answer is still
+  promoted directly after it without renumbering. The breadcrumb row exposes a general
+  `Admin panel` for actors with existing moderator-level capabilities
+  `forum.solution.manageAny`, `forum.sourceLocale.correctAny` or `forum.topic.pin`; individual
+  actions keep their existing server-side capability checks, and the Help-specific solution-status
+  controls remain gated by `forum.solution.manageAny` and applicable Help state. Own-only author
+  tools remain separate. Pages fixtures expose multiple solved Help questions across
+  current/needs-review/outdated states and allow Guest/User/Manager identity switching.
   User signals,
   `needs-details`, duplicates/appeals, broader Needs attention logic and
   combined filters remain later fixed-sequence steps;
