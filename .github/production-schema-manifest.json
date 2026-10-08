@@ -1262,6 +1262,24 @@
           "type": "timestamp with time zone",
           "nullable": false,
           "defaultSha256": "28a4dae0461e17af56e979c2095abfbe0bfc45fe9ca8abf3144338a518a1bb8f"
+        },
+        {
+          "name": "solution_moderation_status",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "solution_outdated_reason",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "solution_outdated_reason_kind",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
         }
       ],
       "primaryKeys": [
@@ -1352,6 +1370,29 @@
             "parent_post_id"
           ],
           "definitionSha256": "1ea94bed08bf646f8c5101aaa5a9edf9fc8b86ce49bc2e07e18173c24ff39164"
+        },
+        {
+          "name": "forum_posts_solution_moderation_status_check",
+          "columns": [
+            "solution_moderation_status"
+          ],
+          "definitionSha256": "PENDING"
+        },
+        {
+          "name": "forum_posts_solution_outdated_reason_kind_check",
+          "columns": [
+            "solution_outdated_reason_kind"
+          ],
+          "definitionSha256": "PENDING"
+        },
+        {
+          "name": "forum_posts_solution_outdated_reason_check",
+          "columns": [
+            "solution_moderation_status",
+            "solution_outdated_reason",
+            "solution_outdated_reason_kind"
+          ],
+          "definitionSha256": "PENDING"
         }
       ],
       "indexes": [
@@ -1782,18 +1823,6 @@
           "type": "timestamp with time zone",
           "nullable": false,
           "defaultSha256": "28a4dae0461e17af56e979c2095abfbe0bfc45fe9ca8abf3144338a518a1bb8f"
-        },
-        {
-          "name": "solution_moderation_status",
-          "type": "text",
-          "nullable": true,
-          "defaultSha256": null
-        },
-        {
-          "name": "solution_outdated_reason",
-          "type": "text",
-          "nullable": true,
-          "defaultSha256": null
         }
       ],
       "primaryKeys": [
@@ -1867,31 +1896,7 @@
           "initiallyDeferred": false
         }
       ],
-      "checks": [
-        {
-          "name": "forum_topics_solution_moderation_requires_solved_check",
-          "columns": [
-            "is_solved",
-            "solution_moderation_status"
-          ],
-          "definitionSha256": "3cbcb95c2a3f53dc71738903e4705f0751d21c0b467c1ec8e39b43f9dd246f8a"
-        },
-        {
-          "name": "forum_topics_solution_moderation_status_check",
-          "columns": [
-            "solution_moderation_status"
-          ],
-          "definitionSha256": "0d9f55ce386be4d047dd62e4d9f49fbe5211dcc0472a6a97514a06caea87da1e"
-        },
-        {
-          "name": "forum_topics_solution_outdated_reason_check",
-          "columns": [
-            "solution_moderation_status",
-            "solution_outdated_reason"
-          ],
-          "definitionSha256": "2e7ab243c458593ffb41a7404b8e4d485e99e1f8f2ca7517690cf0282889fac0"
-        }
-      ],
+      "checks": [],
       "indexes": [
         {
           "name": "forum_topics_author_id_idx",
