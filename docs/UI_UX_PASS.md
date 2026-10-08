@@ -363,9 +363,10 @@ composition without changing the forum hierarchy or schema:
   the dedicated `forum.helpDuplicate.manage` capability. The duplicate-question author can dispute
   only an already confirmed relationship with a required explanation. Pending dispute preserves
   the authoritative duplicate relationship: the topic page may show a neutral public `Disputed`
-  marker, while Help question lists expose pending-dispute and solution-moderation badges only to
-  the relevant moderation actors; the redundant `Best answer` list badge is omitted. The appeal
-  explanation remains private to that author and duplicate managers. Reject preserves
+  marker, while Help question lists keep public `Solved` / `Best answer` signals, omit answer-level
+  `Needs review` / `Solution outdated` badges entirely, and expose `Duplicate` / pending `Disputed`
+  only to duplicate-management actors. The appeal explanation remains private to that author and
+  duplicate managers. Reject preserves
   the relation, while accepting the dispute removes it. General user moderation signals remain
   step 4, Needs attention expansion step 5 and combined relationship filters step 6;
 - owner visual acceptance of the implementation was confirmed on 2026-10-05; exact-head
