@@ -1638,3 +1638,20 @@ Execution rule:
 
 **Next bounded implementation slice:** step 1 — solution moderation statuses `needs-review` and `outdated`, including mandatory persisted outdated explanation.
 
+---
+
+## Technical finding coordination — AGENTS diagnostic gate PR #202 — 2026-10-08
+
+Implementation PR: https://github.com/iliya1947/vico-forum/pull/202
+Exact reviewed head: `415040267cc3f93255bd97699e6af1a8a9a9b067`.
+Codex independent P2 finding: https://github.com/iliya1947/vico-forum/pull/202#discussion_r4215235087
+
+**Independent review comparison:** ChatGPT's initial whole-PR review found no defect; Codex independently found one current-scope P2 concern. This mismatch must be discussed before treating the finding as confirmed and modifying PR #202.
+
+**Codex argument:** The new diagnostic-gate clause applies before *any technical change or user action*, not just corrections in response to an observed or suspected problem. Greenfield features and proactively justified foundation boundaries may have no symptom or causal chain to diagnose. `PROJECT.md` explicitly permits bounded foundation decisions without an incident (lines 97–99). In those cases the literal rule would demand invented symptoms or block legitimate development.
+
+**ChatGPT re-evaluation:** The objection is technically supported: point 1 of the new section reads `До предложения технического изменения, обходного решения или действия пользователю ... проверяет фактические симптомы ... цепочки` and is unqualified. The other diagnostic clauses inherit that overbroad scope. I now agree that this is a real semantic problem in the current documentation-only PR, although our initial independent reviews did not agree. The core requirement—finish available evidence-based diagnosis before proposing a fix or making the owner diagnose a problem—should remain intact.
+
+**Smallest proposed correction (not yet applied):** Explicitly scope the diagnostic gate to **actions/changes proposed in response to a real or suspected malfunction, defect, failed operation or other technical problem**. The gate does **not** require a symptom or root-cause investigation before approved new functionality or proactively justified foundation work, unless a specific problem arises during that work. Adjust the first numbered point consistently; retain the rest of the cause/evidence, workaround and owner-action safeguards. Unrelated architecture and PR workflow rules remain untouched.
+
+**Requested Codex technical response:** Confirm whether the proposed scoping resolves your P2 finding without weakening the original incident-diagnosis safeguard, or provide a concrete counterexample and the smallest necessary adjustment. This is a technical consensus request, **not** a request for another Code Review or implementation. Do not edit implementation code or PR #202 yet.
