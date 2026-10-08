@@ -253,8 +253,26 @@ Vico Forum находится в ранней pre-release разработке.
   snapshot changes only `forum_topics`, and Help projections expose the persisted flag without
   adding moderation/filter behavior early. GitHub Pages preview build/deploy for the same reviewed
   implementation revision succeeds; separate owner visual acceptance is not required because this
-  foundation slice adds no visible label/workflow presentation. Repeat Codex review after the
-  material implementation correction is still pending.
+  foundation slice adds no visible label/workflow presentation. Final exact-head Codex review
+  завершён без findings, PR #204 merged.
+- PR #205 реализует третий шаг зафиксированной Help & solutions moderation/filter sequence:
+  persisted Help-specific duplicate → canonical-original relationship и отдельный durable
+  appeal lifecycle. Active relation не допускает self-link, цепочки/циклы и превращение canonical
+  original в duplicate через штатный server-side repository path; confirm/remove/appeal/resolve
+  сериализуются транзакционно. Новая code-backed capability `forum.helpDuplicate.manage`
+  выдаётся initial built-in moderator/admin и защищает authoritative confirm/remove/resolve;
+  обычный author подтверждённого duplicate-вопроса может отдельно подать appeal с обязательным
+  explanation. Pending appeal не снимает authoritative duplicate status: публично видна только
+  нейтральная метка `Disputed`, explanation доступен только author duplicate и actor с
+  duplicate-management capability. Reject сохраняет relation; accept или manual removal снимает
+  active duplicate relation. Public Help cards показывают duplicate/disputed markers, а topic page
+  показывает locale-aware ссылку на canonical original без раскрытия internal service section.
+  General user moderation signals остаются step 4, расширение `Needs attention` — step 5,
+  combined filters — step 6; admin-panel redesign, similar-search refinement и Stage 6 rollout
+  в этот slice не входят. Forward migration `0030_help_duplicate_workflow`, runtime ACL
+  contract, schema manifest, RU/HE localization, focused route/privacy/database coverage и Pages
+  fixtures добавлены. Финальная owner visual acceptance и independent Codex review PR #205 ещё
+  не выполнены.
 - In-app reply notifications slice реализован в PR #180:
   forward migration `0024_forum_reply_notifications` хранит только stable recipient/actor/topic/post
   references, `createdAt` и nullable `readAt`; unique recipient + reply identity предотвращает
