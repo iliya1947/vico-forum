@@ -1737,23 +1737,25 @@ export function TopicView({
   const ownPendingSolutionOutdated = Boolean(bestAnswerPost) && ownPendingHelpSignals.some(
     (signal) => signal.kind === "solution-outdated" && signal.targetPostId === bestAnswerPost?.id,
   );
-  const hasNewHelpSignalForm = canCreateHelpSignal && (
-    (!topic.needsDetails && !ownPendingNeedsDetails)
-    || (
-      topic.isSolved
-      && Boolean(bestAnswerPost)
-      && currentSolutionModerationStatus === null
-      && !ownPendingNeedsReview
-    )
-    || (
-      topic.isSolved
-      && Boolean(bestAnswerPost)
-      && currentSolutionModerationStatus !== "outdated"
-      && !ownPendingSolutionOutdated
-    )
-    || canSignalDuplicate
-  );
-  const showHelpSignalControl = isHelpTopic && (hasNewHelpSignalForm || ownPendingHelpSignals.length > 0);
+  const canSignalNeedsDetails = canCreateHelpSignal && !topic.needsDetails && !ownPendingNeedsDetails;
+  const canSignalNeedsReview = canCreateHelpSignal
+    && topic.isSolved
+    && Boolean(bestAnswerPost)
+    && currentSolutionModerationStatus === null
+    && !ownPendingNeedsReview;
+  const canSignalSolutionOutdated = canCreateHelpSignal
+    && topic.isSolved
+    && Boolean(bestAnswerPost)
+    && currentSolutionModerationStatus !== "outdated"
+    && !ownPendingSolutionOutdated;
+  const eligibleHelpSignalKinds: HelpSignalKind[] = [
+    ...(canSignalNeedsDetails ? ["needs-details" as const] : []),
+    ...(canSignalNeedsReview ? ["needs-review" as const] : []),
+    ...(canSignalSolutionOutdated ? ["solution-outdated" as const] : []),
+    ...(canCreateHelpSignal && canSignalDuplicate ? ["duplicate" as const] : []),
+  ];
+  const showHelpSignalControl = isHelpTopic
+    && (eligibleHelpSignalKinds.length > 0 || ownPendingHelpSignals.length > 0);
   const orderedPosts = originalPost
     ? [
         originalPost,
@@ -1797,6 +1799,10 @@ export function TopicView({
   const [replyTargetPostId, setReplyTargetPostId] = useState<string | null>(null);
   const [quoteSelectionErrorPostId, setQuoteSelectionErrorPostId] = useState<string | null>(null);
   const [openMessageActionsPostId, setOpenMessageActionsPostId] = useState<string | null>(null);
+  const [selectedHelpSignalKind, setSelectedHelpSignalKind] = useState<HelpSignalKind | null>(null);
+  const activeHelpSignalKind = selectedHelpSignalKind && eligibleHelpSignalKinds.includes(selectedHelpSignalKind)
+    ? selectedHelpSignalKind
+    : null;
   const messageLinkRequestId = useRef(0);
   const replyTextareaRef = useRef<HTMLTextAreaElement>(null);
   const navigation = useNavigation();
