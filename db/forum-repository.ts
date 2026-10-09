@@ -1286,8 +1286,10 @@ export class DrizzleForumRepository {
       else 0
     end::int`;
     const matchSource = sql<ForumHelpSimilarMatchSource>`case
-      when ${exactTitleMatch} or ${strongTitleMatch} then 'title'
-      when ${exactTagMatch} or ${tagMatchCount} > 0 then 'tags'
+      when ${exactTitleMatch} then 'title'
+      when ${exactTagMatch} then 'tags'
+      when ${strongTitleMatch} then 'title'
+      when ${tagMatchCount} > 0 then 'tags'
       when ${bodyMatchCount} > 0 then 'body'
       else 'title'
     end`;
@@ -3077,11 +3079,22 @@ export class DrizzleForumRepository {
 const HELP_SIMILAR_TITLE_TERM_LIMIT = 6;
 const HELP_SIMILAR_BODY_TERM_LIMIT = 6;
 const HELP_SIMILAR_TAG_TERM_LIMIT = 4;
-const HELP_SIMILAR_TOTAL_TERM_LIMIT = 12;
+const HELP_SIMILAR_TAG_SEARCH_TERM_LIMIT = 4;
+const HELP_SIMILAR_TOTAL_TERM_LIMIT = 16;
 const HELP_SIMILAR_BODY_INPUT_LIMIT = 4_000;
 const HELP_SIMILAR_TAG_INPUT_LIMIT = 8;
 const HELP_SIMILAR_TAG_LENGTH_LIMIT = 100;
 const HELP_SIMILAR_SINGLE_LETTER_TECH_TERMS = new Set(["c", "r"]);
+const HELP_SIMILAR_TITLE_STOP_WORDS = new Set([
+  "a", "an", "and", "are", "at", "be", "can", "could", "did", "do", "does", "for", "from",
+  "how", "i", "in", "is", "my", "of", "on", "or", "our", "should", "that", "the", "this",
+  "to", "we", "what", "when", "where", "which", "who", "why", "with", "would", "you", "your",
+  "в", "вы", "где", "для", "и", "из", "или", "как", "какая", "какие", "какой", "когда", "кто",
+  "ли", "мой", "моя", "мои", "мы", "на", "надо", "нужно", "почему", "с", "что", "это", "эта",
+  "этот", "я",
+  "או", "איך", "איפה", "אני", "אנחנו", "את", "אתם", "האם", "זה", "זאת", "למה", "מה", "מי",
+  "מתי", "על", "עם", "של",
+]);
 
 function helpSimilarNormalizedTags(tags: readonly string[]): string[] {
   return [...new Set(
@@ -3098,15 +3111,17 @@ function helpSimilarNormalizedTags(tags: readonly string[]): string[] {
 }
 
 function helpSimilarSearchTerms(query: ForumHelpSimilarQuestionQuery): string[] {
+  const titleTerms = helpSimilarTitleTerms(query.title, HELP_SIMILAR_TITLE_TERM_LIMIT);
   const normalizedTags = helpSimilarNormalizedTags(query.tags);
-  const ordered = [
-    ...helpSimilarTitleTerms(query.title, HELP_SIMILAR_TITLE_TERM_LIMIT),
-    ...normalizedTags.flatMap((tag) => [
-      tag,
-      ...helpSimilarTextTerms(tag, HELP_SIMILAR_TAG_TERM_LIMIT),
-    ]),
-    ...helpSimilarTextTerms(query.body.slice(0, HELP_SIMILAR_BODY_INPUT_LIMIT), HELP_SIMILAR_BODY_TERM_LIMIT),
-  ];
+  const tagTerms = [...new Set(normalizedTags.flatMap((tag) => [
+    tag,
+    ...helpSimilarTextTerms(tag, HELP_SIMILAR_TAG_TERM_LIMIT),
+  ]))].slice(0, HELP_SIMILAR_TAG_SEARCH_TERM_LIMIT);
+  const bodyTerms = helpSimilarTextTerms(
+    query.body.slice(0, HELP_SIMILAR_BODY_INPUT_LIMIT),
+    HELP_SIMILAR_BODY_TERM_LIMIT,
+  );
+  const ordered = [...titleTerms, ...tagTerms, ...bodyTerms];
 
   return [...new Set(ordered)].slice(0, HELP_SIMILAR_TOTAL_TERM_LIMIT);
 }
@@ -3120,7 +3135,7 @@ function helpSimilarTitleTerms(value: string, limit: number): string[] {
     const keep = semanticLength >= 2
       || /[+#]/u.test(chunk)
       || HELP_SIMILAR_SINGLE_LETTER_TECH_TERMS.has(chunk);
-    if (!keep || terms.includes(chunk)) continue;
+    if (!keep || HELP_SIMILAR_TITLE_STOP_WORDS.has(chunk) || terms.includes(chunk)) continue;
     terms.push(chunk);
     if (terms.length >= limit) break;
   }
