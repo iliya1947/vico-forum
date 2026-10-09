@@ -339,6 +339,21 @@ Vico Forum находится в ранней pre-release разработке.
   функционального прохода. Владелец отдельно зафиксировал, что текущая presentation комбинированного
   фильтра временная и после завершения основного функционального прохода её нужно дополнительно
   доработать/отполировать; это future polish, а не дефект текущего PR #208.
+- PR #209 уточняет ранее отложенную **similar-question search relevance/UX** для
+  Help & solutions без новой поисковой подсистемы. Optional pre-publish check теперь использует
+  bounded Unicode-normalized terms из текущих draft title/body/tags вместо одной цельной
+  title-подстроки. Repository ищет только current persisted title/post revisions и tags внутреннего
+  `help-solutions-questions`, ранжирует детерминированно с явным приоритетом
+  `title → tags → body`, затем по покрытию терминов, weighted relevance, existing activity и
+  stable topic-id tie-break, сохраняя result limit 5 в action path. Result projection дополнительно
+  сообщает strongest match source и existing tags, чтобы presentation могла кратко объяснить,
+  почему вопрос предложен. Draft остаётся только request input: проверка read-only, optional и не
+  блокирует публикацию; existing session/origin/permission/validation/write boundaries не меняются.
+  Term/input extraction bounded; stale revisions и ordinary forum sections не участвуют.
+  Schema/migrations, search index, fuzzy/vector/AI search, duplicate automation, signals/admin,
+  `Needs attention` aggregation, combined-filter polish и Stage 6 в slice не входят. Exact-head
+  CI/Pages, owner visual acceptance и final independent review фиксируются только после фактического
+  завершения соответствующих проверок.
 - In-app reply notifications slice реализован в PR #180:
   forward migration `0024_forum_reply_notifications` хранит только stable recipient/actor/topic/post
   references, `createdAt` и nullable `readAt`; unique recipient + reply identity предотвращает
