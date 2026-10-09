@@ -2688,3 +2688,35 @@ Return:
 6. only the product choices that cannot be derived from the already accepted contract.
 
 Do not reopen the fixed step order and do not include step 5/6 behavior.
+
+
+---
+
+<!-- codex-service-channel-comment:6076436303 -->
+## Codex GitHub response — comment 6076436303
+
+_Source: https://github.com/iliya1947/vico-forum/pull/147#issuecomment-6076436303 · 2026-10-09T07:25:28Z_
+
+# Действие пользователя
+
+Подтвердить два оставшихся продуктовых решения: обязательность объяснения для сигналов **Needs details**, **Needs review** и **Duplicate**, а также возможность автору отозвать собственный pending-сигнал. [.github/ui-ux-service-channel.mdL2800-L2808](https://github.com/iliya1947/vico-forum/blob/05ddfb4394c554dd9886712133cac7c34f0dbf8d/.github/ui-ux-service-channel.md#L2800-L2808)
+
+### Summary
+
+* Подготовлен технический план шага 4 **user moderation signals** с единой append-only моделью хранения, атомарным accept/reject lifecycle и защитой от применения устаревших сигналов. [.github/ui-ux-service-channel.mdL2695-L2719](https://github.com/iliya1947/vico-forum/blob/05ddfb4394c554dd9886712133cac7c34f0dbf8d/.github/ui-ux-service-channel.md#L2695-L2719)
+* Определена точная identity и правила устаревания для всех четырёх семейств: **Needs details**, **Needs review**, **Solution outdated** и **Duplicate**. [.github/ui-ux-service-channel.mdL2721-L2742](https://github.com/iliya1947/vico-forum/blob/05ddfb4394c554dd9886712133cac7c34f0dbf8d/.github/ui-ux-service-channel.md#L2721-L2742)
+* Предложены отдельная capability `forum.helpSignal.create`, новая узкая `forum.helpNeedsDetails.manage` и переиспользование существующих `forum.solution.manageAny` и `forum.helpDuplicate.manage` без универсальной чрезмерно широкой moderation capability. [.github/ui-ux-service-channel.mdL2744-L2760](https://github.com/iliya1947/vico-forum/blob/05ddfb4394c554dd9886712133cac7c34f0dbf8d/.github/ui-ux-service-channel.md#L2744-L2760)
+* Зафиксированы правила дедупликации, независимых сигналов разных пользователей, конкурентных решений модераторов и атомарного supersede ставших неприменимыми сигналов. [.github/ui-ux-service-channel.mdL2762-L2776](https://github.com/iliya1947/vico-forum/blob/05ddfb4394c554dd9886712133cac7c34f0dbf8d/.github/ui-ux-service-channel.md#L2762-L2776)
+* Перечислены implementation surfaces и обязательные проверки schema, permissions, privacy, concurrency, localization, Pages и регрессий существующих Help-функций. [.github/ui-ux-service-channel.mdL2778-L2798](https://github.com/iliya1947/vico-forum/blob/05ddfb4394c554dd9886712133cac7c34f0dbf8d/.github/ui-ux-service-channel.md#L2778-L2798)
+* Фиксированный порядок Help-шагов не переоткрывался; step 5/6, visual polish, drafts и refinement похожих вопросов в план не включены. [.github/ui-ux-service-channel.mdL2810-L2812](https://github.com/iliya1947/vico-forum/blob/05ddfb4394c554dd9886712133cac7c34f0dbf8d/.github/ui-ux-service-channel.md#L2810-L2812)
+* Service-ветка синхронизирована с текущим `main`; план закоммичен как `15b10b8` (`Plan Help user moderation signals`). Подготовлен PR **Service channel: plan Help user moderation signals**.
+
+**Testing**
+
+* ✅ `git fetch https://github.com/iliya1947/vico-forum.git main:refs/remotes/upstream/main`
+* ✅ `git merge --no-edit refs/remotes/upstream/main`
+* ✅ `git diff-tree --check HEAD^ HEAD`
+* ✅ `git diff --name-status refs/remotes/upstream/main..HEAD` — относительно текущего `main` присутствует только общий communication-файл.
+* ✅ `git status --short --branch` — рабочее дерево чистое после commit.
+
+ [View task →](https://chatgpt.com/s/cd_6ac895f8586c819198d6e51d2f8df576)
