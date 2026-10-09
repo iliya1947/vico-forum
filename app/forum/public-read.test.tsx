@@ -627,7 +627,7 @@ describe("Help & solutions modes and authoring", () => {
     renderRoute(
       CategoryRoute,
       data,
-      "/en/categories/help-solutions?mode=active&solution=outdated&answers=has&quality=needs-details&relation=duplicate",
+      "/en/categories/help-solutions?mode=active&solution=open&answers=has&quality=needs-details&relation=standalone",
       "en",
       "ltr",
     );
