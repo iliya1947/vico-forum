@@ -2836,3 +2836,36 @@ Inspect current `main` after PR #206 and the existing topic/Help presentation. R
 6. only product decisions that cannot be derived from the approved contract.
 
 Do not implement code. Do not reopen the step order. Do not pull step 5/6 behavior into this plan.
+
+
+---
+
+<!-- codex-service-channel-comment:6078805018 -->
+## Codex GitHub response — comment 6078805018
+
+_Source: https://github.com/iliya1947/vico-forum/pull/147#issuecomment-6078805018 · 2026-10-09T10:09:11Z_
+
+# Действие пользователя
+
+Ничего.
+
+### Summary
+
+* Служебная ветка синхронизирована с текущим `main` после merged PR #206.
+* В shared communication-файле записан технический план **Help & solutions step 4.3a**. Topic-local presentation признана достаточной; глобальная очередь модерации не требуется до последующих шагов. [.github/ui-ux-service-channel.mdL2843-L2850](https://github.com/iliya1947/vico-forum/blob/f7e28c362e24d1d5085da3ee5efb069b11300046/.github/ui-ux-service-channel.md#L2843-L2850)
+* Определены два bounded pending-only reader-контракта для собственных сигналов пользователя и доступных модератору сигналов, включая SQL-фильтрацию, порядок, проекции и privacy boundaries. [.github/ui-ux-service-channel.mdL2852-L2868](https://github.com/iliya1947/vico-forum/blob/f7e28c362e24d1d5085da3ee5efb069b11300046/.github/ui-ux-service-channel.md#L2852-L2868)
+* Зафиксирована независимая проверка permissions и точное соответствие типов сигналов management-capabilities. Собственные pending-сигналы остаются доступны для отзыва даже после потери permission на создание новых сигналов. [.github/ui-ux-service-channel.mdL2870-L2881](https://github.com/iliya1947/vico-forum/blob/f7e28c362e24d1d5085da3ee5efb069b11300046/.github/ui-ux-service-channel.md#L2870-L2881)
+* Определена UI eligibility для `Needs details`, `Needs review`, `Solution outdated` и `Duplicate`, включая authoritative best-answer binding и server-side проверку proposed original question. [.github/ui-ux-service-channel.mdL2883-L2907](https://github.com/iliya1947/vico-forum/blob/f7e28c362e24d1d5085da3ee5efb069b11300046/.github/ui-ux-service-channel.md#L2883-L2907)
+* Спланирована композиция signal-control в breadcrumb action zone и отдельной группы **Pending signals** внутри существующего `Admin panel` без его переработки. [.github/ui-ux-service-channel.mdL2909-L2926](https://github.com/iliya1947/vico-forum/blob/f7e28c362e24d1d5085da3ee5efb069b11300046/.github/ui-ux-service-channel.md#L2909-L2926)
+* Зафиксированы данные, необходимые пользователю и модератору для pending/review presentation, включая target links, объяснения, submitter identity и own-only withdrawal. [.github/ui-ux-service-channel.mdL2928-L2944](https://github.com/iliya1947/vico-forum/blob/f7e28c362e24d1d5085da3ee5efb069b11300046/.github/ui-ux-service-channel.md#L2928-L2944)
+* Определены Pages-сценарии, focused repository/loader/component tests и итоговые readiness gates. Дополнительных продуктовых решений для этого bounded slice не требуется. [.github/ui-ux-service-channel.mdL2946-L2983](https://github.com/iliya1947/vico-forum/blob/f7e28c362e24d1d5085da3ee5efb069b11300046/.github/ui-ux-service-channel.md#L2946-L2983)
+* Изменение закоммичено как `e6bb9f4` (`Plan Help signal presentation`), после чего подготовлен PR **Service channel: plan Help signal presentation**. Implementation-код и project-документация не изменялись.
+
+**Testing**
+
+* ✅ `git diff-tree --check HEAD^ HEAD`
+* ✅ `test "$(git diff-tree --no-commit-id --name-only -r HEAD)" = '.github/ui-ux-service-channel.md'`
+* ✅ `git status --porcelain=v1`
+* ✅ `git status --short --branch` — рабочее дерево чистое после commit.
+
+ [View task →](https://chatgpt.com/s/cd_6ac8bc8c52008191b910dd0e36d517f9)
