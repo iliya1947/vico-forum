@@ -118,7 +118,7 @@ export async function loader({ params, context }: {
       canCorrectAnySourceLocale = sourceAny;
       canGenerateTranslations = generate && contentGenerationActionForRequest(context).enabled;
       canManagePin = pin;
-      canUseAdminPanel = solutionAny || canManageHelpDuplicate || canManageHelpNeedsDetails || sourceAny || pin;
+      canUseAdminPanel = solutionAny || canManageHelpDuplicate || sourceAny || pin;
       correctablePostIds = sourceAny
         ? topic.posts.map((post) => post.id)
         : sourceOwn
@@ -149,6 +149,7 @@ export async function loader({ params, context }: {
       try {
         reviewableHelpSignals = (await forumReader.readReviewablePendingHelpSignals(topic.id, reviewableKinds))
           .map((signal) => ({ ...signal, createdAt: signal.createdAt.toISOString() }));
+        if (reviewableHelpSignals.length > 0) canUseAdminPanel = true;
       } catch (error) {
         if (!(error instanceof ForumStorageUnavailableError)) throw error;
       }
