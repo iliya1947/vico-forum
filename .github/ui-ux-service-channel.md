@@ -3596,3 +3596,38 @@ Readiness: focused editor/renderer/integration/localization tests, representativ
 all three authoring flows including RTL/code/Reply/Quote/Help draft preservation, full repository
 CI, owner acceptance of the functional mechanism, then independent whole-PR Codex review on the
 stable exact head. Visual polish beyond functional usability is not a reason to expand this slice.
+
+
+---
+
+## PR #210 — editor/code core subtask complete — 2026-10-09
+
+Fresh implementation PR #210 is open as draft from current main on branch
+`chatgpt/current-markdown-editor-code`.
+
+Completed reusable core only:
+- shared Markdown editor component with Write / Preview / Split, formatting controls, optional
+  fenced-code language, backtick-safe inline/fenced insertion and exact native `body` value;
+- imperative focus/insert boundary returns Preview to Write before Reply/Quote-style insertion;
+- required-field invalid handling reveals the editable field instead of leaving an invalid control
+  hidden in Preview;
+- safe `ForumMarkdown` preview and rendered fenced-code presentation with language label, copy,
+  wrap/no-wrap, bounded dependency-free syntax tokens and LTR code inside RTL;
+- RU/HE localization + reviewed fingerprints and shared CSS tokens/styles;
+- focused editor/renderer regression tests, including old PR #176 backtick cases;
+- translation renderer regression adapted only to syntax-span DOM while preserving the existing
+  protected-Markdown contract.
+
+Two intermediate test-only issues were diagnosed and corrected: jsdom cannot infer external CSS
+visibility, and syntax highlighting legitimately splits code text across spans. A final insertion
+test also now sets an explicit caret before entering Preview so it verifies preservation of the
+actual selection rather than assuming an end-of-field caret.
+
+Exact core head `0496e42476936010f4de7f552f46dbbade7729fd`:
+- CI run `37969484311`: checks success; database success.
+- No authoring flow has been rewired yet; current product behavior remains unchanged at this
+  intermediate draft state.
+
+Next subtask: adapt current-main `views.tsx` and relevant tests so ordinary create-topic, reply,
+and Help question authoring all use this shared editor without changing existing mutations or Help
+similar-question behavior.
