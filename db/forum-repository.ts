@@ -2226,7 +2226,19 @@ export class DrizzleForumRepository {
           (kind === "needs-review" && answer.status !== null)
           || (kind === "solution-outdated" && answer.status === "outdated")
         ) {
-          return supersedeCurrent();
+          const staleKinds: HelpSignalKind[] = answer.status === "outdated"
+            ? ["needs-review", "solution-outdated"]
+            : ["needs-review"];
+          await tx
+            .update(forumHelpSignals)
+            .set({ status: "superseded", resolvedByUserId: actorId, resolvedAt })
+            .where(and(
+              eq(forumHelpSignals.topicId, signal.topicId),
+              eq(forumHelpSignals.targetPostId, signal.targetPostId),
+              eq(forumHelpSignals.status, "pending"),
+              inArray(forumHelpSignals.kind, staleKinds),
+            ));
+          return "superseded";
         }
 
         await tx
@@ -2258,13 +2270,19 @@ export class DrizzleForumRepository {
         const originalTopicId = signal.proposedOriginalTopicId;
         if (!originalTopicId) return supersedeCurrent();
         const original = topics.find((row) => row.id === originalTopicId);
-        if (
-          !original
-          || signal.topicId === originalTopicId
-          || topic.isSolved
-          || Boolean(topic.bestAnswerPostId)
-        ) {
+        if (!original || signal.topicId === originalTopicId) {
           return supersedeCurrent();
+        }
+        if (topic.isSolved || Boolean(topic.bestAnswerPostId)) {
+          await tx
+            .update(forumHelpSignals)
+            .set({ status: "superseded", resolvedByUserId: actorId, resolvedAt })
+            .where(and(
+              eq(forumHelpSignals.topicId, signal.topicId),
+              eq(forumHelpSignals.kind, "duplicate"),
+              eq(forumHelpSignals.status, "pending"),
+            ));
+          return "superseded";
         }
         const active = await tx
           .select({
@@ -2280,12 +2298,31 @@ export class DrizzleForumRepository {
               eq(forumHelpDuplicateRelationships.originalTopicId, signal.topicId),
             ),
           ));
-        if (
-          active.some((row) => row.duplicateTopicId === signal.topicId)
-          || active.some((row) => row.duplicateTopicId === originalTopicId)
-          || active.some((row) => row.originalTopicId === signal.topicId)
-        ) {
-          return supersedeCurrent();
+        const candidateIsDuplicate = active.some((row) => row.duplicateTopicId === signal.topicId);
+        const candidateIsCanonicalOriginal = active.some((row) => row.originalTopicId === signal.topicId);
+        const proposedOriginalIsDuplicate = active.some((row) => row.duplicateTopicId === originalTopicId);
+        if (candidateIsDuplicate || candidateIsCanonicalOriginal) {
+          await tx
+            .update(forumHelpSignals)
+            .set({ status: "superseded", resolvedByUserId: actorId, resolvedAt })
+            .where(and(
+              eq(forumHelpSignals.topicId, signal.topicId),
+              eq(forumHelpSignals.kind, "duplicate"),
+              eq(forumHelpSignals.status, "pending"),
+            ));
+          return "superseded";
+        }
+        if (proposedOriginalIsDuplicate) {
+          await tx
+            .update(forumHelpSignals)
+            .set({ status: "superseded", resolvedByUserId: actorId, resolvedAt })
+            .where(and(
+              eq(forumHelpSignals.topicId, signal.topicId),
+              eq(forumHelpSignals.proposedOriginalTopicId, originalTopicId),
+              eq(forumHelpSignals.kind, "duplicate"),
+              eq(forumHelpSignals.status, "pending"),
+            ));
+          return "superseded";
         }
         await tx.insert(forumHelpDuplicateRelationships).values({
           id: crypto.randomUUID(),
@@ -2297,10 +2334,14 @@ export class DrizzleForumRepository {
           .update(forumHelpSignals)
           .set({ status: "superseded", resolvedByUserId: actorId, resolvedAt })
           .where(and(
-            eq(forumHelpSignals.topicId, signal.topicId),
             eq(forumHelpSignals.kind, "duplicate"),
             eq(forumHelpSignals.status, "pending"),
             ne(forumHelpSignals.id, signal.id),
+            or(
+              eq(forumHelpSignals.topicId, signal.topicId),
+              eq(forumHelpSignals.topicId, originalTopicId),
+              eq(forumHelpSignals.proposedOriginalTopicId, signal.topicId),
+            ),
           ));
       }
 
