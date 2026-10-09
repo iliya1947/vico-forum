@@ -91,7 +91,9 @@ const fenced = fooBar();
     const { container } = render(<ForumMarkdown>{restored}</ForumMarkdown>);
     expect(screen.getByText("inlineCode()").tagName).toBe("CODE");
     expect(screen.getByText(/const indented/).closest("pre")).not.toBeNull();
-    expect(screen.getByText(/const fenced/).closest("pre")).not.toBeNull();
+    expect([...container.querySelectorAll("pre")].some((pre) =>
+      pre.textContent?.includes("const fenced = fooBar();")
+    )).toBe(true);
     expect(screen.getByRole("link", { name: "https://example.com/raw" }).getAttribute("href"))
       .toBe("https://example.com/raw");
     expect(container.querySelector("img")).toBeNull();
