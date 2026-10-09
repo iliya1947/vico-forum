@@ -656,11 +656,35 @@ describe("PostgreSQL 17 locale migrations", () => {
         actorId: "help-signal-user-b",
         explanation: "The reproduction steps are missing.",
       });
+      expect(await repository.readOwnPendingHelpSignals(
+        "help-signal-needs-details",
+        "help-signal-user-a",
+      )).toEqual([
+        expect.objectContaining({
+          id: firstNeedsDetails.id,
+          kind: "needs-details",
+          explanation: "Please add the exact error and runtime version.",
+        }),
+      ]);
+      expect(await repository.readOwnPendingHelpSignals(
+        "help-signal-needs-details",
+        "help-signal-user-b",
+      )).toEqual([
+        expect.objectContaining({
+          id: peerNeedsDetails.id,
+          kind: "needs-details",
+          explanation: "The reproduction steps are missing.",
+        }),
+      ]);
       await expect(
         forum.withdrawHelpSignal(firstNeedsDetails.id, "help-signal-needs-details", "help-signal-user-b"),
       ).rejects.toBeInstanceOf(ForumAuthorizationError);
       await forum.withdrawHelpSignal(firstNeedsDetails.id, "help-signal-needs-details", "help-signal-user-a");
       expect(await repository.readHelpSignal(firstNeedsDetails.id)).toMatchObject({ status: "withdrawn" });
+      expect(await repository.readOwnPendingHelpSignals(
+        "help-signal-needs-details",
+        "help-signal-user-a",
+      )).toEqual([]);
       await expect(
         forum.resolveHelpSignal(firstNeedsDetails.id, "help-signal-manager", "accepted"),
       ).rejects.toBeInstanceOf(ForumStateConflictError);
@@ -814,11 +838,58 @@ describe("PostgreSQL 17 locale migrations", () => {
         explanation: "These questions describe the same unresolved problem.",
       });
       expect(duplicateA.explanation).toBeNull();
+
+      expect(await repository.readOwnPendingHelpSignals(
+        "help-signal-duplicate",
+        "help-signal-user-b",
+      )).toEqual([
+        expect.objectContaining({
+          id: duplicateB.id,
+          kind: "duplicate",
+          proposedOriginal: {
+            id: "help-signal-original",
+            title: "help-signal-original title",
+          },
+        }),
+      ]);
+      expect(await repository.readReviewablePendingHelpSignals(
+        "help-signal-duplicate",
+        ["needs-details"],
+      )).toEqual([]);
+
+      await client.query(
+        "update forum_help_signals set created_at = '2026-10-09T08:00:00Z' where id = any($1::text[])",
+        [[duplicateA.id, duplicateB.id]],
+      );
+      const duplicateReview = await repository.readReviewablePendingHelpSignals(
+        "help-signal-duplicate",
+        ["duplicate"],
+      );
+      expect(duplicateReview.map(({ id }) => id)).toEqual([duplicateA.id, duplicateB.id].sort());
+      expect(duplicateReview).toEqual(expect.arrayContaining([
+        expect.objectContaining({
+          id: duplicateA.id,
+          submittedBy: expect.objectContaining({ id: "help-signal-user-a" }),
+          proposedOriginal: expect.objectContaining({ id: "help-signal-original" }),
+        }),
+        expect.objectContaining({
+          id: duplicateB.id,
+          submittedBy: expect.objectContaining({ id: "help-signal-user-b" }),
+          proposedOriginal: expect.objectContaining({ id: "help-signal-original" }),
+        }),
+      ]));
+      expect(await repository.hasActiveHelpDuplicateChildren("help-signal-original")).toBe(false);
+
       expect(await forum.resolveHelpSignal(duplicateA.id, "help-signal-manager", "accepted")).toBe("accepted");
       expect(await repository.readTopicPage("help-signal-duplicate")).toMatchObject({
         duplicateOf: { id: "help-signal-original" },
       });
       expect(await repository.readHelpSignal(duplicateB.id)).toMatchObject({ status: "superseded" });
+      expect(await repository.readReviewablePendingHelpSignals(
+        "help-signal-duplicate",
+        ["duplicate"],
+      )).toEqual([]);
+      expect(await repository.hasActiveHelpDuplicateChildren("help-signal-original")).toBe(true);
 
       await createQuestion("help-signal-concurrent");
       const concurrent = await forum.createHelpSignal({
