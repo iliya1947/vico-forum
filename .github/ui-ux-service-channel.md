@@ -2766,3 +2766,73 @@ _Source: https://github.com/iliya1947/vico-forum/pull/147#issuecomment-607695370
 * ✅ `git status --short --branch` — рабочее дерево чистое после commit.
 
  [View task →](https://chatgpt.com/s/cd_6ac89f3a4bac8191939869e20a8aff76)
+
+
+---
+
+## PR #206 merged — Help step 4.2 backend/domain foundation complete — 2026-10-09
+
+Owner merged implementation PR #206.
+
+Final verified implementation:
+- implementation head: `b9642ac4bac5b80e8fce75a98865af85e4f8c10b`;
+- merge commit on `main`: `0e56dab9c54053681d66205a97eac994064e8b15`;
+- exact-head CI run `37913307342`: success;
+- ChatGPT whole-PR review: no remaining confirmed current-scope defects;
+- final independent Codex review on exact implementation head: completed with no findings / 👍;
+- all P1/P2 review threads resolved.
+
+Step 4.2 established durable Help moderation signals, stale-safe acceptance, pending-only self-withdrawal, permissions, server actions, per-user anti-spam cooldown, consistent lock ordering, route-bound withdrawal and database-owned lifecycle timestamps. It intentionally did not add visible submission/review presentation.
+
+Help & solutions step 4.2 is complete.
+
+---
+
+## Help & solutions step 4.3a — visible moderation-signal presentation planning — 2026-10-09
+
+### Required result
+
+Plan the smallest coherent presentation layer for the already-merged step-4 signal workflow. This planning subtask must not implement project code.
+
+The next implementation slice must let an authenticated ordinary user on a Help question:
+- submit an applicable `Needs details`, `Needs review`, `Solution outdated` or `Duplicate` signal;
+- see their own pending signal(s) on that question;
+- withdraw only their own pending signal.
+
+A moderation actor must be able to see the pending signals they are actually authorized to review and accept/reject them through the already-merged server actions.
+
+### Owner-fixed product context not reliably derivable from the repository
+
+- The user moderation-signal entry control belongs in the topic breadcrumb action zone.
+- For an ordinary user, it occupies the same right-side action position where a manager has `Admin panel`.
+- For a manager, the signal control sits immediately **left of** `Admin panel`; do not redesign the broader admin panel in this slice.
+- Explanation is required for `Needs details`, `Needs review` and `Solution outdated`.
+- `Duplicate` requires the proposed original Help question but its explanation is optional.
+- Author may withdraw only their own `pending` signal; accepted/rejected signals are not withdrawable.
+
+### Existing main boundary
+
+PR #206 currently exposes only single-signal lookup `readHelpSignal(id)` to the reader. Topic loader already resolves separate capabilities for solution moderation, duplicate management and the general admin panel. Existing topic UI has breadcrumb actions, best-answer selector, `Admin panel`, duplicate appeal presentation and topic-local moderation controls. Pages preview already supports Guest/User/Manager identity switching and representative Help questions.
+
+### Explicit exclusions
+
+- step 5 expansion of `Needs attention`;
+- step 6 combined filters;
+- broad admin-panel redesign/polish;
+- new solved-question relationship/grouping model;
+- similar-question search refinement;
+- drafts/autosave, unrelated forum work or Stage 6;
+- a new global moderation route/queue unless current step-4 coherence technically requires it rather than merely making future moderation more convenient.
+
+### Requested Codex response
+
+Inspect current `main` after PR #206 and the existing topic/Help presentation. Return a concrete technical plan for **step 4.3 presentation only**:
+
+1. minimal reader/query shape needed for ordinary-user pending presentation and manager review, including privacy boundaries and whether topic-local presentation is sufficient before step 5;
+2. exact UI eligibility for each signal family based on current authoritative topic/best-answer/duplicate state;
+3. recommended composition inside the existing breadcrumb signal control and existing admin panel without redesigning either surface;
+4. how pending own signals and manager-review items should be represented, including the information required to make accept/reject decisions;
+5. Pages scenarios/identity states and focused route/component/repository tests;
+6. only product decisions that cannot be derived from the approved contract.
+
+Do not implement code. Do not reopen the step order. Do not pull step 5/6 behavior into this plan.
