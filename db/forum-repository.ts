@@ -1899,7 +1899,6 @@ export class DrizzleForumRepository {
     proposedOriginalTopicId: string | null;
   }): Promise<ForumHelpSignal> {
     return this.database.transaction(async (tx) => {
-      const createdAt = await enforceHelpSignalWriteCooldown(tx, input.actorId, this.writePolicy);
       let topic: {
         id: string;
         sectionId: string;
@@ -1981,6 +1980,10 @@ export class DrizzleForumRepository {
         topic = lockedTopic;
       }
 
+      // Keep the same lock order as reply writes: topic row(s) first, then
+      // the per-user write mutex used by the signal cooldown.
+      const createdAt = await enforceHelpSignalWriteCooldown(tx, input.actorId, this.writePolicy);
+
       let targetPostId: string | null = null;
       if (input.kind === "needs-details") {
         if (topic.needsDetails) {
@@ -2049,18 +2052,21 @@ export class DrizzleForumRepository {
     });
   }
 
-  async withdrawHelpSignal(signalId: string, actorId: string): Promise<void> {
+  async withdrawHelpSignal(signalId: string, topicId: string, actorId: string): Promise<void> {
     await this.database.transaction(async (tx) => {
       const [signal] = await tx
         .select({
           id: forumHelpSignals.id,
+          topicId: forumHelpSignals.topicId,
           submittedByUserId: forumHelpSignals.submittedByUserId,
           status: forumHelpSignals.status,
         })
         .from(forumHelpSignals)
         .where(eq(forumHelpSignals.id, signalId))
         .for("update");
-      if (!signal) throw new ForumEntityNotFoundError("Help signal does not exist");
+      if (!signal || signal.topicId !== topicId) {
+        throw new ForumEntityNotFoundError("Help signal does not belong to topic");
+      }
       if (signal.submittedByUserId !== actorId) {
         throw new ForumAuthorizationError("only the signal author may withdraw it");
       }
