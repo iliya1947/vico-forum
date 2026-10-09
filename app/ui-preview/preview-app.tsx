@@ -1298,8 +1298,13 @@ function PreviewTopicRoute({ scenario }: { scenario: Scenario }) {
   const helpQuestion = previewHelpSolutions(scenario.locale).questions
     .find((question) => question.id === routeTopicId);
   if (helpQuestion) {
+    const signalOpen = scenario.variant === "help-signals-open";
+    const signalIneligible = scenario.variant === "help-signals-ineligible";
+    const signalOwnPending = scenario.variant === "help-signals-own-pending";
+    const signalReview = scenario.variant === "help-signals-review";
+    const signalPartialReview = scenario.variant === "help-signals-partial-review";
     const postCount = helpQuestion.replyCount + 1;
-    const bestAnswerPostId = helpQuestion.hasBestAnswer && postCount > 1
+    const bestAnswerPostId = !signalOpen && helpQuestion.hasBestAnswer && postCount > 1
       ? `${helpQuestion.id}-post-${Math.min(5, postCount)}`
       : null;
     const posts = Array.from({ length: postCount }, (_, index) => {
@@ -1339,9 +1344,9 @@ function PreviewTopicRoute({ scenario }: { scenario: Scenario }) {
       authorName: scenario.identity === "user" ? "Alex Rivera" : helpQuestion.authorName,
       createdAt: new Date(helpQuestion.createdAt),
       isPinned: false,
-      isSolved: helpQuestion.isSolved,
+      isSolved: signalOpen ? false : helpQuestion.isSolved,
       bestAnswerPostId,
-      needsDetails: helpQuestion.needsDetails,
+      needsDetails: signalIneligible ? true : helpQuestion.needsDetails,
       duplicateOf: helpQuestion.duplicateOf,
       duplicateDisputed: helpQuestion.duplicateDisputed,
       title: {
@@ -1370,10 +1375,98 @@ function PreviewTopicRoute({ scenario }: { scenario: Scenario }) {
         ))}
         generationUnits={[]}
         canReply={scenario.identity !== "guest"}
-        canManageSolution={scenario.identity !== "guest"}
-        canManageAnySolution={scenario.identity === "manager"}
-        canModerateHelpSolution={scenario.identity === "manager"}
-        canManageHelpDuplicate={scenario.identity === "manager"}
+        canManageSolution={scenario.identity !== "guest" && !signalPartialReview}
+        canManageAnySolution={scenario.identity === "manager" && !signalPartialReview}
+        canModerateHelpSolution={scenario.identity === "manager" && !signalPartialReview}
+        canManageHelpDuplicate={scenario.identity === "manager" && !signalPartialReview}
+        canCreateHelpSignal={scenario.identity !== "guest"}
+        canSignalDuplicate={signalOpen}
+        ownPendingHelpSignals={signalOwnPending ? [
+          {
+            id: "signal-own-details",
+            kind: "needs-details",
+            topicId: helpTopic.id,
+            targetPostId: null,
+            proposedOriginal: null,
+            explanation: scenario.locale === "ru"
+              ? "В вопросе не указаны шаги воспроизведения."
+              : scenario.locale === "he"
+                ? "חסרים בשאלה שלבי שחזור."
+                : "The question is missing reproduction steps.",
+            createdAt: "2026-10-09T08:20:00.000Z",
+          },
+          {
+            id: "signal-own-review",
+            kind: "needs-review",
+            topicId: helpTopic.id,
+            targetPostId: bestAnswerPostId,
+            proposedOriginal: null,
+            explanation: scenario.locale === "ru"
+              ? "Решение стоит перепроверить на текущей версии."
+              : scenario.locale === "he"
+                ? "כדאי לבדוק מחדש את הפתרון בגרסה הנוכחית."
+                : "The solution should be rechecked on the current version.",
+            createdAt: "2026-10-09T08:25:00.000Z",
+          },
+          {
+            id: "signal-own-outdated",
+            kind: "solution-outdated",
+            topicId: helpTopic.id,
+            targetPostId: bestAnswerPostId,
+            proposedOriginal: null,
+            explanation: scenario.locale === "ru"
+              ? "Параметр из ответа больше не поддерживается."
+              : scenario.locale === "he"
+                ? "האפשרות מהתשובה כבר אינה נתמכת."
+                : "The option used in the answer is no longer supported.",
+            createdAt: "2026-10-09T08:30:00.000Z",
+          },
+        ] : []}
+        reviewableHelpSignals={signalReview || signalPartialReview ? [
+          {
+            id: "signal-review-details",
+            kind: "needs-details",
+            topicId: helpTopic.id,
+            targetPostId: null,
+            proposedOriginal: null,
+            submittedBy: { id: "signal-user-a", name: "Maya Cohen" },
+            explanation: scenario.locale === "ru"
+              ? "Не хватает версии Worker runtime и точного текста ошибки."
+              : scenario.locale === "he"
+                ? "חסרה גרסת Worker runtime והודעת השגיאה המדויקת."
+                : "The Worker runtime version and exact error are missing.",
+            createdAt: "2026-10-09T07:40:00.000Z",
+          },
+          ...(signalPartialReview ? [] : [
+            {
+              id: "signal-review-solution",
+              kind: "solution-outdated" as const,
+              topicId: helpTopic.id,
+              targetPostId: bestAnswerPostId,
+              proposedOriginal: null,
+              submittedBy: { id: "signal-user-b", name: "Noa Levi" },
+              explanation: scenario.locale === "ru"
+                ? "После обновления Cloudflare этот способ больше не работает."
+                : scenario.locale === "he"
+                  ? "אחרי עדכון Cloudflare השיטה הזו כבר לא עובדת."
+                  : "This approach no longer works after the Cloudflare update.",
+              createdAt: "2026-10-09T07:45:00.000Z",
+            },
+            {
+              id: "signal-review-duplicate",
+              kind: "duplicate" as const,
+              topicId: helpTopic.id,
+              targetPostId: null,
+              proposedOriginal: {
+                id: "help-auth-best-answer",
+                title: previewHelpSolutions(scenario.locale).questions[1]!.title,
+              },
+              submittedBy: { id: "signal-user-c", name: "Alex Rivera" },
+              explanation: null,
+              createdAt: "2026-10-09T07:50:00.000Z",
+            },
+          ]),
+        ] : []}
         pendingDuplicateAppeal={helpQuestion.duplicateDisputed && scenario.identity !== "guest"
           ? {
               id: `${helpQuestion.id}-appeal`,
@@ -1387,9 +1480,9 @@ function PreviewTopicRoute({ scenario }: { scenario: Scenario }) {
             }
           : null}
         isTopicAuthor={scenario.identity === "user"}
-        canCorrectTitleSourceLocale={scenario.identity === "manager"}
-        canCorrectAnySourceLocale={scenario.identity === "manager"}
-        canManagePin={scenario.identity === "manager"}
+        canCorrectTitleSourceLocale={scenario.identity === "manager" && !signalPartialReview}
+        canCorrectAnySourceLocale={scenario.identity === "manager" && !signalPartialReview}
+        canManagePin={scenario.identity === "manager" && !signalPartialReview}
         canUseAdminPanel={scenario.identity === "manager"}
         topicReadState={null}
       />
