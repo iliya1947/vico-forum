@@ -778,7 +778,6 @@ select {
   border: 1px solid var(--color-border);
   border-radius: 0.5rem;
   background: var(--color-surface-muted);
-  direction: ltr;
   text-align: start;
 }
 
