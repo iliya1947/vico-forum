@@ -391,7 +391,11 @@ composition without changing the forum hierarchy or schema:
   pending user signals are not
   filter inputs. This slice does not expand `Needs attention`, add schema/migrations/permissions,
   or change signal/admin presentation. EN/RU/HE and responsive representative Pages states are
-  included; CI/Pages/owner acceptance remain pending until actually completed;
+  included. Exact-head CI/Pages pass and owner visual acceptance was confirmed on 2026-10-09 for
+  the current functional pass. The owner explicitly considers the current combined-filter
+  presentation provisional: after the main functional implementation pass is complete, this
+  filter UI should receive a separate usability/visual refinement pass; that deferred polish does
+  not block PR #208;
 - owner visual acceptance of the implementation was confirmed on 2026-10-05; exact-head
   automated verification remains a separate PR check.
 
