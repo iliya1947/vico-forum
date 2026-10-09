@@ -1616,53 +1616,151 @@ describe("PostgreSQL 17 locale migrations", () => {
     expect(await repository.readCategory("missing")).toBeUndefined();
   });
 
-  it("searches similar questions only inside the Help & solutions service section", async () => {
+  it("ranks bounded multi-term Help similarity by title, tags, then body", async () => {
     await insertForumAuthor("help-similar-author", "help-similar-author@example.test", null);
     const repository = new DrizzleForumRepository(drizzle(client));
     const forum = new ForumService(repository);
 
-    try {
-      await forum.createTopicWithInitialPost({
-        id: "help-similar-topic",
-        sectionId: HELP_SOLUTIONS_SERVICE_SECTION_ID,
+    const createQuestion = async ({
+      id,
+      sectionId = HELP_SOLUTIONS_SERVICE_SECTION_ID,
+      title,
+      body,
+      tags = [],
+    }: {
+      id: string;
+      sectionId?: string;
+      title: string;
+      body: string;
+      tags?: Array<{ key: string; name: string }>;
+    }) => forum.createTopicWithInitialPost({
+      id,
+      sectionId,
+      authorId: "help-similar-author",
+      titleRevision: {
+        id: `${id}-title`,
+        originalContent: title,
+        sourceLocale: "en",
+      },
+      tags,
+      initialPost: {
+        id: `${id}-post`,
+        topicId: id,
         authorId: "help-similar-author",
-        titleRevision: {
-          id: "help-similar-title",
-          originalContent: "Как типизировать API в Worker?",
-          sourceLocale: "ru",
+        bodyRevision: {
+          id: `${id}-body`,
+          originalContent: body,
+          sourceLocale: "en",
         },
-        tags: [{ key: "cloudflare", name: "Cloudflare" }],
-        initialPost: {
-          id: "help-similar-post",
-          topicId: "help-similar-topic",
-          authorId: "help-similar-author",
-          bodyRevision: {
-            id: "help-similar-body",
-            originalContent: "Нужен пример типизации ответа API.",
-            sourceLocale: "ru",
-          },
-        },
+      },
+    });
+
+    try {
+      await createQuestion({
+        id: "help-similar-title",
+        title: "Cloudflare Worker auth redirect failure",
+        body: "The session disappears after login.",
+      });
+      await createQuestion({
+        id: "help-similar-tags",
+        title: "Session provider callback issue",
+        body: "The provider returns successfully.",
+        tags: [
+          { key: "help-similar-cloudflare", name: "Cloudflare" },
+          { key: "help-similar-auth", name: "Auth" },
+        ],
+      });
+      await createQuestion({
+        id: "help-similar-body",
+        title: "Unexpected session behavior",
+        body: "Cloudflare Worker authentication fails on redirect.",
+      });
+      await createQuestion({
+        id: "help-similar-unrelated",
+        title: "PostgreSQL pool sizing",
+        body: "How many database connections should be configured?",
+      });
+      await createQuestion({
+        id: "help-similar-unicode",
+        title: "Как типизировать API в Worker?",
+        body: "Нужен пример типизации ответа API.",
+      });
+      await createQuestion({
+        id: "help-similar-outside",
+        sectionId: "typescript",
+        title: "Cloudflare Worker auth redirect failure",
+        body: "Exact words outside Help & solutions must not match.",
       });
 
-      expect(await repository.searchHelpSolutionsSimilar("типизировать", 5)).toEqual([
+      const query = {
+        title: "CLOUDFLARE—Worker AUTH",
+        body: "redirect OAuth",
+        tags: ["Auth"],
+      };
+      const ranked = await repository.searchHelpSolutionsSimilar(query, 5);
+
+      expect(ranked.map(({ id, matchSource }) => ({ id, matchSource }))).toEqual([
+        { id: "help-similar-title", matchSource: "title" },
+        { id: "help-similar-tags", matchSource: "tags" },
+        { id: "help-similar-body", matchSource: "body" },
+      ]);
+      expect(ranked).toEqual([
         expect.objectContaining({
-          id: "help-similar-topic",
-          title: "Как типизировать API в Worker?",
+          id: "help-similar-title",
+          title: "Cloudflare Worker auth redirect failure",
           replyCount: 0,
           isSolved: false,
-          tags: [{ key: "cloudflare", name: "Cloudflare" }],
+          matchSource: "title",
+        }),
+        expect.objectContaining({
+          id: "help-similar-tags",
+          tags: expect.arrayContaining([
+            { key: "help-similar-auth", name: "Auth" },
+            { key: "help-similar-cloudflare", name: "Cloudflare" },
+          ]),
+          matchSource: "tags",
+        }),
+        expect.objectContaining({
+          id: "help-similar-body",
+          matchSource: "body",
         }),
       ]);
 
-      await forum.markTopicSolved("help-similar-topic", "help-similar-author");
-      expect(await repository.searchHelpSolutionsSimilar("типизировать", 5)).toEqual([
+      expect(await repository.searchHelpSolutionsSimilar({
+        title: "КАК—ТИПИЗИРОВАТЬ api",
+        body: "",
+        tags: [],
+      }, 5)).toEqual([
         expect.objectContaining({
-          id: "help-similar-topic",
+          id: "help-similar-unicode",
+          matchSource: "title",
+        }),
+      ]);
+
+      await forum.markTopicSolved("help-similar-title", "help-similar-author");
+      expect(await repository.searchHelpSolutionsSimilar(query, 1)).toEqual([
+        expect.objectContaining({
+          id: "help-similar-title",
           isSolved: true,
+          matchSource: "title",
         }),
       ]);
     } finally {
-      await client.query("delete from forum_topics where id = 'help-similar-topic'");
+      await client.query(`
+        delete from forum_topics
+        where id in (
+          'help-similar-title',
+          'help-similar-tags',
+          'help-similar-body',
+          'help-similar-unrelated',
+          'help-similar-unicode',
+          'help-similar-outside'
+        )
+      `);
+      await client.query(`
+        delete from forum_tags
+        where key in ('help-similar-cloudflare', 'help-similar-auth')
+      `);
       await client.query(`delete from "user" where id = 'help-similar-author'`);
     }
   });
