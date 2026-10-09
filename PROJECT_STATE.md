@@ -43,9 +43,15 @@ Vico Forum находится в ранней pre-release разработке.
   presentation/route tests и сборки), native PostgreSQL 17 DB tests,
   миграция 0033, schema/privileges/Workers smoke и Pages deployment.
   Собственная whole-PR проверка выполнена. Browser review опубликованного
-  Pages-preview недоступен в текущем окружении и не заявляется выполненным;
-  независимое Codex review ещё ожидается. Production migration/rollout
-  не выполнялись.
+  Pages-preview недоступен в текущем окружении и не заявляется выполненным.
+  Независимое Codex review на c65d914 выявило четыре текущих MVP-дефекта:
+  частые DB writes при спаме heartbeat, race счётчика/списка, full-page
+  failure при transient presence outage и повторный polling после 401.
+  Исправление текущих defects ведётся одним пакетом с DB write cooldown,
+  согласованным read snapshot, честным unavailable UI и остановкой 401.
+  Production rollout evidence для миграции 0033 остаётся задачей Stage 6:
+  внешняя выкладка сейчас не разрешена. Повторная CI/Pages и независимое
+  ревью исправленного head ещё ожидаются; production migration/rollout не выполнялись.
 - Bounded блок форумных профилей реализован в текущем implementation set: public
   `/:locale/users/:userId`, данные имени/аватара/даты регистрации из authoritative identity,
   актуальная роль из DB, независимые persisted-message/current-best-answer счётчики,

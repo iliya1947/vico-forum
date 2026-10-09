@@ -40,6 +40,16 @@ describe("browser presence heartbeat", () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
   });
 
+  it("stops heartbeat requests and revalidates session after a 401", async () => {
+    const fetchMock = vi.fn<typeof fetch>(async () => new Response(null, { status: 401 }));
+    vi.stubGlobal("fetch", fetchMock);
+    show({ id: "member", name: "Member" });
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    fireEvent(document, new Event("visibilitychange"));
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
   it("skips a hidden tab and resumes on visibility change in RTL locale", async () => {
     const visible = vi.spyOn(document, "visibilityState", "get").mockReturnValue("hidden");
     const fetchMock = vi.fn<typeof fetch>(async (input) => {

@@ -209,6 +209,7 @@ export const reviewedCommonFingerprints = {
   onlinePresencePending: "9e8249352175b993ecdedb77e5aa33922a918d578dcb1ae8bc351b4d49392362",
   onlineActiveCount: "03dcaca3ec3586f8a06a747eb8090ef9e14b7a586b88de1fdae670d6155729d2",
   onlineNoMembers: "f9ca6e1ff406146ae5bf32524d83f2b94a8e4d82c51b5ee47a5a423e970160c1",
+  onlinePresenceUnavailable: "REPLACE_SHA256",
   onlineMembersOnly: "1ae93a8444bb3572503ebea2b01d436477c06f11a0f9e82eb7a60ccf4c7dc88e",
   viewDevelopmentStatus: "d018615406d6e285f414ebe61352d12dca78bcc0fe6b06c6bd0272c1413eb68e",
   underDevelopmentEyebrow: "c8e4137e8368c32c7beae882123c7f77ca81018a89544e2b04633acc854532c8",

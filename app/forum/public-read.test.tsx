@@ -439,6 +439,32 @@ describe.each([
   });
 });
 
+describe("optional homepage presence failures", () => {
+  it("keeps categories available when online presence storage is temporarily unavailable", async () => {
+    const ctx = context();
+    ctx.set(forumReaderContext, {
+      ...reader,
+      readOnlinePresence: async () => { throw new ForumStorageUnavailableError(); },
+    });
+    const data = await homeLoader({ params: { locale: "en" }, context: ctx });
+    expect(data.categories).toHaveLength(1);
+    expect(data.onlinePresence).toBeNull();
+    const page = renderRoute(Home, data, "/en", "en", "ltr");
+    expect(screen.getByRole("status")).toHaveTextContent("Online presence is temporarily unavailable.");
+    page.unmount();
+  });
+
+  it("does not swallow unexpected online reader defects", async () => {
+    const ctx = context();
+    const bug = new Error("unexpected");
+    ctx.set(forumReaderContext, {
+      ...reader,
+      readOnlinePresence: async () => { throw bug; },
+    });
+    await expect(homeLoader({ params: { locale: "en" }, context: ctx })).rejects.toBe(bug);
+  });
+});
+
 describe("Help & solutions modes and authoring", () => {
   it("renders real service-section questions and keeps the storage section out of navigation", async () => {
     const requestContext = context("en", "ltr");

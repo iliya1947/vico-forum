@@ -270,6 +270,7 @@ export const canonicalEnglishCatalog = {
     onlinePresencePending: message("onlinePresencePending", "Online presence is still under development.", "Truthful placeholder while online presence is not implemented."),
     onlineActiveCount: message("onlineActiveCount", "Signed-in members active in the last 5 minutes: {{count}}", "Homepage online-presence count from server-authoritative recent heartbeats.", ["count"]),
     onlineNoMembers: message("onlineNoMembers", "No signed-in members active recently.", "Truthful empty state for the recent signed-in online-presence list."),
+    onlinePresenceUnavailable: message("onlinePresenceUnavailable", "Online presence is temporarily unavailable.", "Homepage online-presence read failed; do not misrepresent unavailable data as zero members."),
     onlineMembersOnly: message("onlineMembersOnly", "Only signed-in members are counted; guests are not tracked.", "Scope note for the homepage online-presence data."),
     viewDevelopmentStatus: message("viewDevelopmentStatus", "View development status", "Link to the shared under-development status page."),
     underDevelopmentEyebrow: message("underDevelopmentEyebrow", "Pre-release", "Eyebrow for the shared under-development page."),

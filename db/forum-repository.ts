@@ -395,16 +395,20 @@ export class DrizzleForumRepository {
 
   async readOnlinePresence(): Promise<ForumOnlinePresence> {
     const recent = sql`${forumOnlinePresence.lastSeenAt} >= now() - interval '5 minutes'`;
-    const [countRows, memberRows] = await Promise.all([
-      this.database.select({ count: sql<number>`count(*)::int` }).from(forumOnlinePresence).where(recent),
-      this.database.select({ id: user.id, name: user.name, image: user.image })
-        .from(forumOnlinePresence)
-        .innerJoin(user, eq(user.id, forumOnlinePresence.userId))
-        .where(recent)
-        .orderBy(desc(forumOnlinePresence.lastSeenAt), asc(user.id))
-        .limit(12),
-    ]);
-    return { count: countRows[0]?.count ?? 0, members: memberRows };
+    // A window count keeps the total and the bounded member list on one DB snapshot.
+    const rows = await this.database.select({
+      id: user.id, name: user.name, image: user.image,
+      total: sql<number>`count(*) over ()::int`,
+    })
+      .from(forumOnlinePresence)
+      .innerJoin(user, eq(user.id, forumOnlinePresence.userId))
+      .where(recent)
+      .orderBy(desc(forumOnlinePresence.lastSeenAt), asc(user.id))
+      .limit(12);
+    return {
+      count: rows[0]?.total ?? 0,
+      members: rows.map((row) => ({ id: row.id, name: row.name, image: row.image })),
+    };
   }
 
   async recordOnlinePresence(userId: string): Promise<void> {
@@ -413,6 +417,8 @@ export class DrizzleForumRepository {
       .onConflictDoUpdate({
         target: forumOnlinePresence.userId,
         set: { lastSeenAt: sql`greatest(${forumOnlinePresence.lastSeenAt}, now())` },
+        // The browser timer is not authoritative: reject excess DB writes per user.
+        setWhere: sql`${forumOnlinePresence.lastSeenAt} < now() - interval '45 seconds'`,
       });
   }
 

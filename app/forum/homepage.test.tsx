@@ -222,6 +222,13 @@ describe("homepage online presence", () => {
     expect(screen.queryByRole("link", { name: "View development status" })).not.toBeInTheDocument();
     expect(screen.getByText("Only signed-in members are counted; guests are not tracked.")).toBeInTheDocument();
   });
+  it("does not misreport a transiently unavailable presence reader as zero members", () => {
+    renderView(<HomeView locale="en" categories={[]} onlinePresence={null} />);
+    expect(screen.getByRole("status")).toHaveTextContent("Online presence is temporarily unavailable.");
+    expect(screen.queryByText("No signed-in members active recently.")).not.toBeInTheDocument();
+    expect(screen.queryByText("Signed-in members active in the last 5 minutes: 0")).not.toBeInTheDocument();
+  });
+
   it("shows a truthful zero and empty state", () => {
     renderView(<HomeView locale="en" categories={[]} onlinePresence={{ count: 0, members: [] }} />);
     expect(screen.getByText("Signed-in members active in the last 5 minutes: 0")).toBeInTheDocument();

@@ -40,7 +40,12 @@ describe("recent authenticated presence persistence", () => {
   it("starts empty, accepts repeated heartbeat per user and excludes expired activity", async () => {
     expect(await repo.readOnlinePresence()).toEqual({ count: 0, members: [] });
     await repo.recordOnlinePresence("online-a");
+    await client.query(`update forum_online_presence set last_seen_at = now() - interval '20 seconds' where user_id = 'online-a'`);
     await repo.recordOnlinePresence("online-a");
+    const cooldown = await client.query<{ throttled: boolean }>(
+      `select last_seen_at < now() - interval '10 seconds' as throttled from forum_online_presence where user_id = 'online-a'`,
+    );
+    expect(cooldown.rows[0]?.throttled).toBe(true);
     expect(await repo.readOnlinePresence()).toMatchObject({ count: 1, members: [{ id: "online-a" }] });
     expect((await client.query("select * from forum_online_presence")).rowCount).toBe(1);
     await client.query(`update forum_online_presence set last_seen_at = now() - interval '6 minutes' where user_id = 'online-a'`);
@@ -57,10 +62,22 @@ describe("recent authenticated presence persistence", () => {
     expect(JSON.stringify(result)).not.toContain("private.test");
     await expect(repo.recordOnlinePresence("nonexistent-user")).rejects.toMatchObject({ cause: { code: "23503" } });
   });
+  it("returns the full count with only the first twelve members from one query", async () => {
+    for (let i = 0; i < 12; i++) {
+      const id = `online-extra-${i}`;
+      await client.query(`insert into "user" (id, name, email) values ($1, $2, $3)`, [id, id, `${id}@private.test`]);
+      await repo.recordOnlinePresence(id);
+    }
+    const state = await repo.readOnlinePresence();
+    expect(state.count).toBe(14);
+    expect(state.members).toHaveLength(12);
+    expect(new Set(state.members.map((member) => member.id)).size).toBe(12);
+  });
+
   it("cascades presence when an account is removed", async () => {
     await repo.recordOnlinePresence("online-unused");
-    expect((await repo.readOnlinePresence()).count).toBe(3);
+    expect((await repo.readOnlinePresence()).count).toBe(15);
     await client.query(`delete from "user" where id = 'online-unused'`);
-    expect((await repo.readOnlinePresence()).count).toBe(2);
+    expect((await repo.readOnlinePresence()).count).toBe(14);
   });
 });

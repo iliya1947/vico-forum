@@ -53,7 +53,7 @@ export function HomeView({
 }: {
   locale: string;
   categories: readonly HomepageCategoryOverview[];
-  onlinePresence?: ForumOnlinePresence;
+  onlinePresence?: ForumOnlinePresence | null;
 }) {
   const { t } = useTranslation("common");
   const totals = categories.reduce(
@@ -84,14 +84,16 @@ export function HomeView({
       <section className="home-information" aria-label={t("forumStatisticsHeading")}>
         <article className="home-information-card home-online-card">
           <h2>{t("whosOnlineHeading")}</h2>
-          <p>{t("onlineActiveCount", { count: onlinePresence.count })}</p>
-          {onlinePresence.members.length ? (
-            <ul className="home-online-members">
-              {onlinePresence.members.map((member) => <li key={member.id}>
-                <Link to={forumProfilePath(locale, member.id)}><bdi dir="auto">{member.name}</bdi></Link>
-              </li>)}
-            </ul>
-          ) : <p>{t("onlineNoMembers")}</p>}
+          {onlinePresence ? <>
+            <p>{t("onlineActiveCount", { count: onlinePresence.count })}</p>
+            {onlinePresence.members.length ? (
+              <ul className="home-online-members">
+                {onlinePresence.members.map((member) => <li key={member.id}>
+                  <Link to={forumProfilePath(locale, member.id)}><bdi dir="auto">{member.name}</bdi></Link>
+                </li>)}
+              </ul>
+            ) : <p>{t("onlineNoMembers")}</p>}
+          </> : <p role="status">{t("onlinePresenceUnavailable")}</p>}
           <p className="home-online-scope">{t("onlineMembersOnly")}</p>
         </article>
         <article className="home-information-card home-statistics-card">

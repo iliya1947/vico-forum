@@ -12,22 +12,33 @@ export function OnlinePresenceHeartbeat() {
   useEffect(() => {
     if (!user) return;
     const path = forumPresencePath(locale);
+    let stopped = false;
     const ping = () => {
-      if (document.visibilityState !== "visible") return;
+      if (stopped || document.visibilityState !== "visible") return;
       void fetch(path, {
         method: "POST",
         credentials: "same-origin",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: "intent=heartbeat",
       }).then((response) => {
+        if (stopped) return;
+        if (response.status === 401) {
+          // The header's cached identity can outlive a revoked session in another tab.
+          stopped = true;
+          window.clearInterval(timer);
+          document.removeEventListener("visibilitychange", ping);
+          void revalidator.revalidate();
+          return;
+        }
         // The first heartbeat may land after the homepage SSR snapshot.
-        if (response.ok && location.pathname === forumIndexPath(locale)) revalidator.revalidate();
+        if (response.ok && location.pathname === forumIndexPath(locale)) void revalidator.revalidate();
       }).catch(() => { /* Presence is supplemental; never block browsing. */ });
     };
     ping();
     const timer = window.setInterval(ping, 60_000);
     document.addEventListener("visibilitychange", ping);
     return () => {
+      stopped = true;
       window.clearInterval(timer);
       document.removeEventListener("visibilitychange", ping);
     };
