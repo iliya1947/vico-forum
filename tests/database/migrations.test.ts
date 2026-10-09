@@ -1686,8 +1686,8 @@ describe("PostgreSQL 17 locale migrations", () => {
       });
       await createQuestion({
         id: "help-similar-unicode",
-        title: "Как типизировать API в Worker?",
-        body: "Нужен пример типизации ответа API.",
+        title: "Как типизировать HTTP ответ?",
+        body: "Нужен пример типизации ответа сервера.",
       });
       await createQuestion({
         id: "help-similar-outside",
@@ -1731,7 +1731,7 @@ describe("PostgreSQL 17 locale migrations", () => {
       ]);
 
       expect(await repository.searchHelpSolutionsSimilar({
-        title: "КАК—ТИПИЗИРОВАТЬ api",
+        title: "КАК—ТИПИЗИРОВАТЬ http",
         body: "",
         tags: [],
       }, 5)).toEqual([
