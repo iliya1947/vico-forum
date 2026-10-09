@@ -1178,28 +1178,32 @@ export class DrizzleForumRepository {
     const titleTermMatches = titlePatterns.map((pattern) =>
       sql<boolean>`${forumTopicTitleRevisions.originalContent} ~* ${pattern}`,
     );
-    const tagTermMatches = patterns.map((pattern) =>
-      sql<boolean>`exists (
-        select 1
-        from ${forumTopicTags}
-        inner join ${forumTags} on ${forumTags.key} = ${forumTopicTags.tagKey}
-        where ${forumTopicTags.topicId} = ${forumTopics.id}
-          and (
-            ${forumTags.name} ilike ${pattern} escape '!'
-            or ${forumTags.key} ilike ${pattern} escape '!'
-          )
-      )`,
+    const tagTermMatches = terms.map((term, index) =>
+      usefulHelpSimilarTerm(term)
+        ? sql<boolean>`exists (
+            select 1
+            from ${forumTopicTags}
+            inner join ${forumTags} on ${forumTags.key} = ${forumTopicTags.tagKey}
+            where ${forumTopicTags.topicId} = ${forumTopics.id}
+              and (
+                ${forumTags.name} ilike ${patterns[index]!} escape '!'
+                or ${forumTags.key} ilike ${patterns[index]!} escape '!'
+              )
+          )`
+        : sql<boolean>`false`,
     );
-    const bodyTermMatches = patterns.map((pattern) =>
-      sql<boolean>`exists (
-        select 1
-        from ${forumPosts}
-        inner join ${forumPostRevisions}
-          on ${forumPostRevisions.postId} = ${forumPosts.id}
-          and ${forumPostRevisions.id} = ${forumPosts.currentRevisionId}
-        where ${forumPosts.topicId} = ${forumTopics.id}
-          and ${forumPostRevisions.originalContent} ilike ${pattern} escape '!'
-      )`,
+    const bodyTermMatches = terms.map((term, index) =>
+      usefulHelpSimilarTerm(term)
+        ? sql<boolean>`exists (
+            select 1
+            from ${forumPosts}
+            inner join ${forumPostRevisions}
+              on ${forumPostRevisions.postId} = ${forumPosts.id}
+              and ${forumPostRevisions.id} = ${forumPosts.currentRevisionId}
+            where ${forumPosts.topicId} = ${forumTopics.id}
+              and ${forumPostRevisions.originalContent} ilike ${patterns[index]!} escape '!'
+          )`
+        : sql<boolean>`false`,
     );
 
     const titleQueryMatches = titleTerms.map((term) =>
