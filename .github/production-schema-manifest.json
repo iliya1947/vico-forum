@@ -4159,14 +4159,14 @@
           "columns": [
             "explanation"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "41fa9f4ddb9049d7eb28a61b36e0f0e51358733454418a1ceb6fd91e1d4cf414"
         },
         {
           "name": "forum_help_signals_kind_check",
           "columns": [
             "kind"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "367dc501cde12f5f5e2d39181f965c145212c24d8873b03cf7e82cf6dec54ba2"
         },
         {
           "name": "forum_help_signals_lifecycle_check",
@@ -4176,7 +4176,7 @@
             "resolved_by_user_id",
             "status"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "824b8fc3cbca4bcede3dd40c182163d0bc59278050083fa123007cca994b34f8"
         },
         {
           "name": "forum_help_signals_shape_check",
@@ -4187,14 +4187,14 @@
             "target_post_id",
             "topic_id"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "dfa7b546fb4db29f3d0e6ea3402ff20bd332b9563072b8ef5bd26c45bce8a802"
         },
         {
           "name": "forum_help_signals_status_check",
           "columns": [
             "status"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "63974d7def9e85ba932ea1abc38c2bd3f7ae56a6aa2dad5f3ed8e30c8f0e9813"
         }
       ],
       "indexes": [
