@@ -46,9 +46,13 @@ Vico Forum находится в ранней pre-release разработке.
   латинского имени от аватара в RTL: heading теперь наследует направление страницы, а
   bidi-изоляция применяется только к самому имени. Новый visual preview Pages успешен.
   Владелец принял текущий вид профиля как достаточный для MVP 2026-10-10;
-  дальнейший UI polish отложен. Повторные exact-head CI checks и независимый review
-  ещё ожидаются; native PostgreSQL CI на предыдущем head не стартовал из-за
-  Docker Hub pull rate limit (до запуска тестов).
+  дальнейший UI polish отложен. На head `2faad98` exact-head CI
+  (включая PostgreSQL 17, 650 unit/presentation/route tests, migration/schema/ACL
+  и Worker smoke) и Pages прошли после восстановленного Docker Hub image pull.
+  Независимое Codex review выявило текущую регрессию author-grid из-за нового profile link;
+  она исправляется локально без изменения backend/DB. Индекс для best-answer count
+  остаётся отложенной оптимизацией: текущий масштаб/latency regression не подтверждены.
+  Повторная CI/Pages и независимое review исправленного head ещё ожидаются.
   Профили не включают социальные функции, смену имени/аватара аккаунта или загрузку файлов.
 - Stage 0–3 foundation завершён.
 - Stage 4 forum core завершён в local/CI path.

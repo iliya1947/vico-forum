@@ -425,6 +425,13 @@ describe.each([
     expect(await screen.findByRole("link", { name: "Development" })).toHaveAttribute("href", `/${locale}/categories/development%2Fcore`);
     expect(await screen.findByRole("link", { name: "TypeScript" })).toHaveAttribute("href", `/${locale}/sections/typescript%2Fbasics`);
     expect(await screen.findByText("Start with an explicit response type.")).toBeInTheDocument();
+    const messageAuthor = document.querySelector(".topic-shell .topic-message .topic-message-author");
+    const authorLink = messageAuthor?.querySelector(".topic-message-profile-link");
+    expect(authorLink).toHaveAttribute("href", `/${locale}/users/lin`);
+    expect(authorLink).toHaveClass("topic-message-profile-link");
+    expect(authorLink?.querySelector(".topic-message-avatar")).toBeInTheDocument();
+    expect(authorLink?.querySelector(".topic-message-author-copy > strong")).toHaveTextContent("Lin");
+    expect(messageAuthor?.querySelector(".topic-message-author-statuses")).toBeInTheDocument();
   });
 });
 

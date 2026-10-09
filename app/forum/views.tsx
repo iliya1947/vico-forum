@@ -2184,7 +2184,7 @@ export function TopicView({
                   <header className="topic-message-author">
                     <Link className="topic-message-profile-link" to={forumProfilePath(locale, post.authorId)}>
                       <ForumAvatar name={post.authorName} image={post.authorImage} className="topic-message-avatar" />
-                      <strong dir="auto">{post.authorName}</strong>
+                      <span className="topic-message-author-copy"><strong dir="auto">{post.authorName}</strong></span>
                     </Link>
                     <span className="topic-message-author-statuses">
                       {isOriginalQuestion && (
