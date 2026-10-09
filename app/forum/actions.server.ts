@@ -56,7 +56,11 @@ export async function helpSolutionsCategoryAction({ request, params, context }: 
       return helpSimilarQuestionsResult("invalid", draft, [], 400);
     }
     try {
-      const results = await forumReaderForRequest(context).searchHelpSolutionsSimilar(normalizedTitle, 5);
+      const results = await forumReaderForRequest(context).searchHelpSolutionsSimilar({
+        title: normalizedTitle,
+        body: draft.body,
+        tags: draft.tags.split(",").map((tag) => tag.trim()).filter(Boolean),
+      }, 5);
       return helpSimilarQuestionsResult(results.length > 0 ? "results" : "empty", draft, results, 200);
     } catch (error) {
       if (error instanceof ForumStorageUnavailableError) {
