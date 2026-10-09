@@ -1278,17 +1278,24 @@ describe("Help & solutions modes and authoring", () => {
     renderRoute(TopicRoute, data, forumTopicPath("en", openHelpTopic.id), "en", "ltr");
     fireEvent.click(await screen.findByText("Signal"));
 
-    expect(screen.getByText("Needs details")).toBeVisible();
-    expect(screen.getByText("Duplicate")).toBeVisible();
-    expect(screen.queryByText("Needs review")).not.toBeInTheDocument();
-    expect(screen.queryByText("Solution outdated")).not.toBeInTheDocument();
+    const needsDetailsChoice = screen.getByRole("button", { name: "Needs details" });
+    const duplicateChoice = screen.getByRole("button", { name: "Duplicate" });
+    expect(needsDetailsChoice).toBeVisible();
+    expect(duplicateChoice).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Needs review" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Solution outdated" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
 
-    const requiredExplanation = screen.getByRole("textbox", { name: "Explanation" });
+    fireEvent.click(needsDetailsChoice);
+    expect(screen.getByRole("textbox", { name: "Explanation" })).toBeRequired();
+    expect(screen.queryByRole("textbox", { name: "Proposed original question ID" })).not.toBeInTheDocument();
+
+    fireEvent.click(duplicateChoice);
     const proposedOriginal = screen.getByRole("textbox", { name: "Proposed original question ID" });
     const optionalDuplicateExplanation = screen.getByRole("textbox", { name: "Explanation (optional)" });
-    expect(requiredExplanation).toBeRequired();
     expect(proposedOriginal).toBeRequired();
     expect(optionalDuplicateExplanation).not.toBeRequired();
+    expect(screen.queryByRole("textbox", { name: "Explanation" })).not.toBeInTheDocument();
   });
 
   it("keeps own pending Help signals withdrawable after create permission is revoked", async () => {
