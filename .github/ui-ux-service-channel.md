@@ -3314,3 +3314,18 @@ Verification on exact head `e686895...`:
 
 Because the fix changes visible result copy, a short owner visual re-test of
 **Help & solutions · Similar questions** is required before the repeat final Codex review.
+
+
+---
+
+## PR #209 — owner clarifies acceptance boundary; repeat final review — 2026-10-09
+
+Owner clarified that for this slice the acceptance criterion is the **working similar-question mechanism and
+reusable foundation**, not final visual polish. The current result presentation is intentionally provisional
+and already tracked for later refinement.
+
+Therefore the short visual re-test previously requested after the copy correction is not a blocking gate.
+Exact implementation head remains `e686895c951dffda0abe2c7fdaa20b5357e4dc5d`; exact-head CI and Pages
+are green, and the two previous Codex findings are fixed/resolved.
+
+Next gate: repeat independent Codex whole-PR review on this exact stable head.
