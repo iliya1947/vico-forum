@@ -1695,22 +1695,6 @@ describe("PostgreSQL 17 locale migrations", () => {
         body: "Нужен пример типизации ответа сервера.",
       });
       await createQuestion({
-        id: "help-similar-exact-tag",
-        title: "Opaque provider callback behavior",
-        body: "No title terms overlap with the generic draft.",
-        tags: [{ key: "ignored-exact-tag-key", name: "Cloudflare Exact Fixture" }],
-      });
-      await createQuestion({
-        id: "help-similar-common-noise",
-        title: "How can this unrelated workflow fail?",
-        body: "Generic wording must not outrank an exact draft tag.",
-      });
-      await createQuestion({
-        id: "help-similar-short-title",
-        title: "R",
-        body: "A short technical title still needs exact-title similarity.",
-      });
-      await createQuestion({
         id: "help-similar-outside",
         sectionId: "typescript",
         title: "Cloudflare Worker auth redirect failure",
@@ -1769,6 +1753,23 @@ describe("PostgreSQL 17 locale migrations", () => {
           matchSource: "title",
         }),
       ]);
+
+      await createQuestion({
+        id: "help-similar-exact-tag",
+        title: "Opaque provider callback behavior",
+        body: "No title terms overlap with the generic draft.",
+        tags: [{ key: "ignored-exact-tag-key", name: "Cloudflare Exact Fixture" }],
+      });
+      await createQuestion({
+        id: "help-similar-common-noise",
+        title: "How can this unrelated workflow fail?",
+        body: "Generic wording must not outrank an exact draft tag.",
+      });
+      await createQuestion({
+        id: "help-similar-short-title",
+        title: "R",
+        body: "A short technical title still needs exact-title similarity.",
+      });
 
       expect(await repository.searchHelpSolutionsSimilar({
         title: "How can I configure authentication",
