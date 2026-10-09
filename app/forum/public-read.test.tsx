@@ -538,6 +538,8 @@ describe("Help & solutions modes and authoring", () => {
     const form = await screen.findByRole("form", { name: "Ask a question" });
     expect(within(form).getByLabelText("Question title")).toBeRequired();
     expect(within(form).getByLabelText("Question details")).toBeRequired();
+    expect(within(form).getByRole("toolbar", { name: "Markdown formatting" })).toBeInTheDocument();
+    expect(within(form).getByRole("group", { name: "Editor view" })).toBeInTheDocument();
     expect(within(form).getByLabelText("Tags")).not.toBeRequired();
     const similarButton = within(form).getByRole("button", { name: "Check similar questions" });
     expect(similarButton).toBeEnabled();
@@ -2463,6 +2465,8 @@ describe("forum read states", () => {
     expect(createTopicForm).toHaveClass("section-create-form");
     expect(createTopicForm.querySelector('input[name="intent"]')).toHaveValue("createTopic");
     expect(screen.getByLabelText("Topic title")).toHaveAttribute("aria-describedby", "create-topic-title-help");
+    expect(within(createTopicForm).getByRole("toolbar", { name: "Markdown formatting" })).toBeInTheDocument();
+    expect(within(createTopicForm).getByRole("group", { name: "Editor view" })).toBeInTheDocument();
     expect(screen.getByText("Markdown and fenced code blocks are supported.")).toBeInTheDocument();
     authenticatedView.unmount();
 
@@ -2471,6 +2475,8 @@ describe("forum read states", () => {
     expect(replyForm).toHaveClass("topic-reply-form");
     expect(replyForm.querySelector('input[name="intent"]')).toHaveValue("reply");
     expect(screen.getByLabelText("Reply")).toHaveAttribute("aria-describedby", "reply-body-help");
+    expect(within(replyForm).getByRole("toolbar", { name: "Markdown formatting" })).toBeInTheDocument();
+    expect(within(replyForm).getByRole("group", { name: "Editor view" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Post reply" })).toBeEnabled();
   });
 
