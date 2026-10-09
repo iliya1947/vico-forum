@@ -251,6 +251,15 @@ describe("MarkdownEditor", () => {
     expect(textarea).toHaveFocus();
   });
 
+  it("keeps preview textarea out of sequential keyboard focus", async () => {
+    renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body" defaultValue="text" /></>);
+    const textarea = screen.getByLabelText("Body");
+    await userEvent.click(screen.getByRole("button", { name: "Preview" }));
+    expect(textarea).toHaveAttribute("tabindex", "-1");
+    await userEvent.click(screen.getByRole("button", { name: "Write" }));
+    expect(textarea).not.toHaveAttribute("tabindex", "-1");
+  });
+
   it("submits the exact edited Markdown body through the native form contract", async () => {
     const submitted = vi.fn();
     renderEditor(
@@ -272,6 +281,15 @@ describe("MarkdownEditor", () => {
     await userEvent.click(screen.getByRole("button", { name: "Submit" }));
 
     expect(submitted).toHaveBeenCalledWith("Text with **Markdown** and `code()`.");
+  });
+
+  it("does not format the next line when selection ends at a newline", async () => {
+    renderEditor(<><label htmlFor="body">Body</label><MarkdownEditor id="body" name="body" defaultValue={"alpha\nbeta"} /></>);
+    const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
+    textarea.focus();
+    textarea.setSelectionRange(0, 6);
+    await userEvent.click(screen.getByRole("button", { name: "Bulleted list" }));
+    expect(textarea).toHaveValue("- alpha\nbeta");
   });
 
   it("previews through the safe ForumMarkdown renderer", () => {
