@@ -31,13 +31,21 @@ Vico Forum находится в ранней pre-release разработке.
   существующих экранов, включая профиль, — отдельный последующий проход, не критерий
   готовности отдельных MVP-срезов. Финальная real-runtime acceptance перед публичным
   выпуском по-прежнему обязательна.
-- Online presence («Кто сейчас на форуме») — текущая bounded MVP-задача: только
-  вошедшие пользователи с видимой вкладкой посылают heartbeat через same-origin POST;
-  сервер использует session user ID, а не client input. Отдельная таблица хранит
-  последнюю активность без session token/IP. Главная показывает число вошедших
-  пользователей за последние пять минут и ограниченный список имён со ссылками на
-  публичные профили; гости не отслеживаются. Миграция 0033, CI/Pages и ревью
-  ожидаются; production rollout отсутствует.
+- Online presence («Кто сейчас на форуме») реализован в текущем bounded
+  MVP implementation PR #213: вошедший пользователь с видимой вкладкой посылает
+  same-origin POST heartbeat; сервер идентифицирует участника только по текущей
+  сессии, не доверяя ID из формы. Отдельная таблица хранит последний heartbeat
+  без IP/session token, максимум одну строку на пользователя; окно активности
+  5 минут. Публичная главная показывает действительный счётчик и до 12
+  зарегистрированных участников со ссылками на их профили; гости не
+  отслеживаются и не считаются. EN/RU/HE, RTL и GitHub Pages mock fixture
+  подключены. На implementation head d7931cd зелёные CI (lint/typecheck,
+  presentation/route tests и сборки), native PostgreSQL 17 DB tests,
+  миграция 0033, schema/privileges/Workers smoke и Pages deployment.
+  Собственная whole-PR проверка выполнена. Browser review опубликованного
+  Pages-preview недоступен в текущем окружении и не заявляется выполненным;
+  независимое Codex review ещё ожидается. Production migration/rollout
+  не выполнялись.
 - Bounded блок форумных профилей реализован в текущем implementation set: public
   `/:locale/users/:userId`, данные имени/аватара/даты регистрации из authoritative identity,
   актуальная роль из DB, независимые persisted-message/current-best-answer счётчики,
