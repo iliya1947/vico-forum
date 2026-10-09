@@ -283,8 +283,10 @@ Vico Forum находится в ранней pre-release разработке.
   2026-10-09 после corrections duplicate-list statuses, solved-vs-duplicate exclusivity,
   pending-appeal message visibility и блокировки новых replies у active duplicate. Последующий
   whole-PR review уточнил moderator-only visibility для `Needs review` / pending `Disputed`
-  badges и на topic page; для этой последней видимой correction требуется короткий owner
-  visual re-test. Independent Codex review PR #205 ещё не выполнен.
+  badges и на topic page. Короткий owner visual re-test этой последней correction подтверждён
+  2026-10-09: Guest не видит moderator-only badges, author pending appeal видит своё appeal-сообщение
+  без moderator-only badge, Manager видит moderation badges и explanation автора.
+  Independent Codex review PR #205 ещё не выполнен.
 - In-app reply notifications slice реализован в PR #180:
   forward migration `0024_forum_reply_notifications` хранит только stable recipient/actor/topic/post
   references, `createdAt` и nullable `readAt`; unique recipient + reply identity предотвращает
