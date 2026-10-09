@@ -1618,7 +1618,11 @@ describe("PostgreSQL 17 locale migrations", () => {
 
   it("ranks bounded multi-term Help similarity by title, tags, then body", async () => {
     await insertForumAuthor("help-similar-author", "help-similar-author@example.test", null);
-    const repository = new DrizzleForumRepository(drizzle(client));
+    let similarClock = Date.parse("2030-01-01T00:00:00Z");
+    const repository = new DrizzleForumRepository(drizzle(client), {
+      cooldownMs: FORUM_WRITE_COOLDOWN_MS,
+      now: () => new Date(similarClock += FORUM_WRITE_COOLDOWN_MS + 1),
+    });
     const forum = new ForumService(repository);
 
     const createQuestion = async ({
