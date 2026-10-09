@@ -4670,6 +4670,33 @@ p {
   gap: 0.55rem;
 }
 
+.help-signal-kind-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.help-signal-kind-picker button {
+  min-height: 2rem;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 999px;
+  color: var(--color-text);
+  background: var(--color-surface-muted);
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.help-signal-kind-picker button:hover,
+.help-signal-kind-picker button:focus-visible,
+.help-signal-kind-picker button[aria-pressed="true"] {
+  border-color: var(--color-accent);
+  color: var(--color-accent-hover);
+  background: var(--color-accent-soft);
+}
+
 .help-signal-submit-section + .help-signal-submit-section,
 .help-signal-own-pending,
 .help-signal-review-group {
