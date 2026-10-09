@@ -2869,3 +2869,29 @@ _Source: https://github.com/iliya1947/vico-forum/pull/147#issuecomment-607880501
 * ✅ `git status --short --branch` — рабочее дерево чистое после commit.
 
  [View task →](https://chatgpt.com/s/cd_6ac8bc8c52008191b910dd0e36d517f9)
+
+
+---
+
+<!-- codex-service-channel-comment:6078844304 -->
+## Codex GitHub response — comment 6078844304
+
+_Source: https://github.com/iliya1947/vico-forum/pull/147#issuecomment-6078844304 · 2026-10-09T10:11:53Z_
+
+# Действие пользователя
+
+Ничего.
+
+1. **Reader/privacy shape.** Добавить два topic-local, pending-only reader-контракта: первый возвращает для текущего Help topic только сигналы, где `submittedByUserId` равен authoritative session user; второй возвращает только сигналы тех типов, которыми текущий moderator действительно вправе управлять. Фильтрация по `topicId`, `status = pending`, submitter/allowed kinds и bounded limit выполняется в SQL; порядок детерминированный — `createdAt`, затем `id`. Ordinary user никогда не получает чужие сигналы, объяснения или identity submitter; moderator не получает типы вне своих capabilities. Собственные pending-сигналы остаются доступны для отзыва даже после потери `forum.helpSignal.create`. Topic-local presentation достаточна для 4.3a; глобальная moderation queue до следующих шагов не требуется.
+
+2. **Per-kind UI eligibility.** Signal control показывается только authenticated user с `forum.helpSignal.create` на topic внутреннего Help section; loader вычисляет eligibility из authoritative topic state, а server action повторно проверяет её. `Needs details` доступен, пока `needsDetails = false`. `Needs review` доступен только для solved topic с текущим best-answer post, когда у этого post ещё нет solution-moderation status; target фиксируется на authoritative `bestAnswerPostId`. `Solution outdated` доступен только для текущего best answer, пока его status не `outdated`; explanation обязательна. `Duplicate` доступен только для unsolved question без best answer и без active duplicate relationship; пользователь обязан выбрать другой persisted Help question как proposed original, а server повторно проверяет section, отсутствие self-reference, canonical-root/chain/cycle ограничения и текущую применимость. Manager review eligibility сопоставляется строго по kind: `Needs details` → `forum.helpNeedsDetails.manage`; `Needs review` и `Solution outdated` → `forum.solution.manageAny`; `Duplicate` → `forum.helpDuplicate.manage`.
+
+3. **Breadcrumb/Admin composition.** В существующей breadcrumb action zone добавить один компактный localized signal control. Для ordinary user он занимает правую action-позицию, где у manager находится `Admin panel`; для manager располагается непосредственно слева от `Admin panel`. Control раскрывает только применимые виды сигналов и одну компактную форму: обязательное explanation для `Needs details`, `Needs review` и `Solution outdated`; обязательный proposed-original selector/link target и необязательное explanation для `Duplicate`. Собственные pending-сигналы и withdraw остаются в этом же topic-local control. В существующий `Admin panel` добавить отдельную группу `Pending signals` с доступными этому manager review items и существующими accept/reject actions; прочие группы, геометрия и общий admin UX не перерабатываются.
+
+4. **Pending/review presentation data.** Own-pending projection содержит `signalId`, kind, `createdAt`, explanation, `targetPostId` для solution-сигналов и proposed-original identity/title/locale-aware link для duplicate; UI показывает localized kind, target, submitted time, explanation и только собственную кнопку `Withdraw`. Manager projection дополнительно содержит минимальную публичную identity submitter и достаточно текущего authoritative context для решения: question link/title, конкретный best-answer link/excerpt для solution-сигналов, proposed-original link/title для duplicate, explanation и timestamps. Accept/reject формы передают только topic-bound `signalId`; permission, pending status, target binding и applicability остаются server-authoritative. Accepted, rejected, withdrawn и superseded записи в эти pending-проекции не входят.
+
+5. **Pages/tests.** Добавить representative topic scenarios: guest без signal controls; authenticated user с каждым применимым видом формы; user с собственными pending сигналами и withdraw; manager с mixed pending items, видящий только разрешённые kinds; manager одновременно с signal control слева и `Admin panel` справа; ineligible/stale authoritative states; empty moderator group; storage/auth degradation. Покрыть desktop/mobile и LTR/RTL. Repository tests проверяют pending-only SQL, topic/user/kind isolation, bounded deterministic ordering и отсутствие privacy leaks. Loader/route tests проверяют независимое capability resolution, exact projections, optional-read degradation и route binding. Component/action tests проверяют conditional required fields, authoritative best-answer/original links, own-only withdrawal, per-kind accept/reject visibility и отсутствие регрессий существующих topic, duplicate-appeal и solution-moderation controls. Readiness требует полного CI, exact-head Pages deployment, owner browser acceptance и независимого whole-PR review без открытых current-scope findings.
+
+6. **Unresolved product choices.** Отсутствуют. Позиция control, требования к explanation, обязательный proposed original для `Duplicate`, own-pending withdrawal и permission mapping уже определены утверждённым контрактом; 4.3a не требует решения о глобальной очереди, истории resolved-сигналов или переработке admin panel.
+
+ [View task →](https://chatgpt.com/s/cd_6ac8bd9e3a7c8191867f863dbddf7fb6)
