@@ -240,6 +240,7 @@ const reader: ForumReader = {
     firstUnreadPostId: topic.posts[0]!.id,
     latestPostId: topic.posts.at(-1)!.id,
   } : undefined,
+  readOnlinePresence: async () => ({ count: 1, members: [{ id: "lin", name: "Lin", image: null }] }),
   readReplyNotifications: async () => [],
   countUnreadReplyNotifications: async () => 0,
   readTopicPinState: async (id) => id === topic.id,
@@ -391,6 +392,7 @@ describe.each([
     const topicData = await topicLoader({ params: { locale, topicId: topic.id }, context: requestContext });
 
     expect(home.categories).toHaveLength(1);
+    expect(home.onlinePresence).toMatchObject({ count: 1, members: [{ id: "lin", name: "Lin" }] });
     expect(categoryData.kind).toBe("category");
     if (categoryData.kind !== "category") throw new Error("expected regular category page");
     expect(categoryData.category.sections).toHaveLength(1);
@@ -404,6 +406,8 @@ describe.each([
     expect(screen.getByRole("link", { name: /TypeScript/ }))
       .toHaveAttribute("href", `/${locale}/sections/typescript%2Fbasics`);
     expect(screen.queryByRole("button", { name: "Development" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Lin" })).toHaveAttribute("href", `/${locale}/users/lin`);
+    expect(document.querySelector(".home-online-members")).toHaveTextContent("Lin");
     expect(document.querySelector(`[dir="${direction}"]`)).toBeInTheDocument();
     homeView.unmount();
 
