@@ -2895,3 +2895,117 @@ _Source: https://github.com/iliya1947/vico-forum/pull/147#issuecomment-607884430
 6. **Unresolved product choices.** Отсутствуют. Позиция control, требования к explanation, обязательный proposed original для `Duplicate`, own-pending withdrawal и permission mapping уже определены утверждённым контрактом; 4.3a не требует решения о глобальной очереди, истории resolved-сигналов или переработке admin panel.
 
  [View task →](https://chatgpt.com/s/cd_6ac8bd9e3a7c8191867f863dbddf7fb6)
+
+
+---
+
+## Help & solutions step 4.3a — final aligned presentation plan — 2026-10-09
+
+ChatGPT independently checked current `main` after merged PR #206 and compared the result with Codex comments 6078805018 / 6078844304. No owner product decision remains open for this bounded slice. The following is the agreed implementation contract for step 4.3b.
+
+### 1. Reader and privacy boundary
+
+Use topic-local pending-only reads; do **not** create a global moderation queue or pull step 5 `Needs attention` forward.
+
+Add bounded deterministic reader contracts for:
+
+- **own pending signals**: `topicId + authoritative session userId + status=pending`;
+- **reviewable pending signals**: `topicId + status=pending + allowed kinds`, where allowed kinds are derived server-side from the current effective permissions before the query.
+
+SQL performs the privacy filter, bounded limit and deterministic `createdAt, id` ordering. Do not load all topic signals and filter private rows in the browser.
+
+Own pending signals remain readable/withdrawable by their author even if `forum.helpSignal.create` is later revoked. Therefore the breadcrumb signal control is present when either the actor may create a new signal **or** the actor has at least one own pending signal; new submission forms themselves require the current create capability.
+
+Review kind mapping is exact:
+
+- `needs-details` → `forum.helpNeedsDetails.manage`;
+- `needs-review`, `solution-outdated` → `forum.solution.manageAny`;
+- `duplicate` → `forum.helpDuplicate.manage`.
+
+A user with only one management capability must not receive other signal kinds. A user whose only relevant manager capability is `forum.helpNeedsDetails.manage` must still be able to open the existing Admin panel for that review group; this expands only the panel's capability gate, not its design.
+
+Private signal-read storage degradation is optional presentation data and must not break the public topic read; unexpected programming/configuration failures are not masked.
+
+### 2. Submission eligibility hints
+
+Only authenticated actors with current `forum.helpSignal.create` receive new-signal forms, and only on the internal Help question topic surface. Server actions remain authoritative and revalidate every submission.
+
+Presentation eligibility mirrors the existing domain contract:
+
+- **Needs details**: `needsDetails = false`;
+- **Needs review**: solved Help question + current selected best answer + that answer has no solution moderation status;
+- **Solution outdated**: solved Help question + current selected best answer + current answer is not already `outdated`; `needs-review` may still be escalated to outdated;
+- **Duplicate**: question is unsolved, has no selected best answer, is not already an active duplicate, and is not currently a canonical original with active duplicates.
+
+The last condition requires a topic-local authoritative presentation hint/read beyond the existing `topic.duplicateOf`; otherwise the UI could offer a duplicate action that the current repository correctly rejects. Do not weaken the repository invariant. The proposed original is selected/identified by the user but is always revalidated server-side for Help-section membership, self-reference, canonical-root/chain/cycle constraints and current applicability.
+
+If the same actor already has a matching pending signal for the same domain target, present that pending item rather than an identical new-submit path. Do not expose other users' pending state as a submission hint.
+
+### 3. Existing UI composition
+
+Add one compact localized signal control to the existing topic breadcrumb action zone:
+
+- ordinary user: right-side action position where a manager has `Admin panel`;
+- manager: immediately left of `Admin panel`;
+- existing best-answer selector remains in its current order/role;
+- no broader breadcrumb/Admin redesign.
+
+The signal control contains applicable new-signal forms plus the actor's own pending items/withdraw actions. Required fields remain owner-fixed: explanation required for Needs details / Needs review / Solution outdated; Duplicate requires a proposed original and has optional explanation.
+
+Add a separate **Pending signals** group inside the existing Admin panel. Render it only when this actor has reviewable items. Reuse the already-merged accept/reject actions; do not create a new moderation page.
+
+The exact lightweight input widget for choosing the proposed original is an implementation detail, but it must identify a persisted Help question without turning this slice into similar-search refinement or a new search subsystem.
+
+### 4. Presentation projection
+
+Own-pending rows need only information the author is allowed to know and needs to withdraw:
+
+- signal id, kind, created time, explanation;
+- target post id for solution signals, mapped to the existing permanent message number/link in the already-loaded topic;
+- proposed-original identity plus current title/link for Duplicate;
+- no submitter data from other users.
+
+Review rows additionally expose the minimal public submitter identity and target context required for a decision:
+
+- localized kind and submitted time;
+- submitter display identity;
+- explanation;
+- concrete current/target answer link for solution signals;
+- proposed-original title/link for Duplicate;
+- accept/reject controls carrying only the topic-bound signal id.
+
+Accepted/rejected/withdrawn/superseded history is not part of these projections or this slice.
+
+### 5. Verification and Pages scope
+
+Focused repository/read tests:
+
+- pending-only filtering;
+- topic isolation;
+- own-user isolation;
+- exact allowed-kind isolation for partially privileged moderation actors;
+- bounded deterministic ordering;
+- proposed-original projection and duplicate-candidate eligibility hint;
+- no private explanation/submitter leaks.
+
+Loader/action/component tests:
+
+- independent resolution of `forum.helpSignal.create`, `forum.helpNeedsDetails.manage`, `forum.solution.manageAny`, `forum.helpDuplicate.manage`;
+- own-pending remains available after create permission loss;
+- private read classified-unavailable degradation;
+- exact required/optional fields;
+- best-answer target link/message identity;
+- signal control ordering relative to Admin panel;
+- own-only withdrawal;
+- per-kind accept/reject visibility;
+- no regression to duplicate appeal, best-answer or solution-moderation controls.
+
+Representative Pages states must include Guest / User / Manager, desktop/mobile and LTR/RTL: guest with no private signal UI; user with applicable forms; user with own pending + withdraw; manager with breadcrumb signal control immediately left of Admin panel and mixed reviewable pending items; partial-capability manager filtering; ineligible authoritative states; empty pending review group.
+
+Step 4.3b is not ready for merge until repository CI + Pages deploy pass, owner visually accepts the representative signal presentation, ChatGPT completes whole-PR review, and final independent Codex review has no confirmed current-scope defects.
+
+### 6. Scope closure
+
+No unresolved product decision remains in step 4.3a. Do not add step 5 attention aggregation, step 6 filters, a global moderation queue, resolved-signal history UI, admin-panel redesign, solved-question grouping, similar-search refinement, drafts/autosave or Stage 6 work.
+
+**Step 4.3a is complete.** Implementation step 4.3b starts only after the owner's next explicit continuation.
