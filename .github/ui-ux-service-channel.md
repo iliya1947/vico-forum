@@ -3447,3 +3447,52 @@ Verification:
 
 Consensus: PR #209 has no known current-scope defect and is technically ready for owner merge.
 Merge remains owner-only.
+
+
+---
+
+## Editor/code slice planning handoff — 2026-10-09
+
+Current `main` is `fe4d1fc5f425fa3e2e4487c98fd9d9701248aa75` after merged PR #209.
+
+The next independent release-contract gap under the active UI/UX product pass is the approved
+full editor/code presentation. Signals/reports/admin-panel work is being designed separately by the
+owner and is not part of this task. Drafts/autosave and profiles also remain separate future slices.
+
+Important repository fact: open PR #176 (`chatgpt/markdown-editor-code`) already contains an older
+implementation of this exact product area, based on main `22fae444...`. It is now non-mergeable
+against current main after the subsequent forum/Help work.
+
+PR #176 currently contains:
+- shared client-side Markdown editor for create-topic/reply;
+- Write / Preview / Split modes;
+- selection-aware heading/bold/italic/quote/link/list/inline-code/fenced-code actions;
+- optional fenced-code language;
+- preview through the existing safe `ForumMarkdown` renderer;
+- rendered fenced-code language label, copy feedback, wrap/no-wrap, LTR-in-RTL;
+- small dependency-free syntax token highlighting for a bounded language set;
+- RU/HE strings, Pages fixtures and focused tests;
+- no drafts/autosave, attachments, WYSIWYG, schema/permission/rate-limit/Stage 6 changes.
+
+The earlier Codex review of #176 found three issues: missing PROJECT_STATE update and malformed
+inline/fenced code when selections contain backticks. The current #176 head already contains the
+backtick-safe delimiter fixes and regression tests; its remaining review threads were never
+administratively resolved because the PR was parked. Current main meanwhile has materially changed
+`views.tsx`, especially Help authoring and topic/reply presentation.
+
+Please independently determine the technically minimal plan for completing the current editor/code
+slice from current main. In particular assess whether the sound parts of #176 should be
+ported/adapted into a fresh current-main implementation rather than trying to merge/rebase the old
+30-commit PR, and identify any old implementation choices that should *not* be carried forward.
+
+Scope/readiness should stay bounded to the current approved contract:
+- existing create-topic, reply, and Help-question authoring must all use the same editor behavior;
+- existing exact submitted Markdown/body contracts, Reply/Quote insertion, server validation,
+  permissions, origin protection, rate limiting and translation safety remain authoritative;
+- rendered code must support language selection/label, readable syntax presentation, copy,
+  optional wrapping and LTR inside RTL;
+- no drafts/autosave, attachments, WYSIWYG, schema/migrations, admin/signals work or Stage 6;
+- avoid a new dependency unless there is a concrete need under current main.
+
+Return the technical plan, migration/reuse recommendation for #176, current-scope risks and exact
+readiness checks only. Do not implement project code.
