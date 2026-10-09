@@ -3126,3 +3126,19 @@ Verified on this exact head:
 - no `Needs attention` expansion.
 
 Representative Pages states include ordinary combined filters, public `Needs details` quality filtering, and manager-only `Needs review` filtering. Owner visual acceptance remains pending. Per AGENTS, manual Codex review has not been started and must wait until owner visual acceptance completes.
+
+
+---
+
+## PR #208 owner visual acceptance + deferred polish note — 2026-10-09
+
+Owner accepted the current combined-filter presentation as sufficient for the present functional pass.
+
+Explicit deferred product note:
+- the current combined-filter UI is provisional;
+- after the main functional implementation pass is complete, it must receive a separate usability/visual refinement pass;
+- this future polish is **not** a current defect and does not block PR #208.
+
+Implementation scope remains unchanged: no signals/reports UI, no admin-panel changes, no Needs-attention expansion, no schema/migration/permission changes.
+
+Per AGENTS, PR #208 can now proceed to final exact-head CI confirmation and one manual Codex review.
