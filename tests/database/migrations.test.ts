@@ -1670,8 +1670,8 @@ describe("PostgreSQL 17 locale migrations", () => {
         title: "Session provider callback issue",
         body: "The provider returns successfully.",
         tags: [
-          { key: "help-similar-cloudflare", name: "Cloudflare" },
-          { key: "help-similar-auth", name: "Auth" },
+          { key: "ignored-cloudflare-key", name: "Cloudflare Similarity Fixture" },
+          { key: "ignored-auth-key", name: "Auth Similarity Fixture" },
         ],
       });
       await createQuestion({
@@ -1719,8 +1719,8 @@ describe("PostgreSQL 17 locale migrations", () => {
         expect.objectContaining({
           id: "help-similar-tags",
           tags: expect.arrayContaining([
-            { key: "help-similar-auth", name: "Auth" },
-            { key: "help-similar-cloudflare", name: "Cloudflare" },
+            { key: "auth similarity fixture", name: "Auth Similarity Fixture" },
+            { key: "cloudflare similarity fixture", name: "Cloudflare Similarity Fixture" },
           ]),
           matchSource: "tags",
         }),
@@ -1763,7 +1763,7 @@ describe("PostgreSQL 17 locale migrations", () => {
       `);
       await client.query(`
         delete from forum_tags
-        where key in ('help-similar-cloudflare', 'help-similar-auth')
+        where key in ('cloudflare similarity fixture', 'auth similarity fixture')
       `);
       await client.query(`delete from "user" where id = 'help-similar-author'`);
     }
