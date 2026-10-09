@@ -842,7 +842,6 @@ export class DrizzleForumRepository {
       when bool_or(${tagMatch}) then 2
       else 1
     end::int`;
-    const minimumCoveredTerms = titleTerms.length >= 3 ? 2 : 1;
     const activityAt = sql`greatest(
       ${forumTopics.createdAt},
       coalesce(max(${forumPosts.createdAt}), ${forumTopics.createdAt})
@@ -1221,6 +1220,7 @@ export class DrizzleForumRepository {
       when ${tagMatchCount} > 0 then 'tags'
       else 'body'
     end`;
+    const minimumCoveredTerms = titleTerms.length >= 3 ? 2 : 1;
     const activityAt = sql`greatest(
       ${forumTopics.createdAt},
       coalesce(max(${forumPosts.createdAt}), ${forumTopics.createdAt})
