@@ -851,6 +851,120 @@ describe("PostgreSQL 17 locale migrations", () => {
     }
   });
 
+  it("rate-limits Help signal submissions per user without imposing a per-topic lifetime limit", async () => {
+    const users = [
+      ["help-signal-rate-author", "help-signal-rate-author@example.test"],
+      ["help-signal-rate-user", "help-signal-rate-user@example.test"],
+      ["help-signal-rate-concurrent", "help-signal-rate-concurrent@example.test"],
+    ] as const;
+    for (const [id, email] of users) await insertForumAuthor(id, email, null);
+
+    const setupForum = new ForumService(new DrizzleForumRepository(drizzle(client), {
+      cooldownMs: 0,
+      now: () => new Date(),
+    }));
+    const createQuestion = async (id: string) => setupForum.createTopicWithInitialPost({
+      id,
+      sectionId: HELP_SOLUTIONS_SERVICE_SECTION_ID,
+      authorId: "help-signal-rate-author",
+      titleRevision: {
+        id: `${id}-title`,
+        originalContent: `${id} title`,
+        sourceLocale: "en",
+      },
+      initialPost: {
+        id: `${id}-question`,
+        topicId: id,
+        authorId: "help-signal-rate-author",
+        bodyRevision: {
+          id: `${id}-body`,
+          originalContent: `${id} body`,
+          sourceLocale: "en",
+        },
+      },
+    });
+
+    try {
+      await createQuestion("help-signal-rate-a");
+      await createQuestion("help-signal-rate-b");
+
+      let now = Date.now();
+      const forum = new ForumService(new DrizzleForumRepository(drizzle(client), {
+        cooldownMs: FORUM_WRITE_COOLDOWN_MS,
+        now: () => new Date(now),
+      }));
+
+      const first = await forum.createHelpSignal({
+        kind: "needs-details",
+        topicId: "help-signal-rate-a",
+        actorId: "help-signal-rate-user",
+        explanation: "Add the exact error output.",
+      });
+      await forum.withdrawHelpSignal(first.id, "help-signal-rate-user");
+
+      await expect(forum.createHelpSignal({
+        kind: "needs-details",
+        topicId: "help-signal-rate-a",
+        actorId: "help-signal-rate-user",
+        explanation: "Add the exact runtime version.",
+      })).rejects.toMatchObject({ retryAfterMs: FORUM_WRITE_COOLDOWN_MS });
+
+      await expect(forum.createHelpSignal({
+        kind: "duplicate",
+        topicId: "help-signal-rate-a",
+        actorId: "help-signal-rate-user",
+        proposedOriginalTopicId: "help-signal-rate-b",
+      })).rejects.toBeInstanceOf(ForumWriteRateLimitError);
+
+      now += FORUM_WRITE_COOLDOWN_MS;
+      await expect(forum.createHelpSignal({
+        kind: "needs-details",
+        topicId: "help-signal-rate-a",
+        actorId: "help-signal-rate-user",
+        explanation: "Add the exact runtime version.",
+      })).resolves.toMatchObject({ status: "pending" });
+
+      const pool = new Pool({ connectionString: databaseUrl, max: 2 });
+      try {
+        const fixedNow = new Date();
+        const policy = { cooldownMs: FORUM_WRITE_COOLDOWN_MS, now: () => fixedNow };
+        const firstWriter = new ForumService(new DrizzleForumRepository(drizzle(pool), policy));
+        const secondWriter = new ForumService(new DrizzleForumRepository(drizzle(pool), policy));
+        const outcomes = await Promise.allSettled([
+          firstWriter.createHelpSignal({
+            kind: "needs-details",
+            topicId: "help-signal-rate-a",
+            actorId: "help-signal-rate-concurrent",
+            explanation: "First concurrent signal.",
+          }),
+          secondWriter.createHelpSignal({
+            kind: "needs-details",
+            topicId: "help-signal-rate-b",
+            actorId: "help-signal-rate-concurrent",
+            explanation: "Second concurrent signal.",
+          }),
+        ]);
+        expect(outcomes.filter(({ status }) => status === "fulfilled")).toHaveLength(1);
+        expect(outcomes.filter(({ status }) => status === "rejected")).toHaveLength(1);
+        expect(outcomes.find(({ status }) => status === "rejected")).toMatchObject({
+          status: "rejected",
+          reason: expect.any(ForumWriteRateLimitError),
+        });
+      } finally {
+        await pool.end();
+      }
+    } finally {
+      await client.query(
+        "delete from forum_topics where id = any($1::text[])",
+        [["help-signal-rate-a", "help-signal-rate-b"]],
+      );
+      await client.query(
+        'delete from "user" where id = any($1::text[])',
+        [users.map(([id]) => id)],
+      );
+    }
+  });
+
   it("keeps Help solution moderation scoped to the reserved Help questions section", async () => {
     const repository = new DrizzleForumRepository(drizzle(client), {
       cooldownMs: 0,
