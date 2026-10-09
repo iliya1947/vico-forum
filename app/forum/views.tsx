@@ -1229,7 +1229,7 @@ export function HelpSolutionsView({
             <select name="quality" defaultValue={filters.quality ?? ""}>
               <option value="">{t("helpSolutionsFilterAny")}</option>
               <option value="normal">{t("helpSolutionsFilterNormal")}</option>
-              <option value="needs-details">{t("helpSolutionsNeedsDetails")}</option>
+              <option value="needs-details">{t("helpSolutionsFilterNeedsDetails")}</option>
             </select>
           </label>
           <label>
