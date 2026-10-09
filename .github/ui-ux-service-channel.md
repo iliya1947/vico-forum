@@ -3367,3 +3367,43 @@ Exact-head verification:
 
 Next gate: one repeat independent Codex whole-PR review on exact head
 `77e1bf9feb7858736a8fc3652b34afdc73dceca2`.
+
+
+---
+
+## PR #209 — third review findings fixed; stable exact head for final review — 2026-10-09
+
+Codex whole-PR review of exact head `77e1bf9feb7858736a8fc3652b34afdc73dceca2`
+found three confirmed P2 current-scope defects in the similar-question mechanism/foundation:
+
+1. Common question-scaffolding terms such as `how` / `do` could satisfy strong title coverage
+   and outrank a genuinely related specific-term title.
+2. `matchSource` did not mirror ranking precedence when exact draft-tag and strong-title matches
+   were both present.
+3. The shared total term slice allowed title/tag terms to consume the budget before body terms,
+   so body-only similarity could disappear for valid drafts.
+
+All three are fixed on stable implementation head
+`bccf72a1d3cefca252b46a409701f2ef3e094112`:
+- common question scaffolding/stop words are excluded from title coverage while bounded short
+  technical title terms remain supported;
+- match-source precedence now mirrors ranking: exact title → exact tag → strong title → tag → body
+  → weak title;
+- title/tag/body use separate bounded term budgets (6 / 4 / 6) inside a bounded total of 16, so body
+  cannot be starved by earlier sources;
+- PostgreSQL regressions cover generic `How do...` noise vs a specific `Neon` title, exact-tag
+  plus simultaneous strong-title matching, and a body-only match after filling title/tag budgets.
+
+ChatGPT whole-PR review on the final head found no remaining confirmed current-scope defect.
+
+Exact-head verification:
+- CI run `37954006087`: `checks` success, `database` success;
+- UI preview Pages run `37954055425`: build/deploy success;
+- all review threads are resolved;
+- PR remains ready-for-review and mergeable.
+
+Owner acceptance boundary remains unchanged: working mechanism + reusable foundation are required;
+final presentation polish is separately deferred and non-blocking.
+
+Next gate: final independent Codex whole-PR review on exact head
+`bccf72a1d3cefca252b46a409701f2ef3e094112`.
