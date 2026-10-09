@@ -1464,7 +1464,7 @@ describe("Help & solutions modes and authoring", () => {
       "en",
       "ltr",
     );
-    expect(await screen.findByText("Duplicate")).toBeVisible();
+    await waitFor(() => expect(document.querySelector(".help-question-duplicate")).toHaveTextContent("Duplicate"));
     expect(screen.getByText("Disputed")).toBeVisible();
     expect(screen.getByText("Solution outdated")).toBeVisible();
     expect(screen.queryByText("Best answer")).not.toBeInTheDocument();
