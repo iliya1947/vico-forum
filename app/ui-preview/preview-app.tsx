@@ -115,6 +115,7 @@ export const scenarios: readonly Scenario[] = [
   { id: "help-solutions-attention-empty", label: "Help & solutions · Needs attention · empty", locale: "en", direction: "ltr", identity: "manager", path: "/en/categories/help-solutions?mode=attention", view: "category", variant: "help-solutions-attention-empty", allowedIdentities: ["manager"] },
   { id: "help-solutions-solutions", label: "Help & solutions · Solutions", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=solutions", view: "category" },
   { id: "help-solutions-filters", label: "Help & solutions · Combined filters", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=active&solution=outdated&answers=has&quality=normal&relation=standalone", view: "category" },
+  { id: "help-solutions-filters-needs-details", label: "Help & solutions · Needs details filter", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?answers=has&quality=needs-details&relation=standalone", view: "category" },
   { id: "help-solutions-filters-manager", label: "Help & solutions · Needs review filter", locale: "en", direction: "ltr", identity: "manager", path: "/en/categories/help-solutions?solution=needs-review&answers=has&quality=normal&relation=standalone", view: "category", allowedIdentities: ["manager"] },
   { id: "help-solution-current", label: "Help solution · current", locale: "en", direction: "ltr", identity: "manager", path: "/en/topics/help-cloudflare-cache", view: "topic", allowedIdentities: ["guest", "user", "manager"] },
   { id: "help-solution-needs-review", label: "Help solution · needs review", locale: "en", direction: "ltr", identity: "manager", path: "/en/topics/help-neon-pooling", view: "topic", allowedIdentities: ["guest", "user", "manager"] },
@@ -576,7 +577,7 @@ function previewHelpSolutions(locale: PreviewLocale) {
       },
       {
         id: "help-auth-best-answer", title: titles[1]!, authorName: "Noa Levi", replyCount: 3,
-        isSolved: false, hasBestAnswer: true, solutionModerationStatus: null, solutionOutdatedReason: null, solutionOutdatedReasonKind: null, needsDetails: false, duplicateOf: null, duplicateDisputed: false, createdAt: "2026-09-29T09:00:00.000Z",
+        isSolved: false, hasBestAnswer: true, solutionModerationStatus: null, solutionOutdatedReason: null, solutionOutdatedReasonKind: null, needsDetails: true, duplicateOf: null, duplicateDisputed: false, createdAt: "2026-09-29T09:00:00.000Z",
         activityAt: "2026-09-30T14:20:00.000Z",
         tags: [{ key: "better-auth", name: "Better Auth" }, { key: "workers", name: "Workers" }],
       },
