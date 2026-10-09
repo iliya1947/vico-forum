@@ -395,7 +395,7 @@ export class DrizzleForumRepository {
 
   async readOnlinePresence(): Promise<ForumOnlinePresence> {
     const recent = sql`${forumOnlinePresence.lastSeenAt} >= now() - interval '5 minutes'`;
-    const [countRow, memberRows] = await Promise.all([
+    const [countRows, memberRows] = await Promise.all([
       this.database.select({ count: sql<number>`count(*)::int` }).from(forumOnlinePresence).where(recent),
       this.database.select({ id: user.id, name: user.name, image: user.image })
         .from(forumOnlinePresence)
@@ -404,7 +404,7 @@ export class DrizzleForumRepository {
         .orderBy(desc(forumOnlinePresence.lastSeenAt), asc(user.id))
         .limit(12),
     ]);
-    return { count: countRow?.count ?? 0, members: memberRows };
+    return { count: countRows[0]?.count ?? 0, members: memberRows };
   }
 
   async recordOnlinePresence(userId: string): Promise<void> {

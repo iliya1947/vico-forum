@@ -1,12 +1,14 @@
 import { useEffect } from "react";
-import { useParams } from "react-router";
+import { useLocation, useParams, useRevalidator } from "react-router";
 import { useHeaderAuthUser } from "../auth/auth-controls";
-import { forumPresencePath } from "./paths";
+import { forumIndexPath, forumPresencePath } from "./paths";
 
 /** Only the routed app mounts this: static Pages fixtures never send heartbeats. */
 export function OnlinePresenceHeartbeat() {
   const user = useHeaderAuthUser();
   const { locale = "en" } = useParams();
+  const location = useLocation();
+  const revalidator = useRevalidator();
   useEffect(() => {
     if (!user) return;
     const path = forumPresencePath(locale);
@@ -17,6 +19,9 @@ export function OnlinePresenceHeartbeat() {
         credentials: "same-origin",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: "intent=heartbeat",
+      }).then((response) => {
+        // The first heartbeat may land after the homepage SSR snapshot.
+        if (response.ok && location.pathname === forumIndexPath(locale)) revalidator.revalidate();
       }).catch(() => { /* Presence is supplemental; never block browsing. */ });
     };
     ping();
@@ -26,6 +31,6 @@ export function OnlinePresenceHeartbeat() {
       window.clearInterval(timer);
       document.removeEventListener("visibilitychange", ping);
     };
-  }, [locale, user?.id]);
+  }, [locale, location.pathname, revalidator.revalidate, user?.id]);
   return null;
 }

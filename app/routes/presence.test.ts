@@ -8,7 +8,9 @@ import { action, loader } from "./presence";
 function setup(userId: string | null = "owner") {
   const context = new RouterContextProvider();
   context.set(authSessionContext, userId ? { user: { id: userId } } as AuthSession : null);
-  const recordOnlinePresence = vi.fn(async (_userId: string) => undefined);
+  const recordOnlinePresence = vi.fn(async (userId: string) => {
+    if (!userId) throw new Error("missing session user");
+  });
   context.set(forumWriterContext, { recordOnlinePresence } as unknown as ForumWriter);
   return { context, recordOnlinePresence };
 }
