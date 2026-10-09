@@ -323,8 +323,10 @@ export class ForumService {
     topicId: string,
     status: HelpSolutionModerationStatus | null,
     outdatedReason: string | null = null,
+    actorId: string,
   ) {
     requireText(topicId, "topic id");
+    requireText(actorId, "actor id");
     if (status !== null && status !== "needs-review" && status !== "outdated") {
       throw new InvalidForumContentError("help solution moderation status is invalid");
     }
@@ -340,7 +342,7 @@ export class ForumService {
         );
       }
     }
-    return this.repository.setHelpSolutionModeration(topicId, status, normalizedReason);
+    return this.repository.setHelpSolutionModeration(topicId, status, normalizedReason, actorId);
   }
 }
 
