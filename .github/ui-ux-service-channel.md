@@ -3631,3 +3631,41 @@ Exact core head `0496e42476936010f4de7f552f46dbbade7729fd`:
 Next subtask: adapt current-main `views.tsx` and relevant tests so ordinary create-topic, reply,
 and Help question authoring all use this shared editor without changing existing mutations or Help
 similar-question behavior.
+
+
+---
+
+## PR #210 — authoring integration subtask complete — 2026-10-09
+
+Implementation head: `14398bcb98df6d13a5267084d1a59307604b55de`.
+
+The shared Markdown editor is now wired into all three current-main authoring flows:
+- ordinary create-topic;
+- topic reply;
+- Help & solutions question creation.
+
+Current-main behavior preserved:
+- exact native `body` form field contract remains unchanged;
+- existing server mutations, validation, permissions, origin protection, rate limiting and Help
+  similar-question action are untouched;
+- Help `Check similar questions` and final publish use the same editor-backed `body` field;
+- Reply/Quote now use the editor imperative boundary instead of direct textarea mutation;
+- quoting while the reply editor is in Preview returns it to Write, inserts the quote at the
+  preserved caret and focuses the editable field;
+- clearing a reply target focuses the editor through the same boundary;
+- pending submission still disables the body editor and relevant controls.
+
+Regression coverage now verifies:
+- the Markdown toolbar/view-mode controls exist in create-topic, reply and Help authoring;
+- Help editor remains a native `body` form control;
+- real topic Quote integration works from Preview and returns to Write with the quote inserted.
+
+One intermediate CI failure was test-only TypeScript typing for `FormData`; the production
+implementation was unaffected and the test was corrected with the actual HTMLFormElement type.
+
+Exact-head verification:
+- CI run `37971001895`: `checks` success;
+- CI run `37971001895`: `database` success.
+
+PR #210 remains draft. Next logical subtask is preview/product-state coverage plus project-state/docs
+updates and then ChatGPT whole-PR verification before any owner acceptance or manual Codex review.
