@@ -140,6 +140,24 @@ describe("MarkdownEditor", () => {
     expect(renderedCode.tagName).toBe("CODE");
   });
 
+  it("keeps fenced-code language optional by default", async () => {
+    renderEditor(
+      <>
+        <label htmlFor="body">Body</label>
+        <MarkdownEditor id="body" name="body" defaultValue="plain()" />
+      </>,
+    );
+
+    const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
+    textarea.focus();
+    textarea.setSelectionRange(0, textarea.value.length);
+    expect(screen.getByRole("textbox", { name: "Code language" })).toHaveValue("");
+
+    await userEvent.click(screen.getByRole("button", { name: "Code block" }));
+
+    expect(textarea).toHaveValue("```\nplain()\n```");
+  });
+
   it("uses an outer fenced-code delimiter longer than selected backtick runs", async () => {
     renderEditor(
       <>
@@ -154,7 +172,7 @@ describe("MarkdownEditor", () => {
 
     await userEvent.click(screen.getByRole("button", { name: "Code block" }));
 
-    expect(textarea).toHaveValue("````ts\n```\ninner\n```\n````");
+    expect(textarea).toHaveValue("````\n```\ninner\n```\n````");
 
     await userEvent.click(screen.getByRole("button", { name: "Preview" }));
     const codeBlocks = document.querySelectorAll(".forum-code-block");
