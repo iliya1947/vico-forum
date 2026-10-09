@@ -1737,7 +1737,23 @@ export function TopicView({
   const ownPendingSolutionOutdated = Boolean(bestAnswerPost) && ownPendingHelpSignals.some(
     (signal) => signal.kind === "solution-outdated" && signal.targetPostId === bestAnswerPost?.id,
   );
-  const showHelpSignalControl = isHelpTopic && (canCreateHelpSignal || ownPendingHelpSignals.length > 0);
+  const hasNewHelpSignalForm = canCreateHelpSignal && (
+    (!topic.needsDetails && !ownPendingNeedsDetails)
+    || (
+      topic.isSolved
+      && Boolean(bestAnswerPost)
+      && currentSolutionModerationStatus === null
+      && !ownPendingNeedsReview
+    )
+    || (
+      topic.isSolved
+      && Boolean(bestAnswerPost)
+      && currentSolutionModerationStatus !== "outdated"
+      && !ownPendingSolutionOutdated
+    )
+    || canSignalDuplicate
+  );
+  const showHelpSignalControl = isHelpTopic && (hasNewHelpSignalForm || ownPendingHelpSignals.length > 0);
   const orderedPosts = originalPost
     ? [
         originalPost,
