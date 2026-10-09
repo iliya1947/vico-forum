@@ -677,6 +677,31 @@ describe("PostgreSQL 17 locale migrations", () => {
       expect(await repository.readTopicPage("help-signal-needs-details")).toMatchObject({ needsDetails: true });
       expect(await repository.readHelpSignal(peerNeedsDetails.id)).toMatchObject({ status: "superseded" });
 
+      await createQuestion("help-signal-clock-original");
+      await createQuestion("help-signal-clock-candidate");
+      const futureClockForum = new ForumService(new DrizzleForumRepository(drizzle(client), {
+        cooldownMs: 0,
+        now: () => new Date(Date.now() + 60_000),
+      }));
+      const futureClockSignal = await futureClockForum.createHelpSignal({
+        kind: "duplicate",
+        topicId: "help-signal-clock-candidate",
+        actorId: "help-signal-user-a",
+        proposedOriginalTopicId: "help-signal-clock-original",
+      });
+      await expect(
+        futureClockForum.markTopicSolved(
+          "help-signal-clock-candidate",
+          "help-signal-question-author",
+        ),
+      ).resolves.toBeUndefined();
+      expect(await repository.readHelpSignal(futureClockSignal.id)).toMatchObject({
+        status: "superseded",
+      });
+      expect(await repository.readTopic("help-signal-clock-candidate")).toMatchObject({
+        isSolved: true,
+      });
+
       await createQuestion("help-signal-rejected");
       const rejected = await forum.createHelpSignal({
         kind: "needs-details",
@@ -845,6 +870,8 @@ describe("PostgreSQL 17 locale migrations", () => {
         delete from forum_topics
         where id in (
           'help-signal-needs-details',
+          'help-signal-clock-original',
+          'help-signal-clock-candidate',
           'help-signal-rejected',
           'help-signal-solution',
           'help-signal-original',
@@ -910,6 +937,7 @@ describe("PostgreSQL 17 locale migrations", () => {
         actorId: "help-signal-rate-user",
         explanation: "Add the exact error output.",
       });
+      now = first.createdAt.getTime();
       await forum.withdrawHelpSignal(first.id, "help-signal-rate-a", "help-signal-rate-user");
 
       await expect(forum.createHelpSignal({
