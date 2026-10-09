@@ -2738,3 +2738,31 @@ _Source: https://github.com/iliya1947/vico-forum/pull/147#issuecomment-607645646
 2. **Отзыв:** рекомендую разрешить автору отозвать собственный **pending**-сигнал — это минимально снижает лишнюю модераторскую работу, не затрагивая уже принятое решение и не позволяя управлять чужими сигналами.
 
  [View task →](https://chatgpt.com/s/cd_6ac8972febc08191ab4568b545709800)
+
+
+---
+
+<!-- codex-service-channel-comment:6076953700 -->
+## Codex GitHub response — comment 6076953700
+
+_Source: https://github.com/iliya1947/vico-forum/pull/147#issuecomment-6076953700 · 2026-10-09T08:02:13Z_
+
+# Действие пользователя
+
+Ничего.
+
+### Summary
+
+* В единственном communication-файле зафиксированы требования владельца к объяснениям для сигналов **Needs review**, **Duplicate**, **Needs details** и **Solution outdated**. [.github/ui-ux-service-channel.mdL2745-L2752](https://github.com/iliya1947/vico-forum/blob/244ecd3f2a4f0fe2f8aa94fa80fe8b7c4fb31ee9/.github/ui-ux-service-channel.md#L2745-L2752)
+* Зафиксировано правило отзыва: автор может отозвать только собственный pending-сигнал; после принятия или отклонения отзыв невозможен, чужие сигналы отзывать нельзя. [.github/ui-ux-service-channel.mdL2754-L2754](https://github.com/iliya1947/vico-forum/blob/244ecd3f2a4f0fe2f8aa94fa80fe8b7c4fb31ee9/.github/ui-ux-service-channel.md#L2754-L2754)
+* Подзадача **Help & solutions 4.1** отмечена как завершённая. Следующая подзадача остановлена до явной команды владельца; технический план и порядок Help-шагов не переоткрывались. [.github/ui-ux-service-channel.mdL2756-L2756](https://github.com/iliya1947/vico-forum/blob/244ecd3f2a4f0fe2f8aa94fa80fe8b7c4fb31ee9/.github/ui-ux-service-channel.md#L2756-L2756)
+* Implementation-код не изменялся. Изменение закоммичено как `e1579fb` (`Record Help signal owner decisions`), после чего подготовлены PR metadata с заголовком **Service channel: record Help step 4.1 owner decisions**.
+
+**Testing**
+
+* ✅ `git diff --check`
+* ✅ `git diff-tree --check HEAD^ HEAD`
+* ✅ `git diff-tree --no-commit-id --name-only -r HEAD` — изменён только `.github/ui-ux-service-channel.md`.
+* ✅ `git status --short --branch` — рабочее дерево чистое после commit.
+
+ [View task →](https://chatgpt.com/s/cd_6ac89f3a4bac8191939869e20a8aff76)
