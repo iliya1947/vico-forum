@@ -3195,3 +3195,36 @@ Please determine:
 Keep this independent from signals/reports, admin-panel work, Needs-attention aggregation, combined-filter polish, drafts/autosave, profiles/editor work, schema/search-index expansion unless current evidence proves one is necessary, and Stage 6.
 
 Do not implement project code in the service branch. Return the technical plan and readiness criteria only.
+
+
+---
+
+<!-- codex-service-channel-comment:6081924461 -->
+## Codex GitHub response — comment 6081924461
+
+_Source: https://github.com/iliya1947/vico-forum/pull/147#issuecomment-6081924461 · 2026-10-09T13:31:22Z_
+
+# Действие пользователя
+
+Ничего.
+
+### Summary
+
+* В единый communication-файл добавлен технический план refinement проверки похожих вопросов. Зафиксированы текущие ограничения: поиск получает только заголовок, использует его как цельную `ILIKE`-подстроку и не учитывает покрытие отдельных терминов при ранжировании. [.github/ui-ux-service-channel.mdL3202-L3214](https://github.com/iliya1947/vico-forum/blob/0229a968d60b010ab00e55efcdb56d59928f19f1/.github/ui-ux-service-channel.md#L3202-L3214)
+* Определён минимальный relevance-scope без новой поисковой подсистемы: bounded Unicode-normalized термины из title/body/tags, поиск только по актуальным Help revisions и tags, приоритет title → tags → body и детерминированное ранжирование. [.github/ui-ux-service-channel.mdL3216-L3237](https://github.com/iliya1947/vico-forum/blob/0229a968d60b010ab00e55efcdb56d59928f19f1/.github/ui-ux-service-channel.md#L3216-L3237)
+* Сохранён необязательный и неблокирующий authoring flow. В результаты предложено добавить существующие теги и краткую локализованную причину совпадения без snippets, автоматической duplicate-маркировки или live-search. [.github/ui-ux-service-channel.mdL3239-L3248](https://github.com/iliya1947/vico-forum/blob/0229a968d60b010ab00e55efcdb56d59928f19f1/.github/ui-ux-service-channel.md#L3239-L3248)
+* Зафиксированы query/performance/privacy boundaries: SQL-фильтрация до `LIMIT 5`, стабильные tie-breaks, параметризованные термины, исключение stale revisions и обычных разделов, отсутствие сохранения или логирования неопубликованного draft. [.github/ui-ux-service-channel.mdL3250-L3264](https://github.com/iliya1947/vico-forum/blob/0229a968d60b010ab00e55efcdb56d59928f19f1/.github/ui-ux-service-channel.md#L3250-L3264)
+* Определены focused database, action/component и Pages/browser проверки, а также итоговые CI, visual acceptance и independent-review gates. [.github/ui-ux-service-channel.mdL3266-L3283](https://github.com/iliya1947/vico-forum/blob/0229a968d60b010ab00e55efcdb56d59928f19f1/.github/ui-ux-service-channel.md#L3266-L3283)
+* Подтверждено, что новых продуктовых решений для этого bounded slice не требуется; signals/admin, combined-filter polish, drafts, editor/profile, schema/index expansion и Stage 6 явно исключены. [.github/ui-ux-service-channel.mdL3285-L3298](https://github.com/iliya1947/vico-forum/blob/0229a968d60b010ab00e55efcdb56d59928f19f1/.github/ui-ux-service-channel.md#L3285-L3298)
+* Service-ветка синхронизирована с актуальным `main` после PR #208. План закоммичен как `1cbdaad` (`Plan Help similar-question refinement`), после чего подготовлены PR metadata с заголовком **Service channel: plan Help similar-question refinement**.
+
+**Testing**
+
+* ✅ `git fetch https://github.com/iliya1947/vico-forum.git main:refs/remotes/upstream/main pull/194/head:refs/remotes/upstream/pr-194`
+* ✅ `git merge --no-edit refs/remotes/upstream/main`
+* ✅ `git diff --check`
+* ✅ `git diff-tree --check HEAD^ HEAD`
+* ✅ `git diff --name-status refs/remotes/upstream/main..HEAD` — относительно актуального `main` добавлен только единый communication-файл.
+* ✅ `git status --short --branch` — рабочее дерево чистое после commit.
+
+ [View task →](https://chatgpt.com/s/cd_6ac8ec04808c8191be63e75678f1810f)
