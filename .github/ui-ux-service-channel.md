@@ -2720,3 +2720,21 @@ _Source: https://github.com/iliya1947/vico-forum/pull/147#issuecomment-607643630
 * ✅ `git status --short --branch` — рабочее дерево чистое после commit.
 
  [View task →](https://chatgpt.com/s/cd_6ac895f8586c819198d6e51d2f8df576)
+
+
+---
+
+<!-- codex-service-channel-comment:6076456462 -->
+## Codex GitHub response — comment 6076456462
+
+_Source: https://github.com/iliya1947/vico-forum/pull/147#issuecomment-6076456462 · 2026-10-09T07:26:56Z_
+
+# Действие пользователя
+
+Ничего.
+
+1. **Объяснение:** рекомендую требовать его для **Needs review** и **Duplicate**, но оставить необязательным для **Needs details** — первые два сигнала требуют контекста для безопасного и однозначного решения, тогда как отсутствие деталей обычно очевидно из самого вопроса.
+
+2. **Отзыв:** рекомендую разрешить автору отозвать собственный **pending**-сигнал — это минимально снижает лишнюю модераторскую работу, не затрагивая уже принятое решение и не позволяя управлять чужими сигналами.
+
+ [View task →](https://chatgpt.com/s/cd_6ac8972febc08191ab4568b545709800)
