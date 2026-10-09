@@ -352,8 +352,11 @@ Vico Forum находится в ранней pre-release разработке.
   Term/input extraction bounded; stale revisions и ordinary forum sections не участвуют.
   Schema/migrations, search index, fuzzy/vector/AI search, duplicate automation, signals/admin,
   `Needs attention` aggregation, combined-filter polish и Stage 6 в slice не входят. Exact-head
-  CI/Pages, owner visual acceptance и final independent review фиксируются только после фактического
-  завершения соответствующих проверок.
+  CI/Pages проходят на implementation head; owner visual acceptance подтверждён 2026-10-09 как
+  достаточный для текущего функционального прохода. Владелец отдельно зафиксировал, что текущая
+  presentation похожих вопросов временная и позже должна получить отдельную UX/визуальную
+  доработку; это deferred polish, а не дефект текущего PR #209. Final independent review
+  фиксируется только после его фактического завершения.
 - In-app reply notifications slice реализован в PR #180:
   forward migration `0024_forum_reply_notifications` хранит только stable recipient/actor/topic/post
   references, `createdAt` и nullable `readAt`; unique recipient + reply identity предотвращает
