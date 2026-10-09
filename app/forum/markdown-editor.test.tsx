@@ -193,13 +193,17 @@ describe("MarkdownEditor", () => {
     );
 
     const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
+    const editor = textarea.closest(".markdown-editor")!;
+    const writePane = textarea.closest(".markdown-editor-write-pane")!;
     await userEvent.click(screen.getByRole("button", { name: "Preview" }));
-    expect(textarea).not.toBeVisible();
+    expect(editor).toHaveAttribute("data-mode", "preview");
+    expect(writePane).toHaveClass("is-preview-hidden");
 
     act(() => editorRef.current?.insertText("> quoted\n\n"));
 
     expect(screen.getByRole("button", { name: "Write" })).toHaveAttribute("aria-pressed", "true");
-    expect(textarea).toBeVisible();
+    expect(editor).toHaveAttribute("data-mode", "write");
+    expect(writePane).not.toHaveClass("is-preview-hidden");
     expect(textarea).toHaveFocus();
     expect(textarea).toHaveValue("before> quoted\n\n");
   });
@@ -213,13 +217,17 @@ describe("MarkdownEditor", () => {
     );
 
     const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
+    const editor = textarea.closest(".markdown-editor")!;
+    const writePane = textarea.closest(".markdown-editor-write-pane")!;
     await userEvent.click(screen.getByRole("button", { name: "Preview" }));
-    expect(textarea).not.toBeVisible();
+    expect(editor).toHaveAttribute("data-mode", "preview");
+    expect(writePane).toHaveClass("is-preview-hidden");
 
     fireEvent.invalid(textarea);
 
     expect(screen.getByRole("button", { name: "Write" })).toHaveAttribute("aria-pressed", "true");
-    expect(textarea).toBeVisible();
+    expect(editor).toHaveAttribute("data-mode", "write");
+    expect(writePane).not.toHaveClass("is-preview-hidden");
     expect(textarea).toHaveFocus();
   });
 
@@ -274,18 +282,23 @@ describe("MarkdownEditor", () => {
     );
 
     const textarea = screen.getByLabelText("Body");
+    const editor = textarea.closest(".markdown-editor")!;
+    const writePane = textarea.closest(".markdown-editor-write-pane")!;
     await userEvent.click(screen.getByRole("button", { name: "Preview" }));
     expect(screen.getByRole("region", { name: "Markdown preview" })).toBeInTheDocument();
     expect(screen.getByText("preview me").tagName).toBe("STRONG");
-    expect(textarea).not.toBeVisible();
+    expect(editor).toHaveAttribute("data-mode", "preview");
+    expect(writePane).toHaveClass("is-preview-hidden");
 
     await userEvent.click(screen.getByRole("button", { name: "Split" }));
     expect(screen.getByRole("region", { name: "Markdown preview" })).toBeInTheDocument();
-    expect(textarea).toBeVisible();
+    expect(editor).toHaveAttribute("data-mode", "split");
+    expect(writePane).not.toHaveClass("is-preview-hidden");
 
     await userEvent.click(screen.getByRole("button", { name: "Write" }));
     expect(screen.queryByRole("region", { name: "Markdown preview" })).not.toBeInTheDocument();
-    expect(textarea).toBeVisible();
+    expect(editor).toHaveAttribute("data-mode", "write");
+    expect(writePane).not.toHaveClass("is-preview-hidden");
     expect(textarea).toHaveValue("**preview me**");
   });
 });
