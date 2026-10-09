@@ -306,9 +306,10 @@ export class ForumService {
     });
   }
 
-  withdrawHelpSignal(signalId: string, actorId: string) {
+  withdrawHelpSignal(signalId: string, topicId: string, actorId: string) {
     validateEntity(signalId, actorId);
-    return this.repository.withdrawHelpSignal(signalId, actorId);
+    requireText(topicId, "topic id");
+    return this.repository.withdrawHelpSignal(signalId, topicId, actorId);
   }
 
   resolveHelpSignal(signalId: string, actorId: string, resolution: HelpSignalResolution) {
