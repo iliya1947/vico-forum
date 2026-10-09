@@ -3009,3 +3009,34 @@ Step 4.3b is not ready for merge until repository CI + Pages deploy pass, owner 
 No unresolved product decision remains in step 4.3a. Do not add step 5 attention aggregation, step 6 filters, a global moderation queue, resolved-signal history UI, admin-panel redesign, solved-question grouping, similar-search refinement, drafts/autosave or Stage 6 work.
 
 **Step 4.3a is complete.** Implementation step 4.3b starts only after the owner's next explicit continuation.
+
+
+---
+
+## Owner scope correction — signals/reports and admin-panel systems — 2026-10-09
+
+Owner clarified that the full **signals/reports system** and the future **admin panel** are being designed in separate ChatGPT conversations. This UI/UX thread must not independently define either product system.
+
+Consequences for current work:
+
+- PR #207's current visible presentation direction (breadcrumb `Signal`, topic-local pending list, moderator `Pending signals` group, Pages presentation states) is no longer an approved implementation target and must not be merged as product UI.
+- Do not decide here where report/signal entry points live, whether moderation review is topic-local or global, how queues/history/filters are composed, or how the future admin workspace is structured.
+- Keep only technical foundation that is genuinely reusable regardless of those later product decisions.
+- Merged PR #206 already provides substantial signal foundation: durable signal persistence/lifecycle, permissions, protected submit/withdraw/review actions, exact-target validation, stale-safe atomic acceptance, anti-spam and authoritative state integration.
+- Existing authorization foundation already provides dynamic effective permissions and protected management capabilities. Do not invent additional admin-panel permissions/routes/data models without a demonstrated requirement from the separate design work.
+
+### Neutral Codex planning request
+
+Inspect current `main` after merged PR #206 and the current draft PR #207. Determine the **minimum additional technical foundation, if any**, that should be implemented now so the separately designed signals/reports system and admin panel can later be added without expensive rework.
+
+Do not assume a topic-local UI, a global moderation queue, a particular admin information architecture, history/audit UI, filtering model, or complaint taxonomy beyond what is already persisted/approved.
+
+Please answer:
+
+1. Is PR #206 already a sufficient reusable foundation for the signals side until product design is complete?
+2. Which current PR #207 changes, if any, are truly UI-agnostic foundation and worth retaining now?
+3. Is any additional admin-panel foundation technically necessary now, independent of its future UX/design?
+4. Which #207 changes should be discarded because they prematurely encode product/presentation decisions?
+5. Give the smallest bounded implementation scope and completion criteria; explicitly allow the answer “no additional code is justified now.”
+
+Do not implement code or edit the implementation branch.
