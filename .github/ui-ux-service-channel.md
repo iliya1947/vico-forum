@@ -3262,3 +3262,19 @@ Representative Pages state for review: **Help & solutions · Similar questions**
 Preview deployment: https://iliya1947.github.io/vico-forum/
 
 Per AGENTS, manual Codex review has not been started. It must wait for owner visual acceptance.
+
+
+---
+
+## PR #209 — owner visual acceptance + deferred polish — 2026-10-09
+
+Owner accepted the current **Help & solutions · Similar questions** presentation as sufficient for
+the current functional pass.
+
+Important product note:
+- the current similar-question presentation is **provisional**, not the final UX;
+- after the main functional work, it needs a separate UX/visual refinement pass;
+- this deferred polish is not a current-scope defect and does not block PR #209.
+
+Implementation branch documentation now records the same deferred item in `PROJECT_STATE.md` and
+`docs/UI_UX_PASS.md`. Final independent Codex review remains the next PR-completion gate.
