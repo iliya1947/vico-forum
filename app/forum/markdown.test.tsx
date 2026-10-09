@@ -104,7 +104,8 @@ const longValue = "code";
 
     const { container } = renderMarkdown("```ts\nconst answer = true;\n```");
     const codeBlock = container.querySelector(".forum-code-block");
-    expect(codeBlock).toHaveAttribute("dir", "ltr");
+    expect(codeBlock).not.toHaveAttribute("dir", "ltr");
+    expect(codeBlock?.querySelector("pre")).toHaveAttribute("dir", "ltr");
     expect(codeBlock).toHaveAttribute("data-wrap", "false");
 
     await userEvent.click(screen.getByRole("button", { name: "Wrap lines" }));
@@ -134,7 +135,15 @@ const longValue = "code";
 
     expect(container.firstElementChild).toHaveAttribute("dir", "rtl");
     expect(screen.getByText("مهمة").tagName).toBe("STRONG");
-    expect(container.querySelector(".forum-code-block")).toHaveAttribute("dir", "ltr");
+    expect(container.querySelector(".forum-code-block")).not.toHaveAttribute("dir", "ltr");
+    expect(container.querySelector(".forum-code-block pre")).toHaveAttribute("dir", "ltr");
+  });
+
+  it("falls back to plain text for oversized or token-heavy code", () => {
+    const huge = "const x = 1;".repeat(2000);
+    expect(highlightCode(huge, "ts")).toEqual([{ text: huge }]);
+    const dense = "1 ".repeat(3000);
+    expect(highlightCode(dense, "ts")).toEqual([{ text: dense }]);
   });
 
   it("leaves unknown languages readable without syntax classes", () => {
