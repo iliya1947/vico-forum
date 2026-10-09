@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gt, gte, inArray, isNull, lte, ne, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, gte, inArray, isNotNull, isNull, lte, ne, or, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { alias } from "drizzle-orm/pg-core";
 import {
@@ -1207,35 +1207,35 @@ export class DrizzleForumRepository {
     }));
   }
 
-  async readHelpSolutionsAll(): Promise<ForumHelpSolutionsPage | undefined> {
-    return this.readHelpSolutionsPage({ mode: "all" });
+  async readHelpSolutionsAll(filters: ForumHelpSolutionsFilters = {}): Promise<ForumHelpSolutionsPage | undefined> {
+    return this.readHelpSolutionsPage({ mode: "all" }, filters);
   }
 
-  async readHelpSolutionsOpen(): Promise<ForumHelpSolutionsPage | undefined> {
-    return this.readHelpSolutionsPage({ mode: "open" });
+  async readHelpSolutionsOpen(filters: ForumHelpSolutionsFilters = {}): Promise<ForumHelpSolutionsPage | undefined> {
+    return this.readHelpSolutionsPage({ mode: "open" }, filters);
   }
 
-  async readHelpSolutionsActive(): Promise<ForumHelpSolutionsPage | undefined> {
-    return this.readHelpSolutionsPage({ mode: "active" });
+  async readHelpSolutionsActive(filters: ForumHelpSolutionsFilters = {}): Promise<ForumHelpSolutionsPage | undefined> {
+    return this.readHelpSolutionsPage({ mode: "active" }, filters);
   }
 
-  async readHelpSolutionsNeedsAttention(): Promise<ForumHelpSolutionsPage | undefined> {
-    return this.readHelpSolutionsPage({ mode: "attention" });
+  async readHelpSolutionsNeedsAttention(filters: ForumHelpSolutionsFilters = {}): Promise<ForumHelpSolutionsPage | undefined> {
+    return this.readHelpSolutionsPage({ mode: "attention" }, filters);
   }
 
-  async readHelpSolutionsSolved(): Promise<ForumHelpSolutionsPage | undefined> {
-    return this.readHelpSolutionsPage({ mode: "solved" });
+  async readHelpSolutionsSolved(filters: ForumHelpSolutionsFilters = {}): Promise<ForumHelpSolutionsPage | undefined> {
+    return this.readHelpSolutionsPage({ mode: "solved" }, filters);
   }
 
-  async readHelpSolutionsMine(userId: string): Promise<ForumHelpSolutionsPage | undefined> {
-    return this.readHelpSolutionsPage({ mode: "mine", authorId: userId });
+  async readHelpSolutionsMine(userId: string, filters: ForumHelpSolutionsFilters = {}): Promise<ForumHelpSolutionsPage | undefined> {
+    return this.readHelpSolutionsPage({ mode: "mine", authorId: userId }, filters);
   }
 
-  async readHelpSolutionsWantToHelp(userId: string): Promise<ForumHelpSolutionsPage | undefined> {
-    return this.readHelpSolutionsPage({ mode: "help", excludedAuthorId: userId });
+  async readHelpSolutionsWantToHelp(userId: string, filters: ForumHelpSolutionsFilters = {}): Promise<ForumHelpSolutionsPage | undefined> {
+    return this.readHelpSolutionsPage({ mode: "help", excludedAuthorId: userId }, filters);
   }
 
-  async readHelpSolutionsForMe(userId: string): Promise<ForumHelpSolutionsPage | undefined> {
+  async readHelpSolutionsForMe(userId: string, filters: ForumHelpSolutionsFilters = {}): Promise<ForumHelpSolutionsPage | undefined> {
     const [category] = await this.database
       .select({ id: forumCategories.id, name: forumCategories.name })
       .from(forumCategories)
