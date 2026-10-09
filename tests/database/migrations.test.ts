@@ -570,6 +570,145 @@ describe("PostgreSQL 17 locale migrations", () => {
     }
   });
 
+  it("combines Help question filters from authoritative persisted state", async () => {
+    const repository = new DrizzleForumRepository(drizzle(client), {
+      cooldownMs: 0,
+      now: () => new Date(),
+    });
+    const forum = new ForumService(repository);
+    const users = [
+      ["help-filter-author", "help-filter-author@example.test"],
+      ["help-filter-replier", "help-filter-replier@example.test"],
+    ] as const;
+    for (const [id, email] of users) await insertForumAuthor(id, email, null);
+
+    const topicIds = [
+      "help-filter-open",
+      "help-filter-details",
+      "help-filter-review",
+      "help-filter-outdated",
+      "help-filter-duplicate",
+    ];
+    const createQuestion = async (id: string) => {
+      await forum.createTopicWithInitialPost({
+        id,
+        sectionId: HELP_SOLUTIONS_SERVICE_SECTION_ID,
+        authorId: "help-filter-author",
+        titleRevision: {
+          id: `${id}-title`,
+          originalContent: `${id} title`,
+          sourceLocale: "en",
+        },
+        initialPost: {
+          id: `${id}-question`,
+          topicId: id,
+          authorId: "help-filter-author",
+          bodyRevision: {
+            id: `${id}-body`,
+            originalContent: `${id} body`,
+            sourceLocale: "en",
+          },
+        },
+      });
+    };
+    const addAnswer = async (topicId: string) => {
+      const postId = `${topicId}-answer`;
+      await forum.createPost({
+        id: postId,
+        topicId,
+        authorId: "help-filter-replier",
+        parentPostId: `${topicId}-question`,
+        bodyRevision: {
+          id: `${postId}-body`,
+          originalContent: `${topicId} answer`,
+          sourceLocale: "en",
+        },
+      });
+      return postId;
+    };
+
+    try {
+      for (const topicId of topicIds) await createQuestion(topicId);
+
+      await addAnswer("help-filter-details");
+      await client.query(
+        "update forum_topics set needs_details = true where id = 'help-filter-details'",
+      );
+
+      const reviewAnswer = await addAnswer("help-filter-review");
+      await forum.selectBestAnswer("help-filter-review", reviewAnswer, "help-filter-author");
+      await forum.markTopicSolved("help-filter-review", "help-filter-author");
+      await forum.setHelpSolutionModeration(
+        "help-filter-review",
+        "needs-review",
+        null,
+        "help-filter-replier",
+      );
+
+      const outdatedAnswer = await addAnswer("help-filter-outdated");
+      await forum.selectBestAnswer("help-filter-outdated", outdatedAnswer, "help-filter-author");
+      await forum.markTopicSolved("help-filter-outdated", "help-filter-author");
+      await forum.setHelpSolutionModeration(
+        "help-filter-outdated",
+        "outdated",
+        "The documented API is no longer available.",
+        "help-filter-replier",
+      );
+
+      await forum.confirmHelpDuplicate(
+        "help-filter-duplicate",
+        "help-filter-open",
+        "help-filter-replier",
+      );
+
+      expect((await repository.readHelpSolutionsAll({
+        solution: "open",
+        answers: "none",
+        quality: "normal",
+        relation: "standalone",
+      }))?.questions.map(({ id }) => id)).toEqual(["help-filter-open"]);
+
+      expect((await repository.readHelpSolutionsAll({
+        solution: "needs-review",
+      }))?.questions.map(({ id }) => id)).toEqual(["help-filter-review"]);
+
+      expect((await repository.readHelpSolutionsAll({
+        solution: "outdated",
+        answers: "has",
+        quality: "normal",
+        relation: "standalone",
+      }))?.questions.map(({ id }) => id)).toEqual(["help-filter-outdated"]);
+
+      expect((await repository.readHelpSolutionsAll({
+        quality: "needs-details",
+      }))?.questions.map(({ id }) => id)).toEqual(["help-filter-details"]);
+
+      expect((await repository.readHelpSolutionsAll({
+        relation: "duplicate",
+      }))?.questions.map(({ id }) => id)).toEqual(["help-filter-duplicate"]);
+
+      expect((await repository.readHelpSolutionsAll({
+        answers: "has",
+      }))?.questions.map(({ id }) => id).sort()).toEqual([
+        "help-filter-details",
+        "help-filter-outdated",
+        "help-filter-review",
+      ]);
+
+      expect(await repository.readHelpSolutionsActive({ answers: "none" }))
+        .toMatchObject({ questions: [] });
+    } finally {
+      await client.query(
+        "delete from forum_topics where id = any($1::text[])",
+        [topicIds],
+      );
+      await client.query(
+        'delete from "user" where id = any($1::text[])',
+        [users.map(([id]) => id)],
+      );
+    }
+  });
+
   it("persists Help moderation signals and applies only still-current targets atomically", async () => {
     const repository = new DrizzleForumRepository(drizzle(client), {
       cooldownMs: 0,
