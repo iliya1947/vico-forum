@@ -1982,7 +1982,7 @@ export class DrizzleForumRepository {
 
       // Keep the same lock order as reply writes: topic row(s) first, then
       // the per-user write mutex used by the signal cooldown.
-      const createdAt = await enforceHelpSignalWriteCooldown(tx, input.actorId, this.writePolicy);
+      await enforceHelpSignalWriteCooldown(tx, input.actorId, this.writePolicy);
 
       let targetPostId: string | null = null;
       if (input.kind === "needs-details") {
@@ -2040,7 +2040,10 @@ export class DrizzleForumRepository {
           proposedOriginalTopicId: input.kind === "duplicate" ? input.proposedOriginalTopicId : null,
           submittedByUserId: input.actorId,
           explanation: input.explanation,
-          createdAt,
+          // Lifecycle timestamps for Help signals are database-owned. In
+          // particular, statement time does not freeze at transaction start
+          // while this write waits on row locks.
+          createdAt: sql`statement_timestamp()`,
         })
         .returning();
       if (!created) throw new Error("failed to create Help signal");
@@ -2078,7 +2081,7 @@ export class DrizzleForumRepository {
         .set({
           status: "withdrawn",
           resolvedByUserId: actorId,
-          resolvedAt: sql`now()`,
+          resolvedAt: sql`statement_timestamp()`,
         })
         .where(eq(forumHelpSignals.id, signalId));
     });
@@ -2108,7 +2111,7 @@ export class DrizzleForumRepository {
           .set({
             status: "rejected",
             resolvedByUserId: actorId,
-            resolvedAt: sql`now()`,
+            resolvedAt: sql`statement_timestamp()`,
           })
           .where(eq(forumHelpSignals.id, signalId));
         return "rejected" as const;
@@ -2171,7 +2174,7 @@ export class DrizzleForumRepository {
           && topics.every((row) => row.sectionId === HELP_SOLUTIONS_SERVICE_SECTION_ID);
       }
 
-      const resolvedAt = sql`now()`;
+      const resolvedAt = sql`statement_timestamp()`;
       const supersedeCurrent = async () => {
         await tx
           .update(forumHelpSignals)
@@ -2410,7 +2413,7 @@ export class DrizzleForumRepository {
           .set({
             status: "superseded",
             resolvedByUserId: actorId,
-            resolvedAt: sql`now()`,
+            resolvedAt: sql`statement_timestamp()`,
           })
           .where(and(
             eq(forumHelpSignals.topicId, topicId),
@@ -2485,7 +2488,7 @@ export class DrizzleForumRepository {
         .set({
           status: "superseded",
           resolvedByUserId: actorId,
-          resolvedAt: sql`now()`,
+          resolvedAt: sql`statement_timestamp()`,
         })
         .where(and(
           eq(forumHelpSignals.kind, "duplicate"),
@@ -2649,7 +2652,7 @@ export class DrizzleForumRepository {
           .set({
             status: "superseded",
             resolvedByUserId: actorId,
-            resolvedAt: sql`now()`,
+            resolvedAt: sql`statement_timestamp()`,
           })
           .where(and(
             eq(forumHelpSignals.topicId, topicId),
@@ -2715,7 +2718,7 @@ export class DrizzleForumRepository {
             .set({
               status: "superseded",
               resolvedByUserId: actorId,
-              resolvedAt: sql`now()`,
+              resolvedAt: sql`statement_timestamp()`,
             })
             .where(and(
               eq(forumHelpSignals.topicId, topicId),
@@ -2738,7 +2741,7 @@ export class DrizzleForumRepository {
           .set({
             status: "superseded",
             resolvedByUserId: actorId,
-            resolvedAt: sql`now()`,
+            resolvedAt: sql`statement_timestamp()`,
           })
           .where(and(
             eq(forumHelpSignals.topicId, topicId),
