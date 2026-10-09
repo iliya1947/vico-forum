@@ -1899,6 +1899,7 @@ export class DrizzleForumRepository {
     proposedOriginalTopicId: string | null;
   }): Promise<ForumHelpSignal> {
     return this.database.transaction(async (tx) => {
+      const createdAt = await enforceHelpSignalWriteCooldown(tx, input.actorId, this.writePolicy);
       let topic: {
         id: string;
         sectionId: string;
@@ -2036,6 +2037,7 @@ export class DrizzleForumRepository {
           proposedOriginalTopicId: input.kind === "duplicate" ? input.proposedOriginalTopicId : null,
           submittedByUserId: input.actorId,
           explanation: input.explanation,
+          createdAt,
         })
         .returning();
       if (!created) throw new Error("failed to create Help signal");
@@ -2853,9 +2855,32 @@ async function enforceForumWriteCooldown(
     .where(eq(forumPosts.authorId, authorId))
     .orderBy(desc(forumPosts.createdAt), desc(forumPosts.id))
     .limit(1);
+  return enforceCooldownFromLatest(latest?.createdAt, policy);
+}
+
+async function enforceHelpSignalWriteCooldown(
+  tx: ForumTransaction,
+  actorId: string,
+  policy: ForumWritePolicy,
+): Promise<Date> {
+  // Signal submissions use the same bounded write policy, but keep their
+  // cooldown independent from normal topic/reply authoring.
+  await tx.select({ id: user.id }).from(user).where(eq(user.id, actorId)).for("update");
+  const [latest] = await tx.select({ createdAt: forumHelpSignals.createdAt })
+    .from(forumHelpSignals)
+    .where(eq(forumHelpSignals.submittedByUserId, actorId))
+    .orderBy(desc(forumHelpSignals.createdAt), desc(forumHelpSignals.id))
+    .limit(1);
+  return enforceCooldownFromLatest(latest?.createdAt, policy);
+}
+
+function enforceCooldownFromLatest(
+  latestCreatedAt: Date | undefined,
+  policy: ForumWritePolicy,
+): Date {
   const now = policy.now();
-  if (latest) {
-    const retryAfterMs = policy.cooldownMs - (now.getTime() - latest.createdAt.getTime());
+  if (latestCreatedAt) {
+    const retryAfterMs = policy.cooldownMs - (now.getTime() - latestCreatedAt.getTime());
     if (retryAfterMs > 0) throw new ForumWriteRateLimitError(retryAfterMs);
   }
   return now;
