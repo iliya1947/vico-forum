@@ -14,6 +14,15 @@ behavior when it is cheap and naturally belongs to the presentation layer. Heavi
 subsystems are represented in the target UI now but remain separate implementation tasks rather
 than being silently expanded inside a visual slice.
 
+## MVP-first acceptance priority (owner decision, 2026-10-10)
+
+Функционально завершённый usable MVP имеет приоритет перед polishing существующих экранов.
+Неблокирующие визуальные/UX недочёты сохраняются для отдельного последующего refinement
+pass, включая первоначальную presentation форумных профилей. Новые функциональные
+срезы не задерживаются из-за косметики; подтверждённые функциональные, security,
+permissions и data-integrity дефекты текущего scope исправляются сейчас.
+Это не отменяет обязательную финальную real-runtime acceptance перед публичным запуском.
+
 ## GitHub Pages visual progress preview
 
 По решению владельца во время UI/UX pass используется отдельный лёгкий статический preview на

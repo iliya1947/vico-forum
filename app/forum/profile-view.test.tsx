@@ -19,10 +19,14 @@ describe("profile presentation", () => {
     const originalDirection = document.documentElement.dir;
     document.documentElement.dir = "rtl";
     try {
-      show({ locale: "he", profile: { ...profile, name: "Maya Cohen" } });
-      const heading = screen.getByRole("heading", { level: 1, name: "Maya Cohen" });
-      expect(heading).not.toHaveAttribute("dir");
-      expect(heading.querySelector("bdi")).toHaveAttribute("dir", "auto");
+      const preview = show({ locale: "he", profile: { ...profile, name: "Maya Cohen" } });
+      try {
+        const heading = screen.getByRole("heading", { level: 1, name: "Maya Cohen" });
+        expect(heading).not.toHaveAttribute("dir");
+        expect(heading.querySelector("bdi")).toHaveAttribute("dir", "auto");
+      } finally {
+        preview.unmount();
+      }
     } finally {
       document.documentElement.dir = originalDirection;
     }
