@@ -356,7 +356,7 @@ export async function topicAction({ request, params, context }: {
     if (intent === "markSolutionOutdated" && !outdatedReason) {
       return mutationFailure("invalid", 400);
     }
-    return runForumMutation(request, context, async (writer) => {
+    return runForumMutation(request, context, async (writer, actorId) => {
       await writer.setHelpSolutionModeration({
         topicId,
         status: intent === "markSolutionNeedsReview"
@@ -365,6 +365,7 @@ export async function topicAction({ request, params, context }: {
             ? "outdated"
             : null,
         outdatedReason: outdatedReason ?? null,
+        actorId,
       });
       return redirect(forumTopicPath(locale, topicId));
     });
