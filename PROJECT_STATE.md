@@ -286,7 +286,8 @@ Vico Forum находится в ранней pre-release разработке.
   badges и на topic page. Короткий owner visual re-test этой последней correction подтверждён
   2026-10-09: Guest не видит moderator-only badges, author pending appeal видит своё appeal-сообщение
   без moderator-only badge, Manager видит moderation badges и explanation автора.
-  Independent Codex review PR #205 ещё не выполнен.
+  Final independent Codex review exact implementation head `6aa3115953cbddbdfb8e09f8c193ddc1f242f7fb`
+  завершён 2026-10-09 без major findings.
 - In-app reply notifications slice реализован в PR #180:
   forward migration `0024_forum_reply_notifications` хранит только stable recipient/actor/topic/post
   references, `createdAt` и nullable `readAt`; unique recipient + reply identity предотвращает
