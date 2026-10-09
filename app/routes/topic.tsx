@@ -23,7 +23,12 @@ import type { ContentGenerationActionResponse } from "../localization/content-ge
 import { ForumRouteError } from "../forum/ui";
 import { TopicView } from "../forum/views";
 import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
-import type { ForumTopicReadState } from "../../db/forum-repository";
+import type {
+  ForumPendingHelpSignal,
+  ForumReviewableHelpSignal,
+  ForumTopicReadState,
+  HelpSignalKind,
+} from "../../db/forum-repository";
 import { HELP_SOLUTIONS_SERVICE_SECTION_ID } from "../../db/forum-identifiers";
 
 export { topicAction as action } from "../forum/actions.server";
@@ -32,7 +37,8 @@ export async function loader({ params, context }: {
   params: { locale?: string; topicId?: string };
   context: RouterContextProvider;
 }) {
-  const topic = await forumReaderForRequest(context).readTopicPage(params.topicId ?? "");
+  const forumReader = forumReaderForRequest(context);
+  const topic = await forumReader.readTopicPage(params.topicId ?? "");
   if (!topic) throw new Response("Not Found", { status: 404 });
 
   const resolvedLocale = context.get(localeContext);
@@ -64,25 +70,38 @@ export async function loader({ params, context }: {
 
   const session = authSessionForRequest(context);
   let canReply = false, canManageSolution = false, canModerateHelpSolution = false;
-  let canManageHelpDuplicate = false;
+  let canManageHelpDuplicate = false, canManageHelpNeedsDetails = false, canCreateHelpSignal = false;
   let canCorrectTitleSourceLocale = false, canManagePin = false, canGenerateTranslations = false;
   let canUseAdminPanel = false, canManageAnySolution = false, canCorrectAnySourceLocale = false;
   let correctablePostIds: string[] = [];
   let topicReadState: ForumTopicReadState | null = null;
   if (session) {
     try {
-      topicReadState = await forumReaderForRequest(context).readTopicReadState(session.user.id, topic.id) ?? null;
+      topicReadState = await forumReader.readTopicReadState(session.user.id, topic.id) ?? null;
     } catch (error) {
       if (!(error instanceof ForumStorageUnavailableError)) throw error;
     }
 
     try {
       const resolver = authorizationForRequest(context).forUser(session.user.id);
-      const [reply, solutionAny, solutionOwn, duplicateManage, sourceAny, sourceOwn, generate, pin] = await Promise.all([
+      const [
+        reply,
+        solutionAny,
+        solutionOwn,
+        duplicateManage,
+        needsDetailsManage,
+        signalCreate,
+        sourceAny,
+        sourceOwn,
+        generate,
+        pin,
+      ] = await Promise.all([
         resolver.has("forum.reply.create"),
         resolver.has("forum.solution.manageAny"),
         resolver.has("forum.solution.manageOwn"),
         resolver.has("forum.helpDuplicate.manage"),
+        resolver.has("forum.helpNeedsDetails.manage"),
+        resolver.has("forum.helpSignal.create"),
         resolver.has("forum.sourceLocale.correctAny"),
         resolver.has("forum.sourceLocale.correctOwn"),
         resolver.has("forum.translation.generate"),
@@ -93,11 +112,13 @@ export async function loader({ params, context }: {
       canManageAnySolution = solutionAny;
       canModerateHelpSolution = solutionAny && topic.section.id === HELP_SOLUTIONS_SERVICE_SECTION_ID;
       canManageHelpDuplicate = duplicateManage && topic.section.id === HELP_SOLUTIONS_SERVICE_SECTION_ID;
+      canManageHelpNeedsDetails = needsDetailsManage && topic.section.id === HELP_SOLUTIONS_SERVICE_SECTION_ID;
+      canCreateHelpSignal = signalCreate && topic.section.id === HELP_SOLUTIONS_SERVICE_SECTION_ID;
       canCorrectTitleSourceLocale = sourceAny || (sourceOwn && session.user.id === topic.authorId);
       canCorrectAnySourceLocale = sourceAny;
       canGenerateTranslations = generate && contentGenerationActionForRequest(context).enabled;
       canManagePin = pin;
-      canUseAdminPanel = solutionAny || canManageHelpDuplicate || sourceAny || pin;
+      canUseAdminPanel = solutionAny || canManageHelpDuplicate || canManageHelpNeedsDetails || sourceAny || pin;
       correctablePostIds = sourceAny
         ? topic.posts.map((post) => post.id)
         : sourceOwn
@@ -106,6 +127,39 @@ export async function loader({ params, context }: {
     } catch (error) {
       if (!(error instanceof AuthorizationUnavailableError)) throw error;
       // Public topic reads remain available when optional presentation authorization is unavailable.
+    }
+  }
+
+  let ownPendingHelpSignals: Array<Omit<ForumPendingHelpSignal, "createdAt"> & { createdAt: string }> = [];
+  let reviewableHelpSignals: Array<Omit<ForumReviewableHelpSignal, "createdAt"> & { createdAt: string }> = [];
+  let canSignalDuplicate = false;
+  if (session && topic.section.id === HELP_SOLUTIONS_SERVICE_SECTION_ID) {
+    try {
+      ownPendingHelpSignals = (await forumReader.readOwnPendingHelpSignals(topic.id, session.user.id))
+        .map((signal) => ({ ...signal, createdAt: signal.createdAt.toISOString() }));
+    } catch (error) {
+      if (!(error instanceof ForumStorageUnavailableError)) throw error;
+    }
+
+    const reviewableKinds: HelpSignalKind[] = [];
+    if (canManageHelpNeedsDetails) reviewableKinds.push("needs-details");
+    if (canModerateHelpSolution) reviewableKinds.push("needs-review", "solution-outdated");
+    if (canManageHelpDuplicate) reviewableKinds.push("duplicate");
+    if (reviewableKinds.length > 0) {
+      try {
+        reviewableHelpSignals = (await forumReader.readReviewablePendingHelpSignals(topic.id, reviewableKinds))
+          .map((signal) => ({ ...signal, createdAt: signal.createdAt.toISOString() }));
+      } catch (error) {
+        if (!(error instanceof ForumStorageUnavailableError)) throw error;
+      }
+    }
+
+    if (canCreateHelpSignal && !topic.isSolved && !topic.bestAnswerPostId && !topic.duplicateOf) {
+      try {
+        canSignalDuplicate = !(await forumReader.hasActiveHelpDuplicateChildren(topic.id));
+      } catch (error) {
+        if (!(error instanceof ForumStorageUnavailableError)) throw error;
+      }
     }
   }
 
@@ -121,7 +175,7 @@ export async function loader({ params, context }: {
     && (session.user.id === topic.authorId || canManageHelpDuplicate)
   ) {
     try {
-      const appeal = await forumReaderForRequest(context).readPendingHelpDuplicateAppeal(topic.id);
+      const appeal = await forumReader.readPendingHelpDuplicateAppeal(topic.id);
       if (appeal) {
         pendingDuplicateAppeal = {
           ...appeal,
@@ -167,6 +221,10 @@ export async function loader({ params, context }: {
     canManageAnySolution,
     canModerateHelpSolution,
     canManageHelpDuplicate,
+    canCreateHelpSignal,
+    canSignalDuplicate,
+    ownPendingHelpSignals,
+    reviewableHelpSignals,
     pendingDuplicateAppeal,
     isTopicAuthor: Boolean(session && session.user.id === topic.authorId),
     canCorrectTitleSourceLocale,
