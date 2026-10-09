@@ -66,6 +66,11 @@ type PreviewVariant =
   | "help-solutions-similar-invalid"
   | "help-solutions-similar-unavailable"
   | "help-solution-outdated"
+  | "help-signals-open"
+  | "help-signals-own-pending"
+  | "help-signals-review"
+  | "help-signals-partial-review"
+  | "help-signals-ineligible"
   | "category-no-pins";
 
 interface Scenario {
@@ -117,6 +122,11 @@ export const scenarios: readonly Scenario[] = [
   { id: "help-solution-current", label: "Help solution · current", locale: "en", direction: "ltr", identity: "manager", path: "/en/topics/help-cloudflare-cache", view: "topic", allowedIdentities: ["guest", "user", "manager"] },
   { id: "help-solution-needs-review", label: "Help solution · needs review", locale: "en", direction: "ltr", identity: "manager", path: "/en/topics/help-neon-pooling", view: "topic", allowedIdentities: ["guest", "user", "manager"] },
   { id: "help-solution-outdated", label: "Help solution · outdated", locale: "en", direction: "ltr", identity: "manager", path: "/en/topics/help-postgres-timeout", view: "topic", variant: "help-solution-outdated", allowedIdentities: ["guest", "user", "manager"] },
+  { id: "help-signals-open", label: "Help signals · submit", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/help-cloudflare-cache", view: "topic", variant: "help-signals-open", allowedIdentities: ["user"] },
+  { id: "help-signals-own-pending", label: "Help signals · own pending", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/help-cloudflare-cache", view: "topic", variant: "help-signals-own-pending", allowedIdentities: ["user"] },
+  { id: "help-signals-review", label: "Help signals · manager review", locale: "en", direction: "ltr", identity: "manager", path: "/en/topics/help-cloudflare-cache", view: "topic", variant: "help-signals-review", allowedIdentities: ["manager"] },
+  { id: "help-signals-partial-review", label: "Help signals · partial manager", locale: "en", direction: "ltr", identity: "manager", path: "/en/topics/help-cloudflare-cache", view: "topic", variant: "help-signals-partial-review", allowedIdentities: ["manager"] },
+  { id: "help-signals-ineligible", label: "Help signals · ineligible", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/help-postgres-timeout", view: "topic", variant: "help-signals-ineligible", allowedIdentities: ["user"] },
   { id: "help-solutions-mine", label: "Help & solutions · My questions", locale: "en", direction: "ltr", identity: "user", path: "/en/categories/help-solutions?mode=mine", view: "category", allowedIdentities: ["user", "manager"] },
   { id: "help-solutions-mine-empty", label: "Help & solutions · My questions · empty", locale: "en", direction: "ltr", identity: "user", path: "/en/categories/help-solutions?mode=mine", view: "category", variant: "help-solutions-mine-empty", allowedIdentities: ["user", "manager"] },
   { id: "help-solutions-mine-guest", label: "Help & solutions · My questions · unauthenticated", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=mine", view: "not-found", variant: "route-401", allowedIdentities: ["guest"] },
