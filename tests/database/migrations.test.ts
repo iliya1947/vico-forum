@@ -657,9 +657,9 @@ describe("PostgreSQL 17 locale migrations", () => {
         explanation: "The reproduction steps are missing.",
       });
       await expect(
-        forum.withdrawHelpSignal(firstNeedsDetails.id, "help-signal-user-b"),
+        forum.withdrawHelpSignal(firstNeedsDetails.id, "help-signal-needs-details", "help-signal-user-b"),
       ).rejects.toBeInstanceOf(ForumAuthorizationError);
-      await forum.withdrawHelpSignal(firstNeedsDetails.id, "help-signal-user-a");
+      await forum.withdrawHelpSignal(firstNeedsDetails.id, "help-signal-needs-details", "help-signal-user-a");
       expect(await repository.readHelpSignal(firstNeedsDetails.id)).toMatchObject({ status: "withdrawn" });
       await expect(
         forum.resolveHelpSignal(firstNeedsDetails.id, "help-signal-manager", "accepted"),
@@ -684,10 +684,18 @@ describe("PostgreSQL 17 locale migrations", () => {
         actorId: "help-signal-user-a",
         explanation: "Please add logs.",
       });
+      await expect(
+        forum.withdrawHelpSignal(
+          rejected.id,
+          "help-signal-needs-details",
+          "help-signal-user-a",
+        ),
+      ).rejects.toBeInstanceOf(ForumEntityNotFoundError);
+      expect(await repository.readHelpSignal(rejected.id)).toMatchObject({ status: "pending" });
       expect(await forum.resolveHelpSignal(rejected.id, "help-signal-manager", "rejected")).toBe("rejected");
       expect(await repository.readTopicPage("help-signal-rejected")).toMatchObject({ needsDetails: false });
       await expect(
-        forum.withdrawHelpSignal(rejected.id, "help-signal-user-a"),
+        forum.withdrawHelpSignal(rejected.id, "help-signal-rejected", "help-signal-user-a"),
       ).rejects.toBeInstanceOf(ForumStateConflictError);
 
       await createQuestion("help-signal-solution");
@@ -856,6 +864,7 @@ describe("PostgreSQL 17 locale migrations", () => {
       ["help-signal-rate-author", "help-signal-rate-author@example.test"],
       ["help-signal-rate-user", "help-signal-rate-user@example.test"],
       ["help-signal-rate-concurrent", "help-signal-rate-concurrent@example.test"],
+      ["help-signal-rate-lock-user", "help-signal-rate-lock-user@example.test"],
     ] as const;
     for (const [id, email] of users) await insertForumAuthor(id, email, null);
 
@@ -887,6 +896,7 @@ describe("PostgreSQL 17 locale migrations", () => {
     try {
       await createQuestion("help-signal-rate-a");
       await createQuestion("help-signal-rate-b");
+      await createQuestion("help-signal-rate-lock-order");
 
       let now = Date.now();
       const forum = new ForumService(new DrizzleForumRepository(drizzle(client), {
@@ -900,7 +910,7 @@ describe("PostgreSQL 17 locale migrations", () => {
         actorId: "help-signal-rate-user",
         explanation: "Add the exact error output.",
       });
-      await forum.withdrawHelpSignal(first.id, "help-signal-rate-user");
+      await forum.withdrawHelpSignal(first.id, "help-signal-rate-a", "help-signal-rate-user");
 
       await expect(forum.createHelpSignal({
         kind: "needs-details",
@@ -953,10 +963,41 @@ describe("PostgreSQL 17 locale migrations", () => {
       } finally {
         await pool.end();
       }
+
+      const lockOrderPool = new Pool({ connectionString: databaseUrl, max: 2 });
+      try {
+        const zeroCooldownPolicy = { cooldownMs: 0, now: () => new Date() };
+        const replyForum = new ForumService(new DrizzleForumRepository(drizzle(lockOrderPool), zeroCooldownPolicy));
+        const signalForum = new ForumService(new DrizzleForumRepository(drizzle(lockOrderPool), zeroCooldownPolicy));
+        const outcomes = await Promise.allSettled([
+          replyForum.createPost({
+            id: "help-signal-rate-lock-reply",
+            topicId: "help-signal-rate-lock-order",
+            authorId: "help-signal-rate-lock-user",
+            bodyRevision: {
+              id: "help-signal-rate-lock-reply-body",
+              originalContent: "Concurrent reply.",
+              sourceLocale: "en",
+            },
+          }),
+          signalForum.createHelpSignal({
+            kind: "needs-details",
+            topicId: "help-signal-rate-lock-order",
+            actorId: "help-signal-rate-lock-user",
+            explanation: "Concurrent signal.",
+          }),
+        ]);
+        expect(outcomes).toEqual([
+          expect.objectContaining({ status: "fulfilled" }),
+          expect.objectContaining({ status: "fulfilled" }),
+        ]);
+      } finally {
+        await lockOrderPool.end();
+      }
     } finally {
       await client.query(
         "delete from forum_topics where id = any($1::text[])",
-        [["help-signal-rate-a", "help-signal-rate-b"]],
+        [["help-signal-rate-a", "help-signal-rate-b", "help-signal-rate-lock-order"]],
       );
       await client.query(
         'delete from "user" where id = any($1::text[])',
