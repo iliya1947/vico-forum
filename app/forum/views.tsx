@@ -1803,6 +1803,10 @@ export function TopicView({
   const activeHelpSignalKind = selectedHelpSignalKind && eligibleHelpSignalKinds.includes(selectedHelpSignalKind)
     ? selectedHelpSignalKind
     : null;
+  const activeHelpSignalFormKey = activeHelpSignalKind === "needs-review"
+    || activeHelpSignalKind === "solution-outdated"
+    ? [activeHelpSignalKind, bestAnswerPost?.id ?? "none", currentSolutionModerationStatus ?? "none"].join(":")
+    : activeHelpSignalKind ?? "none";
   const messageLinkRequestId = useRef(0);
   const replyTextareaRef = useRef<HTMLTextAreaElement>(null);
   const navigation = useNavigation();
@@ -1938,73 +1942,44 @@ export function TopicView({
                 <details className="topic-help-signal-tools">
                   <summary>{t("helpSignalControl")}</summary>
                   <div className="topic-help-signal-panel">
-                    {canCreateHelpSignal && !topic.needsDetails && !ownPendingNeedsDetails ? (
-                      <section className="help-signal-submit-section">
-                        <strong>{t("helpSignalNeedsDetails")}</strong>
-                        <Form method="post" className="help-signal-form">
-                          <input type="hidden" name="intent" value="submitHelpSignal" />
-                          <input type="hidden" name="kind" value="needs-details" />
-                          <label>
-                            {t("helpSignalExplanationLabel")}
-                            <textarea name="explanation" required maxLength={1000} rows={3} />
-                          </label>
-                          <button type="submit">{t("helpSignalSubmit")}</button>
-                        </Form>
-                      </section>
+                    {eligibleHelpSignalKinds.length > 0 ? (
+                      <div className="help-signal-kind-picker" role="group" aria-label={t("helpSignalControl")}>
+                        {eligibleHelpSignalKinds.map((kind) => (
+                          <button
+                            key={kind}
+                            type="button"
+                            aria-pressed={activeHelpSignalKind === kind}
+                            onClick={() => setSelectedHelpSignalKind((current) => current === kind ? null : kind)}
+                          >
+                            {helpSignalLabel(kind)}
+                          </button>
+                        ))}
+                      </div>
                     ) : null}
 
-                    {canCreateHelpSignal
-                    && topic.isSolved
-                    && bestAnswerPost
-                    && currentSolutionModerationStatus === null
-                    && !ownPendingNeedsReview ? (
-                      <section className="help-signal-submit-section">
-                        <strong>{t("helpSignalNeedsReview")}</strong>
+                    {activeHelpSignalKind ? (
+                      <section key={activeHelpSignalFormKey} className="help-signal-submit-section">
+                        <strong>{helpSignalLabel(activeHelpSignalKind)}</strong>
                         <Form method="post" className="help-signal-form">
                           <input type="hidden" name="intent" value="submitHelpSignal" />
-                          <input type="hidden" name="kind" value="needs-review" />
-                          <label>
-                            {t("helpSignalExplanationLabel")}
-                            <textarea name="explanation" required maxLength={1000} rows={3} />
-                          </label>
-                          <button type="submit">{t("helpSignalSubmit")}</button>
-                        </Form>
-                      </section>
-                    ) : null}
-
-                    {canCreateHelpSignal
-                    && topic.isSolved
-                    && bestAnswerPost
-                    && currentSolutionModerationStatus !== "outdated"
-                    && !ownPendingSolutionOutdated ? (
-                      <section className="help-signal-submit-section">
-                        <strong>{t("helpSignalSolutionOutdated")}</strong>
-                        <Form method="post" className="help-signal-form">
-                          <input type="hidden" name="intent" value="submitHelpSignal" />
-                          <input type="hidden" name="kind" value="solution-outdated" />
-                          <label>
-                            {t("helpSignalExplanationLabel")}
-                            <textarea name="explanation" required maxLength={1000} rows={3} />
-                          </label>
-                          <button type="submit">{t("helpSignalSubmit")}</button>
-                        </Form>
-                      </section>
-                    ) : null}
-
-                    {canCreateHelpSignal && canSignalDuplicate ? (
-                      <section className="help-signal-submit-section">
-                        <strong>{t("helpSignalDuplicate")}</strong>
-                        <Form method="post" className="help-signal-form">
-                          <input type="hidden" name="intent" value="submitHelpSignal" />
-                          <input type="hidden" name="kind" value="duplicate" />
-                          <label>
-                            {t("helpSignalDuplicateOriginalLabel")}
-                            <input name="proposedOriginalTopicId" required autoComplete="off" />
-                          </label>
-                          <label>
-                            {t("helpSignalDuplicateExplanationLabel")}
-                            <textarea name="explanation" maxLength={1000} rows={3} />
-                          </label>
+                          <input type="hidden" name="kind" value={activeHelpSignalKind} />
+                          {activeHelpSignalKind === "duplicate" ? (
+                            <>
+                              <label>
+                                {t("helpSignalDuplicateOriginalLabel")}
+                                <input name="proposedOriginalTopicId" required autoComplete="off" />
+                              </label>
+                              <label>
+                                {t("helpSignalDuplicateExplanationLabel")}
+                                <textarea name="explanation" maxLength={1000} rows={3} />
+                              </label>
+                            </>
+                          ) : (
+                            <label>
+                              {t("helpSignalExplanationLabel")}
+                              <textarea name="explanation" required maxLength={1000} rows={3} />
+                            </label>
+                          )}
                           <button type="submit">{t("helpSignalSubmit")}</button>
                         </Form>
                       </section>
