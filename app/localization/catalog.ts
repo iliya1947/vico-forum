@@ -27,7 +27,7 @@ export const canonicalEnglishCatalog = {
     profileWebsite: message("profileWebsite", "Website", "Forum profile: profileWebsite."),
     profileBioHint: message("profileBioHint", "Up to 500 characters. This description is public.", "Forum profile: profileBioHint."),
     profileGithubHint: message("profileGithubHint", "A public GitHub profile link. Optional.", "Forum profile: profileGithubHint."),
-    profileWebsiteHint: message("profileWebsiteHint", "An http:// or https:// link. Optional.", "Forum profile: profileWebsiteHint."),
+    profileWebsiteHint: message("profileWebsiteHint", "Use a full HTTP or HTTPS link. Optional.", "Forum profile: profileWebsiteHint."),
     profileSave: message("profileSave", "Save profile", "Forum profile: profileSave."),
     profileSaving: message("profileSaving", "Saving…", "Forum profile: profileSaving."),
     profileCancel: message("profileCancel", "Cancel", "Forum profile: profileCancel."),

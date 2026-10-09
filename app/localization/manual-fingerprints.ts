@@ -19,7 +19,7 @@ export const reviewedCommonFingerprints = {
   profileWebsite: "6834b2cdc8b3ddc8e76de65f348d247f601850c66abb0613346159d8e8f0d1d1",
   profileBioHint: "0ecfbce4391697383101dea6e7c503434d091a63a92c5d445adf0bc8aa8edbef",
   profileGithubHint: "8e7d494c74329724fa0778525c0fe8cbcacd44f9d6e43a85b54374e6c00bbef0",
-  profileWebsiteHint: "10c19db78de7b4255944d5f8eac6f33f7998a9f3747e3c01a559da52ecb1a896",
+  profileWebsiteHint: "866d0a2912bd7e27532e6fcd5fbb072d32ddc71ae3d588fe48ef8a1287a8f9dd",
   profileSave: "41e3f745ee24f55f7de7024557c85f8ac4f9f078ea5924bd6739b5a554de3ba1",
   profileSaving: "9929de379ca64af1fd797f59da1afa32eb4875994fbfcd3767f37e2473e7f4ad",
   profileCancel: "fa81f97357e85dd847d96ee9ab4d1e7888643ec09e96b5919068678407ac7e5d",
