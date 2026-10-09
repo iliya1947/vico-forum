@@ -3278,3 +3278,39 @@ Important product note:
 
 Implementation branch documentation now records the same deferred item in `PROJECT_STATE.md` and
 `docs/UI_UX_PASS.md`. Final independent Codex review remains the next PR-completion gate.
+
+
+---
+
+## PR #209 — Codex findings fixed; short owner re-test required — 2026-10-09
+
+Final Codex review of exact head `92f0a8f9bf908f8bafd6436fb9975b8e8f102667`
+completed with two confirmed P2 current-scope findings:
+
+1. Short/common free-text terms could create high-priority false title matches through raw substring
+   matching.
+2. The result reason `Matches your tags/title/details` incorrectly implied which draft field
+   supplied the matched term; `matchSource` only described the matched field of the existing
+   question.
+
+Both findings are fixed on implementation head
+`e686895c951dffda0abe2c7fdaa20b5357e4dc5d`:
+- free-text terms shorter than three semantic characters are filtered while explicit short tags
+  remain searchable;
+- existing-question title matches are token-boundary-aware;
+- drafts with 3+ meaningful title terms require at least two covered terms before a candidate can
+  enter the result set;
+- DB regression coverage includes the reported `How do I configure Cloudflare auth` versus
+  unrelated `Show Docker...` noise case;
+- localized presentation now truthfully says where the strongest existing-question match was found:
+  `Found in title`, `Found in tags`, or `Found in discussion` (with reviewed RU/HE values).
+
+Verification on exact head `e686895...`:
+- CI run `37945519799`: `checks` success, `database` success;
+- UI preview Pages run `37945578678`: build/deploy success;
+- both Codex review threads were answered and resolved;
+- ChatGPT whole-PR check caught and corrected one intermediate misplaced coverage-threshold line
+  before this head was frozen.
+
+Because the fix changes visible result copy, a short owner visual re-test of
+**Help & solutions · Similar questions** is required before the repeat final Codex review.
