@@ -68,7 +68,7 @@ describe("PostgreSQL 17 locale migrations", () => {
     const applied = await client.query<{ count: string }>(
       'select count(*)::text as count from drizzle."__drizzle_migrations"',
     );
-    expect(applied.rows[0]?.count).toBe("31");
+    expect(applied.rows[0]?.count).toBe("32");
   });
 
   it("seeds Help & solutions while keeping its service section internal to generic discovery", async () => {
@@ -566,6 +566,284 @@ describe("PostgreSQL 17 locale migrations", () => {
     } finally {
       await client.query("delete from forum_topics where id in ('help-foundation-topic', 'help-foundation-no-replies')");
       await client.query(`delete from "user" where id in ('help-foundation-author', 'help-foundation-replier', 'help-foundation-replier-2', 'help-foundation-waiting')`);
+    }
+  });
+
+  it("persists Help moderation signals and applies only still-current targets atomically", async () => {
+    const repository = new DrizzleForumRepository(drizzle(client), {
+      cooldownMs: 0,
+      now: () => new Date(),
+    });
+    const forum = new ForumService(repository);
+    const users = [
+      ["help-signal-question-author", "help-signal-question-author@example.test"],
+      ["help-signal-user-a", "help-signal-user-a@example.test"],
+      ["help-signal-user-b", "help-signal-user-b@example.test"],
+      ["help-signal-manager", "help-signal-manager@example.test"],
+      ["help-signal-replier", "help-signal-replier@example.test"],
+    ] as const;
+    for (const [id, email] of users) await insertForumAuthor(id, email, null);
+
+    const createQuestion = async (id: string, authorId = "help-signal-question-author") => {
+      await forum.createTopicWithInitialPost({
+        id,
+        sectionId: HELP_SOLUTIONS_SERVICE_SECTION_ID,
+        authorId,
+        titleRevision: {
+          id: `${id}-title`,
+          originalContent: `${id} title`,
+          sourceLocale: "en",
+        },
+        initialPost: {
+          id: `${id}-question`,
+          topicId: id,
+          authorId,
+          bodyRevision: {
+            id: `${id}-body`,
+            originalContent: `${id} body`,
+            sourceLocale: "en",
+          },
+        },
+      });
+    };
+
+    try {
+      const grants = await client.query<{ role_id: string; permission_key: string }>(`
+        select role_id, permission_key
+        from authz_role_permissions
+        where permission_key in ('forum.helpSignal.create', 'forum.helpNeedsDetails.manage')
+        order by permission_key, role_id
+      `);
+      expect(grants.rows).toEqual([
+        { role_id: "builtin-admin", permission_key: "forum.helpNeedsDetails.manage" },
+        { role_id: "builtin-moderator", permission_key: "forum.helpNeedsDetails.manage" },
+        { role_id: "builtin-admin", permission_key: "forum.helpSignal.create" },
+        { role_id: "builtin-moderator", permission_key: "forum.helpSignal.create" },
+        { role_id: "builtin-user", permission_key: "forum.helpSignal.create" },
+      ]);
+
+      await createQuestion("help-signal-needs-details");
+      expect(() => forum.createHelpSignal({
+        kind: "needs-details",
+        topicId: "help-signal-needs-details",
+        actorId: "help-signal-user-a",
+      })).toThrow(InvalidForumContentError);
+
+      const firstNeedsDetails = await forum.createHelpSignal({
+        kind: "needs-details",
+        topicId: "help-signal-needs-details",
+        actorId: "help-signal-user-a",
+        explanation: "  Please add   the exact error and runtime version.  ",
+      });
+      expect(firstNeedsDetails).toMatchObject({
+        kind: "needs-details",
+        targetPostId: null,
+        proposedOriginalTopicId: null,
+        explanation: "Please add the exact error and runtime version.",
+        status: "pending",
+      });
+      await expect(forum.createHelpSignal({
+        kind: "needs-details",
+        topicId: "help-signal-needs-details",
+        actorId: "help-signal-user-a",
+        explanation: "Same request again",
+      })).rejects.toBeInstanceOf(ForumStateConflictError);
+
+      const peerNeedsDetails = await forum.createHelpSignal({
+        kind: "needs-details",
+        topicId: "help-signal-needs-details",
+        actorId: "help-signal-user-b",
+        explanation: "The reproduction steps are missing.",
+      });
+      await expect(
+        forum.withdrawHelpSignal(firstNeedsDetails.id, "help-signal-user-b"),
+      ).rejects.toBeInstanceOf(ForumAuthorizationError);
+      await forum.withdrawHelpSignal(firstNeedsDetails.id, "help-signal-user-a");
+      expect(await repository.readHelpSignal(firstNeedsDetails.id)).toMatchObject({ status: "withdrawn" });
+      await expect(
+        forum.resolveHelpSignal(firstNeedsDetails.id, "help-signal-manager", "accepted"),
+      ).rejects.toBeInstanceOf(ForumStateConflictError);
+
+      const replacementNeedsDetails = await forum.createHelpSignal({
+        kind: "needs-details",
+        topicId: "help-signal-needs-details",
+        actorId: "help-signal-user-a",
+        explanation: "Include the failing command output.",
+      });
+      expect(
+        await forum.resolveHelpSignal(replacementNeedsDetails.id, "help-signal-manager", "accepted"),
+      ).toBe("accepted");
+      expect(await repository.readTopicPage("help-signal-needs-details")).toMatchObject({ needsDetails: true });
+      expect(await repository.readHelpSignal(peerNeedsDetails.id)).toMatchObject({ status: "superseded" });
+
+      await createQuestion("help-signal-rejected");
+      const rejected = await forum.createHelpSignal({
+        kind: "needs-details",
+        topicId: "help-signal-rejected",
+        actorId: "help-signal-user-a",
+        explanation: "Please add logs.",
+      });
+      expect(await forum.resolveHelpSignal(rejected.id, "help-signal-manager", "rejected")).toBe("rejected");
+      expect(await repository.readTopicPage("help-signal-rejected")).toMatchObject({ needsDetails: false });
+      await expect(
+        forum.withdrawHelpSignal(rejected.id, "help-signal-user-a"),
+      ).rejects.toBeInstanceOf(ForumStateConflictError);
+
+      await createQuestion("help-signal-solution");
+      await forum.createPost({
+        id: "help-signal-answer-1",
+        topicId: "help-signal-solution",
+        authorId: "help-signal-replier",
+        parentPostId: "help-signal-solution-question",
+        bodyRevision: {
+          id: "help-signal-answer-1-body",
+          originalContent: "First answer",
+          sourceLocale: "en",
+        },
+      });
+      await forum.createPost({
+        id: "help-signal-answer-2",
+        topicId: "help-signal-solution",
+        authorId: "help-signal-user-b",
+        parentPostId: "help-signal-solution-question",
+        bodyRevision: {
+          id: "help-signal-answer-2-body",
+          originalContent: "Second answer",
+          sourceLocale: "en",
+        },
+      });
+      await forum.selectBestAnswer(
+        "help-signal-solution",
+        "help-signal-answer-1",
+        "help-signal-question-author",
+      );
+      await forum.markTopicSolved("help-signal-solution", "help-signal-question-author");
+
+      const staleReview = await forum.createHelpSignal({
+        kind: "needs-review",
+        topicId: "help-signal-solution",
+        actorId: "help-signal-user-a",
+        explanation: "This result needs verification.",
+      });
+      expect(staleReview.targetPostId).toBe("help-signal-answer-1");
+      await forum.selectBestAnswer(
+        "help-signal-solution",
+        "help-signal-answer-2",
+        "help-signal-question-author",
+      );
+      expect(await forum.resolveHelpSignal(staleReview.id, "help-signal-manager", "accepted")).toBe("superseded");
+      expect(await repository.readPost("help-signal-answer-2")).toMatchObject({
+        solutionModerationStatus: null,
+        solutionOutdatedReason: null,
+      });
+
+      const currentReview = await forum.createHelpSignal({
+        kind: "needs-review",
+        topicId: "help-signal-solution",
+        actorId: "help-signal-user-a",
+        explanation: "The current answer needs a second look.",
+      });
+      expect(await forum.resolveHelpSignal(currentReview.id, "help-signal-manager", "accepted")).toBe("accepted");
+      expect(await repository.readPost("help-signal-answer-2")).toMatchObject({
+        solutionModerationStatus: "needs-review",
+      });
+
+      const outdated = await forum.createHelpSignal({
+        kind: "solution-outdated",
+        topicId: "help-signal-solution",
+        actorId: "help-signal-user-b",
+        explanation: "  The API was removed   in the current runtime. ",
+      });
+      expect(await forum.resolveHelpSignal(outdated.id, "help-signal-manager", "accepted")).toBe("accepted");
+      expect(await repository.readPost("help-signal-answer-2")).toMatchObject({
+        solutionModerationStatus: "outdated",
+        solutionOutdatedReason: "The API was removed in the current runtime.",
+        solutionOutdatedReasonKind: null,
+      });
+
+      await createQuestion("help-signal-original");
+      await createQuestion("help-signal-duplicate");
+      const duplicateA = await forum.createHelpSignal({
+        kind: "duplicate",
+        topicId: "help-signal-duplicate",
+        actorId: "help-signal-user-a",
+        proposedOriginalTopicId: "help-signal-original",
+      });
+      const duplicateB = await forum.createHelpSignal({
+        kind: "duplicate",
+        topicId: "help-signal-duplicate",
+        actorId: "help-signal-user-b",
+        proposedOriginalTopicId: "help-signal-original",
+        explanation: "These questions describe the same unresolved problem.",
+      });
+      expect(duplicateA.explanation).toBeNull();
+      expect(await forum.resolveHelpSignal(duplicateA.id, "help-signal-manager", "accepted")).toBe("accepted");
+      expect(await repository.readTopicPage("help-signal-duplicate")).toMatchObject({
+        duplicateOf: { id: "help-signal-original" },
+      });
+      expect(await repository.readHelpSignal(duplicateB.id)).toMatchObject({ status: "superseded" });
+
+      await createQuestion("help-signal-concurrent");
+      const concurrent = await forum.createHelpSignal({
+        kind: "needs-details",
+        topicId: "help-signal-concurrent",
+        actorId: "help-signal-user-a",
+        explanation: "Add a minimal reproduction.",
+      });
+      const pool = new Pool({ connectionString: databaseUrl, max: 2 });
+      try {
+        const concurrentForum = new ForumService(new DrizzleForumRepository(drizzle(pool), {
+          cooldownMs: 0,
+          now: () => new Date(),
+        }));
+        const outcomes = await Promise.allSettled([
+          concurrentForum.resolveHelpSignal(concurrent.id, "help-signal-manager", "accepted"),
+          concurrentForum.resolveHelpSignal(concurrent.id, "help-signal-manager", "accepted"),
+        ]);
+        expect(outcomes.filter((outcome) => outcome.status === "fulfilled")).toHaveLength(1);
+        expect(outcomes.filter((outcome) => outcome.status === "rejected")).toHaveLength(1);
+        expect(outcomes.find((outcome) => outcome.status === "fulfilled")).toMatchObject({
+          status: "fulfilled",
+          value: "accepted",
+        });
+      } finally {
+        await pool.end();
+      }
+
+      await expectDatabaseCode(
+        client.query(`
+          insert into forum_help_signals
+            (id, kind, topic_id, submitted_by_user_id, explanation)
+          values
+            ('help-signal-invalid-shape', 'needs-details', 'help-signal-rejected', 'help-signal-user-a', null)
+        `),
+        "23514",
+      );
+      await expectDatabaseCode(
+        client.query(`
+          insert into forum_help_signals
+            (id, kind, topic_id, submitted_by_user_id, explanation, status, resolved_by_user_id, resolved_at)
+          values
+            ('help-signal-invalid-lifecycle', 'needs-details', 'help-signal-rejected', 'help-signal-user-a', 'Missing logs', 'accepted', null, null)
+        `),
+        "23514",
+      );
+    } finally {
+      await client.query(`
+        delete from forum_topics
+        where id in (
+          'help-signal-needs-details',
+          'help-signal-rejected',
+          'help-signal-solution',
+          'help-signal-original',
+          'help-signal-duplicate',
+          'help-signal-concurrent'
+        )
+      `);
+      await client.query(
+        `delete from "user" where id = any($1::text[])`,
+        [users.map(([id]) => id)],
+      );
     }
   });
 
