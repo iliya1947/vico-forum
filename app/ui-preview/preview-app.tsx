@@ -9,7 +9,7 @@ import {
 } from "../auth/auth-controls";
 import { PERMISSION_CATALOG, type PermissionKey } from "../authorization/catalog";
 import { AuthorizationAdminView } from "../authorization/admin-view";
-import type { ForumPopularPage } from "../../db/forum-repository";
+import type { ForumHelpSolutionsFilters, ForumPopularPage } from "../../db/forum-repository";
 import {
   HELP_SOLUTIONS_CATEGORY_ID,
   HELP_SOLUTIONS_SERVICE_SECTION_ID,
@@ -114,6 +114,8 @@ export const scenarios: readonly Scenario[] = [
   { id: "help-solutions-attention", label: "Help & solutions · Needs attention", locale: "en", direction: "ltr", identity: "manager", path: "/en/categories/help-solutions?mode=attention", view: "category", allowedIdentities: ["manager"] },
   { id: "help-solutions-attention-empty", label: "Help & solutions · Needs attention · empty", locale: "en", direction: "ltr", identity: "manager", path: "/en/categories/help-solutions?mode=attention", view: "category", variant: "help-solutions-attention-empty", allowedIdentities: ["manager"] },
   { id: "help-solutions-solutions", label: "Help & solutions · Solutions", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=solutions", view: "category" },
+  { id: "help-solutions-filters", label: "Help & solutions · Combined filters", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=active&solution=outdated&answers=has&quality=normal&relation=standalone", view: "category" },
+  { id: "help-solutions-filters-manager", label: "Help & solutions · Needs review filter", locale: "en", direction: "ltr", identity: "manager", path: "/en/categories/help-solutions?solution=needs-review&answers=has&quality=normal&relation=standalone", view: "category", allowedIdentities: ["manager"] },
   { id: "help-solution-current", label: "Help solution · current", locale: "en", direction: "ltr", identity: "manager", path: "/en/topics/help-cloudflare-cache", view: "topic", allowedIdentities: ["guest", "user", "manager"] },
   { id: "help-solution-needs-review", label: "Help solution · needs review", locale: "en", direction: "ltr", identity: "manager", path: "/en/topics/help-neon-pooling", view: "topic", allowedIdentities: ["guest", "user", "manager"] },
   { id: "help-solution-outdated", label: "Help solution · outdated", locale: "en", direction: "ltr", identity: "manager", path: "/en/topics/help-postgres-timeout", view: "topic", variant: "help-solution-outdated", allowedIdentities: ["guest", "user", "manager"] },
@@ -1096,6 +1098,23 @@ function PreviewCategoryRoute({ scenario }: { scenario: Scenario }) {
             : requestedMode === "mine"
               ? "mine"
               : "all";
+    const filters: ForumHelpSolutionsFilters = {
+      ...(searchParams.get("solution") === "open"
+        || searchParams.get("solution") === "solved"
+        || searchParams.get("solution") === "needs-review"
+        || searchParams.get("solution") === "outdated"
+        ? { solution: searchParams.get("solution") as NonNullable<ForumHelpSolutionsFilters["solution"]> }
+        : {}),
+      ...(searchParams.get("answers") === "none" || searchParams.get("answers") === "has"
+        ? { answers: searchParams.get("answers") as NonNullable<ForumHelpSolutionsFilters["answers"]> }
+        : {}),
+      ...(searchParams.get("quality") === "normal" || searchParams.get("quality") === "needs-details"
+        ? { quality: searchParams.get("quality") as NonNullable<ForumHelpSolutionsFilters["quality"]> }
+        : {}),
+      ...(searchParams.get("relation") === "standalone" || searchParams.get("relation") === "duplicate"
+        ? { relation: searchParams.get("relation") as NonNullable<ForumHelpSolutionsFilters["relation"]> }
+        : {}),
+    };
     const page = previewHelpSolutions(scenario.locale);
     const previewIdentity = previewUser(scenario);
     const filteredPage = scenario.variant === "help-solutions-open-empty" && mode === "open"
@@ -1132,6 +1151,26 @@ function PreviewCategoryRoute({ scenario }: { scenario: Scenario }) {
                   : mode === "mine"
                     ? { ...page, questions: page.questions.filter((question) => question.authorName === previewIdentity?.name) }
                     : page;
+    const filterQuestion = (question: typeof page.questions[number]) =>
+      (!filters.solution
+        || (filters.solution === "open" && !question.isSolved)
+        || (filters.solution === "solved" && question.isSolved)
+        || (filters.solution === "needs-review" && question.solutionModerationStatus === "needs-review")
+        || (filters.solution === "outdated" && question.solutionModerationStatus === "outdated"))
+      && (!filters.answers
+        || (filters.answers === "none" && question.replyCount === 0)
+        || (filters.answers === "has" && question.replyCount > 0))
+      && (!filters.quality
+        || (filters.quality === "normal" && !question.needsDetails)
+        || (filters.quality === "needs-details" && question.needsDetails))
+      && (!filters.relation
+        || (filters.relation === "standalone" && !question.duplicateOf)
+        || (filters.relation === "duplicate" && Boolean(question.duplicateOf)));
+    const combinedFilteredPage = {
+      ...filteredPage,
+      questions: filteredPage.questions.filter(filterQuestion),
+    };
+
     const similarVariant = scenario.variant?.startsWith("help-solutions-similar-")
       ? scenario.variant
       : undefined;
@@ -1170,7 +1209,8 @@ function PreviewCategoryRoute({ scenario }: { scenario: Scenario }) {
       <HelpSolutionsView
         locale={scenario.locale}
         mode={mode}
-        page={filteredPage}
+        filters={filters}
+        page={combinedFilteredPage}
         referenceTime={previewReferenceTime}
         isAuthenticated={scenario.identity !== "guest"}
         canAskQuestion={scenario.identity !== "guest"}
