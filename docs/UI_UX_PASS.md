@@ -396,6 +396,15 @@ composition without changing the forum hierarchy or schema:
   presentation provisional: after the main functional implementation pass is complete, this
   filter UI should receive a separate usability/visual refinement pass; that deferred polish does
   not block PR #208;
+  PR #209 выполняет отдельно отложенный после завершения основной functional surface
+  refinement проверки похожих вопросов: explicit check использует bounded normalized terms из
+  draft title/body/tags и current persisted Help title/post revisions/tags; ranking остаётся
+  server-side и deterministic с приоритетом title, затем tags, затем body-only match. Result cards
+  сохраняют solved/open и reply count, показывают existing tags и краткую localized match reason.
+  Проверка по-прежнему optional и не блокирует публикацию. Отдельный search index, fuzzy/vector/AI,
+  schema/migrations, live search, automatic duplicate marking, signals/admin integration,
+  Needs-attention aggregation и combined-filter visual polish не входят в этот slice. Проверочные
+  результаты и owner acceptance добавляются только после их фактического получения;
 - owner visual acceptance of the implementation was confirmed on 2026-10-05; exact-head
   automated verification remains a separate PR check.
 
