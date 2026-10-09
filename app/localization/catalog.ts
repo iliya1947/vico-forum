@@ -16,6 +16,32 @@ export interface UiMessageDescriptor {
 
 export const canonicalEnglishCatalog = {
   common: {
+    profileHeading: message("profileHeading", "Forum profile", "Forum profile: profileHeading."),
+    profileEdit: message("profileEdit", "Edit profile", "Forum profile: profileEdit."),
+    profileJoined: message("profileJoined", "Joined", "Forum profile: profileJoined."),
+    profileMessages: message("profileMessages", "Messages", "Forum profile: profileMessages."),
+    profileBestAnswers: message("profileBestAnswers", "Best answers", "Forum profile: profileBestAnswers."),
+    profileBio: message("profileBio", "About", "Forum profile: profileBio."),
+    profileNoBio: message("profileNoBio", "No description yet.", "Forum profile: profileNoBio."),
+    profileLinks: message("profileLinks", "Profile links", "Forum profile: profileLinks."),
+    profileWebsite: message("profileWebsite", "Website", "Forum profile: profileWebsite."),
+    profileBioHint: message("profileBioHint", "Up to 500 characters. This description is public.", "Forum profile: profileBioHint."),
+    profileGithubHint: message("profileGithubHint", "A public GitHub profile link. Optional.", "Forum profile: profileGithubHint."),
+    profileWebsiteHint: message("profileWebsiteHint", "An http:// or https:// link. Optional.", "Forum profile: profileWebsiteHint."),
+    profileSave: message("profileSave", "Save profile", "Forum profile: profileSave."),
+    profileSaving: message("profileSaving", "Saving…", "Forum profile: profileSaving."),
+    profileCancel: message("profileCancel", "Cancel", "Forum profile: profileCancel."),
+    profileSaved: message("profileSaved", "Profile saved.", "Forum profile: profileSaved."),
+    profileInvalid: message("profileInvalid", "Use up to 500 characters and valid public links. GitHub must link to a user profile.", "Forum profile: profileInvalid."),
+    profileRoleUser: message("profileRoleUser", "Member", "Forum profile: profileRoleUser."),
+    profileRoleModerator: message("profileRoleModerator", "Moderator", "Forum profile: profileRoleModerator."),
+    profileRoleAdmin: message("profileRoleAdmin", "Administrator", "Forum profile: profileRoleAdmin."),
+    profileError_unauthenticated: message("profileError_unauthenticated", "Sign in to edit your profile.", "Forum profile: profileError_unauthenticated."),
+    profileError_origin: message("profileError_origin", "This request could not be verified.", "Forum profile: profileError_origin."),
+    profileError_forbidden: message("profileError_forbidden", "You can edit only your own profile.", "Forum profile: profileError_forbidden."),
+    profileError_notFound: message("profileError_notFound", "This profile no longer exists.", "Forum profile: profileError_notFound."),
+    profileError_unavailable: message("profileError_unavailable", "Your profile could not be saved. Try again.", "Forum profile: profileError_unavailable."),
+
     productName: {
       namespace: "common",
       key: "productName",

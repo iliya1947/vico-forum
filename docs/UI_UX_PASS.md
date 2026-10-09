@@ -208,6 +208,19 @@ composition:
 - User profiles remain forum profiles rather than a social network: avatar, name, short bio, role,
   join date, message count, best-answer count, and optional GitHub/site links are appropriate;
   friends/followers/stories/profile likes/personal social feed are not.
+- The bounded profile implementation uses public `/:locale/users/:userId` with opaque text
+  identity encoded as one path segment. Existing users need no optional profile row. Identity,
+  avatar and join date come from Better Auth's user record; role comes from current DB assignment
+  with the existing built-in user fallback. Message totals include initial posts and replies in
+  ordinary and Help topics. Best-answer totals count current selected-post references even on
+  unsolved topics; replacing a selected answer changes both authors' next-request totals.
+  Only the owner may save a plain-text bio (up to 500 Unicode code points), a GitHub profile URL
+  and an optional HTTP(S) website URL through authenticated same-origin POST. Public loaders
+  explicitly project presentation fields; email, sessions, grants and moderation data are absent.
+  Header identity and message-author links use the real route. EN/RU/HE and public/own/edit/error/
+  empty shared-presentation preview states are included. Migration `0032_forum_profiles` is
+  repository/local-CI only. Owner visual acceptance and native runtime acceptance remain separate;
+  Pages submissions are blocked like the other static fixtures.
 
 ### Unfinished-function pre-release behavior
 

@@ -162,6 +162,7 @@ function generationContext(options: {
 
 function writer() {
   return {
+    updateProfile: vi.fn(async () => undefined),
     createTopic: vi.fn(async () => ({ topicId: "server-topic" })),
     createReply: vi.fn(async () => ({ postId: "server-post" })),
     markTopicSolved: vi.fn(async () => undefined),

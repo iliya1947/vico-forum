@@ -84,7 +84,7 @@ function renderView(result?: { ok?: boolean; error?: "conflict" }) {
   const router = createMemoryRouter([{
     path: "*",
     element: (
-      <HeaderAuthProvider initialUser={{ name: "Manager", canManageAuthorization: true }}>
+      <HeaderAuthProvider initialUser={{ id: "fixture-user", name: "Manager", canManageAuthorization: true }}>
         <AuthorizationAdminView
           locale="en"
           permissions={permissions}

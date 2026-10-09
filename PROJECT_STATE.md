@@ -24,6 +24,17 @@
 
 Vico Forum находится в ранней pre-release разработке.
 
+- Bounded блок форумных профилей реализован в текущем implementation set: public
+  `/:locale/users/:userId`, данные имени/аватара/даты регистрации из authoritative identity,
+  актуальная роль из DB, независимые persisted-message/current-best-answer счётчики,
+  optional bio/GitHub/site и owner-only same-origin сохранение. Header и авторы сообщений
+  ведут на реальные профили; EN/RU/HE и representative public/own/edit/error/empty Pages states
+  подключены. Forward migration `0032_forum_profiles` и schema/runtime privilege contracts
+  добавлены только для repository/local-CI path. Локально прошли lint, typecheck, 649 tests,
+  обе сборки и metadata checks на Node 24.21.0 / pnpm 12.3.4; все 33 migrations и full schema
+  manifest parity дополнительно проверены на PGlite PostgreSQL 17.5. Native PostgreSQL 17 CI,
+  Pages/browser review, owner visual acceptance и финальный независимый review ещё ожидаются.
+  Профили не включают социальные функции, смену имени/аватара аккаунта или загрузку файлов.
 - Stage 0–3 foundation завершён.
 - Stage 4 forum core завершён в local/CI path.
 - Stage 5 translations/background jobs завершён в repository/local-CI path.

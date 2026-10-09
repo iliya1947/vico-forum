@@ -177,7 +177,7 @@ describe("homepage category map", () => {
 
   it("shows Unread in homepage navigation only for an authenticated user", async () => {
     renderView(
-      <HeaderAuthProvider initialUser={{ name: "Ada Lovelace" }}>
+      <HeaderAuthProvider initialUser={{ id: "fixture-user", name: "Ada Lovelace" }}>
         <HomeView
           locale="en"
           categories={[]}

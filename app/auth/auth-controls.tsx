@@ -1,10 +1,13 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { Link, useLocation, useRevalidator } from "react-router";
 import { useTranslation } from "react-i18next";
-import { underDevelopmentPath } from "../forum/paths";
+import { ForumAvatar } from "../forum/avatar";
+import { forumProfilePath, underDevelopmentPath } from "../forum/paths";
 import { authClientActions, type AuthClientActions } from "./auth-client";
 
 export interface HeaderAuthUser {
+  readonly id: string;
+  readonly image?: string | null;
   readonly name: string;
   readonly canManageAuthorization?: boolean;
   readonly unreadNotificationCount?: number;
@@ -97,8 +100,8 @@ export function AuthControls({ locale, actions = authClientActions }: {
     <div className="auth-controls" data-state={presentationState} aria-busy={pending || undefined}>
       <div className="auth-controls-main">
         {user ? (
-          <Link className="auth-user" to={underDevelopmentPath(locale, "profiles")}>
-            <span className="auth-avatar" aria-hidden="true">{user.name.trim().slice(0, 1).toUpperCase()}</span>
+          <Link className="auth-user" to={forumProfilePath(locale, user.id)}>
+            <ForumAvatar name={user.name} image={user.image} className="auth-avatar" />
             <span>{user.name}</span>
           </Link>
         ) : null}

@@ -31,7 +31,8 @@ import type {
   HelpSimilarQuestionsActionData,
   SourceLocaleCorrectionMutationError,
 } from "./mutations.server";
-import { forumCategoryPath, forumSearchPath, forumSectionPath, forumTagPath, forumTagsPath, forumTopicPath, underDevelopmentPath } from "./paths";
+import { ForumAvatar } from "./avatar";
+import { forumProfilePath, forumCategoryPath, forumSearchPath, forumSectionPath, forumTagPath, forumTagsPath, forumTopicPath, underDevelopmentPath } from "./paths";
 import type { HomepageCategoryOverview } from "./homepage";
 import {
   PostBodyContent,
@@ -2181,12 +2182,10 @@ export function TopicView({
                   key={post.id}
                 >
                   <header className="topic-message-author">
-                    <span className="topic-message-avatar" aria-hidden="true">
-                      {post.authorName.trim().slice(0, 1).toUpperCase()}
-                    </span>
-                    <span className="topic-message-author-copy">
-                      <strong>{post.authorName}</strong>
-                    </span>
+                    <Link className="topic-message-profile-link" to={forumProfilePath(locale, post.authorId)}>
+                      <ForumAvatar name={post.authorName} image={post.authorImage} className="topic-message-avatar" />
+                      <strong dir="auto">{post.authorName}</strong>
+                    </Link>
                     <span className="topic-message-author-statuses">
                       {isOriginalQuestion && (
                         <strong className="original-question-label">{t("originalQuestion")}</strong>
