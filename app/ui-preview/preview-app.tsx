@@ -1181,10 +1181,10 @@ function PreviewCategoryRoute({ scenario }: { scenario: Scenario }) {
     const similarDraft = {
       title: similarVariant === "help-solutions-similar-invalid" ? "" : page.questions[0]?.title ?? "Worker authentication issue",
       body: scenario.locale === "ru"
-        ? "Сессия пропадает после redirect. Проверяю, обсуждалась ли уже такая проблема.\n\n\`\`\`ts\nconst session = await getSession(request);\n\`\`\`"
+        ? "Сессия пропадает после redirect. Проверяю, обсуждалась ли уже такая проблема.\n\n```ts\nconst session = await getSession(request);\n```"
         : scenario.locale === "he"
-          ? "ה-session נעלם אחרי redirect. בודק אם הבעיה כבר נדונה.\n\n\`\`\`ts\nconst session = await getSession(request);\n\`\`\`"
-          : "The session disappears after redirect. Checking whether this issue already exists.\n\n\`\`\`ts\nconst session = await getSession(request);\n\`\`\`",
+          ? "ה-session נעלם אחרי redirect. בודק אם הבעיה כבר נדונה.\n\n```ts\nconst session = await getSession(request);\n```"
+          : "The session disappears after redirect. Checking whether this issue already exists.\n\n```ts\nconst session = await getSession(request);\n```",
       tags: "Cloudflare, Auth",
     };
     const actionData = similarVariant
