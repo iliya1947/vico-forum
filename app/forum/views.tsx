@@ -1389,6 +1389,9 @@ export function HelpSolutionsView({
                             )}
                           </span>
                         ) : null}
+                        {question.needsDetails ? (
+                          <span className="help-question-quality is-needs-details">{t("helpSolutionsFilterNeedsDetails")}</span>
+                        ) : null}
                         {question.duplicateOf ? (
                           <span className="help-question-duplicate">{t("helpDuplicateBadge")}</span>
                         ) : null}
