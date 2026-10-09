@@ -117,7 +117,7 @@ function classifySyntaxToken(
 
 export function highlightCode(code: string, language: string | undefined): SyntaxToken[] {
   const normalizedLanguage = normalizeLanguage(language);
-  if (!normalizedLanguage) return [{ text: code }];
+  if (!normalizedLanguage || code.length > 20_000) return [{ text: code }];
 
   const pattern = syntaxTokenPattern(normalizedLanguage);
   const keywords = languageKeywords[normalizedLanguage] ?? new Set<string>();
@@ -125,6 +125,7 @@ export function highlightCode(code: string, language: string | undefined): Synta
   let cursor = 0;
 
   for (const match of code.matchAll(pattern)) {
+    if (tokens.length >= 2_000) return [{ text: code }];
     const index = match.index ?? 0;
     if (index > cursor) tokens.push({ text: code.slice(cursor, index) });
     const text = match[0];
@@ -164,7 +165,7 @@ function ForumCodeBlock({
   }
 
   return (
-    <figure className="forum-code-block" dir="ltr" data-wrap={wrap ? "true" : "false"}>
+    <figure className="forum-code-block" data-wrap={wrap ? "true" : "false"}>
       <figcaption className="forum-code-toolbar">
         <span className="forum-code-language">
           {displayLanguage || t("codeLanguagePlainText")}
@@ -191,7 +192,7 @@ function ForumCodeBlock({
           </span>
         )}
       </figcaption>
-      <pre tabIndex={0}>
+      <pre tabIndex={0} dir="ltr">
         <code className={displayLanguage ? `language-${displayLanguage}` : undefined}>
           {tokens.map((token, index) =>
             token.kind ? (
