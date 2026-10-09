@@ -63,7 +63,7 @@ forum_categories, forum_sections
 forum_topics, forum_posts
   SELECT, INSERT, UPDATE
 
-forum_help_duplicate_relationships, forum_help_duplicate_appeals
+forum_help_duplicate_relationships, forum_help_duplicate_appeals, forum_help_signals
   SELECT, INSERT, UPDATE
 
 forum_topic_title_revisions, forum_post_revisions
