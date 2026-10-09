@@ -3228,3 +3228,37 @@ _Source: https://github.com/iliya1947/vico-forum/pull/147#issuecomment-608192446
 * ✅ `git status --short --branch` — рабочее дерево чистое после commit.
 
  [View task →](https://chatgpt.com/s/cd_6ac8ec04808c8191be63e75678f1810f)
+
+
+---
+
+## PR #209 — Help similar-question refinement ready for owner visual acceptance — 2026-10-09
+
+Implementation PR #209 is frozen for owner visual review at exact head
+`1972a5fe413f57a4083be94a7982755829e7f12f`.
+
+Implemented bounded result:
+- optional Help & solutions similar-question check now uses bounded Unicode-normalized terms from
+  the current draft title/body/tags instead of treating the whole title as one substring;
+- repository matching remains restricted to current persisted content/tags of the internal
+  `help-solutions-questions` section;
+- deterministic ranking uses explicit source priority `title → tags → body`, then covered-term
+  count, weighted relevance, existing activity and stable topic-id tie-break;
+- action result limit remains 5;
+- result presentation now exposes existing tags and one localized strongest-match reason;
+- publication remains independent and non-blocking; existing session/origin/permission/validation/
+  write boundaries are unchanged;
+- no schema/migration/search-index/fuzzy/vector/AI search, automatic duplicate marking,
+  signals/admin work, Needs-attention aggregation, combined-filter polish or Stage 6 work.
+
+Verification on exact head:
+- CI run `37940766297`: `checks` success, `database` success;
+- UI preview Pages run `37940812705`: build/deploy success for exact SHA;
+- ChatGPT whole-PR review: no remaining confirmed current-scope defects;
+- PR is mergeable and remains draft only because owner visual acceptance and final Codex review
+  are still pending.
+
+Representative Pages state for review: **Help & solutions · Similar questions**.
+Preview deployment: https://iliya1947.github.io/vico-forum/
+
+Per AGENTS, manual Codex review has not been started. It must wait for owner visual acceptance.
