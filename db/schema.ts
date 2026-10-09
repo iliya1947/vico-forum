@@ -492,6 +492,13 @@ export const forumProfiles = pgTable("forum_profiles", {
   check("forum_profiles_website_url", sql`${table.websiteUrl} is null or (char_length(${table.websiteUrl}) <= 2048 and ${table.websiteUrl} ~ '^https?://')`),
 ]);
 
+export const forumOnlinePresence = pgTable("forum_online_presence", {
+  userId: text("user_id").primaryKey().references(() => user.id, { onDelete: "cascade" }),
+  lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("forum_online_presence_seen_at_idx").on(table.lastSeenAt),
+]);
+
 export const session = pgTable(
   "session",
   {

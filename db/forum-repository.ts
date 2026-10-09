@@ -6,6 +6,7 @@ import {
   authzRoles,
   authzUserRoles,
   forumProfiles,
+  forumOnlinePresence,
   forumCategories,
   forumHelpDuplicateAppeals,
   forumHelpDuplicateRelationships,
@@ -288,7 +289,13 @@ export interface ForumTopicPage extends ForumTopic {
   posts: ForumThreadPost[];
 }
 
+export interface ForumOnlinePresence {
+  count: number;
+  members: { id: string; name: string; image: string | null }[];
+}
+
 export interface ForumReader {
+  readOnlinePresence(): Promise<ForumOnlinePresence>;
   readProfile(userId: string): Promise<ForumProfile | undefined>;
   listCategories(): Promise<ForumCategorySummary[]>;
   readHomepage(): Promise<ForumHomepageCategorySummary[]>;
@@ -385,6 +392,29 @@ export class DrizzleForumRepository {
     private readonly database: NodePgDatabase,
     private readonly writePolicy: ForumWritePolicy = forumWritePolicy,
   ) {}
+
+  async readOnlinePresence(): Promise<ForumOnlinePresence> {
+    const recent = sql`${forumOnlinePresence.lastSeenAt} >= now() - interval '5 minutes'`;
+    const [countRow, memberRows] = await Promise.all([
+      this.database.select({ count: sql<number>`count(*)::int` }).from(forumOnlinePresence).where(recent),
+      this.database.select({ id: user.id, name: user.name, image: user.image })
+        .from(forumOnlinePresence)
+        .innerJoin(user, eq(user.id, forumOnlinePresence.userId))
+        .where(recent)
+        .orderBy(desc(forumOnlinePresence.lastSeenAt), asc(user.id))
+        .limit(12),
+    ]);
+    return { count: countRow?.count ?? 0, members: memberRows };
+  }
+
+  async recordOnlinePresence(userId: string): Promise<void> {
+    await this.database.insert(forumOnlinePresence)
+      .values({ userId })
+      .onConflictDoUpdate({
+        target: forumOnlinePresence.userId,
+        set: { lastSeenAt: sql`greatest(${forumOnlinePresence.lastSeenAt}, now())` },
+      });
+  }
 
   async readProfile(userId: string): Promise<ForumProfile | undefined> {
     const [profile] = await this.database.select({

@@ -9,12 +9,12 @@ export function meta() {
 }
 
 export async function loader({ params, context }: { params: { locale?: string }; context: RouterContextProvider }) {
-  const categories: HomepageCategoryOverview[] = await forumReaderForRequest(context).readHomepage();
-
-  return {
-    locale: params.locale ?? "en",
-    categories,
-  };
+  const reader = forumReaderForRequest(context);
+  const [categories, onlinePresence] = await Promise.all([
+    reader.readHomepage(),
+    reader.readOnlinePresence(),
+  ]);
+  return { locale: params.locale ?? "en", categories: categories satisfies HomepageCategoryOverview[], onlinePresence };
 }
 
 export default function Home() {
