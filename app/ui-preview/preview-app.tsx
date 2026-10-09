@@ -97,6 +97,7 @@ export const scenarios: readonly Scenario[] = [
   { id: "tag-typescript-guest", label: "Tag · TypeScript", locale: "en", direction: "ltr", identity: "guest", path: "/en/tags/typescript", view: "tag" },
   { id: "help-solutions-all", label: "Help & solutions · All", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions", view: "category" },
   { id: "help-solutions-ask", label: "Help & solutions · Ask", locale: "en", direction: "ltr", identity: "user", path: "/en/categories/help-solutions", view: "category", allowedIdentities: ["user", "manager"] },
+  { id: "editor-help-draft", label: "Editor · Help question draft", locale: "en", direction: "ltr", identity: "user", path: "/en/categories/help-solutions", view: "category", variant: "help-solutions-similar-results", allowedIdentities: ["user", "manager"] },
   { id: "help-solutions-similar-results", label: "Help & solutions · Similar questions", locale: "en", direction: "ltr", identity: "user", path: "/en/categories/help-solutions", view: "category", variant: "help-solutions-similar-results", allowedIdentities: ["user", "manager"] },
   { id: "help-solutions-similar-empty", label: "Help & solutions · Similar · empty", locale: "en", direction: "ltr", identity: "user", path: "/en/categories/help-solutions", view: "category", variant: "help-solutions-similar-empty", allowedIdentities: ["user", "manager"] },
   { id: "help-solutions-similar-invalid", label: "Help & solutions · Similar · invalid", locale: "en", direction: "ltr", identity: "user", path: "/en/categories/help-solutions", view: "category", variant: "help-solutions-similar-invalid", allowedIdentities: ["user", "manager"] },
@@ -126,8 +127,10 @@ export const scenarios: readonly Scenario[] = [
   { id: "category-guest", label: "Category", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/development", view: "category" },
   { id: "category-no-pins", label: "Category · no pins", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/development", view: "category", variant: "category-no-pins" },
   { id: "section-user", label: "Section", locale: "en", direction: "ltr", identity: "user", path: "/en/sections/typescript", view: "section" },
+  { id: "editor-create-topic", label: "Editor · Create topic", locale: "en", direction: "ltr", identity: "user", path: "/en/sections/typescript", view: "section", allowedIdentities: ["user", "manager"] },
   { id: "section-form-error", label: "Create topic error", locale: "en", direction: "ltr", identity: "user", path: "/en/sections/typescript", view: "section", variant: "section-form-error", allowedIdentities: ["user", "manager"] },
   { id: "topic-solved-user", label: "Solved topic", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api", view: "topic" },
+  { id: "editor-reply", label: "Editor · Reply", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api", view: "topic", variant: "topic-unsolved", allowedIdentities: ["user", "manager"] },
   { id: "topic-best-answer-unsolved", label: "Best answer · confirmation", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api?solutionPrompt=answer#solution-confirmation", view: "topic", variant: "topic-best-answer-unsolved", allowedIdentities: ["user"] },
   { id: "topic-reply-error", label: "Reply error", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api", view: "topic", variant: "topic-reply-error", allowedIdentities: ["user", "manager"] },
   { id: "topic-unsolved", label: "Unsolved topic", locale: "en", direction: "ltr", identity: "guest", path: "/en/topics/typed-api", view: "topic", variant: "topic-unsolved" },
@@ -1178,10 +1181,10 @@ function PreviewCategoryRoute({ scenario }: { scenario: Scenario }) {
     const similarDraft = {
       title: similarVariant === "help-solutions-similar-invalid" ? "" : page.questions[0]?.title ?? "Worker authentication issue",
       body: scenario.locale === "ru"
-        ? "Сессия пропадает после redirect. Проверяю, обсуждалась ли уже такая проблема."
+        ? "Сессия пропадает после redirect. Проверяю, обсуждалась ли уже такая проблема.\n\n\`\`\`ts\nconst session = await getSession(request);\n\`\`\`"
         : scenario.locale === "he"
-          ? "ה-session נעלם אחרי redirect. בודק אם הבעיה כבר נדונה."
-          : "The session disappears after redirect. Checking whether this issue already exists.",
+          ? "ה-session נעלם אחרי redirect. בודק אם הבעיה כבר נדונה.\n\n\`\`\`ts\nconst session = await getSession(request);\n\`\`\`"
+          : "The session disappears after redirect. Checking whether this issue already exists.\n\n\`\`\`ts\nconst session = await getSession(request);\n\`\`\`",
       tags: "Cloudflare, Auth",
     };
     const actionData = similarVariant
