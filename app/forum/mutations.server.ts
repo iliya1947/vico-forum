@@ -29,6 +29,7 @@ export interface HelpSimilarQuestionResult {
   replyCount: number;
   isSolved: boolean;
   tags: readonly { key: string; name: string }[];
+  matchSource: "title" | "tags" | "body";
 }
 
 export type HelpSimilarQuestionsActionData = {
