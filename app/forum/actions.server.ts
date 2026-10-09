@@ -265,7 +265,7 @@ export async function topicAction({ request, params, context }: {
     const signalId = requiredFormText(formData, "signalId");
     if (!signalId) return mutationFailure("invalid", 400);
     return runForumMutation(request, context, async (writer, actorId) => {
-      await writer.withdrawHelpSignal({ signalId, actorId });
+      await writer.withdrawHelpSignal({ signalId, topicId, actorId });
       return redirect(forumTopicPath(locale, topicId));
     });
   }
