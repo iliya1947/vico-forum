@@ -3072,3 +3072,19 @@ _Source: https://github.com/iliya1947/vico-forum/pull/147#issuecomment-607974544
 * ✅ `git status --short --branch` — рабочее дерево чистое после commit.
 
  [View task →](https://chatgpt.com/s/cd_6ac8cc0b6b0481918361f22628402665)
+
+
+---
+
+## PR #207 superseded — foundation-only boundary confirmed — 2026-10-09
+
+Owner clarified that signals/reports and the future admin panel are being designed in separate conversations. ChatGPT and Codex independently converged on the same technical conclusion:
+
+- merged PR #206 is already sufficient reusable signal foundation;
+- no additional schema, permission model, route, generic moderation queue or admin abstraction is justified before those product contracts are complete;
+- no part of PR #207 should be retained selectively as “foundation”, because its additional reads, eligibility hints and presentation all encode the withdrawn topic-local UI direction;
+- current `main` after PR #206 remains the intended implementation state.
+
+PR #207 was closed **without merge** and marked superseded. No production/external action was performed.
+
+Next implementation work for these systems starts only from the separately approved signals/reports and admin-panel contracts.
