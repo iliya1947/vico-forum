@@ -281,6 +281,7 @@ describe("forum write route actions", () => {
       replyCount: 3,
       isSolved: true,
       tags: [{ key: "cloudflare", name: "Cloudflare" }],
+      matchSource: "title" as const,
     }]);
     requestContext.set(forumReaderContext, { searchHelpSolutionsSimilar } as never);
 
@@ -295,7 +296,11 @@ describe("forum write route actions", () => {
       context: requestContext,
     });
 
-    expect(searchHelpSolutionsSimilar).toHaveBeenCalledWith("Worker auth", 5);
+    expect(searchHelpSolutionsSimilar).toHaveBeenCalledWith({
+      title: "Worker auth",
+      body: " Draft body ",
+      tags: ["Cloudflare", "Auth"],
+    }, 5);
     expect(forumWriter.createTopic).not.toHaveBeenCalled();
     expect(response).toMatchObject({
       data: {
@@ -311,6 +316,7 @@ describe("forum write route actions", () => {
           title: "A focused question about Worker auth",
           replyCount: 3,
           isSolved: true,
+          matchSource: "title",
         }],
       },
       init: { status: 200 },
