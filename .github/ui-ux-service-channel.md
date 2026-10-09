@@ -3142,3 +3142,22 @@ Explicit deferred product note:
 Implementation scope remains unchanged: no signals/reports UI, no admin-panel changes, no Needs-attention expansion, no schema/migration/permission changes.
 
 Per AGENTS, PR #208 can now proceed to final exact-head CI confirmation and one manual Codex review.
+
+
+---
+
+## PR #208 final review complete — ready to merge — 2026-10-09
+
+Final implementation head: `bd9481370014ee058f8d381124c6cd3351dfa68f`.
+
+Verified on this exact head:
+- owner visual acceptance confirmed 2026-10-09 for the current functional pass;
+- future usability/visual refinement of the combined-filter presentation is explicitly deferred and does not block this PR;
+- CI run `37935475464`: `checks` success and `database` success;
+- ChatGPT whole-PR review: no remaining confirmed current-scope defects;
+- manual Codex review completed on `bd94813` with no findings / no review threads;
+- no schema/migration/permission changes;
+- no signals/reports UI or admin-panel changes;
+- no Needs-attention expansion.
+
+PR #208 is ready for owner merge. No additional Codex round is required unless implementation changes before merge.
