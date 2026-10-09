@@ -842,6 +842,7 @@ export class DrizzleForumRepository {
       when bool_or(${tagMatch}) then 2
       else 1
     end::int`;
+    const minimumCoveredTerms = titleTerms.length >= 3 ? 2 : 1;
     const activityAt = sql`greatest(
       ${forumTopics.createdAt},
       coalesce(max(${forumPosts.createdAt}), ${forumTopics.createdAt})
@@ -1164,6 +1165,7 @@ export class DrizzleForumRepository {
       throw new RangeError("similar-question limit must be an integer between 1 and 10");
     }
 
+    const titleTerms = helpSimilarTextTerms(normalizedTitle, HELP_SIMILAR_TITLE_TERM_LIMIT);
     const terms = helpSimilarSearchTerms({
       title: normalizedTitle,
       body: query.body,
@@ -1172,8 +1174,9 @@ export class DrizzleForumRepository {
     if (terms.length === 0) return [];
 
     const patterns = terms.map((term) => `%${escapeSearchPattern(term)}%`);
-    const titleTermMatches = patterns.map((pattern) =>
-      sql<boolean>`${forumTopicTitleRevisions.originalContent} ilike ${pattern} escape '!'`,
+    const titlePatterns = terms.map(helpSimilarTitleTokenPattern);
+    const titleTermMatches = titlePatterns.map((pattern) =>
+      sql<boolean>`${forumTopicTitleRevisions.originalContent} ~* ${pattern}`,
     );
     const tagTermMatches = patterns.map((pattern) =>
       sql<boolean>`coalesce(${forumTags.name} ilike ${pattern} escape '!', false)
@@ -1249,7 +1252,7 @@ export class DrizzleForumRepository {
       .leftJoin(forumTags, eq(forumTags.key, forumTopicTags.tagKey))
       .where(eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID))
       .groupBy(forumTopics.id, forumTopicTitleRevisions.id)
-      .having(sql`${coveredTermCount} > 0`)
+      .having(sql`${coveredTermCount} >= ${minimumCoveredTerms}`)
       .orderBy(
         desc(matchTier),
         desc(coveredTermCount),
@@ -3029,6 +3032,14 @@ function helpSimilarTextTerms(value: string, limit: number): string[] {
 function usefulHelpSimilarTerm(value: string): boolean {
   const semanticLength = value.match(/[\p{L}\p{N}]/gu)?.length ?? 0;
   return semanticLength >= 3 || (semanticLength === 1 && /[+#]/u.test(value));
+}
+
+function helpSimilarTitleTokenPattern(value: string): string {
+  let escaped = value;
+  for (const char of ["\\", "^", "$", ".", "*", "+", "?", "(", ")", "[", "]", "{", "}", "|"]) {
+    escaped = escaped.split(char).join("\\" + char);
+  }
+  return `(^|[^[:alnum:]_])${escaped}([^[:alnum:]_]|$)`;
 }
 
 function escapeSearchPattern(value: string): string {
