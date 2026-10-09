@@ -385,8 +385,10 @@ composition without changing the forum hierarchy or schema:
   slice without coupling it to the separately designed signals/reports or admin-panel systems:
   `Solution / Answers / Quality / Relation` select only already-persisted authoritative state,
   combine over every current Help mode at the database boundary before mode limits/order, preserve
-  filters during mode navigation and expose a mode-preserving reset. `Needs review` remains
-  permission-sensitive through existing `forum.solution.manageAny`; pending user signals are not
+  filters during mode navigation and expose a mode-preserving reset. Persisted `Needs details` is
+  also shown as a public Help-list badge so quality-filter results are self-explanatory.
+  `Needs review` remains permission-sensitive through existing `forum.solution.manageAny`;
+  pending user signals are not
   filter inputs. This slice does not expand `Needs attention`, add schema/migrations/permissions,
   or change signal/admin presentation. EN/RU/HE and responsive representative Pages states are
   included; CI/Pages/owner acceptance remain pending until actually completed;
