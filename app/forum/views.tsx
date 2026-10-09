@@ -4,6 +4,8 @@ import { useTranslation } from "react-i18next";
 
 import type {
   ForumHelpSolutionsPage,
+  ForumPendingHelpSignal,
+  ForumReviewableHelpSignal,
   ForumPopularPeriod,
   ForumPopularTopicSummary,
   ForumReplyNotificationSummary,
@@ -16,6 +18,7 @@ import type {
   ForumTopicReadState,
   ForumUnansweredTopicSummary,
   ForumUnreadTopicSummary,
+  HelpSignalKind,
 } from "../../db/forum-repository";
 import {
   HELP_SOLUTIONS_CATEGORY_ID,
@@ -1612,6 +1615,8 @@ export type TopicViewActionData =
 
 type MessageLinkState = "copied" | "error";
 type MessageLinkFeedback = { postId: string; state: MessageLinkState } | null;
+type PendingHelpSignalPresentation = Omit<ForumPendingHelpSignal, "createdAt"> & { createdAt: string };
+type ReviewableHelpSignalPresentation = Omit<ForumReviewableHelpSignal, "createdAt"> & { createdAt: string };
 
 function MessagePermalinkControl({
   postId,
@@ -1662,6 +1667,10 @@ export function TopicView({
   canManageAnySolution = false,
   canModerateHelpSolution = false,
   canManageHelpDuplicate = false,
+  canCreateHelpSignal = false,
+  canSignalDuplicate = false,
+  ownPendingHelpSignals = [],
+  reviewableHelpSignals = [],
   pendingDuplicateAppeal = null,
   isTopicAuthor = false,
   canCorrectTitleSourceLocale,
@@ -1681,6 +1690,10 @@ export function TopicView({
   canManageAnySolution?: boolean;
   canModerateHelpSolution?: boolean;
   canManageHelpDuplicate?: boolean;
+  canCreateHelpSignal?: boolean;
+  canSignalDuplicate?: boolean;
+  ownPendingHelpSignals?: readonly PendingHelpSignalPresentation[];
+  reviewableHelpSignals?: readonly ReviewableHelpSignalPresentation[];
   pendingDuplicateAppeal?: {
     id: string;
     relationshipId: string;
@@ -1716,6 +1729,15 @@ export function TopicView({
     : undefined;
   const currentSolutionModerationStatus = bestAnswerPost?.solutionModerationStatus ?? null;
   const currentSolutionOutdatedReason = bestAnswerPost?.solutionOutdatedReason ?? null;
+  const isHelpTopic = topic.section.id === HELP_SOLUTIONS_SERVICE_SECTION_ID;
+  const ownPendingNeedsDetails = ownPendingHelpSignals.some((signal) => signal.kind === "needs-details");
+  const ownPendingNeedsReview = Boolean(bestAnswerPost) && ownPendingHelpSignals.some(
+    (signal) => signal.kind === "needs-review" && signal.targetPostId === bestAnswerPost?.id,
+  );
+  const ownPendingSolutionOutdated = Boolean(bestAnswerPost) && ownPendingHelpSignals.some(
+    (signal) => signal.kind === "solution-outdated" && signal.targetPostId === bestAnswerPost?.id,
+  );
+  const showHelpSignalControl = isHelpTopic && (canCreateHelpSignal || ownPendingHelpSignals.length > 0);
   const orderedPosts = originalPost
     ? [
         originalPost,
@@ -1735,6 +1757,16 @@ export function TopicView({
     directRepliesByParent.set(post.parentPostId, replies);
   }
   const { t } = useTranslation("common");
+  const helpSignalLabel = (kind: HelpSignalKind) => t(
+    kind === "needs-details"
+      ? "helpSignalNeedsDetails"
+      : kind === "needs-review"
+        ? "helpSignalNeedsReview"
+        : kind === "solution-outdated"
+          ? "helpSignalSolutionOutdated"
+          : "helpSignalDuplicate",
+  );
+  const helpSignalTime = (createdAt: string) => `${createdAt.slice(0, 10)} ${createdAt.slice(11, 16)} UTC`;
   const location = useLocation();
   const solutionPromptPostId = new URLSearchParams(location.search).get("solutionPrompt");
   const promptedBestAnswerPostId =
@@ -1863,7 +1895,7 @@ export function TopicView({
                 ]}
           />
 
-          {(selectableBestAnswerPosts.length > 0 || canUseAdminPanel) ? (
+          {(selectableBestAnswerPosts.length > 0 || showHelpSignalControl || canUseAdminPanel) ? (
             <div className="topic-breadcrumb-actions">
               {selectableBestAnswerPosts.length > 0 ? (
                 <details className="topic-best-answer-tools">
