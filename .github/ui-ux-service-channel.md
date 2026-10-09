@@ -3699,3 +3699,23 @@ Exact-head automated evidence:
 Next gate is owner Pages acceptance. Do not request final Codex whole-PR review until that owner
 acceptance is recorded; if owner acceptance requires implementation changes, repeat exact-head
 CI/Pages and ChatGPT whole-PR verification before Codex.
+
+
+---
+
+## Scope correction — editor work belongs to a separate chat — 2026-10-09
+
+Owner clarification:
+- full editor/code implementation is handled in a separate dedicated chat and is out of scope for
+  the current development conversation;
+- existing PR #176 remains the original deferred editor PR;
+- PR #210 was created in this conversation by mistake after the editor had already been deferred and
+  must not be treated as the current project's next slice or merged from this conversation;
+- current `main` is unchanged by PR #210 and correctly still lists editor work as unfinished;
+- when the owner explicitly returns to editor work in its dedicated chat, that chat should decide
+  how to reconcile PR #176 and any useful work from #210. This conversation must not make that
+  decision or continue editor implementation.
+
+Other separately designed/integrated tracks also remain separate from this conversation where the
+owner already assigned them: user signals/reports/complaints and the admin-panel system. Their
+existence must not block independent forum development in this conversation.
