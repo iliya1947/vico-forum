@@ -1686,7 +1686,7 @@ describe("PostgreSQL 17 locale migrations", () => {
       });
       await createQuestion({
         id: "help-similar-short-noise",
-        title: "Docker image build failure",
+        title: "Show Docker image build failure",
         body: "A container image fails before startup.",
       });
       await createQuestion({
