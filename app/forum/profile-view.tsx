@@ -25,7 +25,7 @@ export function ProfileView({ locale, profile, isOwner = false, editing = false,
     <section className="profile-card" aria-labelledby="profile-name">
       <header className="profile-identity">
         <ForumAvatar name={profile.name} image={profile.image} className="profile-avatar" />
-        <div className="profile-identity-copy"><p className="profile-eyebrow">{t("profileHeading")}</p><h1 id="profile-name" dir="auto">{profile.name}</h1><span className="profile-role" dir="auto">{role}</span></div>
+        <div className="profile-identity-copy"><p className="profile-eyebrow">{t("profileHeading")}</p><h1 id="profile-name"><bdi dir="auto">{profile.name}</bdi></h1><span className="profile-role" dir="auto">{role}</span></div>
         {isOwner && !editing && <Link className="profile-button" to={`${path}?edit=1`}>{t("profileEdit")}</Link>}
       </header>
       <dl className="profile-statistics">

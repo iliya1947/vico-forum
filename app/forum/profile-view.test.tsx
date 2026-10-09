@@ -15,6 +15,18 @@ function show(props: Partial<Parameters<typeof ProfileView>[0]> = {}) {
   return render(<I18nextProvider i18n={i18n}><RouterProvider router={router} /></I18nextProvider>);
 }
 describe("profile presentation", () => {
+  it("keeps an LTR display name at the layout start edge in RTL without reversing its text", () => {
+    const originalDirection = document.documentElement.dir;
+    document.documentElement.dir = "rtl";
+    try {
+      show({ locale: "he", profile: { ...profile, name: "Maya Cohen" } });
+      const heading = screen.getByRole("heading", { level: 1, name: "Maya Cohen" });
+      expect(heading).not.toHaveAttribute("dir");
+      expect(heading.querySelector("bdi")).toHaveAttribute("dir", "auto");
+    } finally {
+      document.documentElement.dir = originalDirection;
+    }
+  });
   it("renders public identity, statistics, escaped biography and safe links", () => {
     const { container } = show();
     expect(screen.getByRole("heading", { level: 1, name: "Owner" })).toBeInTheDocument();

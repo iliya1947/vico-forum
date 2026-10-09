@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-10-09
+Последнее обновление: 2026-10-10
 
 ## Назначение
 
@@ -35,8 +35,10 @@ Vico Forum находится в ранней pre-release разработке.
   manifest parity дополнительно проверены на PGlite PostgreSQL 17.5. Native PostgreSQL 17 CI
   (205 database tests, schema/privilege verification и Worker smoke) и Pages build прошли.
   Собственная browser проверка public/own/edit/error/empty/long-text states, EN/RU/HE,
-  светлой/тёмной темы и Desktop/Tablet/Mobile завершена; owner visual acceptance и финальный
-  независимый review ещё ожидаются.
+  светлой/тёмной темы и Desktop/Tablet/Mobile завершена. Owner review выявил смещение
+  латинского имени от аватара в RTL: heading теперь наследует направление страницы, а
+  bidi-изоляция применяется только к самому имени. Повторная Pages/owner visual проверка
+  и финальный независимый review ещё ожидаются.
   Профили не включают социальные функции, смену имени/аватара аккаунта или загрузку файлов.
 - Stage 0–3 foundation завершён.
 - Stage 4 forum core завершён в local/CI path.
