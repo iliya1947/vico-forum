@@ -592,19 +592,27 @@ describe("Help & solutions modes and authoring", () => {
 
   it("combines Help filters at the reader boundary and preserves them across modes", async () => {
     const filters = {
-      solution: "outdated" as const,
+      solution: "open" as const,
       answers: "has" as const,
       quality: "needs-details" as const,
-      relation: "duplicate" as const,
+      relation: "standalone" as const,
     };
-    const readActive = vi.fn(async () => helpPage);
+    const combinedPage = {
+      ...helpPage,
+      questions: helpPage.questions.map((question) => ({
+        ...question,
+        needsDetails: true,
+        duplicateOf: null,
+      })),
+    };
+    const readActive = vi.fn(async () => combinedPage);
     const requestContext = context("en", "ltr");
     requestContext.set(forumReaderContext, {
       ...reader,
       readHelpSolutionsActive: readActive,
     });
 
-    const url = "https://forum.example/en/categories/help-solutions?mode=active&solution=outdated&answers=has&quality=needs-details&relation=duplicate";
+    const url = "https://forum.example/en/categories/help-solutions?mode=active&solution=open&answers=has&quality=needs-details&relation=standalone";
     const data = await categoryLoader({
       request: new Request(url),
       params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
@@ -624,14 +632,15 @@ describe("Help & solutions modes and authoring", () => {
       "ltr",
     );
 
-    expect(await screen.findByRole("combobox", { name: "Solution" })).toHaveValue("outdated");
+    expect(await screen.findByRole("combobox", { name: "Solution" })).toHaveValue("open");
     expect(screen.getByRole("combobox", { name: "Answers" })).toHaveValue("has");
     expect(screen.getByRole("combobox", { name: "Quality" })).toHaveValue("needs-details");
-    expect(screen.getByRole("combobox", { name: "Relation" })).toHaveValue("duplicate");
+    expect(screen.getByRole("combobox", { name: "Relation" })).toHaveValue("standalone");
+    expect(document.querySelector(".help-question-quality.is-needs-details")).toHaveTextContent("Needs details");
     expect(screen.queryByRole("option", { name: "Needs review" })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Solutions" })).toHaveAttribute(
       "href",
-      "/en/categories/help-solutions?mode=solutions&solution=outdated&answers=has&quality=needs-details&relation=duplicate",
+      "/en/categories/help-solutions?mode=solutions&solution=open&answers=has&quality=needs-details&relation=standalone",
     );
     expect(screen.getByRole("link", { name: "Reset" })).toHaveAttribute(
       "href",
