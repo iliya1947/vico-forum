@@ -403,8 +403,10 @@ composition without changing the forum hierarchy or schema:
   сохраняют solved/open и reply count, показывают existing tags и краткую localized match reason.
   Проверка по-прежнему optional и не блокирует публикацию. Отдельный search index, fuzzy/vector/AI,
   schema/migrations, live search, automatic duplicate marking, signals/admin integration,
-  Needs-attention aggregation и combined-filter visual polish не входят в этот slice. Проверочные
-  результаты и owner acceptance добавляются только после их фактического получения;
+  Needs-attention aggregation и combined-filter visual polish не входят в этот slice. Exact-head
+  CI/Pages прошли; owner visual acceptance подтверждён 2026-10-09 как достаточный для текущего
+  функционального прохода. Текущая presentation похожих вопросов считается provisional: позже
+  нужен отдельный UX/визуальный refinement pass; это deferred polish и не блокирует PR #209;
 - owner visual acceptance of the implementation was confirmed on 2026-10-05; exact-head
   automated verification remains a separate PR check.
 
