@@ -1206,7 +1206,7 @@ export function HelpSolutionsView({
           {mode !== "all" ? <input type="hidden" name="mode" value={mode} /> : null}
           <label>
             <span>{t("helpSolutionsFilterSolution")}</span>
-            <select name="solution" defaultValue={filters.solution ?? ""}>
+            <select key={filters.solution ?? "any"} name="solution" defaultValue={filters.solution ?? ""}>
               <option value="">{t("helpSolutionsFilterAny")}</option>
               <option value="open">{t("helpSolutionsFilterUnresolved")}</option>
               <option value="solved">{t("helpSolutionsFilterSolved")}</option>
@@ -1218,7 +1218,7 @@ export function HelpSolutionsView({
           </label>
           <label>
             <span>{t("helpSolutionsFilterAnswers")}</span>
-            <select name="answers" defaultValue={filters.answers ?? ""}>
+            <select key={filters.answers ?? "any"} name="answers" defaultValue={filters.answers ?? ""}>
               <option value="">{t("helpSolutionsFilterAny")}</option>
               <option value="none">{t("helpSolutionsFilterNoAnswers")}</option>
               <option value="has">{t("helpSolutionsFilterHasAnswers")}</option>
@@ -1226,7 +1226,7 @@ export function HelpSolutionsView({
           </label>
           <label>
             <span>{t("helpSolutionsFilterQuality")}</span>
-            <select name="quality" defaultValue={filters.quality ?? ""}>
+            <select key={filters.quality ?? "any"} name="quality" defaultValue={filters.quality ?? ""}>
               <option value="">{t("helpSolutionsFilterAny")}</option>
               <option value="normal">{t("helpSolutionsFilterNormal")}</option>
               <option value="needs-details">{t("helpSolutionsFilterNeedsDetails")}</option>
@@ -1234,7 +1234,7 @@ export function HelpSolutionsView({
           </label>
           <label>
             <span>{t("helpSolutionsFilterRelation")}</span>
-            <select name="relation" defaultValue={filters.relation ?? ""}>
+            <select key={filters.relation ?? "any"} name="relation" defaultValue={filters.relation ?? ""}>
               <option value="">{t("helpSolutionsFilterAny")}</option>
               <option value="standalone">{t("helpSolutionsFilterStandalone")}</option>
               <option value="duplicate">{t("helpDuplicateBadge")}</option>
