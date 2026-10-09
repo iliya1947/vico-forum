@@ -3560,3 +3560,39 @@ _Source: https://github.com/iliya1947/vico-forum/pull/147#issuecomment-608595916
 * ✅ `git status --short --branch` — рабочее дерево чистое после commit.
 
  [View task →](https://chatgpt.com/s/cd_6ac92204a9f081919008e8603560c3ee)
+
+
+---
+
+## Editor/code slice — final planning consensus — 2026-10-09
+
+Independent Codex planning agrees with repository review:
+
+- do not merge/rebase old PR #176; treat it as superseded and port only verified algorithms/tests
+  into a fresh implementation branch from current main;
+- one shared Markdown editor must cover ordinary create-topic, reply, and Help & solutions question
+  authoring while preserving the existing exact `body` form/mutation contracts;
+- Help similar-question checks must preserve the current draft through the editor;
+- Reply/Quote integration must use the editor's imperative insertion/focus boundary rather than a
+  raw textarea ref;
+- safe preview continues to use the existing `ForumMarkdown` renderer;
+- rendered fenced code keeps language label, copy feedback, optional wrap/no-wrap, readable bounded
+  syntax presentation, and LTR direction inside RTL;
+- reuse #176's corrected backtick-safe inline/fenced delimiter algorithms and focused regression
+  tests, but do not copy its stale `views.tsx`, preview fixtures, state docs, or integration glue;
+- no drafts/autosave, attachments, WYSIWYG, schema/migrations, signals/reports/admin work, profiles,
+  or Stage 6; no new dependency without a demonstrated current-main need.
+
+Additional current-scope integration checks from current main review:
+- if Reply/Quote is invoked while the editor is in Preview mode, the editor must return to an
+  editable mode, insert the text, and expose/focus the actual field;
+- native required-field validation must not leave the invalid body textarea hidden in Preview mode;
+  validation failure must reveal/focus the editable field instead of producing an inaccessible
+  hidden-control failure;
+- Help question `Check similar questions` and final publish must submit the same current editor
+  value and retain title/body/tags across the existing action/revalidation flow.
+
+Readiness: focused editor/renderer/integration/localization tests, representative Pages states for
+all three authoring flows including RTL/code/Reply/Quote/Help draft preservation, full repository
+CI, owner acceptance of the functional mechanism, then independent whole-PR Codex review on the
+stable exact head. Visual polish beyond functional usability is not a reason to expand this slice.
