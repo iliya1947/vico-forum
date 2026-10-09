@@ -3161,3 +3161,37 @@ Verified on this exact head:
 - no Needs-attention expansion.
 
 PR #208 is ready for owner merge. No additional Codex round is required unless implementation changes before merge.
+
+
+---
+
+## PR #208 merged — next independent Help slice: similar-question search refinement — 2026-10-09
+
+Owner merged PR #208.
+
+Current boundary after the merge:
+- all approved top-level Help & solutions modes are implemented;
+- combined authoritative-state filters are implemented;
+- the current combined-filter presentation remains explicitly deferred for a later usability/visual polish pass;
+- the step-5 expansion of `Needs attention` is signal/moderation-dependent and remains with the separately designed signals/moderation integration, not this thread;
+- signals/reports UI and the future admin-panel system remain outside this thread.
+
+The previously recorded **similar-question search relevance/UX refinement** is now unblocked: owner had explicitly deferred it until the Help & solutions functional surface was complete.
+
+### Neutral Codex planning request
+
+Inspect current `main` after merged PR #208 and the existing Help & solutions similar-question check introduced in PR #194.
+
+Define the smallest bounded refinement slice that materially improves the usefulness of finding similar existing Help questions before publication without turning it into a new search subsystem.
+
+Please determine:
+1. the current matching/ranking behavior and its concrete limitations;
+2. which relevance improvements are justified using existing persisted title/body/tags and current schema;
+3. the minimal UX/presentation changes needed so results are understandable and useful;
+4. query bounds, deterministic ordering/tie-breaks, and any performance/privacy constraints that must remain explicit;
+5. focused automated and Pages/browser acceptance coverage;
+6. any genuine product decision that cannot be inferred from the already approved contract.
+
+Keep this independent from signals/reports, admin-panel work, Needs-attention aggregation, combined-filter polish, drafts/autosave, profiles/editor work, schema/search-index expansion unless current evidence proves one is necessary, and Stage 6.
+
+Do not implement project code in the service branch. Return the technical plan and readiness criteria only.
