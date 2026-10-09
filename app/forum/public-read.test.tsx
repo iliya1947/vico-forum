@@ -779,7 +779,7 @@ describe("Help & solutions modes and authoring", () => {
       context: userContext,
     });
 
-    expect(readWantToHelp).toHaveBeenCalledWith("ada");
+    expect(readWantToHelp).toHaveBeenCalledWith("ada", {});
     expect(data.kind).toBe("help-solutions");
     if (data.kind !== "help-solutions") throw new Error("expected Help & solutions page");
     expect(data.mode).toBe("help");
@@ -868,7 +868,7 @@ describe("Help & solutions modes and authoring", () => {
       context: userContext,
     });
 
-    expect(readForMe).toHaveBeenCalledWith("ada");
+    expect(readForMe).toHaveBeenCalledWith("ada", {});
     expect(data.kind).toBe("help-solutions");
     if (data.kind !== "help-solutions") throw new Error("expected Help & solutions page");
     expect(data.mode).toBe("for-me");
