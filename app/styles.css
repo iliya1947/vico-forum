@@ -4593,6 +4593,7 @@ p {
 }
 
 .topic-best-answer-tools,
+.topic-help-signal-tools,
 .topic-admin-tools {
   position: relative;
   z-index: 20;
@@ -4601,6 +4602,7 @@ p {
 }
 
 .topic-best-answer-tools > summary,
+.topic-help-signal-tools > summary,
 .topic-admin-tools > summary {
   width: fit-content;
   margin-inline-start: auto;
@@ -4616,6 +4618,7 @@ p {
 }
 
 .topic-best-answer-tools > summary::marker,
+.topic-help-signal-tools > summary::marker,
 .topic-admin-tools > summary::marker {
   color: var(--color-accent);
 }
@@ -4623,6 +4626,9 @@ p {
 .topic-best-answer-tools > summary:hover,
 .topic-best-answer-tools > summary:focus-visible,
 .topic-best-answer-tools[open] > summary,
+.topic-help-signal-tools > summary:hover,
+.topic-help-signal-tools > summary:focus-visible,
+.topic-help-signal-tools[open] > summary,
 .topic-admin-tools > summary:hover,
 .topic-admin-tools > summary:focus-visible,
 .topic-admin-tools[open] > summary {
@@ -4631,6 +4637,7 @@ p {
 }
 
 .topic-best-answer-panel,
+.topic-help-signal-panel,
 .topic-admin-panel {
   position: absolute;
   z-index: 20;
@@ -4649,6 +4656,142 @@ p {
 .topic-best-answer-panel {
   width: max-content;
   max-width: min(20rem, calc(100vw - 2rem));
+}
+
+.topic-help-signal-panel {
+  max-height: min(70vh, 38rem);
+  overflow-y: auto;
+}
+
+.help-signal-submit-section,
+.help-signal-own-pending,
+.help-signal-review-group {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.help-signal-submit-section + .help-signal-submit-section,
+.help-signal-own-pending,
+.help-signal-review-group {
+  padding-block-start: 0.7rem;
+  border-block-start: 1px solid var(--color-border);
+}
+
+.help-signal-form {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.help-signal-form label {
+  display: grid;
+  gap: 0.3rem;
+  color: var(--color-text);
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
+.help-signal-form input,
+.help-signal-form textarea {
+  width: 100%;
+  padding: 0.5rem 0.55rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 0.35rem;
+  color: var(--color-text);
+  background: var(--color-surface-muted);
+  font: inherit;
+}
+
+.help-signal-form textarea {
+  resize: vertical;
+}
+
+.help-signal-form input:focus,
+.help-signal-form textarea:focus {
+  border-color: var(--color-accent);
+  outline: 0.13rem solid var(--color-accent-soft);
+  outline-offset: 0.06rem;
+}
+
+.help-signal-form button,
+.help-signal-withdraw-form button {
+  width: fit-content;
+  min-height: 2rem;
+  padding: 0.36rem 0.65rem;
+  border: 1px solid var(--color-accent);
+  border-radius: 0.4rem;
+  color: var(--color-accent-hover);
+  background: var(--color-surface);
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.help-signal-form button:hover,
+.help-signal-form button:focus-visible,
+.help-signal-withdraw-form button:hover,
+.help-signal-withdraw-form button:focus-visible {
+  background: var(--color-accent-soft);
+}
+
+.help-signal-list {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.help-signal-item {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.6rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.42rem;
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+  font-size: 0.72rem;
+}
+
+.help-signal-item-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.35rem 0.7rem;
+}
+
+.help-signal-item-head time,
+.help-signal-item > span {
+  color: var(--color-text-muted);
+  font-size: 0.66rem;
+}
+
+.help-signal-item p {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.help-signal-item a {
+  color: var(--color-accent-hover);
+  font-weight: 700;
+}
+
+.help-signal-withdraw-form {
+  margin: 0;
+}
+
+.help-signal-review-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.help-signal-review-actions .topic-admin-form + .topic-admin-form {
+  padding-block-start: 0;
+  border-block-start: 0;
 }
 
 .topic-best-answer-form {
@@ -5076,7 +5219,9 @@ p {
     width: 100%;
   }
 
-  .topic-best-answer-tools {
+  .topic-best-answer-tools,
+  .topic-help-signal-tools,
+  .topic-admin-tools {
     flex: 1 1 0;
   }
 
@@ -5085,12 +5230,14 @@ p {
   }
 
   .topic-best-answer-panel,
+  .topic-help-signal-panel,
   .topic-admin-panel {
     width: 100%;
     max-width: none;
   }
 
   .topic-best-answer-tools > summary,
+  .topic-help-signal-tools > summary,
   .topic-admin-tools > summary,
   .topic-shell .topic-admin-form button {
     width: 100%;
