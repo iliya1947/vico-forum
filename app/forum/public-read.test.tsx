@@ -590,6 +590,149 @@ describe("Help & solutions modes and authoring", () => {
     expect(unknownData.page.questions).toHaveLength(1);
   });
 
+  it("combines Help filters at the reader boundary and preserves them across modes", async () => {
+    const filters = {
+      solution: "outdated" as const,
+      answers: "has" as const,
+      quality: "needs-details" as const,
+      relation: "duplicate" as const,
+    };
+    const readActive = vi.fn(async () => helpPage);
+    const requestContext = context("en", "ltr");
+    requestContext.set(forumReaderContext, {
+      ...reader,
+      readHelpSolutionsActive: readActive,
+    });
+
+    const url = "https://forum.example/en/categories/help-solutions?mode=active&solution=outdated&answers=has&quality=needs-details&relation=duplicate";
+    const data = await categoryLoader({
+      request: new Request(url),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: requestContext,
+    });
+
+    expect(data.kind).toBe("help-solutions");
+    if (data.kind !== "help-solutions") throw new Error("expected Help & solutions page");
+    expect(data.filters).toEqual(filters);
+    expect(readActive).toHaveBeenCalledWith(filters);
+
+    renderRoute(
+      CategoryRoute,
+      data,
+      "/en/categories/help-solutions?mode=active&solution=outdated&answers=has&quality=needs-details&relation=duplicate",
+      "en",
+      "ltr",
+    );
+
+    expect(await screen.findByRole("combobox", { name: "Solution" })).toHaveValue("outdated");
+    expect(screen.getByRole("combobox", { name: "Answers" })).toHaveValue("has");
+    expect(screen.getByRole("combobox", { name: "Quality" })).toHaveValue("needs-details");
+    expect(screen.getByRole("combobox", { name: "Relation" })).toHaveValue("duplicate");
+    expect(screen.queryByRole("option", { name: "Needs review" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Solutions" })).toHaveAttribute(
+      "href",
+      "/en/categories/help-solutions?mode=solutions&solution=outdated&answers=has&quality=needs-details&relation=duplicate",
+    );
+    expect(screen.getByRole("link", { name: "Reset" })).toHaveAttribute(
+      "href",
+      "/en/categories/help-solutions?mode=active",
+    );
+  });
+
+  it("keeps the Needs review filter behind solution moderation permission", async () => {
+    const url = "https://forum.example/en/categories/help-solutions?solution=needs-review";
+    const readAll = vi.fn(async () => helpPage);
+
+    const guestContext = context("en", "ltr");
+    guestContext.set(forumReaderContext, { ...reader, readHelpSolutionsAll: readAll });
+    await expect(categoryLoader({
+      request: new Request(url),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: guestContext,
+    })).rejects.toMatchObject({ status: 401 });
+    expect(readAll).not.toHaveBeenCalled();
+
+    const userContext = context("en", "ltr");
+    userContext.set(authSessionContext, {
+      user: {
+        id: "filter-user",
+        name: "Filter user",
+        email: "filter-user@example.test",
+        emailVerified: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      session: {
+        id: "filter-user-session",
+        token: "filter-user-token",
+        userId: "filter-user",
+        expiresAt: new Date(Date.now() + 60_000),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    });
+    userContext.set(forumReaderContext, { ...reader, readHelpSolutionsAll: readAll });
+    userContext.set(authorizationContext, {
+      forUser: () => ({
+        resolve: vi.fn(),
+        has: vi.fn(async () => false),
+      }),
+    } as never);
+    await expect(categoryLoader({
+      request: new Request(url),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: userContext,
+    })).rejects.toMatchObject({ status: 403 });
+    expect(readAll).not.toHaveBeenCalled();
+
+    const managerContext = context("en", "ltr");
+    managerContext.set(authSessionContext, {
+      user: {
+        id: "filter-manager",
+        name: "Filter manager",
+        email: "filter-manager@example.test",
+        emailVerified: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      session: {
+        id: "filter-manager-session",
+        token: "filter-manager-token",
+        userId: "filter-manager",
+        expiresAt: new Date(Date.now() + 60_000),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    });
+    managerContext.set(forumReaderContext, { ...reader, readHelpSolutionsAll: readAll });
+    managerContext.set(authorizationContext, {
+      forUser: () => ({
+        resolve: vi.fn(),
+        has: vi.fn(async (permission) => permission === "forum.solution.manageAny"),
+      }),
+    } as never);
+
+    const data = await categoryLoader({
+      request: new Request(url),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: managerContext,
+    });
+    expect(data.kind).toBe("help-solutions");
+    if (data.kind !== "help-solutions") throw new Error("expected Help & solutions page");
+    expect(readAll).toHaveBeenCalledWith({ solution: "needs-review" });
+    expect(data.canViewSolutionModeration).toBe(true);
+
+    renderRoute(
+      CategoryRoute,
+      data,
+      "/en/categories/help-solutions?solution=needs-review",
+      "en",
+      "ltr",
+    );
+    expect(await screen.findByRole("combobox", { name: "Solution" })).toHaveValue("needs-review");
+    expect(screen.getByRole("option", { name: "Needs review" })).toBeVisible();
+  });
+
   it("shows Want to help only to authenticated users and binds exclusion to the session identity", async () => {
     const helpUrl = "https://forum.example/en/categories/help-solutions?mode=help&userId=lin";
     const readWantToHelp = vi.fn(async () => wantToHelpPage);
