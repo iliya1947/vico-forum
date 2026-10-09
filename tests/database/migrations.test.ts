@@ -254,7 +254,7 @@ describe("PostgreSQL 17 locale migrations", () => {
         }],
       });
 
-      await forum.setHelpSolutionModeration("help-foundation-topic", "needs-review");
+      await forum.setHelpSolutionModeration("help-foundation-topic", "needs-review", null, "help-foundation-author");
       expect(await repository.readPost("help-foundation-answer")).toMatchObject({
         solutionModerationStatus: "needs-review",
         solutionOutdatedReason: null,
@@ -274,6 +274,7 @@ describe("PostgreSQL 17 locale migrations", () => {
         "help-foundation-topic",
         "outdated",
         "  The provider removed   this API.  ",
+        "help-foundation-author",
       );
       expect(await repository.readPost("help-foundation-answer")).toMatchObject({
         solutionModerationStatus: "outdated",
@@ -281,7 +282,7 @@ describe("PostgreSQL 17 locale migrations", () => {
         solutionOutdatedReasonKind: null,
       });
       expect(() =>
-        forum.setHelpSolutionModeration("help-foundation-topic", "outdated", "   "),
+        forum.setHelpSolutionModeration("help-foundation-topic", "outdated", "   ", "help-foundation-author"),
       ).toThrow(InvalidForumContentError);
       expect(await repository.readPost("help-foundation-answer")).toMatchObject({
         solutionModerationStatus: "outdated",
@@ -289,7 +290,7 @@ describe("PostgreSQL 17 locale migrations", () => {
         solutionOutdatedReasonKind: null,
       });
 
-      await forum.setHelpSolutionModeration("help-foundation-topic", null);
+      await forum.setHelpSolutionModeration("help-foundation-topic", null, null, "help-foundation-author");
       expect(await repository.readPost("help-foundation-answer")).toMatchObject({
         solutionModerationStatus: null,
         solutionOutdatedReason: null,
@@ -396,7 +397,7 @@ describe("PostgreSQL 17 locale migrations", () => {
       });
       expect((await repository.readHelpSolutionsNeedsAttention())?.questions).toHaveLength(1);
       await expect(
-        forum.setHelpSolutionModeration("help-foundation-no-replies", "needs-review"),
+        forum.setHelpSolutionModeration("help-foundation-no-replies", "needs-review", null, "help-foundation-author"),
       ).rejects.toBeInstanceOf(ForumStateConflictError);
       await expectDatabaseCode(
         client.query(
@@ -895,6 +896,7 @@ describe("PostgreSQL 17 locale migrations", () => {
           "solution-moderation-regular-topic",
           "needs-review",
           null,
+          "solution-moderation-regular-author",
         ),
       ).rejects.toBeInstanceOf(ForumStateConflictError);
       expect(await repository.readTopic("solution-moderation-regular-topic")).toMatchObject({
