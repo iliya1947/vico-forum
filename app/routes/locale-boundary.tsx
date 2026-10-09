@@ -112,6 +112,8 @@ export async function loader(args: LocaleBoundaryArgs) {
     activeLocales,
     authUser: session
       ? {
+          id: session.user.id,
+          image: session.user.image ?? null,
           name: session.user.name,
           canManageAuthorization,
           ...(unreadNotificationCount === undefined ? {} : { unreadNotificationCount }),

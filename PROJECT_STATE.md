@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-10-09
+Последнее обновление: 2026-10-10
 
 ## Назначение
 
@@ -24,6 +24,44 @@
 
 Vico Forum находится в ранней pre-release разработке.
 
+- Решение владельца 2026-10-10: приоритет — довести весь форум до работающего MVP,
+  не блокируя functional slices дальнейшей косметической полировкой. Достаточно usable
+  интерфейса и корректных механизмов; подтверждённые functional/security/data/authz
+  defects исправляются в текущем scope. Переработка и детальный UX/visual polish
+  существующих экранов, включая профиль, — отдельный последующий проход, не критерий
+  готовности отдельных MVP-срезов. Финальная real-runtime acceptance перед публичным
+  выпуском по-прежнему обязательна.
+- Bounded блок форумных профилей реализован в текущем implementation set: public
+  `/:locale/users/:userId`, данные имени/аватара/даты регистрации из authoritative identity,
+  актуальная роль из DB, независимые persisted-message/current-best-answer счётчики,
+  optional bio/GitHub/site и owner-only same-origin сохранение. Header и авторы сообщений
+  ведут на реальные профили; EN/RU/HE и representative public/own/edit/error/empty Pages states
+  подключены. Forward migration `0032_forum_profiles` и schema/runtime privilege contracts
+  добавлены только для repository/local-CI path. Локально прошли lint, typecheck, 649 tests,
+  обе сборки и metadata checks на Node 24.21.0 / pnpm 12.3.4; все 33 migrations и full schema
+  manifest parity дополнительно проверены на PGlite PostgreSQL 17.5. Native PostgreSQL 17 CI
+  (205 database tests, schema/privilege verification и Worker smoke) и Pages build прошли.
+  Собственная browser проверка public/own/edit/error/empty/long-text states, EN/RU/HE,
+  светлой/тёмной темы и Desktop/Tablet/Mobile завершена. Owner review выявил смещение
+  латинского имени от аватара в RTL: heading теперь наследует направление страницы, а
+  bidi-изоляция применяется только к самому имени. Новый visual preview Pages успешен.
+  Владелец принял текущий вид профиля как достаточный для MVP 2026-10-10;
+  дальнейший UI polish отложен. На head `2faad98` exact-head CI
+  (включая PostgreSQL 17, 650 unit/presentation/route tests, migration/schema/ACL
+  и Worker smoke) и Pages прошли после восстановленного Docker Hub image pull.
+  Первое независимое Codex review выявило регрессию author-grid из-за нового profile link;
+  исправлено в `3264828`: вложенная двухколоночная ссылка сохраняет расположение аватара
+  и имени на desktop/mobile, EN/HE; DOM regression checks добавлены. На `3264828`
+  успешно прошли точный CI (checks + PostgreSQL 17/schema/ACL/Worker smoke, после
+  повторения ранее нестабильного неизменённого теста locale concurrency) и Pages.
+  Повторное независимое Codex review завершено на `3264828` без новых findings;
+  подтверждённых незакрытых defects текущего MVP scope не выявлено. Индекс для
+  best-answer count остаётся отложенной оптимизацией: текущий масштаб/latency
+  regression не подтверждены. Визуальная проверка browser-profile states ранее
+  выполнена, а после correction author-grid подтверждены DOM/CSS review и Pages build,
+  не новая browser screenshot. PR подготовлен к merge владельцем; production migration,
+  deploy и real-runtime acceptance не выполнялись.
+  Профили не включают социальные функции, смену имени/аватара аккаунта или загрузку файлов.
 - Stage 0–3 foundation завершён.
 - Stage 4 forum core завершён в local/CI path.
 - Stage 5 translations/background jobs завершён в repository/local-CI path.

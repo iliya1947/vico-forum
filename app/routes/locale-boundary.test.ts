@@ -155,7 +155,7 @@ describe("locale boundary loader", () => {
       request: new Request("https://vico.test/en/"), params: { locale: "en" }, context,
     });
 
-    expect(snapshot.authUser).toEqual({ name: "Vico", canManageAuthorization: false });
+    expect(snapshot.authUser).toEqual({ id: "user-1", image: null, name: "Vico", canManageAuthorization: false });
     expect(snapshot.locale.translationLocale).toBe("en");
     expect(snapshot.activeLocales).toEqual([
       { tag: "en", nativeName: "English", direction: "ltr" },

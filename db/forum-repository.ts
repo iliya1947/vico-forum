@@ -1,7 +1,11 @@
+import { validateProfileFields, type ForumProfile, type ProfileFields } from "../app/forum/profile";
 import { and, asc, desc, eq, gt, gte, inArray, isNotNull, isNull, lte, ne, or, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { alias } from "drizzle-orm/pg-core";
 import {
+  authzRoles,
+  authzUserRoles,
+  forumProfiles,
   forumCategories,
   forumHelpDuplicateAppeals,
   forumHelpDuplicateRelationships,
@@ -267,6 +271,7 @@ export interface ForumSectionPage {
 }
 
 export interface ForumThreadPost extends ForumPost {
+  authorImage?: string | null;
   authorName: string;
   createdAt: Date;
 }
@@ -284,6 +289,7 @@ export interface ForumTopicPage extends ForumTopic {
 }
 
 export interface ForumReader {
+  readProfile(userId: string): Promise<ForumProfile | undefined>;
   listCategories(): Promise<ForumCategorySummary[]>;
   readHomepage(): Promise<ForumHomepageCategorySummary[]>;
   readPopular(referenceTime?: Date, limitPerPeriod?: number): Promise<ForumPopularPage>;
@@ -379,6 +385,30 @@ export class DrizzleForumRepository {
     private readonly database: NodePgDatabase,
     private readonly writePolicy: ForumWritePolicy = forumWritePolicy,
   ) {}
+
+  async readProfile(userId: string): Promise<ForumProfile | undefined> {
+    const [profile] = await this.database.select({
+      id: user.id, name: user.name, image: user.image, joinedAt: user.createdAt,
+      bio: sql<string>`coalesce(${forumProfiles.bio}, '')`,
+      githubUrl: forumProfiles.githubUrl, websiteUrl: forumProfiles.websiteUrl,
+      role: { slug: authzRoles.slug, displayName: authzRoles.displayName, isSystem: authzRoles.isSystem },
+      messageCount: sql<number>`(select count(*) from ${forumPosts} where ${forumPosts.authorId} = ${user.id})`.mapWith(Number),
+      bestAnswerCount: sql<number>`(select count(*) from ${forumTopics} join ${forumPosts} on ${forumPosts.id} = ${forumTopics.bestAnswerPostId} where ${forumPosts.authorId} = ${user.id})`.mapWith(Number),
+    }).from(user)
+      .leftJoin(forumProfiles, eq(forumProfiles.userId, user.id))
+      .leftJoin(authzUserRoles, eq(authzUserRoles.userId, user.id))
+      .innerJoin(authzRoles, sql`${authzRoles.id} = coalesce(${authzUserRoles.roleId}, (select id from authz_roles where slug = 'user'))`)
+      .where(eq(user.id, userId));
+    return profile;
+  }
+
+  async updateProfile(actorId: string, input: ProfileFields): Promise<void> {
+    const fields = validateProfileFields(input);
+    const [owner] = await this.database.select({ id: user.id }).from(user).where(eq(user.id, actorId));
+    if (!owner) throw new ForumEntityNotFoundError("user does not exist");
+    await this.database.insert(forumProfiles).values({ userId: actorId, ...fields })
+      .onConflictDoUpdate({ target: forumProfiles.userId, set: { ...fields, updatedAt: sql`now()` } });
+  }
 
   async createCategory(input: { id: string; name: string }) {
     const [created] = await this.database.insert(forumCategories).values(input).returning();
@@ -2010,7 +2040,7 @@ export class DrizzleForumRepository {
       .select({
         id: forumPosts.id, topicId: forumPosts.topicId, authorId: forumPosts.authorId,
         parentPostId: forumPosts.parentPostId,
-        authorName: user.name, createdAt: forumPosts.createdAt, revisionId: forumPostRevisions.id,
+        authorName: user.name, authorImage: user.image, createdAt: forumPosts.createdAt, revisionId: forumPostRevisions.id,
         originalContent: forumPostRevisions.originalContent, sourceLocale: forumPostRevisions.sourceLocale,
         solutionModerationStatus: forumPosts.solutionModerationStatus,
         solutionOutdatedReason: forumPosts.solutionOutdatedReason,
@@ -2037,7 +2067,7 @@ export class DrizzleForumRepository {
       tags: tags.get(id) ?? [],
       posts: posts.map((post) => ({
         id: post.id, topicId: post.topicId, authorId: post.authorId, parentPostId: post.parentPostId,
-        authorName: post.authorName, createdAt: post.createdAt,
+        authorName: post.authorName, authorImage: post.authorImage, createdAt: post.createdAt,
         solutionModerationStatus: post.solutionModerationStatus as HelpSolutionModerationStatus | null,
         solutionOutdatedReason: post.solutionOutdatedReason,
         solutionOutdatedReasonKind: post.solutionOutdatedReasonKind as HelpSolutionOutdatedReasonKind | null,

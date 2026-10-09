@@ -50,7 +50,7 @@ function renderError(error: Response | Error, initialUser: { name: string } | nu
 
   return render(
     <I18nextProvider i18n={i18n()}>
-      <HeaderAuthProvider initialUser={initialUser}>
+      <HeaderAuthProvider initialUser={initialUser ? { id: "fixture-user", ...initialUser } : null}>
         <RouterProvider router={router} />
       </HeaderAuthProvider>
     </I18nextProvider>,

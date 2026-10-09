@@ -51,7 +51,7 @@ function renderControls(
     loader: () => null,
     Component: () => (
       <HeaderAuthProvider
-        initialUser={initialUser}
+        initialUser={initialUser ? { id: "ada", ...initialUser } : null}
         initialPresentationState={initialPresentationState}
       >
         <AuthControls locale={direction === "ltr" ? "en" : "he"} actions={actions} />
@@ -68,7 +68,7 @@ function renderServerSnapshotControls(actions: AuthClientActions) {
     loader: () => ({ authUser }),
     Component: () => {
       const data = useLoaderData() as { authUser: { name: string } | null };
-      return <HeaderAuthProvider initialUser={data.authUser}><AuthControls locale="en" actions={actions} /></HeaderAuthProvider>;
+      return <HeaderAuthProvider initialUser={data.authUser ? { id: "ada", ...data.authUser } : null}><AuthControls locale="en" actions={actions} /></HeaderAuthProvider>;
     },
   }], { initialEntries: ["/en"] });
   render(<I18nextProvider i18n={i18n("ltr")}><RouterProvider router={router} /></I18nextProvider>);
@@ -132,7 +132,7 @@ describe("forum header auth controls", () => {
     renderControls({ name: "Ada Lovelace" }, client);
     expect(await screen.findByText("Ada Lovelace")).toBeVisible();
     expect(screen.getByRole("link", { name: "Ada Lovelace" }))
-      .toHaveAttribute("href", "/en/under-development?feature=profiles");
+      .toHaveAttribute("href", "/en/users/ada");
     await userEvent.click(screen.getByRole("button", { name: "Sign out" }));
     expect(await screen.findByRole("button", { name: "Sign in" })).toBeVisible();
     expect(screen.queryByText("Ada Lovelace")).not.toBeInTheDocument();
