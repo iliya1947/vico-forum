@@ -69,7 +69,8 @@ type PreviewVariant =
   | "help-solution-outdated"
   | "category-no-pins"
   | "profile-empty"
-  | "profile-error";
+  | "profile-error"
+  | "profile-long";
 
 interface Scenario {
   id: string;
@@ -89,6 +90,7 @@ export const scenarios: readonly Scenario[] = [
   { id: "profile-own", label: "Profile · own", locale: "en", direction: "ltr", identity: "user", path: "/en/users/alex", view: "profile", allowedIdentities: ["user", "manager"] },
   { id: "profile-edit", label: "Profile · edit", locale: "en", direction: "ltr", identity: "user", path: "/en/users/alex?edit=1", view: "profile", allowedIdentities: ["user", "manager"] },
   { id: "profile-error", label: "Profile · validation error", locale: "en", direction: "ltr", identity: "user", path: "/en/users/alex?edit=1", view: "profile", variant: "profile-error", allowedIdentities: ["user", "manager"] },
+  { id: "profile-long", label: "Profile · long text", locale: "en", direction: "ltr", identity: "guest", path: "/en/users/maya", view: "profile", variant: "profile-long" },
   { id: "profile-empty", label: "Profile · empty", locale: "en", direction: "ltr", identity: "guest", path: "/en/users/sam", view: "profile", variant: "profile-empty" },
   { id: "home-guest", label: "Home", locale: "en", direction: "ltr", identity: "guest", path: "/en", view: "home" },
   { id: "auth-pending", label: "Authentication · pending", locale: "en", direction: "ltr", identity: "guest", path: "/en", view: "home", authPresentationState: "pending", allowedIdentities: ["guest"] },
@@ -842,7 +844,7 @@ function previewNotifications(locale: PreviewLocale) {
 export function PreviewController() {
   const [identity, setIdentity] = useState<PreviewIdentity>("guest");
   const [scenarioId, setScenarioId] = useState(scenarios[0]!.id);
-  const [viewport, setViewport] = useState<"desktop" | "mobile">("desktop");
+  const [viewport, setViewport] = useState<"desktop" | "tablet" | "mobile">("desktop");
   const availableScenarios = scenarios.filter((scenario) => supportsPreviewIdentity(scenario, identity));
   const selected = availableScenarios.find((scenario) => scenario.id === scenarioId) ?? availableScenarios[0]!;
 
@@ -891,6 +893,7 @@ export function PreviewController() {
           <fieldset className="preview-viewport-controls">
             <legend>Viewport</legend>
             <button type="button" aria-pressed={viewport === "desktop"} onClick={() => setViewport("desktop")}>Desktop</button>
+            <button type="button" aria-pressed={viewport === "tablet"} onClick={() => setViewport("tablet")}>Tablet</button>
             <button type="button" aria-pressed={viewport === "mobile"} onClick={() => setViewport("mobile")}>Mobile</button>
           </fieldset>
         </div>
@@ -1587,10 +1590,10 @@ function PreviewProfileRoute({ scenario }: { scenario: Scenario }) {
   const id = scenario.id.startsWith("profile-") && scenario.allowedIdentities && userId === "alex"
     ? identity?.id ?? userId : userId;
   const empty = scenario.variant === "profile-empty" || id === "sam";
-  const name = id === "maya" ? "Maya Cohen" : id === "alex" ? "Alex Rivera" : id === "sam" ? "Sam Lee" : "Forum member";
+  const name = scenario.variant === "profile-long" ? "Maya Cohen · מפתחת קהילה · DeveloperWithALongUnbrokenDisplayNameForReflowVerification" : id === "maya" ? "Maya Cohen" : id === "alex" ? "Alex Rivera" : id === "sam" ? "Sam Lee" : "Forum member";
   const bio = scenario.locale === "ru" ? "Создаю веб-приложения с AI-инструментами. Помогаю разбирать TypeScript и API.\nУчусь вместе с форумом." : scenario.locale === "he" ? "בונה יישומי אינטרנט בעזרת כלי AI. משתף ידע על TypeScript ו־API.\nלומד יחד עם חברי הפורום." : "Building web apps with AI tools. Sharing practical TypeScript and API answers.\nLearning with the forum.";
   return <ProfileView locale={scenario.locale} isOwner={identity?.id === id} editing={query.get("edit") === "1"}
-    profile={{ id, name, image: null, joinedAt: "2026-09-01T00:00:00.000Z", bio: empty ? "" : bio,
+    profile={{ id, name, image: null, joinedAt: "2026-09-01T00:00:00.000Z", bio: empty ? "" : scenario.variant === "profile-long" ? `${bio}\n${"TypeScript_שלום_".repeat(16)}` : bio,
       githubUrl: empty ? null : "https://github.com/octocat", websiteUrl: empty ? null : "https://example.com/",
       role: { slug: id === "maya" ? "admin" : "user", displayName: id === "maya" ? "Administrator" : "User", isSystem: true },
       messageCount: empty ? 0 : 128, bestAnswerCount: empty ? 0 : 17 }}
