@@ -236,6 +236,67 @@ export async function topicAction({ request, params, context }: {
       throw error;
     }
   }
+  if (intent === "submitHelpSignal") {
+    const kind = requiredFormText(formData, "kind");
+    if (
+      kind !== "needs-details"
+      && kind !== "needs-review"
+      && kind !== "solution-outdated"
+      && kind !== "duplicate"
+    ) {
+      return mutationFailure("invalid", 400);
+    }
+    const forbidden = await requireForumPermission(context, "forum.helpSignal.create");
+    if (forbidden) return forbidden;
+    const explanation = requiredFormText(formData, "explanation");
+    const proposedOriginalTopicId = requiredFormText(formData, "proposedOriginalTopicId");
+    return runForumMutation(request, context, async (writer, actorId) => {
+      await writer.createHelpSignal({
+        kind,
+        topicId,
+        actorId,
+        explanation,
+        proposedOriginalTopicId,
+      });
+      return redirect(forumTopicPath(locale, topicId));
+    });
+  }
+  if (intent === "withdrawHelpSignal") {
+    const signalId = requiredFormText(formData, "signalId");
+    if (!signalId) return mutationFailure("invalid", 400);
+    return runForumMutation(request, context, async (writer, actorId) => {
+      await writer.withdrawHelpSignal({ signalId, topicId, actorId });
+      return redirect(forumTopicPath(locale, topicId));
+    });
+  }
+  if (intent === "acceptHelpSignal" || intent === "rejectHelpSignal") {
+    const signalId = requiredFormText(formData, "signalId");
+    if (!signalId) return mutationFailure("invalid", 400);
+    let signal;
+    try {
+      signal = await forumReaderForRequest(context).readHelpSignal(signalId);
+    } catch (error) {
+      if (error instanceof ForumStorageUnavailableError) return mutationFailure("unavailable", 503);
+      throw error;
+    }
+    if (!signal || signal.topicId !== topicId) return mutationFailure("notFound", 404);
+    const permission = signal.kind === "needs-details"
+      ? "forum.helpNeedsDetails.manage"
+      : signal.kind === "duplicate"
+        ? "forum.helpDuplicate.manage"
+        : "forum.solution.manageAny";
+    const forbidden = await requireForumPermission(context, permission);
+    if (forbidden) return forbidden;
+    return runForumMutation(request, context, async (writer, actorId) => {
+      await writer.resolveHelpSignal({
+        signalId,
+        actorId,
+        resolution: intent === "acceptHelpSignal" ? "accepted" : "rejected",
+      });
+      return redirect(forumTopicPath(locale, topicId));
+    });
+  }
+
   if (intent === "confirmHelpDuplicate") {
     const originalTopicId = requiredFormText(formData, "originalTopicId");
     if (!originalTopicId) return mutationFailure("invalid", 400);
@@ -295,7 +356,7 @@ export async function topicAction({ request, params, context }: {
     if (intent === "markSolutionOutdated" && !outdatedReason) {
       return mutationFailure("invalid", 400);
     }
-    return runForumMutation(request, context, async (writer) => {
+    return runForumMutation(request, context, async (writer, actorId) => {
       await writer.setHelpSolutionModeration({
         topicId,
         status: intent === "markSolutionNeedsReview"
@@ -304,6 +365,7 @@ export async function topicAction({ request, params, context }: {
             ? "outdated"
             : null,
         outdatedReason: outdatedReason ?? null,
+        actorId,
       });
       return redirect(forumTopicPath(locale, topicId));
     });

@@ -47,6 +47,7 @@ const migrationFiles = [
   "0028_help_solution_moderation.sql",
     "0029_help_question_needs_details.sql",
     "0030_help_duplicate_workflow.sql",
+    "0031_help_user_moderation_signals.sql",
 ] as const;
 
 const client = new Client({ connectionString: databaseUrl, options: `-c search_path=${schemaName}` });

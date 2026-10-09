@@ -10,6 +10,9 @@ import {
 import type { ForumReader } from "./forum-repository";
 import type {
   HelpDuplicateAppealResolution,
+  HelpSignalKind,
+  HelpSignalResolution,
+  HelpSignalStatus,
   HelpSolutionModerationStatus,
   SolutionManagementScope,
 } from "./forum-repository";
@@ -22,11 +25,14 @@ export interface ForumWriter {
   createReply(input: { topicId: string; authorId: string; body: string; parentPostId?: string | null }): Promise<{ postId: string }>;
   markTopicSolved(input: { topicId: string; actorId: string; scope: SolutionManagementScope }): Promise<void>;
   selectBestAnswer(input: { topicId: string; postId: string; actorId: string; scope: SolutionManagementScope }): Promise<{ topicAuthorId: string; isSolved: boolean }>;
-  setHelpSolutionModeration(input: { topicId: string; status: HelpSolutionModerationStatus | null; outdatedReason?: string | null }): Promise<void>;
+  setHelpSolutionModeration(input: { topicId: string; status: HelpSolutionModerationStatus | null; outdatedReason?: string | null; actorId: string }): Promise<void>;
   confirmHelpDuplicate(input: { topicId: string; originalTopicId: string; actorId: string }): Promise<void>;
   removeHelpDuplicate(input: { topicId: string; actorId: string }): Promise<void>;
   appealHelpDuplicate(input: { topicId: string; actorId: string; explanation: string }): Promise<void>;
   resolveHelpDuplicateAppeal(input: { topicId: string; actorId: string; resolution: HelpDuplicateAppealResolution }): Promise<void>;
+  createHelpSignal(input: { kind: HelpSignalKind; topicId: string; actorId: string; explanation?: string | null; proposedOriginalTopicId?: string | null }): Promise<{ id: string }>;
+  withdrawHelpSignal(input: { signalId: string; topicId: string; actorId: string }): Promise<void>;
+  resolveHelpSignal(input: { signalId: string; actorId: string; resolution: HelpSignalResolution }): Promise<HelpSignalStatus>;
   correctTopicTitleSourceLocale(input: { topicId: string; expectedRevisionId: string; sourceLocale: string; actorId: string; scope: SourceLocaleCorrectionScope }): Promise<void>;
   correctPostBodySourceLocale(input: { topicId: string; postId: string; expectedRevisionId: string; sourceLocale: string; actorId: string; scope: SourceLocaleCorrectionScope }): Promise<void>;
   advanceTopicReadState(input: { userId: string; topicId: string; postId: string }): Promise<void>;
@@ -87,6 +93,7 @@ export function createHyperdriveForumReader(
     readHelpSolutionsForMe: (userId) => read((repository) => repository.readHelpSolutionsForMe(userId)),
     searchHelpSolutionsSimilar: (query, limit) => read((repository) => repository.searchHelpSolutionsSimilar(query, limit)),
     readPendingHelpDuplicateAppeal: (topicId) => read((repository) => repository.readPendingHelpDuplicateAppeal(topicId)),
+    readHelpSignal: (id) => read((repository) => repository.readHelpSignal(id)),
     readCategory: (id, pinnedTopicsPerSection) => read((repository) => repository.readCategory(id, pinnedTopicsPerSection)),
     readSection: (id) => read((repository) => repository.readSection(id)),
     readTopicPage: (id) => read((repository) => repository.readTopicPage(id)),
@@ -148,8 +155,8 @@ export function createHyperdriveForumWriter(
     }),
     markTopicSolved: ({ topicId, actorId, scope }) => write((forum) => forum.markTopicSolved(topicId, actorId, scope)),
     selectBestAnswer: ({ topicId, postId, actorId, scope }) => write((forum) => forum.selectBestAnswer(topicId, postId, actorId, scope)),
-    setHelpSolutionModeration: ({ topicId, status, outdatedReason = null }) => writeCorrection(async (forum) => {
-      await forum.setHelpSolutionModeration(topicId, status, outdatedReason);
+    setHelpSolutionModeration: ({ topicId, status, outdatedReason = null, actorId }) => writeCorrection(async (forum) => {
+      await forum.setHelpSolutionModeration(topicId, status, outdatedReason, actorId);
     }),
     confirmHelpDuplicate: ({ topicId, originalTopicId, actorId }) => writeCorrection(async (forum) => {
       await forum.confirmHelpDuplicate(topicId, originalTopicId, actorId);
@@ -163,6 +170,16 @@ export function createHyperdriveForumWriter(
     resolveHelpDuplicateAppeal: ({ topicId, actorId, resolution }) => writeCorrection(async (forum) => {
       await forum.resolveHelpDuplicateAppeal(topicId, actorId, resolution);
     }),
+    createHelpSignal: (input) => writeCorrection(async (forum) => {
+      const signal = await forum.createHelpSignal(input);
+      return { id: signal.id };
+    }),
+    withdrawHelpSignal: ({ signalId, topicId, actorId }) => writeCorrection(async (forum) => {
+      await forum.withdrawHelpSignal(signalId, topicId, actorId);
+    }),
+    resolveHelpSignal: ({ signalId, actorId, resolution }) => writeCorrection(
+      (forum) => forum.resolveHelpSignal(signalId, actorId, resolution),
+    ),
     correctTopicTitleSourceLocale: (input) => writeCorrection(async (forum) => { await forum.correctTopicTitleSourceLocale(input); }),
     correctPostBodySourceLocale: (input) => writeCorrection(async (forum) => { await forum.correctPostBodySourceLocale(input); }),
     advanceTopicReadState: ({ userId, topicId, postId }) => writeCorrection(async (forum) => {

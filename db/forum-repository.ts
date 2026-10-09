@@ -5,6 +5,7 @@ import {
   forumCategories,
   forumHelpDuplicateAppeals,
   forumHelpDuplicateRelationships,
+  forumHelpSignals,
   forumPostRevisions,
   forumPosts,
   forumReplyNotifications,
@@ -170,6 +171,23 @@ export interface ForumHelpDuplicateAppeal {
 }
 
 export type HelpDuplicateAppealResolution = "accepted" | "rejected";
+export type HelpSignalKind = "needs-details" | "needs-review" | "solution-outdated" | "duplicate";
+export type HelpSignalStatus = "pending" | "accepted" | "rejected" | "withdrawn" | "superseded";
+export type HelpSignalResolution = "accepted" | "rejected";
+
+export interface ForumHelpSignal {
+  id: string;
+  kind: HelpSignalKind;
+  topicId: string;
+  targetPostId: string | null;
+  proposedOriginalTopicId: string | null;
+  submittedByUserId: string;
+  explanation: string | null;
+  status: HelpSignalStatus;
+  createdAt: Date;
+  resolvedByUserId: string | null;
+  resolvedAt: Date | null;
+}
 
 export interface ForumHelpQuestionSummary {
   id: string;
@@ -267,6 +285,7 @@ export interface ForumReader {
   readHelpSolutionsForMe(userId: string): Promise<ForumHelpSolutionsPage | undefined>;
   searchHelpSolutionsSimilar(query: string, limit?: number): Promise<ForumHelpSimilarQuestionSummary[]>;
   readPendingHelpDuplicateAppeal(topicId: string): Promise<ForumHelpDuplicateAppeal | undefined>;
+  readHelpSignal(id: string): Promise<ForumHelpSignal | undefined>;
   readCategory(id: string, pinnedTopicsPerSection?: number): Promise<ForumCategoryPage | undefined>;
   readSection(id: string): Promise<ForumSectionPage | undefined>;
   readTopicPage(id: string): Promise<ForumTopicPage | undefined>;
@@ -1848,10 +1867,512 @@ export class DrizzleForumRepository {
     };
   }
 
+  async readHelpSignal(id: string): Promise<ForumHelpSignal | undefined> {
+    const [row] = await this.database
+      .select({
+        id: forumHelpSignals.id,
+        kind: forumHelpSignals.kind,
+        topicId: forumHelpSignals.topicId,
+        targetPostId: forumHelpSignals.targetPostId,
+        proposedOriginalTopicId: forumHelpSignals.proposedOriginalTopicId,
+        submittedByUserId: forumHelpSignals.submittedByUserId,
+        explanation: forumHelpSignals.explanation,
+        status: forumHelpSignals.status,
+        createdAt: forumHelpSignals.createdAt,
+        resolvedByUserId: forumHelpSignals.resolvedByUserId,
+        resolvedAt: forumHelpSignals.resolvedAt,
+      })
+      .from(forumHelpSignals)
+      .where(eq(forumHelpSignals.id, id));
+    return row && {
+      ...row,
+      kind: row.kind as HelpSignalKind,
+      status: row.status as HelpSignalStatus,
+    };
+  }
+
+  async createHelpSignal(input: {
+    kind: HelpSignalKind;
+    topicId: string;
+    actorId: string;
+    explanation: string | null;
+    proposedOriginalTopicId: string | null;
+  }): Promise<ForumHelpSignal> {
+    return this.database.transaction(async (tx) => {
+      let topic: {
+        id: string;
+        sectionId: string;
+        isSolved: boolean;
+        bestAnswerPostId: string | null;
+        needsDetails: boolean;
+      };
+
+      if (input.kind === "duplicate") {
+        const originalTopicId = input.proposedOriginalTopicId;
+        if (!originalTopicId || input.topicId === originalTopicId) {
+          throw new ForumStateConflictError("duplicate signal requires a different proposed original");
+        }
+        const lockedIds = [input.topicId, originalTopicId].sort();
+        const topics = await tx
+          .select({
+            id: forumTopics.id,
+            sectionId: forumTopics.sectionId,
+            isSolved: forumTopics.isSolved,
+            bestAnswerPostId: forumTopics.bestAnswerPostId,
+            needsDetails: forumTopics.needsDetails,
+          })
+          .from(forumTopics)
+          .where(inArray(forumTopics.id, lockedIds))
+          .orderBy(asc(forumTopics.id))
+          .for("update");
+        if (topics.length !== 2) {
+          throw new ForumEntityNotFoundError("duplicate question or proposed original question does not exist");
+        }
+        if (topics.some((candidate) => candidate.sectionId !== HELP_SOLUTIONS_SERVICE_SECTION_ID)) {
+          throw new ForumStateConflictError("duplicate signals are only available between Help & solutions questions");
+        }
+        const candidate = topics.find((row) => row.id === input.topicId);
+        if (!candidate) throw new ForumEntityNotFoundError("duplicate question does not exist");
+        topic = candidate;
+        if (candidate.isSolved || candidate.bestAnswerPostId) {
+          throw new ForumStateConflictError("a question with its own solution cannot be signaled as a duplicate");
+        }
+
+        const active = await tx
+          .select({
+            duplicateTopicId: forumHelpDuplicateRelationships.duplicateTopicId,
+            originalTopicId: forumHelpDuplicateRelationships.originalTopicId,
+          })
+          .from(forumHelpDuplicateRelationships)
+          .where(and(
+            isNull(forumHelpDuplicateRelationships.removedAt),
+            or(
+              eq(forumHelpDuplicateRelationships.duplicateTopicId, input.topicId),
+              eq(forumHelpDuplicateRelationships.duplicateTopicId, originalTopicId),
+              eq(forumHelpDuplicateRelationships.originalTopicId, input.topicId),
+            ),
+          ));
+        if (active.some((row) => row.duplicateTopicId === input.topicId)) {
+          throw new ForumStateConflictError("question is already a confirmed duplicate");
+        }
+        if (active.some((row) => row.duplicateTopicId === originalTopicId)) {
+          throw new ForumStateConflictError("proposed original question must be a canonical root");
+        }
+        if (active.some((row) => row.originalTopicId === input.topicId)) {
+          throw new ForumStateConflictError("a canonical original cannot be signaled as a duplicate while active duplicates point to it");
+        }
+      } else {
+        const [lockedTopic] = await tx
+          .select({
+            id: forumTopics.id,
+            sectionId: forumTopics.sectionId,
+            isSolved: forumTopics.isSolved,
+            bestAnswerPostId: forumTopics.bestAnswerPostId,
+            needsDetails: forumTopics.needsDetails,
+          })
+          .from(forumTopics)
+          .where(eq(forumTopics.id, input.topicId))
+          .for("update");
+        if (!lockedTopic) throw new ForumEntityNotFoundError("topic does not exist");
+        if (lockedTopic.sectionId !== HELP_SOLUTIONS_SERVICE_SECTION_ID) {
+          throw new ForumStateConflictError("Help signals are only available for Help & solutions questions");
+        }
+        topic = lockedTopic;
+      }
+
+      // Keep the same lock order as reply writes: topic row(s) first, then
+      // the per-user write mutex used by the signal cooldown.
+      await enforceHelpSignalWriteCooldown(tx, input.actorId, this.writePolicy);
+
+      let targetPostId: string | null = null;
+      if (input.kind === "needs-details") {
+        if (topic.needsDetails) {
+          throw new ForumStateConflictError("question already has the Needs details label");
+        }
+      } else if (input.kind === "needs-review" || input.kind === "solution-outdated") {
+        if (!topic.isSolved || !topic.bestAnswerPostId) {
+          throw new ForumStateConflictError("solution signals require the current selected solution of a solved Help question");
+        }
+        targetPostId = topic.bestAnswerPostId;
+        const [answer] = await tx
+          .select({
+            status: forumPosts.solutionModerationStatus,
+          })
+          .from(forumPosts)
+          .where(and(
+            eq(forumPosts.topicId, input.topicId),
+            eq(forumPosts.id, targetPostId),
+          ))
+          .for("update");
+        if (!answer) throw new ForumStateConflictError("current selected solution does not exist");
+        if (
+          (input.kind === "needs-review" && answer.status !== null)
+          || (input.kind === "solution-outdated" && answer.status === "outdated")
+        ) {
+          throw new ForumStateConflictError("requested solution moderation state is already authoritative");
+        }
+      }
+
+      const pendingConditions = [
+        eq(forumHelpSignals.status, "pending"),
+        eq(forumHelpSignals.kind, input.kind),
+        eq(forumHelpSignals.topicId, input.topicId),
+        eq(forumHelpSignals.submittedByUserId, input.actorId),
+      ];
+      if (targetPostId) pendingConditions.push(eq(forumHelpSignals.targetPostId, targetPostId));
+      if (input.kind === "duplicate" && input.proposedOriginalTopicId) {
+        pendingConditions.push(eq(forumHelpSignals.proposedOriginalTopicId, input.proposedOriginalTopicId));
+      }
+      const [existing] = await tx
+        .select({ id: forumHelpSignals.id })
+        .from(forumHelpSignals)
+        .where(and(...pendingConditions))
+        .limit(1);
+      if (existing) throw new ForumStateConflictError("matching Help signal is already pending");
+
+      const [created] = await tx
+        .insert(forumHelpSignals)
+        .values({
+          id: crypto.randomUUID(),
+          kind: input.kind,
+          topicId: input.topicId,
+          targetPostId,
+          proposedOriginalTopicId: input.kind === "duplicate" ? input.proposedOriginalTopicId : null,
+          submittedByUserId: input.actorId,
+          explanation: input.explanation,
+          // Lifecycle timestamps for Help signals are database-owned. In
+          // particular, statement time does not freeze at transaction start
+          // while this write waits on row locks.
+          createdAt: sql`statement_timestamp()`,
+        })
+        .returning();
+      if (!created) throw new Error("failed to create Help signal");
+      return {
+        ...created,
+        kind: created.kind as HelpSignalKind,
+        status: created.status as HelpSignalStatus,
+      };
+    });
+  }
+
+  async withdrawHelpSignal(signalId: string, topicId: string, actorId: string): Promise<void> {
+    await this.database.transaction(async (tx) => {
+      const [signal] = await tx
+        .select({
+          id: forumHelpSignals.id,
+          topicId: forumHelpSignals.topicId,
+          submittedByUserId: forumHelpSignals.submittedByUserId,
+          status: forumHelpSignals.status,
+        })
+        .from(forumHelpSignals)
+        .where(eq(forumHelpSignals.id, signalId))
+        .for("update");
+      if (!signal || signal.topicId !== topicId) {
+        throw new ForumEntityNotFoundError("Help signal does not belong to topic");
+      }
+      if (signal.submittedByUserId !== actorId) {
+        throw new ForumAuthorizationError("only the signal author may withdraw it");
+      }
+      if (signal.status !== "pending") {
+        throw new ForumStateConflictError("only a pending Help signal may be withdrawn");
+      }
+      await tx
+        .update(forumHelpSignals)
+        .set({
+          status: "withdrawn",
+          resolvedByUserId: actorId,
+          resolvedAt: sql`statement_timestamp()`,
+        })
+        .where(eq(forumHelpSignals.id, signalId));
+    });
+  }
+
+  async resolveHelpSignal(
+    signalId: string,
+    actorId: string,
+    resolution: HelpSignalResolution,
+  ): Promise<HelpSignalStatus> {
+    if (resolution === "rejected") {
+      return this.database.transaction(async (tx) => {
+        const [signal] = await tx
+          .select({
+            id: forumHelpSignals.id,
+            status: forumHelpSignals.status,
+          })
+          .from(forumHelpSignals)
+          .where(eq(forumHelpSignals.id, signalId))
+          .for("update");
+        if (!signal) throw new ForumEntityNotFoundError("Help signal does not exist");
+        if (signal.status !== "pending") {
+          throw new ForumStateConflictError("Help signal is no longer pending");
+        }
+        await tx
+          .update(forumHelpSignals)
+          .set({
+            status: "rejected",
+            resolvedByUserId: actorId,
+            resolvedAt: sql`statement_timestamp()`,
+          })
+          .where(eq(forumHelpSignals.id, signalId));
+        return "rejected" as const;
+      });
+    }
+
+    return this.database.transaction(async (tx) => {
+      const [snapshot] = await tx
+        .select({
+          id: forumHelpSignals.id,
+          kind: forumHelpSignals.kind,
+          topicId: forumHelpSignals.topicId,
+          targetPostId: forumHelpSignals.targetPostId,
+          proposedOriginalTopicId: forumHelpSignals.proposedOriginalTopicId,
+        })
+        .from(forumHelpSignals)
+        .where(eq(forumHelpSignals.id, signalId));
+      if (!snapshot) throw new ForumEntityNotFoundError("Help signal does not exist");
+
+      const kind = snapshot.kind as HelpSignalKind;
+      const topicIds = kind === "duplicate" && snapshot.proposedOriginalTopicId
+        ? [snapshot.topicId, snapshot.proposedOriginalTopicId].sort()
+        : [snapshot.topicId];
+      const topics = await tx
+        .select({
+          id: forumTopics.id,
+          sectionId: forumTopics.sectionId,
+          isSolved: forumTopics.isSolved,
+          bestAnswerPostId: forumTopics.bestAnswerPostId,
+          needsDetails: forumTopics.needsDetails,
+        })
+        .from(forumTopics)
+        .where(inArray(forumTopics.id, topicIds))
+        .orderBy(asc(forumTopics.id))
+        .for("update");
+
+      const [signal] = await tx
+        .select({
+          id: forumHelpSignals.id,
+          kind: forumHelpSignals.kind,
+          topicId: forumHelpSignals.topicId,
+          targetPostId: forumHelpSignals.targetPostId,
+          proposedOriginalTopicId: forumHelpSignals.proposedOriginalTopicId,
+          explanation: forumHelpSignals.explanation,
+          status: forumHelpSignals.status,
+        })
+        .from(forumHelpSignals)
+        .where(eq(forumHelpSignals.id, signalId))
+        .for("update");
+      if (!signal) throw new ForumEntityNotFoundError("Help signal does not exist");
+      if (signal.status !== "pending") {
+        throw new ForumStateConflictError("Help signal is no longer pending");
+      }
+
+      const topic = topics.find((row) => row.id === signal.topicId);
+      let applicable = Boolean(topic && topic.sectionId === HELP_SOLUTIONS_SERVICE_SECTION_ID);
+      if (kind === "duplicate") {
+        applicable = applicable
+          && topics.length === 2
+          && topics.every((row) => row.sectionId === HELP_SOLUTIONS_SERVICE_SECTION_ID);
+      }
+
+      const resolvedAt = sql`statement_timestamp()`;
+      const supersedeCurrent = async () => {
+        await tx
+          .update(forumHelpSignals)
+          .set({
+            status: "superseded",
+            resolvedByUserId: actorId,
+            resolvedAt,
+          })
+          .where(eq(forumHelpSignals.id, signalId));
+        return "superseded" as const;
+      };
+
+      if (!applicable || !topic) return supersedeCurrent();
+
+      if (kind === "needs-details") {
+        if (topic.needsDetails) return supersedeCurrent();
+        await tx
+          .update(forumTopics)
+          .set({ needsDetails: true })
+          .where(eq(forumTopics.id, signal.topicId));
+        await tx
+          .update(forumHelpSignals)
+          .set({ status: "superseded", resolvedByUserId: actorId, resolvedAt })
+          .where(and(
+            eq(forumHelpSignals.topicId, signal.topicId),
+            eq(forumHelpSignals.kind, "needs-details"),
+            eq(forumHelpSignals.status, "pending"),
+            ne(forumHelpSignals.id, signal.id),
+          ));
+      } else if (kind === "needs-review" || kind === "solution-outdated") {
+        if (
+          !topic.isSolved
+          || !topic.bestAnswerPostId
+          || topic.bestAnswerPostId !== signal.targetPostId
+        ) {
+          await tx
+            .update(forumHelpSignals)
+            .set({ status: "superseded", resolvedByUserId: actorId, resolvedAt })
+            .where(and(
+              eq(forumHelpSignals.topicId, signal.topicId),
+              eq(forumHelpSignals.targetPostId, signal.targetPostId ?? ""),
+              eq(forumHelpSignals.status, "pending"),
+              inArray(forumHelpSignals.kind, ["needs-review", "solution-outdated"]),
+            ));
+          return "superseded";
+        }
+        const [answer] = await tx
+          .select({
+            status: forumPosts.solutionModerationStatus,
+          })
+          .from(forumPosts)
+          .where(and(
+            eq(forumPosts.topicId, signal.topicId),
+            eq(forumPosts.id, signal.targetPostId),
+          ))
+          .for("update");
+        if (!answer) return supersedeCurrent();
+
+        if (
+          (kind === "needs-review" && answer.status !== null)
+          || (kind === "solution-outdated" && answer.status === "outdated")
+        ) {
+          const staleKinds: HelpSignalKind[] = answer.status === "outdated"
+            ? ["needs-review", "solution-outdated"]
+            : ["needs-review"];
+          await tx
+            .update(forumHelpSignals)
+            .set({ status: "superseded", resolvedByUserId: actorId, resolvedAt })
+            .where(and(
+              eq(forumHelpSignals.topicId, signal.topicId),
+              eq(forumHelpSignals.targetPostId, signal.targetPostId),
+              eq(forumHelpSignals.status, "pending"),
+              inArray(forumHelpSignals.kind, staleKinds),
+            ));
+          return "superseded";
+        }
+
+        await tx
+          .update(forumPosts)
+          .set({
+            solutionModerationStatus: kind === "needs-review" ? "needs-review" : "outdated",
+            solutionOutdatedReason: kind === "solution-outdated" ? signal.explanation : null,
+            solutionOutdatedReasonKind: null,
+          })
+          .where(and(
+            eq(forumPosts.topicId, signal.topicId),
+            eq(forumPosts.id, signal.targetPostId),
+          ));
+
+        const kindsToSupersede: HelpSignalKind[] = kind === "solution-outdated"
+          ? ["needs-review", "solution-outdated"]
+          : ["needs-review"];
+        await tx
+          .update(forumHelpSignals)
+          .set({ status: "superseded", resolvedByUserId: actorId, resolvedAt })
+          .where(and(
+            eq(forumHelpSignals.topicId, signal.topicId),
+            eq(forumHelpSignals.targetPostId, signal.targetPostId),
+            eq(forumHelpSignals.status, "pending"),
+            inArray(forumHelpSignals.kind, kindsToSupersede),
+            ne(forumHelpSignals.id, signal.id),
+          ));
+      } else {
+        const originalTopicId = signal.proposedOriginalTopicId;
+        if (!originalTopicId) return supersedeCurrent();
+        const original = topics.find((row) => row.id === originalTopicId);
+        if (!original || signal.topicId === originalTopicId) {
+          return supersedeCurrent();
+        }
+        if (topic.isSolved || Boolean(topic.bestAnswerPostId)) {
+          await tx
+            .update(forumHelpSignals)
+            .set({ status: "superseded", resolvedByUserId: actorId, resolvedAt })
+            .where(and(
+              eq(forumHelpSignals.topicId, signal.topicId),
+              eq(forumHelpSignals.kind, "duplicate"),
+              eq(forumHelpSignals.status, "pending"),
+            ));
+          return "superseded";
+        }
+        const active = await tx
+          .select({
+            duplicateTopicId: forumHelpDuplicateRelationships.duplicateTopicId,
+            originalTopicId: forumHelpDuplicateRelationships.originalTopicId,
+          })
+          .from(forumHelpDuplicateRelationships)
+          .where(and(
+            isNull(forumHelpDuplicateRelationships.removedAt),
+            or(
+              eq(forumHelpDuplicateRelationships.duplicateTopicId, signal.topicId),
+              eq(forumHelpDuplicateRelationships.duplicateTopicId, originalTopicId),
+              eq(forumHelpDuplicateRelationships.originalTopicId, signal.topicId),
+            ),
+          ));
+        const candidateIsDuplicate = active.some((row) => row.duplicateTopicId === signal.topicId);
+        const candidateIsCanonicalOriginal = active.some((row) => row.originalTopicId === signal.topicId);
+        const proposedOriginalIsDuplicate = active.some((row) => row.duplicateTopicId === originalTopicId);
+        if (candidateIsDuplicate || candidateIsCanonicalOriginal) {
+          await tx
+            .update(forumHelpSignals)
+            .set({ status: "superseded", resolvedByUserId: actorId, resolvedAt })
+            .where(and(
+              eq(forumHelpSignals.topicId, signal.topicId),
+              eq(forumHelpSignals.kind, "duplicate"),
+              eq(forumHelpSignals.status, "pending"),
+            ));
+          return "superseded";
+        }
+        if (proposedOriginalIsDuplicate) {
+          await tx
+            .update(forumHelpSignals)
+            .set({ status: "superseded", resolvedByUserId: actorId, resolvedAt })
+            .where(and(
+              eq(forumHelpSignals.topicId, signal.topicId),
+              eq(forumHelpSignals.proposedOriginalTopicId, originalTopicId),
+              eq(forumHelpSignals.kind, "duplicate"),
+              eq(forumHelpSignals.status, "pending"),
+            ));
+          return "superseded";
+        }
+        await tx.insert(forumHelpDuplicateRelationships).values({
+          id: crypto.randomUUID(),
+          duplicateTopicId: signal.topicId,
+          originalTopicId,
+          confirmedByUserId: actorId,
+        });
+        await tx
+          .update(forumHelpSignals)
+          .set({ status: "superseded", resolvedByUserId: actorId, resolvedAt })
+          .where(and(
+            eq(forumHelpSignals.kind, "duplicate"),
+            eq(forumHelpSignals.status, "pending"),
+            ne(forumHelpSignals.id, signal.id),
+            or(
+              eq(forumHelpSignals.topicId, signal.topicId),
+              eq(forumHelpSignals.topicId, originalTopicId),
+              eq(forumHelpSignals.proposedOriginalTopicId, signal.topicId),
+            ),
+          ));
+      }
+
+      await tx
+        .update(forumHelpSignals)
+        .set({
+          status: "accepted",
+          resolvedByUserId: actorId,
+          resolvedAt,
+        })
+        .where(eq(forumHelpSignals.id, signal.id));
+      return "accepted";
+    });
+  }
+
   async setHelpSolutionModeration(
     topicId: string,
     status: HelpSolutionModerationStatus | null,
     outdatedReason: string | null,
+    actorId: string,
   ): Promise<void> {
     await this.database.transaction(async (tx) => {
       const [topic] = await tx
@@ -1883,6 +2404,24 @@ export class DrizzleForumRepository {
           eq(forumPosts.topicId, topicId),
           eq(forumPosts.id, topic.bestAnswerPostId),
         ));
+
+      if (status !== null) {
+        const staleKinds: HelpSignalKind[] = status === "outdated"
+          ? ["needs-review", "solution-outdated"]
+          : ["needs-review"];
+        await tx.update(forumHelpSignals)
+          .set({
+            status: "superseded",
+            resolvedByUserId: actorId,
+            resolvedAt: sql`statement_timestamp()`,
+          })
+          .where(and(
+            eq(forumHelpSignals.topicId, topicId),
+            eq(forumHelpSignals.targetPostId, topic.bestAnswerPostId),
+            eq(forumHelpSignals.status, "pending"),
+            inArray(forumHelpSignals.kind, staleKinds),
+          ));
+      }
     });
   }
 
@@ -1945,6 +2484,21 @@ export class DrizzleForumRepository {
         originalTopicId,
         confirmedByUserId: actorId,
       });
+      await tx.update(forumHelpSignals)
+        .set({
+          status: "superseded",
+          resolvedByUserId: actorId,
+          resolvedAt: sql`statement_timestamp()`,
+        })
+        .where(and(
+          eq(forumHelpSignals.kind, "duplicate"),
+          eq(forumHelpSignals.status, "pending"),
+          or(
+            eq(forumHelpSignals.topicId, topicId),
+            eq(forumHelpSignals.topicId, originalTopicId),
+            eq(forumHelpSignals.proposedOriginalTopicId, topicId),
+          ),
+        ));
     });
   }
 
@@ -2072,7 +2626,11 @@ export class DrizzleForumRepository {
 
   async markTopicSolved(topicId: string, actorId: string, scope: SolutionManagementScope = "own"): Promise<void> {
     await this.database.transaction(async (tx) => {
-      const [topic] = await tx.select({ authorId: forumTopics.authorId, isSolved: forumTopics.isSolved }).from(forumTopics)
+      const [topic] = await tx.select({
+        authorId: forumTopics.authorId,
+        sectionId: forumTopics.sectionId,
+        isSolved: forumTopics.isSolved,
+      }).from(forumTopics)
         .where(eq(forumTopics.id, topicId)).for("update");
       if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
       if (scope === "own" && topic.authorId !== actorId) throw new ForumAuthorizationError("only the topic author may solve it");
@@ -2089,6 +2647,19 @@ export class DrizzleForumRepository {
         throw new ForumStateConflictError("a confirmed duplicate cannot be marked solved");
       }
       await tx.update(forumTopics).set({ isSolved: true }).where(eq(forumTopics.id, topicId));
+      if (topic.sectionId === HELP_SOLUTIONS_SERVICE_SECTION_ID) {
+        await tx.update(forumHelpSignals)
+          .set({
+            status: "superseded",
+            resolvedByUserId: actorId,
+            resolvedAt: sql`statement_timestamp()`,
+          })
+          .where(and(
+            eq(forumHelpSignals.topicId, topicId),
+            eq(forumHelpSignals.kind, "duplicate"),
+            eq(forumHelpSignals.status, "pending"),
+          ));
+      }
     });
   }
 
@@ -2143,6 +2714,18 @@ export class DrizzleForumRepository {
               eq(forumPosts.topicId, topicId),
               eq(forumPosts.id, topic.bestAnswerPostId),
             ));
+          await tx.update(forumHelpSignals)
+            .set({
+              status: "superseded",
+              resolvedByUserId: actorId,
+              resolvedAt: sql`statement_timestamp()`,
+            })
+            .where(and(
+              eq(forumHelpSignals.topicId, topicId),
+              eq(forumHelpSignals.targetPostId, topic.bestAnswerPostId),
+              eq(forumHelpSignals.status, "pending"),
+              inArray(forumHelpSignals.kind, ["needs-review", "solution-outdated"]),
+            ));
         }
         await tx.update(forumPosts)
           .set({
@@ -2153,6 +2736,17 @@ export class DrizzleForumRepository {
           .where(and(
             eq(forumPosts.topicId, topicId),
             eq(forumPosts.id, postId),
+          ));
+        await tx.update(forumHelpSignals)
+          .set({
+            status: "superseded",
+            resolvedByUserId: actorId,
+            resolvedAt: sql`statement_timestamp()`,
+          })
+          .where(and(
+            eq(forumHelpSignals.topicId, topicId),
+            eq(forumHelpSignals.kind, "duplicate"),
+            eq(forumHelpSignals.status, "pending"),
           ));
       }
       await tx.update(forumTopics).set({ bestAnswerPostId: postId }).where(eq(forumTopics.id, topicId));
@@ -2270,9 +2864,32 @@ async function enforceForumWriteCooldown(
     .where(eq(forumPosts.authorId, authorId))
     .orderBy(desc(forumPosts.createdAt), desc(forumPosts.id))
     .limit(1);
+  return enforceCooldownFromLatest(latest?.createdAt, policy);
+}
+
+async function enforceHelpSignalWriteCooldown(
+  tx: ForumTransaction,
+  actorId: string,
+  policy: ForumWritePolicy,
+): Promise<Date> {
+  // Signal submissions use the same bounded write policy, but keep their
+  // cooldown independent from normal topic/reply authoring.
+  await tx.select({ id: user.id }).from(user).where(eq(user.id, actorId)).for("update");
+  const [latest] = await tx.select({ createdAt: forumHelpSignals.createdAt })
+    .from(forumHelpSignals)
+    .where(eq(forumHelpSignals.submittedByUserId, actorId))
+    .orderBy(desc(forumHelpSignals.createdAt), desc(forumHelpSignals.id))
+    .limit(1);
+  return enforceCooldownFromLatest(latest?.createdAt, policy);
+}
+
+function enforceCooldownFromLatest(
+  latestCreatedAt: Date | undefined,
+  policy: ForumWritePolicy,
+): Date {
   const now = policy.now();
-  if (latest) {
-    const retryAfterMs = policy.cooldownMs - (now.getTime() - latest.createdAt.getTime());
+  if (latestCreatedAt) {
+    const retryAfterMs = policy.cooldownMs - (now.getTime() - latestCreatedAt.getTime());
     if (retryAfterMs > 0) throw new ForumWriteRateLimitError(retryAfterMs);
   }
   return now;

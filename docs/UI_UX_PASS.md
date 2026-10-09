@@ -374,7 +374,14 @@ composition without changing the forum hierarchy or schema:
   appeal is pending, duplicate managers see the author's explanation directly in the duplicate
   notice; accept/reject controls remain in the admin panel. General user moderation
   signals remain
-  step 4, Needs attention expansion step 5 and combined relationship filters step 6;
+  step 4, Needs attention expansion step 5 and combined relationship filters step 6.
+  PR #206 adds the backend/domain foundation of step 4: durable ordinary-user signals for
+  `Needs details`, `Needs review`, `Solution outdated` and `Duplicate`, pending-only
+  self-withdrawal, dynamic submission/review permissions and atomic stale-safe acceptance into the
+  already-existing authoritative Help states. This slice intentionally does not expose the visible
+  submission forms, author pending-signal presentation or moderator review queue; those remain the
+  next bounded step-4 presentation task. Step 5 `Needs attention` expansion and step 6 combined
+  filters are still not pulled forward;
 - owner visual acceptance of the implementation was confirmed on 2026-10-05; exact-head
   automated verification remains a separate PR check.
 

@@ -39,6 +39,8 @@ const allForumPermissions = [
   "forum.topic.pin",
   "forum.solution.manageOwn",
   "forum.solution.manageAny",
+  "forum.helpSignal.create",
+  "forum.helpNeedsDetails.manage",
   "forum.helpDuplicate.manage",
   "forum.sourceLocale.correctOwn",
   "forum.sourceLocale.correctAny",
@@ -169,6 +171,9 @@ function writer() {
     removeHelpDuplicate: vi.fn(async () => undefined),
     appealHelpDuplicate: vi.fn(async () => undefined),
     resolveHelpDuplicateAppeal: vi.fn(async () => undefined),
+    createHelpSignal: vi.fn(async () => ({ id: "signal-1" })),
+    withdrawHelpSignal: vi.fn(async () => undefined),
+    resolveHelpSignal: vi.fn(async () => "accepted" as const),
     correctTopicTitleSourceLocale: vi.fn(async () => undefined),
     correctPostBodySourceLocale: vi.fn(async () => undefined),
     advanceTopicReadState: vi.fn(async () => undefined),
@@ -605,6 +610,7 @@ describe("forum write route actions", () => {
       topicId: "help-1",
       status: "needs-review",
       outdatedReason: null,
+      actorId: "session-user",
     });
     if (!(needsReview instanceof Response)) throw new Error("expected moderation redirect");
     expect(needsReview.headers.get("Location")).toBe("/en/topics/help-1");
@@ -621,6 +627,7 @@ describe("forum write route actions", () => {
       topicId: "help-1",
       status: "outdated",
       outdatedReason: "Old workaround is no longer safe.",
+      actorId: "session-user",
     });
     if (!(outdated instanceof Response)) throw new Error("expected outdated redirect");
     expect(outdated.headers.get("Location")).toBe("/ru/topics/help-1");
@@ -634,6 +641,7 @@ describe("forum write route actions", () => {
       topicId: "help-1",
       status: null,
       outdatedReason: null,
+      actorId: "session-user",
     });
     if (!(clear instanceof Response)) throw new Error("expected clear redirect");
     expect(clear.headers.get("Location")).toBe("/he/topics/help-1");
@@ -655,6 +663,122 @@ describe("forum write route actions", () => {
     });
     expect(invalid).toMatchObject({ data: { error: "invalid" }, init: { status: 400 } });
     expect(missingReason.setHelpSolutionModeration).not.toHaveBeenCalled();
+  });
+
+  it("routes Help signals through their exact server permissions", async () => {
+    const submitWriter = writer();
+    const submitted = await topicAction({
+      request: request("/en/topics/help-question", {
+        intent: "submitHelpSignal",
+        kind: "needs-details",
+        explanation: "Add the exact error output.",
+      }),
+      params: { locale: "en", topicId: "help-question" },
+      context: context(submitWriter, true, ["forum.helpSignal.create"]),
+    });
+    expect(submitWriter.createHelpSignal).toHaveBeenCalledWith({
+      kind: "needs-details",
+      topicId: "help-question",
+      actorId: "session-user",
+      explanation: "Add the exact error output.",
+      proposedOriginalTopicId: undefined,
+    });
+    if (!(submitted instanceof Response)) throw new Error("expected signal redirect");
+
+    const withdrawWriter = writer();
+    await topicAction({
+      request: request("/en/topics/help-question", {
+        intent: "withdrawHelpSignal",
+        signalId: "signal-own",
+      }),
+      params: { locale: "en", topicId: "help-question" },
+      context: context(withdrawWriter, true, []),
+    });
+    expect(withdrawWriter.withdrawHelpSignal).toHaveBeenCalledWith({
+      signalId: "signal-own",
+      topicId: "help-question",
+      actorId: "session-user",
+    });
+
+    const reviewCases = [
+      ["needs-details", "forum.helpNeedsDetails.manage"],
+      ["needs-review", "forum.solution.manageAny"],
+      ["solution-outdated", "forum.solution.manageAny"],
+      ["duplicate", "forum.helpDuplicate.manage"],
+    ] as const;
+    for (const [kind, permission] of reviewCases) {
+      const reviewWriter = writer();
+      const reviewContext = context(reviewWriter, true, [permission]);
+      reviewContext.set(forumReaderContext, {
+        readHelpSignal: vi.fn(async () => ({
+          id: `signal-${kind}`,
+          kind,
+          topicId: "help-question",
+          targetPostId: kind === "needs-review" || kind === "solution-outdated" ? "answer-1" : null,
+          proposedOriginalTopicId: kind === "duplicate" ? "help-original" : null,
+          submittedByUserId: "other-user",
+          explanation: kind === "duplicate" ? null : "Context",
+          status: "pending",
+          createdAt: new Date(),
+          resolvedByUserId: null,
+          resolvedAt: null,
+        })),
+      } as never);
+      await topicAction({
+        request: request("/en/topics/help-question", {
+          intent: "acceptHelpSignal",
+          signalId: `signal-${kind}`,
+        }),
+        params: { locale: "en", topicId: "help-question" },
+        context: reviewContext,
+      });
+      expect(reviewWriter.resolveHelpSignal).toHaveBeenCalledWith({
+        signalId: `signal-${kind}`,
+        actorId: "session-user",
+        resolution: "accepted",
+      });
+
+      const deniedWriter = writer();
+      const deniedContext = context(deniedWriter, true, ["forum.reply.create"]);
+      deniedContext.set(forumReaderContext, {
+        readHelpSignal: vi.fn(async () => ({
+          id: `signal-${kind}`,
+          kind,
+          topicId: "help-question",
+          targetPostId: null,
+          proposedOriginalTopicId: null,
+          submittedByUserId: "other-user",
+          explanation: "Context",
+          status: "pending",
+          createdAt: new Date(),
+          resolvedByUserId: null,
+          resolvedAt: null,
+        })),
+      } as never);
+      const denied = await topicAction({
+        request: request("/en/topics/help-question", {
+          intent: "rejectHelpSignal",
+          signalId: `signal-${kind}`,
+        }),
+        params: { locale: "en", topicId: "help-question" },
+        context: deniedContext,
+      });
+      expect(denied).toMatchObject({ init: { status: 403 } });
+      expect(deniedWriter.resolveHelpSignal).not.toHaveBeenCalled();
+    }
+
+    const deniedSubmitWriter = writer();
+    const deniedSubmit = await topicAction({
+      request: request("/en/topics/help-question", {
+        intent: "submitHelpSignal",
+        kind: "duplicate",
+        proposedOriginalTopicId: "help-original",
+      }),
+      params: { locale: "en", topicId: "help-question" },
+      context: context(deniedSubmitWriter, true, ["forum.reply.create"]),
+    });
+    expect(deniedSubmit).toMatchObject({ init: { status: 403 } });
+    expect(deniedSubmitWriter.createHelpSignal).not.toHaveBeenCalled();
   });
 
   it("routes Help duplicate management and appeals through separate server boundaries", async () => {
