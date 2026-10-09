@@ -55,7 +55,7 @@ describe("recent authenticated presence persistence", () => {
     expect(result.members).toHaveLength(2);
     expect(result.members.map((x) => x.id).sort()).toEqual(["online-a", "online-b"]);
     expect(JSON.stringify(result)).not.toContain("private.test");
-    await expect(repo.recordOnlinePresence("nonexistent-user")).rejects.toMatchObject({ code: "23503" });
+    await expect(repo.recordOnlinePresence("nonexistent-user")).rejects.toMatchObject({ cause: { code: "23503" } });
   });
   it("cascades presence when an account is removed", async () => {
     await repo.recordOnlinePresence("online-unused");

@@ -64,6 +64,7 @@ const topic = {
 };
 
 const reader: ForumReader = {
+  readOnlinePresence: async () => ({ count: 0, members: [] }),
   readProfile: async () => undefined,
   listCategories: async () => [{ id: "category-1", name: "Category", sectionCount: 1 }],
   readHomepage: async () => [{
