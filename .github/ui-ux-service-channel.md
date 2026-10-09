@@ -3669,3 +3669,33 @@ Exact-head verification:
 
 PR #210 remains draft. Next logical subtask is preview/product-state coverage plus project-state/docs
 updates and then ChatGPT whole-PR verification before any owner acceptance or manual Codex review.
+
+
+---
+
+## PR #210 — stable head ready for owner Pages acceptance — 2026-10-09
+
+Implementation PR #210 now has a stable reviewed head:
+`f6ed150ad4a39679d9d27fe013f06f9452238357`.
+
+Finalization completed:
+- representative Pages catalog states: `Editor · Create topic`, `Editor · Reply`,
+  `Editor · Help question draft`; Help draft fixture includes fenced TypeScript code so the same
+  editor can be switched to Preview/Split and exercise rendered code controls;
+- `editor` removed from runtime `Under development`;
+- `PROJECT_STATE.md` and `docs/UI_UX_PASS.md` updated to record the current editor/code slice
+  without claiming owner acceptance;
+- ChatGPT whole-PR review found one real current-scope defect: optional fenced-code language was
+  incorrectly initialized to `ts`. The editor now initializes the language field empty; explicit
+  language selection still works and the default-plain behavior has regression coverage;
+- no other confirmed current-scope defect remains from ChatGPT whole-PR review. Deferred cosmetic
+  polish is not a reason to expand this functional slice.
+
+Exact-head automated evidence:
+- CI run `37972171394`: checks success, database success;
+- Pages preview branch `chatgpt/ui-editor-code-pr210-preview` points to the same exact SHA;
+- Pages run `37972364787`: build success, deploy success.
+
+Next gate is owner Pages acceptance. Do not request final Codex whole-PR review until that owner
+acceptance is recorded; if owner acceptance requires implementation changes, repeat exact-head
+CI/Pages and ChatGPT whole-PR verification before Codex.
