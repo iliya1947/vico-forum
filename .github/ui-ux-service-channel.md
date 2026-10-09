@@ -2602,3 +2602,23 @@ No current-scope Codex findings require implementation changes.
 No future-scope finding was raised by this review.
 
 The subsequent `PROJECT_STATE.md` update only records this completed review and is documentation-only; per AGENTS.md it does not require another Codex review.
+
+
+---
+
+## PR #205 merged — Help step 3 complete — 2026-10-09
+
+Implementation PR #205 (`Help & solutions: duplicate relationship workflow`) was merged by the owner.
+
+- merged at: `2026-10-09T07:14:38Z`;
+- merge commit: `6b8eacce5756a40682dd9b8f0971b43749da6299`;
+- final PR head: `54c5cc3085a0e4c054d4c42f28b7e60826ffeb12`;
+- final implementation review head: `6aa3115953cbddbdfb8e09f8c193ddc1f242f7fb`;
+- final Codex review: completed with no major findings;
+- final docs-only CI: success.
+
+Help & solutions fixed-sequence **step 3 — duplicates** is complete.
+
+Deferred product question remains intentionally unresolved: how to relate multiple independently useful solved questions that later prove to describe the same underlying problem. Do not treat that deferred question as part of the completed duplicate model.
+
+Next fixed-sequence step is **step 4 — user moderation signals**, including ordinary-user requests/signals for moderator consideration (for example the separate request to add `Needs details` and the initial duplicate signal). Start only after the owner explicitly continues.
