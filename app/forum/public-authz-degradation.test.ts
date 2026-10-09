@@ -4,6 +4,11 @@ import { authSessionContext, type AuthSession } from "../auth/request-context";
 import { authorizationContext } from "../authorization/request-context";
 import { AuthorizationUnavailableError } from "../../db/authorization-service";
 import type { ForumReader } from "../../db/forum-repository";
+import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
+import {
+  HELP_SOLUTIONS_CATEGORY_ID,
+  HELP_SOLUTIONS_SERVICE_SECTION_ID,
+} from "../../db/forum-identifiers";
 import { forumReaderContext } from "./request-context";
 import { loader as sectionLoader } from "../routes/section";
 import { loader as topicLoader } from "../routes/topic";
@@ -216,6 +221,42 @@ describe("public forum authorization degradation", () => {
     expect(topicResult.canCorrectTitleSourceLocale).toBe(false);
     expect(topicResult.correctablePostIds).toEqual([]);
     expect(topicResult.generationUnits).toEqual([]);
+  });
+
+  it("keeps Help topic reading available when private signal presentation reads are unavailable", async () => {
+    const helpTopic = {
+      ...topic,
+      id: "help-topic-1",
+      sectionId: HELP_SOLUTIONS_SERVICE_SECTION_ID,
+      section: {
+        id: HELP_SOLUTIONS_SERVICE_SECTION_ID,
+        name: "Questions",
+        category: { id: HELP_SOLUTIONS_CATEGORY_ID, name: "Help & solutions" },
+      },
+      posts: topic.posts.map((post) => ({ ...post, topicId: "help-topic-1" })),
+    };
+    const context = contextWithPermissions("viewer-1", ["forum.helpSignal.create"]);
+    context.set(forumReaderContext, {
+      ...reader,
+      readTopicPage: async (id) => id === helpTopic.id ? helpTopic : undefined,
+      readOwnPendingHelpSignals: vi.fn(async () => {
+        throw new ForumStorageUnavailableError();
+      }),
+      hasActiveHelpDuplicateChildren: vi.fn(async () => {
+        throw new ForumStorageUnavailableError();
+      }),
+    });
+
+    const result = await topicLoader({
+      params: { locale: "en", topicId: helpTopic.id },
+      context,
+    });
+
+    expect(result.topic).toBe(helpTopic);
+    expect(result.canCreateHelpSignal).toBe(true);
+    expect(result.ownPendingHelpSignals).toEqual([]);
+    expect(result.reviewableHelpSignals).toEqual([]);
+    expect(result.canSignalDuplicate).toBe(false);
   });
 
   it("shows the same persisted public translation to guests and authenticated users", async () => {
