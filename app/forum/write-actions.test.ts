@@ -696,6 +696,7 @@ describe("forum write route actions", () => {
     });
     expect(withdrawWriter.withdrawHelpSignal).toHaveBeenCalledWith({
       signalId: "signal-own",
+      topicId: "help-question",
       actorId: "session-user",
     });
 
