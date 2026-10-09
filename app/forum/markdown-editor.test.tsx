@@ -195,6 +195,8 @@ describe("MarkdownEditor", () => {
     const textarea = screen.getByLabelText("Body") as HTMLTextAreaElement;
     const editor = textarea.closest(".markdown-editor")!;
     const writePane = textarea.closest(".markdown-editor-write-pane")!;
+    textarea.focus();
+    textarea.setSelectionRange(textarea.value.length, textarea.value.length);
     await userEvent.click(screen.getByRole("button", { name: "Preview" }));
     expect(editor).toHaveAttribute("data-mode", "preview");
     expect(writePane).toHaveClass("is-preview-hidden");
