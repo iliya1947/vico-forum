@@ -133,7 +133,10 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       }
 
       const lineStart = value.lastIndexOf("\n", Math.max(0, selectionStart - 1)) + 1;
-      const nextBreak = value.indexOf("\n", selectionEnd);
+      const effectiveEnd = selectionEnd > selectionStart && value[selectionEnd - 1] === "\n"
+        ? selectionEnd - 1
+        : selectionEnd;
+      const nextBreak = value.indexOf("\n", effectiveEnd);
       const lineEnd = nextBreak === -1 ? value.length : nextBreak;
       const selectedLines = value.slice(lineStart, lineEnd);
       const transformed = selectedLines
@@ -156,7 +159,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       const start = textarea.selectionStart ?? value.length;
       const end = textarea.selectionEnd ?? start;
       const selected = value.slice(start, end);
-      const label = selected || "link text";
+      const label = selected || t("editorLink");
       const destination = "https://";
       const inserted = "[" + label + "](" + destination + ")";
       const nextValue = value.slice(0, start) + inserted + value.slice(end);
@@ -332,6 +335,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
               id={id}
               name={name}
               required={required}
+              tabIndex={mode === "preview" ? -1 : undefined}
               rows={rows}
               disabled={disabled}
               aria-describedby={describedBy}
