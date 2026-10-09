@@ -1204,11 +1204,15 @@ export class DrizzleForumRepository {
       sql` + `,
     )})::int`;
     const relevanceScore = sql<number>`(
-      ${coveredTermCount} * 100
-      + ${titleMatchCount} * 20
+      ${titleMatchCount} * 20
       + ${tagMatchCount} * 8
       + ${bodyMatchCount} * 2
     )::int`;
+    const matchTier = sql<number>`case
+      when ${titleMatchCount} > 0 then 3
+      when ${tagMatchCount} > 0 then 2
+      else 1
+    end::int`;
     const matchSource = sql<ForumHelpSimilarMatchSource>`case
       when ${titleMatchCount} > 0 then 'title'
       when ${tagMatchCount} > 0 then 'tags'
@@ -1227,6 +1231,7 @@ export class DrizzleForumRepository {
         isSolved: forumTopics.isSolved,
         activityAt,
         relevanceScore,
+        matchTier,
         coveredTermCount,
         matchSource,
       })
@@ -1246,8 +1251,9 @@ export class DrizzleForumRepository {
       .groupBy(forumTopics.id, forumTopicTitleRevisions.id)
       .having(sql`${coveredTermCount} > 0`)
       .orderBy(
-        desc(relevanceScore),
+        desc(matchTier),
         desc(coveredTermCount),
+        desc(relevanceScore),
         desc(activityAt),
         desc(forumTopics.id),
       )
