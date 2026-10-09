@@ -1390,6 +1390,7 @@ export class DrizzleForumRepository {
       | { mode: "solved" }
       | { mode: "mine"; authorId: string }
       | { mode: "help"; excludedAuthorId: string },
+    filters: ForumHelpSolutionsFilters = {},
   ): Promise<ForumHelpSolutionsPage | undefined> {
     const [category] = await this.database
       .select({ id: forumCategories.id, name: forumCategories.name })
