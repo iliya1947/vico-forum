@@ -3,6 +3,7 @@ import { Form, Link, useFetcher, useLocation, useNavigation } from "react-router
 import { useTranslation } from "react-i18next";
 
 import type {
+  ForumHelpSolutionsFilters,
   ForumHelpSolutionsPage,
   ForumPopularPeriod,
   ForumPopularTopicSummary,
@@ -1002,6 +1003,7 @@ type HelpSolutionsPagePresentation = Omit<ForumHelpSolutionsPage, "questions"> &
 export function HelpSolutionsView({
   locale,
   mode,
+  filters = {},
   page,
   referenceTime,
   isAuthenticated = false,
@@ -1013,6 +1015,7 @@ export function HelpSolutionsView({
 }: {
   locale: string;
   mode: "all" | "open" | "help" | "for-me" | "active" | "attention" | "solutions" | "mine";
+  filters?: ForumHelpSolutionsFilters;
   page: HelpSolutionsPagePresentation;
   referenceTime: string;
   isAuthenticated?: boolean;
@@ -1040,13 +1043,31 @@ export function HelpSolutionsView({
     && submittingIntent === "createHelpQuestion";
   const isQuestionFormBusy = isQuestionSubmitting || isSimilarChecking;
   const categoryPath = forumCategoryPath(locale, HELP_SOLUTIONS_CATEGORY_ID);
-  const openPath = `${categoryPath}?mode=open`;
-  const helpPath = `${categoryPath}?mode=help`;
-  const forMePath = `${categoryPath}?mode=for-me`;
-  const activePath = `${categoryPath}?mode=active`;
-  const attentionPath = `${categoryPath}?mode=attention`;
-  const solutionsPath = `${categoryPath}?mode=solutions`;
-  const minePath = `${categoryPath}?mode=mine`;
+  const helpPathForMode = (
+    nextMode: "all" | "open" | "help" | "for-me" | "active" | "attention" | "solutions" | "mine",
+    keepFilters = true,
+  ) => {
+    const params = new URLSearchParams();
+    if (nextMode !== "all") params.set("mode", nextMode);
+    if (keepFilters) {
+      if (filters.solution) params.set("solution", filters.solution);
+      if (filters.answers) params.set("answers", filters.answers);
+      if (filters.quality) params.set("quality", filters.quality);
+      if (filters.relation) params.set("relation", filters.relation);
+    }
+    const query = params.toString();
+    return query ? `${categoryPath}?${query}` : categoryPath;
+  };
+  const allPath = helpPathForMode("all");
+  const openPath = helpPathForMode("open");
+  const helpPath = helpPathForMode("help");
+  const forMePath = helpPathForMode("for-me");
+  const activePath = helpPathForMode("active");
+  const attentionPath = helpPathForMode("attention");
+  const solutionsPath = helpPathForMode("solutions");
+  const minePath = helpPathForMode("mine");
+  const resetFiltersPath = helpPathForMode(mode, false);
+  const hasHelpFilters = Boolean(filters.solution || filters.answers || filters.quality || filters.relation);
   const allMode = mode === "all";
   const openMode = mode === "open";
   const helpMode = mode === "help";
@@ -1117,7 +1138,7 @@ export function HelpSolutionsView({
         <nav className="help-solutions-modes" aria-label={t("helpSolutionsHeading")}>
           <Link
             className={"help-solutions-mode" + (allMode ? " is-active" : "")}
-            to={categoryPath}
+            to={allPath}
             aria-current={allMode ? "page" : undefined}
           >
             {t("helpSolutionsAllMode")}
@@ -1180,6 +1201,50 @@ export function HelpSolutionsView({
             </Link>
           ) : null}
         </nav>
+
+        <Form method="get" className="help-solutions-filters" aria-label={t("helpSolutionsFiltersHeading")}>
+          {mode !== "all" ? <input type="hidden" name="mode" value={mode} /> : null}
+          <label>
+            <span>{t("helpSolutionsFilterSolution")}</span>
+            <select name="solution" defaultValue={filters.solution ?? ""}>
+              <option value="">{t("helpSolutionsFilterAny")}</option>
+              <option value="open">{t("helpSolutionsFilterUnresolved")}</option>
+              <option value="solved">{t("helpSolutionsFilterSolved")}</option>
+              {canViewSolutionModeration ? (
+                <option value="needs-review">{t("helpSolutionsFilterNeedsReview")}</option>
+              ) : null}
+              <option value="outdated">{t("helpSolutionsFilterOutdated")}</option>
+            </select>
+          </label>
+          <label>
+            <span>{t("helpSolutionsFilterAnswers")}</span>
+            <select name="answers" defaultValue={filters.answers ?? ""}>
+              <option value="">{t("helpSolutionsFilterAny")}</option>
+              <option value="none">{t("helpSolutionsFilterNoAnswers")}</option>
+              <option value="has">{t("helpSolutionsFilterHasAnswers")}</option>
+            </select>
+          </label>
+          <label>
+            <span>{t("helpSolutionsFilterQuality")}</span>
+            <select name="quality" defaultValue={filters.quality ?? ""}>
+              <option value="">{t("helpSolutionsFilterAny")}</option>
+              <option value="normal">{t("helpSolutionsFilterNormal")}</option>
+              <option value="needs-details">{t("helpSolutionsNeedsDetails")}</option>
+            </select>
+          </label>
+          <label>
+            <span>{t("helpSolutionsFilterRelation")}</span>
+            <select name="relation" defaultValue={filters.relation ?? ""}>
+              <option value="">{t("helpSolutionsFilterAny")}</option>
+              <option value="standalone">{t("helpSolutionsFilterStandalone")}</option>
+              <option value="duplicate">{t("helpDuplicateBadge")}</option>
+            </select>
+          </label>
+          <div className="help-solutions-filter-actions">
+            <button type="submit">{t("helpSolutionsFilterApply")}</button>
+            {hasHelpFilters ? <Link to={resetFiltersPath}>{t("helpSolutionsFilterReset")}</Link> : null}
+          </div>
+        </Form>
 
         {canAskQuestion && questionComposerOpen ? (
           <Form
