@@ -7696,6 +7696,96 @@ a.topic-tag:focus-visible {
   background: var(--color-accent);
 }
 
+.help-solutions-filters {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(7.5rem, 1fr)) auto;
+  gap: 0.5rem;
+  align-items: end;
+  margin: 0 1rem 0.65rem;
+  padding: 0.6rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.55rem;
+  background: var(--color-surface);
+}
+
+.help-solutions-filters label {
+  display: grid;
+  min-width: 0;
+  gap: 0.28rem;
+  color: var(--color-text-muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.help-solutions-filters select {
+  width: 100%;
+  min-width: 0;
+  min-height: 2rem;
+  padding: 0.34rem 1.8rem 0.34rem 0.5rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 0.4rem;
+  color: var(--color-text);
+  background: var(--color-surface-muted);
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+:dir(rtl) .help-solutions-filters select {
+  padding-inline: 0.5rem 1.8rem;
+}
+
+.help-solutions-filters select:focus-visible,
+.help-solutions-filter-actions button:focus-visible,
+.help-solutions-filter-actions a:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.help-solutions-filter-actions {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  min-height: 2rem;
+}
+
+.help-solutions-filter-actions button,
+.help-solutions-filter-actions a {
+  display: inline-flex;
+  min-height: 2rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0.34rem 0.65rem;
+  border-radius: 0.4rem;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.help-solutions-filter-actions button {
+  border: 1px solid var(--color-accent);
+  color: var(--color-action-on-accent);
+  background: var(--color-accent);
+  cursor: pointer;
+}
+
+.help-solutions-filter-actions button:hover {
+  background: var(--color-accent-hover);
+}
+
+.help-solutions-filter-actions a {
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  background: var(--color-surface-muted);
+  text-decoration: none;
+}
+
+.help-solutions-filter-actions a:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent-hover);
+}
+
 .help-solutions-questions {
   margin: 0 1rem 1rem;
 }
@@ -7808,6 +7898,26 @@ a.topic-tag:focus-visible {
 }
 
 
+.help-question-quality {
+  display: inline-flex;
+  min-height: 1.35rem;
+  align-items: center;
+  padding: 0.12rem 0.4rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 999px;
+  color: var(--color-text);
+  background: var(--color-surface-muted);
+  font-size: 0.64rem;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.help-question-quality.is-needs-details {
+  border-color: var(--color-accent);
+  color: var(--color-accent-hover);
+  background: var(--color-accent-soft);
+}
+
 .help-question-solution-moderation,
 .solution-moderation-badge {
   border: 1px solid var(--color-border-strong);
@@ -7862,6 +7972,15 @@ a.topic-tag:focus-visible {
 }
 
 @media (max-width: 52rem) {
+  .help-solutions-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .help-solutions-filter-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+  }
+
   .help-question-card {
     grid-template-columns: minmax(0, 1fr) 5rem 2.65rem;
   }
@@ -7896,6 +8015,7 @@ a.topic-tag:focus-visible {
   .help-solutions-heading,
   .help-question-create-form,
   .help-solutions-modes,
+  .help-solutions-filters,
   .help-solutions-questions {
     margin-inline: 0.75rem;
   }

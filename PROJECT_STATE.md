@@ -320,6 +320,25 @@ Vico Forum находится в ранней pre-release разработке.
   следующей bounded подзадачей step 4; расширение `Needs attention` остаётся step 5, combined
   filters — step 6. Runtime ACL даёт web capability только `SELECT / INSERT / UPDATE` на новую
   relation; external migration/Stage 6 rollout не выполняется.
+- PR #208 реализует независимый step-6 slice **combined filters** для Help & solutions поверх уже
+  существующих authoritative состояний, не дожидаясь отдельно проектируемых signals/reports и
+  admin-panel систем. Четыре optional query dimensions комбинируются поверх любого текущего Help
+  mode и применяются в repository/DB query до mode-specific ordering/limits:
+  `solution=open|solved|needs-review|outdated`, `answers=none|has`,
+  `quality=normal|needs-details`, `relation=standalone|duplicate`. `Needs review` остаётся
+  moderator-only: option показывается только actor с `forum.solution.manageAny`, guest direct
+  request получает 401, authenticated actor без capability — 403, classified authorization
+  unavailable — controlled 503. Остальные filter states используют уже публичные authoritative
+  данные. Mode navigation сохраняет активные filters, Reset очищает только filters и сохраняет mode;
+  persisted `Needs details` показывается public badge в Help list, чтобы quality-filter result был
+  объясним прямо в карточке.
+  Slice не меняет schema/migrations/permissions, не читает pending signals, не расширяет
+  `Needs attention` и не меняет signal/reports или admin-panel UI. EN/RU/HE presentation,
+  responsive Pages states и focused repository/route tests добавлены. Exact-head CI и Pages
+  проходят; owner visual acceptance подтверждён 2026-10-09 как достаточный для текущего
+  функционального прохода. Владелец отдельно зафиксировал, что текущая presentation комбинированного
+  фильтра временная и после завершения основного функционального прохода её нужно дополнительно
+  доработать/отполировать; это future polish, а не дефект текущего PR #208.
 - In-app reply notifications slice реализован в PR #180:
   forward migration `0024_forum_reply_notifications` хранит только stable recipient/actor/topic/post
   references, `createdAt` и nullable `readAt`; unique recipient + reply identity предотвращает

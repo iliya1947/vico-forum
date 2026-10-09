@@ -3,12 +3,37 @@ import { authSessionForRequest } from "../auth/request-context";
 import { authorizationForRequest } from "../authorization/request-context";
 import { AuthorizationUnavailableError } from "../../db/authorization-service";
 import { forumReaderForRequest } from "../forum/request-context";
+import type {
+  ForumHelpSolutionsFilters,
+  HelpSolutionsAnswersFilter,
+  HelpSolutionsQualityFilter,
+  HelpSolutionsRelationFilter,
+  HelpSolutionsSolutionFilter,
+} from "../../db/forum-repository";
 import type { HelpQuestionActionData } from "../forum/mutations.server";
 import { ForumRouteError } from "../forum/ui";
 import { HELP_SOLUTIONS_CATEGORY_ID } from "../../db/forum-identifiers";
 import { CategoryView, HelpSolutionsView } from "../forum/views";
 
 export { helpSolutionsCategoryAction as action } from "../forum/actions.server";
+
+const HELP_SOLUTION_FILTERS = new Set<HelpSolutionsSolutionFilter>(["open", "solved", "needs-review", "outdated"]);
+const HELP_ANSWERS_FILTERS = new Set<HelpSolutionsAnswersFilter>(["none", "has"]);
+const HELP_QUALITY_FILTERS = new Set<HelpSolutionsQualityFilter>(["normal", "needs-details"]);
+const HELP_RELATION_FILTERS = new Set<HelpSolutionsRelationFilter>(["standalone", "duplicate"]);
+
+function readHelpFilters(searchParams: URLSearchParams): ForumHelpSolutionsFilters {
+  const solution = searchParams.get("solution") as HelpSolutionsSolutionFilter | null;
+  const answers = searchParams.get("answers") as HelpSolutionsAnswersFilter | null;
+  const quality = searchParams.get("quality") as HelpSolutionsQualityFilter | null;
+  const relation = searchParams.get("relation") as HelpSolutionsRelationFilter | null;
+  return {
+    ...(solution && HELP_SOLUTION_FILTERS.has(solution) ? { solution } : {}),
+    ...(answers && HELP_ANSWERS_FILTERS.has(answers) ? { answers } : {}),
+    ...(quality && HELP_QUALITY_FILTERS.has(quality) ? { quality } : {}),
+    ...(relation && HELP_RELATION_FILTERS.has(relation) ? { relation } : {}),
+  };
+}
 
 export async function loader({ request, params, context }: {
   request?: Request;
@@ -21,7 +46,9 @@ export async function loader({ request, params, context }: {
   const referenceTime = new Date().toISOString();
 
   if (categoryId === HELP_SOLUTIONS_CATEGORY_ID) {
-    const requestedMode = request ? new URL(request.url).searchParams.get("mode") : null;
+    const searchParams = request ? new URL(request.url).searchParams : new URLSearchParams();
+    const requestedMode = searchParams.get("mode");
+    const filters = readHelpFilters(searchParams);
     const mode = requestedMode === "open"
       ? "open" as const
       : requestedMode === "help"
@@ -38,7 +65,11 @@ export async function loader({ request, params, context }: {
               ? "mine" as const
               : "all" as const;
     const session = authSessionForRequest(context);
-    if ((mode === "mine" || mode === "help" || mode === "for-me" || mode === "attention") && !session) {
+    const needsReviewFilter = filters.solution === "needs-review";
+    if (
+      (mode === "mine" || mode === "help" || mode === "for-me" || mode === "attention" || needsReviewFilter)
+      && !session
+    ) {
       throw new Response("Unauthorized", { status: 401 });
     }
 
@@ -57,37 +88,41 @@ export async function loader({ request, params, context }: {
         canViewAttention = canViewSolutionModeration;
       } catch (error) {
         if (!(error instanceof AuthorizationUnavailableError)) throw error;
-        if (mode === "attention") throw new Response("Unavailable", { status: 503 });
+        if (mode === "attention" || needsReviewFilter) throw new Response("Unavailable", { status: 503 });
         // Public Q&A reading remains available when optional presentation authorization is unavailable.
       }
     }
     if (mode === "attention" && !canViewAttention) {
       throw new Response("Forbidden", { status: 403 });
     }
+    if (needsReviewFilter && !canViewSolutionModeration) {
+      throw new Response("Forbidden", { status: 403 });
+    }
 
     let helpSolutions;
     if (mode === "mine") {
-      helpSolutions = await reader.readHelpSolutionsMine(session!.user.id);
+      helpSolutions = await reader.readHelpSolutionsMine(session!.user.id, filters);
     } else if (mode === "help") {
-      helpSolutions = await reader.readHelpSolutionsWantToHelp(session!.user.id);
+      helpSolutions = await reader.readHelpSolutionsWantToHelp(session!.user.id, filters);
     } else if (mode === "for-me") {
-      helpSolutions = await reader.readHelpSolutionsForMe(session!.user.id);
+      helpSolutions = await reader.readHelpSolutionsForMe(session!.user.id, filters);
     } else {
       helpSolutions = mode === "open"
-        ? await reader.readHelpSolutionsOpen()
+        ? await reader.readHelpSolutionsOpen(filters)
         : mode === "active"
-          ? await reader.readHelpSolutionsActive()
+          ? await reader.readHelpSolutionsActive(filters)
           : mode === "attention"
-            ? await reader.readHelpSolutionsNeedsAttention()
+            ? await reader.readHelpSolutionsNeedsAttention(filters)
             : mode === "solutions"
-              ? await reader.readHelpSolutionsSolved()
-              : await reader.readHelpSolutionsAll();
+              ? await reader.readHelpSolutionsSolved(filters)
+              : await reader.readHelpSolutionsAll(filters);
     }
     if (!helpSolutions) throw new Response("Not Found", { status: 404 });
     return {
       kind: "help-solutions" as const,
       locale,
       mode,
+      filters,
       isAuthenticated: Boolean(session),
       canAskQuestion,
       canViewAttention,
@@ -137,6 +172,7 @@ export default function CategoryRoute() {
       <HelpSolutionsView
         locale={data.locale}
         mode={data.mode}
+        filters={data.filters}
         page={data.page}
         referenceTime={data.referenceTime}
         isAuthenticated={data.isAuthenticated}

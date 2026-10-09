@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gt, gte, inArray, isNull, lte, ne, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, gte, inArray, isNotNull, isNull, lte, ne, or, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { alias } from "drizzle-orm/pg-core";
 import {
@@ -213,6 +213,18 @@ export interface ForumHelpSolutionsPage {
   questions: ForumHelpQuestionSummary[];
 }
 
+export type HelpSolutionsSolutionFilter = "open" | "solved" | "needs-review" | "outdated";
+export type HelpSolutionsAnswersFilter = "none" | "has";
+export type HelpSolutionsQualityFilter = "normal" | "needs-details";
+export type HelpSolutionsRelationFilter = "standalone" | "duplicate";
+
+export interface ForumHelpSolutionsFilters {
+  solution?: HelpSolutionsSolutionFilter;
+  answers?: HelpSolutionsAnswersFilter;
+  quality?: HelpSolutionsQualityFilter;
+  relation?: HelpSolutionsRelationFilter;
+}
+
 export interface ForumHelpSimilarQuestionSummary {
   id: string;
   title: string;
@@ -275,14 +287,14 @@ export interface ForumReader {
   readReplyNotifications(userId: string, limit?: number): Promise<ForumReplyNotificationSummary[]>;
   countUnreadReplyNotifications(userId: string): Promise<number>;
   readTopicPinState(topicId: string): Promise<boolean>;
-  readHelpSolutionsAll(): Promise<ForumHelpSolutionsPage | undefined>;
-  readHelpSolutionsOpen(): Promise<ForumHelpSolutionsPage | undefined>;
-  readHelpSolutionsActive(): Promise<ForumHelpSolutionsPage | undefined>;
-  readHelpSolutionsNeedsAttention(): Promise<ForumHelpSolutionsPage | undefined>;
-  readHelpSolutionsSolved(): Promise<ForumHelpSolutionsPage | undefined>;
-  readHelpSolutionsMine(userId: string): Promise<ForumHelpSolutionsPage | undefined>;
-  readHelpSolutionsWantToHelp(userId: string): Promise<ForumHelpSolutionsPage | undefined>;
-  readHelpSolutionsForMe(userId: string): Promise<ForumHelpSolutionsPage | undefined>;
+  readHelpSolutionsAll(filters?: ForumHelpSolutionsFilters): Promise<ForumHelpSolutionsPage | undefined>;
+  readHelpSolutionsOpen(filters?: ForumHelpSolutionsFilters): Promise<ForumHelpSolutionsPage | undefined>;
+  readHelpSolutionsActive(filters?: ForumHelpSolutionsFilters): Promise<ForumHelpSolutionsPage | undefined>;
+  readHelpSolutionsNeedsAttention(filters?: ForumHelpSolutionsFilters): Promise<ForumHelpSolutionsPage | undefined>;
+  readHelpSolutionsSolved(filters?: ForumHelpSolutionsFilters): Promise<ForumHelpSolutionsPage | undefined>;
+  readHelpSolutionsMine(userId: string, filters?: ForumHelpSolutionsFilters): Promise<ForumHelpSolutionsPage | undefined>;
+  readHelpSolutionsWantToHelp(userId: string, filters?: ForumHelpSolutionsFilters): Promise<ForumHelpSolutionsPage | undefined>;
+  readHelpSolutionsForMe(userId: string, filters?: ForumHelpSolutionsFilters): Promise<ForumHelpSolutionsPage | undefined>;
   searchHelpSolutionsSimilar(query: string, limit?: number): Promise<ForumHelpSimilarQuestionSummary[]>;
   readPendingHelpDuplicateAppeal(topicId: string): Promise<ForumHelpDuplicateAppeal | undefined>;
   readHelpSignal(id: string): Promise<ForumHelpSignal | undefined>;
@@ -1195,35 +1207,35 @@ export class DrizzleForumRepository {
     }));
   }
 
-  async readHelpSolutionsAll(): Promise<ForumHelpSolutionsPage | undefined> {
-    return this.readHelpSolutionsPage({ mode: "all" });
+  async readHelpSolutionsAll(filters: ForumHelpSolutionsFilters = {}): Promise<ForumHelpSolutionsPage | undefined> {
+    return this.readHelpSolutionsPage({ mode: "all" }, filters);
   }
 
-  async readHelpSolutionsOpen(): Promise<ForumHelpSolutionsPage | undefined> {
-    return this.readHelpSolutionsPage({ mode: "open" });
+  async readHelpSolutionsOpen(filters: ForumHelpSolutionsFilters = {}): Promise<ForumHelpSolutionsPage | undefined> {
+    return this.readHelpSolutionsPage({ mode: "open" }, filters);
   }
 
-  async readHelpSolutionsActive(): Promise<ForumHelpSolutionsPage | undefined> {
-    return this.readHelpSolutionsPage({ mode: "active" });
+  async readHelpSolutionsActive(filters: ForumHelpSolutionsFilters = {}): Promise<ForumHelpSolutionsPage | undefined> {
+    return this.readHelpSolutionsPage({ mode: "active" }, filters);
   }
 
-  async readHelpSolutionsNeedsAttention(): Promise<ForumHelpSolutionsPage | undefined> {
-    return this.readHelpSolutionsPage({ mode: "attention" });
+  async readHelpSolutionsNeedsAttention(filters: ForumHelpSolutionsFilters = {}): Promise<ForumHelpSolutionsPage | undefined> {
+    return this.readHelpSolutionsPage({ mode: "attention" }, filters);
   }
 
-  async readHelpSolutionsSolved(): Promise<ForumHelpSolutionsPage | undefined> {
-    return this.readHelpSolutionsPage({ mode: "solved" });
+  async readHelpSolutionsSolved(filters: ForumHelpSolutionsFilters = {}): Promise<ForumHelpSolutionsPage | undefined> {
+    return this.readHelpSolutionsPage({ mode: "solved" }, filters);
   }
 
-  async readHelpSolutionsMine(userId: string): Promise<ForumHelpSolutionsPage | undefined> {
-    return this.readHelpSolutionsPage({ mode: "mine", authorId: userId });
+  async readHelpSolutionsMine(userId: string, filters: ForumHelpSolutionsFilters = {}): Promise<ForumHelpSolutionsPage | undefined> {
+    return this.readHelpSolutionsPage({ mode: "mine", authorId: userId }, filters);
   }
 
-  async readHelpSolutionsWantToHelp(userId: string): Promise<ForumHelpSolutionsPage | undefined> {
-    return this.readHelpSolutionsPage({ mode: "help", excludedAuthorId: userId });
+  async readHelpSolutionsWantToHelp(userId: string, filters: ForumHelpSolutionsFilters = {}): Promise<ForumHelpSolutionsPage | undefined> {
+    return this.readHelpSolutionsPage({ mode: "help", excludedAuthorId: userId }, filters);
   }
 
-  async readHelpSolutionsForMe(userId: string): Promise<ForumHelpSolutionsPage | undefined> {
+  async readHelpSolutionsForMe(userId: string, filters: ForumHelpSolutionsFilters = {}): Promise<ForumHelpSolutionsPage | undefined> {
     const [category] = await this.database
       .select({ id: forumCategories.id, name: forumCategories.name })
       .from(forumCategories)
@@ -1260,6 +1272,31 @@ export class DrizzleForumRepository {
     )`.mapWith(forumTopics.createdAt);
     const matchCount = sql<number>`count(distinct ${forumTopicTags.tagKey})::int`;
     const currentBestAnswer = alias(forumPosts, "help_for_me_current_best_answer");
+    const activeDuplicate = alias(forumHelpDuplicateRelationships, "help_for_me_active_duplicate");
+    const solutionCondition = filters.solution === "open"
+      ? eq(forumTopics.isSolved, false)
+      : filters.solution === "solved"
+        ? eq(forumTopics.isSolved, true)
+        : filters.solution === "needs-review"
+          ? eq(currentBestAnswer.solutionModerationStatus, "needs-review")
+          : filters.solution === "outdated"
+            ? eq(currentBestAnswer.solutionModerationStatus, "outdated")
+            : undefined;
+    const qualityCondition = filters.quality === "normal"
+      ? eq(forumTopics.needsDetails, false)
+      : filters.quality === "needs-details"
+        ? eq(forumTopics.needsDetails, true)
+        : undefined;
+    const relationCondition = filters.relation === "standalone"
+      ? isNull(activeDuplicate.id)
+      : filters.relation === "duplicate"
+        ? isNotNull(activeDuplicate.id)
+        : undefined;
+    const answersCondition = filters.answers === "none"
+      ? sql`count(distinct ${forumPosts.id}) <= 1`
+      : filters.answers === "has"
+        ? sql`count(distinct ${forumPosts.id}) > 1`
+        : sql`true`;
 
     const rows = await this.database
       .select({
@@ -1295,10 +1332,17 @@ export class DrizzleForumRepository {
         eq(currentBestAnswer.topicId, forumTopics.id),
         eq(currentBestAnswer.id, forumTopics.bestAnswerPostId),
       ))
+      .leftJoin(activeDuplicate, and(
+        eq(activeDuplicate.duplicateTopicId, forumTopics.id),
+        isNull(activeDuplicate.removedAt),
+      ))
       .where(and(
         eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
         eq(forumTopics.isSolved, false),
         ne(forumTopics.authorId, userId),
+        solutionCondition,
+        qualityCondition,
+        relationCondition,
       ))
       .groupBy(
         forumTopics.id,
@@ -1308,6 +1352,7 @@ export class DrizzleForumRepository {
         currentBestAnswer.solutionOutdatedReason,
         currentBestAnswer.solutionOutdatedReasonKind,
       )
+      .having(answersCondition)
       .orderBy(desc(matchCount), desc(activityAt), desc(forumTopics.id))
       .limit(HELP_SOLUTIONS_FOR_ME_LIMIT);
 
@@ -1345,6 +1390,7 @@ export class DrizzleForumRepository {
       | { mode: "solved" }
       | { mode: "mine"; authorId: string }
       | { mode: "help"; excludedAuthorId: string },
+    filters: ForumHelpSolutionsFilters = {},
   ): Promise<ForumHelpSolutionsPage | undefined> {
     const [category] = await this.database
       .select({ id: forumCategories.id, name: forumCategories.name })
@@ -1357,6 +1403,31 @@ export class DrizzleForumRepository {
       coalesce(max(${forumPosts.createdAt}), ${forumTopics.createdAt})
     )`.mapWith(forumTopics.createdAt);
     const currentBestAnswer = alias(forumPosts, "help_page_current_best_answer");
+    const activeDuplicate = alias(forumHelpDuplicateRelationships, "help_page_active_duplicate");
+    const solutionCondition = filters.solution === "open"
+      ? eq(forumTopics.isSolved, false)
+      : filters.solution === "solved"
+        ? eq(forumTopics.isSolved, true)
+        : filters.solution === "needs-review"
+          ? eq(currentBestAnswer.solutionModerationStatus, "needs-review")
+          : filters.solution === "outdated"
+            ? eq(currentBestAnswer.solutionModerationStatus, "outdated")
+            : undefined;
+    const qualityCondition = filters.quality === "normal"
+      ? eq(forumTopics.needsDetails, false)
+      : filters.quality === "needs-details"
+        ? eq(forumTopics.needsDetails, true)
+        : undefined;
+    const relationCondition = filters.relation === "standalone"
+      ? isNull(activeDuplicate.id)
+      : filters.relation === "duplicate"
+        ? isNotNull(activeDuplicate.id)
+        : undefined;
+    const answersCondition = filters.answers === "none"
+      ? sql`count(distinct ${forumPosts.id}) <= 1`
+      : filters.answers === "has"
+        ? sql`count(distinct ${forumPosts.id}) > 1`
+        : sql`true`;
 
     const questionQuery = this.database
       .select({
@@ -1384,7 +1455,11 @@ export class DrizzleForumRepository {
         eq(currentBestAnswer.topicId, forumTopics.id),
         eq(currentBestAnswer.id, forumTopics.bestAnswerPostId),
       ))
-      .where(
+      .leftJoin(activeDuplicate, and(
+        eq(activeDuplicate.duplicateTopicId, forumTopics.id),
+        isNull(activeDuplicate.removedAt),
+      ))
+      .where(and(
         filter.mode === "solved"
           ? and(
               eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
@@ -1407,7 +1482,10 @@ export class DrizzleForumRepository {
                     ne(forumTopics.authorId, filter.excludedAuthorId),
                   )
                 : eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
-      )
+        solutionCondition,
+        qualityCondition,
+        relationCondition,
+      ))
       .groupBy(
         forumTopics.id,
         forumTopicTitleRevisions.id,
@@ -1416,13 +1494,14 @@ export class DrizzleForumRepository {
         currentBestAnswer.solutionOutdatedReason,
         currentBestAnswer.solutionOutdatedReasonKind,
       )
-      .having(
+      .having(and(
         filter.mode === "active"
           ? sql`count(distinct ${forumPosts.id}) > 1`
           : filter.mode === "attention"
             ? sql`count(distinct ${forumPosts.id}) <= 1`
             : sql`true`,
-      )
+        answersCondition,
+      ))
       .orderBy(desc(activityAt), desc(forumTopics.id));
 
     const rows = filter.mode === "active"

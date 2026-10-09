@@ -590,6 +590,158 @@ describe("Help & solutions modes and authoring", () => {
     expect(unknownData.page.questions).toHaveLength(1);
   });
 
+  it("combines Help filters at the reader boundary and preserves them across modes", async () => {
+    const filters = {
+      solution: "open" as const,
+      answers: "has" as const,
+      quality: "needs-details" as const,
+      relation: "standalone" as const,
+    };
+    const combinedPage = {
+      ...helpPage,
+      questions: helpPage.questions.map((question) => ({
+        ...question,
+        needsDetails: true,
+        duplicateOf: null,
+      })),
+    };
+    const readActive = vi.fn(async () => combinedPage);
+    const requestContext = context("en", "ltr");
+    requestContext.set(forumReaderContext, {
+      ...reader,
+      readHelpSolutionsActive: readActive,
+    });
+
+    const url = "https://forum.example/en/categories/help-solutions?mode=active&solution=open&answers=has&quality=needs-details&relation=standalone";
+    const data = await categoryLoader({
+      request: new Request(url),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: requestContext,
+    });
+
+    expect(data.kind).toBe("help-solutions");
+    if (data.kind !== "help-solutions") throw new Error("expected Help & solutions page");
+    expect(data.filters).toEqual(filters);
+    expect(readActive).toHaveBeenCalledWith(filters);
+
+    renderRoute(
+      CategoryRoute,
+      data,
+      "/en/categories/help-solutions?mode=active&solution=open&answers=has&quality=needs-details&relation=standalone",
+      "en",
+      "ltr",
+    );
+
+    expect(await screen.findByRole("combobox", { name: "Solution" })).toHaveValue("open");
+    expect(screen.getByRole("combobox", { name: "Answers" })).toHaveValue("has");
+    expect(screen.getByRole("combobox", { name: "Quality" })).toHaveValue("needs-details");
+    expect(screen.getByRole("combobox", { name: "Relation" })).toHaveValue("standalone");
+    expect(document.querySelector(".help-question-quality.is-needs-details")).toHaveTextContent("Needs details");
+    expect(screen.queryByRole("option", { name: "Needs review" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Solutions" })).toHaveAttribute(
+      "href",
+      "/en/categories/help-solutions?mode=solutions&solution=open&answers=has&quality=needs-details&relation=standalone",
+    );
+    expect(screen.getByRole("link", { name: "Reset" })).toHaveAttribute(
+      "href",
+      "/en/categories/help-solutions?mode=active",
+    );
+  });
+
+  it("keeps the Needs review filter behind solution moderation permission", async () => {
+    const url = "https://forum.example/en/categories/help-solutions?solution=needs-review";
+    const readAll = vi.fn(async () => helpPage);
+
+    const guestContext = context("en", "ltr");
+    guestContext.set(forumReaderContext, { ...reader, readHelpSolutionsAll: readAll });
+    await expect(categoryLoader({
+      request: new Request(url),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: guestContext,
+    })).rejects.toMatchObject({ status: 401 });
+    expect(readAll).not.toHaveBeenCalled();
+
+    const userContext = context("en", "ltr");
+    userContext.set(authSessionContext, {
+      user: {
+        id: "filter-user",
+        name: "Filter user",
+        email: "filter-user@example.test",
+        emailVerified: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      session: {
+        id: "filter-user-session",
+        token: "filter-user-token",
+        userId: "filter-user",
+        expiresAt: new Date(Date.now() + 60_000),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    });
+    userContext.set(forumReaderContext, { ...reader, readHelpSolutionsAll: readAll });
+    userContext.set(authorizationContext, {
+      forUser: () => ({
+        resolve: vi.fn(),
+        has: vi.fn(async () => false),
+      }),
+    } as never);
+    await expect(categoryLoader({
+      request: new Request(url),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: userContext,
+    })).rejects.toMatchObject({ status: 403 });
+    expect(readAll).not.toHaveBeenCalled();
+
+    const managerContext = context("en", "ltr");
+    managerContext.set(authSessionContext, {
+      user: {
+        id: "filter-manager",
+        name: "Filter manager",
+        email: "filter-manager@example.test",
+        emailVerified: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      session: {
+        id: "filter-manager-session",
+        token: "filter-manager-token",
+        userId: "filter-manager",
+        expiresAt: new Date(Date.now() + 60_000),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    });
+    managerContext.set(forumReaderContext, { ...reader, readHelpSolutionsAll: readAll });
+    managerContext.set(authorizationContext, {
+      forUser: () => ({
+        resolve: vi.fn(),
+        has: vi.fn(async (permission) => permission === "forum.solution.manageAny"),
+      }),
+    } as never);
+
+    const data = await categoryLoader({
+      request: new Request(url),
+      params: { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: managerContext,
+    });
+    expect(data.kind).toBe("help-solutions");
+    if (data.kind !== "help-solutions") throw new Error("expected Help & solutions page");
+    expect(readAll).toHaveBeenCalledWith({ solution: "needs-review" });
+    expect(data.canViewSolutionModeration).toBe(true);
+
+    renderRoute(
+      CategoryRoute,
+      data,
+      "/en/categories/help-solutions?solution=needs-review",
+      "en",
+      "ltr",
+    );
+    expect(await screen.findByRole("combobox", { name: "Solution" })).toHaveValue("needs-review");
+    expect(screen.getByRole("option", { name: "Needs review" })).toBeVisible();
+  });
+
   it("shows Want to help only to authenticated users and binds exclusion to the session identity", async () => {
     const helpUrl = "https://forum.example/en/categories/help-solutions?mode=help&userId=lin";
     const readWantToHelp = vi.fn(async () => wantToHelpPage);
@@ -636,7 +788,7 @@ describe("Help & solutions modes and authoring", () => {
       context: userContext,
     });
 
-    expect(readWantToHelp).toHaveBeenCalledWith("ada");
+    expect(readWantToHelp).toHaveBeenCalledWith("ada", {});
     expect(data.kind).toBe("help-solutions");
     if (data.kind !== "help-solutions") throw new Error("expected Help & solutions page");
     expect(data.mode).toBe("help");
@@ -725,7 +877,7 @@ describe("Help & solutions modes and authoring", () => {
       context: userContext,
     });
 
-    expect(readForMe).toHaveBeenCalledWith("ada");
+    expect(readForMe).toHaveBeenCalledWith("ada", {});
     expect(data.kind).toBe("help-solutions");
     if (data.kind !== "help-solutions") throw new Error("expected Help & solutions page");
     expect(data.mode).toBe("for-me");
@@ -974,7 +1126,7 @@ describe("Help & solutions modes and authoring", () => {
       context: requestContext,
     });
 
-    expect(readHelpSolutionsMine).toHaveBeenCalledWith("ada");
+    expect(readHelpSolutionsMine).toHaveBeenCalledWith("ada", {});
     expect(data.kind).toBe("help-solutions");
     if (data.kind !== "help-solutions") throw new Error("expected Help & solutions page");
     expect(data.mode).toBe("mine");
@@ -1282,7 +1434,7 @@ describe("Help & solutions modes and authoring", () => {
       "en",
       "ltr",
     );
-    expect(await screen.findByText("Duplicate")).toBeVisible();
+    await waitFor(() => expect(document.querySelector(".help-question-duplicate")).toHaveTextContent("Duplicate"));
     expect(screen.getByText("Solution outdated")).toBeVisible();
     expect(screen.queryByText("Best answer")).not.toBeInTheDocument();
     expect(screen.queryByText("Disputed")).not.toBeInTheDocument();
@@ -1321,7 +1473,7 @@ describe("Help & solutions modes and authoring", () => {
       "en",
       "ltr",
     );
-    expect(await screen.findByText("Duplicate")).toBeVisible();
+    await waitFor(() => expect(document.querySelector(".help-question-duplicate")).toHaveTextContent("Duplicate"));
     expect(screen.getByText("Disputed")).toBeVisible();
     expect(screen.getByText("Solution outdated")).toBeVisible();
     expect(screen.queryByText("Best answer")).not.toBeInTheDocument();
@@ -1498,7 +1650,7 @@ describe("Help & solutions modes and authoring", () => {
       "en",
       "ltr",
     );
-    expect(await screen.findByText("Needs review")).toBeVisible();
+    await waitFor(() => expect(document.querySelector(".help-question-solution-moderation.is-needs-review")).toHaveTextContent("Needs review"));
   });
 
   it("resets a stale outdated reason when the authoritative best answer changes on revalidation", async () => {
@@ -1590,7 +1742,7 @@ describe("Help & solutions modes and authoring", () => {
       .toHaveAttribute("href", forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID));
     expect(screen.getByRole("heading", { level: 2, name: "Solved questions" })).toBeVisible();
     expect(screen.queryByText("Open")).not.toBeInTheDocument();
-    expect(screen.getByText("Solved")).toBeVisible();
+    expect(document.querySelector(".help-question-status.is-solved")).toHaveTextContent("Solved");
   });
 });
 describe("Popular topics", () => {
