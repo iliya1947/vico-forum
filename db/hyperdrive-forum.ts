@@ -25,7 +25,7 @@ export interface ForumWriter {
   createReply(input: { topicId: string; authorId: string; body: string; parentPostId?: string | null }): Promise<{ postId: string }>;
   markTopicSolved(input: { topicId: string; actorId: string; scope: SolutionManagementScope }): Promise<void>;
   selectBestAnswer(input: { topicId: string; postId: string; actorId: string; scope: SolutionManagementScope }): Promise<{ topicAuthorId: string; isSolved: boolean }>;
-  setHelpSolutionModeration(input: { topicId: string; status: HelpSolutionModerationStatus | null; outdatedReason?: string | null }): Promise<void>;
+  setHelpSolutionModeration(input: { topicId: string; status: HelpSolutionModerationStatus | null; outdatedReason?: string | null; actorId: string }): Promise<void>;
   confirmHelpDuplicate(input: { topicId: string; originalTopicId: string; actorId: string }): Promise<void>;
   removeHelpDuplicate(input: { topicId: string; actorId: string }): Promise<void>;
   appealHelpDuplicate(input: { topicId: string; actorId: string; explanation: string }): Promise<void>;
@@ -155,8 +155,8 @@ export function createHyperdriveForumWriter(
     }),
     markTopicSolved: ({ topicId, actorId, scope }) => write((forum) => forum.markTopicSolved(topicId, actorId, scope)),
     selectBestAnswer: ({ topicId, postId, actorId, scope }) => write((forum) => forum.selectBestAnswer(topicId, postId, actorId, scope)),
-    setHelpSolutionModeration: ({ topicId, status, outdatedReason = null }) => writeCorrection(async (forum) => {
-      await forum.setHelpSolutionModeration(topicId, status, outdatedReason);
+    setHelpSolutionModeration: ({ topicId, status, outdatedReason = null, actorId }) => writeCorrection(async (forum) => {
+      await forum.setHelpSolutionModeration(topicId, status, outdatedReason, actorId);
     }),
     confirmHelpDuplicate: ({ topicId, originalTopicId, actorId }) => writeCorrection(async (forum) => {
       await forum.confirmHelpDuplicate(topicId, originalTopicId, actorId);
