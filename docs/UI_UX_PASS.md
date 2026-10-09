@@ -459,8 +459,8 @@ Pages on 2026-10-01:
 - submit actions are touch-friendly and use React Router non-fetcher `Form` pending state to disable
   only the active authoring form while showing a localized progress label;
 - responsive/RTL geometry and representative normal/error preview states were reviewed in Pages;
-- this slice does not implement the future full editor, drafts/autosave, reply/quote relationships
-  or new backend behavior.
+- this earlier slice intentionally stopped at plain authoring forms; the later PR #210 editor
+  slice supersedes only that textarea limitation while preserving the same write contracts.
 
 Secondary translation/source-locale/solution control presentation in PR #163 passed owner
 visual acceptance in GitHub Pages on 2026-10-01:
@@ -482,11 +482,17 @@ Remaining participation work:
 
 - continue verifying long titles, long localized strings, code overflow and mixed-direction content;
 - permanent copy-link was implemented and owner-accepted through PR #172;
-- the current Reply/Quote slice adds a persisted direct-parent relationship while keeping the
-  discussion linear: concrete-message replies expose parent/direct-reply anchors, and Quote inserts
-  only text the user actually selected as a Markdown blockquote; repository/Pages/owner acceptance
-  for this slice is still pending;
-- full editor behavior remains separate approved future work.
+- Reply/Quote now has persisted direct-parent relationships while keeping the discussion linear:
+  concrete-message replies expose parent/direct-reply anchors, and Quote inserts only text the user
+  actually selected as a Markdown blockquote;
+- PR #210 supplies the approved full editor/code behavior on top of the same native authoring
+  contracts: one shared editor covers create-topic, reply and Help questions; Write / Preview /
+  Split, formatting controls, backtick-safe inline/fenced code, optional language, same-renderer
+  preview, code copy/wrap, bounded syntax presentation and RTL-safe LTR code are included. The
+  Reply/Quote boundary can return Preview to Write before insertion, required validation reveals
+  the editable field, and the Help similar-question check preserves the same editor-backed draft;
+- drafts/autosave, attachments and WYSIWYG remain separate future authoring work rather than part of
+  the editor slice.
 
 ### 5. Auth, administration and system states
 
