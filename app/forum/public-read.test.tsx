@@ -1117,7 +1117,7 @@ describe("Help & solutions modes and authoring", () => {
       context: requestContext,
     });
 
-    expect(readHelpSolutionsMine).toHaveBeenCalledWith("ada");
+    expect(readHelpSolutionsMine).toHaveBeenCalledWith("ada", {});
     expect(data.kind).toBe("help-solutions");
     if (data.kind !== "help-solutions") throw new Error("expected Help & solutions page");
     expect(data.mode).toBe("mine");
@@ -1425,7 +1425,7 @@ describe("Help & solutions modes and authoring", () => {
       "en",
       "ltr",
     );
-    expect(await screen.findByText("Duplicate")).toBeVisible();
+    await waitFor(() => expect(document.querySelector(".help-question-duplicate")).toHaveTextContent("Duplicate"));
     expect(screen.getByText("Solution outdated")).toBeVisible();
     expect(screen.queryByText("Best answer")).not.toBeInTheDocument();
     expect(screen.queryByText("Disputed")).not.toBeInTheDocument();
@@ -1641,7 +1641,7 @@ describe("Help & solutions modes and authoring", () => {
       "en",
       "ltr",
     );
-    expect(await screen.findByText("Needs review")).toBeVisible();
+    await waitFor(() => expect(document.querySelector(".help-question-solution-moderation.is-needs-review")).toHaveTextContent("Needs review"));
   });
 
   it("resets a stale outdated reason when the authoritative best answer changes on revalidation", async () => {
@@ -1733,7 +1733,7 @@ describe("Help & solutions modes and authoring", () => {
       .toHaveAttribute("href", forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID));
     expect(screen.getByRole("heading", { level: 2, name: "Solved questions" })).toBeVisible();
     expect(screen.queryByText("Open")).not.toBeInTheDocument();
-    expect(screen.getByText("Solved")).toBeVisible();
+    expect(document.querySelector(".help-question-status.is-solved")).toHaveTextContent("Solved");
   });
 });
 describe("Popular topics", () => {
