@@ -2320,6 +2320,7 @@ export class DrizzleForumRepository {
     topicId: string,
     status: HelpSolutionModerationStatus | null,
     outdatedReason: string | null,
+    actorId: string,
   ): Promise<void> {
     await this.database.transaction(async (tx) => {
       const [topic] = await tx
@@ -2351,6 +2352,24 @@ export class DrizzleForumRepository {
           eq(forumPosts.topicId, topicId),
           eq(forumPosts.id, topic.bestAnswerPostId),
         ));
+
+      if (status !== null) {
+        const staleKinds: HelpSignalKind[] = status === "outdated"
+          ? ["needs-review", "solution-outdated"]
+          : ["needs-review"];
+        await tx.update(forumHelpSignals)
+          .set({
+            status: "superseded",
+            resolvedByUserId: actorId,
+            resolvedAt: sql`now()`,
+          })
+          .where(and(
+            eq(forumHelpSignals.topicId, topicId),
+            eq(forumHelpSignals.targetPostId, topic.bestAnswerPostId),
+            eq(forumHelpSignals.status, "pending"),
+            inArray(forumHelpSignals.kind, staleKinds),
+          ));
+      }
     });
   }
 
@@ -2413,6 +2432,21 @@ export class DrizzleForumRepository {
         originalTopicId,
         confirmedByUserId: actorId,
       });
+      await tx.update(forumHelpSignals)
+        .set({
+          status: "superseded",
+          resolvedByUserId: actorId,
+          resolvedAt: sql`now()`,
+        })
+        .where(and(
+          eq(forumHelpSignals.kind, "duplicate"),
+          eq(forumHelpSignals.status, "pending"),
+          or(
+            eq(forumHelpSignals.topicId, topicId),
+            eq(forumHelpSignals.topicId, originalTopicId),
+            eq(forumHelpSignals.proposedOriginalTopicId, topicId),
+          ),
+        ));
     });
   }
 
@@ -2540,7 +2574,11 @@ export class DrizzleForumRepository {
 
   async markTopicSolved(topicId: string, actorId: string, scope: SolutionManagementScope = "own"): Promise<void> {
     await this.database.transaction(async (tx) => {
-      const [topic] = await tx.select({ authorId: forumTopics.authorId, isSolved: forumTopics.isSolved }).from(forumTopics)
+      const [topic] = await tx.select({
+        authorId: forumTopics.authorId,
+        sectionId: forumTopics.sectionId,
+        isSolved: forumTopics.isSolved,
+      }).from(forumTopics)
         .where(eq(forumTopics.id, topicId)).for("update");
       if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
       if (scope === "own" && topic.authorId !== actorId) throw new ForumAuthorizationError("only the topic author may solve it");
@@ -2557,6 +2595,19 @@ export class DrizzleForumRepository {
         throw new ForumStateConflictError("a confirmed duplicate cannot be marked solved");
       }
       await tx.update(forumTopics).set({ isSolved: true }).where(eq(forumTopics.id, topicId));
+      if (topic.sectionId === HELP_SOLUTIONS_SERVICE_SECTION_ID) {
+        await tx.update(forumHelpSignals)
+          .set({
+            status: "superseded",
+            resolvedByUserId: actorId,
+            resolvedAt: sql`now()`,
+          })
+          .where(and(
+            eq(forumHelpSignals.topicId, topicId),
+            eq(forumHelpSignals.kind, "duplicate"),
+            eq(forumHelpSignals.status, "pending"),
+          ));
+      }
     });
   }
 
@@ -2611,6 +2662,18 @@ export class DrizzleForumRepository {
               eq(forumPosts.topicId, topicId),
               eq(forumPosts.id, topic.bestAnswerPostId),
             ));
+          await tx.update(forumHelpSignals)
+            .set({
+              status: "superseded",
+              resolvedByUserId: actorId,
+              resolvedAt: sql`now()`,
+            })
+            .where(and(
+              eq(forumHelpSignals.topicId, topicId),
+              eq(forumHelpSignals.targetPostId, topic.bestAnswerPostId),
+              eq(forumHelpSignals.status, "pending"),
+              inArray(forumHelpSignals.kind, ["needs-review", "solution-outdated"]),
+            ));
         }
         await tx.update(forumPosts)
           .set({
@@ -2621,6 +2684,17 @@ export class DrizzleForumRepository {
           .where(and(
             eq(forumPosts.topicId, topicId),
             eq(forumPosts.id, postId),
+          ));
+        await tx.update(forumHelpSignals)
+          .set({
+            status: "superseded",
+            resolvedByUserId: actorId,
+            resolvedAt: sql`now()`,
+          })
+          .where(and(
+            eq(forumHelpSignals.topicId, topicId),
+            eq(forumHelpSignals.kind, "duplicate"),
+            eq(forumHelpSignals.status, "pending"),
           ));
       }
       await tx.update(forumTopics).set({ bestAnswerPostId: postId }).where(eq(forumTopics.id, topicId));
