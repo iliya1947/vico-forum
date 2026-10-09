@@ -2991,16 +2991,24 @@ const HELP_SIMILAR_TITLE_TERM_LIMIT = 6;
 const HELP_SIMILAR_BODY_TERM_LIMIT = 6;
 const HELP_SIMILAR_TAG_TERM_LIMIT = 4;
 const HELP_SIMILAR_TOTAL_TERM_LIMIT = 12;
+const HELP_SIMILAR_BODY_INPUT_LIMIT = 4_000;
+const HELP_SIMILAR_TAG_INPUT_LIMIT = 8;
+const HELP_SIMILAR_TAG_LENGTH_LIMIT = 100;
 
 function helpSimilarSearchTerms(query: ForumHelpSimilarQuestionQuery): string[] {
   const ordered = [
     ...helpSimilarTextTerms(query.title, HELP_SIMILAR_TITLE_TERM_LIMIT),
-    ...query.tags.flatMap((tag) => {
-      const normalizedTag = tag.normalize("NFKC").trim().replace(/\s+/gu, " ").toLowerCase();
+    ...query.tags.slice(0, HELP_SIMILAR_TAG_INPUT_LIMIT).flatMap((tag) => {
+      const normalizedTag = tag
+        .slice(0, HELP_SIMILAR_TAG_LENGTH_LIMIT)
+        .normalize("NFKC")
+        .trim()
+        .replace(/\s+/gu, " ")
+        .toLowerCase();
       const tagTerms = helpSimilarTextTerms(normalizedTag, HELP_SIMILAR_TAG_TERM_LIMIT);
       return usefulHelpSimilarTerm(normalizedTag) ? [normalizedTag, ...tagTerms] : tagTerms;
     }),
-    ...helpSimilarTextTerms(query.body, HELP_SIMILAR_BODY_TERM_LIMIT),
+    ...helpSimilarTextTerms(query.body.slice(0, HELP_SIMILAR_BODY_INPUT_LIMIT), HELP_SIMILAR_BODY_TERM_LIMIT),
   ];
 
   return [...new Set(ordered)].slice(0, HELP_SIMILAR_TOTAL_TERM_LIMIT);
