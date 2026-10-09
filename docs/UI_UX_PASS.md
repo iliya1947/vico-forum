@@ -195,6 +195,11 @@ composition:
     hierarchy remains category → section → topic → messages.
 13. The lower homepage zone keeps `Who's online` and `Forum statistics`, using only useful real
     metrics such as topics, messages, registered users and online count when available.
+    Online presence uses a five-minute recent-activity window for authenticated, visible
+    visitors only, with a server-authoritative same-origin heartbeat; anonymous guests are
+    explicitly excluded rather than assigned fake identities. The public list is bounded to
+    twelve members with stable-ID profile links. The preview uses representative mock data,
+    while the deployed Worker uses persisted server data.
 
 ### Topic, message and authoring target
 

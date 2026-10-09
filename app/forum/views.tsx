@@ -6,6 +6,7 @@ import type {
   ForumHelpSolutionsFilters,
   ForumHelpSolutionsPage,
   ForumPopularPeriod,
+  ForumOnlinePresence,
   ForumPopularTopicSummary,
   ForumReplyNotificationSummary,
   ForumSearchResult,
@@ -48,9 +49,11 @@ import { Breadcrumbs, EmptyState, ForumShell } from "./ui";
 export function HomeView({
   locale,
   categories,
+  onlinePresence = { count: 0, members: [] },
 }: {
   locale: string;
   categories: readonly HomepageCategoryOverview[];
+  onlinePresence?: ForumOnlinePresence;
 }) {
   const { t } = useTranslation("common");
   const totals = categories.reduce(
@@ -81,8 +84,15 @@ export function HomeView({
       <section className="home-information" aria-label={t("forumStatisticsHeading")}>
         <article className="home-information-card home-online-card">
           <h2>{t("whosOnlineHeading")}</h2>
-          <p>{t("onlinePresencePending")}</p>
-          <Link to={underDevelopmentPath(locale, "online-presence")}>{t("viewDevelopmentStatus")}</Link>
+          <p>{t("onlineActiveCount", { count: onlinePresence.count })}</p>
+          {onlinePresence.members.length ? (
+            <ul className="home-online-members">
+              {onlinePresence.members.map((member) => <li key={member.id}>
+                <Link to={forumProfilePath(locale, member.id)}><bdi dir="auto">{member.name}</bdi></Link>
+              </li>)}
+            </ul>
+          ) : <p>{t("onlineNoMembers")}</p>}
+          <p className="home-online-scope">{t("onlineMembersOnly")}</p>
         </article>
         <article className="home-information-card home-statistics-card">
           <h2>{t("forumStatisticsHeading")}</h2>

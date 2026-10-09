@@ -8138,6 +8138,11 @@ a.topic-tag:focus-visible {
   gap: 0.5rem;
 }
 
+/* Online presence uses compact public member links; guests aren't assigned identities. */
+.home-online-members { display: flex; flex-wrap: wrap; gap: .35rem .7rem; padding: 0; margin: .6rem 0; list-style: none; }
+.home-online-members a { color: var(--color-accent-hover); font-weight: 650; overflow-wrap: anywhere; }
+.home-online-scope { color: var(--color-text-muted); font-size: .8rem; }
+
 /* Public forum profiles reuse the accepted shell and theme tokens. */
 .auth-avatar img, .topic-message-avatar img, .profile-avatar img {
   inline-size: 100%; block-size: 100%; object-fit: cover; border-radius: inherit;
