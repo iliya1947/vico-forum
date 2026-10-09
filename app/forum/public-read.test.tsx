@@ -2051,6 +2051,11 @@ describe("forum read states", () => {
     expect(await screen.findByText("Replying to Message #1")).toBeInTheDocument();
     expect(replyForm.querySelector('input[name="parentPostId"]')).toHaveValue("question");
 
+    const replyBody = within(replyForm).getByLabelText("Reply");
+    const replyEditor = replyBody.closest(".markdown-editor");
+    fireEvent.click(within(replyForm).getByRole("button", { name: "Preview" }));
+    expect(replyEditor).toHaveAttribute("data-mode", "preview");
+
     const bodyElement = questionCard!.querySelector("[data-message-body]");
     if (!bodyElement) throw new Error("message body selection target missing");
     vi.spyOn(window, "getSelection").mockReturnValue({
@@ -2064,7 +2069,9 @@ describe("forum read states", () => {
     } as unknown as Selection);
 
     fireEvent.click(within(questionCard as HTMLElement).getByRole("button", { name: "Quote" }));
-    expect(screen.getByLabelText("Reply")).toHaveValue("> Selected words\n\n");
+    expect(replyEditor).toHaveAttribute("data-mode", "write");
+    expect(replyBody).toHaveValue("> Selected words\n\n");
+    expect(replyBody).toHaveFocus();
 
     vi.spyOn(window, "getSelection").mockReturnValue({
       rangeCount: 0,
