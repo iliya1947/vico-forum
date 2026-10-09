@@ -1403,6 +1403,31 @@ export class DrizzleForumRepository {
       coalesce(max(${forumPosts.createdAt}), ${forumTopics.createdAt})
     )`.mapWith(forumTopics.createdAt);
     const currentBestAnswer = alias(forumPosts, "help_page_current_best_answer");
+    const activeDuplicate = alias(forumHelpDuplicateRelationships, "help_page_active_duplicate");
+    const solutionCondition = filters.solution === "open"
+      ? eq(forumTopics.isSolved, false)
+      : filters.solution === "solved"
+        ? eq(forumTopics.isSolved, true)
+        : filters.solution === "needs-review"
+          ? eq(currentBestAnswer.solutionModerationStatus, "needs-review")
+          : filters.solution === "outdated"
+            ? eq(currentBestAnswer.solutionModerationStatus, "outdated")
+            : undefined;
+    const qualityCondition = filters.quality === "normal"
+      ? eq(forumTopics.needsDetails, false)
+      : filters.quality === "needs-details"
+        ? eq(forumTopics.needsDetails, true)
+        : undefined;
+    const relationCondition = filters.relation === "standalone"
+      ? isNull(activeDuplicate.id)
+      : filters.relation === "duplicate"
+        ? isNotNull(activeDuplicate.id)
+        : undefined;
+    const answersCondition = filters.answers === "none"
+      ? sql`count(distinct ${forumPosts.id}) <= 1`
+      : filters.answers === "has"
+        ? sql`count(distinct ${forumPosts.id}) > 1`
+        : sql`true`;
 
     const questionQuery = this.database
       .select({
