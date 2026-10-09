@@ -732,7 +732,10 @@ describe("PostgreSQL 17 locale migrations", () => {
         "help-signal-answer-2",
         "help-signal-question-author",
       );
-      expect(await forum.resolveHelpSignal(staleReview.id, "help-signal-manager", "accepted")).toBe("superseded");
+      expect(await repository.readHelpSignal(staleReview.id)).toMatchObject({ status: "superseded" });
+      await expect(
+        forum.resolveHelpSignal(staleReview.id, "help-signal-manager", "accepted"),
+      ).rejects.toBeInstanceOf(ForumStateConflictError);
       expect(await repository.readPost("help-signal-answer-2")).toMatchObject({
         solutionModerationStatus: null,
         solutionOutdatedReason: null,
