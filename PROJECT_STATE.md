@@ -334,8 +334,11 @@ Vico Forum находится в ранней pre-release разработке.
   объясним прямо в карточке.
   Slice не меняет schema/migrations/permissions, не читает pending signals, не расширяет
   `Needs attention` и не меняет signal/reports или admin-panel UI. EN/RU/HE presentation,
-  responsive Pages states и focused repository/route tests добавлены; CI/Pages/owner acceptance
-  фиксируются только после фактического завершения.
+  responsive Pages states и focused repository/route tests добавлены. Exact-head CI и Pages
+  проходят; owner visual acceptance подтверждён 2026-10-09 как достаточный для текущего
+  функционального прохода. Владелец отдельно зафиксировал, что текущая presentation комбинированного
+  фильтра временная и после завершения основного функционального прохода её нужно дополнительно
+  доработать/отполировать; это future polish, а не дефект текущего PR #208.
 - In-app reply notifications slice реализован в PR #180:
   forward migration `0024_forum_reply_notifications` хранит только stable recipient/actor/topic/post
   references, `createdAt` и nullable `readAt`; unique recipient + reply identity предотвращает
