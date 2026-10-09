@@ -100,6 +100,8 @@ actor должен быть author target topic. `forum.sourceLocale.correctOwn`
 - `forum.topic.pin`;
 - `forum.solution.manageOwn`;
 - `forum.solution.manageAny`;
+- `forum.helpSignal.create`;
+- `forum.helpNeedsDetails.manage`;
 - `forum.helpDuplicate.manage`;
 - `forum.sourceLocale.correctOwn`;
 - `forum.sourceLocale.correctAny`;
