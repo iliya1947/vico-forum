@@ -3006,7 +3006,7 @@ function helpSimilarSearchTerms(query: ForumHelpSimilarQuestionQuery): string[] 
         .replace(/\s+/gu, " ")
         .toLowerCase();
       const tagTerms = helpSimilarTextTerms(normalizedTag, HELP_SIMILAR_TAG_TERM_LIMIT);
-      return usefulHelpSimilarTerm(normalizedTag) ? [normalizedTag, ...tagTerms] : tagTerms;
+      return normalizedTag ? [normalizedTag, ...tagTerms] : tagTerms;
     }),
     ...helpSimilarTextTerms(query.body.slice(0, HELP_SIMILAR_BODY_INPUT_LIMIT), HELP_SIMILAR_BODY_TERM_LIMIT),
   ];
@@ -3028,7 +3028,7 @@ function helpSimilarTextTerms(value: string, limit: number): string[] {
 
 function usefulHelpSimilarTerm(value: string): boolean {
   const semanticLength = value.match(/[\p{L}\p{N}]/gu)?.length ?? 0;
-  return semanticLength >= 2 || (semanticLength === 1 && /[+#]/u.test(value));
+  return semanticLength >= 3 || (semanticLength === 1 && /[+#]/u.test(value));
 }
 
 function escapeSearchPattern(value: string): string {
