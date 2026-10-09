@@ -77,7 +77,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const pendingSelectionRef = useRef<PendingSelection | null>(null);
     const [value, setValue] = useState(defaultValue);
-    const [codeLanguage, setCodeLanguage] = useState("ts");
+    const [codeLanguage, setCodeLanguage] = useState("");
     const [mode, setMode] = useState<EditorMode>(defaultPreviewOpen ? "split" : "write");
 
     useLayoutEffect(() => {
