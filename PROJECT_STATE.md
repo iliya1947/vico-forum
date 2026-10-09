@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-10-08
+Последнее обновление: 2026-10-09
 
 ## Назначение
 
@@ -288,6 +288,27 @@ Vico Forum находится в ранней pre-release разработке.
   без moderator-only badge, Manager видит moderation badges и explanation автора.
   Final independent Codex review exact implementation head `6aa3115953cbddbdfb8e09f8c193ddc1f242f7fb`
   завершён 2026-10-09 без major findings.
+- PR #206 реализует bounded backend/domain foundation четвёртого шага **user moderation signals** без
+  преждевременного step 5/6 UI/filter behavior. Forward migration
+  `0031_help_user_moderation_signals` добавляет durable signals для `Needs details`,
+  `Needs review`, `Solution outdated` и `Duplicate` с lifecycle
+  `pending → accepted | rejected | withdrawn | superseded`. Ordinary user submission не меняет
+  authoritative state; `Needs details`, `Needs review` и `Solution outdated` требуют
+  explanation, а `Duplicate` допускает optional explanation, но требует proposed canonical
+  original. Solution signals server-side фиксируют concrete current best-answer post; duplicate
+  signal фиксирует question + proposed original. Accept повторно проверяет current applicability
+  под transaction locks и в той же transaction применяет уже существующий authoritative
+  Needs-details flag, solution moderation state или duplicate relationship; stale signals не
+  применяются и становятся `superseded`. Author может отозвать только собственный pending signal.
+  Новые code-backed capabilities: `forum.helpSignal.create` для submission и
+  `forum.helpNeedsDetails.manage` для authoritative рассмотрения Needs-details requests;
+  solution/duplicate review переиспользуют `forum.solution.manageAny` и
+  `forum.helpDuplicate.manage`. Server actions существуют уже в этом foundation slice и выбирают
+  review permission по persisted signal kind, а не client input. Visible submission/review
+  presentation, private moderation queue/author pending presentation и Pages states остаются
+  следующей bounded подзадачей step 4; расширение `Needs attention` остаётся step 5, combined
+  filters — step 6. Runtime ACL даёт web capability только `SELECT / INSERT / UPDATE` на новую
+  relation; external migration/Stage 6 rollout не выполняется.
 - In-app reply notifications slice реализован в PR #180:
   forward migration `0024_forum_reply_notifications` хранит только stable recipient/actor/topic/post
   references, `createdAt` и nullable `readAt`; unique recipient + reply identity предотвращает
@@ -497,7 +518,7 @@ Vico Forum находится в ранней pre-release разработке.
 - generic `/:locale/*`, runtime `LocaleRegistry`, BCP-47 resolution, LTR/RTL и request-scoped
   `i18next`;
 - persistent locale registry, persistent UI translation storage и compiled bundle storage;
-- текущая repository migration history — `0000`–`0030`; external accepted migration evidence по-прежнему заканчивается на `0020`.
+- текущая repository migration history — `0000`–`0031`; external accepted migration evidence по-прежнему заканчивается на `0020`.
 
 ## Forum core — Stage 4
 
