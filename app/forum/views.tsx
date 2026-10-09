@@ -1912,6 +1912,124 @@ export function TopicView({
                 </details>
               ) : null}
 
+              {showHelpSignalControl ? (
+                <details className="topic-help-signal-tools">
+                  <summary>{t("helpSignalControl")}</summary>
+                  <div className="topic-help-signal-panel">
+                    {canCreateHelpSignal && !topic.needsDetails && !ownPendingNeedsDetails ? (
+                      <section className="help-signal-submit-section">
+                        <strong>{t("helpSignalNeedsDetails")}</strong>
+                        <Form method="post" className="help-signal-form">
+                          <input type="hidden" name="intent" value="submitHelpSignal" />
+                          <input type="hidden" name="kind" value="needs-details" />
+                          <label>
+                            {t("helpSignalExplanationLabel")}
+                            <textarea name="explanation" required maxLength={1000} rows={3} />
+                          </label>
+                          <button type="submit">{t("helpSignalSubmit")}</button>
+                        </Form>
+                      </section>
+                    ) : null}
+
+                    {canCreateHelpSignal
+                    && topic.isSolved
+                    && bestAnswerPost
+                    && currentSolutionModerationStatus === null
+                    && !ownPendingNeedsReview ? (
+                      <section className="help-signal-submit-section">
+                        <strong>{t("helpSignalNeedsReview")}</strong>
+                        <Form method="post" className="help-signal-form">
+                          <input type="hidden" name="intent" value="submitHelpSignal" />
+                          <input type="hidden" name="kind" value="needs-review" />
+                          <label>
+                            {t("helpSignalExplanationLabel")}
+                            <textarea name="explanation" required maxLength={1000} rows={3} />
+                          </label>
+                          <button type="submit">{t("helpSignalSubmit")}</button>
+                        </Form>
+                      </section>
+                    ) : null}
+
+                    {canCreateHelpSignal
+                    && topic.isSolved
+                    && bestAnswerPost
+                    && currentSolutionModerationStatus !== "outdated"
+                    && !ownPendingSolutionOutdated ? (
+                      <section className="help-signal-submit-section">
+                        <strong>{t("helpSignalSolutionOutdated")}</strong>
+                        <Form method="post" className="help-signal-form">
+                          <input type="hidden" name="intent" value="submitHelpSignal" />
+                          <input type="hidden" name="kind" value="solution-outdated" />
+                          <label>
+                            {t("helpSignalExplanationLabel")}
+                            <textarea name="explanation" required maxLength={1000} rows={3} />
+                          </label>
+                          <button type="submit">{t("helpSignalSubmit")}</button>
+                        </Form>
+                      </section>
+                    ) : null}
+
+                    {canCreateHelpSignal && canSignalDuplicate ? (
+                      <section className="help-signal-submit-section">
+                        <strong>{t("helpSignalDuplicate")}</strong>
+                        <Form method="post" className="help-signal-form">
+                          <input type="hidden" name="intent" value="submitHelpSignal" />
+                          <input type="hidden" name="kind" value="duplicate" />
+                          <label>
+                            {t("helpSignalDuplicateOriginalLabel")}
+                            <input name="proposedOriginalTopicId" required autoComplete="off" />
+                          </label>
+                          <label>
+                            {t("helpSignalDuplicateExplanationLabel")}
+                            <textarea name="explanation" maxLength={1000} rows={3} />
+                          </label>
+                          <button type="submit">{t("helpSignalSubmit")}</button>
+                        </Form>
+                      </section>
+                    ) : null}
+
+                    {ownPendingHelpSignals.length > 0 ? (
+                      <section className="help-signal-own-pending">
+                        <strong>{t("helpSignalOwnPendingHeading")}</strong>
+                        <ul className="help-signal-list">
+                          {ownPendingHelpSignals.map((signal) => {
+                            const targetNumber = signal.targetPostId
+                              ? messageNumberById.get(signal.targetPostId)
+                              : undefined;
+                            return (
+                              <li key={signal.id} className="help-signal-item">
+                                <div className="help-signal-item-head">
+                                  <strong>{helpSignalLabel(signal.kind)}</strong>
+                                  <time dateTime={signal.createdAt}>
+                                    {t("helpSignalSubmittedAt", { time: helpSignalTime(signal.createdAt) })}
+                                  </time>
+                                </div>
+                                {targetNumber !== undefined ? (
+                                  <a href={`#post-${encodeURIComponent(signal.targetPostId!)}`}>
+                                    {t("helpSignalTargetAnswer", { message: t("postNumber", { number: targetNumber }) })}
+                                  </a>
+                                ) : null}
+                                {signal.proposedOriginal ? (
+                                  <Link to={forumTopicPath(locale, signal.proposedOriginal.id)} dir="auto">
+                                    {t("helpSignalProposedOriginal", { title: signal.proposedOriginal.title })}
+                                  </Link>
+                                ) : null}
+                                {signal.explanation ? <p dir="auto">{signal.explanation}</p> : null}
+                                <Form method="post" className="help-signal-withdraw-form">
+                                  <input type="hidden" name="intent" value="withdrawHelpSignal" />
+                                  <input type="hidden" name="signalId" value={signal.id} />
+                                  <button type="submit">{t("helpSignalWithdraw")}</button>
+                                </Form>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </section>
+                    ) : null}
+                  </div>
+                </details>
+              ) : null}
+
               {canUseAdminPanel ? (
                 <details className="topic-admin-tools">
               <summary>{t("topicAdminPanel")}</summary>
