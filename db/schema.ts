@@ -562,8 +562,8 @@ export const authzPermissions = pgTable("authz_permissions", {
   key: text("key").primaryKey(),
 }, (table) => [check("authz_permissions_catalog_check", sql`${table.key} in (
   'forum.topic.create', 'forum.reply.create', 'forum.topic.pin', 'forum.solution.manageOwn',
-  'forum.solution.manageAny', 'forum.helpDuplicate.manage',
-  'forum.sourceLocale.correctOwn', 'forum.sourceLocale.correctAny',
+  'forum.solution.manageAny', 'forum.helpSignal.create', 'forum.helpNeedsDetails.manage',
+  'forum.helpDuplicate.manage', 'forum.sourceLocale.correctOwn', 'forum.sourceLocale.correctAny',
   'forum.translation.generate',
   'access.authorization.manage'
 )`)]);
@@ -846,6 +846,91 @@ export const forumPosts = pgTable(
         ${table.solutionModerationStatus} is distinct from 'outdated'
         and ${table.solutionOutdatedReason} is null
         and ${table.solutionOutdatedReasonKind} is null
+      )`,
+    ),
+  ],
+);
+
+export const forumHelpSignals = pgTable(
+  "forum_help_signals",
+  {
+    id: text("id").primaryKey(),
+    kind: text("kind").notNull(),
+    topicId: text("topic_id")
+      .notNull()
+      .references(() => forumTopics.id, { onDelete: "cascade" }),
+    targetPostId: text("target_post_id"),
+    proposedOriginalTopicId: text("proposed_original_topic_id")
+      .references(() => forumTopics.id, { onDelete: "cascade" }),
+    submittedByUserId: text("submitted_by_user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "restrict" }),
+    explanation: text("explanation"),
+    status: text("status").notNull().default("pending"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    resolvedByUserId: text("resolved_by_user_id")
+      .references(() => user.id, { onDelete: "restrict" }),
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+  },
+  (table) => [
+    uniqueIndex("forum_help_signals_pending_needs_details_submitter_idx")
+      .on(table.topicId, table.submittedByUserId)
+      .where(sql`${table.status} = 'pending' and ${table.kind} = 'needs-details'`),
+    uniqueIndex("forum_help_signals_pending_solution_submitter_idx")
+      .on(table.topicId, table.targetPostId, table.submittedByUserId, table.kind)
+      .where(sql`${table.status} = 'pending' and ${table.kind} in ('needs-review', 'solution-outdated')`),
+    uniqueIndex("forum_help_signals_pending_duplicate_submitter_idx")
+      .on(table.topicId, table.proposedOriginalTopicId, table.submittedByUserId)
+      .where(sql`${table.status} = 'pending' and ${table.kind} = 'duplicate'`),
+    index("forum_help_signals_pending_review_idx").on(table.status, table.kind, table.createdAt, table.id),
+    index("forum_help_signals_submitter_created_idx").on(table.submittedByUserId, table.createdAt, table.id),
+    foreignKey({
+      name: "forum_help_signals_target_post_topic_fk",
+      columns: [table.topicId, table.targetPostId],
+      foreignColumns: [forumPosts.topicId, forumPosts.id],
+    }).onDelete("cascade"),
+    check(
+      "forum_help_signals_kind_check",
+      sql`${table.kind} in ('needs-details', 'needs-review', 'solution-outdated', 'duplicate')`,
+    ),
+    check(
+      "forum_help_signals_explanation_check",
+      sql`${table.explanation} is null or (btrim(${table.explanation}) <> '' and char_length(${table.explanation}) <= 1000)`,
+    ),
+    check(
+      "forum_help_signals_shape_check",
+      sql`(
+        ${table.kind} = 'needs-details'
+        and ${table.targetPostId} is null
+        and ${table.proposedOriginalTopicId} is null
+        and ${table.explanation} is not null
+      ) or (
+        ${table.kind} in ('needs-review', 'solution-outdated')
+        and ${table.targetPostId} is not null
+        and ${table.proposedOriginalTopicId} is null
+        and ${table.explanation} is not null
+      ) or (
+        ${table.kind} = 'duplicate'
+        and ${table.targetPostId} is null
+        and ${table.proposedOriginalTopicId} is not null
+        and ${table.proposedOriginalTopicId} <> ${table.topicId}
+      )`,
+    ),
+    check(
+      "forum_help_signals_status_check",
+      sql`${table.status} in ('pending', 'accepted', 'rejected', 'withdrawn', 'superseded')`,
+    ),
+    check(
+      "forum_help_signals_lifecycle_check",
+      sql`(
+        ${table.status} = 'pending'
+        and ${table.resolvedByUserId} is null
+        and ${table.resolvedAt} is null
+      ) or (
+        ${table.status} in ('accepted', 'rejected', 'withdrawn', 'superseded')
+        and ${table.resolvedByUserId} is not null
+        and ${table.resolvedAt} is not null
+        and ${table.resolvedAt} >= ${table.createdAt}
       )`,
     ),
   ],
