@@ -362,6 +362,19 @@ Vico Forum находится в ранней pre-release разработке.
   работающий механизм и пригодный для дальнейшего развития фундамент; текущая presentation
   намеренно provisional и позже должна получить отдельную UX/визуальную доработку. Это deferred
   polish, а не дефект текущего PR #209.
+- PR #210 реализует ранее отложенный **full editor/code tooling** поверх текущих authoring
+  boundaries без изменения server mutation contracts. Один shared Markdown editor используется
+  обычным create-topic, reply и Help & solutions question authoring; Write / Preview / Split и
+  formatting controls работают поверх того же native `body` field. Inline/fenced code insertion
+  безопасен для уже выделенных backtick runs; fenced code поддерживает optional language.
+  Preview использует существующий safe `ForumMarkdown`, а rendered code показывает language,
+  copy feedback, wrap/no-wrap, bounded dependency-free syntax presentation и остаётся LTR внутри
+  RTL UI. Reply/Quote вставляет текст через editor boundary и при необходимости возвращает Preview
+  в Write; native required validation также раскрывает редактируемое поле. Help
+  `Check similar questions` и финальная публикация используют один и тот же editor-backed draft
+  body. Drafts/autosave, attachments, WYSIWYG, profiles, signals/reports/admin integration,
+  schema/migrations и Stage 6 не входят. Representative Pages states выделены отдельно для
+  create-topic, reply и Help draft; `editor` удалён из runtime `Under development`.
 - In-app reply notifications slice реализован в PR #180:
   forward migration `0024_forum_reply_notifications` хранит только stable recipient/actor/topic/post
   references, `createdAt` и nullable `readAt`; unique recipient + reply identity предотвращает
@@ -924,7 +937,12 @@ runtime roles/Hyperdrive writes и другие schema-dependent runtime capabil
 11. Owner mobile review 2026-10-03 унифицировал compact destination cards на Category/Section/Tags/Search: entry action остаётся отдельной vertical orange rail справа по всей высоте карточки; нижний orange footer для этих карточек не используется.
 12. Message links реализован и merged через PR #172: permanent message anchor + public Copy link + localized success/failure feedback; owner visual acceptance подтверждён 2026-10-03.
 13. Reply/Quote реализован: migration `0022_forum_reply_relationships` добавляет nullable same-topic direct-parent relation; discussion остаётся линейным, Reply таргетирует concrete parent, child показывает parent anchor, parent — direct-reply anchors, Quote вставляет только реально выделенный текст как Markdown blockquote. Existing permissions/rate-limit semantics сохраняются; repository CI и GitHub Pages preview проходят, owner visual acceptance подтверждён 2026-10-03.
-14. Stage 6 infrastructure gates остаются на паузе до отдельного указания владельца.
+14. Full editor/code tooling реализуется в PR #210 на одном shared editor для create-topic,
+    reply и Help question authoring; current implementation сохраняет existing body/mutation
+    contracts, Reply/Quote integration и optional similar-question flow. Drafts/autosave остаются
+    следующим отдельным authoring subsystem, а visual polish editor не расширяет текущий
+    функциональный scope.
+15. Stage 6 infrastructure gates остаются на паузе до отдельного указания владельца.
 
 Ранее подготовленный защищённый manual rollout mechanism остаётся в repository. При явном
 возобновлении Stage 6 актуальная последовательность остаётся следующей:
