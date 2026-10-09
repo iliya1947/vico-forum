@@ -610,6 +610,7 @@ describe("forum write route actions", () => {
       topicId: "help-1",
       status: "needs-review",
       outdatedReason: null,
+      actorId: "session-user",
     });
     if (!(needsReview instanceof Response)) throw new Error("expected moderation redirect");
     expect(needsReview.headers.get("Location")).toBe("/en/topics/help-1");
@@ -626,6 +627,7 @@ describe("forum write route actions", () => {
       topicId: "help-1",
       status: "outdated",
       outdatedReason: "Old workaround is no longer safe.",
+      actorId: "session-user",
     });
     if (!(outdated instanceof Response)) throw new Error("expected outdated redirect");
     expect(outdated.headers.get("Location")).toBe("/ru/topics/help-1");
@@ -639,6 +641,7 @@ describe("forum write route actions", () => {
       topicId: "help-1",
       status: null,
       outdatedReason: null,
+      actorId: "session-user",
     });
     if (!(clear instanceof Response)) throw new Error("expected clear redirect");
     expect(clear.headers.get("Location")).toBe("/he/topics/help-1");
