@@ -3837,3 +3837,10 @@ ChatGPT should implement this bounded profile block in a separate implementation
 2. Exact-final-head CI https://github.com/iliya1947/vico-forum/actions/runs/37999777315 **success** (checks, DB job incl PostgreSQL 17, schema/ACL and local Worker smoke), and UI preview Pages https://github.com/iliya1947/vico-forum/actions/runs/37999772074 **success**. GitHub PR metadata: open, not draft, `mergeable=true`. PR body and `PROJECT_STATE.md` state reflect completed work; no external deploy/migration occurred.
 3. Codex manual repeat review summary completed on stable code head `3264828` with **no new findings**; original author-grid defect addressed and verified. Best-answer lookup index remains future optimization without demonstrated current-stage latency failure.
 4. Owner's prior acceptance explicitly treats the current visual surface as usable for MVP, with polish deferred. The PR is ready for owner merge. Service PR #147 stays open and never merges. After owner merge, next approved independent slice is online presence, then registration; start only on owner instruction.
+
+
+## PR #211 merged — profile slice complete — 2026-10-10
+
+- Owner confirmed merge. GitHub PR #211 state `closed`, `merged=true`, merged_at `2026-10-09T22:36:11Z`, merge commit `d846937acd70b0a59706a4411cd01342937a188d`.
+- Forum user profiles feature slice is complete in `main`. Initial presentation accepted for MVP; subsequent UX polish and unproven best-answer index optimization remain deferred. No production migration or deployment authorized.
+- Owner-approved next development sequence: (1) online presence / «Кто сейчас на форуме», (2) registration. These are separate future implementation PRs. Do not start without owner's explicit continuation (the prior continuous-work authorization was limited to making PR #211 merge-ready).
