@@ -2034,6 +2034,53 @@ export function TopicView({
                 <details className="topic-admin-tools">
               <summary>{t("topicAdminPanel")}</summary>
               <div className="topic-admin-panel">
+                {reviewableHelpSignals.length > 0 ? (
+                  <section className="help-signal-review-group">
+                    <strong>{t("helpSignalPendingHeading")}</strong>
+                    <ul className="help-signal-list">
+                      {reviewableHelpSignals.map((signal) => {
+                        const targetNumber = signal.targetPostId
+                          ? messageNumberById.get(signal.targetPostId)
+                          : undefined;
+                        return (
+                          <li key={signal.id} className="help-signal-item">
+                            <div className="help-signal-item-head">
+                              <strong>{helpSignalLabel(signal.kind)}</strong>
+                              <time dateTime={signal.createdAt}>
+                                {t("helpSignalSubmittedAt", { time: helpSignalTime(signal.createdAt) })}
+                              </time>
+                            </div>
+                            <span>{t("startedBy", { author: signal.submittedBy.name })}</span>
+                            {targetNumber !== undefined ? (
+                              <a href={`#post-${encodeURIComponent(signal.targetPostId!)}`}>
+                                {t("helpSignalTargetAnswer", { message: t("postNumber", { number: targetNumber }) })}
+                              </a>
+                            ) : null}
+                            {signal.proposedOriginal ? (
+                              <Link to={forumTopicPath(locale, signal.proposedOriginal.id)} dir="auto">
+                                {t("helpSignalProposedOriginal", { title: signal.proposedOriginal.title })}
+                              </Link>
+                            ) : null}
+                            {signal.explanation ? <p dir="auto">{signal.explanation}</p> : null}
+                            <div className="help-signal-review-actions">
+                              <Form method="post" className="topic-admin-form">
+                                <input type="hidden" name="intent" value="acceptHelpSignal" />
+                                <input type="hidden" name="signalId" value={signal.id} />
+                                <button type="submit">{t("helpSignalAccept")}</button>
+                              </Form>
+                              <Form method="post" className="topic-admin-form">
+                                <input type="hidden" name="intent" value="rejectHelpSignal" />
+                                <input type="hidden" name="signalId" value={signal.id} />
+                                <button type="submit">{t("helpSignalReject")}</button>
+                              </Form>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </section>
+                ) : null}
+
                 {canManagePin ? (
                   <Form method="post" className="pin-topic-form topic-admin-form">
                     <input type="hidden" name="intent" value={topic.isPinned ? "unpinTopic" : "pinTopic"} />
