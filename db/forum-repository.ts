@@ -1455,7 +1455,11 @@ export class DrizzleForumRepository {
         eq(currentBestAnswer.topicId, forumTopics.id),
         eq(currentBestAnswer.id, forumTopics.bestAnswerPostId),
       ))
-      .where(
+      .leftJoin(activeDuplicate, and(
+        eq(activeDuplicate.duplicateTopicId, forumTopics.id),
+        isNull(activeDuplicate.removedAt),
+      ))
+      .where(and(
         filter.mode === "solved"
           ? and(
               eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
@@ -1478,7 +1482,10 @@ export class DrizzleForumRepository {
                     ne(forumTopics.authorId, filter.excludedAuthorId),
                   )
                 : eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
-      )
+        solutionCondition,
+        qualityCondition,
+        relationCondition,
+      ))
       .groupBy(
         forumTopics.id,
         forumTopicTitleRevisions.id,
@@ -1487,13 +1494,14 @@ export class DrizzleForumRepository {
         currentBestAnswer.solutionOutdatedReason,
         currentBestAnswer.solutionOutdatedReasonKind,
       )
-      .having(
+      .having(and(
         filter.mode === "active"
           ? sql`count(distinct ${forumPosts.id}) > 1`
           : filter.mode === "attention"
             ? sql`count(distinct ${forumPosts.id}) <= 1`
             : sql`true`,
-      )
+        answersCondition,
+      ))
       .orderBy(desc(activityAt), desc(forumTopics.id));
 
     const rows = filter.mode === "active"
