@@ -1695,6 +1695,22 @@ describe("PostgreSQL 17 locale migrations", () => {
         body: "Нужен пример типизации ответа сервера.",
       });
       await createQuestion({
+        id: "help-similar-exact-tag",
+        title: "Opaque provider callback behavior",
+        body: "No title terms overlap with the generic draft.",
+        tags: [{ key: "ignored-exact-tag-key", name: "Cloudflare Exact Fixture" }],
+      });
+      await createQuestion({
+        id: "help-similar-common-noise",
+        title: "How can this unrelated workflow fail?",
+        body: "Generic wording must not outrank an exact draft tag.",
+      });
+      await createQuestion({
+        id: "help-similar-short-title",
+        title: "R",
+        body: "A short technical title still needs exact-title similarity.",
+      });
+      await createQuestion({
         id: "help-similar-outside",
         sectionId: "typescript",
         title: "Cloudflare Worker auth redirect failure",
@@ -1754,6 +1770,28 @@ describe("PostgreSQL 17 locale migrations", () => {
         }),
       ]);
 
+      expect(await repository.searchHelpSolutionsSimilar({
+        title: "How can I configure authentication",
+        body: "",
+        tags: ["Cloudflare Exact Fixture"],
+      }, 1)).toEqual([
+        expect.objectContaining({
+          id: "help-similar-exact-tag",
+          matchSource: "tags",
+        }),
+      ]);
+
+      expect(await repository.searchHelpSolutionsSimilar({
+        title: "R",
+        body: "",
+        tags: [],
+      }, 5)).toEqual([
+        expect.objectContaining({
+          id: "help-similar-short-title",
+          matchSource: "title",
+        }),
+      ]);
+
       await forum.markTopicSolved("help-similar-title", "help-similar-author");
       expect(await repository.searchHelpSolutionsSimilar(query, 1)).toEqual([
         expect.objectContaining({
@@ -1772,12 +1810,19 @@ describe("PostgreSQL 17 locale migrations", () => {
           'help-similar-unrelated',
           'help-similar-short-noise',
           'help-similar-unicode',
+          'help-similar-exact-tag',
+          'help-similar-common-noise',
+          'help-similar-short-title',
           'help-similar-outside'
         )
       `);
       await client.query(`
         delete from forum_tags
-        where key in ('cloudflare similarity fixture', 'auth similarity fixture')
+        where key in (
+          'cloudflare similarity fixture',
+          'auth similarity fixture',
+          'cloudflare exact fixture'
+        )
       `);
       await client.query(`delete from "user" where id = 'help-similar-author'`);
     }
