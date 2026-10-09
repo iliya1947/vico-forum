@@ -1196,12 +1196,13 @@ function PreviewCategoryRoute({ scenario }: { scenario: Scenario }) {
                 : "unavailable" as const,
           draft: similarDraft,
           results: similarVariant === "help-solutions-similar-results"
-            ? page.questions.slice(0, 2).map((question) => ({
+            ? page.questions.slice(0, 2).map((question, index) => ({
                 id: question.id,
                 title: question.title,
                 replyCount: question.replyCount,
                 isSolved: question.isSolved,
                 tags: question.tags,
+                matchSource: index === 0 ? "title" as const : "tags" as const,
               }))
             : [],
         }

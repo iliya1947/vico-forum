@@ -1322,6 +1322,22 @@ export function HelpSolutionsView({
                             <strong dir="auto">{question.title}</strong>
                             <span>{t(question.isSolved ? "solved" : "helpSolutionsOpen")}</span>
                             <span>{t("helpSolutionsReplyCount", { count: question.replyCount })}</span>
+                            <span>
+                              {t(
+                                question.matchSource === "title"
+                                  ? "helpSolutionsSimilarMatchTitle"
+                                  : question.matchSource === "tags"
+                                    ? "helpSolutionsSimilarMatchTags"
+                                    : "helpSolutionsSimilarMatchBody",
+                              )}
+                            </span>
+                            {question.tags.length > 0 ? (
+                              <span className="topic-tag-list" aria-label={t("topicTagsLabel")}>
+                                {question.tags.map((tag) => (
+                                  <span className="topic-tag" key={tag.key}>#{tag.name}</span>
+                                ))}
+                              </span>
+                            ) : null}
                           </Link>
                         </li>
                       ))}

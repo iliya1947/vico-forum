@@ -1616,53 +1616,255 @@ describe("PostgreSQL 17 locale migrations", () => {
     expect(await repository.readCategory("missing")).toBeUndefined();
   });
 
-  it("searches similar questions only inside the Help & solutions service section", async () => {
+  it("ranks bounded multi-term Help similarity by title, tags, then body", async () => {
     await insertForumAuthor("help-similar-author", "help-similar-author@example.test", null);
-    const repository = new DrizzleForumRepository(drizzle(client));
+    let similarClock = Date.parse("2030-01-01T00:00:00Z");
+    const repository = new DrizzleForumRepository(drizzle(client), {
+      cooldownMs: FORUM_WRITE_COOLDOWN_MS,
+      now: () => new Date(similarClock += FORUM_WRITE_COOLDOWN_MS + 1),
+    });
     const forum = new ForumService(repository);
 
-    try {
-      await forum.createTopicWithInitialPost({
-        id: "help-similar-topic",
-        sectionId: HELP_SOLUTIONS_SERVICE_SECTION_ID,
+    const createQuestion = async ({
+      id,
+      sectionId = HELP_SOLUTIONS_SERVICE_SECTION_ID,
+      title,
+      body,
+      tags = [],
+    }: {
+      id: string;
+      sectionId?: string;
+      title: string;
+      body: string;
+      tags?: Array<{ key: string; name: string }>;
+    }) => forum.createTopicWithInitialPost({
+      id,
+      sectionId,
+      authorId: "help-similar-author",
+      titleRevision: {
+        id: `${id}-title`,
+        originalContent: title,
+        sourceLocale: "en",
+      },
+      tags,
+      initialPost: {
+        id: `${id}-post`,
+        topicId: id,
         authorId: "help-similar-author",
-        titleRevision: {
-          id: "help-similar-title",
-          originalContent: "Как типизировать API в Worker?",
-          sourceLocale: "ru",
+        bodyRevision: {
+          id: `${id}-body`,
+          originalContent: body,
+          sourceLocale: "en",
         },
-        tags: [{ key: "cloudflare", name: "Cloudflare" }],
-        initialPost: {
-          id: "help-similar-post",
-          topicId: "help-similar-topic",
-          authorId: "help-similar-author",
-          bodyRevision: {
-            id: "help-similar-body",
-            originalContent: "Нужен пример типизации ответа API.",
-            sourceLocale: "ru",
-          },
-        },
+      },
+    });
+
+    try {
+      await createQuestion({
+        id: "help-similar-title",
+        title: "Cloudflare Worker auth redirect failure",
+        body: "The session disappears after login.",
+      });
+      await createQuestion({
+        id: "help-similar-tags",
+        title: "Session provider callback issue",
+        body: "The provider returns successfully.",
+        tags: [
+          { key: "ignored-cloudflare-key", name: "Cloudflare Similarity Fixture" },
+          { key: "ignored-auth-key", name: "Auth Similarity Fixture" },
+        ],
+      });
+      await createQuestion({
+        id: "help-similar-body",
+        title: "Unexpected session behavior",
+        body: "Cloudflare Worker authentication fails on redirect.",
+      });
+      await createQuestion({
+        id: "help-similar-unrelated",
+        title: "PostgreSQL pool sizing",
+        body: "How many database connections should be configured?",
+      });
+      await createQuestion({
+        id: "help-similar-short-noise",
+        title: "Show Docker image build failure",
+        body: "A container image fails before startup.",
+      });
+      await createQuestion({
+        id: "help-similar-unicode",
+        title: "Как типизировать HTTP ответ?",
+        body: "Нужен пример типизации ответа сервера.",
+      });
+      await createQuestion({
+        id: "help-similar-outside",
+        sectionId: "typescript",
+        title: "Cloudflare Worker auth redirect failure",
+        body: "Exact words outside Help & solutions must not match.",
       });
 
-      expect(await repository.searchHelpSolutionsSimilar("типизировать", 5)).toEqual([
+      const query = {
+        title: "CLOUDFLARE—Worker AUTH",
+        body: "redirect OAuth",
+        tags: ["Auth"],
+      };
+      const ranked = await repository.searchHelpSolutionsSimilar(query, 5);
+
+      expect(ranked.map(({ id, matchSource }) => ({ id, matchSource }))).toEqual([
+        { id: "help-similar-title", matchSource: "title" },
+        { id: "help-similar-tags", matchSource: "tags" },
+        { id: "help-similar-body", matchSource: "body" },
+      ]);
+      expect(ranked).toEqual([
         expect.objectContaining({
-          id: "help-similar-topic",
-          title: "Как типизировать API в Worker?",
+          id: "help-similar-title",
+          title: "Cloudflare Worker auth redirect failure",
           replyCount: 0,
           isSolved: false,
-          tags: [{ key: "cloudflare", name: "Cloudflare" }],
+          matchSource: "title",
+        }),
+        expect.objectContaining({
+          id: "help-similar-tags",
+          tags: expect.arrayContaining([
+            { key: "auth similarity fixture", name: "Auth Similarity Fixture" },
+            { key: "cloudflare similarity fixture", name: "Cloudflare Similarity Fixture" },
+          ]),
+          matchSource: "tags",
+        }),
+        expect.objectContaining({
+          id: "help-similar-body",
+          matchSource: "body",
         }),
       ]);
 
-      await forum.markTopicSolved("help-similar-topic", "help-similar-author");
-      expect(await repository.searchHelpSolutionsSimilar("типизировать", 5)).toEqual([
+      const commonWordQuery = await repository.searchHelpSolutionsSimilar({
+        title: "How do I configure Cloudflare auth",
+        body: "",
+        tags: [],
+      }, 5);
+      expect(commonWordQuery.map(({ id }) => id)).not.toContain("help-similar-short-noise");
+      expect(commonWordQuery.map(({ id }) => id)).toContain("help-similar-title");
+
+      expect(await repository.searchHelpSolutionsSimilar({
+        title: "КАК—ТИПИЗИРОВАТЬ http",
+        body: "",
+        tags: [],
+      }, 5)).toEqual([
         expect.objectContaining({
-          id: "help-similar-topic",
+          id: "help-similar-unicode",
+          matchSource: "title",
+        }),
+      ]);
+
+      await createQuestion({
+        id: "help-similar-exact-tag",
+        title: "Configure authentication callback behavior",
+        body: "The exact draft tag must remain the strongest reported source.",
+        tags: [{ key: "ignored-exact-tag-key", name: "Cloudflare Exact Fixture" }],
+      });
+      await createQuestion({
+        id: "help-similar-common-noise",
+        title: "How can this unrelated workflow fail?",
+        body: "Generic wording must not outrank an exact draft tag.",
+      });
+      await createQuestion({
+        id: "help-similar-short-title",
+        title: "R",
+        body: "A short technical title still needs exact-title similarity.",
+      });
+
+      expect(await repository.searchHelpSolutionsSimilar({
+        title: "How can I configure authentication",
+        body: "",
+        tags: ["Cloudflare Exact Fixture"],
+      }, 1)).toEqual([
+        expect.objectContaining({
+          id: "help-similar-exact-tag",
+          matchSource: "tags",
+        }),
+      ]);
+
+      expect(await repository.searchHelpSolutionsSimilar({
+        title: "R",
+        body: "",
+        tags: [],
+      }, 5)).toEqual([
+        expect.objectContaining({
+          id: "help-similar-short-title",
+          matchSource: "title",
+        }),
+      ]);
+
+      await createQuestion({
+        id: "help-similar-stopword-related",
+        title: "Neon edge connection issue",
+        body: "The connection drops after a cold start.",
+      });
+      await createQuestion({
+        id: "help-similar-stopword-noise",
+        title: "How do sessions expire",
+        body: "Generic question wording should not become strong title coverage.",
+      });
+      expect(await repository.searchHelpSolutionsSimilar({
+        title: "How do I diagnose Neon",
+        body: "",
+        tags: [],
+      }, 1)).toEqual([
+        expect.objectContaining({
+          id: "help-similar-stopword-related",
+          matchSource: "title",
+        }),
+      ]);
+
+      await createQuestion({
+        id: "help-similar-body-budget",
+        title: "Opaque reserved detail",
+        body: "reservedbodytoken",
+      });
+      expect(await repository.searchHelpSolutionsSimilar({
+        title: "alphaone betatwo gammathree deltafour epsilonfive zetasix",
+        body: "reservedbodytoken",
+        tags: ["tagalpha tagbeta", "taggamma tagdelta"],
+      }, 5)).toEqual([
+        expect.objectContaining({
+          id: "help-similar-body-budget",
+          matchSource: "body",
+        }),
+      ]);
+
+      await forum.markTopicSolved("help-similar-title", "help-similar-author");
+      expect(await repository.searchHelpSolutionsSimilar(query, 1)).toEqual([
+        expect.objectContaining({
+          id: "help-similar-title",
           isSolved: true,
+          matchSource: "title",
         }),
       ]);
     } finally {
-      await client.query("delete from forum_topics where id = 'help-similar-topic'");
+      await client.query(`
+        delete from forum_topics
+        where id in (
+          'help-similar-title',
+          'help-similar-tags',
+          'help-similar-body',
+          'help-similar-unrelated',
+          'help-similar-short-noise',
+          'help-similar-unicode',
+          'help-similar-exact-tag',
+          'help-similar-common-noise',
+          'help-similar-short-title',
+          'help-similar-stopword-related',
+          'help-similar-stopword-noise',
+          'help-similar-body-budget',
+          'help-similar-outside'
+        )
+      `);
+      await client.query(`
+        delete from forum_tags
+        where key in (
+          'cloudflare similarity fixture',
+          'auth similarity fixture',
+          'cloudflare exact fixture'
+        )
+      `);
       await client.query(`delete from "user" where id = 'help-similar-author'`);
     }
   });

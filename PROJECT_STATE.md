@@ -339,6 +339,29 @@ Vico Forum находится в ранней pre-release разработке.
   функционального прохода. Владелец отдельно зафиксировал, что текущая presentation комбинированного
   фильтра временная и после завершения основного функционального прохода её нужно дополнительно
   доработать/отполировать; это future polish, а не дефект текущего PR #208.
+- PR #209 уточняет ранее отложенную **similar-question search relevance/UX** для
+  Help & solutions без новой поисковой подсистемы. Optional pre-publish check использует bounded
+  Unicode-normalized terms из текущих draft title/body/tags и ищет только current persisted
+  title/post revisions и tags внутреннего `help-solutions-questions`. Ranking source-aware и
+  deterministic: exact title и exact draft-tag получают отдельный сильный приоритет, meaningful
+  multi-term title coverage идёт выше обычных tag/body/weak-title совпадений, а common question
+  scaffolding/stop words не участвуют в title coverage. Короткие технические title-токены
+  (включая `Go`, `AI`, `JS`, `DB`, `R`) сохраняются для boundary-aware title matching, но
+  не превращаются в широкие substring-поиски по body/tags. Title, tag и body используют отдельные
+  bounded term budgets, поэтому один источник не может вытеснить body полностью; общий query budget
+  остаётся ограниченным. Post и tag matching выполняются отдельными bounded `EXISTS`-проверками,
+  без post×tag Cartesian aggregation. Activity и stable topic-id используются как последующие
+  tie-breaks. Action path
+  сохраняет result limit 5. Result projection сообщает strongest match source и existing tags,
+  чтобы presentation могла кратко объяснить, почему вопрос предложен. Draft остаётся только request
+  input: проверка read-only, optional и не блокирует публикацию; existing
+  session/origin/permission/validation/write boundaries не меняются. Stale revisions и ordinary
+  forum sections не участвуют. Schema/migrations, search index, fuzzy/vector/AI search, duplicate
+  automation, signals/admin, `Needs attention` aggregation, combined-filter polish и Stage 6 в
+  slice не входят. Владелец подтвердил 2026-10-09, что acceptance boundary этого slice —
+  работающий механизм и пригодный для дальнейшего развития фундамент; текущая presentation
+  намеренно provisional и позже должна получить отдельную UX/визуальную доработку. Это deferred
+  polish, а не дефект текущего PR #209.
 - In-app reply notifications slice реализован в PR #180:
   forward migration `0024_forum_reply_notifications` хранит только stable recipient/actor/topic/post
   references, `createdAt` и nullable `readAt`; unique recipient + reply identity предотвращает
