@@ -2622,3 +2622,69 @@ Help & solutions fixed-sequence **step 3 — duplicates** is complete.
 Deferred product question remains intentionally unresolved: how to relate multiple independently useful solved questions that later prove to describe the same underlying problem. Do not treat that deferred question as part of the completed duplicate model.
 
 Next fixed-sequence step is **step 4 — user moderation signals**, including ordinary-user requests/signals for moderator consideration (for example the separate request to add `Needs details` and the initial duplicate signal). Start only after the owner explicitly continues.
+
+
+---
+
+## Help & solutions step 4 — user moderation signals technical handoff — 2026-10-09
+
+PR #205 is merged. Per the already agreed fixed Help & solutions sequence, the next bounded functional step is **step 4 — user moderation signals**.
+
+### Required result
+
+Implement the smallest coherent persisted workflow in which authenticated ordinary users can submit moderation signals for already-established Help & solutions states, while the authoritative state remains moderator-controlled and server-side.
+
+The approved signal families in this step are:
+
+- request **Needs details** on a Help question;
+- signal **Needs review** for the current selected solution;
+- signal **Solution outdated** for the current selected solution, preserving the already-approved requirement that an outdated claim carries an explanation;
+- signal **Duplicate**, proposing another Help question as the original.
+
+### Existing authoritative targets already on main
+
+- `forum_topics.needs_details boolean` is the confirmed **Needs details** system label; no user-request state is stored in that flag.
+- `forum_posts.solution_moderation_status = needs-review | outdated` is authoritative solution moderation on the concrete selected answer; outdated has its persisted reason contract.
+- confirmed duplicate relationships and `forum.helpDuplicate.manage` already exist from step 3.
+- duplicate **appeal/dispute of an already confirmed relationship** remains the separate step-3 workflow and must not be reused as the initial duplicate signal.
+
+### Bounded scope
+
+- durable user-submitted pending signal/request state;
+- server-side signal eligibility and target validation;
+- moderator accept/reject lifecycle;
+- acceptance atomically applies the appropriate already-established authoritative state or relationship after revalidating current applicability;
+- ordinary-user submission must not itself mutate authoritative Needs details / solution moderation / duplicate state;
+- private/moderation presentation needed to submit and review signals;
+- focused schema/repository/action/auth/privacy/concurrency tests and representative Pages states where the workflow becomes visible.
+
+### Explicit exclusions
+
+- expanding `Needs attention` from fixed step 5;
+- combined filters from fixed step 6;
+- redesign/polish of the broader admin panel;
+- the deferred product model for grouping independently solved questions that describe the same underlying problem;
+- similar-question search refinement, drafts/autosave, unrelated forum work and Stage 6 rollout.
+
+### Important current-domain constraints
+
+- `Needs details` is a boolean system label, **not** a quality enum and there is no persisted `normal` state.
+- solution moderation is attached to the concrete answer post, not generically to the question.
+- an ordinary duplicate applies only while the question remains eligible for the existing duplicate model; solved/best-answer questions cannot become ordinary duplicates.
+- accepted duplicate appeal semantics from step 3 must not be folded into this signal entity.
+- permission-based authorization remains dynamic; reuse an existing permission only if it is semantically correct.
+
+### Requested Codex response
+
+Inspect current `main`, the authorization source of truth, current Help schema/repository/actions and the fixed sequence above. Do not implement project code or modify an implementation branch.
+
+Return:
+
+1. recommended persistence/lifecycle shape for these four signal families and the invariants that prevent stale or contradictory acceptance;
+2. exact signal target identity for each family (topic, concrete answer, proposed original, etc.) and how target changes make a pending signal stale/non-applicable;
+3. authorization boundaries for submit / review / accept / reject, including whether existing management capabilities are sufficient or a new capability is technically justified;
+4. deduplication/concurrency rules for repeated signals and competing moderator decisions;
+5. concrete implementation surfaces and focused tests;
+6. only the product choices that cannot be derived from the already accepted contract.
+
+Do not reopen the fixed step order and do not include step 5/6 behavior.
