@@ -304,7 +304,10 @@ Vico Forum находится в ранней pre-release разработке.
   lifetime-ограничение на тему и не связывает signal cooldown с обычным topic/reply cooldown.
   Withdrawal принимает expected topic identity до repository и под lock проверяет, что signal
   принадлежит именно текущей route-topic; stale/malformed form не может отозвать сигнал другой
-  темы. Accept повторно проверяет current applicability
+  темы. Help-signal lifecycle timestamps database-owned: creation и terminal/supersede transitions
+  используют PostgreSQL statement time, поэтому ожидание row lock не может сделать
+  `resolved_at < created_at` и сорвать authoritative mutation на lifecycle CHECK.
+  Accept повторно проверяет current applicability
   под transaction locks и в той же transaction применяет уже существующий authoritative
   Needs-details flag, solution moderation state или duplicate relationship; stale signals не
   применяются и становятся `superseded`. Author может отозвать только собственный pending signal.
