@@ -1721,6 +1721,55 @@ describe("Help & solutions modes and authoring", () => {
     expect(await screen.findByText("Needs review")).toBeVisible();
   });
 
+  it("resets a pending solution-signal explanation when the authoritative best answer changes", async () => {
+    const buildData = (bestAnswerPostId: string) => {
+      const solvedTopic = {
+        ...helpTopic,
+        isSolved: true,
+        bestAnswerPostId,
+        posts: helpTopic.posts.map((post) => ({
+          ...post,
+          solutionModerationStatus: null,
+          solutionOutdatedReason: null,
+          solutionOutdatedReasonKind: null,
+        })),
+      };
+      return topicRenderData(solvedTopic, {
+        canCreateHelpSignal: true,
+      });
+    };
+
+    let currentData = buildData("help-answer");
+    const router = createMemoryRouter([{
+      id: "page",
+      path: "*",
+      Component: TopicRoute,
+      loader: () => currentData,
+    }], {
+      initialEntries: [forumTopicPath("en", helpTopic.id)],
+    });
+    render(
+      <div lang="en" dir="ltr">
+        <I18nextProvider i18n={runtime("en", "ltr")}>
+          <RouterProvider router={router} />
+        </I18nextProvider>
+      </div>,
+    );
+
+    fireEvent.click(await screen.findByText("Signal"));
+    fireEvent.click(screen.getByRole("button", { name: "Needs review" }));
+    const explanation = screen.getByRole("textbox", { name: "Explanation" });
+    fireEvent.change(explanation, { target: { value: "Unsaved reason for the old answer." } });
+    expect(explanation).toHaveValue("Unsaved reason for the old answer.");
+
+    currentData = buildData("help-followup");
+    await router.revalidate();
+
+    await waitFor(() => {
+      expect(screen.getByRole("textbox", { name: "Explanation" })).toHaveValue("");
+    });
+  });
+
   it("resets a stale outdated reason when the authoritative best answer changes on revalidation", async () => {
     const buildData = (bestAnswerPostId: string, outdatedReason: string | null) => {
       const solvedTopic = {
