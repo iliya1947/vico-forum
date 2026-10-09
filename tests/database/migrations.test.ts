@@ -1685,6 +1685,11 @@ describe("PostgreSQL 17 locale migrations", () => {
         body: "How many database connections should be configured?",
       });
       await createQuestion({
+        id: "help-similar-short-noise",
+        title: "Docker image build failure",
+        body: "A container image fails before startup.",
+      });
+      await createQuestion({
         id: "help-similar-unicode",
         title: "Как типизировать HTTP ответ?",
         body: "Нужен пример типизации ответа сервера.",
@@ -1730,6 +1735,14 @@ describe("PostgreSQL 17 locale migrations", () => {
         }),
       ]);
 
+      const commonWordQuery = await repository.searchHelpSolutionsSimilar({
+        title: "How do I configure Cloudflare auth",
+        body: "",
+        tags: [],
+      }, 5);
+      expect(commonWordQuery.map(({ id }) => id)).not.toContain("help-similar-short-noise");
+      expect(commonWordQuery.map(({ id }) => id)).toContain("help-similar-title");
+
       expect(await repository.searchHelpSolutionsSimilar({
         title: "КАК—ТИПИЗИРОВАТЬ http",
         body: "",
@@ -1757,6 +1770,7 @@ describe("PostgreSQL 17 locale migrations", () => {
           'help-similar-tags',
           'help-similar-body',
           'help-similar-unrelated',
+          'help-similar-short-noise',
           'help-similar-unicode',
           'help-similar-outside'
         )
