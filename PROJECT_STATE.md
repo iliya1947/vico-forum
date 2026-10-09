@@ -49,10 +49,18 @@ Vico Forum находится в ранней pre-release разработке.
   дальнейший UI polish отложен. На head `2faad98` exact-head CI
   (включая PostgreSQL 17, 650 unit/presentation/route tests, migration/schema/ACL
   и Worker smoke) и Pages прошли после восстановленного Docker Hub image pull.
-  Независимое Codex review выявило текущую регрессию author-grid из-за нового profile link;
-  она исправляется локально без изменения backend/DB. Индекс для best-answer count
-  остаётся отложенной оптимизацией: текущий масштаб/latency regression не подтверждены.
-  Повторная CI/Pages и независимое review исправленного head ещё ожидаются.
+  Первое независимое Codex review выявило регрессию author-grid из-за нового profile link;
+  исправлено в `3264828`: вложенная двухколоночная ссылка сохраняет расположение аватара
+  и имени на desktop/mobile, EN/HE; DOM regression checks добавлены. На `3264828`
+  успешно прошли точный CI (checks + PostgreSQL 17/schema/ACL/Worker smoke, после
+  повторения ранее нестабильного неизменённого теста locale concurrency) и Pages.
+  Повторное независимое Codex review завершено на `3264828` без новых findings;
+  подтверждённых незакрытых defects текущего MVP scope не выявлено. Индекс для
+  best-answer count остаётся отложенной оптимизацией: текущий масштаб/latency
+  regression не подтверждены. Визуальная проверка browser-profile states ранее
+  выполнена, а после correction author-grid подтверждены DOM/CSS review и Pages build,
+  не новая browser screenshot. PR подготовлен к merge владельцем; production migration,
+  deploy и real-runtime acceptance не выполнялись.
   Профили не включают социальные функции, смену имени/аватара аккаунта или загрузку файлов.
 - Stage 0–3 foundation завершён.
 - Stage 4 forum core завершён в local/CI path.
