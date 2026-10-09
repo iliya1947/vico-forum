@@ -296,7 +296,11 @@ Vico Forum находится в ранней pre-release разработке.
   authoritative state; `Needs details`, `Needs review` и `Solution outdated` требуют
   explanation, а `Duplicate` допускает optional explanation, но требует proposed canonical
   original. Solution signals server-side фиксируют concrete current best-answer post; duplicate
-  signal фиксирует question + proposed original. Accept повторно проверяет current applicability
+  signal фиксирует question + proposed original. Submission использует тот же bounded 5-second
+  ForumWritePolicy через отдельный per-user signal cooldown: user-row lock сериализует concurrent
+  submissions, а предыдущий signal независимо от kind/target/terminal state предотвращает
+  немедленное создание следующего. Это не вводит lifetime-ограничение на тему и не связывает signal
+  cooldown с обычным topic/reply cooldown. Accept повторно проверяет current applicability
   под transaction locks и в той же transaction применяет уже существующий authoritative
   Needs-details flag, solution moderation state или duplicate relationship; stale signals не
   применяются и становятся `superseded`. Author может отозвать только собственный pending signal.
