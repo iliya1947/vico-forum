@@ -329,7 +329,9 @@ Vico Forum находится в ранней pre-release разработке.
   moderator-only: option показывается только actor с `forum.solution.manageAny`, guest direct
   request получает 401, authenticated actor без capability — 403, classified authorization
   unavailable — controlled 503. Остальные filter states используют уже публичные authoritative
-  данные. Mode navigation сохраняет активные filters, Reset очищает только filters и сохраняет mode.
+  данные. Mode navigation сохраняет активные filters, Reset очищает только filters и сохраняет mode;
+  persisted `Needs details` показывается public badge в Help list, чтобы quality-filter result был
+  объясним прямо в карточке.
   Slice не меняет schema/migrations/permissions, не читает pending signals, не расширяет
   `Needs attention` и не меняет signal/reports или admin-panel UI. EN/RU/HE presentation,
   responsive Pages states и focused repository/route tests добавлены; CI/Pages/owner acceptance
