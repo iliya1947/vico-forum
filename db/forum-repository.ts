@@ -2103,7 +2103,7 @@ export class DrizzleForumRepository {
             resolvedAt: sql`now()`,
           })
           .where(eq(forumHelpSignals.id, signalId));
-        return "rejected";
+        return "rejected" as const;
       });
     }
 
@@ -2256,7 +2256,8 @@ export class DrizzleForumRepository {
           ));
       } else {
         const originalTopicId = signal.proposedOriginalTopicId;
-        const original = originalTopicId ? topics.find((row) => row.id === originalTopicId) : undefined;
+        if (!originalTopicId) return supersedeCurrent();
+        const original = topics.find((row) => row.id === originalTopicId);
         if (
           !original
           || signal.topicId === originalTopicId
