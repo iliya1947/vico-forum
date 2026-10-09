@@ -253,6 +253,9 @@ const reader: ForumReader = {
   searchHelpSolutionsSimilar: async () => [],
   readPendingHelpDuplicateAppeal: async () => undefined,
   readHelpSignal: async () => undefined,
+  readOwnPendingHelpSignals: async () => [],
+  readReviewablePendingHelpSignals: async () => [],
+  hasActiveHelpDuplicateChildren: async () => false,
   search: async (query) => query.toLowerCase().includes("type") ? [{
     id: topic.id,
     title: topic.title.originalContent,
