@@ -3329,3 +3329,41 @@ Exact implementation head remains `e686895c951dffda0abe2c7fdaa20b5357e4dc5d`; ex
 are green, and the two previous Codex findings are fixed/resolved.
 
 Next gate: repeat independent Codex whole-PR review on this exact stable head.
+
+
+---
+
+## PR #209 — second review findings fixed; exact head ready for repeat final review — 2026-10-09
+
+Repeat Codex review of implementation head `e686895c951dffda0abe2c7fdaa20b5357e4dc5d`
+found three confirmed P2 defects in the current similar-question mechanism/foundation:
+
+1. A global minimum-term threshold could discard an exact draft-tag match while common title words
+   remained eligible.
+2. Independent post/tag joins expanded matching over a post×tag Cartesian product before ranking.
+3. The short-term filter removed valid technical titles such as `Go`, `AI`, `JS`, `DB` and
+   `R`.
+
+All three are fixed on stable implementation head
+`77e1bf9feb7858736a8fc3652b34afdc73dceca2`:
+- ranking is source-aware; exact title and exact normalized draft-tag have explicit strong tiers;
+- meaningful multi-term title coverage is separated from ordinary tag/body/weak-title matching;
+- short technical title tokens are retained for token-boundary title matching but are not expanded
+  into broad body/tag substring matches;
+- tag and current-post-body matching use separate correlated `EXISTS` checks; post count and latest
+  activity use scalar correlated subqueries, removing post×tag aggregation;
+- the Help-only service-section boundary is enforced at the query join;
+- focused PostgreSQL regression coverage includes common-word noise vs exact tag, short title `R`,
+  ordinary-section exclusion, Unicode, solved state and deterministic title/tag/body behavior.
+
+ChatGPT whole-PR review on the final head found no remaining confirmed current-scope defect.
+
+Exact-head verification:
+- CI run `37952528519`: `checks` success, `database` success;
+- UI preview Pages run `37952705874`: build/deploy success;
+- all Codex review threads are resolved;
+- owner acceptance boundary remains working mechanism + reusable foundation; presentation polish is
+  separately deferred and non-blocking.
+
+Next gate: one repeat independent Codex whole-PR review on exact head
+`77e1bf9feb7858736a8fc3652b34afdc73dceca2`.
