@@ -380,8 +380,18 @@ composition without changing the forum hierarchy or schema:
   self-withdrawal, dynamic submission/review permissions and atomic stale-safe acceptance into the
   already-existing authoritative Help states. This slice intentionally does not expose the visible
   submission forms, author pending-signal presentation or moderator review queue; those remain the
-  next bounded step-4 presentation task. Step 5 `Needs attention` expansion and step 6 combined
-  filters are still not pulled forward;
+  next bounded step-4 presentation task. PR #207 is that bounded presentation slice:
+  topic-local pending-only reads keep an ordinary user's own signals private while separately
+  filtering moderator review rows by exact effective management capabilities. The breadcrumb
+  action-zone gets the compact `Signal` control; for a manager it sits directly before the
+  existing `Admin panel`, whose new `Pending signals` group reuses the merged accept/reject
+  actions without redesigning the panel. Own pending signals remain withdrawable after create
+  permission loss, and the Duplicate entry hint also respects the existing reverse canonical-root
+  invariant before the server performs authoritative revalidation. Representative User/Manager,
+  pending/review/ineligible and partial-capability Pages states are included. This remains
+  presentation/read-model work only: no new schema/migration, global moderation queue, resolved
+  history UI, step 5 attention expansion or step 6 filters are pulled forward. Exact-head CI,
+  Pages deployment and owner browser acceptance remain pending until actually completed;
 - owner visual acceptance of the implementation was confirmed on 2026-10-05; exact-head
   automated verification remains a separate PR check.
 
