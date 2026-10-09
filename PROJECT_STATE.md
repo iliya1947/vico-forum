@@ -297,10 +297,14 @@ Vico Forum находится в ранней pre-release разработке.
   explanation, а `Duplicate` допускает optional explanation, но требует proposed canonical
   original. Solution signals server-side фиксируют concrete current best-answer post; duplicate
   signal фиксирует question + proposed original. Submission использует тот же bounded 5-second
-  ForumWritePolicy через отдельный per-user signal cooldown: user-row lock сериализует concurrent
-  submissions, а предыдущий signal независимо от kind/target/terminal state предотвращает
-  немедленное создание следующего. Это не вводит lifetime-ограничение на тему и не связывает signal
-  cooldown с обычным topic/reply cooldown. Accept повторно проверяет current applicability
+  ForumWritePolicy через отдельный per-user signal cooldown: topic row(s) блокируются перед
+  user-row mutex, то есть в том же порядке, что reply writes, чтобы concurrent reply + signal
+  одного actor не создавали lock-order cycle. Предыдущий signal независимо от
+  kind/target/terminal state предотвращает немедленное создание следующего. Это не вводит
+  lifetime-ограничение на тему и не связывает signal cooldown с обычным topic/reply cooldown.
+  Withdrawal принимает expected topic identity до repository и под lock проверяет, что signal
+  принадлежит именно текущей route-topic; stale/malformed form не может отозвать сигнал другой
+  темы. Accept повторно проверяет current applicability
   под transaction locks и в той же transaction применяет уже существующий authoritative
   Needs-details flag, solution moderation state или duplicate relationship; stale signals не
   применяются и становятся `superseded`. Author может отозвать только собственный pending signal.
