@@ -1756,8 +1756,8 @@ describe("PostgreSQL 17 locale migrations", () => {
 
       await createQuestion({
         id: "help-similar-exact-tag",
-        title: "Opaque provider callback behavior",
-        body: "No title terms overlap with the generic draft.",
+        title: "Configure authentication callback behavior",
+        body: "The exact draft tag must remain the strongest reported source.",
         tags: [{ key: "ignored-exact-tag-key", name: "Cloudflare Exact Fixture" }],
       });
       await createQuestion({
@@ -1793,6 +1793,43 @@ describe("PostgreSQL 17 locale migrations", () => {
         }),
       ]);
 
+      await createQuestion({
+        id: "help-similar-stopword-related",
+        title: "Neon edge connection issue",
+        body: "The connection drops after a cold start.",
+      });
+      await createQuestion({
+        id: "help-similar-stopword-noise",
+        title: "How do sessions expire",
+        body: "Generic question wording should not become strong title coverage.",
+      });
+      expect(await repository.searchHelpSolutionsSimilar({
+        title: "How do I diagnose Neon",
+        body: "",
+        tags: [],
+      }, 1)).toEqual([
+        expect.objectContaining({
+          id: "help-similar-stopword-related",
+          matchSource: "title",
+        }),
+      ]);
+
+      await createQuestion({
+        id: "help-similar-body-budget",
+        title: "Opaque reserved detail",
+        body: "reservedbodytoken",
+      });
+      expect(await repository.searchHelpSolutionsSimilar({
+        title: "alphaone betatwo gammathree deltafour epsilonfive zetasix",
+        body: "reservedbodytoken",
+        tags: ["tagalpha tagbeta", "taggamma tagdelta"],
+      }, 5)).toEqual([
+        expect.objectContaining({
+          id: "help-similar-body-budget",
+          matchSource: "body",
+        }),
+      ]);
+
       await forum.markTopicSolved("help-similar-title", "help-similar-author");
       expect(await repository.searchHelpSolutionsSimilar(query, 1)).toEqual([
         expect.objectContaining({
@@ -1814,6 +1851,9 @@ describe("PostgreSQL 17 locale migrations", () => {
           'help-similar-exact-tag',
           'help-similar-common-noise',
           'help-similar-short-title',
+          'help-similar-stopword-related',
+          'help-similar-stopword-noise',
+          'help-similar-body-budget',
           'help-similar-outside'
         )
       `);
