@@ -1409,8 +1409,8 @@ describe("Help & solutions modes and authoring", () => {
     });
     renderRoute(TopicRoute, data, forumTopicPath("en", solvedTopic.id), "en", "ltr");
 
-    const signal = screen.getByText("Signal").closest("details");
-    const admin = screen.getByText("Admin panel").closest("details");
+    const signal = (await screen.findByText("Signal")).closest("details");
+    const admin = (await screen.findByText("Admin panel")).closest("details");
     expect(signal).not.toBeNull();
     expect(admin).not.toBeNull();
     expect(signal?.nextElementSibling).toBe(admin);
