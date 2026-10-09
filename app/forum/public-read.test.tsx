@@ -537,9 +537,12 @@ describe("Help & solutions modes and authoring", () => {
     expect(askButton).toHaveAttribute("aria-expanded", "true");
     const form = await screen.findByRole("form", { name: "Ask a question" });
     expect(within(form).getByLabelText("Question title")).toBeRequired();
-    expect(within(form).getByLabelText("Question details")).toBeRequired();
+    const questionDetails = within(form).getByLabelText("Question details");
+    expect(questionDetails).toBeRequired();
     expect(within(form).getByRole("toolbar", { name: "Markdown formatting" })).toBeInTheDocument();
     expect(within(form).getByRole("group", { name: "Editor view" })).toBeInTheDocument();
+    fireEvent.change(questionDetails, { target: { value: "Draft body with **Markdown**." } });
+    expect(new FormData(form).get("body")).toBe("Draft body with **Markdown**.");
     expect(within(form).getByLabelText("Tags")).not.toBeRequired();
     const similarButton = within(form).getByRole("button", { name: "Check similar questions" });
     expect(similarButton).toBeEnabled();
