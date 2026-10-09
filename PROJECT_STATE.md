@@ -320,6 +320,23 @@ Vico Forum находится в ранней pre-release разработке.
   следующей bounded подзадачей step 4; расширение `Needs attention` остаётся step 5, combined
   filters — step 6. Runtime ACL даёт web capability только `SELECT / INSERT / UPDATE` на новую
   relation; external migration/Stage 6 rollout не выполняется.
+- Текущий PR #207 подключает к merged step-4 domain foundation topic-local presentation
+  пользовательских moderation signals. Authenticated actor с текущим
+  `forum.helpSignal.create` получает в breadcrumb action-zone compact `Signal` control только
+  для применимых `Needs details / Needs review / Solution outdated / Duplicate`; manager видит
+  этот control непосредственно слева от существующего `Admin panel`. Собственные pending signals
+  читаются отдельной server-side projection только для authoritative session user и остаются
+  видимыми/отзываемыми даже после потери create-permission. Moderator projection возвращает только
+  pending kinds, соответствующие текущим effective capabilities
+  `forum.helpNeedsDetails.manage / forum.solution.manageAny / forum.helpDuplicate.manage`, и
+  показывает их отдельной группой `Pending signals` внутри существующего Admin panel с уже
+  защищёнными accept/reject actions. Duplicate submission UI дополнительно скрывается, если текущий
+  вопрос уже является canonical original для active duplicates; server action по-прежнему
+  окончательно revalidate-ит proposed original и все duplicate invariants. Новая schema/migration,
+  глобальная moderation queue, resolved-signal history, step 5 attention aggregation, step 6
+  filters и admin-panel redesign не добавляются. EN/RU/HE copy, responsive presentation,
+  representative Pages states и focused privacy/permission/query tests входят в PR; exact-head CI,
+  Pages deploy и owner visual acceptance фиксируются только после фактического завершения.
 - In-app reply notifications slice реализован в PR #180:
   forward migration `0024_forum_reply_notifications` хранит только stable recipient/actor/topic/post
   references, `createdAt` и nullable `readAt`; unique recipient + reply identity предотвращает
