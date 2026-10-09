@@ -3767,3 +3767,12 @@ existence must not block independent forum development in this conversation.
 ### Next step
 
 ChatGPT should implement this bounded profile block in a separate implementation PR and keep status/results in this file. The approved profile scope is independent of outstanding Help work. Editor, signal/report/admin-panel tracks, online presence, registration and paused Stage 6 remain outside this implementation PR.
+
+
+## Forum profiles — implementation started by ChatGPT — 2026-10-09
+
+1. Correction to the previous handoff: the tool/runtime label Codex does not assign this conversation the owner's separate independent Codex-reviewer role. The owner explicitly renewed the instruction to implement forum profiles. This conversation now performs the ChatGPT implementation role under that authorization.
+2. Implementation is isolated from main in `chatgpt/ui-forum-profiles`, based on `fe4d1fc5f425fa3e2e4487c98fd9d9701248aa75`. No implementation PR has been submitted for final independent review yet.
+3. Implemented work under verification: stable-ID public profile route, optional persisted bio/GitHub/website fields, explicit public projection, current DB role, independently derived message/selected-answer counts, owner-only same-origin update, existing identity/avatar reuse, header/message links, EN/RU/HE presentation and Pages fixtures.
+4. Forward migration `0032_forum_profiles` and repository schema/runtime privilege contracts are part of this bounded local/CI change. Production rollout is not authorized or performed.
+5. Full local suite and browser/migration verification are in progress. Owner visual acceptance and final independent Codex review are still pending. Merge remains owner-only.
